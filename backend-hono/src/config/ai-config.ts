@@ -428,14 +428,14 @@ export const defaultAiConfig: AiConfig = {
     openRouter: {
       baseUrl: openRouterBaseUrl,
       appUrl: getEnv('OPENROUTER_APP_URL') ?? 'https://pulse-solvys.vercel.app',
-      appName: getEnv('OPENROUTER_APP_NAME') ?? 'Pulse-AI-Gateway'
+      appName: getEnv('OPENROUTER_APP_NAME') ?? 'Fintheon-AI-Gateway'
     },
     vercelGateway: {
       baseUrl: vercelGatewayBaseUrl
     },
     hermes: {
       baseUrl: getHermesOpenAIBaseUrl(),
-      appName: getEnv('HERMES_APP_NAME') ?? 'Pulse-PIC-Hermes'
+      appName: getEnv('HERMES_APP_NAME') ?? 'Fintheon-PIC-Hermes'
     },
     githubModels: {
       baseUrl: githubModelsBaseUrl

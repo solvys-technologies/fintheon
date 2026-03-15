@@ -400,7 +400,7 @@ export class AIService {
   }
 
   /**
-   * Quick Pulse: Analyze a chart screenshot
+   * Quick Vision: Analyze a chart screenshot
    */
   async quickPulse(image: string, algoState: any): Promise<any> {
     return this.client.post('/api/ai/quick-pulse', { image, algoState });

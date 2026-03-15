@@ -281,7 +281,7 @@ export function SettingsPage() {
                       onChange={(val) => setAlertConfig({ ...alertConfig, soundEnabled: val })}
                     />
                     <Toggle
-                      label="Nametag Emotional Pulse"
+                      label="Nametag Emotional Resonance"
                       enabled={alertConfig.nametagPulse ?? true}
                       onChange={(val) => setAlertConfig({ ...alertConfig, nametagPulse: val })}
                     />

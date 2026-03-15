@@ -156,7 +156,7 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/3 transition-colors"
       >
         <div className="flex items-center gap-2">
-          {/* Pulse dot while streaming, static when done */}
+          {/* Fintheon dot while streaming, static when done */}
           {isStreaming && !done ? (
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
           ) : (

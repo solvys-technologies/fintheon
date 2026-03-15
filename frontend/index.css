@@ -16,7 +16,7 @@
 }
 
 :root {
-  /* Pulse theme variables — set by ThemeProvider, defaults to Solvys Gold */
+  /* Fintheon theme variables — set by ThemeProvider, defaults to Solvys Gold */
   --fintheon-accent: #D4AF37;
   --fintheon-bg: #050402;
   --fintheon-text: #f0ead6;
@@ -332,7 +332,7 @@
   transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Pulse theme utility classes */
+/* Fintheon theme utility classes */
 .pulse-accent-hover:hover {
   color: var(--fintheon-accent);
   background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);

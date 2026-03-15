@@ -38,8 +38,8 @@
     "desktop:build": "npm run frontend:build && electron-builder --mac dmg"
   },
   "build": {
-    "appId": "io.solvys.pulse",
-    "productName": "Pulse",
+    "appId": "io.solvys.fintheon",
+    "productName": "Fintheon",
     "files": [
       "electron/**/*",
       "frontend/dist/**/*",

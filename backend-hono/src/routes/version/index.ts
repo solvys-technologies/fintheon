@@ -15,7 +15,7 @@ async function getLatestTag(): Promise<string | null> {
 
   try {
     const res = await fetch(GITHUB_API, {
-      headers: { Accept: 'application/json', 'User-Agent': 'Pulse-Update-Check' },
+      headers: { Accept: 'application/json', 'User-Agent': 'Fintheon-Update-Check' },
     })
 
     if (!res.ok) {

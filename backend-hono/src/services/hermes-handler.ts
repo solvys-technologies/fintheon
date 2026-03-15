@@ -431,7 +431,7 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
-        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
       },
       body: JSON.stringify({
         model: OPENROUTER_OPUS_MODEL,
@@ -518,7 +518,7 @@ export async function initHermesAgent(): Promise<void> {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
-        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
       },
       body: JSON.stringify({
         model: OPENROUTER_OPUS_MODEL,

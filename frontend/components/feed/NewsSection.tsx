@@ -287,7 +287,7 @@ export function NewsSection() {
         )}
       </div>
 
-      {/* Pulse animation for high-severity rows */}
+      {/* Fintheon animation for high-severity rows */}
       <style>{`
         @keyframes riskflow-pulse {
           0%, 100% { box-shadow: none; }

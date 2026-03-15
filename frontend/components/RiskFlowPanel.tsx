@@ -590,7 +590,7 @@ export default function RiskFlowPanel({
         )}
         </div>
 
-        {/* Pulse animation styles */}
+        {/* Fintheon animation styles */}
         <style>{`
           @keyframes riskflow-pulse {
             0%, 100% { box-shadow: none; }

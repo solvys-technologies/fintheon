@@ -194,7 +194,7 @@ export function PulseChatInput({
         </div>
       )}
 
-      {/* Main container — 21st-dev-inspired clean shell w/ Pulse palette */}
+      {/* Main container — 21st-dev-inspired clean shell w/ Fintheon palette */}
       <div
         className={[
           'relative flex flex-col rounded-2xl border transition-all duration-200',

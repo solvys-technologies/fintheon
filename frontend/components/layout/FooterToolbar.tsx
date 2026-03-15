@@ -1,7 +1,7 @@
 // [claude-code 2026-03-05] Phase 2A: Added iframe controls + heartbeat status
 // [claude-code 2026-03-07] Slide-up panel with Terminal + Changelog tabs
 // [claude-code 2026-03-10] Notion + X CLI status indicators in toolbar strip.
-// [claude-code 2026-03-14] Pulse CLI: run shell commands via Electron; "/" slash-command suggestions.
+// [claude-code 2026-03-14] Fintheon CLI: run shell commands via Electron; "/" slash-command suggestions.
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText } from 'lucide-react';
 import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TopStepXBrowser';
@@ -10,7 +10,7 @@ import { useSourceStatus } from '../../hooks/useSourceStatus';
 
 type PanelTab = 'terminal' | 'changelog';
 
-/** Slash-command suggestions (like Claude Code skills) for the Pulse CLI */
+/** Slash-command suggestions (like Claude Code skills) for the Fintheon CLI */
 const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
   { slug: 'start-backend', label: 'Start backend', command: 'cd backend-hono && npm run dev' },
   { slug: 'frontend', label: 'Start frontend dev', command: 'npx vite' },

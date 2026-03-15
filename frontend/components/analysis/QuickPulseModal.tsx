@@ -53,7 +53,7 @@ export default function QuickPulseModal({ isOpen, onClose, onAnalysisComplete }:
             onAnalysisComplete(result);
             onClose();
         } catch (err: any) {
-            console.error("Quick Pulse failed:", err);
+            console.error("Quick Vision failed:", err);
             setError("Failed to analyze chart. Please try again.");
         } finally {
             setLoading(false);
@@ -68,7 +68,7 @@ export default function QuickPulseModal({ isOpen, onClose, onAnalysisComplete }:
                 <div className="p-4 border-b border-[var(--fintheon-accent)]/10 flex items-center justify-between bg-[var(--fintheon-accent)]/5">
                     <div className="flex items-center gap-2 text-[var(--fintheon-accent)]">
                         <Activity className="w-5 h-5" />
-                        <h3 className="font-semibold text-lg tracking-wide">Quick Pulse Vision</h3>
+                        <h3 className="font-semibold text-lg tracking-wide">Quick Vision</h3>
                     </div>
                     <button
                         onClick={onClose}

@@ -147,7 +147,7 @@ export const OPENCLAW_TASK_MODEL_MAP = HERMES_TASK_MODEL_MAP
 export const buildHermesHeaders = (config?: {
   appName?: string
 }): Record<string, string> => {
-  const appName = config?.appName ?? process.env.HERMES_APP_NAME ?? 'Pulse-PIC-Hermes'
+  const appName = config?.appName ?? process.env.HERMES_APP_NAME ?? 'Fintheon-PIC-Hermes'
 
   return {
     'X-Hermes-App': appName,
@@ -185,7 +185,7 @@ export const createHermesClient = (modelId?: string) => {
     headers: {
       ...(headers as Record<string, string>),
       'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
-      'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+      'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
     },
   })
 

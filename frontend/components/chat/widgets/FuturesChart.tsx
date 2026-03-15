@@ -20,7 +20,7 @@ export function FuturesChart({ symbol = "CME_MINI:ES1!", className = "" }: Futur
                 enable_publishing={false}
                 hide_side_toolbar={false}
                 allow_symbol_change={true}
-                // Custom colors to match Pulse
+                // Custom colors to match Fintheon
                 // @ts-ignore
                 overrides={{
                     "paneProperties.background": "#000000",

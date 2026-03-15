@@ -294,7 +294,7 @@ export async function handleChat(c: Context) {
             'Authorization': `Bearer ${openRouterKey}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
-            'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+            'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
           },
           body: JSON.stringify({
             model: OPENROUTER_HERMES_4_MODEL,

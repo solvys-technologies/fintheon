@@ -244,7 +244,7 @@ export function createModelClient(modelKey: AiModelKey) {
       baseURL: config.baseUrl,
       headers: {
         'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
-        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
       },
     })
     return client(config.id)
@@ -270,7 +270,7 @@ export function createModelClient(modelKey: AiModelKey) {
       baseURL: config.baseUrl,
       headers: {
         'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
-        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
       },
     })
     return client(config.id)

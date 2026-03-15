@@ -2,7 +2,7 @@
 export type PulseAgentId = string;
 
 /**
- * Map Pulse UI agents to Hermes agent roles.
+ * Map Fintheon UI agents to Hermes agent roles.
  * We keep this intentionally string-based to avoid importing backend types.
  */
 export function toHermesAgentOverride(pulseAgentId: PulseAgentId | undefined | null): string | undefined {

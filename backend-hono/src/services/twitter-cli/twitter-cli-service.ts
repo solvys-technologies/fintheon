@@ -2,8 +2,8 @@
 
 import { execFileNoThrow } from '../../utils/execFileNoThrow.js';
 
-// Absolute path required — Pulse backend runs with restricted PATH (/usr/local/bin only)
-// uv installs to ~/.local/bin which is not in the Pulse process PATH
+// Absolute path required — Fintheon backend runs with restricted PATH (/usr/local/bin only)
+// uv installs to ~/.local/bin which is not in the Fintheon process PATH
 const TWITTER_BIN =
   process.env.TWITTER_CLI_PATH ??
   `${process.env.HOME ?? '/Users/tifos'}/.local/bin/twitter`;
