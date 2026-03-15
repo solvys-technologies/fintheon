@@ -24,6 +24,7 @@ interface AlertConfig {
   priceAlerts: boolean;
   psychAlerts: boolean;
   newsAlerts: boolean;
+  newsAutoRefresh: boolean;
   soundEnabled: boolean;
   healingBowlSound: HealingBowlSound;
   nametagPulse: boolean;
@@ -148,6 +149,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       priceAlerts: true,
       psychAlerts: true,
       newsAlerts: false,
+      newsAutoRefresh: true,
       soundEnabled: true,
       healingBowlSound: 'calm-1' as HealingBowlSound,
       nametagPulse: true,

@@ -16,7 +16,7 @@ import { createHealthService } from './services/health-service.js';
 import { startFeedPoller } from './services/riskflow/feed-poller.js';
 import { startNotionPoller } from './services/notion-poller.js';
 import { startEconEnricher } from './services/cron/econ-enricher.js';
-import { startEconTwitterPoller } from './services/twitter-cli/index.js';
+import { startEconTwitterPoller, startAuthRefresher } from './services/twitter-cli/index.js';
 import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
 import { initHermesAgent } from './services/hermes-handler.js';
 import { startAutopilotScheduler } from './services/autopilot/autopilot-scheduler.js';
@@ -87,6 +87,9 @@ startNotionPoller();
 
 // Start econ calendar enricher (Notion calendar → RiskFlow feed)
 startEconEnricher();
+
+// Start twitter-cli auth refresher (12h cookie rotation — prevents 429 rate limits)
+startAuthRefresher();
 
 // Start econ-triggered twitter-cli poller (cookie-based, FJ emoji filtered)
 startEconTwitterPoller();

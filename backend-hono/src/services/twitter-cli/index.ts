@@ -1,4 +1,5 @@
 // [claude-code 2026-03-10] twitter-cli module public API
+// [claude-code 2026-03-14] Added auth refresher — 12h cookie rotation to prevent 429s
 
 export {
   isTwitterCliInstalled,
@@ -21,3 +22,9 @@ export {
   stopEconTwitterPoller,
   getWarmCacheItems,
 } from './econ-triggered-poller.js';
+
+export {
+  startAuthRefresher,
+  stopAuthRefresher,
+  forceRefreshCookies,
+} from './twitter-auth-refresher.js';

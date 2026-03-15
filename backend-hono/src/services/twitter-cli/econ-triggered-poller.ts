@@ -1,8 +1,10 @@
 // [claude-code 2026-03-10] Econ-triggered twitter poller — links Notion Econ Calendar to twitter-cli searches
 // [claude-code 2026-03-10] Warm cache: filter 'high'→'medium', slice(10)→slice(30) for broader seed
 // [claude-code 2026-03-10] Burst polling: 5s interval for 30s after econ release, actual extraction from FJ tweets
+// [claude-code 2026-03-14] Market-hours gating: only poll 7AM–4PM ET weekdays, respects newsAutoRefresh setting
 
 import { searchTweets, fetchUserTimeline, isTwitterCliInstalled } from './twitter-cli-service.js';
+import { getUserSettings } from '../settings-store.js';
 import { filterByTier } from './fj-emoji-filter.js';
 import { fetchEconCalendar, updateEventActual, writeEconPrint } from '../econ-calendar-service.js';
 import { notionCreatePage } from '../notion-service.js';
@@ -574,21 +576,87 @@ export function getWarmCacheItems(): FeedItem[] {
   return warmCache;
 }
 
+// ── Market Hours Gate ─────────────────────────────────────────────────────────
+
+/**
+ * Check if current time is within polling hours: 7 AM – 4 PM ET, Mon–Fri.
+ * Returns false outside these hours so we don't burn X rate limits overnight.
+ */
+function isWithinPollingHours(): boolean {
+  const now = new Date();
+  // Convert to ET (handles EST/EDT automatically)
+  const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const et = new Date(etStr);
+  const day = et.getDay(); // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false;
+  const hour = et.getHours();
+  const min = et.getMinutes();
+  const timeMin = hour * 60 + min;
+  // 7:00 AM = 420 min, 4:00 PM = 960 min
+  return timeMin >= 420 && timeMin <= 960;
+}
+
+/**
+ * Check if the user has newsAutoRefresh enabled in their settings.
+ * Defaults to true if setting doesn't exist.
+ */
+async function isAutoRefreshEnabled(): Promise<boolean> {
+  try {
+    const settings = await getUserSettings('local-user');
+    const alertConfig = settings?.alertConfig as Record<string, unknown> | undefined;
+    return alertConfig?.newsAutoRefresh !== false; // default true
+  } catch {
+    return true; // default to enabled if settings unavailable
+  }
+}
+
+/** Combined gate: market hours + user setting */
+async function shouldPoll(): Promise<boolean> {
+  if (!isWithinPollingHours()) {
+    return false;
+  }
+  return isAutoRefreshEnabled();
+}
+
+// Track whether we've logged the "paused" message to avoid spam
+let lastGateState: boolean | null = null;
+
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
 let pollerInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startEconTwitterPoller(): void {
   if (pollerInterval) return;
-  console.log('[EconTwitterPoller] Starting (60s interval, 5s burst on releases)');
+  console.log('[EconTwitterPoller] Starting (60s interval, 5s burst on releases, 7AM–4PM ET gate)');
 
-  initFetchHighPriorityPosts().then(() => {
-    pollTwitterForEconNews().catch((err) =>
-      console.warn('[EconTwitterPoller] Initial poll error:', err)
-    );
-  }).catch((err) => console.warn('[EconTwitterPoller] Init fetch error:', err));
+  // Initial fetch only if within polling hours
+  shouldPoll().then((ok) => {
+    if (ok) {
+      initFetchHighPriorityPosts().then(() => {
+        pollTwitterForEconNews().catch((err) =>
+          console.warn('[EconTwitterPoller] Initial poll error:', err)
+        );
+      }).catch((err) => console.warn('[EconTwitterPoller] Init fetch error:', err));
+      lastGateState = true;
+    } else {
+      console.log('[EconTwitterPoller] Outside polling hours or auto-refresh disabled — waiting');
+      lastGateState = false;
+    }
+  });
 
-  pollerInterval = setInterval(() => {
+  pollerInterval = setInterval(async () => {
+    const ok = await shouldPoll();
+    if (!ok) {
+      if (lastGateState !== false) {
+        console.log('[EconTwitterPoller] Paused — outside 7AM–4PM ET or auto-refresh disabled');
+        lastGateState = false;
+      }
+      return;
+    }
+    if (lastGateState === false) {
+      console.log('[EconTwitterPoller] Resumed — within polling hours');
+      lastGateState = true;
+    }
     pollTwitterForEconNews().catch((err) =>
       console.warn('[EconTwitterPoller] Poll error:', err)
     );
