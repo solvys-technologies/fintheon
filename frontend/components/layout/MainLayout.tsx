@@ -550,20 +550,16 @@ export function MainLayout() {
     const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'team' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (missionControlCollapsed) {
-        // Strategium collapsed — thin expand strip only, RiskFlow hidden
+        // Strategium collapsed — panel fully hidden, floating edge button to restore
         rightPanels.push(
-          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15">
-            <div className="h-10 shrink-0 flex items-center justify-between px-3">
-              <span className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-[0.2em] uppercase">Strategium</span>
-              <button
-                onClick={() => setMissionControlCollapsed(false)}
-                className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
-                title="Expand Strategium"
-              >
-                <ChevronDown className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />
-              </button>
-            </div>
-          </div>
+          <button
+            key="right-stack"
+            onClick={() => setMissionControlCollapsed(false)}
+            className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 border-r-0 rounded-l-md px-1 py-3 hover:bg-[var(--fintheon-accent)]/10 transition-colors group"
+            title="Open Strategium"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/40 group-hover:text-[var(--fintheon-accent)]" />
+          </button>
         );
       } else if (riskFlowCollapsed) {
         rightPanels.push(
