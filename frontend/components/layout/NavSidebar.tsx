@@ -13,7 +13,7 @@ interface NavSidebarProps {
   onEditModeChange?: (editing: boolean) => void;
 }
 
-const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'team' | 'earnings'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
+const NAV_ITEMS_MAP: Record<NavTabId, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
   executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
   analysis: { id: 'analysis', icon: Sparkles, label: 'Consilium', description: 'AI-powered trade counsel' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
