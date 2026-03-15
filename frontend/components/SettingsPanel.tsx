@@ -286,6 +286,11 @@ export function SettingsPage() {
                       onChange={(val) => setAlertConfig({ ...alertConfig, nametagPulse: val })}
                     />
                   </div>
+
+                  {/* Test Microphone */}
+                  <div className="mt-4">
+                    <MicTest />
+                  </div>
                 </section>
 
                 <section className="pt-6">
@@ -1113,5 +1118,100 @@ function GatewayTab() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Mic Test — waveform visualizer + permission check                  */
+/* ------------------------------------------------------------------ */
+function MicTest() {
+  const [testing, setTesting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [levels, setLevels] = useState<number[]>(new Array(32).fill(0));
+  const streamRef = React.useRef<MediaStream | null>(null);
+  const rafRef = React.useRef<number>(0);
+
+  const start = async () => {
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      setTesting(true);
+
+      const ctx = new AudioContext();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        setLevels(Array.from(data));
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Microphone access denied';
+      setError(msg);
+    }
+  };
+
+  const stop = () => {
+    cancelAnimationFrame(rafRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setTesting(false);
+    setLevels(new Array(32).fill(0));
+  };
+
+  React.useEffect(() => {
+    return () => { stop(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="border border-[var(--fintheon-accent)]/15 rounded-lg p-4 bg-[#0b0b08]">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Mic size={14} className="text-[var(--fintheon-accent)]" />
+          <span className="text-xs font-semibold text-gray-300">Test Microphone</span>
+        </div>
+        <button
+          onClick={testing ? stop : start}
+          className={`text-[11px] font-medium px-3 py-1 rounded transition-colors ${
+            testing
+              ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+              : 'bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/20'
+          }`}
+        >
+          {testing ? 'Stop' : 'Test'}
+        </button>
+      </div>
+
+      {/* Waveform bars */}
+      <div className="flex items-end gap-[2px] h-10 bg-black/30 rounded px-1 py-1">
+        {levels.map((v, i) => (
+          <div
+            key={i}
+            className="flex-1 rounded-sm transition-all duration-75"
+            style={{
+              height: `${Math.max(2, (v / 255) * 100)}%`,
+              backgroundColor: v > 180 ? '#ef4444' : v > 80 ? 'var(--fintheon-accent)' : '#374151',
+            }}
+          />
+        ))}
+      </div>
+
+      {error && (
+        <p className="text-[10px] text-red-400 mt-2">{error}</p>
+      )}
+      {!testing && !error && (
+        <p className="text-[10px] text-gray-600 mt-2">Click "Test" to check your microphone</p>
+      )}
+      {testing && (
+        <p className="text-[10px] text-emerald-400 mt-2">Listening... speak to see the waveform</p>
+      )}
+    </div>
   );
 }

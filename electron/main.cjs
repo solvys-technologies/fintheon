@@ -1,7 +1,7 @@
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
 // [claude-code 2026-03-11] Auto-start backend on app init.
 
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, session, systemPreferences } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
 const fs = require("fs");
@@ -77,7 +77,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1600,
     height: 980,
-    title: "Pulse",
+    title: "Fintheon",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -93,6 +93,20 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Grant media permissions (microphone, camera, screen capture)
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    const granted = ["media", "mediaKeySystem", "display-capture", "notifications"].includes(permission);
+    callback(granted);
+  });
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+    return ["media", "mediaKeySystem", "display-capture", "notifications"].includes(permission);
+  });
+
+  // macOS: request mic access at OS level
+  if (process.platform === "darwin" && systemPreferences.askForMediaAccess) {
+    systemPreferences.askForMediaAccess("microphone").catch(() => {});
+  }
+
   startBackend();
   createWindow();
 
