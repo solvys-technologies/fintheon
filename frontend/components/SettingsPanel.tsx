@@ -1087,6 +1087,12 @@ function GatewayTab() {
           Hermes connects Fintheon to OpenRouter (Nous subscription) for Claude Opus 4.6 inference. Health checks run every 30 seconds.
         </p>
 
+        {/* Hermes Gateway Port */}
+        <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 mt-4">
+          <h4 className="text-sm font-medium text-white mb-3">Hermes Gateway Port</h4>
+          <HermesPortField />
+        </div>
+
         {/* Persistent Thread */}
         <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 mt-4">
           <h4 className="text-sm font-medium text-white mb-3">Persistent Thread</h4>
@@ -1118,6 +1124,48 @@ function GatewayTab() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Hermes Gateway Port field                                          */
+/* ------------------------------------------------------------------ */
+function HermesPortField() {
+  const { gatewayPort, setGatewayPort } = useSettings();
+  const { reconnect } = useGateway();
+  const [draft, setDraft] = useState(String(gatewayPort));
+
+  const apply = () => {
+    const port = parseInt(draft, 10);
+    if (!isNaN(port) && port > 0 && port < 65536) {
+      setGatewayPort(port);
+      // Reconnect after a short delay so the context picks up the new URL
+      setTimeout(() => reconnect(), 300);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') apply(); }}
+          className="w-24 bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 rounded px-3 py-1.5 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--fintheon-accent)]/60 transition-colors"
+          placeholder="8080"
+        />
+        <button
+          onClick={apply}
+          className="text-[11px] font-medium text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30 rounded px-3 py-1.5 hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+        >
+          Apply & Reconnect
+        </button>
+      </div>
+      <p className="text-[11px] text-gray-500">
+        Default: 8080. Change if running the Hono backend on a different port.
+      </p>
+    </div>
   );
 }
 
