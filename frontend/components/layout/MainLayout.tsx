@@ -550,24 +550,18 @@ export function MainLayout() {
     const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'team' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (missionControlCollapsed) {
-        // Mission Control collapsed — just show a thin expand strip + full RiskFlow
+        // Strategium collapsed — thin expand strip only, RiskFlow hidden
         rightPanels.push(
           <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15">
-            <div className="h-10 shrink-0 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/20">
-              <span className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-[0.2em] uppercase">Mission Control</span>
+            <div className="h-10 shrink-0 flex items-center justify-between px-3">
+              <span className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-[0.2em] uppercase">Strategium</span>
               <button
                 onClick={() => setMissionControlCollapsed(false)}
                 className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
-                title="Expand Mission Control"
+                title="Expand Strategium"
               >
                 <ChevronDown className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />
               </button>
-            </div>
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <RiskFlowPanel
-                collapsed={riskFlowCollapsed}
-                onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
-              />
             </div>
           </div>
         );
