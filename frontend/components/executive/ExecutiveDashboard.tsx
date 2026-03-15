@@ -1,3 +1,4 @@
+// [claude-code 2026-03-15] Brief row height is now drag-resizable (200–800px), persisted to localStorage
 // [claude-code 2026-03-11] T8: Tale of the Tape label for Sun+Mon<7AM, show only first brief item
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useBackend } from '../../lib/backend';
@@ -37,6 +38,34 @@ export function ExecutiveDashboard() {
   const [ntnRefreshing, setNtnRefreshing] = useState(false);
   const [kpisLoaded, setKpisLoaded] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(() => shouldShowSetupGuide());
+
+  // Resizable brief row height — persisted to localStorage
+  const BRIEF_HEIGHT_KEY = 'fintheon_brief_row_height';
+  const [briefRowHeight, setBriefRowHeight] = useState(() => {
+    try { const v = localStorage.getItem(BRIEF_HEIGHT_KEY); return v ? Math.max(200, Math.min(800, Number(v))) : 380; } catch { return 380; }
+  });
+  const briefDragRef = useRef<{ startY: number; startH: number } | null>(null);
+
+  useEffect(() => {
+    try { localStorage.setItem(BRIEF_HEIGHT_KEY, String(briefRowHeight)); } catch {}
+  }, [briefRowHeight]);
+
+  const onBriefResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    briefDragRef.current = { startY: e.clientY, startH: briefRowHeight };
+    const onMove = (ev: MouseEvent) => {
+      if (!briefDragRef.current) return;
+      const newH = Math.max(200, Math.min(800, briefDragRef.current.startH + (ev.clientY - briefDragRef.current.startY)));
+      setBriefRowHeight(newH);
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      briefDragRef.current = null;
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [briefRowHeight]);
 
   // Brief type: TOTT (Sun>=17:00 through Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
   const getBriefLabel = () => {
@@ -182,8 +211,8 @@ export function ExecutiveDashboard() {
               <SetupGuideCard onDismiss={() => setShowSetupGuide(false)} />
             </div>
           )}
-          {/* Row 1: Need-to-Know Brief (left) + Session Calendar (right) */}
-          <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5" style={{ height: '380px' }}>
+          {/* Row 1: Need-to-Know Brief (left) + Session Calendar (right) — height adjustable */}
+          <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-0 relative" style={{ height: `${briefRowHeight}px` }}>
             {/* Need-to-Know Brief */}
             <div className="flex flex-col h-full min-h-0">
               <KanbanTitle
@@ -239,6 +268,13 @@ export function ExecutiveDashboard() {
                 )}
               </div>
             </div>
+          </div>
+          {/* Resize handle for brief row */}
+          <div
+            onMouseDown={onBriefResizeStart}
+            className="shrink-0 h-2 cursor-row-resize flex items-center justify-center mb-3 group"
+          >
+            <div className="w-12 h-0.5 rounded-full bg-zinc-700 group-hover:bg-[var(--fintheon-accent)]/60 transition-colors" />
           </div>
 
           {/* Row 2: Core KPIs — single horizontal row, static */}

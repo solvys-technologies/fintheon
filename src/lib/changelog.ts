@@ -9,6 +9,12 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-15T23:55:00',
+    agent: 'claude-code',
+    summary: 'Made the brief window (Row 1 on Executive Dashboard) height-adjustable via drag handle. Height persists to localStorage. Min 200px, max 800px.',
+    files: ['frontend/components/executive/ExecutiveDashboard.tsx'],
+  },
+  {
     date: '2026-03-15T01:30:00',
     agent: 'claude-code',
     summary: 'Track 4: New Components & Effects — pompa.ts utility, SplashScreen temple doors, ShortcutsPopup modal, PompaToast, SPQRStamp, TriumphusOverlay, NotFoundPage 404, easter-eggs.ts (Konami/SPQR/Ides/triple-click), sound placeholders. Global font fix: Readable Digits unicode-range @font-face ensures digits stay in Inter across all font themes; CSS inheritance rule forces all UI elements to respect --font-body/--font-heading.',
