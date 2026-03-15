@@ -107,6 +107,23 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
         <span className={`text-sm font-bold ${color}`}>
           {data.score.toFixed(1)}
         </span>
+        <span className={`text-[10px] font-medium ${color}`}>
+          {envLabel}
+        </span>
+
+        {/* Implied point range */}
+        {pts && (
+          <>
+            <span className="text-gray-600">|</span>
+            <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
+            <span className="text-[10px] text-[var(--fintheon-accent)] font-medium">
+              ±{pts.scaledPoints} pts
+            </span>
+            <span className={`text-[9px] font-medium ${getUrgencyColor(pts.urgency)}`}>
+              {pts.urgency}
+            </span>
+          </>
+        )}
 
         {/* Info button for rationale tooltip */}
         <button
