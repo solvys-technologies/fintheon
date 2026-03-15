@@ -145,7 +145,10 @@ app.whenReady().then(() => {
   });
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      if (!backendProcess) startBackend();
+      createWindow();
+    }
   });
 });
 

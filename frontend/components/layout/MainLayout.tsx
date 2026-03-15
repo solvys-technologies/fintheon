@@ -103,7 +103,7 @@ export function MainLayout() {
   const missionDeckRef = useRef<HTMLDivElement>(null);
   const [psychAssistTarget, setPsychAssistTarget] = useState<PsychAssistDockTarget>(() => {
     try {
-      return (localStorage.getItem('pulse_psychassist_target:v1') as PsychAssistDockTarget) || 'floating';
+      return (localStorage.getItem('fintheon_psychassist_target:v1') as PsychAssistDockTarget) || 'floating';
     } catch {
       return 'floating';
     }
@@ -111,7 +111,7 @@ export function MainLayout() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('pulse_psychassist_target:v1', psychAssistTarget);
+      localStorage.setItem('fintheon_psychassist_target:v1', psychAssistTarget);
     } catch {
       // ignore
     }
@@ -606,7 +606,7 @@ export function MainLayout() {
     <div className="h-screen flex flex-col bg-[var(--fintheon-bg)] text-white">
       <TopHeader
         topStepXEnabled={topStepXEnabled}
-        onTopStepXToggle={() => { /* T3d: removed auto-enable — power is controlled via dedicated power button only */ }}
+        onTopStepXToggle={() => setTopStepXEnabled(true)}
         onTopStepXDisable={() => setTopStepXEnabled(prev => !prev)}
         selectedPlatform={selectedPlatform}
         onPlatformSelect={setSelectedPlatform}
@@ -710,7 +710,7 @@ export function MainLayout() {
                   <iframe
                     src="https://discord.com/channels/@me"
                     className="w-full h-full border-0"
-                    title="PIC Boardroom — Discord"
+                    title="PIC Team — Discord"
                     allow="microphone; camera; clipboard-write; encrypted-media"
                     sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
                   />
@@ -774,7 +774,7 @@ export function MainLayout() {
           />
         )}
 
-        {/* Global chat panel (hidden on boardroom tab where it's already embedded) */}
+        {/* Global chat panel (hidden on tabs where it's already embedded) */}
         {showAskHarp && (
           <div className="absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl animate-fade-in-tab">
             <div className="flex items-center justify-end px-4 py-2 flex-shrink-0">

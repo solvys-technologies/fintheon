@@ -5,10 +5,9 @@ type NavTab = string;
 const TAB_META: Record<string, { label: string; parent?: string }> = {
   executive: { label: 'Dashboard' },
   feed: { label: 'Dashboard' }, // feed removed from sidebar; fallback for history
-  analysis: { label: 'Chat' },
+  analysis: { label: 'Consilium' },
   news: { label: 'RiskFlow' },
-  chatroom: { label: 'Board Room' },
-  notion: { label: 'Research Department' },
+  notion: { label: 'Scriptorium' },
   econ: { label: 'Economic Calendar' },
   narrative: { label: 'NarrativeFlow' },
   earnings: { label: 'Performance' },

@@ -13,7 +13,7 @@ interface NavSidebarProps {
   onEditModeChange?: (editing: boolean) => void;
 }
 
-const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
+const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'team' | 'earnings'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
   executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
   analysis: { id: 'analysis', icon: Sparkles, label: 'Consilium', description: 'AI-powered trade counsel' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
@@ -106,7 +106,7 @@ export function NavSidebar({
   }, []);
 
   const orderedItems = order
-    .filter((id): id is Exclude<NavTabId, 'chatroom'> => id in NAV_ITEMS_MAP && id !== 'chatroom' && id !== 'team' && id !== 'earnings')
+    .filter((id) => id in NAV_ITEMS_MAP && id !== 'team' && id !== 'earnings')
     .map((tabId) => ({
       tabId,
       icon: NAV_ITEMS_MAP[tabId].icon,

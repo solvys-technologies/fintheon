@@ -137,11 +137,14 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
 
       {showTooltip && (
         <div
-          className={`absolute top-full mt-2 w-80 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl z-[9999] ${
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+          className={`absolute top-full mt-2 w-80 border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-2xl z-[9999] ${
             layoutOption === 'tickers-only' ? 'right-0' : 'left-0'
           }`}
           style={{
             maxWidth: layoutOption === 'tickers-only' ? 'min(320px, calc(100vw - 2rem))' : '320px',
+            backgroundColor: '#0a0a08',
           }}
         >
           <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-2">

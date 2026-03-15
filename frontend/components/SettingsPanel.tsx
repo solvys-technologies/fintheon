@@ -276,6 +276,14 @@ export function SettingsPage() {
                       onChange={(val) => setAlertConfig({ ...alertConfig, newsAlerts: val })}
                     />
                     <Toggle
+                      label="News Auto-Refresh"
+                      enabled={alertConfig.newsAutoRefresh ?? true}
+                      onChange={(val) => setAlertConfig({ ...alertConfig, newsAutoRefresh: val })}
+                    />
+                    <p className="text-[10px] text-gray-500 -mt-1 ml-1">
+                      Auto-polls X for market news during trading hours (7 AM – 4 PM ET). Turn off to save API quota.
+                    </p>
+                    <Toggle
                       label="Sound Enabled"
                       enabled={alertConfig.soundEnabled}
                       onChange={(val) => setAlertConfig({ ...alertConfig, soundEnabled: val })}
@@ -816,25 +824,6 @@ export function SettingsPage() {
                   <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">iFrames</h3>
                   <p className="text-xs text-gray-500 mb-4">Set Notion page URLs for embedded views. Leave blank to use defaults from environment variables.</p>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm text-gray-300 mb-2">Boardroom URL</label>
-                      <input
-                        type="url"
-                        value={iframeUrls.boardroom}
-                        onChange={(e) => setIframeUrls({ ...iframeUrls, boardroom: e.target.value })}
-                        placeholder={import.meta.env.VITE_NOTION_BOARDROOM_URL || 'https://www.notion.so/your-boardroom-page'}
-                        className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30 placeholder:text-zinc-600"
-                      />
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-[10px] text-gray-600">Embedded in the Board Room tab</p>
-                        <button
-                          onClick={() => window.open(iframeUrls.boardroom || import.meta.env.VITE_NOTION_BOARDROOM_URL || '', '_blank')}
-                          className="text-[11px] font-medium text-[var(--fintheon-accent)] hover:underline"
-                        >
-                          Login with Google
-                        </button>
-                      </div>
-                    </div>
                     <div>
                       <label className="block text-sm text-gray-300 mb-2">Research URL</label>
                       <input
