@@ -1,5 +1,6 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
 // [claude-code 2026-03-16] Added Manage button for NarrativeManageModal
+// [claude-code 2026-03-16] Full-width stretch, date in primary font, MiroFish button
 import { useState, useRef } from 'react';
 import {
   ChevronLeft,
@@ -29,6 +30,7 @@ interface NarrativeToolbarProps {
   onManage: () => void;
   onMiroFish: () => void;
   mirofishActive: boolean;
+  onAddNarrative: () => void;
 }
 
 const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
@@ -44,11 +46,10 @@ const SENTIMENT_OPTIONS: { value: CatalystSentiment | 'all'; label: string }[] =
   { value: 'bearish', label: 'Bearish' },
 ];
 
-export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport, onManage, onMiroFish, mirofishActive }: NarrativeToolbarProps) {
+export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport, onManage, onMiroFish, mirofishActive, onAddNarrative }: NarrativeToolbarProps) {
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
-  const filterBtnRef = useRef<HTMLButtonElement>(null);
 
   const getAnchorPos = (ref: React.RefObject<HTMLButtonElement | null>) => {
     if (!ref.current) return { x: 0, y: 0 };
@@ -57,10 +58,9 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
   };
 
   return (
-    <div className="h-12 flex items-center justify-between px-3 border-b border-[var(--fintheon-border)]/20 bg-[var(--fintheon-surface)]">
-      {/* Left group: Zoom + Navigation */}
-      <div className="flex items-center gap-3">
-        {/* Zoom level toggle */}
+    <div className="h-12 flex items-center px-4 border-b border-[var(--fintheon-border)]/20 bg-[var(--fintheon-surface)] w-full">
+      {/* Left: Zoom toggle */}
+      <div className="flex items-center gap-3 shrink-0">
         <div className="flex items-center rounded-md border border-[var(--fintheon-border)]/20 overflow-hidden">
           {ZOOM_LEVELS.map((z) => {
             const active = state.zoomLevel === z.value;
@@ -79,11 +79,6 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
             );
           })}
         </div>
-
-        {/* Current range label */}
-        <span className="text-xs text-[var(--fintheon-muted)] font-mono min-w-[140px]">
-          {formatWeekLabel(new Date(state.currentWeekStart))}
-        </span>
 
         {/* Navigation arrows */}
         <div className="flex items-center gap-0.5">
@@ -108,12 +103,21 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
         </div>
       </div>
 
-      {/* Right group: Filter, Heatmap, Template, Undo, Save, Replay */}
-      <div className="flex items-center gap-1">
+      {/* Center: Date range in primary theme font */}
+      <div className="flex-1 flex justify-center">
+        <span
+          className="text-sm font-semibold tracking-wide"
+          style={{ color: 'var(--fintheon-text)' }}
+        >
+          {formatWeekLabel(new Date(state.currentWeekStart))}
+        </span>
+      </div>
+
+      {/* Right: Actions */}
+      <div className="flex items-center gap-1 shrink-0">
         {/* Filter dropdown */}
         <div className="relative">
           <button
-            ref={filterBtnRef}
             onClick={() => setFilterOpen(!filterOpen)}
             className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
               state.filterSentiment !== 'all'
@@ -125,15 +129,12 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
             <span>{SENTIMENT_OPTIONS.find((s) => s.value === state.filterSentiment)?.label ?? 'All'}</span>
           </button>
           {filterOpen && (
-            <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--fintheon-surface)]/95 backdrop-blur-lg border border-[var(--fintheon-border)]/30 rounded-lg shadow-xl py-1 min-w-[100px] animate-fade-in">
+            <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--fintheon-surface)]/95 backdrop-blur-lg border border-[var(--fintheon-border)]/30 rounded-lg shadow-xl py-1 min-w-[100px]">
               {SENTIMENT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => {
-                    dispatch({
-                      type: 'SET_FILTER',
-                      sentiment: opt.value,
-                    });
+                    dispatch({ type: 'SET_FILTER', sentiment: opt.value });
                     setFilterOpen(false);
                   }}
                   className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
@@ -162,17 +163,26 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
           <Map className="w-3.5 h-3.5" />
         </button>
 
-        {/* Divider */}
         <div className="w-px h-5 bg-[var(--fintheon-border)]/20 mx-1" />
 
-        {/* Add template */}
+        {/* Add Narrative (opens modal) */}
+        <button
+          onClick={onAddNarrative}
+          className="p-1.5 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+          title="Add narrative"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+
+        {/* Add Catalyst template */}
         <button
           ref={addBtnRef}
           onClick={() => setTemplateMenuOpen(!templateMenuOpen)}
-          className="p-1.5 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-          title="Add catalyst"
+          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+          title="Add catalyst event"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-3 h-3" />
+          <span>Event</span>
         </button>
 
         <CatalystTemplateMenu
@@ -231,6 +241,8 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
           <Zap className="w-3.5 h-3.5" />
         </button>
 
+        <div className="w-px h-5 bg-[var(--fintheon-border)]/20 mx-1" />
+
         {/* Undo */}
         <button
           onClick={onUndo}
@@ -252,9 +264,7 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
 
         {/* Replay */}
         <button
-          onClick={() =>
-            dispatch({ type: 'SET_REPLAY_MODE', enabled: !state.replayMode })
-          }
+          onClick={() => dispatch({ type: 'SET_REPLAY_MODE', enabled: !state.replayMode })}
           className={`p-1.5 rounded transition-colors ${
             state.replayMode
               ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'

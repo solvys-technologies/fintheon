@@ -10,21 +10,36 @@ export type DirectionBias = 'long' | 'short' | 'neutral';
 export type RopePolarity = 'reinforcing' | 'contradicting';
 export type ZoomLevel = 'week' | 'month' | 'quarter' | 'year';
 export type CatalystTemplateType = 'fomc' | 'cpi' | 'earnings' | 'geopolitical' | 'custom';
+export type BeatMissResult = 'beat' | 'miss' | 'inline' | null;
+export type NarrativeSortKey = 'order' | 'title' | 'intensity' | 'status' | 'category' | 'updatedAt';
+export type SortDirection = 'asc' | 'desc';
+
+export const ASSET_CLASSES: Record<string, string[]> = {
+  'Equity Index': ['ES', 'NQ', 'YM', 'RTY', 'SPY', 'QQQ', 'IWM', 'DIA'],
+  'Mega-Cap': ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA'],
+  Crypto: ['BTC', 'ETH', 'SOL', 'DOGE', 'XRP'],
+  Commodities: ['GC', 'SI', 'CL', 'NG', 'HG'],
+  'Fixed Income': ['ZN', 'ZB', 'ZF', 'TLT', 'HYG'],
+  Forex: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'DXY'],
+};
 
 export interface NarrativeLane {
   id: string;
   title: string;
+  description?: string;
   instruments: string[];
   directionBias: DirectionBias;
   category: NarrativeCategory;
   status: NarrativeStatus;
   dateRange: { start: string; end: string | null };
   healthScore: number;
+  intensity?: number;
   color: string;
   order: number;
   parentId: string | null;
   forkDate: string | null;
   decayWeeks: number;
+  tags?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -41,8 +56,10 @@ export interface CatalystCard {
   isGhost: boolean;
   templateType: CatalystTemplateType | null;
   position: { x: number; y: number } | null;
-  tags?: string[];  // user-defined tags for filtering/organizing
+  tags?: string[];
   category?: NarrativeCategory;
+  intensity?: number;
+  beatMiss?: BeatMissResult;
   createdAt: string;
   updatedAt: string;
 }
@@ -98,6 +115,11 @@ export interface NarrativeFlowState {
   replayMode: boolean;
   replayPosition: number;
   agentProvider: AgentProviderConfig;
+  sortKey: NarrativeSortKey;
+  sortDirection: SortDirection;
+  filterCategory: NarrativeCategory | 'all';
+  filterStatus: NarrativeStatus | 'all';
+  filterBeatMiss: BeatMissResult | 'all';
 }
 
 export interface NarrativeSnapshot {
@@ -134,5 +156,9 @@ export type NarrativeAction =
   | { type: 'SET_REPLAY_POSITION'; position: number }
   | { type: 'IMPORT_CATALYSTS'; catalysts: Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'>[] }
   | { type: 'TAG_CATALYST'; catalystId: string; tags: string[] }
+  | { type: 'SET_SORT'; sortKey: NarrativeSortKey; sortDirection: SortDirection }
+  | { type: 'SET_FILTER_CATEGORY'; category: NarrativeCategory | 'all' }
+  | { type: 'SET_FILTER_STATUS'; status: NarrativeStatus | 'all' }
+  | { type: 'SET_FILTER_BEAT_MISS'; beatMiss: BeatMissResult | 'all' }
   | { type: 'TAKE_SNAPSHOT' }
   | { type: 'RESTORE_SNAPSHOT' };

@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-17T03:00:00',
+    agent: 'claude-code',
+    summary: 'Narrative Map: right-click context menu (rename, delete, archive, status, direction, fork, ask AI, edit), full Add/Edit Narrative modal with asset class multi-select, description, tagging, category/status/direction pickers. Toolbar redesigned to stretch full width with date in primary theme font. Added intensity/beatMiss fields to types, sort/filter persistence in store.',
+    files: [
+      'frontend/components/narrative/NarrativeContextMenu.tsx',
+      'frontend/components/narrative/AddNarrativeModal.tsx',
+      'frontend/components/narrative/NarrativeToolbar.tsx',
+      'frontend/components/narrative/NarrativeFlow.tsx',
+      'frontend/components/narrative/NarrativeWeekView.tsx',
+      'frontend/lib/narrative-types.ts',
+      'frontend/lib/narrative-store.ts',
+    ],
+  },
+  {
     date: '2026-03-17T02:00:00',
     agent: 'claude-code',
     summary: 'T5: MiroFish local simulation engine — replaced dead localhost:5001 HTTP client with 5-agent debate engine via Hermes/OpenRouter. Built Auditorium section inside Narrative Map: Kalshi-style Canvas line chart (6 risk categories + gold composite), events kanban by risk type (existing + AI-generated), top 5 volatile prediction theses with confidence/volatility bars. Feature flag replaces env var gate. IV prediction auto-fetches latest cached result.',

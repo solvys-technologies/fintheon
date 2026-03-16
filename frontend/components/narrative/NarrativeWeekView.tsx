@@ -9,7 +9,11 @@ const WEEKS_BEFORE = 4;
 const WEEKS_AFTER = 4;
 const TOTAL_WEEKS = WEEKS_BEFORE + 1 + WEEKS_AFTER;
 
-export default function NarrativeWeekView() {
+interface NarrativeWeekViewProps {
+  onContextMenuLane?: (e: React.MouseEvent, id: string, type?: 'lane' | 'catalyst') => void;
+}
+
+export default function NarrativeWeekView({ onContextMenuLane }: NarrativeWeekViewProps = {}) {
   const { state, dispatch, lanesFiltered } = useNarrative();
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -185,6 +189,7 @@ export default function NarrativeWeekView() {
                         onSelectCatalyst={handleSelectCatalyst}
                         onMoveCatalyst={handleMoveCatalyst}
                         onSelectLane={handleSelectLane}
+                        onContextMenuLane={onContextMenuLane}
                         compact={false}
                         cardRefs={cardRefs}
                         onDoubleClickDay={handleDoubleClickDay}
