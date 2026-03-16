@@ -78,7 +78,7 @@ export interface HermesDailyReport {
   pnl: number
   trades: HermesTradeProposal[]
   bias: 'bullish' | 'bearish' | 'neutral' | 'selective'
-  mdbReport: string // Morning Daily Brief report
+  mdbReport: string // Dawn Dispatch report
   timestamp: Date
 }
 

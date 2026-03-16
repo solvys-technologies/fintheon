@@ -72,10 +72,10 @@ function renderInlineBold(text: string): (string | React.ReactElement)[] {
 
 function briefTypeToLabel(bt: string): string {
   switch (bt) {
-    case 'MDB': return 'Morning Brief';
-    case 'ADB': return 'Afternoon Brief';
-    case 'PMDB': return 'Post-Market Brief';
-    case 'TOTT': return 'Tale of the Tape';
+    case 'MDB': return 'Dawn Dispatch';
+    case 'ADB': return 'Midday Dispatch';
+    case 'PMDB': return 'Dusk Dispatch';
+    case 'TOTT': return 'The Weekly Tribune';
     default: return 'Latest Brief';
   }
 }
@@ -93,10 +93,10 @@ export function BriefMiniWidget() {
     const h = now.getHours();
     const t = h * 60 + now.getMinutes();
     // TOTT: Sunday >= 17:00 through Monday < 07:00
-    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'Tale of the Tape';
-    if (t >= 17 * 60 + 30) return 'Post-Market Brief';
-    if (t >= 11 * 60) return 'Afternoon Brief';
-    return 'Morning Brief';
+    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'The Weekly Tribune';
+    if (t >= 17 * 60 + 30) return 'Dusk Dispatch';
+    if (t >= 11 * 60) return 'Midday Dispatch';
+    return 'Dawn Dispatch';
   };
 
   const [label, setLabel] = useState(getBriefLabel);
@@ -139,11 +139,11 @@ export function BriefMiniWidget() {
       // Trigger AI generation of the current brief type
       window.dispatchEvent(new CustomEvent('pulse:open-chat-skill', {
         detail: {
-          skillId: label.includes('Morning') ? 'mdb_report' : label.includes('Tale') ? 'tott' : 'brief',
-          prompt: label.includes('Morning')
-            ? "Run the MDB report for today's session"
-            : label.includes('Tale')
-              ? 'Give me the Tale of the Tape weekly summary'
+          skillId: label.includes('Dawn') ? 'mdb_report' : label.includes('Tribune') ? 'tott' : 'brief',
+          prompt: label.includes('Dawn')
+            ? "Run the Dawn Dispatch for today's session"
+            : label.includes('Tribune')
+              ? 'Give me The Weekly Tribune summary'
               : `Generate the ${label} — only new market-moving headlines since the last brief`,
         },
       }));

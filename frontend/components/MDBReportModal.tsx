@@ -76,7 +76,7 @@ export function MDBReportModal({ onClose }: MDBReportModalProps) {
         <div className="flex items-center justify-between p-4 border-b border-zinc-900">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-bold text-[var(--fintheon-accent)]">MDB Report</h2>
-            <span className="text-xs text-zinc-500">Morning Daily Brief</span>
+            <span className="text-xs text-zinc-500">Dawn Dispatch</span>
           </div>
           <button
             onClick={handleClose}

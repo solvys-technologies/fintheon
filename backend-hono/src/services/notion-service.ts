@@ -148,10 +148,10 @@ export async function notionUpdatePage(
 // ── Public API ──────────────────────────────────────────────────────────────
 
 // Brief rotation schedule:
-//   MDB  (Morning Daily Brief)    — 7:00 AM to 10:59 AM (weekday)
-//   ADB  (Afternoon Daily Brief)  — 11:00 AM to 5:29 PM
-//   PMDB (Post-Market Daily Brief) — 5:30 PM to 11:59 PM
-//   TOTT (Tale of the Tape)       — Sunday 5:00 PM through Monday 6:59 AM
+//   MDB  (Dawn Dispatch)      — 7:00 AM to 10:59 AM (weekday)
+//   ADB  (Midday Dispatch)    — 11:00 AM to 5:29 PM
+//   PMDB (Dusk Dispatch)      — 5:30 PM to 11:59 PM
+//   TOTT (The Weekly Tribune)  — Sunday 5:00 PM through Monday 6:59 AM
 export type BriefType = 'MDB' | 'ADB' | 'PMDB' | 'TOTT';
 
 export function getCurrentBriefType(): BriefType {
@@ -242,7 +242,7 @@ export async function writeMDBReportToNotion(
 /**
  * Fetch the single most relevant brief for the current time slot.
  * Returns exactly one MDBBriefItem (or empty array if nothing found).
- * Supports TOTT (Tip of the Tape) type for ad-hoc intraday briefs.
+ * Supports TOTT (The Weekly Tribune) type.
  */
 export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefItem[]> {
   const key = getNotionKey();
@@ -264,7 +264,7 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
       MDB: ['MDB', 'MORNING', 'EOD BRIEF'],
       ADB: ['ADB', 'AFTERNOON'],
       PMDB: ['PMDB', 'POST-MARKET', 'POST MARKET', 'EOD'],
-      TOTT: ['TOTT', 'TIP OF THE TAPE'],
+      TOTT: ['TOTT', 'TIP OF THE TAPE', 'WEEKLY TRIBUNE', 'THE WEEKLY TRIBUNE'],
     };
 
     // Query Harper Messages DB — source: Harper-Notion, sorted by recency

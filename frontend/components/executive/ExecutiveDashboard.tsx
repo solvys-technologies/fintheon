@@ -1,4 +1,4 @@
-// [claude-code 2026-03-11] T8: Tale of the Tape label for Sun+Mon<7AM, show only first brief item
+// [claude-code 2026-03-11] T8: Weekly Tribune label for Sun+Mon<7AM, show only first brief item
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useBackend } from '../../lib/backend';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
@@ -45,10 +45,10 @@ export function ExecutiveDashboard() {
     const h = now.getHours();
     const t = h * 60 + now.getMinutes();
     // TOTT: Sunday >= 17:00 through Monday < 07:00
-    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'Tale of the Tape';
-    if (t >= 17 * 60 + 30) return 'Post-Market Brief';
-    if (t >= 11 * 60) return 'Afternoon Brief';
-    return 'Morning Brief';
+    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'The Weekly Tribune';
+    if (t >= 17 * 60 + 30) return 'Dusk Dispatch';
+    if (t >= 11 * 60) return 'Midday Dispatch';
+    return 'Dawn Dispatch';
   };
   const [briefLabel, setBriefLabel] = useState(getBriefLabel);
 
