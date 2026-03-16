@@ -1,3 +1,4 @@
+// [claude-code 2026-03-15] Added writeDailyPnlToNotion + checkDailyPnlExists for P&L watchdog pipeline
 // [claude-code 2026-03-14] Fix brief sort: property-based sort instead of timestamp sort
 // [claude-code 2026-03-03] Phase 3: Notion service — fetches MDB Brief from Harper Messages DB
 // [claude-code 2026-03-03] Extended: Trade Ideas + Daily P&L query functions for Notion poller.
@@ -147,25 +148,37 @@ export async function notionUpdatePage(
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
-// Brief rotation schedule:
-//   MDB  (Morning Daily Brief)    — 7:00 AM to 10:59 AM (weekday)
-//   ADB  (Afternoon Daily Brief)  — 11:00 AM to 5:29 PM
-//   PMDB (Post-Market Daily Brief) — 5:30 PM to 11:59 PM
-//   TOTT (Tale of the Tape)       — Sunday 5:00 PM through Monday 6:59 AM
+// [claude-code 2026-03-15] T4: fix overnight PMDB + Saturday + ET timezone handling
+// Brief rotation schedule (all times ET):
+//   TOTT (Tale of the Tape)        — Sunday >= 17:00 through Monday < 07:00
+//   PMDB (Post-Market Daily Brief) — Saturday (all day), Sunday < 17:00,
+//                                    weekday < 07:00 (overnight), weekday >= 17:30
+//   ADB  (Afternoon Daily Brief)   — weekday 11:00 AM to 5:29 PM
+//   MDB  (Morning Daily Brief)     — weekday 7:00 AM to 10:59 AM
 export type BriefType = 'MDB' | 'ADB' | 'PMDB' | 'TOTT';
 
 export function getCurrentBriefType(): BriefType {
-  const now = new Date();
-  const day = now.getDay(); // 0 = Sunday
-  const h = now.getHours();
-  const timeVal = h * 60 + now.getMinutes();
+  const etStr = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const et = new Date(etStr);
+  const day = et.getDay(); // 0 = Sunday
+  const h = et.getHours();
+  const t = h * 60 + et.getMinutes();
 
   // TOTT: Sunday >= 17:00 through Monday < 07:00
-  if (day === 0 && timeVal >= 17 * 60) return 'TOTT';
-  if (day === 1 && h < 7) return 'TOTT';
+  if (day === 0 && t >= 17 * 60) return 'TOTT';
+  if (day === 1 && t < 7 * 60) return 'TOTT';
 
-  if (timeVal >= 17 * 60 + 30) return 'PMDB';
-  if (timeVal >= 11 * 60) return 'ADB';
+  // Saturday — PMDB all day
+  if (day === 6) return 'PMDB';
+  // Sunday before 17:00 — PMDB
+  if (day === 0) return 'PMDB';
+  // Weekday overnight (before 7 AM) — PMDB
+  if (t < 7 * 60) return 'PMDB';
+  // Weekday post-market (>= 17:30) — PMDB
+  if (t >= 17 * 60 + 30) return 'PMDB';
+  // Weekday afternoon (>= 11:00) — ADB
+  if (t >= 11 * 60) return 'ADB';
+  // Weekday morning (>= 07:00) — MDB
   return 'MDB';
 }
 
@@ -435,11 +448,15 @@ export async function queryTradeIdeas(): Promise<NotionTradeIdea[]> {
   try {
     // Only fetch non-template, non-archived ideas (Status != Proposed template)
     const pages = await notionQuery(TRADE_IDEAS_DB);
+    // Filter: skip TEMPLATEs and unactioned proposals (Proposed/Denied/Closed)
+    const EXCLUDED_STATUSES = new Set(['Proposed', 'Denied', 'Closed']);
     return pages
       .filter((page: any) => {
-        // Skip the TEMPLATE entry
         const title = extractPropValue(page.properties?.['Trade Idea']) ?? '';
-        return !String(title).startsWith('TEMPLATE');
+        if (String(title).startsWith('TEMPLATE')) return false;
+        const status = String(extractPropValue(page.properties?.['Status']) ?? '');
+        if (status && EXCLUDED_STATUSES.has(status)) return false;
+        return true;
       })
       .map((page: any) => {
         const props = page.properties ?? {};
@@ -584,4 +601,64 @@ export async function queryDailyPnL(): Promise<NotionPerformanceKpi[]> {
     console.warn('[Notion] Failed to query P&L:', err);
     return [];
   }
+}
+
+// ── Daily P&L Write (Watchdog Pipeline) ──────────────────────────────────────
+
+export interface DailyPnlWriteInput {
+  date: string;        // YYYY-MM-DD
+  netPnl: number;
+  grossPnl: number;
+  winRate: number;     // 0-1
+  tradesTaken: number;
+  bias: string;
+  summary?: string;
+}
+
+/** Check if a Daily P&L entry already exists for the given date */
+export async function checkDailyPnlExists(date: string): Promise<boolean> {
+  if (!getNotionKey()) return false;
+
+  try {
+    const pages = await notionQuery(DAILY_PNL_DB, {
+      filter: {
+        property: 'Date',
+        date: { equals: date },
+      },
+      pageSize: 1,
+    });
+    return pages.length > 0;
+  } catch (err) {
+    console.error('[Notion] checkDailyPnlExists error:', err);
+    return false;
+  }
+}
+
+/** Write a daily P&L row to the Notion Daily P&L DB */
+export async function writeDailyPnlToNotion(input: DailyPnlWriteInput): Promise<{ id: string; url: string } | null> {
+  const key = getNotionKey();
+  if (!key) {
+    console.error('[Notion] NOTION_API_KEY missing — cannot write daily P&L');
+    return null;
+  }
+
+  const properties: Record<string, unknown> = {
+    Day: { title: [{ text: { content: input.date } }] },
+    Date: { date: { start: input.date } },
+    'Net P&L': { number: input.netPnl },
+    'Gross P&L': { number: input.grossPnl },
+    'Win Rate': { number: input.winRate },
+    'Trades Taken': { number: input.tradesTaken },
+    Bias: { select: { name: input.bias.charAt(0).toUpperCase() + input.bias.slice(1) } },
+  };
+
+  if (input.summary) {
+    properties['NTN Summary'] = { rich_text: [{ text: { content: input.summary.slice(0, 2000) } }] };
+  }
+
+  const result = await notionCreatePage(DAILY_PNL_DB, properties);
+  if (result) {
+    console.log(`[Notion] Daily P&L written for ${input.date}: $${input.netPnl} (${result.url})`);
+  }
+  return result;
 }

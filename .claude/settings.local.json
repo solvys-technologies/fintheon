@@ -1,6 +1,20 @@
 {
   "permissions": {
     "allow": [
+      "Bash(npm run*)",
+      "Bash(npx *)",
+      "Bash(git *)",
+      "Bash(ls *)",
+      "Bash(cd *)",
+      "Bash(cat *)",
+      "Bash(curl *)",
+      "Bash(node *)",
+      "Bash(mkdir *)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
       "Bash(git checkout:*)",
       "Bash(git ls-tree:*)",
       "Bash(git stash drop)",

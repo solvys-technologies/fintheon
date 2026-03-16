@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, AlertTriangle } from 'lucide-react';
 import { WaveformCanvas } from './WaveformCanvas';
 import { useBackend } from '../../lib/backend';
-import { useERSafe } from '../../contexts/ERContext';
+import { useERSafe, AGGRESSIVE_KEYWORDS } from '../../contexts/ERContext';
 
 interface CompactERMonitorProps {
   onERScoreChange?: (score: number) => void;
@@ -89,8 +89,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
             .map((result: any) => result[0].transcript)
             .join('');
 
-          const aggressiveWords = ['fuck', 'shit', 'damn', 'stupid', 'idiot', 'hate'];
-          const hasAggression = aggressiveWords.some(word =>
+          const hasAggression = AGGRESSIVE_KEYWORDS.some(word =>
             transcript.toLowerCase().includes(word)
           );
 

@@ -7,6 +7,9 @@ import type { Context } from 'hono';
 import * as projectxService from '../../services/projectx-service.js';
 import type { SyncCredentialsRequest } from '../../types/projectx.js';
 import { getActivity, recordActivityEvents } from '../../services/projectx-activity-service.js';
+import { computeDailyPnl } from '../../services/projectx-pnl-service.js';
+import { writeDailyPnlToNotion, checkDailyPnlExists } from '../../services/notion-service.js';
+import { runHealthCheck } from '../../services/pnl-watchdog.js';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -253,5 +256,68 @@ export async function handleIngestActivityEvents(c: Context) {
     console.error('[ProjectX] Activity ingest error:', error);
     const message = error instanceof Error ? error.message : 'Failed to ingest activity events';
     return c.json({ error: message }, 500);
+  }
+}
+
+/**
+ * POST /api/projectx/daily-pnl
+ * Compute daily P&L and optionally write to Notion.
+ * Body: { accountId?: number, date?: string, writeToNotion?: boolean }
+ */
+export async function handleDailyPnl(c: Context) {
+  const userId = c.get('userId') as string | undefined;
+
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const body = await c.req
+    .json<{ accountId?: number; date?: string; writeToNotion?: boolean }>()
+    .catch(() => ({} as { accountId?: number; date?: string; writeToNotion?: boolean }));
+
+  const accountId = typeof body.accountId === 'number' ? body.accountId : 1;
+  const date = body.date; // optional — defaults to today ET inside computeDailyPnl
+
+  try {
+    const pnl = await computeDailyPnl(userId, accountId, date);
+
+    let notionResult: { id: string; url: string } | null = null;
+
+    if (body.writeToNotion) {
+      const exists = await checkDailyPnlExists(pnl.date);
+      if (exists) {
+        return c.json({ pnl, notion: { skipped: true, reason: 'Entry already exists' } });
+      }
+
+      notionResult = await writeDailyPnlToNotion({
+        date: pnl.date,
+        netPnl: pnl.netPnl,
+        grossPnl: pnl.grossPnl,
+        winRate: pnl.winRate,
+        tradesTaken: pnl.tradesTaken,
+        bias: pnl.bias,
+        summary: `Manual: ${pnl.winningTrades}W/${pnl.losingTrades}L`,
+      });
+    }
+
+    return c.json({ pnl, notion: notionResult ? { written: true, url: notionResult.url } : undefined });
+  } catch (error) {
+    console.error('[ProjectX] Daily P&L error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to compute daily P&L';
+    return c.json({ error: message }, 500);
+  }
+}
+
+/**
+ * GET /api/projectx/health-check
+ * On-demand pipeline health check
+ */
+export async function handleHealthCheck(c: Context) {
+  try {
+    const result = await runHealthCheck();
+    return c.json(result);
+  } catch (error) {
+    console.error('[ProjectX] Health check error:', error);
+    return c.json({ error: 'Health check failed' }, 500);
   }
 }

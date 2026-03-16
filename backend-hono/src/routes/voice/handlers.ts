@@ -1,7 +1,10 @@
+// [claude-code 2026-03-15] Track 1: Voice skill routing — thinkHarder/skillTag extraction, voice-skill-router integration
 // [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
 import type { Context } from 'hono';
 import * as conversationStore from '../../services/ai/conversation-store.js';
 import { handleHermesChat } from '../../services/hermes-handler.js';
+import { executeVoiceSkill } from '../../services/voice-skill-router.js';
+import type { VoiceSkillTag } from '../../services/voice-skill-router.js';
 import { synthesizeVoice, transcribeVoice } from '../../services/voice-service.js';
 import { analyzeSentiment } from '../../services/voice-sentiment.js';
 
@@ -76,6 +79,8 @@ export async function handleSpeak(c: Context) {
       mode?: 'chat' | 'infraction';
       includeAudio?: boolean;
       agent?: string;
+      thinkHarder?: boolean;
+      skillTag?: string;
     }>()
     .catch(() => null);
 
@@ -87,22 +92,37 @@ export async function handleSpeak(c: Context) {
   const mode = body?.mode === 'infraction' ? 'infraction' : 'chat';
   const includeAudio = body?.includeAudio !== false;
   const agent = body?.agent || 'harper-cao';
+  const thinkHarder = body?.thinkHarder === true;
+  const skillTag = body?.skillTag as VoiceSkillTag | undefined;
 
   try {
     const conversation = await resolveConversation(userId, body?.conversationId, text);
     const history = await conversationStore.getRecentContext(conversation.id);
 
-    const hermesInput =
-      mode === 'infraction'
-        ? `Psych Assist infraction signal. Provide a concise intervention with immediate de-escalation guidance. Context: ${text}`
-        : text;
+    // Route through voice-skill-router if a skill tag is present
+    let response: { content: string; agent: string };
+    if (skillTag) {
+      response = await executeVoiceSkill({
+        transcript: text,
+        skillTag,
+        thinkHarder,
+        conversationId: conversation.id,
+        history,
+      });
+    } else {
+      const hermesInput =
+        mode === 'infraction'
+          ? `Psych Assist infraction signal. Provide a concise intervention with immediate de-escalation guidance. Context: ${text}`
+          : text;
 
-    const response = await handleHermesChat({
-      message: hermesInput,
-      conversationId: conversation.id,
-      history,
-      agentOverride: 'harper-cao',
-    });
+      response = await handleHermesChat({
+        message: hermesInput,
+        conversationId: conversation.id,
+        history,
+        agentOverride: 'harper-cao',
+        thinkHarder,
+      });
+    }
 
     await conversationStore.addMessage(conversation.id, {
       conversationId: conversation.id,

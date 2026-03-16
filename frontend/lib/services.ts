@@ -699,12 +699,15 @@ export class VoiceService {
     return this.client.post('/api/voice/transcribe', data);
   }
 
+  // [claude-code 2026-03-15] Track 1: Voice skill routing — added thinkHarder + skillTag opts
   async speak(data: {
     text: string;
     conversationId?: string;
     mode?: 'chat' | 'infraction';
     includeAudio?: boolean;
     agent?: string;
+    thinkHarder?: boolean;
+    skillTag?: string;
   }): Promise<VoiceSpeakResponse> {
     return this.client.post('/api/voice/speak', data);
   }

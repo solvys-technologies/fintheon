@@ -9,6 +9,73 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-15T12:00:00',
+    agent: 'claude-code',
+    summary: 'T3: ProjectX → Notion P&L pipeline with 6PM watchdog + 7:05AM health check',
+    files: [
+      'backend-hono/src/utils/timezone.ts',
+      'backend-hono/src/services/projectx-pnl-service.ts',
+      'backend-hono/src/services/pnl-watchdog.ts',
+      'backend-hono/src/services/notion-service.ts',
+      'backend-hono/src/routes/projectx/index.ts',
+      'backend-hono/src/routes/projectx/handlers.ts',
+      'backend-hono/src/index.ts',
+    ],
+  },
+  {
+    date: '2026-03-15T12:00:00',
+    agent: 'claude-code',
+    summary: 'T4: Fix brief display time ranges — overnight PMDB, Saturday, ET timezone conversion',
+    files: ['backend-hono/src/services/notion-service.ts', 'frontend/components/executive/ExecutiveDashboard.tsx'],
+  },
+  {
+    date: '2026-03-16T01:15:00',
+    agent: 'claude-code',
+    summary: 'Track 2: PsychAssist Hardening — refactored ERContext.tsx (827 lines) into 3 sub-modules: er-types.ts (types + AGGRESSIVE_KEYWORDS constant + VAD config), er-vad.ts (useERVad hook with VAD/Whisper/mic logic), ERProvider.tsx (core provider). ERContext.tsx reduced to 6-line barrel re-export preserving all import paths. CompactERMonitor updated to use shared AGGRESSIVE_KEYWORDS.',
+    files: [
+      'frontend/contexts/er/er-types.ts',
+      'frontend/contexts/er/er-vad.ts',
+      'frontend/contexts/er/ERProvider.tsx',
+      'frontend/contexts/ERContext.tsx',
+      'frontend/components/mission-control/CompactERMonitor.tsx',
+    ],
+  },
+  {
+    date: '2026-03-16T00:35:00',
+    agent: 'claude-code',
+    summary: 'Track 1: Voice Assistant Overhaul — new voice-skill-router.ts (detectSkillFromTranscript, detectDueDiligence, executeVoiceSkill), playSoundCue with coin-clink fallback, skill/DD detection in onresult, thinkHarder+skillTag flow through speak() to handleSpeak(), ephemeral conversationId (useRef only).',
+    files: [
+      'backend-hono/src/services/voice-skill-router.ts',
+      'frontend/hooks/useVoiceAssistant.ts',
+      'frontend/lib/services.ts',
+      'backend-hono/src/routes/voice/handlers.ts',
+    ],
+  },
+  {
+    date: '2026-03-16T00:30:00',
+    agent: 'claude-code',
+    summary: 'Track 3: ProjectX Performance Pipeline — timezone.ts utility (ET helpers), projectx-pnl-service.ts (daily P&L computation from activity events), pnl-watchdog.ts (60s interval: auto-write P&L to Notion @18:00 ET, health check @07:05 ET). Extended notion-service with writeDailyPnlToNotion/checkDailyPnlExists. Added POST /daily-pnl and GET /health-check routes.',
+    files: [
+      'backend-hono/src/utils/timezone.ts',
+      'backend-hono/src/services/projectx-pnl-service.ts',
+      'backend-hono/src/services/pnl-watchdog.ts',
+      'backend-hono/src/services/notion-service.ts',
+      'backend-hono/src/routes/projectx/handlers.ts',
+      'backend-hono/src/routes/projectx/index.ts',
+      'backend-hono/src/index.ts',
+    ],
+  },
+  {
+    date: '2026-03-16T00:10:00',
+    agent: 'claude-code',
+    summary: 'Track 4: Fixed getCurrentBriefType() — ET timezone, Saturday=PMDB, overnight=PMDB. Synced frontend getBriefLabel(). Added queryTradeIdeas() filter: excludes Proposed/Denied/Closed status so only Approved/Executed ideas reach the feed.',
+    files: [
+      'backend-hono/src/services/notion-service.ts',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+      'frontend/components/mission-control/BriefMiniWidget.tsx',
+    ],
+  },
+  {
     date: '2026-03-15T23:55:00',
     agent: 'claude-code',
     summary: 'Made the brief window (Row 1 on Executive Dashboard) height-adjustable via drag handle. Height persists to localStorage. Min 200px, max 800px.',

@@ -12,6 +12,8 @@ import {
   handleDisconnect,
   handleGetActivity,
   handleIngestActivityEvents,
+  handleDailyPnl,
+  handleHealthCheck,
 } from './handlers.js';
 
 export function createProjectXRoutes(): Hono {
@@ -37,6 +39,12 @@ export function createProjectXRoutes(): Hono {
 
   // POST /api/projectx/activity/ingest - SignalR bridge ingestion
   router.post('/activity/ingest', handleIngestActivityEvents);
+
+  // POST /api/projectx/daily-pnl - Compute + optionally write daily P&L
+  router.post('/daily-pnl', handleDailyPnl);
+
+  // GET /api/projectx/health-check - Pipeline health check
+  router.get('/health-check', handleHealthCheck);
 
   return router;
 }

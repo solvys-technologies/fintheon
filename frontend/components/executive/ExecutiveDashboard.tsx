@@ -67,17 +67,21 @@ export function ExecutiveDashboard() {
     document.addEventListener('mouseup', onUp);
   }, [briefRowHeight]);
 
-  // Brief type: TOTT (Sun>=17:00 through Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
+  // [claude-code 2026-03-15] T4: fix overnight PMDB + Saturday + ET timezone handling
+  // Brief type rotation (ET timezone) — synced with backend getCurrentBriefType()
   const getBriefLabel = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const h = now.getHours();
-    const t = h * 60 + now.getMinutes();
-    // TOTT: Sunday >= 17:00 through Monday < 07:00
-    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'Tale of the Tape';
-    if (t >= 17 * 60 + 30) return 'Post-Market Brief';
-    if (t >= 11 * 60) return 'Afternoon Brief';
-    return 'Morning Brief';
+    const etStr = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+    const et = new Date(etStr);
+    const day = et.getDay();
+    const t = et.getHours() * 60 + et.getMinutes();
+    if (day === 0 && t >= 17 * 60) return 'The Weekly Tribune';
+    if (day === 1 && t < 7 * 60) return 'The Weekly Tribune';
+    if (day === 6) return 'Dusk Dispatch';
+    if (day === 0) return 'Dusk Dispatch';
+    if (t < 7 * 60) return 'Dusk Dispatch';
+    if (t >= 17 * 60 + 30) return 'Dusk Dispatch';
+    if (t >= 11 * 60) return 'Midday Dispatch';
+    return 'Dawn Dispatch';
   };
   const [briefLabel, setBriefLabel] = useState(getBriefLabel);
 

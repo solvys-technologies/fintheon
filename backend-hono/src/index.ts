@@ -21,6 +21,7 @@ import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
 import { initHermesAgent } from './services/hermes-handler.js';
 import { startAutopilotScheduler } from './services/autopilot/autopilot-scheduler.js';
 import { startContextBankTicker } from './services/context-bank/context-bank-service.js';
+import { startPnlWatchdog } from './services/pnl-watchdog.js';
 
 const app = new Hono();
 const healthService = createHealthService();
@@ -99,6 +100,9 @@ startAutopilotScheduler();
 
 // Start Context Bank ticker (120s — unified snapshot for all agents)
 startContextBankTicker();
+
+// Start P&L watchdog (60s — auto-write daily P&L @ 18:00 ET, health check @ 07:05 ET)
+startPnlWatchdog();
 
 // Initialize Hermes/OpenRouter connection (health check — non-blocking)
 initHermesAgent().catch((err) => console.warn('[API] Hermes init failed (non-fatal):', err));

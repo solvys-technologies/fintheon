@@ -1,13 +1,66 @@
+// [claude-code 2026-03-15] Track 1: Voice skill routing — playSoundCue, skill/DD detection, ephemeral conversationId
 // [claude-code 2026-03-13] Hermes migration: openclawAgentRouting -> hermesAgentRouting
 // [claude-code 2026-03-09] Added: useMicPermission, useMicArbitration, error state with auto-recovery, cancel/interrupt support
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBackend } from '../lib/backend';
-import { hermesConversationStorageKey } from '../lib/hermesAgentRouting';
 import type { VoiceRuntimeState, MicPermissionState } from '../types/voice';
 
 const VOICE_ENABLED_STORAGE_KEY = 'pulse_voice_assistant_enabled:v1';
-const HARPER_CONVERSATION_STORAGE_KEY = hermesConversationStorageKey('harper');
 const ERROR_AUTO_RECOVERY_MS = 5000;
+
+// ─── Voice Skill Detection (frontend mirror of backend voice-skill-router) ──────
+
+type VoiceSkillTag = 'brief' | 'validate' | 'report' | 'track' | 'psych_assist' | 'quick_pulse';
+
+const SKILL_KEYWORDS: Record<VoiceSkillTag, string[]> = {
+  brief:        ['brief', 'search', 'news', 'summarize', 'web'],
+  validate:     ['validate', 'risk', 'check', 'verify'],
+  report:       ['report', 'dashboard'],
+  track:        ['track', 'narrative', 'thread', 'thesis'],
+  psych_assist: ['psych', 'mental', 'tilt', 'emotion', 'performance'],
+  quick_pulse:  ['chart', 'screenshot', 'snap'],
+};
+
+const DUE_DILIGENCE_PATTERNS = [
+  /\bdue\s+diligence\b/i,
+  /\bthink\s+harder\b/i,
+  /\bdeep\s+dive\b/i,
+  /\bdig\s+deeper\b/i,
+];
+
+function detectSkillFromTranscript(text: string): VoiceSkillTag | null {
+  const lower = text.toLowerCase();
+  for (const [tag, keywords] of Object.entries(SKILL_KEYWORDS) as [VoiceSkillTag, string[]][]) {
+    for (const kw of keywords) {
+      if (lower.includes(kw)) return tag;
+    }
+  }
+  return null;
+}
+
+function detectDueDiligence(text: string): boolean {
+  return DUE_DILIGENCE_PATTERNS.some((p) => p.test(text));
+}
+
+// ─── Sound Cue ──────────────────────────────────────────────────────────────────
+
+function playSoundCue(): Promise<void> {
+  if (typeof window === 'undefined' || typeof Audio === 'undefined') return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    const primary = new Audio('/sounds/voice-activate.mp3');
+    primary.volume = 0.4;
+    primary.onended = () => resolve();
+    primary.onerror = () => {
+      // Fallback to coin-clink
+      const fallback = new Audio('/sounds/coin-clink.mp3');
+      fallback.volume = 0.4;
+      fallback.onended = () => resolve();
+      fallback.onerror = () => resolve();
+      fallback.play().catch(() => resolve());
+    };
+    primary.play().catch(() => resolve());
+  });
+}
 
 interface VoiceSendResult {
   conversationId?: string;
@@ -121,7 +174,7 @@ export function useVoiceAssistant() {
 
   const [enabled, setEnabledState] = useState(false);
   const [runtimeState, setRuntimeState] = useState<VoiceRuntimeState>('idle');
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
   const [lastUserText, setLastUserText] = useState('');
   const [lastAssistantText, setLastAssistantText] = useState('');
 
@@ -186,10 +239,7 @@ export function useVoiceAssistant() {
   }, []);
 
   const persistConversationId = useCallback((id: string | null) => {
-    setConversationId(id);
-    if (id) {
-      safeLocalStorageSet(HARPER_CONVERSATION_STORAGE_KEY, id);
-    }
+    conversationIdRef.current = id;
   }, []);
 
   const playAudio = useCallback(async (audioBase64: string, mimeType?: string) => {
@@ -270,7 +320,11 @@ export function useVoiceAssistant() {
   }, [stopPlayback, stopRecognition]);
 
   const sendText = useCallback(
-    async (text: string, mode: 'chat' | 'infraction' = 'chat'): Promise<VoiceSendResult | null> => {
+    async (
+      text: string,
+      mode: 'chat' | 'infraction' = 'chat',
+      opts?: { thinkHarder?: boolean; skillTag?: string }
+    ): Promise<VoiceSendResult | null> => {
       const prompt = text.trim();
       if (!prompt || busyRef.current) return null;
 
@@ -286,9 +340,11 @@ export function useVoiceAssistant() {
         const response = (await backend.voice.speak({
           text: prompt,
           mode,
-          conversationId: conversationId || undefined,
+          conversationId: conversationIdRef.current || undefined,
           includeAudio: true,
           agent: 'harper-cao',
+          thinkHarder: opts?.thinkHarder,
+          skillTag: opts?.skillTag,
         })) as VoiceSendResult;
 
         // Check if cancelled during the request
@@ -339,7 +395,7 @@ export function useVoiceAssistant() {
         }
       }
     },
-    [backend, conversationId, persistConversationId, playAudio, playWithSpeechSynthesis, setErrorWithRecovery, analyzeSpeechForTilt]
+    [backend, persistConversationId, playAudio, playWithSpeechSynthesis, setErrorWithRecovery, analyzeSpeechForTilt]
   );
 
   const respondToInfraction = useCallback(
@@ -401,8 +457,15 @@ export function useVoiceAssistant() {
       const trimmed = finalText.trim();
       if (!trimmed) return;
 
+      // Detect voice skill + due diligence intent
+      const skillTag = detectSkillFromTranscript(trimmed);
+      const thinkHarder = detectDueDiligence(trimmed);
+
       stopRecognition();
-      void sendText(trimmed, 'chat');
+      void sendText(trimmed, 'chat', {
+        thinkHarder: thinkHarder || undefined,
+        skillTag: skillTag || undefined,
+      });
     };
 
     recognition.onerror = (event: any) => {
@@ -442,7 +505,10 @@ export function useVoiceAssistant() {
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
+    // Play activation cue before starting recognition
+    playSoundCue().then(() => {
+      try { recognition.start(); } catch { /* already started */ }
+    });
   }, [sendText, speechRecognitionSupported, stopRecognition, permission, requestMic, setErrorWithRecovery]);
 
   // Keep ref in sync so sendText can restart recognition without circular deps
@@ -474,12 +540,6 @@ export function useVoiceAssistant() {
 
   useEffect(() => {
     const savedEnabled = safeLocalStorageGet(VOICE_ENABLED_STORAGE_KEY) === 'true';
-    const savedConversationId = safeLocalStorageGet(HARPER_CONVERSATION_STORAGE_KEY);
-
-    if (savedConversationId) {
-      setConversationId(savedConversationId);
-    }
-
     if (savedEnabled) {
       setEnabled(savedEnabled);
     }
@@ -508,7 +568,7 @@ export function useVoiceAssistant() {
   return {
     enabled,
     runtimeState,
-    conversationId,
+    conversationId: conversationIdRef.current,
     lastUserText,
     lastAssistantText,
     isSupported: speechRecognitionSupported,

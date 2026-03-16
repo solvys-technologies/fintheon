@@ -88,12 +88,15 @@ export function BriefMiniWidget() {
   const [generating, setGenerating] = useState(false);
 
   const getBriefLabel = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const h = now.getHours();
-    const t = h * 60 + now.getMinutes();
-    // TOTT: Sunday >= 17:00 through Monday < 07:00
-    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'Tale of the Tape';
+    const etStr = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+    const et = new Date(etStr);
+    const day = et.getDay();
+    const t = et.getHours() * 60 + et.getMinutes();
+    if (day === 0 && t >= 17 * 60) return 'Tale of the Tape';
+    if (day === 1 && t < 7 * 60) return 'Tale of the Tape';
+    if (day === 6) return 'Post-Market Brief';
+    if (day === 0) return 'Post-Market Brief';
+    if (t < 7 * 60) return 'Post-Market Brief';
     if (t >= 17 * 60 + 30) return 'Post-Market Brief';
     if (t >= 11 * 60) return 'Afternoon Brief';
     return 'Morning Brief';
