@@ -44,6 +44,9 @@ interface TradingSymbol {
 interface DeveloperSettings {
   showTestTradeButton: boolean;
   showMockProposal: boolean;
+  showPlaceholderBriefings: boolean;
+  mirofishSimulations: boolean;
+  agentAutoProposals: boolean;
 }
 
 type AutoPilotMode = 'off' | 'semi' | 'autonomous';
@@ -102,7 +105,7 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'pulse_settings';
+const STORAGE_KEY = 'fintheon:settings';
 const BACKEND_SETTINGS_URL = '/api/settings';
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -186,6 +189,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     loadFromStorage('developerSettings', {
       showTestTradeButton: false,
       showMockProposal: false,
+      showPlaceholderBriefings: false,
+      mirofishSimulations: false,
+      agentAutoProposals: false,
     })
   );
   const [autoPilotSettings, setAutoPilotSettings] = useState<AutoPilotSettings>(() =>

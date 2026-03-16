@@ -10,9 +10,9 @@ import type {
   CatalystCard,
 } from './narrative-types';
 
-const STORAGE_KEY = 'pulse_narrative_v1';
-const SNAPSHOT_KEY = 'pulse_narrative_snapshot_v1';
-const AGENT_CONFIG_KEY = 'pulse_narrative_agent_v1';
+const STORAGE_KEY = 'fintheon:narrative:v1';
+const SNAPSHOT_KEY = 'fintheon:narrative-snapshot:v1';
+const AGENT_CONFIG_KEY = 'fintheon:narrative-agent:v1';
 
 export function generateId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {

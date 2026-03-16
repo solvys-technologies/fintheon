@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useBackend } from '../lib/backend';
 
-const STORAGE_KEY = 'pulse_settings';
+const STORAGE_KEY = 'fintheon:settings';
 
 interface PersistedSettings {
   tradingModels?: any;

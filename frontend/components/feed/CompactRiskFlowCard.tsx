@@ -1,8 +1,10 @@
 // [claude-code 2026-03-11] Compact RiskFlow card for combined panels
 // [claude-code 2026-03-11] Replaced SourceDot with SVG icons (X/Notion), removed direction triangle
 // [claude-code 2026-03-12] Disabled card expand, added dismiss button, headline-only link
+// [claude-code 2026-03-16] FIX 3: Use shared inferDirection, show instrument to match large cards
 import { X as XIcon } from 'lucide-react';
 import type { RiskFlowAlert } from '../../lib/riskflow-feed';
+import { inferDirection } from '../../lib/riskflow-feed';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
 
 function timeAgo(dateStr: string): string {
@@ -40,19 +42,6 @@ function SourceIcon({ source, className }: { source: string; className?: string 
     return <NotionLogo className={className} />;
   }
   return <span className={`font-bold text-[7px] uppercase ${className}`}>{source.charAt(0)}</span>;
-}
-
-/** Infer Bullish/Bearish from alert data or headline keywords */
-function inferDirection(alert: RiskFlowAlert): 'Bullish' | 'Bearish' {
-  if (alert.direction === 'Bullish' || alert.direction === 'Bearish') return alert.direction;
-  if (alert.tradeIdea) return alert.tradeIdea.direction === 'long' ? 'Bullish' : 'Bearish';
-  const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
-  const bullish = ['surge', 'rally', 'rise', 'gain', 'jump', 'soar', 'bull', 'record high', 'beat', 'above', 'upgrade', 'boom', 'positive', 'strong', 'up '];
-  const bearish = ['drop', 'fall', 'crash', 'plunge', 'decline', 'sink', 'bear', 'miss', 'below', 'downgrade', 'slump', 'negative', 'fear', 'risk', 'warn', 'cut', 'sell', 'weak', 'down '];
-  let b = 0, s = 0;
-  for (const kw of bullish) if (lower.includes(kw)) b++;
-  for (const kw of bearish) if (lower.includes(kw)) s++;
-  return b >= s ? 'Bullish' : 'Bearish';
 }
 
 interface CompactRiskFlowCardProps {
@@ -108,7 +97,7 @@ export function CompactRiskFlowCard({ alert, seen = false, onDismiss }: CompactR
             );
           })()}
           <span className="text-[9px] text-zinc-500 font-mono">
-            {alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}pt` : '0-5pt'}
+            {alert.instrument ? `${alert.instrument} ` : ''}{alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}pt` : '0-5pt'}
           </span>
           {onDismiss && (
             <button

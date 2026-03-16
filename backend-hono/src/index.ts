@@ -1,5 +1,5 @@
 /**
- * Pulse API - Main Entry Point
+ * Fintheon API - Main Entry Point
  * Hono backend on Fly.io
  */
 

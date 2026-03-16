@@ -1,9 +1,12 @@
+// [claude-code 2026-03-16] Added global error bus emission for toast notifications
 /**
  * Hono API Client
- * 
+ *
  * This client is designed to work with a Hono backend API.
  * Replace the base URL with your Hono backend endpoint.
  */
+
+import { emitApiError } from './errorBus';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -99,11 +102,13 @@ class ApiClient {
     const execute = async (attempt: number): Promise<T> => {
       // Skip request if auth has failed recently (prevents error cascade)
       if (shouldSkipRequest()) {
-        throw {
+        const err: ApiError = {
           code: 'auth_skipped',
           message: 'Skipping request due to recent auth failure. Will retry in 30s.',
           status: 401,
-        } as ApiError;
+        };
+        emitApiError({ ...err, endpoint });
+        throw err;
       }
 
       const headers: HeadersInit = {
@@ -143,6 +148,7 @@ class ApiClient {
           if (response.status === 401) {
             error.code = errorData.code || 'unauthenticated';
             handle401Error();
+            emitApiError({ ...error, endpoint });
             throw error;
           }
 
@@ -167,6 +173,7 @@ class ApiClient {
             last401Timestamp = null;
           }
 
+          emitApiError({ ...error, endpoint });
           throw error;
         }
 
@@ -201,10 +208,12 @@ class ApiClient {
           throw error;
         }
 
-        throw {
+        const netErr: ApiError = {
           code: 'network_error',
           message: error instanceof Error ? error.message : 'Network request failed',
-        } as ApiError;
+        };
+        emitApiError({ ...netErr, endpoint });
+        throw netErr;
       }
     };
 

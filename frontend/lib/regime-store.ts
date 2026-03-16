@@ -4,8 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { type TradingRegime, SEED_REGIMES } from './regimes';
 
-const STORAGE_KEY = 'pulse_regime_tracker_v2';
-const OLD_STORAGE_KEY = 'pulse_regime_tracker_v1';
+const STORAGE_KEY = 'fintheon:regime-tracker:v2';
+const OLD_STORAGE_KEY = 'fintheon:regime-tracker:v1';
 
 /** Migrate v1 (wins/losses) to v2 (bullishDays/bearishDays) */
 function migrateV1toV2(regimes: any[]): TradingRegime[] {

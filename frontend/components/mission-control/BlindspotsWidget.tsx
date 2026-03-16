@@ -15,8 +15,8 @@ const FALLBACK_BLINDSPOTS: BlindspotItem[] = [
 
 function getInterviewBlindspots(): BlindspotItem[] {
   try {
-    const completed = localStorage.getItem('pulse_interview_completed');
-    const raw = localStorage.getItem('pulse_interview_data');
+    const completed = localStorage.getItem('fintheon:interview-completed');
+    const raw = localStorage.getItem('fintheon:interview-data');
     if (completed && raw) {
       const data = JSON.parse(raw);
       const roadblocks: string[] = [...(data.roadblocks || [])];

@@ -1,15 +1,18 @@
 // [claude-code 2026-03-16] MiroFish simulation engine types
+// [claude-code 2026-03-16] Extended with risk categories, time series, generated events for Auditorium
 
-export interface MiroFishConfig {
-  url: string;
-  enabled: boolean;
-  timeoutMs: number;
-}
+export type MiroFishRiskCategory =
+  | 'geopolitical'
+  | 'political'
+  | 'monetary-policy'
+  | 'earnings-corporate'
+  | 'market-structure'
+  | 'black-swan';
 
 export interface MiroFishAgent {
   id: string;
   persona: string;
-  role: 'macro-strategist' | 'sentiment-analyst' | 'geopolitical-analyst' | 'earnings-analyst' | 'risk-manager';
+  role: 'macro-strategist' | 'sentiment-analyst' | 'geopolitical-analyst' | 'earnings-analyst' | 'risk-manager' | 'contrarian' | 'fundamentals' | 'sentiment';
   narrativeCategories: string[];
 }
 
@@ -52,6 +55,41 @@ export interface MiroFishScenario {
   agentConsensus: number;
 }
 
+export interface MiroFishCategoryScore {
+  category: MiroFishRiskCategory;
+  ivScore: number;
+  confidence: number;
+  delta: number;
+}
+
+export interface MiroFishTimePoint {
+  dayOffset: number;
+  date: string;
+  composite: number;
+  categories: Record<MiroFishRiskCategory, number>;
+}
+
+export interface MiroFishGeneratedEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  category: MiroFishRiskCategory;
+  impactScore: number;
+  probability: number;
+  isAiGenerated: true;
+}
+
+export interface MiroFishAgentResponse {
+  agentId: string;
+  projectedIVScore: number;
+  regimeShiftProbability: number;
+  categoryScores: MiroFishCategoryScore[];
+  scenarios: MiroFishScenario[];
+  generatedEvents: MiroFishGeneratedEvent[];
+  reasoning: string;
+}
+
 export interface MiroFishReport {
   simulationId: string;
   scenarios: MiroFishScenario[];
@@ -59,6 +97,9 @@ export interface MiroFishReport {
   nextSessionProjection: number;
   confidence: number;
   agentVotes: Array<{ agentId: string; position: string; confidence: number }>;
+  categoryScores: MiroFishCategoryScore[];
+  timeSeries: MiroFishTimePoint[];
+  generatedEvents: MiroFishGeneratedEvent[];
   generatedAt: string;
 }
 
@@ -72,6 +113,9 @@ export interface MiroFishPrediction {
     probability: number;
     projectedScore: number;
   }>;
+  categoryScores?: MiroFishCategoryScore[];
+  timeSeries?: MiroFishTimePoint[];
+  generatedEvents?: MiroFishGeneratedEvent[];
   source: 'mirofish';
   generatedAt: string;
 }

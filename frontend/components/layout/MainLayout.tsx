@@ -41,7 +41,7 @@ import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { TradingJournal } from '../journal/TradingJournal';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
-import { HermesCommandCenter } from '../hermes/HermesCommandCenter';
+// [claude-code 2026-03-16] Hermes moved from standalone page into Settings tab
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
 import { RegimeMini } from '../mission-control/RegimeMini';
 import { SessionCalendarMini } from '../mission-control/SessionCalendarMini';
@@ -55,7 +55,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings' | 'hermes';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -103,7 +103,7 @@ export function MainLayout() {
   const missionDeckRef = useRef<HTMLDivElement>(null);
   const [psychAssistTarget, setPsychAssistTarget] = useState<PsychAssistDockTarget>(() => {
     try {
-      return (localStorage.getItem('pulse_psychassist_target:v1') as PsychAssistDockTarget) || 'floating';
+      return (localStorage.getItem('fintheon:psychassist-target:v1') as PsychAssistDockTarget) || 'floating';
     } catch {
       return 'floating';
     }
@@ -111,7 +111,7 @@ export function MainLayout() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('pulse_psychassist_target:v1', psychAssistTarget);
+      localStorage.setItem('fintheon:psychassist-target:v1', psychAssistTarget);
     } catch {
       // ignore
     }
@@ -163,7 +163,6 @@ export function MainLayout() {
       '4': 'econ',
       '6': 'notion',
       '7': 'narrative',
-      '8': 'hermes',
     };
 
     const handler = (e: KeyboardEvent) => {
@@ -548,7 +547,7 @@ export function MainLayout() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'settings' || activeTab === 'hermes';
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (missionControlCollapsed) {
         // Mission Control collapsed — just show a thin expand strip + full RiskFlow
@@ -632,7 +631,6 @@ export function MainLayout() {
         onForward={goForward}
         hideBranding={topStepXEnabled && sidebarOverlayVisible}
         toolbarEditMode={layoutEditMode}
-        onHermesOpen={activeTab === 'settings' ? () => handleTabChange('hermes') : undefined}
         psychAssistHeadingWidget={
           topStepXEnabled && layoutOption === 'tickers-only' && psychAssistTarget === 'header' ? (
             <PsychAssistDockable
@@ -720,11 +718,6 @@ export function MainLayout() {
               {activeTab === 'settings' && (
                 <div key="settings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <SettingsPage />
-                </div>
-              )}
-              {activeTab === 'hermes' && (
-                <div key="hermes" data-tour-target="hermes" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <HermesCommandCenter />
                 </div>
               )}
               </div>

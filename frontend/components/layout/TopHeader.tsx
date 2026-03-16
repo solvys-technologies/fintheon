@@ -10,13 +10,13 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
-import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power, Cpu } from 'lucide-react';
+import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power } from 'lucide-react';
 import { WhatsNewButton } from '../onboarding/FirstTimeTour';
 import { TraderNametag } from '../TraderNametag';
 import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings' | 'hermes';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   executive: 'Dashboard',
@@ -28,7 +28,6 @@ const TAB_LABELS: Record<NavTab, string> = {
   narrative: 'NarrativeFlow',
   earnings: 'Performance',
   settings: 'Settings',
-  hermes: 'Hermes Command Center',
 };
 
 type LayoutOption = 'tickers-only' | 'combined';
@@ -51,7 +50,6 @@ interface TopHeaderProps {
   hideBranding?: boolean;
   psychAssistHeadingWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
-  onHermesOpen?: () => void;
 }
 
 export function TopHeader({
@@ -72,7 +70,6 @@ export function TopHeader({
   hideBranding = false,
   psychAssistHeadingWidget,
   toolbarEditMode = false,
-  onHermesOpen,
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
@@ -246,16 +243,6 @@ export function TopHeader({
       <div className="flex items-center gap-4 min-w-0 overflow-x-auto overflow-y-hidden flex-shrink">
         <div className="flex items-center gap-2 flex-shrink-0">
           <WhatsNewButton />
-          {onHermesOpen && (
-            <button
-              onClick={onHermesOpen}
-              className="px-2.5 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
-              title="Hermes Command Center"
-            >
-              <Cpu className="w-3.5 h-3.5" />
-              <span>Hermes</span>
-            </button>
-          )}
           {psychAssistHeadingWidget}
           <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-3 h-8 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">

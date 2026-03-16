@@ -59,6 +59,9 @@ const AGENT_PERSONAS: Record<MiroFishAgent['role'], { persona: string }> = {
   'geopolitical-analyst': { persona: 'Geopolitical risk analyst covering supply chains and trade policy' },
   'earnings-analyst': { persona: 'Corporate earnings analyst tracking sector rotations' },
   'risk-manager': { persona: 'Tail risk manager monitoring systemic threats and black swans' },
+  'contrarian': { persona: 'Contrarian agent challenging consensus theses' },
+  'fundamentals': { persona: 'Fundamental analyst evaluating corporate earnings and sector rotation' },
+  'sentiment': { persona: 'Sentiment analyst reading news flow and social signals' },
 };
 
 function buildEntities(lanes: NarrativeLaneInput[], catalysts: CatalystCardInput[]): MiroFishEntity[] {

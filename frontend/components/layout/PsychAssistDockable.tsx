@@ -25,7 +25,7 @@ export function PsychAssistDockable({
   onDockToHeader,
   onUndockToFloating,
   onClose,
-  storageKey = 'pulse_psychassist_floating_pos:v1',
+  storageKey = 'fintheon:psychassist-floating-pos:v1',
   headerDockZoneId = 'pulse-heading-toolbar',
 }: PsychAssistDockableProps) {
   const [pos, setPos] = useState<Pos>({ x: 24, y: 92 });

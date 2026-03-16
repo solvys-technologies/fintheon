@@ -12,8 +12,8 @@ export function usePersistentHermesConversation(
 
   useEffect(() => {
     // Check if persistent thread is enabled in Gateway settings
-    const persistentEnabled = localStorage.getItem('pulse_gateway_persistent_thread_enabled') === 'true';
-    const persistentId = localStorage.getItem('pulse_gateway_persistent_thread_id');
+    const persistentEnabled = localStorage.getItem('fintheon:gateway-persistent-thread-enabled') === 'true';
+    const persistentId = localStorage.getItem('fintheon:gateway-persistent-thread-id');
 
     if (persistentEnabled && persistentId) {
       setConversationIdState(persistentId);
@@ -31,9 +31,9 @@ export function usePersistentHermesConversation(
       localStorage.setItem(key, id);
 
       // Also update persistent thread ID if persistent mode is enabled
-      const persistentEnabled = localStorage.getItem('pulse_gateway_persistent_thread_enabled') === 'true';
+      const persistentEnabled = localStorage.getItem('fintheon:gateway-persistent-thread-enabled') === 'true';
       if (persistentEnabled) {
-        localStorage.setItem('pulse_gateway_persistent_thread_id', id);
+        localStorage.setItem('fintheon:gateway-persistent-thread-id', id);
       }
 
       setConversationIdState(id);

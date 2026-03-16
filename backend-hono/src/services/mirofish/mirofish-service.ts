@@ -1,13 +1,8 @@
 // [claude-code 2026-03-16] MiroFish simulation lifecycle orchestrator
+// [claude-code 2026-03-16] Rewired to use local debate engine instead of external HTTP
 
 import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection } from './mirofish-types.js';
-import {
-  isMiroFishEnabled,
-  startSimulation,
-  getSimulationStatus,
-  getSimulationReport,
-  injectVariable,
-} from './mirofish-client.js';
+import { isMiroFishEnabled, runDebate } from './mirofish-client.js';
 import { convertNarrativeToSeed } from './mirofish-seed.js';
 
 /** In-memory prediction cache (simId → prediction) */
@@ -15,6 +10,9 @@ const predictionCache = new Map<string, MiroFishPrediction>();
 
 /** In-memory simulation tracking */
 const activeSimulations = new Map<string, MiroFishSimulation>();
+
+/** Track seeds for re-running with injections */
+const seedCache = new Map<string, ReturnType<typeof convertNarrativeToSeed>>();
 
 interface NarrativeState {
   lanes: Array<{
@@ -40,7 +38,7 @@ interface ContextBank {
 
 /**
  * Start a MiroFish prediction simulation from narrative state.
- * Returns the simulation ID for polling.
+ * Runs the local debate engine and returns immediately with results.
  */
 export async function startPrediction(
   narrativeState: NarrativeState,
@@ -50,6 +48,14 @@ export async function startPrediction(
     return { error: 'MiroFish is not enabled' };
   }
 
+  const simId = crypto.randomUUID();
+
+  // Mark as running
+  activeSimulations.set(simId, {
+    id: simId, status: 'running', progress: 0,
+    startedAt: new Date().toISOString(),
+  });
+
   try {
     const seed = convertNarrativeToSeed(
       narrativeState.lanes,
@@ -58,61 +64,87 @@ export async function startPrediction(
       contextBank,
     );
 
-    const sim = await startSimulation(seed);
-    activeSimulations.set(sim.id, sim);
-    return { simulationId: sim.id };
+    seedCache.set(simId, seed);
+
+    const report = await runDebate(seed);
+    report.simulationId = simId;
+
+    const prediction = reportToPrediction(simId, report);
+    predictionCache.set(simId, prediction);
+
+    activeSimulations.set(simId, {
+      id: simId, status: 'complete', progress: 100,
+      startedAt: activeSimulations.get(simId)!.startedAt,
+      completedAt: new Date().toISOString(),
+    });
+
+    return { simulationId: simId };
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error starting simulation';
     console.error('[MiroFish] startPrediction failed:', msg);
+
+    activeSimulations.set(simId, {
+      id: simId, status: 'error', progress: 0,
+      startedAt: activeSimulations.get(simId)!.startedAt,
+      error: msg,
+    });
+
     return { error: msg };
   }
 }
 
-/** Poll simulation status */
-export async function pollStatus(simId: string): Promise<MiroFishSimulation | null> {
-  if (!isMiroFishEnabled()) return null;
-
-  try {
-    const sim = await getSimulationStatus(simId);
-    activeSimulations.set(simId, sim);
-    return sim;
-  } catch (err) {
-    console.error('[MiroFish] pollStatus failed:', err);
-    return activeSimulations.get(simId) ?? null;
-  }
+/** Get simulation status (always complete or error for local engine) */
+export function pollStatus(simId: string): MiroFishSimulation | null {
+  return activeSimulations.get(simId) ?? null;
 }
 
-/** Extract structured predictions from a completed simulation report */
-export async function getPredictions(simId: string): Promise<MiroFishPrediction | null> {
-  // Check cache first
-  const cached = predictionCache.get(simId);
-  if (cached) return cached;
-
-  if (!isMiroFishEnabled()) return null;
-
-  try {
-    const report = await getSimulationReport(simId);
-    const prediction = reportToPrediction(simId, report);
-    predictionCache.set(simId, prediction);
-    return prediction;
-  } catch (err) {
-    console.error('[MiroFish] getPredictions failed:', err);
-    return null;
-  }
+/** Extract structured predictions from a completed simulation */
+export function getPredictions(simId: string): MiroFishPrediction | null {
+  return predictionCache.get(simId) ?? null;
 }
 
-/** Inject a "God's Eye View" variable into a running simulation */
+/** Inject a "God's Eye View" variable and re-run the debate */
 export async function injectScenarioVariable(
   simId: string,
   injection: MiroFishInjection,
 ): Promise<MiroFishSimulation | null> {
   if (!isMiroFishEnabled()) return null;
 
+  const cachedSeed = seedCache.get(simId);
+  if (!cachedSeed) return null;
+
   try {
-    const sim = await injectVariable(simId, injection);
+    // Add injection as a new entity to the seed
+    const modifiedSeed = {
+      ...cachedSeed,
+      entities: [
+        ...cachedSeed.entities,
+        {
+          id: `injection-${crypto.randomUUID().slice(0, 8)}`,
+          type: 'event' as const,
+          label: injection.variable,
+          properties: {
+            description: injection.description,
+            targetNarrativeIds: injection.targetNarrativeIds,
+            isInjection: true,
+          },
+        },
+      ],
+    };
+
+    const report = await runDebate(modifiedSeed);
+    report.simulationId = simId;
+
+    const prediction = reportToPrediction(simId, report);
+    predictionCache.set(simId, prediction);
+
+    const sim: MiroFishSimulation = {
+      id: simId, status: 'complete', progress: 100,
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+    };
     activeSimulations.set(simId, sim);
-    // Clear cached prediction since injection changes outcomes
-    predictionCache.delete(simId);
+
     return sim;
   } catch (err) {
     console.error('[MiroFish] injectScenarioVariable failed:', err);
@@ -130,6 +162,17 @@ export function getCachedPrediction(simId: string): MiroFishPrediction | undefin
   return predictionCache.get(simId);
 }
 
+/** Get the most recent cached prediction (for IV scorer integration) */
+export function getLatestCachedPrediction(): MiroFishPrediction | undefined {
+  let latest: MiroFishPrediction | undefined;
+  for (const pred of predictionCache.values()) {
+    if (!latest || pred.generatedAt > latest.generatedAt) {
+      latest = pred;
+    }
+  }
+  return latest;
+}
+
 function reportToPrediction(simId: string, report: MiroFishReport): MiroFishPrediction {
   return {
     simulationId: simId,
@@ -141,6 +184,9 @@ function reportToPrediction(simId: string, report: MiroFishReport): MiroFishPred
       probability: s.probability,
       projectedScore: s.projectedIVScore,
     })),
+    categoryScores: report.categoryScores,
+    timeSeries: report.timeSeries,
+    generatedEvents: report.generatedEvents,
     source: 'mirofish',
     generatedAt: report.generatedAt,
   };

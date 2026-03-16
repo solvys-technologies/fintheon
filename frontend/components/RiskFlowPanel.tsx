@@ -5,10 +5,12 @@
 // [claude-code 2026-03-11] v7.7.7 T3: Card overhaul — SVG logos, cyclical badge top-right,
 //   point range, approve/deny CTA on proposals, chat CTA on news, remove "Neutral" text.
 // [claude-code 2026-03-11] T5: drag-drop support for chat injection (application/x-riskflow)
+// [claude-code 2026-03-16] T2: AlertRow bottom-hero redesign, toolbar consolidation, shared inferDirection
 import React, { useState, useCallback } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
 import { Zap, ExternalLink, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, MessageSquare, Check, XCircle, RefreshCw } from 'lucide-react';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
+import { inferDirection } from '../lib/riskflow-feed';
 import TradeIdeaModal from './TradeIdeaModal';
 import { useSourceStatus } from '../hooks/useSourceStatus';
 import { useBackend } from '../lib/backend';
@@ -82,20 +84,7 @@ function CyclicalBadge({ classification }: { classification: string }) {
   );
 }
 
-// ── Direction + Point Range ───────────────────────────────────────────────────
-
-/** Infer Bullish/Bearish from alert data or headline keywords */
-function inferDirection(alert: RiskFlowAlert): 'Bullish' | 'Bearish' {
-  if (alert.direction === 'Bullish' || alert.direction === 'Bearish') return alert.direction;
-  if (alert.tradeIdea) return alert.tradeIdea.direction === 'long' ? 'Bullish' : 'Bearish';
-  const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
-  const bullish = ['surge', 'rally', 'rise', 'gain', 'jump', 'soar', 'bull', 'record high', 'beat', 'above', 'upgrade', 'boom', 'positive', 'strong', 'up '];
-  const bearish = ['drop', 'fall', 'crash', 'plunge', 'decline', 'sink', 'bear', 'miss', 'below', 'downgrade', 'slump', 'negative', 'fear', 'risk', 'warn', 'cut', 'sell', 'weak', 'down '];
-  let b = 0, s = 0;
-  for (const kw of bullish) if (lower.includes(kw)) b++;
-  for (const kw of bearish) if (lower.includes(kw)) s++;
-  return b >= s ? 'Bullish' : 'Bearish';
-}
+// ── Direction Badge (used in TradeIdeaRow) ───────────────────────────────────
 
 function DirectionBadge({ alert }: { alert: RiskFlowAlert }) {
   const dir = inferDirection(alert);
@@ -241,7 +230,7 @@ function TradeIdeaRow({
   );
 }
 
-// ── Alert Row (news — with source SVGs, cyclical badge, point range, chat CTA) ─
+// ── Alert Row (news — rounded card with bottom-hero footer) ─────────────────
 
 function AlertRow({
   alert,
@@ -258,6 +247,8 @@ function AlertRow({
 }) {
   const sev = SEVERITY_CONFIG[alert.severity];
   const isHigh = alert.severity === 'high' || alert.severity === 'critical';
+  const dir = inferDirection(alert);
+  const isBull = dir === 'Bullish';
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('application/x-riskflow', JSON.stringify({
@@ -271,67 +262,72 @@ function AlertRow({
     <div
       draggable
       onDragStart={handleDragStart}
-      className={`group relative flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-70' : ''}`}
+      className={`group relative rounded-xl border border-zinc-800/60 mx-2 my-1.5 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-70' : ''}`}
     >
-      {/* Cyclical badge — top right */}
-      {alert.cyclical && alert.cyclical !== 'Neutral' && (
-        <div className="absolute top-1.5 right-9">
-          <CyclicalBadge classification={alert.cyclical} />
-        </div>
-      )}
-
+      {/* Main content area */}
       <a
         href={alert.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex-1 min-w-0 flex items-start gap-2 cursor-pointer"
+        className="block px-3 pt-2.5 pb-2 cursor-pointer"
         onClick={() => onMarkSeen(alert.id)}
       >
-        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ''} flex-shrink-0 mt-0.5`}>
-          {sev.label}
-        </span>
-        <div className="flex-1 min-w-0">
+        <div className="flex items-start gap-2">
+          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ''} flex-shrink-0 mt-0.5`}>
+            {sev.label}
+          </span>
+          <div className="flex-1 min-w-0">
             <p className={`text-xs leading-snug font-medium line-clamp-3 break-words ${alert.severity === 'critical' ? 'text-orange-300' : isHigh ? 'text-red-300' : 'text-zinc-300'} group-hover:text-white transition-colors`}>
               {alert.headline}
             </p>
-          <div className="flex items-center gap-2 mt-1">
-            <SourceIcon source={alert.source} className="w-2.5 h-2.5 text-zinc-600" />
-            <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
-            {alert.authorHandle && (
-              <>
-                <span className="text-[10px] text-zinc-700">&middot;</span>
-                <span className="text-[10px] text-zinc-500">@{alert.authorHandle}</span>
-              </>
+            {alert.summary && alert.summary !== alert.headline && (
+              <p className="text-[10px] text-zinc-600 line-clamp-1 mt-0.5">{alert.summary}</p>
             )}
-            <span className="text-[10px] text-zinc-700">&middot;</span>
-            <DirectionBadge alert={alert} />
-            <span className="text-[10px] text-zinc-700">&middot;</span>
-            <PointRangeBadge points={alert.pointRange} instrument={alert.instrument} />
-            <ExternalLink className="w-2.5 h-2.5 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
+            {/* Source + cyclical badge row */}
+            <div className="flex items-center gap-1.5 mt-1">
+              <SourceIcon source={alert.source} className="w-2.5 h-2.5 text-zinc-600" />
+              {alert.cyclical && alert.cyclical !== 'Neutral' && (
+                <CyclicalBadge classification={alert.cyclical} />
+              )}
+              {alert.authorHandle && (
+                <span className="text-[9px] text-zinc-500">@{alert.authorHandle}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Chat + Dismiss CTAs */}
+          <div className="flex-shrink-0 flex items-center gap-0.5">
+            {onChat && (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChat(alert); }}
+                className="p-1 rounded text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors opacity-0 group-hover:opacity-100"
+                title="Chat about this"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(alert.id); }}
+              className="flex-shrink-0 p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              title="Remove item"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </a>
 
-      {/* Chat + Dismiss CTAs */}
-      <div className="flex-shrink-0 flex items-center gap-0.5">
-        {onChat && (
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChat(alert); }}
-            className="p-1 rounded text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors opacity-0 group-hover:opacity-100"
-            title="Chat about this"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(alert.id); }}
-          className="flex-shrink-0 p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-          title="Remove item"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
+      {/* Bottom hero footer — time (left), direction (center), points (right) */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40">
+        <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
+        <span className={`text-[11px] font-bold tracking-wider uppercase ${isBull ? 'text-emerald-500' : 'text-red-400'}`}>
+          {isBull ? '▲ BULLISH' : '▼ BEARISH'}
+        </span>
+        <span className="text-[10px] text-zinc-500 tabular-nums" title={`Implied ${alert.instrument ?? ''} move`}>
+          {alert.instrument ? `${alert.instrument} ` : ''}{alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)} pts` : '0-5 pts'}
+        </span>
       </div>
     </div>
   );
@@ -441,54 +437,49 @@ export default function RiskFlowPanel({
       )}
 
       <div className="h-full flex flex-col bg-[var(--fintheon-surface)]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--fintheon-accent)]/20">
-          <div className="flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
-            <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">RiskFlow</h3>
-            {highCount > 0 && (
-              <span className="riskflow-pulse-badge inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500/30 text-red-400 text-[9px] font-bold">
-                {highCount}
-              </span>
-            )}
-            {ideaCount > 0 && (
-              <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-sm bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] text-[9px] font-bold tracking-wider">
-                {ideaCount} proposal{ideaCount !== 1 ? 's' : ''}
-              </span>
-            )}
-            <div className="flex items-center gap-2 ml-1">
-              <StatusDot active={sourceStatus.notion} label="Notion" />
-              <StatusDot active={sourceStatus.twitterCli} label="X" />
+        {/* Header — title + filters + status consolidated */}
+        <div className="px-3 py-2 border-b border-[var(--fintheon-accent)]/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+              <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">RiskFlow</h3>
+              {highCount > 0 && (
+                <span className="riskflow-pulse-badge inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500/30 text-red-400 text-[9px] font-bold">
+                  {highCount}
+                </span>
+              )}
+              <div className="flex items-center gap-2 ml-1">
+                <StatusDot active={sourceStatus.notion} label="Notion" />
+                <StatusDot active={sourceStatus.twitterCli} label="X" />
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <AutoRefreshToggle />
+              <button
+                type="button"
+                onClick={() => { void refresh(); }}
+                disabled={refreshing}
+                className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
+                title="Refresh feeds"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+              {alerts.length > 0 && (
+                <button type="button" onClick={clearAll} className="p-1 rounded hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors" title="Clear all">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                onClick={() => { if (onToggleCollapsed) onToggleCollapsed(); else setExpandedInternal(!expandedInternal); }}
+                className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+              >
+                {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <AutoRefreshToggle />
-            <button
-              type="button"
-              onClick={() => { void refresh(); }}
-              disabled={refreshing}
-              className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
-              title="Refresh feeds"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
-            {alerts.length > 0 && (
-              <button type="button" onClick={clearAll} className="p-1 rounded hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors" title="Clear all">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-            <button
-              onClick={() => { if (onToggleCollapsed) onToggleCollapsed(); else setExpandedInternal(!expandedInternal); }}
-              className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
-            >
-              {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-
-        <div className={`flex-1 min-h-0 flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${expanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}>
-            {/* Filter row */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-zinc-800/50 flex-wrap">
+          {/* Inline filters — same row as header */}
+          {expanded && (
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
               <FilterDropdown<PriorityFilter>
                 value={showProposals ? 'all' : priorityFilter}
                 options={[
@@ -518,6 +509,10 @@ export default function RiskFlowPanel({
                 Proposals{ideaCount > 0 ? ` (${ideaCount})` : ''}
               </button>
             </div>
+          )}
+        </div>
+
+        <div className={`flex-1 min-h-0 flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${expanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}>
 
             {/* Alert list */}
             <div className="flex-1 min-w-0 overflow-y-auto">

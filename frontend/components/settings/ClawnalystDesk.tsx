@@ -114,89 +114,24 @@ export function ClawnalystDesk() {
         </button>
       </div>
 
-      {/* Agent grid */}
+      {/* Harper-Hermes — elevated lead card, centered */}
+      {agents.filter((a) => a.id === 'harper-hermes').map((agent) => {
+        const draft = getDraft(agent.id);
+        const isSaved = savedIds.has(agent.id);
+        return (
+          <div key={agent.id} className="max-w-xl mx-auto mb-6">
+            <AgentCard agent={agent} draft={draft} isSaved={isSaved} getDraft={getDraft} setField={setField} isDefaultAgent={isDefaultAgent} deleteAgent={deleteAgent} addToast={addToast} />
+          </div>
+        );
+      })}
+
+      {/* Remaining agents — 2x2 grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {agents.map((agent) => {
+        {agents.filter((a) => a.id !== 'harper-hermes').map((agent) => {
           const draft = getDraft(agent.id);
           const isSaved = savedIds.has(agent.id);
           return (
-            <div
-              key={agent.id}
-              className="border border-[var(--fintheon-accent)]/15 hover:border-[var(--fintheon-accent)]/35 bg-[#0b0b08] rounded-lg transition-all duration-200"
-              style={{ padding: '20px 22px' }}
-            >
-              {/* Card header: avatar + name/nickname + sector pill */}
-              <div className="flex items-start gap-3.5 mb-4">
-                {/* 48px rounded-full avatar */}
-                <div
-                  className="flex items-center justify-center rounded-full bg-[var(--fintheon-accent)]/10 text-xl shrink-0"
-                  style={{ width: '48px', height: '48px' }}
-                >
-                  {agent.icon}
-                </div>
-                {/* Name + nickname + model */}
-                <div className="flex-1 min-w-0 pt-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-semibold text-white truncate">{agent.name}</span>
-                    {draft.nickname && (
-                      <span className="text-[12px] italic text-gray-500 truncate">"{draft.nickname}"</span>
-                    )}
-                  </div>
-                  <span
-                    className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded font-medium truncate max-w-[180px]"
-                    style={{ backgroundColor: 'rgba(217,119,6,0.1)', color: '#D97706' }}
-                  >
-                    {DEFAULT_MODEL_NAME}
-                  </span>
-                </div>
-                {/* Sector pill + delete */}
-                <div className="flex items-center gap-2 shrink-0">
-                  {draft.sector && (
-                    <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-full border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]/70 bg-[var(--fintheon-accent)]/5">
-                      {draft.sector}
-                    </span>
-                  )}
-                  {!isDefaultAgent(agent.id) && (
-                    <button
-                      onClick={() => { deleteAgent(agent.id); addToast(`${agent.name} removed`, 'info'); }}
-                      className="text-gray-600 hover:text-red-400 transition-colors"
-                      title="Remove analyst"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Card body: editable fields */}
-              <div className="flex flex-col gap-2.5">
-                <div className="grid grid-cols-2 gap-2.5">
-                  <Field label="Name" value={draft.name} onChange={(v) => setField(agent.id, 'name', v)} placeholder="Analyst name" />
-                  <Field label="Nickname" value={draft.nickname} onChange={(v) => setField(agent.id, 'nickname', v)} placeholder="e.g. 'The Oracle'" />
-                </div>
-                <Field label="Sector" value={draft.sector} onChange={(v) => setField(agent.id, 'sector', v)} placeholder="e.g. Macro Intelligence" />
-                <div>
-                  <label className="block text-[11px] font-medium text-gray-500 mb-1">Description</label>
-                  <textarea
-                    value={draft.description}
-                    onChange={(e) => setField(agent.id, 'description', e.target.value)}
-                    className="w-full rounded-md border border-[var(--fintheon-accent)]/15 bg-[#070704] text-[13px] text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--fintheon-accent)]/40 px-3 py-2 transition-colors resize-none"
-                    placeholder="Short description of this analyst's role"
-                    rows={2}
-                  />
-                </div>
-                <Field label="Instructions Doc ID" value={draft.instructions_doc_id} onChange={(v) => setField(agent.id, 'instructions_doc_id', v)} placeholder="Notion page ID (optional)" />
-              </div>
-
-              {/* Card footer: save indicator + delete for defaults */}
-              <div className="flex items-center justify-end mt-3 min-h-[20px]">
-                {isSaved && (
-                  <span className="flex items-center gap-1 text-[11px] text-emerald-400">
-                    <Check size={11} /> Saved
-                  </span>
-                )}
-              </div>
-            </div>
+            <AgentCard key={agent.id} agent={agent} draft={draft} isSaved={isSaved} getDraft={getDraft} setField={setField} isDefaultAgent={isDefaultAgent} deleteAgent={deleteAgent} addToast={addToast} />
           );
         })}
       </div>
@@ -286,6 +221,106 @@ export function ClawnalystDesk() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Agent card — extracted to share between lead + grid                 */
+/* ------------------------------------------------------------------ */
+
+function AgentCard({
+  agent,
+  draft,
+  isSaved,
+  getDraft: _getDraft,
+  setField,
+  isDefaultAgent,
+  deleteAgent,
+  addToast,
+}: {
+  agent: PulseAgent;
+  draft: AgentDraft;
+  isSaved: boolean;
+  getDraft: (id: string) => AgentDraft;
+  setField: (id: string, field: keyof AgentDraft, value: string) => void;
+  isDefaultAgent: (id: string) => boolean;
+  deleteAgent: (id: string) => void;
+  addToast: (msg: string, type: 'success' | 'info') => void;
+}) {
+  return (
+    <div
+      className="border border-[var(--fintheon-accent)]/15 hover:border-[var(--fintheon-accent)]/35 bg-[#0b0b08] rounded-lg transition-all duration-200"
+      style={{ padding: '20px 22px' }}
+    >
+      {/* Card header: avatar + name/nickname + sector pill */}
+      <div className="flex items-start gap-3.5 mb-4">
+        <div
+          className="flex items-center justify-center rounded-full bg-[var(--fintheon-accent)]/10 text-xl shrink-0"
+          style={{ width: '48px', height: '48px' }}
+        >
+          {agent.icon}
+        </div>
+        <div className="flex-1 min-w-0 pt-0.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[14px] font-semibold text-white truncate">{agent.name}</span>
+            {draft.nickname && (
+              <span className="text-[12px] italic text-gray-500 truncate">"{draft.nickname}"</span>
+            )}
+          </div>
+          <span
+            className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded font-medium truncate max-w-[180px]"
+            style={{ backgroundColor: 'rgba(217,119,6,0.1)', color: '#D97706' }}
+          >
+            {DEFAULT_MODEL_NAME}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {draft.sector && (
+            <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-full border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]/70 bg-[var(--fintheon-accent)]/5">
+              {draft.sector}
+            </span>
+          )}
+          {!isDefaultAgent(agent.id) && (
+            <button
+              onClick={() => { deleteAgent(agent.id); addToast(`${agent.name} removed`, 'info'); }}
+              className="text-gray-600 hover:text-red-400 transition-colors"
+              title="Remove analyst"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Card body: editable fields */}
+      <div className="flex flex-col gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5">
+          <Field label="Name" value={draft.name} onChange={(v) => setField(agent.id, 'name', v)} placeholder="Analyst name" />
+          <Field label="Nickname" value={draft.nickname} onChange={(v) => setField(agent.id, 'nickname', v)} placeholder="e.g. 'The Oracle'" />
+        </div>
+        <Field label="Sector" value={draft.sector} onChange={(v) => setField(agent.id, 'sector', v)} placeholder="e.g. Macro Intelligence" />
+        <div>
+          <label className="block text-[11px] font-medium text-gray-500 mb-1">Description</label>
+          <textarea
+            value={draft.description}
+            onChange={(e) => setField(agent.id, 'description', e.target.value)}
+            className="w-full rounded-md border border-[var(--fintheon-accent)]/15 bg-[#070704] text-[13px] text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--fintheon-accent)]/40 px-3 py-2 transition-colors resize-none"
+            placeholder="Short description of this analyst's role"
+            rows={2}
+          />
+        </div>
+        <Field label="Instructions Doc ID" value={draft.instructions_doc_id} onChange={(v) => setField(agent.id, 'instructions_doc_id', v)} placeholder="Notion page ID (optional)" />
+      </div>
+
+      {/* Card footer: save indicator */}
+      <div className="flex items-center justify-end mt-3 min-h-[20px]">
+        {isSaved && (
+          <span className="flex items-center gap-1 text-[11px] text-emerald-400">
+            <Check size={11} /> Saved
+          </span>
+        )}
+      </div>
     </div>
   );
 }

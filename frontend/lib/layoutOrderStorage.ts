@@ -3,13 +3,13 @@
  * Sidebar and toolbar orders are independent; items cannot move between them.
  */
 
-const SIDEBAR_ORDER_KEY = 'pulse_sidebar_nav_order';
-const TOOLBAR_ORDER_KEY = 'pulse_toolbar_order';
-const MISSION_WIDGET_ORDER_KEY = 'pulse_mission_widget_order_v3'; // v3: calendar added
-const MISSION_WIDGET_VISIBILITY_KEY = 'pulse_mission_widget_visibility';
-const RIGHT_PANEL_ORDER_KEY = 'pulse_right_panel_order';
+const SIDEBAR_ORDER_KEY = 'fintheon:sidebar-nav-order';
+const TOOLBAR_ORDER_KEY = 'fintheon:toolbar-order';
+const MISSION_WIDGET_ORDER_KEY = 'fintheon:mission-widget-order:v3'; // v3: calendar added
+const MISSION_WIDGET_VISIBILITY_KEY = 'fintheon:mission-widget-visibility';
+const RIGHT_PANEL_ORDER_KEY = 'fintheon:right-panel-order';
 
-export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'hermes';
+export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings';
 
 export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'executive',
@@ -20,7 +20,6 @@ export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'notion',
   'narrative',
   'earnings',
-  'hermes',
 ];
 
 export type ToolbarItemId = 'platform' | 'power' | 'layout' | 'chat' | 'voice' | 'heartbeat' | 'ivScore';

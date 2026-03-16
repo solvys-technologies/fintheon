@@ -114,7 +114,7 @@ export function InterventionSidebar({ messages, sending, onSend, onMention, acti
               ? `Call ${activeAgent.name} to the floor...`
               : 'Message Harper...'
           }
-          draftKey="pulse_draft_intervention"
+          draftKey="fintheon:draft-intervention"
         />
       </div>
     </div>

@@ -10,7 +10,7 @@ const MESSAGES = [
   'Pre-market check: Is your thesis from yesterday still valid?',
 ];
 
-const STORAGE_KEY = 'pulse_premarket_reminder_last:v1';
+const STORAGE_KEY = 'fintheon:premarket-reminder-last:v1';
 
 function isPreMarketET(): boolean {
   const now = new Date();

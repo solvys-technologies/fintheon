@@ -1,4 +1,5 @@
 // [claude-code 2026-03-16] MiroFish route handlers
+// [claude-code 2026-03-16] Switched to feature flag, local debate engine
 
 import type { Context } from 'hono';
 import {
@@ -7,11 +8,19 @@ import {
   getPredictions,
   injectScenarioVariable,
 } from '../../services/mirofish/mirofish-service.js';
-import { isMiroFishEnabled } from '../../services/mirofish/mirofish-client.js';
+import { isSkillEnabled } from '../../config/feature-flags.js';
+
+function checkEnabled(c: Context): Response | null {
+  if (!isSkillEnabled('mirofish')) {
+    return c.json({ error: 'MiroFish is disabled', code: 'FEATURE_DISABLED' }, 403);
+  }
+  return null;
+}
 
 /** POST /simulate — kick off a new prediction simulation */
 export async function handleSimulate(c: Context) {
-  if (!isMiroFishEnabled()) return c.json({ error: 'MiroFish is not enabled' }, 503);
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
 
   const body = await c.req.json<{
     narrativeState: {
@@ -49,10 +58,11 @@ export async function handleSimulate(c: Context) {
 
 /** GET /status/:id — poll simulation status */
 export async function handleStatus(c: Context) {
-  if (!isMiroFishEnabled()) return c.json({ error: 'MiroFish is not enabled' }, 503);
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
 
   const simId = c.req.param('id');
-  const sim = await pollStatus(simId);
+  const sim = pollStatus(simId);
   if (!sim) {
     return c.json({ error: 'Simulation not found' }, 404);
   }
@@ -61,10 +71,11 @@ export async function handleStatus(c: Context) {
 
 /** GET /report/:id — get prediction report from completed simulation */
 export async function handleReport(c: Context) {
-  if (!isMiroFishEnabled()) return c.json({ error: 'MiroFish is not enabled' }, 503);
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
 
   const simId = c.req.param('id');
-  const prediction = await getPredictions(simId);
+  const prediction = getPredictions(simId);
   if (!prediction) {
     return c.json({ error: 'Report not available' }, 404);
   }
@@ -73,7 +84,8 @@ export async function handleReport(c: Context) {
 
 /** POST /inject/:id — inject a scenario variable into a running simulation */
 export async function handleInject(c: Context) {
-  if (!isMiroFishEnabled()) return c.json({ error: 'MiroFish is not enabled' }, 503);
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
 
   const simId = c.req.param('id');
   const body = await c.req.json<{
@@ -93,7 +105,7 @@ export async function handleInject(c: Context) {
   });
 
   if (!sim) {
-    return c.json({ error: 'Injection failed — simulation may not exist or be running' }, 400);
+    return c.json({ error: 'Injection failed — simulation may not exist' }, 400);
   }
   return c.json(sim);
 }

@@ -4,7 +4,7 @@
  * Agentic backend layer for Priced In Capital (P.I.C.)
  * Orchestrates AI agents: Harper-Hermes (CAO), Oracle (All-Seer), Feucht (Futures & Risk), Consul (Fundamentals), Herald (News)
  *
- * Architecture: HERMES AGENT → PULSE UI → H.E's (Human Executives)
+ * Architecture: HERMES AGENT → FINTHEON UI → H.E's (Human Executives)
  * Inference: OpenRouter (Nous subscription) + Claude Opus 4.6
  */
 
@@ -148,7 +148,7 @@ export const OPENCLAW_TASK_MODEL_MAP = HERMES_TASK_MODEL_MAP
 export const buildHermesHeaders = (config?: {
   appName?: string
 }): Record<string, string> => {
-  const appName = config?.appName ?? process.env.HERMES_APP_NAME ?? 'Pulse-PIC-Hermes'
+  const appName = config?.appName ?? process.env.HERMES_APP_NAME ?? 'Fintheon-PIC-Hermes'
 
   return {
     'X-Hermes-App': appName,
@@ -185,8 +185,8 @@ export const createHermesClient = (modelId?: string) => {
     baseURL: HERMES_BASE_URL,
     headers: {
       ...(headers as Record<string, string>),
-      'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
-      'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+      'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
+      'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
     },
   })
 

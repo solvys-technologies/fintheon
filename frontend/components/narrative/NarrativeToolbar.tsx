@@ -12,6 +12,7 @@ import {
   Filter,
   Download,
   Settings2,
+  Zap,
 } from 'lucide-react';
 import type { NarrativeFlowState, ZoomLevel, CatalystSentiment, CatalystTemplateType } from '../../lib/narrative-types';
 import { formatWeekLabel, shiftWeek } from '../../lib/narrative-time';
@@ -26,6 +27,8 @@ interface NarrativeToolbarProps {
   hasSnapshot: boolean;
   onImport: () => void;
   onManage: () => void;
+  onMiroFish: () => void;
+  mirofishActive: boolean;
 }
 
 const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
@@ -41,7 +44,7 @@ const SENTIMENT_OPTIONS: { value: CatalystSentiment | 'all'; label: string }[] =
   { value: 'bearish', label: 'Bearish' },
 ];
 
-export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport, onManage }: NarrativeToolbarProps) {
+export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport, onManage, onMiroFish, mirofishActive }: NarrativeToolbarProps) {
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
@@ -213,6 +216,19 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
           title="Manage narratives"
         >
           <Settings2 className="w-3.5 h-3.5" />
+        </button>
+
+        {/* MiroFish Auditorium */}
+        <button
+          onClick={onMiroFish}
+          className={`p-1.5 rounded transition-colors ${
+            mirofishActive
+              ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+              : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10'
+          }`}
+          title="MiroFish Auditorium"
+        >
+          <Zap className="w-3.5 h-3.5" />
         </button>
 
         {/* Undo */}

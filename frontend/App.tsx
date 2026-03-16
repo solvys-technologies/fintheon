@@ -16,6 +16,11 @@ import { ToastContainer } from './components/ui/Toast';
 import { PreMarketReminder } from './components/PreMarketReminder';
 import { GitHubOAuthCallback } from './components/GitHubOAuthCallback';
 import { UpdateBanner } from './components/UpdateBanner';
+import { ApiErrorToastBridge } from './components/ApiErrorToastBridge';
+import { migrateStorageKeys } from './lib/storage-migration';
+
+// Run storage migration before any providers read localStorage
+migrateStorageKeys();
 
 // [claude-code 2026-03-13] VoiceBorderPulse — green pulse when listening, gold when speaking
 function VoiceBorderPulse() {
@@ -102,6 +107,7 @@ export default function App() {
                       pointer-events: none;
                     }
                   `}</style>
+                  <ApiErrorToastBridge />
                   <UpdateBanner />
                   <GitHubOAuthCallback />
                   <MainLayout />

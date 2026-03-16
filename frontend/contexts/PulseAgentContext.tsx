@@ -22,7 +22,7 @@ export interface PulseAgent {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Default agent roster — 5 Pulse analysts (v7.9)                     */
+/*  Default agent roster — 5 Fintheon analysts (v7.9)                   */
 /* ------------------------------------------------------------------ */
 
 const now = () => new Date().toISOString();

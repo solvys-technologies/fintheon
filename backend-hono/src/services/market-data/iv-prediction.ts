@@ -1,9 +1,10 @@
 // [claude-code 2026-03-16] IV prediction service — heuristic fallback + MiroFish integration
+// [claude-code 2026-03-16] Removed simulationId param — auto-checks latest cached prediction
 
 import type { IVPrediction, IVPredictionScenario } from './iv-prediction-types.js';
 import type { BlendedIVScore } from './iv-scorer.js';
-import { isMiroFishEnabled } from '../mirofish/mirofish-client.js';
-import { getCachedPrediction } from '../mirofish/mirofish-service.js';
+import { isSkillEnabled } from '../../config/feature-flags.js';
+import { getLatestCachedPrediction } from '../mirofish/mirofish-service.js';
 
 /**
  * Generate an IV prediction for the next session.
@@ -12,11 +13,10 @@ import { getCachedPrediction } from '../mirofish/mirofish-service.js';
  */
 export async function generateIVPrediction(
   currentScore: BlendedIVScore,
-  latestSimulationId?: string,
 ): Promise<IVPrediction> {
-  // Try MiroFish first
-  if (isMiroFishEnabled() && latestSimulationId) {
-    const mfPrediction = getCachedPrediction(latestSimulationId);
+  // Try MiroFish first — auto-fetch latest cached prediction
+  if (isSkillEnabled('mirofish')) {
+    const mfPrediction = getLatestCachedPrediction();
     if (mfPrediction) {
       return {
         nextSessionScore: mfPrediction.nextSessionScore,

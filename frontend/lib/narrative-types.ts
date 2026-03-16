@@ -42,6 +42,7 @@ export interface CatalystCard {
   templateType: CatalystTemplateType | null;
   position: { x: number; y: number } | null;
   tags?: string[];  // user-defined tags for filtering/organizing
+  category?: NarrativeCategory;
   createdAt: string;
   updatedAt: string;
 }

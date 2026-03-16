@@ -2,10 +2,12 @@
 // [claude-code 2026-03-11] Auto-start backend on app init.
 
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
+// [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
+const { autoUpdater } = require("electron-updater");
 
 let mainWindow = null;
 let backendProcess = null;
@@ -29,10 +31,12 @@ function startBackend() {
     }
   }
 
-  console.log("[Electron] Starting backend server...");
+  // [claude-code 2026-03-16] Ensure .env is loaded from backend-hono dir by setting cwd correctly
+  const envPath = path.join(backendDir, ".env");
+  console.log(`[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`);
   backendProcess = spawn("node", [distEntry], {
     cwd: backendDir,
-    env: { ...process.env, NODE_ENV: "production" },
+    env: { ...process.env, NODE_ENV: "production", DOTENV_CONFIG_PATH: envPath },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
@@ -56,6 +60,59 @@ function stopBackend() {
     backendProcess.kill("SIGTERM");
     backendProcess = null;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Auto-Updater (electron-updater)                                    */
+/* ------------------------------------------------------------------ */
+
+function setupAutoUpdater() {
+  // Don't auto-download — let the user decide via the modal
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on("update-available", (info) => {
+    console.log("[Updater] Update available:", info.version);
+    if (mainWindow) {
+      mainWindow.webContents.send("update-available", {
+        version: info.version,
+        releaseNotes: info.releaseNotes || "",
+        releaseDate: info.releaseDate || "",
+      });
+    }
+  });
+
+  autoUpdater.on("update-not-available", () => {
+    console.log("[Updater] App is up to date");
+  });
+
+  autoUpdater.on("download-progress", (progress) => {
+    console.log(`[Updater] Download: ${Math.round(progress.percent)}%`);
+    if (mainWindow) {
+      mainWindow.webContents.send("update-download-progress", {
+        percent: Math.round(progress.percent),
+        transferred: progress.transferred,
+        total: progress.total,
+      });
+    }
+  });
+
+  autoUpdater.on("update-downloaded", () => {
+    console.log("[Updater] Update downloaded, ready to install");
+    if (mainWindow) {
+      mainWindow.webContents.send("update-downloaded");
+    }
+  });
+
+  autoUpdater.on("error", (err) => {
+    console.error("[Updater] Error:", err.message);
+  });
+
+  // Check immediately, then every 30 minutes
+  autoUpdater.checkForUpdates().catch(() => {});
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 30 * 60 * 1000);
 }
 
 const shouldAllowInAppPopup = (urlString) => {
@@ -112,6 +169,7 @@ function createWindow() {
 app.whenReady().then(() => {
   startBackend();
   createWindow();
+  setupAutoUpdater();
 
   // Handle window.open from embedded <webview> tags.
   app.on("web-contents-created", (_event, contents) => {
@@ -166,7 +224,30 @@ ipcMain.handle("toggle-mini-widget", () => {
   return { ok: true };
 });
 
-// Pulse CLI: run shell command from project root and stream output to renderer
+// Auto-update IPC handlers
+ipcMain.handle("update-download", () => {
+  autoUpdater.downloadUpdate().catch((err) => {
+    console.error("[Updater] Download failed:", err.message);
+  });
+  return { ok: true };
+});
+
+ipcMain.handle("update-install", () => {
+  stopBackend();
+  autoUpdater.quitAndInstall(false, true);
+  return { ok: true };
+});
+
+ipcMain.handle("update-check", () => {
+  autoUpdater.checkForUpdates().catch(() => {});
+  return { ok: true };
+});
+
+ipcMain.handle("get-app-version", () => {
+  return app.getVersion();
+});
+
+// Fintheon CLI: run shell command from project root and stream output to renderer
 const projectRoot = path.join(__dirname, "..");
 ipcMain.handle("run-shell-command", (event, command) => {
   if (typeof command !== "string" || !command.trim()) {

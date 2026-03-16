@@ -8,10 +8,10 @@ import { BlindspotsInterview } from './BlindspotsInterview';
 import { SetupWizard } from './SetupWizard';
 import { useSettings } from '../../contexts/SettingsContext';
 
-const TOUR_STORAGE_KEY = 'pulse_tour_completed';
-const LAST_VERSION_KEY = 'pulse_last_seen_version';
-const INTERVIEW_STORAGE_KEY = 'pulse_interview_completed';
-const INTERVIEW_DATA_KEY = 'pulse_interview_data';
+const TOUR_STORAGE_KEY = 'fintheon:tour-completed';
+const LAST_VERSION_KEY = 'fintheon:last-seen-version';
+const INTERVIEW_STORAGE_KEY = 'fintheon:interview-completed';
+const INTERVIEW_DATA_KEY = 'fintheon:interview-data';
 const CURRENT_VERSION = '7.9.0';
 const WHATS_NEW_TIMEOUT_MS = 30_000;
 

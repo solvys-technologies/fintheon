@@ -1,5 +1,6 @@
 // [claude-code 2026-03-14] Removed MarketWatch RSS poller, XML parsing, singleton. Types + severity kept.
 // [claude-code 2026-03-13] Hermes migration: openclawDescription -> hermesDescription in TradeIdeaDetail
+// [claude-code 2026-03-16] T2: ensureScoring, inferDirection, downgradeNonFinancialBreaking exports
 /**
  * RiskFlow Alert Types & Severity Classification
  * Types and classification logic used by both frontend context and backend feed mapping.
@@ -147,6 +148,112 @@ function extractTags(text: string): string[] {
     if (wordMatch(lower, kw) && !tags.includes(kw)) tags.push(kw);
   }
   return tags.slice(0, 5);
+}
+
+// ── Shared Direction Inference ────────────────────────────────────────────────
+
+const BULLISH_KW = ['surge', 'rally', 'rise', 'gain', 'jump', 'soar', 'bull', 'record high', 'beat', 'above', 'upgrade', 'boom', 'positive', 'strong', 'up '];
+const BEARISH_KW = ['drop', 'fall', 'crash', 'plunge', 'decline', 'sink', 'bear', 'miss', 'below', 'downgrade', 'slump', 'negative', 'fear', 'risk', 'warn', 'cut', 'sell', 'weak', 'down '];
+
+/** Infer Bullish/Bearish from alert data or headline keywords */
+export function inferDirection(alert: RiskFlowAlert): 'Bullish' | 'Bearish' {
+  if (alert.direction === 'Bullish' || alert.direction === 'Bearish') return alert.direction;
+  if (alert.tradeIdea) return alert.tradeIdea.direction === 'long' ? 'Bullish' : 'Bearish';
+  const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
+  let b = 0, s = 0;
+  for (const kw of BULLISH_KW) if (lower.includes(kw)) b++;
+  for (const kw of BEARISH_KW) if (lower.includes(kw)) s++;
+  return b >= s ? 'Bullish' : 'Bearish';
+}
+
+// ── Cyclical Inference ───────────────────────────────────────────────────────
+
+const CYCLICAL_KW = ['gdp', 'employment', 'consumer spending', 'retail sales', 'manufacturing', 'housing', 'industrial', 'earnings', 'revenue', 'ipo', 'merger', 'acquisition', 'capex'];
+const COUNTER_CYCLICAL_KW = ['treasury', 'gold', 'vix', 'defensive', 'utilities', 'healthcare', 'staples', 'bond', 'yield inversion', 'recession', 'safe haven', 'flight to safety'];
+
+function inferCyclical(alert: RiskFlowAlert): 'Cyclical' | 'Counter-cyclical' | 'Neutral' {
+  if (alert.cyclical && alert.cyclical !== 'Neutral') return alert.cyclical;
+  const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
+  let cyc = 0, ctr = 0;
+  for (const kw of CYCLICAL_KW) if (lower.includes(kw)) cyc++;
+  for (const kw of COUNTER_CYCLICAL_KW) if (lower.includes(kw)) ctr++;
+  if (cyc > ctr) return 'Cyclical';
+  if (ctr > cyc) return 'Counter-cyclical';
+  return 'Neutral';
+}
+
+// ── Ensure Scoring on Every Item ─────────────────────────────────────────────
+
+/** Severity-to-beta multiplier for estimating implied points */
+const SEVERITY_POINT_ESTIMATE: Record<AlertSeverity, number> = {
+  critical: 25,
+  high: 15,
+  medium: 8,
+  low: 3,
+};
+
+/**
+ * Ensures every RiskFlowAlert has pointRange, direction, and cyclical filled in.
+ * If pointRange is missing, estimates from severity + instrument beta.
+ * Mutates in place for performance but also returns the array.
+ */
+export function ensureScoring(alerts: RiskFlowAlert[], selectedInstrument?: string): RiskFlowAlert[] {
+  for (const alert of alerts) {
+    // Direction — always fill
+    if (!alert.direction || alert.direction === 'Neutral') {
+      alert.direction = inferDirection(alert);
+    }
+    // Cyclical — always fill
+    if (!alert.cyclical || alert.cyclical === 'Neutral') {
+      alert.cyclical = inferCyclical(alert);
+    }
+    // Instrument — default to user's selected
+    if (!alert.instrument && selectedInstrument) {
+      alert.instrument = selectedInstrument;
+    }
+    // Point range — estimate from severity if missing
+    if (alert.pointRange == null || alert.pointRange === 0) {
+      alert.pointRange = SEVERITY_POINT_ESTIMATE[alert.severity] ?? 3;
+    }
+  }
+  return alerts;
+}
+
+// ── False-BREAKING Headline Filter ───────────────────────────────────────────
+
+const FINANCIAL_TERMS = [
+  'spx', 'spy', 'nq', 'es', 'nqs', 'ym', 'rty', 'vix', 'dxy',
+  'futures', 'equities', 'equity', 'stock', 'stocks', 'index', 'indices',
+  'fed', 'fomc', 'cpi', 'ppi', 'nfp', 'gdp', 'pce', 'treasury',
+  'earnings', 'revenue', 'eps', 'guidance', 'dividend',
+  'rate', 'yield', 'bond', 'bonds', 'inflation', 'recession',
+  'tariff', 'trade war', 'sanctions', 'opec', 'oil', 'crude',
+  'gold', 'silver', 'bitcoin', 'btc', 'eth', 'crypto',
+  'dollar', 'euro', 'yen', 'forex', 'fx',
+  'market', 'markets', 'wall street', 'nasdaq', 'dow',
+  's&p', 'russell', 'sector', 'rally', 'selloff', 'sell-off',
+  'bull', 'bear', 'short', 'long', 'hedge',
+  'ipo', 'merger', 'acquisition', 'buyback', 'sec',
+  'bank', 'banking', 'credit', 'liquidity', 'default',
+];
+
+/**
+ * Downgrade severity of items with BREAKING/emoji prefixes that aren't about
+ * financial topics. Prevents celebrity news, sports, etc. from being 'critical'.
+ */
+export function downgradeNonFinancialBreaking(alerts: RiskFlowAlert[]): RiskFlowAlert[] {
+  for (const alert of alerts) {
+    const hasBreaking = alert.isBreaking || /breaking|🚨|⚠️|🔴/i.test(alert.headline);
+    if (!hasBreaking) continue;
+    // Already low — skip
+    if (alert.severity === 'low') continue;
+    const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
+    const hasFinancialTerm = FINANCIAL_TERMS.some((term) => wordMatch(lower, term) || lower.includes(term));
+    if (!hasFinancialTerm) {
+      alert.severity = 'low';
+    }
+  }
+  return alerts;
 }
 
 // ── Exported utilities (used by backend feed mapping) ────────────────────────

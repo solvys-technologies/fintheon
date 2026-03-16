@@ -9,6 +9,7 @@
     "@clerk/themes": "^2.2.26",
     "@sentry/react": "^10.32.1",
     "ai": "^6.0.3",
+    "electron-updater": "^6.8.3",
     "lucide-react": "^0.484.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -52,7 +53,8 @@
     },
     "mac": {
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "icon": "electron/icons/icon.icns",
       "category": "public.app-category.finance"
@@ -62,6 +64,11 @@
         "nsis"
       ],
       "icon": "electron/icons/icon.ico"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "solvys-technologies",
+      "repo": "pulse"
     }
   }
 }
