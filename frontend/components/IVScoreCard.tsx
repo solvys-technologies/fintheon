@@ -221,6 +221,50 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             </div>
           )}
 
+          {/* V4: Next-session forecast */}
+          {data.prediction && (
+            <div className="mb-3 space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
+                <h5 className="text-xs font-semibold text-[var(--fintheon-accent)]">Next Session Forecast</h5>
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-gray-500 ml-auto">
+                  {data.prediction.source === 'mirofish' ? 'MiroFish' : 'Heuristic'}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-[10px]">
+                <span className="text-gray-400">
+                  Projected: <span className={`font-medium ${getScoreColor(data.prediction.nextSessionScore)}`}>
+                    {data.prediction.nextSessionScore.toFixed(1)}/10
+                  </span>
+                </span>
+                <span className="text-gray-600">|</span>
+                <span className="text-gray-400">
+                  Confidence: <span className="text-gray-300">{(data.prediction.confidence * 100).toFixed(0)}%</span>
+                </span>
+              </div>
+              {data.prediction.regimeShiftProbability > 0.1 && (
+                <p className="text-[10px] text-amber-400">
+                  Regime shift probability: {(data.prediction.regimeShiftProbability * 100).toFixed(0)}%
+                </p>
+              )}
+              {data.prediction.scenarios.length > 0 && (
+                <div className="space-y-1 mt-1">
+                  {data.prediction.scenarios.map((sc, i) => (
+                    <div key={i} className="flex items-center justify-between text-[10px]">
+                      <span className="text-gray-400 truncate mr-2">{sc.label}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-gray-500">{(sc.probability * 100).toFixed(0)}%</span>
+                        <span className={`font-medium ${getScoreColor(sc.projectedScore)}`}>
+                          {sc.projectedScore.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Timestamp + staleness */}
           <div className="text-[9px] text-gray-600 flex items-center gap-2">
             <span>Updated: {new Date(data.timestamp).toLocaleTimeString()}</span>

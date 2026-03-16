@@ -1,6 +1,8 @@
+// [claude-code 2026-03-16] Added NarrativeCategory type for canvas zone mapping
 // [claude-code 2026-03-13] Hermes migration: openclaw -> hermes in AgentProviderConfig
 // [claude-code 2026-03-06] NarrativeFlow shared types — all tracks import from here
 export type CatalystSentiment = 'bullish' | 'bearish';
+export type NarrativeCategory = 'geopolitical' | 'macroeconomic' | 'monetary' | 'market-structure' | 'supply-chain' | 'black-swan' | 'earnings';
 export type CatalystSource = 'rss' | 'user' | 'agent' | 'riskflow' | 'brief';
 export type CatalystSeverity = 'high' | 'medium' | 'low';
 export type NarrativeStatus = 'active' | 'watching' | 'archived' | 'decayed';
@@ -14,6 +16,7 @@ export interface NarrativeLane {
   title: string;
   instruments: string[];
   directionBias: DirectionBias;
+  category: NarrativeCategory;
   status: NarrativeStatus;
   dateRange: { start: string; end: string | null };
   healthScore: number;
