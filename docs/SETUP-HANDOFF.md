@@ -126,6 +126,43 @@ cd backend-hono && npx tsc --noEmit   # Type check only
 | Trade Ideas | `136fa9a2069e4afc835e0e139ead49f2` | Agent/human trade proposals |
 | Daily P&L | `ee7d03052a424dcb95f6406c166e7584` | Daily performance tracking |
 
+## Dashboard Briefing Schedule (ET — All Times Eastern)
+
+The Dashboard displays a rotating daily brief in the **BriefMiniWidget**. Briefs are sourced from the **Harper Messages** Notion DB (`Source: Harper-Notion`) — NOT from the Trade Ideas DB. **Proposals/trade ideas never appear in the briefing window.**
+
+### Brief Windows
+
+| Brief | Code | Time Window (ET) | Days | Format |
+|-------|------|-----------------|------|--------|
+| Morning Daily Brief | `MDB` | **7:00 AM – 10:59 AM** | Mon–Fri (weekdays) | Full report (400-600 words) |
+| Afternoon Daily Brief | `ADB` | **11:00 AM – 5:29 PM** | Mon–Fri (weekdays) | Short update (3-5 bullets, max 200 words) |
+| Post-Market Daily Brief | `PMDB` | **5:30 PM – 11:59 PM** | Mon–Fri (weekdays) | Short update (3-5 bullets, max 200 words) |
+| Tale of the Tape | `TOTT` | **Sunday 5:00 PM – Monday 6:59 AM** | Sun evening → Mon morning | Full report (400-600 words) |
+
+> **Source of truth**: `backend-hono/src/services/notion-service.ts` → `getCurrentBriefType()`
+
+### What appears in briefs (and what does NOT)
+
+**Included in brief generation** (`POST /api/notion/mdb-report/generate`):
+- RiskFlow headlines / economic feed (up to 15 items — Twitter-CLI, FinancialJuice, InsiderWire, Economic Calendar, Polymarket)
+- Same-day economic calendar events (event name, time, actual/forecast/previous)
+
+**NOT included in briefs**:
+- Trade ideas / proposals (these live in a separate Trade Ideas DB and are displayed in their own dashboard section)
+- Journal entries
+- P&L data
+
+### Polling / Cron Intervals
+
+| What | Interval | Source |
+|------|----------|--------|
+| XCLI / RiskFlow prefetch (GitHub Actions) | Every 5 min (`*/5 * * * *`) | `.github/workflows/riskflow-cron.yml` |
+| Frontend backend feed poll | Every 30 sec | `RiskFlowContext.tsx` (`BACKEND_FEED_POLL_MS`) |
+| Notion trade ideas poll | Every 60 sec | `notion-poller.ts` (`POLL_INTERVAL_MS`) |
+| Brief widget refresh | Every 60 sec | `BriefMiniWidget.tsx` |
+| Brief cache TTL | 5 min | `notion-service.ts` (`BRIEF_CACHE_TTL_MS`) |
+| Hermes Boardroom meeting | Weekdays 10:00 AM ET (90-min window) | `boardroom-schedule.ts` |
+
 ## Common Issues
 
 - **DMG build fails with hdiutil error**: A previous DMG volume is mounted. Run `hdiutil detach "/Volumes/Pulse 1.0.0" -force`
