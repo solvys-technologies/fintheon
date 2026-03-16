@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] NarrativeFlow CatalystCard — glassmorphism card for catalyst events
+// [claude-code 2026-03-16] Stone theme + narrative theme integration
 import { useState, useCallback } from 'react';
 import type { CatalystCard as CatalystCardType } from '../../lib/narrative-types';
 
@@ -13,7 +13,7 @@ const SENTIMENT_BG: Record<string, string> = {
 };
 
 const SEVERITY_LABELS: Record<string, { label: string; color: string }> = {
-  high: { label: 'HIGH', color: '#EF4444' },
+  high: { label: 'HIGH', color: 'var(--fintheon-bearish)' },
   medium: { label: 'MED', color: 'var(--fintheon-accent)' },
   low: { label: 'LOW', color: 'var(--fintheon-muted)' },
 };
@@ -148,6 +148,25 @@ export default function CatalystCard({
               {SOURCE_LABELS[catalyst.source] || catalyst.source}
             </span>
           </div>
+
+          {/* Tag pills */}
+          {catalyst.tags && catalyst.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {catalyst.tags.map(tag => (
+                <span
+                  key={tag}
+                  className="text-[8px] px-1.5 py-0.5 rounded-full border"
+                  style={{
+                    color: 'var(--fintheon-accent)',
+                    backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 15%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)',
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>

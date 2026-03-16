@@ -86,6 +86,18 @@ interface SettingsContextType {
   setGatewayPort: (port: number) => void;
   traderName: string;
   setTraderName: (name: string) => void;
+  autoRefresh: boolean;
+  setAutoRefresh: (enabled: boolean) => void;
+  interviewCompleted: boolean;
+  setInterviewCompleted: (done: boolean) => void;
+  tradingGoals: string;
+  setTradingGoals: (goals: string) => void;
+  instrumentsTraded: string[];
+  setInstrumentsTraded: (instruments: string[]) => void;
+  discordUsername: string;
+  setDiscordUsername: (username: string) => void;
+  tradingRoadblocks: string[];
+  setTradingRoadblocks: (roadblocks: string[]) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -198,6 +210,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [traderName, setTraderName] = useState<string>(() =>
     loadFromStorage('traderName', '')
   );
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(() =>
+    loadFromStorage('autoRefresh', true)
+  );
+  const [interviewCompleted, setInterviewCompleted] = useState<boolean>(() =>
+    loadFromStorage('interviewCompleted', false)
+  );
+  const [tradingGoals, setTradingGoals] = useState<string>(() =>
+    loadFromStorage('tradingGoals', '')
+  );
+  const [instrumentsTraded, setInstrumentsTraded] = useState<string[]>(() =>
+    loadFromStorage('instrumentsTraded', [])
+  );
+  const [discordUsername, setDiscordUsername] = useState<string>(() =>
+    loadFromStorage('discordUsername', '')
+  );
+  const [tradingRoadblocks, setTradingRoadblocks] = useState<string[]>(() =>
+    loadFromStorage('tradingRoadblocks', [])
+  );
 
   // Track whether initial backend fetch has completed to avoid saving back stale data
   const backendSynced = useRef(false);
@@ -218,6 +248,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.iframeUrls) setIframeUrls(prev => ({ ...prev, ...(remote.iframeUrls as IframeUrls) }));
         if (remote.gatewayPort) setGatewayPort(remote.gatewayPort as number);
         if (remote.traderName) setTraderName(remote.traderName as string);
+        if (remote.autoRefresh !== undefined) setAutoRefresh(remote.autoRefresh as boolean);
+        if (remote.interviewCompleted !== undefined) setInterviewCompleted(remote.interviewCompleted as boolean);
+        if (remote.tradingGoals) setTradingGoals(remote.tradingGoals as string);
+        if (remote.instrumentsTraded) setInstrumentsTraded(remote.instrumentsTraded as string[]);
+        if (remote.discordUsername) setDiscordUsername(remote.discordUsername as string);
+        if (remote.tradingRoadblocks) setTradingRoadblocks(remote.tradingRoadblocks as string[]);
       }
       backendSynced.current = true;
     });
@@ -238,17 +274,23 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       iframeUrls,
       gatewayPort,
       traderName,
+      autoRefresh,
+      interviewCompleted,
+      tradingGoals,
+      instrumentsTraded,
+      discordUsername,
+      tradingRoadblocks,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (error) {
-      console.error('Failed to persist settings:', error);
+      console.warn('Failed to persist settings:', error);
     }
     // Only sync to backend after initial fetch completes
     if (backendSynced.current) {
       saveBackendSettings(settings);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName, autoRefresh, interviewCompleted, tradingGoals, instrumentsTraded, discordUsername, tradingRoadblocks]);
 
   return (
     <SettingsContext.Provider
@@ -277,6 +319,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setGatewayPort,
         traderName,
         setTraderName,
+        autoRefresh,
+        setAutoRefresh,
+        interviewCompleted,
+        setInterviewCompleted,
+        tradingGoals,
+        setTradingGoals,
+        instrumentsTraded,
+        setInstrumentsTraded,
+        discordUsername,
+        setDiscordUsername,
+        tradingRoadblocks,
+        setTradingRoadblocks,
       }}
     >
       {children}

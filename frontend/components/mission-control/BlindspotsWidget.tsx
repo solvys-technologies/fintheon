@@ -1,4 +1,4 @@
-// [claude-code 2026-03-11] BlindspotsWidget — agent-controllable via backend ER monitoring
+// [claude-code 2026-03-16] BlindspotsWidget — interview-seeded + agent-controllable via backend ER monitoring
 import { useState, useEffect } from 'react';
 import { Eye } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,11 +13,34 @@ const FALLBACK_BLINDSPOTS: BlindspotItem[] = [
   { id: 3, text: 'Revenge trading after losses', severity: 'high' },
 ];
 
+function getInterviewBlindspots(): BlindspotItem[] {
+  try {
+    const completed = localStorage.getItem('pulse_interview_completed');
+    const raw = localStorage.getItem('pulse_interview_data');
+    if (completed && raw) {
+      const data = JSON.parse(raw);
+      const roadblocks: string[] = [...(data.roadblocks || [])];
+      if (data.customRoadblock?.trim()) roadblocks.push(data.customRoadblock.trim());
+      if (roadblocks.length > 0) {
+        return roadblocks.map((rb, idx) => ({
+          id: idx + 1,
+          text: rb,
+          severity: (rb.toLowerCase().includes('overtrad') || rb.toLowerCase().includes('revenge') ? 'high' : 'medium') as 'high' | 'medium',
+        }));
+      }
+    }
+  } catch {}
+  return [];
+}
+
 export function BlindspotsWidget() {
   const { tier } = useAuth();
   const backend = useBackend();
   const isLocked = !IS_INTERNAL_BUILD && tier === 'free';
-  const [blindspots, setBlindspots] = useState<BlindspotItem[]>(FALLBACK_BLINDSPOTS);
+  const [blindspots, setBlindspots] = useState<BlindspotItem[]>(() => {
+    const interview = getInterviewBlindspots();
+    return interview.length > 0 ? interview : FALLBACK_BLINDSPOTS;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -28,7 +51,7 @@ export function BlindspotsWidget() {
           setBlindspots(data.blindspots);
         }
       } catch {
-        // keep fallback
+        // keep current (interview or fallback)
       }
     };
     load();

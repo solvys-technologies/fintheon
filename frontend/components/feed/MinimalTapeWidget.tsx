@@ -10,7 +10,7 @@ let lastSeenNewsId: number | null = null;
 
 export function MinimalTapeWidget() {
   const backend = useBackend();
-  const { developerSettings, autoPilotSettings } = useSettings();
+  const { developerSettings, autoPilotSettings, autoRefresh } = useSettings();
   const [unreadCount, setUnreadCount] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [activeProposal, setActiveProposal] = useState<TradingProposal | null>(null);
@@ -37,14 +37,17 @@ export function MinimalTapeWidget() {
           }
         }
       } catch (err) {
-        console.error('Failed to fetch news for Minimal Tape Widget:', err);
+        console.warn('Failed to fetch news for Minimal Tape Widget:', err);
       }
     };
 
     fetchNews();
-    const interval = setInterval(fetchNews, 30000);
+    const interval = setInterval(() => {
+      if (!autoRefresh) return;
+      fetchNews();
+    }, 30000);
     return () => clearInterval(interval);
-  }, [backend]);
+  }, [backend, autoRefresh]);
 
   const handleTriggerMockProposal = () => {
     const proposal = { ...MOCK_PROPOSAL, id: `mock-${Date.now()}` };

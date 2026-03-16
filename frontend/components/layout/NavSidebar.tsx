@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Users } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck } from 'lucide-react';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -21,7 +21,6 @@ const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom'>, { id: NavTab; icon: t
   notion: { id: 'notion', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
   narrative: { id: 'narrative', icon: GitBranch, label: 'Narratives', description: 'Market narrative flow' },
   earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
-  team: { id: 'team', icon: Users, label: 'Team', description: 'Unified Context Bank & desk reports' },
 };
 
 // Icon size: original was w-6 h-6 (24px). 35% smaller = ~15.6px → w-4 h-4 (16px)
@@ -106,7 +105,7 @@ export function NavSidebar({
   }, []);
 
   const orderedItems = order
-    .filter((id): id is Exclude<NavTabId, 'chatroom'> => id in NAV_ITEMS_MAP && id !== 'chatroom' && id !== 'team' && id !== 'earnings')
+    .filter((id): id is Exclude<NavTabId, 'chatroom'> => id in NAV_ITEMS_MAP && id !== 'chatroom' && id !== 'earnings')
     .map((tabId) => ({
       tabId,
       icon: NAV_ITEMS_MAP[tabId].icon,
@@ -173,6 +172,7 @@ export function NavSidebar({
               )}
               <button
                 onClick={() => onTabChange(tabId as NavTab)}
+                data-tour-target={tabId}
                 className={`flex-1 w-full flex items-center gap-2.5 rounded-md transition-colors min-w-0 ${
                   expanded ? 'px-2 py-1.5' : 'justify-center py-1.5 px-0'
                 } ${
@@ -203,6 +203,7 @@ export function NavSidebar({
         {/* Performance */}
         <button
           onClick={() => onTabChange('earnings')}
+          data-tour-target="earnings"
           className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
             expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
           } ${
@@ -220,30 +221,6 @@ export function NavSidebar({
               </div>
               <div className={`text-[9px] truncate ${activeTab === 'earnings' ? 'text-black/60' : 'text-gray-500'}`}>
                 ER history & KPIs
-              </div>
-            </div>
-          )}
-        </button>
-        {/* Team (Discord) */}
-        <button
-          onClick={() => onTabChange('team')}
-          className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
-            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
-          } ${
-            activeTab === 'team'
-              ? 'pulse-nav-active'
-              : 'pulse-nav-inactive'
-          }`}
-          title={expanded ? undefined : 'Team'}
-        >
-          <Users className="w-4 h-4 shrink-0" />
-          {expanded && (
-            <div className="min-w-0 text-left">
-              <div className={`text-[11px] font-semibold truncate ${activeTab === 'team' ? 'text-black' : ''}`}>
-                Team
-              </div>
-              <div className={`text-[9px] truncate ${activeTab === 'team' ? 'text-black/60' : 'text-gray-500'}`}>
-                PIC Discord
               </div>
             </div>
           )}

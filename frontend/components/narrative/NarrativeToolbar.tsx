@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] Top toolbar for NarrativeFlow — zoom, filter, heatmap, templates, undo, save, replay
+// [claude-code 2026-03-16] Stone theme + narrative theme integration
 import { useState, useRef } from 'react';
 import {
   ChevronLeft,

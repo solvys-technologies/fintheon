@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BookOpen, User, Bot, RefreshCw } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
+import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
 import { HumanPsychTab } from './HumanPsychTab';
 import { AgentPerformanceTab } from './AgentPerformanceTab';
 import type { JournalEntryItem, JournalSummaryResponse } from '../../lib/services';
@@ -26,7 +27,7 @@ export function TradingJournal() {
       setEntries(entriesRes.entries);
       setSummary(summaryRes);
     } catch (err) {
-      console.error('Failed to fetch journal data:', err);
+      console.warn('Failed to fetch journal data:', err);
     } finally {
       setLoading(false);
     }
@@ -49,13 +50,16 @@ export function TradingJournal() {
           <BookOpen className="w-4 h-4 text-[var(--fintheon-accent)]" />
           <span className="text-sm font-semibold text-[var(--fintheon-text)]">Performance</span>
         </div>
-        <button
-          onClick={fetchData}
-          disabled={loading}
-          className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-[var(--fintheon-muted)] ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-1">
+          <AutoRefreshToggle />
+          <button
+            onClick={fetchData}
+            disabled={loading}
+            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[var(--fintheon-muted)] ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Tab Toggle */}

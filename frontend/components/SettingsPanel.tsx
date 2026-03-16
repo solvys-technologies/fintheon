@@ -159,7 +159,7 @@ export function SettingsPage() {
           }));
         }
       } catch (error) {
-        console.error('Failed to load settings data:', error);
+        console.warn('Failed to load settings data:', error);
       }
     }
 

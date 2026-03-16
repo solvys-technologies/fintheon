@@ -32,6 +32,8 @@ interface FooterToolbarProps {
   topStepXEnabled?: boolean;
   primaryPlatform?: TradingPlatform;
   onPrimaryPlatformChange?: (p: TradingPlatform) => void;
+  secondaryPlatform?: TradingPlatform;
+  onSecondaryPlatformChange?: (p: TradingPlatform) => void;
   splitViewEnabled?: boolean;
   onSplitViewToggle?: () => void;
   allowSplitView?: boolean;
@@ -42,6 +44,8 @@ export function FooterToolbar({
   topStepXEnabled = false,
   primaryPlatform = 'topstepx',
   onPrimaryPlatformChange,
+  secondaryPlatform = 'research',
+  onSecondaryPlatformChange,
   splitViewEnabled = false,
   onSplitViewToggle,
   allowSplitView = false,
@@ -451,18 +455,34 @@ export function FooterToolbar({
               ))}
             </select>
             {allowSplitView && (
-              <button
-                type="button"
-                onClick={onSplitViewToggle}
-                className={`p-0.5 rounded transition-colors ${
-                  splitViewEnabled
-                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-                    : 'text-gray-600 hover:text-[var(--fintheon-accent)]'
-                }`}
-                title="Toggle split view"
-              >
-                <SplitSquareVertical className="w-3 h-3" />
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={onSplitViewToggle}
+                  className={`p-0.5 rounded transition-colors ${
+                    splitViewEnabled
+                      ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                      : 'text-gray-600 hover:text-[var(--fintheon-accent)]'
+                  }`}
+                  title="Toggle split view"
+                >
+                  <SplitSquareVertical className="w-3 h-3" />
+                </button>
+                {splitViewEnabled && (
+                  <select
+                    value={secondaryPlatform}
+                    onChange={(e) => onSecondaryPlatformChange?.(e.target.value as TradingPlatform)}
+                    className="px-1.5 py-0.5 bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded text-[10px] text-[var(--fintheon-accent)]/70 focus:outline-none"
+                    title="Secondary frame"
+                  >
+                    {Object.entries(PLATFORM_LABELS)
+                      .filter(([key]) => key !== primaryPlatform)
+                      .map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                  </select>
+                )}
+              </>
             )}
             <button
               type="button"

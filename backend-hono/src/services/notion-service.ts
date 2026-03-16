@@ -1,8 +1,29 @@
+// [claude-code 2026-03-16] Fix brief rendering: Category select + Status=Active filter instead of keyword matching
+// [claude-code 2026-03-16] Agent backend v7.9: Harper-Notion / Harper-Perp responsibility split docs
 // [claude-code 2026-03-14] Fix brief sort: property-based sort instead of timestamp sort
 // [claude-code 2026-03-03] Phase 3: Notion service — fetches MDB Brief from Harper Messages DB
 // [claude-code 2026-03-03] Extended: Trade Ideas + Daily P&L query functions for Notion poller.
 // [claude-code 2026-03-04] Economic calendar now sourced from Notion DB via alias-based field mapping.
 // [claude-code 2026-03-05] Added Notion write (createPage/updatePage), fetchEconCalendar, fetchEconPrints, writeEconPrint.
+//
+// ── Harper Subagent Responsibility Split (v7.9) ──────────────────────────────
+//
+// Harper-Notion (Notion AI integration — THIS SERVICE):
+//   - Agent coordination messages via Harper Messages DB
+//   - Issue detection and DB operations
+//   - Real-time trade idea / P&L polling (feeds frontend via notion-poller.ts)
+//   - Economic calendar reads and econ print writes
+//   - Brief write-back (writeMDBReportToNotion)
+//
+// Harper-Perp (Perplexity Computer — EXTERNAL, not in this codebase):
+//   - MDB / ADB / PMDB / TOTT brief generation (the actual analysis content)
+//   - Maintenance ticket creation and tracking
+//   - Deployment monitoring and status updates
+//
+// The poller (notion-poller.ts) serves the FEED INTEGRATION (trade ideas + P&L),
+// NOT the brief generation pipeline. Brief content is authored by Harper-Perp
+// and written to Notion externally; this service only reads and caches it.
+// ─────────────────────────────────────────────────────────────────────────────
 
 const NOTION_API = 'https://api.notion.com/v1';
 const NOTION_VERSION = '2022-06-28';
@@ -259,39 +280,46 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
   }
 
   try {
-    // Category keywords per brief type
-    const categoryKeywords: Record<BriefType, string[]> = {
-      MDB: ['MDB', 'MORNING', 'EOD BRIEF'],
-      ADB: ['ADB', 'AFTERNOON'],
-      PMDB: ['PMDB', 'POST-MARKET', 'POST MARKET', 'EOD'],
-      TOTT: ['TOTT', 'TIP OF THE TAPE'],
-    };
+    // [claude-code 2026-03-16] Fix brief rendering: use Category select property + Status filter
+    // instead of keyword matching on Message content. Harper-Perp writes briefs with
+    // Category = MDB/ADB/PMDB/TOTT and Status = Active directly.
 
-    // Query Harper Messages DB — source: Harper-Notion, sorted by recency
+    // Primary query: filter by Category + Status = Active (exact match)
     const pages = await notionQuery(HARPER_MESSAGES_DB, {
       filter: {
-        property: 'Source',
-        select: { equals: 'Harper-Notion' },
+        and: [
+          { property: 'Category', select: { equals: currentType } },
+          { property: 'Status', status: { equals: 'Active' } },
+        ],
       },
-      sorts: [{ timestamp: 'created_time', direction: 'descending' }],
-      pageSize: 20,
+      sorts: [{ property: 'Created time', direction: 'descending' }],
+      pageSize: 5,
     });
 
-    if (pages.length === 0) {
-      return _briefCache?.items ?? [];
+    if (pages.length > 0) {
+      const bestPage = pages[0];
+      const message = getPropText(bestPage, 'Message');
+      const category = getPropText(bestPage, 'Category');
+      const items: MDBBriefItem[] = [{
+        title: `${currentType} — ${category || 'Brief'}`,
+        detail: message,
+      }];
+      _briefCache = { items, briefType: currentType, fetchedAt: Date.now() };
+      return items;
     }
 
-    // Find briefs matching current type — NO fallback to unrelated types
-    const keywords = categoryKeywords[currentType];
-    const matchingPages = pages.filter((page: any) => {
-      const message = getPropText(page, 'Message').toUpperCase();
-      const category = getPropText(page, 'Category').toUpperCase();
-      return keywords.some((kw) => message.includes(kw) || category.includes(kw));
+    // Fallback: if no Active brief for this type, try most recent Active brief of any type
+    const fallbackPages = await notionQuery(HARPER_MESSAGES_DB, {
+      filter: {
+        property: 'Status',
+        status: { equals: 'Active' },
+      },
+      sorts: [{ property: 'Created time', direction: 'descending' }],
+      pageSize: 1,
     });
 
-    if (matchingPages.length === 0 && pages.length > 0) {
-      // No matching brief for this time slot — fall back to most recent brief of any type
-      const fallback = pages[0];
+    if (fallbackPages.length > 0) {
+      const fallback = fallbackPages[0];
       const message = getPropText(fallback, 'Message');
       const category = getPropText(fallback, 'Category');
       const items: MDBBriefItem[] = [{
@@ -301,22 +329,9 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
       _briefCache = { items, briefType: currentType, fetchedAt: Date.now() };
       return items;
     }
-    if (matchingPages.length === 0) {
-      _briefCache = { items: [], briefType: currentType, fetchedAt: Date.now() };
-      return [];
-    }
 
-    // Single item: the most recent matching brief only
-    const bestPage = matchingPages[0];
-    const message = getPropText(bestPage, 'Message');
-    const category = getPropText(bestPage, 'Category');
-    const items: MDBBriefItem[] = [{
-      title: `${currentType} — ${category || 'Brief'}`,
-      detail: message,
-    }];
-
-    _briefCache = { items, briefType: currentType, fetchedAt: Date.now() };
-    return items;
+    _briefCache = { items: [], briefType: currentType, fetchedAt: Date.now() };
+    return [];
   } catch (err) {
     console.error('[Notion] fetchMDBBrief error:', err);
     return _briefCache?.items ?? [];

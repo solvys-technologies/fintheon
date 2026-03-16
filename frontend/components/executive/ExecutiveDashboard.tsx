@@ -13,6 +13,8 @@ import { RegimeCard } from '../dashboard/RegimeCard';
 import { RegimeTrackerModal } from '../regimes/RegimeTrackerModal';
 import { SetupGuideCard, shouldShowSetupGuide } from '../onboarding/SetupGuideCard';
 import { RefreshCw } from 'lucide-react';
+import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
+import { useSettings } from '../../contexts/SettingsContext';
 
 const DASHBOARD_PAGES = ['Briefing', 'RiskFlow'];
 
@@ -28,6 +30,7 @@ function briefTypeToLabel(bt: string): string {
 
 export function ExecutiveDashboard() {
   const backend = useBackend();
+  const { autoRefresh } = useSettings();
   const [activePage, setActivePage] = useState(0); // default to Briefing
   const containerRef = useRef<HTMLDivElement>(null);
   const [ntnText, setNtnText] = useState('');
@@ -69,12 +72,15 @@ export function ExecutiveDashboard() {
       }
     };
     void load();
-    const interval = setInterval(() => { void load(); }, 60_000);
+    const interval = setInterval(() => {
+      if (!autoRefresh) return;
+      void load();
+    }, 60_000);
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [backend]);
+  }, [backend, autoRefresh]);
 
   // Core KPIs from Notion Daily P&L database
   useEffect(() => {
@@ -92,12 +98,15 @@ export function ExecutiveDashboard() {
       }
     };
     void load();
-    const interval = setInterval(() => { void load(); }, 60_000);
+    const interval = setInterval(() => {
+      if (!autoRefresh) return;
+      void load();
+    }, 60_000);
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [backend]);
+  }, [backend, autoRefresh]);
 
   const refreshBrief = useCallback(async () => {
     setNtnRefreshing(true);
@@ -190,21 +199,25 @@ export function ExecutiveDashboard() {
                 title={briefLabel}
                 tone="gold"
                 headerRight={
-                  <button
-                    type="button"
-                    onClick={refreshBrief}
-                    disabled={ntnRefreshing}
-                    className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
-                    title="Refresh brief"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${ntnRefreshing ? 'animate-spin' : ''}`} />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <AutoRefreshToggle size="xs" />
+                    <button
+                      type="button"
+                      onClick={refreshBrief}
+                      disabled={ntnRefreshing}
+                      className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
+                      title="Refresh brief"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${ntnRefreshing ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
                 }
               />
               <textarea
                 value={ntnText}
                 readOnly
-                className="mt-2 flex-1 min-h-0 w-full resize-none bg-[#0b0b08] px-4 py-3 text-sm text-gray-200 border-l-2 border-[var(--fintheon-accent)]/40 focus:outline-none focus:border-[var(--fintheon-accent)]"
+                className="mt-2 flex-1 min-h-0 w-full bg-[#0b0b08] px-4 py-3 text-sm text-gray-200 border-l-2 border-[var(--fintheon-accent)]/40 focus:outline-none focus:border-[var(--fintheon-accent)]"
+                style={{ resize: 'vertical', minHeight: '80px' }}
                 placeholder={ntnLoaded ? 'Awaiting AI-generated brief...' : 'Loading brief...'}
               />
               {ntnLoaded && !ntnText.trim() && (
@@ -274,15 +287,18 @@ export function ExecutiveDashboard() {
           {/* Row 3: RiskFlow — fills remaining space, expandable items, recency fade */}
           <div className="flex-1 min-h-0 flex flex-col">
             <KanbanTitle title="RiskFlow" tag="Alerts + Signals" tone="emerald" headerRight={
-              <button
-                type="button"
-                onClick={() => { void refresh(); }}
-                disabled={refreshing}
-                className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
-                title="Refresh feeds"
-              >
-                <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
-              </button>
+              <div className="flex items-center gap-1">
+                <AutoRefreshToggle size="xs" />
+                <button
+                  type="button"
+                  onClick={() => { void refresh(); }}
+                  disabled={refreshing}
+                  className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
+                  title="Refresh feeds"
+                >
+                  <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
             } />
             <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
               {tapeAlerts.length === 0 ? (
@@ -317,15 +333,18 @@ export function ExecutiveDashboard() {
         {/* Page 2: Full RiskFlow */}
         <div data-dash-page="1" className="min-h-full snap-start p-5 flex flex-col">
           <KanbanTitle title="RiskFlow" tag="Full Feed" tone="emerald" headerRight={
-              <button
-                type="button"
-                onClick={() => { void refresh(); }}
-                disabled={refreshing}
-                className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
-                title="Refresh feeds"
-              >
-                <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
-              </button>
+              <div className="flex items-center gap-1">
+                <AutoRefreshToggle size="xs" />
+                <button
+                  type="button"
+                  onClick={() => { void refresh(); }}
+                  disabled={refreshing}
+                  className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
+                  title="Refresh feeds"
+                >
+                  <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
             } />
           <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
             {tapeAlerts.length === 0 ? (

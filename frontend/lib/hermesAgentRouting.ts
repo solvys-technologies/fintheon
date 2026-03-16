@@ -8,19 +8,18 @@ export type PulseAgentId = string;
 export function toHermesAgentOverride(pulseAgentId: PulseAgentId | undefined | null): string | undefined {
   if (!pulseAgentId) return undefined;
 
+  // [claude-code 2026-03-16] Agent roster v7.9: 5-agent mapping
   switch (pulseAgentId) {
-    case 'harper':
+    case 'harper-hermes':
       return 'harper-cao';
     case 'oracle':
-      return 'pma-1';
-    case 'charles':
-      return 'pma-2';
+      return 'pma-merged';
     case 'feucht':
       return 'futures-desk';
-    case 'sentinel':
+    case 'consul':
       return 'fundamentals-desk';
-    case 'horace':
-      return 'harper-cao';
+    case 'herald':
+      return 'herald';
     default:
       return undefined;
   }

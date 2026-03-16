@@ -179,6 +179,13 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
           c.id === action.id ? { ...c, date: action.date, position: action.position, updatedAt: now } : c
         ),
       };
+    case 'TAG_CATALYST':
+      return {
+        ...state,
+        catalysts: state.catalysts.map((c) =>
+          c.id === action.catalystId ? { ...c, tags: action.tags, updatedAt: now } : c
+        ),
+      };
     case 'ADD_ROPE': {
       const rope = { ...action.rope, id: generateId(), createdAt: now };
       return { ...state, ropes: [...state.ropes, rope] };

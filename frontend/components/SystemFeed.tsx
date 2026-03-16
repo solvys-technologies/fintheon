@@ -31,16 +31,7 @@ export default function SystemFeed() {
       const data = await backend.events.list();
       setEvents(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      console.error('Failed to load events:', error);
-      if (error.code === "not_found" || error.code === "unauthenticated") {
-        try {
-          await backend.events.seed();
-          const data = await backend.events.list();
-          setEvents(Array.isArray(data) ? data : []);
-        } catch (seedError) {
-          console.error('Failed to seed events:', seedError);
-        }
-      }
+      console.warn('Failed to load events:', error);
     }
   };
 

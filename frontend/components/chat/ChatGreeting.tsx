@@ -34,18 +34,17 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
     // Provider not mounted yet — fallback
   }
 
-  const agent = activeAgent || { name: 'Harper', icon: 'H', sector: 'Chief Analyst', description: 'Executive strategy and oversight' };
+  const agent = activeAgent || { name: 'Harper-Hermes', icon: 'H', sector: 'CAO', description: 'Chief Analyst Officer — executive strategy and oversight' };
   const greeting = getGreeting();
 
-  // Role subtitle based on agent
+  // Role subtitle based on agent (v7.9 roster)
   const getSubtitle = () => {
     switch (agent.name) {
-      case 'Harper': return "I'm Harper, your Chief Agentic Officer. What needs orchestrating today?";
-      case 'Oracle': return "I'm Oracle, your Consul. What data shall we review?";
-      case 'Feucht': return "I'm Feucht, your Risk Management Specialist. What exposure needs attention?";
-      case 'Sentinel': return "I'm Sentinel, your Censori. What needs verification?";
-      case 'Charles': return "I'm Oracle, the pattern diviner. What signals should we analyze?";
-      case 'Horace': return "I'm Horace, your Herald. What allocations need review?";
+      case 'Harper-Hermes': return "I'm Harper-Hermes, your Chief Agentic Officer. What needs orchestrating today?";
+      case 'Oracle': return "I'm Oracle, the All-Seer. What patterns shall we divine?";
+      case 'Feucht': return "I'm Feucht, your Futures, Execution & Risk desk. What exposure needs attention?";
+      case 'Consul': return "I'm Consul, your Fundamentals desk. What shall we analyze?";
+      case 'Herald': return "I'm Herald, your News & Sentiment analyst. What signals are you tracking?";
       default: return `I'm ${agent.name}. What needs orchestrating today?`;
     }
   };

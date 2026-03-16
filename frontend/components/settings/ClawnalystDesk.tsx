@@ -90,7 +90,7 @@ export function ClawnalystDesk() {
   };
 
   const isDefaultAgent = (id: string) =>
-    ['harper', 'oracle', 'feucht', 'sentinel', 'charles', 'horace'].includes(id);
+    ['harper-hermes', 'oracle', 'feucht', 'consul', 'herald'].includes(id);
 
   return (
     <div className="h-full overflow-y-auto">

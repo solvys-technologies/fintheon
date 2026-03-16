@@ -1,6 +1,7 @@
 // [claude-code 2026-03-16] Glassmorphism narrative filter dropdown panel
+// [claude-code 2026-03-16] Added catalyst tag filter section
 import { useState, useCallback, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
+import { ChevronDown, ChevronRight, Filter, Tag } from 'lucide-react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import type { NarrativeCategory, NarrativeLane } from '../../lib/narrative-types';
 
@@ -24,6 +25,8 @@ interface NarrativeDropdownProps {
   onToggleLane: (laneId: string) => void;
   onSelectAll: () => void;
   onClearAll: () => void;
+  activeTags?: Set<string>;
+  onToggleTag?: (tag: string) => void;
 }
 
 export function NarrativeDropdown({
@@ -31,6 +34,8 @@ export function NarrativeDropdown({
   onToggleLane,
   onSelectAll,
   onClearAll,
+  activeTags,
+  onToggleTag,
 }: NarrativeDropdownProps) {
   const { state } = useNarrative();
   const [open, setOpen] = useState(false);
@@ -56,6 +61,17 @@ export function NarrativeDropdown({
       return next;
     });
   }, []);
+
+  // Collect all unique tags across catalysts
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const catalyst of state.catalysts) {
+      if (catalyst.tags) {
+        for (const tag of catalyst.tags) tagSet.add(tag);
+      }
+    }
+    return Array.from(tagSet).sort();
+  }, [state.catalysts]);
 
   const visibleCount = visibleLaneIds.size;
   const totalCount = state.lanes.length;
@@ -182,6 +198,44 @@ export function NarrativeDropdown({
                 </div>
               );
             })}
+
+            {/* Tag filter section */}
+            {allTags.length > 0 && onToggleTag && (
+              <>
+                <div
+                  className="flex items-center gap-2 px-3 py-2 mt-1 border-t"
+                  style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}
+                >
+                  <Tag className="w-3 h-3" style={{ color: 'var(--fintheon-accent)' }} />
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+                    Catalyst Tags
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 px-3 py-1.5 pb-2">
+                  {allTags.map(tag => {
+                    const isActive = activeTags?.has(tag) ?? false;
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => onToggleTag(tag)}
+                        className="text-[10px] px-2 py-0.5 rounded-full border transition-all duration-150"
+                        style={{
+                          color: isActive ? 'var(--fintheon-accent)' : 'var(--fintheon-muted)',
+                          backgroundColor: isActive
+                            ? 'color-mix(in srgb, var(--fintheon-accent) 15%, transparent)'
+                            : 'transparent',
+                          borderColor: isActive
+                            ? 'color-mix(in srgb, var(--fintheon-accent) 30%, transparent)'
+                            : 'rgba(255, 255, 255, 0.1)',
+                        }}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

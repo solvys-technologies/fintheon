@@ -3,7 +3,7 @@
  *
  * Usage:
  *   import { triggerIntervention, postTradeIdea } from '../lib/interventions';
- *   await triggerIntervention({ agent: 'Sentinel', type: 'risk_alert', message: '...', severity: 'critical' });
+ *   await triggerIntervention({ agent: 'Feucht', type: 'risk_alert', message: '...', severity: 'critical' });
  *   await postTradeIdea({ agent: 'Feucht', instrument: 'ES', direction: 'long', conviction: 'high', thesis: '...' });
  */
 
@@ -129,30 +129,27 @@ export interface AgentTopicMatch {
   relevance: number; // 0-1
 }
 
+// [claude-code 2026-03-16] Agent roster v7.9: 6→5 agents (Sentinel→Feucht, Charles→Oracle, Horace→Herald)
 const AGENT_TOPICS: Record<string, { keywords: RegExp; description: string }> = {
-  Sentinel: {
-    keywords: /risk|drawdown|exposure|margin|stop.?loss|max.?loss|position.?size|limit|breach/i,
-    description: 'Risk management and exposure monitoring',
-  },
   Feucht: {
-    keywords: /volatility|iv|vix|options|gamma|theta|skew|vol.?surface|implied|futures|spread/i,
-    description: 'Volatility analysis and futures',
+    keywords: /volatility|iv|vix|options|gamma|theta|skew|vol.?surface|implied|futures|spread|risk|drawdown|exposure|margin|stop.?loss|max.?loss|position.?size|limit|breach/i,
+    description: 'Futures, execution, volatility, and risk management',
   },
-  Horace: {
-    keywords: /sentiment|news|social|twitter|x\.com|headline|earnings|report|fundamental|valuation/i,
-    description: 'News sentiment and fundamentals',
+  Herald: {
+    keywords: /sentiment|news|social|twitter|x\.com|headline|report/i,
+    description: 'News sentiment and social signals',
   },
   Oracle: {
-    keywords: /macro|fed|rate|cpi|gdp|employment|inflation|yield|bond|treasury|polymarket|prediction/i,
-    description: 'Macro intelligence and prediction markets',
+    keywords: /macro|fed|rate|cpi|gdp|employment|inflation|yield|bond|treasury|polymarket|prediction|execution|order|fill|slippage|entry|exit|position|trade|buy|sell|close|open/i,
+    description: 'All-seer — prediction markets, macro intelligence, and execution oversight',
   },
-  Charles: {
-    keywords: /execution|order|fill|slippage|entry|exit|position|trade|buy|sell|close|open/i,
-    description: 'Trade execution and position management',
+  Consul: {
+    keywords: /fundamental|valuation|earnings|revenue|pe|eps|mega.?cap|large.?cap|balance.?sheet|cashflow|dividend|guidance|margin/i,
+    description: 'Fundamentals and mega-caps desk',
   },
-  Harper: {
+  'Harper-Hermes': {
     keywords: /strategy|plan|review|summary|overview|coordination|meeting|agenda/i,
-    description: 'Executive strategy and oversight',
+    description: 'CAO — executive strategy and oversight',
   },
 };
 

@@ -64,7 +64,7 @@ export function EconCalendarProvider({ children }: { children: React.ReactNode }
       setEvents(result);
       setError(null);
     } catch (err) {
-      console.error('[EconCalendar] Fetch error:', err);
+      console.warn('[EconCalendar] Fetch error:', err);
       setError('Failed to load calendar');
     } finally {
       setLoading(false);

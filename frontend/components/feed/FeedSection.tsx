@@ -86,7 +86,7 @@ function convertRiskFlowToFeedItem(riskflowItem: RiskFlowItem): FeedItemType | n
 
 export function FeedSection() {
   const backend = useBackend();
-  const { mockDataEnabled } = useSettings();
+  const { mockDataEnabled, autoRefresh } = useSettings();
   const [feedItems, setFeedItems] = useState<FeedItemType[]>([]);
   const [showMDBModal, setShowMDBModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -115,7 +115,7 @@ export function FeedSection() {
           setFeedItems(convertedItems);
         }
       } catch (err) {
-        console.error('Failed to fetch RiskFlow for RiskFlow:', err);
+        console.warn('Failed to fetch RiskFlow:', err);
         // Fallback to mock data on error if enabled
         if (mockDataEnabled) {
           setFeedItems(generateInitialFeed(20));
@@ -145,18 +145,21 @@ export function FeedSection() {
           setFeedItems(convertedItems);
         }
       } catch (err) {
-        console.error('Failed to fetch RiskFlow for RiskFlow:', err);
+        console.warn('Failed to fetch RiskFlow:', err);
       }
     };
 
     // Initialize on mount (load from database or mock data)
     initializeNews();
 
-    // Then fetch every 30 seconds (just refresh the list, don't sync every time)
-    const interval = setInterval(fetchNews, 15000);
+    // Then fetch every 15 seconds (just refresh the list, don't sync every time)
+    const interval = setInterval(() => {
+      if (!autoRefresh) return;
+      fetchNews();
+    }, 15000);
 
     return () => clearInterval(interval);
-  }, [backend, mockDataEnabled]);
+  }, [backend, mockDataEnabled, autoRefresh]);
 
   const handleBreakingNews = useCallback((item: RiskFlowItem) => {
     const converted = convertRiskFlowToFeedItem(item);

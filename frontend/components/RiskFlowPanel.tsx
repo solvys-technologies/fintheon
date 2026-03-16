@@ -14,6 +14,7 @@ import { useSourceStatus } from '../hooks/useSourceStatus';
 import { useBackend } from '../lib/backend';
 
 import { SEVERITY_CONFIG } from '../lib/severity-config';
+import { AutoRefreshToggle } from './ui/AutoRefreshToggle';
 
 // ── SVG Source Logos ──────────────────────────────────────────────────────────
 
@@ -458,6 +459,7 @@ export default function RiskFlowPanel({
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <AutoRefreshToggle />
             <button
               type="button"
               onClick={() => { void refresh(); }}

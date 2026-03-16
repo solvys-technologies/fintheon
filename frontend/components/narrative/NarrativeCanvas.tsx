@@ -1,4 +1,4 @@
-// [claude-code 2026-03-16] Canvas 2D rendering engine for NarrativeFlow — bubbles, ropes, zones
+// [claude-code 2026-03-16] Stone theme + narrative theme integration
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import type { NarrativeLane, Rope } from '../../lib/narrative-types';
@@ -27,10 +27,11 @@ import {
 import type { ZoomLevel } from '../../lib/narrative-types';
 
 interface NarrativeCanvasProps {
-  zoomLevel: ZoomLevel;
+  zoomLevel?: ZoomLevel;
+  visibleLaneIds?: Set<string>;
 }
 
-export function NarrativeCanvas({ zoomLevel }: NarrativeCanvasProps) {
+export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { state, dispatch } = useNarrative();
@@ -41,8 +42,11 @@ export function NarrativeCanvas({ zoomLevel }: NarrativeCanvasProps) {
   const isDragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
 
-  const activeLanes = state.lanes.filter(l => l.status !== 'archived');
-  const zoomConfig = getZoomConfig(zoomLevel);
+  const effectiveZoom = zoomLevel ?? state.zoomLevel;
+  const activeLanes = state.lanes.filter(l =>
+    l.status !== 'archived' && (!visibleLaneIds || visibleLaneIds.has(l.id))
+  );
+  const zoomConfig = getZoomConfig(effectiveZoom);
 
   // Initialize bubbles when lanes change
   useEffect(() => {

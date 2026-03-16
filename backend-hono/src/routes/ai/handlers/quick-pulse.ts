@@ -83,7 +83,7 @@ export async function handleQuickPulse(c: Context): Promise<Response> {
       message: userText,
       multimodalContent,
       history: [],
-      agentOverride: 'pma-1',
+      agentOverride: 'pma-merged',
     })
     rawContent = response.content
   } catch (err) {

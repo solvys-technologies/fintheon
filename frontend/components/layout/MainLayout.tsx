@@ -39,7 +39,6 @@ import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
-// TeamDashboard replaced by Discord iframe — see 'team' tab below
 import { TradingJournal } from '../journal/TradingJournal';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
@@ -55,7 +54,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -216,7 +215,7 @@ export function MainLayout() {
         const data = await backend.marketData.getIVScore();
         setIvData(data);
       } catch (error) {
-        console.error('[IV] Failed to fetch IV score:', error);
+        console.warn('[IV] Failed to fetch IV score:', error);
       } finally {
         setIvLoading(false);
       }
@@ -235,7 +234,7 @@ export function MainLayout() {
         setCombinedPanelPnl(account.dailyPnl);
         setCombinedPanelAlgoEnabled(account.autoTrade || false);
       } catch (err) {
-        console.error('Failed to fetch account:', err);
+        console.warn('Failed to fetch account:', err);
       }
     };
     fetchAccount();
@@ -387,7 +386,7 @@ export function MainLayout() {
 
   // Reusable Mission Control content block: snap deck with exactly 2 widgets per page.
   const missionControlContent = (collapseFn?: () => void) => (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col" data-tour-target="strategium">
       <KanbanTitle
         title="Strategium"
         tone="gold"
@@ -547,7 +546,7 @@ export function MainLayout() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'team' || activeTab === 'settings';
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (missionControlCollapsed) {
         // Mission Control collapsed — just show a thin expand strip + full RiskFlow
@@ -616,7 +615,7 @@ export function MainLayout() {
     <div className="h-screen flex flex-col bg-[var(--fintheon-bg)] text-white">
       <TopHeader
         topStepXEnabled={topStepXEnabled}
-        onTopStepXToggle={() => { /* T3d: removed auto-enable — power is controlled via dedicated power button only */ }}
+        onTopStepXToggle={() => setTopStepXEnabled(true)} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
         onTopStepXDisable={() => setTopStepXEnabled(prev => !prev)}
         selectedPlatform={selectedPlatform}
         onPlatformSelect={setSelectedPlatform}
@@ -670,36 +669,36 @@ export function MainLayout() {
                 onSecondaryPlatformChange={setSecondaryPlatform}
                 splitViewEnabled={splitBrowserView}
                 onSplitViewEnabledChange={setSplitBrowserView}
-                allowSplitView={layoutOption === 'tickers-only'}
+                allowSplitView={topStepXEnabled}
               />
             </div>
           ) : (
             <div className="h-full relative flex-1 flex flex-col">
               <div className="flex-1 min-h-0 overflow-hidden">
               {activeTab === 'executive' && (
-                <div key="executive" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="executive" data-tour-target="executive" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ExecutiveDashboard />
                 </div>
               )}
               {activeTab === 'analysis' && (
-                <div key="analysis" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="analysis" data-tour-target="chat" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <AnalysisSection />
                 </div>
               )}
               {activeTab === 'news' && (
-                <div key="news" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="news" data-tour-target="riskflow" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <NewsSection />
                 </div>
               )}
               {activeTab === 'econ' && (
-                <div key="econ" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="econ" data-tour-target="econ" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <EconCalendarProvider>
                     <EconCalendar />
                   </EconCalendarProvider>
                 </div>
               )}
               {activeTab === 'narrative' && (
-                <div key="narrative" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="narrative" data-tour-target="narrative" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <NarrativeProvider>
                     <NarrativeFlow />
                   </NarrativeProvider>
@@ -711,19 +710,8 @@ export function MainLayout() {
                 </div>
               )}
               {activeTab === 'earnings' && (
-                <div key="earnings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="earnings" data-tour-target="performance" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <TradingJournal />
-                </div>
-              )}
-              {activeTab === 'team' && (
-                <div key="team" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <iframe
-                    src="https://discord.com/channels/@me"
-                    className="w-full h-full border-0"
-                    title="PIC Boardroom — Discord"
-                    allow="microphone; camera; clipboard-write; encrypted-media"
-                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-                  />
                 </div>
               )}
               {activeTab === 'settings' && (
@@ -809,9 +797,11 @@ export function MainLayout() {
         topStepXEnabled={topStepXEnabled}
         primaryPlatform={selectedPlatform}
         onPrimaryPlatformChange={setSelectedPlatform}
+        secondaryPlatform={secondaryPlatform}
+        onSecondaryPlatformChange={setSecondaryPlatform}
         splitViewEnabled={splitBrowserView}
         onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
-        allowSplitView={layoutOption === 'tickers-only'}
+        allowSplitView={topStepXEnabled}
         onPowerOff={() => setTopStepXEnabled(false)}
       />
 
@@ -830,7 +820,7 @@ export function MainLayout() {
         onNavigateTab={(tab) => navigateTab(tab as NavTab)}
       />
 
-      {/* First-time user tour */}
+      {/* First-time user tour + interview + setup wizard */}
       <FirstTimeTour onNavigate={(tab) => navigateTab(tab as NavTab)} />
     </div>
     </ScheduleProvider>

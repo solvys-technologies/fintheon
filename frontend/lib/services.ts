@@ -721,17 +721,17 @@ export class VoiceService {
 
 // Events Service
 export class EventsService {
+  private _warned = false;
   constructor(private client: ApiClient) { }
 
   async list(): Promise<any[]> {
     // Stub - backend doesn't have this endpoint
-    console.warn('Events endpoint not available in Hono backend');
+    if (!this._warned) { console.warn('Events endpoint not available — returning empty list'); this._warned = true; }
     return [];
   }
 
   async seed(): Promise<void> {
-    // Stub - backend doesn't have this endpoint
-    console.warn('Events seed endpoint not available in Hono backend');
+    // Stub - no-op
   }
 }
 
@@ -760,12 +760,11 @@ export class PolymarketService {
 
 // Boardroom types (mirrors backend boardroom.ts)
 export type BoardroomAgent =
+  | 'Harper-Hermes'
   | 'Oracle'
   | 'Feucht'
-  | 'Sentinel'
-  | 'Charles'
-  | 'Horace'
-  | 'Harper'
+  | 'Consul'
+  | 'Herald'
   | 'Unknown';
 
 export interface BoardroomMessage {

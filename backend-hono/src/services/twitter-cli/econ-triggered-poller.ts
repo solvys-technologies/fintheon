@@ -1,6 +1,7 @@
 // [claude-code 2026-03-10] Econ-triggered twitter poller — links Notion Econ Calendar to twitter-cli searches
 // [claude-code 2026-03-10] Warm cache: filter 'high'→'medium', slice(10)→slice(30) for broader seed
 // [claude-code 2026-03-10] Burst polling: 5s interval for 30s after econ release, actual extraction from FJ tweets
+// [claude-code 2026-03-16] Smart polling: event-window-only (T-5min to T+15min), autoRefresh gate
 
 import { searchTweets, fetchUserTimeline, isTwitterCliInstalled } from './twitter-cli-service.js';
 import { filterByTier } from './fj-emoji-filter.js';
@@ -9,6 +10,7 @@ import { notionCreatePage } from '../notion-service.js';
 import { injectEconPrintToFeed } from '../riskflow/econ-bridge.js';
 import type { EconEvent } from '../econ-calendar-service.js';
 import type { FeedItem, NewsSource } from '../../types/riskflow.js';
+import { getUserSettings } from '../settings-store.js';
 
 // Notion: write high-priority tweets to Harper Messages DB for persistence + agent visibility
 const HARPER_MESSAGES_DB = '30c141b0da7d81ba8bb6e319a0c4c309';
@@ -40,8 +42,9 @@ async function pushToNotion(items: FeedItem[]): Promise<void> {
   console.log(`[EconTwitterPoller] Pushed ${newItems.length} ${newItems.map(i => i.macroLevel === 4 ? 'Critical' : 'High').join('/')} items to Notion`);
 }
 
-const EVENT_WINDOW_MINUTES = 10; // Poll twitter around ±10 min of event time
-const POLL_INTERVAL_MS = 60_000; // 60s standard polling
+const PRE_EVENT_MINUTES = 5;      // Start polling 5 min before print
+const POST_EVENT_MINUTES = 15;    // Stop 15 min after print
+const POLL_INTERVAL_MS = 60_000;  // 60s standard polling
 const BURST_INTERVAL_MS = 5_000; // 5s burst polling during releases
 const BURST_DURATION_MS = 30_000; // 30s burst window after release time
 
@@ -265,16 +268,15 @@ function buildEventQueries(eventNames: string[]): string[] {
 // ── Event Time Checks ────────────────────────────────────────────────────────
 
 /**
- * Check if an econ event is within EVENT_WINDOW_MINUTES of now.
+ * Check if an econ event is within the polling window: T-5min to T+15min.
  */
-function isEventActive(eventDate?: string, eventTime?: string): boolean {
-  if (!eventDate) return false;
+function isInEventWindow(eventDate?: string, eventTime?: string): boolean {
+  if (!eventDate || !eventTime) return false;
   try {
-    const dateStr = eventTime ? `${eventDate}T${eventTime}` : eventDate;
-    const eventMs = new Date(dateStr).getTime();
+    const eventMs = new Date(`${eventDate}T${eventTime}`).getTime();
     const nowMs = Date.now();
-    const diffMin = Math.abs(nowMs - eventMs) / 60_000;
-    return diffMin <= EVENT_WINDOW_MINUTES;
+    const diffMin = (nowMs - eventMs) / 60_000;
+    return diffMin >= -PRE_EVENT_MINUTES && diffMin <= POST_EVENT_MINUTES;
   } catch {
     return false;
   }
@@ -366,6 +368,15 @@ function extractTagsFromText(text: string): string[] {
  * Also extracts "Actual" values from FJ tweets and writes them to Notion.
  */
 export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
+  // Respect autoRefresh setting
+  try {
+    const settings = await getUserSettings('default');
+    if (settings.autoRefresh === false) {
+      console.debug('[EconTwitterPoller] autoRefresh disabled, skipping');
+      return [];
+    }
+  } catch { /* proceed if settings unavailable */ }
+
   const installed = await isTwitterCliInstalled();
   if (!installed) {
     console.debug('[EconTwitterPoller] twitter-cli not installed, skipping');
@@ -380,10 +391,10 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
   try {
     const events = await fetchEconCalendar({ from: today, to: today });
     const highImportance = events.filter((e) => (e.importance ?? 1) >= 2);
-    activeEvents = highImportance.filter((e) => isEventActive(e.date, e.time));
+    activeEvents = highImportance.filter((e) => isInEventWindow(e.date, e.time));
     activeEventNames = activeEvents.map((e) => e.name);
     if (activeEvents.length > 0) {
-      console.log(`[EconTwitterPoller] ${activeEvents.length} active econ events: ${activeEventNames.join(', ')}`);
+      console.log(`[EconTwitterPoller] ${activeEvents.length} events in window (T-5min to T+15min): ${activeEventNames.join(', ')}`);
     }
 
     // Schedule burst polling for upcoming events (within next 2 min)
@@ -392,6 +403,12 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
       if (msUntil !== null && msUntil > 0 && msUntil <= 120_000) {
         scheduleBurst(event);
       }
+    }
+
+    // If no events in window, skip X CLI calls entirely
+    if (activeEvents.length === 0) {
+      console.debug('[EconTwitterPoller] No events in window (T-5min to T+15min), skipping X CLI calls');
+      return [];
     }
   } catch (err) {
     console.warn('[EconTwitterPoller] Failed to fetch econ calendar:', err);

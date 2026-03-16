@@ -160,11 +160,12 @@ export interface PolymarketMarketSummary {
 
 // ── Desk Reports ─────────────────────────────────────────────────────────────
 
-export type DeskId = 'fundamentals' | 'futures' | 'pma-1' | 'pma-2' | 'risk'
-export type AgentName = 'Sentinel' | 'Feucht' | 'Oracle' | 'Charles' | 'Horace'
+// [claude-code 2026-03-16] Agent backend v7.9: updated desk IDs and agent names
+export type DeskId = 'fundamentals' | 'futures' | 'pma-merged' | 'news-sentiment'
+export type AgentName = 'Harper-Hermes' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald'
 
-export const VALID_DESKS: DeskId[] = ['fundamentals', 'futures', 'pma-1', 'pma-2', 'risk']
-export const VALID_AGENTS: AgentName[] = ['Sentinel', 'Feucht', 'Oracle', 'Charles', 'Horace']
+export const VALID_DESKS: DeskId[] = ['fundamentals', 'futures', 'pma-merged', 'news-sentiment']
+export const VALID_AGENTS: AgentName[] = ['Harper-Hermes', 'Oracle', 'Feucht', 'Consul', 'Herald']
 
 export interface DeskAlert {
   severity: 'info' | 'warning' | 'critical'

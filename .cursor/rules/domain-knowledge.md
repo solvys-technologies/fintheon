@@ -1,8 +1,12 @@
-# Pulse Knowledge Base & Domain Rules
+# Fintheon Knowledge Base & Domain Rules
 
 ## Trading & Market Logic
-- **Domain Expert**: Price
-- **Focus**: Market analysis, IV scoring, trading strategies.
+- **Domain Expert**: Oracle
+- **Focus**: Market analysis, IV scoring, trading strategies, macro regime detection.
+
+## Risk Management
+- **Domain Expert**: Feucht
+- **Focus**: Capital protection, position sizing, drawdown limits, overtrading detection.
 
 ## Knowledge Base Structure
 Local knowledge is stored in `/knowledge-base/`:
@@ -12,7 +16,7 @@ Local knowledge is stored in `/knowledge-base/`:
 - `trading-psychology/`: Emotional resonance and tilt prevention rules.
 
 ## IV Scoring (Industry Standard)
-- Utilize Gemini API for IV reasoning.
+- Utilize blended IV scoring via backend market-data service.
 - Incorporate economic news and industry-standard volatility matrices.
 
 ## Psychological Safeguards (PsychAssist)

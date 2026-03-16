@@ -1,4 +1,4 @@
-// [claude-code 2026-03-16] NarrativeFlow — canvas at year/quarter/month, week view at week zoom
+// [claude-code 2026-03-16] Stone theme + narrative theme integration
 import { useState, useCallback, useMemo } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import { NarrativeToolbar } from './NarrativeToolbar';
@@ -68,7 +68,6 @@ export function NarrativeFlow() {
         {isCanvasView && (
           <div className="pr-2">
             <NarrativeDropdown
-              lanes={state.lanes}
               visibleLaneIds={visibleLaneIds}
               onToggleLane={handleToggleLane}
               onSelectAll={handleSelectAll}

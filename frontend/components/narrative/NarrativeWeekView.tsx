@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] NarrativeFlow NarrativeWeekView — primary snap-scroll week view
+// [claude-code 2026-03-16] Stone theme + narrative theme integration
 import { useRef, useState, useCallback, useMemo } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import { getMonday, getWeekDates, shiftWeek, formatWeekLabel, formatDayLabel } from '../../lib/narrative-time';
@@ -101,6 +101,7 @@ export default function NarrativeWeekView() {
         title: newLaneTitle.trim(),
         instruments: newLaneInstruments.split(',').map(s => s.trim()).filter(Boolean),
         directionBias: newLaneDirection,
+        category: 'macroeconomic',
         status: 'active',
         dateRange: { start: new Date().toISOString(), end: null },
         healthScore: 100,

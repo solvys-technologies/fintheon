@@ -1,9 +1,10 @@
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
 // [claude-code 2026-03-11] Auto-start backend on app init.
 
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+// [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
+const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
-const { spawn } = require("child_process");
+const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
 
 let mainWindow = null;
@@ -14,8 +15,18 @@ function startBackend() {
   const distEntry = path.join(backendDir, "dist", "index.js");
 
   if (!fs.existsSync(distEntry)) {
-    console.warn("[Electron] Backend dist not found at", distEntry, "— skipping auto-start");
-    return;
+    console.warn("[Electron] Backend dist not found — attempting build...");
+    try {
+      execFileSync("npm", ["run", "build"], { cwd: backendDir, stdio: "inherit" });
+      console.log("[Electron] Backend build succeeded");
+    } catch (buildErr) {
+      console.error("[Electron] Backend build failed:", buildErr.message);
+      dialog.showErrorBox(
+        "Backend Not Built",
+        "The backend could not be compiled.\n\nRun manually:\n  cd backend-hono && npm run build\n\nThen relaunch the app."
+      );
+      return;
+    }
   }
 
   console.log("[Electron] Starting backend server...");
@@ -67,6 +78,12 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "github.com") return true;
     if (host.endsWith(".github.com")) return true;
 
+    // Discord (Boardroom)
+    if (host === "discord.com") return true;
+    if (host.endsWith(".discord.com")) return true;
+    if (host === "discordapp.com") return true;
+    if (host.endsWith(".discordapp.com")) return true;
+
     return false;
   } catch {
     return false;
@@ -77,7 +94,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1600,
     height: 980,
-    title: "Pulse",
+    title: "Fintheon",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,

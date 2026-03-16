@@ -10,6 +10,8 @@ import { useSettings } from './SettingsContext';
 import type { NotionPollStatus } from '../lib/services';
 import type { RiskFlowItem } from '../types/api';
 
+// [claude-code 2026-03-16] Auto-refresh gating: polls skip when autoRefresh is OFF
+
 interface RiskFlowContextValue {
   alerts: RiskFlowAlert[];
   highCount: number;
@@ -84,7 +86,7 @@ function persistIds(key: string, ids: Set<string>): void {
 }
 
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
-  const { selectedSymbol } = useSettings();
+  const { selectedSymbol, autoRefresh } = useSettings();
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
@@ -146,11 +148,14 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void pollNotion();
-    notionIntervalRef.current = setInterval(() => { void pollNotion(); }, NOTION_POLL_MS);
+    notionIntervalRef.current = setInterval(() => {
+      if (!autoRefresh) return;
+      void pollNotion();
+    }, NOTION_POLL_MS);
     return () => {
       if (notionIntervalRef.current) clearInterval(notionIntervalRef.current);
     };
-  }, [pollNotion]);
+  }, [pollNotion, autoRefresh]);
 
   // Backend feed polling (twitter-cli, Polymarket, Economic Calendar)
   const pollBackendFeed = useCallback(async () => {
@@ -185,11 +190,14 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void pollBackendFeed();
-    backendIntervalRef.current = setInterval(() => { void pollBackendFeed(); }, BACKEND_FEED_POLL_MS);
+    backendIntervalRef.current = setInterval(() => {
+      if (!autoRefresh) return;
+      void pollBackendFeed();
+    }, BACKEND_FEED_POLL_MS);
     return () => {
       if (backendIntervalRef.current) clearInterval(backendIntervalRef.current);
     };
-  }, [pollBackendFeed]);
+  }, [pollBackendFeed, autoRefresh]);
 
   // Merge: Notion (pinned) → Backend feed
   // [claude-code 2026-03-11] 24h stalemate rule: drop items older than 24h on init/render

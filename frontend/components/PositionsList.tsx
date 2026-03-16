@@ -18,7 +18,7 @@ export default function PositionsList() {
       const data = await backend.trading.listPositions();
       setPositions(data.positions);
     } catch (error) {
-      console.error('Failed to load positions:', error);
+      console.warn('Failed to load positions:', error);
     }
   };
 

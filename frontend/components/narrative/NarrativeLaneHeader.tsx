@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] NarrativeFlow NarrativeLaneHeader — lane row header with direction/status/instruments
+// [claude-code 2026-03-16] Stone theme + narrative theme integration
 import { useCallback } from 'react';
 import type { NarrativeLane } from '../../lib/narrative-types';
 
@@ -9,10 +9,10 @@ const DIRECTION_ICONS: Record<string, { symbol: string; color: string }> = {
 };
 
 const STATUS_CONFIG: Record<string, { dot: string; label: string }> = {
-  active: { dot: '#34D399', label: 'Active' },
-  watching: { dot: '#FBBF24', label: 'Watching' },
-  archived: { dot: '#6B7280', label: 'Archived' },
-  decayed: { dot: '#4B5563', label: 'Decayed' },
+  active: { dot: 'var(--fintheon-bullish)', label: 'Active' },
+  watching: { dot: 'var(--fintheon-accent)', label: 'Watching' },
+  archived: { dot: 'var(--fintheon-muted)', label: 'Archived' },
+  decayed: { dot: 'var(--fintheon-border)', label: 'Decayed' },
 };
 
 interface NarrativeLaneHeaderProps {
@@ -74,7 +74,10 @@ export default function NarrativeLaneHeader({
             flexShrink: 0,
           }}
         />
-        <span style={{ fontSize: '9px', color: 'var(--fintheon-muted)' }}>
+        <span
+          className="uppercase"
+          style={{ fontSize: '10px', color: 'var(--fintheon-muted)', letterSpacing: '0.12em' }}
+        >
           {status.label}
         </span>
       </div>

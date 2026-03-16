@@ -1,5 +1,6 @@
 // [claude-code 2026-03-11] Redesigned to consume backend IVScoreResponse — point range, rationale tooltip, environment label
 // [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
+// [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
 import { Info, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import type { IVScoreResponse } from '../types/market-data';
@@ -107,26 +108,41 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
         <span className={`text-sm font-bold ${color}`}>
           {data.score.toFixed(1)}
         </span>
+        <span className={`text-[10px] font-medium ${color}`}>
+          {envLabel}
+        </span>
+        {pts && (
+          <>
+            <span className="text-gray-600 text-[10px]">|</span>
+            <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
+            <span className="text-[10px] text-[var(--fintheon-accent)] font-medium">
+              ±{pts.scaledPoints} pts
+            </span>
+            <span className={`text-[9px] font-medium ${getUrgencyColor(pts.urgency)}`}>
+              {pts.urgency}
+            </span>
+          </>
+        )}
 
-        {/* Info button for rationale tooltip */}
-        <button
+        {/* Info button + tooltip wrapper — hover zone spans both so tooltip stays open */}
+        <div
+          className="relative ml-0.5"
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
-          className="text-gray-500 hover:text-gray-400 transition-colors ml-0.5"
         >
-          <Info className="w-2.5 h-2.5" />
-        </button>
-      </div>
+          <button className="text-gray-500 hover:text-gray-400 transition-colors">
+            <Info className="w-2.5 h-2.5" />
+          </button>
 
-      {showTooltip && (
-        <div
-          className={`absolute top-full mt-2 w-80 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl z-[9999] ${
-            layoutOption === 'tickers-only' ? 'right-0' : 'left-0'
-          }`}
-          style={{
-            maxWidth: layoutOption === 'tickers-only' ? 'min(320px, calc(100vw - 2rem))' : '320px',
-          }}
-        >
+          {showTooltip && (
+            <div
+              className={`absolute top-full mt-1 w-80 bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl z-[9999] ${
+                layoutOption === 'tickers-only' ? 'right-0' : 'left-0'
+              }`}
+              style={{
+                maxWidth: layoutOption === 'tickers-only' ? 'min(320px, calc(100vw - 2rem))' : '320px',
+              }}
+            >
           <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-2">
             Blended IV Score
           </h4>
@@ -287,9 +303,11 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                 <span className="text-xs text-gray-300"><strong>{item.range}:</strong> {item.label}</span>
               </div>
             ))}
+            </div>
           </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 # AI Agent Global Rules
 
-> **Applies to**: All AI agents (Antigravity, Cursor, Codi, etc.)  
-> **Scope**: Pulse repository tasks
+> **Applies to**: All AI agents (Harper-Hermes, Oracle, Feucht, Consul, Herald, Claude Code)
+> **Scope**: Fintheon repository tasks
 
 ---
 

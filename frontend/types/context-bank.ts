@@ -1,8 +1,8 @@
 // [claude-code 2026-03-11] Frontend mirror of backend context-bank types
 
 export type VixRegime = 'low' | 'normal' | 'elevated' | 'crisis'
-export type DeskId = 'fundamentals' | 'futures' | 'pma-1' | 'pma-2' | 'risk'
-export type AgentName = 'Sentinel' | 'Feucht' | 'Oracle' | 'Charles' | 'Horace'
+export type DeskId = 'fundamentals' | 'futures' | 'pma-merged' | 'news-sentiment'
+export type AgentName = 'Harper-Hermes' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald'
 
 export interface ContextBankSnapshot {
   version: number

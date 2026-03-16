@@ -62,15 +62,16 @@ const INTENT_PATTERNS: { pattern: RegExp; agent: HermesAgentRole; intent: string
   { pattern: /\b(psych|tilt|emotion|mental|eval)/i, agent: 'harper-cao', intent: 'psych-eval' },
   { pattern: /\b(weekly.?tribune|tale.?of.?the.?tape|weekly|recap)/i, agent: 'harper-cao', intent: 'weekly-recap' },
 
-  // PMA-1 triggers (S&P/Crypto)
-  { pattern: /\b(spy|spx|s&?p|es|nasdaq|qqq|nq)\b/i, agent: 'pma-1', intent: 'sp-analysis' },
-  { pattern: /\b(btc|bitcoin|eth|ethereum|crypto)\b/i, agent: 'pma-1', intent: 'crypto-analysis' },
-  { pattern: /\b(kalshi|prediction.?market|probability)\b/i, agent: 'pma-1', intent: 'prediction-market' },
+  // Oracle (merged PMA) triggers — S&P, Crypto, Econ, Political
+  { pattern: /\b(spy|spx|s&?p|es|nasdaq|qqq|nq)\b/i, agent: 'pma-merged', intent: 'sp-analysis' },
+  { pattern: /\b(btc|bitcoin|eth|ethereum|crypto)\b/i, agent: 'pma-merged', intent: 'crypto-analysis' },
+  { pattern: /\b(kalshi|prediction.?market|probability)\b/i, agent: 'pma-merged', intent: 'prediction-market' },
+  { pattern: /\b(fed|fomc|rate|inflation|cpi|ppi)\b/i, agent: 'pma-merged', intent: 'fed-analysis' },
+  { pattern: /\b(election|political|policy|tariff)\b/i, agent: 'pma-merged', intent: 'political-analysis' },
+  { pattern: /\b(gdp|employment|jobs|unemployment)\b/i, agent: 'pma-merged', intent: 'econ-analysis' },
 
-  // PMA-2 triggers (Econ/Political)
-  { pattern: /\b(fed|fomc|rate|inflation|cpi|ppi)\b/i, agent: 'pma-2', intent: 'fed-analysis' },
-  { pattern: /\b(election|political|policy|tariff)\b/i, agent: 'pma-2', intent: 'political-analysis' },
-  { pattern: /\b(gdp|employment|jobs|unemployment)\b/i, agent: 'pma-2', intent: 'econ-analysis' },
+  // Herald triggers (News & Sentiment)
+  { pattern: /\b(sentiment|news|headline|social|twitter)\b/i, agent: 'herald', intent: 'news-sentiment' },
 
   // Futures Desk triggers
   { pattern: /(\/nq|\/mnq|\/es|futures|topstep)/i, agent: 'futures-desk', intent: 'futures-trade' },
@@ -200,11 +201,11 @@ function generateMDBReport(): string {
 - **VIX**: Monitoring volatility levels
 
 ### Agent Check-In
-- **Harper/CAO**: Operational
-- **PMA-1 (S&P/Crypto)**: Standing by
-- **PMA-2 (Econ/Politics)**: Monitoring calendar
-- **Futures Desk**: Ready for setups
-- **Fundamentals Desk**: Tracking mega-caps
+- **Harper-Hermes/CAO**: Operational
+- **Oracle (All-Seer)**: Standing by
+- **Feucht (Futures & Risk)**: Ready for setups
+- **Consul (Fundamentals)**: Tracking mega-caps
+- **Herald (News)**: Monitoring headlines
 
 ### Today's Focus
 *Hermes is now connected. Agent pipeline ready.*
@@ -327,9 +328,9 @@ function generateFundamentalsAnalysis(symbols: string[], _message: string): stri
 }
 
 function generatePMAAnalysis(agent: HermesAgentRole, _symbols: string[], _message: string): string {
-  const focus = agent === 'pma-1' ? 'S&P 500 & Crypto' : 'Economic & Political'
+  const focus = 'S&P 500, Crypto, Economic & Political'
 
-  return `## ${agent.toUpperCase()} Analysis: ${focus}
+  return `## Oracle (All-Seer) Analysis: ${focus}
 
 ### Prediction Market Overview
 *Connecting to Kalshi...*
@@ -365,11 +366,11 @@ function generateMacroAnalysis(intent: string, _message: string): string {
 
 function generateGeneralResponse(agent: HermesAgentRole, _message: string): string {
   const agentName = {
-    'harper-cao': 'Harper (CAO)',
-    'pma-1': 'Oracle (Consul)',
-    'pma-2': 'Sentinel (Censori)',
-    'futures-desk': 'Futures Desk',
-    'fundamentals-desk': 'Horace (Herald)'
+    'harper-cao': 'Harper-Hermes (CAO)',
+    'pma-merged': 'Oracle (All-Seer)',
+    'futures-desk': 'Feucht (Futures & Risk)',
+    'fundamentals-desk': 'Consul (Fundamentals)',
+    'herald': 'Herald (News & Sentiment)'
   }[agent]
 
   return `## ${agentName} Response
@@ -380,10 +381,10 @@ Your message has been received. Here's what I can help with:
 
 **My Capabilities:**
 ${agent === 'harper-cao' ? '- MDB Reports & Daily Briefings\n- Trade Approvals\n- Psych Evaluations\n- Trading Rules & Discipline' : ''}
-${agent === 'pma-1' ? '- S&P 500 prediction markets\n- Crypto analysis\n- Kalshi contract evaluation' : ''}
-${agent === 'pma-2' ? '- Fed/FOMC analysis\n- Political event impact\n- Economic data interpretation' : ''}
-${agent === 'futures-desk' ? '- /NQ, /ES, /MNQ trading\n- FA Ripper setups\n- Technical analysis' : ''}
+${agent === 'pma-merged' ? '- S&P 500 & Crypto prediction markets\n- Fed/FOMC & macro analysis\n- Political event impact\n- Kalshi contract evaluation' : ''}
+${agent === 'futures-desk' ? '- /NQ, /ES, /MNQ trading\n- FA Ripper setups\n- Technical analysis\n- Risk management & exposure monitoring' : ''}
 ${agent === 'fundamentals-desk' ? '- Mega-cap tech analysis\n- Earnings deep-dives\n- Valuation models' : ''}
+${agent === 'herald' ? '- News sentiment analysis\n- Social signal detection\n- Headline impact assessment' : ''}
 
 *Hermes local processing is active.*`
 }

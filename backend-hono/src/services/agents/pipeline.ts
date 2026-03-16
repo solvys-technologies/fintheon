@@ -1,12 +1,19 @@
+// [claude-code 2026-03-16] Agent backend v7.9: merged PMA, Herald, Notion split docs
 /**
  * Agent Pipeline Orchestrator
- * Runs the full collaborative AI agent pipeline
- * Phase 6 - Day 25
+ * Runs the full collaborative AI agent pipeline.
+ *
+ * v7.9 Pipeline Stages (Fintheon agent roster):
+ *   Stage 1 (parallel): Market Data + Technical + Herald (sentiment/social)
+ *   Stage 2: Oracle's PMA Combined (prediction markets + macro)
+ *   Stage 3: Consul fundamental overlay (bull/bear research + debate)
+ *   Stage 4: Feucht risk check (drawdown/exposure validation + proposal)
  */
 
 import { analyzeMarketData } from './market-data-analyst.js'
-import { analyzeNewsSentiment } from './news-sentiment-analyst.js'
+import { analyzeHeraldSentiment } from './herald-analyst.js'
 import { analyzeTechnicals } from './technical-analyst.js'
+import { analyzePMAMerged } from './pma-merged-analyst.js'
 import { buildBullCase } from './bullish-researcher.js'
 import { buildBearCase } from './bearish-researcher.js'
 import { runDebate } from './debate-protocol.js'
@@ -22,6 +29,7 @@ import type {
   TradingProposal,
   RiskAssessment,
 } from '../../types/agents.js'
+import type { PMAReport } from './pma-merged-analyst.js'
 
 export interface PipelineOptions {
   includeDebate?: boolean
@@ -33,7 +41,12 @@ export interface PipelineOptions {
 }
 
 /**
- * Run the full agent pipeline
+ * Run the full agent pipeline.
+ *
+ * Stage 1 (parallel): Market Data Analyst + Technical Analyst + Herald Analyst
+ * Stage 2: Oracle — PMA Combined (prediction markets + macro overlay)
+ * Stage 3: Consul — Fundamental overlay (bull/bear researchers + debate)
+ * Stage 4: Feucht — Risk check (trader proposal + risk assessment)
  */
 export async function runAgentPipeline(
   userId: string,
@@ -42,21 +55,35 @@ export async function runAgentPipeline(
   const startTime = Date.now()
   const { includeDebate = true, includeProposal = true } = options
 
-  // Stage 1: Run all analysts in parallel
-  const [marketDataReport, sentimentReport, technicalReport] = await Promise.all([
+  // ── Stage 1: Analysts (parallel) — Market Data + Technical + Herald ──
+  const [marketDataReport, technicalReport, sentimentReport] = await Promise.all([
     analyzeMarketData(userId),
-    analyzeNewsSentiment(userId),
     analyzeTechnicals(userId),
+    analyzeHeraldSentiment(userId),
   ])
 
   const marketData = marketDataReport.reportData as unknown as MarketDataReport
-  const sentiment = sentimentReport.reportData as unknown as NewsSentimentReport
   const technical = technicalReport.reportData as unknown as TechnicalReport
+  const sentiment = sentimentReport.reportData as unknown as NewsSentimentReport
 
-  // Get current price from input or market data
+  // ── Stage 2: Oracle — PMA Combined (prediction markets + macro) ──
+  // Oracle's merged analysis overlays prediction market signals on top of
+  // the Stage 1 data. The PMA report is stored alongside sentiment for
+  // downstream consumption but is conceptually a separate analytical layer.
+  const pmaReport = await analyzePMAMerged(userId, {
+    macroData: {
+      // Feed macro context from Stage 1 into Oracle's analysis
+      latestCpi: undefined, // Would come from real data feed
+      fedFundsRate: undefined,
+    },
+    marketContext: `VIX: ${marketData.vix.current}, Regime: ${marketData.marketRegime}, Sentiment: ${sentiment.overallSentiment}`,
+  })
+  const _pma = pmaReport.reportData as unknown as PMAReport
+
+  // Get current price from input or technical data
   const currentPrice = options.currentPrice ?? technical.emaAnalysis.ema20 ?? 19000
 
-  // Stage 2: Run researchers in parallel
+  // ── Stage 3: Consul — Fundamental overlay (researchers + debate) ──
   const researcherInput = {
     marketData,
     sentiment,
@@ -72,7 +99,6 @@ export async function runAgentPipeline(
   const bullish = bullishReport.reportData as unknown as ResearcherReport
   const bearish = bearishReport.reportData as unknown as ResearcherReport
 
-  // Stage 3: Run debate (if enabled)
   let debate: DebateResult | undefined
   if (includeDebate) {
     debate = await runDebate(userId, {
@@ -81,7 +107,6 @@ export async function runAgentPipeline(
       analystReportIds: [marketDataReport.id, sentimentReport.id, technicalReport.id],
     })
   } else {
-    // Quick consensus without debate
     debate = createQuickConsensus(userId, bullish, bearish, [
       marketDataReport.id,
       sentimentReport.id,
@@ -89,7 +114,9 @@ export async function runAgentPipeline(
     ])
   }
 
-  // Stage 4: Generate proposal and assess risk (if enabled)
+  // ── Stage 4: Feucht — Risk check (proposal + risk assessment) ──
+  // Feucht (Futures, Execution & Risk) absorbs old risk-manager logic.
+  // The trader agent generates a proposal, then Feucht validates it.
   let proposal: TradingProposal | undefined
   let riskAssessment: RiskAssessment | undefined
 
@@ -103,7 +130,6 @@ export async function runAgentPipeline(
       accountSize: options.accountSize,
     })
 
-    // Get user psychology for risk assessment
     const psychology = await getUserPsychology(userId)
 
     riskAssessment = await assessProposal(userId, {
@@ -115,7 +141,6 @@ export async function runAgentPipeline(
     })
   }
 
-  // Generate overall recommendation
   const overallRecommendation = generateOverallRecommendation(
     debate,
     riskAssessment,
@@ -144,13 +169,12 @@ function createQuickConsensus(
   bearish: ResearcherReport,
   analystReportIds: string[]
 ): DebateResult {
-  // Simple comparison of conviction and argument strength
-  const bullScore = bullish.conviction * 
+  const bullScore = bullish.conviction *
     (bullish.keyArguments.reduce((s, a) => s + a.strength, 0) / Math.max(1, bullish.keyArguments.length * 10))
-  const bearScore = bearish.conviction * 
+  const bearScore = bearish.conviction *
     (bearish.keyArguments.reduce((s, a) => s + a.strength, 0) / Math.max(1, bearish.keyArguments.length * 10))
 
-  const consensusScore = (bullScore - bearScore) / 100 // Normalize to -1 to +1
+  const consensusScore = (bullScore - bearScore) / 100
 
   return {
     id: crypto.randomUUID(),
@@ -158,7 +182,7 @@ function createQuickConsensus(
     analystReportIds,
     bullishReport: bullish,
     bearishReport: bearish,
-    debateRounds: [], // No debate rounds
+    debateRounds: [],
     consensusScore,
     finalAssessment: {
       recommendation: consensusScore > 0.2 ? 'bullish' : consensusScore < -0.2 ? 'bearish' : 'neutral',
@@ -178,7 +202,6 @@ function generateOverallRecommendation(
   riskAssessment?: RiskAssessment,
   proposal?: TradingProposal
 ): AgentPipelineResult['overallRecommendation'] {
-  // If risk assessment rejected, recommend avoid
   if (riskAssessment?.decision === 'rejected') {
     return {
       action: 'avoid',
@@ -187,7 +210,6 @@ function generateOverallRecommendation(
     }
   }
 
-  // If proposal direction is flat, recommend wait
   if (proposal?.direction === 'flat') {
     return {
       action: 'wait',
@@ -196,7 +218,6 @@ function generateOverallRecommendation(
     }
   }
 
-  // If debate consensus is neutral, recommend wait
   if (Math.abs(debate.consensusScore) < 0.2) {
     return {
       action: 'wait',
@@ -205,9 +226,8 @@ function generateOverallRecommendation(
     }
   }
 
-  // Otherwise, trade with direction from proposal/debate
   const proposalDirection = proposal?.direction
-  const direction: 'long' | 'short' = 
+  const direction: 'long' | 'short' =
     (proposalDirection === 'long' || proposalDirection === 'short')
       ? proposalDirection
       : (debate.consensusScore > 0 ? 'long' : 'short')
@@ -223,7 +243,7 @@ function generateOverallRecommendation(
 }
 
 /**
- * Run analysts only (lighter weight)
+ * Run analysts only (lighter weight — Stage 1 only)
  */
 export async function runAnalystsOnly(userId: string): Promise<{
   marketData: MarketDataReport
@@ -235,7 +255,7 @@ export async function runAnalystsOnly(userId: string): Promise<{
 
   const [marketDataReport, sentimentReport, technicalReport] = await Promise.all([
     analyzeMarketData(userId),
-    analyzeNewsSentiment(userId),
+    analyzeHeraldSentiment(userId),
     analyzeTechnicals(userId),
   ])
 

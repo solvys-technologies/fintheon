@@ -41,6 +41,7 @@ export interface CatalystCard {
   isGhost: boolean;
   templateType: CatalystTemplateType | null;
   position: { x: number; y: number } | null;
+  tags?: string[];  // user-defined tags for filtering/organizing
   createdAt: string;
   updatedAt: string;
 }
@@ -131,5 +132,6 @@ export type NarrativeAction =
   | { type: 'SET_REPLAY_MODE'; enabled: boolean }
   | { type: 'SET_REPLAY_POSITION'; position: number }
   | { type: 'IMPORT_CATALYSTS'; catalysts: Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'>[] }
+  | { type: 'TAG_CATALYST'; catalystId: string; tags: string[] }
   | { type: 'TAKE_SNAPSHOT' }
   | { type: 'RESTORE_SNAPSHOT' };
