@@ -1,4 +1,5 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
+// [claude-code 2026-03-16] Added Manage button for NarrativeManageModal
 import { useState, useRef } from 'react';
 import {
   ChevronLeft,
@@ -10,6 +11,7 @@ import {
   Play,
   Filter,
   Download,
+  Settings2,
 } from 'lucide-react';
 import type { NarrativeFlowState, ZoomLevel, CatalystSentiment, CatalystTemplateType } from '../../lib/narrative-types';
 import { formatWeekLabel, shiftWeek } from '../../lib/narrative-time';
@@ -23,6 +25,7 @@ interface NarrativeToolbarProps {
   onUndo: () => void;
   hasSnapshot: boolean;
   onImport: () => void;
+  onManage: () => void;
 }
 
 const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
@@ -38,7 +41,7 @@ const SENTIMENT_OPTIONS: { value: CatalystSentiment | 'all'; label: string }[] =
   { value: 'bearish', label: 'Bearish' },
 ];
 
-export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport }: NarrativeToolbarProps) {
+export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport, onManage }: NarrativeToolbarProps) {
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
@@ -201,6 +204,15 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
           title="Import catalysts from RiskFlow"
         >
           <Download className="w-3.5 h-3.5" />
+        </button>
+
+        {/* Manage */}
+        <button
+          onClick={onManage}
+          className="p-1.5 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+          title="Manage narratives"
+        >
+          <Settings2 className="w-3.5 h-3.5" />
         </button>
 
         {/* Undo */}

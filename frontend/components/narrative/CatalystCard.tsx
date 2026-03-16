@@ -1,5 +1,6 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
-import { useState, useCallback } from 'react';
+// [claude-code 2026-03-16] Added tag pills and inline tag-add button
+import { useState, useCallback, useRef } from 'react';
 import type { CatalystCard as CatalystCardType } from '../../lib/narrative-types';
 
 const SENTIMENT_COLORS: Record<string, string> = {
@@ -31,6 +32,7 @@ interface CatalystCardProps {
   compact?: boolean;
   selected?: boolean;
   onSelect: (id: string) => void;
+  onTagAdd?: (id: string, tag: string) => void;
   onDragStart?: (e: React.DragEvent, id: string) => void;
   onDragEnd?: (e: React.DragEvent) => void;
   cardRef?: (el: HTMLDivElement | null) => void;
@@ -41,11 +43,15 @@ export default function CatalystCard({
   compact = false,
   selected = false,
   onSelect,
+  onTagAdd,
   onDragStart,
   onDragEnd,
   cardRef,
 }: CatalystCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+  const [showTagInput, setShowTagInput] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = useCallback(() => {
     onSelect(catalyst.id);
@@ -150,23 +156,65 @@ export default function CatalystCard({
           </div>
 
           {/* Tag pills */}
-          {catalyst.tags && catalyst.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {catalyst.tags.map(tag => (
-                <span
-                  key={tag}
-                  className="text-[8px] px-1.5 py-0.5 rounded-full border"
-                  style={{
-                    color: 'var(--fintheon-accent)',
-                    backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 15%, transparent)',
-                    borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)',
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-1 mt-1">
+            {catalyst.tags?.map(tag => (
+              <span
+                key={tag}
+                className="text-[8px] px-1.5 py-0.5 rounded-full border"
+                style={{
+                  color: 'var(--fintheon-accent)',
+                  backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 15%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)',
+                }}
+              >
+                {tag}
+              </span>
+            ))}
+            {onTagAdd && !showTagInput && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowTagInput(true);
+                  setTimeout(() => tagInputRef.current?.focus(), 0);
+                }}
+                className="text-[8px] w-4 h-4 flex items-center justify-center rounded-full border transition-colors"
+                style={{
+                  color: 'var(--fintheon-muted)',
+                  borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)',
+                }}
+                title="Add tag"
+              >
+                +
+              </button>
+            )}
+            {showTagInput && (
+              <input
+                ref={tagInputRef}
+                value={tagInput}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter' && tagInput.trim()) {
+                    onTagAdd?.(catalyst.id, tagInput.trim());
+                    setTagInput('');
+                    setShowTagInput(false);
+                  }
+                  if (e.key === 'Escape') {
+                    setTagInput('');
+                    setShowTagInput(false);
+                  }
+                }}
+                onBlur={() => { setTagInput(''); setShowTagInput(false); }}
+                className="text-[8px] w-14 px-1 py-0.5 rounded border bg-transparent outline-none"
+                style={{
+                  color: 'var(--fintheon-text)',
+                  borderColor: 'color-mix(in srgb, var(--fintheon-accent) 30%, transparent)',
+                }}
+                placeholder="tag..."
+              />
+            )}
+          </div>
         </>
       )}
     </div>

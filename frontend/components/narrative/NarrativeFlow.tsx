@@ -1,4 +1,5 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
+// [claude-code 2026-03-16] Wired NarrativeManageModal and tag filter state
 import { useState, useCallback, useMemo } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import { NarrativeToolbar } from './NarrativeToolbar';
@@ -8,14 +9,17 @@ import { NarrativeDropdown } from './NarrativeDropdown';
 import { TimelineScrubber } from './TimelineScrubber';
 import { NarrativeSaveModal } from './NarrativeSaveModal';
 import { RiskFlowImportModal } from './RiskFlowImportModal';
+import { NarrativeManageModal } from './NarrativeManageModal';
 
 export function NarrativeFlow() {
   const { state, snapshot, dispatch } = useNarrative();
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [manageModalOpen, setManageModalOpen] = useState(false);
   const [visibleLaneIds, setVisibleLaneIds] = useState<Set<string>>(() =>
     new Set(state.lanes.map(l => l.id))
   );
+  const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
 
   const handleSave = useCallback(() => {
     setSaveModalOpen(true);
@@ -52,6 +56,14 @@ export function NarrativeFlow() {
     setVisibleLaneIds(new Set());
   }, []);
 
+  const handleToggleTag = useCallback((tag: string) => {
+    setActiveTags(prev => {
+      const next = new Set(prev);
+      next.has(tag) ? next.delete(tag) : next.add(tag);
+      return next;
+    });
+  }, []);
+
   const isCanvasView = state.zoomLevel !== 'week';
 
   return (
@@ -64,6 +76,7 @@ export function NarrativeFlow() {
           onUndo={handleUndo}
           hasSnapshot={!!snapshot}
           onImport={() => setImportModalOpen(true)}
+          onManage={() => setManageModalOpen(true)}
         />
         {isCanvasView && (
           <div className="pr-2">
@@ -72,6 +85,8 @@ export function NarrativeFlow() {
               onToggleLane={handleToggleLane}
               onSelectAll={handleSelectAll}
               onClearAll={handleClearAll}
+              activeTags={activeTags}
+              onToggleTag={handleToggleTag}
             />
           </div>
         )}
@@ -102,6 +117,11 @@ export function NarrativeFlow() {
         onClose={() => setImportModalOpen(false)}
         onImport={handleImportCatalysts}
         lanes={state.lanes}
+      />
+
+      <NarrativeManageModal
+        open={manageModalOpen}
+        onClose={() => setManageModalOpen(false)}
       />
     </div>
   );

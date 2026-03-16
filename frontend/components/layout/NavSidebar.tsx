@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Cpu } from 'lucide-react';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings' | 'hermes';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -21,6 +21,7 @@ const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom'>, { id: NavTab; icon: t
   notion: { id: 'notion', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
   narrative: { id: 'narrative', icon: GitBranch, label: 'Narratives', description: 'Market narrative flow' },
   earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
+  hermes: { id: 'hermes', icon: Cpu, label: 'Hermes', description: 'Agent command center' },
 };
 
 // Icon size: original was w-6 h-6 (24px). 35% smaller = ~15.6px → w-4 h-4 (16px)

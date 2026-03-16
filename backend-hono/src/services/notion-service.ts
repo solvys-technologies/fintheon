@@ -289,16 +289,21 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
       filter: {
         and: [
           { property: 'Category', select: { equals: currentType } },
-          { property: 'Status', status: { equals: 'Active' } },
+          // [claude-code 2026-03-16] Status is a select property, not status type
+          { property: 'Status', select: { equals: 'Active' } },
         ],
       },
-      sorts: [{ property: 'Created time', direction: 'descending' }],
+      sorts: [{ timestamp: 'created_time', direction: 'descending' }],
       pageSize: 5,
     });
 
     if (pages.length > 0) {
       const bestPage = pages[0];
-      const message = getPropText(bestPage, 'Message');
+      // Message is the title property, not rich_text — read from title array
+      const msgProp = bestPage.properties?.['Message'];
+      const message = msgProp?.type === 'title'
+        ? (msgProp.title ?? []).map((t: any) => t.text?.content ?? '').join('')
+        : getPropText(bestPage, 'Message');
       const category = getPropText(bestPage, 'Category');
       const items: MDBBriefItem[] = [{
         title: `${currentType} — ${category || 'Brief'}`,
@@ -312,15 +317,18 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
     const fallbackPages = await notionQuery(HARPER_MESSAGES_DB, {
       filter: {
         property: 'Status',
-        status: { equals: 'Active' },
+        select: { equals: 'Active' },
       },
-      sorts: [{ property: 'Created time', direction: 'descending' }],
+      sorts: [{ timestamp: 'created_time', direction: 'descending' }],
       pageSize: 1,
     });
 
     if (fallbackPages.length > 0) {
       const fallback = fallbackPages[0];
-      const message = getPropText(fallback, 'Message');
+      const msgProp = fallback.properties?.['Message'];
+      const message = msgProp?.type === 'title'
+        ? (msgProp.title ?? []).map((t: any) => t.text?.content ?? '').join('')
+        : getPropText(fallback, 'Message');
       const category = getPropText(fallback, 'Category');
       const items: MDBBriefItem[] = [{
         title: `Latest — ${category || 'Brief'}`,

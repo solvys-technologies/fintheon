@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-16T23:00:00',
+    agent: 'claude-code',
+    summary: 'Hermes Command Center — full-page tab with agent status dashboard, gateway settings, embedded chat (useHermesRuntime), activity log. Added hermes to NavTabId, sidebar nav, TopHeader CTA button, MainLayout routing.',
+    files: [
+      'frontend/components/hermes/HermesCommandCenter.tsx',
+      'frontend/components/hermes/HermesAgentCards.tsx',
+      'frontend/components/hermes/HermesActivityLog.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/components/layout/NavSidebar.tsx',
+      'frontend/components/layout/TopHeader.tsx',
+      'frontend/lib/layoutOrderStorage.ts',
+    ],
+  },
+  {
+    date: '2026-03-17T01:00:00',
+    agent: 'claude-code',
+    summary: 'T3: Complete catalyst tagging system — inline tag-add button on CatalystCard, NarrativeManageModal for lane/catalyst overview with tag add/remove and lane rename/archive/reorder, Manage button in NarrativeToolbar, tag filter props wired in NarrativeFlow.',
+    files: [
+      'frontend/components/narrative/CatalystCard.tsx',
+      'frontend/components/narrative/NarrativeManageModal.tsx',
+      'frontend/components/narrative/NarrativeToolbar.tsx',
+      'frontend/components/narrative/NarrativeFlow.tsx',
+    ],
+  },
+  {
     date: '2026-03-17T00:00:00',
     agent: 'claude-code',
     summary: 'T2: Fix brief rendering (Notion query now uses Category select + Status=Active filter instead of keyword matching on Message body), add vertical resize to BriefMiniWidget and ExecutiveDashboard textarea, add catalyst tag system (tags field on CatalystCard, TAG_CATALYST store action, tag pills in card component, tag filter in NarrativeDropdown).',

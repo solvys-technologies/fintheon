@@ -9,7 +9,7 @@ const MISSION_WIDGET_ORDER_KEY = 'pulse_mission_widget_order_v3'; // v3: calenda
 const MISSION_WIDGET_VISIBILITY_KEY = 'pulse_mission_widget_visibility';
 const RIGHT_PANEL_ORDER_KEY = 'pulse_right_panel_order';
 
-export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings';
+export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'hermes';
 
 export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'executive',
@@ -20,6 +20,7 @@ export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'notion',
   'narrative',
   'earnings',
+  'hermes',
 ];
 
 export type ToolbarItemId = 'platform' | 'power' | 'layout' | 'chat' | 'voice' | 'heartbeat' | 'ivScore';
