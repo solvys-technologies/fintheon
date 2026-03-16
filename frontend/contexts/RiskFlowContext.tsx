@@ -58,6 +58,7 @@ function mapBackendSource(source: string): RiskFlowAlert['source'] {
   if (s === 'insiderwire') return 'insider-wire';
   if (s === 'economiccalendar') return 'economic-calendar';
   if (s === 'polymarket') return 'polymarket';
+  if (s === 'kalshi') return 'kalshi-whale';
   if (s === 'twittercli') return 'twitter-cli';
   return 'backend';
 }

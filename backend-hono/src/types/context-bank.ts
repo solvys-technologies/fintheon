@@ -37,6 +37,9 @@ export interface ContextBankSnapshot {
   /** Polymarket prediction market odds */
   polymarket: PolymarketContext
 
+  /** Kalshi prediction market whale flow + macro odds */
+  kalshi: KalshiContext
+
   /** Latest desk reports (one per desk, most recent) */
   deskReports: DeskReportSummary[]
 }
@@ -156,6 +159,31 @@ export interface PolymarketMarketSummary {
   probability: number
   outcome: string
   closeTime?: string
+}
+
+export interface KalshiContext {
+  topMarkets: KalshiMarketSummary[]
+  recentWhales: WhaleAlertSummary[]
+  fetchedAt: string
+}
+
+export interface KalshiMarketSummary {
+  ticker: string
+  title: string
+  lastPrice: number
+  volume24h: number
+  closeTime?: string
+}
+
+export interface WhaleAlertSummary {
+  id: string
+  ticker: string
+  marketTitle: string
+  contracts: number
+  notionalUsd: number
+  takerSide: 'yes' | 'no'
+  alertTypes: string[]
+  createdAt: string
 }
 
 // ── Desk Reports ─────────────────────────────────────────────────────────────

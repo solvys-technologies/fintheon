@@ -5,6 +5,7 @@ export type NewsSource =
   | 'TrendSpider'
   | 'Barchart'
   | 'Polymarket'
+  | 'Kalshi'
   | 'TwitterCli'
   | 'Custom'
 

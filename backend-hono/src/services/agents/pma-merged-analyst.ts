@@ -110,6 +110,10 @@ export interface PMAInput {
     btcChange24h?: number
     btcSpxCorrelation?: number
   }
+  kalshiData?: {
+    topWhaleAlerts?: Array<{ ticker: string; notionalUsd: number; takerSide: string; marketTitle: string; contracts: number }>
+    macroMarketPrices?: Record<string, number>
+  }
   marketContext?: string
 }
 
@@ -187,6 +191,23 @@ function buildPMAPrompt(data: PMAInput): string {
     if (data.cryptoData.btcPrice != null) sections.push(`BTC: $${data.cryptoData.btcPrice.toLocaleString()}`)
     if (data.cryptoData.btcChange24h != null) sections.push(`BTC 24h: ${data.cryptoData.btcChange24h > 0 ? '+' : ''}${data.cryptoData.btcChange24h.toFixed(2)}%`)
     if (data.cryptoData.btcSpxCorrelation != null) sections.push(`BTC-SPX correlation: ${data.cryptoData.btcSpxCorrelation.toFixed(2)}`)
+  }
+
+  if (data.kalshiData) {
+    if (data.kalshiData.topWhaleAlerts?.length) {
+      sections.push('\n=== KALSHI WHALE FLOW ===')
+      sections.push('Large institutional trades detected on Kalshi prediction markets:')
+      for (const w of data.kalshiData.topWhaleAlerts.slice(0, 5)) {
+        sections.push(`  ${w.marketTitle}: ${w.contracts} contracts ${w.takerSide.toUpperCase()} ($${w.notionalUsd.toFixed(0)} notional)`)
+      }
+      sections.push('Interpret whale flow as institutional conviction signals — large directional bets indicate smart money positioning.')
+    }
+    if (data.kalshiData.macroMarketPrices && Object.keys(data.kalshiData.macroMarketPrices).length > 0) {
+      sections.push('\n=== KALSHI MACRO ODDS ===')
+      for (const [ticker, price] of Object.entries(data.kalshiData.macroMarketPrices)) {
+        sections.push(`  ${ticker}: ${(price * 100).toFixed(1)}% YES`)
+      }
+    }
   }
 
   if (data.marketContext) {

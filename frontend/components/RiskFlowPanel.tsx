@@ -53,6 +53,9 @@ function SourceIcon({ source, className }: { source: string; className?: string 
   if (s === 'marketwatch') {
     return <MarketWatchLogo className={className} />;
   }
+  if (s === 'kalshi-whale' || s === 'kalshi') {
+    return <span className={`font-bold text-[8px] uppercase leading-none text-[var(--fintheon-accent)] ${className}`}>K</span>;
+  }
   // Default: first letter
   return (
     <span className={`font-bold text-[8px] uppercase leading-none ${className}`}>

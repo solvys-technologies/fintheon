@@ -19,6 +19,8 @@ import * as newsCache from './news-cache.js';
 import { fetchEconomicFeed } from './economic-feed.js';
 import { fetchPolymarket } from '../polymarket-service.js';
 import type { PolymarketMarket } from '../../types/polymarket.js';
+import { fetchKalshiWhales } from '../kalshi-service.js';
+import type { WhaleAlert } from '../../types/kalshi.js';
 import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
 import { isTwitterCliInstalled, pollTwitterForEconNews, getWarmCacheItems } from '../twitter-cli/index.js';
 import { estimatePoints } from '../market-data/point-estimator.js';
@@ -99,6 +101,43 @@ function polymarketToFeedItem(market: PolymarketMarket): FeedItem {
 }
 
 /**
+ * Convert Kalshi whale alert to FeedItem
+ */
+function kalshiWhaleToFeedItem(alert: WhaleAlert): FeedItem {
+  const macroLevel: MacroLevel = (alert.notionalUsd >= 2000 || alert.alertTypes.includes('cluster')) ? 3 : 2
+  const sideLabel = alert.takerSide.toUpperCase()
+  const titleLower = alert.marketTitle.toLowerCase()
+
+  const hasBearish = BEARISH_KEYWORDS.some(kw => titleLower.includes(kw))
+  const hasBullish = BULLISH_KEYWORDS.some(kw => titleLower.includes(kw))
+  let sentiment: SentimentDirection
+  if (hasBearish && !hasBullish) {
+    sentiment = alert.takerSide === 'yes' ? 'bearish' : 'bullish'
+  } else if (hasBullish && !hasBearish) {
+    sentiment = alert.takerSide === 'yes' ? 'bullish' : 'bearish'
+  } else {
+    sentiment = alert.lastPrice > 0.5 ? 'bullish' : 'bearish'
+  }
+
+  const clusterTag = alert.clusterSize ? ` (${alert.clusterSize} trades in 5min)` : ''
+  return {
+    id: alert.id,
+    source: 'Kalshi',
+    headline: `WHALE: ${alert.marketTitle} — ${alert.contracts} contracts (${sideLabel}) @ $${alert.lastPrice.toFixed(2)} | $${alert.notionalUsd.toFixed(0)} notional${clusterTag}`,
+    body: `https://kalshi.com/markets/${alert.ticker}`,
+    symbols: [],
+    tags: ['KALSHI', 'WHALE', sideLabel, ...alert.alertTypes.map(t => t.toUpperCase())],
+    isBreaking: false,
+    urgency: 'high',
+    sentiment,
+    ivScore: undefined,
+    macroLevel,
+    publishedAt: alert.createdAt,
+    analyzedAt: alert.detectedAt,
+  }
+}
+
+/**
  * Map RiskFlow NewsSource to Analysis NewsSource
  */
 function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
@@ -109,6 +148,7 @@ function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
     TrendSpider: 'Custom',
     Barchart: 'Custom',
     Polymarket: 'Custom',
+    Kalshi: 'Custom',
     TwitterCli: 'FinancialJuice', // FJ emoji-filtered tweets treated as FJ quality
     Custom: 'Custom',
   };
@@ -270,22 +310,24 @@ function applyFilters(items: FeedItem[], filters: FeedFilters): FeedItem[] {
  */
 async function fetchFreshFeed(): Promise<FeedItem[]> {
   try {
-    const [econItems, polyResp, twitterCliItems] = await Promise.all([
+    const [econItems, polyResp, kalshiResp, twitterCliItems] = await Promise.all([
       fetchEconomicFeed(),
       fetchPolymarket().catch(() => ({ markets: [], fetchedAt: new Date().toISOString() })),
+      fetchKalshiWhales().catch(() => ({ alerts: [], markets: [], lastTradeFetchedAt: new Date().toISOString() })),
       isTwitterCliInstalled().then(ok => ok ? pollTwitterForEconNews() : []).catch(() => []),
     ]);
 
     const polyItems = polyResp.markets.map(polymarketToFeedItem);
+    const kalshiItems = kalshiResp.alerts.map(kalshiWhaleToFeedItem);
     // Include warm-cached Critical/High posts seeded at startup
     const warmItems = getWarmCacheItems();
 
     // Merge and dedupe by id
-    const merged = [...econItems, ...polyItems, ...twitterCliItems, ...warmItems].filter(
+    const merged = [...econItems, ...polyItems, ...kalshiItems, ...twitterCliItems, ...warmItems].filter(
       (item, idx, arr) => idx === arr.findIndex(i => i.id === item.id)
     );
 
-    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${polyItems.length} poly, ${twitterCliItems.length} twcli)`);
+    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${polyItems.length} poly, ${kalshiItems.length} kalshi, ${twitterCliItems.length} twcli)`);
     return merged;
   } catch (error) {
     console.error('[RiskFlow] Fetch error:', error);

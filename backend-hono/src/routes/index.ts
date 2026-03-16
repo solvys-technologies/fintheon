@@ -15,6 +15,7 @@ import { createPsychAssistRoutes } from './psych-assist.js';
 import { createAiRoutes } from './ai/index.js';
 import { createAgentRoutes } from './agents/index.js';
 import { createPolymarketRoutes } from './polymarket/index.js';
+import { createKalshiRoutes } from './kalshi/index.js';
 import { createBoardroomRoutes } from './boardroom/index.js';
 import { createRithmicRoutes } from './rithmic/index.js';
 import { createHyperliquidRoutes } from './hyperliquid/index.js';
@@ -101,6 +102,8 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/agents/*', authMiddleware);
   app.use('/api/polymarket', authMiddleware);
   app.use('/api/polymarket/*', authMiddleware);
+  app.use('/api/kalshi', authMiddleware);
+  app.use('/api/kalshi/*', authMiddleware);
   app.use('/api/er', authMiddleware);
   app.use('/api/er/*', authMiddleware);
   app.use('/api/voice', authMiddleware);
@@ -145,6 +148,9 @@ export function registerRoutes(app: Hono): void {
 
   // Polymarket routes
   app.route('/api/polymarket', createPolymarketRoutes());
+
+  // Kalshi whale tracker routes
+  app.route('/api/kalshi', createKalshiRoutes());
 
   // ER telemetry routes
   app.route('/api/er', createERRoutes());

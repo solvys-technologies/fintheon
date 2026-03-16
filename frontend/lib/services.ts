@@ -758,6 +758,23 @@ export class PolymarketService {
   }
 }
 
+// Kalshi Whale Tracker Service
+export class KalshiService {
+  constructor(private client: ApiClient) { }
+
+  async getMarkets(): Promise<any> {
+    return this.client.get('/api/kalshi/markets');
+  }
+
+  async getWhales(): Promise<any> {
+    return this.client.get('/api/kalshi/whales');
+  }
+
+  async sync(): Promise<{ success: boolean; alertCount: number; marketCount: number }> {
+    return this.client.post('/api/kalshi/sync');
+  }
+}
+
 // Boardroom types (mirrors backend boardroom.ts)
 export type BoardroomAgent =
   | 'Harper-Hermes'
@@ -1296,6 +1313,7 @@ export interface BackendClient {
   voice: VoiceService;
   events: EventsService;
   polymarket: PolymarketService;
+  kalshi: KalshiService;
   boardroom: BoardroomService;
   narrative: NarrativeService;
   notion: NotionService;
@@ -1326,6 +1344,7 @@ export function createBackendClient(client: ApiClient): BackendClient {
     voice: new VoiceService(client),
     events: new EventsService(client),
     polymarket: new PolymarketService(client),
+    kalshi: new KalshiService(client),
     boardroom: new BoardroomService(client),
     narrative: new NarrativeService(client),
     notion: new NotionService(client),

@@ -14,6 +14,7 @@ export type AlertSource =
   | 'insider-wire'
   | 'economic-calendar'
   | 'polymarket'
+  | 'kalshi-whale'
   | 'twitter-cli'
   | 'backend';
 
