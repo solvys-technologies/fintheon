@@ -25,6 +25,8 @@ import { getCachedAssessment } from '../systemic/risk-detector.js'
 import { getCachedFredIndicators, getFredFetchedAt } from '../systemic/fred-service.js'
 import { getCachedTradeIdeas, getCachedPerformance } from '../notion-poller.js'
 import { fetchPolymarket } from '../polymarket-service.js'
+import { fetchKalshiWhales } from '../kalshi-service.js'
+import type { KalshiContext } from '../../types/context-bank.js'
 
 const TICK_INTERVAL_MS = 120_000 // 120s
 const RING_SIZE = 10
@@ -194,6 +196,32 @@ async function assembleSnapshot(version: number): Promise<ContextBankSnapshot> {
     }
   } catch { /* Polymarket unavailable */ }
 
+  // Kalshi whale flow
+  let kalshi: KalshiContext = { topMarkets: [], recentWhales: [], fetchedAt: now.toISOString() }
+  try {
+    const kw = await fetchKalshiWhales()
+    kalshi = {
+      topMarkets: kw.markets.slice(0, 10).map(m => ({
+        ticker: m.ticker,
+        title: m.title,
+        lastPrice: m.lastPrice,
+        volume24h: m.volume24h,
+        closeTime: m.closeTime,
+      })),
+      recentWhales: kw.alerts.slice(0, 20).map(a => ({
+        id: a.id,
+        ticker: a.ticker,
+        marketTitle: a.marketTitle,
+        contracts: a.contracts,
+        notionalUsd: a.notionalUsd,
+        takerSide: a.takerSide,
+        alertTypes: a.alertTypes,
+        createdAt: a.createdAt,
+      })),
+      fetchedAt: kw.lastTradeFetchedAt,
+    }
+  } catch { /* Kalshi unavailable */ }
+
   // Desk report summaries
   const deskReports: DeskReportSummary[] = []
   for (const [, report] of _latestReports) {
@@ -220,6 +248,7 @@ async function assembleSnapshot(version: number): Promise<ContextBankSnapshot> {
     tradeIdeas,
     fred,
     polymarket,
+    kalshi,
     deskReports,
   }
 }

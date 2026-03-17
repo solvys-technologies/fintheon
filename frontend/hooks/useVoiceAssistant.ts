@@ -5,7 +5,7 @@ import { useBackend } from '../lib/backend';
 import { hermesConversationStorageKey } from '../lib/hermesAgentRouting';
 import type { VoiceRuntimeState, MicPermissionState } from '../types/voice';
 
-const VOICE_ENABLED_STORAGE_KEY = 'pulse_voice_assistant_enabled:v1';
+const VOICE_ENABLED_STORAGE_KEY = 'fintheon:voice-assistant-enabled:v1';
 const HARPER_CONVERSATION_STORAGE_KEY = hermesConversationStorageKey('harper');
 const ERROR_AUTO_RECOVERY_MS = 5000;
 

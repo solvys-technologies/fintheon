@@ -1,11 +1,11 @@
-// [claude-code 2026-03-10] Claude SDK Bridge — relays Pulse chat to Claude Code CLI stream-json
+// [claude-code 2026-03-10] Claude SDK Bridge — relays Fintheon chat to Claude Code CLI stream-json
 /**
  * Claude SDK Bridge
- * Converts between Pulse chat interface and Claude Code CLI's stream-json protocol.
+ * Converts between Fintheon chat interface and Claude Code CLI's stream-json protocol.
  * Streams Claude Opus responses back through existing SSE infrastructure.
  *
  * Flow:
- *   1. Pulse chat sends message + history
+ *   1. Fintheon chat sends message + history
  *   2. Bridge formats prompt with conversation context
  *   3. Spawns Claude Code CLI with --print --output-format stream-json
  *   4. Parses streaming JSON events from stdout

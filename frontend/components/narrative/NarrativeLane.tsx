@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] NarrativeFlow NarrativeLane — full horizontal row: header + day columns
+// [claude-code 2026-03-16] Stone theme + narrative theme integration
 import { useCallback, useState } from 'react';
 import type { CatalystCard as CatalystCardType, NarrativeLane as NarrativeLaneType } from '../../lib/narrative-types';
 import { isSameDay } from '../../lib/narrative-time';

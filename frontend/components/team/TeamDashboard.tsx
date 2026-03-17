@@ -4,12 +4,12 @@ import { useContextBankContext } from '../../contexts/ContextBankContext'
 import { DeskCard } from './DeskCard'
 import type { DeskReportSummary, AgentName, DeskId } from '../../types/context-bank'
 
+// [claude-code 2026-03-16] Agent roster v7.9: 5-agent desk config
 const DESK_CONFIG: { desk: DeskId; agent: AgentName; label: string; role: string }[] = [
-  { desk: 'fundamentals', agent: 'Sentinel', label: 'Sentinel', role: 'Fundamentals' },
-  { desk: 'futures', agent: 'Feucht', label: 'Feucht', role: 'Futures' },
-  { desk: 'pma-1', agent: 'Oracle', label: 'Oracle', role: 'PMA-1' },
-  { desk: 'pma-2', agent: 'Charles', label: 'Charles', role: 'PMA-2' },
-  { desk: 'risk', agent: 'Horace', label: 'Horace', role: 'Risk' },
+  { desk: 'fundamentals', agent: 'Consul', label: 'Consul', role: 'Fundamentals' },
+  { desk: 'futures', agent: 'Feucht', label: 'Feucht', role: 'Futures & Risk' },
+  { desk: 'pma-merged', agent: 'Oracle', label: 'Oracle', role: 'All-Seer' },
+  { desk: 'news-sentiment', agent: 'Herald', label: 'Herald', role: 'News & Sentiment' },
 ]
 
 function formatAge(seconds: number): string {

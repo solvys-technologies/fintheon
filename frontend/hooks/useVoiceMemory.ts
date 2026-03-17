@@ -1,8 +1,8 @@
 // [claude-code 2026-03-11] T5: Voice memory hook — persists mic device selection and voice transcript history
 import { useCallback, useEffect, useState } from 'react';
 
-const VOICE_MIC_DEVICE_KEY = 'pulse_voice_mic_device:v1';
-const VOICE_TRANSCRIPT_KEY = 'pulse_voice_transcripts:v1';
+const VOICE_MIC_DEVICE_KEY = 'fintheon:voice-mic-device:v1';
+const VOICE_TRANSCRIPT_KEY = 'fintheon:voice-transcripts:v1';
 const MAX_TRANSCRIPTS = 50;
 
 export interface VoiceTranscript {

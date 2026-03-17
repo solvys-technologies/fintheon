@@ -391,8 +391,8 @@ export const defaultAiConfig: AiConfig = {
       'harper-cao': 'openrouter-opus',
       'cao-approval': 'openrouter-opus',
       'cao-consolidation': 'openrouter-opus',
-      'pma-1': 'openrouter-opus',
-      'pma-2': 'openrouter-opus',
+      'pma-merged': 'openrouter-opus',
+      'herald': 'openrouter-opus',
       'prediction-market': 'openrouter-opus',
       'futures-desk': 'openrouter-opus',
       'fa-rippers': 'openrouter-opus',
@@ -427,15 +427,15 @@ export const defaultAiConfig: AiConfig = {
     enableFallback: enableProviderFallback,
     openRouter: {
       baseUrl: openRouterBaseUrl,
-      appUrl: getEnv('OPENROUTER_APP_URL') ?? 'https://pulse-solvys.vercel.app',
-      appName: getEnv('OPENROUTER_APP_NAME') ?? 'Pulse-AI-Gateway'
+      appUrl: getEnv('OPENROUTER_APP_URL') ?? 'https://fintheon-solvys.vercel.app',
+      appName: getEnv('OPENROUTER_APP_NAME') ?? 'Fintheon-AI-Gateway'
     },
     vercelGateway: {
       baseUrl: vercelGatewayBaseUrl
     },
     hermes: {
       baseUrl: getHermesOpenAIBaseUrl(),
-      appName: getEnv('HERMES_APP_NAME') ?? 'Pulse-PIC-Hermes'
+      appName: getEnv('HERMES_APP_NAME') ?? 'Fintheon-PIC-Hermes'
     },
     githubModels: {
       baseUrl: githubModelsBaseUrl

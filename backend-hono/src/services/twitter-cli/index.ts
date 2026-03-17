@@ -20,4 +20,5 @@ export {
   startEconTwitterPoller,
   stopEconTwitterPoller,
   getWarmCacheItems,
+  getPollingMode,
 } from './econ-triggered-poller.js';

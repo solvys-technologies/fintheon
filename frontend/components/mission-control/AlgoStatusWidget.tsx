@@ -19,7 +19,7 @@ export function AlgoStatusWidget() {
         const account = await backend.account.get();
         setAlgoEnabled(account.algoEnabled ?? false);
       } catch (err) {
-        console.error('Failed to fetch account:', err);
+        console.warn('Failed to fetch account:', err);
       }
     };
     fetchAccount();
@@ -32,7 +32,7 @@ export function AlgoStatusWidget() {
       const result = await backend.trading.toggleAlgo({ enabled: !algoEnabled });
       setAlgoEnabled(result.algoEnabled ?? !algoEnabled);
     } catch (err) {
-      console.error('Failed to toggle algo:', err);
+      console.warn('Failed to toggle algo:', err);
     }
   };
 

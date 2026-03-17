@@ -94,5 +94,37 @@ export function createBlindspotsRoutes() {
     }
   });
 
+  // POST /api/blindspots/interview — save interview profile data
+  router.post('/interview', async (c) => {
+    try {
+      const body = await c.req.json();
+      const { name, roadblocks, goals, instruments, discord } = body;
+
+      const { sql, isDatabaseAvailable } = await import('../config/database.js');
+      if (!isDatabaseAvailable() || !sql) {
+        return c.json({ ok: true, stored: 'local-only' });
+      }
+
+      const blindSpots = Array.isArray(roadblocks) ? roadblocks : [];
+
+      await sql`
+        INSERT INTO psych_assist_profiles (user_id, blind_spots, orientation_complete, updated_at)
+        VALUES ('local', ${JSON.stringify(blindSpots)}::jsonb, true, NOW())
+        ON CONFLICT (user_id) DO UPDATE SET
+          blind_spots = ${JSON.stringify(blindSpots)}::jsonb,
+          orientation_complete = true,
+          updated_at = NOW()
+      `;
+
+      return c.json({
+        ok: true,
+        profile: { name, instruments, goals, discord, roadblockCount: blindSpots.length },
+      });
+    } catch (err) {
+      console.error('[blindspots/interview] Error:', err);
+      return c.json({ ok: false, error: 'Failed to save interview' }, 500);
+    }
+  });
+
   return router;
 }

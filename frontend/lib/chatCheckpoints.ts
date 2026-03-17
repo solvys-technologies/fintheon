@@ -7,7 +7,7 @@ export interface ChatCheckpoint {
   createdAt: string;
 }
 
-const STORAGE_KEY = 'pulse_chat_checkpoints:v1';
+const STORAGE_KEY = 'fintheon:chat-checkpoints:v1';
 
 function readAll(): ChatCheckpoint[] {
   try {

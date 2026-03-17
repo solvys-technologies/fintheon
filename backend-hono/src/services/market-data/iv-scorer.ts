@@ -5,6 +5,8 @@
 import { fetchVIX, type VIXData } from '../vix-service.js';
 import { calculateIVScoreV2, classifyEventType, type StackedEvent } from '../iv-scoring-v2.js';
 import { getCachedAssessment } from '../systemic/risk-detector.js';
+import { generateIVPrediction } from './iv-prediction.js';
+import type { IVPrediction } from './iv-prediction-types.js';
 
 export interface BlendedIVScore {
   /** Composite 0-10 score (60% VIX component + 40% headline component + systemic overlay) */
@@ -44,6 +46,8 @@ export interface BlendedIVScore {
     };
     rationale: string[];
   };
+  /** V4: Next-session prediction (MiroFish or heuristic) */
+  prediction?: IVPrediction;
 }
 
 const VIX_WEIGHT = 0.6;
@@ -155,7 +159,7 @@ export async function calculateBlendedIVScore(
   const clamped = Math.min(10, Math.max(0, Number(finalScore.toFixed(1))));
   rationale.push(`Blended: (${vixScore.toFixed(1)} × ${effectiveVixWeight}) + (${headlineScore.toFixed(1)} × ${effectiveHeadlineWeight}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)}${systemicAssessment?.ivScoreOverlay ? ` + systemic ${systemicAssessment.ivScoreOverlay.toFixed(1)}` : ''} → ${clamped}`);
 
-  return {
+  const result: BlendedIVScore = {
     score: clamped,
     vixComponent: Number(vixScore.toFixed(1)),
     headlineComponent: Number(headlineScore.toFixed(1)),
@@ -172,6 +176,15 @@ export async function calculateBlendedIVScore(
     timestamp: new Date().toISOString(),
     systemic: systemicData,
   };
+
+  // V4: Attach next-session prediction (non-blocking — don't fail the score)
+  try {
+    result.prediction = await generateIVPrediction(result);
+  } catch (err) {
+    console.error('[IV Scorer] prediction failed:', err);
+  }
+
+  return result;
 }
 
 /** Re-export classifyEventType for handler use */

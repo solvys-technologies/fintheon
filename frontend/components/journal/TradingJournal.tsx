@@ -1,40 +1,119 @@
-// [claude-code 2026-03-12] Renamed user-facing label "Trading Journal" → "Performance"
-// [claude-code 2026-03-11] Track 7A: TradingJournal — Human/Agent toggle tabs
-import { useState, useEffect, useCallback } from 'react';
-import { BookOpen, User, Bot, RefreshCw } from 'lucide-react';
+// [claude-code 2026-03-16] T4: Journal redesign — scroll-lock dashboard with KPI cards, charts, day history
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { BookOpen, User, Bot, RefreshCw, Eye, AlertTriangle } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
-import { HumanPsychTab } from './HumanPsychTab';
-import { AgentPerformanceTab } from './AgentPerformanceTab';
-import type { JournalEntryItem, JournalSummaryResponse } from '../../lib/services';
+import { useERSafe } from '../../contexts/ERContext';
+import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
+import { KPICard } from './KPICard';
+import { PnLChart } from './PnLChart';
+import { ERTrendChart } from './ERTrendChart';
+import { HybridChart } from './HybridChart';
+import { HybridChartDropdown, type ChartMode } from './HybridChartDropdown';
+import { DayHistoryCard } from './DayHistoryCard';
+import { SessionNotesPanel } from './HumanPsychTab';
+import type { JournalEntryItem, JournalSummaryResponse, NotionPerformanceResponse, BlindspotItem } from '../../lib/services';
 
 type JournalTab = 'human' | 'agent';
 
 export function TradingJournal() {
   const backend = useBackend();
+  const er = useERSafe();
   const [activeTab, setActiveTab] = useState<JournalTab>('human');
   const [entries, setEntries] = useState<JournalEntryItem[]>([]);
   const [summary, setSummary] = useState<JournalSummaryResponse | null>(null);
+  const [kpis, setKpis] = useState<NotionPerformanceResponse | null>(null);
+  const [blindspots, setBlindspots] = useState<BlindspotItem[]>([]);
+  const [blindspotSource, setBlindspotSource] = useState('');
   const [loading, setLoading] = useState(true);
+  const [chartMode, setChartMode] = useState<ChartMode>('pnl');
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [entriesRes, summaryRes] = await Promise.all([
+      const [entriesRes, summaryRes, kpisRes, blindRes] = await Promise.all([
         backend.journal.listEntries({ limit: 30 }),
         backend.journal.getSummary(30),
+        backend.notion.getPerformance(),
+        backend.blindspots.getBlindspots(),
       ]);
       setEntries(entriesRes.entries);
       setSummary(summaryRes);
+      setKpis(kpisRes);
+      setBlindspots(blindRes.blindspots);
+      setBlindspotSource(blindRes.source);
     } catch (err) {
-      console.error('Failed to fetch journal data:', err);
+      console.warn('Failed to fetch journal data:', err);
     } finally {
       setLoading(false);
     }
   }, [backend]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // --- Derived data ---
+  const findKpi = (label: string) =>
+    kpis?.kpis?.find(k => k.label.toLowerCase().includes(label.toLowerCase()));
+
+  const netPnl = findKpi('P&L') ?? findKpi('pnl') ?? findKpi('Net');
+  const winRate = findKpi('Win Rate') ?? findKpi('win');
+  const trades = findKpi('Trades') ?? findKpi('trades');
+
+  // Agent stats from summary
+  const agentWinRate = summary?.avgWinRate ?? 0;
+  const agentDecisions = entries.filter(e => e.type === 'agent').reduce((s, e) => s + (e.proposalCount ?? 0), 0);
+  const agentPnl = summary?.totalAgentPnl ?? 0;
+
+  // Discipline
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+  const weekEntries = entries.filter(e => e.type === 'human' && e.date >= weekAgo);
+  const avgDiscipline = weekEntries.length > 0
+    ? Math.round(weekEntries.reduce((s, e) => s + (e.disciplineScore ?? 0), 0) / weekEntries.length) : 0;
+  const todayInfractions = er?.infractionCount ?? 0;
+
+  // ER trend data
+  const erTrendData = useMemo(() => {
+    const fromEntries = entries
+      .filter(e => e.type === 'human' && e.erTrend?.length)
+      .slice(0, 7).reverse()
+      .flatMap(e => e.erTrend ?? []);
+    const liveSnapshots = er?.getRecentSnapshots?.() ?? [];
+    const live = liveSnapshots.map(s => s.score).reverse();
+    return fromEntries.length > 0 ? fromEntries : live;
+  }, [entries, er]);
+
+  // P&L daily data for chart
+  const pnlDailyData = useMemo(() => {
+    return entries
+      .filter(e => e.type === 'agent' && typeof e.totalPnl === 'number')
+      .slice(0, 30).reverse()
+      .map(e => e.totalPnl ?? 0);
+  }, [entries]);
+
+  // --- KPI cards (order flips based on tab) ---
+  const humanKpis = [
+    { label: 'Net P&L', value: netPnl?.value ?? '--', subtitle: netPnl?.meta, accentColor: netPnl?.value?.startsWith('-') ? '#EF4444' : '#34D399', pieData: undefined },
+    { label: 'Win Rate', value: winRate?.value ?? '--', subtitle: winRate?.meta, accentColor: parseFloat(winRate?.value ?? '0') >= 50 ? '#34D399' : '#EF4444', pieData: { value: parseFloat(winRate?.value ?? '0'), max: 100 } },
+    { label: 'Trades Taken', value: trades?.value ?? '--', subtitle: trades?.meta, accentColor: undefined, pieData: undefined },
+    { label: 'Avg R:R', value: summary?.avgRR?.toFixed(2) ?? '--', subtitle: '30-day', accentColor: (summary?.avgRR ?? 0) >= 1.5 ? '#34D399' : 'var(--fintheon-accent)', pieData: undefined },
+  ];
+
+  const agentKpis = [
+    { label: 'Agent Win Rate', value: `${agentWinRate.toFixed(1)}%`, subtitle: '30-day', accentColor: agentWinRate >= 50 ? '#34D399' : '#EF4444', pieData: { value: agentWinRate, max: 100 } },
+    { label: 'Agent Decisions', value: String(agentDecisions), subtitle: 'proposals', accentColor: undefined, pieData: undefined },
+    { label: 'Agent P&L', value: `${agentPnl >= 0 ? '+' : ''}$${agentPnl.toFixed(0)}`, subtitle: '30-day net', accentColor: agentPnl >= 0 ? '#34D399' : '#EF4444', pieData: undefined },
+    { label: 'Discipline', value: `${avgDiscipline}%`, subtitle: '7-day avg', accentColor: avgDiscipline >= 80 ? '#34D399' : avgDiscipline >= 50 ? 'var(--fintheon-accent)' : '#EF4444', pieData: { value: avgDiscipline, max: 100 } },
+  ];
+
+  const orderedKpis = activeTab === 'human' ? [...humanKpis, ...agentKpis] : [...agentKpis, ...humanKpis];
+
+  // --- Page 2: day history ---
+  const historyEntries = useMemo(() => {
+    const typeFilter = activeTab === 'human' ? 'human' : 'agent';
+    const filtered = entries.filter(e => e.type === typeFilter);
+    const start = weekOffset * 5;
+    return filtered.slice(start, start + 5);
+  }, [entries, activeTab, weekOffset]);
 
   const tabs: { key: JournalTab; label: string; icon: typeof User }[] = [
     { key: 'human', label: 'Human', icon: User },
@@ -49,13 +128,12 @@ export function TradingJournal() {
           <BookOpen className="w-4 h-4 text-[var(--fintheon-accent)]" />
           <span className="text-sm font-semibold text-[var(--fintheon-text)]">Performance</span>
         </div>
-        <button
-          onClick={fetchData}
-          disabled={loading}
-          className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-[var(--fintheon-muted)] ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-1">
+          <AutoRefreshToggle />
+          <button onClick={fetchData} disabled={loading} className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors">
+            <RefreshCw className={`w-3.5 h-3.5 text-[var(--fintheon-muted)] ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Tab Toggle */}
@@ -80,17 +158,121 @@ export function TradingJournal() {
         })}
       </div>
 
-      {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto px-3 py-3">
-        {loading && entries.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-[10px] text-[var(--fintheon-muted)]">
-            Loading journal...
+      {/* Scroll-lock container */}
+      <div className="flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth">
+        {/* PAGE 1 */}
+        <div className="min-h-full snap-start flex flex-col px-3 py-3 gap-3">
+          {loading && entries.length === 0 ? (
+            <div className="flex items-center justify-center h-32 text-[10px] text-[var(--fintheon-muted)]">
+              Loading dashboard...
+            </div>
+          ) : (
+            <>
+              {/* KPI Cards — 4x2 grid */}
+              <div className="grid grid-cols-4 gap-2">
+                {orderedKpis.map((kpi, i) => (
+                  <KPICard key={i} label={kpi.label} value={kpi.value} subtitle={kpi.subtitle} pieData={kpi.pieData} accentColor={kpi.accentColor} />
+                ))}
+              </div>
+
+              {/* Middle split: charts + blindspots */}
+              <div className="flex gap-3 min-h-0">
+                {/* Left 65%: Chart */}
+                <div className="flex-[65] min-w-0">
+                  <div className="mb-1.5">
+                    <HybridChartDropdown mode={chartMode} onChange={setChartMode} />
+                  </div>
+                  {chartMode === 'pnl' && <PnLChart data={pnlDailyData} />}
+                  {chartMode === 'er' && <ERTrendChart data={erTrendData} />}
+                  {chartMode === 'hybrid' && <HybridChart pnlData={pnlDailyData} erData={erTrendData} />}
+                </div>
+
+                {/* Right 35%: Blindspots */}
+                <div className="flex-[35] min-w-0">
+                  <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg p-3 h-full">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Eye className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+                      <span className="text-xs font-semibold text-[var(--fintheon-text)]">Blindspots</span>
+                    </div>
+                    {blindspots.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {blindspots.slice(0, 4).map(spot => (
+                          <div key={spot.id} className="flex items-start gap-1.5">
+                            <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${spot.severity === 'high' ? 'bg-red-400' : 'bg-[var(--fintheon-accent)]'}`} />
+                            <span className="text-[10px] text-[var(--fintheon-text)] leading-tight">{spot.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-[var(--fintheon-muted)] py-3 text-center">
+                        {blindspotSource === 'error' || blindspotSource === 'empty'
+                          ? 'No blindspot data yet'
+                          : 'No blindspots detected'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom split: Session + Notes */}
+              <SessionNotesPanel
+                entries={entries}
+                onRefresh={fetchData}
+                todayInfractions={todayInfractions}
+                avgDiscipline={avgDiscipline}
+              />
+            </>
+          )}
+        </div>
+
+        {/* PAGE 2 */}
+        <div className="min-h-full snap-start flex flex-col px-3 py-3 gap-3">
+          {/* Week picker */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-[var(--fintheon-text)]">
+              {activeTab === 'human' ? 'Session History' : 'Agent History'}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setWeekOffset(w => w + 1)}
+                disabled={weekOffset >= Math.floor(entries.length / 5)}
+                className="px-2 py-0.5 text-[10px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] disabled:opacity-30"
+              >
+                Older
+              </button>
+              <button
+                onClick={() => setWeekOffset(w => Math.max(0, w - 1))}
+                disabled={weekOffset === 0}
+                className="px-2 py-0.5 text-[10px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] disabled:opacity-30"
+              >
+                Newer
+              </button>
+            </div>
           </div>
-        ) : activeTab === 'human' ? (
-          <HumanPsychTab entries={entries} onRefresh={fetchData} />
-        ) : (
-          <AgentPerformanceTab entries={entries} summary={summary} />
-        )}
+
+          {/* Day cards */}
+          {historyEntries.length > 0 ? (
+            <div className="space-y-2">
+              {historyEntries.map(entry => (
+                <DayHistoryCard
+                  key={entry.id}
+                  date={entry.date}
+                  pnl={entry.totalPnl ?? 0}
+                  notes={entry.notes}
+                  erScore={entry.erTrend?.length ? entry.erTrend[entry.erTrend.length - 1] : undefined}
+                  isAgentView={activeTab === 'agent'}
+                  agentName={entry.agentName}
+                  winRate={entry.winRate}
+                  proposalCount={entry.proposalCount}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-32 text-[10px] text-[var(--fintheon-muted)]">
+              No history entries
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

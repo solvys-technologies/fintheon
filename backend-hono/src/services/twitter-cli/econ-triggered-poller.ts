@@ -1,6 +1,7 @@
 // [claude-code 2026-03-10] Econ-triggered twitter poller — links Notion Econ Calendar to twitter-cli searches
 // [claude-code 2026-03-10] Warm cache: filter 'high'→'medium', slice(10)→slice(30) for broader seed
 // [claude-code 2026-03-10] Burst polling: 5s interval for 30s after econ release, actual extraction from FJ tweets
+// [claude-code 2026-03-16] Smart polling: event-window-only (T-5min to T+15min), autoRefresh gate
 
 import { searchTweets, fetchUserTimeline, isTwitterCliInstalled } from './twitter-cli-service.js';
 import { filterByTier } from './fj-emoji-filter.js';
@@ -9,6 +10,7 @@ import { notionCreatePage } from '../notion-service.js';
 import { injectEconPrintToFeed } from '../riskflow/econ-bridge.js';
 import type { EconEvent } from '../econ-calendar-service.js';
 import type { FeedItem, NewsSource } from '../../types/riskflow.js';
+import { getUserSettings } from '../settings-store.js';
 
 // Notion: write high-priority tweets to Harper Messages DB for persistence + agent visibility
 const HARPER_MESSAGES_DB = '30c141b0da7d81ba8bb6e319a0c4c309';
@@ -40,10 +42,54 @@ async function pushToNotion(items: FeedItem[]): Promise<void> {
   console.log(`[EconTwitterPoller] Pushed ${newItems.length} ${newItems.map(i => i.macroLevel === 4 ? 'Critical' : 'High').join('/')} items to Notion`);
 }
 
-const EVENT_WINDOW_MINUTES = 10; // Poll twitter around ±10 min of event time
-const POLL_INTERVAL_MS = 60_000; // 60s standard polling
-const BURST_INTERVAL_MS = 5_000; // 5s burst polling during releases
-const BURST_DURATION_MS = 30_000; // 30s burst window after release time
+// ── Polling Modes ────────────────────────────────────────────────────────────
+// IDLE:   Check Notion econ calendar only (no Twitter calls). Every 60s.
+// ACTIVE: Poll FJ/InsiderWire/Trusted timelines + event searches. Every 60s.
+//         Triggered only when a Tier-3 major event is within ±15 min.
+// BURST:  5s rapid-fire FJ-only polling for 30s after release time.
+//
+// Tier-3 events that trigger ACTIVE mode:
+//   CPI, PPI, NFP, GDP, PCE, FED RATE/FOMC, PMI, Trump-related
+//
+// Set TWITTER_POLLING_ENABLED=false to disable all Twitter polling entirely.
+
+const IDLE_INTERVAL_MS = 60_000;    // 60s — check calendar, no Twitter calls
+const ACTIVE_INTERVAL_MS = 60_000;  // 60s — full Twitter polling during event window
+const BURST_INTERVAL_MS = 5_000;    // 5s — rapid FJ-only during release
+const BURST_DURATION_MS = 30_000;   // 30s burst window after release time
+const EVENT_WINDOW_MINUTES = 15;    // ±15 min around event = ACTIVE mode
+
+const TWITTER_POLLING_ENABLED = (process.env.TWITTER_POLLING_ENABLED ?? 'true').toLowerCase() !== 'false';
+
+/** Check if we're in the Twitter polling window: Mon-Fri, 7:00 AM - 6:00 PM ET */
+function isInPollingWindow(): boolean {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = et.getDay(); // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false;
+  const hour = et.getHours();
+  return hour >= 7 && hour < 18; // 7:00 AM - 5:59 PM ET
+}
+
+// ── Tier-3 Major Event Keywords ──────────────────────────────────────────────
+// Only these events trigger ACTIVE Twitter polling. Everything else stays IDLE.
+
+const TIER3_EVENT_KEYWORDS = [
+  'CPI', 'INFLATION',
+  'PPI', 'PRODUCER PRICE',
+  'NFP', 'NONFARM', 'NON-FARM', 'PAYROLL',
+  'GDP',
+  'PCE', 'PERSONAL CONSUMPTION',
+  'FOMC', 'FED RATE', 'INTEREST RATE', 'FEDERAL RESERVE',
+  'PMI',
+  'TRUMP', 'TARIFF',
+] as const;
+
+/** Check if an event name matches a Tier-3 major event */
+function isTier3Event(eventName: string): boolean {
+  const upper = eventName.toUpperCase();
+  return TIER3_EVENT_KEYWORDS.some((kw) => upper.includes(kw));
+}
 
 // Financial Juice and InsiderWire screen names to always fetch
 const FJ_ACCOUNTS = ['financialjuice', 'InsiderWire'] as const;
@@ -265,16 +311,15 @@ function buildEventQueries(eventNames: string[]): string[] {
 // ── Event Time Checks ────────────────────────────────────────────────────────
 
 /**
- * Check if an econ event is within EVENT_WINDOW_MINUTES of now.
+ * Check if an econ event is within the polling window: T-5min to T+15min.
  */
 function isEventActive(eventDate?: string, eventTime?: string): boolean {
-  if (!eventDate) return false;
+  if (!eventDate || !eventTime) return false;
   try {
-    const dateStr = eventTime ? `${eventDate}T${eventTime}` : eventDate;
-    const eventMs = new Date(dateStr).getTime();
+    const eventMs = new Date(`${eventDate}T${eventTime}`).getTime();
     const nowMs = Date.now();
-    const diffMin = Math.abs(nowMs - eventMs) / 60_000;
-    return diffMin <= EVENT_WINDOW_MINUTES;
+    const diffMin = (nowMs - eventMs) / 60_000;
+    return diffMin >= -EVENT_WINDOW_MINUTES && diffMin <= EVENT_WINDOW_MINUTES;
   } catch {
     return false;
   }
@@ -358,70 +403,123 @@ function extractTagsFromText(text: string): string[] {
   return tags;
 }
 
+// ── Polling Mode State ───────────────────────────────────────────────────────
+
+type PollingMode = 'idle' | 'active';
+let currentMode: PollingMode = 'idle';
+
+/** Exported for status/debug endpoints */
+export function getPollingMode(): PollingMode {
+  return currentMode;
+}
+
 // ── Main Poll Function ───────────────────────────────────────────────────────
 
 /**
- * Main poll function: fetches FJ/InsiderWire/Trusted timelines + event-triggered search results.
- * Only returns items that pass the FJ emoji filter (medium+).
- * Also extracts "Actual" values from FJ tweets and writes them to Notion.
+ * Event-driven poll function. Each 60s tick:
+ *   1. Always checks Notion econ calendar (cheap, no Twitter calls)
+ *   2. If a Tier-3 major event is within ±15 min → ACTIVE mode (poll Twitter)
+ *   3. Otherwise → IDLE mode (no Twitter calls, serve warm cache)
+ *
+ * This reduces Twitter CLI invocations from ~2,000/day to ~50-100/day
+ * (only around CPI, NFP, FOMC, etc. releases).
  */
 export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
+  if (!TWITTER_POLLING_ENABLED) return [];
+
+  // Respect autoRefresh setting
+  try {
+    const settings = await getUserSettings('default');
+    if (settings.autoRefresh === false) {
+      console.debug('[EconTwitterPoller] autoRefresh disabled, skipping');
+      return [];
+    }
+  } catch { /* proceed if settings unavailable */ }
+
+  if (!isInPollingWindow()) {
+    if (currentMode !== 'idle') {
+      console.log('[EconTwitterPoller] Outside polling window — switching to IDLE');
+      currentMode = 'idle';
+    }
+    return [];
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  // 1. Always check Notion econ calendar (no Twitter calls)
+  let tier3ActiveEvents: EconEvent[] = [];
+  let tier3ActiveNames: string[] = [];
+  try {
+    const events = await fetchEconCalendar({ from: today, to: today });
+    const highImportance = events.filter((e) => (e.importance ?? 1) >= 2);
+
+    // Filter to Tier-3 major events that are within the event window
+    const tier3Events = highImportance.filter((e) => isTier3Event(e.name));
+    tier3ActiveEvents = tier3Events.filter((e) => isEventActive(e.date, e.time));
+    tier3ActiveNames = tier3ActiveEvents.map((e) => e.name);
+
+    // Schedule burst polling for upcoming Tier-3 events (within next 2 min)
+    for (const event of tier3Events) {
+      const msUntil = msUntilRelease(event.date, event.time);
+      if (msUntil !== null && msUntil > 0 && msUntil <= 120_000) {
+        scheduleBurst(event);
+      }
+    }
+
+  } catch (err) {
+    console.warn('[EconTwitterPoller] Failed to fetch econ calendar:', err);
+  }
+
+  // 2. Determine polling mode
+  const shouldBeActive = tier3ActiveEvents.length > 0;
+
+  if (shouldBeActive && currentMode !== 'active') {
+    console.log(`[EconTwitterPoller] ACTIVE MODE: Tier-3 events in window — ${tier3ActiveNames.join(', ')}`);
+    currentMode = 'active';
+  } else if (!shouldBeActive && currentMode !== 'idle') {
+    console.log('[EconTwitterPoller] IDLE MODE: No Tier-3 events in window — pausing Twitter calls');
+    currentMode = 'idle';
+  }
+
+  // 3. IDLE mode — no Twitter calls, just return warm cache
+  if (currentMode === 'idle') {
+    return [];
+  }
+
+  // 4. ACTIVE mode — poll Twitter (only reached when Tier-3 event is near)
   const installed = await isTwitterCliInstalled();
   if (!installed) {
     console.debug('[EconTwitterPoller] twitter-cli not installed, skipping');
     return [];
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Build search queries from active Tier-3 events
+  const searchQueries = buildEventQueries(tier3ActiveNames);
 
-  // 1. Fetch today's econ events from Notion
-  let activeEvents: EconEvent[] = [];
-  let activeEventNames: string[] = [];
-  try {
-    const events = await fetchEconCalendar({ from: today, to: today });
-    const highImportance = events.filter((e) => (e.importance ?? 1) >= 2);
-    activeEvents = highImportance.filter((e) => isEventActive(e.date, e.time));
-    activeEventNames = activeEvents.map((e) => e.name);
-    if (activeEvents.length > 0) {
-      console.log(`[EconTwitterPoller] ${activeEvents.length} active econ events: ${activeEventNames.join(', ')}`);
-    }
+  // Collect tweets: FJ + InsiderWire + Trusted + event searches
+  // Stagger calls with small delays to reduce scraping fingerprint
+  const allTweets: Array<{ id: string; text: string; author: string; publishedAt: string }> = [];
 
-    // Schedule burst polling for upcoming events (within next 2 min)
-    for (const event of highImportance) {
-      const msUntil = msUntilRelease(event.date, event.time);
-      if (msUntil !== null && msUntil > 0 && msUntil <= 120_000) {
-        scheduleBurst(event);
-      }
-    }
-  } catch (err) {
-    console.warn('[EconTwitterPoller] Failed to fetch econ calendar:', err);
-  }
-
-  // 2. Build search queries from active events
-  const searchQueries = buildEventQueries(activeEventNames);
-
-  // 3. Collect all tweets: FJ + InsiderWire + Trusted accounts + event-triggered searches
-  const allTweetPromises: Promise<Array<{ id: string; text: string; author: string; publishedAt: string }>>[] = [];
-
-  // Always fetch FJ and InsiderWire timelines
+  // Sequential with 3s delays between calls (Grok recommendation)
   for (const account of FJ_ACCOUNTS) {
-    allTweetPromises.push(fetchUserTimeline(account, { limit: TIMELINE_LIMIT }));
+    const tweets = await fetchUserTimeline(account, { limit: TIMELINE_LIMIT }).catch(() => []);
+    allTweets.push(...tweets);
+    await delay(3_000);
   }
 
-  // Always fetch trusted accounts (NickTimiraos, etc.)
   for (const account of TRUSTED_ACCOUNTS) {
-    allTweetPromises.push(fetchUserTimeline(account, { limit: TIMELINE_LIMIT }));
+    const tweets = await fetchUserTimeline(account, { limit: TIMELINE_LIMIT }).catch(() => []);
+    allTweets.push(...tweets);
+    await delay(3_000);
   }
 
-  // Event-triggered searches (only when events are active)
   for (const query of searchQueries) {
-    allTweetPromises.push(searchTweets(query, { limit: SEARCH_LIMIT, filter: 'latest' }));
+    const tweets = await searchTweets(query, { limit: SEARCH_LIMIT, filter: 'latest' }).catch(() => []);
+    allTweets.push(...tweets);
+    await delay(3_000);
   }
 
-  const tweetBatches = await Promise.allSettled(allTweetPromises);
-  const allTweets = tweetBatches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
-
-  // 4. Dedupe by tweet id
+  // Dedupe by tweet id
   const seenIds = new Set<string>();
   const uniqueTweets = allTweets.filter((t) => {
     if (seenIds.has(t.id)) return false;
@@ -429,25 +527,30 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
     return true;
   });
 
-  // 5. Extract actuals from FJ tweets and write to Notion (fire-and-forget)
-  processActualsFromTweets(uniqueTweets, activeEvents).catch((err) =>
+  // Extract actuals from FJ tweets and write to Notion (fire-and-forget)
+  processActualsFromTweets(uniqueTweets, tier3ActiveEvents).catch((err) =>
     console.warn('[EconTwitterPoller] Actual extraction error:', err)
   );
 
-  // 6. Apply FJ emoji tier filter (medium+)
+  // Apply FJ emoji tier filter (medium+)
   const classified = filterByTier(uniqueTweets, 'medium');
 
-  // 7. Convert to FeedItem[]
+  // Convert to FeedItem[]
   const feedItems: FeedItem[] = classified.map((t) =>
     tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
   );
 
   if (feedItems.length > 0) {
-    console.log(`[EconTwitterPoller] ${feedItems.length} items passed FJ emoji filter (from ${uniqueTweets.length} raw tweets)`);
+    console.log(`[EconTwitterPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw, mode=ACTIVE)`);
     pushToNotion(feedItems).catch(() => {});
   }
 
   return feedItems;
+}
+
+/** Small delay helper for staggering Twitter calls */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ── Burst Polling ────────────────────────────────────────────────────────────
@@ -534,6 +637,8 @@ function scheduleBurst(event: EconEvent): void {
 let warmCache: FeedItem[] = [];
 
 async function initFetchHighPriorityPosts(): Promise<void> {
+  if (!TWITTER_POLLING_ENABLED || !isInPollingWindow()) return;
+
   const installed = await isTwitterCliInstalled();
   if (!installed) return;
 
@@ -580,7 +685,13 @@ let pollerInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startEconTwitterPoller(): void {
   if (pollerInterval) return;
-  console.log('[EconTwitterPoller] Starting (60s interval, 5s burst on releases)');
+
+  if (!TWITTER_POLLING_ENABLED) {
+    console.log('[EconTwitterPoller] Disabled via TWITTER_POLLING_ENABLED=false');
+    return;
+  }
+
+  console.log('[EconTwitterPoller] Starting (IDLE by default, ACTIVE only for Tier-3 events: CPI/PPI/NFP/GDP/PCE/FOMC/PMI/Trump)');
 
   initFetchHighPriorityPosts().then(() => {
     pollTwitterForEconNews().catch((err) =>
@@ -592,7 +703,7 @@ export function startEconTwitterPoller(): void {
     pollTwitterForEconNews().catch((err) =>
       console.warn('[EconTwitterPoller] Poll error:', err)
     );
-  }, POLL_INTERVAL_MS);
+  }, IDLE_INTERVAL_MS);
 }
 
 export function stopEconTwitterPoller(): void {

@@ -13,7 +13,7 @@ export interface SkillDef {
 
 export const SKILLS: readonly SkillDef[] = [
   { id: 'brief', label: 'Brief', icon: Globe, color: '#A78BFA', description: 'Web search, summarize, and interpret for your instrument', keywords: ['brief', 'search', 'news', 'summarize', 'web'], mcpServers: ['exa'] },
-  { id: 'validate', label: 'Validate', icon: ShieldCheck, color: '#F59E0B', description: 'Risk validation against narratives, memos, and live news', keywords: ['validate', 'risk', 'check', 'verify', 'horace'], mcpServers: ['exa', 'notion'] },
+  { id: 'validate', label: 'Validate', icon: ShieldCheck, color: '#F59E0B', description: 'Risk validation against narratives, memos, and live news', keywords: ['validate', 'risk', 'check', 'verify', 'herald'], mcpServers: ['exa', 'notion'] },
   { id: 'report', label: 'Report', icon: FileBarChart, color: '#60A5FA', description: 'Generate HTML dashboard reports in app palette', keywords: ['report', 'dashboard', 'html', 'chart'], mcpServers: ['exa', 'fmp'] },
   { id: 'track', label: 'Track', icon: GitBranch, color: '#34D399', description: 'Start a new narrative thread', keywords: ['track', 'narrative', 'thread', 'thesis'], mcpServers: ['notion'] },
   { id: 'psych_assist', label: 'PsychAssist', icon: Brain, color: '#E879F9', description: 'Psych analysis, performance review, trading activity', keywords: ['psych', 'mental', 'tilt', 'emotion', 'performance'], mcpServers: [] },

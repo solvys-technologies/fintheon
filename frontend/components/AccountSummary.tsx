@@ -37,7 +37,7 @@ export default function AccountSummary() {
       setAccount(data);
       return true;
     } catch (error: any) {
-      console.error('Failed to load account:', error);
+      console.warn('Failed to load account:', error);
       // If unauthorized, stop polling
       if (error?.status === 401 || error?.code === 'auth_skipped') {
         console.warn('Account polling stopped due to auth failure');

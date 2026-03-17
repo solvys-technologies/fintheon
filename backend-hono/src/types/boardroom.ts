@@ -1,15 +1,23 @@
+// [claude-code 2026-03-16] Agent backend v7.9: updated BoardroomAgent roster
 /**
  * Boardroom types
  * Shared backend contracts for boardroom and intervention messages.
+ *
+ * Agent roster (v7.9):
+ *   Harper-Hermes — CAO (Chief Agent Officer), coordination & boardroom moderation
+ *   Oracle        — The All-Seer, prediction markets + macro (merged PMA-1 + PMA-2)
+ *   Feucht        — Futures, Execution & Risk
+ *   Consul        — Fundamentals desk
+ *   Herald        — News & Sentiment
+ *   (Sentinel removed in v7.9 — risk absorbed by Feucht)
  */
 
 export type BoardroomAgent =
+  | 'Harper-Hermes'
   | 'Oracle'
   | 'Feucht'
-  | 'Sentinel'
-  | 'Charles'
-  | 'Horace'
-  | 'Harper'
+  | 'Consul'
+  | 'Herald'
   | 'Unknown';
 
 export interface BoardroomMessage {
@@ -23,7 +31,7 @@ export interface BoardroomMessage {
 
 export interface InterventionMessage {
   id: string;
-  sender: 'User' | 'Harper' | 'Unknown';
+  sender: 'User' | 'Harper-Hermes' | 'Unknown';
   content: string;
   timestamp: string;
 }

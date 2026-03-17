@@ -1,5 +1,6 @@
 // [claude-code 2026-03-11] Redesigned to consume backend IVScoreResponse — point range, rationale tooltip, environment label
 // [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
+// [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
 import { Info, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import type { IVScoreResponse } from '../types/market-data';
@@ -107,26 +108,41 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
         <span className={`text-sm font-bold ${color}`}>
           {data.score.toFixed(1)}
         </span>
+        <span className={`text-[10px] font-medium ${color}`}>
+          {envLabel}
+        </span>
+        {pts && (
+          <>
+            <span className="text-gray-600 text-[10px]">|</span>
+            <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
+            <span className="text-[10px] text-[var(--fintheon-accent)] font-medium">
+              ±{pts.scaledPoints} pts
+            </span>
+            <span className={`text-[9px] font-medium ${getUrgencyColor(pts.urgency)}`}>
+              {pts.urgency}
+            </span>
+          </>
+        )}
 
-        {/* Info button for rationale tooltip */}
-        <button
+        {/* Info button + tooltip wrapper — hover zone spans both so tooltip stays open */}
+        <div
+          className="relative ml-0.5"
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
-          className="text-gray-500 hover:text-gray-400 transition-colors ml-0.5"
         >
-          <Info className="w-2.5 h-2.5" />
-        </button>
-      </div>
+          <button className="text-gray-500 hover:text-gray-400 transition-colors">
+            <Info className="w-2.5 h-2.5" />
+          </button>
 
-      {showTooltip && (
-        <div
-          className={`absolute top-full mt-2 w-80 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl z-[9999] ${
-            layoutOption === 'tickers-only' ? 'right-0' : 'left-0'
-          }`}
-          style={{
-            maxWidth: layoutOption === 'tickers-only' ? 'min(320px, calc(100vw - 2rem))' : '320px',
-          }}
-        >
+          {showTooltip && (
+            <div
+              className={`absolute top-full mt-1 w-80 bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl z-[9999] ${
+                layoutOption === 'tickers-only' ? 'right-0' : 'left-0'
+              }`}
+              style={{
+                maxWidth: layoutOption === 'tickers-only' ? 'min(320px, calc(100vw - 2rem))' : '320px',
+              }}
+            >
           <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-2">
             Blended IV Score
           </h4>
@@ -221,6 +237,50 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             </div>
           )}
 
+          {/* V4: Next-session forecast */}
+          {data.prediction && (
+            <div className="mb-3 space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
+                <h5 className="text-xs font-semibold text-[var(--fintheon-accent)]">Next Session Forecast</h5>
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-gray-500 ml-auto">
+                  {data.prediction.source === 'mirofish' ? 'MiroFish' : 'Heuristic'}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-[10px]">
+                <span className="text-gray-400">
+                  Projected: <span className={`font-medium ${getScoreColor(data.prediction.nextSessionScore)}`}>
+                    {data.prediction.nextSessionScore.toFixed(1)}/10
+                  </span>
+                </span>
+                <span className="text-gray-600">|</span>
+                <span className="text-gray-400">
+                  Confidence: <span className="text-gray-300">{(data.prediction.confidence * 100).toFixed(0)}%</span>
+                </span>
+              </div>
+              {data.prediction.regimeShiftProbability > 0.1 && (
+                <p className="text-[10px] text-amber-400">
+                  Regime shift probability: {(data.prediction.regimeShiftProbability * 100).toFixed(0)}%
+                </p>
+              )}
+              {data.prediction.scenarios.length > 0 && (
+                <div className="space-y-1 mt-1">
+                  {data.prediction.scenarios.map((sc, i) => (
+                    <div key={i} className="flex items-center justify-between text-[10px]">
+                      <span className="text-gray-400 truncate mr-2">{sc.label}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-gray-500">{(sc.probability * 100).toFixed(0)}%</span>
+                        <span className={`font-medium ${getScoreColor(sc.projectedScore)}`}>
+                          {sc.projectedScore.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Timestamp + staleness */}
           <div className="text-[9px] text-gray-600 flex items-center gap-2">
             <span>Updated: {new Date(data.timestamp).toLocaleTimeString()}</span>
@@ -243,9 +303,11 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                 <span className="text-xs text-gray-300"><strong>{item.range}:</strong> {item.label}</span>
               </div>
             ))}
+            </div>
           </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

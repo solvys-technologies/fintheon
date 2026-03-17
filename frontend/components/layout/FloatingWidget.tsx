@@ -110,7 +110,7 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
           }
         }
       } catch (err) {
-        console.error('Failed to fetch news:', err);
+        console.warn('Failed to fetch news:', err);
       }
     };
 

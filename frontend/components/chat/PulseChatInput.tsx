@@ -46,7 +46,7 @@ export function PulseChatInput({
   onSlashSelect,
   addExternalImage,
   disabled = false,
-  draftKey = 'pulse_draft_analysis',
+  draftKey = 'fintheon:draft-analysis',
 }: PulseChatInputProps) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);

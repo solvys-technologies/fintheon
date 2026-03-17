@@ -28,7 +28,7 @@ export interface BoardroomThread {
 /*  IndexedDB helpers                                                  */
 /* ------------------------------------------------------------------ */
 
-const DB_NAME = 'pulse_boardroom_threads';
+const DB_NAME = 'fintheon_boardroom_threads';
 const DB_VERSION = 1;
 const STORE_NAME = 'threads';
 

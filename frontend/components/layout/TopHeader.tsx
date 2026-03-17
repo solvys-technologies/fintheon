@@ -16,7 +16,7 @@ import { TraderNametag } from '../TraderNametag';
 import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   executive: 'Dashboard',
@@ -27,7 +27,6 @@ const TAB_LABELS: Record<NavTab, string> = {
   econ: 'Economic Calendar',
   narrative: 'NarrativeFlow',
   earnings: 'Performance',
-  team: 'Team',
   settings: 'Settings',
 };
 
@@ -165,7 +164,7 @@ export function TopHeader({
         const data = await backend.marketData.getIVScore(selectedSymbol.symbol);
         setIvData(data);
       } catch (error) {
-        console.error('[IV] Failed to fetch IV score:', error);
+        console.warn('[IV] Failed to fetch IV score:', error);
       } finally {
         setIvLoading(false);
       }
@@ -189,6 +188,7 @@ export function TopHeader({
   return (
     <div
       id="pulse-heading-toolbar"
+      data-tour-target="toolbar"
       className={`relative bg-[var(--fintheon-surface)] flex items-center justify-between pl-6 pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[52px]' : 'h-[56px]'}`}
     >
       <div className="flex items-center gap-6">

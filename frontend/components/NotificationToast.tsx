@@ -119,7 +119,7 @@ export function NotificationContainer() {
           setLastChecked(new Date());
         }
       } catch (error) {
-        console.error('Failed to fetch notifications:', error);
+        console.warn('Failed to fetch notifications:', error);
       }
     };
 

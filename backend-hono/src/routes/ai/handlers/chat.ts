@@ -51,15 +51,15 @@ const USE_LOCAL_HERMES = process.env.USE_LOCAL_HERMES !== 'false'
 function toAgentLabel(agent: HermesAgentRole | string): string {
   switch (agent) {
     case 'harper-cao':
-      return 'Harper / CAO'
-    case 'pma-1':
-      return 'PMA-1'
-    case 'pma-2':
-      return 'PMA-2'
+      return 'Harper-Hermes / CAO'
+    case 'pma-merged':
+      return 'Oracle (All-Seer)'
     case 'futures-desk':
-      return 'Futures Desk'
+      return 'Feucht (Futures & Risk)'
     case 'fundamentals-desk':
-      return 'Fundamentals Desk'
+      return 'Consul (Fundamentals)'
+    case 'herald':
+      return 'Herald (News & Sentiment)'
     default:
       return 'PIC Analyst'
   }
@@ -293,8 +293,8 @@ export async function handleChat(c: Context) {
           headers: {
             'Authorization': `Bearer ${openRouterKey}`,
             'Content-Type': 'application/json',
-            'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
-            'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+            'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
+            'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
           },
           body: JSON.stringify({
             model: OPENROUTER_HERMES_4_MODEL,

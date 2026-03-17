@@ -1,27 +1,61 @@
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
 // [claude-code 2026-03-11] Auto-start backend on app init.
 
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+// [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
+// [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
+const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
-const { spawn } = require("child_process");
+const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
+const { autoUpdater } = require("electron-updater");
 
 let mainWindow = null;
 let backendProcess = null;
 
+// [claude-code 2026-03-16] Resolve backend path for both dev and packaged DMG
+function getBackendDir() {
+  if (app.isPackaged) {
+    // In packaged app, extraResources are at process.resourcesPath
+    return path.join(process.resourcesPath, "backend-hono");
+  }
+  // In dev, backend-hono is a sibling of electron/
+  return path.join(__dirname, "..", "backend-hono");
+}
+
 function startBackend() {
-  const backendDir = path.join(__dirname, "..", "backend-hono");
+  const backendDir = getBackendDir();
   const distEntry = path.join(backendDir, "dist", "index.js");
 
   if (!fs.existsSync(distEntry)) {
-    console.warn("[Electron] Backend dist not found at", distEntry, "— skipping auto-start");
-    return;
+    if (app.isPackaged) {
+      // Packaged app should always have the backend built — fatal error
+      dialog.showErrorBox(
+        "Backend Missing",
+        "The backend was not bundled correctly.\nPlease reinstall the app."
+      );
+      return;
+    }
+    // Dev mode — try to compile
+    console.warn("[Electron] Backend dist not found — attempting build...");
+    try {
+      execFileSync("npm", ["run", "build"], { cwd: backendDir, stdio: "inherit" });
+      console.log("[Electron] Backend build succeeded");
+    } catch (buildErr) {
+      console.error("[Electron] Backend build failed:", buildErr.message);
+      dialog.showErrorBox(
+        "Backend Not Built",
+        "The backend could not be compiled.\n\nRun manually:\n  cd backend-hono && npm run build\n\nThen relaunch the app."
+      );
+      return;
+    }
   }
 
-  console.log("[Electron] Starting backend server...");
-  backendProcess = spawn("node", [distEntry], {
+  const envPath = path.join(backendDir, ".env");
+  console.log(`[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`);
+  // Use Electron's own Node runtime in packaged apps (no system `node` on PATH)
+  backendProcess = spawn(process.execPath, [distEntry], {
     cwd: backendDir,
-    env: { ...process.env, NODE_ENV: "production" },
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", NODE_ENV: "production", DOTENV_CONFIG_PATH: envPath },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
@@ -47,6 +81,59 @@ function stopBackend() {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/*  Auto-Updater (electron-updater)                                    */
+/* ------------------------------------------------------------------ */
+
+function setupAutoUpdater() {
+  // Don't auto-download — let the user decide via the modal
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on("update-available", (info) => {
+    console.log("[Updater] Update available:", info.version);
+    if (mainWindow) {
+      mainWindow.webContents.send("update-available", {
+        version: info.version,
+        releaseNotes: info.releaseNotes || "",
+        releaseDate: info.releaseDate || "",
+      });
+    }
+  });
+
+  autoUpdater.on("update-not-available", () => {
+    console.log("[Updater] App is up to date");
+  });
+
+  autoUpdater.on("download-progress", (progress) => {
+    console.log(`[Updater] Download: ${Math.round(progress.percent)}%`);
+    if (mainWindow) {
+      mainWindow.webContents.send("update-download-progress", {
+        percent: Math.round(progress.percent),
+        transferred: progress.transferred,
+        total: progress.total,
+      });
+    }
+  });
+
+  autoUpdater.on("update-downloaded", () => {
+    console.log("[Updater] Update downloaded, ready to install");
+    if (mainWindow) {
+      mainWindow.webContents.send("update-downloaded");
+    }
+  });
+
+  autoUpdater.on("error", (err) => {
+    console.error("[Updater] Error:", err.message);
+  });
+
+  // Check immediately, then every 30 minutes
+  autoUpdater.checkForUpdates().catch(() => {});
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 30 * 60 * 1000);
+}
+
 const shouldAllowInAppPopup = (urlString) => {
   try {
     const url = new URL(urlString);
@@ -67,17 +154,44 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "github.com") return true;
     if (host.endsWith(".github.com")) return true;
 
+    // Discord (Boardroom)
+    if (host === "discord.com") return true;
+    if (host.endsWith(".discord.com")) return true;
+    if (host === "discordapp.com") return true;
+    if (host.endsWith(".discordapp.com")) return true;
+
+    // Clerk authentication (Google OAuth + Clerk hosted UI)
+    if (host.endsWith(".clerk.accounts.dev")) return true;
+    if (host.endsWith(".pricedinresearch.io")) return true;
+    if (host === "clerk.app.pricedinresearch.io") return true;
+
     return false;
   } catch {
     return false;
   }
 };
 
+// [claude-code 2026-03-16] Load from localhost:8080 for Clerk auth (needs HTTP origin, not file://)
+const BACKEND_URL = "http://localhost:8080";
+
+async function waitForBackend(url, maxRetries = 30, delayMs = 1000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const res = await fetch(`${url}/health`);
+      if (res.ok || res.status === 207 || res.status === 503) return true;
+    } catch {
+      // Backend not ready yet
+    }
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+  return false;
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1600,
     height: 980,
-    title: "Pulse",
+    title: "Fintheon",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -87,14 +201,25 @@ function createWindow() {
     },
   });
 
-  const rendererPath = path.join(__dirname, "..", "frontend", "dist", "index.html");
-  win.loadFile(rendererPath);
+  // Load from backend server (serves frontend/dist/ as static files)
+  waitForBackend(BACKEND_URL).then((ready) => {
+    if (ready) {
+      win.loadURL(BACKEND_URL);
+    } else {
+      // Fallback to file:// if backend never started
+      console.warn("[Electron] Backend not reachable — falling back to file://");
+      const rendererPath = path.join(__dirname, "..", "frontend", "dist", "index.html");
+      win.loadFile(rendererPath);
+    }
+  });
+
   mainWindow = win;
 }
 
 app.whenReady().then(() => {
   startBackend();
   createWindow();
+  setupAutoUpdater();
 
   // Handle window.open from embedded <webview> tags.
   app.on("web-contents-created", (_event, contents) => {
@@ -137,7 +262,7 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   stopBackend();
-  if (process.platform !== "darwin") app.quit();
+  app.quit();
 });
 
 app.on("before-quit", () => {
@@ -149,7 +274,30 @@ ipcMain.handle("toggle-mini-widget", () => {
   return { ok: true };
 });
 
-// Pulse CLI: run shell command from project root and stream output to renderer
+// Auto-update IPC handlers
+ipcMain.handle("update-download", () => {
+  autoUpdater.downloadUpdate().catch((err) => {
+    console.error("[Updater] Download failed:", err.message);
+  });
+  return { ok: true };
+});
+
+ipcMain.handle("update-install", () => {
+  stopBackend();
+  autoUpdater.quitAndInstall(false, true);
+  return { ok: true };
+});
+
+ipcMain.handle("update-check", () => {
+  autoUpdater.checkForUpdates().catch(() => {});
+  return { ok: true };
+});
+
+ipcMain.handle("get-app-version", () => {
+  return app.getVersion();
+});
+
+// Fintheon CLI: run shell command from project root and stream output to renderer
 const projectRoot = path.join(__dirname, "..");
 ipcMain.handle("run-shell-command", (event, command) => {
   if (typeof command !== "string" || !command.trim()) {

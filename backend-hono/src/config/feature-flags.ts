@@ -16,6 +16,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   psych_assist: { enabled: true },
   maintenance: { enabled: true },
   quick_pulse: { enabled: true },
+  mirofish: { enabled: true },
 }
 
 let cachedFlags: FeatureFlags | null = null
@@ -68,6 +69,7 @@ export function extractSkillFromMessage(message: string): string | null {
     maintenance: 'maintenance',
     quickpulse: 'quick_pulse',
     narrative: 'narrative',
+    mirofish: 'mirofish',
   }
   return map[raw] ?? null
 }

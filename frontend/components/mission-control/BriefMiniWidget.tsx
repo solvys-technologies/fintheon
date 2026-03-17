@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, RefreshCw, Sparkles } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
+import { useSettings } from '../../contexts/SettingsContext';
+import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
 
 /** Simple markdown-ish renderer for brief text — bolds, bullets, headers */
 function BriefContent({ text }: { text: string }) {
@@ -82,6 +84,7 @@ function briefTypeToLabel(bt: string): string {
 
 export function BriefMiniWidget() {
   const backend = useBackend();
+  const { autoRefresh } = useSettings();
   const [briefText, setBriefText] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -116,9 +119,12 @@ export function BriefMiniWidget() {
 
   useEffect(() => {
     fetchBrief();
-    const interval = setInterval(fetchBrief, 60_000);
+    const interval = setInterval(() => {
+      if (!autoRefresh) return;
+      fetchBrief();
+    }, 60_000);
     return () => clearInterval(interval);
-  }, [fetchBrief]);
+  }, [fetchBrief, autoRefresh]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -153,7 +159,7 @@ export function BriefMiniWidget() {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col" style={{ minHeight: '120px', resize: 'vertical', overflow: 'auto' }}>
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <FileText className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
@@ -169,6 +175,7 @@ export function BriefMiniWidget() {
           >
             <Sparkles className={`w-2.5 h-2.5 ${generating ? 'animate-pulse' : ''}`} />
           </button>
+          <AutoRefreshToggle size="xs" />
           <button
             type="button"
             onClick={handleRefresh}

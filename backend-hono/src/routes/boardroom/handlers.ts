@@ -1,3 +1,4 @@
+// [claude-code 2026-03-16] Agent backend v7.9: updated agent names (Harper-Hermes, Consul, Herald)
 import type { Context } from 'hono';
 import {
   getBoardroomMessages,
@@ -107,7 +108,8 @@ export async function handleTriggerIntervention(c: Context) {
       metadata?: Record<string, unknown>;
     }>().catch(() => null);
 
-    const agent = (body?.agent as BoardroomAgent) || 'Sentinel';
+    // Default to Feucht for system alerts (risk desk); frontends may pass any BoardroomAgent
+    const agent = (body?.agent as BoardroomAgent) || 'Feucht';
     const type = body?.type || 'risk_alert';
     const severity = body?.severity || 'warning';
     const message = typeof body?.message === 'string' ? body.message.trim() : '';
@@ -165,7 +167,7 @@ export async function handlePostTradeIdea(c: Context) {
       keyLevels?: { label: string; price: number }[];
     }>().catch(() => null);
 
-    const agent = body?.agent || 'Harper';
+    const agent = body?.agent || 'Harper-Hermes';
     const instrument = body?.instrument;
     const direction = body?.direction || 'neutral';
     const conviction = body?.conviction || 'medium';

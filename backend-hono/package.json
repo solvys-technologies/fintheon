@@ -1,7 +1,7 @@
 {
-  "name": "pulse-api",
+  "name": "fintheon-api",
   "version": "1.0.0",
-  "description": "Pulse Trading Platform API - Hono + Neon PostgreSQL",
+  "description": "Fintheon Trading Platform API - Hono + Neon PostgreSQL",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

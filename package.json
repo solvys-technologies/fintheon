@@ -9,6 +9,7 @@
     "@clerk/themes": "^2.2.26",
     "@sentry/react": "^10.32.1",
     "ai": "^6.0.3",
+    "electron-updater": "^6.8.3",
     "lucide-react": "^0.484.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -35,25 +36,61 @@
   "scripts": {
     "frontend:install": "npm --prefix frontend install",
     "frontend:build": "npm --prefix frontend run build",
-    "desktop:build": "npm run frontend:build && electron-builder --mac dmg"
+    "desktop:build": "npm run frontend:build && cd backend-hono && npm run build && cd .. && electron-builder --mac dmg",
+    "release:mac": "npm run frontend:build && cd backend-hono && npm run build && cd .. && npx electron-builder --mac dmg",
+    "release": "bash scripts/build-release.sh"
   },
   "build": {
-    "appId": "io.solvys.pulse",
-    "productName": "Pulse",
+    "appId": "io.solvys.fintheon",
+    "productName": "Fintheon",
     "files": [
       "electron/**/*",
       "frontend/dist/**/*",
       "frontend/package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend-hono/dist/",
+        "to": "backend-hono/dist/"
+      },
+      {
+        "from": "backend-hono/node_modules/",
+        "to": "backend-hono/node_modules/"
+      },
+      {
+        "from": "backend-hono/package.json",
+        "to": "backend-hono/package.json"
+      },
+      {
+        "from": "backend-hono/.env",
+        "to": "backend-hono/.env"
+      },
+      {
+        "from": "backend-hono/migrations/",
+        "to": "backend-hono/migrations/"
+      }
     ],
     "directories": {
       "output": "desktop-dist"
     },
     "mac": {
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "icon": "electron/icons/icon.icns",
       "category": "public.app-category.finance"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "electron/icons/icon.ico"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "solvys-technologies",
+      "repo": "pulse"
     }
   }
 }

@@ -1,6 +1,8 @@
 // [claude-code 2026-03-06] Extracted AnalysisGreeting from ChatInterface — greeting + suggestion chips
 // [claude-code 2026-03-11] Chips now wired to skill system via onSkillSend
-// [claude-code 2026-03-14] Fintheon rebrand: Dawn Dispatch/Weekly Tribune chips, Roman greetings, new agent titles (Consul/Censori/Herald/Oracle)
+// [claude-code 2026-03-14] Fintheon rebrand: Dawn Dispatch/Weekly Tribune chips, Roman greetings, new agent titles
+// [claude-code 2026-03-16] Shimmer greeting animation, removed border/bg/emoji from greeting area
+import { useState, useEffect } from 'react';
 import { BarChart3, CalendarCheck, Brain, Eye } from 'lucide-react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 
@@ -25,6 +27,14 @@ interface ChatGreetingProps {
 }
 
 export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // Trigger animation on mount
+    const t = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
+
   let activeAgent: { name: string; icon: string; sector: string; description: string } | null = null;
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -34,18 +44,16 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
     // Provider not mounted yet — fallback
   }
 
-  const agent = activeAgent || { name: 'Harper', icon: 'H', sector: 'Chief Analyst', description: 'Executive strategy and oversight' };
+  const agent = activeAgent || { name: 'Harper-Hermes', icon: 'H', sector: 'CAO', description: 'Chief Analyst Officer — executive strategy and oversight' };
   const greeting = getGreeting();
 
-  // Role subtitle based on agent
   const getSubtitle = () => {
     switch (agent.name) {
-      case 'Harper': return "I'm Harper, your Chief Agentic Officer. What needs orchestrating today?";
-      case 'Oracle': return "I'm Oracle, your Consul. What data shall we review?";
-      case 'Feucht': return "I'm Feucht, your Risk Management Specialist. What exposure needs attention?";
-      case 'Sentinel': return "I'm Sentinel, your Censori. What needs verification?";
-      case 'Charles': return "I'm Oracle, the pattern diviner. What signals should we analyze?";
-      case 'Horace': return "I'm Horace, your Herald. What allocations need review?";
+      case 'Harper-Hermes': return "I'm Harper-Hermes, your Chief Agentic Officer. What needs orchestrating today?";
+      case 'Oracle': return "I'm Oracle, the All-Seer. What patterns shall we divine?";
+      case 'Feucht': return "I'm Feucht, your Futures, Execution & Risk desk. What exposure needs attention?";
+      case 'Consul': return "I'm Consul, your Fundamentals desk. What shall we analyze?";
+      case 'Herald': return "I'm Herald, your News & Sentiment analyst. What signals are you tracking?";
       default: return `I'm ${agent.name}. What needs orchestrating today?`;
     }
   };
@@ -60,7 +68,7 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] gap-5 max-w-[580px] mx-auto w-full">
-      {/* Agent name — large, centered, no icon */}
+      {/* Agent name — large, centered */}
       <div className="flex flex-col items-center gap-2.5">
         <h2 className="text-[22px] font-semibold text-white tracking-tight">{agent.name}</h2>
 
@@ -81,12 +89,17 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
         <p className="text-[13px] text-gray-500 mt-0.5">{getSubtitle()}</p>
       </div>
 
-      {/* Large greeting */}
-      <h1 className="text-[26px] font-bold text-white tracking-tight text-center leading-snug mt-1">
+      {/* Large greeting — shimmer animation */}
+      <h1
+        className={[
+          'text-[26px] font-bold text-white tracking-tight text-center leading-snug mt-1',
+          mounted ? 'greeting-animate greeting-settle' : 'opacity-0',
+        ].join(' ')}
+      >
         {greeting}
       </h1>
 
-      {/* Suggestion chips — 2x2 grid, card style with icons */}
+      {/* Suggestion chips — 2x2 grid */}
       <div className="grid grid-cols-2 gap-3 w-full mt-3">
         {SUGGESTION_CHIPS.map((chip, index) => {
           const Icon = chip.icon;
