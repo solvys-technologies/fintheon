@@ -52,9 +52,10 @@ function startBackend() {
 
   const envPath = path.join(backendDir, ".env");
   console.log(`[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`);
-  backendProcess = spawn("node", [distEntry], {
+  // Use Electron's own Node runtime in packaged apps (no system `node` on PATH)
+  backendProcess = spawn(process.execPath, [distEntry], {
     cwd: backendDir,
-    env: { ...process.env, NODE_ENV: "production", DOTENV_CONFIG_PATH: envPath },
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", NODE_ENV: "production", DOTENV_CONFIG_PATH: envPath },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
