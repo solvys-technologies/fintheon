@@ -45,6 +45,23 @@ const POLL_INTERVAL_MS = 60_000; // 60s standard polling
 const BURST_INTERVAL_MS = 5_000; // 5s burst polling during releases
 const BURST_DURATION_MS = 30_000; // 30s burst window after release time
 
+// ── Polling Schedule ─────────────────────────────────────────────────────────
+// Twitter polling only runs during extended market hours (Mon-Fri, 7 AM - 6 PM ET).
+// Outside this window, polling is paused to reduce scraping risk.
+// Set TWITTER_POLLING_ENABLED=false to disable all Twitter polling entirely.
+
+const TWITTER_POLLING_ENABLED = (process.env.TWITTER_POLLING_ENABLED ?? 'true').toLowerCase() !== 'false';
+
+/** Check if we're in the Twitter polling window: Mon-Fri, 7:00 AM - 6:00 PM ET */
+function isInPollingWindow(): boolean {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = et.getDay(); // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false;
+  const hour = et.getHours();
+  return hour >= 7 && hour < 18; // 7:00 AM - 5:59 PM ET
+}
+
 // Financial Juice and InsiderWire screen names to always fetch
 const FJ_ACCOUNTS = ['financialjuice', 'InsiderWire'] as const;
 
@@ -366,6 +383,13 @@ function extractTagsFromText(text: string): string[] {
  * Also extracts "Actual" values from FJ tweets and writes them to Notion.
  */
 export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
+  if (!TWITTER_POLLING_ENABLED) return [];
+
+  if (!isInPollingWindow()) {
+    console.debug('[EconTwitterPoller] Outside polling window (Mon-Fri 7AM-6PM ET), skipping');
+    return [];
+  }
+
   const installed = await isTwitterCliInstalled();
   if (!installed) {
     console.debug('[EconTwitterPoller] twitter-cli not installed, skipping');
@@ -534,6 +558,8 @@ function scheduleBurst(event: EconEvent): void {
 let warmCache: FeedItem[] = [];
 
 async function initFetchHighPriorityPosts(): Promise<void> {
+  if (!TWITTER_POLLING_ENABLED || !isInPollingWindow()) return;
+
   const installed = await isTwitterCliInstalled();
   if (!installed) return;
 
@@ -580,7 +606,13 @@ let pollerInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startEconTwitterPoller(): void {
   if (pollerInterval) return;
-  console.log('[EconTwitterPoller] Starting (60s interval, 5s burst on releases)');
+
+  if (!TWITTER_POLLING_ENABLED) {
+    console.log('[EconTwitterPoller] Disabled via TWITTER_POLLING_ENABLED=false');
+    return;
+  }
+
+  console.log('[EconTwitterPoller] Starting (60s interval, 5s burst on releases, Mon-Fri 7AM-6PM ET only)');
 
   initFetchHighPriorityPosts().then(() => {
     pollTwitterForEconNews().catch((err) =>

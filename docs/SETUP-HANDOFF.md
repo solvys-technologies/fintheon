@@ -36,6 +36,10 @@ DATABASE_URL=postgresql://...              # PostgreSQL
 FMP_API_KEY=<key>                          # Financial Modeling Prep
 GITHUB_CLIENT_ID=<id>                      # GitHub OAuth
 GITHUB_CLIENT_SECRET=<secret>              # GitHub OAuth
+
+# Twitter polling (cookie-based scraping via twitter-cli)
+TWITTER_POLLING_ENABLED=true               # Set to 'false' to disable all Twitter polling
+TWITTER_CLI_PATH=~/.local/bin/twitter      # Override twitter-cli binary path
 ```
 
 No other agent API keys (Anthropic, 21st, Exa) are required. Voice sentiment uses OpenRouter.
@@ -154,14 +158,27 @@ The Dashboard displays a rotating daily brief in the **BriefMiniWidget**. Briefs
 
 ### Polling / Cron Intervals
 
-| What | Interval | Source |
-|------|----------|--------|
-| XCLI / RiskFlow prefetch (GitHub Actions) | Every 5 min (`*/5 * * * *`) | `.github/workflows/riskflow-cron.yml` |
-| Frontend backend feed poll | Every 30 sec | `RiskFlowContext.tsx` (`BACKEND_FEED_POLL_MS`) |
-| Notion trade ideas poll | Every 60 sec | `notion-poller.ts` (`POLL_INTERVAL_MS`) |
-| Brief widget refresh | Every 60 sec | `BriefMiniWidget.tsx` |
-| Brief cache TTL | 5 min | `notion-service.ts` (`BRIEF_CACHE_TTL_MS`) |
-| Hermes Boardroom meeting | Weekdays 10:00 AM ET (90-min window) | `boardroom-schedule.ts` |
+| What | Interval | Schedule | Source |
+|------|----------|----------|--------|
+| Econ Twitter poller | Every 60s (5s burst on releases) | **Mon-Fri 7 AM – 6 PM ET only** | `econ-triggered-poller.ts` |
+| Feed poller (reads warm cache) | Every 15s | Always (no Twitter calls) | `feed-poller.ts` |
+| XCLI / RiskFlow prefetch (GitHub Actions) | Every 5 min (`*/5 * * * *`) | Always | `.github/workflows/riskflow-cron.yml` |
+| Frontend backend feed poll | Every 30 sec | Always | `RiskFlowContext.tsx` (`BACKEND_FEED_POLL_MS`) |
+| Notion trade ideas poll | Every 60 sec | Always | `notion-poller.ts` (`POLL_INTERVAL_MS`) |
+| Brief widget refresh | Every 60 sec | Always | `BriefMiniWidget.tsx` |
+| Brief cache TTL | 5 min | Always | `notion-service.ts` (`BRIEF_CACHE_TTL_MS`) |
+| Hermes Boardroom meeting | Weekdays 10:00 AM ET (90-min window) | Weekdays | `boardroom-schedule.ts` |
+
+### Twitter Polling Schedule
+
+Twitter scraping (via `twitter-cli`) is **schedule-gated** to reduce risk of X flagging:
+
+- **Active window**: Mon–Fri, 7:00 AM – 5:59 PM ET (covers pre-market through close)
+- **Outside window**: Polling is paused; feed poller reads from warm cache (last known items)
+- **Kill switch**: Set `TWITTER_POLLING_ENABLED=false` in `.env` to disable all Twitter polling entirely
+- **Burst mode**: 5s polling for 30s after economic release times (only during active window)
+
+The feed poller (15s) **never calls Twitter directly** — it reads from the warm cache populated by the econ twitter poller (60s). This prevents double-polling.
 
 ## Common Issues
 
