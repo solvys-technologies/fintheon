@@ -1,6 +1,4 @@
-import type { Appearance } from '@clerk/types';
-
-export const pulseAppearance: Appearance = {
+export const pulseAppearance = {
   variables: {
     colorPrimary: '#EAB308',
     colorText: '#F5F3FF',

@@ -25,8 +25,8 @@ export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
   const [position, setPosition] = useState({ x: -100, y: -100 });
   const [trail, setTrail] = useState<TrailPoint[]>([]);
   const [pulseBoost, setPulseBoost] = useState(false);
-  const trailAnimationRef = useRef<number>();
-  const snapAnimationRef = useRef<number>();
+  const trailAnimationRef = useRef<number>(undefined);
+  const snapAnimationRef = useRef<number>(undefined);
   const trailIdCounter = useRef(0);
   const isSnappingRef = useRef(false);
   const positionRef = useRef(position);
