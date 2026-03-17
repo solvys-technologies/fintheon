@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] GitHub OAuth state for GitHub Models (DeepSeek R1) — popup window flow
+// [claude-code 2026-03-16] Clerk user identity integration + GitHub OAuth for AI models
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 
 export type UserTier = 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
@@ -41,10 +41,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 /**
- * Local Auth Provider with GitHub OAuth for GitHub Models
- * Single-user local product — GitHub auth is optional, used for AI model access
+ * Auth Provider — Clerk identity + GitHub OAuth for AI model access
  */
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({
+  children,
+  clerkUserId,
+  clerkEmail,
+}: {
+  children: ReactNode;
+  clerkUserId?: string;
+  clerkEmail?: string;
+}) {
   const [tier, setTier] = useState<UserTier>('pulse_pro');
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     hasCompletedOnboarding: true,
@@ -126,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         onboardingData,
         setOnboardingData,
         isAuthenticated: true,
-        userId: 'local-user',
+        userId: clerkUserId || 'local-user',
         isLoading: false,
         gitHub: {
           isConnected: Boolean(ghToken),

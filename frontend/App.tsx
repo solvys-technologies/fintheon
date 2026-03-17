@@ -1,5 +1,8 @@
+// [claude-code 2026-03-16] Added Clerk authentication with Google OAuth, AuthShell login screen
 import React from 'react';
+import { ClerkProvider, SignIn, SignedIn, SignedOut, useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
 import { AuthProvider } from './contexts/AuthContext';
+import { BackendProvider } from './lib/backend';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { ThreadProvider } from './contexts/ThreadContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -17,10 +20,19 @@ import { PreMarketReminder } from './components/PreMarketReminder';
 import { GitHubOAuthCallback } from './components/GitHubOAuthCallback';
 import { UpdateBanner } from './components/UpdateBanner';
 import { ApiErrorToastBridge } from './components/ApiErrorToastBridge';
+import { AuthShell } from './components/auth/AuthShell';
+import { pulseAppearance } from './components/auth/pulseAppearance';
 import { migrateStorageKeys } from './lib/storage-migration';
 
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();
+
+// Development mode: bypass Clerk authentication ONLY when explicitly enabled
+const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
+const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
+
+const DEFAULT_CLERK_DOMAIN = 'clerk.app.pricedinresearch.io';
+const DEFAULT_CLERK_PROXY_URL = 'https://clerk.app.pricedinresearch.io';
 
 // [claude-code 2026-03-13] VoiceBorderPulse — green pulse when listening, gold when speaking
 function VoiceBorderPulse() {
@@ -53,14 +65,31 @@ function VoiceBorderPulse() {
   );
 }
 
-/**
- * Fintheon - Local Single-User Trading Platform
- * No authentication required - company internal use only
- */
-export default function App() {
+function AuthenticatedAppContent() {
+  const { getToken, userId } = useClerkAuth();
+  const { user } = useUser();
+  return (
+    <AppContent
+      getToken={getToken}
+      clerkUserId={userId ?? undefined}
+      clerkEmail={user?.primaryEmailAddress?.emailAddress}
+    />
+  );
+}
+
+function AppContent({
+  getToken,
+  clerkUserId,
+  clerkEmail,
+}: {
+  getToken?: () => Promise<string | null>;
+  clerkUserId?: string;
+  clerkEmail?: string;
+}) {
   return (
     <ThemeProvider>
-    <AuthProvider>
+    <BackendProvider getToken={getToken}>
+    <AuthProvider clerkUserId={clerkUserId} clerkEmail={clerkEmail}>
       <SettingsProvider>
         <ToastProvider>
           <GatewayProvider>
@@ -125,6 +154,54 @@ export default function App() {
         </ToastProvider>
       </SettingsProvider>
     </AuthProvider>
+    </BackendProvider>
     </ThemeProvider>
+  );
+}
+
+function AppInner() {
+  // In dev mode with auth bypass, show app directly
+  if (BYPASS_AUTH) {
+    return <AppContent />;
+  }
+
+  return (
+    <>
+      <SignedOut>
+        <AuthShell>
+          <SignIn
+            appearance={pulseAppearance}
+            routing="path"
+            path="/sign-in"
+            signUpUrl="/sign-up"
+          />
+        </AuthShell>
+      </SignedOut>
+      <SignedIn>
+        <AuthenticatedAppContent />
+      </SignedIn>
+    </>
+  );
+}
+
+export default function App() {
+  const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+  const clerkDomain = import.meta.env.VITE_CLERK_DOMAIN || DEFAULT_CLERK_DOMAIN;
+  const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL || DEFAULT_CLERK_PROXY_URL;
+
+  // In dev mode with auth bypass, skip ClerkProvider entirely
+  if (BYPASS_AUTH) {
+    return <AppContent />;
+  }
+
+  if (!clerkKey) {
+    console.warn('[Auth] Missing VITE_CLERK_PUBLISHABLE_KEY — falling back to bypass mode');
+    return <AppContent />;
+  }
+
+  return (
+    <ClerkProvider publishableKey={clerkKey} domain={clerkDomain} proxyUrl={clerkProxyUrl}>
+      <AppInner />
+    </ClerkProvider>
   );
 }

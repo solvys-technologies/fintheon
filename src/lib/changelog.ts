@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-17T04:00:00',
+    agent: 'claude-code',
+    summary: 'Clerk authentication integration: Google OAuth login via pulse.pricedinresearch.io, AuthShell landing screen, Clerk JWT verification in backend auth middleware, static file serving from Hono (Electron loads from localhost:8080 for HTTP origin), BackendProvider context for auth-aware API calls. Fixed notifications 500 (DB schema mismatch) and health 503 (missing Clerk key). Updated window title to Fintheon.',
+    files: [
+      'frontend/App.tsx',
+      'frontend/index.html',
+      'frontend/lib/backend.ts',
+      'frontend/contexts/AuthContext.tsx',
+      'frontend/components/auth/AuthShell.tsx',
+      'frontend/components/auth/FluidCursor.tsx',
+      'frontend/components/auth/pulseAppearance.ts',
+      'backend-hono/src/index.ts',
+      'backend-hono/src/middleware/auth.ts',
+      'backend-hono/src/routes/notifications/handlers.ts',
+      'backend-hono/migrations/013_fix_notifications_schema.sql',
+      'electron/main.cjs',
+    ],
+  },
+  {
     date: '2026-03-17T03:00:00',
     agent: 'claude-code',
     summary: 'Narrative Map: right-click context menu (rename, delete, archive, status, direction, fork, ask AI, edit), full Add/Edit Narrative modal with asset class multi-select, description, tagging, category/status/direction pickers. Toolbar redesigned to stretch full width with date in primary theme font. Added intensity/beatMiss fields to types, sort/filter persistence in store.',

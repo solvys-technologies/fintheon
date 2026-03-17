@@ -3,11 +3,15 @@
  * Hono backend on Fly.io
  */
 
+// [claude-code 2026-03-16] Added static file serving for Electron + Clerk auth
 import 'dotenv/config';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import path from 'path';
+import fs from 'fs';
 
 import { corsConfig } from './config/cors.js';
 import { getEnvConfig, isDev } from './config/env.js';
@@ -70,8 +74,27 @@ app.onError((err, c) => {
   );
 });
 
-// 404 handler
-app.notFound((c) => c.json({ error: 'Not found' }, 404));
+// Serve frontend static files (Electron loads from http://localhost:8080)
+const frontendDist = path.resolve(import.meta.dirname!, '..', '..', 'frontend', 'dist');
+if (fs.existsSync(frontendDist)) {
+  app.use('/*', serveStatic({ root: path.relative(process.cwd(), frontendDist) }));
+
+  // SPA fallback: serve index.html for non-API routes (Clerk routing)
+  app.notFound((c) => {
+    if (c.req.path.startsWith('/api/')) {
+      return c.json({ error: 'Not found' }, 404);
+    }
+    const indexPath = path.join(frontendDist, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      const html = fs.readFileSync(indexPath, 'utf-8');
+      return c.html(html);
+    }
+    return c.json({ error: 'Not found' }, 404);
+  });
+} else {
+  // 404 handler (no frontend build available)
+  app.notFound((c) => c.json({ error: 'Not found' }, 404));
+}
 
 // Start server
 serve({ fetch: app.fetch, port: config.PORT });

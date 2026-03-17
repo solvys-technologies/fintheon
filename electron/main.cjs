@@ -141,11 +141,32 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "discordapp.com") return true;
     if (host.endsWith(".discordapp.com")) return true;
 
+    // Clerk authentication (Google OAuth + Clerk hosted UI)
+    if (host.endsWith(".clerk.accounts.dev")) return true;
+    if (host.endsWith(".pricedinresearch.io")) return true;
+    if (host === "clerk.app.pricedinresearch.io") return true;
+
     return false;
   } catch {
     return false;
   }
 };
+
+// [claude-code 2026-03-16] Load from localhost:8080 for Clerk auth (needs HTTP origin, not file://)
+const BACKEND_URL = "http://localhost:8080";
+
+async function waitForBackend(url, maxRetries = 30, delayMs = 1000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const res = await fetch(`${url}/health`);
+      if (res.ok || res.status === 207 || res.status === 503) return true;
+    } catch {
+      // Backend not ready yet
+    }
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+  return false;
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -161,8 +182,18 @@ function createWindow() {
     },
   });
 
-  const rendererPath = path.join(__dirname, "..", "frontend", "dist", "index.html");
-  win.loadFile(rendererPath);
+  // Load from backend server (serves frontend/dist/ as static files)
+  waitForBackend(BACKEND_URL).then((ready) => {
+    if (ready) {
+      win.loadURL(BACKEND_URL);
+    } else {
+      // Fallback to file:// if backend never started
+      console.warn("[Electron] Backend not reachable — falling back to file://");
+      const rendererPath = path.join(__dirname, "..", "frontend", "dist", "index.html");
+      win.loadFile(rendererPath);
+    }
+  });
+
   mainWindow = win;
 }
 

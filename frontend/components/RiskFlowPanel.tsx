@@ -262,7 +262,7 @@ function AlertRow({
     <div
       draggable
       onDragStart={handleDragStart}
-      className={`group relative rounded-xl border border-zinc-800/60 mx-2 my-1.5 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-70' : ''}`}
+      className={`group relative border-b border-zinc-800/50 overflow-hidden hover:bg-[var(--fintheon-accent)]/5 transition-colors ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-70' : ''}`}
     >
       {/* Main content area */}
       <a
@@ -319,13 +319,13 @@ function AlertRow({
         </div>
       </a>
 
-      {/* Bottom hero footer — time (left), direction (center), points (right) */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40">
-        <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
-        <span className={`text-[11px] font-bold tracking-wider uppercase ${isBull ? 'text-emerald-500' : 'text-red-400'}`}>
+      {/* Bottom footer — 75% size */}
+      <div className="flex items-center justify-between px-2.5 py-1 bg-zinc-900/80 border-t border-zinc-800/40">
+        <span className="text-[8px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
+        <span className={`text-[8px] font-bold tracking-wider uppercase ${isBull ? 'text-emerald-500' : 'text-red-400'}`}>
           {isBull ? '▲ BULLISH' : '▼ BEARISH'}
         </span>
-        <span className="text-[10px] text-zinc-500 tabular-nums" title={`Implied ${alert.instrument ?? ''} move`}>
+        <span className="text-[8px] text-zinc-500 tabular-nums" title={`Implied ${alert.instrument ?? ''} move`}>
           {alert.instrument ? `${alert.instrument} ` : ''}{alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)} pts` : '0-5 pts'}
         </span>
       </div>
