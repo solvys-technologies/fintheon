@@ -12,11 +12,30 @@ const { autoUpdater } = require("electron-updater");
 let mainWindow = null;
 let backendProcess = null;
 
+// [claude-code 2026-03-16] Resolve backend path for both dev and packaged DMG
+function getBackendDir() {
+  if (app.isPackaged) {
+    // In packaged app, extraResources are at process.resourcesPath
+    return path.join(process.resourcesPath, "backend-hono");
+  }
+  // In dev, backend-hono is a sibling of electron/
+  return path.join(__dirname, "..", "backend-hono");
+}
+
 function startBackend() {
-  const backendDir = path.join(__dirname, "..", "backend-hono");
+  const backendDir = getBackendDir();
   const distEntry = path.join(backendDir, "dist", "index.js");
 
   if (!fs.existsSync(distEntry)) {
+    if (app.isPackaged) {
+      // Packaged app should always have the backend built — fatal error
+      dialog.showErrorBox(
+        "Backend Missing",
+        "The backend was not bundled correctly.\nPlease reinstall the app."
+      );
+      return;
+    }
+    // Dev mode — try to compile
     console.warn("[Electron] Backend dist not found — attempting build...");
     try {
       execFileSync("npm", ["run", "build"], { cwd: backendDir, stdio: "inherit" });
@@ -31,7 +50,6 @@ function startBackend() {
     }
   }
 
-  // [claude-code 2026-03-16] Ensure .env is loaded from backend-hono dir by setting cwd correctly
   const envPath = path.join(backendDir, ".env");
   console.log(`[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`);
   backendProcess = spawn("node", [distEntry], {
@@ -243,7 +261,7 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   stopBackend();
-  if (process.platform !== "darwin") app.quit();
+  app.quit();
 });
 
 app.on("before-quit", () => {

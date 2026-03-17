@@ -36,7 +36,7 @@
   "scripts": {
     "frontend:install": "npm --prefix frontend install",
     "frontend:build": "npm --prefix frontend run build",
-    "desktop:build": "npm run frontend:build && electron-builder --mac dmg",
+    "desktop:build": "npm run frontend:build && cd backend-hono && npm run build && cd .. && electron-builder --mac dmg",
     "release:mac": "npm run frontend:build && cd backend-hono && npm run build && cd .. && npx electron-builder --mac dmg",
     "release": "bash scripts/build-release.sh"
   },
@@ -47,6 +47,28 @@
       "electron/**/*",
       "frontend/dist/**/*",
       "frontend/package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend-hono/dist/",
+        "to": "backend-hono/dist/"
+      },
+      {
+        "from": "backend-hono/node_modules/",
+        "to": "backend-hono/node_modules/"
+      },
+      {
+        "from": "backend-hono/package.json",
+        "to": "backend-hono/package.json"
+      },
+      {
+        "from": "backend-hono/.env",
+        "to": "backend-hono/.env"
+      },
+      {
+        "from": "backend-hono/migrations/",
+        "to": "backend-hono/migrations/"
+      }
     ],
     "directories": {
       "output": "desktop-dist"
