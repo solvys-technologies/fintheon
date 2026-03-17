@@ -160,7 +160,7 @@ The Dashboard displays a rotating daily brief in the **BriefMiniWidget**. Briefs
 
 | What | Interval | Schedule | Source |
 |------|----------|----------|--------|
-| Econ Twitter poller | Every 60s (5s burst on releases) | **Mon-Fri 7 AM – 6 PM ET only** | `econ-triggered-poller.ts` |
+| Econ Twitter poller | 60s tick (calendar check only in IDLE) | **Mon-Fri 7 AM – 6 PM ET** | `econ-triggered-poller.ts` |
 | Feed poller (reads warm cache) | Every 15s | Always (no Twitter calls) | `feed-poller.ts` |
 | XCLI / RiskFlow prefetch (GitHub Actions) | Every 5 min (`*/5 * * * *`) | Always | `.github/workflows/riskflow-cron.yml` |
 | Frontend backend feed poll | Every 30 sec | Always | `RiskFlowContext.tsx` (`BACKEND_FEED_POLL_MS`) |
@@ -169,16 +169,29 @@ The Dashboard displays a rotating daily brief in the **BriefMiniWidget**. Briefs
 | Brief cache TTL | 5 min | Always | `notion-service.ts` (`BRIEF_CACHE_TTL_MS`) |
 | Hermes Boardroom meeting | Weekdays 10:00 AM ET (90-min window) | Weekdays | `boardroom-schedule.ts` |
 
-### Twitter Polling Schedule
+### Twitter Polling — Event-Driven Architecture
 
-Twitter scraping (via `twitter-cli`) is **schedule-gated** to reduce risk of X flagging:
+Twitter scraping is **event-driven** to minimize X exposure. The poller operates in three modes:
 
-- **Active window**: Mon–Fri, 7:00 AM – 5:59 PM ET (covers pre-market through close)
-- **Outside window**: Polling is paused; feed poller reads from warm cache (last known items)
-- **Kill switch**: Set `TWITTER_POLLING_ENABLED=false` in `.env` to disable all Twitter polling entirely
-- **Burst mode**: 5s polling for 30s after economic release times (only during active window)
+| Mode | Twitter Calls | When | Interval |
+|------|--------------|------|----------|
+| **IDLE** | **0** (calendar check only) | Default — no Tier-3 event nearby | 60s tick |
+| **ACTIVE** | FJ + InsiderWire + Trusted + searches | Tier-3 event within ±15 min | 60s with 3s delays between calls |
+| **BURST** | FJ + InsiderWire only | 0–30s after release time | 5s |
 
-The feed poller (15s) **never calls Twitter directly** — it reads from the warm cache populated by the econ twitter poller (60s). This prevents double-polling.
+**Tier-3 events that trigger ACTIVE mode:**
+CPI, PPI, NFP, GDP, PCE, FOMC/Fed Rate, PMI, Trump/Tariff
+
+**Estimated daily Twitter CLI calls:**
+- No major events: **~0** (startup warm cache only)
+- Typical day (1-2 events): **~50-100** (vs. ~2,000 before)
+- Heavy day (3+ events): **~150-200**
+
+**Other safeguards:**
+- **Market hours only**: Mon–Fri, 7:00 AM – 5:59 PM ET
+- **3s delays** between sequential twitter-cli calls (per Grok stealth recommendation)
+- **Kill switch**: Set `TWITTER_POLLING_ENABLED=false` in `.env` to disable entirely
+- Feed poller (15s) **never calls Twitter directly** — reads from warm cache
 
 ## Common Issues
 
