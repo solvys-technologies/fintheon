@@ -98,7 +98,7 @@ export function PromptBox({
   showSkills,
   onToggleSkills,
   disabled = false,
-  draftKey = 'pulse_draft_analysis',
+  draftKey = 'fintheon:draft-analysis',
   compact = false,
   lastError,
   disabledSkills,

@@ -721,17 +721,17 @@ export class VoiceService {
 
 // Events Service
 export class EventsService {
+  private _warned = false;
   constructor(private client: ApiClient) { }
 
   async list(): Promise<any[]> {
     // Stub - backend doesn't have this endpoint
-    console.warn('Events endpoint not available in Hono backend');
+    if (!this._warned) { console.warn('Events endpoint not available — returning empty list'); this._warned = true; }
     return [];
   }
 
   async seed(): Promise<void> {
-    // Stub - backend doesn't have this endpoint
-    console.warn('Events seed endpoint not available in Hono backend');
+    // Stub - no-op
   }
 }
 
@@ -758,14 +758,30 @@ export class PolymarketService {
   }
 }
 
+// Kalshi Whale Tracker Service
+export class KalshiService {
+  constructor(private client: ApiClient) { }
+
+  async getMarkets(): Promise<any> {
+    return this.client.get('/api/kalshi/markets');
+  }
+
+  async getWhales(): Promise<any> {
+    return this.client.get('/api/kalshi/whales');
+  }
+
+  async sync(): Promise<{ success: boolean; alertCount: number; marketCount: number }> {
+    return this.client.post('/api/kalshi/sync');
+  }
+}
+
 // Boardroom types (mirrors backend boardroom.ts)
 export type BoardroomAgent =
+  | 'Harper-Hermes'
   | 'Oracle'
   | 'Feucht'
-  | 'Sentinel'
-  | 'Charles'
-  | 'Horace'
-  | 'Harper'
+  | 'Consul'
+  | 'Herald'
   | 'Unknown';
 
 export interface BoardroomMessage {
@@ -1281,6 +1297,35 @@ export class ContextBankService {
   }
 }
 
+// MiroFish Service
+export class MiroFishService {
+  constructor(private client: ApiClient) {}
+
+  async simulate(narrativeState: {
+    lanes: Array<any>;
+    catalysts: Array<any>;
+    ropes: Array<any>;
+  }, contextBank?: {
+    vixLevel?: number;
+    gexNet?: number;
+    macroIndicators?: Record<string, number>;
+  }): Promise<{ simulationId: string }> {
+    return this.client.post('/api/mirofish/simulate', { narrativeState, contextBank });
+  }
+
+  async getReport(simId: string): Promise<any> {
+    return this.client.get(`/api/mirofish/report/${simId}`);
+  }
+
+  async getStatus(simId: string): Promise<any> {
+    return this.client.get(`/api/mirofish/status/${simId}`);
+  }
+
+  async inject(simId: string, variable: string, targetNarrativeIds: string[], description: string): Promise<any> {
+    return this.client.post(`/api/mirofish/inject/${simId}`, { variable, targetNarrativeIds, description });
+  }
+}
+
 // Main Backend Client Interface
 export interface BackendClient {
   account: AccountService;
@@ -1297,6 +1342,7 @@ export interface BackendClient {
   voice: VoiceService;
   events: EventsService;
   polymarket: PolymarketService;
+  kalshi: KalshiService;
   boardroom: BoardroomService;
   narrative: NarrativeService;
   notion: NotionService;
@@ -1308,6 +1354,7 @@ export interface BackendClient {
   agentPerformance: AgentPerformanceService;
   contextBank: ContextBankService;
   autopilot: AutopilotService;
+  mirofish: MiroFishService;
 }
 
 // Create backend client from API client
@@ -1327,6 +1374,7 @@ export function createBackendClient(client: ApiClient): BackendClient {
     voice: new VoiceService(client),
     events: new EventsService(client),
     polymarket: new PolymarketService(client),
+    kalshi: new KalshiService(client),
     boardroom: new BoardroomService(client),
     narrative: new NarrativeService(client),
     notion: new NotionService(client),
@@ -1338,5 +1386,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     agentPerformance: new AgentPerformanceService(client),
     contextBank: new ContextBankService(client),
     autopilot: new AutopilotService(client),
+    mirofish: new MiroFishService(client),
   };
 }

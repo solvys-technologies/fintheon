@@ -1,7 +1,17 @@
+// [claude-code 2026-03-16] Agent backend v7.9: merged PMA, Herald, Notion split docs
 /**
- * Risk Manager Agent
- * Evaluates trading proposals and enforces risk rules
- * Phase 6 - Day 24
+ * Risk Manager Agent — Feucht's Domain
+ * Evaluates trading proposals and enforces risk rules.
+ *
+ * Risk management is now primarily under Feucht's purview (Futures, Execution & Risk).
+ * This module provides the core risk assessment logic that Feucht invokes
+ * as Stage 4 of the agent pipeline.
+ *
+ * Agent roster context:
+ *   - Feucht: owns this risk check (drawdown, exposure, position sizing, psychology)
+ *   - Oracle: feeds prediction market + macro risk signals upstream (Stage 2)
+ *   - Herald: feeds sentiment risk flags upstream (Stage 1)
+ *   - Consul: provides fundamental risk context via research debate (Stage 3)
  */
 
 import { generateText } from 'ai'

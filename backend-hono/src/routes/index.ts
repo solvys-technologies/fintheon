@@ -15,11 +15,13 @@ import { createPsychAssistRoutes } from './psych-assist.js';
 import { createAiRoutes } from './ai/index.js';
 import { createAgentRoutes } from './agents/index.js';
 import { createPolymarketRoutes } from './polymarket/index.js';
+import { createKalshiRoutes } from './kalshi/index.js';
 import { createBoardroomRoutes } from './boardroom/index.js';
 import { createRithmicRoutes } from './rithmic/index.js';
 import { createHyperliquidRoutes } from './hyperliquid/index.js';
 import { createNotionRoutes } from './notion/index.js';
 import { createNarrativeRoutes } from './narrative/index.js';
+import { createMirofishRoutes } from './mirofish/index.js';
 import { createERRoutes } from './er/index.js';
 import { createVoiceRoutes } from './voice/index.js';
 import { createRegimeRoutes } from './regimes/index.js';
@@ -59,6 +61,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/systemic', systemicRoutes);
   // Context Bank — public, agents consume directly (unified snapshot + desk reports)
   app.route('/api/context-bank', createContextBankRoutes());
+  // MiroFish multi-agent simulation — feature-flagged via MIROFISH_ENABLED
+  app.route('/api/mirofish', createMirofishRoutes());
 
   // Autopilot — signal-ingest/status/signals are public (QC/TV webhooks), proposal mgmt needs auth
   app.use('/api/autopilot/proposals', authMiddleware);
@@ -98,6 +102,8 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/agents/*', authMiddleware);
   app.use('/api/polymarket', authMiddleware);
   app.use('/api/polymarket/*', authMiddleware);
+  app.use('/api/kalshi', authMiddleware);
+  app.use('/api/kalshi/*', authMiddleware);
   app.use('/api/er', authMiddleware);
   app.use('/api/er/*', authMiddleware);
   app.use('/api/voice', authMiddleware);
@@ -142,6 +148,9 @@ export function registerRoutes(app: Hono): void {
 
   // Polymarket routes
   app.route('/api/polymarket', createPolymarketRoutes());
+
+  // Kalshi whale tracker routes
+  app.route('/api/kalshi', createKalshiRoutes());
 
   // ER telemetry routes
   app.route('/api/er', createERRoutes());

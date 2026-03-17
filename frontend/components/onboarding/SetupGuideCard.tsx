@@ -15,7 +15,7 @@ interface ServiceCheck {
   status: ServiceStatus;
 }
 
-const STORAGE_KEY = 'pulse_setup_dismissed';
+const STORAGE_KEY = 'fintheon:setup-dismissed';
 
 export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
   const backend = useBackend();

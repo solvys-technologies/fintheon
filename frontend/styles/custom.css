@@ -14,3 +14,39 @@
   );
   pointer-events: none;
 }
+
+/* [claude-code 2026-03-16] Greeting shimmer + scroll-in animations */
+@keyframes greeting-scroll-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes greeting-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes greeting-settle {
+  from { opacity: 1; }
+  to   { opacity: 0.8; }
+}
+
+.greeting-animate {
+  animation:
+    greeting-scroll-in 400ms ease-out forwards,
+    greeting-shimmer 1.5s ease-in-out 400ms 1 forwards;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(199, 159, 74, 0.4) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-repeat: no-repeat;
+}
+
+.greeting-settle {
+  animation: greeting-settle 300ms ease-out 1.9s forwards;
+}

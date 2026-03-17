@@ -169,7 +169,7 @@ Be direct, use financial shorthand. Anchor ONLY to key macro events. No scatterg
 
 Be analytical, direct, use financial shorthand. 600-1000 words.`}
 `
-        : `You are Fintheon, the macro trading command center for Priced In Capital. Generate a brief ${BRIEF_LABELS[briefType]}.
+        : `You are Fintheon, a macro trading assistant for Priced In Capital. Generate a brief ${BRIEF_LABELS[briefType]}.
 
 ## Today's Economic Events
 ${econSummary}

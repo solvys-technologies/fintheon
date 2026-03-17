@@ -9,7 +9,7 @@ import * as newsCache from './news-cache.js';
 import { enrichFeedWithAnalysis } from './feed-service.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import { fetchEconomicFeed } from './economic-feed.js';
-import { isTwitterCliInstalled, pollTwitterForEconNews } from '../twitter-cli/index.js';
+import { getWarmCacheItems } from '../twitter-cli/index.js';
 import type { FeedItem } from '../../types/riskflow.js';
 
 const POLL_INTERVAL_MS = 15_000; // Poll every 15 seconds for instant Level 4 detection
@@ -27,9 +27,9 @@ async function pollForNewItems(): Promise<void> {
   isPolling = true;
 
   try {
-    // Gather items from twitter-cli + economic feed
+    // Gather items from warm cache (fed by econ-triggered-poller on its own schedule) + economic feed
     const [twitterCliItems, econItems] = await Promise.all([
-      isTwitterCliInstalled().then(ok => ok ? pollTwitterForEconNews() : []).catch(() => []),
+      Promise.resolve(getWarmCacheItems()),
       fetchEconomicFeed().catch(() => []),
     ]);
 

@@ -1,6 +1,6 @@
-# Pulse — Setup & Handoff Guide
+# Fintheon — Setup & Handoff Guide
 
-> **For AI agents**: Read this file when bootstrapping the repo on a new machine. Follow the steps in order. The in-app Setup Guide will verify everything is connected.
+> **For AI agents** (Harper-Hermes, Oracle, Feucht, Consul, Herald, Claude Code): Read this file when bootstrapping the repo on a new machine. Follow the steps in order. The first-run setup wizard will verify everything is connected.
 
 ## Prerequisites
 
@@ -57,7 +57,8 @@ cd frontend && npm run dev        # Starts on port 5173
 
 ### Production (Electron)
 ```bash
-npm run desktop:build             # Builds DMG → desktop-dist/Pulse-1.0.0.dmg
+npm run desktop:build             # Builds DMG → desktop-dist/Fintheon-1.0.0.dmg
+npm run release                   # Full release: frontend + backend + DMG + checksums
 ```
 
 The Electron app auto-spawns the backend as a child process.
@@ -77,7 +78,7 @@ Electron App (main.cjs)
 
 ## In-App Setup Guide
 
-On first launch, Pulse shows a **Setup Guide** card on the Dashboard with status indicators:
+On first launch, Fintheon shows a **Setup Guide** card on the Dashboard with status indicators:
 
 | Service | What It Checks |
 |---------|----------------|
@@ -106,7 +107,7 @@ curl http://localhost:8080/health
 
 ## For AI Agents Onboarding Users
 
-When helping a user set up Pulse:
+When helping a user set up Fintheon:
 1. Install Node.js 20+ if not present
 2. Clone and install deps (see Installation above)
 3. **Get OpenRouter API key** — from OpenRouter (Nous subscription) at openrouter.ai/settings/keys; set `OPENROUTER_API_KEY` in `backend-hono/.env`

@@ -101,6 +101,15 @@ export interface IVScoreResponse {
     };
   };
   instrument: string;
+  /** V4: MiroFish / heuristic forward-looking prediction */
+  prediction?: {
+    nextSessionScore: number;
+    confidence: number;
+    regimeShiftProbability: number;
+    scenarios: Array<{ label: string; probability: number; projectedScore: number }>;
+    source: 'mirofish' | 'heuristic';
+    generatedAt: string;
+  };
   /** V3: Systemic risk overlay data */
   systemic?: {
     score: number;

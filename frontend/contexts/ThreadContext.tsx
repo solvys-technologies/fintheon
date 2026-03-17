@@ -30,7 +30,7 @@ const ThreadContext = createContext<ThreadContextType | undefined>(undefined);
 
 export function ThreadProvider({ children }: { children: ReactNode }) {
   const [threads, setThreads] = useState<Thread[]>(() => {
-    const saved = localStorage.getItem('pulse_threads');
+    const saved = localStorage.getItem('fintheon:threads');
     return saved ? JSON.parse(saved) : [];
   });
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
@@ -77,7 +77,7 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    localStorage.setItem('pulse_threads', JSON.stringify(threads));
+    localStorage.setItem('fintheon:threads', JSON.stringify(threads));
   }, [threads]);
 
   return (

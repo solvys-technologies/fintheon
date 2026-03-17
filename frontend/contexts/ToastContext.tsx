@@ -10,12 +10,13 @@ export interface Toast {
   id: string;
   message: string;
   variant: ToastVariant;
+  description?: string;
   exiting?: boolean;
 }
 
 interface ToastContextValue {
   toasts: Toast[];
-  addToast: (message: string, variant?: ToastVariant) => string;
+  addToast: (message: string, variant?: ToastVariant, description?: string) => string;
   dismissToast: (id: string) => void;
 }
 
@@ -42,14 +43,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToast = useCallback(
-    (message: string, variant: ToastVariant = 'info'): string => {
+    (message: string, variant: ToastVariant = 'info', description?: string): string => {
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      const toast: Toast = { id, message, variant };
+      const toast: Toast = { id, message, variant, description };
       setToasts((prev) => [...prev, toast]);
 
       // Auto-dismiss (except 'updating' which stays until manually dismissed)
       if (variant !== 'updating') {
-        setTimeout(() => dismissToast(id), variant === 'reminder' ? 8000 : 4000);
+        const delay = variant === 'error' ? 2500 : variant === 'reminder' ? 8000 : 4000;
+        setTimeout(() => dismissToast(id), delay);
       }
 
       return id;

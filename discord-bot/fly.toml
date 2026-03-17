@@ -1,0 +1,13 @@
+app = "harper-perp-bot"
+primary_region = "ewr"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  LOG_LEVEL = "info"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpus = 1

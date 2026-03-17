@@ -27,7 +27,7 @@ function MiniWidgetApp() {
         const data = await backend.marketData.getIVScore(selectedSymbol.symbol);
         setIvData(data);
       } catch (error) {
-        console.error('[MiniWidget] Failed to fetch IV score:', error);
+        console.warn('[MiniWidget] Failed to fetch IV score:', error);
       } finally {
         setIvLoading(false);
       }

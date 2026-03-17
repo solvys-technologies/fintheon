@@ -35,7 +35,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
           setSelectedAccount(result.accounts[0].accountId);
         }
       } catch (err) {
-        console.error('Failed to fetch ProjectX accounts:', err);
+        console.warn('Failed to fetch ProjectX accounts:', err);
       } finally {
         setLoading(false);
       }
@@ -55,7 +55,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
         setCurrentPnL(account.dailyPnl);
         return true;
       } catch (err: any) {
-        console.error('Failed to fetch account:', err);
+        console.warn('Failed to fetch account:', err);
         if (err?.status === 401 || err?.code === 'auth_skipped') {
           return false;
         }
@@ -101,7 +101,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
         setUplinkMessage(result.message);
       }
     } catch (err: any) {
-      console.error('Failed to uplink:', err);
+      console.warn('Failed to uplink:', err);
       if (err?.message?.includes('credentials') || err?.message?.includes('ProjectX')) {
         setUplinkMessage(err.message);
       } else if (err?.code === 'unauthenticated') {

@@ -168,7 +168,7 @@ export function ResearchDepartment() {
               thinkHarder={thinkHarder}
               setThinkHarder={setThinkHarder}
               placeholder={`Message ${agent.name}...`}
-              draftKey="pulse_draft_research"
+              draftKey="fintheon:draft-research"
             />
           </div>
         </div>

@@ -60,14 +60,14 @@ export default function NewsFeed() {
       });
       setRiskflow(data.items);
     } catch (error: any) {
-      console.error('Failed to load RiskFlow:', error);
+      console.warn('Failed to load RiskFlow:', error);
       if (error.code === "not_found" || error.code === "unauthenticated") {
         try {
           await backend.riskflow.seed();
           const newData = await backend.riskflow.list({ limit: 15 });
           setRiskflow(newData.items);
         } catch (seedError) {
-          console.error('Failed to seed RiskFlow:', seedError);
+          console.warn('Failed to seed RiskFlow:', seedError);
         }
       }
     } finally {

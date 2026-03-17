@@ -15,8 +15,9 @@ import { useVoiceMemory } from '../hooks/useVoiceMemory';
 
 import { ClawnalystDesk } from './settings/ClawnalystDesk';
 import { ThemeSettings } from './settings/ThemeSettings';
+import { HermesSettings } from './settings/HermesSettings';
 
-type SettingsTab = 'general' | 'gateway' | 'appearance' | 'desk' | 'notifications' | 'trading' | 'api' | 'iframes' | 'developer' | 'danger';
+type SettingsTab = 'general' | 'gateway' | 'appearance' | 'desk' | 'hermes' | 'notifications' | 'trading' | 'api' | 'iframes' | 'developer' | 'danger';
 
 export function SettingsPage() {
   const { tier, setTier, isAuthenticated } = useAuth();
@@ -159,7 +160,7 @@ export function SettingsPage() {
           }));
         }
       } catch (error) {
-        console.error('Failed to load settings data:', error);
+        console.warn('Failed to load settings data:', error);
       }
     }
 
@@ -168,10 +169,11 @@ export function SettingsPage() {
 
   const tabs = [
     { id: 'general' as const, label: 'Profile', icon: Settings, description: 'Trading symbol, billing, and account preferences' },
-    { id: 'gateway' as const, label: 'Hermes', icon: Wifi, description: 'Hermes agent connection and health status' },
+    { id: 'gateway' as const, label: 'Connection', icon: Wifi, description: 'Gateway connection and persistent thread settings' },
     { id: 'appearance' as const, label: 'Appearance', icon: Palette, description: 'Theme and visual customization options' },
-    { id: 'desk' as const, label: 'Clawnalyst Desk', icon: Users, description: 'Configure analyst personas and agent settings' },
-    { id: 'trading' as const, label: 'Trading', icon: Cpu, description: 'Risk management, autopilot, and strategy toggles' },
+    { id: 'desk' as const, label: 'Analyst Desk', icon: Users, description: 'Configure analyst personas and agent settings' },
+    { id: 'hermes' as const, label: 'Hermes', icon: Cpu, description: 'Agent gateway, API key, status, and activity log' },
+    { id: 'trading' as const, label: 'Trading', icon: CreditCard, description: 'Risk management, autopilot, and strategy toggles' },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
     { id: 'api' as const, label: 'API', icon: Code, description: 'API keys and external service credentials' },
     { id: 'iframes' as const, label: 'iFrames', icon: Globe, description: 'Notion embed URLs for Boardroom, Research, and more' },
@@ -872,6 +874,12 @@ export function SettingsPage() {
               </div>
             )}
 
+            {activeTab === 'hermes' && (
+              <div key="hermes" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
+                <HermesSettings />
+              </div>
+            )}
+
             {activeTab === 'danger' && (
               <div key="danger" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
@@ -941,6 +949,36 @@ export function SettingsPage() {
                     />
                     <p className="text-xs text-gray-500">
                       Show a button on the Tape to trigger a mock trading proposal for UX testing
+                    </p>
+                  </div>
+                </section>
+
+                <section className="pt-6">
+                  <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Feature Flags</h3>
+                  <div className="space-y-3">
+                    <Toggle
+                      label="Show placeholder briefings"
+                      enabled={developerSettings.showPlaceholderBriefings ?? false}
+                      onChange={(val) => setDeveloperSettings({ ...developerSettings, showPlaceholderBriefings: val })}
+                    />
+                    <p className="text-xs text-gray-500">
+                      When off, empty briefs show "No brief available" instead of "Awaiting AI-generated brief..."
+                    </p>
+                    <Toggle
+                      label="MiroFish simulations"
+                      enabled={developerSettings.mirofishSimulations ?? false}
+                      onChange={(val) => setDeveloperSettings({ ...developerSettings, mirofishSimulations: val })}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Enable MiroFish simulation layer for narrative and IV prediction testing
+                    </p>
+                    <Toggle
+                      label="Agent auto-proposals"
+                      enabled={developerSettings.agentAutoProposals ?? false}
+                      onChange={(val) => setDeveloperSettings({ ...developerSettings, agentAutoProposals: val })}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Allow agents to automatically generate and submit trade proposals without manual trigger
                     </p>
                   </div>
                 </section>
@@ -1038,20 +1076,20 @@ function GatewayTab() {
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
 
   const [persistentEnabled, setPersistentEnabled] = useState(() =>
-    localStorage.getItem('pulse_gateway_persistent_thread_enabled') === 'true'
+    localStorage.getItem('fintheon:gateway-persistent-thread-enabled') === 'true'
   );
   const [persistentThreadId, setPersistentThreadId] = useState(() =>
-    localStorage.getItem('pulse_gateway_persistent_thread_id') ?? ''
+    localStorage.getItem('fintheon:gateway-persistent-thread-id') ?? ''
   );
 
   const handleTogglePersistent = (enabled: boolean) => {
     setPersistentEnabled(enabled);
-    localStorage.setItem('pulse_gateway_persistent_thread_enabled', String(enabled));
+    localStorage.setItem('fintheon:gateway-persistent-thread-enabled', String(enabled));
   };
 
   const handleThreadIdChange = (id: string) => {
     setPersistentThreadId(id);
-    localStorage.setItem('pulse_gateway_persistent_thread_id', id);
+    localStorage.setItem('fintheon:gateway-persistent-thread-id', id);
   };
 
   return (

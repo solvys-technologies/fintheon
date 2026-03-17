@@ -138,7 +138,7 @@ export function useHermesChat(
           ...(thinkHarderRef.current && { thinkHarder: true }),
           // Active MCP connector IDs — backend uses these to scope available tools
           mcpServers: (() => {
-            try { return JSON.parse(localStorage.getItem('pulse_mcp_active_connectors') ?? '[]'); }
+            try { return JSON.parse(localStorage.getItem('fintheon:mcp-active-connectors') ?? '[]'); }
             catch { return []; }
           })(),
         },

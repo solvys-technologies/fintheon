@@ -10,9 +10,9 @@ import type {
   CatalystCard,
 } from './narrative-types';
 
-const STORAGE_KEY = 'pulse_narrative_v1';
-const SNAPSHOT_KEY = 'pulse_narrative_snapshot_v1';
-const AGENT_CONFIG_KEY = 'pulse_narrative_agent_v1';
+const STORAGE_KEY = 'fintheon:narrative:v1';
+const SNAPSHOT_KEY = 'fintheon:narrative-snapshot:v1';
+const AGENT_CONFIG_KEY = 'fintheon:narrative-agent:v1';
 
 export function generateId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -38,6 +38,11 @@ function defaultState(): NarrativeFlowState {
     replayMode: false,
     replayPosition: 0,
     agentProvider: { provider: 'manual', autoApprove: false },
+    sortKey: 'order',
+    sortDirection: 'asc',
+    filterCategory: 'all',
+    filterStatus: 'all',
+    filterBeatMiss: 'all',
   };
 }
 
@@ -179,6 +184,13 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
           c.id === action.id ? { ...c, date: action.date, position: action.position, updatedAt: now } : c
         ),
       };
+    case 'TAG_CATALYST':
+      return {
+        ...state,
+        catalysts: state.catalysts.map((c) =>
+          c.id === action.catalystId ? { ...c, tags: action.tags, updatedAt: now } : c
+        ),
+      };
     case 'ADD_ROPE': {
       const rope = { ...action.rope, id: generateId(), createdAt: now };
       return { ...state, ropes: [...state.ropes, rope] };
@@ -217,6 +229,14 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
       return { ...state, replayMode: action.enabled };
     case 'SET_REPLAY_POSITION':
       return { ...state, replayPosition: action.position };
+    case 'SET_SORT':
+      return { ...state, sortKey: action.sortKey, sortDirection: action.sortDirection };
+    case 'SET_FILTER_CATEGORY':
+      return { ...state, filterCategory: action.category };
+    case 'SET_FILTER_STATUS':
+      return { ...state, filterStatus: action.status };
+    case 'SET_FILTER_BEAT_MISS':
+      return { ...state, filterBeatMiss: action.beatMiss };
     case 'TAKE_SNAPSHOT':
       return state; // handled outside reducer
     case 'RESTORE_SNAPSHOT':

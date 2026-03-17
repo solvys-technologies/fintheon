@@ -14,13 +14,13 @@ interface RawSessionMessage {
   sessionKey?: string;
 }
 
+// [claude-code 2026-03-16] Agent backend v7.9: updated agent patterns for new roster
 const AGENT_PATTERNS: Array<{ regex: RegExp; agent: Exclude<BoardroomAgent, 'Unknown'>; emoji: string }> = [
+  { regex: /harper[-\s]?hermes|harper/i, agent: 'Harper-Hermes', emoji: '🎩' },
   { regex: /oracle/i, agent: 'Oracle', emoji: '📊' },
   { regex: /feucht/i, agent: 'Feucht', emoji: '⚡' },
-  { regex: /sentinel/i, agent: 'Sentinel', emoji: '🔍' },
-  { regex: /charles/i, agent: 'Charles', emoji: '💀' },
-  { regex: /horace/i, agent: 'Horace', emoji: '⚖️' },
-  { regex: /harper/i, agent: 'Harper', emoji: '🎩' },
+  { regex: /consul/i, agent: 'Consul', emoji: '📜' },
+  { regex: /herald/i, agent: 'Herald', emoji: '📰' },
 ];
 
 const safeJsonParse = <T>(line: string): T | null => {
@@ -45,9 +45,9 @@ const inferAgent = (content: string): { agent: BoardroomAgent; emoji: string } =
 };
 
 const inferSender = (content: string, role: string): InterventionMessage['sender'] => {
-  if (/harper/i.test(content)) return 'Harper';
+  if (/harper/i.test(content)) return 'Harper-Hermes';
   if (role === 'user') return 'User';
-  if (role === 'assistant') return 'Harper';
+  if (role === 'assistant') return 'Harper-Hermes';
   return 'Unknown';
 };
 

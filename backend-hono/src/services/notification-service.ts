@@ -82,7 +82,7 @@ export function getMockNotifications(userId: string): NotificationListResponse {
       id: '4',
       userId,
       type: 'system',
-      title: 'Welcome to Pulse',
+      title: 'Welcome to Fintheon',
       message: 'Your account has been activated. Start trading with confidence.',
       priority: 'low',
       isRead: true,

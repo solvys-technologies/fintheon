@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] Theme system — types, presets, and localStorage persistence
+// [claude-code 2026-03-16] Stone theme + narrative theme integration
 
 export interface ThemeConfig {
   name: string;
@@ -85,6 +85,18 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
     surface: '#141414',
     border: '#FFFFFF',
     muted: '#737373',
+  },
+  stone: {
+    name: 'stone',
+    label: 'Stone',
+    accent: '#c79f4a',
+    bg: '#0d0c09',
+    text: '#cdc5b4',
+    bullish: '#2d5a3d',
+    bearish: '#7a3030',
+    surface: '#151310',
+    border: '#3d3826',
+    muted: '#6b6455',
   },
 };
 

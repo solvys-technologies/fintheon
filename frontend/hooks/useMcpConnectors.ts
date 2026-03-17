@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { McpServerConfig, McpServerId, McpServerListResponse } from '../types/mcp';
 import { API_BASE_URL } from '../components/chat/constants';
 
-const STORAGE_KEY = 'pulse_mcp_active_connectors';
+const STORAGE_KEY = 'fintheon:mcp-active-connectors';
 
 /** Static fallback when T1 backend routes are not yet available */
 const DEFAULT_SERVERS: McpServerConfig[] = [

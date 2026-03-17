@@ -19,6 +19,11 @@ export interface ElectronAPI {
   closeWindow: () => void;
   runShellCommand: (command: string) => Promise<{ ok: boolean; error?: string }>;
   setCliOutputCallback: (cb: ((event: CliOutputEvent) => void) | null) => void;
+  onUpdateAvailable: (cb: ((info: any) => void) | null) => () => void;
+  onUpdateProgress: (cb: ((progress: any) => void) | null) => () => void;
+  onUpdateDownloaded: (cb: (() => void) | null) => () => void;
+  downloadUpdate: () => Promise<void>;
+  installUpdate: () => void;
 }
 
 declare global {

@@ -1,8 +1,10 @@
 // [claude-code 2026-03-11] Compact RiskFlow card for combined panels
 // [claude-code 2026-03-11] Replaced SourceDot with SVG icons (X/Notion), removed direction triangle
 // [claude-code 2026-03-12] Disabled card expand, added dismiss button, headline-only link
+// [claude-code 2026-03-16] FIX 3: Use shared inferDirection, show instrument to match large cards
 import { X as XIcon } from 'lucide-react';
 import type { RiskFlowAlert } from '../../lib/riskflow-feed';
+import { inferDirection } from '../../lib/riskflow-feed';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
 
 function timeAgo(dateStr: string): string {
@@ -42,19 +44,6 @@ function SourceIcon({ source, className }: { source: string; className?: string 
   return <span className={`font-bold text-[7px] uppercase ${className}`}>{source.charAt(0)}</span>;
 }
 
-/** Infer Bullish/Bearish from alert data or headline keywords */
-function inferDirection(alert: RiskFlowAlert): 'Bullish' | 'Bearish' {
-  if (alert.direction === 'Bullish' || alert.direction === 'Bearish') return alert.direction;
-  if (alert.tradeIdea) return alert.tradeIdea.direction === 'long' ? 'Bullish' : 'Bearish';
-  const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
-  const bullish = ['surge', 'rally', 'rise', 'gain', 'jump', 'soar', 'bull', 'record high', 'beat', 'above', 'upgrade', 'boom', 'positive', 'strong', 'up '];
-  const bearish = ['drop', 'fall', 'crash', 'plunge', 'decline', 'sink', 'bear', 'miss', 'below', 'downgrade', 'slump', 'negative', 'fear', 'risk', 'warn', 'cut', 'sell', 'weak', 'down '];
-  let b = 0, s = 0;
-  for (const kw of bullish) if (lower.includes(kw)) b++;
-  for (const kw of bearish) if (lower.includes(kw)) s++;
-  return b >= s ? 'Bullish' : 'Bearish';
-}
-
 interface CompactRiskFlowCardProps {
   alert: RiskFlowAlert;
   seen?: boolean;
@@ -64,63 +53,64 @@ interface CompactRiskFlowCardProps {
 export function CompactRiskFlowCard({ alert, seen = false, onDismiss }: CompactRiskFlowCardProps) {
   const sev = SEVERITY_CONFIG[alert.severity];
   const isHigh = alert.severity === 'high' || alert.severity === 'critical';
+  const dir = inferDirection(alert);
+  const isBull = dir === 'Bullish';
 
   return (
     <div
-      className={`group flex items-start gap-2 px-2.5 py-2 rounded-md hover:bg-[var(--fintheon-accent)]/5 transition-colors ${isHigh ? 'bg-red-500/5' : ''} ${seen ? 'opacity-60' : ''}`}
+      className={`group rounded-xl border border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'bg-red-500/5' : ''} ${seen ? 'opacity-60' : ''}`}
     >
-      {/* Severity dot */}
-      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
-        style={{ backgroundColor: isHigh ? '#EF4444' : alert.severity === 'medium' ? '#F59E0B' : '#6B7280' }}
-      />
-
-      <div className="flex-1 min-w-0">
-        {/* Headline */}
-        {alert.url ? (
-          <a
-            href={alert.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`text-[11px] leading-snug font-medium line-clamp-2 block ${isHigh ? 'text-red-300' : 'text-zinc-300'} hover:text-white transition-colors`}
-          >
-            {alert.headline}
-          </a>
-        ) : (
-          <p className={`text-[11px] leading-snug font-medium line-clamp-2 ${isHigh ? 'text-red-300' : 'text-zinc-300'}`}>
-            {alert.headline}
-          </p>
-        )}
-
-        {/* Meta row */}
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <SourceIcon source={alert.source} className="w-2.5 h-2.5 text-zinc-600 flex-shrink-0" />
-          <span className="text-[9px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
-          {alert.authorHandle && (
-            <span className="text-[9px] text-zinc-500 truncate max-w-[80px]">@{alert.authorHandle}</span>
-          )}
-          {(() => {
-            const dir = inferDirection(alert);
-            const isBull = dir === 'Bullish';
-            return (
-              <span className={`text-[9px] font-semibold ${isBull ? 'text-emerald-500' : 'text-red-400'}`}>
-                {isBull ? '▲' : '▼'}
-              </span>
-            );
-          })()}
-          <span className="text-[9px] text-zinc-500 font-mono">
-            {alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}pt` : '0-5pt'}
+      {/* Main content area */}
+      <div className="px-2.5 pt-2 pb-1.5">
+        <div className="flex items-start gap-2">
+          <span className={`inline-flex items-center px-1 py-px rounded text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border flex-shrink-0 mt-0.5`}>
+            {sev.label}
           </span>
+          <div className="flex-1 min-w-0">
+            {alert.url ? (
+              <a
+                href={alert.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`text-[11px] leading-snug font-medium line-clamp-2 block ${isHigh ? 'text-red-300' : 'text-zinc-300'} hover:text-white transition-colors`}
+              >
+                {alert.headline}
+              </a>
+            ) : (
+              <p className={`text-[11px] leading-snug font-medium line-clamp-2 ${isHigh ? 'text-red-300' : 'text-zinc-300'}`}>
+                {alert.headline}
+              </p>
+            )}
+            {/* Source + author row */}
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <SourceIcon source={alert.source} className="w-2.5 h-2.5 text-zinc-600 flex-shrink-0" />
+              {alert.authorHandle && (
+                <span className="text-[8px] text-zinc-500 truncate max-w-[80px]">@{alert.authorHandle}</span>
+              )}
+            </div>
+          </div>
           {onDismiss && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onDismiss(alert.id); }}
-              className="text-zinc-700 hover:text-red-400 transition-colors ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100"
+              className="text-zinc-700 hover:text-red-400 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
               title="Dismiss"
             >
               <XIcon className="w-2.5 h-2.5" />
             </button>
           )}
         </div>
+      </div>
+
+      {/* Bottom hero footer — time (left), direction (center), points (right) */}
+      <div className="flex items-center justify-between px-2.5 py-1 bg-zinc-900/80 border-t border-zinc-800/40">
+        <span className="text-[8px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
+        <span className={`text-[9px] font-bold tracking-wider uppercase ${isBull ? 'text-emerald-500' : 'text-red-400'}`}>
+          {isBull ? '▲ BULLISH' : '▼ BEARISH'}
+        </span>
+        <span className="text-[8px] text-zinc-500 tabular-nums font-mono">
+          {alert.instrument ? `${alert.instrument} ` : ''}{alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}pt` : '0-5pt'}
+        </span>
       </div>
     </div>
   );

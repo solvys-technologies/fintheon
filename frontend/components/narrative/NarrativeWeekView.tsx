@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] NarrativeFlow NarrativeWeekView — primary snap-scroll week view
+// [claude-code 2026-03-16] Stone theme + narrative theme integration
 import { useRef, useState, useCallback, useMemo } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import { getMonday, getWeekDates, shiftWeek, formatWeekLabel, formatDayLabel } from '../../lib/narrative-time';
@@ -9,7 +9,11 @@ const WEEKS_BEFORE = 4;
 const WEEKS_AFTER = 4;
 const TOTAL_WEEKS = WEEKS_BEFORE + 1 + WEEKS_AFTER;
 
-export default function NarrativeWeekView() {
+interface NarrativeWeekViewProps {
+  onContextMenuLane?: (e: React.MouseEvent, id: string, type?: 'lane' | 'catalyst') => void;
+}
+
+export default function NarrativeWeekView({ onContextMenuLane }: NarrativeWeekViewProps = {}) {
   const { state, dispatch, lanesFiltered } = useNarrative();
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -101,6 +105,7 @@ export default function NarrativeWeekView() {
         title: newLaneTitle.trim(),
         instruments: newLaneInstruments.split(',').map(s => s.trim()).filter(Boolean),
         directionBias: newLaneDirection,
+        category: 'macroeconomic',
         status: 'active',
         dateRange: { start: new Date().toISOString(), end: null },
         healthScore: 100,
@@ -184,6 +189,7 @@ export default function NarrativeWeekView() {
                         onSelectCatalyst={handleSelectCatalyst}
                         onMoveCatalyst={handleMoveCatalyst}
                         onSelectLane={handleSelectLane}
+                        onContextMenuLane={onContextMenuLane}
                         compact={false}
                         cardRefs={cardRefs}
                         onDoubleClickDay={handleDoubleClickDay}

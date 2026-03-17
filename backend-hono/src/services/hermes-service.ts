@@ -2,9 +2,9 @@
 /**
  * Hermes Service
  * Agentic backend layer for Priced In Capital (P.I.C.)
- * Orchestrates AI agents: Harper (CAO), PMA-1, PMA-2, Futures Desk, Fundamentals Desk
+ * Orchestrates AI agents: Harper-Hermes (CAO), Oracle (All-Seer), Feucht (Futures & Risk), Consul (Fundamentals), Herald (News)
  *
- * Architecture: HERMES AGENT → PULSE UI → H.E's (Human Executives)
+ * Architecture: HERMES AGENT → FINTHEON UI → H.E's (Human Executives)
  * Inference: OpenRouter (Nous subscription) + Claude Opus 4.6
  */
 
@@ -17,13 +17,14 @@ const HERMES_BASE_URL = process.env.OPENROUTER_BASE_URL
   : OPENROUTER_BASE
 const HERMES_API_KEY = process.env.OPENROUTER_API_KEY
 
+// [claude-code 2026-03-16] Agent roster v7.9: merged PMA, added Herald
 // P.I.C. Agent Hierarchy
 export type HermesAgentRole =
   | 'harper-cao'          // Chief Agentic Officer - Executive level
-  | 'pma-1'               // S&P 500 & Crypto Predictions
-  | 'pma-2'               // Econ/Politics Predictions
-  | 'futures-desk'        // Economic Analyst/Trader
-  | 'fundamentals-desk'   // Tech Mega-Cap Analyst
+  | 'pma-merged'          // Oracle: All-Seer (merged PMA-1 + PMA-2)
+  | 'futures-desk'        // Feucht: Futures, Execution & Risk
+  | 'fundamentals-desk'   // Consul: Tech Mega-Cap Analyst
+  | 'herald'              // Herald: News & Sentiment
 
 // Backward compat alias
 export type OpenClawAgentRole = HermesAgentRole
@@ -88,36 +89,36 @@ export interface HermesClientConfig {
   appName?: string
 }
 
-// Agent definitions following P.I.C. hierarchy
+// Agent definitions following P.I.C. hierarchy (v7.9)
 const HERMES_AGENTS: Record<HermesAgentRole, Omit<HermesAgent, 'id' | 'lastCheckin' | 'status'>> = {
   'harper-cao': {
     role: 'harper-cao',
-    displayName: 'Harper / CAO',
+    displayName: 'Harper-Hermes / CAO',
     scope: 'Macro oversight, approvals, trade consolidation',
     reportsTo: 'human-executives'
   },
-  'pma-1': {
-    role: 'pma-1',
-    displayName: 'PMA-1 (S&P/Crypto)',
-    scope: 'S&P 500 & Crypto prediction markets',
-    reportsTo: 'harper-cao'
-  },
-  'pma-2': {
-    role: 'pma-2',
-    displayName: 'PMA-2 (Econ/Politics)',
-    scope: 'Economic & Political prediction markets',
+  'pma-merged': {
+    role: 'pma-merged',
+    displayName: 'Oracle (All-Seer)',
+    scope: 'Prediction markets (S&P, Crypto, Econ, Political) + execution oversight',
     reportsTo: 'harper-cao'
   },
   'futures-desk': {
     role: 'futures-desk',
-    displayName: 'Futures Desk',
-    scope: '/NQ, /MNQ, /ES trading via TopStepX',
+    displayName: 'Feucht (Futures & Risk)',
+    scope: '/NQ, /MNQ, /ES trading via TopStepX + risk management',
     reportsTo: 'harper-cao'
   },
   'fundamentals-desk': {
     role: 'fundamentals-desk',
-    displayName: 'Fundamentals Desk',
-    scope: 'Top 10 S&P/NDX tech watchlist',
+    displayName: 'Consul (Fundamentals)',
+    scope: 'Top 10 S&P/NDX tech watchlist + mega-cap analysis',
+    reportsTo: 'harper-cao'
+  },
+  'herald': {
+    role: 'herald',
+    displayName: 'Herald (News & Sentiment)',
+    scope: 'News sentiment, social signals, headline impact',
     reportsTo: 'harper-cao'
   }
 }
@@ -127,8 +128,7 @@ export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   'harper-cao': 'anthropic/claude-opus-4.6',
   'cao-approval': 'anthropic/claude-opus-4.6',
   'cao-consolidation': 'anthropic/claude-opus-4.6',
-  'pma-1': 'anthropic/claude-opus-4.6',
-  'pma-2': 'anthropic/claude-opus-4.6',
+  'pma-merged': 'anthropic/claude-opus-4.6',
   'prediction-market': 'anthropic/claude-opus-4.6',
   'futures-desk': 'anthropic/claude-opus-4.6',
   'fa-rippers': 'anthropic/claude-opus-4.6',
@@ -136,6 +136,7 @@ export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   'fundamentals-desk': 'anthropic/claude-opus-4.6',
   'earnings-analysis': 'anthropic/claude-opus-4.6',
   'tech-mega-cap': 'anthropic/claude-opus-4.6',
+  'herald': 'anthropic/claude-opus-4.6',
 }
 
 // Backward compat
@@ -147,7 +148,7 @@ export const OPENCLAW_TASK_MODEL_MAP = HERMES_TASK_MODEL_MAP
 export const buildHermesHeaders = (config?: {
   appName?: string
 }): Record<string, string> => {
-  const appName = config?.appName ?? process.env.HERMES_APP_NAME ?? 'Pulse-PIC-Hermes'
+  const appName = config?.appName ?? process.env.HERMES_APP_NAME ?? 'Fintheon-PIC-Hermes'
 
   return {
     'X-Hermes-App': appName,
@@ -184,8 +185,8 @@ export const createHermesClient = (modelId?: string) => {
     baseURL: HERMES_BASE_URL,
     headers: {
       ...(headers as Record<string, string>),
-      'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
-      'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+      'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
+      'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
     },
   })
 
@@ -224,9 +225,10 @@ export const agentRoleToTaskType = (role: HermesAgentRole): string => {
   switch (role) {
     case 'harper-cao':
       return 'reasoning'
-    case 'pma-1':
-    case 'pma-2':
+    case 'pma-merged':
       return 'prediction-market'
+    case 'herald':
+      return 'news-sentiment'
     case 'futures-desk':
       return 'technical'
     case 'fundamentals-desk':

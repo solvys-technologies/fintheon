@@ -43,7 +43,7 @@ export function CompactPnLDisplay({ showAccount = true }: CompactPnLDisplayProps
         }
         return true;
       } catch (err: any) {
-        console.error('Failed to fetch account data:', err);
+        console.warn('Failed to fetch account data:', err);
         if (err?.status === 401 || err?.code === 'auth_skipped') {
           return false;
         }

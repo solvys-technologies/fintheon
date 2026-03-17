@@ -4,11 +4,15 @@
 // [claude-code 2026-03-12] Instrument persistence: passes selectedSymbol to backend feed poll
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { RiskFlowAlert } from '../lib/riskflow-feed';
+import { ensureScoring, downgradeNonFinancialBreaking } from '../lib/riskflow-feed';
 import baseBackend from '../lib/backend';
 import { decodeHtmlEntities } from '../lib/html-entities';
 import { useSettings } from './SettingsContext';
 import type { NotionPollStatus } from '../lib/services';
 import type { RiskFlowItem } from '../types/api';
+
+// [claude-code 2026-03-16] Auto-refresh gating: polls skip when autoRefresh is OFF
+// [claude-code 2026-03-16] T2: ensureScoring + downgradeNonFinancialBreaking on merged feed
 
 interface RiskFlowContextValue {
   alerts: RiskFlowAlert[];
@@ -56,12 +60,13 @@ function mapBackendSource(source: string): RiskFlowAlert['source'] {
   if (s === 'insiderwire') return 'insider-wire';
   if (s === 'economiccalendar') return 'economic-calendar';
   if (s === 'polymarket') return 'polymarket';
+  if (s === 'kalshi') return 'kalshi-whale';
   if (s === 'twittercli') return 'twitter-cli';
   return 'backend';
 }
 
-const DISMISSED_STORAGE_KEY = 'pulse_riskflow_dismissed_ids:v1';
-const SEEN_STORAGE_KEY = 'pulse_riskflow_seen_ids:v1';
+const DISMISSED_STORAGE_KEY = 'fintheon:riskflow-dismissed:v1';
+const SEEN_STORAGE_KEY = 'fintheon:riskflow-seen:v1';
 
 function loadStoredIds(key: string): Set<string> {
   try {
@@ -84,7 +89,7 @@ function persistIds(key: string, ids: Set<string>): void {
 }
 
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
-  const { selectedSymbol } = useSettings();
+  const { selectedSymbol, autoRefresh } = useSettings();
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
@@ -146,11 +151,14 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void pollNotion();
-    notionIntervalRef.current = setInterval(() => { void pollNotion(); }, NOTION_POLL_MS);
+    notionIntervalRef.current = setInterval(() => {
+      if (!autoRefresh) return;
+      void pollNotion();
+    }, NOTION_POLL_MS);
     return () => {
       if (notionIntervalRef.current) clearInterval(notionIntervalRef.current);
     };
-  }, [pollNotion]);
+  }, [pollNotion, autoRefresh]);
 
   // Backend feed polling (twitter-cli, Polymarket, Economic Calendar)
   const pollBackendFeed = useCallback(async () => {
@@ -185,11 +193,14 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void pollBackendFeed();
-    backendIntervalRef.current = setInterval(() => { void pollBackendFeed(); }, BACKEND_FEED_POLL_MS);
+    backendIntervalRef.current = setInterval(() => {
+      if (!autoRefresh) return;
+      void pollBackendFeed();
+    }, BACKEND_FEED_POLL_MS);
     return () => {
       if (backendIntervalRef.current) clearInterval(backendIntervalRef.current);
     };
-  }, [pollBackendFeed]);
+  }, [pollBackendFeed, autoRefresh]);
 
   // Merge: Notion (pinned) → Backend feed
   // [claude-code 2026-03-11] 24h stalemate rule: drop items older than 24h on init/render
@@ -203,6 +214,10 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const seenBackendIds = new Set(notionAlerts.map((a) => a.id));
   const dedupedBackend = backendAlerts.filter((a) => !seenBackendIds.has(a.id));
   const merged = [...notionAlerts, ...dedupedBackend].filter(isFresh);
+  // FIX 1: Ensure every item has pointRange, direction, cyclical
+  ensureScoring(merged, selectedSymbol.symbol);
+  // FIX 4: Downgrade non-financial BREAKING headlines
+  downgradeNonFinancialBreaking(merged);
   const visibleAlerts = merged.filter((a) => !dismissedIds.has(a.id));
   const highCount = visibleAlerts.filter((a) => a.severity === 'high' || a.severity === 'critical').length;
   const mediumCount = visibleAlerts.filter((a) => a.severity === 'medium').length;

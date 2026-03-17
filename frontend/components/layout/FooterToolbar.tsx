@@ -1,7 +1,7 @@
 // [claude-code 2026-03-05] Phase 2A: Added iframe controls + heartbeat status
 // [claude-code 2026-03-07] Slide-up panel with Terminal + Changelog tabs
 // [claude-code 2026-03-10] Notion + X CLI status indicators in toolbar strip.
-// [claude-code 2026-03-14] Pulse CLI: run shell commands via Electron; "/" slash-command suggestions.
+// [claude-code 2026-03-14] Fintheon CLI: run shell commands via Electron; "/" slash-command suggestions.
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText } from 'lucide-react';
 import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TopStepXBrowser';
@@ -10,7 +10,7 @@ import { useSourceStatus } from '../../hooks/useSourceStatus';
 
 type PanelTab = 'terminal' | 'changelog';
 
-/** Slash-command suggestions (like Claude Code skills) for the Pulse CLI */
+/** Slash-command suggestions (like Claude Code skills) for the Fintheon CLI */
 const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
   { slug: 'start-backend', label: 'Start backend', command: 'cd backend-hono && npm run dev' },
   { slug: 'frontend', label: 'Start frontend dev', command: 'npx vite' },
@@ -32,6 +32,8 @@ interface FooterToolbarProps {
   topStepXEnabled?: boolean;
   primaryPlatform?: TradingPlatform;
   onPrimaryPlatformChange?: (p: TradingPlatform) => void;
+  secondaryPlatform?: TradingPlatform;
+  onSecondaryPlatformChange?: (p: TradingPlatform) => void;
   splitViewEnabled?: boolean;
   onSplitViewToggle?: () => void;
   allowSplitView?: boolean;
@@ -42,6 +44,8 @@ export function FooterToolbar({
   topStepXEnabled = false,
   primaryPlatform = 'topstepx',
   onPrimaryPlatformChange,
+  secondaryPlatform = 'research',
+  onSecondaryPlatformChange,
   splitViewEnabled = false,
   onSplitViewToggle,
   allowSplitView = false,
@@ -451,18 +455,34 @@ export function FooterToolbar({
               ))}
             </select>
             {allowSplitView && (
-              <button
-                type="button"
-                onClick={onSplitViewToggle}
-                className={`p-0.5 rounded transition-colors ${
-                  splitViewEnabled
-                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-                    : 'text-gray-600 hover:text-[var(--fintheon-accent)]'
-                }`}
-                title="Toggle split view"
-              >
-                <SplitSquareVertical className="w-3 h-3" />
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={onSplitViewToggle}
+                  className={`p-0.5 rounded transition-colors ${
+                    splitViewEnabled
+                      ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                      : 'text-gray-600 hover:text-[var(--fintheon-accent)]'
+                  }`}
+                  title="Toggle split view"
+                >
+                  <SplitSquareVertical className="w-3 h-3" />
+                </button>
+                {splitViewEnabled && (
+                  <select
+                    value={secondaryPlatform}
+                    onChange={(e) => onSecondaryPlatformChange?.(e.target.value as TradingPlatform)}
+                    className="px-1.5 py-0.5 bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded text-[10px] text-[var(--fintheon-accent)]/70 focus:outline-none"
+                    title="Secondary frame"
+                  >
+                    {Object.entries(PLATFORM_LABELS)
+                      .filter(([key]) => key !== primaryPlatform)
+                      .map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                  </select>
+                )}
+              </>
             )}
             <button
               type="button"

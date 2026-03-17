@@ -1,8 +1,8 @@
 // [claude-code 2026-03-11] Frontend mirror of backend context-bank types
 
 export type VixRegime = 'low' | 'normal' | 'elevated' | 'crisis'
-export type DeskId = 'fundamentals' | 'futures' | 'pma-1' | 'pma-2' | 'risk'
-export type AgentName = 'Sentinel' | 'Feucht' | 'Oracle' | 'Charles' | 'Horace'
+export type DeskId = 'fundamentals' | 'futures' | 'pma-merged' | 'news-sentiment'
+export type AgentName = 'Harper-Hermes' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald'
 
 export interface ContextBankSnapshot {
   version: number
@@ -16,6 +16,7 @@ export interface ContextBankSnapshot {
   tradeIdeas: TradeIdeasContext
   fred: FredContext
   polymarket: PolymarketContext
+  kalshi: KalshiContext
   deskReports: DeskReportSummary[]
 }
 
@@ -120,6 +121,31 @@ export interface PolymarketMarketSummary {
   probability: number
   outcome: string
   closeTime?: string
+}
+
+export interface KalshiContext {
+  topMarkets: KalshiMarketSummary[]
+  recentWhales: WhaleAlertSummary[]
+  fetchedAt: string
+}
+
+export interface KalshiMarketSummary {
+  ticker: string
+  title: string
+  lastPrice: number
+  volume24h: number
+  closeTime?: string
+}
+
+export interface WhaleAlertSummary {
+  id: string
+  ticker: string
+  marketTitle: string
+  contracts: number
+  notionalUsd: number
+  takerSide: 'yes' | 'no'
+  alertTypes: string[]
+  createdAt: string
 }
 
 export interface DeskReportSummary {

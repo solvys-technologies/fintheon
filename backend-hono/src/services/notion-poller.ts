@@ -1,6 +1,18 @@
+// [claude-code 2026-03-16] Agent backend v7.9: Harper-Notion / Harper-Perp responsibility docs
 // [claude-code 2026-03-14] Hermes descriptions via OpenRouter (Opus 4.6)
-// Notion poller — polls Trade Ideas + Daily P&L on 60s interval,
-// generates Hermes descriptions for new trade ideas via OpenRouter (Nous subscription).
+//
+// Notion Poller — polls Trade Ideas + Daily P&L on 60s interval,
+// generates Hermes descriptions for new trade ideas via OpenRouter.
+//
+// This poller handles RETAINED Harper-Notion responsibilities only:
+//   - Trade idea polling from Notion Trade Ideas DB
+//   - Performance KPI polling from Daily P&L DB
+//   - Hermes description generation for new trade ideas (OpenRouter)
+//
+// What this poller does NOT handle (Harper-Perp territory):
+//   - MDB/ADB/PMDB/TOTT brief generation (done externally by Perplexity Computer)
+//   - Maintenance ticket management
+//   - Deployment orchestration
 
 import {
   queryTradeIdeas,
@@ -45,8 +57,8 @@ async function generateHermesDescription(idea: NotionTradeIdea): Promise<string>
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
-        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
       },
       body: JSON.stringify({
         model: 'anthropic/claude-opus-4.6',
