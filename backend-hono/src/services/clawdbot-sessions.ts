@@ -14,13 +14,12 @@ interface RawSessionMessage {
   sessionKey?: string;
 }
 
-// [claude-code 2026-03-16] Agent backend v7.9: updated agent patterns for new roster
+// [claude-code 2026-03-19] Agent backend v8.0: updated agent patterns for 4-agent roster
 const AGENT_PATTERNS: Array<{ regex: RegExp; agent: Exclude<BoardroomAgent, 'Unknown'>; emoji: string }> = [
   { regex: /harper[-\s]?hermes|harper/i, agent: 'Harper-Hermes', emoji: '🎩' },
-  { regex: /oracle/i, agent: 'Oracle', emoji: '📊' },
   { regex: /feucht/i, agent: 'Feucht', emoji: '⚡' },
   { regex: /consul/i, agent: 'Consul', emoji: '📜' },
-  { regex: /herald/i, agent: 'Herald', emoji: '📰' },
+  { regex: /oracle/i, agent: 'Oracle', emoji: '📊' },
 ];
 
 const safeJsonParse = <T>(line: string): T | null => {

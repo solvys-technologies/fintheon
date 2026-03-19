@@ -17,14 +17,13 @@ const HERMES_BASE_URL = process.env.OPENROUTER_BASE_URL
   : OPENROUTER_BASE
 const HERMES_API_KEY = process.env.OPENROUTER_API_KEY
 
-// [claude-code 2026-03-16] Agent roster v7.9: merged PMA, added Herald
+// [claude-code 2026-03-19] Agent roster v8.0: 4-agent structure
 // P.I.C. Agent Hierarchy
 export type HermesAgentRole =
   | 'harper-cao'          // Chief Agentic Officer - Executive level
-  | 'pma-merged'          // Oracle: All-Seer (merged PMA-1 + PMA-2)
-  | 'futures-desk'        // Feucht: Futures, Execution & Risk
-  | 'fundamentals-desk'   // Consul: Tech Mega-Cap Analyst
-  | 'herald'              // Herald: News & Sentiment
+  | 'futures-desk'        // Feucht: Futures Execution & 40/40 Club
+  | 'pma-1'              // Consul: PMA-1 Market Intelligence (Kalshi BTC bot)
+  | 'pma-2'              // Oracle: PMA-2 Quantitative Pattern Diviner
 
 // Backward compat alias
 export type OpenClawAgentRole = HermesAgentRole
@@ -89,36 +88,30 @@ export interface HermesClientConfig {
   appName?: string
 }
 
-// Agent definitions following P.I.C. hierarchy (v7.9)
+// Agent definitions following P.I.C. hierarchy (v8.0)
 const HERMES_AGENTS: Record<HermesAgentRole, Omit<HermesAgent, 'id' | 'lastCheckin' | 'status'>> = {
   'harper-cao': {
     role: 'harper-cao',
     displayName: 'Harper-Hermes / CAO',
-    scope: 'Macro oversight, approvals, trade consolidation',
+    scope: 'Macro oversight, approvals, trade consolidation, news sentiment',
     reportsTo: 'human-executives'
-  },
-  'pma-merged': {
-    role: 'pma-merged',
-    displayName: 'Oracle (All-Seer)',
-    scope: 'Prediction markets (S&P, Crypto, Econ, Political) + execution oversight',
-    reportsTo: 'harper-cao'
   },
   'futures-desk': {
     role: 'futures-desk',
-    displayName: 'Feucht (Futures & Risk)',
-    scope: '/NQ, /MNQ, /ES trading via TopStepX + risk management',
+    displayName: 'Feucht (Futures Execution)',
+    scope: '/NQ, /MNQ, /ES trading via TopStepX, 40/40 Club, risk management',
     reportsTo: 'harper-cao'
   },
-  'fundamentals-desk': {
-    role: 'fundamentals-desk',
-    displayName: 'Consul (Fundamentals)',
-    scope: 'Top 10 S&P/NDX tech watchlist + mega-cap analysis',
+  'pma-1': {
+    role: 'pma-1',
+    displayName: 'Consul (PMA-1 Market Intelligence)',
+    scope: 'Kalshi BTC bot, prediction market analysis, automated positioning',
     reportsTo: 'harper-cao'
   },
-  'herald': {
-    role: 'herald',
-    displayName: 'Herald (News & Sentiment)',
-    scope: 'News sentiment, social signals, headline impact',
+  'pma-2': {
+    role: 'pma-2',
+    displayName: 'Oracle (PMA-2 Quantitative Pattern Diviner)',
+    scope: 'Quantitative pattern analysis, alternative prediction markets, statistical modeling',
     reportsTo: 'harper-cao'
   }
 }
@@ -128,15 +121,14 @@ export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   'harper-cao': 'anthropic/claude-opus-4.6',
   'cao-approval': 'anthropic/claude-opus-4.6',
   'cao-consolidation': 'anthropic/claude-opus-4.6',
-  'pma-merged': 'anthropic/claude-opus-4.6',
+  'pma-1': 'anthropic/claude-opus-4.6',
+  'pma-2': 'anthropic/claude-opus-4.6',
   'prediction-market': 'anthropic/claude-opus-4.6',
   'futures-desk': 'anthropic/claude-opus-4.6',
   'fa-rippers': 'anthropic/claude-opus-4.6',
   'economic-analysis': 'anthropic/claude-opus-4.6',
-  'fundamentals-desk': 'anthropic/claude-opus-4.6',
   'earnings-analysis': 'anthropic/claude-opus-4.6',
   'tech-mega-cap': 'anthropic/claude-opus-4.6',
-  'herald': 'anthropic/claude-opus-4.6',
 }
 
 // Backward compat

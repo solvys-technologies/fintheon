@@ -1,6 +1,6 @@
 # AI Agent Global Rules
 
-> **Applies to**: All AI agents (Harper-Hermes, Oracle, Feucht, Consul, Herald, Claude Code)
+> **Applies to**: All AI agents (Harper-Hermes, Oracle, Feucht, Consul, Claude Code)
 > **Scope**: Fintheon repository tasks
 
 ---

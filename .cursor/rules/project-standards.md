@@ -2,7 +2,7 @@
 
 ## Identity
 - **Platform**: Fintheon (by Priced In Capital)
-- **Agent Roster**: Harper-Hermes, Oracle, Feucht, Consul, Herald, Claude Code
+- **Agent Roster**: Harper-Hermes, Oracle, Feucht, Consul, Claude Code
 
 ## Core Engineering Principles
 1. **TypeScript First**: Clean, typed, documented code. Enforce strict mode.
