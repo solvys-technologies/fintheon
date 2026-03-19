@@ -89,13 +89,33 @@ function AppInner() {
 }
 
 export default function App() {
-  // Production Clerk publishable key
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
   const clerkDomain = import.meta.env.VITE_CLERK_DOMAIN || DEFAULT_CLERK_DOMAIN;
   const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL || DEFAULT_CLERK_PROXY_URL;
 
-  // Clerk auth temporarily disabled
-  return <AppInner />;
+  // Dev mode: bypass Clerk entirely
+  if (BYPASS_AUTH || !clerkKey) {
+    return <AppInner />;
+  }
+
+  // Production: wrap with ClerkProvider for full auth
+  return (
+    <ClerkProvider
+      publishableKey={clerkKey}
+      appearance={pulseAppearance}
+      domain={clerkDomain}
+      proxyUrl={clerkProxyUrl}
+    >
+      <SignedIn>
+        <AppInner />
+      </SignedIn>
+      <SignedOut>
+        <AuthShell>
+          <SignIn appearance={pulseAppearance} />
+        </AuthShell>
+      </SignedOut>
+    </ClerkProvider>
+  );
 }
 
 function MockSignInPreview() {

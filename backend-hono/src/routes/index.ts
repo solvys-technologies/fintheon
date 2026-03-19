@@ -37,6 +37,7 @@ import { createBlindspotsRoutes } from './blindspots.js';
 import { systemic as systemicRoutes } from './systemic/index.js';
 import { createContextBankRoutes } from './context-bank/index.js';
 import { createAutopilotRoutes } from './autopilot/index.js';
+import cloudRoutes from './cloud/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -170,4 +171,7 @@ export function registerRoutes(app: Hono): void {
 
   // Trading journal (human psych + agent performance)
   app.route('/api/journal', createJournalRoutes());
+
+  // Cloud (Supabase) — scored items, ER sessions, settings, consilium
+  app.route('/api/cloud', cloudRoutes);
 }

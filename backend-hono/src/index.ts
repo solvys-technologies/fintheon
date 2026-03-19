@@ -21,6 +21,7 @@ import { startFeedPoller, stopFeedPoller, isPollingActive as isFeedPolling } fro
 import { startNotionPoller, stopNotionPoller } from './services/notion-poller.js';
 import { startEconEnricher, stopEconEnricher } from './services/cron/econ-enricher.js';
 import { startEconTwitterPoller, stopEconTwitterPoller } from './services/twitter-cli/index.js';
+import { startCentralScorer, stopCentralScorer } from './services/riskflow/central-scorer.js';
 import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
 import { initHermesAgent } from './services/hermes-handler.js';
 import { startAutopilotScheduler, stopAutopilotScheduler } from './services/autopilot/autopilot-scheduler.js';
@@ -113,6 +114,7 @@ function startAllPollers() {
   startEconTwitterPoller();
   startAutopilotScheduler();
   startContextBankTicker();
+  startCentralScorer();
   pollingActive = true;
   console.log('[API] All pollers started');
 }
@@ -125,6 +127,7 @@ function stopAllPollers() {
   stopEconTwitterPoller();
   stopAutopilotScheduler();
   stopContextBankTicker();
+  stopCentralScorer();
   pollingActive = false;
   console.log('[API] All pollers stopped');
 }
