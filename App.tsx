@@ -10,7 +10,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { NotificationContainer } from './components/NotificationToast';
 import { PsychOrientationModal } from './components/psych/PsychOrientationModal';
 import { AuthShell } from './components/auth/AuthShell';
-import { pulseAppearance } from './components/auth/pulseAppearance';
+import { fintheonAppearance } from './components/auth/fintheonAppearance';
 // ERProvider removed - using component-based ER monitoring for stability
 
 // Development mode: bypass Clerk authentication ONLY when explicitly enabled
@@ -102,7 +102,7 @@ export default function App() {
   return (
     <ClerkProvider
       publishableKey={clerkKey}
-      appearance={pulseAppearance}
+      appearance={fintheonAppearance}
       domain={clerkDomain}
       proxyUrl={clerkProxyUrl}
     >
@@ -111,7 +111,7 @@ export default function App() {
       </SignedIn>
       <SignedOut>
         <AuthShell>
-          <SignIn appearance={pulseAppearance} />
+          <SignIn appearance={fintheonAppearance} />
         </AuthShell>
       </SignedOut>
     </ClerkProvider>
