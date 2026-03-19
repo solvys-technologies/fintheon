@@ -24,6 +24,9 @@ export type HermesAgentRole =
   | 'futures-desk'        // Feucht: Futures Execution & 40/40 Club
   | 'pma-1'              // Consul: PMA-1 Market Intelligence (Kalshi BTC bot)
   | 'pma-2'              // Oracle: PMA-2 Quantitative Pattern Diviner
+  | 'pma-merged'          // Merged PMA analysis mode
+  | 'herald'              // Herald: News & Signal Analyst
+  | 'fundamentals-desk'   // Fundamentals research desk
 
 // Backward compat alias
 export type OpenClawAgentRole = HermesAgentRole
@@ -112,6 +115,24 @@ const HERMES_AGENTS: Record<HermesAgentRole, Omit<HermesAgent, 'id' | 'lastCheck
     role: 'pma-2',
     displayName: 'Oracle (PMA-2 Quantitative Pattern Diviner)',
     scope: 'Quantitative pattern analysis, alternative prediction markets, statistical modeling',
+    reportsTo: 'harper-cao'
+  },
+  'pma-merged': {
+    role: 'pma-merged',
+    displayName: 'PMA Merged Analysis',
+    scope: 'Combined PMA-1 + PMA-2 market intelligence and quantitative analysis',
+    reportsTo: 'harper-cao'
+  },
+  'herald': {
+    role: 'herald',
+    displayName: 'Herald (News & Signal Analyst)',
+    scope: 'Real-time news monitoring, signal detection, sentiment analysis',
+    reportsTo: 'harper-cao'
+  },
+  'fundamentals-desk': {
+    role: 'fundamentals-desk',
+    displayName: 'Fundamentals Desk',
+    scope: 'Earnings analysis, economic data, fundamental research, sector analysis',
     reportsTo: 'harper-cao'
   }
 }

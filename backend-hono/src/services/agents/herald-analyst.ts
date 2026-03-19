@@ -1,13 +1,15 @@
-// [claude-code 2026-03-16] Agent backend v7.9: Herald news/sentiment analyst (replaces Horace)
+// [claude-code 2026-03-19] Agent backend v7.10: Herald — Head of Risk & Sentinel (merges Horace + Herald)
 /**
- * Herald Analyst — News & Sentiment
- * Herald handles news sentiment scoring, social signal detection,
- * headline impact assessment, and earnings reaction analysis.
+ * Herald — Head of Risk / Cross-Desk Sentinel
+ * 
+ * DUAL FUNCTION:
+ * 1. RISK GUARDIAN (Horace legacy) — Enforce Rules 8 & 12, check position sizing,
+ *    flag overconcentration, provide cross-desk risk oversight
+ * 2. SENTINEL ANALYST (Herald legacy) — Score news sentiment, detect breaking events,
+ *    assess headline impact, monitor social signals and earnings reactions
  *
- * Same core logic as the original news-sentiment-analyst.ts, but branded
- * under Herald's persona. The original file is preserved for backward
- * compatibility — this wrapper adds Herald-specific personality and
- * social signal detection capabilities.
+ * Herald is invoked by Harper on trade proposals for risk overlay + sentinel check.
+ * All flags are advisory but visible to H.E's in final proposal package.
  */
 
 import {
@@ -20,9 +22,21 @@ import {
 } from './base-agent.js'
 import type { AgentReport, NewsSentimentReport, Sentiment } from '../../types/agents.js'
 
-// --- Extended Report ---
+// --- Extended Report Types ---
+
+export interface RiskAssessment {
+  riskScore: number // 1-10 scale
+  flags: string[]
+  cumulativeExposure: string
+  recommendation: 'PROCEED' | 'REDUCE_SIZE' | 'RECONSIDER' | 'HOLD_FOR_TIMING'
+  rule8Check: string // Margin of safety assessment
+  rule12Check: string // Exit thesis clarity
+  newsOverride?: string // Breaking news impact
+  sentimentDivergence?: string // Price vs sentiment mismatch
+}
 
 export interface HeraldReport extends NewsSentimentReport {
+  // Sentinel (news/sentiment) functions
   socialSignals: {
     twitterSentiment: Sentiment
     redditMentions: 'trending' | 'normal' | 'quiet'
@@ -36,21 +50,41 @@ export interface HeraldReport extends NewsSentimentReport {
     guidance: 'raised' | 'lowered' | 'maintained' | 'none'
   }[]
   headlineImpactScore: number // 0-10 aggregate
+
+  // Risk oversight functions (Horace legacy)
+  riskAssessment?: RiskAssessment
 }
 
 // --- System Prompt ---
 
-const SYSTEM_PROMPT = `You are Herald, the News & Sentiment analyst for Fintheon's trading desk.
+const SYSTEM_PROMPT = `You are Herald, the Head of Risk and Cross-Desk Sentinel for Priced In Capital.
 
-Your role combines traditional news analysis with social signal detection:
+YOUR DUAL FUNCTION:
 
-1. NEWS SENTIMENT — Score headlines, detect breaking events, classify macro urgency (4-tier)
-2. SOCIAL SIGNALS — Twitter/X sentiment, Reddit activity spikes, unusual social volume
-3. HEADLINE IMPACT — Aggregate impact score for the current news environment
-4. EARNINGS REACTIONS — Track recent earnings surprises and market reactions
+1. RISK GUARDIAN (Horace Legacy)
+   - Enforce Rules 8 & 12 across all desks
+   - Check position sizing, overconcentration, correlated bets
+   - Challenge conviction on marginal setups
+   - Provide second-level thinking sanity checks
+   - Monitor cumulative exposure across Futures + PMA
+   - Adjust risk parameters when VIX > 22
+
+2. SENTINEL ANALYST (Herald Legacy)
+   - Score news sentiment, detect breaking events (4-tier macro levels)
+   - Assess headline impact on positions and proposals
+   - Track social signals — Twitter/X, Reddit activity
+   - Monitor earnings reactions and guidance changes
+
+RULES YOU ENFORCE:
+- Rule 8: GOOD TRADERS BUY FROM GOOD PRICES (margin of safety required)
+- Rule 12: BE RIGHT OR BE RIGHT OUT (clear exit thesis mandatory)
+- Rule 3: NO SHOT IN THE DARK (medium+ conviction required)
+- Rule 5: IN VOLATILITY, DIAL BACK (VIX > 22 = tighten everything)
+- Rule 13: Rules 8 & 12 override all else
 
 Return valid JSON:
 {
+  // SENTINEL FUNCTIONS
   "overallSentiment": "bullish" | "bearish" | "neutral",
   "sentimentScore": number (-1 to +1),
   "macroLevel": number (1-4 urgency tier),
@@ -65,14 +99,7 @@ Return valid JSON:
       "publishedAt": "ISO timestamp"
     }
   ],
-  "catalysts": [
-    {
-      "event": "string",
-      "impact": "high" | "medium" | "low",
-      "direction": "bullish" | "bearish" | "neutral",
-      "timing": "string"
-    }
-  ],
+  "catalysts": [{ "event": "string", "impact": "high" | "medium" | "low", "direction": "bullish" | "bearish" | "neutral", "timing": "string" }],
   "riskEvents": ["upcoming risk events"],
   "socialSignals": {
     "twitterSentiment": "bullish" | "bearish" | "neutral",
@@ -80,23 +107,31 @@ Return valid JSON:
     "unusualActivity": boolean,
     "topMentions": ["tickers or topics trending"]
   },
-  "earningsReactions": [
-    {
-      "ticker": "string",
-      "surprise": "beat" | "miss" | "inline",
-      "priceReaction": "positive" | "negative" | "muted",
-      "guidance": "raised" | "lowered" | "maintained" | "none"
-    }
-  ],
+  "earningsReactions": [{ "ticker": "string", "surprise": "beat" | "miss" | "inline", "priceReaction": "positive" | "negative" | "muted", "guidance": "raised" | "lowered" | "maintained" | "none" }],
   "headlineImpactScore": number (0-10),
-  "summary": "2-3 sentence synthesis of news + social landscape"
+
+  // RISK OVERSIGHT FUNCTIONS (when proposal provided)
+  "riskAssessment": {
+    "riskScore": number (1-10),
+    "flags": ["array of risk flags"],
+    "cumulativeExposure": "description",
+    "recommendation": "PROCEED" | "REDUCE_SIZE" | "RECONSIDER" | "HOLD_FOR_TIMING",
+    "rule8Check": "margin of safety assessment",
+    "rule12Check": "exit thesis clarity check",
+    "newsOverride": "breaking news impact if applicable",
+    "sentimentDivergence": "price vs sentiment mismatch if any"
+  },
+
+  "summary": "2-3 sentence synthesis"
 }
 
-Macro Level Classification:
+MACRO LEVEL CLASSIFICATION:
 - Level 4: Breaking, FOMC decisions, major economic surprises, IV >= 8
 - Level 3: High impact scheduled (CPI, NFP), IV 6-8
 - Level 2: Moderate (earnings, Fed speakers), IV 4-6
 - Level 1: Routine, sector chatter, IV < 4
+
+YOUR VOICE: Measured, cautionary, wise. Not pessimistic — you understand avoiding big losses matters more than catching big wins. A 50% loss requires a 100% gain to recover.
 
 Respond with valid JSON only.`
 
@@ -122,6 +157,22 @@ export interface HeraldInput {
     guidance?: string
   }[]
   upcomingEvents?: string[]
+  // Risk assessment input (Horace legacy)
+  proposal?: {
+    id: string
+    instrument: string
+    direction: 'long' | 'short'
+    entryPrice?: number
+    stopLoss?: number
+    takeProfit?: number[]
+    positionSize?: number
+    riskRewardRatio?: number
+    conviction?: number // 0-100
+    rationale: string
+  }
+  existingPositions?: { symbol: string; size: number; direction: 'long' | 'short' }[]
+  vixLevel?: number
+  accountSize?: number
 }
 
 // --- Runner ---
@@ -201,7 +252,50 @@ function buildHeraldPrompt(data: HeraldInput): string {
     data.upcomingEvents.forEach((ev) => sections.push(`- ${ev}`))
   }
 
+  // Risk assessment section (Horace legacy)
+  if (data.proposal) {
+    sections.push('\n=== TRADE PROPOSAL FOR RISK REVIEW ===')
+    sections.push(`ID: ${data.proposal.id}`)
+    sections.push(`Instrument: ${data.proposal.instrument}`)
+    sections.push(`Direction: ${data.proposal.direction.toUpperCase()}`)
+    if (data.proposal.entryPrice) sections.push(`Entry: $${data.proposal.entryPrice}`)
+    if (data.proposal.stopLoss) sections.push(`Stop: $${data.proposal.stopLoss}`)
+    if (data.proposal.takeProfit?.length) sections.push(`TP: ${data.proposal.takeProfit.join(', ')}`)
+    if (data.proposal.positionSize) sections.push(`Size: ${data.proposal.positionSize} contracts`)
+    if (data.proposal.riskRewardRatio) sections.push(`R:R: ${data.proposal.riskRewardRatio}:1`)
+    if (data.proposal.conviction) sections.push(`Conviction: ${data.proposal.conviction}%`)
+    sections.push(`Rationale: ${data.proposal.rationale}`)
+
+    if (data.existingPositions?.length) {
+      sections.push('\n=== EXISTING POSITIONS ===')
+      data.existingPositions.forEach(p => {
+        sections.push(`- ${p.symbol}: ${p.size} contracts (${p.direction})`)
+      })
+    }
+
+    if (data.vixLevel) {
+      sections.push(`\nVIX: ${data.vixLevel} ${data.vixLevel > 22 ? '(ELEVATED - tighten risk)' : ''}`)
+    }
+
+    if (data.accountSize) {
+      const positionValue = (data.proposal.positionSize ?? 0) * (data.proposal.entryPrice ?? 0)
+      const concentration = ((positionValue / data.accountSize) * 100).toFixed(2)
+      sections.push(`\nPosition Concentration: ${concentration}% of account`)
+    }
+
+    sections.push('\n=== RISK ASSESSMENT REQUIRED ===')
+    sections.push('Evaluate this proposal against:')
+    sections.push('- Rule 8: Is this a good price? Margin of safety?')
+    sections.push('- Rule 12: Clear exit thesis? Will they know when they\'re wrong?')
+    sections.push('- Rule 3: Conviction level justified by confluence?')
+    sections.push('- Cross-desk correlation with existing positions')
+    sections.push('- VIX regime adjustment (if VIX > 22)')
+  }
+
   sections.push('\nSynthesize sentiment from news + social signals. Flag any divergences.')
+  if (data.proposal) {
+    sections.push('Provide risk assessment overlay for the proposal.')
+  }
   return sections.join('\n')
 }
 
