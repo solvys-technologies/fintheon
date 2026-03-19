@@ -7,7 +7,8 @@ const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
-const { autoUpdater } = require("electron-updater");
+// electron-updater lazy-loaded inside setupAutoUpdater() to avoid crash before app.ready
+let autoUpdater = null;
 
 let mainWindow = null;
 let backendProcess = null;
@@ -86,6 +87,12 @@ function stopBackend() {
 /* ------------------------------------------------------------------ */
 
 function setupAutoUpdater() {
+  try {
+    autoUpdater = require("electron-updater").autoUpdater;
+  } catch (err) {
+    console.warn("[Updater] electron-updater not available:", err.message);
+    return;
+  }
   // Don't auto-download — let the user decide via the modal
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -201,17 +208,17 @@ function createWindow() {
     },
   });
 
-  // Load from backend server (serves frontend/dist/ as static files)
-  waitForBackend(BACKEND_URL).then((ready) => {
-    if (ready) {
-      win.loadURL(BACKEND_URL);
-    } else {
-      // Fallback to file:// if backend never started
-      console.warn("[Electron] Backend not reachable — falling back to file://");
-      const rendererPath = path.join(__dirname, "..", "frontend", "dist", "index.html");
+  // Dev: load Vite dev server. Production: load built dist/index.html
+  if (!app.isPackaged) {
+    const VITE_DEV_URL = "http://localhost:5173";
+    console.log("[Electron] Dev mode — loading Vite dev server at", VITE_DEV_URL);
+    win.loadURL(VITE_DEV_URL);
+  } else {
+    waitForBackend(BACKEND_URL).then(() => {
+      const rendererPath = path.join(__dirname, "..", "dist", "index.html");
       win.loadFile(rendererPath);
-    }
-  });
+    });
+  }
 
   mainWindow = win;
 }
@@ -276,6 +283,7 @@ ipcMain.handle("toggle-mini-widget", () => {
 
 // Auto-update IPC handlers
 ipcMain.handle("update-download", () => {
+  if (!autoUpdater) return { ok: false, error: "updater not available" };
   autoUpdater.downloadUpdate().catch((err) => {
     console.error("[Updater] Download failed:", err.message);
   });
@@ -283,12 +291,14 @@ ipcMain.handle("update-download", () => {
 });
 
 ipcMain.handle("update-install", () => {
+  if (!autoUpdater) return { ok: false, error: "updater not available" };
   stopBackend();
   autoUpdater.quitAndInstall(false, true);
   return { ok: true };
 });
 
 ipcMain.handle("update-check", () => {
+  if (!autoUpdater) return { ok: false, error: "updater not available" };
   autoUpdater.checkForUpdates().catch(() => {});
   return { ok: true };
 });

@@ -84,29 +84,8 @@ function AppInner() {
     </VIXProvider>
   );
 
-  // In dev mode with auth bypass, show app directly
-  if (BYPASS_AUTH) {
-    return appContent;
-  }
-
-  // Normal Clerk authentication flow
-  return (
-    <>
-      <SignedOut>
-        <AuthShell>
-          <SignIn
-            appearance={pulseAppearance}
-            routing="path"
-            path="/sign-in"
-            signUpUrl="/sign-up"
-          />
-        </AuthShell>
-      </SignedOut>
-      <SignedIn>
-        {appContent}
-      </SignedIn>
-    </>
-  );
+  // Auth temporarily disabled — show app directly
+  return appContent;
 }
 
 export default function App() {
@@ -115,25 +94,8 @@ export default function App() {
   const clerkDomain = import.meta.env.VITE_CLERK_DOMAIN || DEFAULT_CLERK_DOMAIN;
   const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL || DEFAULT_CLERK_PROXY_URL;
 
-  // In dev mode with auth bypass, skip ClerkProvider
-  if (BYPASS_AUTH) {
-    return <AppInner />;
-  }
-
-  if (!clerkKey && DEV_MODE) {
-    console.warn('[DEV MODE] Missing VITE_CLERK_PUBLISHABLE_KEY. Showing AuthShell preview without Clerk.');
-    return (
-      <AuthShell>
-        <MockSignInPreview />
-      </AuthShell>
-    );
-  }
-
-  return (
-    <ClerkProvider publishableKey={clerkKey} domain={clerkDomain} proxyUrl={clerkProxyUrl}>
-      <AppInner />
-    </ClerkProvider>
-  );
+  // Clerk auth temporarily disabled
+  return <AppInner />;
 }
 
 function MockSignInPreview() {

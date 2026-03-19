@@ -17,14 +17,14 @@ import { corsConfig } from './config/cors.js';
 import { getEnvConfig, isDev } from './config/env.js';
 import { registerRoutes } from './routes/index.js';
 import { createHealthService } from './services/health-service.js';
-import { startFeedPoller } from './services/riskflow/feed-poller.js';
-import { startNotionPoller } from './services/notion-poller.js';
-import { startEconEnricher } from './services/cron/econ-enricher.js';
-import { startEconTwitterPoller } from './services/twitter-cli/index.js';
+import { startFeedPoller, stopFeedPoller, isPollingActive as isFeedPolling } from './services/riskflow/feed-poller.js';
+import { startNotionPoller, stopNotionPoller } from './services/notion-poller.js';
+import { startEconEnricher, stopEconEnricher } from './services/cron/econ-enricher.js';
+import { startEconTwitterPoller, stopEconTwitterPoller } from './services/twitter-cli/index.js';
 import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
 import { initHermesAgent } from './services/hermes-handler.js';
-import { startAutopilotScheduler } from './services/autopilot/autopilot-scheduler.js';
-import { startContextBankTicker } from './services/context-bank/context-bank-service.js';
+import { startAutopilotScheduler, stopAutopilotScheduler } from './services/autopilot/autopilot-scheduler.js';
+import { startContextBankTicker, stopContextBankTicker } from './services/context-bank/context-bank-service.js';
 
 const app = new Hono();
 const healthService = createHealthService();
@@ -102,23 +102,43 @@ serve({ fetch: app.fetch, port: config.PORT });
 console.log(`[API] Server started on port ${config.PORT}`);
 console.log(`[API] Environment: ${config.NODE_ENV}`);
 
-// Start background feed poller for real-time Level 4 detection
-startFeedPoller();
+// [claude-code 2026-03-19] Polling gated by DISABLE_AUTO_POLLING env var
+let pollingActive = false;
 
-// Start Notion polling (trade ideas + daily P&L)
-startNotionPoller();
+function startAllPollers() {
+  if (pollingActive) return;
+  startFeedPoller();
+  startNotionPoller();
+  startEconEnricher();
+  startEconTwitterPoller();
+  startAutopilotScheduler();
+  startContextBankTicker();
+  pollingActive = true;
+  console.log('[API] All pollers started');
+}
 
-// Start econ calendar enricher (Notion calendar → RiskFlow feed)
-startEconEnricher();
+function stopAllPollers() {
+  if (!pollingActive) return;
+  stopFeedPoller();
+  stopNotionPoller();
+  stopEconEnricher();
+  stopEconTwitterPoller();
+  stopAutopilotScheduler();
+  stopContextBankTicker();
+  pollingActive = false;
+  console.log('[API] All pollers stopped');
+}
 
-// Start econ-triggered twitter-cli poller (cookie-based, FJ emoji filtered)
-startEconTwitterPoller();
+// Polling toggle endpoints (no auth — local-only app)
+app.get('/api/polling/status', (c) => c.json({ polling: pollingActive }));
+app.post('/api/polling/start', (c) => { startAllPollers(); return c.json({ polling: true }); });
+app.post('/api/polling/stop', (c) => { stopAllPollers(); return c.json({ polling: false }); });
 
-// Start autopilot scheduler (30s cycle — proposal expiry, session detection)
-startAutopilotScheduler();
-
-// Start Context Bank ticker (120s — unified snapshot for all agents)
-startContextBankTicker();
+if (process.env.DISABLE_AUTO_POLLING === 'true') {
+  console.log('[API] Auto-polling disabled — POST /api/polling/start to enable');
+} else {
+  startAllPollers();
+}
 
 // Initialize Hermes/OpenRouter connection (health check — non-blocking)
 initHermesAgent().catch((err) => console.warn('[API] Hermes init failed (non-fatal):', err));
