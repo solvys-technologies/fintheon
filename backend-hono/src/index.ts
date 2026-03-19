@@ -76,7 +76,7 @@ app.onError((err, c) => {
 });
 
 // Serve frontend static files (Electron loads from http://localhost:8080)
-const frontendDist = path.resolve(import.meta.dirname!, '..', '..', 'frontend', 'dist');
+const frontendDist = path.resolve(import.meta.dirname!, '..', '..', 'dist');
 if (fs.existsSync(frontendDist)) {
   app.use('/*', serveStatic({ root: path.relative(process.cwd(), frontendDist) }));
 
