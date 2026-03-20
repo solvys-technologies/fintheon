@@ -324,7 +324,7 @@ export function AgentChattr() {
               className={`rounded-lg p-2 transition-all ${
                 thinkHarder
                   ? 'bg-[#c79f4a]/15 text-[#c79f4a] border border-[#c79f4a]/30'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border border-transparent'
+                  : 'text-[#f0ead6]/30 hover:text-[#f0ead6]/60 hover:bg-[#c79f4a]/5 border border-transparent'
               }`}
               title={thinkHarder ? 'Think Harder: ON' : 'Think Harder: OFF'}
             >

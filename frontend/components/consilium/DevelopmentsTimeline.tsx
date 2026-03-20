@@ -22,7 +22,7 @@ const CATEGORY_STYLES: Record<DevelopmentCategory, string> = {
   trade_idea: 'border-[#c79f4a]/30 text-[#c79f4a]',
   regime_shift: 'border-amber-500/30 text-amber-400/80',
   standup: 'border-[#c79f4a]/15 text-[#f0ead6]/40',
-  briefing: 'border-blue-500/30 text-blue-400/80',
+  briefing: 'border-[#c79f4a]/30 text-[#c79f4a]/80',
   insight: 'border-[#c79f4a]/20 text-[#f0ead6]/60',
   market_event: 'border-amber-500/30 text-amber-400/80',
   huddle: 'border-red-500/30 text-red-400/80',
@@ -122,7 +122,7 @@ export function DevelopmentsTimeline() {
         ) : (
           dateKeys.map((dateKey) => (
             <div key={dateKey} className="mb-4">
-              <div className="mb-2 text-xs uppercase tracking-wider text-[#c79f4a]/60">
+              <div className="mb-2 text-xs uppercase tracking-wider text-[#c79f4a]">
                 {formatDate(grouped[dateKey][0].timestamp)}
               </div>
               <div className="relative ml-3 border-l border-[#c79f4a]/20 pl-4">
@@ -141,7 +141,7 @@ export function DevelopmentsTimeline() {
 
                     {/* Event card */}
                     <button
-                      className="w-full rounded-lg border border-[#c79f4a]/10 bg-[#050402] px-3 py-2.5 text-left transition-colors hover:border-[#c79f4a]/25"
+                      className="w-full rounded-lg border border-[#c79f4a]/15 bg-[#0a0a00] px-3 py-2.5 text-left transition-colors hover:border-[#c79f4a]/25"
                       onClick={() => setExpandedId(expandedId === ev.id ? null : ev.id)}
                     >
                       <div className="flex items-start gap-2">

@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-20T21:00:00',
+    agent: 'claude-code',
+    summary: 'Theme-consistent styling on all 8 Consilium sub-tabs. Converted zinc grays to fintheon gold/cream palette in ProposalWidget, ModelGlossary, DevelopmentsTimeline, AgentChattr. Fixed blue briefing category to gold, event card bg to #0a0a00, date header opacity, flat direction badge colors. No emojis, no separators, no off-theme accents.',
+    files: [
+      'frontend/components/proposals/ProposalWidget.tsx',
+      'frontend/components/proposals/ModelGlossary.tsx',
+      'frontend/components/consilium/DevelopmentsTimeline.tsx',
+      'frontend/components/consilium/AgentChattr.tsx',
+    ],
+  },
+  {
     date: '2026-03-20T20:00:00',
     agent: 'claude-code',
     summary: 'S3-FIX:T4 — Walkthrough overhaul: replaced SpotlightOverlay with contextual floating cards (TopStepX-style), 11 tour steps, semi-transparent overlay (no blur), smooth CSS transitions (300ms), 1s auto-start delay, welcome toast on complete. SetupGuideCard CTA triggers BlindspotsInterview post-tour. Version bumped to 8.20.3.',
