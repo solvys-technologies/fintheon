@@ -1,6 +1,6 @@
 // [claude-code 2026-03-09] Added FrontendIVConfig type, computeIVScore now accepts optional config override
 /**
- * IV Scoring Engine for PULSE
+ * IV Scoring Engine for Fintheon
  *
  * Computes an Implied Volatility Score (0-100) based on:
  * - Current VIX vs 30-day average

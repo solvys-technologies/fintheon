@@ -41,11 +41,11 @@ Provide real-time sentiment reads and social signal analysis.`,
 const SKILL_INSTRUCTIONS: Record<string, string> = {
   BRIEF: `\n\n[Skill: Brief]\nSearch for the latest information about the instrument mentioned. Summarize findings and interpret implications for the user's position or thesis. Check active trading regimes for timing context. Be concise and actionable.`,
   VALIDATE: `\n\n[Skill: Validate]\nAct as Herald (risk validation). Analyze thesis validity against: (1) current research narratives, (2) published memos, (3) current news, (4) active trading regimes. Provide a confidence-weighted verdict.`,
-  REPORT: `\n\n[Skill: Report]\nGenerate an HTML dashboard report using the Solvys Gold palette (#D4AF37 accent, #050402 bg, #f0ead6 text). Self-contained HTML with <!-- PULSE_REPORT --> as first comment. Include inline CSS.`,
+  REPORT: `\n\n[Skill: Report]\nGenerate an HTML dashboard report using the Solvys Gold palette (#D4AF37 accent, #050402 bg, #f0ead6 text). Self-contained HTML with <!-- FINTHEON_REPORT --> as first comment. Include inline CSS.`,
   TRACK: `\n\n[Skill: Track]\nBuild a new narrative thread. Identify key thesis, relevant instruments, catalysts, and timeline. Format as a structured narrative entry.`,
   PSYCH: `\n\n[Skill: Psych Assist]\nRun psychological/performance analysis. Evaluate trading behavior patterns, emotional state, decision quality. Provide actionable coaching — empathetic but direct.`,
   MAINTENANCE: `\n\n[Skill: Maintenance]\nPerform app maintenance. Review recent changes, update changelog, report status as structured messages.`,
-  QUICKPULSE: `\n\n[Skill: QuickPulse]\nAnalyze the provided chart/screenshot. Provide: Bias, Confidence %, Rationale, Entry 1, Entry 2, Stop Loss, Target. Be concise like a SnapTrader.`,
+  QUICKFINTHEON: `\n\n[Skill: QuickFintheon]\nAnalyze the provided chart/screenshot. Provide: Bias, Confidence %, Rationale, Entry 1, Entry 2, Stop Loss, Target. Be concise like a SnapTrader.`,
   NARRATIVE: `\n\n[Skill: Narrative]\nAnalyze current NarrativeFlow board state. Identify active narratives, recent catalysts, suggest new connections or flag stale theses.`,
 }
 

@@ -9,6 +9,9 @@ import {
 } from '../supabase-service.js';
 import { isSupabaseConfigured } from '../../config/supabase.js';
 import type { FeedItem } from '../../types/riskflow.js';
+import { createLogger } from '../../lib/logger.js';
+
+const log = createLogger('CentralScorer');
 
 const SCORING_INTERVAL = 30_000; // 30 seconds
 const BATCH_SIZE = 20;
@@ -71,7 +74,7 @@ async function scoringCycle(): Promise<void> {
       return;
     }
 
-    console.log(`[Central Scorer] Processing ${unscoredItems.length} unscored items`);
+    log.info(` Processing ${unscoredItems.length} unscored items`);
 
     // Build a map of tweet_id → raw Supabase id for linking
     const rawIdMap = new Map<string, string>();
@@ -90,9 +93,9 @@ async function scoringCycle(): Promise<void> {
     });
 
     const written = await writeScoredItems(scoredItems);
-    console.log(`[Central Scorer] Wrote ${written} scored items to Supabase`);
+    log.info(` Wrote ${written} scored items to Supabase`);
   } catch (err) {
-    console.error('[Central Scorer] Scoring cycle error:', err);
+    log.error(' Scoring cycle error:', err);
   } finally {
     isScoring = false;
   }
@@ -103,16 +106,16 @@ async function scoringCycle(): Promise<void> {
  */
 export function startCentralScorer(): void {
   if (!ENABLE_CENTRAL_SCORING) {
-    console.log('[Central Scorer] Disabled (set ENABLE_CENTRAL_SCORING=true to enable)');
+    log.info(' Disabled (set ENABLE_CENTRAL_SCORING=true to enable)');
     return;
   }
 
   if (!isSupabaseConfigured()) {
-    console.warn('[Central Scorer] Supabase not configured — cannot start');
+    log.warn(' Supabase not configured — cannot start');
     return;
   }
 
-  console.log(`[Central Scorer] Starting (interval: ${SCORING_INTERVAL / 1000}s, batch: ${BATCH_SIZE})`);
+  log.info(` Starting (interval: ${SCORING_INTERVAL / 1000}s, batch: ${BATCH_SIZE})`);
 
   // Run immediately, then on interval
   scoringCycle();
@@ -126,7 +129,7 @@ export function stopCentralScorer(): void {
   if (scoringTimer) {
     clearInterval(scoringTimer);
     scoringTimer = null;
-    console.log('[Central Scorer] Stopped');
+    log.info(' Stopped');
   }
 }
 

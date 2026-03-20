@@ -13,7 +13,7 @@ export default function Header() {
           <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Online</span>
         </div>
         
-        <h1 className="text-2xl font-bold text-[var(--fintheon-accent)] tracking-widest">PULSE</h1>
+        <h1 className="text-2xl font-bold text-[var(--fintheon-accent)] tracking-widest">FINTHEON</h1>
         
         <button
           onClick={() => setShowSettings(true)}

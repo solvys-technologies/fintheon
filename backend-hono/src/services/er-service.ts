@@ -1,5 +1,4 @@
 import { isPoolAvailable, query } from '../db/optimized.js';
-import { checkOvertrading } from './projectx-activity-service.js';
 
 export type ERState = 'stable' | 'neutral' | 'tilt';
 
@@ -372,5 +371,5 @@ export async function evaluateOvertrading(
   penalty: number;
   warning?: string;
 }> {
-  return checkOvertrading(userId, options);
+  return { isOvertrading: false, tradesInWindow: 0, weightedTrades: 0, threshold: options?.threshold ?? 10, penalty: 0 };
 }

@@ -1,15 +1,16 @@
+// [claude-code 2026-03-20] S3:T2b — surfaceId prop for shared thread with AskHarp
 // [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
 // [claude-code 2026-03-10] Simplified ChatInterface — removed unused state, added AiLoader
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { AlertTriangle, CalendarCheck, X, Bookmark, Trash2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
-import { usePulseAgents } from '../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../contexts/FintheonAgentContext';
 import { useHermesRuntime } from './chat/useHermesRuntime';
 import { ChatHeader } from './chat/ChatHeader';
-import { PulseThread, AiLoader } from './chat/PulseThread';
-import { PulseComposer } from './chat/PulseComposer';
+import { FintheonThread, AiLoader } from './chat/FintheonThread';
+import { FintheonComposer } from './chat/FintheonComposer';
 import { SKILL_PREFIXES } from '../lib/skillPrefixes';
-import QuickPulseModal from './analysis/QuickPulseModal';
+import QuickFintheonModal from './analysis/QuickFintheonModal';
 import { addCheckpoint, deleteCheckpoint, listCheckpoints, type ChatCheckpoint } from '../lib/chatCheckpoints';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
 
@@ -50,16 +51,16 @@ function groupCheckpointsByDate(items: ChatCheckpoint[]): { label: string; items
 }
 
 function ChatInterfaceInner({ conversationId, clearConversationId, lastError, thinkHarder, setThinkHarder, lastRequestId }: { conversationId: string | undefined; clearConversationId: () => void; lastError: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void; lastRequestId: string | null }) {
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
 
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
   const { disabledSkills } = useFeatureFlags();
-  const [showCheckpoints, setShowCheckpoints] = usePanelState('pulse:panel:checkpoints', false);
+  const [showCheckpoints, setShowCheckpoints] = usePanelState('fintheon:panel:checkpoints', false);
   const [checkpointVersion, setCheckpointVersion] = useState(0);
-  const [showQuickPulseModal] = useState(false);
+  const [showQuickFintheonModal] = useState(false);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const checkpointItems = useMemo<ChatCheckpoint[]>(
@@ -87,8 +88,8 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
         handleSkillSend(detail.skillId, detail.prompt);
       }
     };
-    window.addEventListener('pulse:open-chat-skill', handler);
-    return () => window.removeEventListener('pulse:open-chat-skill', handler);
+    window.addEventListener('fintheon:open-chat-skill', handler);
+    return () => window.removeEventListener('fintheon:open-chat-skill', handler);
   }, [handleSkillSend]);
 
   const handleNewChat = useCallback(() => {
@@ -122,7 +123,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <div className="flex-1 flex flex-col min-h-0">
-          <PulseThread
+          <FintheonThread
             onSend={handleSend}
             isLoading={isRunning}
             agentName={activeAgent?.name}
@@ -131,7 +132,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
             lastError={lastError}
             lastRequestId={lastRequestId}
           />
-          <PulseComposer
+          <FintheonComposer
             thinkHarder={thinkHarder}
             setThinkHarder={setThinkHarder}
             lastError={lastError}
@@ -207,15 +208,15 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
         </div>
       </div>
 
-      <QuickPulseModal isOpen={showQuickPulseModal} onClose={() => {}} onAnalysisComplete={() => {}} />
+      <QuickFintheonModal isOpen={showQuickFintheonModal} onClose={() => {}} onAnalysisComplete={() => {}} />
     </div>
   );
 }
 
-export default function ChatInterface() {
-  const { activeAgent } = usePulseAgents();
+export default function ChatInterface({ surfaceId = 'analysis' }: { surfaceId?: string }) {
+  const { activeAgent } = useFintheonAgents();
   const [thinkHarderState, setThinkHarderState] = useState(true);
-  const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, 'analysis');
+  const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, surfaceId);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>

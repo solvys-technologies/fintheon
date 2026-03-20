@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Target } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Target, Cpu, Bell, BellOff } from 'lucide-react';
+import { useDND } from '../../contexts/DNDContext';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'proposals' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'apparatus' | 'earnings' | 'proposals' | 'settings';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -11,14 +12,16 @@ interface NavSidebarProps {
   topStepXEnabled?: boolean;
   onOverlayVisibilityChange?: (visible: boolean) => void;
   onEditModeChange?: (editing: boolean) => void;
+  onNotificationCenterToggle?: () => void;
 }
 
 const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
   executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
-  analysis: { id: 'analysis', icon: Sparkles, label: 'Consilium', description: 'AI-powered trade counsel' },
+  analysis: { id: 'analysis', icon: Landmark, label: 'Consilium', description: 'AI-powered trade counsel' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
   notion: { id: 'notion', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
+  apparatus: { id: 'apparatus', icon: Cpu, label: 'Apparatus', description: 'Agent intelligence layer' },
   narrative: { id: 'narrative', icon: GitBranch, label: 'Narratives', description: 'Market narrative flow' },
   proposals: { id: 'proposals', icon: Target, label: 'Proposals', description: 'Trade proposals & model glossary' },
   earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
@@ -35,7 +38,9 @@ export function NavSidebar({
   topStepXEnabled = false,
   onOverlayVisibilityChange,
   onEditModeChange,
+  onNotificationCenterToggle,
 }: NavSidebarProps) {
+  const { dndActive, toggleManualDnd, queueCount } = useDND();
   const [hovered, setHovered] = useState(false);
   const [manualExpand, setManualExpand] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -117,7 +122,7 @@ export function NavSidebar({
   const sidebarContent = (
     <div
       style={{ backgroundColor: 'var(--fintheon-surface)' }}
-      className={`h-full border-r pulse-accent-border flex flex-col py-3 transition-all duration-200 ease-out ${
+      className={`h-full border-r fintheon-accent-border flex flex-col py-3 transition-all duration-200 ease-out ${
         expanded ? 'w-48' : 'w-11'
       }`}
       onMouseEnter={handleMouseEnter}
@@ -128,7 +133,7 @@ export function NavSidebar({
         <button
           type="button"
           onClick={() => setManualExpand((v) => !v)}
-          className="w-full flex items-center justify-center py-1 rounded-md pulse-nav-inactive transition-colors"
+          className="w-full flex items-center justify-center py-1 rounded-md fintheon-nav-inactive transition-colors"
           title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
         >
           {expanded ? <ChevronsLeft className="w-3.5 h-3.5" /> : <ChevronsRight className="w-3.5 h-3.5" />}
@@ -142,8 +147,8 @@ export function NavSidebar({
             onClick={() => setEditMode((v) => !v)}
             className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
               editMode
-                ? 'pulse-accent-border pulse-nav-active-light'
-                : 'border-zinc-700 text-zinc-400 pulse-accent-hover'
+                ? 'fintheon-accent-border fintheon-nav-active-light'
+                : 'border-zinc-700 text-zinc-400 fintheon-accent-hover'
             }`}
             title={editMode ? 'Finish reordering' : 'Enable drag reorder'}
           >
@@ -165,7 +170,7 @@ export function NavSidebar({
             >
               {expanded && editMode && (
                 <div
-                  className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-500 pulse-accent-hover"
+                  className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-500 fintheon-accent-hover"
                   title="Drag to reorder"
                 >
                   <GripVertical className="w-3 h-3" />
@@ -178,8 +183,8 @@ export function NavSidebar({
                   expanded ? 'px-2 py-1.5' : 'justify-center py-1.5 px-0'
                 } ${
                   isActive
-                    ? 'pulse-nav-active'
-                    : 'pulse-nav-inactive'
+                    ? 'fintheon-nav-active'
+                    : 'fintheon-nav-inactive'
                 }`}
                 title={expanded ? undefined : label}
               >
@@ -201,6 +206,45 @@ export function NavSidebar({
       </div>
 
       <div className="space-y-1 px-1.5">
+        {/* DND / Notification Center */}
+        <button
+          onClick={() => {
+            if (queueCount > 0) {
+              onNotificationCenterToggle?.();
+            } else {
+              toggleManualDnd();
+            }
+          }}
+          className={`w-full flex items-center gap-2.5 rounded-md transition-colors relative ${
+            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+          } ${
+            dndActive
+              ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
+              : 'fintheon-nav-inactive'
+          }`}
+          title={expanded ? undefined : dndActive ? 'Do Not Disturb (ON)' : 'Notifications'}
+        >
+          {dndActive ? (
+            <BellOff className="w-4 h-4 shrink-0" />
+          ) : (
+            <Bell className="w-4 h-4 shrink-0" />
+          )}
+          {queueCount > 0 && (
+            <span className="absolute top-0.5 right-0.5 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-red-500/80 text-white text-[9px] font-bold leading-none">
+              {queueCount > 99 ? '99+' : queueCount}
+            </span>
+          )}
+          {expanded && (
+            <div className="min-w-0 text-left">
+              <div className={`text-[11px] font-semibold truncate ${dndActive ? 'text-[var(--fintheon-accent)]' : ''}`}>
+                {dndActive ? 'Do Not Disturb' : 'Notifications'}
+              </div>
+              <div className={`text-[9px] truncate ${dndActive ? 'text-[var(--fintheon-accent)]/60' : 'text-gray-500'}`}>
+                {dndActive ? `${queueCount} queued` : 'Click to enable DND'}
+              </div>
+            </div>
+          )}
+        </button>
         {/* Performance */}
         <button
           onClick={() => onTabChange('earnings')}
@@ -209,8 +253,8 @@ export function NavSidebar({
             expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
           } ${
             activeTab === 'earnings'
-              ? 'pulse-nav-active'
-              : 'pulse-nav-inactive'
+              ? 'fintheon-nav-active'
+              : 'fintheon-nav-inactive'
           }`}
           title={expanded ? undefined : 'Performance'}
         >
@@ -232,8 +276,8 @@ export function NavSidebar({
             expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
           } ${
             activeTab === 'settings'
-              ? 'pulse-nav-active'
-              : 'pulse-nav-inactive'
+              ? 'fintheon-nav-active'
+              : 'fintheon-nav-inactive'
           }`}
           title={expanded ? undefined : 'Settings'}
         >

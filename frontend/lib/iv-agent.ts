@@ -1,6 +1,6 @@
 // [claude-code 2026-03-13] Hermes migration: OpenClaw -> Hermes references
 /**
- * IV Agent Integration for PULSE
+ * IV Agent Integration for Fintheon
  *
  * Formats IV scoring data for AI-powered analysis via Hermes agent (OpenRouter Opus 4.6).
  *
@@ -9,7 +9,7 @@
  * - Receive AI-enhanced analysis (regime detection, anomaly alerts, trade ideas)
  *
  * For now, this module provides local formatting of IV score results
- * for display in the PULSE UI.
+ * for display in the Fintheon UI.
  */
 
 import { type IVScoreResult, type IVScoringInput, computeIVScore, quickIVScore } from './iv-scoring';

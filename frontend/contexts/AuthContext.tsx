@@ -1,7 +1,7 @@
 // [claude-code 2026-03-06] GitHub OAuth state for GitHub Models (DeepSeek R1) — popup window flow
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 
-export type UserTier = 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
+export type UserTier = 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
 
 interface OnboardingData {
   hasCompletedOnboarding: boolean;
@@ -45,7 +45,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
  * Single-user local product — GitHub auth is optional, used for AI model access
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [tier, setTier] = useState<UserTier>('pulse_pro');
+  const [tier, setTier] = useState<UserTier>('fintheon_pro');
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     hasCompletedOnboarding: true,
   });

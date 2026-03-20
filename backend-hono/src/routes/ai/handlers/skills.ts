@@ -17,7 +17,7 @@ const SKILL_CATALOG: Omit<SkillDefinition, 'enabled' | 'reason'>[] = [
   { id: 'track', label: 'Track', description: 'Build a new narrative thread with thesis, instruments, catalysts, and timeline.' },
   { id: 'psych_assist', label: 'Psych Assist', description: 'Psychological/performance analysis — behavior patterns, emotional state, coaching.' },
   { id: 'maintenance', label: 'Maintenance', description: 'App maintenance — review changes, update changelog, report status.' },
-  { id: 'quick_pulse', label: 'QuickPulse', description: 'Analyze chart/screenshot — bias, confidence, entries, stop, target.' },
+  { id: 'quick_fintheon', label: 'QuickFintheon', description: 'Analyze chart/screenshot — bias, confidence, entries, stop, target.' },
   { id: 'narrative', label: 'Narrative', description: 'Analyze NarrativeFlow board — active narratives, catalysts, stale theses.' },
 ]
 

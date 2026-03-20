@@ -139,9 +139,6 @@ export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   'herald': 'anthropic/claude-opus-4.6',
 }
 
-// Backward compat
-export const OPENCLAW_TASK_MODEL_MAP = HERMES_TASK_MODEL_MAP
-
 /**
  * Build headers for OpenRouter API calls
  */
@@ -363,6 +360,4 @@ export const HERMES_MODELS = {
 } as const
 
 // Backward compat
-export const OPENCLAW_MODELS = HERMES_MODELS
-
 export type HermesModelId = (typeof HERMES_MODELS)[keyof typeof HERMES_MODELS]

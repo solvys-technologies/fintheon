@@ -26,7 +26,7 @@ export function PsychAssistDockable({
   onUndockToFloating,
   onClose,
   storageKey = 'fintheon:psychassist-floating-pos:v1',
-  headerDockZoneId = 'pulse-heading-toolbar',
+  headerDockZoneId = 'fintheon-heading-toolbar',
 }: PsychAssistDockableProps) {
   const [pos, setPos] = useState<Pos>({ x: 24, y: 92 });
   const [dragging, setDragging] = useState(false);

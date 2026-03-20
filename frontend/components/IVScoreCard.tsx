@@ -1,8 +1,9 @@
 // [claude-code 2026-03-11] Redesigned to consume backend IVScoreResponse — point range, rationale tooltip, environment label
 // [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
 // [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
+// [claude-code 2026-03-20] S3:T4a: Fixed popup to position:fixed with viewport boundary detection, left-aligned, max-w-[90vw]
 import { Info, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { IVScoreResponse } from '../types/market-data';
 
 interface IVScoreCardProps {
@@ -68,10 +69,10 @@ function getVixPulseStyle(vixLevel: number): React.CSSProperties | undefined {
 }
 
 // Inject the keyframes once via a style tag
-const PULSE_KEYFRAMES_ID = 'vix-pulse-keyframes';
-if (typeof document !== 'undefined' && !document.getElementById(PULSE_KEYFRAMES_ID)) {
+const FINTHEON_KEYFRAMES_ID = 'vix-pulse-keyframes';
+if (typeof document !== 'undefined' && !document.getElementById(FINTHEON_KEYFRAMES_ID)) {
   const style = document.createElement('style');
-  style.id = PULSE_KEYFRAMES_ID;
+  style.id = FINTHEON_KEYFRAMES_ID;
   style.textContent = `
     @keyframes vix-pulse {
       0%, 100% { opacity: 1; }
@@ -83,6 +84,22 @@ if (typeof document !== 'undefined' && !document.getElementById(PULSE_KEYFRAMES_
 
 export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showTooltip || !triggerRef.current) { setPopupPos(null); return; }
+    const rect = triggerRef.current.getBoundingClientRect();
+    const popupW = 320;
+    const popupH = 480; // estimate
+    let left = rect.left;
+    let top = rect.bottom + 4;
+    // Keep within viewport
+    if (left + popupW > window.innerWidth - 16) left = window.innerWidth - popupW - 16;
+    if (left < 16) left = 16;
+    if (top + popupH > window.innerHeight - 16) top = rect.top - popupH - 4;
+    setPopupPos({ top, left });
+  }, [showTooltip]);
 
   if (loading || !data) {
     return (
@@ -126,6 +143,7 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
 
         {/* Info button + tooltip wrapper — hover zone spans both so tooltip stays open */}
         <div
+          ref={triggerRef}
           className="relative ml-0.5"
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
@@ -134,14 +152,12 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             <Info className="w-2.5 h-2.5" />
           </button>
 
-          {showTooltip && (
+          {showTooltip && popupPos && (
             <div
-              className={`absolute top-full mt-1 w-80 bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl z-[9999] ${
-                layoutOption === 'tickers-only' ? 'right-0' : 'left-0'
-              }`}
-              style={{
-                maxWidth: layoutOption === 'tickers-only' ? 'min(320px, calc(100vw - 2rem))' : '320px',
-              }}
+              className="fixed w-80 max-w-[90vw] bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl z-[9999]"
+              style={{ top: popupPos.top, left: popupPos.left }}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
             >
           <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-2">
             Blended IV Score

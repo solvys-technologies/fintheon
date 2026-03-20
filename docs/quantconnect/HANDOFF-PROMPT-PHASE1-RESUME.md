@@ -423,7 +423,7 @@ Key MCP tools to use:
 
 ## Agents in This Ecosystem
 
-- **Claude Code** (you) — Pulse backend, execution layer, QC algorithm builds
+- **Claude Code** (you) — Fintheon backend, execution layer, QC algorithm builds
 - **Harper** (OpenClaw/CAO) — may have parallel QC work; check `~/.openclaw/workspace/memory/` before modifying shared files
 - **Sentinel, Oracle, Charles, Horace** — other pipeline agents
 

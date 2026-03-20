@@ -1,6 +1,7 @@
+// [claude-code 2026-03-20] S3:T2c — Boardroom with rich input (persona pills, think harder, skills)
 // [claude-code 2026-03-20] Consilium — agent chat panel (chat-only, sub-tabs moved to ConsiliumHub)
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, AtSign, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Send, RefreshCw, Wifi, WifiOff, Brain, Zap } from 'lucide-react';
 import { ConsiliumMessage, type BoardroomMessage } from './ConsiliumMessage';
 import { AgentBadge, AGENT_MAP, type BoardroomAgent } from './AgentBadge';
 import { ConsiliumFilterBar } from './ConsiliumFilterBar';
@@ -10,6 +11,43 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const POLL_INTERVAL = 30_000;
 
 const MENTIONABLE_AGENTS: BoardroomAgent[] = ['Harper-Hermes', 'Oracle', 'Feucht', 'Consul', 'Herald'];
+
+// Map boardroom agent names to persona-style metadata
+const PERSONA_META: Record<BoardroomAgent, { label: string }> = {
+  'Harper-Hermes': { label: 'CAO' },
+  Oracle: { label: 'All-Seer' },
+  Feucht: { label: 'Futures & Risk' },
+  Consul: { label: 'Fundamentals' },
+  Herald: { label: 'News & Sentiment' },
+  Unknown: { label: 'Unknown' },
+};
+
+function BoardroomPersonaPill({ agent, isActive, onClick }: { agent: BoardroomAgent; isActive: boolean; onClick: () => void }) {
+  const meta = PERSONA_META[agent];
+  const agentInfo = AGENT_MAP[agent];
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all shrink-0',
+        isActive
+          ? 'border border-[#c79f4a]/60 bg-[#c79f4a]/10'
+          : 'border border-zinc-800/60 hover:border-zinc-700 bg-transparent',
+      ].join(' ')}
+    >
+      <span
+        className="w-[6px] h-[6px] rounded-full shrink-0"
+        style={{ backgroundColor: agentInfo?.accentClass === 'gold' ? '#c79f4a' : agentInfo?.accentClass === 'blue' ? '#60a5fa' : agentInfo?.accentClass === 'red' ? '#ef4444' : agentInfo?.accentClass === 'emerald' ? '#10b981' : agentInfo?.accentClass === 'purple' ? '#a78bfa' : '#52525b' }}
+      />
+      <span className="flex flex-col items-start leading-none">
+        <span className={`text-[10px] font-bold tracking-wide ${isActive ? 'text-[#c79f4a]' : 'text-zinc-300'}`}>
+          {agentInfo?.label || agent}
+        </span>
+        <span className="text-[8px] text-zinc-500 mt-[1px]">{meta.label}</span>
+      </span>
+    </button>
+  );
+}
 
 function getDateRangeSince(range: 'today' | '7d' | '30d' | 'all'): string | undefined {
   if (range === 'all') return undefined;
@@ -25,9 +63,9 @@ export function AgentChattr() {
   const [input, setInput] = useState('');
   const [isOnline, setIsOnline] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [showMentionMenu, setShowMentionMenu] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<BoardroomAgent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [thinkHarder, setThinkHarder] = useState(false);
 
   // Filter state
   const [filterAgents, setFilterAgents] = useState<BoardroomAgent[]>([]);
@@ -45,7 +83,7 @@ export function AgentChattr() {
   }, []);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -100,13 +138,13 @@ export function AgentChattr() {
         await fetch(`${API_BASE}/api/boardroom/mention/send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text, agent: selectedAgent }),
+          body: JSON.stringify({ message: text, agent: selectedAgent, thinkHarder }),
         });
       } else {
         await fetch(`${API_BASE}/api/boardroom/intervention/send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text }),
+          body: JSON.stringify({ message: text, thinkHarder }),
         });
       }
       setInput('');
@@ -126,14 +164,7 @@ export function AgentChattr() {
     }
     if (e.key === 'Escape') {
       setSelectedAgent(null);
-      setShowMentionMenu(false);
     }
-  };
-
-  const handleMentionSelect = (agent: BoardroomAgent) => {
-    setSelectedAgent(agent);
-    setShowMentionMenu(false);
-    inputRef.current?.focus();
   };
 
   return (
@@ -194,70 +225,72 @@ export function AgentChattr() {
       {/* Expanded message slide-over */}
       <ConsiliumMessageExpanded message={expandedMessage} onClose={() => setExpandedMessage(null)} />
 
-      {/* Mention menu */}
-      {showMentionMenu && (
-        <div className="border-t border-[#c79f4a]/10 bg-[#0a0a00] px-3 py-2">
-          <div className="mb-1.5 text-[10px] uppercase tracking-wider text-[#f0ead6]/30">
-            Mention Agent
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {MENTIONABLE_AGENTS.map((agent) => (
-              <button
-                key={agent}
-                onClick={() => handleMentionSelect(agent)}
-                className="rounded-full border border-[#c79f4a]/20 bg-[#050402] px-3 py-1.5 transition-all hover:border-[#c79f4a]/50 hover:bg-[#c79f4a]/10"
-              >
-                <AgentBadge agent={agent} size="sm" />
-              </button>
-            ))}
-          </div>
+      {/* Rich input area — FintheonComposer-style */}
+      <div className="border-t border-[#c79f4a]/15 bg-[#0a0a00]">
+        {/* Persona pills row */}
+        <div className="flex items-center gap-1.5 px-4 pt-2.5 pb-1 overflow-x-auto scrollbar-none">
+          {MENTIONABLE_AGENTS.map((agent) => (
+            <BoardroomPersonaPill
+              key={agent}
+              agent={agent}
+              isActive={selectedAgent === agent}
+              onClick={() => setSelectedAgent(selectedAgent === agent ? null : agent)}
+            />
+          ))}
         </div>
-      )}
 
-      {/* Input bar */}
-      <div className="border-t border-[#c79f4a]/15 bg-[#0a0a00] px-4 py-3">
-        {selectedAgent && (
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-wider text-[#c79f4a]/50">Mentioning:</span>
-            <AgentBadge agent={selectedAgent} size="sm" />
-            <button
-              onClick={() => setSelectedAgent(null)}
-              className="ml-auto text-xs text-[#f0ead6]/30 hover:text-[#f0ead6]/60"
-            >
-              Clear
-            </button>
+        {/* Input row with toggles */}
+        <div className="px-4 pt-1 pb-3">
+          {selectedAgent && (
+            <div className="mb-1.5 flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-wider text-[#c79f4a]/50">Mentioning:</span>
+              <AgentBadge agent={selectedAgent} size="sm" />
+              <button
+                onClick={() => setSelectedAgent(null)}
+                className="ml-auto text-xs text-[#f0ead6]/30 hover:text-[#f0ead6]/60"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+          <div className="flex items-end gap-2">
+            <div className="flex-1 relative">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={selectedAgent ? `Message @${AGENT_MAP[selectedAgent]?.label}...` : 'Address the Consilium...'}
+                className="w-full resize-none rounded-xl border border-[#c79f4a]/15 bg-[#050402] px-4 py-2.5 text-sm text-[#f0ead6] placeholder-[#f0ead6]/20 outline-none transition-colors focus:border-[#c79f4a]/40 min-h-[42px] max-h-[120px]"
+                rows={1}
+                disabled={isSending}
+              />
+            </div>
+            <div className="flex items-center gap-1 pb-0.5">
+              {/* Think Harder toggle */}
+              <button
+                type="button"
+                onClick={() => setThinkHarder(!thinkHarder)}
+                className={`rounded-lg p-2 transition-all ${
+                  thinkHarder
+                    ? 'bg-[#c79f4a]/15 text-[#c79f4a] border border-[#c79f4a]/30'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border border-transparent'
+                }`}
+                title={thinkHarder ? 'Think Harder: ON' : 'Think Harder: OFF'}
+              >
+                <Brain size={16} />
+              </button>
+              {/* Send */}
+              <button
+                onClick={sendMessage}
+                disabled={!input.trim() || isSending}
+                className="rounded-lg p-2 bg-[#c79f4a]/10 text-[#c79f4a] transition-all disabled:text-[#c79f4a]/20 disabled:bg-transparent hover:bg-[#c79f4a]/20 border border-[#c79f4a]/20 disabled:border-transparent"
+                title="Send"
+              >
+                {isSending ? <Zap size={16} className="animate-pulse" /> : <Send size={16} />}
+              </button>
+            </div>
           </div>
-        )}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowMentionMenu(!showMentionMenu)}
-            className={`rounded-full p-2 transition-colors ${
-              showMentionMenu || selectedAgent
-                ? 'bg-[#c79f4a]/15 text-[#c79f4a]'
-                : 'text-[#c79f4a]/40 hover:bg-[#c79f4a]/10 hover:text-[#c79f4a]'
-            }`}
-            title="Mention agent"
-          >
-            <AtSign size={16} />
-          </button>
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={selectedAgent ? `Message @${AGENT_MAP[selectedAgent]?.label}...` : 'Address the Consilium...'}
-            className="flex-1 rounded-full border border-[#c79f4a]/15 bg-[#050402] px-4 py-2.5 text-sm text-[#f0ead6] placeholder-[#f0ead6]/20 outline-none transition-colors focus:border-[#c79f4a]/40"
-            disabled={isSending}
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!input.trim() || isSending}
-            className="rounded-full p-2 text-[#c79f4a] transition-all disabled:text-[#c79f4a]/20 hover:bg-[#c79f4a]/10 disabled:hover:bg-transparent"
-            title="Send"
-          >
-            <Send size={16} />
-          </button>
         </div>
       </div>
     </div>

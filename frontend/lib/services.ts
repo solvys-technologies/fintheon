@@ -17,7 +17,7 @@ export interface Account {
   dailyPnl: number;
   dailyTarget?: number;
   dailyLossLimit?: number;
-  tier?: 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
+  tier?: 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
   tradingEnabled?: boolean;
   autoTrade?: boolean;
   riskManagement?: boolean;
@@ -400,10 +400,10 @@ export class AIService {
   }
 
   /**
-   * Quick Pulse: Analyze a chart screenshot
+   * Quick Fintheon: Analyze a chart screenshot
    */
-  async quickPulse(image: string, algoState: any): Promise<any> {
-    return this.client.post('/api/ai/quick-pulse', { image, algoState });
+  async quickFintheon(image: string, algoState: any): Promise<any> {
+    return this.client.post('/api/ai/quick-fintheon', { image, algoState });
   }
 
   async checkTape(): Promise<any> {
@@ -735,46 +735,6 @@ export class EventsService {
   }
 }
 
-// Polymarket Service
-export class PolymarketService {
-  constructor(private client: ApiClient) { }
-
-  async getOdds(): Promise<{ success: boolean; data: { odds: any[] } }> {
-    return this.client.get('/api/polymarket/odds');
-  }
-
-  async getUpdates(limit?: number, marketType?: string): Promise<{ success: boolean; data: { updates: any[] } }> {
-    const params = new URLSearchParams();
-    if (limit) params.append('limit', limit.toString());
-    if (marketType) params.append('marketType', marketType);
-
-    const queryString = params.toString();
-    const endpoint = `/api/polymarket/updates${queryString ? `?${queryString}` : ''}`;
-    return this.client.get(endpoint);
-  }
-
-  async sync(): Promise<{ success: boolean; message: string; oddsCount?: number }> {
-    return this.client.post('/api/polymarket/sync');
-  }
-}
-
-// Kalshi Whale Tracker Service
-export class KalshiService {
-  constructor(private client: ApiClient) { }
-
-  async getMarkets(): Promise<any> {
-    return this.client.get('/api/kalshi/markets');
-  }
-
-  async getWhales(): Promise<any> {
-    return this.client.get('/api/kalshi/whales');
-  }
-
-  async sync(): Promise<{ success: boolean; alertCount: number; marketCount: number }> {
-    return this.client.post('/api/kalshi/sync');
-  }
-}
-
 // Boardroom types (mirrors backend boardroom.ts)
 export type BoardroomAgent =
   | 'Harper-Hermes'
@@ -857,7 +817,7 @@ export class EconCalendarService {
       if (params?.from) query.append('from', params.from);
       if (params?.to) query.append('to', params.to);
       const suffix = query.toString() ? `?${query.toString()}` : '';
-      const res = await this.client.get<{ events: EconEventItem[] }>(`/api/notion/econ-calendar${suffix}`);
+      const res = await this.client.get<{ events: EconEventItem[] }>(`/api/data/econ-calendar${suffix}`);
       return res.events ?? [];
     } catch {
       return [];
@@ -867,7 +827,7 @@ export class EconCalendarService {
   async getPrints(eventName?: string): Promise<EconPrintItem[]> {
     try {
       const suffix = eventName ? `?event=${encodeURIComponent(eventName)}` : '';
-      const res = await this.client.get<{ prints: EconPrintItem[] }>(`/api/notion/econ-prints${suffix}`);
+      const res = await this.client.get<{ prints: EconPrintItem[] }>(`/api/data/econ-prints${suffix}`);
       return res.prints ?? [];
     } catch {
       return [];
@@ -914,7 +874,7 @@ export class NotionService {
 
   async getTradeIdeas(): Promise<NotionTradeIdeaItem[]> {
     try {
-      const res = await this.client.get<{ tradeIdeas: NotionTradeIdeaItem[] }>('/api/notion/trade-ideas');
+      const res = await this.client.get<{ tradeIdeas: NotionTradeIdeaItem[] }>('/api/data/trade-ideas');
       return res.tradeIdeas ?? [];
     } catch {
       return [];
@@ -923,28 +883,20 @@ export class NotionService {
 
   async getPerformance(): Promise<NotionPerformanceResponse> {
     try {
-      return await this.client.get<NotionPerformanceResponse>('/api/notion/performance');
+      return await this.client.get<NotionPerformanceResponse>('/api/data/performance');
     } catch {
       return { kpis: [], count: 0, fetchedAt: new Date().toISOString() };
     }
   }
 
+  /** @deprecated Notion poller removed — Supabase is now the source of truth */
   async getPollStatus(): Promise<NotionPollStatus> {
-    try {
-      return await this.client.get<NotionPollStatus>('/api/notion/poll-status');
-    } catch {
-      return {
-        running: false,
-        lastPollAt: null,
-        pollCount: 0,
-        tradeIdeaCount: 0,
-      };
-    }
+    return { running: true, lastPollAt: new Date().toISOString(), pollCount: 0, tradeIdeaCount: 0 };
   }
 
   async getMdbBrief(): Promise<{ items: Array<{ title: string; detail: string }>; briefType?: string }> {
     try {
-      const res = await this.client.get<{ items: Array<{ title: string; detail: string }>; briefType?: string }>('/api/notion/mdb-brief');
+      const res = await this.client.get<{ items: Array<{ title: string; detail: string }>; briefType?: string }>('/api/data/brief');
       return { items: res.items ?? [], briefType: res.briefType };
     } catch {
       return { items: [] };
@@ -953,7 +905,7 @@ export class NotionService {
 
   async getSchedule(): Promise<Array<{ title: string; detail: string; forecast?: string; actual?: string; previous?: string; date?: string }>> {
     try {
-      const res = await this.client.get<{ items: Array<{ title: string; detail: string; forecast?: string; actual?: string; previous?: string; date?: string }> }>('/api/notion/schedule');
+      const res = await this.client.get<{ items: Array<{ title: string; detail: string; forecast?: string; actual?: string; previous?: string; date?: string }> }>('/api/data/schedule');
       return res.items ?? [];
     } catch {
       return [];
@@ -962,16 +914,16 @@ export class NotionService {
 
   async generateMdbReport(): Promise<{ content: string; briefType: string; generatedAt: string; notionUrl?: string | null }> {
     try {
-      return await this.client.post<{ content: string; briefType: string; generatedAt: string; notionUrl?: string | null }>('/api/notion/mdb-report/generate', {});
+      return await this.client.post<{ content: string; briefType: string; generatedAt: string; notionUrl?: string | null }>('/api/data/brief/generate', {});
     } catch {
       return { content: '', briefType: 'MDB', generatedAt: new Date().toISOString() };
     }
   }
 
-  /** Update trade idea status in Notion Kanban (Approved/Denied/Executed/Closed) */
+  /** Update trade idea status (Approved/Rejected/Closed) */
   async updateTradeIdeaStatus(pageId: string, status: string): Promise<boolean> {
     try {
-      await this.client.patch<{ success: boolean }>(`/api/notion/trade-ideas/${pageId}/status`, { status });
+      await this.client.patch<{ success: boolean }>(`/api/data/trade-ideas/${pageId}/status`, { status });
       return true;
     } catch {
       return false;
@@ -1157,6 +1109,8 @@ export interface JournalSummaryResponse {
   avgRR: number;
   totalAgentPnl: number;
   streakDays: number;
+  /** 8f: Proposals not taken that would have been profitable */
+  missedTrades?: number;
 }
 
 export class JournalService {
@@ -1249,6 +1203,8 @@ export interface BlindspotItem {
   id: number;
   text: string;
   severity: 'high' | 'medium' | 'low';
+  /** 7-day rolling record: 'W' = win (avoided), 'L' = loss (triggered) */
+  record?: Array<'W' | 'L'>;
 }
 
 export class BlindspotsService {
@@ -1341,8 +1297,6 @@ export interface BackendClient {
   er: ERService;
   voice: VoiceService;
   events: EventsService;
-  polymarket: PolymarketService;
-  kalshi: KalshiService;
   boardroom: BoardroomService;
   narrative: NarrativeService;
   notion: NotionService;
@@ -1373,8 +1327,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     er: new ERService(client),
     voice: new VoiceService(client),
     events: new EventsService(client),
-    polymarket: new PolymarketService(client),
-    kalshi: new KalshiService(client),
     boardroom: new BoardroomService(client),
     narrative: new NarrativeService(client),
     notion: new NotionService(client),

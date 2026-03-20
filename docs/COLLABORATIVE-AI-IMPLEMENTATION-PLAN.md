@@ -8,7 +8,7 @@
 - **No blank assistant bubble while thinking**: When the agent is working/thinking and not yet streaming tokens, do **not** render an empty assistant message bubble. Only render assistant bubble once stream/output begins.
 - **Sticky bottom chat behavior**: Chat view must stay pinned to the bottom during active conversation/streaming (with robust auto-scroll + bottom-lock behavior) unless the user intentionally scrolls up.
 
-## Pulse v3.0 - Multi-Agent Trading Intelligence
+## Fintheon v3.0 - Multi-Agent Trading Intelligence
 
 > **Created**: 2026-01-02
 > **Status**: Planning Phase
@@ -18,7 +18,7 @@
 
 ## Executive Summary
 
-This document outlines the transformation of Pulse's single-agent "PriceBrain Layer" into a **collaborative multi-agent AI system** inspired by the TradingAgents framework. Instead of one AI controlling all decisions, we'll implement specialized AI agents that work together like a professional trading firm.
+This document outlines the transformation of Fintheon's single-agent "PriceBrain Layer" into a **collaborative multi-agent AI system** inspired by the TradingAgents framework. Instead of one AI controlling all decisions, we'll implement specialized AI agents that work together like a professional trading firm.
 
 ### Current Problems
 1. **News Feed**: Has failed across all 3 backend iterations
@@ -147,7 +147,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 
 ---
 
-## Part 3: Pulse Collaborative AI Architecture
+## Part 3: Fintheon Collaborative AI Architecture
 
 ### Design Principles
 
@@ -157,7 +157,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 4. **Fail-Safe**: Risk manager has veto power on all trades
 5. **Real-Time**: Agents react to market events as they happen
 
-### Agent Mapping for Pulse
+### Agent Mapping for Fintheon
 
 #### Analyst Layer (Parallel Processing)
 
@@ -1302,7 +1302,7 @@ Prioritize capital preservation over profit. Reject aggressively when uncertain.
 
 ## Conclusion
 
-This plan transforms Pulse from a single-agent "PriceBrain Layer" into a **collaborative multi-agent AI system** inspired by the TradingAgents framework. By breaking down the trading decision process into specialized agents (Analysts, Researchers, Trader, Risk Manager), we create a transparent, robust, and scalable system.
+This plan transforms Fintheon from a single-agent "PriceBrain Layer" into a **collaborative multi-agent AI system** inspired by the TradingAgents framework. By breaking down the trading decision process into specialized agents (Analysts, Researchers, Trader, Risk Manager), we create a transparent, robust, and scalable system.
 
 ### Key Benefits
 

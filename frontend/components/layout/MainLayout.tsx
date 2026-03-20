@@ -1,6 +1,7 @@
 // [claude-code 2026-02-26] Support dockable PsychAssist in Zen layout.
 // [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
 // [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
+// [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X } from 'lucide-react';
 import type { IVScoreResponse } from '../../types/market-data';
@@ -41,12 +42,16 @@ import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { TradingJournal } from '../journal/TradingJournal';
 import { ProposalWidget } from '../proposals/ProposalWidget';
+import { ApparatusPage } from '../apparatus/ApparatusPage';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 // [claude-code 2026-03-16] Hermes moved from standalone page into Settings tab
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
 import { RegimeMini } from '../mission-control/RegimeMini';
+import { MiniProposalCard } from '../mission-control/MiniProposalCard';
 import { SessionCalendarMini } from '../mission-control/SessionCalendarMini';
 import { WidgetArrangeMenu } from '../mission-control/WidgetArrangeMenu';
+import { DNDProvider, useDND } from '../../contexts/DNDContext';
+import { NotificationCenter } from '../NotificationCenter';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -56,7 +61,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'proposals' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'apparatus' | 'earnings' | 'proposals' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -67,12 +72,31 @@ function normalizeOrder<T extends string>(order: T[], defaults: readonly T[]): T
   return [...deduped, ...missing];
 }
 
-// Main layout component - no authentication needed
+// Wrapper to provide DNDProvider above MainLayout internals
 export function MainLayout() {
+  return (
+    <DNDProvider>
+      <MainLayoutInner />
+    </DNDProvider>
+  );
+}
+
+// Main layout component - no authentication needed
+function MainLayoutInner() {
   const { iframeUrls } = useSettings();
+  const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('executive');
   const [layoutEditMode, setLayoutEditMode] = useState(false);
-  const [missionControlCollapsed, setMissionControlCollapsed] = useState(false);
+  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
+  const [missionControlCollapsed, setMissionControlCollapsedRaw] = useState(false);
+  // 4c: Link Strategium ↔ RiskFlow collapse — always in sync
+  const setMissionControlCollapsed = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
+    setMissionControlCollapsedRaw((prev) => {
+      const next = typeof v === 'function' ? v(prev) : v;
+      setRiskFlowCollapsed(next);
+      return next;
+    });
+  }, []);
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
   const [combinedPanelCollapsed, setCombinedPanelCollapsed] = useState(false);
   const [tabTransitioning, setTabTransitioning] = useState(false);
@@ -173,6 +197,12 @@ export function MainLayout() {
         setShowSearchModal((v) => !v);
         return;
       }
+      // Ctrl+Shift+D -> Toggle DND
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault();
+        toggleManualDnd();
+        return;
+      }
       // Cmd+Shift+1-5 -> Tab navigation
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && TAB_MAP[e.key]) {
         e.preventDefault();
@@ -182,12 +212,22 @@ export function MainLayout() {
       // Esc -> Close modals
       if (e.key === 'Escape') {
         setShowSearchModal(false);
+        setNotificationCenterOpen(false);
       }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-DND: activate when trading mode is on, flush queue when it turns off
+  useEffect(() => {
+    setAutoDnd(topStepXEnabled);
+    if (!topStepXEnabled) {
+      // Trading mode just turned off — flush queued notifications as stacked toasts (max 5)
+      flushQueue();
+    }
+  }, [topStepXEnabled, setAutoDnd, flushQueue]);
 
   // Reset layout when TopStepX is toggled
   useEffect(() => {
@@ -315,7 +355,12 @@ export function MainLayout() {
     regime: {
       id: 'regime' as const,
       label: 'Regime Tracker',
-      node: <RegimeMini />,
+      node: (
+        <div className="space-y-2">
+          <RegimeMini />
+          <MiniProposalCard onExpand={() => handleTabChange('proposals')} />
+        </div>
+      ),
     },
     account: {
       id: 'account' as const,
@@ -548,7 +593,7 @@ export function MainLayout() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'proposals' || activeTab === 'settings';
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'earnings' || activeTab === 'proposals' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (missionControlCollapsed) {
         // Mission Control collapsed — just show a thin expand strip + full RiskFlow
@@ -644,14 +689,21 @@ export function MainLayout() {
       />
 
       <div className="flex-1 flex overflow-hidden relative">
-        <NavSidebar
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          onLogout={handleLogout}
-          topStepXEnabled={topStepXEnabled}
-          onOverlayVisibilityChange={setSidebarOverlayVisible}
-          onEditModeChange={setLayoutEditMode}
-        />
+        <div className="relative">
+          <NavSidebar
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            onLogout={handleLogout}
+            topStepXEnabled={topStepXEnabled}
+            onOverlayVisibilityChange={setSidebarOverlayVisible}
+            onEditModeChange={setLayoutEditMode}
+            onNotificationCenterToggle={() => setNotificationCenterOpen((v) => !v)}
+          />
+          <NotificationCenter
+            open={notificationCenterOpen}
+            onClose={() => setNotificationCenterOpen(false)}
+          />
+        </div>
 
         {/* Left Panels */}
         {leftPanels.length > 0 && (
@@ -704,6 +756,11 @@ export function MainLayout() {
                   <NarrativeProvider>
                     <NarrativeFlow />
                   </NarrativeProvider>
+                </div>
+              )}
+              {activeTab === 'apparatus' && (
+                <div key="apparatus" data-tour-target="apparatus" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <ApparatusPage />
                 </div>
               )}
               {activeTab === 'notion' && (

@@ -160,7 +160,7 @@ function MinimalCard({
     <div
       className={`group relative px-2.5 py-2 border-b border-zinc-800/40 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
         isProposal ? 'border-l-2 border-l-[var(--fintheon-accent)]/40 cursor-pointer' : ''
-      } ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-60' : ''}`}
+      } ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-60' : ''}`}
       onClick={handleClick}
     >
       {/* Top row: source icon, severity, headline */}

@@ -4,7 +4,7 @@
 // [claude-code 2026-03-16] Shimmer greeting animation, removed border/bg/emoji from greeting area
 import { useState, useEffect } from 'react';
 import { BarChart3, CalendarCheck, Brain, Eye } from 'lucide-react';
-import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 
 const SUGGESTION_CHIPS: { label: string; skillId: string; prompt: string; icon: typeof BarChart3 }[] = [
   { label: "Dawn Dispatch", skillId: 'mdb_report', prompt: "Run the MDB report for today's session", icon: BarChart3 },
@@ -38,7 +38,7 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
   let activeAgent: { name: string; icon: string; sector: string; description: string } | null = null;
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const ctx = usePulseAgents();
+    const ctx = useFintheonAgents();
     activeAgent = ctx.activeAgent;
   } catch {
     // Provider not mounted yet — fallback
@@ -108,9 +108,9 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
               key={index}
               onClick={() => handleChipClick(chip)}
               disabled={isLoading}
-              className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-white/10 pulse-accent-border-hover disabled:opacity-50 rounded-xl text-left transition-all group"
+              className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-white/10 fintheon-accent-border-hover disabled:opacity-50 rounded-xl text-left transition-all group"
             >
-              <Icon className="w-[18px] h-[18px] text-gray-500 transition-colors shrink-0 pulse-group-accent" />
+              <Icon className="w-[18px] h-[18px] text-gray-500 transition-colors shrink-0 fintheon-group-accent" />
               <span className="text-[13px] text-zinc-300 group-hover:text-white transition-colors">{chip.label}</span>
             </button>
           );

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { InterventionMessage } from '../lib/services';
-import { KNOWN_AGENTS, usePulseAgents } from '../contexts/PulseAgentContext';
-import { PulseChatInput } from './chat/PulseChatInput';
+import { KNOWN_AGENTS, useFintheonAgents } from '../contexts/FintheonAgentContext';
+import { FintheonChatInput } from './chat/FintheonChatInput';
 
 function formatTimestamp(ts: string) {
   const d = new Date(ts);
@@ -29,7 +29,7 @@ interface InterventionSidebarProps {
 export function InterventionSidebar({ messages, sending, onSend, onMention, active }: InterventionSidebarProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [thinkHarder, setThinkHarder] = useState(true);
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -84,7 +84,7 @@ export function InterventionSidebar({ messages, sending, onSend, onMention, acti
                 <div
                   className={`max-w-[85%] rounded-xl px-3 py-2 text-[12px] leading-relaxed ${
                     isUser
-                      ? 'pulse-user-bubble text-white'
+                      ? 'fintheon-user-bubble text-white'
                       : 'bg-[#0f0f0b]/92 border border-white/10 text-zinc-300'
                   }`}
                 >
@@ -102,9 +102,9 @@ export function InterventionSidebar({ messages, sending, onSend, onMention, acti
         <div ref={bottomRef} />
       </div>
 
-      {/* Input — PulseChatInput with agent selector */}
+      {/* Input — FintheonChatInput with agent selector */}
       <div className="p-3">
-        <PulseChatInput
+        <FintheonChatInput
           onSend={(msg) => handleSend(msg)}
           isProcessing={sending}
           thinkHarder={thinkHarder}

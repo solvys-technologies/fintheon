@@ -3,23 +3,23 @@ import { Button } from './Button';
 
 interface FeatureLockScreenProps {
   featureName: string;
-  requiredTier: 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
-  currentTier?: 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro' | null;
+  requiredTier: 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
+  currentTier?: 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro' | null;
   onUpgrade?: () => void;
 }
 
 const tierNames: Record<string, string> = {
   free: 'Free',
-  pulse: 'Equestrian',
-  pulse_plus: 'Equestrian+',
-  pulse_pro: 'Consul',
+  fintheon: 'Equestrian',
+  fintheon_plus: 'Equestrian+',
+  fintheon_pro: 'Consul',
 };
 
 const tierDescriptions: Record<string, string> = {
   free: 'Basic features for getting started',
-  pulse: 'Essential trading tools and PsychAssist',
-  pulse_plus: 'Advanced RiskFlow and autonomous trading',
-  pulse_pro: 'Full access with custom AI agents and priority support',
+  fintheon: 'Essential trading tools and PsychAssist',
+  fintheon_plus: 'Advanced RiskFlow and autonomous trading',
+  fintheon_pro: 'Full access with custom AI agents and priority support',
 };
 
 export function FeatureLockScreen({
@@ -30,9 +30,9 @@ export function FeatureLockScreen({
 }: FeatureLockScreenProps) {
   const tierLevels: Record<string, number> = {
     free: 0,
-    pulse: 1,
-    pulse_plus: 2,
-    pulse_pro: 3,
+    fintheon: 1,
+    fintheon_plus: 2,
+    fintheon_pro: 3,
   };
 
   const currentLevel = currentTier ? tierLevels[currentTier] : -1;

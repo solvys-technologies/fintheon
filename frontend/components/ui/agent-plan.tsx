@@ -1,4 +1,4 @@
-// [claude-code 2026-03-11] 21st.dev AgentPlan replacement — full featured with framer-motion animations, subtasks, tool badges, Pulse theme
+// [claude-code 2026-03-11] 21st.dev AgentPlan replacement — full featured with framer-motion animations, subtasks, tool badges, Fintheon theme
 "use client";
 
 import React, { useState } from "react";

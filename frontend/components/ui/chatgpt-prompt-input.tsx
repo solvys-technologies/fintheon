@@ -23,10 +23,10 @@ import {
   Loader2,
   Clock,
 } from 'lucide-react';
-import { PulseSlashPicker } from '../chat/PulseSlashPicker';
-import { PulseAttachPopup } from '../chat/PulseAttachPopup';
+import { FintheonSlashPicker } from '../chat/FintheonSlashPicker';
+import { FintheonAttachPopup } from '../chat/FintheonAttachPopup';
 import { McpConnectorPopup } from '../chat/McpConnectorPopup';
-import { PulseSkillsPopup } from '../chat/PulseSkillsPopup';
+import { FintheonSkillsPopup } from '../chat/FintheonSkillsPopup';
 import { SkillBadge } from '../chat/SkillBadge';
 import { useMcpConnectors } from '../../hooks/useMcpConnectors';
 
@@ -284,7 +284,7 @@ export function PromptBox({
         )}
 
         {/* Skills popup */}
-        <PulseSkillsPopup
+        <FintheonSkillsPopup
           open={showSkills}
           onClose={onToggleSkills}
           activeSkill={activeSkill}
@@ -294,7 +294,7 @@ export function PromptBox({
 
         {/* Slash-command picker */}
         {slashQuery !== null && (
-          <PulseSlashPicker
+          <FintheonSlashPicker
             query={slashQuery}
             onSelect={handleSlashSelect}
             onDismiss={() => setSlashQuery(null)}
@@ -311,7 +311,7 @@ export function PromptBox({
         )}
 
         {/* Attach panel */}
-        <PulseAttachPopup
+        <FintheonAttachPopup
           open={showAttach}
           onClose={() => setShowAttach(false)}
           onAttachImage={handleAttachImage}

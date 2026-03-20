@@ -7,6 +7,7 @@ import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Po
 import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TopStepXBrowser';
 import { changelog } from '../../../src/lib/changelog';
 import { useSourceStatus } from '../../hooks/useSourceStatus';
+import { EPOCH_VERSION } from '../../lib/epoch-version';
 
 type PanelTab = 'terminal' | 'changelog';
 
@@ -209,7 +210,7 @@ export function FooterToolbar({
         return;
       }
       if (lower === 'version') {
-        newHistory.push({ type: 'output', text: 'Fintheon Epoch 7.7.7 | Build 2026-03-14' });
+        newHistory.push({ type: 'output', text: 'Fintheon Epoch {EPOCH_VERSION} | Build 2026-03-14' });
         setCliHistory(newHistory);
         return;
       }
@@ -365,7 +366,7 @@ export function FooterToolbar({
           title={panelOpen ? 'Close panel' : 'Open panel'}
         >
           {panelOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
-          <span className="font-mono tracking-[0.12em]">Epoch 7.7.7</span>
+          <span className="font-mono tracking-[0.12em]">Epoch {EPOCH_VERSION}</span>
         </button>
 
         <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
@@ -530,7 +531,7 @@ export function FooterToolbar({
         {/* System status dot */}
         <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-          <span>pulse</span>
+          <span>fintheon</span>
         </div>
       </div>
     </div>

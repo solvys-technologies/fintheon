@@ -11,6 +11,9 @@ import { broadcastLevel4 } from './sse-broadcaster.js';
 import { fetchEconomicFeed } from './economic-feed.js';
 import { isTwitterCliInstalled, pollTwitterForEconNews } from '../twitter-cli/index.js';
 import type { FeedItem } from '../../types/riskflow.js';
+import { createLogger } from '../../lib/logger.js';
+
+const log = createLogger('FeedPoller');
 
 const POLL_INTERVAL_MS = 15_000; // Poll every 15 seconds for instant Level 4 detection
 let pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -48,7 +51,7 @@ async function pollForNewItems(): Promise<void> {
       return; // No new items
     }
 
-    console.log(`[FeedPoller] Found ${newItems.length} new items (${cachedIds.size} already cached)`);
+    log.info(` Found ${newItems.length} new items (${cachedIds.size} already cached)`);
 
     // Enrich with AI analysis (this calculates IV scores and macro levels)
     const enrichedItems = await enrichFeedWithAnalysis(newItems);
@@ -59,15 +62,15 @@ async function pollForNewItems(): Promise<void> {
     // Broadcast Level 4 items immediately via SSE
     const level4Items = enrichedItems.filter(item => item.macroLevel === 4);
     for (const item of level4Items) {
-      console.log(`[FeedPoller] Broadcasting Level 4 item: ${item.headline}`);
+      log.info(` Broadcasting Level 4 item: ${item.headline}`);
       broadcastLevel4(item);
     }
 
     if (level4Items.length > 0) {
-      console.log(`[FeedPoller] Broadcast ${level4Items.length} Level 4 items via SSE`);
+      log.info(` Broadcast ${level4Items.length} Level 4 items via SSE`);
     }
   } catch (error) {
-    console.error('[FeedPoller] Poll error:', error);
+    log.error(' Poll error:', error);
   } finally {
     isPolling = false;
   }
@@ -82,7 +85,7 @@ export function startFeedPoller(): void {
     return;
   }
 
-  console.log(`[FeedPoller] Starting continuous polling (every ${POLL_INTERVAL_MS / 1000}s)`);
+  log.info(` Starting continuous polling (every ${POLL_INTERVAL_MS / 1000}s)`);
 
   // Poll immediately on startup
   pollForNewItems();

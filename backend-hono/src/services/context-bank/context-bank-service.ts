@@ -23,11 +23,11 @@ import { estimatePoints } from '../market-data/point-estimator.js'
 import { fetchVIX } from '../vix-service.js'
 import { getCachedAssessment } from '../systemic/risk-detector.js'
 import { getCachedFredIndicators, getFredFetchedAt } from '../systemic/fred-service.js'
-import { getCachedTradeIdeas, getCachedPerformance } from '../notion-poller.js'
-import { fetchPolymarket } from '../polymarket-service.js'
-import { fetchKalshiWhales } from '../kalshi-service.js'
+import { readTradeIdeas, readDailyPnl } from '../supabase-service.js'
 import type { KalshiContext } from '../../types/context-bank.js'
+import { createLogger } from '../../lib/logger.js'
 
+const log = createLogger('ContextBank')
 const TICK_INTERVAL_MS = 120_000 // 120s
 const RING_SIZE = 10
 const PERSIST_EVERY = 5 // Persist to DB every 5th snapshot
@@ -152,20 +152,26 @@ async function assembleSnapshot(version: number): Promise<ContextBankSnapshot> {
   // Econ Calendar
   const econCalendar = await fetchEconContext()
 
-  // Trade Ideas + P&L
-  const tradeIdeasRaw = getCachedTradeIdeas()
-  const performanceRaw = getCachedPerformance()
+  // Trade Ideas + P&L (from Supabase)
+  const [tradeIdeasRaw, pnlRecords] = await Promise.all([
+    readTradeIdeas({ limit: 50 }),
+    readDailyPnl({ limit: 1 }),
+  ])
   const tradeIdeas: TradeIdeasContext = {
     active: tradeIdeasRaw.map(t => ({
-      id: t.id,
+      id: t.id!,
       title: t.title,
-      ticker: t.ticker,
-      direction: t.direction,
-      confidence: t.confidence,
-      entry: t.entry,
-      sourceAgent: t.sourceAgent,
+      ticker: t.ticker ?? '',
+      direction: (t.direction ?? 'neutral').toLowerCase() as 'long' | 'short' | 'neutral',
+      confidence: t.confidence != null ? (t.confidence >= 70 ? 'high' : t.confidence >= 50 ? 'medium' : 'low') : undefined,
+      entry: t.entry_price ?? undefined,
+      sourceAgent: t.analyst ?? undefined,
     })),
-    pnlSummary: extractPnlSummary(performanceRaw),
+    pnlSummary: pnlRecords.length > 0 ? {
+      todayPnl: pnlRecords[0].net_pnl != null ? Number(pnlRecords[0].net_pnl) : undefined,
+      winRate: pnlRecords[0].win_rate != null ? Number(pnlRecords[0].win_rate) : undefined,
+      tradesCount: pnlRecords[0].trades_taken ?? undefined,
+    } : {},
   }
 
   // FRED
@@ -180,47 +186,9 @@ async function assembleSnapshot(version: number): Promise<ContextBankSnapshot> {
     fetchedAt: fredFetchedAt?.toISOString(),
   }
 
-  // Polymarket
-  let polymarket: PolymarketContext = { markets: [], fetchedAt: now.toISOString() }
-  try {
-    const pm = await fetchPolymarket()
-    polymarket = {
-      markets: pm.markets.map(m => ({
-        id: m.id,
-        title: m.title,
-        probability: m.probability,
-        outcome: m.outcome,
-        closeTime: m.closeTime,
-      })),
-      fetchedAt: pm.fetchedAt,
-    }
-  } catch { /* Polymarket unavailable */ }
-
-  // Kalshi whale flow
-  let kalshi: KalshiContext = { topMarkets: [], recentWhales: [], fetchedAt: now.toISOString() }
-  try {
-    const kw = await fetchKalshiWhales()
-    kalshi = {
-      topMarkets: kw.markets.slice(0, 10).map(m => ({
-        ticker: m.ticker,
-        title: m.title,
-        lastPrice: m.lastPrice,
-        volume24h: m.volume24h,
-        closeTime: m.closeTime,
-      })),
-      recentWhales: kw.alerts.slice(0, 20).map(a => ({
-        id: a.id,
-        ticker: a.ticker,
-        marketTitle: a.marketTitle,
-        contracts: a.contracts,
-        notionalUsd: a.notionalUsd,
-        takerSide: a.takerSide,
-        alertTypes: a.alertTypes,
-        createdAt: a.createdAt,
-      })),
-      fetchedAt: kw.lastTradeFetchedAt,
-    }
-  } catch { /* Kalshi unavailable */ }
+  // Polymarket / Kalshi removed (integrations not set up)
+  const polymarket: PolymarketContext = { markets: [], fetchedAt: now.toISOString() }
+  const kalshi: KalshiContext = { topMarkets: [], recentWhales: [], fetchedAt: now.toISOString() }
 
   // Desk report summaries
   const deskReports: DeskReportSummary[] = []
@@ -368,7 +336,7 @@ async function restoreFromDB(): Promise<void> {
         restored.ageSeconds = Math.round(ageMs / 1000)
         _currentVersion = restored.version
         _snapshots.push(restored)
-        console.log(`[ContextBank] Restored snapshot v${restored.version} from DB (${Math.round(ageMs / 1000)}s old)`)
+        log.info(` Restored snapshot v${restored.version} from DB (${Math.round(ageMs / 1000)}s old)`)
       }
     }
   } catch { /* Silent — fresh snapshot on first tick */ }
@@ -423,7 +391,7 @@ async function tick(): Promise<void> {
       `Desks: ${snapshot.deskReports.length}/5`
     )
   } catch (err) {
-    console.error('[ContextBank] Tick failed:', err)
+    log.error(' Tick failed:', err)
   }
 }
 
@@ -458,7 +426,7 @@ export function submitDeskReport(report: DeskReport): void {
   // Persist to DB
   persistDeskReport(report)
 
-  console.log(`[ContextBank] Desk report from ${report.agent} (${report.desk}) v${report.snapshotVersion} — confidence: ${report.confidence}`)
+  log.info(` Desk report from ${report.agent} (${report.desk}) v${report.snapshotVersion} — confidence: ${report.confidence}`)
 }
 
 export function getLatestDeskReports(): DeskReport[] {
@@ -472,7 +440,7 @@ export function getDeskReportHistory(desk: DeskId, limit: number = 10): DeskRepo
 export function submitBrief(brief: ConsolidatedBrief): void {
   _latestBrief = brief
   persistBrief(brief)
-  console.log(`[ContextBank] Brief submitted for v${brief.snapshotVersion} — ${brief.topAlerts.length} alerts, ${brief.topTradeIdeas.length} ideas`)
+  log.info(` Brief submitted for v${brief.snapshotVersion} — ${brief.topAlerts.length} alerts, ${brief.topTradeIdeas.length} ideas`)
 }
 
 export function getLatestBrief(): ConsolidatedBrief | null {
@@ -504,7 +472,7 @@ async function persistBrief(brief: ConsolidatedBrief): Promise<void> {
 export function startContextBankTicker(): void {
   if (_intervalId) return
 
-  console.log('[ContextBank] Starting Unified Context Bank ticker...')
+  log.info(' Starting Unified Context Bank ticker...')
 
   // Restore from DB first
   restoreFromDB().then(() => {
@@ -513,7 +481,7 @@ export function startContextBankTicker(): void {
   })
 
   _intervalId = setInterval(tick, TICK_INTERVAL_MS)
-  console.log(`[ContextBank] Ticking every ${TICK_INTERVAL_MS / 1000}s`)
+  log.info(` Ticking every ${TICK_INTERVAL_MS / 1000}s`)
 }
 
 export function stopContextBankTicker(): void {
@@ -521,5 +489,5 @@ export function stopContextBankTicker(): void {
     clearInterval(_intervalId)
     _intervalId = null
   }
-  console.log('[ContextBank] Stopped')
+  log.info(' Stopped')
 }

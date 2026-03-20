@@ -15,7 +15,7 @@ export function NewsSection() {
       const permission = await Notification.requestPermission();
       setNotificationsEnabled(permission === 'granted');
       if (permission === 'granted') {
-        new Notification('PULSE News Alerts', {
+        new Notification('Fintheon News Alerts', {
           body: 'You will now receive notifications for breaking news',
           icon: '/favicon.ico',
         });

@@ -5,7 +5,7 @@ import { hermesConversationStorageKey } from '../lib/hermesAgentRouting';
 
 // [claude-code 2026-03-09] Added surfaceId for per-surface session isolation
 export function usePersistentHermesConversation(
-  pulseAgentId: string | undefined | null,
+  fintheonAgentId: string | undefined | null,
   surfaceId?: string,
 ) {
   const [conversationId, setConversationIdState] = useState<string | undefined>(undefined);
@@ -20,14 +20,14 @@ export function usePersistentHermesConversation(
       return;
     }
 
-    const key = hermesConversationStorageKey(pulseAgentId, surfaceId);
+    const key = hermesConversationStorageKey(fintheonAgentId, surfaceId);
     const stored = localStorage.getItem(key) || undefined;
     setConversationIdState(stored);
-  }, [pulseAgentId, surfaceId]);
+  }, [fintheonAgentId, surfaceId]);
 
   const setConversationId = useCallback(
     (id: string) => {
-      const key = hermesConversationStorageKey(pulseAgentId, surfaceId);
+      const key = hermesConversationStorageKey(fintheonAgentId, surfaceId);
       localStorage.setItem(key, id);
 
       // Also update persistent thread ID if persistent mode is enabled
@@ -38,15 +38,15 @@ export function usePersistentHermesConversation(
 
       setConversationIdState(id);
     },
-    [pulseAgentId, surfaceId]
+    [fintheonAgentId, surfaceId]
   );
 
   const clearConversationId = useCallback(() => {
     // Only clear the per-agent key, not the persistent thread
-    const key = hermesConversationStorageKey(pulseAgentId, surfaceId);
+    const key = hermesConversationStorageKey(fintheonAgentId, surfaceId);
     localStorage.removeItem(key);
     setConversationIdState(undefined);
-  }, [pulseAgentId, surfaceId]);
+  }, [fintheonAgentId, surfaceId]);
 
   return { conversationId, setConversationId, clearConversationId };
 }

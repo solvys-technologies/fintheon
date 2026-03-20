@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { RefreshCw, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 import { useGateway } from '../../contexts/GatewayContext';
 import { useSettings } from '../../contexts/SettingsContext';
-import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { HermesAgentCards } from '../hermes/HermesAgentCards';
 import { HermesActivityLog, useActivityLog } from '../hermes/HermesActivityLog';
 
@@ -29,7 +29,7 @@ function SectionHeader({ title }: { title: string }) {
 export function HermesSettings() {
   const { status, lastHealthCheck, reconnect, gatewayUrl } = useGateway();
   const { gatewayPort } = useSettings();
-  const { agents } = usePulseAgents();
+  const { agents } = useFintheonAgents();
   const { entries } = useActivityLog();
   const [showKey, setShowKey] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'fail' | null>(null);

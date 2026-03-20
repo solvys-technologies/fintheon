@@ -1,4 +1,4 @@
-# Pulse v3.0 Fresh Implementation Plan
+# Fintheon v3.0 Fresh Implementation Plan
 ## Clean Slate Backend Rebuild
 
 > **Created**: 2026-01-10

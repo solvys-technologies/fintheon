@@ -1,5 +1,5 @@
+// [claude-code 2026-03-20] S3:T6 — Updated tour steps for Consilium/Proposals/Apparatus tabs
 // [claude-code 2026-03-16] Spotlight tour + blindspots interview v7.9
-// [claude-code 2026-03-12] Renamed "Trading Journal" -> "Performance" in tour + What's New
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { SpotlightOverlay } from './SpotlightOverlay';
@@ -12,7 +12,7 @@ const TOUR_STORAGE_KEY = 'fintheon:tour-completed';
 const LAST_VERSION_KEY = 'fintheon:last-seen-version';
 const INTERVIEW_STORAGE_KEY = 'fintheon:interview-completed';
 const INTERVIEW_DATA_KEY = 'fintheon:interview-data';
-const CURRENT_VERSION = '7.9.0';
+const CURRENT_VERSION = '8.20.0';
 const WHATS_NEW_TIMEOUT_MS = 30_000;
 
 interface TourStep {
@@ -31,15 +31,27 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'RiskFlow',
-    description: 'Real-time news and event feed scored by the IV engine. Headlines flow in automatically from X, RSS, and Notion trade ideas.',
+    description: 'Real-time news and event feed scored by the IV engine. Headlines flow in from X, RSS, and Notion.',
     target: 'news',
     targetSelector: '[data-tour-target="riskflow"]',
   },
   {
-    title: 'Chat',
-    description: 'Talk to your AI analysts. Use skills like /brief, /validate, /report, or /psych_assist. Drag RiskFlow items into chat for context.',
+    title: 'Consilium',
+    description: 'Your AI agents debate trades and surface proposals here. Use /brief, /validate, or drag RiskFlow items in for context.',
     target: 'analysis',
     targetSelector: '[data-tour-target="chat"]',
+  },
+  {
+    title: 'Proposals',
+    description: 'View trade proposals from MiroFish and chart them on TopStepX.',
+    target: 'proposals',
+    targetSelector: '[data-tour-target="proposals"]',
+  },
+  {
+    title: 'Apparatus',
+    description: 'See what your agents know, what they\'re thinking, and when they work.',
+    target: 'apparatus',
+    targetSelector: '[data-tour-target="apparatus"]',
   },
   {
     title: 'Economic Calendar',
@@ -74,12 +86,12 @@ const TOUR_STEPS: TourStep[] = [
 ];
 
 const WHATS_NEW_ITEMS = [
-  'Spotlight-guided onboarding tour with smooth transitions',
-  'Blindspots interview — personalized trader profile setup',
+  'Onboarding tour now covers Consilium, Proposals, and Apparatus tabs',
+  'Consilium — AI agents debate trades and surface proposals',
+  'Apparatus — agent memory, reasoning, and schedule visibility',
   'Narrative Map canvas with MiroFish integration',
-  'IV prediction layer on Narrative Flow',
+  'Blindspots interview — personalized trader profile setup',
   'Setup wizard for backend dependency checks',
-  'Auto-refresh toggle for all polling widgets',
 ];
 
 type Phase = 'tour' | 'interview' | 'setup' | 'done';

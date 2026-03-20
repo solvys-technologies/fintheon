@@ -19,7 +19,7 @@ export function ChatHeader({ onRunMDB, onNewChat, onToggleCheckpoints, isLoading
           <button
             onClick={onRunMDB}
             disabled={isLoading}
-            className="px-3 py-1.5 disabled:opacity-50 rounded text-[13px] text-zinc-400 transition-all whitespace-nowrap pulse-accent-hover"
+            className="px-3 py-1.5 disabled:opacity-50 rounded text-[13px] text-zinc-400 transition-all whitespace-nowrap fintheon-accent-hover"
           >
             Dawn Dispatch
           </button>
