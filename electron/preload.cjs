@@ -34,6 +34,13 @@ contextBridge.exposeInMainWorld("electron", {
     cliOutputCallback = typeof cb === "function" ? cb : null;
   },
 
+  // Startup config API
+  getStartupConfig: () => ipcRenderer.invoke("get-startup-config"),
+  setStartupConfig: (patch) => ipcRenderer.invoke("set-startup-config", patch),
+  startBackend: () => ipcRenderer.invoke("start-backend"),
+  stopBackend: () => ipcRenderer.invoke("stop-backend"),
+  isBackendAlive: () => ipcRenderer.invoke("is-backend-alive"),
+
   // Auto-update API
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   checkForUpdate: () => ipcRenderer.invoke("update-check"),

@@ -2,8 +2,10 @@
 // [claude-code 2026-03-03] Toolbar items reorderable via getToolbarOrder/setToolbarOrder.
 // [claude-code 2026-03-11] T2: IV score wired to backend /api/market-data/iv-score — replaces local quickIVScore
 // [claude-code 2026-03-20] S3:T4b: Merge platform/layout into one toolbar slot; DND moves to header when iFrame active
+// [claude-code 2026-03-20] S3:T4c: createPortal for platform/layout dropdowns — fixes z-index behind Strategium panel
 // [claude-code 2026-03-20] S3:T5 — VIX spike toast trigger when VIX crosses above threshold
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { UpgradeModal } from '../UpgradeModal';
 import { IVScoreCard } from '../IVScoreCard';
@@ -90,6 +92,10 @@ export function TopHeader({
   const [toolbarOrder, setToolbarOrderState] = useState<ToolbarItemId[]>(() => getToolbarOrder());
   const dropdownRef = useRef<HTMLDivElement>(null);
   const platformDropdownRef = useRef<HTMLDivElement>(null);
+  const layoutPortalRef = useRef<HTMLDivElement>(null);
+  const platformPortalRef = useRef<HTMLDivElement>(null);
+  const [layoutDropdownPos, setLayoutDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const [platformDropdownPos, setPlatformDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const { dndActive, toggleManualDnd, queueCount } = useDND();
   const vixWasBelowRef = useRef(true);
 
@@ -126,11 +132,16 @@ export function TopHeader({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowLayoutDropdown(false);
+      const target = event.target as Node;
+      if (showLayoutDropdown) {
+        const inTrigger = dropdownRef.current?.contains(target);
+        const inPortal = layoutPortalRef.current?.contains(target);
+        if (!inTrigger && !inPortal) setShowLayoutDropdown(false);
       }
-      if (platformDropdownRef.current && !platformDropdownRef.current.contains(event.target as Node)) {
-        setShowPlatformDropdown(false);
+      if (showPlatformDropdown) {
+        const inTrigger = platformDropdownRef.current?.contains(target);
+        const inPortal = platformPortalRef.current?.contains(target);
+        if (!inTrigger && !inPortal) setShowPlatformDropdown(false);
       }
     };
 
@@ -139,6 +150,25 @@ export function TopHeader({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showLayoutDropdown, showPlatformDropdown]);
+
+  // Calculate fixed position for portaled dropdowns
+  useEffect(() => {
+    if (!showLayoutDropdown || !dropdownRef.current) { setLayoutDropdownPos(null); return; }
+    const rect = dropdownRef.current.getBoundingClientRect();
+    const dropdownW = 288; // w-72 = 18rem
+    let left = rect.right - dropdownW;
+    if (left < 16) left = 16;
+    setLayoutDropdownPos({ top: rect.bottom + 8, left });
+  }, [showLayoutDropdown]);
+
+  useEffect(() => {
+    if (!showPlatformDropdown || !platformDropdownRef.current) { setPlatformDropdownPos(null); return; }
+    const rect = platformDropdownRef.current.getBoundingClientRect();
+    const dropdownW = 288;
+    let left = rect.right - dropdownW;
+    if (left < 16) left = 16;
+    setPlatformDropdownPos({ top: rect.bottom + 8, left });
+  }, [showPlatformDropdown]);
 
   const platformOptions: Array<{ value: TradingPlatform; label: string; description: string }> = [
     { value: 'tradesea', label: 'TradeSea', description: 'TradeSea Trading' },
@@ -333,8 +363,12 @@ export function TopHeader({
                       <span>{layoutOptions.find(opt => opt.value === layoutOption)?.label}</span>
                       <ChevronDown className={`w-3 h-3 transition-transform ${showLayoutDropdown ? 'rotate-180' : ''}`} />
                     </button>
-                    {showLayoutDropdown && (
-                      <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden">
+                    {showLayoutDropdown && layoutDropdownPos && createPortal(
+                      <div
+                        ref={layoutPortalRef}
+                        style={{ position: 'fixed', top: layoutDropdownPos.top, left: layoutDropdownPos.left, zIndex: 9999 }}
+                        className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden"
+                      >
                         {layoutOptions.map((option) => (
                           <button
                             key={option.value}
@@ -359,7 +393,8 @@ export function TopHeader({
                             </div>
                           </button>
                         ))}
-                      </div>
+                      </div>,
+                      document.body
                     )}
                   </div>
                 );
@@ -376,8 +411,12 @@ export function TopHeader({
                     <span>{selectedPlatformLabel}</span>
                     <ChevronDown className={`w-3 h-3 transition-transform ${showPlatformDropdown ? 'rotate-180' : ''}`} />
                   </button>
-                  {showPlatformDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden py-1">
+                  {showPlatformDropdown && platformDropdownPos && createPortal(
+                    <div
+                      ref={platformPortalRef}
+                      style={{ position: 'fixed', top: platformDropdownPos.top, left: platformDropdownPos.left, zIndex: 9999 }}
+                      className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden py-1"
+                    >
                       {platformOptions.map((option) => (
                         <button
                           key={option.value}
@@ -403,7 +442,8 @@ export function TopHeader({
                           </div>
                         </button>
                       ))}
-                    </div>
+                    </div>,
+                    document.body
                   )}
                 </div>
               );

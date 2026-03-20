@@ -3,6 +3,7 @@
 
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
 // [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
+// [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
@@ -11,6 +12,30 @@ const { autoUpdater } = require("electron-updater");
 
 let mainWindow = null;
 let backendProcess = null;
+
+/* ------------------------------------------------------------------ */
+/*  Startup config — persisted to userData/fintheon-startup.json       */
+/* ------------------------------------------------------------------ */
+
+const CONFIG_PATH = path.join(app.getPath("userData"), "fintheon-startup.json");
+const DEFAULT_CONFIG = { backendAutostart: true, launchOnLogin: false };
+
+function readStartupConfig() {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      return { ...DEFAULT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")) };
+    }
+  } catch {}
+  return { ...DEFAULT_CONFIG };
+}
+
+function writeStartupConfig(cfg) {
+  try {
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), "utf8");
+  } catch (err) {
+    console.error("[Config] Failed to write startup config:", err.message);
+  }
+}
 
 // [claude-code 2026-03-20] Check if backend is already running (LaunchAgent or manual)
 async function isBackendAlive() {
@@ -189,7 +214,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  startBackend();
+  const cfg = readStartupConfig();
+  if (cfg.backendAutostart) {
+    startBackend();
+  } else {
+    console.log("[Electron] Backend autostart disabled — skipping");
+  }
   createWindow();
   setupAutoUpdater();
 
@@ -267,6 +297,42 @@ ipcMain.handle("update-check", () => {
 
 ipcMain.handle("get-app-version", () => {
   return app.getVersion();
+});
+
+// Startup config IPC
+ipcMain.handle("get-startup-config", () => {
+  const cfg = readStartupConfig();
+  // Also read actual login-item state from OS
+  const loginSettings = app.getLoginItemSettings();
+  cfg.launchOnLogin = loginSettings.openAtLogin;
+  return cfg;
+});
+
+ipcMain.handle("set-startup-config", (_event, patch) => {
+  const cfg = readStartupConfig();
+  if (typeof patch.backendAutostart === "boolean") cfg.backendAutostart = patch.backendAutostart;
+  if (typeof patch.launchOnLogin === "boolean") {
+    cfg.launchOnLogin = patch.launchOnLogin;
+    app.setLoginItemSettings({ openAtLogin: patch.launchOnLogin });
+  }
+  writeStartupConfig(cfg);
+  return cfg;
+});
+
+// Manual backend start/stop from renderer
+ipcMain.handle("start-backend", async () => {
+  if (backendProcess) return { ok: true, detail: "already running" };
+  await startBackend();
+  return { ok: true };
+});
+
+ipcMain.handle("stop-backend", () => {
+  stopBackend();
+  return { ok: true };
+});
+
+ipcMain.handle("is-backend-alive", async () => {
+  return { alive: await isBackendAlive() };
 });
 
 // Fintheon CLI: run shell command from project root and stream output to renderer

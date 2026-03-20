@@ -1137,7 +1137,7 @@ function HermesAdminTab() {
       setDiagnostics(data);
 
       // Check for errors and trigger handoff CTA
-      const errors = data.services.filter(s => s.status === 'error');
+      const errors = (data.services ?? []).filter(s => s.status === 'error');
       if (errors.length > 0) {
         const errorNames = errors.map(e => e.name).join(', ');
         const simpleFixable = errors.every(e => e.fix && !e.fix.includes('Claude Code'));
@@ -1289,7 +1289,7 @@ function HermesAdminTab() {
         {diagnostics && (
           <>
             <div className="grid grid-cols-2 gap-2">
-              {diagnostics.services.map((svc) => (
+              {(diagnostics.services ?? []).map((svc) => (
                 <div
                   key={svc.name}
                   className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded-lg p-3"
@@ -1311,11 +1311,11 @@ function HermesAdminTab() {
             </div>
 
             {/* Missing env vars */}
-            {diagnostics.missingEnvVars.length > 0 && (
+            {(diagnostics.missingEnvVars ?? []).length > 0 && (
               <div className="mt-3 bg-[var(--fintheon-bg)] border border-red-500/20 rounded-lg p-3">
                 <div className="text-[11px] font-semibold text-red-400 mb-1">Missing Environment Variables</div>
                 <div className="text-[10px] text-gray-500 font-mono space-y-0.5">
-                  {diagnostics.missingEnvVars.map(v => (
+                  {(diagnostics.missingEnvVars ?? []).map(v => (
                     <div key={v}>{v}</div>
                   ))}
                 </div>
@@ -1323,7 +1323,7 @@ function HermesAdminTab() {
             )}
 
             {/* Handoff Prompt CTA — shown when there are errors */}
-            {diagnostics.services.some(s => s.status === 'error') && (
+            {(diagnostics.services ?? []).some(s => s.status === 'error') && (
               <button
                 onClick={handleCopyHandoff}
                 className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] text-[11px] font-semibold hover:bg-[var(--fintheon-accent)]/20 transition-colors"

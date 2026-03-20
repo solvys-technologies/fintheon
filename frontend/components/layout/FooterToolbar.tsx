@@ -202,6 +202,13 @@ export function FooterToolbar({
 
   const handleCli = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Ctrl+C kills the active process
+      if (e.key === 'c' && e.ctrlKey) {
+        e.preventDefault();
+        killActiveProcess();
+        return;
+      }
+
       const cmd = cliInput.trim();
 
       if (showSlashSuggestions && slashSuggestions.length > 0) {
@@ -275,18 +282,10 @@ export function FooterToolbar({
         setCliHistory(newHistory);
         return;
       }
-      if (isElectron) {
-        setCliHistory(newHistory);
-        runShellCommand(commandToRun);
-        return;
-      }
-      newHistory.push({
-        type: 'output',
-        text: `Run Fintheon in Electron (npm run desktop) to execute: ${displayCmd}`,
-      });
       setCliHistory(newHistory);
+      runShellCommand(commandToRun);
     },
-    [cliInput, cliHistory, isElectron, runShellCommand, showSlashSuggestions, slashSuggestions, slashSuggestionsIndex]
+    [cliInput, cliHistory, runShellCommand, killActiveProcess, showSlashSuggestions, slashSuggestions, slashSuggestionsIndex]
   );
 
   const onCliInputChange = (value: string) => {

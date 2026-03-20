@@ -20,6 +20,11 @@ export interface UpdateProgress {
   total: number;
 }
 
+export interface StartupConfig {
+  backendAutostart: boolean;
+  launchOnLogin: boolean;
+}
+
 export interface ElectronAPI {
   platform: 'electron';
   isElectron: true;
@@ -32,6 +37,13 @@ export interface ElectronAPI {
   closeWindow: () => void;
   runShellCommand: (command: string) => Promise<{ ok: boolean; error?: string }>;
   setCliOutputCallback: (cb: ((event: CliOutputEvent) => void) | null) => void;
+
+  // Startup config
+  getStartupConfig: () => Promise<StartupConfig>;
+  setStartupConfig: (patch: Partial<StartupConfig>) => Promise<StartupConfig>;
+  startBackend: () => Promise<{ ok: boolean; detail?: string }>;
+  stopBackend: () => Promise<{ ok: boolean }>;
+  isBackendAlive: () => Promise<{ alive: boolean }>;
 
   // Auto-update
   checkForUpdate: () => Promise<{ ok: boolean }>;

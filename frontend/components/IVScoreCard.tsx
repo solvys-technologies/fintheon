@@ -1,9 +1,10 @@
 // [claude-code 2026-03-11] Redesigned to consume backend IVScoreResponse — point range, rationale tooltip, environment label
 // [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
 // [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
-// [claude-code 2026-03-20] S3:T4a: Fixed popup to position:fixed with viewport boundary detection, left-aligned, max-w-[90vw], debounced hide
+// [claude-code 2026-03-20] S3:T4a: createPortal to document.body for popup — escapes parent stacking context, position:fixed with viewport clamping
 import { Info, TrendingUp } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { IVScoreResponse } from '../types/market-data';
 
 interface IVScoreCardProps {
@@ -163,10 +164,10 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             <Info className="w-2.5 h-2.5" />
           </button>
 
-          {showTooltip && popupPos && (
+          {showTooltip && popupPos && createPortal(
             <div
-              className="fixed w-80 max-w-[90vw] bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl z-[9999]"
-              style={{ top: popupPos.top, left: popupPos.left }}
+              className="w-80 max-w-[90vw] bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl"
+              style={{ position: 'fixed', top: popupPos.top, left: popupPos.left, zIndex: 9999 }}
               onMouseEnter={handleShowTooltip}
               onMouseLeave={handleHideTooltip}
             >
@@ -331,7 +332,8 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
               </div>
             ))}
             </div>
-          </div>
+          </div>,
+          document.body
           )}
         </div>
       </div>

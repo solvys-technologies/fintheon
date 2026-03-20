@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-20T22:30:00',
+    agent: 'claude-code',
+    summary: 'Fix white screen crash in SettingsPanel (diagnostics.services undefined). Add configurable backend autostart + launch-on-login toggles in HermesSettings — Electron main reads fintheon-startup.json from userData, exposes IPC for get/set config + manual start/stop backend. Login item uses app.setLoginItemSettings().',
+    files: [
+      'frontend/components/SettingsPanel.tsx',
+      'frontend/components/settings/HermesSettings.tsx',
+      'electron/main.cjs',
+      'electron/preload.cjs',
+      'types/electron.d.ts',
+      'frontend/types/electron.d.ts',
+    ],
+  },
+  {
+    date: '2026-03-20T22:00:00',
+    agent: 'claude-code',
+    summary: 'Fix z-index bug: IV popup + platform/layout dropdowns rendered behind Strategium panel. All three now use createPortal(…, document.body) to escape parent stacking context. Position: fixed + z-index 9999. Click-outside handlers updated to check both trigger and portal refs.',
+    files: ['frontend/components/IVScoreCard.tsx', 'frontend/components/layout/TopHeader.tsx'],
+  },
+  {
     date: '2026-03-20T21:00:00',
     agent: 'claude-code',
     summary: 'Theme-consistent styling on all 8 Consilium sub-tabs. Converted zinc grays to fintheon gold/cream palette in ProposalWidget, ModelGlossary, DevelopmentsTimeline, AgentChattr. Fixed blue briefing category to gold, event card bg to #0a0a00, date header opacity, flat direction badge colors. No emojis, no separators, no off-theme accents.',
