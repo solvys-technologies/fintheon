@@ -214,9 +214,9 @@ function createWindow() {
     console.log("[Electron] Dev mode — loading Vite dev server at", VITE_DEV_URL);
     win.loadURL(VITE_DEV_URL);
   } else {
+    // Production: load from backend HTTP server (not file://) so Clerk OAuth works
     waitForBackend(BACKEND_URL).then(() => {
-      const rendererPath = path.join(__dirname, "..", "dist", "index.html");
-      win.loadFile(rendererPath);
+      win.loadURL(BACKEND_URL);
     });
   }
 
