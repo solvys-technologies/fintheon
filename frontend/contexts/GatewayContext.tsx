@@ -67,7 +67,7 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
           // [claude-code 2026-03-10] Gateway toast: show once per session only
           if (!sessionStorage.getItem('gateway_connected_shown')) {
             sessionStorage.setItem('gateway_connected_shown', '1');
-            addToast('Hermes connected', 'success');
+            addToast('Hermes connected', 'success', undefined, 'connection-status');
           }
         }
       } else {
@@ -79,7 +79,7 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
 
       // Only toast when we were previously connected (avoid noise on first load / no gateway)
       if (wasConnected) {
-        addToast('Hermes disconnected — retrying...', 'error');
+        addToast('Hermes disconnected — retrying...', 'error', undefined, 'connection-status');
       }
 
       // Exponential backoff retry
@@ -91,7 +91,7 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
   const reconnect = useCallback(() => {
     if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     setStatus('connecting');
-    connectingToastRef.current = addToast('Reconnecting to Hermes...', 'updating');
+    connectingToastRef.current = addToast('Reconnecting to Hermes...', 'updating', undefined, 'connection-status');
     backoffRef.current = 2000;
     checkHealth();
   }, [checkHealth, addToast]);

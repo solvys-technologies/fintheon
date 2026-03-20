@@ -1,6 +1,6 @@
-// [claude-code 2026-03-16] Toast with fade-in/out, error descriptions, 2.5s error auto-dismiss
+// [claude-code 2026-03-20] S3:T5 — Toast: bottom-left, theme colors, Don't Show Again on all types
 import { useEffect, useState } from 'react';
-import { X, Check, AlertTriangle, Loader2, Info } from 'lucide-react';
+import { X, Check, AlertTriangle, Loader2, Info, BellOff, Activity } from 'lucide-react';
 import { useToast, type Toast, type ToastVariant } from '../../contexts/ToastContext';
 
 /* ------------------------------------------------------------------ */
@@ -11,32 +11,37 @@ const VARIANT_CONFIG: Record<ToastVariant, { border: string; color: string; Icon
   success: { border: '#34D399', color: '#34D399', Icon: Check },
   error: { border: '#EF4444', color: '#EF4444', Icon: AlertTriangle },
   updating: { border: 'var(--fintheon-accent)', color: 'var(--fintheon-accent)', Icon: Loader2 },
-  info: { border: 'rgba(212,175,55,0.4)', color: '#9CA3AF', Icon: Info },
+  info: { border: 'var(--fintheon-accent)', color: 'var(--fintheon-text)', Icon: Info },
   reminder: { border: 'var(--fintheon-accent)', color: 'var(--fintheon-accent)', Icon: AlertTriangle },
+  vix: { border: '#EF4444', color: '#EF4444', Icon: Activity },
 };
 
 /* ------------------------------------------------------------------ */
-/*  Single toast item (handles its own enter animation)                */
+/*  Single toast item                                                  */
 /* ------------------------------------------------------------------ */
 
-function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
+function ToastItem({ toast, onDismiss, onBlock }: {
+  toast: Toast;
+  onDismiss: (id: string) => void;
+  onBlock: (toast: Toast) => void;
+}) {
   const [entered, setEntered] = useState(false);
   const cfg = VARIANT_CONFIG[toast.variant];
 
-  // Trigger enter animation on mount
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(raf);
   }, []);
 
   const isVisible = entered && !toast.exiting;
+  const hasDND = !!toast.notificationType;
 
   return (
     <div
       className="transition-all duration-300 ease-out"
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateX(0)' : 'translateX(16px)',
+        transform: isVisible ? 'translateX(0)' : 'translateX(-16px)',
         pointerEvents: 'auto',
         minWidth: '280px',
         maxWidth: '400px',
@@ -64,59 +69,70 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
             {toast.description && (
               <span
                 className="text-[11px] leading-tight"
-                style={{ color: 'rgba(156,163,175,0.7)' }}
+                style={{ color: 'var(--fintheon-muted)' }}
               >
                 {toast.description}
               </span>
             )}
           </div>
         </div>
-        <button
-          onClick={() => onDismiss(toast.id)}
-          className="flex items-center justify-center rounded text-gray-500 hover:text-white transition-colors flex-shrink-0"
-          style={{ width: '20px', height: '20px', marginLeft: '8px' }}
-        >
-          <X size={12} />
-        </button>
+        <div className="flex items-center flex-shrink-0" style={{ gap: '2px', marginLeft: '8px' }}>
+          {hasDND && (
+            <button
+              onClick={() => onBlock(toast)}
+              title="Don't show again"
+              className="flex items-center justify-center rounded transition-colors"
+              style={{ width: '20px', height: '20px', color: 'var(--fintheon-muted)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--fintheon-accent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--fintheon-muted)'; }}
+            >
+              <BellOff size={11} />
+            </button>
+          )}
+          <button
+            onClick={() => onDismiss(toast.id)}
+            className="flex items-center justify-center rounded transition-colors"
+            style={{ width: '20px', height: '20px', color: 'var(--fintheon-muted)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--fintheon-text)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--fintheon-muted)'; }}
+          >
+            <X size={12} />
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Container                                                          */
+/*  Container — all toasts bottom-left                                 */
 /* ------------------------------------------------------------------ */
 
 export function ToastContainer() {
-  const { toasts, dismissToast } = useToast();
+  const { toasts, dismissToast, blockNotificationType } = useToast();
 
   if (toasts.length === 0) return null;
 
-  const normalToasts = toasts.filter(t => t.variant !== 'reminder');
-  const reminderToasts = toasts.filter(t => t.variant === 'reminder');
+  const handleBlock = (toast: Toast) => {
+    if (toast.notificationType) {
+      blockNotificationType(toast.notificationType);
+    }
+    dismissToast(toast.id);
+  };
 
   return (
-    <>
-      {normalToasts.length > 0 && (
-        <div
-          className="fixed z-[100] flex flex-col items-end"
-          style={{ bottom: '24px', right: '24px', gap: '10px', pointerEvents: 'none' }}
-        >
-          {normalToasts.map((toast) => (
-            <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
-          ))}
-        </div>
-      )}
-      {reminderToasts.length > 0 && (
-        <div
-          className="fixed z-[100] flex flex-col items-start"
-          style={{ bottom: '24px', left: '24px', gap: '10px', pointerEvents: 'none' }}
-        >
-          {reminderToasts.map((toast) => (
-            <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
-          ))}
-        </div>
-      )}
-    </>
+    <div
+      className="fixed z-[100] flex flex-col items-start"
+      style={{ bottom: '24px', left: '24px', gap: '10px', pointerEvents: 'none' }}
+    >
+      {toasts.map((toast) => (
+        <ToastItem
+          key={toast.id}
+          toast={toast}
+          onDismiss={dismissToast}
+          onBlock={handleBlock}
+        />
+      ))}
+    </div>
   );
 }

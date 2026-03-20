@@ -245,7 +245,7 @@ export function ExecutiveDashboard() {
                   <div className="text-xs text-zinc-500 py-3 px-1">Loading session calendar...</div>
                 ) : scheduleItems.length === 0 ? (
                   <div className="text-xs text-zinc-500 py-3 px-1">
-                    No economic events available. Verify Notion calendar access.
+                    No economic events available. Start the backend or check Supabase connection.
                   </div>
                 ) : (
                   <SessionCalendarList items={scheduleItems} />

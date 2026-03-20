@@ -1,5 +1,5 @@
 // [claude-code 2026-03-09] Feature flags for skill permissions
-// Load from PULSE_FEATURE_FLAGS env (JSON) or default (all enabled)
+// Load from FINTHEON_FEATURE_FLAGS env (JSON) or default (all enabled)
 
 export interface FeatureFlag {
   enabled: boolean
@@ -15,7 +15,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   track: { enabled: true },
   psych_assist: { enabled: true },
   maintenance: { enabled: true },
-  quick_pulse: { enabled: true },
+  quick_fintheon: { enabled: true },
   mirofish: { enabled: true },
 }
 
@@ -24,13 +24,13 @@ let cachedFlags: FeatureFlags | null = null
 export function getFeatureFlags(): FeatureFlags {
   if (cachedFlags) return cachedFlags
 
-  const envFlags = process.env.PULSE_FEATURE_FLAGS
+  const envFlags = process.env.FINTHEON_FEATURE_FLAGS
   if (envFlags) {
     try {
       const parsed = JSON.parse(envFlags) as FeatureFlags
       cachedFlags = { ...DEFAULT_FLAGS, ...parsed }
     } catch (err) {
-      console.error('[FeatureFlags] Failed to parse PULSE_FEATURE_FLAGS:', err)
+      console.error('[FeatureFlags] Failed to parse FINTHEON_FEATURE_FLAGS:', err)
       cachedFlags = DEFAULT_FLAGS
     }
   } else {
@@ -67,7 +67,7 @@ export function extractSkillFromMessage(message: string): string | null {
     track: 'track',
     psych: 'psych_assist',
     maintenance: 'maintenance',
-    quickpulse: 'quick_pulse',
+    quickfintheon: 'quick_fintheon',
     narrative: 'narrative',
     mirofish: 'mirofish',
   }

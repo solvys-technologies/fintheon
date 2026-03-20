@@ -1,4 +1,4 @@
-// [claude-code 2026-03-05] Phase 5A: Shared schedule context — polls /api/notion/schedule every 60s
+// [claude-code 2026-03-20] Phase 5A: Shared schedule context — polls /api/data/schedule every 60s
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useBackend } from '../lib/backend';
 import type { ExecutiveScheduleItem } from '../components/executive/mockExecutiveData';

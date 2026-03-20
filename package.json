@@ -70,7 +70,7 @@
     "publish": {
       "provider": "github",
       "owner": "solvys-technologies",
-      "repo": "pulse"
+      "repo": "fintheon"
     }
   }
 }

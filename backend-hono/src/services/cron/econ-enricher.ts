@@ -2,6 +2,9 @@
 
 import { fetchEconCalendar, writeEconPrint, updateEventActual } from '../econ-calendar-service.js';
 import { injectEconPrintToFeed } from '../riskflow/econ-bridge.js';
+import { createLogger } from '../../lib/logger.js';
+
+const log = createLogger('EconEnricher');
 
 const ENRICHER_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const INTRADAY_CHECK_MS = 5 * 60 * 1000; // 5 min during market hours
@@ -20,7 +23,7 @@ export async function runEconEnrichment(): Promise<{ processed: number; written:
   try {
     const events = await fetchEconCalendar({ from: today, to: today });
     if (!events.length) {
-      console.log('[EconEnricher] No events for today');
+      log.info(' No events for today');
       return { processed: 0, written: 0 };
     }
 
@@ -45,14 +48,14 @@ export async function runEconEnrichment(): Promise<{ processed: number; written:
           forecast: event.forecast ? parseFloat(event.forecast) : undefined,
           previous: event.previous ? parseFloat(event.previous) : undefined,
           date: today,
-        }).catch((err) => console.error('[EconEnricher] Bridge inject error:', err));
+        }).catch((err) => log.error(' Bridge inject error:', err));
         console.log(`[EconEnricher] Wrote print: ${event.name} = ${event.actual}`);
       }
     }
 
     console.log(`[EconEnricher] Done: ${processed} processed, ${written} written`);
   } catch (err) {
-    console.error('[EconEnricher] Enrichment error:', err);
+    log.error(' Enrichment error:', err);
   }
 
   return { processed, written };
@@ -66,19 +69,19 @@ function isMarketHours(): boolean {
 }
 
 export function startEconEnricher(): void {
-  console.log('[EconEnricher] Starting enrichment scheduler');
+  log.info(' Starting enrichment scheduler');
 
   enricherTimer = setInterval(() => {
-    runEconEnrichment().catch((err) => console.error('[EconEnricher] Nightly error:', err));
+    runEconEnrichment().catch((err) => log.error(' Nightly error:', err));
   }, ENRICHER_INTERVAL_MS);
 
   intradayTimer = setInterval(() => {
     if (isMarketHours()) {
-      runEconEnrichment().catch((err) => console.error('[EconEnricher] Intraday error:', err));
+      runEconEnrichment().catch((err) => log.error(' Intraday error:', err));
     }
   }, INTRADAY_CHECK_MS);
 
-  runEconEnrichment().catch((err) => console.error('[EconEnricher] Initial run error:', err));
+  runEconEnrichment().catch((err) => log.error(' Initial run error:', err));
 }
 
 export function stopEconEnricher(): void {

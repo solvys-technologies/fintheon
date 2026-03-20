@@ -4,7 +4,7 @@ import { SettingsProvider } from './contexts/SettingsContext';
 import { ThreadProvider } from './contexts/ThreadContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { GatewayProvider } from './contexts/GatewayContext';
-import { PulseAgentProvider } from './contexts/PulseAgentContext';
+import { FintheonAgentProvider } from './contexts/FintheonAgentContext';
 import { RiskFlowProvider } from './contexts/RiskFlowContext';
 import { ContextBankProvider } from './contexts/ContextBankContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -64,7 +64,7 @@ export default function App() {
       <SettingsProvider>
         <ToastProvider>
           <GatewayProvider>
-            <PulseAgentProvider>
+            <FintheonAgentProvider>
               <RiskFlowProvider>
               <ContextBankProvider>
               <ThreadProvider>
@@ -120,7 +120,7 @@ export default function App() {
               </ThreadProvider>
               </ContextBankProvider>
               </RiskFlowProvider>
-            </PulseAgentProvider>
+            </FintheonAgentProvider>
           </GatewayProvider>
         </ToastProvider>
       </SettingsProvider>

@@ -1,17 +1,17 @@
 // [claude-code 2026-03-13] Hermes migration: OpenClaw -> Hermes imports
-// [claude-code 2026-03-11] T2d: refactored sidebar to rounded bubble style + PulseChatInput
+// [claude-code 2026-03-11] T2d: refactored sidebar to rounded bubble style + FintheonChatInput
 import { useMemo, useState, useCallback } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useHermesChat } from '../chat/hooks/useHermesChat';
-import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
 import { toHermesAgentOverride } from '../../lib/hermesAgentRouting';
 import { usePersistentHermesConversation } from '../../hooks/usePersistentHermesConversation';
-import { PulseThinkingIndicator } from '../chat/PulseThinkingIndicator';
+import { FintheonThinkingIndicator } from '../chat/FintheonThinkingIndicator';
 import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
 import { useSettings } from '../../contexts/SettingsContext';
-import { PulseChatInput } from '../chat/PulseChatInput';
+import { FintheonChatInput } from '../chat/FintheonChatInput';
 
 export function ResearchDepartment() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -21,7 +21,7 @@ export function ResearchDepartment() {
 
   let activeAgent: { name: string; icon: string } | null = null;
   try {
-    const ctx = usePulseAgents();
+    const ctx = useFintheonAgents();
     activeAgent = ctx.activeAgent;
   } catch {
     // fallback
@@ -115,7 +115,7 @@ export function ResearchDepartment() {
                     <div
                       className={`max-w-[85%] rounded-xl px-3 py-2 text-[12px] leading-relaxed ${
                         isUser
-                          ? 'pulse-user-bubble text-white'
+                          ? 'fintheon-user-bubble text-white'
                           : 'bg-[#0f0f0b]/92 border border-white/10 text-zinc-300'
                       }`}
                     >
@@ -151,7 +151,7 @@ export function ResearchDepartment() {
               </div>
             )}
             {isStreaming && (
-              <PulseThinkingIndicator
+              <FintheonThinkingIndicator
                 isThinking
                 thinkingContent={latestThinkingContent}
                 agentName={agent.name}
@@ -159,9 +159,9 @@ export function ResearchDepartment() {
             )}
           </div>
 
-          {/* Input — PulseChatInput */}
+          {/* Input — FintheonChatInput */}
           <div className="shrink-0 p-3">
-            <PulseChatInput
+            <FintheonChatInput
               onSend={(msg) => handleSend(msg)}
               onStop={() => stop()}
               isProcessing={isStreaming}

@@ -278,7 +278,7 @@
 
 ---
 
-## Week 5: Risk Manager Agent & QuickPulse
+## Week 5: Risk Manager Agent & QuickFintheon
 
 ### Risk Manager Agent (Claude Opus 4.5)
 - [ ] Create `risk-manager-agent.ts` implementation
@@ -294,7 +294,7 @@
 - [ ] Add modification suggestions
 - [ ] Build risk assessment reports
 
-### QuickPulse Analyst (Claude Opus 4.5 Fast)
+### QuickFintheon Analyst (Claude Opus 4.5 Fast)
 - [ ] Create `quickpulse-analyst.ts` service
 - [ ] Implement snapshot analysis (<5 seconds)
 - [ ] Integrate news sentiment grade
@@ -516,7 +516,7 @@
 
 ### Week 5
 - ✅ Risk manager evaluating correctly
-- ✅ QuickPulse < 5 second response
+- ✅ QuickFintheon < 5 second response
 - ✅ Risk decisions logged
 
 ### Week 6

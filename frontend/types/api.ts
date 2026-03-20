@@ -79,7 +79,7 @@ export interface Account {
   dailyPnl?: number;
   dailyTarget?: number;
   dailyLossLimit?: number;
-  tier?: 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
+  tier?: 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
   tradingEnabled?: boolean;
   autoTrade?: boolean;
   riskManagement?: boolean;

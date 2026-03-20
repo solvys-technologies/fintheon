@@ -1,4 +1,4 @@
-# Pulse Setup Handoff — LLM Agent Guide
+# Fintheon Setup Handoff — LLM Agent Guide
 
 This document is for any LLM agent (Claude Code, Cursor, OpenClaw, Codex) setting up or deploying Pulse. Read this to understand all backend dependencies, startup sequence, and deployment steps.
 

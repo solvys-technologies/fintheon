@@ -6,40 +6,36 @@
 import { searchTweets, fetchUserTimeline, isTwitterCliInstalled } from './twitter-cli-service.js';
 import { filterByTier } from './fj-emoji-filter.js';
 import { fetchEconCalendar, updateEventActual, writeEconPrint } from '../econ-calendar-service.js';
-import { notionCreatePage } from '../notion-service.js';
+import { writeConsiliumMessage } from '../supabase-service.js';
 import { injectEconPrintToFeed } from '../riskflow/econ-bridge.js';
 import type { EconEvent } from '../econ-calendar-service.js';
 import type { FeedItem, NewsSource } from '../../types/riskflow.js';
 import { getUserSettings } from '../settings-store.js';
 
-// Notion: write high-priority tweets to Harper Messages DB for persistence + agent visibility
-const HARPER_MESSAGES_DB = '30c141b0da7d81ba8bb6e319a0c4c309';
+// In-memory dedup — don't re-post same item to Supabase across polls
+const postedIds = new Set<string>();
 
-// In-memory dedup — don't re-post same tweet ID to Notion across polls
-const notionPostedIds = new Set<string>();
-
-/** Push Critical/High FeedItems to Notion Harper Messages DB (fire-and-forget, deduplicated) */
-async function pushToNotion(items: FeedItem[]): Promise<void> {
+/** Push Critical/High FeedItems to Supabase consilium_messages (fire-and-forget, deduplicated) */
+async function pushToSupabase(items: FeedItem[]): Promise<void> {
   const newItems = items.filter(
-    (item) => (item.macroLevel ?? 1) >= 3 && !notionPostedIds.has(item.id)
+    (item) => (item.macroLevel ?? 1) >= 3 && !postedIds.has(item.id)
   );
   if (newItems.length === 0) return;
 
   for (const item of newItems) {
-    notionPostedIds.add(item.id);
+    postedIds.add(item.id);
     const tier = item.macroLevel === 4 ? 'Critical' : 'High';
-    const headline = item.headline.slice(0, 200);
 
-    notionCreatePage(HARPER_MESSAGES_DB, {
-      Name: { title: [{ text: { content: `[${tier}] ${headline}` } }] },
-      Message: { rich_text: [{ text: { content: item.headline.slice(0, 2000) } }] },
-      Category: { select: { name: `RiskFlow-${tier}` } },
-      Source: { select: { name: item.source === 'FinancialJuice' ? 'FinancialJuice' : 'TwitterCli' } },
-      Status: { status: { name: 'Active' } },
-    }).catch((err) => console.warn('[EconTwitterPoller] Notion push failed:', err));
+    writeConsiliumMessage({
+      agent_name: 'EconTwitterPoller',
+      agent_role: 'econ-monitor',
+      content: `[${tier}] ${item.headline}`,
+      message_type: `RiskFlow-${tier}`,
+      metadata: { source: item.source, tweetId: item.id },
+    }).catch((err) => console.warn('[EconTwitterPoller] Supabase push failed:', err));
   }
 
-  console.log(`[EconTwitterPoller] Pushed ${newItems.length} ${newItems.map(i => i.macroLevel === 4 ? 'Critical' : 'High').join('/')} items to Notion`);
+  console.log(`[EconTwitterPoller] Pushed ${newItems.length} items to Supabase consilium`);
 }
 
 const PRE_EVENT_MINUTES = 5;      // Start polling 5 min before print
@@ -461,7 +457,7 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
 
   if (feedItems.length > 0) {
     console.log(`[EconTwitterPoller] ${feedItems.length} items passed FJ emoji filter (from ${uniqueTweets.length} raw tweets)`);
-    pushToNotion(feedItems).catch(() => {});
+    pushToSupabase(feedItems).catch(() => {});
   }
 
   return feedItems;
@@ -523,7 +519,7 @@ function scheduleBurst(event: EconEvent): void {
           const newItems = feedItems.filter((f) => !warmCache.some((w) => w.id === f.id));
           if (newItems.length > 0) {
             warmCache = [...newItems, ...warmCache].slice(0, 50);
-            pushToNotion(newItems).catch(() => {});
+            pushToSupabase(newItems).catch(() => {});
           }
         }
       } catch (err) {
@@ -580,7 +576,7 @@ async function initFetchHighPriorityPosts(): Promise<void> {
     );
 
     console.log(`[EconTwitterPoller] Init warm cache: ${warmCache.length} Medium+ posts seeded`);
-    await pushToNotion(warmCache);
+    await pushToSupabase(warmCache);
   } catch (err) {
     console.warn('[EconTwitterPoller] Init fetch failed:', err);
   }

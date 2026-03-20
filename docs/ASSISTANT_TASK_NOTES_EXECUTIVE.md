@@ -1,10 +1,10 @@
-# Assistant Task Notes — Pulse Executive Merge
+# Assistant Task Notes — Fintheon Executive Merge
 
 Use this as context for Claude Code / Codex in separate tabs.
 
 ## What changed (high-signal)
 
-- **OpenClaw gateway routing fixed** so Pulse `ChatInterface` reaches the gateway instead of falling back.
+- **OpenClaw gateway routing fixed** so Fintheon `ChatInterface` reaches the gateway instead of falling back.
   - Key files:
     - `backend-hono/src/services/openclaw-handler.ts`
     - `backend-hono/src/config/ai-config.ts`
@@ -22,5 +22,5 @@ See `docs/PULSE_EXECUTIVE_LOCAL.md`.
 
 ## Known non-blockers
 
-- Pulse backend logs may show RiskFlow/X token warnings and notification DB schema warnings; unrelated to OpenClaw chat.
+- Fintheon backend logs may show RiskFlow/X token warnings and notification DB schema warnings; unrelated to OpenClaw chat.
 

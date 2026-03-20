@@ -12,7 +12,30 @@ const { autoUpdater } = require("electron-updater");
 let mainWindow = null;
 let backendProcess = null;
 
-function startBackend() {
+// [claude-code 2026-03-20] Check if backend is already running (LaunchAgent or manual)
+async function isBackendAlive() {
+  try {
+    const http = require("http");
+    return new Promise((resolve) => {
+      const req = http.get("http://localhost:8080/health", (res) => {
+        resolve(res.statusCode < 500);
+      });
+      req.on("error", () => resolve(false));
+      req.setTimeout(2000, () => { req.destroy(); resolve(false); });
+    });
+  } catch {
+    return false;
+  }
+}
+
+async function startBackend() {
+  // If backend is already running (via LaunchAgent or manually), skip spawn
+  const alive = await isBackendAlive();
+  if (alive) {
+    console.log("[Electron] Backend already running on :8080 — skipping spawn");
+    return;
+  }
+
   const backendDir = path.join(__dirname, "..", "backend-hono");
   const distEntry = path.join(backendDir, "dist", "index.js");
 
@@ -31,7 +54,6 @@ function startBackend() {
     }
   }
 
-  // [claude-code 2026-03-16] Ensure .env is loaded from backend-hono dir by setting cwd correctly
   const envPath = path.join(backendDir, ".env");
   console.log(`[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`);
   backendProcess = spawn("node", [distEntry], {

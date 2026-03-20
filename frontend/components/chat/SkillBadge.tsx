@@ -1,6 +1,6 @@
 // [claude-code 2026-03-06] Dismissible skill badge pill for active skill display
 import { X } from 'lucide-react';
-import { SKILLS } from './PulseSkillsPopup';
+import { SKILLS } from './FintheonSkillsPopup';
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */

@@ -10,7 +10,6 @@ import { runAgentPipeline, runAnalystsOnly } from '../../services/agents/pipelin
 import { getReports } from '../../services/agents/base-agent.js'
 import { getDebates } from '../../services/agents/debate-protocol.js'
 import { getCombinedPerformance } from '../../services/agents/outcome-tracker.js'
-import { getPredictionStats, getTrackedPredictions } from '../../services/agents/polymarket-tracker.js'
 import type { AgentType, AnalyzeRequest, GetReportsRequest } from '../../types/agents.js'
 
 /**
@@ -200,20 +199,8 @@ export async function handleGetPerformance(c: Context) {
 
 /**
  * GET /api/agents/predictions
- * Get tracked polymarket predictions
+ * Polymarket predictions removed (integration not set up)
  */
 export async function handleGetPredictions(c: Context) {
-  try {
-    const predictions = getTrackedPredictions()
-    const stats = getPredictionStats()
-
-    return c.json({
-      predictions,
-      stats,
-      timestamp: new Date().toISOString(),
-    })
-  } catch (error) {
-    console.error('[Agents] Get predictions error:', error)
-    return c.json({ error: 'Failed to get predictions' }, 500)
-  }
+  return c.json({ predictions: [], stats: { total: 0, correct: 0, accuracy: 0 }, timestamp: new Date().toISOString() })
 }

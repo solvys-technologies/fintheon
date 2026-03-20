@@ -1,29 +1,24 @@
 # Dependencies
 **/node_modules/
 
-# Encore generated artifacts
-**/.encore/
-**/encore.gen/
-**/encore.gen.go
-**/encore.gen.cue
-
-# Bun / Node
-**/.bun/
-**/bun.lockb
-
 # Build outputs
 **/dist/
 **/build/
 desktop-dist/
 
+# Bun / Node
+**/.bun/
+**/bun.lockb
+package-lock.json
+
+# Encore (legacy)
+**/.encore/
+**/encore.gen/
+**/encore.gen.go
+**/encore.gen.cue
+
 # OS
 .DS_Store
-
-**/node_modules/**
-**/.encore/**
-**/encore.gen/**
-**/.bun/**
-**/dist/**
 **/.DS_Store
 
 # Environment files with secrets
@@ -31,3 +26,6 @@ desktop-dist/
 secrets.env
 **/.env.local
 **/.env*.local
+.env.production
+.env.development
+.env.local.db

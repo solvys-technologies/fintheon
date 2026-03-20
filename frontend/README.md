@@ -1,4 +1,4 @@
-# Pulse Frontend
+# Fintheon Frontend
 
 React 19 + Vite frontend for Pulse, wired to the `backend-hono` API.
 

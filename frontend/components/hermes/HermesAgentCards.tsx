@@ -1,5 +1,5 @@
 // [claude-code 2026-03-16] Hermes Command Center: agent status cards sub-component
-import type { PulseAgent, AgentStatus } from '../../contexts/PulseAgentContext';
+import type { FintheonAgent, AgentStatus } from '../../contexts/FintheonAgentContext';
 
 const STATUS_DOT: Record<AgentStatus, string> = {
   working: 'bg-emerald-500',
@@ -16,7 +16,7 @@ const STATUS_LABEL: Record<AgentStatus, string> = {
 };
 
 interface HermesAgentCardsProps {
-  agents: PulseAgent[];
+  agents: FintheonAgent[];
 }
 
 export function HermesAgentCards({ agents }: HermesAgentCardsProps) {

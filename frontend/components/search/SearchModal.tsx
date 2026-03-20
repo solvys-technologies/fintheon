@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Search, X, Users, Activity, FileText, Calendar, Layout } from 'lucide-react';
-import { PULSE_AGENTS } from '../../contexts/PulseAgentContext';
+import { FINTHEON_AGENTS } from '../../contexts/FintheonAgentContext';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -68,7 +68,7 @@ export function SearchModal({ open, onClose, onNavigateTab }: SearchModalProps) 
     const matched: SearchResult[] = [];
 
     // Agents
-    PULSE_AGENTS.forEach((a) => {
+    FINTHEON_AGENTS.forEach((a) => {
       if (a.name.toLowerCase().includes(q) || a.sector.toLowerCase().includes(q)) {
         matched.push({
           id: `agent-${a.id}`,

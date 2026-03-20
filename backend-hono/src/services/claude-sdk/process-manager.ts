@@ -12,8 +12,9 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process'
+import { createLogger } from '../../lib/logger.js'
 
-const LOG_PREFIX = '[ClaudeSDK]'
+const log = createLogger('ClaudeSDK')
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -101,11 +102,11 @@ export async function checkHealth(): Promise<ProcessHealth> {
     })
 
     health = { available: true, version, lastCheckAt: Date.now(), error: null }
-    console.log(`${LOG_PREFIX} Health check passed: ${version}`)
+    log.info(` Health check passed: ${version}`)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     health = { available: false, version: null, lastCheckAt: Date.now(), error: message }
-    console.warn(`${LOG_PREFIX} Health check failed: ${message}`)
+    log.warn(` Health check failed: ${message}`)
   }
   return health
 }
@@ -160,7 +161,7 @@ export function spawnClaudeProcess(prompt: string, options?: Partial<ClaudeSDKCo
   // Prompt goes last
   args.push(prompt)
 
-  console.log(`${LOG_PREFIX} Spawning: ${opts.binaryPath} ${args.slice(0, 4).join(' ')} ... (prompt: ${prompt.length} chars)`)
+  log.info(` Spawning: ${opts.binaryPath} ${args.slice(0, 4).join(' ')} ... (prompt: ${prompt.length} chars)`)
 
   const proc = spawn(opts.binaryPath, args, {
     cwd: opts.cwd,
@@ -185,7 +186,7 @@ export function spawnClaudeProcess(prompt: string, options?: Partial<ClaudeSDKCo
   })
   proc.on('close', (code) => {
     if (code !== 0 && stderr) {
-      console.warn(`${LOG_PREFIX} Process exited ${code}, stderr: ${stderr.slice(0, 500)}`)
+      log.warn(` Process exited ${code}, stderr: ${stderr.slice(0, 500)}`)
     }
   })
 
@@ -203,7 +204,7 @@ export function spawnClaudeProcess(prompt: string, options?: Partial<ClaudeSDKCo
 
 export function configure(overrides: Partial<ClaudeSDKConfig>): void {
   config = { ...config, ...overrides }
-  console.log(`${LOG_PREFIX} Config updated:`, {
+  log.info(` Config updated:`, {
     model: config.model,
     effort: config.effort,
     maxTurns: config.maxTurns,
@@ -223,18 +224,18 @@ export function getActiveCount(): number {
 
 /** Initialize: check health on startup */
 export async function initClaudeSDK(): Promise<void> {
-  console.log(`${LOG_PREFIX} Initializing Claude SDK bridge...`)
+  log.info(` Initializing Claude SDK bridge...`)
   await checkHealth()
   if (health.available) {
-    console.log(`${LOG_PREFIX} Ready — Claude Code ${health.version}, model: ${config.model}, max concurrent: ${MAX_CONCURRENT}`)
+    log.info(` Ready — Claude Code ${health.version}, model: ${config.model}, max concurrent: ${MAX_CONCURRENT}`)
   } else {
-    console.warn(`${LOG_PREFIX} Claude Code CLI not available — bridge disabled. Error: ${health.error}`)
+    log.warn(` Claude Code CLI not available — bridge disabled. Error: ${health.error}`)
   }
 }
 
 /** Graceful shutdown: kill any active processes */
 export function shutdownClaudeSDK(): void {
-  console.log(`${LOG_PREFIX} Shutting down (${activeProcesses} active processes)`)
+  log.info(` Shutting down (${activeProcesses} active processes)`)
   // Active processes will be cleaned up by their individual abort() calls
   // or OS process group cleanup on parent exit
 }

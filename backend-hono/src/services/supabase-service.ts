@@ -1,3 +1,4 @@
+// [claude-code 2026-03-20] Supabase cloud service — full data layer replacing Notion + scoring, ER, settings, consilium
 // [claude-code 2026-03-19] Supabase cloud service — centralized scoring, ER persistence, user settings, consilium
 import { getSupabaseClient, isSupabaseConfigured } from '../config/supabase.js';
 
@@ -254,6 +255,336 @@ export async function readConsiliumMessages(limit = 100): Promise<ConsiliumMessa
 
   if (error) {
     console.error('[Supabase] readConsiliumMessages error:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+// ─── Trade Ideas ────────────────────────────────────────────────
+
+export interface TradeIdeaRecord {
+  id?: string;
+  title: string;
+  ticker?: string;
+  direction?: 'Long' | 'Short';
+  entry_price?: number;
+  stop_loss?: number;
+  take_profit?: number;
+  confidence?: number;
+  analyst?: string;
+  thesis?: string;
+  status?: string;
+  model?: string;
+  timeframe?: string;
+  risk_reward_ratio?: number;
+  hermes_description?: string;
+  pnl?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function writeTradeIdea(idea: Omit<TradeIdeaRecord, 'id' | 'created_at' | 'updated_at'>): Promise<TradeIdeaRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('trade_ideas')
+    .insert(idea)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] writeTradeIdea error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function readTradeIdeas(filter?: {
+  status?: string;
+  limit?: number;
+}): Promise<TradeIdeaRecord[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  let query = sb
+    .from('trade_ideas')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(filter?.limit ?? 100);
+
+  if (filter?.status) {
+    query = query.eq('status', filter.status);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[Supabase] readTradeIdeas error:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function updateTradeIdeaStatus(id: string, status: string): Promise<boolean> {
+  const sb = getSupabaseClient();
+  if (!sb) return false;
+
+  const { error } = await sb
+    .from('trade_ideas')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) {
+    console.error('[Supabase] updateTradeIdeaStatus error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─── Daily P&L ──────────────────────────────────────────────────
+
+export interface DailyPnlRecord {
+  id?: string;
+  day_label: string;
+  date: string;
+  net_pnl?: number;
+  gross_pnl?: number;
+  win_rate?: number;
+  trades_taken?: number;
+  bias?: string;
+  ntn_summary?: string;
+  fees?: number;
+  created_at?: string;
+}
+
+export async function writeDailyPnl(record: Omit<DailyPnlRecord, 'id' | 'created_at'>): Promise<boolean> {
+  const sb = getSupabaseClient();
+  if (!sb) return false;
+
+  const { error } = await sb
+    .from('daily_pnl')
+    .upsert(record, { onConflict: 'date' });
+
+  if (error) {
+    console.error('[Supabase] writeDailyPnl error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function readDailyPnl(filter?: {
+  limit?: number;
+  from?: string;
+  to?: string;
+}): Promise<DailyPnlRecord[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  let query = sb
+    .from('daily_pnl')
+    .select('*')
+    .order('date', { ascending: false })
+    .limit(filter?.limit ?? 30);
+
+  if (filter?.from) query = query.gte('date', filter.from);
+  if (filter?.to) query = query.lte('date', filter.to);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[Supabase] readDailyPnl error:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+// ─── Briefs ─────────────────────────────────────────────────────
+
+export type BriefType = 'MDB' | 'ADB' | 'PMDB' | 'TOTT';
+
+export interface BriefRecord {
+  id?: string;
+  brief_type: BriefType;
+  content: string;
+  generated_by?: string;
+  status?: string;
+  category?: string;
+  created_at?: string;
+}
+
+export async function writeBrief(brief: Omit<BriefRecord, 'id' | 'created_at'>): Promise<BriefRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  // Archive previous active briefs of same type
+  await sb
+    .from('briefs')
+    .update({ status: 'Archived' })
+    .eq('brief_type', brief.brief_type)
+    .eq('status', 'Active');
+
+  const { data, error } = await sb
+    .from('briefs')
+    .insert({ ...brief, status: brief.status ?? 'Active' })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] writeBrief error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function readBriefs(type?: BriefType, limit = 10): Promise<BriefRecord[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  let query = sb
+    .from('briefs')
+    .select('*')
+    .eq('status', 'Active')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (type) query = query.eq('brief_type', type);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[Supabase] readBriefs error:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function readLatestBrief(type: BriefType): Promise<BriefRecord | null> {
+  const briefs = await readBriefs(type, 1);
+  return briefs[0] ?? null;
+}
+
+// ─── Economic Events ────────────────────────────────────────────
+
+export interface EconEventRecord {
+  id?: string;
+  name: string;
+  date?: string;
+  time?: string;
+  forecast?: string;
+  actual?: string;
+  previous?: string;
+  detail?: string;
+  impact?: 'low' | 'medium' | 'high';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function writeEconEvent(event: Omit<EconEventRecord, 'id' | 'created_at' | 'updated_at'>): Promise<EconEventRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('economic_events')
+    .insert(event)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] writeEconEvent error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function readEconEvents(dateRange?: {
+  from?: string;
+  to?: string;
+}): Promise<EconEventRecord[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  let query = sb
+    .from('economic_events')
+    .select('*')
+    .order('date', { ascending: true })
+    .limit(100);
+
+  if (dateRange?.from) query = query.gte('date', dateRange.from);
+  if (dateRange?.to) query = query.lte('date', dateRange.to);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[Supabase] readEconEvents error:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function updateEconEventActual(id: string, actual: string): Promise<boolean> {
+  const sb = getSupabaseClient();
+  if (!sb) return false;
+
+  const { error } = await sb
+    .from('economic_events')
+    .update({ actual, updated_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) {
+    console.error('[Supabase] updateEconEventActual error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─── Econ Prints ────────────────────────────────────────────────
+
+export interface EconPrintRecord {
+  id?: string;
+  event_id?: string;
+  headline: string;
+  actual_value?: string;
+  forecast_value?: string;
+  previous_value?: string;
+  iv_score?: number;
+  source?: string;
+  printed_at?: string;
+}
+
+export async function writeEconPrint(print: Omit<EconPrintRecord, 'id' | 'printed_at'>): Promise<EconPrintRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('econ_prints')
+    .insert(print)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] writeEconPrint error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function readEconPrints(filter?: {
+  eventName?: string;
+  limit?: number;
+}): Promise<EconPrintRecord[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  let query = sb
+    .from('econ_prints')
+    .select('*')
+    .order('printed_at', { ascending: false })
+    .limit(filter?.limit ?? 50);
+
+  if (filter?.eventName) {
+    query = query.ilike('headline', `%${filter.eventName}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[Supabase] readEconPrints error:', error.message);
     return [];
   }
   return data ?? [];

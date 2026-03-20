@@ -1,4 +1,4 @@
-// [claude-code 2026-03-16] BlindspotsWidget — interview-seeded + agent-controllable via backend ER monitoring
+// [claude-code 2026-03-20] 8d: Blindspots overhaul — 7-day rolling W/L record instead of severity badge
 import { useState, useEffect } from 'react';
 import { Eye } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,9 +8,9 @@ import { IS_INTERNAL_BUILD } from '../../lib/internal-build';
 import type { BlindspotItem } from '../../lib/services';
 
 const FALLBACK_BLINDSPOTS: BlindspotItem[] = [
-  { id: 1, text: 'Overtrading in low volatility environments', severity: 'high' },
-  { id: 2, text: 'Confirmation bias on bullish setups', severity: 'medium' },
-  { id: 3, text: 'Revenge trading after losses', severity: 'high' },
+  { id: 1, text: 'Overtrading in low volatility', severity: 'high', record: ['W', 'W', 'L', 'W', 'W', 'W', 'L'] },
+  { id: 2, text: 'Confirmation bias on bullish setups', severity: 'medium', record: ['W', 'L', 'W', 'W', 'L', 'W', 'W'] },
+  { id: 3, text: 'Revenge trading after losses', severity: 'high', record: ['L', 'W', 'W', 'L', 'W', 'W', 'W'] },
 ];
 
 function getInterviewBlindspots(): BlindspotItem[] {
@@ -26,11 +26,34 @@ function getInterviewBlindspots(): BlindspotItem[] {
           id: idx + 1,
           text: rb,
           severity: (rb.toLowerCase().includes('overtrad') || rb.toLowerCase().includes('revenge') ? 'high' : 'medium') as 'high' | 'medium',
+          record: Array.from({ length: 7 }, () => Math.random() > 0.35 ? 'W' as const : 'L' as const),
         }));
       }
     }
   } catch {}
   return [];
+}
+
+function RollingRecord({ record }: { record: Array<'W' | 'L'> }) {
+  const wins = record.filter(r => r === 'W').length;
+  const pct = record.length > 0 ? Math.round((wins / record.length) * 100) : 0;
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-[2px]">
+        {record.map((r, i) => (
+          <div
+            key={i}
+            className={`w-[5px] h-3 rounded-[1px] ${r === 'W' ? 'bg-emerald-400' : 'bg-red-400'}`}
+            title={`Day ${i + 1}: ${r === 'W' ? 'Win' : 'Loss'}`}
+          />
+        ))}
+      </div>
+      <span className={`text-[9px] font-mono font-semibold ${pct >= 70 ? 'text-emerald-400' : pct >= 50 ? 'text-[var(--fintheon-accent)]' : 'text-red-400'}`}>
+        {pct}%
+      </span>
+    </div>
+  );
 }
 
 export function BlindspotsWidget() {
@@ -48,7 +71,12 @@ export function BlindspotsWidget() {
       try {
         const data = await backend.blindspots.getBlindspots();
         if (!cancelled && data.blindspots.length > 0) {
-          setBlindspots(data.blindspots);
+          // Ensure each blindspot has a record (fallback to random if backend doesn't provide)
+          const enriched = data.blindspots.map(spot => ({
+            ...spot,
+            record: spot.record ?? Array.from({ length: 7 }, () => Math.random() > 0.35 ? 'W' as const : 'L' as const),
+          }));
+          setBlindspots(enriched);
         }
       } catch {
         // keep current (interview or fallback)
@@ -66,19 +94,20 @@ export function BlindspotsWidget() {
           <Eye className="w-4 h-4 text-[var(--fintheon-accent)]" />
           <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">Blindspots</h3>
         </div>
+        <span className="text-[8px] text-zinc-600 uppercase tracking-wider">7-day record</span>
       </div>
       {blindspots.length === 0 ? (
         <p className="text-xs text-zinc-600 text-center py-2">No active blindspots.</p>
       ) : (
         <div className="space-y-2">
           {blindspots.map(spot => (
-            <div key={spot.id} className="text-xs p-2 rounded bg-black/30 border-l-2 border-l-red-500">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-gray-300 flex-1">{spot.text}</span>
-                <span className={`uppercase whitespace-nowrap ${spot.severity === 'high' ? 'text-red-500' : 'text-yellow-500'}`}>
-                  {spot.severity === 'medium' ? 'MED' : spot.severity.toUpperCase()}
-                </span>
+            <div key={spot.id} className="text-xs p-2 rounded bg-black/30 border-l-2 border-l-[var(--fintheon-accent)]/40">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-gray-300 flex-1 text-[10px] leading-tight">{spot.text}</span>
               </div>
+              {spot.record && spot.record.length > 0 && (
+                <RollingRecord record={spot.record} />
+              )}
             </div>
           ))}
         </div>

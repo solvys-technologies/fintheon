@@ -143,7 +143,7 @@ export function BriefMiniWidget() {
     setGenerating(true);
     try {
       // Trigger AI generation of the current brief type
-      window.dispatchEvent(new CustomEvent('pulse:open-chat-skill', {
+      window.dispatchEvent(new CustomEvent('fintheon:open-chat-skill', {
         detail: {
           skillId: label.includes('Morning') ? 'mdb_report' : label.includes('Tale') ? 'tott' : 'brief',
           prompt: label.includes('Morning')

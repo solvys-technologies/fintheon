@@ -12,6 +12,9 @@
 import { execFile, spawn as spawnProcess } from 'node:child_process'
 import type { HermesAgentRole } from './hermes-service.js'
 import { getAgentSystemPrompt, extractSkillTag } from './ai/agent-instructions.js'
+import { createLogger } from '../lib/logger.js'
+
+const log = createLogger('Hermes')
 
 export type ContentPart =
   | { type: 'text'; text: string }
@@ -419,11 +422,11 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
   const baseUrl = 'https://openrouter.ai/api/v1'
 
   if (!apiKey) {
-    console.warn('[Hermes] OPENROUTER_API_KEY not set, using local fallback')
+    log.warn('OPENROUTER_API_KEY not set, using local fallback')
     return generateLocalResponse(request, agentInfo)
   }
 
-  console.log(`[Hermes] Calling OpenRouter (Sonnet 4.6) for agent ${agentInfo.agent} (${messages.length} messages)`)
+  log.info('Calling OpenRouter', { agent: agentInfo.agent, messages: messages.length })
 
   try {
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -443,7 +446,7 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`[Hermes] OpenRouter error ${response.status}: ${errorText}`)
+      log.error('OpenRouter error', { status: response.status, body: errorText })
       return generateLocalResponse(request, agentInfo)
     }
 
@@ -453,11 +456,11 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
     const content = data.choices?.[0]?.message?.content ?? ''
 
     if (!content) {
-      console.warn('[Hermes] Empty response from OpenRouter, using local fallback')
+      log.warn('Empty response from OpenRouter, using local fallback')
       return generateLocalResponse(request, agentInfo)
     }
 
-    console.log(`[Hermes] OpenRouter (Sonnet 4.6) response received: ${content.substring(0, 50)}...`)
+    log.info('OpenRouter response received', { preview: content.substring(0, 50) })
 
     return {
       content,
@@ -469,7 +472,7 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
       }
     }
   } catch (error) {
-    console.error('[Hermes] OpenRouter request failed:', error)
+    log.error('OpenRouter request failed', { error: String(error) })
     return generateLocalResponse(request, agentInfo)
   }
 }
@@ -493,20 +496,20 @@ export async function initHermesAgent(): Promise<void> {
       })
     })
     if (!gatewayRunning) {
-      console.log('[Hermes] Gateway not running — starting...')
+      log.info('Gateway not running — starting')
       const gw = spawnProcess(hermesBin, ['gateway', 'start'], { stdio: 'ignore', detached: true })
       gw.unref()
-      console.log('[Hermes] Gateway start dispatched (PID:', gw.pid, ')')
+      log.info('Gateway start dispatched', { pid: gw.pid })
     } else {
-      console.log('[Hermes] Gateway already running')
+      log.info('Gateway already running')
     }
   } catch (err) {
-    console.warn(`[Hermes] Gateway launch skipped (non-fatal): ${err instanceof Error ? err.message : String(err)}`)
+    log.warn('Gateway launch skipped (non-fatal)', { error: err instanceof Error ? err.message : String(err) })
   }
 
   const apiKey = process.env.OPENROUTER_API_KEY ?? ''
   if (!apiKey) {
-    console.log('[Hermes] OPENROUTER_API_KEY not set — skipping OpenRouter warm-up')
+    log.info('OPENROUTER_API_KEY not set — skipping warm-up')
     return
   }
 
@@ -533,12 +536,12 @@ export async function initHermesAgent(): Promise<void> {
     })
     clearTimeout(timeout)
     if (response.ok) {
-      console.log('[Hermes] OpenRouter (Sonnet 4.6) warm-up complete (harper-cao ready)')
+      log.info('OpenRouter warm-up complete (harper-cao ready)')
     } else {
-      console.warn(`[Hermes] OpenRouter warm-up failed (non-fatal): HTTP ${response.status}`)
+      log.warn('OpenRouter warm-up failed (non-fatal)', { status: response.status })
     }
   } catch (error) {
-    console.warn(`[Hermes] OpenRouter warm-up failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`)
+    log.warn('OpenRouter warm-up failed (non-fatal)', { error: error instanceof Error ? error.message : String(error) })
   }
 }
 

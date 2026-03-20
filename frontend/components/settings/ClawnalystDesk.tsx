@@ -1,8 +1,8 @@
 // [claude-code 2026-03-13] T1: visual redesign — elevated cards, 48px avatar, sector pills, model badge
 import { useState, useCallback } from 'react';
 import { Save, Plus, X, Check, Users } from 'lucide-react';
-import { usePulseAgents, type PulseAgent } from '../../contexts/PulseAgentContext';
-import { DEFAULT_MODEL_NAME } from '../../lib/PulseModelCatalog';
+import { useFintheonAgents, type FintheonAgent } from '../../contexts/FintheonAgentContext';
+import { DEFAULT_MODEL_NAME } from '../../lib/FintheonModelCatalog';
 import { useToast } from '../../contexts/ToastContext';
 
 /* ------------------------------------------------------------------ */
@@ -17,7 +17,7 @@ interface AgentDraft {
   instructions_doc_id: string;
 }
 
-function agentToDraft(a: PulseAgent): AgentDraft {
+function agentToDraft(a: FintheonAgent): AgentDraft {
   return {
     name: a.name,
     nickname: a.nickname || '',
@@ -32,7 +32,7 @@ function agentToDraft(a: PulseAgent): AgentDraft {
 /* ------------------------------------------------------------------ */
 
 export function ClawnalystDesk() {
-  const { agents, updateAgent, createAgent, deleteAgent } = usePulseAgents();
+  const { agents, updateAgent, createAgent, deleteAgent } = useFintheonAgents();
   const { addToast } = useToast();
 
   // Drafts map: agentId -> AgentDraft
@@ -239,7 +239,7 @@ function AgentCard({
   deleteAgent,
   addToast,
 }: {
-  agent: PulseAgent;
+  agent: FintheonAgent;
   draft: AgentDraft;
   isSaved: boolean;
   getDraft: (id: string) => AgentDraft;

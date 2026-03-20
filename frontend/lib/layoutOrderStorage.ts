@@ -5,11 +5,11 @@
 
 const SIDEBAR_ORDER_KEY = 'fintheon:sidebar-nav-order';
 const TOOLBAR_ORDER_KEY = 'fintheon:toolbar-order';
-const MISSION_WIDGET_ORDER_KEY = 'fintheon:mission-widget-order:v3'; // v3: calendar added
+const MISSION_WIDGET_ORDER_KEY = 'fintheon:mission-widget-order:v4'; // v4: account above blindspots
 const MISSION_WIDGET_VISIBILITY_KEY = 'fintheon:mission-widget-visibility';
 const RIGHT_PANEL_ORDER_KEY = 'fintheon:right-panel-order';
 
-export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'proposals';
+export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'apparatus' | 'earnings' | 'proposals';
 
 export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'executive',
@@ -18,6 +18,7 @@ export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'econ',
   'chatroom',
   'notion',
+  'apparatus',
   'narrative',
   'proposals',
   'earnings',
@@ -45,6 +46,9 @@ export const DEFAULT_MISSION_WIDGET_ORDER: MissionWidgetId[] = [
   'blindspots',
   'calendar',
 ];
+
+// 8e: Account above Blindspots — this is the canonical default order.
+// v4 localStorage key forces re-read so existing users pick up the swap.
 
 export type RightPanelId = 'mission';
 

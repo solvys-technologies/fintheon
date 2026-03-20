@@ -1,5 +1,6 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
 // [claude-code 2026-03-16] Added Manage button for NarrativeManageModal
+// [claude-code 2026-03-20] S3:T4e: Made toolbar flex-1 for full width
 import { useState, useRef } from 'react';
 import {
   ChevronLeft,
@@ -57,7 +58,7 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
   };
 
   return (
-    <div className="h-12 flex items-center justify-between px-3 border-b border-[var(--fintheon-border)]/20 bg-[var(--fintheon-surface)]">
+    <div className="h-12 flex-1 flex items-center justify-between px-3 border-b border-[var(--fintheon-border)]/20 bg-[var(--fintheon-surface)]">
       {/* Left group: Zoom + Navigation */}
       <div className="flex items-center gap-3">
         {/* Zoom level toggle */}

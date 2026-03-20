@@ -4,7 +4,7 @@
 
 ## Rule
 
-**No non-urgent Pulse engineering execution during 08:30-11:00 EST, Monday-Friday.**
+**No non-urgent Fintheon engineering execution during 08:30-11:00 EST, Monday-Friday.**
 
 This window covers market open and the highest-volatility period. All agents (Claude Code, Harper, Cursor, Codex) and human engineers must observe this rule.
 

@@ -1,3 +1,4 @@
+// [claude-code 2026-03-20] Re-implement Clerk auth — proper BYPASS_AUTH, ClerkProvider, SignedIn/SignedOut
 import { useState } from 'react';
 import { ClerkProvider, SignIn, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { AuthProvider } from './contexts/AuthContext';
@@ -10,25 +11,23 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { NotificationContainer } from './components/NotificationToast';
 import { PsychOrientationModal } from './components/psych/PsychOrientationModal';
 import { AuthShell } from './components/auth/AuthShell';
-import { pulseAppearance } from './components/auth/pulseAppearance';
-// ERProvider removed - using component-based ER monitoring for stability
+import { fintheonAppearance } from './components/auth/fintheonAppearance';
 
-// [claude-code 2026-03-20] Auth bypass forced — Clerk stripped for Sprint 1
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const BYPASS_AUTH = true;
+const IS_ELECTRON = typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.hostname === 'localhost');
+const BYPASS_AUTH = IS_ELECTRON || (DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true');
 
 const DEFAULT_CLERK_DOMAIN = 'clerk.app.pricedinresearch.io';
 const DEFAULT_CLERK_PROXY_URL = 'https://clerk.app.pricedinresearch.io';
 
-// Debug logging
 if (DEV_MODE) {
-  console.log('[DEV MODE] Bypass Auth:', BYPASS_AUTH, 'DEV:', import.meta.env.DEV, 'MODE:', import.meta.env.MODE, 'VITE_BYPASS_AUTH:', import.meta.env.VITE_BYPASS_AUTH);
+  console.log('[DEV MODE] Bypass Auth:', BYPASS_AUTH, 'IS_ELECTRON:', IS_ELECTRON, 'DEV:', import.meta.env.DEV, 'MODE:', import.meta.env.MODE, 'VITE_BYPASS_AUTH:', import.meta.env.VITE_BYPASS_AUTH);
 }
 
 function AppInner() {
   const [showSettings, setShowSettings] = useState(false);
 
-  const appContent = (
+  return (
     <VIXProvider>
     <AuthProvider>
       <SettingsProvider>
@@ -37,30 +36,30 @@ function AppInner() {
             <div className="dark">
             <style>{`
               @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
-              
+
               * {
                 scrollbar-width: thin;
                 scrollbar-color: #D4AF37 #0a0a00;
               }
-              
+
               *::-webkit-scrollbar {
                 width: 8px;
                 height: 8px;
               }
-              
+
               *::-webkit-scrollbar-track {
                 background: #0a0a00;
               }
-              
+
               *::-webkit-scrollbar-thumb {
                 background: #D4AF37;
                 border-radius: 4px;
               }
-              
+
               *::-webkit-scrollbar-thumb:hover {
                 background: #FFD060;
               }
-              
+
               .scanline-overlay {
                 background: repeating-linear-gradient(
                   0deg,
@@ -83,53 +82,15 @@ function AppInner() {
     </AuthProvider>
     </VIXProvider>
   );
-
-  // In dev mode with auth bypass, show app directly
-  if (BYPASS_AUTH) {
-    return appContent;
-  }
-
-  // Normal Clerk authentication flow
-  return (
-    <>
-      <SignedOut>
-        <AuthShell>
-          <SignIn
-            appearance={pulseAppearance}
-            routing="path"
-            path="/sign-in"
-            signUpUrl="/sign-up"
-          />
-        </AuthShell>
-      </SignedOut>
-      <SignedIn>
-        {appContent}
-      </SignedIn>
-    </>
-  );
 }
 
 export default function App() {
-  const [authed, setAuthed] = useState(() => {
-    return localStorage.getItem('fintheon-bypass-auth') === 'true';
-  });
-
-  // Bypass mode: show AuthShell gate, then app
+  // Bypass mode: skip Clerk entirely (Electron / dev with VITE_BYPASS_AUTH=true)
   if (BYPASS_AUTH) {
-    if (authed) {
-      return <AppInner />;
-    }
-    return (
-      <AuthShell onBypass={() => {
-        localStorage.setItem('fintheon-bypass-auth', 'true');
-        setAuthed(true);
-      }}>
-        <BypassLoginPrompt />
-      </AuthShell>
-    );
+    return <AppInner />;
   }
 
-  // --- Clerk flow (preserved for Sprint 2 re-enablement) ---
+  // --- Clerk authentication flow ---
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
   const clerkDomain = import.meta.env.VITE_CLERK_DOMAIN || DEFAULT_CLERK_DOMAIN;
   const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL || DEFAULT_CLERK_PROXY_URL;
@@ -145,18 +106,20 @@ export default function App() {
 
   return (
     <ClerkProvider publishableKey={clerkKey} domain={clerkDomain} proxyUrl={clerkProxyUrl}>
-      <AppInner />
+      <SignedOut>
+        <AuthShell>
+          <SignIn
+            appearance={fintheonAppearance}
+            routing={IS_ELECTRON ? 'hash' : 'path'}
+            path={IS_ELECTRON ? undefined : '/sign-in'}
+            signUpUrl={IS_ELECTRON ? undefined : '/sign-up'}
+          />
+        </AuthShell>
+      </SignedOut>
+      <SignedIn>
+        <AppInner />
+      </SignedIn>
     </ClerkProvider>
-  );
-}
-
-function BypassLoginPrompt() {
-  return (
-    <div className="flex flex-col items-center gap-3 text-center">
-      <p className="text-sm text-yellow-100/60">
-        Authentication is not configured. Use the bypass button below to enter.
-      </p>
-    </div>
   );
 }
 
