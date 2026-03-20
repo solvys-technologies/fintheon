@@ -157,18 +157,7 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
 
           {/* Footer */}
           <div className="shrink-0 flex items-center justify-between px-4 py-2.5 border-t border-zinc-800/60">
-            <span className="text-[10px] text-zinc-700 tracking-wider uppercase">Notion Trade Ideas</span>
-            {idea.notionUrl && (
-              <a
-                href={idea.notionUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[10px] text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] transition-colors"
-              >
-                View in Notion
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
+            <span className="text-[10px] text-zinc-700 tracking-wider uppercase">Trade Ideas</span>
           </div>
         </div>
       </div>

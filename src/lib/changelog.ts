@@ -9,6 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-20T20:00:00',
+    agent: 'claude-code',
+    summary: 'S3-FIX:T4 — Walkthrough overhaul: replaced SpotlightOverlay with contextual floating cards (TopStepX-style), 11 tour steps, semi-transparent overlay (no blur), smooth CSS transitions (300ms), 1s auto-start delay, welcome toast on complete. SetupGuideCard CTA triggers BlindspotsInterview post-tour. Version bumped to 8.20.3.',
+    files: [
+      'frontend/components/onboarding/FirstTimeTour.tsx',
+      'frontend/components/onboarding/SetupGuideCard.tsx',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+    ],
+  },
+  {
+    date: '2026-03-20T18:00:00',
+    agent: 'claude-code',
+    summary: 'S3-FIX:T3 — Remove Notion indicators, redesign Apparatus cards, verify Twitter CLI, audit deps. Removed Notion status dots, "Notion Trade Ideas" text, "View in Notion" links. Apparatus redesigned from circle constellation to intelligence briefing card grid (text-only headers, no icons/emojis). Removed last OpenClaw backward-compat alias. Fixed NavSidebar type predicate. Zero type errors, build passes.',
+    files: [
+      'frontend/components/apparatus/ApparatusPage.tsx',
+      'frontend/components/apparatus/MemoryCard.tsx',
+      'frontend/components/apparatus/types.ts',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+      'frontend/components/RiskFlowPanel.tsx',
+      'frontend/components/TradeIdeaModal.tsx',
+      'frontend/components/narrative/RiskFlowImportModal.tsx',
+      'frontend/components/layout/NavSidebar.tsx',
+      'backend-hono/src/services/hermes-service.ts',
+    ],
+  },
+  {
     date: '2026-03-21T08:00:00',
     agent: 'claude-code',
     summary: 'S3:T8 — KPIs, Performance, Kalshi & Strategium Polish: Bloomberg-style P&L chart (gold gradient, trade dots, volume bars, period filters), Blindspots 7-day rolling W/L record, Kalshi service + Human/Agentic toggle in Proposals, Mini Proposals in Strategium, Session Notes block editor (agent summary + user notes), PsychAssist auto-start config, Epoch version from package.json, Account above Blindspots default order, Missed Trades KPI for Agent tab.',

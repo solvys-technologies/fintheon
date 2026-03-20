@@ -1,7 +1,7 @@
 // [claude-code 2026-03-11] Redesigned to consume backend IVScoreResponse — point range, rationale tooltip, environment label
 // [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
 // [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
-// [claude-code 2026-03-20] S3:T4a: Fixed popup to position:fixed with viewport boundary detection, left-aligned, max-w-[90vw]
+// [claude-code 2026-03-20] S3:T4a: Fixed popup to position:fixed with viewport boundary detection, left-aligned, max-w-[90vw], debounced hide
 import { Info, TrendingUp } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import type { IVScoreResponse } from '../types/market-data';
@@ -86,6 +86,17 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleShowTooltip = () => {
+    if (hideTimeoutRef.current) { clearTimeout(hideTimeoutRef.current); hideTimeoutRef.current = null; }
+    setShowTooltip(true);
+  };
+  const handleHideTooltip = () => {
+    hideTimeoutRef.current = setTimeout(() => setShowTooltip(false), 150);
+  };
+
+  useEffect(() => () => { if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current); }, []);
 
   useEffect(() => {
     if (!showTooltip || !triggerRef.current) { setPopupPos(null); return; }
@@ -145,8 +156,8 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
         <div
           ref={triggerRef}
           className="relative ml-0.5"
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
+          onMouseEnter={handleShowTooltip}
+          onMouseLeave={handleHideTooltip}
         >
           <button className="text-gray-500 hover:text-gray-400 transition-colors">
             <Info className="w-2.5 h-2.5" />
@@ -156,8 +167,8 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             <div
               className="fixed w-80 max-w-[90vw] bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl z-[9999]"
               style={{ top: popupPos.top, left: popupPos.left }}
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
+              onMouseEnter={handleShowTooltip}
+              onMouseLeave={handleHideTooltip}
             >
           <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-2">
             Blended IV Score

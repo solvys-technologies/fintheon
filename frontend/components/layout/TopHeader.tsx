@@ -1,7 +1,7 @@
 // [claude-code 2026-02-26] Add heading toolbar dock zone + optional docked widgets slot.
 // [claude-code 2026-03-03] Toolbar items reorderable via getToolbarOrder/setToolbarOrder.
 // [claude-code 2026-03-11] T2: IV score wired to backend /api/market-data/iv-score — replaces local quickIVScore
-// [claude-code 2026-03-20] S3:T4b: Hide platform dropdown when TopStepX active (layout dropdown replaces it)
+// [claude-code 2026-03-20] S3:T4b: Merge platform/layout into one toolbar slot; DND moves to header when iFrame active
 // [claude-code 2026-03-20] S3:T5 — VIX spike toast trigger when VIX crosses above threshold
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,11 +13,12 @@ import { useToast } from '../../contexts/ToastContext';
 import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
-import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power } from 'lucide-react';
+import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power, Bell, BellOff } from 'lucide-react';
 import { WhatsNewButton } from '../onboarding/FirstTimeTour';
 import { TraderNametag } from '../TraderNametag';
 import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TopStepXBrowser';
+import { useDND } from '../../contexts/DNDContext';
 
 type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'proposals' | 'apparatus' | 'settings';
 
@@ -89,6 +90,7 @@ export function TopHeader({
   const [toolbarOrder, setToolbarOrderState] = useState<ToolbarItemId[]>(() => getToolbarOrder());
   const dropdownRef = useRef<HTMLDivElement>(null);
   const platformDropdownRef = useRef<HTMLDivElement>(null);
+  const { dndActive, toggleManualDnd, queueCount } = useDND();
   const vixWasBelowRef = useRef(true);
 
   useEffect(() => {
@@ -263,6 +265,24 @@ export function TopHeader({
             <span className="text-[13px] text-gray-300">{getTierDisplayName()}</span>
           </button>
           {traderName && <TraderNametag name={traderName} disablePulse={!(alertConfig.nametagEmoPulse ?? true)} />}
+          {topStepXEnabled && (
+            <button
+              onClick={toggleManualDnd}
+              className={`relative p-1.5 rounded-lg transition-colors ${
+                dndActive
+                  ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-zinc-800/50'
+              }`}
+              title={dndActive ? 'Do Not Disturb (ON)' : 'Notifications'}
+            >
+              {dndActive ? <BellOff className="w-3.5 h-3.5" /> : <Bell className="w-3.5 h-3.5" />}
+              {queueCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500/80 text-white text-[8px] font-bold leading-none">
+                  {queueCount > 99 ? '99+' : queueCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
       
@@ -299,16 +319,57 @@ export function TopHeader({
                 {node}
               </div>
             );
-            if (id === 'platform' && onTopStepXToggle && !topStepXEnabled) {
+            if (id === 'platform') {
+              if (topStepXEnabled && onLayoutOptionChange) {
+                // iFrame active → show layout dropdown (Castra/Zen) in the platform slot
+                return wrapper(
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
+                      className="px-3 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                      title="Layout Options"
+                    >
+                      {layoutOptions.find(opt => opt.value === layoutOption)?.icon}
+                      <span>{layoutOptions.find(opt => opt.value === layoutOption)?.label}</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${showLayoutDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    {showLayoutDropdown && (
+                      <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden">
+                        {layoutOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => {
+                              onLayoutOptionChange(option.value);
+                              setShowLayoutDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
+                              layoutOption === option.value ? 'bg-[var(--fintheon-accent)]/20' : ''
+                            }`}
+                          >
+                            <div className="mt-0.5 text-[var(--fintheon-accent)]">
+                              {option.icon}
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-[var(--fintheon-accent)] mb-1">
+                                {option.label}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                {option.description}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              // iFrame off → platform selection dropdown (select FIRST, then power ON)
               return wrapper(
                 <div className="relative" ref={platformDropdownRef}>
                   <button
                     onClick={() => setShowPlatformDropdown(!showPlatformDropdown)}
-                    className={`px-3 h-8 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                      topStepXEnabled
-                        ? 'bg-[var(--fintheon-accent)] text-black hover:bg-[var(--fintheon-accent)]/90'
-                        : 'bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40'
-                    }`}
+                    className="px-3 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
                     title="Select trading platform"
                   >
                     {!isElectron() && <Monitor className="w-3 h-3" />}
@@ -322,7 +383,6 @@ export function TopHeader({
                           key={option.value}
                           onClick={() => {
                             onPlatformSelect?.(option.value);
-                            onTopStepXToggle();
                             setShowPlatformDropdown(false);
                           }}
                           className={`w-full px-4 py-3 text-left transition-colors ${
@@ -363,48 +423,8 @@ export function TopHeader({
                 </button>
               );
             }
-            if (id === 'layout' && topStepXEnabled && onLayoutOptionChange) {
-              return wrapper(
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
-                    className="px-3 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
-                    title="Layout Options"
-                  >
-                    {layoutOptions.find(opt => opt.value === layoutOption)?.icon}
-                    <span>{layoutOptions.find(opt => opt.value === layoutOption)?.label}</span>
-                    <ChevronDown className={`w-3 h-3 transition-transform ${showLayoutDropdown ? 'rotate-180' : ''}`} />
-                  </button>
-                  {showLayoutDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden">
-                      {layoutOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => {
-                            onLayoutOptionChange(option.value);
-                            setShowLayoutDropdown(false);
-                          }}
-                          className={`w-full px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
-                            layoutOption === option.value ? 'bg-[var(--fintheon-accent)]/20' : ''
-                          }`}
-                        >
-                          <div className="mt-0.5 text-[var(--fintheon-accent)]">
-                            {option.icon}
-                          </div>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-[var(--fintheon-accent)] mb-1">
-                              {option.label}
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              {option.description}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
+            if (id === 'layout') {
+              return null; // Layout dropdown is rendered in the 'platform' slot
             }
             if (id === 'chat' && onAskHarpToggle) {
               return wrapper(

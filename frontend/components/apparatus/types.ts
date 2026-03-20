@@ -1,14 +1,9 @@
-// [claude-code 2026-03-20] Apparatus tab — Neural Constellation agent intelligence types
-import type { LucideIcon } from 'lucide-react';
+// [claude-code 2026-03-20] Apparatus tab — agent intelligence card types
 
 export interface AgentNode {
   id: string;
   label: string;
   role: string;
-  icon: LucideIcon;
-  /** Position on the constellation canvas (0-1 normalized) */
-  x: number;
-  y: number;
   accentColor: string;
   memories: AgentMemory[];
 }
@@ -29,7 +24,7 @@ export interface MemoryVersion {
   timestamp: string;
 }
 
-export type MemorySource = 'twitter' | 'notion' | 'mirofish' | 'trade' | 'boardroom' | 'manual';
+export type MemorySource = 'twitter' | 'data' | 'mirofish' | 'trade' | 'boardroom' | 'manual';
 
 export interface AgentConnection {
   from: string;

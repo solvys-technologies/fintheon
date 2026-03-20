@@ -2,6 +2,7 @@
 // [claude-code 2026-03-07] Slide-up panel with Terminal + Changelog tabs
 // [claude-code 2026-03-10] Notion + X CLI status indicators in toolbar strip.
 // [claude-code 2026-03-14] Fintheon CLI: run shell commands via Electron; "/" slash-command suggestions.
+// [claude-code 2026-03-20] Terminal now works in browser via backend SSE (not just Electron)
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText } from 'lucide-react';
 import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TopStepXBrowser';
@@ -28,6 +29,8 @@ function resolveSlashCommand(input: string): string | null {
   );
   return match?.command ?? null;
 }
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 interface FooterToolbarProps {
   topStepXEnabled?: boolean;
@@ -65,6 +68,7 @@ export function FooterToolbar({
   const inputRef = useRef<HTMLInputElement>(null);
   const cliContainerRef = useRef<HTMLDivElement>(null);
   const prevPanelOpenRef = useRef(false);
+  const activeProcessRef = useRef<{ processId: string; es: EventSource } | null>(null);
 
   const isElectron = typeof window !== 'undefined' && window.electron?.runShellCommand != null;
   const slashFilter = cliInput.startsWith('/') ? cliInput.slice(1).toLowerCase().trim() : '';
@@ -129,15 +133,72 @@ export function FooterToolbar({
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [showSlashSuggestions]);
 
-  const runShellCommand = useCallback((cmd: string) => {
-    if (!window.electron?.runShellCommand) return;
-    setCliHistory((prev) => [...prev, { type: 'input', text: cmd }, { type: 'output', text: 'Running...' }]);
-    window.electron.runShellCommand(cmd).then((r) => {
-      if (!r.ok) {
-        setCliHistory((prev) => [...prev, { type: 'output', text: r.error ?? 'Failed to run command' }]);
-      }
-    });
+  const runViaBackend = useCallback((cmd: string) => {
+    fetch(`${API_BASE}/api/terminal/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: cmd }),
+    })
+      .then((r) => r.json())
+      .then((data: { ok?: boolean; processId?: string; error?: string }) => {
+        if (!data.ok || !data.processId) {
+          setCliHistory((prev) => [...prev, { type: 'output', text: data.error ?? 'Failed to start command' }]);
+          return;
+        }
+        const es = new EventSource(`${API_BASE}/api/terminal/stream/${data.processId}`);
+        activeProcessRef.current = { processId: data.processId, es };
+
+        const onData = (e: MessageEvent) => {
+          const lines = String(e.data).split('\n').filter(Boolean);
+          setCliHistory((prev) => [...prev, ...lines.map((text) => ({ type: 'output' as const, text }))]);
+        };
+        es.addEventListener('stdout', onData);
+        es.addEventListener('stderr', onData);
+        es.addEventListener('exit', (e: MessageEvent) => {
+          try {
+            const { code, signal } = JSON.parse(e.data);
+            const exitVal = code ?? signal ?? '?';
+            setCliHistory((prev) => [...prev, { type: 'output', text: `[exit ${exitVal}]` }]);
+          } catch {
+            setCliHistory((prev) => [...prev, { type: 'output', text: '[exit]' }]);
+          }
+          es.close();
+          activeProcessRef.current = null;
+        });
+        es.onerror = () => {
+          es.close();
+          activeProcessRef.current = null;
+        };
+      })
+      .catch((err) => {
+        setCliHistory((prev) => [
+          ...prev,
+          { type: 'output', text: `Backend unavailable: ${err instanceof Error ? err.message : String(err)}` },
+        ]);
+      });
   }, []);
+
+  const killActiveProcess = useCallback(() => {
+    const active = activeProcessRef.current;
+    if (!active) return;
+    fetch(`${API_BASE}/api/terminal/kill/${active.processId}`, { method: 'POST' }).catch(() => {});
+    active.es.close();
+    activeProcessRef.current = null;
+    setCliHistory((prev) => [...prev, { type: 'output', text: '^C' }]);
+  }, []);
+
+  const runShellCommand = useCallback((cmd: string) => {
+    setCliHistory((prev) => [...prev, { type: 'input', text: cmd }, { type: 'output', text: 'Running...' }]);
+    if (window.electron?.runShellCommand) {
+      window.electron.runShellCommand(cmd).then((r) => {
+        if (!r.ok) {
+          setCliHistory((prev) => [...prev, { type: 'output', text: r.error ?? 'Failed to run command' }]);
+        }
+      });
+    } else {
+      runViaBackend(cmd);
+    }
+  }, [runViaBackend]);
 
   const handleCli = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -189,7 +250,7 @@ export function FooterToolbar({
         });
         newHistory.push({
           type: 'output',
-          text: isElectron ? 'In Electron, any line runs as a shell command.' : 'Run Fintheon in Electron (npm run desktop) to run slash commands.',
+          text: 'Any line runs as a shell command. Ctrl+C to kill a running process.',
         });
         setCliHistory(newHistory);
         return;
@@ -210,7 +271,7 @@ export function FooterToolbar({
         return;
       }
       if (lower === 'version') {
-        newHistory.push({ type: 'output', text: 'Fintheon Epoch {EPOCH_VERSION} | Build 2026-03-14' });
+        newHistory.push({ type: 'output', text: `Fintheon Epoch ${EPOCH_VERSION} | Build 2026-03-14` });
         setCliHistory(newHistory);
         return;
       }
@@ -506,13 +567,6 @@ export function FooterToolbar({
 
         {/* Source status indicators */}
         <div className="flex items-center gap-2 shrink-0">
-          <span
-            className="flex items-center gap-1 text-[10px]"
-            title={`Notion: ${sourceStatus.notion ? 'connected' : 'disconnected'}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.notion ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
-            <span className={sourceStatus.notion ? 'text-emerald-400/60' : 'text-zinc-700'}>Notion</span>
-          </span>
           <span
             className="flex items-center gap-1 text-[10px]"
             title={`X CLI: ${sourceStatus.twitterCli ? 'connected' : 'disconnected'}`}

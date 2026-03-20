@@ -184,7 +184,7 @@ export function SettingsPage() {
     { id: 'trading' as const, label: 'Trading', icon: CreditCard, description: 'Risk management, autopilot, and strategy toggles' },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
     { id: 'api' as const, label: 'API', icon: Code, description: 'API keys and external service credentials' },
-    { id: 'iframes' as const, label: 'iFrames', icon: Globe, description: 'Notion embed URLs for Boardroom, Research, and more' },
+    { id: 'iframes' as const, label: 'iFrames', icon: Globe, description: 'Embed URLs for Boardroom, Research, and more' },
     { id: 'developer' as const, label: 'Developer', icon: Terminal, description: 'Mock data, test tools, and tier management' },
     { id: 'danger' as const, label: 'Danger Zone', icon: AlertTriangle, description: 'Reset analysts, clear data, and export config' },
   ];
@@ -844,7 +844,7 @@ export function SettingsPage() {
               <div key="iframes" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
                   <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">iFrames</h3>
-                  <p className="text-xs text-gray-500 mb-4">Set Notion page URLs for embedded views. Leave blank to use defaults from environment variables.</p>
+                  <p className="text-xs text-gray-500 mb-4">Set embed URLs for integrated views. Leave blank to use defaults from environment variables.</p>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm text-gray-300 mb-2">Boardroom URL</label>

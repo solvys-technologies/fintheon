@@ -25,9 +25,6 @@ export interface HermesMessage {
   content: string | ContentPart[]
 }
 
-// Backward compat
-export type OpenClawMessage = HermesMessage
-
 export interface HermesChatRequest {
   message: string
   multimodalContent?: ContentPart[]
@@ -36,9 +33,6 @@ export interface HermesChatRequest {
   agentOverride?: HermesAgentRole
   thinkHarder?: boolean
 }
-
-// Backward compat
-export type OpenClawChatRequest = HermesChatRequest
 
 export interface HermesChatResponse {
   content: string
@@ -51,9 +45,6 @@ export interface HermesChatResponse {
     riskLevel?: 'low' | 'medium' | 'high'
   }
 }
-
-// Backward compat
-export type OpenClawChatResponse = HermesChatResponse
 
 // Intent detection patterns
 const INTENT_PATTERNS: { pattern: RegExp; agent: HermesAgentRole; intent: string }[] = [
@@ -477,9 +468,6 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
   }
 }
 
-// Backward compat
-export const handleOpenClawChat = handleHermesChat
-
 /**
  * Initialize Hermes agent on startup:
  * 1. Optionally launch Hermes gateway process if configured
@@ -490,16 +478,22 @@ export async function initHermesAgent(): Promise<void> {
 
   try {
     const gatewayRunning = await new Promise<boolean>((resolve) => {
-      execFile(hermesBin, ['gateway', 'status'], { timeout: 5_000 }, (err, stdout) => {
+      const child = execFile(hermesBin, ['gateway', 'status'], { timeout: 5_000 }, (err, stdout) => {
         if (err) { resolve(false); return }
         resolve(stdout.toLowerCase().includes('running'))
       })
+      child.on('error', () => resolve(false))
     })
     if (!gatewayRunning) {
       log.info('Gateway not running — starting')
-      const gw = spawnProcess(hermesBin, ['gateway', 'start'], { stdio: 'ignore', detached: true })
-      gw.unref()
-      log.info('Gateway start dispatched', { pid: gw.pid })
+      try {
+        const gw = spawnProcess(hermesBin, ['gateway', 'start'], { stdio: 'ignore', detached: true })
+        gw.on('error', () => {}) // swallow spawn errors (binary not found in production)
+        gw.unref()
+        log.info('Gateway start dispatched', { pid: gw.pid })
+      } catch {
+        log.warn('Hermes binary not found — gateway launch skipped (expected in cloud deployment)')
+      }
     } else {
       log.info('Gateway already running')
     }
@@ -545,9 +539,6 @@ export async function initHermesAgent(): Promise<void> {
   }
 }
 
-// Backward compat
-export const initOpenClawAgent = initHermesAgent
-
 /**
  * Stream Hermes response
  */
@@ -562,5 +553,3 @@ export async function* streamHermesChat(request: HermesChatRequest): AsyncGenera
   }
 }
 
-// Backward compat
-export const streamOpenClawChat = streamHermesChat

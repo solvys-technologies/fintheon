@@ -1,92 +1,106 @@
-// [claude-code 2026-03-20] S3:T6 — Updated tour steps for Consilium/Proposals/Apparatus tabs
-// [claude-code 2026-03-16] Spotlight tour + blindspots interview v7.9
+// [claude-code 2026-03-20] S3-FIX:T4 — Walkthrough overhaul: contextual floating cards, 11 steps
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Sparkles } from 'lucide-react';
-import { SpotlightOverlay } from './SpotlightOverlay';
-import { TourTooltip } from './TourTooltip';
-import { BlindspotsInterview } from './BlindspotsInterview';
-import { SetupWizard } from './SetupWizard';
-import { useSettings } from '../../contexts/SettingsContext';
+import { useToast } from '../../contexts/ToastContext';
 
 const TOUR_STORAGE_KEY = 'fintheon:tour-completed';
 const LAST_VERSION_KEY = 'fintheon:last-seen-version';
-const INTERVIEW_STORAGE_KEY = 'fintheon:interview-completed';
-const INTERVIEW_DATA_KEY = 'fintheon:interview-data';
-const CURRENT_VERSION = '8.20.0';
-const WHATS_NEW_TIMEOUT_MS = 30_000;
+const CURRENT_VERSION = '8.20.3';
+
+/* ------------------------------------------------------------------ */
+/*  Step definitions                                                   */
+/* ------------------------------------------------------------------ */
 
 interface TourStep {
   title: string;
   description: string;
-  target: string;
-  targetSelector: string;
+  nav: string | null;
+  selector: string;
+  position: 'top' | 'bottom' | 'left' | 'right';
 }
 
 const TOUR_STEPS: TourStep[] = [
   {
     title: 'Dashboard',
-    description: 'Your daily briefing, economic calendar, KPIs, and action tape. Start each session here.',
-    target: 'executive',
-    targetSelector: '[data-tour-target="executive"]',
-  },
-  {
-    title: 'RiskFlow',
-    description: 'Real-time news and event feed scored by the IV engine. Headlines flow in from X, RSS, and Notion.',
-    target: 'news',
-    targetSelector: '[data-tour-target="riskflow"]',
+    description: 'Your command center. KPIs, calendar, and RiskFlow at a glance.',
+    nav: 'executive',
+    selector: 'button[data-tour-target="executive"]',
+    position: 'right',
   },
   {
     title: 'Consilium',
-    description: 'Your AI agents debate trades and surface proposals here. Use /brief, /validate, or drag RiskFlow items in for context.',
-    target: 'analysis',
-    targetSelector: '[data-tour-target="chat"]',
+    description: 'Where your AI agents debate, analyze, and surface proposals.',
+    nav: 'analysis',
+    selector: 'button[data-tour-target="analysis"]',
+    position: 'right',
+  },
+  {
+    title: 'Chat',
+    description: 'Talk directly to Hermes. Ask questions, run reports, get briefs.',
+    nav: 'analysis',
+    selector: 'button[data-tour-target="analysis"]',
+    position: 'right',
+  },
+  {
+    title: 'Boardroom',
+    description: 'The agent discussion room. Watch Oracle, Feucht, and Herald deliberate.',
+    nav: 'analysis',
+    selector: 'button[data-tour-target="analysis"]',
+    position: 'right',
+  },
+  {
+    title: 'Predictions',
+    description: 'MiroFish prediction engine. IV forecasts and risk visualization.',
+    nav: 'proposals',
+    selector: 'button[data-tour-target="proposals"]',
+    position: 'right',
   },
   {
     title: 'Proposals',
-    description: 'View trade proposals from MiroFish and chart them on TopStepX.',
-    target: 'proposals',
-    targetSelector: '[data-tour-target="proposals"]',
+    description: 'Active trade proposals from the agents. Chart them on TopStepX.',
+    nav: 'proposals',
+    selector: 'button[data-tour-target="proposals"]',
+    position: 'right',
+  },
+  {
+    title: 'Narratives',
+    description: 'Map market narratives. Drag catalysts, draw connections.',
+    nav: 'narrative',
+    selector: 'button[data-tour-target="narrative"]',
+    position: 'right',
   },
   {
     title: 'Apparatus',
-    description: 'See what your agents know, what they\'re thinking, and when they work.',
-    target: 'apparatus',
-    targetSelector: '[data-tour-target="apparatus"]',
-  },
-  {
-    title: 'Economic Calendar',
-    description: 'TradingView calendar with country filters, importance levels, earnings, dividends, and IPOs.',
-    target: 'econ',
-    targetSelector: '[data-tour-target="econ"]',
-  },
-  {
-    title: 'Performance',
-    description: 'Two tabs — Human (ER trend, infractions, discipline score) and Agent (proposal tracker, win rate, R:R).',
-    target: 'earnings',
-    targetSelector: '[data-tour-target="performance"]',
-  },
-  {
-    title: 'Narrative Map',
-    description: 'Build and track market narratives with visual flows and MiroFish integration.',
-    target: 'narrative',
-    targetSelector: '[data-tour-target="narrative"]',
+    description: 'Agent intelligence. See what your agents know and when they work.',
+    nav: 'apparatus',
+    selector: 'button[data-tour-target="apparatus"]',
+    position: 'right',
   },
   {
     title: 'Strategium',
-    description: 'Compact widgets: ER monitor, blindspots, account tracker, algo status, session calendar. Rearrange with the gear icon.',
-    target: 'mission-control',
-    targetSelector: '[data-tour-target="strategium"]',
+    description: 'Mission Control: ER, account tracking, regime detection.',
+    nav: 'executive',
+    selector: '[data-tour-target="strategium"]',
+    position: 'left',
+  },
+  {
+    title: 'RiskFlow',
+    description: 'Real-time market feed. News, prints, and trade ideas.',
+    nav: 'news',
+    selector: 'button[data-tour-target="news"]',
+    position: 'right',
   },
   {
     title: 'Toolbar',
-    description: 'IV score, VIX ticker, voice control, and chat toggle live in the top toolbar. Drag items to reorder.',
-    target: 'toolbar',
-    targetSelector: '[data-tour-target="toolbar"]',
+    description: 'VIX, IV scoring, platform controls, and layout options.',
+    nav: null,
+    selector: '[data-tour-target="toolbar"]',
+    position: 'bottom',
   },
 ];
 
 const WHATS_NEW_ITEMS = [
-  'Onboarding tour now covers Consilium, Proposals, and Apparatus tabs',
+  'Contextual walkthrough tour with 11-step guided overview',
   'Consilium — AI agents debate trades and surface proposals',
   'Apparatus — agent memory, reasoning, and schedule visibility',
   'Narrative Map canvas with MiroFish integration',
@@ -94,174 +108,262 @@ const WHATS_NEW_ITEMS = [
   'Setup wizard for backend dependency checks',
 ];
 
-type Phase = 'tour' | 'interview' | 'setup' | 'done';
+/* ------------------------------------------------------------------ */
+/*  Floating tour card                                                 */
+/* ------------------------------------------------------------------ */
+
+const CARD_WIDTH = 340;
+const CARD_GAP = 16;
+const VP_MARGIN = 12;
+
+function TourCard({
+  step,
+  stepIndex,
+  totalSteps,
+  targetRect,
+  onNext,
+  onPrev,
+  onSkip,
+}: {
+  step: TourStep;
+  stepIndex: number;
+  totalSteps: number;
+  targetRect: DOMRect | null;
+  onNext: () => void;
+  onPrev: () => void;
+  onSkip: () => void;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [cardHeight, setCardHeight] = useState(200);
+
+  useEffect(() => {
+    if (cardRef.current) setCardHeight(cardRef.current.offsetHeight);
+  }, [step]);
+
+  // Default: center of viewport
+  let top = window.innerHeight / 2 - cardHeight / 2;
+  let left = window.innerWidth / 2 - CARD_WIDTH / 2;
+
+  if (targetRect) {
+    switch (step.position) {
+      case 'right':
+        left = targetRect.right + CARD_GAP;
+        top = targetRect.top + targetRect.height / 2 - cardHeight / 2;
+        break;
+      case 'left':
+        left = targetRect.left - CARD_WIDTH - CARD_GAP;
+        top = targetRect.top + targetRect.height / 2 - cardHeight / 2;
+        break;
+      case 'bottom':
+        left = targetRect.left + targetRect.width / 2 - CARD_WIDTH / 2;
+        top = targetRect.bottom + CARD_GAP;
+        break;
+      case 'top':
+        left = targetRect.left + targetRect.width / 2 - CARD_WIDTH / 2;
+        top = targetRect.top - cardHeight - CARD_GAP;
+        break;
+    }
+  }
+
+  // Clamp to viewport
+  left = Math.max(VP_MARGIN, Math.min(left, window.innerWidth - CARD_WIDTH - VP_MARGIN));
+  top = Math.max(VP_MARGIN, Math.min(top, window.innerHeight - cardHeight - VP_MARGIN));
+
+  const isLast = stepIndex === totalSteps - 1;
+
+  return (
+    <div
+      ref={cardRef}
+      className="fixed z-[10000]"
+      style={{
+        top,
+        left,
+        width: CARD_WIDTH,
+        transition: 'top 300ms ease-out, left 300ms ease-out',
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{
+          background: '#0a0a00',
+          border: '1px solid rgba(199, 159, 74, 0.3)',
+          boxShadow: '0 0 40px rgba(199, 159, 74, 0.06), 0 8px 32px rgba(0,0,0,0.5)',
+        }}
+      >
+        {/* Header with icon */}
+        <div className="px-5 pt-4 pb-1 flex items-center gap-2.5">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(199, 159, 74, 0.12)' }}
+          >
+            <Sparkles className="w-4 h-4" style={{ color: '#c79f4a' }} />
+          </div>
+          <h3 className="text-base font-bold" style={{ color: '#c79f4a' }}>
+            {step.title}
+          </h3>
+        </div>
+
+        {/* Description */}
+        <div className="px-5 py-3">
+          <p className="text-sm leading-relaxed" style={{ color: 'rgba(240, 234, 214, 0.8)' }}>
+            {step.description}
+          </p>
+        </div>
+
+        {/* Footer: step counter + nav */}
+        <div
+          className="px-5 py-3 flex items-center justify-between"
+          style={{ borderTop: '1px solid rgba(199, 159, 74, 0.1)' }}
+        >
+          <span className="text-xs" style={{ color: 'rgba(240, 234, 214, 0.4)' }}>
+            {stepIndex + 1} of {totalSteps}
+          </span>
+          <div className="flex items-center gap-2">
+            {stepIndex > 0 && (
+              <button
+                onClick={onPrev}
+                className="px-3 py-1.5 text-xs rounded transition-colors hover:text-[#f0ead6]"
+                style={{ color: 'rgba(240, 234, 214, 0.6)' }}
+              >
+                Previous
+              </button>
+            )}
+            <button
+              onClick={onNext}
+              className="px-4 py-1.5 text-xs font-medium rounded transition-all hover:brightness-110"
+              style={{ background: '#c79f4a', color: '#050402' }}
+            >
+              {isLast ? 'Get Started' : 'Next'}
+            </button>
+          </div>
+        </div>
+
+        {/* Skip link */}
+        <div className="px-5 pb-3 text-center">
+          <button
+            onClick={onSkip}
+            className="text-[11px] transition-colors"
+            style={{ color: 'rgba(240, 234, 214, 0.3)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(240, 234, 214, 0.6)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(240, 234, 214, 0.3)'; }}
+          >
+            Skip tour
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tour orchestrator                                                  */
+/* ------------------------------------------------------------------ */
 
 export function FirstTimeTour({ onNavigate }: { onNavigate?: (tab: string) => void }) {
-  const [phase, setPhase] = useState<Phase>('done');
+  const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
-  const [spotlightRect, setSpotlightRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
-  const settings = useSettings();
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [opacity, setOpacity] = useState(0);
   const measureTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const { addToast } = useToast();
 
-  // Check if tour should show on mount
+  // Auto-start after 1s on first visit
   useEffect(() => {
     const completed = localStorage.getItem(TOUR_STORAGE_KEY);
     if (!completed) {
-      setPhase('tour');
-      // Navigate to first tab
-      onNavigate?.(TOUR_STEPS[0].target);
+      const timer = setTimeout(() => {
+        setActive(true);
+        onNavigate?.(TOUR_STEPS[0].nav!);
+        requestAnimationFrame(() => setOpacity(1));
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Measure spotlight target whenever step changes
+  // Measure target element on step change
   useEffect(() => {
-    if (phase !== 'tour') return;
+    if (!active) return;
     const current = TOUR_STEPS[step];
     if (!current) return;
 
-    // Navigate to the tab for this step
-    onNavigate?.(current.target);
+    if (current.nav) onNavigate?.(current.nav);
 
-    // Measure after navigation settles
     clearTimeout(measureTimer.current);
     measureTimer.current = setTimeout(() => {
-      const el = document.querySelector(current.targetSelector);
-      if (el) {
-        const r = el.getBoundingClientRect();
-        setSpotlightRect({ x: r.x, y: r.y, width: r.width, height: r.height });
-      } else {
-        setSpotlightRect(null);
-      }
-    }, 200);
+      const el = document.querySelector(current.selector);
+      setTargetRect(el ? el.getBoundingClientRect() : null);
+    }, 250);
 
     return () => clearTimeout(measureTimer.current);
-  }, [step, phase, onNavigate]);
+  }, [step, active]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-measure on resize
+  useEffect(() => {
+    if (!active) return;
+    const handle = () => {
+      const el = document.querySelector(TOUR_STEPS[step]?.selector ?? '');
+      if (el) setTargetRect(el.getBoundingClientRect());
+    };
+    window.addEventListener('resize', handle);
+    return () => window.removeEventListener('resize', handle);
+  }, [active, step]);
 
   const completeTour = useCallback(() => {
-    localStorage.setItem(TOUR_STORAGE_KEY, 'true');
-    localStorage.setItem(LAST_VERSION_KEY, CURRENT_VERSION);
-    // Check if interview is already done
-    const interviewDone = localStorage.getItem(INTERVIEW_STORAGE_KEY);
-    if (!interviewDone) {
-      setPhase('interview');
-    } else {
-      setPhase('setup');
-    }
-  }, []);
+    setOpacity(0);
+    setTimeout(() => {
+      localStorage.setItem(TOUR_STORAGE_KEY, 'true');
+      localStorage.setItem(LAST_VERSION_KEY, CURRENT_VERSION);
+      setActive(false);
+      onNavigate?.('executive');
+      addToast('Welcome to Fintheon', 'success', 'Your tour is complete. Explore at your own pace.');
+    }, 300);
+  }, [addToast, onNavigate]);
 
   const goNext = useCallback(() => {
-    if (step < TOUR_STEPS.length - 1) {
-      setStep(step + 1);
-    } else {
-      completeTour();
-    }
+    if (step < TOUR_STEPS.length - 1) setStep(step + 1);
+    else completeTour();
   }, [step, completeTour]);
 
   const goPrev = useCallback(() => {
     if (step > 0) setStep(step - 1);
   }, [step]);
 
-  const handleInterviewComplete = useCallback(
-    (data: { name: string; discord: string; instruments: string[]; roadblocks: string[]; customRoadblock: string; dailyTarget: string; weeklyGoal: string; accountSize: string }) => {
-      // Merge custom roadblock
-      const allRoadblocks = [...data.roadblocks];
-      if (data.customRoadblock.trim()) allRoadblocks.push(data.customRoadblock.trim());
+  if (!active) return null;
 
-      // Save to localStorage
-      localStorage.setItem(INTERVIEW_STORAGE_KEY, 'true');
-      localStorage.setItem(INTERVIEW_DATA_KEY, JSON.stringify(data));
+  return (
+    <>
+      {/* Dim overlay — semi-transparent, no blur */}
+      <div
+        className="fixed inset-0 z-[9998]"
+        style={{
+          background: 'rgba(0, 0, 0, 0.4)',
+          opacity,
+          transition: 'opacity 300ms ease-out',
+        }}
+        onClick={completeTour}
+      />
 
-      // Save to SettingsContext
-      settings.setTraderName(data.name);
-      settings.setDiscordUsername(data.discord);
-      settings.setInstrumentsTraded(data.instruments);
-      settings.setTradingRoadblocks(allRoadblocks);
-      settings.setTradingGoals(`Daily: $${data.dailyTarget}, Weekly: $${data.weeklyGoal}, Account: $${data.accountSize}`);
-      settings.setInterviewCompleted(true);
-
-      // Fire-and-forget POST to backend
-      fetch('/api/blindspots/interview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
-          roadblocks: allRoadblocks,
-          goals: `Daily: $${data.dailyTarget}, Weekly: $${data.weeklyGoal}, Account: $${data.accountSize}`,
-          instruments: data.instruments,
-          discord: data.discord,
-        }),
-      }).catch(() => {});
-
-      // Post roadblocks as blindspots
-      fetch('/api/blindspots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          blindspots: allRoadblocks.map((rb) => ({
-            text: rb,
-            severity: rb.toLowerCase().includes('overtrad') || rb.toLowerCase().includes('revenge') ? 'high' : 'medium',
-          })),
-        }),
-      }).catch(() => {});
-
-      setPhase('setup');
-    },
-    [settings]
+      {/* Floating card */}
+      <TourCard
+        step={TOUR_STEPS[step]}
+        stepIndex={step}
+        totalSteps={TOUR_STEPS.length}
+        targetRect={targetRect}
+        onNext={goNext}
+        onPrev={goPrev}
+        onSkip={completeTour}
+      />
+    </>
   );
-
-  const handleInterviewSkip = useCallback(() => {
-    localStorage.setItem(INTERVIEW_STORAGE_KEY, 'skipped');
-    setPhase('setup');
-  }, []);
-
-  // Tour phase: spotlight + tooltip
-  if (phase === 'tour') {
-    const current = TOUR_STEPS[step];
-    return (
-      <SpotlightOverlay
-        targetSelector={current.targetSelector}
-        visible={true}
-        onClose={completeTour}
-      >
-        <TourTooltip
-          targetRect={spotlightRect}
-          step={current}
-          stepIndex={step}
-          totalSteps={TOUR_STEPS.length}
-          onNext={goNext}
-          onPrev={goPrev}
-          onSkip={completeTour}
-        />
-      </SpotlightOverlay>
-    );
-  }
-
-  // Interview phase
-  if (phase === 'interview') {
-    return (
-      <BlindspotsInterview
-        visible={true}
-        onComplete={handleInterviewComplete}
-        onSkip={handleInterviewSkip}
-        initialName={settings.traderName}
-      />
-    );
-  }
-
-  // Setup phase
-  if (phase === 'setup') {
-    return (
-      <SetupWizard
-        visible={true}
-        onClose={() => setPhase('done')}
-      />
-    );
-  }
-
-  return null;
 }
 
-/** "What's New" button -- appears in toolbar for 30s after detecting a version update */
+/* ------------------------------------------------------------------ */
+/*  What's New button (toolbar — appears 30s after version update)     */
+/* ------------------------------------------------------------------ */
+
+const WHATS_NEW_TIMEOUT_MS = 30_000;
+
 export function WhatsNewButton() {
   const [visible, setVisible] = useState(false);
   const [showPanel, setShowPanel] = useState(false);

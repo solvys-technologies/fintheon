@@ -1,6 +1,6 @@
 // [claude-code 2026-02-26] Make RiskFlow subsection collapsible in Mission Control stack.
 // [claude-code 2026-03-03] Add trade idea row rendering (gold border, click-to-modal).
-// [claude-code 2026-03-10] Status dots (Notion + X CLI), dropdown filters (Priority + Source), X filter.
+// [claude-code 2026-03-10] Status dots (X CLI), dropdown filters (Priority + Source), X filter.
 // [claude-code 2026-03-10] T3: critical severity renders same as high (pulse + red text)
 // [claude-code 2026-03-11] v7.7.7 T3: Card overhaul — SVG logos, cyclical badge top-right,
 //   point range, approve/deny CTA on proposals, chat CTA on news, remove "Neutral" text.
@@ -450,7 +450,6 @@ export default function RiskFlowPanel({
                 </span>
               )}
               <div className="flex items-center gap-2 ml-1">
-                <StatusDot active={sourceStatus.notion} label="Notion" />
                 <StatusDot active={sourceStatus.twitterCli} label="X" />
               </div>
             </div>
@@ -494,7 +493,6 @@ export default function RiskFlowPanel({
                 value={showProposals ? 'all' : sourceFilter}
                 options={[
                   { value: 'all', label: 'Source: All' },
-                  { value: 'notion', label: 'Notion' },
                   { value: 'twitter', label: 'X / FJ' },
                 ]}
                 onChange={(v) => { setShowProposals(false); setSourceFilter(v); }}

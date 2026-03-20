@@ -596,25 +596,16 @@ function MainLayoutInner() {
     const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'earnings' || activeTab === 'proposals' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (missionControlCollapsed) {
-        // Mission Control collapsed — just show a thin expand strip + full RiskFlow
+        // Strategium collapsed — entire right panel collapses (RiskFlow always collapses with it)
         rightPanels.push(
-          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15">
-            <div className="h-10 shrink-0 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/20">
-              <span className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-[0.2em] uppercase">Mission Control</span>
-              <button
-                onClick={() => setMissionControlCollapsed(false)}
-                className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
-                title="Expand Mission Control"
-              >
-                <ChevronDown className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />
-              </button>
-            </div>
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <RiskFlowPanel
-                collapsed={riskFlowCollapsed}
-                onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
-              />
-            </div>
+          <div key="right-stack" className="w-12 flex-shrink-0 h-full min-w-0 flex flex-col items-center justify-center border-l border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]">
+            <button
+              onClick={() => setMissionControlCollapsed(false)}
+              className="p-2 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
+              title="Expand Strategium"
+            >
+              <ChevronLeft className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
+            </button>
           </div>
         );
       } else if (riskFlowCollapsed) {
@@ -669,7 +660,13 @@ function MainLayoutInner() {
         layoutOption={layoutOption}
         onLayoutOptionChange={setLayoutOption}
         askHarpOpen={showAskHarp}
-        onAskHarpToggle={() => setShowAskHarp(prev => !prev)}
+        onAskHarpToggle={() => setShowAskHarp(prev => {
+          // Opening chat in Castra → auto-switch to Zen so panels don't fight for space
+          if (!prev && topStepXEnabled && layoutOption === 'combined') {
+            setLayoutOption('tickers-only');
+          }
+          return !prev;
+        })}
         activeTab={activeTab}
         tabHistory={tabHistory}
         historyIndex={historyIndex}

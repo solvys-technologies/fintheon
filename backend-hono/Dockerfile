@@ -1,4 +1,4 @@
-# Production build for Pulse API
+# Fintheon API — Production Build
 FROM node:20-alpine
 
 WORKDIR /app
@@ -9,7 +9,7 @@ COPY package.json package-lock.json* ./
 # Install ALL dependencies (need typescript for build)
 RUN npm ci
 
-# Copy source code
+# Copy source code and config
 COPY src ./src
 COPY tsconfig.json ./
 
