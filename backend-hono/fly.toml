@@ -1,4 +1,4 @@
-app = "pulse-api-withered-dust-1394"
+app = "fintheon-api"
 primary_region = "ord"
 
 [build]
