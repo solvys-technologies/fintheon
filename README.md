@@ -108,7 +108,7 @@ fintheon/
 
 ### Per-User Resources
 
-- **OpenClaw** — Local `~/.openclaw/` config and memory
+- **Hermes** — Local `~/.hermes/` config and memory
 - **localStorage** — UI preferences, widget order, collapsed states
 - **Journal entries** — Stored per `userId` (falls back to `local-user` without auth)
 
