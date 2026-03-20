@@ -35,7 +35,7 @@ function AgentSummaryBlock({ entries }: { entries: JournalEntryItem[] }) {
   const todayEntry = entries.find(e => e.date === today && e.type === 'agent');
 
   // Build a structured agent summary from today's data
-  const agentSummary = todayEntry?.notes || todayEntry?.rationale;
+  const agentSummary = todayEntry?.notes;
   const todayHuman = entries.find(e => e.date === today && e.type === 'human');
   const tradeCount = todayEntry?.proposalCount ?? 0;
   const pnl = todayEntry?.totalPnl ?? todayHuman?.totalPnl ?? 0;

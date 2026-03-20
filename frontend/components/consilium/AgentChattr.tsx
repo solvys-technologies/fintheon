@@ -19,6 +19,7 @@ const PERSONA_META: Record<BoardroomAgent, { label: string }> = {
   Feucht: { label: 'Futures & Risk' },
   Consul: { label: 'Fundamentals' },
   Herald: { label: 'News & Sentiment' },
+  Unknown: { label: 'Unknown' },
 };
 
 function BoardroomPersonaPill({ agent, isActive, onClick }: { agent: BoardroomAgent; isActive: boolean; onClick: () => void }) {
@@ -36,7 +37,7 @@ function BoardroomPersonaPill({ agent, isActive, onClick }: { agent: BoardroomAg
     >
       <span
         className="w-[6px] h-[6px] rounded-full shrink-0"
-        style={{ backgroundColor: agentInfo?.color || '#52525b' }}
+        style={{ backgroundColor: agentInfo?.accentClass === 'gold' ? '#c79f4a' : agentInfo?.accentClass === 'blue' ? '#60a5fa' : agentInfo?.accentClass === 'red' ? '#ef4444' : agentInfo?.accentClass === 'emerald' ? '#10b981' : agentInfo?.accentClass === 'purple' ? '#a78bfa' : '#52525b' }}
       />
       <span className="flex flex-col items-start leading-none">
         <span className={`text-[10px] font-bold tracking-wide ${isActive ? 'text-[#c79f4a]' : 'text-zinc-300'}`}>

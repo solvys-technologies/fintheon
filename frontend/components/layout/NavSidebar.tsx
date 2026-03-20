@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Target, Cpu, Bell, BellOff } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Target, Cpu, Bell, BellOff } from 'lucide-react';
 import { useDND } from '../../contexts/DNDContext';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
@@ -17,7 +17,7 @@ interface NavSidebarProps {
 
 const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
   executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
-  analysis: { id: 'analysis', icon: Sparkles, label: 'Consilium', description: 'AI-powered trade counsel' },
+  analysis: { id: 'analysis', icon: Landmark, label: 'Consilium', description: 'AI-powered trade counsel' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
   notion: { id: 'notion', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
