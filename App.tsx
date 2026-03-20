@@ -110,9 +110,9 @@ export default function App() {
         <AuthShell>
           <SignIn
             appearance={fintheonAppearance}
-            routing="path"
-            path="/sign-in"
-            signUpUrl="/sign-up"
+            routing={IS_ELECTRON ? 'hash' : 'path'}
+            path={IS_ELECTRON ? undefined : '/sign-in'}
+            signUpUrl={IS_ELECTRON ? undefined : '/sign-up'}
           />
         </AuthShell>
       </SignedOut>
