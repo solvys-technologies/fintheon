@@ -188,7 +188,7 @@ export function TopHeader({
 
   return (
     <div
-      id="pulse-heading-toolbar"
+      id="fintheon-heading-toolbar"
       data-tour-target="toolbar"
       className={`relative bg-[var(--fintheon-surface)] flex items-center justify-between pl-6 pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[52px]' : 'h-[56px]'}`}
     >
@@ -237,7 +237,7 @@ export function TopHeader({
           >
             <span className="text-[13px] text-gray-300">{getTierDisplayName()}</span>
           </button>
-          {traderName && <TraderNametag name={traderName} disablePulse={!(alertConfig.nametagPulse ?? true)} />}
+          {traderName && <TraderNametag name={traderName} disablePulse={!(alertConfig.nametagEmoPulse ?? true)} />}
         </div>
       </div>
       

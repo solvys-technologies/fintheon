@@ -139,7 +139,7 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
 
     return enriched;
   } catch (error) {
-    log.error(' Analysis enrichment failed for item:', item.id, error);
+    log.error('Analysis enrichment failed', { itemId: item.id, error: String(error) });
     // Fallback: ensure every item gets bullish/bearish (never null/neutral from failed enrichment)
     if (!item.sentiment || item.sentiment === 'neutral') {
       const fallbackSentiment = inferSentimentFromKeywords(item.headline);
@@ -244,7 +244,7 @@ async function fetchFreshFeed(): Promise<FeedItem[]> {
     log.info(` fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${twitterCliItems.length} twcli)`);
     return merged;
   } catch (error) {
-    log.error(' Fetch error:', error);
+    log.error('Fetch error', { error: String(error) });
     return [];
   }
 }
@@ -419,7 +419,7 @@ async function getCachedFeed(): Promise<FeedItem[]> {
  */
 export async function getFeed(userId: string, filters?: FeedFilters): Promise<FeedResponse> {
   try {
-    log.info(` getFeed called for user ${userId} with filters:`, JSON.stringify(filters));
+    log.info('getFeed called', { userId, filters });
     
     const allItems = await getCachedFeed();
     log.info(` getFeed: ${allItems.length} total items from cache`);
@@ -430,7 +430,7 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
     }
     
     const watchlist = getWatchlist(userId);
-    log.info(` Watchlist for user ${userId}:`, JSON.stringify(watchlist));
+    log.info('Watchlist loaded', { userId, watchlist: JSON.stringify(watchlist) });
 
     // Apply watchlist filtering
     let items = allItems.filter(item => matchesWatchlist(watchlist, item));
@@ -438,8 +438,8 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
     
     if (items.length === 0 && allItems.length > 0) {
       log.warn(` Watchlist filtered out all ${allItems.length} items!`);
-      log.warn(` Watchlist config:`, watchlist);
-      log.warn(` Sample item:`, JSON.stringify(allItems[0], null, 2));
+      log.warn('Watchlist config', { watchlist: JSON.stringify(watchlist) });
+      log.warn('Sample item', { item: JSON.stringify(allItems[0]) });
     }
 
   // Default to macroLevel 2+ (medium importance and above)
@@ -508,8 +508,7 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
     log.info(` getFeed returning: ${response.items.length} items (total: ${response.total}, hasMore: ${response.hasMore})`);
     return response;
   } catch (error) {
-    log.error(` getFeed error for user ${userId}:`, error);
-    log.error(` Error stack:`, error instanceof Error ? error.stack : 'No stack');
+    log.error('getFeed error', { userId, error: String(error), stack: error instanceof Error ? error.stack : undefined });
     // Return empty response instead of throwing
     return {
       items: [],

@@ -28,7 +28,7 @@ export async function takeScreenshot(options?: ScreenshotOptions): Promise<Scree
   const url = options?.url ?? process.env.FINTHEON_APP_URL ?? 'http://localhost:5173'
   const width = options?.width ?? 1920
   const height = options?.height ?? 1080
-  const outPath = join(tmpdir(), `pulse-screenshot-${randomUUID()}.png`)
+  const outPath = join(tmpdir(), `fintheon-screenshot-${randomUUID()}.png`)
 
   const selectorLine = options?.selector
     ? `await page.locator(${JSON.stringify(options.selector)}).screenshot({ path: outPath });`

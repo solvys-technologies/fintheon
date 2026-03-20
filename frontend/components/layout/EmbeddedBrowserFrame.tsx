@@ -16,7 +16,7 @@ export function EmbeddedBrowserFrame({ title, src, className = 'w-full h-full bg
         src={src}
         className={className}
         allowpopups
-        partition="persist:pulse"
+        partition="persist:fintheon"
         webpreferences="nativeWindowOpen=yes"
       />
     );

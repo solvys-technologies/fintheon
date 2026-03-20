@@ -45,7 +45,7 @@ const SKILL_INSTRUCTIONS: Record<string, string> = {
   TRACK: `\n\n[Skill: Track]\nBuild a new narrative thread. Identify key thesis, relevant instruments, catalysts, and timeline. Format as a structured narrative entry.`,
   PSYCH: `\n\n[Skill: Psych Assist]\nRun psychological/performance analysis. Evaluate trading behavior patterns, emotional state, decision quality. Provide actionable coaching — empathetic but direct.`,
   MAINTENANCE: `\n\n[Skill: Maintenance]\nPerform app maintenance. Review recent changes, update changelog, report status as structured messages.`,
-  QUICKPULSE: `\n\n[Skill: QuickFintheon]\nAnalyze the provided chart/screenshot. Provide: Bias, Confidence %, Rationale, Entry 1, Entry 2, Stop Loss, Target. Be concise like a SnapTrader.`,
+  QUICKFINTHEON: `\n\n[Skill: QuickFintheon]\nAnalyze the provided chart/screenshot. Provide: Bias, Confidence %, Rationale, Entry 1, Entry 2, Stop Loss, Target. Be concise like a SnapTrader.`,
   NARRATIVE: `\n\n[Skill: Narrative]\nAnalyze current NarrativeFlow board state. Identify active narratives, recent catalysts, suggest new connections or flag stale theses.`,
 }
 

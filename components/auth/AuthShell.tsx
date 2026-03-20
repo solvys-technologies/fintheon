@@ -97,7 +97,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({ children }) => {
               style={{ boxShadow: '0 0 60px rgba(234,179,8,0.35)' }}
             />
             <div className="relative z-10 opacity-95 drop-shadow-[0_0_18px_rgba(234,179,8,0.55)]">
-              <img src="/logo.png" alt="Pulse logo" className="h-32 w-32 object-contain" />
+              <img src="/logo.png" alt="Fintheon logo" className="h-32 w-32 object-contain" />
             </div>
           </div>
 

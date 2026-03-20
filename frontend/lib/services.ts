@@ -400,7 +400,7 @@ export class AIService {
   }
 
   /**
-   * Quick Pulse: Analyze a chart screenshot
+   * Quick Fintheon: Analyze a chart screenshot
    */
   async quickFintheon(image: string, algoState: any): Promise<any> {
     return this.client.post('/api/ai/quick-fintheon', { image, algoState });

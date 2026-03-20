@@ -530,7 +530,7 @@ export function FooterToolbar({
         {/* System status dot */}
         <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-          <span>pulse</span>
+          <span>fintheon</span>
         </div>
       </div>
     </div>

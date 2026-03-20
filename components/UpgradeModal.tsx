@@ -34,7 +34,7 @@ const tierData: Record<Tier, TierInfo> = {
     buttonText: 'Current Plan',
   },
   fintheon: {
-    name: 'Pulse',
+    name: 'Fintheon',
     price: '$49',
     priceSubtext: 'per month',
     features: [
@@ -45,28 +45,28 @@ const tierData: Record<Tier, TierInfo> = {
     ],
     color: 'text-[#D4AF37]',
     borderColor: 'border-[#D4AF37]',
-    buttonText: 'Upgrade to Pulse',
+    buttonText: 'Upgrade to Fintheon',
   },
   fintheon_plus: {
-    name: 'Pulse+',
+    name: 'Fintheon+',
     price: '$149',
     priceSubtext: 'per month',
     features: [
-      'Everything in Pulse',
+      'Everything in Fintheon',
       'Risk management tools',
       'Autonomous Trading Algo',
       'Full RiskFlow for commentary and macroeconomic data releases with implied volatility scoring',
     ],
     color: 'text-[#FBC717]',
     borderColor: 'border-[#FBC717]',
-    buttonText: 'Upgrade to Pulse+',
+    buttonText: 'Upgrade to Fintheon+',
   },
   fintheon_pro: {
-    name: 'Pulse Pro',
+    name: 'Fintheon Pro',
     price: '$299',
     priceSubtext: 'per month',
     features: [
-      'Everything in Pulse+',
+      'Everything in Fintheon+',
       'Priority support',
       'Custom AI Agent & Trading model training',
       'Multi-account management',

@@ -138,7 +138,7 @@ export function NewsSection() {
       const permission = await Notification.requestPermission();
       setNotificationsEnabled(permission === 'granted');
       if (permission === 'granted') {
-        new Notification('PULSE RiskFlow Alerts', {
+        new Notification('Fintheon RiskFlow Alerts', {
           body: 'You will now receive notifications for breaking RiskFlow events',
           icon: '/favicon.ico',
         });

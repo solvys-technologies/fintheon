@@ -283,9 +283,9 @@ export function SettingsPage() {
                       onChange={(val) => setAlertConfig({ ...alertConfig, soundEnabled: val })}
                     />
                     <Toggle
-                      label="Nametag Emotional Pulse"
-                      enabled={alertConfig.nametagPulse ?? true}
-                      onChange={(val) => setAlertConfig({ ...alertConfig, nametagPulse: val })}
+                      label="Nametag Emotional Indicator"
+                      enabled={alertConfig.nametagEmoPulse ?? true}
+                      onChange={(val) => setAlertConfig({ ...alertConfig, nametagEmoPulse: val })}
                     />
                   </div>
                 </section>

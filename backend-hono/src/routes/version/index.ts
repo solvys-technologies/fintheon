@@ -1,7 +1,7 @@
 // [claude-code 2026-03-06] Version check endpoint — compares local version against latest GitHub tag
 import { Hono } from 'hono'
 
-const REPO = 'solvys-technologies/pulse'
+const REPO = 'solvys-technologies/fintheon'
 const GITHUB_API = `https://api.github.com/repos/${REPO}/tags`
 
 // Cache to avoid hammering GitHub API (5 min TTL)

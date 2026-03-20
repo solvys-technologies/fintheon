@@ -15,7 +15,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   track: { enabled: true },
   psych_assist: { enabled: true },
   maintenance: { enabled: true },
-  quick_pulse: { enabled: true },
+  quick_fintheon: { enabled: true },
   mirofish: { enabled: true },
 }
 
@@ -67,7 +67,7 @@ export function extractSkillFromMessage(message: string): string | null {
     track: 'track',
     psych: 'psych_assist',
     maintenance: 'maintenance',
-    quickpulse: 'quick_pulse',
+    quickfintheon: 'quick_fintheon',
     narrative: 'narrative',
     mirofish: 'mirofish',
   }

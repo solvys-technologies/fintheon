@@ -71,7 +71,7 @@ export async function executeOrder(
         ? { limit: { tif: 'Gtc' } }   // limit order if entry price specified
         : { limit: { tif: 'Ioc' } },   // market-like IOC otherwise
       reduce_only: false,
-      cloid: `PULSE-${Date.now()}`,
+      cloid: `FINTHEON-${Date.now()}`,
     });
 
     if (result.status !== 'ok') {

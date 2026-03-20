@@ -13,12 +13,12 @@ import type { IVAggregateResponse } from '../../lib/services';
 
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
 
-function PulseLogo() {
+function FintheonLogo() {
   return (
     <div className="relative w-10 h-10 flex items-center justify-center">
       <img 
         src="/fintheon-logo.png" 
-        alt="Pulse Logo" 
+        alt="Fintheon Logo" 
         className="w-10 h-10 object-contain"
       />
     </div>
@@ -110,9 +110,9 @@ export function TopHeader({
   const getTierDisplayName = () => {
     switch (tier) {
       case 'free': return 'Free';
-      case 'fintheon': return 'Pulse';
-      case 'fintheon_plus': return 'Pulse+';
-      case 'fintheon_pro': return 'Pulse Pro';
+      case 'fintheon': return 'Fintheon';
+      case 'fintheon_plus': return 'Fintheon+';
+      case 'fintheon_pro': return 'Fintheon Pro';
       default: return 'Free';
     }
   };
@@ -123,7 +123,7 @@ export function TopHeader({
         <div className="flex items-center gap-3">
           {/* Logo centered at 32px to align with sidebar icons (w-16 = 64px, center = 32px) */}
           <div className="w-16 flex items-center justify-center">
-            <PulseLogo />
+            <FintheonLogo />
           </div>
           <button
             onClick={() => setShowUpgrade(true)}

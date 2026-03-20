@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-20T22:00:00',
+    agent: 'claude-code',
+    summary: 'Notion→Supabase migration: Created 5 new Supabase tables (trade_ideas, daily_pnl, briefs, economic_events, econ_prints). Expanded supabase-service.ts with full CRUD for all tables. Created /api/data/* routes replacing /api/notion/*. Migrated econ-calendar-service.ts from Notion to Supabase. Updated context-bank, riskflow handlers, and twitter poller to use Supabase. Deleted notion-service.ts (610 lines), notion-poller.ts, and routes/notion/. Added 301 redirects from /api/notion/* → /api/data/*. Updated frontend services.ts endpoints.',
+    files: [
+      'backend-hono/src/services/supabase-service.ts',
+      'backend-hono/src/services/econ-calendar-service.ts',
+      'backend-hono/src/routes/data/index.ts',
+      'backend-hono/src/routes/index.ts',
+      'backend-hono/src/services/context-bank/context-bank-service.ts',
+      'backend-hono/src/routes/riskflow/handlers.ts',
+      'backend-hono/src/services/twitter-cli/econ-triggered-poller.ts',
+      'frontend/lib/services.ts',
+      'frontend/components/onboarding/SetupWizard.tsx',
+      'frontend/contexts/ScheduleContext.tsx',
+    ],
+  },
+  {
     date: '2026-03-20T20:00:00',
     agent: 'claude-code',
     summary: 'Re-implement Clerk auth after Sprint 1 bypass. Backend: auth middleware now verifies Clerk JWT (Bearer token) with BYPASS_AUTH=true fallback for dev/Electron. Frontend: App.tsx restored proper BYPASS_AUTH logic (IS_ELECTRON || VITE_BYPASS_AUTH), ClerkProvider wraps app with SignedIn/SignedOut boundaries, switched to fintheonAppearance. AuthShell: removed Sprint 1 bypass button. User sync already handled by AuthContext (account.get/create on Clerk sign-in).',

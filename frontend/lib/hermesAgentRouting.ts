@@ -1,15 +1,15 @@
 // [claude-code 2026-03-13] Hermes migration: renamed from openclawAgentRouting.ts
-export type PulseAgentId = string;
+export type FintheonAgentId = string;
 
 /**
  * Map Fintheon UI agents to Hermes agent roles.
  * We keep this intentionally string-based to avoid importing backend types.
  */
-export function toHermesAgentOverride(pulseAgentId: PulseAgentId | undefined | null): string | undefined {
-  if (!pulseAgentId) return undefined;
+export function toHermesAgentOverride(fintheonAgentId: FintheonAgentId | undefined | null): string | undefined {
+  if (!fintheonAgentId) return undefined;
 
   // [claude-code 2026-03-16] Agent roster v7.9: 5-agent mapping
-  switch (pulseAgentId) {
+  switch (fintheonAgentId) {
     case 'harper-hermes':
       return 'harper-cao';
     case 'oracle':
@@ -28,10 +28,10 @@ export function toHermesAgentOverride(pulseAgentId: PulseAgentId | undefined | n
 // [claude-code 2026-03-09] Added surfaceId for per-surface session isolation (no context bleed)
 // [claude-code 2026-03-16] Hermes migration: localStorage keys migrated from pulse_openclaw_* to fintheon:hermes-*
 export function hermesConversationStorageKey(
-  pulseAgentId: PulseAgentId | undefined | null,
+  fintheonAgentId: FintheonAgentId | undefined | null,
   surfaceId?: string,
 ): string {
-  const agent = pulseAgentId ?? 'default';
+  const agent = fintheonAgentId ?? 'default';
 
   // Backward compat: migrate old openclaw → pulse_hermes → fintheon:hermes keys
   const oldKey1 = surfaceId
