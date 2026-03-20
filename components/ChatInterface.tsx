@@ -109,16 +109,31 @@ export default function ChatInterface() {
   // Local input state for textarea
   const [input, setInput] = useState("");
 
-  // Model selector state - default to Grok 4.1 for fast reasoning
-  const [selectedModel, setSelectedModel] = useState<string>('grok-4.1');
+  // Model selector state - default to Claude Sonnet for balanced performance
+  const [selectedModel, setSelectedModel] = useState<string>('claude-sonnet-4.5');
   const [showModelSelector, setShowModelSelector] = useState(false);
+
+  // "Think Harder" toggle - switches to Claude Opus for complex reasoning
+  const [thinkHarder, setThinkHarder] = useState(false);
+  useEffect(() => {
+    if (thinkHarder) {
+      setSelectedModel('claude-opus-4');
+    } else {
+      setSelectedModel('claude-sonnet-4.5');
+    }
+  }, [thinkHarder]);
+
+  // Cognition stream state for real-time thinking steps
+  const [cognitionSteps, setCognitionSteps] = useState<Array<{ kind: string; label: string; detail?: string; durationMs?: number }>>([]);
+  const [showCognitionPanel, setShowCognitionPanel] = useState(false);
+  const [requestId, setRequestId] = useState<string | undefined>();
 
   // Admin detection (hidden tier - not visible to regular users)
   const isAdmin = user?.publicMetadata?.role === 'admin';
 
   // Custom fetch function for useChat with auth
-  const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const token = await getToken({ template: 'neon' });
+  const fetchWithAuth=*** (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const token=*** getToken({ template: 'neon' });
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
     // If URL is relative, prepend API_BASE_URL
@@ -133,13 +148,19 @@ export default function ChatInterface() {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    // Add conversationId to body if available
+    // Add conversationId, model, and thinkHarder to body if available
     let body = init?.body;
-    if (body && conversationId) {
+    if (body) {
       try {
         const bodyObj = typeof body === 'string' ? JSON.parse(body) : body;
         if (typeof bodyObj === 'object' && bodyObj !== null) {
-          bodyObj.conversationId = conversationId;
+          if (conversationId) {
+            bodyObj.conversationId = conversationId;
+          }
+          // Add model selection
+          bodyObj.model = selectedModel;
+          // Add thinkHarder flag for deep reasoning
+          bodyObj.thinkHarder = thinkHarder;
           body = JSON.stringify(bodyObj);
         }
       } catch (e) {
@@ -176,9 +197,14 @@ export default function ChatInterface() {
       api: `${API_BASE_URL}/api/ai/chat`,
       fetch: fetchWithAuth,
     }),
-    onFinish: (message) => {
+    onFinish: (message, { response }) => {
       setIsStreaming(false);
       console.log('Message finished:', message);
+      // Extract requestId from response headers for cognition stream
+      const requestId = response?.headers?.get?.('X-Request-Id');
+      if (requestId) {
+        setRequestId(requestId);
+      }
     },
     onError: (error) => {
       setIsStreaming(false);
@@ -234,22 +260,54 @@ export default function ChatInterface() {
     healingBowlPlayer.setSound(alertConfig.healingBowlSound);
   }, [alertConfig.healingBowlSound]);
 
-  // Animate thinking text - 2-3 seconds between words for faster feedback
+  // Subscribe to cognition SSE stream for real-time thinking steps
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading || !requestId) {
+      setCognitionSteps([]);
+      setShowCognitionPanel(false);
+      return;
+    }
+
+    // Open SSE connection to cognition stream
+    const eventSource = new EventSource(`${API_BASE_URL}/api/ai/cognition/stream?requestId=${requestId}`);
+
+    // Handle 'step' events from backend
+    eventSource.addEventListener('step', (event) => {
+      try {
+        const step = JSON.parse(event.data);
+        setCognitionSteps(prev => [...prev, step]);
+        setShowCognitionPanel(true); // Auto-expand panel when steps arrive
+      } catch (e) {
+        console.error('Failed to parse cognition step:', e);
+      }
+    });
+
+    // Handle 'done' event when streaming completes
+    eventSource.addEventListener('done', () => {
+      eventSource.close();
+    });
+
+    // Handle connection errors
+    eventSource.onerror = (err) => {
+      console.error('Cognition SSE error:', err);
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [isLoading, requestId]);
+
+  // Update thinking text based on latest cognition step
+  useEffect(() => {
+    if (!isLoading || cognitionSteps.length === 0) {
       setThinkingText("");
       return;
     }
 
-    let currentIndex = 0;
-    setThinkingText(THINKING_TERMS[0]);
-    const interval = setInterval(() => {
-      currentIndex = (currentIndex + 1) % THINKING_TERMS.length;
-      setThinkingText(THINKING_TERMS[currentIndex]);
-    }, 2500); // 2.5 seconds between words
-
-    return () => clearInterval(interval);
-  }, [isLoading]);
+    const latestStep = cognitionSteps[cognitionSteps.length - 1];
+    setThinkingText(latestStep.label || 'Processing...');
+  }, [isLoading, cognitionSteps]);
 
   // Hide suggestions once user sends a message
   useEffect(() => {
@@ -403,7 +461,8 @@ export default function ChatInterface() {
 
     // Hide suggestions when user sends a message
     setShowSuggestions(false);
-    setThinkingText(THINKING_TERMS[0]);
+    setCognitionSteps([]); // Reset cognition steps for new message
+    setShowCognitionPanel(false);
     setIsStreaming(true);
 
     // Send message using useChat's sendMessage
@@ -716,14 +775,47 @@ export default function ChatInterface() {
             </div>
           ))}
           {isLoading && (
-            <div className="flex justify-start items-center gap-3">
-              {/* Radar pulsating graphic */}
-              <div className="relative w-6 h-6">
-                <div className="absolute inset-0 rounded-full border-2 border-[#D4AF37]/40 animate-ping"></div>
-                <div className="absolute inset-1 rounded-full border-2 border-[#D4AF37]/60 animate-pulse"></div>
-                <div className="absolute inset-2 rounded-full bg-[#D4AF37]/20"></div>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-start items-center gap-3">
+                {/* Radar pulsating graphic */}
+                <div className="relative w-6 h-6">
+                  <div className="absolute inset-0 rounded-full border-2 border-[#D4AF37]/40 animate-ping"></div>
+                  <div className="absolute inset-1 rounded-full border-2 border-[#D4AF37]/60 animate-pulse"></div>
+                  <div className="absolute inset-2 rounded-full bg-[#D4AF37]/20"></div>
+                </div>
+                <span className="text-sm text-[#D4AF37] font-medium">{thinkingText}</span>
               </div>
-              <span className="text-sm text-[#D4AF37] font-medium">{thinkingText}</span>
+
+              {/* Cognition Steps Panel - Expandable */}
+              {cognitionSteps.length > 0 && showCognitionPanel && (
+                <div className="ml-9 mt-2 bg-zinc-900/50 border border-zinc-800 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setShowCognitionPanel(!showCognitionPanel)}
+                    className="w-full flex items-center justify-between px-3 py-2 bg-zinc-800/50 hover:bg-zinc-800 transition-colors"
+                  >
+                    <span className="text-xs font-medium text-zinc-400">Agent Thinking Steps</span>
+                    <ChevronDown className={`w-3 h-3 text-zinc-500 transition-transform ${showCognitionPanel ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showCognitionPanel && (
+                    <div className="max-h-48 overflow-y-auto p-2 space-y-1">
+                      {cognitionSteps.map((step, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-xs">
+                          <span className="text-[#D4AF37]/60 mt-0.5">→</span>
+                          <div className="flex-1">
+                            <span className="text-zinc-300">{step.label}</span>
+                            {step.detail && (
+                              <span className="text-zinc-500 ml-2">— {step.detail}</span>
+                            )}
+                          </div>
+                          {step.durationMs && (
+                            <span className="text-zinc-600 text-[10px] font-mono">{step.durationMs}ms</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -732,17 +824,17 @@ export default function ChatInterface() {
 
       {/* Input */}
       <div className="sticky bottom-0 pt-6 pb-4 px-4 bg-[#050500]/80 backdrop-blur-md">
-        {/* Model Selector - Vercel AI SDK style */}
-        <div className="w-full max-w-3xl mx-auto mb-3 flex items-center justify-start">
+        {/* Model Selector and Think Harder Toggle */}
+        <div className="w-full max-w-3xl mx-auto mb-3 flex items-center justify-between">
           <div className="relative">
             <button
               onClick={() => setShowModelSelector(!showModelSelector)}
               className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/80 border border-zinc-700 hover:border-zinc-600 rounded-lg text-xs text-zinc-400 hover:text-zinc-300 transition-all"
               type="button"
             >
-              <span className="font-medium">{AI_MODELS.find(m => m.id === selectedModel)?.name || 'Claude Opus 4'}</span>
+              <span className="font-medium">{AI_MODELS.find(m => m.id === selectedModel)?.name || 'Claude Sonnet'}</span>
               <span className="text-zinc-500">•</span>
-              <span className="text-zinc-500">{AI_MODELS.find(m => m.id === selectedModel)?.level || 'Complex Reasoning'}</span>
+              <span className="text-zinc-500">{AI_MODELS.find(m => m.id === selectedModel)?.level || 'Moderate Reasoning'}</span>
               <ChevronDown className="w-3 h-3 ml-1" />
             </button>
 
@@ -776,6 +868,23 @@ export default function ChatInterface() {
               </div>
             )}
           </div>
+
+          {/* Think Harder Toggle */}
+          <button
+            onClick={() => setThinkHarder(!thinkHarder)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${thinkHarder
+                ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+                : 'bg-zinc-900/80 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+              }`}
+            type="button"
+            title="Enable deep reasoning with Claude Opus"
+          >
+            <span className={thinkHarder ? 'animate-pulse' : ''}>🧠</span>
+            <span>Think Harder</span>
+            {thinkHarder && (
+              <span className="text-xs px-1.5 py-0.5 bg-purple-500/30 rounded-full">Opus</span>
+            )}
+          </button>
         </div>
 
         <div className="w-full max-w-3xl mx-auto flex gap-2 items-end">

@@ -192,11 +192,11 @@ export async function handleChat(c: Context) {
       cognition.step('skill-check', `Skill active: ${detectedSkill}`)
     }
 
-    // Auto-screenshot for QUICKPULSE when no image parts present
-    if (detectedSkill === 'QUICKPULSE' && !multimodalContent?.some(p => p.type === 'image_url')) {
+    // Auto-screenshot for QUICKFINTHEON when no image parts present
+    if (detectedSkill === 'QUICKFINTHEON' && !multimodalContent?.some(p => p.type === 'image_url')) {
       try {
         if (await isPlaywrightReady()) {
-          cognition.step('tool-dispatch', 'Playwright screenshot', 'Auto-capturing dashboard for QuickPulse')
+          cognition.step('tool-dispatch', 'Playwright screenshot', 'Auto-capturing dashboard for QuickFintheon')
           const shot = await takeScreenshot()
           const imgPart: ContentPart = { type: 'image_url', image_url: { url: `data:image/png;base64,${shot.base64}` } }
           if (multimodalContent) {
@@ -207,10 +207,10 @@ export async function handleChat(c: Context) {
               imgPart,
             ]
           }
-          console.log(`[Hermes][${requestId}] QuickPulse auto-screenshot captured`)
+          console.log(`[Hermes][${requestId}] QuickFintheon auto-screenshot captured`)
         }
       } catch (err) {
-        console.warn(`[Hermes][${requestId}] QuickPulse auto-screenshot failed, proceeding without:`, err)
+        console.warn(`[Hermes][${requestId}] QuickFintheon auto-screenshot failed, proceeding without:`, err)
       }
     }
 
@@ -381,15 +381,17 @@ export async function handleChat(c: Context) {
           })
 
           c.header('X-Conversation-Id', conversation.id)
+          c.header('X-Request-Id', requestId)
           c.header('X-Hermes-Agent', 'claude-opus-deep')
           return createUIMessageStreamResponse({
             stream,
             headers: {
               'X-Conversation-Id': conversation.id,
+              'X-Request-Id': requestId,
               'X-Hermes-Agent': 'claude-opus-deep',
               'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
               'Access-Control-Allow-Credentials': 'true',
-              'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Hermes-Agent, X-Research-Sources',
+              'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Request-Id, X-Hermes-Agent, X-Research-Sources',
             },
           })
         }
@@ -432,6 +434,7 @@ export async function handleChat(c: Context) {
 
       // Set conversation ID header
       c.header('X-Conversation-Id', conversation.id)
+      c.header('X-Request-Id', requestId)
       c.header('X-Hermes-Agent', hermesResponse.agent)
 
       // Stream using AI SDK UI message event stream (SSE with JSON payloads).
@@ -495,10 +498,11 @@ export async function handleChat(c: Context) {
         stream,
         headers: {
           'X-Conversation-Id': conversation.id,
+          'X-Request-Id': requestId,
           'X-Hermes-Agent': hermesResponse.agent,
           'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
           'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Hermes-Agent, X-Research-Sources',
+          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Request-Id, X-Hermes-Agent, X-Research-Sources',
         }
       })
     }
@@ -569,16 +573,18 @@ export async function handleChat(c: Context) {
       })
 
       c.header('X-Conversation-Id', conversation.id)
+      c.header('X-Request-Id', requestId)
       c.header('X-Hermes-Agent', 'claude-opus-local')
 
       return createUIMessageStreamResponse({
         stream,
         headers: {
           'X-Conversation-Id': conversation.id,
+          'X-Request-Id': requestId,
           'X-Hermes-Agent': 'claude-opus-local',
           'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
           'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Hermes-Agent, X-Research-Sources',
+          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Request-Id, X-Hermes-Agent, X-Research-Sources',
         },
       })
     }
