@@ -1,6 +1,6 @@
 # Autopilot Strategy Index
 
-This document catalogs all trading strategies implemented in the Fintheon Autopilot system.
+This document catalogs all trading strategies implemented in the Pulse Autopilot system.
 
 ## Overview
 

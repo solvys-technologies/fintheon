@@ -10,10 +10,10 @@ import { fetchEconomicFeed } from '../../services/riskflow/economic-feed.js';
 import { selectModel } from '../../services/ai/model-selector.js';
 
 const BRIEF_LABELS: Record<string, string> = {
-  MDB: 'Dawn Dispatch',
-  ADB: 'Midday Dispatch',
-  PMDB: 'Dusk Dispatch',
-  TOTT: 'The Weekly Tribune',
+  MDB: 'Morning Daily Brief (MDB)',
+  ADB: 'Afternoon Daily Brief (ADB)',
+  PMDB: 'Post-Market Daily Brief (PMDB)',
+  TOTT: 'Tip of the Tape (TOTT)',
 };
 import { createEconCalendarRoutes } from './econ-calendar.js';
 
@@ -128,7 +128,7 @@ export function createNotionRoutes(): Hono {
       const isFull = briefType === 'MDB' || briefType === 'TOTT';
 
       const prompt = isFull
-        ? `You are Fintheon, the macro trading command center for Priced In Capital. Generate a comprehensive ${BRIEF_LABELS[briefType]}.
+        ? `You are Fintheon, a macro trading assistant for Priced In Capital. Generate a comprehensive ${BRIEF_LABELS[briefType]}.
 
 ## Today's Economic Events
 ${econSummary}
@@ -138,7 +138,7 @@ ${feedSummary}
 
 ## Instructions
 ${briefType === 'MDB'
-  ? `Write a full Dawn Dispatch in this exact format:
+  ? `Write a full Morning Daily Brief in this exact format:
 
 **Day Type:** [Macro/Catalyst/Drift/Compounding] — one-line reason
 **Key Prints & Speeches (ET):** List each with time, actual vs expected, directional read (bullish/bearish)
@@ -150,7 +150,7 @@ ${briefType === 'MDB'
 **Best Intraday Approach:** Specific strategy recommendation (Ripper, AWV, Snipe, etc.)
 
 Be direct, use financial shorthand. Anchor ONLY to key macro events. No scattergun anchoring. 400-600 words.`
-  : `Write a comprehensive Weekly Tribune (The Weekly Tribune) covering:
+  : `Write a comprehensive Weekly Tribune covering:
 
 **Past Week Recap:**
 - Market Overview (S&P, Nasdaq, equal-weight, sector rotation)

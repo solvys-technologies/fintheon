@@ -19,8 +19,8 @@ export const corsConfig = {
   origin: (origin: string) => {
     const allowlist = [
     'https://app.pricedinresearch.io',
-    'https://fintheon.solvys.io',
-    'https://fintheon-solvys.vercel.app',
+    'https://pulse.solvys.io',
+    'https://pulse-solvys.vercel.app',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:7777',

@@ -2,7 +2,7 @@
 
 ## Objective
 
-Complete backend/frontend/integration work required for OpenClaw to fully operate inside Fintheon with reliable proposal, approval, and execution flows.
+Complete backend/frontend/integration work required for OpenClaw to fully operate inside Pulse with reliable proposal, approval, and execution flows.
 
 ## Sprint 1 — API Reachability and Parity
 

@@ -7,36 +7,16 @@ const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
-// electron-updater lazy-loaded inside setupAutoUpdater() to avoid crash before app.ready
-let autoUpdater = null;
+const { autoUpdater } = require("electron-updater");
 
 let mainWindow = null;
 let backendProcess = null;
 
-// [claude-code 2026-03-16] Resolve backend path for both dev and packaged DMG
-function getBackendDir() {
-  if (app.isPackaged) {
-    // In packaged app, extraResources are at process.resourcesPath
-    return path.join(process.resourcesPath, "backend-hono");
-  }
-  // In dev, backend-hono is a sibling of electron/
-  return path.join(__dirname, "..", "backend-hono");
-}
-
 function startBackend() {
-  const backendDir = getBackendDir();
+  const backendDir = path.join(__dirname, "..", "backend-hono");
   const distEntry = path.join(backendDir, "dist", "index.js");
 
   if (!fs.existsSync(distEntry)) {
-    if (app.isPackaged) {
-      // Packaged app should always have the backend built — fatal error
-      dialog.showErrorBox(
-        "Backend Missing",
-        "The backend was not bundled correctly.\nPlease reinstall the app."
-      );
-      return;
-    }
-    // Dev mode — try to compile
     console.warn("[Electron] Backend dist not found — attempting build...");
     try {
       execFileSync("npm", ["run", "build"], { cwd: backendDir, stdio: "inherit" });
@@ -51,12 +31,12 @@ function startBackend() {
     }
   }
 
+  // [claude-code 2026-03-16] Ensure .env is loaded from backend-hono dir by setting cwd correctly
   const envPath = path.join(backendDir, ".env");
   console.log(`[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`);
-  // Use Electron's own Node runtime in packaged apps (no system `node` on PATH)
-  backendProcess = spawn(process.execPath, [distEntry], {
+  backendProcess = spawn("node", [distEntry], {
     cwd: backendDir,
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", NODE_ENV: "production", DOTENV_CONFIG_PATH: envPath },
+    env: { ...process.env, NODE_ENV: "production", DOTENV_CONFIG_PATH: envPath },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
@@ -87,12 +67,6 @@ function stopBackend() {
 /* ------------------------------------------------------------------ */
 
 function setupAutoUpdater() {
-  try {
-    autoUpdater = require("electron-updater").autoUpdater;
-  } catch (err) {
-    console.warn("[Updater] electron-updater not available:", err.message);
-    return;
-  }
   // Don't auto-download — let the user decide via the modal
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -167,32 +141,11 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "discordapp.com") return true;
     if (host.endsWith(".discordapp.com")) return true;
 
-    // Clerk authentication (Google OAuth + Clerk hosted UI)
-    if (host.endsWith(".clerk.accounts.dev")) return true;
-    if (host.endsWith(".pricedinresearch.io")) return true;
-    if (host === "clerk.app.pricedinresearch.io") return true;
-
     return false;
   } catch {
     return false;
   }
 };
-
-// [claude-code 2026-03-16] Load from localhost:8080 for Clerk auth (needs HTTP origin, not file://)
-const BACKEND_URL = "http://localhost:8080";
-
-async function waitForBackend(url, maxRetries = 30, delayMs = 1000) {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const res = await fetch(`${url}/health`);
-      if (res.ok || res.status === 207 || res.status === 503) return true;
-    } catch {
-      // Backend not ready yet
-    }
-    await new Promise((r) => setTimeout(r, delayMs));
-  }
-  return false;
-}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -208,41 +161,8 @@ function createWindow() {
     },
   });
 
-  // Dev: load Vite dev server. Production: load built dist/index.html
-  if (!app.isPackaged) {
-    const VITE_DEV_URL = "http://localhost:5173";
-    console.log("[Electron] Dev mode — loading Vite dev server at", VITE_DEV_URL);
-    win.loadURL(VITE_DEV_URL);
-  } else {
-    // Production: load from backend HTTP server (not file://) so Clerk OAuth works
-    waitForBackend(BACKEND_URL).then(() => {
-      win.loadURL(BACKEND_URL);
-    });
-  }
-
-  // Handle OAuth popups from the main window (Clerk Google sign-in)
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (shouldAllowInAppPopup(url)) {
-      return {
-        action: "allow",
-        overrideBrowserWindowOptions: {
-          width: 520,
-          height: 760,
-          parent: win,
-          modal: false,
-          title: "Sign in with Google",
-          webPreferences: {
-            contextIsolation: true,
-            nodeIntegration: false,
-          },
-        },
-      };
-    }
-    // Non-auth links open in system browser
-    shell.openExternal(url).catch(() => {});
-    return { action: "deny" };
-  });
-
+  const rendererPath = path.join(__dirname, "..", "frontend", "dist", "index.html");
+  win.loadFile(rendererPath);
   mainWindow = win;
 }
 
@@ -292,7 +212,7 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   stopBackend();
-  app.quit();
+  if (process.platform !== "darwin") app.quit();
 });
 
 app.on("before-quit", () => {
@@ -306,7 +226,6 @@ ipcMain.handle("toggle-mini-widget", () => {
 
 // Auto-update IPC handlers
 ipcMain.handle("update-download", () => {
-  if (!autoUpdater) return { ok: false, error: "updater not available" };
   autoUpdater.downloadUpdate().catch((err) => {
     console.error("[Updater] Download failed:", err.message);
   });
@@ -314,14 +233,12 @@ ipcMain.handle("update-download", () => {
 });
 
 ipcMain.handle("update-install", () => {
-  if (!autoUpdater) return { ok: false, error: "updater not available" };
   stopBackend();
   autoUpdater.quitAndInstall(false, true);
   return { ok: true };
 });
 
 ipcMain.handle("update-check", () => {
-  if (!autoUpdater) return { ok: false, error: "updater not available" };
   autoUpdater.checkForUpdates().catch(() => {});
   return { ok: true };
 });

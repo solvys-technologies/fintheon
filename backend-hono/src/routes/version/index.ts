@@ -1,7 +1,7 @@
 // [claude-code 2026-03-06] Version check endpoint — compares local version against latest GitHub tag
 import { Hono } from 'hono'
 
-const REPO = 'solvys-technologies/fintheon'
+const REPO = 'solvys-technologies/pulse'
 const GITHUB_API = `https://api.github.com/repos/${REPO}/tags`
 
 // Cache to avoid hammering GitHub API (5 min TTL)
@@ -57,7 +57,7 @@ export function createVersionRoutes(): Hono {
 
   // GET /api/version/check
   router.get('/check', async (c) => {
-    const localVersion = process.env.FINTHEON_VERSION ?? 'v2.27.9'
+    const localVersion = process.env.PULSE_VERSION ?? 'v2.27.9'
     const latestTag = await getLatestTag()
 
     if (!latestTag) {

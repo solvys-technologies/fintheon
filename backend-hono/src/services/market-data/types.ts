@@ -60,7 +60,7 @@ export interface OptionsFlow {
   timestamp: string;
 }
 
-// Aggregated context for QuickFintheon / Morning Brief
+// Aggregated context for QuickPulse / Morning Brief
 export interface MarketContext {
   vix?: VixData;
   gex?: GammaExposure;

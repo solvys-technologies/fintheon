@@ -270,7 +270,7 @@ interface AntilagSignal {
 | 3 | Debate System | ✅ Required | ✅ Complete |
 | 4 | Trader Agent | ✅ Required | ✅ Complete |
 | 5 | Risk Manager | ✅ Required | ✅ Complete |
-| 5 | QuickFintheon | ✅ Required | ⚠️ Partial |
+| 5 | QuickPulse | ✅ Required | ⚠️ Partial |
 | 6 | Chat + Agent Queries | ✅ Required | ⚠️ Partial |
 | 7 | Full Pipeline | ✅ Required | ✅ Complete |
 

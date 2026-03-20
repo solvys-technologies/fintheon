@@ -80,7 +80,7 @@ export async function executeOrder(
         side: params.direction === 'long' ? 'buy' : 'sell',
         quantity: params.quantity,
         order_type: 'market',
-        tag: `FINTHEON-AUTO-${Date.now()}`,
+        tag: `PULSE-AUTO-${Date.now()}`,
       }),
     });
 

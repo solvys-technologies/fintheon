@@ -1,7 +1,7 @@
 # RiskFlow Fix — Track 1: Backend Level Filter + Warm Cache
 
 ## Context
-You are Track 1 of 3 parallel tracks fixing the Fintheon RiskFlow system.
+You are Track 1 of 3 parallel tracks fixing the Pulse RiskFlow system.
 This track fixes the backend: lower the minimum feed level from 3 (High+) to 2 (Medium+), expand
 the twitter-cli warm cache from 10 Critical/High items to 30 Medium+ items, and ensure the
 feed-service default is also level 2.
@@ -112,7 +112,7 @@ Add to `frontend/lib/changelog.ts` (find the array and prepend):
 ## Verification
 
 ```bash
-cd /Users/tifos/Desktop/Codebases/fintheon/backend-hono
+cd /Users/tifos/Desktop/Codebases/pulse/backend-hono
 npx tsc --noEmit
 ```
 

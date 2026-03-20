@@ -1,20 +1,20 @@
-# Fintheon — Priced In Capital Trading Platform
+# Pulse — Priced In Capital Trading Platform
 
-Fintheon is an Electron desktop app for the PIC trading desk. It combines real-time market data, AI-assisted analysis, risk management, and team coordination into a single interface.
+Pulse is an Electron desktop app for the PIC trading desk. It combines real-time market data, AI-assisted analysis, risk management, and team coordination into a single interface.
 
 ## Quick Start
 
 ### Prerequisites
 
 - **Node.js** 20+ and **Bun** (package manager)
-- **Git** access to `solvys-technologies/fintheon`
+- **Git** access to `solvys-technologies/pulse`
 - macOS (Electron builds target Darwin)
 
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/solvys-technologies/fintheon.git
-cd fintheon
+git clone https://github.com/solvys-technologies/pulse.git
+cd pulse
 bun install
 cd backend-hono && bun install && cd ..
 ```
@@ -77,13 +77,13 @@ npm run desktop:dev
 
 ```bash
 npm run desktop:build
-cp desktop-dist/Fintheon-1.0.0.dmg ~/Desktop/Fintheon-1.0.0.dmg
+cp desktop-dist/Pulse-1.0.0.dmg ~/Desktop/Pulse-1.0.0.dmg
 ```
 
 ## Architecture
 
 ```
-fintheon/
+pulse/
   backend-hono/       # Hono API server (port 8080)
     src/
       routes/         # API endpoints
@@ -130,7 +130,7 @@ fintheon/
 1. Clone repo and install dependencies
 2. Get backend `.env` credentials from team lead (Notion key is shared)
 3. Run `twitter login` to connect your X account
-4. Open Fintheon — the first-time tour will guide you through the interface
+4. Open Pulse — the first-time tour will guide you through the interface
 5. Log into Notion when prompted in the Research Department iframe
 6. Start trading
 
@@ -143,7 +143,7 @@ git pull origin main
 bun install
 cd backend-hono && bun install && cd ..
 npm run desktop:build
-cp desktop-dist/Fintheon-1.0.0.dmg ~/Desktop/Fintheon-1.0.0.dmg
+cp desktop-dist/Pulse-1.0.0.dmg ~/Desktop/Pulse-1.0.0.dmg
 ```
 
-Or use the `/update-fintheon` skill in OpenClaw chat.
+Or use the `/update-pulse` skill in OpenClaw chat.

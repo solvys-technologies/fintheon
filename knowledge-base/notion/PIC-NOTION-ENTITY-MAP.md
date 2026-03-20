@@ -1,8 +1,8 @@
-<!-- [claude-code 2026-02-26] Notion entities used by Fintheon boardroom/notion integration. -->
+<!-- [claude-code 2026-02-26] Notion entities used by Pulse boardroom/notion integration. -->
 
-# PIC Notion — Entity Map (for Fintheon)
+# PIC Notion — Entity Map (for Pulse)
 
-This document records the canonical Notion pages/databases that make up the **Priced In Capital** operating system so Fintheon can embed the right surface(s) and later integrate programmatically (Claude Co-Work is a separate effort).
+This document records the canonical Notion pages/databases that make up the **Priced In Capital** operating system so Pulse can embed the right surface(s) and later integrate programmatically (Claude Co-Work is a separate effort).
 
 ## Primary pages
 
@@ -41,6 +41,6 @@ This database is part of the existing PIC system for surfacing executive-facing 
 
 ## Notes for Boardroom iframe
 
-- Fintheon will use `VITE_NOTION_BOARDROOM_URL` to decide what to embed in the Board Room tab.
+- Pulse will use `VITE_NOTION_BOARDROOM_URL` to decide what to embed in the Board Room tab.
 - Default should be the **PIC Dashboard** URL above, but you can swap it to a dedicated “Boardroom Meeting” page when you finalize that page in Notion.
 

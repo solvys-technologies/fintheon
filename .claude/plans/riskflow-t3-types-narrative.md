@@ -1,7 +1,7 @@
 # RiskFlow Fix — Track 3: Type System + NarrativeFlow + Gateway Popup Fix
 
 ## Context
-You are Track 3 of 3 parallel tracks fixing the Fintheon RiskFlow system.
+You are Track 3 of 3 parallel tracks fixing the Pulse RiskFlow system.
 
 This track handles:
 1. **Type system** — extend `RiskFlowAlert.source` union to include backend source strings
@@ -78,7 +78,7 @@ severity === 'medium' ? 'text-yellow-400' :
 ```
 
 Use whatever CSS pattern the project already uses — don't invent new classes.
-Critical should visually be the most prominent (bold, brighter red, or fintheon).
+Critical should visually be the most prominent (bold, brighter red, or pulse).
 
 ---
 
@@ -200,7 +200,7 @@ Add to `frontend/lib/changelog.ts`:
 ## Verification
 
 ```bash
-cd /Users/tifos/Desktop/Codebases/fintheon
+cd /Users/tifos/Desktop/Codebases/pulse
 npx vite build
 ```
 
