@@ -17,7 +17,7 @@ function PulseLogo() {
   return (
     <div className="relative w-10 h-10 flex items-center justify-center">
       <img 
-        src="/pulse-logo.png" 
+        src="/fintheon-logo.png" 
         alt="Pulse Logo" 
         className="w-10 h-10 object-contain"
       />
