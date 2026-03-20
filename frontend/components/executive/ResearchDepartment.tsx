@@ -8,7 +8,7 @@ import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
 import { toHermesAgentOverride } from '../../lib/hermesAgentRouting';
 import { usePersistentHermesConversation } from '../../hooks/usePersistentHermesConversation';
-import { PulseThinkingIndicator } from '../chat/PulseThinkingIndicator';
+import { FintheonThinkingIndicator } from '../chat/FintheonThinkingIndicator';
 import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
 import { useSettings } from '../../contexts/SettingsContext';
 import { FintheonChatInput } from '../chat/FintheonChatInput';
@@ -151,7 +151,7 @@ export function ResearchDepartment() {
               </div>
             )}
             {isStreaming && (
-              <PulseThinkingIndicator
+              <FintheonThinkingIndicator
                 isThinking
                 thinkingContent={latestThinkingContent}
                 agentName={agent.name}

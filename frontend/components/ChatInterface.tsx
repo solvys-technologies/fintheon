@@ -6,10 +6,10 @@ import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistan
 import { usePulseAgents } from '../contexts/PulseAgentContext';
 import { useHermesRuntime } from './chat/useHermesRuntime';
 import { ChatHeader } from './chat/ChatHeader';
-import { PulseThread, AiLoader } from './chat/PulseThread';
+import { FintheonThread, AiLoader } from './chat/FintheonThread';
 import { FintheonComposer } from './chat/FintheonComposer';
 import { SKILL_PREFIXES } from '../lib/skillPrefixes';
-import QuickPulseModal from './analysis/QuickPulseModal';
+import QuickFintheonModal from './analysis/QuickFintheonModal';
 import { addCheckpoint, deleteCheckpoint, listCheckpoints, type ChatCheckpoint } from '../lib/chatCheckpoints';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
 
@@ -59,7 +59,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
   const { disabledSkills } = useFeatureFlags();
   const [showCheckpoints, setShowCheckpoints] = usePanelState('pulse:panel:checkpoints', false);
   const [checkpointVersion, setCheckpointVersion] = useState(0);
-  const [showQuickPulseModal] = useState(false);
+  const [showQuickFintheonModal] = useState(false);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const checkpointItems = useMemo<ChatCheckpoint[]>(
@@ -122,7 +122,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <div className="flex-1 flex flex-col min-h-0">
-          <PulseThread
+          <FintheonThread
             onSend={handleSend}
             isLoading={isRunning}
             agentName={activeAgent?.name}
@@ -207,7 +207,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
         </div>
       </div>
 
-      <QuickPulseModal isOpen={showQuickPulseModal} onClose={() => {}} onAnalysisComplete={() => {}} />
+      <QuickFintheonModal isOpen={showQuickFintheonModal} onClose={() => {}} onAnalysisComplete={() => {}} />
     </div>
   );
 }

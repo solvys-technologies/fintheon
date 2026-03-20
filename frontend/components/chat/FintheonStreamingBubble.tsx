@@ -1,12 +1,12 @@
 import { useRef, useEffect } from 'react';
 
-interface PulseStreamingBubbleProps {
+interface FintheonStreamingBubbleProps {
   content: string;
   agentName?: string;
   compact?: boolean;
 }
 
-export function PulseStreamingBubble({ content, agentName, compact = false }: PulseStreamingBubbleProps) {
+export function FintheonStreamingBubble({ content, agentName, compact = false }: FintheonStreamingBubbleProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

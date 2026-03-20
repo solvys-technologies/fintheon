@@ -42,7 +42,7 @@ export function MessagePartRenderer({ parts, isStreaming }: MessagePartRendererP
               />
             );
           case 'reasoning':
-            // Reasoning is shown by PulseThinkingIndicator — skip inline rendering
+            // Reasoning is shown by FintheonThinkingIndicator — skip inline rendering
             return null;
           case 'tool-invocation':
             return (

@@ -1,12 +1,12 @@
 // [claude-code 2026-03-11] T2b: Image part in user bubbles, T2c: CoT auto-open/close via useEffect
-// [claude-code 2026-03-10] Enhanced PulseThread — hover actions, scroll-to-bottom, CoT, fade-in
+// [claude-code 2026-03-10] Enhanced FintheonThread — hover actions, scroll-to-bottom, CoT, fade-in
 import { type FC, type RefObject, useState, useRef, useEffect, useCallback } from 'react';
 import { ThreadPrimitive, MessagePrimitive, useMessage } from '@assistant-ui/react';
 import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CalendarCheck, AlertCircle, Copy, RotateCcw, Bookmark, ArrowDown, Check } from 'lucide-react';
 import { ChatGreeting } from './ChatGreeting';
-import { PulseThinkingIndicator } from './PulseThinkingIndicator';
+import { FintheonThinkingIndicator } from './FintheonThinkingIndicator';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { CognitionPanel } from './CognitionPanel';
 
@@ -378,7 +378,7 @@ export const AiLoader: FC = () => (
 /*  Thread                                                              */
 /* ------------------------------------------------------------------ */
 
-interface PulseThreadProps {
+interface FintheonThreadProps {
   onSend: (msg: string) => void;
   isLoading: boolean;
   agentName?: string;
@@ -389,7 +389,7 @@ interface PulseThreadProps {
   compact?: boolean;
 }
 
-export function PulseThread({ onSend, isLoading, agentName, onCheckpoint, lastError, lastRequestId, compact }: PulseThreadProps) {
+export function FintheonThread({ onSend, isLoading, agentName, onCheckpoint, lastError, lastRequestId, compact }: FintheonThreadProps) {
   const { activeAgent } = usePulseAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -419,7 +419,7 @@ export function PulseThread({ onSend, isLoading, agentName, onCheckpoint, lastEr
           {/* Thinking indicator — shown while streaming */}
           <ThreadPrimitive.If running>
             <div className="flex justify-start items-center">
-              <PulseThinkingIndicator
+              <FintheonThinkingIndicator
                 isThinking
                 agentName={agentName ?? activeAgent?.name}
               />

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { FintheonChatInput } from './FintheonChatInput';
 import { FintheonSkillsPopup } from './FintheonSkillsPopup';
 import { FintheonAttachPopup } from './FintheonAttachPopup';
-import { PulseSlashPicker } from './PulseSlashPicker';
+import { FintheonSlashPicker } from './FintheonSlashPicker';
 import { McpConnectorPopup } from './McpConnectorPopup';
 import { SkillBadge } from './SkillBadge';
 import { useMcpConnectors } from '../../hooks/useMcpConnectors';
@@ -79,7 +79,7 @@ export function ChatInputArea({
         />
         {/* Slash-command picker */}
         {slashQuery !== null && (
-          <PulseSlashPicker
+          <FintheonSlashPicker
             query={slashQuery}
             onSelect={handleSlashSelect}
             onDismiss={() => setSlashQuery(null)}

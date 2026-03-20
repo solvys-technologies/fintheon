@@ -6,7 +6,7 @@ import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { useGateway } from '../../contexts/GatewayContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useHermesRuntime } from '../chat/useHermesRuntime';
-import { PulseThread } from '../chat/PulseThread';
+import { FintheonThread } from '../chat/FintheonThread';
 import { FintheonComposer } from '../chat/FintheonComposer';
 import { HermesAgentCards } from './HermesAgentCards';
 import { HermesActivityLog, useActivityLog } from './HermesActivityLog';
@@ -143,7 +143,7 @@ function HermesChatInner({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <PulseThread
+      <FintheonThread
         onSend={handleSend}
         isLoading={isRunning}
         agentName={activeAgent?.name}

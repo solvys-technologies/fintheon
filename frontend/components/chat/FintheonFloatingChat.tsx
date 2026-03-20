@@ -5,7 +5,7 @@ import { MessageSquare, X, Maximize2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { useHermesRuntime } from './useHermesRuntime';
-import { PulseThread } from './PulseThread';
+import { FintheonThread } from './FintheonThread';
 import { FintheonComposer } from './FintheonComposer';
 
 interface FintheonFloatingChatProps {
@@ -79,7 +79,7 @@ function FloatingInner({
       </div>
 
       {/* Thread (compact variant — no greeting, no cognition panel) */}
-      <PulseThread
+      <FintheonThread
         onSend={handleSend}
         isLoading={isRunning}
         agentName={activeAgent?.name}

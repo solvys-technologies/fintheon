@@ -19,13 +19,13 @@ const THINKING_PHRASES = [
   'Stress-testing conviction...',
 ];
 
-interface PulseThinkingIndicatorProps {
+interface FintheonThinkingIndicatorProps {
   isThinking: boolean;
   thinkingContent?: string;
   agentName?: string;
 }
 
-export function PulseThinkingIndicator({ isThinking, thinkingContent, agentName }: PulseThinkingIndicatorProps) {
+export function FintheonThinkingIndicator({ isThinking, thinkingContent, agentName }: FintheonThinkingIndicatorProps) {
   const [phrase, setPhrase] = useState(THINKING_PHRASES[0]);
   const [expanded, setExpanded] = useState(false);
 

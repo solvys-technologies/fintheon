@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { useHermesRuntime } from './useHermesRuntime';
-import { PulseThread } from './PulseThread';
+import { FintheonThread } from './FintheonThread';
 import { FintheonComposer } from './FintheonComposer';
 
 function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }: { lastError: string | null; lastRequestId: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void }) {
@@ -21,7 +21,7 @@ function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }:
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.07),transparent_38%),#070704]">
-      <PulseThread
+      <FintheonThread
         onSend={handleSend}
         isLoading={isRunning}
         agentName={activeAgent?.name}

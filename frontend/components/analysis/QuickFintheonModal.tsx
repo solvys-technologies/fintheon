@@ -3,13 +3,13 @@ import React, { useState, useRef } from 'react';
 import { X, Upload, Activity, AlertTriangle, Check, Loader2 } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 
-interface QuickPulseModalProps {
+interface QuickFintheonModalProps {
     isOpen: boolean;
     onClose: () => void;
     onAnalysisComplete: (result: any) => void;
 }
 
-export default function QuickPulseModal({ isOpen, onClose, onAnalysisComplete }: QuickPulseModalProps) {
+export default function QuickFintheonModal({ isOpen, onClose, onAnalysisComplete }: QuickFintheonModalProps) {
     const [image, setImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

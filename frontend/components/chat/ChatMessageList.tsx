@@ -3,7 +3,7 @@ import { useRef, useEffect } from 'react';
 import type { ChatMessage } from './types';
 import { ChatGreeting } from './ChatGreeting';
 import { ChatMessageBubble } from './ChatMessageBubble';
-import { PulseThinkingIndicator } from './PulseThinkingIndicator';
+import { FintheonThinkingIndicator } from './FintheonThinkingIndicator';
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
@@ -55,7 +55,7 @@ export function ChatMessageList({
 
         {(isLoading || !!latestThinkingContent) && (
           <div className="flex justify-start items-center">
-            <PulseThinkingIndicator
+            <FintheonThinkingIndicator
               isThinking
               thinkingContent={latestThinkingContent}
               agentName={agentName}

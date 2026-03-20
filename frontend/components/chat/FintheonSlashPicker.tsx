@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Lock } from 'lucide-react';
 import { filterSkills, type SkillDef } from '../../lib/skills';
 
-interface PulseSlashPickerProps {
+interface FintheonSlashPickerProps {
   query: string;
   onSelect: (skillId: string) => void;
   onDismiss: () => void;
@@ -11,7 +11,7 @@ interface PulseSlashPickerProps {
   disabledSkills?: Record<string, { reason: string }>;
 }
 
-export function PulseSlashPicker({ query, onSelect, onDismiss, onStop, disabledSkills }: PulseSlashPickerProps) {
+export function FintheonSlashPicker({ query, onSelect, onDismiss, onStop, disabledSkills }: FintheonSlashPickerProps) {
   const [highlightIndex, setHighlightIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const filtered = filterSkills(query);
