@@ -13,9 +13,10 @@ import { AuthShell } from './components/auth/AuthShell';
 import { fintheonAppearance } from './components/auth/fintheonAppearance';
 // ERProvider removed - using component-based ER monitoring for stability
 
-// Development mode: bypass Clerk authentication ONLY when explicitly enabled
+// Bypass Clerk in Electron (localhost origin) or when explicitly set
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
+const IS_ELECTRON = typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.hostname === 'localhost');
+const BYPASS_AUTH = IS_ELECTRON || (DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true');
 
 // Clerk API domain is encoded in the publishable key — no manual domain/proxy needed
 
