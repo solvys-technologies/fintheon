@@ -36,8 +36,9 @@ const checkDatabase = async () => {
     await pingDb()
     return { status: 'ok' as ComponentStatus }
   } catch (error) {
+    // Database is optional in cloud (Supabase handles persistence) — degraded, not error
     return {
-      status: 'error' as ComponentStatus,
+      status: 'degraded' as ComponentStatus,
       details: {
         message: error instanceof Error ? error.message : String(error)
       }
@@ -93,7 +94,7 @@ const checkAiGateway = async () => {
 const checkClerk = () => {
   const details = clerkHealth()
   return {
-    status: details.hasSecret ? ('ok' as ComponentStatus) : ('error' as ComponentStatus),
+    status: details.hasSecret ? ('ok' as ComponentStatus) : ('degraded' as ComponentStatus),
     details
   }
 }
