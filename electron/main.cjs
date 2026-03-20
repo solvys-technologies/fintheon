@@ -220,6 +220,29 @@ function createWindow() {
     });
   }
 
+  // Handle OAuth popups from the main window (Clerk Google sign-in)
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (shouldAllowInAppPopup(url)) {
+      return {
+        action: "allow",
+        overrideBrowserWindowOptions: {
+          width: 520,
+          height: 760,
+          parent: win,
+          modal: false,
+          title: "Sign in with Google",
+          webPreferences: {
+            contextIsolation: true,
+            nodeIntegration: false,
+          },
+        },
+      };
+    }
+    // Non-auth links open in system browser
+    shell.openExternal(url).catch(() => {});
+    return { action: "deny" };
+  });
+
   mainWindow = win;
 }
 
