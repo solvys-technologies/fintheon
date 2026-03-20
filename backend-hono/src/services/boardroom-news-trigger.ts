@@ -345,50 +345,5 @@ export function filterToMarketMoving(alerts: HeraldSentinelAlert[]): HeraldSenti
   );
 }
 
-/**
- * HTTP handler for receiving Herald alerts
- * 
- * This can be used as a Hono route handler to receive webhook-style
- * alerts from the Herald sentinel system
- * 
- * Usage in routes:
- * ```typescript
- * import { handleHeraldAlertWebhook } from './services/boardroom-news-trigger';
- * app.post('/api/boardroom/herald-alert', handleHeraldAlertWebhook);
- * ```
- */
-export async function handleHeraldAlertWebhook(c: Context): Promise<Response> {
-  try {
-    const body = await c.req.json<Partial<HeraldSentinelAlert>>();
-    const alert = createHeraldAlert(body);
-
-    const result = await triggerBoardroomForNews(alert);
-
-    if (result.triggered) {
-      return c.json({
-        success: true,
-        triggered: true,
-        reason: result.reason,
-        alertId: alert.id,
-      });
-    } else {
-      return c.json({
-        success: true,
-        triggered: false,
-        reason: result.reason,
-        alertId: alert.id,
-      });
-    }
-  } catch (error) {
-    console.error('[BoardroomNewsTrigger] Failed to process herald alert:', error);
-    return c.json({ error: 'Failed to process herald alert' }, 500);
-  }
-}
-
-// Hono Context type for the webhook handler
-type Context = {
-  req: {
-    json: <T>() => Promise<T>;
-  };
-  json: (data: unknown, status?: number) => Response;
-};
+// Note: HTTP handler for Herald alerts is in routes/boardroom/handlers.ts (handleHeraldAlert)
+// This module provides the core logic; route handling is done via Hono context in the handlers.

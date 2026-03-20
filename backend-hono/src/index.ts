@@ -26,6 +26,7 @@ import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
 import { initHermesAgent } from './services/hermes-handler.js';
 import { startAutopilotScheduler, stopAutopilotScheduler } from './services/autopilot/autopilot-scheduler.js';
 import { startContextBankTicker, stopContextBankTicker } from './services/context-bank/context-bank-service.js';
+import { startBoardroomScheduler, stopBoardroomScheduler } from './services/cron/boardroom-scheduler.js';
 
 const app = new Hono();
 const healthService = createHealthService();
@@ -115,6 +116,7 @@ function startAllPollers() {
   startAutopilotScheduler();
   startContextBankTicker();
   startCentralScorer();
+  startBoardroomScheduler();
   pollingActive = true;
   console.log('[API] All pollers started');
 }
@@ -128,6 +130,7 @@ function stopAllPollers() {
   stopAutopilotScheduler();
   stopContextBankTicker();
   stopCentralScorer();
+  stopBoardroomScheduler();
   pollingActive = false;
   console.log('[API] All pollers stopped');
 }

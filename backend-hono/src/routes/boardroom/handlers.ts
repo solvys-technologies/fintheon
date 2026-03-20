@@ -231,3 +231,183 @@ export async function handleGetBoardroomMeetingSchedule(c: Context) {
     return c.json({ error: 'Failed to compute meeting schedule' }, 500);
   }
 }
+
+// ─── Standup Trigger Routes ──────────────────────────────────────────
+
+const VALID_STANDUP_TASKS: StandupTask[] = [
+  'morning-standup',
+  'checkin-8am',
+  'econ-scan',
+  'premarket',
+  'market-open',
+];
+
+/**
+ * POST /api/boardroom/standup/:task
+ * Manually trigger a specific standup phase.
+ * Task param: morning-standup | checkin-8am | econ-scan | premarket | market-open
+ */
+export async function handleTriggerStandup(c: Context) {
+  try {
+    const task = c.req.param('task') as StandupTask;
+
+    if (!VALID_STANDUP_TASKS.includes(task)) {
+      return c.json({
+        error: `Invalid standup task: ${task}`,
+        validTasks: VALID_STANDUP_TASKS,
+      }, 400);
+    }
+
+    // Fire standup asynchronously — don't block the HTTP response
+    const resultPromise = spawnBoardroomStandup(task);
+
+    // Wait a brief moment to ensure the opening message is posted
+    const result = await resultPromise;
+
+    return c.json({
+      success: result.success,
+      task: result.task,
+      triggeredAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('[Boardroom] Failed to trigger standup:', error);
+    return c.json({ error: 'Failed to trigger standup' }, 500);
+  }
+}
+
+// ─── Breaking News Trigger ───────────────────────────────────────────
+
+/**
+ * POST /api/boardroom/trigger/breaking-news
+ * Trigger boardroom discussion for a breaking news event.
+ * Body: { eventType, macroLevel, headline, description?, affectedInstruments?, impactDirection?, impactMagnitude? }
+ */
+export async function handleBreakingNewsTrigger(c: Context) {
+  try {
+    const body = await c.req.json<{
+      eventType?: string;
+      macroLevel?: number;
+      headline?: string;
+      description?: string;
+      affectedInstruments?: string[];
+      impactDirection?: string;
+      impactMagnitude?: number;
+    }>().catch(() => null);
+
+    if (!body?.headline) {
+      return c.json({ error: 'headline is required' }, 400);
+    }
+
+    const alert = createHeraldAlert({
+      eventType: (body.eventType as any) ?? 'OTHER',
+      macroLevel: (body.macroLevel as any) ?? 3,
+      headline: body.headline,
+      description: body.description,
+      affectedInstruments: body.affectedInstruments,
+      impactDirection: body.impactDirection as any,
+      impactMagnitude: body.impactMagnitude,
+    });
+
+    // Post the formatted alert to boardroom
+    const result = await triggerBoardroomForNews(alert);
+
+    // If triggered, also spawn agent responses
+    if (result.triggered) {
+      // Don't await — let agents respond asynchronously
+      spawnBoardroomNewsResponse(alert.headline, alert.eventType).catch((err) =>
+        console.error('[Boardroom] News response spawn failed:', err)
+      );
+    }
+
+    return c.json({
+      success: true,
+      triggered: result.triggered,
+      reason: result.reason,
+      alertId: alert.id,
+      triggeredAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('[Boardroom] Failed to trigger breaking news:', error);
+    return c.json({ error: 'Failed to trigger breaking news' }, 500);
+  }
+}
+
+// ─── Herald Sentinel Alert ───────────────────────────────────────────
+
+/**
+ * POST /api/boardroom/herald-alert
+ * Webhook endpoint for Herald sentinel alerts (Macro Level 3-4 events).
+ * Evaluates alert severity and triggers boardroom if criteria met.
+ */
+export async function handleHeraldAlert(c: Context) {
+  try {
+    const body = await c.req.json<{
+      eventType?: string;
+      macroLevel?: number;
+      headline?: string;
+      description?: string;
+      affectedInstruments?: string[];
+      impactDirection?: string;
+      impactMagnitude?: number;
+      source?: string;
+    }>().catch(() => null);
+
+    if (!body?.headline || !body?.macroLevel) {
+      return c.json({ error: 'headline and macroLevel are required' }, 400);
+    }
+
+    // Validate macroLevel >= 3 for boardroom trigger
+    if (body.macroLevel < 3) {
+      return c.json({
+        success: true,
+        triggered: false,
+        reason: `Macro level ${body.macroLevel} below threshold (min: 3)`,
+      });
+    }
+
+    const alert = createHeraldAlert({
+      eventType: (body.eventType as any) ?? 'OTHER',
+      macroLevel: body.macroLevel as any,
+      headline: body.headline,
+      description: body.description,
+      affectedInstruments: body.affectedInstruments,
+      impactDirection: body.impactDirection as any,
+      impactMagnitude: body.impactMagnitude,
+      source: body.source,
+    });
+
+    const result = await triggerBoardroomForNews(alert);
+
+    if (result.triggered) {
+      spawnBoardroomNewsResponse(alert.headline, alert.eventType).catch((err) =>
+        console.error('[Boardroom] Herald news response failed:', err)
+      );
+    }
+
+    return c.json({
+      success: true,
+      triggered: result.triggered,
+      reason: result.reason,
+      alertId: alert.id,
+    });
+  } catch (error) {
+    console.error('[Boardroom] Failed to process herald alert:', error);
+    return c.json({ error: 'Failed to process herald alert' }, 500);
+  }
+}
+
+// ─── Scheduler Status ────────────────────────────────────────────────
+
+/**
+ * GET /api/boardroom/scheduler/status
+ * Returns the current state of the boardroom cron scheduler.
+ */
+export async function handleGetSchedulerStatus(c: Context) {
+  try {
+    const status = getBoardroomSchedulerStatus();
+    return c.json(status);
+  } catch (error) {
+    console.error('[Boardroom] Failed to get scheduler status:', error);
+    return c.json({ error: 'Failed to get scheduler status' }, 500);
+  }
+}
