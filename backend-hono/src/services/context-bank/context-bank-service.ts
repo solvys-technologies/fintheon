@@ -23,7 +23,7 @@ import { estimatePoints } from '../market-data/point-estimator.js'
 import { fetchVIX } from '../vix-service.js'
 import { getCachedAssessment } from '../systemic/risk-detector.js'
 import { getCachedFredIndicators, getFredFetchedAt } from '../systemic/fred-service.js'
-import { getCachedTradeIdeas, getCachedPerformance } from '../notion-poller.js'
+import { readTradeIdeas, readDailyPnl } from '../supabase-service.js'
 import type { KalshiContext } from '../../types/context-bank.js'
 
 const TICK_INTERVAL_MS = 120_000 // 120s
@@ -150,20 +150,26 @@ async function assembleSnapshot(version: number): Promise<ContextBankSnapshot> {
   // Econ Calendar
   const econCalendar = await fetchEconContext()
 
-  // Trade Ideas + P&L
-  const tradeIdeasRaw = getCachedTradeIdeas()
-  const performanceRaw = getCachedPerformance()
+  // Trade Ideas + P&L (from Supabase)
+  const [tradeIdeasRaw, pnlRecords] = await Promise.all([
+    readTradeIdeas({ limit: 50 }),
+    readDailyPnl({ limit: 1 }),
+  ])
   const tradeIdeas: TradeIdeasContext = {
     active: tradeIdeasRaw.map(t => ({
-      id: t.id,
+      id: t.id!,
       title: t.title,
-      ticker: t.ticker,
-      direction: t.direction,
-      confidence: t.confidence,
-      entry: t.entry,
-      sourceAgent: t.sourceAgent,
+      ticker: t.ticker ?? '',
+      direction: (t.direction ?? 'neutral').toLowerCase() as 'long' | 'short' | 'neutral',
+      confidence: t.confidence != null ? (t.confidence >= 70 ? 'high' : t.confidence >= 50 ? 'medium' : 'low') : undefined,
+      entry: t.entry_price ?? undefined,
+      sourceAgent: t.analyst ?? undefined,
     })),
-    pnlSummary: extractPnlSummary(performanceRaw),
+    pnlSummary: pnlRecords.length > 0 ? {
+      todayPnl: pnlRecords[0].net_pnl != null ? Number(pnlRecords[0].net_pnl) : undefined,
+      winRate: pnlRecords[0].win_rate != null ? Number(pnlRecords[0].win_rate) : undefined,
+      tradesCount: pnlRecords[0].trades_taken ?? undefined,
+    } : {},
   }
 
   // FRED

@@ -20,6 +20,9 @@ import {
   type NotionTradeIdea,
   type NotionPerformanceKpi,
 } from './notion-service.js';
+import { createLogger } from '../lib/logger.js';
+
+const log = createLogger('NotionPoller');
 
 const POLL_INTERVAL_MS = 60_000;
 
@@ -77,7 +80,7 @@ async function generateHermesDescription(idea: NotionTradeIdea): Promise<string>
 }
 
 async function poll(): Promise<void> {
-  console.log('[NotionPoller] Polling...');
+  log.info('[NotionPoller] Polling...');
   try {
     const [newIdeas, newPerf] = await Promise.all([queryTradeIdeas(), queryDailyPnL()]);
 
@@ -104,7 +107,7 @@ async function poll(): Promise<void> {
 
     console.log(`[NotionPoller] Done. ${newIdeas.length} trade ideas, ${newPerf.length} KPIs.`);
   } catch (err) {
-    console.warn('[NotionPoller] Poll error:', err);
+    log.warn('[NotionPoller] Poll error:', err);
   }
 }
 
@@ -112,7 +115,7 @@ export function startNotionPoller(): void {
   if (intervalId) return;
   void poll(); // immediate first fetch
   intervalId = setInterval(() => { void poll(); }, POLL_INTERVAL_MS);
-  console.log('[NotionPoller] Started (60s interval)');
+  log.info('[NotionPoller] Started (60s interval)');
 }
 
 export function stopNotionPoller(): void {
