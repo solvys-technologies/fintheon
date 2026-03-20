@@ -10,9 +10,9 @@ const HUDDLE_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
 const AGENTS: Array<{ role: HermesAgentRole; name: string }> = [
   { role: 'harper-cao', name: 'Harper-Hermes' },
-  { role: 'pma-2', name: 'Oracle' },
+  { role: 'pma-merged', name: 'Oracle' },
   { role: 'futures-desk', name: 'Feucht' },
-  { role: 'pma-1', name: 'Consul' },
+  { role: 'fundamentals-desk', name: 'Consul' },
   { role: 'herald', name: 'Herald' },
 ];
 

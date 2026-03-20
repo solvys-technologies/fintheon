@@ -54,16 +54,16 @@ export async function getFeatures(userId: string): Promise<{
 
   const tierLevel: Record<UserTier, number> = {
     free: 0,
-    fintheon: 1,
-    fintheon_plus: 2,
-    fintheon_pro: 3,
+    pulse: 1,
+    pulse_plus: 2,
+    pulse_pro: 3,
   };
 
   const features = [
     { name: 'riskflow', requiredTier: 'free' },
-    { name: 'ai_chat', requiredTier: 'fintheon' },
-    { name: 'autopilot', requiredTier: 'fintheon_plus' },
-    { name: 'agents', requiredTier: 'fintheon_pro' },
+    { name: 'ai_chat', requiredTier: 'pulse' },
+    { name: 'autopilot', requiredTier: 'pulse_plus' },
+    { name: 'agents', requiredTier: 'pulse_pro' },
   ];
 
   return {

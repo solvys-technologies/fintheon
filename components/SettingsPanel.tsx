@@ -1,35 +1,10 @@
-// [claude-code 2026-03-20] Shell rebuild: removed PsychContext, Toggle, Button imports — inlined replacements
-import { X, Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal } from 'lucide-react';
+import { X, Settings, Bell, Shield, CreditCard, Cpu, Code, Radio, Volume2, Terminal } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
+import { usePsych } from '../contexts/PsychContext';
 import { useAuth } from '../contexts/AuthContext';
+import Toggle from './Toggle';
+import { Button } from './ui/Button';
 import { useState, useEffect } from 'react';
-
-function Toggle({ label, enabled, onChange }: { label: string; enabled: boolean; onChange: (val: boolean) => void }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-300">{label}</span>
-      <button
-        onClick={() => onChange(!enabled)}
-        className={`w-10 h-5 rounded-full transition-colors relative ${enabled ? 'bg-[#D4AF37]' : 'bg-zinc-700'}`}
-      >
-        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${enabled ? 'left-5' : 'left-0.5'}`} />
-      </button>
-    </div>
-  );
-}
-
-function Button({ variant = 'secondary', onClick, className = '', disabled, children }: {
-  variant?: 'primary' | 'secondary'; onClick?: () => void; className?: string; disabled?: boolean; children: React.ReactNode;
-}) {
-  const base = variant === 'primary'
-    ? 'bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90'
-    : 'bg-[#050500] border border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/10';
-  return (
-    <button onClick={onClick} disabled={disabled} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${base} ${className}`}>
-      {children}
-    </button>
-  );
-}
 import { useBackend } from '../lib/backend';
 import { HEALING_BOWL_SOUNDS, healingBowlPlayer } from '../utils/healingBowlSounds';
 import type { HealingBowlSound } from '../utils/healingBowlSounds';
@@ -39,7 +14,6 @@ interface SettingsPanelProps {
 }
 
 type SettingsTab = 'general' | 'notifications' | 'trading' | 'api' | 'developer';
-// Psych tab removed — PsychContext deleted in shell rebuild
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { tier, setTier } = useAuth();
@@ -60,6 +34,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     setDeveloperSettings,
   } = useSettings();
   const backend = useBackend();
+  const {
+    profile: psychProfile,
+    saveProfile: savePsychProfile,
+    loading: psychLoading
+  } = usePsych();
   const [contractsPerTrade, setContractsPerTrade] = useState<number>(1);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -111,6 +90,18 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [prevTab, setPrevTab] = useState<SettingsTab | null>(null);
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
+  const [psychBlindSpots, setPsychBlindSpots] = useState<string[]>(['', '', '']);
+  const [psychGoal, setPsychGoal] = useState('');
+  const [psychSaveMessage, setPsychSaveMessage] = useState<string | null>(null);
+  const [psychSaving, setPsychSaving] = useState(false);
+
+  useEffect(() => {
+    if (psychProfile) {
+      const spots = [...psychProfile.blindSpots, '', '', ''].slice(0, 3);
+      setPsychBlindSpots(spots);
+      setPsychGoal(psychProfile.goal ?? '');
+    }
+  }, [psychProfile]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -144,6 +135,24 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       setSaveMessage('Failed to save settings. Please try again.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePsychSave = async () => {
+    setPsychSaving(true);
+    setPsychSaveMessage(null);
+    try {
+      await savePsychProfile({
+        blindSpots: psychBlindSpots,
+        goal: psychGoal,
+        source: 'settings'
+      });
+      setPsychSaveMessage('Psych Assist profile updated.');
+    } catch (error) {
+      console.error('Failed to save psych profile:', error);
+      setPsychSaveMessage('Failed to save Psych Assist settings. Please try again.');
+    } finally {
+      setPsychSaving(false);
     }
   };
 
@@ -183,6 +192,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const tabs = [
     { id: 'general' as const, label: 'General', icon: Settings },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell },
+    { id: 'psych' as const, label: 'Psych Assist', icon: Shield },
     { id: 'trading' as const, label: 'Trading', icon: Cpu },
     { id: 'api' as const, label: 'API', icon: Code },
     { id: 'developer' as const, label: 'Developer', icon: Terminal },
@@ -300,6 +310,96 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                     ))}
                   </div>
                 </section>
+              </div>
+            )}
+
+            {activeTab === 'psych' && (
+              <div key="psych" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
+                {psychLoading ? (
+                  <div className="text-sm text-zinc-500">Loading Psych Assist profile…</div>
+                ) : (
+                  <>
+                    <section>
+                      <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Orientation Status</h3>
+                      <div className="bg-[#050500] border border-[#D4AF37]/30 rounded-lg p-4 flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm text-white">
+                            {psychProfile?.orientationComplete ? 'Complete' : 'Required'}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            {psychProfile?.updatedAt
+                              ? `Updated ${new Date(psychProfile.updatedAt).toLocaleString()}`
+                              : 'Not yet configured'}
+                          </p>
+                        </div>
+                        {!psychProfile?.orientationComplete && (
+                          <span className="text-xs uppercase tracking-[0.2em] text-red-400">
+                            Action Needed
+                          </span>
+                        )}
+                      </div>
+                    </section>
+
+                    <section className="pt-6 border-t border-zinc-800">
+                      <h3 className="text-sm font-semibold text-[#D4AF37] mb-4">Blind Spots & Goal</h3>
+                      <div className="space-y-4">
+                        {psychBlindSpots.map((spot, idx) => (
+                          <div key={idx}>
+                            <label className="text-xs text-gray-500 mb-1 block">
+                              Blind Spot #{idx + 1}
+                            </label>
+                            <input
+                              type="text"
+                              value={spot}
+                              onChange={(e) =>
+                                setPsychBlindSpots((prev) =>
+                                  prev.map((current, sIdx) => (sIdx === idx ? e.target.value : current))
+                                )
+                              }
+                              className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
+                              placeholder={
+                                idx === 0
+                                  ? 'Example: Oversizing after a streak'
+                                  : idx === 1
+                                  ? 'Example: Fighting trend days'
+                                  : 'Example: Skipping resets after tilt'
+                              }
+                            />
+                          </div>
+                        ))}
+
+                        <div>
+                          <label className="text-xs text-gray-500 mb-1 block">Primary Goal</label>
+                          <textarea
+                            value={psychGoal}
+                            onChange={(e) => setPsychGoal(e.target.value)}
+                            rows={3}
+                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30 resize-none"
+                            placeholder="Define the outcome Price should reinforce during sessions."
+                          />
+                        </div>
+
+                        {psychSaveMessage && (
+                          <div
+                            className={`text-sm px-3 py-2 rounded border ${
+                              psychSaveMessage.includes('Failed')
+                                ? 'text-red-400 border-red-500/30 bg-red-500/10'
+                                : 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
+                            }`}
+                          >
+                            {psychSaveMessage}
+                          </div>
+                        )}
+
+                        <div className="flex justify-end">
+                          <Button variant="primary" onClick={handlePsychSave} disabled={psychSaving}>
+                            {psychSaving ? 'Saving…' : 'Save Psych Profile'}
+                          </Button>
+                        </div>
+                      </div>
+                    </section>
+                  </>
+                )}
               </div>
             )}
 
@@ -581,7 +681,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 <section>
                   <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Account Tier</h3>
                   <div className="flex gap-2">
-                    {(['free', 'fintheon', 'fintheon_plus', 'fintheon_pro'] as const).map(t => (
+                    {(['free', 'pulse', 'pulse_plus', 'pulse_pro'] as const).map(t => (
                       <Button
                         key={t}
                         variant={tier === t ? 'primary' : 'secondary'}

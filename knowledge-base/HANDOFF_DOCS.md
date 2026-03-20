@@ -6,7 +6,7 @@
 
 ## 1) Current Backend Reality
 
-Fintheon backend is implemented under `backend-hono/` and is not greenfield.
+Pulse backend is implemented under `backend-hono/` and is not greenfield.
 
 ### Route groups currently mounted
 
@@ -54,7 +54,7 @@ RiskFlow has route + service implementation, feed polling, and cron-related hand
 
 ## 4) Boardroom / OpenClaw Notes
 
-Boardroom backend reads/writes local Hermes session files and relays intervention messages. This works locally and requires explicit deployment/runtime validation for non-local environments.
+Boardroom backend reads/writes local Clawdbot session files and relays intervention messages. This works locally and requires explicit deployment/runtime validation for non-local environments.
 
 ## 5) OpenClaw Move-In Critical Tasks
 
@@ -67,4 +67,4 @@ Boardroom backend reads/writes local Hermes session files and relays interventio
 
 ## 6) Canonical Audit Reference
 
-Notion source of truth: `Fintheon Engineering Audit — 2026-02-12`
+Notion source of truth: `Pulse Engineering Audit — 2026-02-12`

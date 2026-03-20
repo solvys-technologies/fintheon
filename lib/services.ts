@@ -15,7 +15,7 @@ export interface Account {
   dailyPnl: number;
   dailyTarget?: number;
   dailyLossLimit?: number;
-  tier?: 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
+  tier?: 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
   tradingEnabled?: boolean;
   autoTrade?: boolean;
   riskManagement?: boolean;
@@ -426,201 +426,6 @@ export class TwitterService {
   }
 }
 
-// [claude-code 2026-03-19] Boardroom/Consilium service for agent discussion panel
-export interface BoardroomMessageResponse {
-  id: string;
-  agent: string;
-  emoji: string;
-  content: string;
-  timestamp: string;
-  role: 'user' | 'assistant' | 'system';
-}
-
-export interface BoardroomStatus {
-  boardroomActive: boolean;
-  interventionActive: boolean;
-}
-
-export interface MeetingSchedule {
-  nowIso: string;
-  lastMeetingIso: string;
-  nextMeetingIso: string;
-  meetingWindowMinutes: number;
-  live: boolean;
-  source: 'cron' | 'fallback';
-}
-
-// [claude-code 2026-03-19] Consilium Intelligence Layer types
-export interface DevelopmentEvent {
-  id: string;
-  agent: string;
-  title: string;
-  detail: string;
-  category: 'risk_alert' | 'trade_idea' | 'regime_shift' | 'standup' | 'briefing' | 'insight' | 'market_event' | 'huddle';
-  severity: 'info' | 'warning' | 'critical';
-  timestamp: string;
-  relatedInstruments?: string[];
-}
-
-export interface AgentScorecardResponse {
-  agent: string;
-  totalPredictions: number;
-  correctCount: number;
-  incorrectCount: number;
-  partialCount: number;
-  winRate: number;
-  avgPnlPerPrediction: number;
-  streakCurrent: number;
-  bestStreak: number;
-}
-
-export interface TrackedPrediction {
-  id: string;
-  agent: string;
-  instrument: string;
-  direction: string;
-  thesis: string;
-  outcome: 'pending' | 'correct' | 'incorrect' | 'partial' | 'expired';
-  actualResult?: string;
-  pnlImpact?: number;
-  createdAt: string;
-  resolvedAt?: string;
-}
-
-export class BoardroomService {
-  constructor(private client: ApiClient) {}
-
-  async getMessages(): Promise<{ messages: BoardroomMessageResponse[] }> {
-    return this.client.get('/api/boardroom/messages');
-  }
-
-  async sendMessage(message: string): Promise<{ success: boolean }> {
-    return this.client.post('/api/boardroom/intervention/send', { message });
-  }
-
-  async sendMention(agent: string, message: string): Promise<{ success: boolean }> {
-    return this.client.post('/api/boardroom/mention/send', { message, agent });
-  }
-
-  async triggerIntervention(data: {
-    message: string;
-    agent?: string;
-    type?: string;
-    severity?: string;
-    metadata?: Record<string, unknown>;
-  }): Promise<{ success: boolean; id: string }> {
-    return this.client.post('/api/boardroom/intervention/trigger', data);
-  }
-
-  async postTradeIdea(data: {
-    instrument: string;
-    thesis: string;
-    direction?: string;
-    conviction?: string;
-    entry?: number;
-    stopLoss?: number;
-    target?: number;
-  }): Promise<{ success: boolean; id: string }> {
-    return this.client.post('/api/boardroom/trade-idea', data);
-  }
-
-  async getStatus(): Promise<BoardroomStatus> {
-    return this.client.get('/api/boardroom/status');
-  }
-
-  async getMeetingSchedule(): Promise<MeetingSchedule> {
-    return this.client.get('/api/boardroom/meeting-schedule');
-  }
-
-  async getMessagesFiltered(filter?: {
-    agents?: string[];
-    search?: string;
-    since?: string;
-    until?: string;
-    limit?: number;
-    offset?: number;
-  }): Promise<{ messages: BoardroomMessageResponse[]; total: number }> {
-    const params = new URLSearchParams();
-    if (filter?.agents?.length) params.set('agent', filter.agents.join(','));
-    if (filter?.search) params.set('search', filter.search);
-    if (filter?.since) params.set('since', filter.since);
-    if (filter?.until) params.set('until', filter.until);
-    if (filter?.limit) params.set('limit', String(filter.limit));
-    if (filter?.offset) params.set('offset', String(filter.offset));
-    const qs = params.toString();
-    return this.client.get(`/api/boardroom/messages${qs ? `?${qs}` : ''}`);
-  }
-
-  async getDevelopments(filter?: {
-    since?: string;
-    category?: string;
-    agent?: string;
-    limit?: number;
-  }): Promise<{ events: DevelopmentEvent[] }> {
-    const params = new URLSearchParams();
-    if (filter?.since) params.set('since', filter.since);
-    if (filter?.category) params.set('category', filter.category);
-    if (filter?.agent) params.set('agent', filter.agent);
-    if (filter?.limit) params.set('limit', String(filter.limit));
-    const qs = params.toString();
-    return this.client.get(`/api/boardroom/developments${qs ? `?${qs}` : ''}`);
-  }
-
-  async getScorecards(): Promise<{ scorecards: AgentScorecardResponse[] }> {
-    return this.client.get('/api/boardroom/scorecards');
-  }
-
-  async getPredictions(filter?: { agent?: string; outcome?: string }): Promise<{ predictions: TrackedPrediction[] }> {
-    const params = new URLSearchParams();
-    if (filter?.agent) params.set('agent', filter.agent);
-    if (filter?.outcome) params.set('outcome', filter.outcome);
-    const qs = params.toString();
-    return this.client.get(`/api/boardroom/predictions${qs ? `?${qs}` : ''}`);
-  }
-
-  async resolvePrediction(id: string, data: { outcome: string; actualResult: string; pnlImpact?: number }): Promise<{ success: boolean }> {
-    return this.client.post(`/api/boardroom/predictions/${id}/resolve`, data);
-  }
-}
-
-// [claude-code 2026-03-19] Cloud service for Supabase-backed scored items, ER, settings
-export class CloudService {
-  constructor(private client: ApiClient) {}
-
-  async getScoredItems(opts?: { minMacroLevel?: number; limit?: number; since?: string }) {
-    const params = new URLSearchParams();
-    if (opts?.minMacroLevel) params.set('minMacroLevel', String(opts.minMacroLevel));
-    if (opts?.limit) params.set('limit', String(opts.limit));
-    if (opts?.since) params.set('since', opts.since);
-    const qs = params.toString();
-    return this.client.get(`/api/cloud/scored-items${qs ? `?${qs}` : ''}`);
-  }
-
-  async pushRawItems(items: unknown[]) {
-    return this.client.post('/api/cloud/raw-items', { items });
-  }
-
-  async getERSessions(userId: string, limit = 20) {
-    return this.client.get(`/api/cloud/er-sessions?userId=${userId}&limit=${limit}`);
-  }
-
-  async saveERSession(data: { user_id: string; final_score?: number; [key: string]: unknown }) {
-    return this.client.post('/api/cloud/er-sessions', data);
-  }
-
-  async getSettings(userId: string) {
-    return this.client.get(`/api/cloud/settings?userId=${userId}`);
-  }
-
-  async saveSettings(data: { user_id: string; [key: string]: unknown }) {
-    return this.client.put('/api/cloud/settings', data);
-  }
-
-  async getCloudStatus() {
-    return this.client.get('/api/cloud/status');
-  }
-}
-
 // Main Backend Client Interface
 export interface BackendClient {
   account: AccountService;
@@ -634,8 +439,6 @@ export interface BackendClient {
   er: ERService;
   events: EventsService;
   riskflow: RiskFlowService;
-  boardroom: BoardroomService;
-  cloud: CloudService;
 }
 
 // Create backend client from API client
@@ -652,7 +455,5 @@ export function createBackendClient(client: ApiClient): BackendClient {
     er: new ERService(client),
     events: new EventsService(client),
     riskflow: new RiskFlowService(client),
-    boardroom: new BoardroomService(client),
-    cloud: new CloudService(client),
   };
 }

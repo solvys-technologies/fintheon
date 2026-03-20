@@ -1,4 +1,4 @@
-# Technology Gap Analysis - Fintheon v3.0
+# Technology Gap Analysis - Pulse v3.0
 ## Critical Integration Points & Solutions
 
 > **Purpose**: Close all technological gaps between components
@@ -28,7 +28,7 @@ export async function authMiddleware(c: Context, next: Next) {
 
     const verified = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY,
-      authorizedParties: ['https://fintheon.solvys.io', 'http://localhost:3000']
+      authorizedParties: ['https://pulse.solvys.io', 'http://localhost:3000']
     });
 
     c.set('userId', verified.sub);

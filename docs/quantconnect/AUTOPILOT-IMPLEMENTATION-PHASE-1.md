@@ -3,7 +3,7 @@
 
 ## Scope
 
-Phase 1 establishes the real-money execution path: connecting Fintheon → ProjectX (TopstepX/Rithmic) → live market orders. The agent pipeline backend is already built (see AGENT-2-CLAUDE-CODE-TASKS.md Weeks 1–7). Phase 1 closes the final gap between AI proposals and order execution.
+Phase 1 establishes the real-money execution path: connecting Pulse → ProjectX (TopstepX/Rithmic) → live market orders. The agent pipeline backend is already built (see AGENT-2-CLAUDE-CODE-TASKS.md Weeks 1–7). Phase 1 closes the final gap between AI proposals and order execution.
 
 **Build order:** Rithmic test trade → QuantConnect 40/40 Club algo → Flush → Ripper
 
@@ -44,7 +44,7 @@ Fires a 1-contract market order via ProjectX. Uses the frontend `TestTradeButton
 **Flow:**
 1. Look up ProjectX credentials for user
 2. `POST /api/Contract/search` with `searchText: "MNQ"` to get active front-month contract ID
-3. `POST /api/Order/place` — type: 2 (Market), size: 1, customTag: `FINTHEON-TEST-{timestamp}`
+3. `POST /api/Order/place` — type: 2 (Market), size: 1, customTag: `PULSE-TEST-{timestamp}`
 4. Return `orderId` + human-readable message
 
 **Requires:** ProjectX credentials configured in Settings (username + API key).
