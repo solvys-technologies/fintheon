@@ -1,4 +1,4 @@
-// [claude-code 2026-02-26] Ensure intervention UI shows user chat bubbles by mirroring sent messages locally.
+// [claude-code 2026-03-19] T1: Herald pattern, BoardroomFilter, paginated getBoardroomMessages
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { BoardroomMessage, InterventionMessage, BoardroomAgent } from '../types/boardroom.js';
@@ -14,12 +14,13 @@ interface RawSessionMessage {
   sessionKey?: string;
 }
 
-// [claude-code 2026-03-19] Agent backend v8.0: updated agent patterns for 4-agent roster
+// [claude-code 2026-03-19] Agent backend v8.0: updated agent patterns for 5-agent roster (Herald restored)
 const AGENT_PATTERNS: Array<{ regex: RegExp; agent: Exclude<BoardroomAgent, 'Unknown'>; emoji: string }> = [
   { regex: /harper[-\s]?hermes|harper/i, agent: 'Harper-Hermes', emoji: '🎩' },
   { regex: /feucht/i, agent: 'Feucht', emoji: '⚡' },
   { regex: /consul/i, agent: 'Consul', emoji: '📜' },
   { regex: /oracle/i, agent: 'Oracle', emoji: '📊' },
+  { regex: /herald/i, agent: 'Herald', emoji: '👴' },
 ];
 
 const safeJsonParse = <T>(line: string): T | null => {
@@ -65,11 +66,23 @@ const splitLines = (content: string): string[] =>
     .map((line) => line.trim())
     .filter(Boolean);
 
-export async function getBoardroomMessages(sessionLabel = 'pic-boardroom'): Promise<BoardroomMessage[]> {
-  const sessionFiles = await findSessionFilesByLabel(sessionLabel);
-  if (!sessionFiles.length) return [];
+export interface BoardroomFilter {
+  agents?: BoardroomAgent[];
+  search?: string;
+  since?: string;
+  until?: string;
+  limit?: number;
+  offset?: number;
+}
 
-  const messages: BoardroomMessage[] = [];
+export async function getBoardroomMessages(
+  sessionLabel = 'pic-boardroom',
+  filter?: BoardroomFilter
+): Promise<{ messages: BoardroomMessage[]; total: number }> {
+  const sessionFiles = await findSessionFilesByLabel(sessionLabel);
+  if (!sessionFiles.length) return { messages: [], total: 0 };
+
+  let messages: BoardroomMessage[] = [];
   for (const sessionFile of sessionFiles) {
     const fileContent = await readFile(sessionFile, 'utf-8').catch(() => '');
     for (const line of splitLines(fileContent)) {
@@ -89,7 +102,35 @@ export async function getBoardroomMessages(sessionLabel = 'pic-boardroom'): Prom
     }
   }
 
-  return messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  // Apply filters
+  if (filter?.agents?.length) {
+    messages = messages.filter(m => filter.agents!.includes(m.agent));
+  }
+  if (filter?.search) {
+    const q = filter.search.toLowerCase();
+    messages = messages.filter(m => m.content.toLowerCase().includes(q));
+  }
+  if (filter?.since) {
+    const sinceMs = new Date(filter.since).getTime();
+    messages = messages.filter(m => new Date(m.timestamp).getTime() >= sinceMs);
+  }
+  if (filter?.until) {
+    const untilMs = new Date(filter.until).getTime();
+    messages = messages.filter(m => new Date(m.timestamp).getTime() <= untilMs);
+  }
+
+  const total = messages.length;
+
+  if (filter?.offset) {
+    messages = messages.slice(filter.offset);
+  }
+  if (filter?.limit) {
+    messages = messages.slice(0, filter.limit);
+  }
+
+  return { messages, total };
 }
 
 export async function getInterventionMessages(sessionLabel = 'pic-intervention'): Promise<InterventionMessage[]> {

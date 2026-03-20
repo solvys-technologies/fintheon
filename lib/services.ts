@@ -450,6 +450,43 @@ export interface MeetingSchedule {
   source: 'cron' | 'fallback';
 }
 
+// [claude-code 2026-03-19] Consilium Intelligence Layer types
+export interface DevelopmentEvent {
+  id: string;
+  agent: string;
+  title: string;
+  detail: string;
+  category: 'risk_alert' | 'trade_idea' | 'regime_shift' | 'standup' | 'briefing' | 'insight' | 'market_event' | 'huddle';
+  severity: 'info' | 'warning' | 'critical';
+  timestamp: string;
+  relatedInstruments?: string[];
+}
+
+export interface AgentScorecardResponse {
+  agent: string;
+  totalPredictions: number;
+  correctCount: number;
+  incorrectCount: number;
+  partialCount: number;
+  winRate: number;
+  avgPnlPerPrediction: number;
+  streakCurrent: number;
+  bestStreak: number;
+}
+
+export interface TrackedPrediction {
+  id: string;
+  agent: string;
+  instrument: string;
+  direction: string;
+  thesis: string;
+  outcome: 'pending' | 'correct' | 'incorrect' | 'partial' | 'expired';
+  actualResult?: string;
+  pnlImpact?: number;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
 export class BoardroomService {
   constructor(private client: ApiClient) {}
 
@@ -493,6 +530,56 @@ export class BoardroomService {
 
   async getMeetingSchedule(): Promise<MeetingSchedule> {
     return this.client.get('/api/boardroom/meeting-schedule');
+  }
+
+  async getMessagesFiltered(filter?: {
+    agents?: string[];
+    search?: string;
+    since?: string;
+    until?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ messages: BoardroomMessageResponse[]; total: number }> {
+    const params = new URLSearchParams();
+    if (filter?.agents?.length) params.set('agent', filter.agents.join(','));
+    if (filter?.search) params.set('search', filter.search);
+    if (filter?.since) params.set('since', filter.since);
+    if (filter?.until) params.set('until', filter.until);
+    if (filter?.limit) params.set('limit', String(filter.limit));
+    if (filter?.offset) params.set('offset', String(filter.offset));
+    const qs = params.toString();
+    return this.client.get(`/api/boardroom/messages${qs ? `?${qs}` : ''}`);
+  }
+
+  async getDevelopments(filter?: {
+    since?: string;
+    category?: string;
+    agent?: string;
+    limit?: number;
+  }): Promise<{ events: DevelopmentEvent[] }> {
+    const params = new URLSearchParams();
+    if (filter?.since) params.set('since', filter.since);
+    if (filter?.category) params.set('category', filter.category);
+    if (filter?.agent) params.set('agent', filter.agent);
+    if (filter?.limit) params.set('limit', String(filter.limit));
+    const qs = params.toString();
+    return this.client.get(`/api/boardroom/developments${qs ? `?${qs}` : ''}`);
+  }
+
+  async getScorecards(): Promise<{ scorecards: AgentScorecardResponse[] }> {
+    return this.client.get('/api/boardroom/scorecards');
+  }
+
+  async getPredictions(filter?: { agent?: string; outcome?: string }): Promise<{ predictions: TrackedPrediction[] }> {
+    const params = new URLSearchParams();
+    if (filter?.agent) params.set('agent', filter.agent);
+    if (filter?.outcome) params.set('outcome', filter.outcome);
+    const qs = params.toString();
+    return this.client.get(`/api/boardroom/predictions${qs ? `?${qs}` : ''}`);
+  }
+
+  async resolvePrediction(id: string, data: { outcome: string; actualResult: string; pnlImpact?: number }): Promise<{ success: boolean }> {
+    return this.client.post(`/api/boardroom/predictions/${id}/resolve`, data);
   }
 }
 

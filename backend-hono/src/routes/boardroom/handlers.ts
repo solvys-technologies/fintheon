@@ -1,5 +1,6 @@
 // [claude-code 2026-03-16] Agent backend v7.9: updated agent names (Harper-Hermes, Consul, Herald)
 // [claude-code 2026-03-20] Added standup triggers, breaking news, herald alert, scheduler status routes
+// [claude-code 2026-03-20] T2: Consilium routes — filter params on /messages, developments, scorecards, predictions
 import type { Context } from 'hono';
 import {
   getBoardroomMessages,
@@ -8,6 +9,7 @@ import {
   sendMentionToBoardroom,
   checkBoardroomStatus,
   appendToBoardroom,
+  type BoardroomFilter,
 } from '../../services/hermes-sessions.js';
 import { getBoardroomMeetingSchedule } from '../../services/boardroom-schedule.js';
 import type { InterventionType, InterventionSeverity, BoardroomAgent } from '../../types/boardroom.js';
@@ -30,8 +32,23 @@ interface SendMentionBody {
  */
 export async function handleGetBoardroomMessages(c: Context) {
   try {
-    const messages = await getBoardroomMessages('pic-boardroom');
-    return c.json({ messages });
+    const agentParam = c.req.query('agent');
+    const search = c.req.query('search');
+    const since = c.req.query('since');
+    const until = c.req.query('until');
+    const limitParam = c.req.query('limit');
+    const offsetParam = c.req.query('offset');
+
+    const filter: BoardroomFilter = {};
+    if (agentParam) filter.agents = agentParam.split(',') as BoardroomAgent[];
+    if (search) filter.search = search;
+    if (since) filter.since = since;
+    if (until) filter.until = until;
+    if (limitParam) filter.limit = parseInt(limitParam, 10);
+    if (offsetParam) filter.offset = parseInt(offsetParam, 10);
+
+    const result = await getBoardroomMessages('pic-boardroom', Object.keys(filter).length ? filter : undefined);
+    return c.json({ messages: result.messages, total: result.total });
   } catch (error) {
     console.error('[Boardroom] Failed to fetch boardroom messages:', error);
     return c.json({ error: 'Failed to fetch boardroom messages' }, 500);
@@ -135,6 +152,9 @@ export async function handleTriggerIntervention(c: Context) {
       rule_violation: 'RULE VIOLATION',
       market_event: 'MARKET EVENT',
       position_check: 'POSITION CHECK',
+      huddle: 'HUDDLE',
+      standup: 'STANDUP',
+      briefing: 'BRIEFING',
     };
 
     const emoji = SEVERITY_EMOJI[severity];
@@ -409,5 +429,81 @@ export async function handleGetSchedulerStatus(c: Context) {
   } catch (error) {
     console.error('[Boardroom] Failed to get scheduler status:', error);
     return c.json({ error: 'Failed to get scheduler status' }, 500);
+  }
+}
+
+// ─── Consilium Intelligence Layer ───────────────────────────────────
+
+import { extractDevelopments } from '../../services/developments-extractor.js';
+import { getAgentScorecards, getPredictions, resolvePrediction } from '../../services/outcome-tracker.js';
+import type { DevelopmentCategory } from '../../types/developments.js';
+import type { PredictionOutcome } from '../../types/outcome-tracking.js';
+
+/**
+ * GET /api/boardroom/developments
+ * Fetch extracted development events with optional filters.
+ */
+export async function handleGetDevelopments(c: Context) {
+  try {
+    const since = c.req.query('since');
+    const category = c.req.query('category') as DevelopmentCategory | undefined;
+    const agent = c.req.query('agent') as BoardroomAgent | undefined;
+    const limitParam = c.req.query('limit');
+    const limit = limitParam ? parseInt(limitParam, 10) : 50;
+
+    const events = await extractDevelopments({ since, category, agent, limit });
+    return c.json({ events });
+  } catch (error) {
+    console.error('[Boardroom] Failed to fetch developments:', error);
+    return c.json({ error: 'Failed to fetch developments' }, 500);
+  }
+}
+
+/**
+ * GET /api/boardroom/scorecards
+ * Fetch agent prediction scorecards (win rate, streaks, P&L).
+ */
+export async function handleGetScorecards(c: Context) {
+  try {
+    const scorecards = await getAgentScorecards();
+    return c.json({ scorecards });
+  } catch (error) {
+    console.error('[Boardroom] Failed to fetch scorecards:', error);
+    return c.json({ error: 'Failed to fetch scorecards' }, 500);
+  }
+}
+
+/**
+ * GET /api/boardroom/predictions
+ * Fetch tracked predictions with optional agent/outcome filters.
+ */
+export async function handleGetPredictions(c: Context) {
+  try {
+    const agent = c.req.query('agent') as BoardroomAgent | undefined;
+    const outcome = c.req.query('outcome');
+    const predictions = await getPredictions({ agent, outcome });
+    return c.json({ predictions });
+  } catch (error) {
+    console.error('[Boardroom] Failed to fetch predictions:', error);
+    return c.json({ error: 'Failed to fetch predictions' }, 500);
+  }
+}
+
+/**
+ * POST /api/boardroom/predictions/:id/resolve
+ * Resolve a prediction with outcome, actual result, and optional P&L impact.
+ */
+export async function handleResolvePrediction(c: Context) {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json<{ outcome: PredictionOutcome; actualResult: string; pnlImpact?: number }>().catch(() => null);
+    if (!body?.outcome || !body?.actualResult) {
+      return c.json({ error: 'outcome and actualResult are required' }, 400);
+    }
+    await resolvePrediction(id, body.outcome, body.actualResult, body.pnlImpact);
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('[Boardroom] Failed to resolve prediction:', error);
+    return c.json({ error: 'Failed to resolve prediction' }, 500);
   }
 }

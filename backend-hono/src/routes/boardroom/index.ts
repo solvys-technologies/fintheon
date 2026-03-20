@@ -12,6 +12,10 @@ import {
   handleBreakingNewsTrigger,
   handleHeraldAlert,
   handleGetSchedulerStatus,
+  handleGetDevelopments,
+  handleGetScorecards,
+  handleGetPredictions,
+  handleResolvePrediction,
 } from './handlers.js';
 
 export function createBoardroomRoutes(): Hono {
@@ -36,6 +40,12 @@ export function createBoardroomRoutes(): Hono {
 
   // Scheduler status
   router.get('/scheduler/status', handleGetSchedulerStatus);
+
+  // Consilium Intelligence Layer
+  router.get('/developments', handleGetDevelopments);
+  router.get('/scorecards', handleGetScorecards);
+  router.get('/predictions', handleGetPredictions);
+  router.post('/predictions/:id/resolve', handleResolvePrediction);
 
   return router;
 }

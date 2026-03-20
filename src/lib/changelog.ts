@@ -9,6 +9,59 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-20T17:00:00',
+    agent: 'claude-code',
+    summary: 'Unification: Remove duplicate boardroom-standup.ts (conflicts with Harper boardroom-scheduler), add Herald to boardroom-spawner BOARDROOM_AGENTS, fix Herald emoji to 👴, 30s polling with visibility check, fix ConsiliumMessage onClick wiring',
+    files: ['backend-hono/src/index.ts', 'backend-hono/src/services/boardroom-spawner.ts', 'backend-hono/src/services/hermes-sessions.ts', 'components/consilium/AgentChattr.tsx', 'components/consilium/ConsiliumMessage.tsx'],
+  },
+  {
+    date: '2026-03-20T16:00:00',
+    agent: 'claude-code',
+    summary: 'T3: Frontend Consilium Intelligence Layer — filter bar, expanded message view, developments timeline, agent scorecards, sub-tab navigation (Chat/Timeline/Scorecards)',
+    files: ['components/consilium/ConsiliumFilterBar.tsx', 'components/consilium/ConsiliumMessageExpanded.tsx', 'components/consilium/DevelopmentsTimeline.tsx', 'components/consilium/AgentScorecard.tsx', 'components/consilium/AgentChattr.tsx', 'components/consilium/ConsiliumMessage.tsx', 'lib/services.ts'],
+  },
+  {
+    date: '2026-03-20T15:00:00',
+    agent: 'claude-code',
+    summary: 'T2: Backend routes + wiring for Consilium Intelligence Layer — filter params on /messages, new /developments + /scorecards + /predictions routes, standup + briefing schedulers wired, Level 4 huddle trigger',
+    files: [
+      'backend-hono/src/routes/boardroom/handlers.ts',
+      'backend-hono/src/routes/boardroom/index.ts',
+      'backend-hono/src/index.ts',
+      'backend-hono/src/services/riskflow/feed-poller.ts',
+      'backend-hono/.env.example',
+    ],
+  },
+  {
+    date: '2026-03-19T23:00:00',
+    agent: 'claude-code',
+    summary: 'T1: Backend services + types for Consilium Intelligence Layer — Herald pattern fix, boardroom filter support, developments extractor, outcome tracker, standup cron, huddle trigger, briefing scheduler',
+    files: [
+      'backend-hono/src/services/hermes-sessions.ts',
+      'backend-hono/src/types/boardroom.ts',
+      'backend-hono/src/types/developments.ts',
+      'backend-hono/src/types/outcome-tracking.ts',
+      'backend-hono/src/services/developments-extractor.ts',
+      'backend-hono/src/services/outcome-tracker.ts',
+      'backend-hono/src/services/boardroom-standup.ts',
+      'backend-hono/src/services/boardroom-huddle.ts',
+      'backend-hono/src/services/boardroom-briefings.ts',
+    ],
+  },
+  {
+    date: '2026-03-20T14:00:00',
+    agent: 'claude-code',
+    summary: 'Boardroom Autonomy: Implemented morning standup scheduler (node-cron, 5 phases 7:30-9:30 AM ET weekdays), agent spawner service (Harper opens, Feucht/Consul/Oracle respond via OpenRouter), breaking news trigger routes (POST /standup/:task, /trigger/breaking-news, /herald-alert), scheduler status endpoint, fixed Context type conflict in boardroom-news-trigger.ts. Harper handoff Phase 1-3 complete.',
+    files: [
+      'backend-hono/src/services/boardroom-spawner.ts',
+      'backend-hono/src/services/cron/boardroom-scheduler.ts',
+      'backend-hono/src/routes/boardroom/handlers.ts',
+      'backend-hono/src/routes/boardroom/index.ts',
+      'backend-hono/src/services/boardroom-news-trigger.ts',
+      'backend-hono/src/index.ts',
+    ],
+  },
+  {
     date: '2026-03-19T22:00:00',
     agent: 'claude-code',
     summary: 'Sprint: Fix Clerk auth (ClerkProvider restored with BYPASS_AUTH escape hatch, safe hook wrappers for ChatInterface/MainLayout), Supabase cloud persistence (5 tables: raw_riskflow_items, scored_riskflow_items, er_scores, user_settings, consilium_messages), centralized scoring pipeline (central-scorer polls unscored items, runs Grok analyzer, writes scored results), Consilium agent chat tab (AgentChattr with boardroom API, @mention, polling), cloud API routes (/api/cloud/*), redesigned auth screen (split layout: name left, Clerk right, dithered hero).',

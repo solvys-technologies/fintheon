@@ -4,6 +4,7 @@
  * Runs independently of HTTP requests for real-time updates
  */
 // [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
+// [claude-code 2026-03-20] T2: Added huddle trigger on Level 4 broadcasts
 
 import * as newsCache from './news-cache.js';
 import { enrichFeedWithAnalysis } from './feed-service.js';
@@ -11,6 +12,7 @@ import { broadcastLevel4 } from './sse-broadcaster.js';
 import { fetchEconomicFeed } from './economic-feed.js';
 import { getWarmCacheItems } from '../twitter-cli/index.js';
 import type { FeedItem } from '../../types/riskflow.js';
+import { triggerHuddle } from '../boardroom-huddle.js';
 
 const POLL_INTERVAL_MS = 15_000; // Poll every 15 seconds for instant Level 4 detection
 let pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -61,6 +63,7 @@ async function pollForNewItems(): Promise<void> {
     for (const item of level4Items) {
       console.log(`[FeedPoller] Broadcasting Level 4 item: ${item.headline}`);
       broadcastLevel4(item);
+      triggerHuddle(item).catch(err => console.error('[FeedPoller] Huddle trigger failed:', err));
     }
 
     if (level4Items.length > 0) {

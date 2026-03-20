@@ -32,6 +32,7 @@ const BOARDROOM_AGENTS: AgentStandupConfig[] = [
   { role: 'futures-desk', displayName: 'Feucht', emoji: '⚡' },
   { role: 'fundamentals-desk', displayName: 'Consul', emoji: '📜' },
   { role: 'pma-merged', displayName: 'Oracle', emoji: '📊' },
+  { role: 'herald', displayName: 'Herald', emoji: '👴' },
 ];
 
 /** Prompts for each standup phase */
