@@ -57,7 +57,7 @@ export function createVersionRoutes(): Hono {
 
   // GET /api/version/check
   router.get('/check', async (c) => {
-    const localVersion = process.env.PULSE_VERSION ?? 'v2.27.9'
+    const localVersion = process.env.FINTHEON_VERSION ?? 'v2.27.9'
     const latestTag = await getLatestTag()
 
     if (!latestTag) {

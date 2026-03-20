@@ -1,6 +1,6 @@
-// [claude-code 2026-03-10] Frontend QuickPulse types (mirror of backend)
+// [claude-code 2026-03-10] Frontend QuickFintheon types (mirror of backend)
 
-export interface QuickPulseRequest {
+export interface QuickFintheonRequest {
   image?: string
   algoState?: {
     bias?: string
@@ -10,21 +10,21 @@ export interface QuickPulseRequest {
   url?: string
 }
 
-export interface QuickPulseEntry {
+export interface QuickFintheonEntry {
   price: string
   reason: string
 }
 
-export interface QuickPulseResult {
+export interface QuickFintheonResult {
   bias: 'Bullish' | 'Bearish' | 'Neutral'
   confidence: number
   rationale: string
   entries: {
-    entry1: QuickPulseEntry
-    entry2?: QuickPulseEntry
+    entry1: QuickFintheonEntry
+    entry2?: QuickFintheonEntry
   }
-  stopLoss: QuickPulseEntry
-  target: QuickPulseEntry
+  stopLoss: QuickFintheonEntry
+  target: QuickFintheonEntry
   riskReward?: string
   timeframe?: string
   keyLevels?: string[]

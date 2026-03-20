@@ -194,7 +194,7 @@ export function FintheonChatInput({
         </div>
       )}
 
-      {/* Main container — 21st-dev-inspired clean shell w/ Pulse palette */}
+      {/* Main container — 21st-dev-inspired clean shell w/ Fintheon palette */}
       <div
         className={[
           'relative flex flex-col rounded-2xl border transition-all duration-200',
@@ -289,7 +289,7 @@ export function FintheonChatInput({
               title="Voice input"
               onClick={() => {
                 // Dispatch a click on the header voice orb to toggle voice
-                window.dispatchEvent(new CustomEvent('pulse:voice-toggle'));
+                window.dispatchEvent(new CustomEvent('fintheon:voice-toggle'));
               }}
             >
               <Mic size={14} />

@@ -75,7 +75,7 @@ export function TopHeader({
   const { tier } = useAuth();
   const backend = useBackend();
   const { selectedSymbol, traderName, alertConfig } = useSettings();
-  const instanceName = import.meta.env.VITE_PULSE_INSTANCE_NAME || 'Fintheon';
+  const instanceName = import.meta.env.VITE_FINTHEON_INSTANCE_NAME || 'Fintheon';
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
   const [ivLoading, setIvLoading] = useState(true);
@@ -179,9 +179,9 @@ export function TopHeader({
   const getTierDisplayName = () => {
     switch (tier) {
       case 'free': return 'Pleb';
-      case 'pulse': return 'Equestrian';
-      case 'pulse_plus': return 'Equestrian+';
-      case 'pulse_pro': return 'Consul';
+      case 'fintheon': return 'Equestrian';
+      case 'fintheon_plus': return 'Equestrian+';
+      case 'fintheon_pro': return 'Consul';
       default: return 'Pleb';
     }
   };

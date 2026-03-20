@@ -57,7 +57,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
   const { disabledSkills } = useFeatureFlags();
-  const [showCheckpoints, setShowCheckpoints] = usePanelState('pulse:panel:checkpoints', false);
+  const [showCheckpoints, setShowCheckpoints] = usePanelState('fintheon:panel:checkpoints', false);
   const [checkpointVersion, setCheckpointVersion] = useState(0);
   const [showQuickFintheonModal] = useState(false);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -87,8 +87,8 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
         handleSkillSend(detail.skillId, detail.prompt);
       }
     };
-    window.addEventListener('pulse:open-chat-skill', handler);
-    return () => window.removeEventListener('pulse:open-chat-skill', handler);
+    window.addEventListener('fintheon:open-chat-skill', handler);
+    return () => window.removeEventListener('fintheon:open-chat-skill', handler);
   }, [handleSkillSend]);
 
   const handleNewChat = useCallback(() => {

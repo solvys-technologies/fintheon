@@ -39,7 +39,7 @@ export const ChatMessageBubble = forwardRef<HTMLDivElement, ChatMessageBubblePro
           className={[
             'max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors',
             message.role === 'user'
-              ? 'pulse-user-bubble'
+              ? 'fintheon-user-bubble'
               : message.cancelled
               ? 'bg-white/[0.03] border-white/5 opacity-50'
               : 'bg-[#0f0f0b]/92 border-white/10 shadow-[0_12px_28px_rgba(0,0,0,0.35)]',

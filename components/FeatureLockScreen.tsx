@@ -10,9 +10,9 @@ interface FeatureLockScreenProps {
 
 const tierDisplayNames: Record<string, string> = {
   free: 'Free',
-  pulse: 'Pulse',
-  pulse_plus: 'Pulse+',
-  pulse_pro: 'Pulse Pro',
+  fintheon: 'Pulse',
+  fintheon_plus: 'Pulse+',
+  fintheon_pro: 'Pulse Pro',
 };
 
 export function FeatureLockScreen({

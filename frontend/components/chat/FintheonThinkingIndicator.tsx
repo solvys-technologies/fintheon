@@ -43,13 +43,13 @@ export function FintheonThinkingIndicator({ isThinking, thinkingContent, agentNa
   if (!isThinking) return null;
 
   return (
-    <div className="w-full rounded-xl px-3 py-2.5 pulse-accent-border pulse-thinking-container">
+    <div className="w-full rounded-xl px-3 py-2.5 fintheon-accent-border fintheon-thinking-container">
       <div className="flex items-start gap-3">
         {/* Radar pulse */}
         <div className="relative mt-0.5 h-6 w-6 flex-shrink-0">
-          <div className="absolute inset-0 rounded-full pulse-radar-ring-1 pulse-thinking-ring" />
-          <div className="absolute inset-[3px] rounded-full pulse-radar-ring-2 pulse-thinking-ring-inner" />
-          <div className="absolute inset-[7px] rounded-full pulse-radar-dot pulse-thinking-dot" />
+          <div className="absolute inset-0 rounded-full pulse-radar-ring-1 fintheon-thinking-ring" />
+          <div className="absolute inset-[3px] rounded-full pulse-radar-ring-2 fintheon-thinking-ring-inner" />
+          <div className="absolute inset-[7px] rounded-full pulse-radar-dot fintheon-thinking-dot" />
         </div>
 
         <div className="min-w-0 flex-1">
@@ -68,7 +68,7 @@ export function FintheonThinkingIndicator({ isThinking, thinkingContent, agentNa
                 {expanded ? 'Hide thinking pane' : 'Show thinking pane'}
               </button>
               {expanded && (
-                <div className="mt-1.5 max-h-[180px] overflow-y-auto border-l pl-2 text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap pulse-accent-border">
+                <div className="mt-1.5 max-h-[180px] overflow-y-auto border-l pl-2 text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap fintheon-accent-border">
                   {thinkingContent}
                 </div>
               )}

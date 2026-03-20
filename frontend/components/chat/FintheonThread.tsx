@@ -79,7 +79,7 @@ function formatTimestamp(date: Date): string {
 /*  Text part — Markdown renderer                                       */
 /* ------------------------------------------------------------------ */
 
-const PulseTextPart: FC<{ text: string }> = ({ text }) => (
+const FintheonTextPart: FC<{ text: string }> = ({ text }) => (
   <MarkdownTextPrimitive
     remarkPlugins={[remarkGfm]}
     components={MARKDOWN_COMPONENTS as any}
@@ -91,7 +91,7 @@ const PulseTextPart: FC<{ text: string }> = ({ text }) => (
 /*  Reasoning part — collapsible thinking pane                         */
 /* ------------------------------------------------------------------ */
 
-const PulseReasoningPart: FC<{ text: string }> = ({ text }) => {
+const FintheonReasoningPart: FC<{ text: string }> = ({ text }) => {
   if (!text) return null;
   return (
     <details className="mb-2 group/reason">
@@ -207,13 +207,13 @@ const ActionBar: FC<{ textContent: string; messageId?: string; onCheckpoint?: (i
 /*  User message                                                        */
 /* ------------------------------------------------------------------ */
 
-const PulseUserMessage: FC = () => {
+const FintheonUserMessage: FC = () => {
   const message = useMessage();
   const createdAt = (message as any).createdAt as Date | undefined;
 
   return (
     <div className="group/msg flex flex-col items-end animate-fade-slide-in">
-      <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors pulse-user-bubble">
+      <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
         <MessagePrimitive.Parts
           components={{
             Text: ({ text }) => (
@@ -242,7 +242,7 @@ const PulseUserMessage: FC = () => {
 /*  Assistant message                                                   */
 /* ------------------------------------------------------------------ */
 
-const PulseAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string) => void }> = ({ onCheckpoint }) => {
+const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string) => void }> = ({ onCheckpoint }) => {
   const message = useMessage();
   const createdAt = (message as any).createdAt as Date | undefined;
   const id = (message as any).id as string | undefined;
@@ -278,10 +278,10 @@ const PulseAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string) =
         <MessagePrimitive.Parts
           components={{
             Text: ({ text }) => (
-              <PulseTextPart text={text} />
+              <FintheonTextPart text={text} />
             ),
             Reasoning: ({ text }) => (
-              <PulseReasoningPart text={text} />
+              <FintheonReasoningPart text={text} />
             ),
           }}
         />
@@ -394,7 +394,7 @@ export function FintheonThread({ onSend, isLoading, agentName, onCheckpoint, las
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const AssistantMsg = () => (
-    <PulseAssistantMessage onCheckpoint={onCheckpoint} />
+    <FintheonAssistantMessage onCheckpoint={onCheckpoint} />
   );
 
   return (
@@ -411,7 +411,7 @@ export function FintheonThread({ onSend, isLoading, agentName, onCheckpoint, las
           {/* Message list */}
           <ThreadPrimitive.Messages
             components={{
-              UserMessage: PulseUserMessage,
+              UserMessage: FintheonUserMessage,
               AssistantMessage: AssistantMsg,
             }}
           />

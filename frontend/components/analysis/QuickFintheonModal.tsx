@@ -49,11 +49,11 @@ export default function QuickFintheonModal({ isOpen, onClose, onAnalysisComplete
                 timeframe: "1H"
             };
 
-            const result = await backend.ai.quickPulse(image, algoState);
+            const result = await backend.ai.quickFintheon(image, algoState);
             onAnalysisComplete(result);
             onClose();
         } catch (err: any) {
-            console.error("Quick Pulse failed:", err);
+            console.error("Quick Fintheon failed:", err);
             setError("Failed to analyze chart. Please try again.");
         } finally {
             setLoading(false);
@@ -68,7 +68,7 @@ export default function QuickFintheonModal({ isOpen, onClose, onAnalysisComplete
                 <div className="p-4 border-b border-[var(--fintheon-accent)]/10 flex items-center justify-between bg-[var(--fintheon-accent)]/5">
                     <div className="flex items-center gap-2 text-[var(--fintheon-accent)]">
                         <Activity className="w-5 h-5" />
-                        <h3 className="font-semibold text-lg tracking-wide">QuickPulse Vision</h3>
+                        <h3 className="font-semibold text-lg tracking-wide">QuickFintheon Vision</h3>
                     </div>
                     <button
                         onClick={onClose}

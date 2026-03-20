@@ -42,7 +42,7 @@ Voice features (mic input → transcription, TTS responses) use **OpenAI** only.
 
 ## Hermes / OpenRouter (Opus 4.6)
 
-Pulse uses **OpenRouter** with your **Nous subscription** for all analyst chat. Set `OPENROUTER_API_KEY` in `backend-hono/.env` (get it from [OpenRouter](https://openrouter.ai/settings/keys)). The default model is **Claude Opus 4.6** (`anthropic/claude-opus-4.6`). Health checks run periodically; the Hermes status in **Settings → Hermes** shows connection state.
+Fintheon uses **OpenRouter** with your **Nous subscription** for all analyst chat. Set `OPENROUTER_API_KEY` in `backend-hono/.env` (get it from [OpenRouter](https://openrouter.ai/settings/keys)). The default model is **Claude Opus 4.6** (`anthropic/claude-opus-4.6`). Health checks run periodically; the Hermes status in **Settings → Hermes** shows connection state.
 
 ## Running
 

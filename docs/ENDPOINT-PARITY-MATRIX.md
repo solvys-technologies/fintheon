@@ -1,4 +1,4 @@
-# Pulse Endpoint Parity Matrix
+# Fintheon Endpoint Parity Matrix
 
 **Generated**: 2026-03-09 | **Branch**: v7.7.7 @ ca3dce6
 

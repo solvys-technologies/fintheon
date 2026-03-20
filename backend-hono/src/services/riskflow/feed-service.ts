@@ -21,7 +21,9 @@ import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis
 import { isTwitterCliInstalled, pollTwitterForEconNews, getWarmCacheItems } from '../twitter-cli/index.js';
 import { estimatePoints } from '../market-data/point-estimator.js';
 import { fetchVIX } from '../vix-service.js';
+import { createLogger } from '../../lib/logger.js';
 
+const log = createLogger('RiskFlow');
 const MAX_FEED_ITEMS = 50;
 const isDev = process.env.NODE_ENV !== 'production';
 const ALLOW_MOCK_FALLBACK = process.env.RISKFLOW_ALLOW_MOCK_FALLBACK === 'true';
@@ -137,7 +139,7 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
 
     return enriched;
   } catch (error) {
-    console.error('[RiskFlow] Analysis enrichment failed for item:', item.id, error);
+    log.error(' Analysis enrichment failed for item:', item.id, error);
     // Fallback: ensure every item gets bullish/bearish (never null/neutral from failed enrichment)
     if (!item.sentiment || item.sentiment === 'neutral') {
       const fallbackSentiment = inferSentimentFromKeywords(item.headline);
@@ -239,10 +241,10 @@ async function fetchFreshFeed(): Promise<FeedItem[]> {
       (item, idx, arr) => idx === arr.findIndex(i => i.id === item.id)
     );
 
-    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${twitterCliItems.length} twcli)`);
+    log.info(` fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${twitterCliItems.length} twcli)`);
     return merged;
   } catch (error) {
-    console.error('[RiskFlow] Fetch error:', error);
+    log.error(' Fetch error:', error);
     return [];
   }
 }
@@ -337,7 +339,7 @@ async function getCachedFeed(): Promise<FeedItem[]> {
     hoursBack: 48 
   });
   
-  console.log(`[RiskFlow] getCachedFeed: Found ${dbItems.length} items in database cache`);
+  log.info(` getCachedFeed: Found ${dbItems.length} items in database cache`);
 
   // Check if we need to fetch fresh data
   const shouldFetchFresh = Date.now() - lastFreshFetch >= FETCH_INTERVAL_MS;
@@ -345,30 +347,30 @@ async function getCachedFeed(): Promise<FeedItem[]> {
 
   // If database is empty or we have < 15 items, always fetch fresh
   if (isDatabaseEmpty || dbItems.length < 15 || shouldFetchFresh) {
-    console.log(`[RiskFlow] Fetching fresh data (empty: ${isDatabaseEmpty}, count: ${dbItems.length}, shouldFetch: ${shouldFetchFresh})...`);
+    log.info(` Fetching fresh data (empty: ${isDatabaseEmpty}, count: ${dbItems.length}, shouldFetch: ${shouldFetchFresh})...`);
     lastFreshFetch = Date.now();
     
     const rawItems = await fetchFreshFeed();
-    console.log(`[RiskFlow] Fetched ${rawItems.length} raw items`);
+    log.info(` Fetched ${rawItems.length} raw items`);
 
     // If fetch failed and we have database items, use them
     if (rawItems.length === 0 && dbItems.length > 0) {
-      console.log(`[RiskFlow] Fresh fetch returned 0 items, using ${dbItems.length} items from database cache`);
+      log.info(` Fresh fetch returned 0 items, using ${dbItems.length} items from database cache`);
       feedCache = { items: dbItems, fetchedAt: Date.now() };
       return dbItems;
     }
 
     // If fetch failed and database is empty, return empty unless explicit mock fallback is enabled
     if (rawItems.length === 0 && dbItems.length === 0) {
-      console.warn(`[RiskFlow] No items from fresh fetch and database is empty`);
-      console.warn(`[RiskFlow] Environment: ${process.env.NODE_ENV}`);
+      log.warn(` No items from fresh fetch and database is empty`);
+      log.warn(` Environment: ${process.env.NODE_ENV}`);
 
       if (ALLOW_MOCK_FALLBACK) {
-        console.warn(`[RiskFlow] RISKFLOW_ALLOW_MOCK_FALLBACK=true — generating fallback mock data`);
+        log.warn(` RISKFLOW_ALLOW_MOCK_FALLBACK=true — generating fallback mock data`);
         const mockItems = generateMockFeed();
         const enrichedItems = await enrichFeedWithAnalysis(mockItems);
         await newsCache.storeFeedItems(enrichedItems);
-        console.log(`[RiskFlow] Stored ${enrichedItems.length} fallback mock items in database`);
+        log.info(` Stored ${enrichedItems.length} fallback mock items in database`);
         feedCache = { items: enrichedItems, fetchedAt: Date.now() };
         return enrichedItems;
       }
@@ -381,7 +383,7 @@ async function getCachedFeed(): Promise<FeedItem[]> {
     const existingIds = await newsCache.getCachedTweetIds(rawItems.map(i => i.id));
     const newItems = rawItems.filter(item => !existingIds.has(item.id));
 
-    console.log(`[RiskFlow] ${newItems.length} new items to analyze (${existingIds.size} already cached)`);
+    log.info(` ${newItems.length} new items to analyze (${existingIds.size} already cached)`);
 
     // Only analyze new items
     let enrichedNewItems: FeedItem[] = [];
@@ -389,7 +391,7 @@ async function getCachedFeed(): Promise<FeedItem[]> {
       enrichedNewItems = await enrichFeedWithAnalysis(newItems);
       // Store new items in database
       await newsCache.storeFeedItems(enrichedNewItems);
-      console.log(`[RiskFlow] Stored ${enrichedNewItems.length} enriched items in database`);
+      log.info(` Stored ${enrichedNewItems.length} enriched items in database`);
     }
 
     // Merge new items with existing database items
@@ -400,12 +402,12 @@ async function getCachedFeed(): Promise<FeedItem[]> {
       .slice(0, MAX_FEED_ITEMS);
 
     feedCache = { items: allItems, fetchedAt: Date.now() };
-    console.log(`[RiskFlow] Returning ${allItems.length} total items (${enrichedNewItems.length} new, ${dbItems.length} cached)`);
+    log.info(` Returning ${allItems.length} total items (${enrichedNewItems.length} new, ${dbItems.length} cached)`);
     return allItems;
   }
 
   // Use database cache (we have enough items and don't need to fetch)
-  console.log(`[RiskFlow] Using ${dbItems.length} items from database cache (no fresh fetch needed)`);
+  log.info(` Using ${dbItems.length} items from database cache (no fresh fetch needed)`);
   feedCache = { items: dbItems, fetchedAt: Date.now() };
   return dbItems;
 }
@@ -417,27 +419,27 @@ async function getCachedFeed(): Promise<FeedItem[]> {
  */
 export async function getFeed(userId: string, filters?: FeedFilters): Promise<FeedResponse> {
   try {
-    console.log(`[RiskFlow] getFeed called for user ${userId} with filters:`, JSON.stringify(filters));
+    log.info(` getFeed called for user ${userId} with filters:`, JSON.stringify(filters));
     
     const allItems = await getCachedFeed();
-    console.log(`[RiskFlow] getFeed: ${allItems.length} total items from cache`);
+    log.info(` getFeed: ${allItems.length} total items from cache`);
     
     if (allItems.length === 0) {
-      console.error(`[RiskFlow] getCachedFeed returned 0 items - this is the root cause!`);
-      console.error(`[RiskFlow] Check: database connection, fetchFreshFeed function`);
+      log.error(` getCachedFeed returned 0 items - this is the root cause!`);
+      log.error(` Check: database connection, fetchFreshFeed function`);
     }
     
     const watchlist = getWatchlist(userId);
-    console.log(`[RiskFlow] Watchlist for user ${userId}:`, JSON.stringify(watchlist));
+    log.info(` Watchlist for user ${userId}:`, JSON.stringify(watchlist));
 
     // Apply watchlist filtering
     let items = allItems.filter(item => matchesWatchlist(watchlist, item));
-    console.log(`[RiskFlow] After watchlist filter: ${items.length} items`);
+    log.info(` After watchlist filter: ${items.length} items`);
     
     if (items.length === 0 && allItems.length > 0) {
-      console.warn(`[RiskFlow] Watchlist filtered out all ${allItems.length} items!`);
-      console.warn(`[RiskFlow] Watchlist config:`, watchlist);
-      console.warn(`[RiskFlow] Sample item:`, JSON.stringify(allItems[0], null, 2));
+      log.warn(` Watchlist filtered out all ${allItems.length} items!`);
+      log.warn(` Watchlist config:`, watchlist);
+      log.warn(` Sample item:`, JSON.stringify(allItems[0], null, 2));
     }
 
   // Default to macroLevel 2+ (medium importance and above)
@@ -448,20 +450,20 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
 
   // Apply filters (including macroLevel)
   items = applyFilters(items, effectiveFilters);
-  console.log(`[RiskFlow] After filters (minMacroLevel: ${effectiveFilters.minMacroLevel}): ${items.length} items`);
+  log.info(` After filters (minMacroLevel: ${effectiveFilters.minMacroLevel}): ${items.length} items`);
 
   // If no items with minMacroLevel 2+, fall back to all items (for initial load)
   // This ensures users see something even if database only has low-level items
   if (items.length === 0 && effectiveFilters.minMacroLevel === 2 && !filters?.minMacroLevel) {
-    console.log(`[RiskFlow] No level 3+ items found, falling back to all items (level 1+)`);
+    log.info(` No level 3+ items found, falling back to all items (level 1+)`);
     const fallbackItems = allItems.filter(item => matchesWatchlist(watchlist, item));
     const fallbackFilters = { ...effectiveFilters, minMacroLevel: 1 as MacroLevel };
     items = applyFilters(fallbackItems, fallbackFilters);
-    console.log(`[RiskFlow] Fallback items after level 1+ filter: ${items.length}`);
+    log.info(` Fallback items after level 1+ filter: ${items.length}`);
     
     // If still no items, try without any macro level filter at all
     if (items.length === 0) {
-      console.log(`[RiskFlow] Still no items, trying without macro level filter`);
+      log.info(` Still no items, trying without macro level filter`);
       items = fallbackItems.filter(item => {
         // Only apply non-macro filters
         if (effectiveFilters.sources?.length && !effectiveFilters.sources.includes(item.source)) return false;
@@ -477,7 +479,7 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
         if (effectiveFilters.minIvScore !== undefined && (item.ivScore ?? 0) < effectiveFilters.minIvScore) return false;
         return true;
       });
-      console.log(`[RiskFlow] Items without macro level filter: ${items.length}`);
+      log.info(` Items without macro level filter: ${items.length}`);
     }
   }
 
@@ -503,11 +505,11 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
       fetchedAt: new Date().toISOString(),
     };
     
-    console.log(`[RiskFlow] getFeed returning: ${response.items.length} items (total: ${response.total}, hasMore: ${response.hasMore})`);
+    log.info(` getFeed returning: ${response.items.length} items (total: ${response.total}, hasMore: ${response.hasMore})`);
     return response;
   } catch (error) {
-    console.error(`[RiskFlow] getFeed error for user ${userId}:`, error);
-    console.error(`[RiskFlow] Error stack:`, error instanceof Error ? error.stack : 'No stack');
+    log.error(` getFeed error for user ${userId}:`, error);
+    log.error(` Error stack:`, error instanceof Error ? error.stack : 'No stack');
     // Return empty response instead of throwing
     return {
       items: [],

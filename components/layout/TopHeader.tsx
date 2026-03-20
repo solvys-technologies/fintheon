@@ -110,9 +110,9 @@ export function TopHeader({
   const getTierDisplayName = () => {
     switch (tier) {
       case 'free': return 'Free';
-      case 'pulse': return 'Pulse';
-      case 'pulse_plus': return 'Pulse+';
-      case 'pulse_pro': return 'Pulse Pro';
+      case 'fintheon': return 'Pulse';
+      case 'fintheon_plus': return 'Pulse+';
+      case 'fintheon_pro': return 'Pulse Pro';
       default: return 'Free';
     }
   };

@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils';
 
 /* ─── Shared glass style tokens ─── */
 const GLASS_BG = 'rgba(255, 255, 255, 0.06)';
-const GLASS_BORDER = 'rgba(212, 175, 55, 0.18)'; // pulse-accent tint
+const GLASS_BORDER = 'rgba(212, 175, 55, 0.18)'; // fintheon-accent tint
 const GLASS_BLUR = 16;
 
 /* ─── GlassFilter (SVG blur primitive, mount once) ─── */

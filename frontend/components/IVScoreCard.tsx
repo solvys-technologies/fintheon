@@ -68,10 +68,10 @@ function getVixPulseStyle(vixLevel: number): React.CSSProperties | undefined {
 }
 
 // Inject the keyframes once via a style tag
-const PULSE_KEYFRAMES_ID = 'vix-pulse-keyframes';
-if (typeof document !== 'undefined' && !document.getElementById(PULSE_KEYFRAMES_ID)) {
+const FINTHEON_KEYFRAMES_ID = 'vix-pulse-keyframes';
+if (typeof document !== 'undefined' && !document.getElementById(FINTHEON_KEYFRAMES_ID)) {
   const style = document.createElement('style');
-  style.id = PULSE_KEYFRAMES_ID;
+  style.id = FINTHEON_KEYFRAMES_ID;
   style.textContent = `
     @keyframes vix-pulse {
       0%, 100% { opacity: 1; }

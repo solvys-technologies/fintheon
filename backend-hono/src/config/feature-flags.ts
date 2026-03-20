@@ -1,5 +1,5 @@
 // [claude-code 2026-03-09] Feature flags for skill permissions
-// Load from PULSE_FEATURE_FLAGS env (JSON) or default (all enabled)
+// Load from FINTHEON_FEATURE_FLAGS env (JSON) or default (all enabled)
 
 export interface FeatureFlag {
   enabled: boolean
@@ -24,13 +24,13 @@ let cachedFlags: FeatureFlags | null = null
 export function getFeatureFlags(): FeatureFlags {
   if (cachedFlags) return cachedFlags
 
-  const envFlags = process.env.PULSE_FEATURE_FLAGS
+  const envFlags = process.env.FINTHEON_FEATURE_FLAGS
   if (envFlags) {
     try {
       const parsed = JSON.parse(envFlags) as FeatureFlags
       cachedFlags = { ...DEFAULT_FLAGS, ...parsed }
     } catch (err) {
-      console.error('[FeatureFlags] Failed to parse PULSE_FEATURE_FLAGS:', err)
+      console.error('[FeatureFlags] Failed to parse FINTHEON_FEATURE_FLAGS:', err)
       cachedFlags = DEFAULT_FLAGS
     }
   } else {

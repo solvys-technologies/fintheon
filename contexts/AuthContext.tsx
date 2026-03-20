@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useBackend } from '../lib/backend';
 
-export type UserTier = 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
+export type UserTier = 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
 
 interface OnboardingData {
   hasCompletedOnboarding: boolean;

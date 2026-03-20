@@ -83,7 +83,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({ children }) => {
             phase === 'auth' ? 'md:items-start md:gap-12' : ''
           }`}
         >
-          {/* Logo + Pulse glow */}
+          {/* Logo + Fintheon glow */}
           <div
             ref={logoRef}
             className={`relative mb-2 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${

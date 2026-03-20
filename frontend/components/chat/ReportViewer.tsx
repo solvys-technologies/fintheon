@@ -12,7 +12,7 @@ export function isReportHtml(text: string): boolean {
   if (!text) return false;
   const trimmed = text.trim();
   return (
-    trimmed.includes('<!-- PULSE_REPORT -->') || trimmed.includes('<!-- FINTHEON_REPORT -->') ||
+    trimmed.includes('<!-- FINTHEON_REPORT -->') || trimmed.includes('<!-- FINTHEON_REPORT -->') ||
     trimmed.startsWith('<!DOCTYPE html>') ||
     trimmed.startsWith('<!doctype html>') ||
     trimmed.startsWith('<html')

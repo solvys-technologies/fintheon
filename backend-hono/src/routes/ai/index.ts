@@ -37,7 +37,7 @@ export function createAiRoutes(): Hono {
   // GET /api/ai/skills
   router.get('/skills', handleGetSkills)
 
-  // QuickPulse — multimodal chart analysis
+  // QuickFintheon — multimodal chart analysis
   // POST /api/ai/quick-fintheon
   router.post('/quick-fintheon', handleQuickFintheon)
 

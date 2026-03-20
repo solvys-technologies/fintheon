@@ -262,7 +262,7 @@ function AlertRow({
     <div
       draggable
       onDragStart={handleDragStart}
-      className={`group relative rounded-xl border border-zinc-800/60 mx-2 my-1.5 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-70' : ''}`}
+      className={`group relative rounded-xl border border-zinc-800/60 mx-2 my-1.5 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
     >
       {/* Main content area */}
       <a
@@ -590,13 +590,13 @@ export default function RiskFlowPanel({
         )}
         </div>
 
-        {/* Pulse animation styles */}
+        {/* Fintheon animation styles */}
         <style>{`
           @keyframes riskflow-pulse {
             0%, 100% { box-shadow: none; }
             50% { box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.08); }
           }
-          .riskflow-pulse-row { animation: riskflow-pulse 3s ease-in-out infinite; }
+          .riskflow-fintheon-row { animation: riskflow-pulse 3s ease-in-out infinite; }
           @keyframes riskflow-badge-pulse {
             0%, 100% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.15); opacity: 0.8; }

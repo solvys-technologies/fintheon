@@ -16,6 +16,9 @@
 import cron from 'node-cron';
 import { getEnabledSchedules } from '../../config/boardroom-cron.js';
 import { spawnBoardroomStandup, type StandupTask } from '../boardroom-spawner.js';
+import { createLogger } from '../../lib/logger.js';
+
+const log = createLogger('BoardroomScheduler');
 
 /** Map cron schedule IDs to StandupTask types */
 const SCHEDULE_ID_TO_TASK: Record<string, StandupTask> = {
@@ -35,21 +38,21 @@ let isRunning = false;
  */
 export function startBoardroomScheduler(): void {
   if (isRunning) {
-    console.log('[BoardroomScheduler] Already running');
+    log.info(' Already running');
     return;
   }
 
   const schedules = getEnabledSchedules();
 
   if (schedules.length === 0) {
-    console.log('[BoardroomScheduler] No enabled schedules found');
+    log.info(' No enabled schedules found');
     return;
   }
 
   for (const schedule of schedules) {
     const task = SCHEDULE_ID_TO_TASK[schedule.id];
     if (!task) {
-      console.warn(`[BoardroomScheduler] Unknown schedule ID: ${schedule.id}, skipping`);
+      log.warn(` Unknown schedule ID: ${schedule.id}, skipping`);
       continue;
     }
 
@@ -60,7 +63,7 @@ export function startBoardroomScheduler(): void {
         try {
           await spawnBoardroomStandup(task);
         } catch (error) {
-          console.error(`[BoardroomScheduler] Failed to run ${task}:`, error);
+          log.error(` Failed to run ${task}:`, error);
         }
       },
       { timezone: schedule.timezone }
@@ -85,7 +88,7 @@ export function stopBoardroomScheduler(): void {
   }
   scheduledJobs = [];
   isRunning = false;
-  console.log('[BoardroomScheduler] Stopped all cron jobs');
+  log.info(' Stopped all cron jobs');
 }
 
 /**

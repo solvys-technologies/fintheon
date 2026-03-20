@@ -208,7 +208,7 @@ export function SettingsPage() {
                         className={`group text-left p-4 rounded-lg border transition-all hover:scale-[1.01] ${
                           isDanger
                             ? 'border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5'
-                            : 'pulse-accent-border pulse-accent-border-hover'
+                            : 'fintheon-accent-border fintheon-accent-border-hover'
                         }`}
                         style={{ backgroundColor: 'rgba(10,10,0,0.4)' }}
                       >
@@ -216,7 +216,7 @@ export function SettingsPage() {
                           <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                             isDanger
                               ? 'bg-red-500/10 text-red-400 group-hover:bg-red-500/20'
-                              : 'pulse-settings-icon'
+                              : 'fintheon-settings-icon'
                           } transition-colors`}>
                             <Icon className="w-4 h-4" />
                           </div>
@@ -910,7 +910,7 @@ export function SettingsPage() {
                 <section>
                   <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Account Tier</h3>
                   <div className="flex gap-2">
-                    {(['free', 'pulse', 'pulse_plus', 'pulse_pro'] as const).map(t => (
+                    {(['free', 'fintheon', 'fintheon_plus', 'fintheon_pro'] as const).map(t => (
                       <Button
                         key={t}
                         variant={tier === t ? 'primary' : 'secondary'}

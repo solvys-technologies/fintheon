@@ -271,7 +271,7 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
 
   /** Open sidebar chat with Regimes skill attached */
   const handleAIGenerate = () => {
-    window.dispatchEvent(new CustomEvent('pulse:open-chat-skill', {
+    window.dispatchEvent(new CustomEvent('fintheon:open-chat-skill', {
       detail: { skillId: 'regimes', prompt: 'Create a new trading regime for me' },
     }));
     onClose();

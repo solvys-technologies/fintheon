@@ -333,71 +333,71 @@
 }
 
 /* Pulse theme utility classes */
-.pulse-accent-hover:hover {
+.fintheon-accent-hover:hover {
   color: var(--fintheon-accent);
   background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
 }
 
-.pulse-accent-border {
+.fintheon-accent-border {
   border-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
 }
 
-.pulse-accent-border-hover:hover {
+.fintheon-accent-border-hover:hover {
   border-color: color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
   background-color: color-mix(in srgb, var(--fintheon-accent) 5%, transparent);
 }
 
-.group:hover .pulse-group-accent {
+.group:hover .fintheon-group-accent {
   color: var(--fintheon-accent);
 }
 
-.pulse-thinking-container {
+.fintheon-thinking-container {
   border: 1px solid color-mix(in srgb, var(--fintheon-accent) 25%, transparent);
   background-color: var(--fintheon-surface);
 }
 
-.pulse-thinking-ring {
+.fintheon-thinking-ring {
   border: 1px solid color-mix(in srgb, var(--fintheon-accent) 60%, transparent);
 }
 
-.pulse-thinking-ring-inner {
+.fintheon-thinking-ring-inner {
   border: 1px solid color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
 }
 
-.pulse-thinking-dot {
+.fintheon-thinking-dot {
   background-color: color-mix(in srgb, var(--fintheon-accent) 70%, transparent);
 }
 
-.pulse-settings-icon {
+.fintheon-settings-icon {
   background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
   color: var(--fintheon-accent);
 }
 
-.group:hover .pulse-settings-icon {
+.group:hover .fintheon-settings-icon {
   background-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
 }
 
-.pulse-nav-active {
+.fintheon-nav-active {
   background-color: var(--fintheon-accent);
   color: black;
 }
 
-.pulse-nav-inactive {
+.fintheon-nav-inactive {
   color: color-mix(in srgb, var(--fintheon-accent) 60%, transparent);
 }
 
-.pulse-nav-inactive:hover {
+.fintheon-nav-inactive:hover {
   color: var(--fintheon-accent);
   background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
 }
 
-.pulse-nav-active-light {
+.fintheon-nav-active-light {
   border-color: color-mix(in srgb, var(--fintheon-accent) 50%, transparent);
   color: var(--fintheon-accent);
   background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
 }
 
-.pulse-user-bubble {
+.fintheon-user-bubble {
   background-color: color-mix(in srgb, var(--fintheon-accent) 12%, transparent);
   border-color: color-mix(in srgb, var(--fintheon-accent) 35%, transparent);
   box-shadow: 0 12px 26px color-mix(in srgb, var(--fintheon-accent) 8%, transparent);

@@ -25,7 +25,9 @@ import { getCachedAssessment } from '../systemic/risk-detector.js'
 import { getCachedFredIndicators, getFredFetchedAt } from '../systemic/fred-service.js'
 import { readTradeIdeas, readDailyPnl } from '../supabase-service.js'
 import type { KalshiContext } from '../../types/context-bank.js'
+import { createLogger } from '../../lib/logger.js'
 
+const log = createLogger('ContextBank')
 const TICK_INTERVAL_MS = 120_000 // 120s
 const RING_SIZE = 10
 const PERSIST_EVERY = 5 // Persist to DB every 5th snapshot
@@ -334,7 +336,7 @@ async function restoreFromDB(): Promise<void> {
         restored.ageSeconds = Math.round(ageMs / 1000)
         _currentVersion = restored.version
         _snapshots.push(restored)
-        console.log(`[ContextBank] Restored snapshot v${restored.version} from DB (${Math.round(ageMs / 1000)}s old)`)
+        log.info(` Restored snapshot v${restored.version} from DB (${Math.round(ageMs / 1000)}s old)`)
       }
     }
   } catch { /* Silent — fresh snapshot on first tick */ }
@@ -389,7 +391,7 @@ async function tick(): Promise<void> {
       `Desks: ${snapshot.deskReports.length}/5`
     )
   } catch (err) {
-    console.error('[ContextBank] Tick failed:', err)
+    log.error(' Tick failed:', err)
   }
 }
 
@@ -424,7 +426,7 @@ export function submitDeskReport(report: DeskReport): void {
   // Persist to DB
   persistDeskReport(report)
 
-  console.log(`[ContextBank] Desk report from ${report.agent} (${report.desk}) v${report.snapshotVersion} — confidence: ${report.confidence}`)
+  log.info(` Desk report from ${report.agent} (${report.desk}) v${report.snapshotVersion} — confidence: ${report.confidence}`)
 }
 
 export function getLatestDeskReports(): DeskReport[] {
@@ -438,7 +440,7 @@ export function getDeskReportHistory(desk: DeskId, limit: number = 10): DeskRepo
 export function submitBrief(brief: ConsolidatedBrief): void {
   _latestBrief = brief
   persistBrief(brief)
-  console.log(`[ContextBank] Brief submitted for v${brief.snapshotVersion} — ${brief.topAlerts.length} alerts, ${brief.topTradeIdeas.length} ideas`)
+  log.info(` Brief submitted for v${brief.snapshotVersion} — ${brief.topAlerts.length} alerts, ${brief.topTradeIdeas.length} ideas`)
 }
 
 export function getLatestBrief(): ConsolidatedBrief | null {
@@ -470,7 +472,7 @@ async function persistBrief(brief: ConsolidatedBrief): Promise<void> {
 export function startContextBankTicker(): void {
   if (_intervalId) return
 
-  console.log('[ContextBank] Starting Unified Context Bank ticker...')
+  log.info(' Starting Unified Context Bank ticker...')
 
   // Restore from DB first
   restoreFromDB().then(() => {
@@ -479,7 +481,7 @@ export function startContextBankTicker(): void {
   })
 
   _intervalId = setInterval(tick, TICK_INTERVAL_MS)
-  console.log(`[ContextBank] Ticking every ${TICK_INTERVAL_MS / 1000}s`)
+  log.info(` Ticking every ${TICK_INTERVAL_MS / 1000}s`)
 }
 
 export function stopContextBankTicker(): void {
@@ -487,5 +489,5 @@ export function stopContextBankTicker(): void {
     clearInterval(_intervalId)
     _intervalId = null
   }
-  console.log('[ContextBank] Stopped')
+  log.info(' Stopped')
 }

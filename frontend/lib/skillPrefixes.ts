@@ -1,4 +1,4 @@
-// [claude-code 2026-03-11] T3c: QuickPulse prefix updated for auto-screenshot via Playwright
+// [claude-code 2026-03-11] T3c: QuickFintheon prefix updated for auto-screenshot via Playwright
 export const SKILL_PREFIXES: Record<string, string> = {
   brief: '[SKILL:BRIEF] Search the web for the latest information about the instrument mentioned, summarize findings, and interpret what it means for the user\'s position or thesis. Check active trading regimes for timing context. Be concise and actionable.',
   validate: '[SKILL:VALIDATE] Act as Herald (risk validation). Analyze the validity of the user\'s thesis against: (1) current research narratives we\'re tracking, (2) memos we\'ve published, (3) current news via web search, (4) check active trading regimes for timing context. Assess market risk and provide a confidence-weighted verdict.',

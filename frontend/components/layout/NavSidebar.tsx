@@ -117,7 +117,7 @@ export function NavSidebar({
   const sidebarContent = (
     <div
       style={{ backgroundColor: 'var(--fintheon-surface)' }}
-      className={`h-full border-r pulse-accent-border flex flex-col py-3 transition-all duration-200 ease-out ${
+      className={`h-full border-r fintheon-accent-border flex flex-col py-3 transition-all duration-200 ease-out ${
         expanded ? 'w-48' : 'w-11'
       }`}
       onMouseEnter={handleMouseEnter}
@@ -128,7 +128,7 @@ export function NavSidebar({
         <button
           type="button"
           onClick={() => setManualExpand((v) => !v)}
-          className="w-full flex items-center justify-center py-1 rounded-md pulse-nav-inactive transition-colors"
+          className="w-full flex items-center justify-center py-1 rounded-md fintheon-nav-inactive transition-colors"
           title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
         >
           {expanded ? <ChevronsLeft className="w-3.5 h-3.5" /> : <ChevronsRight className="w-3.5 h-3.5" />}
@@ -142,8 +142,8 @@ export function NavSidebar({
             onClick={() => setEditMode((v) => !v)}
             className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
               editMode
-                ? 'pulse-accent-border pulse-nav-active-light'
-                : 'border-zinc-700 text-zinc-400 pulse-accent-hover'
+                ? 'fintheon-accent-border fintheon-nav-active-light'
+                : 'border-zinc-700 text-zinc-400 fintheon-accent-hover'
             }`}
             title={editMode ? 'Finish reordering' : 'Enable drag reorder'}
           >
@@ -165,7 +165,7 @@ export function NavSidebar({
             >
               {expanded && editMode && (
                 <div
-                  className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-500 pulse-accent-hover"
+                  className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-500 fintheon-accent-hover"
                   title="Drag to reorder"
                 >
                   <GripVertical className="w-3 h-3" />
@@ -178,8 +178,8 @@ export function NavSidebar({
                   expanded ? 'px-2 py-1.5' : 'justify-center py-1.5 px-0'
                 } ${
                   isActive
-                    ? 'pulse-nav-active'
-                    : 'pulse-nav-inactive'
+                    ? 'fintheon-nav-active'
+                    : 'fintheon-nav-inactive'
                 }`}
                 title={expanded ? undefined : label}
               >
@@ -209,8 +209,8 @@ export function NavSidebar({
             expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
           } ${
             activeTab === 'earnings'
-              ? 'pulse-nav-active'
-              : 'pulse-nav-inactive'
+              ? 'fintheon-nav-active'
+              : 'fintheon-nav-inactive'
           }`}
           title={expanded ? undefined : 'Performance'}
         >
@@ -232,8 +232,8 @@ export function NavSidebar({
             expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
           } ${
             activeTab === 'settings'
-              ? 'pulse-nav-active'
-              : 'pulse-nav-inactive'
+              ? 'fintheon-nav-active'
+              : 'fintheon-nav-inactive'
           }`}
           title={expanded ? undefined : 'Settings'}
         >

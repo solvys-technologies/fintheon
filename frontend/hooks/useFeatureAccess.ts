@@ -17,7 +17,7 @@ export function useFeatureAccess(featureName: string): FeatureAccessResult {
   const backend = useBackend();
   const { tier } = useAuth();
   const [hasAccess, setHasAccess] = useState(IS_INTERNAL_BUILD);
-  const [requiredTier, setRequiredTier] = useState<string>('pulse_pro');
+  const [requiredTier, setRequiredTier] = useState<string>('fintheon_pro');
   const [isLoading, setIsLoading] = useState(!IS_INTERNAL_BUILD);
 
   useEffect(() => {
@@ -46,12 +46,12 @@ export function useFeatureAccess(featureName: string): FeatureAccessResult {
         } else {
           // Default to no access if feature not found
           setHasAccess(false);
-          setRequiredTier('pulse_pro');
+          setRequiredTier('fintheon_pro');
         }
       } catch (error) {
         console.error('Failed to check feature access:', error);
         setHasAccess(false);
-        setRequiredTier('pulse_pro');
+        setRequiredTier('fintheon_pro');
       } finally {
         setIsLoading(false);
       }

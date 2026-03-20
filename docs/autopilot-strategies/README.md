@@ -66,5 +66,5 @@ All time windows are in **EST/EDT** (US Eastern Time):
 
 ## Reference
 
-- Pulse Autopilot System: See main repository documentation
+- Fintheon Autopilot System: See main repository documentation
 - Strategy Implementation: See `backend-hono/src/services/agents/trader-agent.ts`

@@ -62,7 +62,7 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'pulse_settings';
+const STORAGE_KEY = 'fintheon_settings';
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {

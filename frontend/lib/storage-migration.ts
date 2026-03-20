@@ -1,6 +1,6 @@
-// [claude-code 2026-03-16] Pulse → Fintheon localStorage key migration
+// [claude-code 2026-03-16] Fintheon → Fintheon localStorage key migration
 const KEY_MAP: Record<string, string> = {
-  'pulse_settings': 'fintheon:settings',
+  'fintheon_settings': 'fintheon:settings',
   'pulse_tour_completed': 'fintheon:tour-completed',
   'pulse_last_seen_version': 'fintheon:last-seen-version',
   'pulse_interview_completed': 'fintheon:interview-completed',
@@ -18,7 +18,7 @@ const KEY_MAP: Record<string, string> = {
   'pulse_narrative_snapshot_v1': 'fintheon:narrative-snapshot:v1',
   'pulse_narrative_agent_v1': 'fintheon:narrative-agent:v1',
   'pulse_hermes_conversation': 'fintheon:hermes-conversation',
-  'pulse_threads': 'fintheon:threads',
+  'fintheon_threads': 'fintheon:threads',
   'pulse_voice_assistant_enabled:v1': 'fintheon:voice-assistant-enabled:v1',
   'pulse_voice_mic_device:v1': 'fintheon:voice-mic-device:v1',
   'pulse_voice_transcripts:v1': 'fintheon:voice-transcripts:v1',

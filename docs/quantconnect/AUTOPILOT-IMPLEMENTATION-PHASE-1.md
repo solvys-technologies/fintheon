@@ -3,7 +3,7 @@
 
 ## Scope
 
-Phase 1 establishes the real-money execution path: connecting Pulse → ProjectX (TopstepX/Rithmic) → live market orders. The agent pipeline backend is already built (see AGENT-2-CLAUDE-CODE-TASKS.md Weeks 1–7). Phase 1 closes the final gap between AI proposals and order execution.
+Phase 1 establishes the real-money execution path: connecting Fintheon → ProjectX (TopstepX/Rithmic) → live market orders. The agent pipeline backend is already built (see AGENT-2-CLAUDE-CODE-TASKS.md Weeks 1–7). Phase 1 closes the final gap between AI proposals and order execution.
 
 **Build order:** Rithmic test trade → QuantConnect 40/40 Club algo → Flush → Ripper
 

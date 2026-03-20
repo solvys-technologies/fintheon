@@ -16,7 +16,7 @@ import { createAgentRoutes } from './agents/index.js';
 import { createBoardroomRoutes } from './boardroom/index.js';
 import { createRithmicRoutes } from './rithmic/index.js';
 import { createHyperliquidRoutes } from './hyperliquid/index.js';
-import { createNotionRoutes } from './notion/index.js';
+import { createDataRoutes } from './data/index.js';
 import { createNarrativeRoutes } from './narrative/index.js';
 import { createMirofishRoutes } from './mirofish/index.js';
 import { createERRoutes } from './er/index.js';
@@ -41,8 +41,14 @@ export function registerRoutes(app: Hono): void {
   // Phase 2: Market routes - VIX is public
   app.route('/api/market', createMarketRoutes());
   app.route('/api/boardroom', createBoardroomRoutes());
-  // Notion polling routes — internal org data, no user auth required
-  app.route('/api/notion', createNotionRoutes());
+  // Data routes — Supabase-backed (replaces Notion polling routes)
+  app.route('/api/data', createDataRoutes());
+  // Legacy /api/notion/* aliases → redirect to /api/data/* for one sprint
+  app.all('/api/notion/*', (c) => {
+    const suffix = c.req.path.replace('/api/notion', '/api/data');
+    const query = c.req.url.includes('?') ? '?' + c.req.url.split('?')[1] : '';
+    return c.redirect(suffix + query, 301);
+  });
   // Regime tracker — public, returns active trading regimes
   app.route('/api/regimes', createRegimeRoutes());
   // Market data — Yahoo Finance quotes/VIX + Unusual Whales GEX/walls/flow (public)

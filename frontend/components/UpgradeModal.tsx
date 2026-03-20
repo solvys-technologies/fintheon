@@ -7,7 +7,7 @@ interface UpgradeModalProps {
   onClose: () => void;
 }
 
-type Tier = 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
+type Tier = 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
 
 interface TierInfo {
   name: string;
@@ -33,7 +33,7 @@ const tierData: Record<Tier, TierInfo> = {
     borderColor: 'border-gray-600',
     buttonText: 'Current Plan',
   },
-  pulse: {
+  fintheon: {
     name: 'Equestrian',
     price: '$49',
     priceSubtext: 'per month',
@@ -47,7 +47,7 @@ const tierData: Record<Tier, TierInfo> = {
     borderColor: 'border-[var(--fintheon-accent)]',
     buttonText: 'Upgrade to Equestrian',
   },
-  pulse_plus: {
+  fintheon_plus: {
     name: 'Equestrian+',
     price: '$149',
     priceSubtext: 'per month',
@@ -61,7 +61,7 @@ const tierData: Record<Tier, TierInfo> = {
     borderColor: 'border-[color-mix(in_srgb,var(--fintheon-accent)_80%,white)]',
     buttonText: 'Upgrade to Equestrian+',
   },
-  pulse_pro: {
+  fintheon_pro: {
     name: 'Consul',
     price: '$299',
     priceSubtext: 'per month',
@@ -114,7 +114,7 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
 
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {(['free', 'pulse', 'pulse_plus', 'pulse_pro'] as const).map((t) => {
+            {(['free', 'fintheon', 'fintheon_plus', 'fintheon_pro'] as const).map((t) => {
               const info = tierData[t];
               const isCurrent = tier === t;
               

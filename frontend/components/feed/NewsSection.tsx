@@ -244,7 +244,7 @@ export function NewsSection() {
                 rel="noopener noreferrer"
                 className={`group block bg-[var(--fintheon-bg)] border border-zinc-800/60 px-4 py-3 transition-colors hover:border-[var(--fintheon-accent)]/30 ${
                   seen ? 'opacity-60' : ''
-                } ${isHigh ? 'riskflow-pulse-row' : ''}`}
+                } ${isHigh ? 'riskflow-fintheon-row' : ''}`}
               >
                 {/* Row 1: Priority badge + Headline + Cyclical right-justified */}
                 <div className="flex items-start gap-2">
@@ -287,13 +287,13 @@ export function NewsSection() {
         )}
       </div>
 
-      {/* Pulse animation for high-severity rows */}
+      {/* Fintheon animation for high-severity rows */}
       <style>{`
         @keyframes riskflow-pulse {
           0%, 100% { box-shadow: none; }
           50% { box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.08); }
         }
-        .riskflow-pulse-row { animation: riskflow-pulse 3s ease-in-out infinite; }
+        .riskflow-fintheon-row { animation: riskflow-pulse 3s ease-in-out infinite; }
       `}</style>
     </div>
   );
