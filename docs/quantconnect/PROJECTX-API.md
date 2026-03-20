@@ -1,5 +1,5 @@
-# ProjectX API Reference (cached from solvys-technologies/fintheon)
-# See full docs: gh api "repos/solvys-technologies/fintheon/contents/docs/integration/PROJECTX-API.md"
+# ProjectX API Reference (cached from solvys-technologies/pulse)
+# See full docs: gh api "repos/solvys-technologies/pulse/contents/docs/integration/PROJECTX-API.md"
 
 ## Key Details
 - **Base URL:** https://api.topstepx.com/api

@@ -1,6 +1,6 @@
 # Fintheon — Setup & Handoff Guide
 
-> **For AI agents** (Harper-Hermes, Oracle, Feucht, Consul, Claude Code): Read this file when bootstrapping the repo on a new machine. Follow the steps in order. The first-run setup wizard will verify everything is connected.
+> **For AI agents** (Harper-Hermes, Oracle, Feucht, Consul, Herald, Claude Code): Read this file when bootstrapping the repo on a new machine. Follow the steps in order. The first-run setup wizard will verify everything is connected.
 
 ## Prerequisites
 
@@ -11,8 +11,8 @@
 ## Installation
 
 ```bash
-git clone https://github.com/solvys-technologies/fintheon.git
-cd fintheon
+git clone https://github.com/solvys-technologies/pulse.git
+cd pulse
 
 # Install all dependencies (root + frontend + backend)
 npm install && npm --prefix frontend install && npm --prefix backend-hono install
@@ -42,7 +42,7 @@ Voice features (mic input → transcription, TTS responses) use **OpenAI** only.
 
 ## Hermes / OpenRouter (Opus 4.6)
 
-Fintheon uses **OpenRouter** with your **Nous subscription** for all analyst chat. Set `OPENROUTER_API_KEY` in `backend-hono/.env` (get it from [OpenRouter](https://openrouter.ai/settings/keys)). The default model is **Claude Opus 4.6** (`anthropic/claude-opus-4.6`). Health checks run periodically; the Hermes status in **Settings → Hermes** shows connection state.
+Pulse uses **OpenRouter** with your **Nous subscription** for all analyst chat. Set `OPENROUTER_API_KEY` in `backend-hono/.env` (get it from [OpenRouter](https://openrouter.ai/settings/keys)). The default model is **Claude Opus 4.6** (`anthropic/claude-opus-4.6`). Health checks run periodically; the Hermes status in **Settings → Hermes** shows connection state.
 
 ## Running
 

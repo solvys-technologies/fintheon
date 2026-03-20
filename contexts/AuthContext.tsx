@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useBackend } from '../lib/backend';
 
-export type UserTier = 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
+export type UserTier = 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
 
 interface OnboardingData {
   hasCompletedOnboarding: boolean;
@@ -23,10 +23,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Bypass Clerk in Electron (localhost) or dev mode
+// Development mode: bypass Clerk authentication
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const IS_ELECTRON_INNER = typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.hostname === 'localhost');
-const BYPASS_AUTH = IS_ELECTRON_INNER || (DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true');
+const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
 
 // Auth provider without Clerk (for dev mode)
 function AuthProviderNoClerk({ children }: { children: ReactNode }) {
@@ -152,14 +151,9 @@ function AuthProviderWithClerk({ children }: { children: ReactNode }) {
   );
 }
 
-// Bypass flags (matching App.tsx — Electron runs on localhost, must skip Clerk)
-const DEV_MODE_AUTH = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const IS_ELECTRON = typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.hostname === 'localhost');
-const BYPASS_AUTH_CTX = IS_ELECTRON || (DEV_MODE_AUTH && import.meta.env.VITE_BYPASS_AUTH === 'true');
-
-// Main AuthProvider — uses Clerk when available, dev fallback otherwise
+// Main AuthProvider that chooses the right implementation
 export function AuthProvider({ children }: { children: ReactNode }) {
-  if (BYPASS_AUTH_CTX || !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) {
+  if (BYPASS_AUTH) {
     return <AuthProviderNoClerk>{children}</AuthProviderNoClerk>;
   }
   return <AuthProviderWithClerk>{children}</AuthProviderWithClerk>;

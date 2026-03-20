@@ -11,5 +11,5 @@
 
 ## Global Environment
 - Frontend: Vercel (Auto-deploy)
-- Backend: Fly.io (App: fintheon-api-withered-dust-1394)
+- Backend: Fly.io (App: pulse-api-withered-dust-1394)
 - DB: Neon (Migrations in backend-hono/migrations)

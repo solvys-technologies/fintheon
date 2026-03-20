@@ -15,6 +15,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
+        'mini-widget': path.resolve(__dirname, 'mini-widget.html'),
       },
     },
     outDir: 'dist',

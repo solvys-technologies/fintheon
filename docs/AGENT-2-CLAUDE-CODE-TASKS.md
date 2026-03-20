@@ -3,8 +3,8 @@
 
 ## Non-Negotiable Scope & UI Directives (Chief Override)
 
-- **Fintheon-only scope**: All implementation in this plan targets **Fintheon** exclusively. **Do not implement anything in ClawSpace** (deprecated).
-- **UI source standard**: Any new or updated chat UI elements/components must be sourced from **21st.dev** patterns/components first, then adapted to Fintheon.
+- **Pulse-only scope**: All implementation in this plan targets **Pulse** exclusively. **Do not implement anything in ClawSpace** (deprecated).
+- **UI source standard**: Any new or updated chat UI elements/components must be sourced from **21st.dev** patterns/components first, then adapted to Pulse.
 - **No blank assistant bubble while thinking**: When the agent is working/thinking and not yet streaming tokens, do **not** render an empty assistant message bubble. Only render assistant bubble once stream/output begins.
 - **Sticky bottom chat behavior**: Chat view must stay pinned to the bottom during active conversation/streaming (with robust auto-scroll + bottom-lock behavior) unless the user intentionally scrolls up.
 
@@ -278,7 +278,7 @@
 
 ---
 
-## Week 5: Risk Manager Agent & QuickFintheon
+## Week 5: Risk Manager Agent & QuickPulse
 
 ### Risk Manager Agent (Claude Opus 4.5)
 - [ ] Create `risk-manager-agent.ts` implementation
@@ -294,8 +294,8 @@
 - [ ] Add modification suggestions
 - [ ] Build risk assessment reports
 
-### QuickFintheon Analyst (Claude Opus 4.5 Fast)
-- [ ] Create `quickfintheon-analyst.ts` service
+### QuickPulse Analyst (Claude Opus 4.5 Fast)
+- [ ] Create `quickpulse-analyst.ts` service
 - [ ] Implement snapshot analysis (<5 seconds)
 - [ ] Integrate news sentiment grade
 - [ ] Add technical overlay analysis
@@ -516,7 +516,7 @@
 
 ### Week 5
 - ✅ Risk manager evaluating correctly
-- ✅ QuickFintheon < 5 second response
+- ✅ QuickPulse < 5 second response
 - ✅ Risk decisions logged
 
 ### Week 6

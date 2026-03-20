@@ -1,0 +1,296 @@
+// [claude-code 2026-03-06] NarrativeFlow localStorage CRUD + useNarrativeStore hook
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { getMonday } from './narrative-time';
+import type {
+  NarrativeFlowState,
+  NarrativeSnapshot,
+  AgentProviderConfig,
+  NarrativeAction,
+  NarrativeLane,
+  CatalystCard,
+} from './narrative-types';
+
+const STORAGE_KEY = 'fintheon:narrative:v1';
+const SNAPSHOT_KEY = 'fintheon:narrative-snapshot:v1';
+const AGENT_CONFIG_KEY = 'fintheon:narrative-agent:v1';
+
+export function generateId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function defaultState(): NarrativeFlowState {
+  const now = new Date();
+  return {
+    lanes: [],
+    catalysts: [],
+    ropes: [],
+    confluenceNodes: [],
+    conflicts: [],
+    zoomLevel: 'week',
+    currentWeekStart: getMonday(now).toISOString(),
+    selectedCatalystId: null,
+    selectedLaneId: null,
+    filterSentiment: 'all',
+    heatmapEnabled: false,
+    replayMode: false,
+    replayPosition: 0,
+    agentProvider: { provider: 'manual', autoApprove: false },
+  };
+}
+
+export function loadNarrativeState(): NarrativeFlowState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    return { ...defaultState(), ...JSON.parse(raw) };
+  } catch {
+    return defaultState();
+  }
+}
+
+export function saveNarrativeState(state: NarrativeFlowState): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // silent
+  }
+}
+
+export function loadSnapshot(): NarrativeSnapshot | null {
+  try {
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function saveSnapshot(snapshot: NarrativeSnapshot): void {
+  try {
+    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
+  } catch {
+    // silent
+  }
+}
+
+export function loadAgentConfig(): AgentProviderConfig {
+  try {
+    const raw = localStorage.getItem(AGENT_CONFIG_KEY);
+    if (!raw) return { provider: 'manual', autoApprove: false };
+    return JSON.parse(raw);
+  } catch {
+    return { provider: 'manual', autoApprove: false };
+  }
+}
+
+export function saveAgentConfig(config: AgentProviderConfig): void {
+  try {
+    localStorage.setItem(AGENT_CONFIG_KEY, JSON.stringify(config));
+  } catch {
+    // silent
+  }
+}
+
+function takeSnapshotFromState(state: NarrativeFlowState): NarrativeSnapshot {
+  return {
+    lanes: state.lanes,
+    catalysts: state.catalysts,
+    ropes: state.ropes,
+    confluenceNodes: state.confluenceNodes,
+    conflicts: state.conflicts,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFlowState {
+  const now = new Date().toISOString();
+  switch (action.type) {
+    case 'ADD_LANE': {
+      const lane: NarrativeLane = { ...action.lane, id: generateId(), createdAt: now, updatedAt: now };
+      return { ...state, lanes: [...state.lanes, lane] };
+    }
+    case 'UPDATE_LANE':
+      return {
+        ...state,
+        lanes: state.lanes.map((l) => (l.id === action.id ? { ...l, ...action.updates, updatedAt: now } : l)),
+      };
+    case 'REMOVE_LANE':
+      return { ...state, lanes: state.lanes.filter((l) => l.id !== action.id) };
+    case 'REORDER_LANES': {
+      const ordered = action.ids
+        .map((id, i) => {
+          const lane = state.lanes.find((l) => l.id === id);
+          return lane ? { ...lane, order: i } : null;
+        })
+        .filter(Boolean) as NarrativeLane[];
+      const remaining = state.lanes.filter((l) => !action.ids.includes(l.id));
+      return { ...state, lanes: [...ordered, ...remaining] };
+    }
+    case 'FORK_LANE': {
+      const parent = state.lanes.find((l) => l.id === action.laneId);
+      if (!parent) return state;
+      const fork: NarrativeLane = {
+        ...parent,
+        id: generateId(),
+        title: action.title,
+        parentId: parent.id,
+        forkDate: now,
+        order: state.lanes.length,
+        createdAt: now,
+        updatedAt: now,
+      };
+      return { ...state, lanes: [...state.lanes, fork] };
+    }
+    case 'ADD_CATALYST': {
+      const catalyst: CatalystCard = { ...action.catalyst, id: generateId(), createdAt: now, updatedAt: now };
+      return { ...state, catalysts: [...state.catalysts, catalyst] };
+    }
+    case 'IMPORT_CATALYSTS': {
+      const now2 = new Date().toISOString();
+      const newCatalysts = action.catalysts
+        .filter(c => !state.catalysts.some(existing =>
+          existing.title === c.title && existing.date === c.date
+        ))
+        .map(c => ({
+          ...c,
+          id: generateId(),
+          createdAt: now2,
+          updatedAt: now2,
+        }));
+      return { ...state, catalysts: [...state.catalysts, ...newCatalysts] };
+    }
+    case 'UPDATE_CATALYST':
+      return {
+        ...state,
+        catalysts: state.catalysts.map((c) =>
+          c.id === action.id ? { ...c, ...action.updates, updatedAt: now } : c
+        ),
+      };
+    case 'REMOVE_CATALYST':
+      return { ...state, catalysts: state.catalysts.filter((c) => c.id !== action.id) };
+    case 'MOVE_CATALYST':
+      return {
+        ...state,
+        catalysts: state.catalysts.map((c) =>
+          c.id === action.id ? { ...c, date: action.date, position: action.position, updatedAt: now } : c
+        ),
+      };
+    case 'TAG_CATALYST':
+      return {
+        ...state,
+        catalysts: state.catalysts.map((c) =>
+          c.id === action.catalystId ? { ...c, tags: action.tags, updatedAt: now } : c
+        ),
+      };
+    case 'ADD_ROPE': {
+      const rope = { ...action.rope, id: generateId(), createdAt: now };
+      return { ...state, ropes: [...state.ropes, rope] };
+    }
+    case 'REMOVE_ROPE':
+      return { ...state, ropes: state.ropes.filter((r) => r.id !== action.id) };
+    case 'APPROVE_ROPE':
+      return {
+        ...state,
+        ropes: state.ropes.map((r) => (r.id === action.id ? { ...r, approved: true } : r)),
+      };
+    case 'ADD_CONFLUENCE': {
+      const node = { ...action.node, id: generateId() };
+      return { ...state, confluenceNodes: [...state.confluenceNodes, node] };
+    }
+    case 'REMOVE_CONFLUENCE':
+      return { ...state, confluenceNodes: state.confluenceNodes.filter((n) => n.id !== action.id) };
+    case 'ADD_CONFLICT': {
+      const conflict = { ...action.conflict, id: generateId() };
+      return { ...state, conflicts: [...state.conflicts, conflict] };
+    }
+    case 'RESOLVE_CONFLICT':
+      return {
+        ...state,
+        conflicts: state.conflicts.map((c) => (c.id === action.id ? { ...c, resolved: true } : c)),
+      };
+    case 'SET_ZOOM':
+      return { ...state, zoomLevel: action.level };
+    case 'SET_WEEK':
+      return { ...state, currentWeekStart: action.weekStart };
+    case 'SET_FILTER':
+      return { ...state, filterSentiment: action.sentiment };
+    case 'TOGGLE_HEATMAP':
+      return { ...state, heatmapEnabled: !state.heatmapEnabled };
+    case 'SET_REPLAY_MODE':
+      return { ...state, replayMode: action.enabled };
+    case 'SET_REPLAY_POSITION':
+      return { ...state, replayPosition: action.position };
+    case 'TAKE_SNAPSHOT':
+      return state; // handled outside reducer
+    case 'RESTORE_SNAPSHOT':
+      return state; // handled outside reducer
+    default:
+      return state;
+  }
+}
+
+const DESTRUCTIVE_ACTIONS = new Set(['REMOVE_LANE', 'REMOVE_CATALYST', 'REMOVE_ROPE', 'RESTORE_SNAPSHOT']);
+
+export function useNarrativeStore() {
+  const [state, setState] = useState<NarrativeFlowState>(loadNarrativeState);
+  const [snapshot, setSnapshot] = useState<NarrativeSnapshot | null>(loadSnapshot);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced persist
+  const scheduleSave = useCallback((s: NarrativeFlowState) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => saveNarrativeState(s), 500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  const dispatch = useCallback(
+    (action: NarrativeAction) => {
+      setState((prev) => {
+        // Snapshot before destructive operations
+        if (DESTRUCTIVE_ACTIONS.has(action.type)) {
+          const snap = takeSnapshotFromState(prev);
+          setSnapshot(snap);
+          saveSnapshot(snap);
+        }
+
+        if (action.type === 'TAKE_SNAPSHOT') {
+          const snap = takeSnapshotFromState(prev);
+          setSnapshot(snap);
+          saveSnapshot(snap);
+          return prev;
+        }
+
+        if (action.type === 'RESTORE_SNAPSHOT') {
+          const snap = loadSnapshot();
+          if (!snap) return prev;
+          const restored: NarrativeFlowState = {
+            ...prev,
+            lanes: snap.lanes,
+            catalysts: snap.catalysts,
+            ropes: snap.ropes,
+            confluenceNodes: snap.confluenceNodes,
+            conflicts: snap.conflicts,
+          };
+          scheduleSave(restored);
+          return restored;
+        }
+
+        const next = reduce(prev, action);
+        scheduleSave(next);
+        return next;
+      });
+    },
+    [scheduleSave]
+  );
+
+  return { state, snapshot, dispatch };
+}

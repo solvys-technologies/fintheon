@@ -354,7 +354,7 @@ When `AUTOPILOT_MODE=autonomous`: after `generate`, if `proposal.confidence >= M
 **Ripper:**
 1. Fib invalidation logic — same as 40/40 or different for macro events?
 2. Anchored VWAP specification — catalyst-only anchors resolved? (same 48h rule?)
-3. Fintheon/OpenClaw catalyst severity classification rules — how does the algo receive `event_severity`?
+3. Pulse/OpenClaw catalyst severity classification rules — how does the algo receive `event_severity`?
 4. DOM heuristic — confirmed skipped; footprint chart as V2 enhancement
 
 **Antilag:**
@@ -369,7 +369,7 @@ When `AUTOPILOT_MODE=autonomous`: after `generate`, if `proposal.confidence >= M
 ## Key File Map
 
 ```
-fintheon/
+pulse/
 ├── rithmic-gateway/
 │   ├── gateway.py                  ← Python sidecar (FastAPI + async_rithmic)
 │   ├── requirements.txt
@@ -423,7 +423,7 @@ Key MCP tools to use:
 
 ## Agents in This Ecosystem
 
-- **Claude Code** (you) — Fintheon backend, execution layer, QC algorithm builds
+- **Claude Code** (you) — Pulse backend, execution layer, QC algorithm builds
 - **Harper** (OpenClaw/CAO) — may have parallel QC work; check `~/.openclaw/workspace/memory/` before modifying shared files
 - **Sentinel, Oracle, Charles, Horace** — other pipeline agents
 

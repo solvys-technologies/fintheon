@@ -4,7 +4,7 @@
 
 ## Context for Next Session
 
-TP completed a multi-session walkthrough with Claude Code documenting three trading models (40/40 Club, Flush, Ripper) plus supporting specs (Antilag signal detection, pre-staged news entry risk management) and frame-by-frame video analysis of two live trade clips. All docs are pushed to `solvys-technologies/fintheon` under `docs/quantconnect/`.
+TP completed a multi-session walkthrough with Claude Code documenting three trading models (40/40 Club, Flush, Ripper) plus supporting specs (Antilag signal detection, pre-staged news entry risk management) and frame-by-frame video analysis of two live trade clips. All docs are pushed to `solvys-technologies/pulse` under `docs/quantconnect/`.
 
 These specs are written for **Harper** (CAO / OpenClaw agent) to implement on **QuantConnect** (Lean/C#).
 
@@ -69,7 +69,7 @@ These specs are written for **Harper** (CAO / OpenClaw agent) to implement on **
 ## How to Resume
 
 ```
-Pull solvys-technologies/fintheon, read docs/quantconnect/*.md.
+Pull solvys-technologies/pulse, read docs/quantconnect/*.md.
 All 14 questions are resolved — all three specs are ready to code.
 Build priority: 40/40 Club first, then Flush + Ripper.
 Backtest from Liberation Day (April 2, 2025) forward.

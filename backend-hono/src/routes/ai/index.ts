@@ -5,10 +5,10 @@
  */
 
 // [claude-code 2026-03-10] Added queue + cognition routes
-// [claude-code 2026-03-10] Registered /quick-fintheon endpoint
+// [claude-code 2026-03-10] Registered /quick-pulse endpoint
 import { Hono } from 'hono'
 import { handleChat, handleChatStream } from './handlers/chat.js'
-import { handleQuickFintheon } from './handlers/quick-fintheon.js'
+import { handleQuickPulse } from './handlers/quick-pulse.js'
 import {
   handleListConversations,
   handleGetConversation,
@@ -37,9 +37,9 @@ export function createAiRoutes(): Hono {
   // GET /api/ai/skills
   router.get('/skills', handleGetSkills)
 
-  // QuickFintheon — multimodal chart analysis
-  // POST /api/ai/quick-fintheon
-  router.post('/quick-fintheon', handleQuickFintheon)
+  // QuickPulse — multimodal chart analysis
+  // POST /api/ai/quick-pulse
+  router.post('/quick-pulse', handleQuickPulse)
 
   // Chat endpoints
   // POST /api/ai/chat - Send message and get response
