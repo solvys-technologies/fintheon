@@ -9,6 +9,12 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-20T18:30:00',
+    agent: 'claude-code',
+    summary: 'fix(auth): restore logout — use useSafeClerk directly in MainLayout so signOut works in both Clerk and bypass modes',
+    files: ['components/layout/MainLayout.tsx'],
+  },
+  {
     date: '2026-03-20T18:00:00',
     agent: 'claude-code',
     summary: 'Shell rebuild + dead code purge: rewrote NavSidebar (2 tabs), MainLayout (60 lines from 481), TopHeader (clean title bar), App.tsx (removed VIX/Psych/Thread providers). Deleted 40+ dead files: feed/, analysis/, mission-control/, psych/, TopStepX, FloatingWidget, DraggablePanel, orphan components, dead contexts. Cleaned SettingsPanel (inlined Toggle/Button, removed psych tab). Removed mini-widget entry point + vite config.',
