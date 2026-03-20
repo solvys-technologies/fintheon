@@ -1,5 +1,5 @@
 // [claude-code 2026-03-13] Hermes migration: OpenClaw -> Hermes imports
-// [claude-code 2026-03-11] T2d: refactored sidebar to rounded bubble style + PulseChatInput
+// [claude-code 2026-03-11] T2d: refactored sidebar to rounded bubble style + FintheonChatInput
 import { useMemo, useState, useCallback } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -11,7 +11,7 @@ import { usePersistentHermesConversation } from '../../hooks/usePersistentHermes
 import { PulseThinkingIndicator } from '../chat/PulseThinkingIndicator';
 import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
 import { useSettings } from '../../contexts/SettingsContext';
-import { PulseChatInput } from '../chat/PulseChatInput';
+import { FintheonChatInput } from '../chat/FintheonChatInput';
 
 export function ResearchDepartment() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -159,9 +159,9 @@ export function ResearchDepartment() {
             )}
           </div>
 
-          {/* Input — PulseChatInput */}
+          {/* Input — FintheonChatInput */}
           <div className="shrink-0 p-3">
-            <PulseChatInput
+            <FintheonChatInput
               onSend={(msg) => handleSend(msg)}
               onStop={() => stop()}
               isProcessing={isStreaming}

@@ -5,7 +5,7 @@ import { ArrowUp, Square, Plus, Wrench, Brain, Mic, X, GitBranch, Plug2 } from '
 /*  Props                                                              */
 /* ------------------------------------------------------------------ */
 
-export interface PulseChatInputProps {
+export interface FintheonChatInputProps {
   onSend: (message: string, images: string[]) => void;
   onStop?: () => void;
   onSteer?: (message: string) => void;
@@ -29,7 +29,7 @@ export interface PulseChatInputProps {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function PulseChatInput({
+export function FintheonChatInput({
   onSend,
   onStop,
   onSteer,
@@ -47,7 +47,7 @@ export function PulseChatInput({
   addExternalImage,
   disabled = false,
   draftKey = 'fintheon:draft-analysis',
-}: PulseChatInputProps) {
+}: FintheonChatInputProps) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [steerText, setSteerText] = useState('');

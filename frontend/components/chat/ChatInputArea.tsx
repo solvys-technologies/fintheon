@@ -1,9 +1,9 @@
 // [claude-code 2026-03-10] Added MCP connector popup (T3)
 // [claude-code 2026-03-09] Input area wrapper — images, attach panel, slash picker
 import { useState, useCallback } from 'react';
-import { PulseChatInput } from './PulseChatInput';
-import { PulseSkillsPopup } from './PulseSkillsPopup';
-import { PulseAttachPopup } from './PulseAttachPopup';
+import { FintheonChatInput } from './FintheonChatInput';
+import { FintheonSkillsPopup } from './FintheonSkillsPopup';
+import { FintheonAttachPopup } from './FintheonAttachPopup';
 import { PulseSlashPicker } from './PulseSlashPicker';
 import { McpConnectorPopup } from './McpConnectorPopup';
 import { SkillBadge } from './SkillBadge';
@@ -70,7 +70,7 @@ export function ChatInputArea({
             <SkillBadge skillId={activeSkill} onDismiss={() => onSelectSkill(null)} />
           </div>
         )}
-        <PulseSkillsPopup
+        <FintheonSkillsPopup
           open={showSkills}
           onClose={() => onToggleSkills()}
           activeSkill={activeSkill}
@@ -92,7 +92,7 @@ export function ChatInputArea({
           </div>
         )}
         {/* Slide-up attach panel — anchored above input */}
-        <PulseAttachPopup
+        <FintheonAttachPopup
           open={showAttach}
           onClose={() => setShowAttach(false)}
           onAttachImage={handleAttachImage}
@@ -105,7 +105,7 @@ export function ChatInputArea({
           onToggle={toggleConnector}
           onClose={() => setShowConnectors(false)}
         />
-        <PulseChatInput
+        <FintheonChatInput
           onSend={(msg, imgs) => onSend(msg, imgs)}
           onStop={onStop}
           onSteer={onSteer}

@@ -66,10 +66,10 @@ function PersonaPill({ agent, isActive, onClick }: { agent: PulseAgent; isActive
 }
 
 /* ------------------------------------------------------------------ */
-/*  PulseComposer                                                      */
+/*  FintheonComposer                                                      */
 /* ------------------------------------------------------------------ */
 
-interface PulseComposerProps {
+interface FintheonComposerProps {
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
   activeSkill: string | null;
@@ -81,7 +81,7 @@ interface PulseComposerProps {
   compact?: boolean;
 }
 
-export function PulseComposer({
+export function FintheonComposer({
   thinkHarder,
   setThinkHarder,
   activeSkill,
@@ -91,7 +91,7 @@ export function PulseComposer({
   lastError,
   disabledSkills: propDisabledSkills,
   compact,
-}: PulseComposerProps) {
+}: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
   const [apiDisabledSkills, setApiDisabledSkills] = useState<Record<string, { reason: string }>>({});
@@ -149,7 +149,7 @@ export function PulseComposer({
       runtime.append({ role: 'user', content: content as any });
       onSelectSkill(null);
     } catch (err) {
-      console.error('[PulseComposer] Failed to append message:', err);
+      console.error('[FintheonComposer] Failed to append message:', err);
     }
   }, [runtime, activeSkill, onSelectSkill]);
 

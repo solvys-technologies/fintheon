@@ -7,7 +7,7 @@ import { useGateway } from '../../contexts/GatewayContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useHermesRuntime } from '../chat/useHermesRuntime';
 import { PulseThread } from '../chat/PulseThread';
-import { PulseComposer } from '../chat/PulseComposer';
+import { FintheonComposer } from '../chat/FintheonComposer';
 import { HermesAgentCards } from './HermesAgentCards';
 import { HermesActivityLog, useActivityLog } from './HermesActivityLog';
 
@@ -151,7 +151,7 @@ function HermesChatInner({
         lastRequestId={lastRequestId}
         compact
       />
-      <PulseComposer
+      <FintheonComposer
         thinkHarder={thinkHarder}
         setThinkHarder={setThinkHarder}
         lastError={lastError}

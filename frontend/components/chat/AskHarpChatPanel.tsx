@@ -1,11 +1,11 @@
 // [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
-// [claude-code 2026-03-10] AskHarpChatPanel — now uses PulseComposer (which wraps PromptBox)
+// [claude-code 2026-03-10] AskHarpChatPanel — now uses FintheonComposer (which wraps PromptBox)
 import { useCallback, useState } from 'react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { useHermesRuntime } from './useHermesRuntime';
 import { PulseThread } from './PulseThread';
-import { PulseComposer } from './PulseComposer';
+import { FintheonComposer } from './FintheonComposer';
 
 function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }: { lastError: string | null; lastRequestId: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void }) {
   const { activeAgent } = usePulseAgents();
@@ -28,7 +28,7 @@ function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }:
         lastError={lastError}
         lastRequestId={lastRequestId}
       />
-      <PulseComposer
+      <FintheonComposer
         thinkHarder={thinkHarder}
         setThinkHarder={setThinkHarder}
         lastError={lastError}

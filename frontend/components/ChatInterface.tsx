@@ -7,7 +7,7 @@ import { usePulseAgents } from '../contexts/PulseAgentContext';
 import { useHermesRuntime } from './chat/useHermesRuntime';
 import { ChatHeader } from './chat/ChatHeader';
 import { PulseThread, AiLoader } from './chat/PulseThread';
-import { PulseComposer } from './chat/PulseComposer';
+import { FintheonComposer } from './chat/FintheonComposer';
 import { SKILL_PREFIXES } from '../lib/skillPrefixes';
 import QuickPulseModal from './analysis/QuickPulseModal';
 import { addCheckpoint, deleteCheckpoint, listCheckpoints, type ChatCheckpoint } from '../lib/chatCheckpoints';
@@ -131,7 +131,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
             lastError={lastError}
             lastRequestId={lastRequestId}
           />
-          <PulseComposer
+          <FintheonComposer
             thinkHarder={thinkHarder}
             setThinkHarder={setThinkHarder}
             lastError={lastError}

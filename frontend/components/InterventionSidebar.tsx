@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { InterventionMessage } from '../lib/services';
 import { KNOWN_AGENTS, usePulseAgents } from '../contexts/PulseAgentContext';
-import { PulseChatInput } from './chat/PulseChatInput';
+import { FintheonChatInput } from './chat/FintheonChatInput';
 
 function formatTimestamp(ts: string) {
   const d = new Date(ts);
@@ -102,9 +102,9 @@ export function InterventionSidebar({ messages, sending, onSend, onMention, acti
         <div ref={bottomRef} />
       </div>
 
-      {/* Input — PulseChatInput with agent selector */}
+      {/* Input — FintheonChatInput with agent selector */}
       <div className="p-3">
-        <PulseChatInput
+        <FintheonChatInput
           onSend={(msg) => handleSend(msg)}
           isProcessing={sending}
           thinkHarder={thinkHarder}

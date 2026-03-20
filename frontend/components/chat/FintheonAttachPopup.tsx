@@ -4,7 +4,7 @@ import { X, FileText, Image, Activity } from 'lucide-react';
 
 type AttachTab = 'docs' | 'media' | 'riskflow';
 
-interface PulseAttachPopupProps {
+interface FintheonAttachPopupProps {
   open: boolean;
   onClose: () => void;
   onAttachImage?: (dataUrl: string) => void;
@@ -39,7 +39,7 @@ function compressImage(file: File, maxDim = 1200, quality = 0.8): Promise<string
   });
 }
 
-export function PulseAttachPopup({ open, onClose, onAttachImage, onAttachRiskFlow }: PulseAttachPopupProps) {
+export function FintheonAttachPopup({ open, onClose, onAttachImage, onAttachRiskFlow }: FintheonAttachPopupProps) {
   const [tab, setTab] = useState<AttachTab>('media');
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);

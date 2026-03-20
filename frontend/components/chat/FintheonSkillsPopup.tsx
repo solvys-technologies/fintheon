@@ -5,7 +5,7 @@ import { SKILLS, type SkillId } from '../../lib/skills';
 
 export { type SkillId, SKILLS };
 
-interface PulseSkillsPopupProps {
+interface FintheonSkillsPopupProps {
   open: boolean;
   onClose: () => void;
   activeSkill?: string | null;
@@ -13,7 +13,7 @@ interface PulseSkillsPopupProps {
   disabledSkills?: Record<string, { reason: string }>;
 }
 
-export function PulseSkillsPopup({ open, onClose, activeSkill, onSelectSkill, disabledSkills }: PulseSkillsPopupProps) {
+export function FintheonSkillsPopup({ open, onClose, activeSkill, onSelectSkill, disabledSkills }: FintheonSkillsPopupProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const handleClick = (skillId: string) => {

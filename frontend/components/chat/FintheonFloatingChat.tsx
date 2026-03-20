@@ -1,14 +1,14 @@
 // [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
-// [claude-code 2026-03-10] Migrated to useHermesRuntime + AssistantRuntimeProvider + PulseThread + PulseComposer
+// [claude-code 2026-03-10] Migrated to useHermesRuntime + AssistantRuntimeProvider + FintheonThread + FintheonComposer
 import { useState, useCallback } from 'react';
 import { MessageSquare, X, Maximize2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { useHermesRuntime } from './useHermesRuntime';
 import { PulseThread } from './PulseThread';
-import { PulseComposer } from './PulseComposer';
+import { FintheonComposer } from './FintheonComposer';
 
-interface PulseFloatingChatProps {
+interface FintheonFloatingChatProps {
   visible: boolean;
   onExpandToAnalysis: () => void;
 }
@@ -89,7 +89,7 @@ function FloatingInner({
       />
 
       {/* Composer (compact mode — fewer toolbar buttons) */}
-      <PulseComposer
+      <FintheonComposer
         thinkHarder={thinkHarder}
         setThinkHarder={setThinkHarder}
         lastError={lastError}
@@ -103,7 +103,7 @@ function FloatingInner({
   );
 }
 
-export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloatingChatProps) {
+export function FintheonFloatingChat({ visible, onExpandToAnalysis }: FintheonFloatingChatProps) {
   const [expanded, setExpanded] = useState(false);
   const [thinkHarder, setThinkHarder] = useState(true);
   const { activeAgent } = usePulseAgents();
