@@ -1,8 +1,10 @@
-// [claude-code 2026-03-20] T5a: Proposals tab — active proposal card + model glossary
+// [claude-code 2026-03-20] 8b: Proposals tab — Human/Agentic toggle + Kalshi tracking
 import { useState, useEffect, useCallback } from 'react';
-import { Target, TrendingUp, TrendingDown, Loader2, AlertTriangle, Crosshair } from 'lucide-react';
+import { Target, TrendingUp, TrendingDown, Loader2, AlertTriangle, Crosshair, User, Bot, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 import { ModelGlossary } from './ModelGlossary';
+
+type ExecutionMode = 'human' | 'agentic';
 
 interface ActiveProposal {
   id: string;
@@ -36,6 +38,19 @@ export function ProposalWidget() {
   const [loading, setLoading] = useState(true);
   const [charting, setCharting] = useState(false);
   const [chartStatus, setChartStatus] = useState<string | null>(null);
+  const [executionMode, setExecutionMode] = useState<ExecutionMode>(() => {
+    try {
+      return (localStorage.getItem('fintheon:proposal-execution-mode') as ExecutionMode) || 'human';
+    } catch {
+      return 'human';
+    }
+  });
+
+  const toggleMode = () => {
+    const next: ExecutionMode = executionMode === 'human' ? 'agentic' : 'human';
+    setExecutionMode(next);
+    try { localStorage.setItem('fintheon:proposal-execution-mode', next); } catch {}
+  };
 
   const fetchLatestProposal = useCallback(async () => {
     try {
@@ -94,7 +109,7 @@ export function ProposalWidget() {
       } else {
         setChartStatus(data.error || 'Chart failed');
       }
-    } catch (err) {
+    } catch {
       setChartStatus('Failed to connect');
     } finally {
       setCharting(false);
@@ -106,15 +121,50 @@ export function ProposalWidget() {
 
   return (
     <div className="h-full flex flex-col overflow-y-auto">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-6 py-4 border-b border-zinc-800/50">
-        <Target className="w-4 h-4 text-[var(--fintheon-accent)]" />
-        <h2 className="text-[13px] font-bold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase">
-          Proposals
-        </h2>
+      {/* Header with Human/Agentic toggle */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50">
+        <div className="flex items-center gap-2">
+          <Target className="w-4 h-4 text-[var(--fintheon-accent)]" />
+          <h2 className="text-[13px] font-bold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase">
+            Proposals
+          </h2>
+        </div>
+
+        {/* Human/Agentic toggle */}
+        <button
+          onClick={toggleMode}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all text-[10px] font-semibold"
+          style={{
+            borderColor: executionMode === 'agentic' ? 'rgba(52, 211, 153, 0.4)' : 'rgba(199, 159, 74, 0.3)',
+            backgroundColor: executionMode === 'agentic' ? 'rgba(52, 211, 153, 0.08)' : 'rgba(199, 159, 74, 0.05)',
+          }}
+          title={executionMode === 'human' ? 'Display only — you execute manually' : 'Auto-execute via API (with confirmation)'}
+        >
+          {executionMode === 'human' ? (
+            <>
+              <User className="w-3 h-3 text-[var(--fintheon-accent)]" />
+              <span className="text-[var(--fintheon-accent)]">Human</span>
+              <ToggleLeft className="w-4 h-4 text-[var(--fintheon-accent)]" />
+            </>
+          ) : (
+            <>
+              <Bot className="w-3 h-3 text-emerald-400" />
+              <span className="text-emerald-400">Agentic</span>
+              <ToggleRight className="w-4 h-4 text-emerald-400" />
+            </>
+          )}
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+        {/* Execution mode banner */}
+        {executionMode === 'agentic' && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400">
+            <Bot className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Agentic mode — proposals auto-execute via Kalshi API with confirmation toast</span>
+          </div>
+        )}
+
         {/* Active Proposal Card */}
         <div>
           <div className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-semibold mb-2">
@@ -206,21 +256,37 @@ export function ProposalWidget() {
                 </p>
               </div>
 
-              {/* Chart It button */}
+              {/* Action buttons */}
               <div className="px-4 pb-3">
-                <button
-                  type="button"
-                  onClick={handleChartIt}
-                  disabled={charting}
-                  className="w-full flex items-center justify-center gap-2 py-2 rounded-md bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] text-[11px] font-semibold hover:bg-[var(--fintheon-accent)]/20 transition-colors disabled:opacity-50"
-                >
-                  {charting ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Crosshair className="w-3.5 h-3.5" />
-                  )}
-                  {charting ? 'Charting...' : 'Chart It'}
-                </button>
+                {executionMode === 'human' ? (
+                  <button
+                    type="button"
+                    onClick={handleChartIt}
+                    disabled={charting}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-md bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] text-[11px] font-semibold hover:bg-[var(--fintheon-accent)]/20 transition-colors disabled:opacity-50"
+                  >
+                    {charting ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Crosshair className="w-3.5 h-3.5" />
+                    )}
+                    {charting ? 'Charting...' : 'Chart It'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleChartIt}
+                    disabled={charting}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                  >
+                    {charting ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Bot className="w-3.5 h-3.5" />
+                    )}
+                    {charting ? 'Executing...' : 'Auto-Execute'}
+                  </button>
+                )}
                 {chartStatus && (
                   <div className="text-[9px] text-zinc-500 text-center mt-1.5">{chartStatus}</div>
                 )}

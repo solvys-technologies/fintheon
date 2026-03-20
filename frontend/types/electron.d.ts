@@ -7,6 +7,18 @@ export type CliOutputEvent =
   | { type: 'stderr'; data: string }
   | { type: 'exit'; code: number | null; signal: string | null };
 
+export interface UpdateInfo {
+  version: string;
+  releaseNotes: string;
+  releaseDate: string;
+}
+
+export interface UpdateProgress {
+  percent: number;
+  transferred: number;
+  total: number;
+}
+
 export interface ElectronAPI {
   platform: 'electron';
   isElectron: true;
@@ -19,11 +31,12 @@ export interface ElectronAPI {
   closeWindow: () => void;
   runShellCommand: (command: string) => Promise<{ ok: boolean; error?: string }>;
   setCliOutputCallback: (cb: ((event: CliOutputEvent) => void) | null) => void;
-  onUpdateAvailable: (cb: ((info: any) => void) | null) => () => void;
-  onUpdateProgress: (cb: ((progress: any) => void) | null) => () => void;
-  onUpdateDownloaded: (cb: (() => void) | null) => () => void;
-  downloadUpdate: () => Promise<void>;
-  installUpdate: () => void;
+  checkForUpdate: () => Promise<{ ok: boolean }>;
+  onUpdateAvailable: (cb: ((info: UpdateInfo) => void) | null) => void;
+  onUpdateProgress: (cb: ((progress: UpdateProgress) => void) | null) => void;
+  onUpdateDownloaded: (cb: (() => void) | null) => void;
+  downloadUpdate: () => Promise<{ ok: boolean }>;
+  installUpdate: () => Promise<{ ok: boolean }>;
 }
 
 declare global {

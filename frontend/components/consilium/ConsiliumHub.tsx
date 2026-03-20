@@ -1,26 +1,51 @@
-// [claude-code 2026-03-20] ConsiliumHub — unified Auditorium + AgentChattr with 4 sub-tabs
-import { useState, useCallback } from 'react';
-import { MessageSquare, LineChart, Clock, Trophy } from 'lucide-react';
+// [claude-code 2026-03-20] S3:T2 — Consilium overhaul: 5 sub-tabs + collapsible Proposals panel
+import { useState, useCallback, lazy, Suspense } from 'react';
+import { MessageSquare, Users, LineChart, Clock, Trophy, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { AgentChattr } from './AgentChattr';
 import { DevelopmentsTimeline } from './DevelopmentsTimeline';
 import { AgentScorecard } from './AgentScorecard';
 import { Auditorium } from '../narrative/Auditorium';
+import { ProposalWidget } from '../proposals/ProposalWidget';
+import { AiLoader } from '../chat/FintheonThread';
 import type { AuditoriumData } from '../../types/mirofish';
+
+const ChatInterface = lazy(() => import('../ChatInterface'));
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-type ConsiliumTab = 'chat' | 'predictions' | 'timeline' | 'scorecards';
+type ConsiliumTab = 'chat' | 'boardroom' | 'predictions' | 'timeline' | 'scorecards';
 
 const TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquare }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
+  { id: 'boardroom', label: 'Boardroom', icon: Users },
   { id: 'predictions', label: 'Predictions', icon: LineChart },
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { id: 'scorecards', label: 'Scorecards', icon: Trophy },
 ];
 
+function usePanelState(key: string, defaultValue: boolean): [boolean, () => void] {
+  const [state, setState] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored !== null ? JSON.parse(stored) : defaultValue;
+    } catch { return defaultValue; }
+  });
+
+  const toggle = useCallback(() => {
+    setState((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
+  }, [key]);
+
+  return [state, toggle];
+}
+
 export function ConsiliumHub() {
   const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
   const [mirofishData, setMirofishData] = useState<AuditoriumData | null>(null);
+  const [showProposals, toggleProposals] = usePanelState('fintheon:consilium:proposals-panel', false);
 
   const handleRunMiroFish = useCallback(async () => {
     setMirofishData(prev => prev
@@ -75,30 +100,66 @@ export function ConsiliumHub() {
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-1.5 rounded-t px-3 py-2.5 text-xs font-medium transition-colors ${
               activeTab === id
-                ? 'bg-[#D4AF37] text-black'
-                : 'text-[#D4AF37]/60 hover:bg-[#D4AF37]/10'
+                ? 'bg-[#c79f4a] text-[#050402]'
+                : 'text-[#c79f4a]/60 hover:bg-[#c79f4a]/10 hover:text-[#c79f4a]'
             }`}
           >
             <Icon size={14} />
             {label}
           </button>
         ))}
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Proposals panel toggle */}
+        <button
+          onClick={toggleProposals}
+          className={`flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+            showProposals
+              ? 'bg-[#c79f4a]/15 text-[#c79f4a] border border-[#c79f4a]/30'
+              : 'text-[#c79f4a]/40 hover:text-[#c79f4a]/70 hover:bg-[#c79f4a]/5 border border-transparent'
+          }`}
+          title={showProposals ? 'Hide Proposals' : 'Show Proposals'}
+        >
+          {showProposals ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+          Proposals
+        </button>
       </div>
 
-      {/* Tab content */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === 'chat' && <AgentChattr />}
-        {activeTab === 'predictions' && (
-          <div className="h-full [&>div]:w-full [&>div]:border-l-0">
-            <Auditorium
-              data={mirofishData}
-              onRun={handleRunMiroFish}
-              catalysts={[]}
-            />
+      {/* Tab content + Proposals panel */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* Main content area */}
+        <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
+          {activeTab === 'chat' && (
+            <Suspense fallback={<AiLoader />}>
+              <ChatInterface surfaceId="askharp" />
+            </Suspense>
+          )}
+          {activeTab === 'boardroom' && <AgentChattr />}
+          {activeTab === 'predictions' && (
+            <div className="h-full [&>div]:w-full [&>div]:border-l-0">
+              <Auditorium
+                data={mirofishData}
+                onRun={handleRunMiroFish}
+                catalysts={[]}
+              />
+            </div>
+          )}
+          {activeTab === 'timeline' && <DevelopmentsTimeline />}
+          {activeTab === 'scorecards' && <AgentScorecard />}
+        </div>
+
+        {/* Collapsible Proposals right panel */}
+        <div
+          className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out border-l border-[#c79f4a]/10 ${
+            showProposals ? 'w-80' : 'w-0 border-l-0'
+          }`}
+        >
+          <div className="w-80 h-full overflow-y-auto bg-[#050402]">
+            <ProposalWidget />
           </div>
-        )}
-        {activeTab === 'timeline' && <DevelopmentsTimeline />}
-        {activeTab === 'scorecards' && <AgentScorecard />}
+        </div>
       </div>
     </div>
   );

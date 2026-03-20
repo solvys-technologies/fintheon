@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Target } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Target, Cpu, Bell, BellOff } from 'lucide-react';
+import { useDND } from '../../contexts/DNDContext';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'proposals' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'apparatus' | 'earnings' | 'proposals' | 'settings';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -11,6 +12,7 @@ interface NavSidebarProps {
   topStepXEnabled?: boolean;
   onOverlayVisibilityChange?: (visible: boolean) => void;
   onEditModeChange?: (editing: boolean) => void;
+  onNotificationCenterToggle?: () => void;
 }
 
 const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
@@ -19,6 +21,7 @@ const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom'>, { id: NavTab; icon: t
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
   notion: { id: 'notion', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
+  apparatus: { id: 'apparatus', icon: Cpu, label: 'Apparatus', description: 'Agent intelligence layer' },
   narrative: { id: 'narrative', icon: GitBranch, label: 'Narratives', description: 'Market narrative flow' },
   proposals: { id: 'proposals', icon: Target, label: 'Proposals', description: 'Trade proposals & model glossary' },
   earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
@@ -35,7 +38,9 @@ export function NavSidebar({
   topStepXEnabled = false,
   onOverlayVisibilityChange,
   onEditModeChange,
+  onNotificationCenterToggle,
 }: NavSidebarProps) {
+  const { dndActive, toggleManualDnd, queueCount } = useDND();
   const [hovered, setHovered] = useState(false);
   const [manualExpand, setManualExpand] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -201,6 +206,45 @@ export function NavSidebar({
       </div>
 
       <div className="space-y-1 px-1.5">
+        {/* DND / Notification Center */}
+        <button
+          onClick={() => {
+            if (queueCount > 0) {
+              onNotificationCenterToggle?.();
+            } else {
+              toggleManualDnd();
+            }
+          }}
+          className={`w-full flex items-center gap-2.5 rounded-md transition-colors relative ${
+            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+          } ${
+            dndActive
+              ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
+              : 'fintheon-nav-inactive'
+          }`}
+          title={expanded ? undefined : dndActive ? 'Do Not Disturb (ON)' : 'Notifications'}
+        >
+          {dndActive ? (
+            <BellOff className="w-4 h-4 shrink-0" />
+          ) : (
+            <Bell className="w-4 h-4 shrink-0" />
+          )}
+          {queueCount > 0 && (
+            <span className="absolute top-0.5 right-0.5 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-red-500/80 text-white text-[9px] font-bold leading-none">
+              {queueCount > 99 ? '99+' : queueCount}
+            </span>
+          )}
+          {expanded && (
+            <div className="min-w-0 text-left">
+              <div className={`text-[11px] font-semibold truncate ${dndActive ? 'text-[var(--fintheon-accent)]' : ''}`}>
+                {dndActive ? 'Do Not Disturb' : 'Notifications'}
+              </div>
+              <div className={`text-[9px] truncate ${dndActive ? 'text-[var(--fintheon-accent)]/60' : 'text-gray-500'}`}>
+                {dndActive ? `${queueCount} queued` : 'Click to enable DND'}
+              </div>
+            </div>
+          )}
+        </button>
         {/* Performance */}
         <button
           onClick={() => onTabChange('earnings')}

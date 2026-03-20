@@ -27,6 +27,8 @@ interface AlertConfig {
   soundEnabled: boolean;
   healingBowlSound: HealingBowlSound;
   nametagEmoPulse: boolean;
+  /** VIX level threshold for spike toast (default: 22) */
+  vixSpikeThreshold: number;
 }
 
 interface RiskSettings {
@@ -101,6 +103,9 @@ interface SettingsContextType {
   setDiscordUsername: (username: string) => void;
   tradingRoadblocks: string[];
   setTradingRoadblocks: (roadblocks: string[]) => void;
+  /** 8g: Auto-start all PsychAssist features EXCEPT mic-based ER monitoring */
+  psychAssistAutoStart: boolean;
+  setPsychAssistAutoStart: (enabled: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -166,6 +171,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       soundEnabled: true,
       healingBowlSound: 'calm-1' as HealingBowlSound,
       nametagEmoPulse: true,
+      vixSpikeThreshold: 22,
     })
   );
   const [mockDataEnabled, setMockDataEnabled] = useState(() =>
@@ -234,6 +240,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [tradingRoadblocks, setTradingRoadblocks] = useState<string[]>(() =>
     loadFromStorage('tradingRoadblocks', [])
   );
+  const [psychAssistAutoStart, setPsychAssistAutoStart] = useState<boolean>(() =>
+    loadFromStorage('psychAssistAutoStart', true)
+  );
 
   // Track whether initial backend fetch has completed to avoid saving back stale data
   const backendSynced = useRef(false);
@@ -286,6 +295,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       instrumentsTraded,
       discordUsername,
       tradingRoadblocks,
+      psychAssistAutoStart,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -337,6 +347,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setDiscordUsername,
         tradingRoadblocks,
         setTradingRoadblocks,
+        psychAssistAutoStart,
+        setPsychAssistAutoStart,
       }}
     >
       {children}

@@ -1,14 +1,12 @@
-// [claude-code 2026-03-16] T4: Journal redesign — scroll-lock dashboard with KPI cards, charts, day history
+// [claude-code 2026-03-20] S3:T8f — Bloomberg-style chart, narrower blindspots, Missed Trades KPI, period filter
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { BookOpen, User, Bot, RefreshCw, Eye, AlertTriangle } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 import { useERSafe } from '../../contexts/ERContext';
 import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
 import { KPICard } from './KPICard';
-import { PnLChart } from './PnLChart';
+import { BloombergChart, type ChartPeriod, type ChartMetric } from './BloombergChart';
 import { ERTrendChart } from './ERTrendChart';
-import { HybridChart } from './HybridChart';
-import { HybridChartDropdown, type ChartMode } from './HybridChartDropdown';
 import { DayHistoryCard } from './DayHistoryCard';
 import { SessionNotesPanel } from './HumanPsychTab';
 import type { JournalEntryItem, JournalSummaryResponse, NotionPerformanceResponse, BlindspotItem } from '../../lib/services';
@@ -25,14 +23,15 @@ export function TradingJournal() {
   const [blindspots, setBlindspots] = useState<BlindspotItem[]>([]);
   const [blindspotSource, setBlindspotSource] = useState('');
   const [loading, setLoading] = useState(true);
-  const [chartMode, setChartMode] = useState<ChartMode>('pnl');
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('30D');
+  const [chartMetric, setChartMetric] = useState<ChartMetric>('pnl');
   const [weekOffset, setWeekOffset] = useState(0);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [entriesRes, summaryRes, kpisRes, blindRes] = await Promise.all([
-        backend.journal.listEntries({ limit: 30 }),
+        backend.journal.listEntries({ limit: 90 }),
         backend.journal.getSummary(30),
         backend.notion.getPerformance(),
         backend.blindspots.getBlindspots(),
@@ -63,6 +62,7 @@ export function TradingJournal() {
   const agentWinRate = summary?.avgWinRate ?? 0;
   const agentDecisions = entries.filter(e => e.type === 'agent').reduce((s, e) => s + (e.proposalCount ?? 0), 0);
   const agentPnl = summary?.totalAgentPnl ?? 0;
+  const missedTrades = summary?.missedTrades ?? 0;
 
   // Discipline
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
@@ -70,6 +70,23 @@ export function TradingJournal() {
   const avgDiscipline = weekEntries.length > 0
     ? Math.round(weekEntries.reduce((s, e) => s + (e.disciplineScore ?? 0), 0) / weekEntries.length) : 0;
   const todayInfractions = er?.infractionCount ?? 0;
+
+  // P&L daily data filtered by period
+  const pnlDailyData = useMemo(() => {
+    const agentEntries = entries
+      .filter(e => e.type === 'agent' && typeof e.totalPnl === 'number')
+      .slice(0, 90).reverse();
+
+    const periodDays: Record<ChartPeriod, number> = {
+      '7D': 7,
+      '30D': 30,
+      '90D': 90,
+      'YTD': Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) / 86400000),
+      'ALL': 9999,
+    };
+    const limit = periodDays[chartPeriod];
+    return agentEntries.slice(-limit).map(e => e.totalPnl ?? 0);
+  }, [entries, chartPeriod]);
 
   // ER trend data
   const erTrendData = useMemo(() => {
@@ -82,15 +99,7 @@ export function TradingJournal() {
     return fromEntries.length > 0 ? fromEntries : live;
   }, [entries, er]);
 
-  // P&L daily data for chart
-  const pnlDailyData = useMemo(() => {
-    return entries
-      .filter(e => e.type === 'agent' && typeof e.totalPnl === 'number')
-      .slice(0, 30).reverse()
-      .map(e => e.totalPnl ?? 0);
-  }, [entries]);
-
-  // --- KPI cards (order flips based on tab) ---
+  // --- KPI cards ---
   const humanKpis = [
     { label: 'Net P&L', value: netPnl?.value ?? '--', subtitle: netPnl?.meta, accentColor: netPnl?.value?.startsWith('-') ? '#EF4444' : '#34D399', pieData: undefined },
     { label: 'Win Rate', value: winRate?.value ?? '--', subtitle: winRate?.meta, accentColor: parseFloat(winRate?.value ?? '0') >= 50 ? '#34D399' : '#EF4444', pieData: { value: parseFloat(winRate?.value ?? '0'), max: 100 } },
@@ -102,7 +111,7 @@ export function TradingJournal() {
     { label: 'Agent Win Rate', value: `${agentWinRate.toFixed(1)}%`, subtitle: '30-day', accentColor: agentWinRate >= 50 ? '#34D399' : '#EF4444', pieData: { value: agentWinRate, max: 100 } },
     { label: 'Agent Decisions', value: String(agentDecisions), subtitle: 'proposals', accentColor: undefined, pieData: undefined },
     { label: 'Agent P&L', value: `${agentPnl >= 0 ? '+' : ''}$${agentPnl.toFixed(0)}`, subtitle: '30-day net', accentColor: agentPnl >= 0 ? '#34D399' : '#EF4444', pieData: undefined },
-    { label: 'Discipline', value: `${avgDiscipline}%`, subtitle: '7-day avg', accentColor: avgDiscipline >= 80 ? '#34D399' : avgDiscipline >= 50 ? 'var(--fintheon-accent)' : '#EF4444', pieData: { value: avgDiscipline, max: 100 } },
+    { label: 'Missed Trades', value: String(missedTrades), subtitle: 'would-be winners', accentColor: missedTrades > 0 ? '#EF4444' : '#34D399', pieData: undefined },
   ];
 
   const orderedKpis = activeTab === 'human' ? [...humanKpis, ...agentKpis] : [...agentKpis, ...humanKpis];
@@ -175,38 +184,49 @@ export function TradingJournal() {
                 ))}
               </div>
 
-              {/* Middle split: charts + blindspots */}
+              {/* Middle split: Bloomberg chart (78%) + Blindspots (~22%) */}
               <div className="flex gap-3 min-h-0">
-                {/* Left 65%: Chart */}
-                <div className="flex-[65] min-w-0">
-                  <div className="mb-1.5">
-                    <HybridChartDropdown mode={chartMode} onChange={setChartMode} />
-                  </div>
-                  {chartMode === 'pnl' && <PnLChart data={pnlDailyData} />}
-                  {chartMode === 'er' && <ERTrendChart data={erTrendData} />}
-                  {chartMode === 'hybrid' && <HybridChart pnlData={pnlDailyData} erData={erTrendData} />}
+                {/* Left: Bloomberg chart fills container */}
+                <div className="flex-[78] min-w-0">
+                  {chartMetric === 'pnl' ? (
+                    <BloombergChart
+                      data={pnlDailyData}
+                      period={chartPeriod}
+                      metric={chartMetric}
+                      onPeriodChange={setChartPeriod}
+                      onMetricChange={setChartMetric}
+                    />
+                  ) : (
+                    <BloombergChart
+                      data={pnlDailyData}
+                      period={chartPeriod}
+                      metric={chartMetric}
+                      onPeriodChange={setChartPeriod}
+                      onMetricChange={setChartMetric}
+                    />
+                  )}
                 </div>
 
-                {/* Right 35%: Blindspots */}
-                <div className="flex-[35] min-w-0">
-                  <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg p-3 h-full">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Eye className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
-                      <span className="text-xs font-semibold text-[var(--fintheon-text)]">Blindspots</span>
+                {/* Right ~22%: Blindspots (narrower) */}
+                <div className="flex-[22] min-w-0">
+                  <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg p-2.5 h-full">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Eye className="w-3 h-3 text-[var(--fintheon-accent)]" />
+                      <span className="text-[10px] font-semibold text-[var(--fintheon-text)]">Blindspots</span>
                     </div>
                     {blindspots.length > 0 ? (
                       <div className="space-y-1.5">
                         {blindspots.slice(0, 4).map(spot => (
-                          <div key={spot.id} className="flex items-start gap-1.5">
-                            <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${spot.severity === 'high' ? 'bg-red-400' : 'bg-[var(--fintheon-accent)]'}`} />
-                            <span className="text-[10px] text-[var(--fintheon-text)] leading-tight">{spot.text}</span>
+                          <div key={spot.id} className="flex items-start gap-1">
+                            <span className={`mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${spot.severity === 'high' ? 'bg-red-400' : 'bg-[var(--fintheon-accent)]'}`} />
+                            <span className="text-[9px] text-[var(--fintheon-text)] leading-tight">{spot.text}</span>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-[10px] text-[var(--fintheon-muted)] py-3 text-center">
+                      <div className="text-[9px] text-[var(--fintheon-muted)] py-3 text-center">
                         {blindspotSource === 'error' || blindspotSource === 'empty'
-                          ? 'No blindspot data yet'
+                          ? 'No blindspot data'
                           : 'No blindspots detected'}
                       </div>
                     )}

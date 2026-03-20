@@ -1,6 +1,8 @@
+// [claude-code 2026-03-20] S3:T3e — upsert user_settings on Clerk sign-in
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useBackend } from '../lib/backend';
+import { pullCloudSettings } from '../lib/user-sync';
 
 export type UserTier = 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
 
@@ -103,6 +105,8 @@ function AuthProviderWithClerk({ children }: { children: ReactNode }) {
             // Fallback to free if tier is somehow missing
             setTierState('free');
           }
+          // Hydrate cloud settings (non-blocking)
+          pullCloudSettings(clerkUserId).catch(() => {});
         } catch (error: any) {
           if (error?.message?.includes('not found') || error?.code === 'not_found') {
             try {

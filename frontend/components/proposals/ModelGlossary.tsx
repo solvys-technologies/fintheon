@@ -1,4 +1,4 @@
-// [claude-code 2026-03-20] T5a: Model glossary accordion for Proposals tab
+// [claude-code 2026-03-20] S3:T2e — ModelGlossary redesign: fused card, merged items, rounded whole card
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
@@ -44,45 +44,48 @@ export function ModelGlossary() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   return (
-    <div className="space-y-1">
+    <div>
       <div className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-semibold mb-2">
         Model Glossary
       </div>
-      {MODELS.map((model, idx) => {
-        const isOpen = expandedIndex === idx;
-        return (
-          <div
-            key={model.name}
-            className="border border-zinc-800 rounded-lg overflow-hidden"
-          >
-            <button
-              type="button"
-              onClick={() => setExpandedIndex(isOpen ? null : idx)}
-              className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-900/50 transition-colors text-left"
-            >
-              <span className="text-[11px] font-semibold text-white">{model.name}</span>
-              <ChevronDown
-                className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-            <div
-              className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}
-            >
-              <div className="px-3 pb-3 space-y-2 border-t border-zinc-800/50">
-                <p className="text-[11px] text-zinc-400 leading-relaxed pt-2">{model.description}</p>
-                <div>
-                  <div className="text-[9px] text-zinc-600 uppercase tracking-wider">When to Use</div>
-                  <p className="text-[10px] text-zinc-500 leading-relaxed">{model.whenToUse}</p>
-                </div>
-                <div>
-                  <div className="text-[9px] text-zinc-600 uppercase tracking-wider">Risk Profile</div>
-                  <p className="text-[10px] text-zinc-500 leading-relaxed">{model.riskProfile}</p>
+      {/* Fused card — rounded on the whole outer container, no individual rounding */}
+      <div className="rounded-lg border border-zinc-800 overflow-hidden">
+        {MODELS.map((model, idx) => {
+          const isOpen = expandedIndex === idx;
+          const isLast = idx === MODELS.length - 1;
+          return (
+            <div key={model.name}>
+              <button
+                type="button"
+                onClick={() => setExpandedIndex(isOpen ? null : idx)}
+                className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-900/50 transition-colors text-left"
+              >
+                <span className="text-[11px] font-semibold text-white">{model.name}</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              <div
+                className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}
+              >
+                <div className="px-3 pb-2.5 space-y-2 border-t border-zinc-800/50">
+                  <p className="text-[11px] text-zinc-400 leading-relaxed pt-2">{model.description}</p>
+                  <div>
+                    <div className="text-[9px] text-zinc-600 uppercase tracking-wider">When to Use</div>
+                    <p className="text-[10px] text-zinc-500 leading-relaxed">{model.whenToUse}</p>
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-zinc-600 uppercase tracking-wider">Risk Profile</div>
+                    <p className="text-[10px] text-zinc-500 leading-relaxed">{model.riskProfile}</p>
+                  </div>
                 </div>
               </div>
+              {/* Divider between items (not after last) */}
+              {!isLast && <div className="border-b border-zinc-800/50" />}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

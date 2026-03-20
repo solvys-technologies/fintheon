@@ -1,14 +1,15 @@
+// [claude-code 2026-03-20] S3:T3 — merged Connection+Hermes tabs into Hermes:Admin, added backend status cards + handoff CTA
 // [claude-code 2026-03-13] Hermes migration: OpenClaw Gateway -> Hermes Agent in UI text
-// [claude-code 2026-03-11] T2e: persistent thread toggle in Gateway tab
 // [claude-code 2026-03-11] T5: added mic device selector to notifications tab
 import React from 'react';
-import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Wifi, Palette, Users, AlertTriangle, ArrowLeft, Globe, Mic } from 'lucide-react';
+import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Palette, Users, AlertTriangle, ArrowLeft, Globe, Mic, Copy, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { useSettings, type APIKeys } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useGateway } from '../contexts/GatewayContext';
+import { useToast } from '../contexts/ToastContext';
 import Toggle from './Toggle';
 import { Button } from './ui/Button';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useBackend } from '../lib/backend';
 import { HEALING_BOWL_SOUNDS, healingBowlPlayer } from '../utils/healingBowlSounds';
 import { useVoiceMemory } from '../hooks/useVoiceMemory';
@@ -17,7 +18,7 @@ import { ClawnalystDesk } from './settings/ClawnalystDesk';
 import { ThemeSettings } from './settings/ThemeSettings';
 import { HermesSettings } from './settings/HermesSettings';
 
-type SettingsTab = 'general' | 'gateway' | 'appearance' | 'desk' | 'hermes' | 'notifications' | 'trading' | 'api' | 'iframes' | 'developer' | 'danger';
+type SettingsTab = 'general' | 'hermes-admin' | 'appearance' | 'desk' | 'notifications' | 'trading' | 'api' | 'iframes' | 'developer' | 'danger';
 
 export function SettingsPage() {
   const { tier, setTier, isAuthenticated } = useAuth();
@@ -121,11 +122,19 @@ export function SettingsPage() {
           contractsPerTrade: contractsPerTrade,
         });
 
+        // ProjectX credentials are optional — don't block save on failure
         if (apiKeys.topstepxUsername || apiKeys.topstepxApiKey) {
-          await backend.account.updateProjectXCredentials({
-            username: apiKeys.topstepxUsername || undefined,
-            apiKey: apiKeys.topstepxApiKey || undefined,
-          });
+          try {
+            await backend.account.updateProjectXCredentials({
+              username: apiKeys.topstepxUsername || undefined,
+              apiKey: apiKeys.topstepxApiKey || undefined,
+            });
+          } catch (pxError) {
+            console.warn('ProjectX credential sync failed:', pxError);
+            setSaveMessage('Settings saved. ProjectX credentials failed \u2014 check API key.');
+            setTimeout(() => setSaveMessage(null), 5000);
+            return;
+          }
         }
       }
 
@@ -169,10 +178,9 @@ export function SettingsPage() {
 
   const tabs = [
     { id: 'general' as const, label: 'Profile', icon: Settings, description: 'Trading symbol, billing, and account preferences' },
-    { id: 'gateway' as const, label: 'Connection', icon: Wifi, description: 'Gateway connection and persistent thread settings' },
+    { id: 'hermes-admin' as const, label: 'Hermes:Admin', icon: Cpu, description: 'Gateway, agent status, backend dependencies, and diagnostics' },
     { id: 'appearance' as const, label: 'Appearance', icon: Palette, description: 'Theme and visual customization options' },
     { id: 'desk' as const, label: 'Analyst Desk', icon: Users, description: 'Configure analyst personas and agent settings' },
-    { id: 'hermes' as const, label: 'Hermes', icon: Cpu, description: 'Agent gateway, API key, status, and activity log' },
     { id: 'trading' as const, label: 'Trading', icon: CreditCard, description: 'Risk management, autopilot, and strategy toggles' },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
     { id: 'api' as const, label: 'API', icon: Code, description: 'API keys and external service credentials' },
@@ -287,8 +295,33 @@ export function SettingsPage() {
                       enabled={alertConfig.nametagEmoPulse ?? true}
                       onChange={(val) => setAlertConfig({ ...alertConfig, nametagEmoPulse: val })}
                     />
+
+                    {/* VIX Spike Threshold */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm text-white">VIX Spike Threshold</span>
+                        <p className="text-[10px] text-gray-500">Toast when VIX crosses above this level</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min={15}
+                          max={40}
+                          step={1}
+                          value={alertConfig.vixSpikeThreshold ?? 22}
+                          onChange={(e) => setAlertConfig({ ...alertConfig, vixSpikeThreshold: Number(e.target.value) })}
+                          className="w-20 accent-[var(--fintheon-accent)]"
+                        />
+                        <span className="text-sm font-mono text-[var(--fintheon-accent)] w-6 text-right">
+                          {alertConfig.vixSpikeThreshold ?? 22}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </section>
+
+                {/* Don't Show Again — reset blocked notifications */}
+                <DndResetSection />
 
                 <section className="pt-6">
                   <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Healing Bowl Sound</h3>
@@ -856,9 +889,9 @@ export function SettingsPage() {
               </div>
             )}
 
-            {activeTab === 'gateway' && (
-              <div key="gateway" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
-                <GatewayTab />
+            {activeTab === 'hermes-admin' && (
+              <div key="hermes-admin" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
+                <HermesAdminTab />
               </div>
             )}
 
@@ -871,12 +904,6 @@ export function SettingsPage() {
             {activeTab === 'desk' && (
               <div key="desk" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <ClawnalystDesk />
-              </div>
-            )}
-
-            {activeTab === 'hermes' && (
-              <div key="hermes" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
-                <HermesSettings />
               </div>
             )}
 
@@ -1066,12 +1093,26 @@ export function SettingsPage() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Gateway settings tab                                               */
+/*  Hermes:Admin — merged Gateway + Hermes + Backend Status + Handoff  */
 /* ------------------------------------------------------------------ */
 
-// [claude-code 2026-03-11] T2e: persistent thread toggle + thread ID input
-function GatewayTab() {
+interface DiagnosticService {
+  name: string;
+  status: 'ok' | 'error' | 'degraded' | 'unavailable';
+  detail?: string;
+  fix?: string;
+}
+
+interface DiagnosticsData {
+  timestamp: string;
+  overall: string;
+  services: DiagnosticService[];
+  missingEnvVars: string[];
+}
+
+function HermesAdminTab() {
   const { status, lastHealthCheck, reconnect, gatewayUrl } = useGateway();
+  const { addToast } = useToast();
   const statusColor = status === 'connected' ? '#34D399' : status === 'connecting' ? 'var(--fintheon-accent)' : '#EF4444';
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
 
@@ -1081,6 +1122,45 @@ function GatewayTab() {
   const [persistentThreadId, setPersistentThreadId] = useState(() =>
     localStorage.getItem('fintheon:gateway-persistent-thread-id') ?? ''
   );
+
+  // Diagnostics state
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsData | null>(null);
+  const [diagLoading, setDiagLoading] = useState(false);
+
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+  const fetchDiagnostics = useCallback(async () => {
+    setDiagLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/api/diagnostics`);
+      const data: DiagnosticsData = await res.json();
+      setDiagnostics(data);
+
+      // Check for errors and trigger handoff CTA
+      const errors = data.services.filter(s => s.status === 'error');
+      if (errors.length > 0) {
+        const errorNames = errors.map(e => e.name).join(', ');
+        const simpleFixable = errors.every(e => e.fix && !e.fix.includes('Claude Code'));
+
+        if (simpleFixable) {
+          addToast(
+            `${errors.length} service${errors.length > 1 ? 's' : ''} need attention`,
+            'error',
+            errors.map(e => `${e.name}: ${e.fix}`).join(' | ')
+          );
+        } else {
+          addToast(`Service errors detected: ${errorNames}`, 'error');
+        }
+      }
+    } catch {
+      addToast('Failed to reach diagnostics endpoint', 'error', 'Is the backend running? (cd backend-hono && bun run dev)');
+    } finally {
+      setDiagLoading(false);
+    }
+  }, [apiBase, addToast]);
+
+  // Fetch diagnostics on mount
+  useEffect(() => { fetchDiagnostics(); }, [fetchDiagnostics]);
 
   const handleTogglePersistent = (enabled: boolean) => {
     setPersistentEnabled(enabled);
@@ -1092,10 +1172,48 @@ function GatewayTab() {
     localStorage.setItem('fintheon:gateway-persistent-thread-id', id);
   };
 
+  const handleCopyHandoff = useCallback(() => {
+    if (!diagnostics) return;
+
+    const errors = diagnostics.services.filter(s => s.status === 'error' || s.status === 'degraded');
+    const prompt = [
+      `## Fintheon Diagnostics Handoff`,
+      `**Timestamp:** ${diagnostics.timestamp}`,
+      `**Overall:** ${diagnostics.overall}`,
+      ``,
+      `### Failing Services`,
+      ...errors.map(e => `- **${e.name}**: ${e.status} — ${e.detail}${e.fix ? `\n  Fix: ${e.fix}` : ''}`),
+      ``,
+      `### Missing Env Vars`,
+      diagnostics.missingEnvVars.length > 0
+        ? diagnostics.missingEnvVars.map(v => `- \`${v}\``).join('\n')
+        : '(none)',
+      ``,
+      `### Suggested Approach`,
+      `1. Fix missing env vars in \`backend-hono/.env\``,
+      `2. Restart backend: \`cd backend-hono && bun run dev\``,
+      `3. Re-run diagnostics to verify`,
+    ].join('\n');
+
+    navigator.clipboard.writeText(prompt);
+    addToast('Handoff prompt copied', 'success');
+  }, [diagnostics, addToast]);
+
+  const statusDot = (s: DiagnosticService['status']) => {
+    const colors: Record<string, string> = {
+      ok: 'bg-emerald-500',
+      error: 'bg-red-500',
+      degraded: 'bg-yellow-500',
+      unavailable: 'bg-zinc-600',
+    };
+    return colors[s] || 'bg-zinc-600';
+  };
+
   return (
-    <section>
-      <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">Hermes Agent</h3>
-      <div className="space-y-4">
+    <div className="space-y-6">
+      {/* 1. Gateway Status */}
+      <section>
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">Gateway Connection</h3>
         <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -1112,16 +1230,13 @@ function GatewayTab() {
           <div className="text-xs text-gray-500 space-y-1">
             <p>URL: <span className="text-gray-400">{gatewayUrl}</span></p>
             {lastHealthCheck && (
-              <p>Last health check: <span className="text-gray-400">{new Date(lastHealthCheck).toLocaleTimeString()}</span></p>
+              <p>Last check: <span className="text-gray-400">{new Date(lastHealthCheck).toLocaleTimeString()}</span></p>
             )}
           </div>
         </div>
-        <p className="text-xs text-gray-500">
-          Hermes connects Fintheon to OpenRouter (Nous subscription) for Claude Opus 4.6 inference. Health checks run every 30 seconds.
-        </p>
 
         {/* Persistent Thread */}
-        <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 mt-4">
+        <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 mt-3">
           <h4 className="text-sm font-medium text-white mb-3">Persistent Thread</h4>
           <div className="space-y-3">
             <Toggle
@@ -1149,7 +1264,132 @@ function GatewayTab() {
             </p>
           </div>
         </div>
+      </section>
+
+      {/* 2. Hermes agent settings (existing component) */}
+      <HermesSettings />
+
+      {/* 3. Backend Dependency Status Cards */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">Backend Dependencies</h3>
+          <button
+            onClick={fetchDiagnostics}
+            disabled={diagLoading}
+            className="flex items-center gap-1.5 text-[10px] text-[var(--fintheon-accent)] hover:text-[var(--fintheon-accent)]/80 transition-colors disabled:opacity-40"
+          >
+            <RefreshCw className={`w-3 h-3 ${diagLoading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+        </div>
+
+        {!diagnostics && diagLoading && (
+          <div className="text-xs text-gray-500 py-4 text-center">Checking services...</div>
+        )}
+
+        {diagnostics && (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              {diagnostics.services.map((svc) => (
+                <div
+                  key={svc.name}
+                  className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded-lg p-3"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className={`w-2 h-2 rounded-full ${statusDot(svc.status)}`} />
+                    <span className="text-[11px] font-semibold text-white truncate">{svc.name}</span>
+                  </div>
+                  <div className="text-[10px] text-gray-500 leading-relaxed">
+                    {svc.detail || svc.status}
+                  </div>
+                  {svc.status === 'error' && svc.fix && (
+                    <div className="text-[10px] text-red-400/80 mt-1 leading-relaxed">
+                      {svc.fix}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Missing env vars */}
+            {diagnostics.missingEnvVars.length > 0 && (
+              <div className="mt-3 bg-[var(--fintheon-bg)] border border-red-500/20 rounded-lg p-3">
+                <div className="text-[11px] font-semibold text-red-400 mb-1">Missing Environment Variables</div>
+                <div className="text-[10px] text-gray-500 font-mono space-y-0.5">
+                  {diagnostics.missingEnvVars.map(v => (
+                    <div key={v}>{v}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Handoff Prompt CTA — shown when there are errors */}
+            {diagnostics.services.some(s => s.status === 'error') && (
+              <button
+                onClick={handleCopyHandoff}
+                className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] text-[11px] font-semibold hover:bg-[var(--fintheon-accent)]/20 transition-colors"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                Copy Handoff Prompt
+              </button>
+            )}
+
+            <div className="text-[10px] text-zinc-600 mt-2">
+              Last checked: {new Date(diagnostics.timestamp).toLocaleTimeString()}
+            </div>
+          </>
+        )}
+
+        {!diagnostics && !diagLoading && (
+          <div className="text-xs text-red-400/70 py-4 text-center">
+            Could not reach backend. Is it running?
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+// [claude-code 2026-03-20] S3:T5 — Don't Show Again reset section
+function DndResetSection() {
+  const { blockedTypes, resetBlockedNotifications } = useToast();
+
+  if (blockedTypes.length === 0) return null;
+
+  return (
+    <section className="pt-6">
+      <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Blocked Notifications</h3>
+      <p className="text-xs text-gray-500 mb-3">
+        You've hidden {blockedTypes.length} notification type{blockedTypes.length > 1 ? 's' : ''} via "Don't Show Again".
+      </p>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {blockedTypes.map((type) => (
+          <span
+            key={type}
+            className="text-[10px] px-2 py-1 rounded-full border"
+            style={{
+              borderColor: 'var(--fintheon-accent)',
+              color: 'var(--fintheon-accent)',
+              backgroundColor: 'rgba(199,159,74,0.08)',
+            }}
+          >
+            {type}
+          </span>
+        ))}
       </div>
+      <button
+        onClick={resetBlockedNotifications}
+        className="text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors"
+        style={{
+          borderColor: 'rgba(239,68,68,0.3)',
+          color: '#EF4444',
+          backgroundColor: 'transparent',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.1)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+      >
+        Reset All — Show Everything
+      </button>
     </section>
   );
 }
+

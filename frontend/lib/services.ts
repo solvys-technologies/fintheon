@@ -735,46 +735,6 @@ export class EventsService {
   }
 }
 
-// Polymarket Service
-export class PolymarketService {
-  constructor(private client: ApiClient) { }
-
-  async getOdds(): Promise<{ success: boolean; data: { odds: any[] } }> {
-    return this.client.get('/api/polymarket/odds');
-  }
-
-  async getUpdates(limit?: number, marketType?: string): Promise<{ success: boolean; data: { updates: any[] } }> {
-    const params = new URLSearchParams();
-    if (limit) params.append('limit', limit.toString());
-    if (marketType) params.append('marketType', marketType);
-
-    const queryString = params.toString();
-    const endpoint = `/api/polymarket/updates${queryString ? `?${queryString}` : ''}`;
-    return this.client.get(endpoint);
-  }
-
-  async sync(): Promise<{ success: boolean; message: string; oddsCount?: number }> {
-    return this.client.post('/api/polymarket/sync');
-  }
-}
-
-// Kalshi Whale Tracker Service
-export class KalshiService {
-  constructor(private client: ApiClient) { }
-
-  async getMarkets(): Promise<any> {
-    return this.client.get('/api/kalshi/markets');
-  }
-
-  async getWhales(): Promise<any> {
-    return this.client.get('/api/kalshi/whales');
-  }
-
-  async sync(): Promise<{ success: boolean; alertCount: number; marketCount: number }> {
-    return this.client.post('/api/kalshi/sync');
-  }
-}
-
 // Boardroom types (mirrors backend boardroom.ts)
 export type BoardroomAgent =
   | 'Harper-Hermes'
@@ -1149,6 +1109,8 @@ export interface JournalSummaryResponse {
   avgRR: number;
   totalAgentPnl: number;
   streakDays: number;
+  /** 8f: Proposals not taken that would have been profitable */
+  missedTrades?: number;
 }
 
 export class JournalService {
@@ -1241,6 +1203,8 @@ export interface BlindspotItem {
   id: number;
   text: string;
   severity: 'high' | 'medium' | 'low';
+  /** 7-day rolling record: 'W' = win (avoided), 'L' = loss (triggered) */
+  record?: Array<'W' | 'L'>;
 }
 
 export class BlindspotsService {
@@ -1333,8 +1297,6 @@ export interface BackendClient {
   er: ERService;
   voice: VoiceService;
   events: EventsService;
-  polymarket: PolymarketService;
-  kalshi: KalshiService;
   boardroom: BoardroomService;
   narrative: NarrativeService;
   notion: NotionService;
@@ -1365,8 +1327,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     er: new ERService(client),
     voice: new VoiceService(client),
     events: new EventsService(client),
-    polymarket: new PolymarketService(client),
-    kalshi: new KalshiService(client),
     boardroom: new BoardroomService(client),
     narrative: new NarrativeService(client),
     notion: new NotionService(client),

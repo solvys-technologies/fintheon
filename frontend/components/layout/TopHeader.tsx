@@ -1,12 +1,15 @@
 // [claude-code 2026-02-26] Add heading toolbar dock zone + optional docked widgets slot.
 // [claude-code 2026-03-03] Toolbar items reorderable via getToolbarOrder/setToolbarOrder.
 // [claude-code 2026-03-11] T2: IV score wired to backend /api/market-data/iv-score — replaces local quickIVScore
+// [claude-code 2026-03-20] S3:T4b: Hide platform dropdown when TopStepX active (layout dropdown replaces it)
+// [claude-code 2026-03-20] S3:T5 — VIX spike toast trigger when VIX crosses above threshold
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { UpgradeModal } from '../UpgradeModal';
 import { IVScoreCard } from '../IVScoreCard';
 import { useBackend } from '../../lib/backend';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useToast } from '../../contexts/ToastContext';
 import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
@@ -75,6 +78,7 @@ export function TopHeader({
   const { tier } = useAuth();
   const backend = useBackend();
   const { selectedSymbol, traderName, alertConfig } = useSettings();
+  const { addToast } = useToast();
   const instanceName = import.meta.env.VITE_FINTHEON_INSTANCE_NAME || 'Fintheon';
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
@@ -84,6 +88,7 @@ export function TopHeader({
   const [toolbarOrder, setToolbarOrderState] = useState<ToolbarItemId[]>(() => getToolbarOrder());
   const dropdownRef = useRef<HTMLDivElement>(null);
   const platformDropdownRef = useRef<HTMLDivElement>(null);
+  const vixWasBelowRef = useRef(true);
 
   useEffect(() => {
     setToolbarOrderState(getToolbarOrder());
@@ -175,6 +180,25 @@ export function TopHeader({
     const interval = setInterval(fetchIVScore, 60_000);
     return () => clearInterval(interval);
   }, [backend, selectedSymbol.symbol]);
+
+  // VIX spike toast — fires once when VIX crosses above threshold, resets when it drops below
+  useEffect(() => {
+    if (!ivData) return;
+    const threshold = alertConfig.vixSpikeThreshold ?? 22;
+    const vixLevel = ivData.vix.level;
+
+    if (vixLevel >= threshold && vixWasBelowRef.current) {
+      vixWasBelowRef.current = false;
+      addToast(
+        `VIX at ${vixLevel.toFixed(1)} — consider reducing risk`,
+        'vix',
+        `Crossed above ${threshold} threshold`,
+        'vix-spike',
+      );
+    } else if (vixLevel < threshold) {
+      vixWasBelowRef.current = true;
+    }
+  }, [ivData, alertConfig.vixSpikeThreshold, addToast]);
 
   const getTierDisplayName = () => {
     switch (tier) {
@@ -274,7 +298,7 @@ export function TopHeader({
                 {node}
               </div>
             );
-            if (id === 'platform' && onTopStepXToggle) {
+            if (id === 'platform' && onTopStepXToggle && !topStepXEnabled) {
               return wrapper(
                 <div className="relative" ref={platformDropdownRef}>
                   <button

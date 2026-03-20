@@ -33,9 +33,12 @@ import { createContextBankRoutes } from './context-bank/index.js';
 import { createAutopilotRoutes } from './autopilot/index.js';
 import { createProposalRoutes } from './proposals/index.js';
 import cloudRoutes from './cloud/index.js';
+import { createDiagnosticsRoutes } from './diagnostics/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
+  // Diagnostics — service status, missing env vars, suggested fixes
+  app.route('/api/diagnostics', createDiagnosticsRoutes());
   // Version check (public, used by auto-update prompt)
   app.route('/api/version', createVersionRoutes());
   // Phase 2: Market routes - VIX is public

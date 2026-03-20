@@ -1,7 +1,9 @@
-// [claude-code 2026-03-16] Replaced simple banner with modal — electron-updater "Install Now" / "Later"
+// [claude-code 2026-03-20] Rewrote modal → bottom-left toast with Install Now / Later / Don't show again
 import { useEffect, useState, useCallback } from 'react';
 import { Download, X, Loader2 } from 'lucide-react';
-import type { UpdateInfo, UpdateProgress } from '../../types/electron';
+import type { UpdateInfo, UpdateProgress } from '../types/electron';
+
+const SUPPRESS_KEY = 'fintheon-update-suppressed';
 
 type UpdateState = 'idle' | 'available' | 'downloading' | 'ready';
 
@@ -17,6 +19,10 @@ export function UpdateBanner() {
     if (!el?.onUpdateAvailable) return;
 
     el.onUpdateAvailable((updateInfo) => {
+      // If user suppressed this version, skip
+      const suppressed = localStorage.getItem(SUPPRESS_KEY);
+      if (suppressed === updateInfo.version) return;
+
       setInfo(updateInfo);
       setState('available');
       setDismissed(false);
@@ -60,127 +66,142 @@ export function UpdateBanner() {
     setTimeout(() => setDismissed(true), 300);
   }, []);
 
+  const handleSuppress = useCallback(() => {
+    if (info?.version) {
+      localStorage.setItem(SUPPRESS_KEY, info.version);
+    }
+    setEntered(false);
+    setTimeout(() => setDismissed(true), 300);
+  }, [info]);
+
   if (state === 'idle' || dismissed) return null;
 
   const isVisible = entered;
 
   return (
-    <>
-      {/* Backdrop */}
+    <div
+      className="fixed z-[150] transition-all duration-300 ease-out"
+      style={{
+        bottom: '24px',
+        left: '24px',
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(16px)',
+        width: '340px',
+        borderRadius: '12px',
+        border: '1px solid var(--fintheon-accent)',
+        backgroundColor: 'var(--fintheon-surface)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+        overflow: 'hidden',
+        pointerEvents: isVisible ? 'auto' : 'none',
+      }}
+    >
+      {/* Header */}
       <div
-        className="fixed inset-0 z-[200] transition-opacity duration-300"
-        style={{
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          opacity: isVisible ? 1 : 0,
-          pointerEvents: isVisible ? 'auto' : 'none',
-        }}
-        onClick={state === 'available' ? handleLater : undefined}
-      />
-
-      {/* Modal */}
-      <div
-        className="fixed z-[201] transition-all duration-300 ease-out"
-        style={{
-          top: '50%',
-          left: '50%',
-          transform: isVisible
-            ? 'translate(-50%, -50%) scale(1)'
-            : 'translate(-50%, -48%) scale(0.96)',
-          opacity: isVisible ? 1 : 0,
-          width: '380px',
-          borderRadius: '14px',
-          border: '1px solid var(--fintheon-accent)',
-          backgroundColor: 'var(--fintheon-surface)',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
-          overflow: 'hidden',
-        }}
+        className="flex items-center justify-between"
+        style={{ padding: '12px 14px 0' }}
       >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between"
-          style={{ padding: '16px 20px 0' }}
-        >
-          <div className="flex items-center" style={{ gap: '10px' }}>
-            <Download size={18} style={{ color: 'var(--fintheon-accent)' }} />
-            <span
-              className="text-[15px] font-semibold"
-              style={{ color: 'var(--fintheon-text)' }}
-            >
-              Update Available
-            </span>
-          </div>
-          {state === 'available' && (
-            <button
-              onClick={handleLater}
-              className="flex items-center justify-center rounded text-gray-500 hover:text-white transition-colors"
-              style={{ width: '24px', height: '24px' }}
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: '14px 20px 20px' }}>
-          <p
-            className="text-[13px] leading-relaxed"
-            style={{ color: 'rgba(156,163,175,0.9)', marginBottom: '16px' }}
+        <div className="flex items-center" style={{ gap: '8px' }}>
+          <Download size={14} style={{ color: 'var(--fintheon-accent)' }} />
+          <span
+            className="text-[13px] font-semibold"
+            style={{ color: 'var(--fintheon-text)' }}
           >
-            {state === 'available' && (
-              <>
-                Fintheon <span style={{ color: 'var(--fintheon-accent)', fontWeight: 600 }}>{info?.version}</span> is
-                ready. Restart the app to install the latest improvements.
-              </>
-            )}
-            {state === 'downloading' && (
-              <>Downloading update{progress ? ` — ${progress.percent}%` : '...'}</>
-            )}
-            {state === 'ready' && (
-              <>Update downloaded. Click Install Now to restart and apply.</>
-            )}
-          </p>
+            Fintheon{' '}
+            <span style={{ color: 'var(--fintheon-accent)' }}>
+              {info?.version ? `v${info.version}` : ''}
+            </span>{' '}
+            available
+          </span>
+        </div>
+        {state === 'available' && (
+          <button
+            onClick={handleLater}
+            className="flex items-center justify-center rounded text-gray-500 hover:text-white transition-colors"
+            style={{ width: '22px', height: '22px' }}
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
 
-          {/* Progress bar (downloading) */}
-          {state === 'downloading' && progress && (
+      {/* Body */}
+      <div style={{ padding: '8px 14px 12px' }}>
+        {state === 'downloading' && (
+          <p
+            className="text-[11px] leading-relaxed"
+            style={{ color: 'rgba(156,163,175,0.8)', marginBottom: '8px' }}
+          >
+            Downloading{progress ? ` — ${progress.percent}%` : '...'}
+          </p>
+        )}
+        {state === 'ready' && (
+          <p
+            className="text-[11px] leading-relaxed"
+            style={{ color: 'rgba(156,163,175,0.8)', marginBottom: '8px' }}
+          >
+            Ready to install. Restart to apply.
+          </p>
+        )}
+
+        {/* Progress bar */}
+        {state === 'downloading' && progress && (
+          <div
+            style={{
+              height: '3px',
+              borderRadius: '2px',
+              backgroundColor: 'rgba(199,159,74,0.15)',
+              marginBottom: '10px',
+              overflow: 'hidden',
+            }}
+          >
             <div
               style={{
-                height: '4px',
+                height: '100%',
+                width: `${progress.percent}%`,
                 borderRadius: '2px',
-                backgroundColor: 'rgba(199,159,74,0.15)',
-                marginBottom: '16px',
-                overflow: 'hidden',
+                backgroundColor: 'var(--fintheon-accent)',
+                transition: 'width 300ms ease',
+              }}
+            />
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center justify-between">
+          {state === 'available' && (
+            <button
+              onClick={handleSuppress}
+              className="text-[10px] transition-colors"
+              style={{ color: 'rgba(156,163,175,0.5)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'rgba(156,163,175,0.8)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'rgba(156,163,175,0.5)';
               }}
             >
-              <div
-                style={{
-                  height: '100%',
-                  width: `${progress.percent}%`,
-                  borderRadius: '2px',
-                  backgroundColor: 'var(--fintheon-accent)',
-                  transition: 'width 300ms ease',
-                }}
-              />
-            </div>
+              Don't show again
+            </button>
           )}
+          {state !== 'available' && <span />}
 
-          {/* Actions */}
-          <div className="flex items-center justify-end" style={{ gap: '10px' }}>
+          <div className="flex items-center" style={{ gap: '8px' }}>
             {state === 'available' && (
               <button
                 onClick={handleLater}
-                className="text-[12px] font-medium transition-colors"
+                className="text-[11px] font-medium transition-colors"
                 style={{
-                  padding: '7px 16px',
-                  borderRadius: '8px',
-                  color: 'rgba(156,163,175,0.8)',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  color: 'rgba(156,163,175,0.7)',
                   backgroundColor: 'transparent',
-                  border: '1px solid rgba(156,163,175,0.2)',
+                  border: '1px solid rgba(156,163,175,0.15)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(156,163,175,0.4)';
+                  e.currentTarget.style.borderColor = 'rgba(156,163,175,0.35)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(156,163,175,0.2)';
+                  e.currentTarget.style.borderColor = 'rgba(156,163,175,0.15)';
                 }}
               >
                 Later
@@ -189,11 +210,11 @@ export function UpdateBanner() {
             <button
               onClick={handleInstall}
               disabled={state === 'downloading'}
-              className="text-[12px] font-semibold transition-all flex items-center"
+              className="text-[11px] font-semibold transition-all flex items-center"
               style={{
-                padding: '7px 20px',
-                borderRadius: '8px',
-                gap: '6px',
+                padding: '5px 14px',
+                borderRadius: '6px',
+                gap: '5px',
                 color: '#050402',
                 backgroundColor: 'var(--fintheon-accent)',
                 opacity: state === 'downloading' ? 0.6 : 1,
@@ -208,7 +229,7 @@ export function UpdateBanner() {
                 e.currentTarget.style.filter = 'none';
               }}
             >
-              {state === 'downloading' && <Loader2 size={12} className="animate-spin" />}
+              {state === 'downloading' && <Loader2 size={11} className="animate-spin" />}
               {state === 'available' && 'Install Now'}
               {state === 'downloading' && 'Downloading...'}
               {state === 'ready' && 'Install Now'}
@@ -216,6 +237,6 @@ export function UpdateBanner() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

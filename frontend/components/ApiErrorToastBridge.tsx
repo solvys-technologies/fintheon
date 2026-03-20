@@ -31,7 +31,7 @@ export function ApiErrorToastBridge() {
         ? `${err.message} (${err.endpoint.replace('/api/', '')})`
         : err.message;
 
-      addToast(label, 'error', fix);
+      addToast(label, 'error', fix, 'api-error');
     });
   }, [addToast]);
 

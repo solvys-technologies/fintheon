@@ -1,3 +1,4 @@
+// [claude-code 2026-03-20] S3:T2b — surfaceId prop for shared thread with AskHarp
 // [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
 // [claude-code 2026-03-10] Simplified ChatInterface — removed unused state, added AiLoader
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
@@ -212,10 +213,10 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
   );
 }
 
-export default function ChatInterface() {
+export default function ChatInterface({ surfaceId = 'analysis' }: { surfaceId?: string }) {
   const { activeAgent } = useFintheonAgents();
   const [thinkHarderState, setThinkHarderState] = useState(true);
-  const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, 'analysis');
+  const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, surfaceId);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>

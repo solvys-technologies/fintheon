@@ -147,7 +147,7 @@ export function NarrativeFlow() {
 
   return (
     <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--fintheon-bg)' }}>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 w-full">
         <NarrativeToolbar
           state={state}
           dispatch={dispatch}

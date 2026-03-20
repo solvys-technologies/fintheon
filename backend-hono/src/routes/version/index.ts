@@ -1,8 +1,18 @@
 // [claude-code 2026-03-06] Version check endpoint — compares local version against latest GitHub tag
+// [claude-code 2026-03-20] Read version from package.json, added GET /api/version base route
 import { Hono } from 'hono'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
 
 const REPO = 'solvys-technologies/fintheon'
 const GITHUB_API = `https://api.github.com/repos/${REPO}/tags`
+
+// Read version from root package.json at startup
+let PKG_VERSION = '1.0.0'
+try {
+  const pkg = JSON.parse(readFileSync(resolve(__dirname, '..', '..', '..', '..', 'package.json'), 'utf-8'))
+  PKG_VERSION = pkg.version ?? PKG_VERSION
+} catch { /* fallback */ }
 
 // Cache to avoid hammering GitHub API (5 min TTL)
 let cachedLatest: { tag: string; fetchedAt: number } | null = null
@@ -55,9 +65,14 @@ function isNewer(remote: string, local: string): boolean {
 export function createVersionRoutes(): Hono {
   const router = new Hono()
 
+  // GET /api/version — returns running version
+  router.get('/', (c) => {
+    return c.json({ version: process.env.FINTHEON_VERSION ?? PKG_VERSION })
+  })
+
   // GET /api/version/check
   router.get('/check', async (c) => {
-    const localVersion = process.env.FINTHEON_VERSION ?? 'v2.27.9'
+    const localVersion = process.env.FINTHEON_VERSION ?? PKG_VERSION
     const latestTag = await getLatestTag()
 
     if (!latestTag) {
