@@ -17,8 +17,7 @@ import { fintheonAppearance } from './components/auth/fintheonAppearance';
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
 const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
 
-const DEFAULT_CLERK_DOMAIN = 'clerk.app.pricedinresearch.io';
-const DEFAULT_CLERK_PROXY_URL = 'https://clerk.app.pricedinresearch.io';
+// Clerk API domain is encoded in the publishable key — no manual domain/proxy needed
 
 // Debug logging
 if (DEV_MODE) {
@@ -90,8 +89,6 @@ function AppInner() {
 
 export default function App() {
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
-  const clerkDomain = import.meta.env.VITE_CLERK_DOMAIN || DEFAULT_CLERK_DOMAIN;
-  const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL || DEFAULT_CLERK_PROXY_URL;
 
   // Dev mode: bypass Clerk entirely
   if (BYPASS_AUTH || !clerkKey) {
@@ -99,12 +96,11 @@ export default function App() {
   }
 
   // Production: wrap with ClerkProvider for full auth
+  // The publishable key already encodes the Clerk API domain — no need for domain/proxyUrl
   return (
     <ClerkProvider
       publishableKey={clerkKey}
       appearance={fintheonAppearance}
-      domain={clerkDomain}
-      proxyUrl={clerkProxyUrl}
     >
       <SignedIn>
         <AppInner />
