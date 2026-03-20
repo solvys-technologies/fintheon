@@ -3,12 +3,12 @@ import { FluidCursor, FluidCursorHandle } from './FluidCursor';
 
 type AuthShellProps = {
   children: React.ReactNode;
-  onBypass?: () => void;
 };
 
 type AuthPhase = 'landing' | 'transitioning' | 'auth';
 
-export const AuthShell: React.FC<AuthShellProps> = ({ children, onBypass }) => {
+// [claude-code 2026-03-20] Removed onBypass prop — Sprint 1 bypass no longer needed
+export const AuthShell: React.FC<AuthShellProps> = ({ children }) => {
   const [phase, setPhase] = useState<AuthPhase>('landing');
   const [showClerk, setShowClerk] = useState(false);
   const cursorRef = useRef<FluidCursorHandle>(null);
@@ -145,14 +145,6 @@ export const AuthShell: React.FC<AuthShellProps> = ({ children, onBypass }) => {
               </div>
               <div className={`transition-all duration-500 ${showClerk ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
                 {showClerk ? children : null}
-                {showClerk && onBypass && (
-                  <button
-                    onClick={onBypass}
-                    className="mt-6 w-full rounded-full border-2 border-[#c79f4a] bg-transparent px-8 py-4 text-sm font-bold uppercase tracking-[0.3em] text-[#c79f4a] transition-all duration-500 hover:bg-[#c79f4a] hover:text-black hover:shadow-[0_0_30px_rgba(199,159,74,0.4)]"
-                  >
-                    Enter Fintheon
-                  </button>
-                )}
               </div>
             </div>
           </div>

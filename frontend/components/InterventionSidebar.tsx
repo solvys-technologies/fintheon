@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { InterventionMessage } from '../lib/services';
-import { KNOWN_AGENTS, usePulseAgents } from '../contexts/PulseAgentContext';
+import { KNOWN_AGENTS, useFintheonAgents } from '../contexts/FintheonAgentContext';
 import { FintheonChatInput } from './chat/FintheonChatInput';
 
 function formatTimestamp(ts: string) {
@@ -29,7 +29,7 @@ interface InterventionSidebarProps {
 export function InterventionSidebar({ messages, sending, onSend, onMention, active }: InterventionSidebarProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [thinkHarder, setThinkHarder] = useState(true);
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
 
   // Auto-scroll on new messages
   useEffect(() => {

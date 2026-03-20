@@ -4,7 +4,7 @@
 // [claude-code 2026-03-16] Shimmer greeting animation, removed border/bg/emoji from greeting area
 import { useState, useEffect } from 'react';
 import { BarChart3, CalendarCheck, Brain, Eye } from 'lucide-react';
-import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 
 const SUGGESTION_CHIPS: { label: string; skillId: string; prompt: string; icon: typeof BarChart3 }[] = [
   { label: "Dawn Dispatch", skillId: 'mdb_report', prompt: "Run the MDB report for today's session", icon: BarChart3 },
@@ -38,7 +38,7 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
   let activeAgent: { name: string; icon: string; sector: string; description: string } | null = null;
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const ctx = usePulseAgents();
+    const ctx = useFintheonAgents();
     activeAgent = ctx.activeAgent;
   } catch {
     // Provider not mounted yet — fallback

@@ -6,7 +6,7 @@
 
 ## 1) Current Backend Reality
 
-Pulse backend is implemented under `backend-hono/` and is not greenfield.
+Fintheon backend is implemented under `backend-hono/` and is not greenfield.
 
 ### Route groups currently mounted
 
@@ -67,4 +67,4 @@ Boardroom backend reads/writes local Clawdbot session files and relays intervent
 
 ## 6) Canonical Audit Reference
 
-Notion source of truth: `Pulse Engineering Audit — 2026-02-12`
+Notion source of truth: `Fintheon Engineering Audit — 2026-02-12`

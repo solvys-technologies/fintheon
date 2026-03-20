@@ -11,8 +11,8 @@
 ## Installation
 
 ```bash
-git clone https://github.com/solvys-technologies/pulse.git
-cd pulse
+git clone https://github.com/solvys-technologies/fintheon.git
+cd fintheon
 
 # Install all dependencies (root + frontend + backend)
 npm install && npm --prefix frontend install && npm --prefix backend-hono install

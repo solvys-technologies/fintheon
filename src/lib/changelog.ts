@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-20T20:00:00',
+    agent: 'claude-code',
+    summary: 'Re-implement Clerk auth after Sprint 1 bypass. Backend: auth middleware now verifies Clerk JWT (Bearer token) with BYPASS_AUTH=true fallback for dev/Electron. Frontend: App.tsx restored proper BYPASS_AUTH logic (IS_ELECTRON || VITE_BYPASS_AUTH), ClerkProvider wraps app with SignedIn/SignedOut boundaries, switched to fintheonAppearance. AuthShell: removed Sprint 1 bypass button. User sync already handled by AuthContext (account.get/create on Clerk sign-in).',
+    files: [
+      'backend-hono/src/middleware/auth.ts',
+      'App.tsx',
+      'components/auth/AuthShell.tsx',
+      'src/lib/changelog.ts',
+    ],
+  },
+  {
     date: '2026-03-20T18:00:00',
     agent: 'claude-code',
     summary: 'T5: Proposals tab + Playwright TopStepX charting automation. Added proposals nav tab (Target icon) with ProposalWidget (fetches latest pending proposal from Autopilot, shows instrument/direction/levels/strategy/rationale, Chart It button) and ModelGlossary accordion (FortyForty, Ripper, AWV, Snipe). Backend POST /api/proposals/chart checks EST blackout (8:30a-12p), spawns Playwright script to draw horizontal rays on TopStepX Practice account. Scripts: chart-blackout.ts (blackout check), chart-proposal.ts (persistent Playwright context, switch to Practice, open ticker chart, draw entry/SL/TP rays using saved templates).',

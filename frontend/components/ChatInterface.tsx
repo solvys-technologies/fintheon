@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { AlertTriangle, CalendarCheck, X, Bookmark, Trash2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
-import { usePulseAgents } from '../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../contexts/FintheonAgentContext';
 import { useHermesRuntime } from './chat/useHermesRuntime';
 import { ChatHeader } from './chat/ChatHeader';
 import { FintheonThread, AiLoader } from './chat/FintheonThread';
@@ -50,7 +50,7 @@ function groupCheckpointsByDate(items: ChatCheckpoint[]): { label: string; items
 }
 
 function ChatInterfaceInner({ conversationId, clearConversationId, lastError, thinkHarder, setThinkHarder, lastRequestId }: { conversationId: string | undefined; clearConversationId: () => void; lastError: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void; lastRequestId: string | null }) {
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
 
@@ -213,7 +213,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
 }
 
 export default function ChatInterface() {
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
   const [thinkHarderState, setThinkHarderState] = useState(true);
   const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, 'analysis');
 

@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { MessageSquare, X, Maximize2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
-import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { useHermesRuntime } from './useHermesRuntime';
 import { FintheonThread } from './FintheonThread';
 import { FintheonComposer } from './FintheonComposer';
@@ -29,7 +29,7 @@ function FloatingInner({
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
 }) {
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
 
@@ -106,7 +106,7 @@ function FloatingInner({
 export function FintheonFloatingChat({ visible, onExpandToAnalysis }: FintheonFloatingChatProps) {
   const [expanded, setExpanded] = useState(false);
   const [thinkHarder, setThinkHarder] = useState(true);
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
 
   const { runtime, lastError, lastRequestId } = useHermesRuntime(
     activeAgent?.id ?? 'default',

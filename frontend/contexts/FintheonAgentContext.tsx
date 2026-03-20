@@ -6,7 +6,7 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 
 export type AgentStatus = 'idle' | 'working' | 'blocked' | 'offline';
 
-export interface PulseAgent {
+export interface FintheonAgent {
   id: string;
   name: string;
   nickname: string | null;
@@ -27,7 +27,7 @@ export interface PulseAgent {
 
 const now = () => new Date().toISOString();
 
-export const PULSE_AGENTS: PulseAgent[] = [
+export const FINTHEON_AGENTS: FintheonAgent[] = [
   {
     id: 'harper-hermes',
     name: 'Harper-Hermes',
@@ -101,29 +101,29 @@ export const PULSE_AGENTS: PulseAgent[] = [
 ];
 
 /** Flat array of agent names for mention detection, boardroom routing, etc. */
-export const KNOWN_AGENTS: string[] = PULSE_AGENTS.map((a) => a.name);
+export const KNOWN_AGENTS: string[] = FINTHEON_AGENTS.map((a) => a.name);
 
 /* ------------------------------------------------------------------ */
 /*  Context                                                            */
 /* ------------------------------------------------------------------ */
 
-interface PulseAgentContextValue {
-  agents: PulseAgent[];
-  activeAgent: PulseAgent | null;
-  setActiveAgent: (agent: PulseAgent | null) => void;
-  setAgents: (agents: PulseAgent[]) => void;
-  updateAgent: (id: string, updates: Partial<PulseAgent>) => void;
-  createAgent: (name: string, sector: string) => PulseAgent;
+interface FintheonAgentContextValue {
+  agents: FintheonAgent[];
+  activeAgent: FintheonAgent | null;
+  setActiveAgent: (agent: FintheonAgent | null) => void;
+  setAgents: (agents: FintheonAgent[]) => void;
+  updateAgent: (id: string, updates: Partial<FintheonAgent>) => void;
+  createAgent: (name: string, sector: string) => FintheonAgent;
   deleteAgent: (id: string) => void;
 }
 
-const PulseAgentContext = createContext<PulseAgentContextValue>({
+const FintheonAgentContext = createContext<FintheonAgentContextValue>({
   agents: [],
   activeAgent: null,
   setActiveAgent: () => {},
   setAgents: () => {},
   updateAgent: () => {},
-  createAgent: () => ({}) as PulseAgent,
+  createAgent: () => ({}) as FintheonAgent,
   deleteAgent: () => {},
 });
 
@@ -131,19 +131,19 @@ const PulseAgentContext = createContext<PulseAgentContextValue>({
 /*  Provider                                                           */
 /* ------------------------------------------------------------------ */
 
-export function PulseAgentProvider({ children }: { children: ReactNode }) {
-  const [agents, setAgents] = useState<PulseAgent[]>(PULSE_AGENTS);
-  const [activeAgent, setActiveAgent] = useState<PulseAgent | null>(PULSE_AGENTS[0] || null);
+export function FintheonAgentProvider({ children }: { children: ReactNode }) {
+  const [agents, setAgents] = useState<FintheonAgent[]>(FINTHEON_AGENTS);
+  const [activeAgent, setActiveAgent] = useState<FintheonAgent | null>(FINTHEON_AGENTS[0] || null);
 
-  const updateAgent = useCallback((id: string, updates: Partial<PulseAgent>) => {
+  const updateAgent = useCallback((id: string, updates: Partial<FintheonAgent>) => {
     setAgents((prev) =>
       prev.map((a) => (a.id === id ? { ...a, ...updates, updated_at: now() } : a)),
     );
   }, []);
 
-  const createAgent = useCallback((name: string, sector: string): PulseAgent => {
+  const createAgent = useCallback((name: string, sector: string): FintheonAgent => {
     const ts = now();
-    const newAgent: PulseAgent = {
+    const newAgent: FintheonAgent = {
       id: `agent-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       name,
       nickname: null,
@@ -166,11 +166,11 @@ export function PulseAgentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <PulseAgentContext.Provider
+    <FintheonAgentContext.Provider
       value={{ agents, activeAgent, setActiveAgent, setAgents, updateAgent, createAgent, deleteAgent }}
     >
       {children}
-    </PulseAgentContext.Provider>
+    </FintheonAgentContext.Provider>
   );
 }
 
@@ -178,4 +178,4 @@ export function PulseAgentProvider({ children }: { children: ReactNode }) {
 /*  Hook                                                               */
 /* ------------------------------------------------------------------ */
 
-export const usePulseAgents = () => useContext(PulseAgentContext);
+export const useFintheonAgents = () => useContext(FintheonAgentContext);

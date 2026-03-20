@@ -1,3 +1,4 @@
+// [claude-code 2026-03-20] Overhauled: structured errors, JSON logging, boot consolidation
 /**
  * Fintheon API - Main Entry Point
  * Hono backend on Fly.io
@@ -13,16 +14,11 @@ import { corsConfig } from './config/cors.js';
 import { getEnvConfig, isDev } from './config/env.js';
 import { registerRoutes } from './routes/index.js';
 import { createHealthService } from './services/health-service.js';
-import { startFeedPoller } from './services/riskflow/feed-poller.js';
-import { startNotionPoller } from './services/notion-poller.js';
-import { startEconEnricher } from './services/cron/econ-enricher.js';
-import { startEconTwitterPoller } from './services/twitter-cli/index.js';
-import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
-import { initHermesAgent } from './services/hermes-handler.js';
-import { startAutopilotScheduler } from './services/autopilot/autopilot-scheduler.js';
-import { startContextBankTicker } from './services/context-bank/context-bank-service.js';
-import { startBoardroomScheduler } from './services/cron/boardroom-scheduler.js';
+import { AppError } from './errors/index.js';
+import { createLogger } from './lib/logger.js';
+import { bootServices } from './boot/index.js';
 
+const log = createLogger('API');
 const app = new Hono();
 const healthService = createHealthService();
 const config = getEnvConfig();
@@ -51,20 +47,35 @@ registerRoutes(app);
 // Global error handler
 app.onError((err, c) => {
   const requestId = c.req.header('x-request-id') || 'unknown';
-  const status = ((err as { status?: number }).status ?? 500) as ContentfulStatusCode;
 
-  console.error('[API] Error:', {
+  if (err instanceof AppError) {
+    log.error(err.message, {
+      code: err.code,
+      statusCode: err.statusCode,
+      requestId,
+      method: c.req.method,
+      path: c.req.path,
+      ...err.context,
+    });
+    return c.json(
+      { error: err.message, code: err.code, context: err.context, requestId },
+      err.statusCode as ContentfulStatusCode
+    );
+  }
+
+  const status = ((err as { status?: number }).status ?? 500) as ContentfulStatusCode;
+  log.error(err instanceof Error ? err.message : String(err), {
     requestId,
     status,
     method: c.req.method,
     path: c.req.path,
-    message: err instanceof Error ? err.message : String(err),
     stack: isDev && err instanceof Error ? err.stack : undefined,
   });
 
   return c.json(
     {
       error: status >= 500 ? 'Internal server error' : err.message,
+      code: 'INTERNAL_ERROR',
       requestId,
     },
     status
@@ -72,39 +83,17 @@ app.onError((err, c) => {
 });
 
 // 404 handler
-app.notFound((c) => c.json({ error: 'Not found' }, 404));
+app.notFound((c) => {
+  const requestId = c.req.header('x-request-id') || 'unknown';
+  return c.json({ error: 'Not found', code: 'NOT_FOUND', requestId }, 404);
+});
 
 // Start server
 serve({ fetch: app.fetch, port: config.PORT });
 
-console.log(`[API] Server started on port ${config.PORT}`);
-console.log(`[API] Environment: ${config.NODE_ENV}`);
+log.info('Server started', { port: config.PORT, env: config.NODE_ENV });
 
-// Start background feed poller for real-time Level 4 detection
-startFeedPoller();
-
-// Start Notion polling (trade ideas + daily P&L)
-startNotionPoller();
-
-// Start econ calendar enricher (Notion calendar → RiskFlow feed)
-startEconEnricher();
-
-// Start econ-triggered twitter-cli poller (cookie-based, FJ emoji filtered)
-startEconTwitterPoller();
-
-// Start autopilot scheduler (30s cycle — proposal expiry, session detection)
-startAutopilotScheduler();
-
-// Start Context Bank ticker (120s — unified snapshot for all agents)
-startContextBankTicker();
-
-// Start boardroom scheduler (cron-driven standups, econ scans, market-open triggers)
-startBoardroomScheduler();
-
-// Initialize Hermes/OpenRouter connection (health check — non-blocking)
-initHermesAgent().catch((err) => console.warn('[API] Hermes init failed (non-fatal):', err));
-
-// Initialize Claude SDK bridge (health check — non-blocking)
-initClaudeSDK().catch((err) => console.warn('[API] Claude SDK init failed (non-fatal):', err));
+// Boot background services
+bootServices();
 
 export default app;

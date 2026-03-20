@@ -382,7 +382,7 @@ export const defaultAiConfig: AiConfig = {
       research: 'openrouter-opus',
       reasoning: 'openrouter-opus',
       technical: 'openrouter-opus',
-      'quick-pulse': 'openrouter-opus',
+      'quick-fintheon': 'openrouter-opus',
       quickpulse: 'openrouter-opus',
       news: 'openrouter-opus',
       sentiment: 'openrouter-opus',

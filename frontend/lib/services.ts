@@ -403,7 +403,7 @@ export class AIService {
    * Quick Pulse: Analyze a chart screenshot
    */
   async quickPulse(image: string, algoState: any): Promise<any> {
-    return this.client.post('/api/ai/quick-pulse', { image, algoState });
+    return this.client.post('/api/ai/quick-fintheon', { image, algoState });
   }
 
   async checkTape(): Promise<any> {

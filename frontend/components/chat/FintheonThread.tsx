@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { CalendarCheck, AlertCircle, Copy, RotateCcw, Bookmark, ArrowDown, Check } from 'lucide-react';
 import { ChatGreeting } from './ChatGreeting';
 import { FintheonThinkingIndicator } from './FintheonThinkingIndicator';
-import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { CognitionPanel } from './CognitionPanel';
 
 /* ------------------------------------------------------------------ */
@@ -390,7 +390,7 @@ interface FintheonThreadProps {
 }
 
 export function FintheonThread({ onSend, isLoading, agentName, onCheckpoint, lastError, lastRequestId, compact }: FintheonThreadProps) {
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const AssistantMsg = () => (

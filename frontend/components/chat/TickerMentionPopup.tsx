@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { KNOWN_AGENTS } from '../../contexts/PulseAgentContext';
+import { KNOWN_AGENTS } from '../../contexts/FintheonAgentContext';
 
 /* ------------------------------------------------------------------ */
 /*  Ticker data                                                        */

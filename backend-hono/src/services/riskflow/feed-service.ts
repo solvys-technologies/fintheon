@@ -17,10 +17,6 @@ import { classifyEventType } from '../iv-scoring-v2.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import * as newsCache from './news-cache.js';
 import { fetchEconomicFeed } from './economic-feed.js';
-import { fetchPolymarket } from '../polymarket-service.js';
-import type { PolymarketMarket } from '../../types/polymarket.js';
-import { fetchKalshiWhales } from '../kalshi-service.js';
-import type { WhaleAlert } from '../../types/kalshi.js';
 import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
 import { isTwitterCliInstalled, pollTwitterForEconNews, getWarmCacheItems } from '../twitter-cli/index.js';
 import { estimatePoints } from '../market-data/point-estimator.js';
@@ -56,86 +52,6 @@ const CACHE_TTL_MS = 15_000; // 15 seconds (in-memory cache)
 const FETCH_INTERVAL_MS = 5 * 60_000; // 5 minutes between fresh fetches
 let lastFreshFetch: number = 0;
 
-/**
- * Convert Polymarket market to FeedItem
- */
-function polymarketToFeedItem(market: PolymarketMarket): FeedItem {
-  const macroLevel: MacroLevel =
-    market.probability >= 0.6 ? 3 : 2
-
-  // Infer sentiment from market title keywords first, then fall back to YES price direction
-  const titleText = `${market.title} ${market.outcome}`;
-  const lower = titleText.toLowerCase();
-  let sentiment: SentimentDirection;
-
-  const hasBearish = BEARISH_KEYWORDS.some(kw => lower.includes(kw));
-  const hasBullish = BULLISH_KEYWORDS.some(kw => lower.includes(kw));
-
-  if (hasBearish && !hasBullish) {
-    sentiment = 'bearish';
-  } else if (hasBullish && !hasBearish) {
-    sentiment = 'bullish';
-  } else if (hasBearish && hasBullish) {
-    // Both present — use keyword scoring
-    sentiment = inferSentimentFromKeywords(titleText);
-  } else {
-    // No keywords matched — use YES price direction: >50% = bullish for the underlying question
-    sentiment = market.probability > 0.5 ? 'bullish' : 'bearish';
-  }
-
-  return {
-    id: `poly-${market.id}`,
-    source: 'Polymarket',
-    headline: `${market.title} | ${market.outcome}: ${(market.probability * 100).toFixed(1)}%`,
-    body: market.url,
-    symbols: [],
-    tags: ['POLYMARKET', 'ODDS'],
-    isBreaking: false,
-    urgency: 'high',
-    sentiment,
-    ivScore: undefined,
-    macroLevel,
-    publishedAt: market.closeTime ?? new Date().toISOString(),
-    analyzedAt: new Date().toISOString(),
-  };
-}
-
-/**
- * Convert Kalshi whale alert to FeedItem
- */
-function kalshiWhaleToFeedItem(alert: WhaleAlert): FeedItem {
-  const macroLevel: MacroLevel = (alert.notionalUsd >= 2000 || alert.alertTypes.includes('cluster')) ? 3 : 2
-  const sideLabel = alert.takerSide.toUpperCase()
-  const titleLower = alert.marketTitle.toLowerCase()
-
-  const hasBearish = BEARISH_KEYWORDS.some(kw => titleLower.includes(kw))
-  const hasBullish = BULLISH_KEYWORDS.some(kw => titleLower.includes(kw))
-  let sentiment: SentimentDirection
-  if (hasBearish && !hasBullish) {
-    sentiment = alert.takerSide === 'yes' ? 'bearish' : 'bullish'
-  } else if (hasBullish && !hasBearish) {
-    sentiment = alert.takerSide === 'yes' ? 'bullish' : 'bearish'
-  } else {
-    sentiment = alert.lastPrice > 0.5 ? 'bullish' : 'bearish'
-  }
-
-  const clusterTag = alert.clusterSize ? ` (${alert.clusterSize} trades in 5min)` : ''
-  return {
-    id: alert.id,
-    source: 'Kalshi',
-    headline: `WHALE: ${alert.marketTitle} — ${alert.contracts} contracts (${sideLabel}) @ $${alert.lastPrice.toFixed(2)} | $${alert.notionalUsd.toFixed(0)} notional${clusterTag}`,
-    body: `https://kalshi.com/markets/${alert.ticker}`,
-    symbols: [],
-    tags: ['KALSHI', 'WHALE', sideLabel, ...alert.alertTypes.map(t => t.toUpperCase())],
-    isBreaking: false,
-    urgency: 'high',
-    sentiment,
-    ivScore: undefined,
-    macroLevel,
-    publishedAt: alert.createdAt,
-    analyzedAt: alert.detectedAt,
-  }
-}
 
 /**
  * Map RiskFlow NewsSource to Analysis NewsSource
@@ -310,24 +226,20 @@ function applyFilters(items: FeedItem[], filters: FeedFilters): FeedItem[] {
  */
 async function fetchFreshFeed(): Promise<FeedItem[]> {
   try {
-    const [econItems, polyResp, kalshiResp, twitterCliItems] = await Promise.all([
+    const [econItems, twitterCliItems] = await Promise.all([
       fetchEconomicFeed(),
-      fetchPolymarket().catch(() => ({ markets: [], fetchedAt: new Date().toISOString() })),
-      fetchKalshiWhales().catch(() => ({ alerts: [], markets: [], lastTradeFetchedAt: new Date().toISOString() })),
       isTwitterCliInstalled().then(ok => ok ? pollTwitterForEconNews() : []).catch(() => []),
     ]);
 
-    const polyItems = polyResp.markets.map(polymarketToFeedItem);
-    const kalshiItems = kalshiResp.alerts.map(kalshiWhaleToFeedItem);
     // Include warm-cached Critical/High posts seeded at startup
     const warmItems = getWarmCacheItems();
 
     // Merge and dedupe by id
-    const merged = [...econItems, ...polyItems, ...kalshiItems, ...twitterCliItems, ...warmItems].filter(
+    const merged = [...econItems, ...twitterCliItems, ...warmItems].filter(
       (item, idx, arr) => idx === arr.findIndex(i => i.id === item.id)
     );
 
-    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${polyItems.length} poly, ${kalshiItems.length} kalshi, ${twitterCliItems.length} twcli)`);
+    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${twitterCliItems.length} twcli)`);
     return merged;
   } catch (error) {
     console.error('[RiskFlow] Fetch error:', error);

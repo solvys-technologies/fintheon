@@ -9,7 +9,7 @@ import { PromptBox } from '../ui/chatgpt-prompt-input';
 import { SKILL_PREFIXES } from '../../lib/skillPrefixes';
 import { SKILLS } from '../../lib/skills';
 import { useVoice } from '../../contexts/VoiceContext';
-import { usePulseAgents, type PulseAgent } from '../../contexts/PulseAgentContext';
+import { useFintheonAgents, type FintheonAgent } from '../../contexts/FintheonAgentContext';
 import { API_BASE_URL } from './constants';
 
 /* ------------------------------------------------------------------ */
@@ -37,7 +37,7 @@ function statusColor(status: string): string {
 /*  PersonaPill                                                        */
 /* ------------------------------------------------------------------ */
 
-function PersonaPill({ agent, isActive, onClick }: { agent: PulseAgent; isActive: boolean; onClick: () => void }) {
+function PersonaPill({ agent, isActive, onClick }: { agent: FintheonAgent; isActive: boolean; onClick: () => void }) {
   const meta = PERSONA_META[agent.id] ?? { label: agent.sector };
   return (
     <button
@@ -96,7 +96,7 @@ export function FintheonComposer({
   const isRunning = useThread((t) => t.isRunning);
   const [apiDisabledSkills, setApiDisabledSkills] = useState<Record<string, { reason: string }>>({});
   const voice = useVoice();
-  const { agents, activeAgent, setActiveAgent } = usePulseAgents();
+  const { agents, activeAgent, setActiveAgent } = useFintheonAgents();
 
   // Fetch skills from backend — merge with prop-level disabled skills
   useEffect(() => {

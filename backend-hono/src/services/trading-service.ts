@@ -10,11 +10,8 @@ import type {
   AlgoStatus,
   ToggleAlgoResponse,
 } from '../types/trading.js';
-import * as projectxService from './projectx-service.js';
-import * as projectxClient from './projectx/client.js';
 import * as rithmicService from './rithmic-service.js';
 import * as hyperliquidService from './hyperliquid-service.js';
-import { recordActivityEvent } from './projectx-activity-service.js';
 
 // In-memory store for algo status (per user)
 const algoStatusStore = new Map<string, AlgoStatus>();
@@ -88,7 +85,7 @@ export async function fireTestTrade(
     side: 'buy' | 'sell';
   }
 ): Promise<{ success: boolean; orderId?: string | number; message: string }> {
-  const broker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'projectx' | 'hyperliquid';
+  const broker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'hyperliquid';
   const symbolSearch = params.symbol.replace(/^\//, '');
   const direction = params.side === 'buy' ? 'long' : 'short';
 
@@ -102,25 +99,6 @@ export async function fireTestTrade(
       throw new Error(result.error ?? 'Hyperliquid order failed');
     }
 
-    const numericAccountId = Number.parseInt(params.accountId, 10);
-    if (Number.isFinite(numericAccountId)) {
-      await recordActivityEvent(userId, {
-        accountId: numericAccountId,
-        eventType: 'order_filled',
-        eventSource: 'hyperliquid',
-        eventTimestamp: new Date(),
-        isTrade: true,
-        symbol: symbolSearch,
-        side: params.side,
-        quantity: 1,
-        eventWeight: 1,
-        payload: {
-          broker: 'hyperliquid',
-          orderId: result.orderId,
-        },
-      });
-    }
-
     return {
       success: true,
       orderId: result.orderId,
@@ -128,91 +106,20 @@ export async function fireTestTrade(
     };
   }
 
-  if (broker === 'rithmic') {
-    const result = await rithmicService.executeOrder(userId, {
-      symbol: symbolSearch,
-      direction,
-      quantity: 1,
-    });
-    if (!result.success) {
-      throw new Error(result.error ?? 'Rithmic order failed');
-    }
-
-    const numericAccountId = Number.parseInt(params.accountId, 10);
-    if (Number.isFinite(numericAccountId)) {
-      await recordActivityEvent(userId, {
-        accountId: numericAccountId,
-        eventType: 'order_filled',
-        eventSource: 'rithmic',
-        eventTimestamp: new Date(),
-        isTrade: true,
-        symbol: symbolSearch,
-        side: params.side,
-        quantity: 1,
-        eventWeight: 1,
-        payload: {
-          broker: 'rithmic',
-          orderId: result.orderId,
-        },
-      });
-    }
-
-    return {
-      success: true,
-      orderId: result.orderId,
-      message: `Order #${result.orderId} placed — 1 ${symbolSearch} ${direction.toUpperCase()} @ Market (Rithmic)`,
-    };
-  }
-
-  // ProjectX path
-  const credentials = projectxService.getCredentials(userId);
-  if (!credentials) {
-    throw new Error('ProjectX credentials not configured. Add API key in Settings.');
-  }
-
-  const contracts = await projectxClient.searchContracts(userId, credentials, symbolSearch, false);
-  const activeContract = contracts.find(c => c.activeContract);
-  if (!activeContract) {
-    throw new Error(`No active contract found for ${symbolSearch}`);
-  }
-
-  const result = await projectxClient.placeOrder(userId, credentials, {
-    accountId: parseInt(params.accountId, 10),
-    contractId: activeContract.id,
-    type: 2,  // Market
-    side: params.side === 'buy' ? 0 : 1,
-    size: 1,
-    customTag: `PULSE-TEST-${Date.now()}`,
+  // Rithmic path (default)
+  const result = await rithmicService.executeOrder(userId, {
+    symbol: symbolSearch,
+    direction,
+    quantity: 1,
   });
-
   if (!result.success) {
-    throw new Error(result.errorMessage ?? 'ProjectX order failed');
-  }
-
-  const numericAccountId = parseInt(params.accountId, 10);
-  if (Number.isFinite(numericAccountId)) {
-    await recordActivityEvent(userId, {
-      accountId: numericAccountId,
-      eventType: 'order_filled',
-      eventSource: 'projectx-api',
-      eventTimestamp: new Date(),
-      isTrade: true,
-      symbol: symbolSearch,
-      side: params.side,
-      quantity: 1,
-      eventWeight: 1,
-      payload: {
-        broker: 'projectx',
-        orderId: result.orderId,
-        contractId: activeContract.id,
-      },
-    });
+    throw new Error(result.error ?? 'Rithmic order failed');
   }
 
   return {
     success: true,
     orderId: result.orderId,
-    message: `Order #${result.orderId} placed — 1 ${symbolSearch} ${direction.toUpperCase()} @ Market (ProjectX)`,
+    message: `Order #${result.orderId} placed — 1 ${symbolSearch} ${direction.toUpperCase()} @ Market (Rithmic)`,
   };
 }
 

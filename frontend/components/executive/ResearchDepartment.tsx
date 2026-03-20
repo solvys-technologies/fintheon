@@ -4,7 +4,7 @@ import { useMemo, useState, useCallback } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useHermesChat } from '../chat/hooks/useHermesChat';
-import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
 import { toHermesAgentOverride } from '../../lib/hermesAgentRouting';
 import { usePersistentHermesConversation } from '../../hooks/usePersistentHermesConversation';
@@ -21,7 +21,7 @@ export function ResearchDepartment() {
 
   let activeAgent: { name: string; icon: string } | null = null;
   try {
-    const ctx = usePulseAgents();
+    const ctx = useFintheonAgents();
     activeAgent = ctx.activeAgent;
   } catch {
     // fallback

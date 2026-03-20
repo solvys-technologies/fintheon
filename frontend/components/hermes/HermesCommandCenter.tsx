@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { Cpu, RefreshCw, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
-import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { useGateway } from '../../contexts/GatewayContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useHermesRuntime } from '../chat/useHermesRuntime';
@@ -127,7 +127,7 @@ function HermesChatInner({
   setThinkHarder: (v: boolean) => void;
   onMessageSent: (text: string) => void;
 }) {
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
@@ -170,7 +170,7 @@ function HermesChatInner({
 /* ------------------------------------------------------------------ */
 
 export function HermesCommandCenter() {
-  const { agents, activeAgent, setActiveAgent } = usePulseAgents();
+  const { agents, activeAgent, setActiveAgent } = useFintheonAgents();
   const [thinkHarder, setThinkHarder] = useState(true);
   const { entries, logActivity } = useActivityLog();
 

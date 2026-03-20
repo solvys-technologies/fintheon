@@ -2,13 +2,13 @@
 // [claude-code 2026-03-10] AskHarpChatPanel — now uses FintheonComposer (which wraps PromptBox)
 import { useCallback, useState } from 'react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
-import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { useHermesRuntime } from './useHermesRuntime';
 import { FintheonThread } from './FintheonThread';
 import { FintheonComposer } from './FintheonComposer';
 
 function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }: { lastError: string | null; lastRequestId: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void }) {
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
 
@@ -42,7 +42,7 @@ function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }:
 }
 
 export function AskHarpChatPanel() {
-  const { activeAgent } = usePulseAgents();
+  const { activeAgent } = useFintheonAgents();
   const [thinkHarder, setThinkHarder] = useState(true);
   const { runtime, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarder, 'askharp');
 

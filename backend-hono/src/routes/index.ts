@@ -9,13 +9,10 @@ import { createAccountRoutes } from './account/index.js';
 import { createMarketRoutes } from './market/index.js';
 import { createNotificationRoutes } from './notifications/index.js';
 import { createTradingRoutes } from './trading/index.js';
-import { createProjectXRoutes } from './projectx/index.js';
 import { createRiskFlowRoutes } from './riskflow/index.js';
 import { createPsychAssistRoutes } from './psych-assist.js';
 import { createAiRoutes } from './ai/index.js';
 import { createAgentRoutes } from './agents/index.js';
-import { createPolymarketRoutes } from './polymarket/index.js';
-import { createKalshiRoutes } from './kalshi/index.js';
 import { createBoardroomRoutes } from './boardroom/index.js';
 import { createRithmicRoutes } from './rithmic/index.js';
 import { createHyperliquidRoutes } from './hyperliquid/index.js';
@@ -26,12 +23,9 @@ import { createERRoutes } from './er/index.js';
 import { createVoiceRoutes } from './voice/index.js';
 import { createRegimeRoutes } from './regimes/index.js';
 
-import { createGitHubAuthRoutes } from './auth/github.js';
 import { createVersionRoutes } from './version/index.js';
 import { createMarketDataRoutes } from './market-data/index.js';
-import { createMcpRoutes } from './mcp/index.js';
 import { createSettingsRoutes } from './settings/index.js';
-import { createTwentyFirstRoutes } from './twenty-first/index.js';
 import { createJournalRoutes } from './journal/index.js';
 import { createBlindspotsRoutes } from './blindspots.js';
 import { systemic as systemicRoutes } from './systemic/index.js';
@@ -42,8 +36,6 @@ import cloudRoutes from './cloud/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
-  // GitHub OAuth (must be public for login flow)
-  app.route('/api/auth/github', createGitHubAuthRoutes());
   // Version check (public, used by auto-update prompt)
   app.route('/api/version', createVersionRoutes());
   // Phase 2: Market routes - VIX is public
@@ -86,8 +78,6 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/notifications/*', authMiddleware);
   app.use('/api/trading', authMiddleware);
   app.use('/api/trading/*', authMiddleware);
-  app.use('/api/projectx', authMiddleware);
-  app.use('/api/projectx/*', authMiddleware);
   app.use('/api/rithmic', authMiddleware);
   app.use('/api/rithmic/*', authMiddleware);
   app.use('/api/hyperliquid', authMiddleware);
@@ -107,20 +97,12 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/ai/*', authMiddleware);
   app.use('/api/agents', authMiddleware);
   app.use('/api/agents/*', authMiddleware);
-  app.use('/api/polymarket', authMiddleware);
-  app.use('/api/polymarket/*', authMiddleware);
-  app.use('/api/kalshi', authMiddleware);
-  app.use('/api/kalshi/*', authMiddleware);
   app.use('/api/er', authMiddleware);
   app.use('/api/er/*', authMiddleware);
   app.use('/api/voice', authMiddleware);
   app.use('/api/voice/*', authMiddleware);
-  app.use('/api/mcp', authMiddleware);
-  app.use('/api/mcp/*', authMiddleware);
   app.use('/api/settings', authMiddleware);
   app.use('/api/settings/*', authMiddleware);
-  app.use('/api/21st', authMiddleware);
-  app.use('/api/21st/*', authMiddleware);
   // Journal — public (local Electron app, no user auth needed)
 
   // Phase 1: Account routes
@@ -131,9 +113,6 @@ export function registerRoutes(app: Hono): void {
 
   // Phase 2: Trading routes
   app.route('/api/trading', createTradingRoutes());
-
-  // Phase 3: ProjectX routes
-  app.route('/api/projectx', createProjectXRoutes());
 
   // Rithmic routes (Autopilot primary broker scaffold)
   app.route('/api/rithmic', createRithmicRoutes());
@@ -153,12 +132,6 @@ export function registerRoutes(app: Hono): void {
   // Phase 6: Agent routes
   app.route('/api/agents', createAgentRoutes());
 
-  // Polymarket routes
-  app.route('/api/polymarket', createPolymarketRoutes());
-
-  // Kalshi whale tracker routes
-  app.route('/api/kalshi', createKalshiRoutes());
-
   // ER telemetry routes
   app.route('/api/er', createERRoutes());
 
@@ -166,14 +139,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/voice', createVoiceRoutes());
 
 
-  // MCP server registry
-  app.route('/api/mcp', createMcpRoutes());
-
   // User settings persistence
   app.route('/api/settings', createSettingsRoutes());
-
-  // 21st API token proxy (deep thinking fallback)
-  app.route('/api/21st', createTwentyFirstRoutes());
 
   // Trading journal (human psych + agent performance)
   app.route('/api/journal', createJournalRoutes());
