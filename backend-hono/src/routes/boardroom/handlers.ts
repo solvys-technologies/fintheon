@@ -1,4 +1,5 @@
 // [claude-code 2026-03-16] Agent backend v7.9: updated agent names (Harper-Hermes, Consul, Herald)
+// [claude-code 2026-03-20] Added standup triggers, breaking news, herald alert, scheduler status routes
 import type { Context } from 'hono';
 import {
   getBoardroomMessages,
@@ -10,6 +11,9 @@ import {
 } from '../../services/hermes-sessions.js';
 import { getBoardroomMeetingSchedule } from '../../services/boardroom-schedule.js';
 import type { InterventionType, InterventionSeverity, BoardroomAgent } from '../../types/boardroom.js';
+import { spawnBoardroomStandup, spawnBoardroomNewsResponse, type StandupTask } from '../../services/boardroom-spawner.js';
+import { triggerBoardroomForNews, createHeraldAlert } from '../../services/boardroom-news-trigger.js';
+import { getBoardroomSchedulerStatus } from '../../services/cron/boardroom-scheduler.js';
 
 interface SendInterventionBody {
   message?: string;
