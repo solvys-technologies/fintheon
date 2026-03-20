@@ -16,12 +16,13 @@ import { TraderNametag } from '../TraderNametag';
 import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'proposals' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   executive: 'Dashboard',
   feed: 'Dashboard', // feed section removed; fallback for history
   analysis: 'Chat',
+  proposals: 'Proposals',
   news: 'RiskFlow',
   notion: 'Scriptorium',
   econ: 'Economic Calendar',
