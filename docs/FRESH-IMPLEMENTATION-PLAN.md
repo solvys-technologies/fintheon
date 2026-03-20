@@ -1,10 +1,10 @@
-# Pulse v3.0 Fresh Implementation Plan
+# Fintheon v3.0 Fresh Implementation Plan
 ## Clean Slate Backend Rebuild
 
 > **Created**: 2026-01-10
 > **Status**: Active
 > **Domain**: `app.pricedinresearch.io`
-> **Backend**: `pulse-api-withered-dust-1394.fly.dev`
+> **Backend**: `fintheon-api-withered-dust-1394.fly.dev`
 
 ---
 
@@ -187,7 +187,7 @@ backend-hono/src/
 - [ ] Deploy to Fly.io
 - [ ] Verify endpoints work from `app.pricedinresearch.io`:
   ```bash
-  curl https://pulse-api-withered-dust-1394.fly.dev/api/account
+  curl https://fintheon-api-withered-dust-1394.fly.dev/api/account
   ```
 - [ ] Commit: `[v.5.10.1] feat: Phase 1 - Account routes foundation`
 
@@ -368,14 +368,14 @@ After each phase, verify:
 
 ```bash
 # Health check
-curl https://pulse-api-withered-dust-1394.fly.dev/health
+curl https://fintheon-api-withered-dust-1394.fly.dev/health
 
 # CORS check
-curl -I -X OPTIONS https://pulse-api-withered-dust-1394.fly.dev/api/account \
+curl -I -X OPTIONS https://fintheon-api-withered-dust-1394.fly.dev/api/account \
   -H "Origin: https://app.pricedinresearch.io"
 
 # Auth check (replace TOKEN)
-curl https://pulse-api-withered-dust-1394.fly.dev/api/account \
+curl https://fintheon-api-withered-dust-1394.fly.dev/api/account \
   -H "Authorization: Bearer TOKEN"
 ```
 
@@ -426,7 +426,7 @@ Each phase is deployed independently. If a phase fails:
 
 1. Revert to previous deployment:
    ```bash
-   fly releases -a pulse-api-withered-dust-1394
+   fly releases -a fintheon-api-withered-dust-1394
    fly deploy --image <previous-image>
    ```
 
@@ -442,7 +442,7 @@ Each phase is deployed independently. If a phase fails:
 
 Command to strip violating files:
 ```bash
-cd /Users/tifos/Desktop/Pulse/Developer/Pulse/pulse/backend-hono/src
+cd /Users/tifos/Desktop/Fintheon/Developer/Fintheon/fintheon/backend-hono/src
 
 # Remove files over 300 lines
 rm services/ai-model-service.ts

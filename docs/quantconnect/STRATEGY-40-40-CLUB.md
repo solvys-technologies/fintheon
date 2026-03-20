@@ -51,7 +51,7 @@ Liquidity sweep reversal targeting ~40 points, typically firing ~40 minutes into
 - Rationale: avoid trading the clash between two competing fib regimes during a sentiment shift
 
 ### Fib Anchoring
-- Hybrid: algo auto-detects large moves + Pulse/OpenClaw fundamental catalyst detection + manual override
+- Hybrid: algo auto-detects large moves + Fintheon/OpenClaw fundamental catalyst detection + manual override
 - Fibs drawn from **fundamentally driven moves** (not random swings)
 - Anchored VWAP co-plotted from same anchor point
 

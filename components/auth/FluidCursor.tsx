@@ -171,7 +171,7 @@ export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
           }`}
         ></div>
 
-        {/* Outer Ring (Counter Pulse) */}
+        {/* Outer Ring (Counter Fintheon) */}
         <div className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-yellow-600/60 opacity-70 transition-all duration-300 ease-out"></div>
 
         {/* Center Dot */}

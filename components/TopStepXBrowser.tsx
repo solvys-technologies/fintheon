@@ -113,7 +113,7 @@ export function TopStepXBrowser({ onClose }: TopStepXBrowserProps) {
           </div>
           <h3 className="text-xl font-semibold text-white mb-2">Desktop App Required</h3>
           <p className="text-gray-400 mb-6 max-w-md">
-            TopStepX integration requires the Pulse desktop app due to browser security restrictions.
+            TopStepX integration requires the Fintheon desktop app due to browser security restrictions.
             Download the desktop app for the full trading experience with embedded TopStepX.
           </p>
           <div className="flex gap-3">

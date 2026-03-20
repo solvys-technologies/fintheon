@@ -3,8 +3,8 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { BoardroomMessage, InterventionMessage, BoardroomAgent } from '../types/boardroom.js';
 
-const CLAWDBOT_SESSIONS_DIR = join(process.env.HOME ?? '', '.clawdbot/agents/main/sessions');
-const CLAWDBOT_SEND_URL = process.env.CLAWDBOT_SESSIONS_SEND_URL ?? 'http://localhost:47832/api/sessions/send';
+const HERMES_SESSIONS_DIR = join(process.env.HOME ?? '', '.hermes/agents/main/sessions');
+const HERMES_SEND_URL = process.env.HERMES_SESSIONS_SEND_URL ?? 'http://localhost:47832/api/sessions/send';
 
 interface RawSessionMessage {
   role?: string;
@@ -51,12 +51,12 @@ const inferSender = (content: string, role: string): InterventionMessage['sender
 };
 
 async function findSessionFilesByLabel(sessionLabel: string): Promise<string[]> {
-  const files = await readdir(CLAWDBOT_SESSIONS_DIR).catch(() => []);
+  const files = await readdir(HERMES_SESSIONS_DIR).catch(() => []);
   const normalized = sessionLabel.toLowerCase();
   return files
     .filter((file) => file.endsWith('.jsonl'))
     .filter((file) => file.toLowerCase().includes(normalized))
-    .map((file) => join(CLAWDBOT_SESSIONS_DIR, file));
+    .map((file) => join(HERMES_SESSIONS_DIR, file));
 }
 
 const splitLines = (content: string): string[] =>
@@ -129,7 +129,7 @@ async function appendToSession(
   role: 'user' | 'assistant' = 'assistant'
 ): Promise<void> {
   const files = await findSessionFilesByLabel(sessionLabel);
-  const targetFile = files[0] ?? join(CLAWDBOT_SESSIONS_DIR, `${sessionLabel}.jsonl`);
+  const targetFile = files[0] ?? join(HERMES_SESSIONS_DIR, `${sessionLabel}.jsonl`);
   const { writeFile, appendFile, access } = await import('node:fs/promises');
   const line = JSON.stringify({ role, content, timestamp: new Date().toISOString() }) + '\n';
   try {
@@ -142,7 +142,7 @@ async function appendToSession(
 
 export async function sendToIntervention(message: string, sessionKey = 'pic-intervention'): Promise<void> {
   // Write to intervention session
-  const response = await fetch(CLAWDBOT_SEND_URL, {
+  const response = await fetch(HERMES_SEND_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionKey, message }),

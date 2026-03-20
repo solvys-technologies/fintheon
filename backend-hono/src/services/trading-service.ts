@@ -182,7 +182,7 @@ export async function fireTestTrade(
     type: 2,  // Market
     side: params.side === 'buy' ? 0 : 1,
     size: 1,
-    customTag: `PULSE-TEST-${Date.now()}`,
+    customTag: `FINTHEON-TEST-${Date.now()}`,
   });
 
   if (!result.success) {

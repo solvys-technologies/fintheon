@@ -1,6 +1,6 @@
-// [claude-code 2026-03-10] Shared QuickPulse request/result types
+// [claude-code 2026-03-10] Shared QuickFintheon request/result types
 
-export interface QuickPulseRequest {
+export interface QuickFintheonRequest {
   image?: string       // base64 image data (user-provided, optional)
   algoState?: {
     bias?: string
@@ -10,21 +10,21 @@ export interface QuickPulseRequest {
   url?: string         // specific URL to screenshot (optional, defaults to localhost:5173)
 }
 
-export interface QuickPulseEntry {
+export interface QuickFintheonEntry {
   price: string
   reason: string
 }
 
-export interface QuickPulseResult {
+export interface QuickFintheonResult {
   bias: 'Bullish' | 'Bearish' | 'Neutral'
   confidence: number          // 0–100
   rationale: string
   entries: {
-    entry1: QuickPulseEntry
-    entry2?: QuickPulseEntry
+    entry1: QuickFintheonEntry
+    entry2?: QuickFintheonEntry
   }
-  stopLoss: QuickPulseEntry
-  target: QuickPulseEntry
+  stopLoss: QuickFintheonEntry
+  target: QuickFintheonEntry
   riskReward?: string
   timeframe?: string
   keyLevels?: string[]

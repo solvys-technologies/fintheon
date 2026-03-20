@@ -3,7 +3,7 @@
  * Type definitions for user accounts
  */
 
-export type UserTier = 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
+export type UserTier = 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
 
 export interface Account {
   id: string;

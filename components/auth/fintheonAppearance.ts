@@ -1,6 +1,6 @@
 import type { Appearance } from '@clerk/types';
 
-export const pulseAppearance: Appearance = {
+export const fintheonAppearance: Appearance = {
   variables: {
     colorPrimary: '#EAB308',
     colorText: '#F5F3FF',

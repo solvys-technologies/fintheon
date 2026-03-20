@@ -1,4 +1,4 @@
-# Pulse Endpoint Parity Matrix
+# Fintheon Endpoint Parity Matrix
 
 **Generated**: 2026-03-09 | **Branch**: v7.7.7 @ ca3dce6
 
@@ -15,7 +15,7 @@
 
 | Frontend Call | Service Method | Backend Status | Severity | Resolution |
 |---|---|---|---|---|
-| `POST /api/ai/quick-pulse` | `AIService.quickPulse()` | **MISSING** | Low — UI has fallback | Route through `/api/ai/chat` with task param, or add backend handler |
+| `POST /api/ai/quick-fintheon` | `AIService.quickFintheon()` | **MISSING** | Low — UI has fallback | Route through `/api/ai/chat` with task param, or add backend handler |
 | `POST /api/ai/check-tape` | `AIService.checkTape()` | **MISSING** | Low — not on critical path | Route through `/api/ai/chat` with task param |
 | `POST /api/ai/generate-daily-recap` | `AIService.generateDailyRecap()` | **MISSING** | Low — not on critical path | Route through `/api/ai/chat` with task param |
 | `POST /api/agents/reports/run` | `AnalystService.runReports()` | **MISSING** — backend has `/api/agents/analyze` | Medium — naming mismatch | Align frontend to use `/api/agents/analyze` or add alias |

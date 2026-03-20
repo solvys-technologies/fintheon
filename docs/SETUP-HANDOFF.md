@@ -1,11 +1,11 @@
-# Pulse Setup Handoff — LLM Agent Guide
+# Fintheon Setup Handoff — LLM Agent Guide
 
-This document is for any LLM agent (Claude Code, Cursor, OpenClaw, Codex) setting up or deploying Pulse. Read this to understand all backend dependencies, startup sequence, and deployment steps.
+This document is for any LLM agent (Claude Code, Cursor, OpenClaw, Codex) setting up or deploying Fintheon. Read this to understand all backend dependencies, startup sequence, and deployment steps.
 
 ## Repository Structure
 
 ```
-/Users/tifos/Desktop/Codebases/pulse/
+/Users/tifos/Desktop/Codebases/fintheon/
   backend-hono/     — Hono API server (Node.js, TypeScript)
   frontend/         — React 19 + Tailwind 4 + Vite
   electron/         — Electron main process (main.cjs)
@@ -76,9 +76,9 @@ cd backend-hono && npx tsc && cd ..
 ### Full Build (Frontend + DMG)
 
 ```bash
-cd /Users/tifos/Desktop/Codebases/pulse
+cd /Users/tifos/Desktop/Codebases/fintheon
 npm run desktop:build    # tsc + vite build + electron-builder --mac dmg
-cp desktop-dist/Pulse-1.0.0.dmg ~/Desktop/Pulse-1.0.0.dmg
+cp desktop-dist/Fintheon-1.0.0.dmg ~/Desktop/Fintheon-1.0.0.dmg
 ```
 
 ### Backend Only
@@ -195,7 +195,7 @@ CPI, PPI, NFP, GDP, PCE, FOMC/Fed Rate, PMI, Trump/Tariff
 
 ## Common Issues
 
-- **DMG build fails with hdiutil error**: A previous DMG volume is mounted. Run `hdiutil detach "/Volumes/Pulse 1.0.0" -force`
+- **DMG build fails with hdiutil error**: A previous DMG volume is mounted. Run `hdiutil detach "/Volumes/Fintheon 1.0.0" -force`
 - **Code signing warning**: Expected — no Developer ID cert. Ignore.
 - **Backend dist not found on Electron launch**: Run `cd backend-hono && npx tsc` first
 - **Notion status shows disconnected**: Backend may not be running. Check `http://localhost:8080/health`

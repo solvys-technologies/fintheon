@@ -1,16 +1,16 @@
-# PULSE Detailed Execution Plan (Based on Latest Desktop Codebase)
+# FINTHEON Detailed Execution Plan (Based on Latest Desktop Codebase)
 
 
 ## Non-Negotiable Scope & UI Directives (Chief Override)
 
-- **Pulse-only scope**: All implementation in this plan targets **Pulse** exclusively. **Do not implement anything in ClawSpace** (deprecated).
-- **UI source standard**: Any new or updated chat UI elements/components must be sourced from **21st.dev** patterns/components first, then adapted to Pulse.
+- **Fintheon-only scope**: All implementation in this plan targets **Fintheon** exclusively. **Do not implement anything in ClawSpace** (deprecated).
+- **UI source standard**: Any new or updated chat UI elements/components must be sourced from **21st.dev** patterns/components first, then adapted to Fintheon.
 - **No blank assistant bubble while thinking**: When the agent is working/thinking and not yet streaming tokens, do **not** render an empty assistant message bubble. Only render assistant bubble once stream/output begins.
 - **Sticky bottom chat behavior**: Chat view must stay pinned to the bottom during active conversation/streaming (with robust auto-scroll + bottom-lock behavior) unless the user intentionally scrolls up.
 
 
 **Date:** 2026-03-09  
-**Source Codebase:** `~/Desktop/Codebases/pulse`  
+**Source Codebase:** `~/Desktop/Codebases/fintheon`  
 **Observed Branch/Head:** `v7.7.7` @ `ca3dce6`  
 **Current Reality:** repo has active uncommitted frontend/backend/chat/runtime changes + new untracked integration/docs files.
 
@@ -49,7 +49,7 @@
 
 ### 1.4 Trading Blackout Protection (Operational Rule)
 - Introduce a hard operational policy in workflow docs/runtime behavior:
-  - **No non-urgent Pulse engineering execution during 08:30–11:00 EST** unless explicitly instructed by Chief.
+  - **No non-urgent Fintheon engineering execution during 08:30–11:00 EST** unless explicitly instructed by Chief.
 - Add this rule as a top-level “execution gate” in planning docs and daily ops checklist.
 - Add a pre-run checklist item: “Are we inside blackout window?”
 
@@ -73,8 +73,8 @@
 
 ### 2.3 Component Refactor Queue (Chat Stack)
 - Rationalize overlap among:
-  - `PulseChatInput.tsx`
-  - `PulseComposer.tsx`
+  - `FintheonChatInput.tsx`
+  - `FintheonComposer.tsx`
   - `ChatInputArea.tsx`
 - Standardize a single state contract for:
   - draft text

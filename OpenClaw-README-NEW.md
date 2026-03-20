@@ -1,7 +1,7 @@
 # OpenClaw-README-NEW
 
 ## Purpose
-This README is the implementation handoff for OpenClaw agents operating inside Pulse after the latest Psych Assist vNext rollout.
+This README is the implementation handoff for OpenClaw agents operating inside Fintheon after the latest Psych Assist vNext rollout.
 
 It covers:
 - Header voice assistant + Aurora orb behavior.
@@ -95,9 +95,9 @@ Color map (locked):
 ### Animation rules
 In `VoiceAuroraOrb.tsx`:
 - Wave motion runs only when `state === 'speaking'`.
-- `thinking`: breathing pulse only.
-- `infraction`: sharper alert pulse only.
-- `idle` / `listening`: subtle pulse.
+- `thinking`: breathing fintheon only.
+- `infraction`: sharper alert fintheon only.
+- `idle` / `listening`: subtle fintheon.
 - Border + glow are color-bound to current state.
 
 ---
@@ -221,7 +221,7 @@ Bridge endpoint for SignalR-fed event batches.
 - Shares persistent conversation logic.
 
 ### Floating chat
-- UI: `frontend/components/chat/PulseFloatingChat.tsx`
+- UI: `frontend/components/chat/FintheonFloatingChat.tsx`
 - Same OpenClaw transport + per-agent conversation persistence.
 
 ### Research Department chat

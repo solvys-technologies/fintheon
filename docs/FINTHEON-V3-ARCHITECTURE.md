@@ -1,4 +1,4 @@
-# Pulse v3 Architecture (Updated)
+# Fintheon v3 Architecture (Updated)
 
 > Version: 3.x (active implementation stream)  
 > Status: Implemented with known gaps  
@@ -6,7 +6,7 @@
 
 ## System Overview
 
-Pulse is a React + Hono trading operations platform with boardroom communication, RiskFlow intelligence, and proposal-driven trade workflows.
+Fintheon is a React + Hono trading operations platform with boardroom communication, RiskFlow intelligence, and proposal-driven trade workflows.
 
 ```mermaid
 flowchart TD
@@ -29,7 +29,7 @@ flowchart TD
     projectX["ProjectXBrokerApis"]
     xFeeds["XNewsFeeds"]
     fmpData["FMPData"]
-    clawSessions["ClawdbotSessionFiles"]
+    clawSessions["HermesSessionFiles"]
   end
 
   frontendApp -->|"HTTPS"| honoApi
@@ -93,5 +93,5 @@ flowchart TD
 
 ## Reference
 
-- Notion audit: `Pulse Engineering Audit — 2026-02-12`
+- Notion audit: `Fintheon Engineering Audit — 2026-02-12`
 - Local execution plan: `docs/OpenClaw Move-In Sprint Plan.md`

@@ -5,7 +5,7 @@ import type { MarketContext } from './types.js';
 
 /**
  * Get full market context for a symbol.
- * Used by QuickPulse skill and Morning Brief.
+ * Used by QuickFintheon skill and Morning Brief.
  * All providers are fetched in parallel; failures degrade gracefully.
  */
 export async function getMarketContext(symbol: string): Promise<MarketContext> {

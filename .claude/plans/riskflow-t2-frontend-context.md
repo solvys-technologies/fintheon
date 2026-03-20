@@ -1,7 +1,7 @@
 # RiskFlow Fix — Track 2: Frontend Context + Backend Feed Wiring (THE CORE FIX)
 
 ## Context
-You are Track 2 of 3 parallel tracks fixing the Pulse RiskFlow system.
+You are Track 2 of 3 parallel tracks fixing the Fintheon RiskFlow system.
 
 **This is the most critical track.** The entire reason RiskFlow panels show no data is that
 `RiskFlowContext.tsx` only polls MarketWatch RSS and Notion trade ideas. It NEVER calls
@@ -224,7 +224,7 @@ Add to `frontend/lib/changelog.ts`:
 ## Verification
 
 ```bash
-cd /Users/tifos/Desktop/Codebases/pulse
+cd /Users/tifos/Desktop/Codebases/fintheon
 npx vite build
 ```
 

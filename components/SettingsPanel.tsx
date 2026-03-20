@@ -681,7 +681,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 <section>
                   <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Account Tier</h3>
                   <div className="flex gap-2">
-                    {(['free', 'pulse', 'pulse_plus', 'pulse_pro'] as const).map(t => (
+                    {(['free', 'fintheon', 'fintheon_plus', 'fintheon_pro'] as const).map(t => (
                       <Button
                         key={t}
                         variant={tier === t ? 'primary' : 'secondary'}

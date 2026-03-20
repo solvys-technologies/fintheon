@@ -1,11 +1,11 @@
 ---
-name: pulse
-description: PULSE is the world's first true AI-powered Integrated Trading Environment (ITE) under **Priced In Research.
+name: fintheon
+description: FINTHEON is the world's first true AI-powered Integrated Trading Environment (ITE) under **Priced In Research.
 ---
 
 # Overview
 
-# PULSE — Project Rules
+# FINTHEON — Project Rules
 
 ### MVP Features
 - **PsychAssist**: Prevents tilting/overtrading via emotional resonance + duration-based execution monitoring
@@ -95,7 +95,7 @@ return { error: e.message, data: null };
 ## Codebase Summary
 
 For a comprehensive overview of the codebase architecture, services, APIs, and implementation details, see:
-**`.cursor/skills/pulse/CODEBASE-SUMMARY.md`**
+**`.cursor/skills/fintheon/CODEBASE-SUMMARY.md`**
 
 This summary includes:
 - Complete API endpoint documentation

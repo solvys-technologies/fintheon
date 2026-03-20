@@ -7,7 +7,7 @@ import {
   sendMentionToBoardroom,
   checkBoardroomStatus,
   appendToBoardroom,
-} from '../../services/clawdbot-sessions.js';
+} from '../../services/hermes-sessions.js';
 import { getBoardroomMeetingSchedule } from '../../services/boardroom-schedule.js';
 import type { InterventionType, InterventionSeverity, BoardroomAgent } from '../../types/boardroom.js';
 
@@ -202,7 +202,7 @@ export async function handlePostTradeIdea(c: Context) {
 
 /**
  * GET /api/boardroom/status
- * Quick check that expected Clawdbot sessions are available.
+ * Quick check that expected Hermes sessions are available.
  */
 export async function handleGetBoardroomStatus(c: Context) {
   try {

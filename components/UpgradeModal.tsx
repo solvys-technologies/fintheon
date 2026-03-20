@@ -7,7 +7,7 @@ interface UpgradeModalProps {
   onClose: () => void;
 }
 
-type Tier = 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
+type Tier = 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
 
 interface TierInfo {
   name: string;
@@ -33,8 +33,8 @@ const tierData: Record<Tier, TierInfo> = {
     borderColor: 'border-gray-600',
     buttonText: 'Current Plan',
   },
-  pulse: {
-    name: 'Pulse',
+  fintheon: {
+    name: 'Fintheon',
     price: '$49',
     priceSubtext: 'per month',
     features: [
@@ -45,28 +45,28 @@ const tierData: Record<Tier, TierInfo> = {
     ],
     color: 'text-[#D4AF37]',
     borderColor: 'border-[#D4AF37]',
-    buttonText: 'Upgrade to Pulse',
+    buttonText: 'Upgrade to Fintheon',
   },
-  pulse_plus: {
-    name: 'Pulse+',
+  fintheon_plus: {
+    name: 'Fintheon+',
     price: '$149',
     priceSubtext: 'per month',
     features: [
-      'Everything in Pulse',
+      'Everything in Fintheon',
       'Risk management tools',
       'Autonomous Trading Algo',
       'Full RiskFlow for commentary and macroeconomic data releases with implied volatility scoring',
     ],
     color: 'text-[#FBC717]',
     borderColor: 'border-[#FBC717]',
-    buttonText: 'Upgrade to Pulse+',
+    buttonText: 'Upgrade to Fintheon+',
   },
-  pulse_pro: {
-    name: 'Pulse Pro',
+  fintheon_pro: {
+    name: 'Fintheon Pro',
     price: '$299',
     priceSubtext: 'per month',
     features: [
-      'Everything in Pulse+',
+      'Everything in Fintheon+',
       'Priority support',
       'Custom AI Agent & Trading model training',
       'Multi-account management',
@@ -114,7 +114,7 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
 
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {(['free', 'pulse', 'pulse_plus', 'pulse_pro'] as const).map((t) => {
+            {(['free', 'fintheon', 'fintheon_plus', 'fintheon_pro'] as const).map((t) => {
               const info = tierData[t];
               const isCurrent = tier === t;
               

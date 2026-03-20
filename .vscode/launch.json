@@ -25,7 +25,7 @@
             "name": "Launch Chrome",
             "request": "launch",
             "type": "chrome",
-            "url": "https://pulse.solvys.io",
+            "url": "https://fintheon.solvys.io",
             "webRoot": "${workspaceFolder}"
         },
     ]

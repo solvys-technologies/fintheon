@@ -52,7 +52,7 @@ Risk event / macro surprise play. A Flush **supercharged by a fundamental cataly
 ## Entry Logic (Reactive Mode)
 
 Same as Flush with these modifications:
-- **Catalyst must be identified** (Pulse/OpenClaw fundamental detection or manual)
+- **Catalyst must be identified** (Fintheon/OpenClaw fundamental detection or manual)
 - **Wider initial stop** (next cycle level below entry, not just below sweep wick)
 - **No fixed timing windows** — catalyst timing dictates
 - Trades may move too fast for standard scale-in — use judgment
@@ -125,4 +125,4 @@ The 120-second blackout protects against scheduled news chaos. This governor pro
 - Fib invalidation logic
 - Anchored VWAP specification
 - DOM heuristic for exits
-- Pulse/OpenClaw catalyst severity classification rules
+- Fintheon/OpenClaw catalyst severity classification rules

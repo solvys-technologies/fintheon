@@ -1,8 +1,8 @@
-# PULSE Codebase Summary (Updated)
+# FINTHEON Codebase Summary (Updated)
 
 ## Project Overview
 
-PULSE is an integrated trading workspace with:
+FINTHEON is an integrated trading workspace with:
 
 - React 19 + Vite frontend (`frontend/`)
 - Hono backend API (`backend-hono/`)
@@ -61,5 +61,5 @@ Primary backend is `backend-hono/`, not Encore.
 
 ## Canonical Status Reference
 
-- Notion: `Pulse Engineering Audit — 2026-02-12`
+- Notion: `Fintheon Engineering Audit — 2026-02-12`
 - Local: `docs/OpenClaw Move-In Sprint Plan.md`
