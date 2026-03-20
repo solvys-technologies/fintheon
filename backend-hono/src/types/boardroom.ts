@@ -1,22 +1,22 @@
-// [claude-code 2026-03-16] Agent backend v7.9: updated BoardroomAgent roster
+// [claude-code 2026-03-19] Agent backend v8.0: updated BoardroomAgent roster (4 agents)
 /**
  * Boardroom types
  * Shared backend contracts for boardroom and intervention messages.
  *
- * Agent roster (v7.9):
+ * Agent roster (v8.0):
  *   Harper-Hermes — CAO (Chief Agent Officer), coordination & boardroom moderation
- *   Oracle        — The All-Seer, prediction markets + macro (merged PMA-1 + PMA-2)
- *   Feucht        — Futures, Execution & Risk
- *   Consul        — Fundamentals desk
- *   Herald        — News & Sentiment
+ *   Feucht        — Futures Execution & 40/40 Club
+ *   Consul        — PMA-1 Market Intelligence (Kalshi BTC bot)
+ *   Oracle        — PMA-2 Quantitative Pattern Diviner
+ *   (Herald removed in v8.0 — communications absorbed by Harper-Hermes)
  *   (Sentinel removed in v7.9 — risk absorbed by Feucht)
  */
 
 export type BoardroomAgent =
   | 'Harper-Hermes'
-  | 'Oracle'
   | 'Feucht'
   | 'Consul'
+  | 'Oracle'
   | 'Herald'
   | 'Unknown';
 

@@ -1,6 +1,6 @@
 # Fintheon — Setup & Handoff Guide
 
-> **For AI agents** (Harper-Hermes, Oracle, Feucht, Consul, Herald, Claude Code): Read this file when bootstrapping the repo on a new machine. Follow the steps in order. The first-run setup wizard will verify everything is connected.
+> **For AI agents** (Harper-Hermes, Oracle, Feucht, Consul, Claude Code): Read this file when bootstrapping the repo on a new machine. Follow the steps in order. The first-run setup wizard will verify everything is connected.
 
 ## Prerequisites
 

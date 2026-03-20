@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-19T22:00:00',
+    agent: 'claude-code',
+    summary: 'Sprint: Fix Clerk auth (ClerkProvider restored with BYPASS_AUTH escape hatch, safe hook wrappers for ChatInterface/MainLayout), Supabase cloud persistence (5 tables: raw_riskflow_items, scored_riskflow_items, er_scores, user_settings, consilium_messages), centralized scoring pipeline (central-scorer polls unscored items, runs Grok analyzer, writes scored results), Consilium agent chat tab (AgentChattr with boardroom API, @mention, polling), cloud API routes (/api/cloud/*), redesigned auth screen (split layout: name left, Clerk right, dithered hero).',
+    files: [
+      'App.tsx',
+      'contexts/AuthContext.tsx',
+      'lib/clerk-hooks.ts',
+      'lib/supabase.ts',
+      'lib/services.ts',
+      'components/auth/AuthShell.tsx',
+      'components/ChatInterface.tsx',
+      'components/layout/MainLayout.tsx',
+      'components/layout/NavSidebar.tsx',
+      'components/consilium/AgentChattr.tsx',
+      'components/consilium/ConsiliumMessage.tsx',
+      'components/consilium/AgentBadge.tsx',
+      'backend-hono/src/config/supabase.ts',
+      'backend-hono/src/services/supabase-service.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+      'backend-hono/src/routes/cloud/index.ts',
+      'backend-hono/src/routes/index.ts',
+      'backend-hono/src/index.ts',
+    ],
+  },
+  {
     date: '2026-03-17T04:00:00',
     agent: 'claude-code',
     summary: 'Clerk authentication integration: Google OAuth login via pulse.pricedinresearch.io, AuthShell landing screen, Clerk JWT verification in backend auth middleware, static file serving from Hono (Electron loads from localhost:8080 for HTTP origin), BackendProvider context for auth-aware API calls. Fixed notifications 500 (DB schema mismatch) and health 503 (missing Clerk key). Updated window title to Fintheon.',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useClerk } from '@clerk/clerk-react';
+import { useSafeClerk as useClerk } from '../../lib/clerk-hooks';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
@@ -21,12 +21,13 @@ import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
 import { ModelDashboard } from '../models/ModelDashboard';
+import { AgentChattr } from '../consilium/AgentChattr';
 
 // Development mode: bypass Clerk authentication ONLY when explicitly enabled
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
 const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'models';
+type NavTab = 'feed' | 'analysis' | 'news' | 'models' | 'consilium';
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
 
 interface MainLayoutProps {
@@ -400,6 +401,11 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
               {activeTab === 'models' && (
                 <div key="models" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ModelDashboard />
+                </div>
+              )}
+              {activeTab === 'consilium' && (
+                <div key="consilium" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <AgentChattr />
                 </div>
               )}
             </div>

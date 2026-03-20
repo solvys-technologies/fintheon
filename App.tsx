@@ -10,7 +10,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { NotificationContainer } from './components/NotificationToast';
 import { PsychOrientationModal } from './components/psych/PsychOrientationModal';
 import { AuthShell } from './components/auth/AuthShell';
-import { pulseAppearance } from './components/auth/pulseAppearance';
+import { fintheonAppearance } from './components/auth/fintheonAppearance';
 // ERProvider removed - using component-based ER monitoring for stability
 
 // Development mode: bypass Clerk authentication ONLY when explicitly enabled
@@ -84,54 +84,36 @@ function AppInner() {
     </VIXProvider>
   );
 
-  // In dev mode with auth bypass, show app directly
-  if (BYPASS_AUTH) {
-    return appContent;
-  }
-
-  // Normal Clerk authentication flow
-  return (
-    <>
-      <SignedOut>
-        <AuthShell>
-          <SignIn
-            appearance={pulseAppearance}
-            routing="path"
-            path="/sign-in"
-            signUpUrl="/sign-up"
-          />
-        </AuthShell>
-      </SignedOut>
-      <SignedIn>
-        {appContent}
-      </SignedIn>
-    </>
-  );
+  // Auth temporarily disabled — show app directly
+  return appContent;
 }
 
 export default function App() {
-  // Production Clerk publishable key
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
   const clerkDomain = import.meta.env.VITE_CLERK_DOMAIN || DEFAULT_CLERK_DOMAIN;
   const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL || DEFAULT_CLERK_PROXY_URL;
 
-  // In dev mode with auth bypass, skip ClerkProvider
-  if (BYPASS_AUTH) {
+  // Dev mode: bypass Clerk entirely
+  if (BYPASS_AUTH || !clerkKey) {
     return <AppInner />;
   }
 
-  if (!clerkKey && DEV_MODE) {
-    console.warn('[DEV MODE] Missing VITE_CLERK_PUBLISHABLE_KEY. Showing AuthShell preview without Clerk.');
-    return (
-      <AuthShell>
-        <MockSignInPreview />
-      </AuthShell>
-    );
-  }
-
+  // Production: wrap with ClerkProvider for full auth
   return (
-    <ClerkProvider publishableKey={clerkKey} domain={clerkDomain} proxyUrl={clerkProxyUrl}>
-      <AppInner />
+    <ClerkProvider
+      publishableKey={clerkKey}
+      appearance={fintheonAppearance}
+      domain={clerkDomain}
+      proxyUrl={clerkProxyUrl}
+    >
+      <SignedIn>
+        <AppInner />
+      </SignedIn>
+      <SignedOut>
+        <AuthShell>
+          <SignIn appearance={fintheonAppearance} />
+        </AuthShell>
+      </SignedOut>
     </ClerkProvider>
   );
 }

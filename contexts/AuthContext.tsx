@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useBackend } from '../lib/backend';
 
-export type UserTier = 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
+export type UserTier = 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
 
 interface OnboardingData {
   hasCompletedOnboarding: boolean;
@@ -151,9 +151,13 @@ function AuthProviderWithClerk({ children }: { children: ReactNode }) {
   );
 }
 
-// Main AuthProvider that chooses the right implementation
+// Development mode flags (matching App.tsx)
+const DEV_MODE_AUTH = import.meta.env.DEV || import.meta.env.MODE === 'development';
+const BYPASS_AUTH_CTX = DEV_MODE_AUTH && import.meta.env.VITE_BYPASS_AUTH === 'true';
+
+// Main AuthProvider — uses Clerk when available, dev fallback otherwise
 export function AuthProvider({ children }: { children: ReactNode }) {
-  if (BYPASS_AUTH) {
+  if (BYPASS_AUTH_CTX || !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) {
     return <AuthProviderNoClerk>{children}</AuthProviderNoClerk>;
   }
   return <AuthProviderWithClerk>{children}</AuthProviderWithClerk>;
