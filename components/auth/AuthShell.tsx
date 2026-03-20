@@ -3,11 +3,12 @@ import { FluidCursor, FluidCursorHandle } from './FluidCursor';
 
 type AuthShellProps = {
   children: React.ReactNode;
+  onBypass?: () => void;
 };
 
 type AuthPhase = 'landing' | 'transitioning' | 'auth';
 
-export const AuthShell: React.FC<AuthShellProps> = ({ children }) => {
+export const AuthShell: React.FC<AuthShellProps> = ({ children, onBypass }) => {
   const [phase, setPhase] = useState<AuthPhase>('landing');
   const [showClerk, setShowClerk] = useState(false);
   const cursorRef = useRef<FluidCursorHandle>(null);
@@ -139,11 +140,19 @@ export const AuthShell: React.FC<AuthShellProps> = ({ children }) => {
             <div className="absolute inset-[-200%] animate-spin-slow bg-[conic-gradient(from_0deg,transparent_0_85%,#B45309_92%,#EAB308_100%)] opacity-80" />
             <div className="relative z-10 flex flex-col gap-6 rounded-[32px] bg-black/80 px-8 py-10 shadow-[0_25px_55px_rgba(0,0,0,0.65)] backdrop-blur-lg">
               <div className="space-y-2 text-center">
-                <p className="text-xs uppercase tracking-[0.5em] text-yellow-500/70">Pulse Terminal</p>
+                <p className="text-xs uppercase tracking-[0.5em] text-yellow-500/70">Fintheon Terminal</p>
                 <h1 className="text-2xl font-semibold tracking-[0.2em] text-yellow-50">Access Control</h1>
               </div>
               <div className={`transition-all duration-500 ${showClerk ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
                 {showClerk ? children : null}
+                {showClerk && onBypass && (
+                  <button
+                    onClick={onBypass}
+                    className="mt-6 w-full rounded-full border-2 border-[#c79f4a] bg-transparent px-8 py-4 text-sm font-bold uppercase tracking-[0.3em] text-[#c79f4a] transition-all duration-500 hover:bg-[#c79f4a] hover:text-black hover:shadow-[0_0_30px_rgba(199,159,74,0.4)]"
+                  >
+                    Enter Fintheon
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -22,9 +22,8 @@ import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
 import { ModelDashboard } from '../models/ModelDashboard';
 
-// Development mode: bypass Clerk authentication ONLY when explicitly enabled
-const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
+// [claude-code 2026-03-20] Auth bypass forced — Clerk stripped for Sprint 1
+const BYPASS_AUTH = true;
 
 type NavTab = 'feed' | 'analysis' | 'news' | 'models';
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';

@@ -37,6 +37,8 @@ import { createBlindspotsRoutes } from './blindspots.js';
 import { systemic as systemicRoutes } from './systemic/index.js';
 import { createContextBankRoutes } from './context-bank/index.js';
 import { createAutopilotRoutes } from './autopilot/index.js';
+import { createProposalRoutes } from './proposals/index.js';
+import cloudRoutes from './cloud/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -63,6 +65,11 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/context-bank', createContextBankRoutes());
   // MiroFish multi-agent simulation — feature-flagged via MIROFISH_ENABLED
   app.route('/api/mirofish', createMirofishRoutes());
+  // Proposal charting — Playwright automation for TopStepX (public, local only)
+  app.route('/api/proposals', createProposalRoutes());
+
+  // Cloud API — Supabase-backed scored items, ER sessions, settings, consilium
+  app.route('/api/cloud', cloudRoutes);
 
   // Autopilot — signal-ingest/status/signals are public (QC/TV webhooks), proposal mgmt needs auth
   app.use('/api/autopilot/proposals', authMiddleware);

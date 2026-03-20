@@ -9,6 +9,47 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-20T18:00:00',
+    agent: 'claude-code',
+    summary: 'T5: Proposals tab + Playwright TopStepX charting automation. Added proposals nav tab (Target icon) with ProposalWidget (fetches latest pending proposal from Autopilot, shows instrument/direction/levels/strategy/rationale, Chart It button) and ModelGlossary accordion (FortyForty, Ripper, AWV, Snipe). Backend POST /api/proposals/chart checks EST blackout (8:30a-12p), spawns Playwright script to draw horizontal rays on TopStepX Practice account. Scripts: chart-blackout.ts (blackout check), chart-proposal.ts (persistent Playwright context, switch to Practice, open ticker chart, draw entry/SL/TP rays using saved templates).',
+    files: [
+      'frontend/components/proposals/ProposalWidget.tsx',
+      'frontend/components/proposals/ModelGlossary.tsx',
+      'frontend/components/layout/NavSidebar.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/lib/layoutOrderStorage.ts',
+      'backend-hono/src/routes/proposals/index.ts',
+      'backend-hono/src/routes/proposals/handlers.ts',
+      'backend-hono/src/routes/index.ts',
+      'scripts/chart-blackout.ts',
+      'scripts/chart-proposal.ts',
+      'src/lib/changelog.ts',
+    ],
+  },
+  {
+    date: '2026-03-20T14:00:00',
+    agent: 'claude-code',
+    summary: 'T3: Consilium tab — unified Auditorium + AgentChattr with 4 sub-tabs (Chat, Predictions, Timeline, Scorecards). Copied consilium components from root to frontend/components/consilium/, refactored AgentChattr to chat-only (sub-tabs moved to hub), created ConsiliumHub parent, wired into MainLayout replacing AnalysisSection. Narrative tab preserved as-is.',
+    files: [
+      'frontend/components/consilium/ConsiliumHub.tsx',
+      'frontend/components/consilium/AgentChattr.tsx',
+      'frontend/components/consilium/AgentBadge.tsx',
+      'frontend/components/consilium/AgentScorecard.tsx',
+      'frontend/components/consilium/ConsiliumFilterBar.tsx',
+      'frontend/components/consilium/ConsiliumMessage.tsx',
+      'frontend/components/consilium/ConsiliumMessageExpanded.tsx',
+      'frontend/components/consilium/DevelopmentsTimeline.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+      'src/lib/changelog.ts',
+    ],
+  },
+  {
+    date: '2026-03-20T12:00:00',
+    agent: 'claude-code',
+    summary: 'T4: Strip Clerk auth — force BYPASS_AUTH=true in App.tsx and MainLayout.tsx. Add "Enter Fintheon" bypass login button to AuthShell with localStorage gate. App loads AuthShell landing → bypass button → full app. Clerk code preserved for Sprint 2 re-enablement.',
+    files: ['App.tsx', 'components/layout/MainLayout.tsx', 'components/auth/AuthShell.tsx', 'src/lib/changelog.ts'],
+  },
+  {
     date: '2026-03-17T02:00:00',
     agent: 'claude-code',
     summary: 'T5: MiroFish local simulation engine — replaced dead localhost:5001 HTTP client with 5-agent debate engine via Hermes/OpenRouter. Built Auditorium section inside Narrative Map: Kalshi-style Canvas line chart (6 risk categories + gold composite), events kanban by risk type (existing + AI-generated), top 5 volatile prediction theses with confidence/volatility bars. Feature flag replaces env var gate. IV prediction auto-fetches latest cached result.',

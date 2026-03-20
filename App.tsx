@@ -13,9 +13,9 @@ import { AuthShell } from './components/auth/AuthShell';
 import { pulseAppearance } from './components/auth/pulseAppearance';
 // ERProvider removed - using component-based ER monitoring for stability
 
-// Development mode: bypass Clerk authentication ONLY when explicitly enabled
+// [claude-code 2026-03-20] Auth bypass forced — Clerk stripped for Sprint 1
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
+const BYPASS_AUTH = true;
 
 const DEFAULT_CLERK_DOMAIN = 'clerk.app.pricedinresearch.io';
 const DEFAULT_CLERK_PROXY_URL = 'https://clerk.app.pricedinresearch.io';
@@ -110,15 +110,29 @@ function AppInner() {
 }
 
 export default function App() {
-  // Production Clerk publishable key
+  const [authed, setAuthed] = useState(() => {
+    return localStorage.getItem('fintheon-bypass-auth') === 'true';
+  });
+
+  // Bypass mode: show AuthShell gate, then app
+  if (BYPASS_AUTH) {
+    if (authed) {
+      return <AppInner />;
+    }
+    return (
+      <AuthShell onBypass={() => {
+        localStorage.setItem('fintheon-bypass-auth', 'true');
+        setAuthed(true);
+      }}>
+        <BypassLoginPrompt />
+      </AuthShell>
+    );
+  }
+
+  // --- Clerk flow (preserved for Sprint 2 re-enablement) ---
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
   const clerkDomain = import.meta.env.VITE_CLERK_DOMAIN || DEFAULT_CLERK_DOMAIN;
   const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL || DEFAULT_CLERK_PROXY_URL;
-
-  // In dev mode with auth bypass, skip ClerkProvider
-  if (BYPASS_AUTH) {
-    return <AppInner />;
-  }
 
   if (!clerkKey && DEV_MODE) {
     console.warn('[DEV MODE] Missing VITE_CLERK_PUBLISHABLE_KEY. Showing AuthShell preview without Clerk.');
@@ -133,6 +147,16 @@ export default function App() {
     <ClerkProvider publishableKey={clerkKey} domain={clerkDomain} proxyUrl={clerkProxyUrl}>
       <AppInner />
     </ClerkProvider>
+  );
+}
+
+function BypassLoginPrompt() {
+  return (
+    <div className="flex flex-col items-center gap-3 text-center">
+      <p className="text-sm text-yellow-100/60">
+        Authentication is not configured. Use the bypass button below to enter.
+      </p>
+    </div>
   );
 }
 

@@ -11,7 +11,7 @@ import { CompactRiskFlowCard } from '../feed/CompactRiskFlowCard';
 import { KanbanTitle } from '../ui/KanbanTitle';
 import { MinimalTapeWidget } from '../feed/MinimalTapeWidget';
 import { NewsSection } from '../feed/NewsSection';
-import { AnalysisSection } from '../analysis/AnalysisSection';
+import { ConsiliumHub } from '../consilium/ConsiliumHub';
 import { TopStepXBrowser, type TradingPlatform } from '../TopStepXBrowser';
 import { FloatingWidget } from './FloatingWidget';
 import { PanelPosition } from './DraggablePanel';
@@ -40,6 +40,7 @@ import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { TradingJournal } from '../journal/TradingJournal';
+import { ProposalWidget } from '../proposals/ProposalWidget';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 // [claude-code 2026-03-16] Hermes moved from standalone page into Settings tab
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
@@ -55,7 +56,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'proposals' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -547,7 +548,7 @@ export function MainLayout() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'settings';
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'proposals' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (missionControlCollapsed) {
         // Mission Control collapsed — just show a thin expand strip + full RiskFlow
@@ -683,7 +684,7 @@ export function MainLayout() {
               )}
               {activeTab === 'analysis' && (
                 <div key="analysis" data-tour-target="chat" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <AnalysisSection />
+                  <ConsiliumHub />
                 </div>
               )}
               {activeTab === 'news' && (
@@ -708,6 +709,11 @@ export function MainLayout() {
               {activeTab === 'notion' && (
                 <div key="notion" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ResearchDepartment />
+                </div>
+              )}
+              {activeTab === 'proposals' && (
+                <div key="proposals" data-tour-target="proposals" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <ProposalWidget />
                 </div>
               )}
               {activeTab === 'earnings' && (

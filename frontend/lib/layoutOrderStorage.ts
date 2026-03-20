@@ -9,7 +9,7 @@ const MISSION_WIDGET_ORDER_KEY = 'fintheon:mission-widget-order:v3'; // v3: cale
 const MISSION_WIDGET_VISIBILITY_KEY = 'fintheon:mission-widget-visibility';
 const RIGHT_PANEL_ORDER_KEY = 'fintheon:right-panel-order';
 
-export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings';
+export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'proposals';
 
 export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'executive',
@@ -19,6 +19,7 @@ export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'chatroom',
   'notion',
   'narrative',
+  'proposals',
   'earnings',
 ];
 
