@@ -24,6 +24,7 @@ import { initHermesAgent } from './services/hermes-handler.js';
 import { startAutopilotScheduler, stopAutopilotScheduler } from './services/autopilot/autopilot-scheduler.js';
 import { startContextBankTicker, stopContextBankTicker } from './services/context-bank/context-bank-service.js';
 import { startBoardroomScheduler, stopBoardroomScheduler } from './services/cron/boardroom-scheduler.js';
+import { startBriefingScheduler, stopBriefingScheduler } from './services/boardroom-briefings.js';
 const app = new Hono();
 const healthService = createHealthService();
 const config = getEnvConfig();
@@ -98,6 +99,7 @@ function startAllPollers() {
     startContextBankTicker();
     startCentralScorer();
     startBoardroomScheduler();
+    startBriefingScheduler();
     pollingActive = true;
     console.log('[API] All pollers started');
 }
@@ -112,6 +114,7 @@ function stopAllPollers() {
     stopContextBankTicker();
     stopCentralScorer();
     stopBoardroomScheduler();
+    stopBriefingScheduler();
     pollingActive = false;
     console.log('[API] All pollers stopped');
 }

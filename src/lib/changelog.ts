@@ -9,6 +9,15 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-20T18:00:00',
+    agent: 'claude-code',
+    summary: 'Shell rebuild + dead code purge: rewrote NavSidebar (2 tabs), MainLayout (60 lines from 481), TopHeader (clean title bar), App.tsx (removed VIX/Psych/Thread providers). Deleted 40+ dead files: feed/, analysis/, mission-control/, psych/, TopStepX, FloatingWidget, DraggablePanel, orphan components, dead contexts. Cleaned SettingsPanel (inlined Toggle/Button, removed psych tab). Removed mini-widget entry point + vite config.',
+    files: [
+      'components/layout/NavSidebar.tsx', 'components/layout/MainLayout.tsx', 'components/layout/TopHeader.tsx', 'App.tsx',
+      'components/SettingsPanel.tsx', 'vite.config.ts',
+    ],
+  },
+  {
     date: '2026-03-20T17:00:00',
     agent: 'claude-code',
     summary: 'Unification: Remove duplicate boardroom-standup.ts (conflicts with Harper boardroom-scheduler), add Herald to boardroom-spawner BOARDROOM_AGENTS, fix Herald emoji to 👴, 30s polling with visibility check, fix ConsiliumMessage onClick wiring',
