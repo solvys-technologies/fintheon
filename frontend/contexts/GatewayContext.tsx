@@ -52,7 +52,9 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
       const res = await fetch(`${gatewayUrl}/health`, { signal: AbortSignal.timeout(5000) });
       const contentType = res.headers.get('content-type') || '';
       const looksLikeJson = contentType.includes('application/json');
-      if (res.ok && looksLikeJson) {
+      // Any JSON response from /health means the backend is reachable.
+      // Sub-component errors (DB, etc.) return 503 but the API still serves chat requests.
+      if (looksLikeJson) {
         const wasDisconnected = status === 'disconnected' || status === 'error' || status === 'connecting';
         setStatus('connected');
         setLastHealthCheck(new Date().toISOString());

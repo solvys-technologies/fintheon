@@ -9,6 +9,12 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-20T23:00:00',
+    agent: 'claude-code',
+    summary: 'Fix Hermes connection: GatewayContext health check now accepts any JSON response from /health (not just res.ok). Backend returns 503 when DB is down but chat API works fine — frontend was incorrectly showing disconnected.',
+    files: ['frontend/contexts/GatewayContext.tsx'],
+  },
+  {
     date: '2026-03-20T22:30:00',
     agent: 'claude-code',
     summary: 'Fix white screen crash in SettingsPanel (diagnostics.services undefined). Add configurable backend autostart + launch-on-login toggles in HermesSettings — Electron main reads fintheon-startup.json from userData, exposes IPC for get/set config + manual start/stop backend. Login item uses app.setLoginItemSettings().',
