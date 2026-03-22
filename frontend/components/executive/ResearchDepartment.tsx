@@ -15,7 +15,7 @@ import { FintheonChatInput } from '../chat/FintheonChatInput';
 
 export function ResearchDepartment() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [thinkHarder, setThinkHarder] = useState(true);
+  const [thinkHarder, setThinkHarder] = useState(false);
   const { iframeUrls } = useSettings();
   const notionResearchUrl = iframeUrls.research || import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so';
 

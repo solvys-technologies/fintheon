@@ -286,20 +286,29 @@ const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string
   const parts = Array.isArray(rawContent) ? rawContent : [];
 
   // Extract full text for checkpoint / copy
-  const textContent = parts
+  const currentText = parts
     .filter((p: any) => p.type === 'text' && typeof p.text === 'string')
     .map((p: any) => p.text)
     .join('\n') ?? '';
 
   // Extract reasoning content for CoT display
-  const reasoningContent = parts
+  const currentReasoning = parts
     .filter((p: any) => p.type === 'reasoning' && typeof p.text === 'string')
     .map((p: any) => p.text)
     .join('\n');
 
+  // Hold last known good content — prevents flicker when assistant-ui
+  // reconciles the message (briefly empties content between stream end and finalization)
+  const lastTextRef = useRef(currentText);
+  const lastReasoningRef = useRef(currentReasoning);
+  if (currentText) lastTextRef.current = currentText;
+  if (currentReasoning) lastReasoningRef.current = currentReasoning;
+
+  const textContent = currentText || lastTextRef.current;
+  const reasoningContent = currentReasoning || lastReasoningRef.current;
   const hasReasoningContent = !!reasoningContent;
 
-  // Don't render empty bubble while waiting for stream tokens
+  // Don't render empty bubble while waiting for first stream tokens
   if (!textContent && !hasReasoningContent) return null;
 
   return (

@@ -28,7 +28,7 @@ interface InterventionSidebarProps {
 
 export function InterventionSidebar({ messages, sending, onSend, onMention, active }: InterventionSidebarProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const [thinkHarder, setThinkHarder] = useState(true);
+  const [thinkHarder, setThinkHarder] = useState(false);
   const { activeAgent } = useFintheonAgents();
 
   // Auto-scroll on new messages

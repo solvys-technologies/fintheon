@@ -43,7 +43,7 @@ function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }:
 
 export function AskHarpChatPanel() {
   const { activeAgent } = useFintheonAgents();
-  const [thinkHarder, setThinkHarder] = useState(true);
+  const [thinkHarder, setThinkHarder] = useState(false);
   const { runtime, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarder, 'askharp');
 
   return (

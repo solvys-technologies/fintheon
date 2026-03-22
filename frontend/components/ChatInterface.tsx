@@ -215,7 +215,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
 
 export default function ChatInterface({ surfaceId = 'analysis' }: { surfaceId?: string }) {
   const { activeAgent } = useFintheonAgents();
-  const [thinkHarderState, setThinkHarderState] = useState(true);
+  const [thinkHarderState, setThinkHarderState] = useState(false);
   const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, surfaceId);
 
   return (
