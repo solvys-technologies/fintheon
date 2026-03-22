@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-23T00:30:00',
+    agent: 'claude-code',
+    summary: 'feat: Automated dispatch briefing scheduler — replaces Perplexity Computer crons. New dispatch-scheduler.ts with node-cron jobs for MDB (6:30 AM), ADB (10:45 AM), PMDB (5:15 PM), TOTT (Sun 4:30 PM). Extracted brief-generator.ts shared service from inline route handler. Idempotent (skips if already generated today). Posts to both Supabase + boardroom. Disable via DISPATCH_SCHEDULER_ENABLED=false.',
+    files: [
+      'backend-hono/src/services/brief-generator.ts',
+      'backend-hono/src/services/cron/dispatch-scheduler.ts',
+      'backend-hono/src/boot/index.ts',
+      'backend-hono/src/routes/data/index.ts',
+    ],
+  },
+  {
     date: '2026-03-22T23:30:00',
     agent: 'claude-code',
     summary: 'feat: CLI onboarding system for team distribution. Interactive `bun run setup` wizard using @clack/prompts — handles prerequisites, deps, Hermes install, API key prompts with live validation, .env generation (merge, don\'t overwrite), port detection, backend build+start, health verification, and Harper welcome message. Fully idempotent — safe to re-run. New POST /api/setup/welcome endpoint returns JSON (not SSE) for CLI consumption.',

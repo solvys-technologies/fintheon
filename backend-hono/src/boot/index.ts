@@ -9,6 +9,7 @@ import { initHermesAgent } from '../services/hermes-handler.js';
 import { startAutopilotScheduler } from '../services/autopilot/autopilot-scheduler.js';
 import { startContextBankTicker } from '../services/context-bank/context-bank-service.js';
 import { startBoardroomScheduler } from '../services/cron/boardroom-scheduler.js';
+import { startDispatchScheduler } from '../services/cron/dispatch-scheduler.js';
 
 const log = createLogger('Boot');
 
@@ -38,6 +39,10 @@ export async function bootServices(): Promise<void> {
   // Boardroom scheduler (cron-driven standups, econ scans, market-open triggers)
   startBoardroomScheduler();
   log.info('BoardroomScheduler started');
+
+  // Dispatch scheduler (cron-driven MDB/ADB/PMDB/TOTT briefing generation)
+  startDispatchScheduler();
+  log.info('DispatchScheduler started');
 
   // Hermes/OpenRouter connection (non-blocking)
   initHermesAgent().catch((err) =>
