@@ -1,7 +1,7 @@
 // [claude-code 2026-03-11] T2b: Image part in user bubbles, T2c: CoT auto-open/close via useEffect
 // [claude-code 2026-03-10] Enhanced FintheonThread — hover actions, scroll-to-bottom, CoT, fade-in
 import { type FC, type RefObject, Component, type ReactNode, useState, useRef, useEffect, useCallback } from 'react';
-import { ThreadPrimitive, useMessage } from '@assistant-ui/react';
+import { ThreadPrimitive, useMessage, useThread } from '@assistant-ui/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CalendarCheck, AlertCircle, Copy, RotateCcw, Bookmark, ArrowDown, Check } from 'lucide-react';
@@ -236,7 +236,8 @@ const ActionBar: FC<{ textContent: string; messageId?: string; onCheckpoint?: (i
 const FintheonUserMessage: FC = () => {
   const message = useMessage();
   const createdAt = (message as any).createdAt as Date | undefined;
-  const rawContent = (message as any).content;
+  // AI SDK v6 UIMessage uses .parts, assistant-ui may expose .content — try both
+  const rawContent = (message as any).parts ?? (message as any).content;
   const parts = Array.isArray(rawContent) ? rawContent : [];
 
   // Extract text and images directly — bypass MessagePrimitive.Parts (#185)
@@ -282,8 +283,18 @@ const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string
   const message = useMessage();
   const createdAt = (message as any).createdAt as Date | undefined;
   const id = (message as any).id as string | undefined;
-  const rawContent = (message as any).content;
-  const parts = Array.isArray(rawContent) ? rawContent : [];
+
+  // Debug: log the actual message shape to find the right property
+  const msg = message as any;
+  if (msg.role === 'assistant') {
+    console.log('[AssistantMsg] keys:', Object.keys(msg), 'parts?', !!msg.parts, 'content?', !!msg.content, 'text?', typeof msg.text);
+  }
+
+  // Try every known property: .parts (AI SDK v6), .content (assistant-ui), .text (plain string)
+  const rawContent = msg.parts ?? msg.content;
+  const parts = Array.isArray(rawContent) ? rawContent :
+    typeof rawContent === 'string' ? [{ type: 'text', text: rawContent }] :
+    typeof msg.text === 'string' ? [{ type: 'text', text: msg.text }] : [];
 
   // Extract full text for checkpoint / copy
   const currentText = parts
@@ -416,6 +427,77 @@ export const AiLoader: FC = () => (
 );
 
 /* ------------------------------------------------------------------ */
+/*  Direct-render message components — bypass useMessage() entirely     */
+/*  These take the ThreadMessage as a prop, no context dependency        */
+/* ------------------------------------------------------------------ */
+
+function extractText(msg: any): string {
+  const parts = msg.content ?? msg.parts ?? [];
+  if (!Array.isArray(parts)) return typeof parts === 'string' ? parts : '';
+  return parts
+    .filter((p: any) => p.type === 'text' && typeof p.text === 'string')
+    .map((p: any) => p.text)
+    .join('\n');
+}
+
+function extractReasoning(msg: any): string {
+  const parts = msg.content ?? msg.parts ?? [];
+  if (!Array.isArray(parts)) return '';
+  return parts
+    .filter((p: any) => p.type === 'reasoning' && typeof p.text === 'string')
+    .map((p: any) => p.text)
+    .join('\n');
+}
+
+function extractImages(msg: any): string[] {
+  const parts = msg.content ?? msg.parts ?? [];
+  if (!Array.isArray(parts)) return [];
+  return parts
+    .filter((p: any) => p.type === 'image' && typeof p.image === 'string')
+    .map((p: any) => p.image as string);
+}
+
+const DirectUserMessage: FC<{ msg: any }> = ({ msg }) => {
+  const text = extractText(msg);
+  const images = extractImages(msg);
+  return (
+    <div className="group/msg flex flex-col items-end animate-fade-slide-in">
+      <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
+        {text && <p className="text-sm text-white whitespace-pre-wrap break-words">{text}</p>}
+        {images.map((src, i) => (
+          <img key={i} src={src} alt="Attached" className="mt-2 rounded-lg max-w-full max-h-64 object-contain border border-white/10" />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const DirectAssistantMessage: FC<{ msg: any; onCheckpoint?: (id: string, content: string) => void }> = ({ msg, onCheckpoint }) => {
+  const textContent = extractText(msg);
+  const reasoningContent = extractReasoning(msg);
+
+  if (!textContent && !reasoningContent) return null;
+
+  return (
+    <div className="group/msg flex flex-col items-start animate-fade-slide-in">
+      {reasoningContent && (
+        <div className="max-w-[82%] mb-1">
+          <ChainOfThoughtDisplay text={reasoningContent} />
+        </div>
+      )}
+      <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border border-white/10 bg-[#0f0f0b]/92 shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition-colors">
+        {textContent && <FintheonTextPart text={textContent} />}
+      </div>
+      <ActionBar
+        textContent={textContent}
+        messageId={msg.id}
+        onCheckpoint={onCheckpoint}
+      />
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
 /*  Thread                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -434,28 +516,29 @@ export function FintheonThread({ onSend, isLoading, agentName, onCheckpoint, las
   const { activeAgent } = useFintheonAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  const AssistantMsg = () => (
-    <FintheonAssistantMessage onCheckpoint={onCheckpoint} />
-  );
+  // Read messages directly from the thread store — bypasses ThreadPrimitive.Messages
+  // which caused flicker/disappearance due to assistant-ui reconciliation issues
+  const messages = useThread((s) => s.messages);
 
   return (
     <ThreadPrimitive.Root className="flex-1 flex flex-col min-h-0 relative">
       <ThreadPrimitive.Viewport ref={viewportRef as any} className="flex-1 overflow-y-auto p-6 pb-8">
         <div className={`${compact ? 'max-w-full' : 'max-w-3xl'} mx-auto space-y-4 mb-8`}>
           {/* Greeting screen — shown when thread is empty */}
-          {!compact && (
-            <ThreadPrimitive.Empty>
-              <ChatGreeting onSend={onSend} isLoading={isLoading} />
-            </ThreadPrimitive.Empty>
+          {!compact && messages.length === 0 && (
+            <ChatGreeting onSend={onSend} isLoading={isLoading} />
           )}
 
-          {/* Message list */}
-          <ThreadPrimitive.Messages
-            components={{
-              UserMessage: FintheonUserMessage,
-              AssistantMessage: AssistantMsg,
-            }}
-          />
+          {/* Message list — rendered directly from thread store */}
+          {messages.map((msg: any) => {
+            if (msg.role === 'user') {
+              return <DirectUserMessage key={msg.id} msg={msg} />;
+            }
+            if (msg.role === 'assistant') {
+              return <DirectAssistantMessage key={msg.id} msg={msg} onCheckpoint={onCheckpoint} />;
+            }
+            return null;
+          })}
 
           {/* Thinking indicator — shown while streaming */}
           <ThreadPrimitive.If running>

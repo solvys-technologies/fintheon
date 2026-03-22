@@ -43,7 +43,7 @@ export function Auditorium({ data, onRun, catalysts }: AuditoriumProps) {
   return (
     <div
       className="w-[40%] h-full flex flex-col border-l border-[var(--fintheon-border)]/20 overflow-hidden"
-      style={{ backgroundColor: 'var(--fintheon-surface)' }}
+      style={{ backgroundColor: 'var(--fintheon-bg)' }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-border)]/15">
@@ -71,7 +71,7 @@ export function Auditorium({ data, onRun, catalysts }: AuditoriumProps) {
                 onClick={() => setRollingDays(d)}
                 className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${
                   rollingDays === d
-                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                    ? 'text-[var(--fintheon-accent)]'
                     : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]'
                 }`}
               >
@@ -84,7 +84,7 @@ export function Auditorium({ data, onRun, catalysts }: AuditoriumProps) {
           <button
             onClick={handleRun}
             disabled={isLoading}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[9px] font-medium transition-colors bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/20 disabled:opacity-40"
+            className="flex items-center gap-1 px-2 py-1 rounded text-[9px] font-medium transition-colors border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-40"
           >
             {isLoading ? (
               <Loader2 className="w-3 h-3 animate-spin" />

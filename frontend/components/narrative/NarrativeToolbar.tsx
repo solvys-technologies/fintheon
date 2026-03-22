@@ -58,7 +58,7 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
   };
 
   return (
-    <div className="h-12 flex-1 flex items-center justify-between px-3 border-b border-[var(--fintheon-border)]/20 bg-[var(--fintheon-surface)]">
+    <div className="h-12 flex-1 flex items-center justify-between px-3 border-b border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)]">
       {/* Left group: Zoom + Navigation */}
       <div className="flex items-center gap-3">
         {/* Zoom level toggle */}

@@ -190,6 +190,15 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "discordapp.com") return true;
     if (host.endsWith(".discordapp.com")) return true;
 
+    // TopStepX (trading platform)
+    if (host === "topstepx.com") return true;
+    if (host.endsWith(".topstepx.com")) return true;
+
+    // Google auth relay domains
+    if (host.endsWith(".google.com")) return true;
+    if (host.endsWith(".gstatic.com")) return true;
+    if (host.endsWith(".googleapis.com")) return true;
+
     return false;
   } catch {
     return false;
@@ -233,7 +242,8 @@ app.whenReady().then(() => {
       if (contents.getType && contents.getType() === "webview") {
         contents.setWindowOpenHandler(({ url }) => {
           if (shouldAllowInAppPopup(url)) {
-            // Allow an in-app popup so the auth session stays in the same partition.
+            // Allow an in-app popup — share the webview's partition so the
+            // auth session cookies carry over (fixes Google OAuth in iframes).
             return {
               action: "allow",
               overrideBrowserWindowOptions: {
@@ -246,6 +256,7 @@ app.whenReady().then(() => {
                   contextIsolation: true,
                   nodeIntegration: false,
                   nativeWindowOpen: true,
+                  partition: "persist:fintheon",
                 },
               },
             };
@@ -254,6 +265,42 @@ app.whenReady().then(() => {
           // For non-auth links, open externally to avoid popup spam.
           shell.openExternal(url).catch(() => {});
           return { action: "deny" };
+        });
+
+        // Intercept in-page navigations to Google OAuth inside webviews —
+        // Google blocks sign-in in embedded frames. Open in a popup instead.
+        contents.on("will-navigate", (navEvent, navUrl) => {
+          try {
+            const parsed = new URL(navUrl);
+            if (parsed.hostname === "accounts.google.com") {
+              navEvent.preventDefault();
+              const popup = new BrowserWindow({
+                width: 520,
+                height: 760,
+                parent: mainWindow ?? undefined,
+                modal: false,
+                title: "Sign in with Google",
+                webPreferences: {
+                  contextIsolation: true,
+                  nodeIntegration: false,
+                  nativeWindowOpen: true,
+                  partition: "persist:fintheon",
+                },
+              });
+              popup.loadURL(navUrl);
+              // When Google redirects back to the service, close the popup
+              popup.webContents.on("will-redirect", (_rEvent, redirectUrl) => {
+                try {
+                  const rParsed = new URL(redirectUrl);
+                  if (rParsed.hostname !== "accounts.google.com" &&
+                      !rParsed.hostname.endsWith(".google.com")) {
+                    // Auth complete — redirect happened back to the service
+                    setTimeout(() => popup.close(), 1500);
+                  }
+                } catch {}
+              });
+            }
+          } catch {}
         });
       }
     } catch {
