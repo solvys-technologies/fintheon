@@ -1,4 +1,5 @@
 // [claude-code 2026-03-16] Added auto-update IPC bridge
+// [claude-code 2026-03-22] Source of Truth fusion — agent view IPC bridge for Browser Control Phase 1
 const { contextBridge, ipcRenderer } = require("electron");
 
 let cliOutputCallback = null;
@@ -54,5 +55,17 @@ contextBridge.exposeInMainWorld("electron", {
   },
   onUpdateDownloaded: (cb) => {
     updateDownloadedCallback = typeof cb === "function" ? cb : null;
+  },
+
+  // Browser Control Phase 1 — Agent View API (read-only)
+  agentView: {
+    create: (url) => ipcRenderer.invoke("agent-view-create", url),
+    close: () => ipcRenderer.invoke("agent-view-close"),
+    navigate: (url) => ipcRenderer.invoke("agent-view-navigate", url),
+    readDOM: (selector) => ipcRenderer.invoke("agent-view-read-dom", selector),
+    readBatch: (selectors) => ipcRenderer.invoke("agent-view-read-batch", selectors),
+    screenshot: () => ipcRenderer.invoke("agent-view-screenshot"),
+    getInfo: () => ipcRenderer.invoke("agent-view-info"),
+    isActive: () => ipcRenderer.invoke("agent-view-active"),
   },
 });

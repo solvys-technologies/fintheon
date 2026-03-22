@@ -26,13 +26,16 @@ import type {
   RiskAssessmentRow,
 } from '../../types/agents.js'
 
-const SYSTEM_PROMPT = `You are a Risk Manager for an intraday futures trading desk.
+// [claude-code 2026-03-22] Source of Truth fusion — reconciled risk rules
+const SYSTEM_PROMPT = `You are Feucht's Risk Manager module for Priced In Capital's intraday futures desk.
+You enforce the 14 Commandments and the Source of Truth risk framework.
 
 Your role is to evaluate trading proposals and protect the trader from:
-1. Excessive risk (position size, drawdown)
-2. Poor risk/reward trades
-3. Trading during adverse conditions
-4. Psychological blind spots (FOMO, revenge trading, overconfidence)
+1. Excessive risk (position size, drawdown, PDPT overshoot)
+2. Poor risk/reward trades (minimum 2:1 R:R — Commandment 8)
+3. Trading during adverse conditions (blackout windows, post-11:30 AM)
+4. Psychological blind spots (funded creep, revenge trading, hot hand overconfidence)
+5. Commandment violations (especially 3, 7, 12, 14 — hard blocks)
 
 Given a trading proposal and trader psychology profile, return a risk assessment:
 {
@@ -40,10 +43,11 @@ Given a trading proposal and trader psychology profile, return a risk assessment
   "decision": "approved" | "rejected" | "modified",
   "issues": [
     {
-      "category": "position_size" | "risk_reward" | "timing" | "psychology" | "correlation",
+      "category": "position_size" | "risk_reward" | "timing" | "psychology" | "correlation" | "commandment",
       "severity": "low" | "medium" | "high" | "extreme",
       "description": "string",
-      "mitigation": "string (how to fix)"
+      "mitigation": "string (how to fix)",
+      "commandmentRef": number | null
     }
   ],
   "portfolioImpact": {
@@ -60,17 +64,27 @@ Given a trading proposal and trader psychology profile, return a risk assessment
       "reason": "string"
     }
   ],
-  "rejectionReason": "string (if rejected)",
+  "rejectionReason": "string (if rejected, cite commandment number)",
   "summary": "2-3 sentence overall assessment"
 }
 
-Risk thresholds:
-- Max position size: 5% of account per trade
-- Min risk/reward: 1.5:1
-- Max daily drawdown: 3%
+Risk thresholds (Source of Truth):
+- PDPT target: $1,550/day ($50 buffer over $1,500 for clean fills)
+- Min risk/reward: 2:1 (Commandment 8 — "good traders buy from good prices")
+- Max daily drawdown: 3% of account
 - VIX > 30: Reduce position size by 50%
+- VIX > 35: Extreme volatility — further reduction required
+- 120-second blackout after major econ prints (PMI, PPI, CPI, NFP, PCE, GDP)
+- 11:30 AM EST circuit breaker — no new trades after
+- Commandment 3: Reject proposals with conviction below medium
+- Commandment 7: Reject any doubling-down on losing positions
+- Commandment 12: Every trade MUST have a defined stop-loss
+- Commandment 14: Morning routine must be completed before first trade
 
-Be firm but constructive. Protect the trader.
+Detect funded creep: if position sizing or entry frequency exceeds
+funded-account norms, flag as psychology issue.
+
+Be firm but constructive. Cite commandment numbers in rejections. Protect the trader.
 
 Respond with valid JSON only.`
 
@@ -80,7 +94,15 @@ export interface RiskManagerInput {
   currentPnL?: number
   accountSize?: number
   vixLevel?: number
-  existingPositions?: { symbol: string; size: number }[]
+  existingPositions?: { symbol: string; size: number; pnl?: number }[]
+  /** Current time in EST (HH:MM format) for circuit breaker checks */
+  timeEST?: string
+  /** Whether morning routine has been completed today */
+  morningRoutineDone?: boolean
+  /** Seconds since last major econ print (for blackout check) */
+  secondsSinceLastPrint?: number
+  /** Number of consecutive losses this session */
+  consecutiveLosses?: number
 }
 
 /**
@@ -136,7 +158,7 @@ export async function assessProposal(
 }
 
 /**
- * Apply automatic risk rules
+ * Apply automatic risk rules — Source of Truth reconciled
  */
 function applyAutomaticRules(
   input: RiskManagerInput,
@@ -144,9 +166,89 @@ function applyAutomaticRules(
 ): ProposalDecision {
   const issues = assessment.issues
 
-  // Reject if direction is flat (no trade)
+  // Flat direction is always safe
   if (input.proposal.direction === 'flat') {
-    return 'approved' // Flat is always safe
+    return 'approved'
+  }
+
+  // HARD BLOCK: Commandment 14 — morning routine
+  if (input.morningRoutineDone === false) {
+    assessment.rejectionReason = '[C14] Morning routine not completed. No trading until routine is verified.'
+    assessment.issues.push({
+      category: 'commandment',
+      severity: 'extreme',
+      description: 'Commandment 14: The morning routine is non-negotiable.',
+      mitigation: 'Complete morning routine before submitting trades.',
+    })
+    return 'rejected'
+  }
+
+  // HARD BLOCK: 11:30 AM EST circuit breaker
+  if (input.timeEST) {
+    const [h, m] = input.timeEST.split(':').map(Number)
+    if (h > 11 || (h === 11 && m >= 30)) {
+      assessment.rejectionReason = '11:30 AM EST circuit breaker — no new trades.'
+      assessment.issues.push({
+        category: 'timing',
+        severity: 'extreme',
+        description: 'Circuit breaker: 11:30 AM EST hard stop. No new trades after this time.',
+        mitigation: 'Trading session is over. Review and prepare for tomorrow.',
+      })
+      return 'rejected'
+    }
+  }
+
+  // HARD BLOCK: 120-second blackout after major econ prints
+  if (input.secondsSinceLastPrint !== undefined && input.secondsSinceLastPrint < 120) {
+    assessment.rejectionReason = `120-second blackout active (${120 - input.secondsSinceLastPrint}s remaining). The wick fills back in.`
+    assessment.issues.push({
+      category: 'timing',
+      severity: 'extreme',
+      description: 'News blackout: 120 seconds must pass after a major econ print. Initial spike is noise/algos/stop hunts.',
+      mitigation: 'Wait for the wick to fill back — the reclaim IS the trade.',
+    })
+    return 'rejected'
+  }
+
+  // HARD BLOCK: Commandment 12 — no trade without stop-loss
+  if (!input.proposal.stopLoss) {
+    assessment.rejectionReason = '[C12] Be right or be right out — stop-loss is non-negotiable.'
+    assessment.issues.push({
+      category: 'commandment',
+      severity: 'extreme',
+      description: 'Commandment 12: Every trade must have a defined stop-loss.',
+      mitigation: 'Define a stop-loss level before entry.',
+    })
+    return 'rejected'
+  }
+
+  // HARD BLOCK: Commandment 3 — no shot in the dark
+  if (input.proposal.confidence !== undefined && input.proposal.confidence < 50) {
+    assessment.rejectionReason = '[C3] No shot in the dark trades — conviction too low.'
+    assessment.issues.push({
+      category: 'commandment',
+      severity: 'extreme',
+      description: `Commandment 3: Confidence at ${input.proposal.confidence}% is below medium threshold.`,
+      mitigation: 'Build a stronger thesis or wait for a higher-conviction setup.',
+    })
+    return 'rejected'
+  }
+
+  // HARD BLOCK: Commandment 7 — no doubling down on losers
+  if (input.existingPositions?.length) {
+    const sameSymbolLosing = input.existingPositions.find(
+      p => p.symbol === input.proposal.instrument && (p.pnl ?? 0) < 0
+    )
+    if (sameSymbolLosing) {
+      assessment.rejectionReason = '[C7] No doubling down on losers. Cut and reassess.'
+      assessment.issues.push({
+        category: 'commandment',
+        severity: 'extreme',
+        description: `Commandment 7: Already holding a losing position in ${sameSymbolLosing.symbol}. Cannot add.`,
+        mitigation: 'Close the losing position first, then reassess from scratch.',
+      })
+      return 'rejected'
+    }
   }
 
   // Reject if risk score is too high
@@ -162,29 +264,57 @@ function applyAutomaticRules(
     return 'rejected'
   }
 
+  // SOFT: Commandment 6 — anti-revenge after consecutive losses
+  if (input.consecutiveLosses && input.consecutiveLosses >= 2) {
+    assessment.issues.push({
+      category: 'psychology',
+      severity: 'high',
+      description: `Commandment 6: ${input.consecutiveLosses} consecutive losses. Revenge trading risk elevated.`,
+      mitigation: 'Consider switching instrument or direction. You never need to make back losses the same way.',
+    })
+  }
+
+  // SOFT: R:R minimum 2:1 (Commandment 8)
+  if (input.proposal.riskRewardRatio !== undefined && input.proposal.riskRewardRatio < 2) {
+    assessment.issues.push({
+      category: 'risk_reward',
+      severity: 'high',
+      description: `Commandment 8: R:R at ${input.proposal.riskRewardRatio}:1 is below 2:1 minimum.`,
+      mitigation: 'Adjust entry, stop, or target to achieve at least 2:1 R:R.',
+    })
+  }
+
   // Suggest modifications if high severity issues
   const hasHigh = issues.some(i => i.severity === 'high')
   if (hasHigh && assessment.modificationSuggestions?.length) {
     return 'modified'
   }
 
-  // Check VIX threshold
+  // VIX thresholds
   if (input.vixLevel && input.vixLevel > 35) {
     assessment.issues.push({
       category: 'timing',
       severity: 'high',
-      description: `VIX at ${input.vixLevel} indicates extreme volatility`,
-      mitigation: 'Reduce position size by 50% or wait for VIX to settle',
+      description: `VIX at ${input.vixLevel} — extreme volatility`,
+      mitigation: 'Reduce position size by 50% or wait for VIX to settle.',
     })
     return 'modified'
   }
+  if (input.vixLevel && input.vixLevel > 30) {
+    assessment.issues.push({
+      category: 'timing',
+      severity: 'medium',
+      description: `VIX at ${input.vixLevel} — elevated volatility`,
+      mitigation: 'Reduce position size by 50%.',
+    })
+  }
 
-  // Check daily PnL
+  // Daily PnL check
   const accountSize = input.accountSize ?? 50000
   const dailyPnLPercent = ((input.currentPnL ?? 0) / accountSize) * 100
-  
+
   if (dailyPnLPercent < -3) {
-    assessment.rejectionReason = 'Daily loss limit reached (-3%)'
+    assessment.rejectionReason = 'Daily loss limit reached (-3%). Commandment 13: there is always another trade.'
     assessment.issues.push({
       category: 'psychology',
       severity: 'extreme',
@@ -194,7 +324,11 @@ function applyAutomaticRules(
     return 'rejected'
   }
 
-  // Approved if we get here
+  // Check for high issues without modification suggestions
+  if (hasHigh) {
+    return 'modified'
+  }
+
   return 'approved'
 }
 

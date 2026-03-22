@@ -52,6 +52,18 @@ export interface ElectronAPI {
   onUpdateAvailable: (cb: ((info: UpdateInfo) => void) | null) => void;
   onUpdateProgress: (cb: ((progress: UpdateProgress) => void) | null) => void;
   onUpdateDownloaded: (cb: (() => void) | null) => void;
+
+  // Browser Control Phase 1 — Agent View (read-only)
+  agentView: {
+    create: (url: string) => Promise<{ ok: boolean; error?: string }>;
+    close: () => Promise<{ ok: boolean }>;
+    navigate: (url: string) => Promise<{ ok: boolean; error?: string }>;
+    readDOM: (selector: string) => Promise<string | null>;
+    readBatch: (selectors: string[]) => Promise<Record<string, string | null>>;
+    screenshot: () => Promise<string | null>;
+    getInfo: () => Promise<{ title: string; url: string; loading: boolean } | null>;
+    isActive: () => Promise<{ active: boolean }>;
+  };
 }
 
 declare global {

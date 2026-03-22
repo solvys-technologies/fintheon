@@ -11,7 +11,7 @@
 
 import { execFile, spawn as spawnProcess } from 'node:child_process'
 import type { HermesAgentRole } from './hermes-service.js'
-import { getAgentSystemPrompt, extractSkillTag } from './ai/agent-instructions.js'
+import { getAgentSystemPrompt, extractSkillTag } from './ai/agent-instructions/index.js'
 import { createLogger } from '../lib/logger.js'
 
 const log = createLogger('Hermes')

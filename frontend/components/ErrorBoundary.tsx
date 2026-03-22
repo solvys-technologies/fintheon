@@ -1,6 +1,8 @@
 // [claude-code 2026-03-22] App-level error boundary — prevents white screen crashes
+// [claude-code 2026-03-22] Push caught errors to error log ring buffer for ErrorLogPanel
 import { Component, type ReactNode } from 'react';
 import { RotateCcw } from 'lucide-react';
+import { pushError } from '../lib/errorLog';
 
 interface Props { children: ReactNode }
 interface State { hasError: boolean; error: Error | null }
@@ -14,6 +16,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[ErrorBoundary] Caught:', error, info.componentStack);
+    pushError({
+      id: `eb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date().toISOString(),
+      code: 'react_crash',
+      message: error.message,
+      stack: error.stack ?? info.componentStack ?? undefined,
+    });
   }
 
   render() {

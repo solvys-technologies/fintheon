@@ -18,6 +18,7 @@ import { GitHubOAuthCallback } from './components/GitHubOAuthCallback';
 import { UpdateBanner } from './components/UpdateBanner';
 import { ApiErrorToastBridge } from './components/ApiErrorToastBridge';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { SystemStatusProvider } from './contexts/SystemStatusContext';
 import { migrateStorageKeys } from './lib/storage-migration';
 
 // Run storage migration before any providers read localStorage
@@ -66,6 +67,7 @@ export default function App() {
       <SettingsProvider>
         <ToastProvider>
           <GatewayProvider>
+          <SystemStatusProvider>
             <FintheonAgentProvider>
               <RiskFlowProvider>
               <ContextBankProvider>
@@ -123,6 +125,7 @@ export default function App() {
               </ContextBankProvider>
               </RiskFlowProvider>
             </FintheonAgentProvider>
+          </SystemStatusProvider>
           </GatewayProvider>
         </ToastProvider>
       </SettingsProvider>

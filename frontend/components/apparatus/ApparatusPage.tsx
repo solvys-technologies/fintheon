@@ -1,9 +1,10 @@
-// [claude-code 2026-03-22] Theme-consistent styling — CSS vars, conditional bg for card states
+// [claude-code 2026-03-22] Source of Truth fusion — full 14 commandments, extracted CommandmentsSidebar
 // [claude-code 2026-03-20] S3:T3 — Apparatus redesign: circle constellation replaced with intelligence briefing cards
 import { useState } from 'react';
-import { Lock, Clock, AlertTriangle } from 'lucide-react';
+import { Clock, AlertTriangle } from 'lucide-react';
 import { MemoryCard } from './MemoryCard';
-import type { AgentNode, AgentConnection, CronEntry, LiveActivity, Commandment } from './types';
+import { CommandmentsSidebar } from './CommandmentsSidebar';
+import type { AgentNode, AgentConnection, CronEntry, LiveActivity } from './types';
 
 // ─── Agent Node Definitions ───────────────────────────────────────────
 const AGENTS: AgentNode[] = [
@@ -74,16 +75,6 @@ const CONNECTIONS: AgentConnection[] = [
   { from: 'oracle', to: 'feucht', type: 'conflict', label: 'Oracle <> Feucht: NQ Direction', detail: 'Oracle sees SPX/NQ upside from prediction model; Feucht flagging elevated risk from VIX structure + morning flush pattern' },
 ];
 
-// ─── Commandments ─────────────────────────────────────────────────────
-const COMMANDMENTS: Commandment[] = [
-  { number: 3, text: 'No "shot in the dark" trades — conviction required (medium or high)' },
-  { number: 5, text: 'Dial back in volatility; wait for EVEN price retests' },
-  { number: 6, text: 'EVEN psychological levels are sacred (stink bids)' },
-  { number: 7, text: 'Howard Marks framework — second-level thinking' },
-  { number: 8, text: 'GOOD TRADERS BUY FROM GOOD PRICES — R:R minimum 2:1' },
-  { number: 12, text: 'Be right or be right out — stop loss always defined' },
-];
-
 // ─── Schedule Data ────────────────────────────────────────────────────
 const CRON_SCHEDULE: CronEntry[] = [
   { agent: 'Harper', description: 'Morning Daily Brief', schedule: '6:00 AM ET' },
@@ -142,27 +133,8 @@ export function ApparatusPage() {
       </div>
 
       <div className="flex-1 min-h-0 flex overflow-hidden">
-        {/* Left sidebar: Commandments */}
-        <div className="w-[220px] shrink-0 border-r border-[var(--fintheon-accent)]/10 flex flex-col overflow-y-auto">
-          <div className="p-3">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Lock size={10} className="text-[var(--fintheon-accent)]/60" />
-              <span className="text-[10px] font-semibold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase">Rules of Engagement</span>
-            </div>
-            <div className="border border-[var(--fintheon-accent)]/20 rounded-md bg-[var(--fintheon-surface)] p-2.5 space-y-2">
-              {COMMANDMENTS.map(cmd => (
-                <div key={cmd.number} className="flex gap-2">
-                  <span className="text-[9px] font-bold text-[var(--fintheon-accent)]/50 shrink-0 w-4 text-right font-mono">
-                    {cmd.number}.
-                  </span>
-                  <span className="text-[9px] text-[var(--fintheon-text)]/70 leading-relaxed font-mono">
-                    {cmd.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Left sidebar: Commandments (full 14 with Source of Truth metadata) */}
+        <CommandmentsSidebar />
 
         {/* Center: Agent briefing cards grid */}
         <div className="flex-1 min-w-0 min-h-0 overflow-y-auto p-4">

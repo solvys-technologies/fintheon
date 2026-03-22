@@ -1,10 +1,12 @@
 // [claude-code 2026-03-20] Diagnostics endpoint — service status, missing env vars, suggested fixes
+// [claude-code 2026-03-22] Add POST /hermes/restart for frontend-triggered Hermes re-initialization
 
 import { Hono } from 'hono';
 import { pingDb } from '../../db/optimized.js';
 import { clerkHealth } from '../../services/clerk-auth.js';
 import { isPollingActive } from '../../services/riskflow/feed-poller.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
+import { initHermesAgent } from '../../services/hermes-handler.js';
 import { createLogger } from '../../lib/logger.js';
 
 const log = createLogger('Diagnostics');
@@ -205,6 +207,34 @@ export function createDiagnosticsRoutes(): Hono {
 
     const statusCode = overall === 'ok' ? 200 : overall === 'degraded' ? 207 : 503;
     return c.json(response, statusCode);
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  Hermes restart — rate-limited to once per 30s                      */
+  /* ------------------------------------------------------------------ */
+
+  let lastRestartAt = 0;
+
+  router.post('/hermes/restart', async (c) => {
+    const now = Date.now();
+    if (now - lastRestartAt < 30_000) {
+      return c.json({
+        success: false,
+        message: 'Rate limited — wait 30s between restart attempts',
+      }, 429);
+    }
+
+    lastRestartAt = now;
+    log.info('Hermes restart requested by frontend');
+
+    try {
+      await initHermesAgent();
+      return c.json({ success: true, message: 'Hermes re-initialization complete' });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      log.warn('Hermes restart failed', { error: detail });
+      return c.json({ success: false, message: detail }, 500);
+    }
   });
 
   return router;

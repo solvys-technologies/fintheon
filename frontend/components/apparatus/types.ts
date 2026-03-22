@@ -47,7 +47,15 @@ export interface LiveActivity {
   elapsed: string;
 }
 
+export type CommandmentBlockLevel = 'hard' | 'soft' | 'guidance';
+
 export interface Commandment {
   number: number;
   text: string;
+  fullText: string;
+  blockLevel: CommandmentBlockLevel;
+  coreLessons: string[];
+  agentUsage: Record<string, string>;
+  relatedCommandments: number[];
+  mentorSource?: string;
 }

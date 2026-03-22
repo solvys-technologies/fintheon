@@ -4,7 +4,9 @@
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
 // [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
 // [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
+// [claude-code 2026-03-22] Source of Truth fusion — Browser Control Phase 1 (agent-view-handlers)
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const { setupAgentViewHandlers } = require("./agent-view-handlers.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
@@ -222,6 +224,8 @@ app.whenReady().then(() => {
   }
   createWindow();
   setupAutoUpdater();
+  // Browser Control Phase 1 — read-only agent view for TopStep X observation
+  if (mainWindow) setupAgentViewHandlers(mainWindow);
 
   // Handle window.open from embedded <webview> tags.
   app.on("web-contents-created", (_event, contents) => {
