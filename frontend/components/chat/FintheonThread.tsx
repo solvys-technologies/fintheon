@@ -1,6 +1,6 @@
 // [claude-code 2026-03-11] T2b: Image part in user bubbles, T2c: CoT auto-open/close via useEffect
 // [claude-code 2026-03-10] Enhanced FintheonThread — hover actions, scroll-to-bottom, CoT, fade-in
-import { type FC, type RefObject, useState, useRef, useEffect, useCallback } from 'react';
+import { type FC, type RefObject, Component, type ReactNode, useState, useRef, useEffect, useCallback } from 'react';
 import { ThreadPrimitive, MessagePrimitive, useMessage } from '@assistant-ui/react';
 import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,6 +9,25 @@ import { ChatGreeting } from './ChatGreeting';
 import { FintheonThinkingIndicator } from './FintheonThinkingIndicator';
 import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { CognitionPanel } from './CognitionPanel';
+
+/* ------------------------------------------------------------------ */
+/*  Message-level error boundary                                        */
+/* ------------------------------------------------------------------ */
+class MessageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: Error) { console.error('[MessageErrorBoundary]', error.message); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="text-xs text-red-400/60 italic px-2 py-1">
+          Failed to render message
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /*  Markdown renderer                                                   */
@@ -79,13 +98,21 @@ function formatTimestamp(date: Date): string {
 /*  Text part — Markdown renderer                                       */
 /* ------------------------------------------------------------------ */
 
-const FintheonTextPart: FC<{ text: string }> = ({ text }) => (
-  <MarkdownTextPrimitive
-    remarkPlugins={[remarkGfm]}
-    components={MARKDOWN_COMPONENTS as any}
-    className="text-sm text-zinc-300 max-w-none"
-  />
-);
+const FintheonTextPart: FC<{ text: string }> = ({ text }) => {
+  // Guard: if text is not a string (can happen during streaming edge cases),
+  // fall back to plain text rendering to avoid ReactMarkdown #185 crash
+  if (typeof text !== 'string') {
+    const fallback = text != null ? String(text) : '';
+    return fallback ? <p className="text-sm text-zinc-300 whitespace-pre-wrap">{fallback}</p> : null;
+  }
+  return (
+    <MarkdownTextPrimitive
+      remarkPlugins={[remarkGfm]}
+      components={MARKDOWN_COMPONENTS as any}
+      className="text-sm text-zinc-300 max-w-none"
+    />
+  );
+};
 
 /* ------------------------------------------------------------------ */
 /*  Reasoning part — collapsible thinking pane                         */
@@ -214,6 +241,7 @@ const FintheonUserMessage: FC = () => {
   return (
     <div className="group/msg flex flex-col items-end animate-fade-slide-in">
       <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
+        <MessageErrorBoundary>
         <MessagePrimitive.Parts
           components={{
             Text: ({ text }) => (
@@ -228,6 +256,7 @@ const FintheonUserMessage: FC = () => {
             ),
           }}
         />
+        </MessageErrorBoundary>
       </div>
       {createdAt && (
         <span className="text-[10px] text-zinc-600 mt-1 mr-1 opacity-0 group-hover/msg:opacity-100 transition-opacity tabular-nums">
@@ -276,16 +305,18 @@ const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string
       )}
 
       <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border border-white/10 bg-[#0f0f0b]/92 shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition-colors">
-        <MessagePrimitive.Parts
-          components={{
-            Text: ({ text }) => (
-              <FintheonTextPart text={text} />
-            ),
-            Reasoning: ({ text }) => (
-              <FintheonReasoningPart text={text} />
-            ),
-          }}
-        />
+        <MessageErrorBoundary>
+          <MessagePrimitive.Parts
+            components={{
+              Text: ({ text }) => (
+                <FintheonTextPart text={text} />
+              ),
+              Reasoning: ({ text }) => (
+                <FintheonReasoningPart text={text} />
+              ),
+            }}
+          />
+        </MessageErrorBoundary>
       </div>
 
       {/* Hover row: timestamp + action bar */}
