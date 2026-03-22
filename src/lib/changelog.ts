@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-22T23:30:00',
+    agent: 'claude-code',
+    summary: 'feat: CLI onboarding system for team distribution. Interactive `bun run setup` wizard using @clack/prompts — handles prerequisites, deps, Hermes install, API key prompts with live validation, .env generation (merge, don\'t overwrite), port detection, backend build+start, health verification, and Harper welcome message. Fully idempotent — safe to re-run. New POST /api/setup/welcome endpoint returns JSON (not SSE) for CLI consumption.',
+    files: [
+      'scripts/setup.ts',
+      'scripts/setup-utils.ts',
+      'backend-hono/src/routes/setup/index.ts',
+      'backend-hono/src/routes/index.ts',
+      'package.json',
+    ],
+  },
+  {
     date: '2026-03-22T22:00:00',
     agent: 'claude-code',
     summary: 'feat: Team-ready status indicators, error log panel, and Hermes startup verification. (1) Real-time system status indicators in footer replacing static dots — polls /api/diagnostics for per-service health. (2) Persistent error log with expandable "More Info" dropdowns showing stack traces, endpoints, fix suggestions. (3) Hermes verification on startup — parses /health body, auto-restarts if AI gateway down, verifies before showing connected. (4) New POST /api/diagnostics/hermes/restart endpoint with rate limiting. (5) SystemStatusContext + StatusIndicator components. (6) ErrorBoundary pushes crashes to error log.',

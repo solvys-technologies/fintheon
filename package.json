@@ -17,6 +17,7 @@
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
+    "@clack/prompts": "^0.9.1",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/oxide": "^4.1.11",
     "@tailwindcss/vite": "^4.1.11",
@@ -40,7 +41,8 @@
     "frontend:build": "npm --prefix frontend run build",
     "desktop:build": "npm run frontend:build && electron-builder --mac dmg",
     "release:mac": "npm run frontend:build && cd backend-hono && npm run build && cd .. && npx electron-builder --mac dmg",
-    "release": "bash scripts/build-release.sh"
+    "release": "bash scripts/build-release.sh",
+    "setup": "bun run scripts/setup.ts"
   },
   "build": {
     "appId": "io.solvys.fintheon",
