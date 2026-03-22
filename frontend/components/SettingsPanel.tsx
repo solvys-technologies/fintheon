@@ -1,5 +1,3 @@
-// [claude-code 2026-03-20] S3:T3 — merged Connection+Hermes tabs into Hermes:Admin, added backend status cards + handoff CTA
-// [claude-code 2026-03-13] Hermes migration: OpenClaw Gateway -> Hermes Agent in UI text
 // [claude-code 2026-03-11] T5: added mic device selector to notifications tab
 import React from 'react';
 import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Palette, Users, AlertTriangle, ArrowLeft, Globe, Mic, Copy, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';

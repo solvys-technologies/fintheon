@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: OpenClaw Gateway -> Hermes Agent
 // [claude-code 2026-03-11] First-time setup guide card with status indicators
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, AlertCircle, Loader2, RefreshCw, X, Server, Globe, FileText, TrendingUp } from 'lucide-react';

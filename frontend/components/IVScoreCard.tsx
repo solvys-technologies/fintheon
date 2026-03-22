@@ -3,7 +3,8 @@
 // [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
 // [claude-code 2026-03-20] S3:T4a: Fixed popup to position:fixed with viewport boundary detection, left-aligned, max-w-[90vw]
 import { Info, TrendingUp } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import type { IVScoreResponse } from '../types/market-data';
 
 interface IVScoreCardProps {
@@ -84,22 +85,22 @@ if (typeof document !== 'undefined' && !document.getElementById(FINTHEON_KEYFRAM
 
 export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
-  const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!showTooltip || !triggerRef.current) { setPopupPos(null); return; }
-    const rect = triggerRef.current.getBoundingClientRect();
-    const popupW = 320;
-    const popupH = 480; // estimate
-    let left = rect.left;
-    let top = rect.bottom + 4;
-    // Keep within viewport
-    if (left + popupW > window.innerWidth - 16) left = window.innerWidth - popupW - 16;
-    if (left < 16) left = 16;
-    if (top + popupH > window.innerHeight - 16) top = rect.top - popupH - 4;
-    setPopupPos({ top, left });
-  }, [showTooltip]);
+  const handleMouseEnter = useCallback(() => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const tooltipW = 320;
+      const pad = 12;
+      // Anchor right edge to button, clamp so it never leaves viewport
+      let left = rect.right - tooltipW;
+      if (left < pad) left = pad;
+      if (left + tooltipW > window.innerWidth - pad) left = window.innerWidth - pad - tooltipW;
+      setTooltipPos({ top: rect.bottom + 8, left });
+    }
+    setShowTooltip(true);
+  }, []);
 
   if (loading || !data) {
     return (
@@ -141,24 +142,31 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
           </>
         )}
 
-        {/* Info button + tooltip wrapper — hover zone spans both so tooltip stays open */}
+        {/* Info button — tooltip renders via portal to escape overflow:hidden */}
         <div
-          ref={triggerRef}
+          ref={btnRef}
           className="relative ml-0.5"
-          onMouseEnter={() => setShowTooltip(true)}
+          onMouseEnter={handleMouseEnter}
           onMouseLeave={() => setShowTooltip(false)}
         >
           <button className="text-gray-500 hover:text-gray-400 transition-colors">
             <Info className="w-2.5 h-2.5" />
           </button>
+        </div>
+      </div>
 
-          {showTooltip && popupPos && (
-            <div
-              className="fixed w-80 max-w-[90vw] bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl z-[9999]"
-              style={{ top: popupPos.top, left: popupPos.left }}
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-            >
+      {showTooltip && tooltipPos && createPortal(
+        <div
+          className="fixed z-[9999]"
+          style={{
+            top: tooltipPos.top,
+            left: Math.max(8, tooltipPos.left),
+            width: 320,
+          }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          <div className="w-full bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl">
           <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-2">
             Blended IV Score
           </h4>
@@ -321,9 +329,10 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             ))}
             </div>
           </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
