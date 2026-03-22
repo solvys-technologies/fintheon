@@ -1,3 +1,4 @@
+// [claude-code 2026-03-22] T5: Wire Change Plan → UpgradeModal, add logout button in Danger Zone
 // [claude-code 2026-03-20] S3:T3 — merged Connection+Hermes tabs into Hermes:Admin, added backend status cards + handoff CTA
 // [claude-code 2026-03-13] Hermes migration: OpenClaw Gateway -> Hermes Agent in UI text
 // [claude-code 2026-03-11] T5: added mic device selector to notifications tab
@@ -17,6 +18,7 @@ import { useVoiceMemory } from '../hooks/useVoiceMemory';
 import { ClawnalystDesk } from './settings/ClawnalystDesk';
 import { ThemeSettings } from './settings/ThemeSettings';
 import { HermesSettings } from './settings/HermesSettings';
+import { UpgradeModal } from './UpgradeModal';
 
 type SettingsTab = 'general' | 'hermes-admin' | 'appearance' | 'desk' | 'notifications' | 'trading' | 'api' | 'iframes' | 'developer' | 'danger';
 
@@ -106,6 +108,7 @@ export function SettingsPage() {
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -729,7 +732,7 @@ export function SettingsPage() {
                             <p className="text-lg font-bold text-[var(--fintheon-accent)]">{tier.replace('_', ' ').toUpperCase()}</p>
                             <p className="text-xs text-gray-500">Active subscription</p>
                           </div>
-                          <Button variant="secondary" className="text-xs">
+                          <Button variant="secondary" className="text-xs" onClick={() => setShowUpgradeModal(true)}>
                             Change Plan
                           </Button>
                         </div>
@@ -927,6 +930,22 @@ export function SettingsPage() {
                       <p className="text-xs text-gray-500 mb-3">Download your agent and settings configuration as JSON.</p>
                       <Button variant="secondary" className="text-xs text-[var(--fintheon-accent)] border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/10">Export</Button>
                     </div>
+                    <div className="bg-[var(--fintheon-bg)] border border-red-500/20 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-white mb-1">Log Out</h4>
+                      <p className="text-xs text-gray-500 mb-3">Sign out and clear your local session. You will need to re-authenticate.</p>
+                      <Button
+                        variant="secondary"
+                        className="text-xs text-red-500 border-red-500/30 hover:bg-red-500/10"
+                        onClick={() => {
+                          localStorage.removeItem('github_token');
+                          localStorage.removeItem('github_user');
+                          localStorage.removeItem('clerk_token');
+                          window.location.reload();
+                        }}
+                      >
+                        Log Out
+                      </Button>
+                    </div>
                   </div>
                 </section>
               </div>
@@ -1088,6 +1107,7 @@ export function SettingsPage() {
         </div>
       </div>
       )}
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     </div>
   );
 }

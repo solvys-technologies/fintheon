@@ -9,6 +9,46 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-22T23:45:00',
+    agent: 'claude-code',
+    summary: 'Track 4: Chat input consolidation — persona pills → inline PersonaDropdown inside PromptBox, Think Harder → icon only, Plug2+Wrench → combined ToolsDropdown with Skills + Connectors sections.',
+    files: [
+      'frontend/components/chat/PersonaDropdown.tsx',
+      'frontend/components/chat/ToolsDropdown.tsx',
+      'frontend/components/ui/chatgpt-prompt-input.tsx',
+      'frontend/components/chat/FintheonComposer.tsx',
+    ],
+  },
+  {
+    date: '2026-03-22T22:30:00',
+    agent: 'claude-code',
+    summary: 'Track 3: Convert Consilium agent chips to multi-select dropdown, replace Boardroom textarea with universal PromptBox, use CSS vars throughout.',
+    files: [
+      'frontend/components/consilium/AgentFilterDropdown.tsx',
+      'frontend/components/consilium/ConsiliumFilterBar.tsx',
+      'frontend/components/consilium/AgentChattr.tsx',
+    ],
+  },
+  {
+    date: '2026-03-22T21:00:00',
+    agent: 'claude-code',
+    summary: 'Settings Track 5: Wire Change Plan button to UpgradeModal, update pricing tiers (Pleb $0, Analyst $149, Desk $699, Boardroom $1,999), add logout button in Danger Zone, verify settings persistence and iframes tab.',
+    files: [
+      'frontend/components/SettingsPanel.tsx',
+      'frontend/components/UpgradeModal.tsx',
+    ],
+  },
+  {
+    date: '2026-03-22T19:30:00',
+    agent: 'claude-code',
+    summary: 'Fix twitter-cli v0.7.0 JSON parser (data field missing → 0 warm cache). Store warm cache in local DB on startup so feed-poller serves headlines even on no-event days. Remove dead NOTION_API_KEY — all DBs fully migrated to Supabase. Install PostgreSQL 17 locally, run all 14 migrations. Populate econ calendar for week of Mar 23-28.',
+    files: [
+      'backend-hono/src/services/twitter-cli/twitter-cli-service.ts',
+      'backend-hono/src/services/twitter-cli/econ-triggered-poller.ts',
+      'backend-hono/.env',
+    ],
+  },
+  {
     date: '2026-03-20T23:00:00',
     agent: 'claude-code',
     summary: 'Fix Hermes connection: GatewayContext health check now accepts any JSON response from /health (not just res.ok). Backend returns 503 when DB is down but chat API works fine — frontend was incorrectly showing disconnected.',
