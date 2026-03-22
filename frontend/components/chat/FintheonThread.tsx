@@ -1,7 +1,7 @@
 // [claude-code 2026-03-11] T2b: Image part in user bubbles, T2c: CoT auto-open/close via useEffect
 // [claude-code 2026-03-10] Enhanced FintheonThread — hover actions, scroll-to-bottom, CoT, fade-in
 import { type FC, type RefObject, Component, type ReactNode, useState, useRef, useEffect, useCallback } from 'react';
-import { ThreadPrimitive, MessagePrimitive, useMessage } from '@assistant-ui/react';
+import { ThreadPrimitive, useMessage } from '@assistant-ui/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CalendarCheck, AlertCircle, Copy, RotateCcw, Bookmark, ArrowDown, Check } from 'lucide-react';
@@ -236,25 +236,33 @@ const ActionBar: FC<{ textContent: string; messageId?: string; onCheckpoint?: (i
 const FintheonUserMessage: FC = () => {
   const message = useMessage();
   const createdAt = (message as any).createdAt as Date | undefined;
+  const rawContent = (message as any).content;
+  const parts = Array.isArray(rawContent) ? rawContent : [];
+
+  // Extract text and images directly — bypass MessagePrimitive.Parts (#185)
+  const userText = parts
+    .filter((p: any) => p.type === 'text' && typeof p.text === 'string')
+    .map((p: any) => p.text)
+    .join('\n');
+  const images = parts
+    .filter((p: any) => p.type === 'image' && typeof p.image === 'string')
+    .map((p: any) => p.image as string);
 
   return (
     <div className="group/msg flex flex-col items-end animate-fade-slide-in">
       <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
         <MessageErrorBoundary>
-        <MessagePrimitive.Parts
-          components={{
-            Text: ({ text }) => (
-              <p className="text-sm text-white whitespace-pre-wrap break-words">{text}</p>
-            ),
-            Image: ({ image }: { image: string }) => (
-              <img
-                src={image}
-                alt="Attached"
-                className="mt-2 rounded-lg max-w-full max-h-64 object-contain border border-white/10"
-              />
-            ),
-          }}
-        />
+          {userText && (
+            <p className="text-sm text-white whitespace-pre-wrap break-words">{userText}</p>
+          )}
+          {images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt="Attached"
+              className="mt-2 rounded-lg max-w-full max-h-64 object-contain border border-white/10"
+            />
+          ))}
         </MessageErrorBoundary>
       </div>
       {createdAt && (
@@ -305,16 +313,9 @@ const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string
 
       <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border border-white/10 bg-[#0f0f0b]/92 shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition-colors">
         <MessageErrorBoundary>
-          <MessagePrimitive.Parts
-            components={{
-              Text: ({ text }) => (
-                <FintheonTextPart text={text} />
-              ),
-              Reasoning: ({ text }) => (
-                <FintheonReasoningPart text={text} />
-              ),
-            }}
-          />
+          {/* Render directly from extracted parts — bypass MessagePrimitive.Parts
+              which crashes (#185) due to assistant-ui context/smooth-streaming internals */}
+          {textContent && <FintheonTextPart text={textContent} />}
         </MessageErrorBoundary>
       </div>
 
