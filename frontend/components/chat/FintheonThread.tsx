@@ -2,7 +2,7 @@
 // [claude-code 2026-03-10] Enhanced FintheonThread — hover actions, scroll-to-bottom, CoT, fade-in
 import { type FC, type RefObject, Component, type ReactNode, useState, useRef, useEffect, useCallback } from 'react';
 import { ThreadPrimitive, MessagePrimitive, useMessage } from '@assistant-ui/react';
-import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown';
+import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CalendarCheck, AlertCircle, Copy, RotateCcw, Bookmark, ArrowDown, Check } from 'lucide-react';
 import { ChatGreeting } from './ChatGreeting';
@@ -99,18 +99,17 @@ function formatTimestamp(date: Date): string {
 /* ------------------------------------------------------------------ */
 
 const FintheonTextPart: FC<{ text: string }> = ({ text }) => {
-  // Guard: if text is not a string (can happen during streaming edge cases),
-  // fall back to plain text rendering to avoid ReactMarkdown #185 crash
-  if (typeof text !== 'string') {
-    const fallback = text != null ? String(text) : '';
-    return fallback ? <p className="text-sm text-zinc-300 whitespace-pre-wrap">{fallback}</p> : null;
-  }
+  // Bypass MarkdownTextPrimitive entirely — it reads from assistant-ui context
+  // which can produce non-string values during streaming, crashing ReactMarkdown (#185).
+  // Instead, use the `text` prop directly (always a string from MessagePrimitive.Parts).
+  const safeText = typeof text === 'string' ? text : String(text ?? '');
+  if (!safeText) return null;
   return (
-    <MarkdownTextPrimitive
-      remarkPlugins={[remarkGfm]}
-      components={MARKDOWN_COMPONENTS as any}
-      className="text-sm text-zinc-300 max-w-none"
-    />
+    <div className="text-sm text-zinc-300 max-w-none">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS as any}>
+        {safeText}
+      </ReactMarkdown>
+    </div>
   );
 };
 
