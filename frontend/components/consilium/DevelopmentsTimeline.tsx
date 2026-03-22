@@ -1,3 +1,4 @@
+// [claude-code 2026-03-22] Theme-consistent styling — CSS vars, no bg fills on filter pills
 // [claude-code 2026-03-19] Vertical timeline of extracted agent events for Consilium
 import { useState, useEffect } from 'react';
 import { AgentBadge, type BoardroomAgent } from './AgentBadge';
@@ -19,11 +20,11 @@ type DevelopmentCategory = 'risk_alert' | 'trade_idea' | 'regime_shift' | 'stand
 
 const CATEGORY_STYLES: Record<DevelopmentCategory, string> = {
   risk_alert: 'border-red-500/30 text-red-400/80',
-  trade_idea: 'border-[#c79f4a]/30 text-[#c79f4a]',
+  trade_idea: 'border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)]',
   regime_shift: 'border-amber-500/30 text-amber-400/80',
-  standup: 'border-[#c79f4a]/15 text-[#f0ead6]/40',
-  briefing: 'border-[#c79f4a]/30 text-[#c79f4a]/80',
-  insight: 'border-[#c79f4a]/20 text-[#f0ead6]/60',
+  standup: 'border-[var(--fintheon-accent)]/15 text-[var(--fintheon-text)]/40',
+  briefing: 'border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)]/80',
+  insight: 'border-[var(--fintheon-accent)]/20 text-[var(--fintheon-text)]/60',
   market_event: 'border-amber-500/30 text-amber-400/80',
   huddle: 'border-red-500/30 text-red-400/80',
 };
@@ -89,16 +90,16 @@ export function DevelopmentsTimeline() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Category filter chips */}
-      <div className="flex flex-wrap gap-1.5 border-b border-[#c79f4a]/10 bg-[#0a0a00] px-4 py-2">
+      {/* Category filter chips — no background fills */}
+      <div className="flex flex-wrap gap-1.5 border-b border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)] px-4 py-2">
         {FILTER_CATEGORIES.map((cat) => (
           <button
             key={cat}
             onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
             className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-wider transition-colors ${
               categoryFilter === cat
-                ? CATEGORY_STYLES[cat] + ' bg-white/5'
-                : 'border-[#c79f4a]/15 text-[#f0ead6]/30 hover:text-[#f0ead6]/60'
+                ? 'border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)]'
+                : 'border-[var(--fintheon-accent)]/10 text-[var(--fintheon-text)]/30 hover:text-[var(--fintheon-text)]/60'
             }`}
           >
             {cat.replace('_', ' ')}
@@ -110,22 +111,22 @@ export function DevelopmentsTimeline() {
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
-            <span className="text-xs text-[#f0ead6]/30">Loading developments...</span>
+            <span className="text-xs text-[var(--fintheon-text)]/30">Loading developments...</span>
           </div>
         ) : events.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2">
-            <span className="text-sm text-[#c79f4a]/40">No developments found</span>
-            <span className="text-xs text-[#f0ead6]/20">
+            <span className="text-sm text-[var(--fintheon-accent)]/40">No developments found</span>
+            <span className="text-xs text-[var(--fintheon-text)]/20">
               {categoryFilter ? 'Try clearing filters' : 'Developments will appear as agents report'}
             </span>
           </div>
         ) : (
           dateKeys.map((dateKey) => (
             <div key={dateKey} className="mb-4">
-              <div className="mb-2 text-xs uppercase tracking-wider text-[#c79f4a]">
+              <div className="mb-2 text-xs uppercase tracking-wider text-[var(--fintheon-accent)]">
                 {formatDate(grouped[dateKey][0].timestamp)}
               </div>
-              <div className="relative ml-3 border-l border-[#c79f4a]/20 pl-4">
+              <div className="relative ml-3 border-l border-[var(--fintheon-accent)]/20 pl-4">
                 {grouped[dateKey].map((ev) => (
                   <div key={ev.id} className="relative mb-3">
                     {/* Dot on timeline */}
@@ -135,25 +136,25 @@ export function DevelopmentsTimeline() {
                       ) : ev.severity === 'warning' ? (
                         <span className="h-2 w-2 rounded-full bg-amber-500/70" />
                       ) : (
-                        <span className="h-2 w-2 rounded-full bg-[#c79f4a]/30" />
+                        <span className="h-2 w-2 rounded-full bg-[var(--fintheon-accent)]/30" />
                       )}
                     </div>
 
                     {/* Event card */}
                     <button
-                      className="w-full rounded-lg border border-[#c79f4a]/15 bg-[#0a0a00] px-3 py-2.5 text-left transition-colors hover:border-[#c79f4a]/25"
+                      className="w-full rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] px-3 py-2.5 text-left transition-colors hover:border-[var(--fintheon-accent)]/25"
                       onClick={() => setExpandedId(expandedId === ev.id ? null : ev.id)}
                     >
                       <div className="flex items-start gap-2">
                         <AgentBadge agent={ev.agent} size="sm" />
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-[#f0ead6]">{ev.title}</span>
+                            <span className="text-sm font-medium text-[var(--fintheon-text)]">{ev.title}</span>
                             <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase ${CATEGORY_STYLES[ev.category]}`}>
                               {ev.category.replace('_', ' ')}
                             </span>
                           </div>
-                          <span className="text-[10px] text-[#f0ead6]/30">{formatTime(ev.timestamp)}</span>
+                          <span className="text-[10px] text-[var(--fintheon-text)]/30">{formatTime(ev.timestamp)}</span>
                         </div>
                       </div>
 
@@ -161,7 +162,7 @@ export function DevelopmentsTimeline() {
                       {ev.relatedInstruments && ev.relatedInstruments.length > 0 && (
                         <div className="mt-1.5 flex flex-wrap gap-1">
                           {ev.relatedInstruments.map((inst) => (
-                            <span key={inst} className="rounded border border-[#c79f4a]/15 bg-[#c79f4a]/5 px-1.5 py-0.5 text-[10px] text-[#c79f4a]/70">
+                            <span key={inst} className="rounded border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-accent)]/5 px-1.5 py-0.5 text-[10px] text-[var(--fintheon-accent)]/70">
                               {inst}
                             </span>
                           ))}
@@ -170,7 +171,7 @@ export function DevelopmentsTimeline() {
 
                       {/* Expanded detail */}
                       {expandedId === ev.id && (
-                        <p className="mt-2 whitespace-pre-wrap border-t border-[#c79f4a]/10 pt-2 text-xs leading-relaxed text-[#f0ead6]/60">
+                        <p className="mt-2 whitespace-pre-wrap border-t border-[var(--fintheon-accent)]/10 pt-2 text-xs leading-relaxed text-[var(--fintheon-text)]/60">
                           {ev.detail}
                         </p>
                       )}

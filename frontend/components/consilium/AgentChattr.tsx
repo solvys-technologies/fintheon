@@ -1,11 +1,12 @@
-// [claude-code 2026-03-20] S3:T2c — Boardroom with rich input (persona pills, think harder, skills)
+// [claude-code 2026-03-22] Track 3: Boardroom with PromptBox replacing built-in textarea
 // [claude-code 2026-03-20] Consilium — agent chat panel (chat-only, sub-tabs moved to ConsiliumHub)
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, RefreshCw, Wifi, WifiOff, Brain, Zap, ChevronDown } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff, ChevronDown } from 'lucide-react';
 import { ConsiliumMessage, type BoardroomMessage } from './ConsiliumMessage';
 import { AGENT_MAP, type BoardroomAgent } from './AgentBadge';
 import { ConsiliumFilterBar } from './ConsiliumFilterBar';
 import { ConsiliumMessageExpanded } from './ConsiliumMessageExpanded';
+import { PromptBox } from '../ui/chatgpt-prompt-input';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const POLL_INTERVAL = 30_000;
@@ -26,7 +27,7 @@ function getAgentColor(agent: BoardroomAgent): string {
   const info = AGENT_MAP[agent];
   if (!info) return '#52525b';
   switch (info.accentClass) {
-    case 'gold': return '#c79f4a';
+    case 'gold': return 'var(--fintheon-accent)';
     case 'blue': return '#60a5fa';
     case 'red': return '#ef4444';
     case 'emerald': return '#10b981';
@@ -65,8 +66,8 @@ function AgentDropdown({
         onClick={() => setOpen((v) => !v)}
         className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors border ${
           selectedAgent
-            ? 'border-[#c79f4a]/30 bg-[#c79f4a]/10 text-[#c79f4a]'
-            : 'border-[#c79f4a]/20 text-[#f0ead6]/60 hover:bg-[#c79f4a]/5 hover:text-[#f0ead6]'
+            ? 'border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)]'
+            : 'border-[var(--fintheon-accent)]/20 text-[var(--fintheon-text)]/60 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]'
         }`}
       >
         {selectedAgent && (
@@ -80,19 +81,19 @@ function AgentDropdown({
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 mb-1 z-50 w-52 rounded-lg border border-[#c79f4a]/20 bg-[#0a0a00] py-1 shadow-xl">
+        <div className="absolute bottom-full left-0 mb-1 z-50 w-52 rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] py-1 shadow-xl">
           {/* "All" option */}
           <button
             onClick={() => { onSelect(null); setOpen(false); }}
             className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
-              !selectedAgent ? 'bg-[#c79f4a]/10 text-[#c79f4a]' : 'text-[#f0ead6]/60 hover:bg-[#c79f4a]/5 hover:text-[#f0ead6]'
+              !selectedAgent ? 'bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]' : 'text-[var(--fintheon-text)]/60 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]'
             }`}
           >
             <span className="font-medium">All Agents</span>
-            <span className="ml-auto text-[10px] text-[#f0ead6]/30">Broadcast</span>
+            <span className="ml-auto text-[10px] text-[var(--fintheon-text)]/30">Broadcast</span>
           </button>
 
-          <div className="h-px bg-[#c79f4a]/10 my-0.5" />
+          <div className="h-px bg-[var(--fintheon-accent)]/10 my-0.5" />
 
           {MENTIONABLE_AGENTS.map((agent) => {
             const info = AGENT_MAP[agent];
@@ -102,7 +103,7 @@ function AgentDropdown({
                 key={agent}
                 onClick={() => { onSelect(agent); setOpen(false); }}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
-                  selectedAgent === agent ? 'bg-[#c79f4a]/10 text-[#c79f4a]' : 'text-[#f0ead6]/60 hover:bg-[#c79f4a]/5 hover:text-[#f0ead6]'
+                  selectedAgent === agent ? 'bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]' : 'text-[var(--fintheon-text)]/60 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]'
                 }`}
               >
                 <span
@@ -110,7 +111,7 @@ function AgentDropdown({
                   style={{ backgroundColor: getAgentColor(agent) }}
                 />
                 <span className="font-medium">{info?.label || agent}</span>
-                <span className="ml-auto text-[10px] text-[#f0ead6]/30">{meta.label}</span>
+                <span className="ml-auto text-[10px] text-[var(--fintheon-text)]/30">{meta.label}</span>
               </button>
             );
           })}
@@ -154,7 +155,6 @@ export function AgentChattr() {
   }, []);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -199,25 +199,18 @@ export function AgentChattr() {
     scrollToBottom();
   }, [messages.length, scrollToBottom]);
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = async (msgText?: string) => {
+    const text = (msgText ?? input).trim();
     if (!text || isSending) return;
 
     setIsSending(true);
     try {
-      if (selectedAgent) {
-        await fetch(`${API_BASE}/api/boardroom/mention/send`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text, agent: selectedAgent, thinkHarder }),
-        });
-      } else {
-        await fetch(`${API_BASE}/api/boardroom/intervention/send`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text, thinkHarder }),
-        });
-      }
+      // @everyone broadcast (All selected) or single agent mention
+      await fetch(`${API_BASE}/api/boardroom/mention/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, agent: selectedAgent ?? '@everyone', thinkHarder }),
+      });
       setInput('');
       setSelectedAgent(null);
       await fetchMessages();
@@ -228,15 +221,6 @@ export function AgentChattr() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-    if (e.key === 'Escape') {
-      setSelectedAgent(null);
-    }
-  };
 
   return (
     <div className="relative flex h-full flex-col">
@@ -244,17 +228,17 @@ export function AgentChattr() {
       <div className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-1.5">
           {isOnline ? (
-            <Wifi size={12} className="text-[#c79f4a]/60" />
+            <Wifi size={12} className="text-[var(--fintheon-accent)]/60" />
           ) : (
             <WifiOff size={12} className="text-red-500/60" />
           )}
-          <span className="text-[10px] text-[#f0ead6]/30">
+          <span className="text-[10px] text-[var(--fintheon-text)]/30">
             {isOnline ? 'Connected' : 'Offline'}
           </span>
         </div>
         <button
           onClick={fetchMessages}
-          className="rounded-full p-1.5 text-[#c79f4a]/40 transition-colors hover:bg-[#c79f4a]/10 hover:text-[#c79f4a]"
+          className="rounded-full p-1.5 text-[var(--fintheon-accent)]/40 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
           title="Refresh"
         >
           <RefreshCw size={14} />
@@ -277,12 +261,12 @@ export function AgentChattr() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto py-2">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
-            <span className="text-xs text-[#f0ead6]/30">Loading transcript...</span>
+            <span className="text-xs text-[var(--fintheon-text)]/30">Loading transcript...</span>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6">
-            <span className="text-sm text-[#c79f4a]/40">No messages yet</span>
-            <span className="text-center text-xs text-[#f0ead6]/20">
+            <span className="text-sm text-[var(--fintheon-accent)]/40">No messages yet</span>
+            <span className="text-center text-xs text-[var(--fintheon-text)]/20">
               The Consilium awaits. Send a message to begin deliberation.
             </span>
           </div>
@@ -296,51 +280,23 @@ export function AgentChattr() {
       {/* Expanded message slide-over */}
       <ConsiliumMessageExpanded message={expandedMessage} onClose={() => setExpandedMessage(null)} />
 
-      {/* Input area — compact with agent dropdown inline */}
-      <div className="px-4 py-3">
-        <div className="flex items-end gap-2">
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={selectedAgent ? `Message @${AGENT_MAP[selectedAgent]?.label}...` : 'Address the Consilium...'}
-              className="w-full resize-none rounded-xl border border-[#c79f4a]/15 bg-[#050402] px-4 py-2.5 text-sm text-[#f0ead6] placeholder-[#f0ead6]/20 outline-none transition-colors focus:border-[#c79f4a]/40 min-h-[42px] max-h-[120px]"
-              rows={1}
-              disabled={isSending}
-            />
-          </div>
-          <div className="flex items-center gap-1 pb-0.5">
-            {/* Agent dropdown */}
-            <AgentDropdown
-              selectedAgent={selectedAgent}
-              onSelect={setSelectedAgent}
-            />
-            {/* Think Harder toggle */}
-            <button
-              type="button"
-              onClick={() => setThinkHarder(!thinkHarder)}
-              className={`rounded-lg p-2 transition-all ${
-                thinkHarder
-                  ? 'bg-[#c79f4a]/15 text-[#c79f4a] border border-[#c79f4a]/30'
-                  : 'text-[#f0ead6]/30 hover:text-[#f0ead6]/60 hover:bg-[#c79f4a]/5 border border-transparent'
-              }`}
-              title={thinkHarder ? 'Think Harder: ON' : 'Think Harder: OFF'}
-            >
-              <Brain size={16} />
-            </button>
-            {/* Send */}
-            <button
-              onClick={sendMessage}
-              disabled={!input.trim() || isSending}
-              className="rounded-lg p-2 bg-[#c79f4a]/10 text-[#c79f4a] transition-all disabled:text-[#c79f4a]/20 disabled:bg-transparent hover:bg-[#c79f4a]/20 border border-[#c79f4a]/20 disabled:border-transparent"
-              title="Send"
-            >
-              {isSending ? <Zap size={16} className="animate-pulse" /> : <Send size={16} />}
-            </button>
-          </div>
+      {/* Input area — AgentDropdown for @-mention + universal PromptBox */}
+      <div className="px-2">
+        <div className="flex items-end gap-2 mb-1">
+          <AgentDropdown selectedAgent={selectedAgent} onSelect={setSelectedAgent} />
         </div>
+        <PromptBox
+          compact
+          onSend={(msg) => sendMessage(msg)}
+          isProcessing={isSending}
+          placeholder={selectedAgent ? `Message @${AGENT_MAP[selectedAgent]?.label}...` : 'Address the Consilium...'}
+          thinkHarder={thinkHarder}
+          setThinkHarder={setThinkHarder}
+          activeSkill={null}
+          onSelectSkill={() => {}}
+          showSkills={false}
+          onToggleSkills={() => {}}
+        />
       </div>
     </div>
   );

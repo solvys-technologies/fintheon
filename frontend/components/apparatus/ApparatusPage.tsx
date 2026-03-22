@@ -1,3 +1,4 @@
+// [claude-code 2026-03-22] Theme-consistent styling — CSS vars, conditional bg for card states
 // [claude-code 2026-03-20] S3:T3 — Apparatus redesign: circle constellation replaced with intelligence briefing cards
 import { useState } from 'react';
 import { Lock, Clock, AlertTriangle } from 'lucide-react';
@@ -109,12 +110,12 @@ export function ApparatusPage() {
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
 
   return (
-    <div className="h-full w-full flex flex-col bg-[#050402] overflow-hidden">
+    <div className="h-full w-full flex flex-col bg-[var(--fintheon-bg)] overflow-hidden">
       {/* Top bar */}
-      <div className="shrink-0 px-4 py-3 border-b border-[#c79f4a]/10 flex items-center justify-between">
+      <div className="shrink-0 px-4 py-3 border-b border-[var(--fintheon-accent)]/10 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-sm font-semibold text-[#c79f4a] tracking-[0.15em] uppercase">Apparatus</h1>
-          <span className="text-[9px] text-[#f0ead6]/30 font-mono">Intelligence Briefing</span>
+          <h1 className="text-sm font-semibold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase">Apparatus</h1>
+          <span className="text-[9px] text-[var(--fintheon-text)]/30 font-mono">Intelligence Briefing</span>
         </div>
         <div className="flex items-center gap-2">
           {conflicts.map(c => (
@@ -130,8 +131,8 @@ export function ApparatusPage() {
             onClick={() => setShowSchedule(!showSchedule)}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded border transition-colors text-[10px] font-mono ${
               showSchedule
-                ? 'border-[#c79f4a]/40 bg-[#c79f4a]/10 text-[#c79f4a]'
-                : 'border-[#c79f4a]/15 text-[#c79f4a]/50 hover:text-[#c79f4a] hover:border-[#c79f4a]/30'
+                ? 'border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]'
+                : 'border-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30'
             }`}
           >
             <Clock size={10} />
@@ -142,19 +143,19 @@ export function ApparatusPage() {
 
       <div className="flex-1 min-h-0 flex overflow-hidden">
         {/* Left sidebar: Commandments */}
-        <div className="w-[220px] shrink-0 border-r border-[#c79f4a]/10 flex flex-col overflow-y-auto">
+        <div className="w-[220px] shrink-0 border-r border-[var(--fintheon-accent)]/10 flex flex-col overflow-y-auto">
           <div className="p-3">
             <div className="flex items-center gap-1.5 mb-2">
-              <Lock size={10} className="text-[#c79f4a]/60" />
-              <span className="text-[10px] font-semibold text-[#c79f4a] tracking-[0.15em] uppercase">Rules of Engagement</span>
+              <Lock size={10} className="text-[var(--fintheon-accent)]/60" />
+              <span className="text-[10px] font-semibold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase">Rules of Engagement</span>
             </div>
-            <div className="border border-[#c79f4a]/20 rounded-md bg-[#0a0a00] p-2.5 space-y-2">
+            <div className="border border-[var(--fintheon-accent)]/20 rounded-md bg-[var(--fintheon-surface)] p-2.5 space-y-2">
               {COMMANDMENTS.map(cmd => (
                 <div key={cmd.number} className="flex gap-2">
-                  <span className="text-[9px] font-bold text-[#c79f4a]/50 shrink-0 w-4 text-right font-mono">
+                  <span className="text-[9px] font-bold text-[var(--fintheon-accent)]/50 shrink-0 w-4 text-right font-mono">
                     {cmd.number}.
                   </span>
-                  <span className="text-[9px] text-[#f0ead6]/70 leading-relaxed font-mono">
+                  <span className="text-[9px] text-[var(--fintheon-text)]/70 leading-relaxed font-mono">
                     {cmd.text}
                   </span>
                 </div>
@@ -178,18 +179,18 @@ export function ApparatusPage() {
               return (
                 <div
                   key={agent.id}
-                  className={`border rounded-lg bg-[#0a0a00] transition-all cursor-pointer ${
+                  className={`border rounded-lg transition-all cursor-pointer ${
                     isExpanded
-                      ? 'border-[#c79f4a]/40 col-span-1 lg:col-span-2 xl:col-span-2'
-                      : 'border-[#c79f4a]/15 hover:border-[#c79f4a]/30'
+                      ? 'bg-[var(--fintheon-surface)] border-[var(--fintheon-accent)]/40 col-span-1 lg:col-span-2 xl:col-span-2'
+                      : 'bg-[var(--fintheon-bg)] border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/40 hover:bg-[var(--fintheon-accent)]/5'
                   }`}
                   onClick={() => setExpandedAgent(prev => prev === agent.id ? null : agent.id)}
                 >
                   {/* Card header */}
-                  <div className="px-3 py-2.5 border-b border-[#c79f4a]/10 flex items-center justify-between">
+                  <div className="px-3 py-2.5 border-b border-[var(--fintheon-accent)]/10 flex items-center justify-between">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-xs font-semibold text-[#f0ead6] tracking-wide">{agent.label}</span>
-                      <span className="text-[9px] text-[#c79f4a]/50 font-mono uppercase">{agent.role}</span>
+                      <span className="text-xs font-semibold text-[var(--fintheon-text)] tracking-wide">{agent.label}</span>
+                      <span className="text-[9px] text-[var(--fintheon-accent)]/50 font-mono uppercase">{agent.role}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {agentConflicts.length > 0 && (
@@ -197,7 +198,7 @@ export function ApparatusPage() {
                           CONFLICT
                         </span>
                       )}
-                      <span className="text-[8px] text-[#c79f4a]/30 font-mono">
+                      <span className="text-[8px] text-[var(--fintheon-accent)]/30 font-mono">
                         {agent.memories.length} facts
                       </span>
                     </div>
@@ -209,7 +210,7 @@ export function ApparatusPage() {
                       <MemoryCard key={mem.id} memory={mem} />
                     ))}
                     {!isExpanded && agent.memories.length > 2 && (
-                      <div className="text-[8px] text-[#c79f4a]/30 font-mono text-center pt-1">
+                      <div className="text-[8px] text-[var(--fintheon-accent)]/30 font-mono text-center pt-1">
                         +{agent.memories.length - 2} more
                       </div>
                     )}
@@ -217,15 +218,15 @@ export function ApparatusPage() {
 
                   {/* Expanded: connections */}
                   {isExpanded && agentConnections.length > 0 && (
-                    <div className="px-3 pb-3 border-t border-[#c79f4a]/10 pt-2">
-                      <span className="text-[8px] text-[#c79f4a]/40 font-mono uppercase tracking-wider">Connections</span>
+                    <div className="px-3 pb-3 border-t border-[var(--fintheon-accent)]/10 pt-2">
+                      <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">Connections</span>
                       <div className="mt-1.5 space-y-1">
                         {agentConnections.map(conn => (
                           <div key={`${conn.from}-${conn.to}`} className="flex items-start gap-2">
-                            <div className="w-1 h-1 rounded-full bg-[#c79f4a]/30 mt-1.5 shrink-0" />
+                            <div className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)]/30 mt-1.5 shrink-0" />
                             <div>
-                              <span className="text-[9px] text-[#c79f4a]/60 font-mono">{conn.label}</span>
-                              <span className="text-[8px] text-[#f0ead6]/40 ml-1.5">{conn.detail}</span>
+                              <span className="text-[9px] text-[var(--fintheon-accent)]/60 font-mono">{conn.label}</span>
+                              <span className="text-[8px] text-[var(--fintheon-text)]/40 ml-1.5">{conn.detail}</span>
                             </div>
                           </div>
                         ))}
@@ -251,45 +252,45 @@ export function ApparatusPage() {
 
         {/* Right sidebar: Schedule (conditional) */}
         {showSchedule && (
-          <div className="w-[250px] shrink-0 border-l border-[#c79f4a]/10 flex flex-col overflow-y-auto animate-fade-in-tab">
+          <div className="w-[250px] shrink-0 border-l border-[var(--fintheon-accent)]/10 flex flex-col overflow-y-auto animate-fade-in-tab">
             <div className="p-3">
-              <span className="text-[10px] font-semibold text-[#c79f4a] tracking-[0.15em] uppercase block mb-2">
+              <span className="text-[10px] font-semibold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase block mb-2">
                 Cron Schedule
               </span>
               <div className="space-y-1.5">
                 {CRON_SCHEDULE.map((entry, i) => (
                   <div key={i} className="flex items-start gap-2 py-1">
-                    <div className="w-1 h-1 rounded-full bg-[#c79f4a]/40 mt-1.5 shrink-0" />
+                    <div className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)]/40 mt-1.5 shrink-0" />
                     <div className="min-w-0">
-                      <div className="text-[9px] text-[#f0ead6]/70 font-mono">
-                        <span className="text-[#c79f4a]/80">{entry.agent}:</span> {entry.description}
+                      <div className="text-[9px] text-[var(--fintheon-text)]/70 font-mono">
+                        <span className="text-[var(--fintheon-accent)]/80">{entry.agent}:</span> {entry.description}
                       </div>
-                      <div className="text-[8px] text-[#c79f4a]/30 font-mono">{entry.schedule}</div>
+                      <div className="text-[8px] text-[var(--fintheon-accent)]/30 font-mono">{entry.schedule}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="p-3 border-t border-[#c79f4a]/10 flex-1">
-              <span className="text-[10px] font-semibold text-[#c79f4a] tracking-[0.15em] uppercase block mb-2">
+            <div className="p-3 border-t border-[var(--fintheon-accent)]/10 flex-1">
+              <span className="text-[10px] font-semibold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase block mb-2">
                 Live Activity
               </span>
               <div className="space-y-2">
                 {MOCK_ACTIVITY.map((act, i) => (
                   <div key={i} className="flex items-start gap-2 py-1">
                     <div className="relative shrink-0 mt-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#c79f4a]/60" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)]/60" />
                       {i === 0 && (
-                        <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-[#c79f4a] animate-ping" />
+                        <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-ping" />
                       )}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[9px] text-[#f0ead6]/60">
-                        <span className="text-[#c79f4a]/70 font-semibold">{act.agent}:</span>{' '}
+                      <div className="text-[9px] text-[var(--fintheon-text)]/60">
+                        <span className="text-[var(--fintheon-accent)]/70 font-semibold">{act.agent}:</span>{' '}
                         {act.action}
                       </div>
-                      <div className="text-[7px] text-[#f0ead6]/25 font-mono">{act.elapsed}</div>
+                      <div className="text-[7px] text-[var(--fintheon-text)]/25 font-mono">{act.elapsed}</div>
                     </div>
                   </div>
                 ))}

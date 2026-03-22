@@ -1,3 +1,4 @@
+// [claude-code 2026-03-22] Theme-consistent styling + tab fade cross-dissolve (350ms)
 // [claude-code 2026-03-20] S3-FIX:T2 — Consilium mega-merge: 8 sub-tabs, floating tab bar, agent dropdown, UI polish
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { MessageSquare, Users, LineChart, Clock, Trophy, Target, GitBranch, Cpu, PanelRightOpen, PanelRightClose } from 'lucide-react';
@@ -50,9 +51,12 @@ function usePanelState(key: string, defaultValue: boolean): [boolean, () => void
 
 export function ConsiliumHub() {
   const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
+  const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>('chat');
+  const [transitioning, setTransitioning] = useState(false);
   const [mirofishData, setMirofishData] = useState<AuditoriumData | null>(null);
   const [showProposals, toggleProposals] = usePanelState('fintheon:consilium:proposals-panel', false);
   const tabBarRef = useRef<HTMLDivElement>(null);
+  const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Scroll active tab into view when it changes
   useEffect(() => {
@@ -62,6 +66,23 @@ export function ConsiliumHub() {
       activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
   }, [activeTab]);
+
+  // Tab transition: fade out (150ms) → swap content → fade in (200ms) = ~350ms cross-dissolve
+  const handleTabChange = useCallback((tab: ConsiliumTab) => {
+    if (tab === activeTab) return;
+    setTransitioning(true);
+    setActiveTab(tab);
+    if (transitionRef.current) clearTimeout(transitionRef.current);
+    transitionRef.current = setTimeout(() => {
+      setDisplayedTab(tab);
+      setTransitioning(false);
+    }, 150);
+  }, [activeTab]);
+
+  // Cleanup transition timeout on unmount
+  useEffect(() => {
+    return () => { if (transitionRef.current) clearTimeout(transitionRef.current); };
+  }, []);
 
   const handleRunMiroFish = useCallback(async () => {
     setMirofishData(prev => prev
@@ -120,11 +141,11 @@ export function ConsiliumHub() {
             <button
               key={id}
               data-active={activeTab === id}
-              onClick={() => setActiveTab(id)}
+              onClick={() => handleTabChange(id)}
               className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                 activeTab === id
-                  ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
-                  : 'text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
+                  ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
+                  : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
               }`}
               style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
             >
@@ -141,8 +162,8 @@ export function ConsiliumHub() {
           onClick={toggleProposals}
           className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
             showProposals
-              ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
-              : 'text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5'
+              ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
+              : 'border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5'
           }`}
           title={showProposals ? 'Hide Proposals' : 'Show Proposals'}
         >
@@ -153,15 +174,18 @@ export function ConsiliumHub() {
 
       {/* Tab content + Proposals panel — no border between tab bar and content */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Main content area */}
-        <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
-          {activeTab === 'chat' && (
+        {/* Main content area with fade transition */}
+        <div
+          className="flex-1 min-h-0 min-w-0 overflow-hidden"
+          style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 200ms ease' }}
+        >
+          {displayedTab === 'chat' && (
             <Suspense fallback={<AiLoader />}>
               <ChatInterface surfaceId="askharp" />
             </Suspense>
           )}
-          {activeTab === 'boardroom' && <AgentChattr />}
-          {activeTab === 'predictions' && (
+          {displayedTab === 'boardroom' && <AgentChattr />}
+          {displayedTab === 'predictions' && (
             <div className="h-full [&>div]:w-full [&>div]:border-l-0">
               <Auditorium
                 data={mirofishData}
@@ -170,28 +194,28 @@ export function ConsiliumHub() {
               />
             </div>
           )}
-          {activeTab === 'timeline' && <DevelopmentsTimeline />}
-          {activeTab === 'scorecards' && <AgentScorecard />}
-          {activeTab === 'proposals' && (
+          {displayedTab === 'timeline' && <DevelopmentsTimeline />}
+          {displayedTab === 'scorecards' && <AgentScorecard />}
+          {displayedTab === 'proposals' && (
             <div className="h-full overflow-y-auto">
               <ProposalWidget />
             </div>
           )}
-          {activeTab === 'narratives' && (
+          {displayedTab === 'narratives' && (
             <NarrativeProvider>
               <NarrativeFlow />
             </NarrativeProvider>
           )}
-          {activeTab === 'apparatus' && <ApparatusPage />}
+          {displayedTab === 'apparatus' && <ApparatusPage />}
         </div>
 
         {/* Collapsible Proposals right panel */}
         <div
-          className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out border-l border-[#c79f4a]/10 ${
+          className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out border-l border-[var(--fintheon-accent)]/10 ${
             showProposals ? 'w-80' : 'w-0 border-l-0'
           }`}
         >
-          <div className="w-80 h-full overflow-y-auto bg-[#050402]">
+          <div className="w-80 h-full overflow-y-auto bg-[var(--fintheon-bg)]">
             <ProposalWidget />
           </div>
         </div>

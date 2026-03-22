@@ -9,6 +9,40 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-23T01:45:00',
+    agent: 'claude-code',
+    summary: 'feat(boardroom): @everyone broadcast — selecting "All" in AgentDropdown now triggers all 5 agents to respond sequentially, ordered by keyword relevance to the message (most relevant sub-agent first → CAO Harper last). Each agent sees prior responses as context. Harper synthesizes as final word.',
+    files: [
+      'backend-hono/src/services/boardroom-spawner.ts',
+      'backend-hono/src/routes/boardroom/handlers.ts',
+      'frontend/components/consilium/AgentChattr.tsx',
+    ],
+  },
+  {
+    date: '2026-03-23T01:15:00',
+    agent: 'claude-code',
+    summary: 'Track 2 fix(consilium): theme-consistent styling — replaced all hardcoded hex with CSS vars across 8 components, removed background fills from inactive pills/chips/toolbar buttons (accent via text+borders only), added 350ms fade cross-dissolve on tab transitions, inactive cards use pure black bg, active/expanded cards use surface bg.',
+    files: [
+      'frontend/components/consilium/ConsiliumHub.tsx',
+      'frontend/components/consilium/ConsiliumFilterBar.tsx',
+      'frontend/components/consilium/AgentChattr.tsx',
+      'frontend/components/consilium/DevelopmentsTimeline.tsx',
+      'frontend/components/consilium/AgentScorecard.tsx',
+      'frontend/components/apparatus/ApparatusPage.tsx',
+      'frontend/components/apparatus/MemoryCard.tsx',
+      'frontend/components/narrative/NarrativeToolbar.tsx',
+    ],
+  },
+  {
+    date: '2026-03-23T00:40:00',
+    agent: 'claude-code',
+    summary: 'Track 1 fix(chat): Orphaned reasoning-start in thinkHarder SSE path — AI SDK parser stayed in reasoning mode and swallowed text-delta events. Now reasoning-start/end only emitted when OpenRouter actually returns reasoning content. Also fixed build-breaking stale imports in root SettingsPanel.tsx (GatewayContext/ToastContext moved to frontend/).',
+    files: [
+      'backend-hono/src/routes/ai/handlers/chat.ts',
+      'components/SettingsPanel.tsx',
+    ],
+  },
+  {
     date: '2026-03-22T23:45:00',
     agent: 'claude-code',
     summary: 'Track 4: Chat input consolidation — persona pills → inline PersonaDropdown inside PromptBox, Think Harder → icon only, Plug2+Wrench → combined ToolsDropdown with Skills + Connectors sections.',

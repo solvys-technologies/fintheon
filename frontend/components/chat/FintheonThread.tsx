@@ -246,17 +246,18 @@ const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string
   const message = useMessage();
   const createdAt = (message as any).createdAt as Date | undefined;
   const id = (message as any).id as string | undefined;
-  const parts = (message as any).content ?? [];
+  const rawContent = (message as any).content;
+  const parts = Array.isArray(rawContent) ? rawContent : [];
 
   // Extract full text for checkpoint / copy
   const textContent = parts
-    .filter((p: any) => p.type === 'text')
+    .filter((p: any) => p.type === 'text' && typeof p.text === 'string')
     .map((p: any) => p.text)
     .join('\n') ?? '';
 
   // Extract reasoning content for CoT display
   const reasoningContent = parts
-    .filter((p: any) => p.type === 'reasoning' && p.text)
+    .filter((p: any) => p.type === 'reasoning' && typeof p.text === 'string')
     .map((p: any) => p.text)
     .join('\n');
 
