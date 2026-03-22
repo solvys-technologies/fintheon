@@ -269,6 +269,7 @@ ipcMain.handle("get-app-version", () => {
   return app.getVersion();
 });
 
+
 // Fintheon CLI: run shell command from project root and stream output to renderer
 const projectRoot = path.join(__dirname, "..");
 ipcMain.handle("run-shell-command", (event, command) => {

@@ -25,9 +25,6 @@ export interface HermesMessage {
   content: string | ContentPart[]
 }
 
-// Backward compat
-export type OpenClawMessage = HermesMessage
-
 export interface HermesChatRequest {
   message: string
   multimodalContent?: ContentPart[]
@@ -36,9 +33,6 @@ export interface HermesChatRequest {
   agentOverride?: HermesAgentRole
   thinkHarder?: boolean
 }
-
-// Backward compat
-export type OpenClawChatRequest = HermesChatRequest
 
 export interface HermesChatResponse {
   content: string
@@ -51,9 +45,6 @@ export interface HermesChatResponse {
     riskLevel?: 'low' | 'medium' | 'high'
   }
 }
-
-// Backward compat
-export type OpenClawChatResponse = HermesChatResponse
 
 // Intent detection patterns
 const INTENT_PATTERNS: { pattern: RegExp; agent: HermesAgentRole; intent: string }[] = [
@@ -477,9 +468,6 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
   }
 }
 
-// Backward compat
-export const handleOpenClawChat = handleHermesChat
-
 /**
  * Initialize Hermes agent on startup:
  * 1. Optionally launch Hermes gateway process if configured
@@ -496,10 +484,7 @@ export async function initHermesAgent(): Promise<void> {
       })
     })
     if (!gatewayRunning) {
-      log.info('Gateway not running — starting')
-      const gw = spawnProcess(hermesBin, ['gateway', 'start'], { stdio: 'ignore', detached: true })
-      gw.unref()
-      log.info('Gateway start dispatched', { pid: gw.pid })
+      log.info('No local gateway — routing via OpenRouter directly')
     } else {
       log.info('Gateway already running')
     }
@@ -545,9 +530,6 @@ export async function initHermesAgent(): Promise<void> {
   }
 }
 
-// Backward compat
-export const initOpenClawAgent = initHermesAgent
-
 /**
  * Stream Hermes response
  */
@@ -561,6 +543,3 @@ export async function* streamHermesChat(request: HermesChatRequest): AsyncGenera
     await new Promise(resolve => setTimeout(resolve, 10))
   }
 }
-
-// Backward compat
-export const streamOpenClawChat = streamHermesChat

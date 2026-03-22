@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: openclawDescription -> hermesDescription
 // [claude-code 2026-03-03] Trade Idea modal — shown when a Notion trade idea RiskFlow item is clicked.
 // [claude-code 2026-03-03] Layout polish: tighter padding, formatted price values.
 // Solvys Gold palette: BG #050402, Accent #c79f4a, Text #f0ead6. No gradients, no colored emojis.

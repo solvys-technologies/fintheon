@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: renamed from useOpenClawRuntime.ts
 // [claude-code 2026-03-07] assistant-ui runtime hook — wraps useHermesChat via useAISDKRuntime
 import { useAISDKRuntime } from '@assistant-ui/react-ai-sdk';
 import { useHermesChat } from './hooks/useHermesChat';

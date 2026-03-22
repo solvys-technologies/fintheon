@@ -1,5 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
-// [claude-code 2026-03-10] AskHarpChatPanel — now uses FintheonComposer (which wraps PromptBox)
 import { useCallback, useState } from 'react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { useFintheonAgents } from '../../contexts/FintheonAgentContext';

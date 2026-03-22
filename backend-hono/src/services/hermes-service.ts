@@ -26,9 +26,6 @@ export type HermesAgentRole =
   | 'fundamentals-desk'   // Consul: Tech Mega-Cap Analyst
   | 'herald'              // Herald: News & Sentiment
 
-// Backward compat alias
-export type OpenClawAgentRole = HermesAgentRole
-
 export type HermesAgentStatus = 'operational' | 'monitoring' | 'awaiting-approval' | 'hedging' | 'standby' | 'offline'
 
 export interface HermesAgent {
@@ -153,18 +150,12 @@ export const buildHermesHeaders = (config?: {
   }
 }
 
-// Backward compat
-export const buildOpenClawHeaders = buildHermesHeaders
-
 /**
  * Check if Hermes / OpenRouter is available
  */
 export const isHermesAvailable = (): boolean => {
   return Boolean(HERMES_API_KEY && HERMES_API_KEY.length > 0)
 }
-
-// Backward compat
-export const isOpenClawAvailable = isHermesAvailable
 
 /**
  * Create a Hermes client using OpenAI-compatible interface
@@ -189,9 +180,6 @@ export const createHermesClient = (modelId?: string) => {
 
   return hermes(modelId ?? 'anthropic/claude-opus-4.6')
 }
-
-// Backward compat
-export const createOpenClawClient = createHermesClient
 
 /**
  * Get agent definition by role
@@ -269,9 +257,6 @@ export const calculateHermesCost = (
   }
 }
 
-// Backward compat
-export const calculateOpenClawCost = calculateHermesCost
-
 /**
  * Check if an error is a rate limit error
  */
@@ -288,9 +273,6 @@ export const isHermesRateLimitError = (error: unknown): boolean => {
     message.toLowerCase().includes('too many requests')
   )
 }
-
-// Backward compat
-export const isOpenClawRateLimitError = isHermesRateLimitError
 
 /**
  * Check if an error is retryable
@@ -314,9 +296,6 @@ export const isHermesRetryableError = (error: unknown): boolean => {
     message.includes('connection')
   )
 }
-
-// Backward compat
-export const isOpenClawRetryableError = isHermesRetryableError
 
 /**
  * P.I.C. Trading Rules validation
@@ -359,5 +338,4 @@ export const HERMES_MODELS = {
   RESEARCH: 'anthropic/claude-opus-4.6',
 } as const
 
-// Backward compat
 export type HermesModelId = (typeof HERMES_MODELS)[keyof typeof HERMES_MODELS]

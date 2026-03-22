@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: renamed from usePersistentOpenClawConversation.ts
 // [claude-code 2026-03-11] T2e: persistent thread support from Gateway settings
 import { useCallback, useEffect, useState } from 'react';
 import { hermesConversationStorageKey } from '../lib/hermesAgentRouting';
