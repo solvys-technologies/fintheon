@@ -152,6 +152,23 @@ export async function createProposal(
     proposalCache.set(storedProposal.id, storedProposal)
   }
 
+  // [claude-code 2026-03-23] Browser Use Phase 2 — auto-chart on proposal creation
+  if (storedProposal.entryPrice && storedProposal.stopLoss) {
+    const port = process.env.PORT || '8080'
+    fetch(`http://localhost:${port}/api/proposals/chart`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticker: storedProposal.instrument,
+        direction: storedProposal.direction,
+        entry: storedProposal.entryPrice,
+        stopLoss: storedProposal.stopLoss,
+        takeProfit: storedProposal.takeProfit?.[0] ?? storedProposal.entryPrice,
+        proposalId: storedProposal.id,
+      }),
+    }).catch(err => console.error('[Proposal] Auto-chart failed:', (err as Error).message))
+  }
+
   return storedProposal
 }
 

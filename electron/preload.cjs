@@ -1,5 +1,5 @@
 // [claude-code 2026-03-16] Added auto-update IPC bridge
-// [claude-code 2026-03-22] Source of Truth fusion — agent view IPC bridge for Browser Control Phase 1
+// [claude-code 2026-03-23] Browser Use Phase 2 — browserUse IPC bridge
 const { contextBridge, ipcRenderer } = require("electron");
 
 let cliOutputCallback = null;

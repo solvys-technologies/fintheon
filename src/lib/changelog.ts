@@ -9,6 +9,30 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-23T20:00:00',
+    agent: 'claude-code',
+    summary: 'feat(browser-use): Phase 2 — Browser Use CLI integration via CDP, chart automation (Playwright → browser-use), ProposalCard feed component, [SKILL:CHARTLEVELS] skill, auto-trigger charting on proposal creation, SSE broadcast proposals to RiskFlow feed',
+    files: [
+      'electron/main.cjs',
+      'electron/preload.cjs',
+      'frontend/types/electron.d.ts',
+      'types/electron.d.ts',
+      'scripts/chart-proposal.ts',
+      'backend-hono/src/routes/proposals/handlers.ts',
+      'backend-hono/src/services/autopilot/proposal-service.ts',
+      'backend-hono/src/types/riskflow.ts',
+      'backend-hono/src/services/riskflow/sse-broadcaster.ts',
+      'frontend/types/feed.ts',
+      'frontend/types/api.ts',
+      'frontend/components/feed/ProposalCard.tsx',
+      'frontend/components/feed/FeedItem.tsx',
+      'frontend/components/feed/FeedSection.tsx',
+      'backend-hono/src/services/hermes-handler.ts',
+      'backend-hono/src/services/ai/agent-instructions/skill-instructions.ts',
+      'backend-hono/src/config/feature-flags.ts',
+    ],
+  },
+  {
     date: '2026-03-23T18:00:00',
     agent: 'claude-code',
     summary: 'chore(autoresearch): unify types and resolve cross-track conflicts — canonical types.ts, scoring-weights.json, all T2/T3 modules import from types.ts',

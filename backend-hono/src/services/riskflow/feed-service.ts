@@ -69,6 +69,7 @@ function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
     Kalshi: 'Custom',
     TwitterCli: 'FinancialJuice', // FJ emoji-filtered tweets treated as FJ quality
     Custom: 'Custom',
+    Hermes: 'Custom',
   };
   return sourceMap[source] ?? 'Custom';
 }
