@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, Check, X } from 'lucide-react';
 import type { ProposalData } from '../../types/feed';
-import { useBackend } from '../../lib/backend';
+
+const API_BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8080').replace(/\/$/, '');
 
 interface ProposalCardProps {
   proposal: ProposalData;
@@ -10,7 +11,6 @@ interface ProposalCardProps {
 }
 
 export function ProposalCard({ proposal, timestamp }: ProposalCardProps) {
-  const backend = useBackend();
   const [status, setStatus] = useState(proposal.status);
   const [expanded, setExpanded] = useState(false);
 
@@ -23,7 +23,7 @@ export function ProposalCard({ proposal, timestamp }: ProposalCardProps) {
 
   const handleAcknowledge = async (action: 'approved' | 'rejected') => {
     try {
-      await backend.fetch(`/api/proposals/${proposal.id}/acknowledge`, {
+      await fetch(`${API_BASE}/api/proposals/${proposal.id}/acknowledge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
