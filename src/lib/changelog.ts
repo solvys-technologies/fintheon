@@ -9,6 +9,14 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-23T12:30:00',
+    agent: 'claude-code',
+    summary: 'feat: Night poller — X CLI polls FJ/InsiderWire/Trusted hourly 7PM-7AM EST regardless of autoRefresh, stores to DB for all users.',
+    files: [
+      'backend-hono/src/services/twitter-cli/econ-triggered-poller.ts',
+    ],
+  },
+  {
     date: '2026-03-23T12:00:00',
     agent: 'claude-code',
     summary: 'feat: Polish login screen — remove background image (plain #050402 black), add FINTHEON title with Cinzel/Solvys Gold, clean up Clerk → showAuth naming. Also rebranded fintheon-landing repo (Pulse → Fintheon, pushed).',

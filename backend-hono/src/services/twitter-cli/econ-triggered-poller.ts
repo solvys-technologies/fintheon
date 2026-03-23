@@ -592,6 +592,101 @@ export function getWarmCacheItems(): FeedItem[] {
   return warmCache;
 }
 
+// ── Night Poller (7PM–7AM EST, hourly, ignores autoRefresh) ─────────────────
+
+const NIGHT_POLL_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+let nightPollerInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Check if current time is within the night window: 7PM–7AM EST (Eastern).
+ * EST = UTC-5, EDT = UTC-4. We use America/New_York to handle DST automatically.
+ */
+function isNightWindowEST(): boolean {
+  const nowEST = new Date(
+    new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+  );
+  const hour = nowEST.getHours();
+  // 7PM (19) through midnight (23), or midnight (0) through 7AM (6)
+  return hour >= 19 || hour < 7;
+}
+
+/**
+ * Night poll: fetches FJ/InsiderWire/Trusted timelines regardless of autoRefresh.
+ * Stores to DB so all users get fresh data when they open the app.
+ */
+async function nightPoll(): Promise<void> {
+  if (!isNightWindowEST()) {
+    console.debug('[NightPoller] Outside 7PM-7AM EST window, skipping');
+    return;
+  }
+
+  const installed = await isTwitterCliInstalled();
+  if (!installed) {
+    console.debug('[NightPoller] twitter-cli not installed, skipping');
+    return;
+  }
+
+  console.log('[NightPoller] Hourly night poll running (7PM-7AM EST)');
+
+  const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
+  const batches = await Promise.allSettled(
+    allAccounts.map((account) => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }))
+  );
+  const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+
+  // Dedupe
+  const seenIds = new Set<string>();
+  const uniqueTweets = allTweets.filter((t) => {
+    if (seenIds.has(t.id)) return false;
+    seenIds.add(t.id);
+    return true;
+  });
+
+  if (uniqueTweets.length === 0) {
+    console.log('[NightPoller] No tweets fetched');
+    return;
+  }
+
+  // Apply FJ emoji tier filter (medium+)
+  const classified = filterByTier(uniqueTweets, 'medium');
+  const feedItems: FeedItem[] = classified.map((t) =>
+    tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
+  );
+
+  if (feedItems.length > 0) {
+    console.log(`[NightPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw) — storing to DB`);
+    await storeFeedItems(feedItems).catch((err) =>
+      console.warn('[NightPoller] Failed to store items:', err)
+    );
+    await pushToSupabase(feedItems).catch(() => {});
+    // Update warm cache so feed-service can serve them
+    const newItems = feedItems.filter((f) => !warmCache.some((w) => w.id === f.id));
+    if (newItems.length > 0) {
+      warmCache = [...newItems, ...warmCache].slice(0, 50);
+    }
+  } else {
+    console.log('[NightPoller] 0 items passed filter');
+  }
+}
+
+function startNightPoller(): void {
+  if (nightPollerInterval) return;
+  console.log('[NightPoller] Starting (hourly, 7PM-7AM EST, ignores autoRefresh)');
+  // Run immediately on boot if in window
+  nightPoll().catch((err) => console.warn('[NightPoller] Initial poll error:', err));
+  nightPollerInterval = setInterval(() => {
+    nightPoll().catch((err) => console.warn('[NightPoller] Poll error:', err));
+  }, NIGHT_POLL_INTERVAL_MS);
+}
+
+function stopNightPoller(): void {
+  if (nightPollerInterval) {
+    clearInterval(nightPollerInterval);
+    nightPollerInterval = null;
+    console.log('[NightPoller] Stopped');
+  }
+}
+
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
 let pollerInterval: ReturnType<typeof setInterval> | null = null;
@@ -611,6 +706,9 @@ export function startEconTwitterPoller(): void {
       console.warn('[EconTwitterPoller] Poll error:', err)
     );
   }, POLL_INTERVAL_MS);
+
+  // Start the night poller alongside — independent of autoRefresh
+  startNightPoller();
 }
 
 export function stopEconTwitterPoller(): void {
@@ -623,5 +721,7 @@ export function stopEconTwitterPoller(): void {
     clearInterval(interval);
     activeBursts.delete(key);
   }
-  console.log('[EconTwitterPoller] Stopped (all burst intervals cleared)');
+  // Stop night poller
+  stopNightPoller();
+  console.log('[EconTwitterPoller] Stopped (all intervals cleared)');
 }
