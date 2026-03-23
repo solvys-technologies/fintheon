@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for fintheon on 2026-03-20T20:24:53Z
+# fly.toml app configuration file generated for fintheon on 2026-03-23T05:21:06Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -20,4 +20,4 @@ primary_region = 'iad'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 512
+  memory_mb = 1024
