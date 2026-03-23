@@ -1,4 +1,7 @@
 // [claude-code 2026-03-23] T1: Boardroom DB schema + store service
+// [claude-code 2026-03-23] Touch-up: use BoardroomAgent union, add emoji field, adapter to legacy type
+
+import type { BoardroomAgent, BoardroomMessage } from './boardroom.js'
 
 /** DB row shape (snake_case) for boardroom_sessions */
 export interface BoardroomSessionRow {
@@ -32,11 +35,11 @@ export interface BoardroomSession {
   updatedAt: string
 }
 
-/** Application-level message (camelCase) */
+/** Application-level message (camelCase) — uses BoardroomAgent union for type safety */
 export interface BoardroomDBMessage {
   id: string
   sessionId: string
-  agent: string
+  agent: BoardroomAgent
   role: string
   content: string
   messageType: string
@@ -44,9 +47,19 @@ export interface BoardroomDBMessage {
   createdAt: string
 }
 
+/** Agent emoji lookup — matches hermes-sessions.ts AGENT_PATTERNS */
+const AGENT_EMOJIS: Record<BoardroomAgent, string> = {
+  'Harper-Hermes': '🎩',
+  'Feucht': '⚡',
+  'Consul': '📜',
+  'Oracle': '📊',
+  'Herald': '👴',
+  'Unknown': '❓',
+}
+
 /** Filter options for querying messages */
 export interface BoardroomSessionFilter {
-  agent?: string
+  agent?: BoardroomAgent
   search?: string
   since?: string
   until?: string
@@ -57,11 +70,17 @@ export interface BoardroomSessionFilter {
 
 /** Input for creating a new boardroom message */
 export interface BoardroomMessageInput {
-  agent: string
+  agent: BoardroomAgent
   role: string
   content: string
   messageType?: string
   metadata?: Record<string, unknown>
+}
+
+/** Coerce a raw string to BoardroomAgent (DB stores as VARCHAR) */
+function toAgent(raw: string): BoardroomAgent {
+  const valid: BoardroomAgent[] = ['Harper-Hermes', 'Feucht', 'Consul', 'Oracle', 'Herald']
+  return valid.includes(raw as BoardroomAgent) ? (raw as BoardroomAgent) : 'Unknown'
 }
 
 /** Map a DB session row to the application interface */
@@ -81,7 +100,7 @@ export function mapRowToMessage(row: BoardroomMessageRow): BoardroomDBMessage {
   return {
     id: row.id,
     sessionId: row.session_id,
-    agent: row.agent,
+    agent: toAgent(row.agent),
     role: row.role,
     content: row.content,
     messageType: row.message_type ?? 'chat',
@@ -89,3 +108,17 @@ export function mapRowToMessage(row: BoardroomMessageRow): BoardroomDBMessage {
     createdAt: String(row.created_at),
   }
 }
+
+/** Convert a DB message to the legacy BoardroomMessage format (used by existing UI) */
+export function toLegacyMessage(msg: BoardroomDBMessage): BoardroomMessage {
+  return {
+    id: msg.id,
+    agent: msg.agent,
+    emoji: AGENT_EMOJIS[msg.agent] ?? '❓',
+    content: msg.content,
+    timestamp: msg.createdAt,
+    role: msg.role as 'user' | 'assistant' | 'system',
+  }
+}
+
+

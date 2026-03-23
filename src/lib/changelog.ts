@@ -56,6 +56,16 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: '2026-03-23T17:00:00',
+    agent: 'claude-code',
+    summary: 'fix(boardroom+riskflow): Touch-up boardroom T1 — BoardroomAgent union types, toAgent() coercion, toLegacyMessage() adapter, memory cap 500. Square RiskFlow cards (remove rounded-xl, edge-to-edge border-b).',
+    files: [
+      'backend-hono/src/types/boardroom-db.ts',
+      'backend-hono/src/services/boardroom-store.ts',
+      'frontend/components/RiskFlowPanel.tsx',
+    ],
+  },
+  {
     date: '2026-03-23T16:00:00',
     agent: 'claude-code',
     summary: 'feat(boardroom): T1 — DB schema (boardroom_sessions + boardroom_messages) + TypeScript types + store service with in-memory fallback, EST-based daily sessions, filtered message queries',

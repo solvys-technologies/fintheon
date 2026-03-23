@@ -1,4 +1,5 @@
 // [claude-code 2026-03-23] T1: Boardroom DB schema + store service
+// [claude-code 2026-03-23] Touch-up: memory cap, BoardroomAgent types
 
 import { sql, isDatabaseAvailable } from '../config/database.js'
 import {
@@ -15,6 +16,8 @@ import {
 // ---------------------------------------------------------------------------
 // In-memory fallback when DB is unavailable
 // ---------------------------------------------------------------------------
+const MEMORY_MESSAGES_MAX = 500
+
 const memoryStore = {
   sessions: new Map<string, BoardroomSession>(),
   messages: new Map<string, BoardroomDBMessage[]>(),
@@ -119,6 +122,8 @@ export async function addBoardroomMessage(
     }
     const list = memoryStore.messages.get(sessionId) ?? []
     list.push(message)
+    // Cap in-memory fallback to prevent unbounded growth
+    if (list.length > MEMORY_MESSAGES_MAX) list.splice(0, list.length - MEMORY_MESSAGES_MAX)
     memoryStore.messages.set(sessionId, list)
     return message
   }

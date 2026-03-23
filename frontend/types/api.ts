@@ -61,6 +61,17 @@ export interface RiskFlowItem {
   priceBrainScore?: PriceBrainScore;
   authorHandle?: string;
   polymarketUpdate?: PolymarketUpdate;
+  // [claude-code 2026-03-23] Browser Use Phase 2
+  proposal?: {
+    id: string;
+    ticker: string;
+    direction: 'long' | 'short';
+    entry: number;
+    stopLoss: number;
+    takeProfit: number[];
+    status: 'pending' | 'approved' | 'rejected' | 'executed' | 'expired';
+    screenshotUrl?: string;
+  };
 }
 
 // Alias for backward compatibility

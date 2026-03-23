@@ -12,10 +12,26 @@ import { useRiskFlow } from '../../hooks/useRiskFlow';
 // Convert RiskFlowItem to FeedItem format
 // Filters out raw/unprocessed data and ensures only interpreted messages are shown
 function convertRiskFlowToFeedItem(riskflowItem: RiskFlowItem): FeedItemType | null {
-  // Filter out items that look like raw system logs or unprocessed data
   const title = riskflowItem.title || '';
   const content = riskflowItem.content || '';
-  
+
+  // [claude-code 2026-03-23] Browser Use Phase 2 — proposal items from Hermes
+  if (riskflowItem.source === 'Hermes' && riskflowItem.proposal) {
+    return {
+      id: riskflowItem.id.toString(),
+      time: typeof riskflowItem.publishedAt === 'string' ? new Date(riskflowItem.publishedAt) : riskflowItem.publishedAt,
+      text: title || `${riskflowItem.proposal.direction.toUpperCase()} ${riskflowItem.proposal.ticker}`,
+      source: 'Hermes',
+      type: 'proposal' as const,
+      iv: { value: 8, type: 'Neutral' as const, classification: 'Neutral' as const },
+      proposal: {
+        ...riskflowItem.proposal,
+        takeProfit: Array.isArray(riskflowItem.proposal.takeProfit) ? riskflowItem.proposal.takeProfit : [riskflowItem.proposal.takeProfit],
+      },
+    };
+  }
+
+  // Filter out items that look like raw system logs or unprocessed data
   // Skip items that look like raw API responses or system logs
   const rawDataPatterns = [
     /^\[.*\]/,  // Items starting with brackets like [Error], [API], etc.

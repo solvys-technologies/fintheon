@@ -231,7 +231,7 @@ function TradeIdeaRow({
   );
 }
 
-// ── Alert Row (news — rounded card with bottom-hero footer) ─────────────────
+// ── Alert Row (news — square edge-to-edge card with bottom-hero footer) ──────
 
 function AlertRow({
   alert,
@@ -263,7 +263,7 @@ function AlertRow({
     <div
       draggable
       onDragStart={handleDragStart}
-      className={`group relative rounded-xl border border-zinc-800/60 mx-2 my-1.5 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
+      className={`group relative border-b border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
     >
       {/* Main content area */}
       <a
