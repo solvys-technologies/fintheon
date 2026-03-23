@@ -1,4 +1,4 @@
-import type { FeedItem } from '../../types/riskflow.js'
+import type { FeedItem, NewsSource } from '../../types/riskflow.js'
 
 type SSEClient = {
   controller: ReadableStreamDefaultController
@@ -40,4 +40,34 @@ export function broadcastLevel4(item: FeedItem) {
       removeClient(client.controller)
     }
   })
+}
+
+// [claude-code 2026-03-23] Browser Use Phase 2 — proposal broadcasting
+export interface ProposalBroadcast {
+  ticker: string
+  direction: 'long' | 'short'
+  entry: number
+  stopLoss: number
+  takeProfit: number | number[]
+  screenshotPath?: string
+  proposalId?: string
+}
+
+export function broadcastProposal(proposal: ProposalBroadcast) {
+  const item: FeedItem = {
+    id: proposal.proposalId ?? crypto.randomUUID(),
+    source: 'Hermes' as NewsSource,
+    headline: `${proposal.direction.toUpperCase()} ${proposal.ticker} @ ${proposal.entry}`,
+    body: `Entry: ${proposal.entry} | Stop: ${proposal.stopLoss} | Target: ${Array.isArray(proposal.takeProfit) ? proposal.takeProfit.join(', ') : proposal.takeProfit}`,
+    symbols: [proposal.ticker],
+    tags: ['proposal', proposal.direction],
+    isBreaking: true,
+    urgency: 'high',
+    sentiment: proposal.direction === 'long' ? 'bullish' : 'bearish',
+    ivScore: 8,
+    macroLevel: 4,
+    publishedAt: new Date().toISOString(),
+  }
+
+  broadcastLevel4(item)
 }

@@ -57,15 +57,9 @@ contextBridge.exposeInMainWorld("electron", {
     updateDownloadedCallback = typeof cb === "function" ? cb : null;
   },
 
-  // Browser Control Phase 1 — Agent View API (read-only)
-  agentView: {
-    create: (url) => ipcRenderer.invoke("agent-view-create", url),
-    close: () => ipcRenderer.invoke("agent-view-close"),
-    navigate: (url) => ipcRenderer.invoke("agent-view-navigate", url),
-    readDOM: (selector) => ipcRenderer.invoke("agent-view-read-dom", selector),
-    readBatch: (selectors) => ipcRenderer.invoke("agent-view-read-batch", selectors),
-    screenshot: () => ipcRenderer.invoke("agent-view-screenshot"),
-    getInfo: () => ipcRenderer.invoke("agent-view-info"),
-    isActive: () => ipcRenderer.invoke("agent-view-active"),
+  // [claude-code 2026-03-23] Browser Use Phase 2 — CLI command bridge
+  browserUse: {
+    runCommand: (args) => ipcRenderer.invoke("browser-use-command", args),
+    getStatus: () => ipcRenderer.invoke("browser-use-status"),
   },
 });

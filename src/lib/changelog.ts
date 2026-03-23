@@ -56,6 +56,16 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: '2026-03-23T16:00:00',
+    agent: 'claude-code',
+    summary: 'feat(boardroom): T1 — DB schema (boardroom_sessions + boardroom_messages) + TypeScript types + store service with in-memory fallback, EST-based daily sessions, filtered message queries',
+    files: [
+      'backend-hono/migrations/014_boardroom_sessions.sql',
+      'backend-hono/src/types/boardroom-db.ts',
+      'backend-hono/src/services/boardroom-store.ts',
+    ],
+  },
+  {
     date: '2026-03-23T15:00:00',
     agent: 'claude-code',
     summary: 'feat: Default browser layout + platform settings — users can choose Zen/Castra and default iFrame platform in Settings > iFrames tab. MainLayout reads from settings on mount.',

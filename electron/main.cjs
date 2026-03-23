@@ -4,9 +4,8 @@
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
 // [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
 // [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
-// [claude-code 2026-03-22] Source of Truth fusion — Browser Control Phase 1 (agent-view-handlers)
+// [claude-code 2026-03-23] Browser Use Phase 2 — CDP + browser-use CLI bridge
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
-const { setupAgentViewHandlers } = require("./agent-view-handlers.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
@@ -224,6 +223,9 @@ function createWindow() {
   mainWindow = win;
 }
 
+// [claude-code 2026-03-23] Browser Use Phase 2 — enable CDP for browser-use CLI
+app.commandLine.appendSwitch('remote-debugging-port', '9222');
+
 app.whenReady().then(() => {
   const cfg = readStartupConfig();
   if (cfg.backendAutostart) {
@@ -233,8 +235,7 @@ app.whenReady().then(() => {
   }
   createWindow();
   setupAutoUpdater();
-  // Browser Control Phase 1 — read-only agent view for TopStep X observation
-  if (mainWindow) setupAgentViewHandlers(mainWindow);
+  // Browser Use Phase 2 — CDP enabled via commandLine switch, no in-process handlers needed
 
   // Handle window.open from embedded <webview> tags.
   app.on("web-contents-created", (_event, contents) => {
@@ -423,4 +424,31 @@ ipcMain.handle("run-shell-command", (event, command) => {
     } catch (_) {}
   });
   return { ok: true };
+});
+
+// [claude-code 2026-03-23] Browser Use Phase 2 — CLI command bridge
+ipcMain.handle("browser-use-command", async (_event, args) => {
+  const { execFile } = require("child_process");
+  return new Promise((resolve) => {
+    execFile("browser-use", ["--cdp-url", "http://localhost:9222", "--json", ...args], {
+      timeout: 30000,
+      env: { ...process.env },
+    }, (error, stdout, stderr) => {
+      if (error) resolve({ ok: false, error: error.message, stderr });
+      else {
+        try { resolve({ ok: true, data: JSON.parse(stdout) }); }
+        catch { resolve({ ok: true, data: stdout.trim() }); }
+      }
+    });
+  });
+});
+
+ipcMain.handle("browser-use-status", async () => {
+  const { execFile } = require("child_process");
+  return new Promise((resolve) => {
+    execFile("browser-use", ["--json", "sessions"], { timeout: 5000 }, (error, stdout) => {
+      if (error) resolve({ running: false });
+      else resolve({ running: true, sessions: stdout.trim() });
+    });
+  });
 });

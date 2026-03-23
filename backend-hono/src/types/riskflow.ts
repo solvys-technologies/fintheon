@@ -3,7 +3,7 @@
  * Type definitions for RiskFlow news feed
  */
 
-export type NewsSource = 'FinancialJuice' | 'InsiderWire' | 'EconomicCalendar' | 'TrendSpider' | 'Barchart' | 'Polymarket' | 'Kalshi' | 'TwitterCli' | 'Custom';
+export type NewsSource = 'FinancialJuice' | 'InsiderWire' | 'EconomicCalendar' | 'TrendSpider' | 'Barchart' | 'Polymarket' | 'Kalshi' | 'TwitterCli' | 'Custom' | 'Hermes';
 export type UrgencyLevel = 'immediate' | 'high' | 'normal';
 export type SentimentDirection = 'bullish' | 'bearish' | 'neutral';
 
@@ -70,4 +70,23 @@ export interface WatchlistUpdateRequest {
 export interface WatchlistResponse {
   watchlist: Watchlist;
   success: boolean;
+}
+
+// [claude-code 2026-03-23] Browser Use Phase 2 — proposal feed items
+export interface ProposalFeedData {
+  id: string;
+  ticker: string;
+  direction: 'long' | 'short';
+  entry: number;
+  stopLoss: number;
+  takeProfit: number[];
+  strategy?: string;
+  confidence?: number;
+  rationale?: string;
+  screenshotUrl?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'executed' | 'expired';
+}
+
+export interface ProposalFeedItem extends FeedItem {
+  proposal: ProposalFeedData;
 }
