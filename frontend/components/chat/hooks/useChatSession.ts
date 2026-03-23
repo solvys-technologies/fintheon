@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: OpenClaw -> Hermes imports
 // [claude-code 2026-03-06] Unified chat session hook wrapping useHermesChat + persistence + agent routing + part normalization
 import { useCallback, useMemo, useState } from 'react';
 import { useHermesChat } from './useHermesChat';

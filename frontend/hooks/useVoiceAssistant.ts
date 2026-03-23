@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: openclawAgentRouting -> hermesAgentRouting
 // [claude-code 2026-03-09] Added: useMicPermission, useMicArbitration, error state with auto-recovery, cancel/interrupt support
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBackend } from '../lib/backend';

@@ -1,6 +1,5 @@
 // [claude-code 2026-03-14] Removed MarketWatch RSS polling — feed now Notion + backend only.
 // [claude-code 2026-03-14] XCLI: minMacroLevel=0 so all items show regardless of macro level.
-// [claude-code 2026-03-13] Hermes migration: openclawDescription -> hermesDescription
 // [claude-code 2026-03-12] Instrument persistence: passes selectedSymbol to backend feed poll
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { RiskFlowAlert } from '../lib/riskflow-feed';

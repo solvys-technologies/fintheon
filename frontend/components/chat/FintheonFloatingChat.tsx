@@ -1,5 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
-// [claude-code 2026-03-10] Migrated to useHermesRuntime + AssistantRuntimeProvider + FintheonThread + FintheonComposer
 import { useState, useCallback } from 'react';
 import { MessageSquare, X, Maximize2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';

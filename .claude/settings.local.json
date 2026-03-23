@@ -8,7 +8,8 @@
       "Glob(*)",
       "Grep(*)",
       "WebSearch(*)",
-      "WebFetch(*)"
+      "WebFetch(*)",
+      "Bash(git rm:*)"
     ]
   }
 }

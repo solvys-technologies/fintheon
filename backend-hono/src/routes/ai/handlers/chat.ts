@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
 // [claude-code 2026-03-14] thinkHarder maps to Claude Opus deep thought via OpenRouter (no reasoning param)
 // [claude-code 2026-03-14] Model routing fix: default→Sonnet, thinkHarder→Opus
 /**

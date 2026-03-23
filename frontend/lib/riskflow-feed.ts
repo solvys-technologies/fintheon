@@ -1,6 +1,3 @@
-// [claude-code 2026-03-14] Removed MarketWatch RSS poller, XML parsing, singleton. Types + severity kept.
-// [claude-code 2026-03-13] Hermes migration: openclawDescription -> hermesDescription in TradeIdeaDetail
-// [claude-code 2026-03-16] T2: ensureScoring, inferDirection, downgradeNonFinancialBreaking exports
 /**
  * RiskFlow Alert Types & Severity Classification
  * Types and classification logic used by both frontend context and backend feed mapping.

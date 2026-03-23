@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: renamed from openclawAgentRouting.ts
 export type FintheonAgentId = string;
 
 /**
@@ -25,33 +24,13 @@ export function toHermesAgentOverride(fintheonAgentId: FintheonAgentId | undefin
   }
 }
 
-// [claude-code 2026-03-09] Added surfaceId for per-surface session isolation (no context bleed)
-// [claude-code 2026-03-16] Hermes migration: localStorage keys migrated from pulse_openclaw_* to fintheon:hermes-*
 export function hermesConversationStorageKey(
   fintheonAgentId: FintheonAgentId | undefined | null,
   surfaceId?: string,
 ): string {
   const agent = fintheonAgentId ?? 'default';
 
-  // Backward compat: migrate old openclaw → pulse_hermes → fintheon:hermes keys
-  const oldKey1 = surfaceId
-    ? `pulse_openclaw_conversation:${surfaceId}:${agent}`
-    : `pulse_openclaw_conversation:${agent}`;
-  const oldKey2 = surfaceId
-    ? `pulse_hermes_conversation:${surfaceId}:${agent}`
-    : `pulse_hermes_conversation:${agent}`;
-  const newKey = surfaceId
+  return surfaceId
     ? `fintheon:hermes-conversation:${surfaceId}:${agent}`
     : `fintheon:hermes-conversation:${agent}`;
-
-  try {
-    if (!localStorage.getItem(newKey)) {
-      const v = localStorage.getItem(oldKey2) ?? localStorage.getItem(oldKey1);
-      if (v) localStorage.setItem(newKey, v);
-    }
-  } catch {
-    // ignore storage errors
-  }
-
-  return newKey;
 }

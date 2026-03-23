@@ -1,5 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: OpenClaw -> Hermes imports
-// [claude-code 2026-03-11] T2d: refactored sidebar to rounded bubble style + FintheonChatInput
 import { useMemo, useState, useCallback } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -17,7 +15,8 @@ export function ResearchDepartment() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [thinkHarder, setThinkHarder] = useState(false);
   const { iframeUrls } = useSettings();
-  const notionResearchUrl = iframeUrls.research || import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so';
+  const notionResearchUrl = iframeUrls.research || import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so/2db141b0da7d80efa647ee7f6d5153f5';
+  const hasResearchUrl = notionResearchUrl.length > 0;
 
   let activeAgent: { name: string; icon: string } | null = null;
   try {
@@ -80,11 +79,26 @@ export function ResearchDepartment() {
 
         {/* Notion iframe — fills everything from edge to edge */}
         <div className="flex-1 min-h-0 w-full">
-          <EmbeddedBrowserFrame
-            title="Notion Research Department"
-            src={notionResearchUrl}
-            className="w-full h-full bg-white"
-          />
+          {hasResearchUrl ? (
+            <EmbeddedBrowserFrame
+              title="Notion Research Department"
+              src={notionResearchUrl}
+              className="w-full h-full bg-white"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-[var(--fintheon-bg)]">
+              <div className="text-center max-w-md px-6">
+                <div className="text-4xl mb-4">📜</div>
+                <h3 className="text-lg font-semibold text-[var(--fintheon-accent)] mb-2">Scriptorium Awaits</h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Configure your Notion research page URL in <strong className="text-gray-300">Settings</strong> to embed your knowledge base here.
+                </p>
+                <p className="text-xs text-gray-600">
+                  Settings → Iframe URLs → Research URL
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
