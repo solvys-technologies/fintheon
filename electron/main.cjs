@@ -69,13 +69,13 @@ async function startBackend() {
   if (!fs.existsSync(distEntry)) {
     console.warn("[Electron] Backend dist not found — attempting build...");
     try {
-      execFileSync("npm", ["run", "build"], { cwd: backendDir, stdio: "inherit" });
+      execFileSync("bun", ["run", "build"], { cwd: backendDir, stdio: "inherit" });
       console.log("[Electron] Backend build succeeded");
     } catch (buildErr) {
       console.error("[Electron] Backend build failed:", buildErr.message);
       dialog.showErrorBox(
         "Backend Not Built",
-        "The backend could not be compiled.\n\nRun manually:\n  cd backend-hono && npm run build\n\nThen relaunch the app."
+        "The backend could not be compiled.\n\nRun manually:\n  cd backend-hono && bun run build\n\nThen relaunch the app."
       );
       return;
     }

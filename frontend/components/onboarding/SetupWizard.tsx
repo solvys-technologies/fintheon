@@ -24,7 +24,7 @@ const STATUS_ICON = {
 
 export function SetupWizard({ visible, onClose }: SetupWizardProps) {
   const [checks, setChecks] = useState<CheckStatus[]>([
-    { label: 'Backend API', description: 'Hono server on port 8080', status: 'checking', command: 'cd backend-hono && npm install && npm run dev' },
+    { label: 'Backend API', description: 'Hono server on port 8080', status: 'checking', command: 'cd backend-hono && bun install && bun run dev' },
     { label: 'Hermes / OpenRouter', description: 'AI inference key configured', status: 'checking', helpUrl: 'https://openrouter.ai' },
     { label: 'Data Layer', description: 'Trade ideas & briefs endpoint', status: 'checking' },
     { label: 'Market Data', description: 'IV score endpoint responding', status: 'checking' },

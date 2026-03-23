@@ -331,10 +331,10 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                 <span className="text-xs text-gray-300"><strong>{item.range}:</strong> {item.label}</span>
               </div>
             ))}
-            </div>
-          </div>,
-          document.body
-          )}
+          </div>
+        </div>,
+        document.body
+      )}
         </div>
       </div>
     </div>

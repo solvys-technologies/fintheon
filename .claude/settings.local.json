@@ -9,7 +9,9 @@
       "Grep(*)",
       "WebSearch(*)",
       "WebFetch(*)",
-      "Bash(git rm:*)"
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__get_publishable_keys"
     ]
   }
 }

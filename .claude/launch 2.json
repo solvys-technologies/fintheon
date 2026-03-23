@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "fintheon-frontend",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "dev"],
       "port": 7777,
       "cwd": "frontend"

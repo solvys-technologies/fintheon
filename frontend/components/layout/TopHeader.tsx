@@ -186,7 +186,7 @@ export function TopHeader({
     {
       value: 'combined',
       label: 'Castra',
-      description: 'Mission Control and Tape stacked on the right',
+      description: 'Mission Control and RiskFlow stacked on the right',
       icon: <Layers className="w-4 h-4" />
     },
     {

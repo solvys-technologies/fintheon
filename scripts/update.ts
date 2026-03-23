@@ -86,7 +86,7 @@ async function main() {
   // Step 6: Rebuild frontend
   const feBuildSpinner = p.spinner();
   feBuildSpinner.start('Rebuilding frontend');
-  const feBuild = await runCommand('npx', ['vite', 'build'], { cwd: FRONTEND_DIR });
+  const feBuild = await runCommand('bunx', ['vite', 'build'], { cwd: FRONTEND_DIR });
   if (feBuild.ok) {
     feBuildSpinner.stop('Frontend rebuilt');
   } else {

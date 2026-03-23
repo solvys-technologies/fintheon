@@ -1,3 +1,4 @@
+// @ts-nocheck
 //@version=2
 // Priced In Research — Suite 2: Reversal RSI + HTF Patterns (MMT Port)
 
@@ -106,12 +107,12 @@ function onBar(index) {
       phRsi[0] = na
       phIdx[0] = na
     } else {
-      plPrice[0] = plPrice(1)
-      plRsi[0] = plRsi(1)
-      plIdx[0] = plIdx(1)
-      phPrice[0] = phPrice(1)
-      phRsi[0] = phRsi(1)
-      phIdx[0] = phIdx(1)
+      plPrice[0] = plPrice[1]
+      plRsi[0] = plRsi[1]
+      plIdx[0] = plIdx[1]
+      phPrice[0] = phPrice[1]
+      phRsi[0] = phRsi[1]
+      phIdx[0] = phIdx[1]
     }
 
     const pivotRsiLow = ta.pivotlow(rsi, lbL, lbR)
@@ -126,18 +127,18 @@ function onBar(index) {
       if (!na(plPrice[0]) && currRsi > plRsi[0] && currPrice < plPrice[0]) {
         // Bullish divergence confirmed
         // Draw on price chart (forceOverlay)
-        Line(`bdiv_price_${bi}`, {
+        Line("bdiv_price_" + bi, {
           x1: plIdx[0], y1: plPrice[0],
           x2: currIdx, y2: currPrice,
           color: bullDivCol, width: 2, forceOverlay: true
         })
-        Label(`bdiv_lbl_${bi}`, {
+        Label("bdiv_lbl_" + bi, {
           x: currIdx, y: currPrice,
           text: "Bull Div", color: bullDivCol, size: size.sm,
           forceOverlay: true
         })
         // Draw on RSI pane
-        Line(`bdiv_rsi_${bi}`, {
+        Line("bdiv_rsi_" + bi, {
           x1: plIdx[0], y1: plRsi[0],
           x2: currIdx, y2: currRsi,
           color: bullDivCol, width: 2
@@ -158,17 +159,17 @@ function onBar(index) {
 
       if (!na(phPrice[0]) && currRsi < phRsi[0] && currPrice > phPrice[0]) {
         // Bearish divergence confirmed
-        Line(`brdiv_price_${bi}`, {
+        Line("brdiv_price_" + bi, {
           x1: phIdx[0], y1: phPrice[0],
           x2: currIdx, y2: currPrice,
           color: bearDivCol, width: 2, forceOverlay: true
         })
-        Label(`brdiv_lbl_${bi}`, {
+        Label("brdiv_lbl_" + bi, {
           x: currIdx, y: currPrice,
           text: "Bear Div", color: bearDivCol, size: size.sm,
           forceOverlay: true
         })
-        Line(`brdiv_rsi_${bi}`, {
+        Line("brdiv_rsi_" + bi, {
           x1: phIdx[0], y1: phRsi[0],
           x2: currIdx, y2: currRsi,
           color: bearDivCol, width: 2
@@ -210,14 +211,14 @@ function onBar(index) {
     // Bullish Engulfing
     const isBullEng = showEngulfing && hC > hO && hPC < hPO && hC >= hPO && hO <= hPC
     if (isBullEng && isExtremityBull) {
-      Box(`beng_${bi}`, {
+      Box("beng_" + bi, {
         x1: bi - 1, y1: hH, x2: bi, y2: hL,
         color: color.transp(bullEngCol, 90),
         borderColor: color.transp(bullEngCol, 50),
         forceOverlay: true
       })
       if (showLabels) {
-        Label(`beng_lbl_${bi}`, {
+        Label("beng_lbl_" + bi, {
           x: bi, y: hL, text: "Bull Engulfing",
           color: bullEngCol, size: size.sm, forceOverlay: true
         })
@@ -227,14 +228,14 @@ function onBar(index) {
     // Bearish Engulfing
     const isBearEng = showEngulfing && hC < hO && hPC > hPO && hC <= hPO && hO >= hPC
     if (isBearEng && isExtremityBear) {
-      Box(`breng_${bi}`, {
+      Box("breng_" + bi, {
         x1: bi - 1, y1: hH, x2: bi, y2: hL,
         color: color.transp(bearEngCol, 90),
         borderColor: color.transp(bearEngCol, 50),
         forceOverlay: true
       })
       if (showLabels) {
-        Label(`breng_lbl_${bi}`, {
+        Label("breng_lbl_" + bi, {
           x: bi, y: hH, text: "Bear Engulfing",
           color: bearEngCol, size: size.sm, forceOverlay: true
         })
@@ -245,14 +246,14 @@ function onBar(index) {
     const lowerWick = math.min(hO, hC) - hL
     const isHammer = showHammer && lowerWick > candleRange * pinSens && math.abs(hC - hO) < candleRange * (1 - pinSens)
     if (isHammer && isExtremityBull) {
-      Box(`ham_${bi}`, {
+      Box("ham_" + bi, {
         x1: bi - 1, y1: hH, x2: bi, y2: hL,
         color: color.transp(bullPinCol, 90),
         borderColor: color.transp(bullPinCol, 50),
         forceOverlay: true
       })
       if (showLabels) {
-        Label(`ham_lbl_${bi}`, {
+        Label("ham_lbl_" + bi, {
           x: bi, y: hL, text: "Hammer",
           color: bullPinCol, size: size.sm, forceOverlay: true
         })
@@ -263,14 +264,14 @@ function onBar(index) {
     const upperWick = hH - math.max(hO, hC)
     const isStar = showStar && upperWick > candleRange * pinSens && math.abs(hC - hO) < candleRange * (1 - pinSens)
     if (isStar && isExtremityBear) {
-      Box(`star_${bi}`, {
+      Box("star_" + bi, {
         x1: bi - 1, y1: hH, x2: bi, y2: hL,
         color: color.transp(bearPinCol, 90),
         borderColor: color.transp(bearPinCol, 50),
         forceOverlay: true
       })
       if (showLabels) {
-        Label(`star_lbl_${bi}`, {
+        Label("star_lbl_" + bi, {
           x: bi, y: hH, text: "Shooting Star",
           color: bearPinCol, size: size.sm, forceOverlay: true
         })

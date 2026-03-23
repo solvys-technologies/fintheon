@@ -2,13 +2,13 @@
 // [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
 // [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
+// [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowPanel (same as non-iFrame Strategium)
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X } from 'lucide-react';
 import type { IVScoreResponse } from '../../types/market-data';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
 import { MinimalFeedSection } from '../feed/MinimalFeedSection';
-import { CompactRiskFlowCard } from '../feed/CompactRiskFlowCard';
 import { KanbanTitle } from '../ui/KanbanTitle';
 import { MinimalTapeWidget } from '../feed/MinimalTapeWidget';
 import { NewsSection } from '../feed/NewsSection';
@@ -534,41 +534,12 @@ function MainLayoutInner() {
                     {missionControlContent(() => setCombinedPanelCollapsed(true))}
                   </div>
                 </section>
-                {/* The Tape: 50% when expanded, collapsed header when hidden */}
-                <section className={`${combinedTapeCollapsed ? 'flex-shrink-0' : 'h-1/2'} min-h-0 flex flex-col border-t border-[var(--fintheon-accent)]/20`}>
-                  <button
-                    type="button"
-                    onClick={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}
-                    className="h-10 flex-shrink-0 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/20 hover:bg-[var(--fintheon-accent)]/5 transition-colors w-full text-left"
-                  >
-                    <span className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-[0.2em] uppercase">The Tape</span>
-                    {combinedTapeCollapsed && riskFlowAlerts.length > 0 && (
-                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500/30 text-red-400 text-[10px] font-bold">
-                        {riskFlowAlerts.length}
-                      </span>
-                    )}
-                    <span className="text-[var(--fintheon-accent)]/60">
-                      {combinedTapeCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
-                    </span>
-                  </button>
-                  {!combinedTapeCollapsed && (
-                    <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1.5 space-y-0.5">
-                      {riskFlowAlerts.length === 0 ? (
-                        <div className="text-center text-zinc-600 py-6 text-[10px]">No items</div>
-                      ) : (
-                        riskFlowAlerts.slice(0, 30).map((alert) => (
-                          <CompactRiskFlowCard key={alert.id} alert={alert} onDismiss={removeAlert} />
-                        ))
-                      )}
-                    </div>
-                  )}
-                  {combinedTapeCollapsed && (
-                    <div className="p-3 flex justify-center">
-                      <div className="w-full max-w-[120px]">
-                        <MinimalTapeWidget />
-                      </div>
-                    </div>
-                  )}
+                {/* RiskFlow: 50% when expanded, collapsed when hidden */}
+                <section className={`${combinedTapeCollapsed ? 'flex-shrink-0' : 'h-1/2'} min-h-0 flex flex-col`}>
+                  <RiskFlowPanel
+                    collapsed={combinedTapeCollapsed}
+                    onToggleCollapsed={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}
+                  />
                 </section>
               </div>
             )}
@@ -824,7 +795,7 @@ function MainLayoutInner() {
         )}
         {showTapeNotification && (
           <PanelNotificationWidget
-            panelName="The Tape"
+            panelName="RiskFlow"
             onRestore={() => {
               setTapePosition('right');
               setShowTapeNotification(false);
@@ -833,23 +804,24 @@ function MainLayoutInner() {
           />
         )}
 
-        {/* Global chat panel (hidden on boardroom tab where it's already embedded) */}
-        {showAskHarp && (
-          <div className="absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl animate-fade-in-tab">
-            <div className="flex items-center justify-end px-4 py-2 flex-shrink-0">
-              <button
-                onClick={() => setShowAskHarp(false)}
-                className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors"
-                title="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <AskHarpChatPanel />
-            </div>
+        {/* Global chat panel — slide in/out from right */}
+        <div
+          className={`absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl transition-transform duration-300 ease-in-out ${showAskHarp ? 'translate-x-0' : 'translate-x-full'}`}
+          style={{ pointerEvents: showAskHarp ? 'auto' : 'none' }}
+        >
+          <div className="flex items-center justify-end px-4 py-2 flex-shrink-0">
+            <button
+              onClick={() => setShowAskHarp(false)}
+              className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <AskHarpChatPanel />
+          </div>
+        </div>
       </div>
 
       <SessionCountdownWidget />

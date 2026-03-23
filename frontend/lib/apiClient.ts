@@ -19,6 +19,7 @@ let consecutive401Count = 0;
 let last401Timestamp: number | null = null;
 
 const MAX_RETRIES = 3;
+const MAX_CONCURRENT = 6; // Browser limit per origin for HTTP/1.1
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 const BASE_RETRY_DELAY_MS = 400;
 
@@ -31,6 +32,33 @@ const buildRetryDelay = (attempt: number) => {
   const jitter = Math.random() * 150;
   return BASE_RETRY_DELAY_MS * 2 ** attempt + jitter;
 };
+
+// --- Concurrency limiter: prevents ERR_INSUFFICIENT_RESOURCES ---
+let inFlight = 0;
+const queue: Array<() => void> = [];
+
+function acquireSlot(): Promise<void> {
+  if (inFlight < MAX_CONCURRENT) {
+    inFlight++;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    queue.push(() => { inFlight++; resolve(); });
+  });
+}
+
+function releaseSlot() {
+  inFlight--;
+  const next = queue.shift();
+  if (next) next();
+}
+
+// Detect resource exhaustion errors (retrying makes these worse)
+function isResourceExhausted(error: unknown): boolean {
+  if (!(error instanceof TypeError)) return false;
+  const msg = error.message.toLowerCase();
+  return msg.includes('failed to fetch') && inFlight >= MAX_CONCURRENT - 1;
+}
 
 // Export function to reset auth state (call on successful login)
 export function resetAuthState() {
@@ -99,6 +127,22 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
+    // Wait for a connection slot before executing
+    await acquireSlot();
+
+    try {
+      return await this._executeWithRetry(url, endpoint, options, 0);
+    } finally {
+      releaseSlot();
+    }
+  }
+
+  private async _executeWithRetry<T>(
+    url: string,
+    endpoint: string,
+    options: RequestInit,
+    attempt: number
+  ): Promise<T> {
     const execute = async (attempt: number): Promise<T> => {
       // Skip request if auth has failed recently (prevents error cascade)
       if (shouldSkipRequest()) {
@@ -195,6 +239,18 @@ class ApiClient {
         return jsonData;
       } catch (error) {
         const isApiError = error && typeof error === 'object' && 'code' in error;
+
+        // Don't retry on resource exhaustion — retrying makes it worse
+        if (!isApiError && isResourceExhausted(error)) {
+          console.warn(`[API] Resource exhaustion on ${endpoint} — skipping retry`);
+          const netErr: ApiError = {
+            code: 'resource_exhausted',
+            message: 'Too many concurrent requests. Try again shortly.',
+          };
+          emitApiError({ ...netErr, endpoint });
+          throw netErr;
+        }
+
         if (!isApiError && attempt < MAX_RETRIES) {
           console.warn(
             `[API] Network error on ${endpoint} (attempt ${attempt + 1}/${MAX_RETRIES})`,

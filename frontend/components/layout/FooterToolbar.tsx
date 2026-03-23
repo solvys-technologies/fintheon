@@ -20,11 +20,14 @@ type PanelTab = 'terminal' | 'changelog' | 'errors';
 
 /** Slash-command suggestions (like Claude Code skills) for the Fintheon CLI */
 const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
-  { slug: 'start-backend', label: 'Start backend', command: 'cd backend-hono && npm run dev' },
-  { slug: 'frontend', label: 'Start frontend dev', command: 'npx vite' },
-  { slug: 'install', label: 'Install all deps', command: 'npm install && npm --prefix frontend install && npm --prefix backend-hono install' },
-  { slug: 'build', label: 'Build frontend', command: 'npx vite build' },
-  { slug: 'typecheck', label: 'Typecheck backend', command: 'cd backend-hono && npx tsc --noEmit' },
+  { slug: 'start-backend', label: 'Start backend', command: 'cd backend-hono && bun run dev' },
+  { slug: 'frontend', label: 'Start frontend dev', command: 'bunx vite' },
+  { slug: 'install', label: 'Install all deps', command: 'bun install && cd frontend && bun install && cd ../backend-hono && bun install' },
+  { slug: 'build', label: 'Build frontend', command: 'bunx vite build' },
+  { slug: 'typecheck', label: 'Typecheck backend', command: 'cd backend-hono && bunx tsc --noEmit' },
+  { slug: 'hermes-start', label: 'Start Hermes gateway', command: 'hermes gateway start' },
+  { slug: 'hermes-restart', label: 'Restart Hermes gateway', command: 'hermes gateway stop && hermes gateway start' },
+  { slug: 'hermes-port', label: 'Change Hermes port', command: 'hermes gateway start --port 7787' },
 ];
 
 function resolveSlashCommand(input: string): string | null {
@@ -37,6 +40,27 @@ function resolveSlashCommand(input: string): string | null {
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+/** Render terminal output with clickable `backtick commands` */
+function renderOutputLine(text: string, onClickCommand: (cmd: string) => void) {
+  const parts = text.split(/`([^`]+)`/);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <button
+        key={i}
+        type="button"
+        onClick={() => onClickCommand(part)}
+        className="text-[var(--fintheon-accent)] hover:underline cursor-pointer"
+        title={`Click to fill: ${part}`}
+      >
+        {part}
+      </button>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
 
 interface FooterToolbarProps {
   topStepXEnabled?: boolean;
@@ -66,7 +90,7 @@ export function FooterToolbar({
   const [cliInput, setCliInput] = useState('');
   const [cliHistory, setCliHistory] = useState<Array<{ type: 'input' | 'output'; text: string }>>([
     { type: 'output', text: 'Fintheon CLI — type / for commands or "help" for built-ins.' },
-    { type: 'output', text: 'Slash commands: /start-backend, /backend, /frontend, /install, /build, /typecheck' },
+    { type: 'output', text: 'Slash commands: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port' },
   ]);
   const [slashSuggestionsOpen, setSlashSuggestionsOpen] = useState(false);
   const [slashSuggestionsIndex, setSlashSuggestionsIndex] = useState(0);
@@ -179,7 +203,7 @@ export function FooterToolbar({
       .catch((err) => {
         setCliHistory((prev) => [
           ...prev,
-          { type: 'output', text: `Backend unavailable: ${err instanceof Error ? err.message : String(err)}` },
+          { type: 'output', text: `Backend unavailable — start it with \`cd backend-hono && bun run dev\`` },
         ]);
       });
   }, []);
@@ -259,7 +283,7 @@ export function FooterToolbar({
       if (lower === 'help') {
         newHistory.push({
           type: 'output',
-          text: 'Built-in: help, changelog, clear, status, version. Slash: /start-backend, /backend, /frontend, /install, /build, /typecheck',
+          text: 'Built-in: help, changelog, clear, status, version. Slash: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port',
         });
         newHistory.push({
           type: 'output',
@@ -377,7 +401,7 @@ export function FooterToolbar({
                 <div className="flex-1 overflow-y-auto px-3 py-2 font-mono text-[11px] space-y-0.5">
                   {cliHistory.map((line, i) => (
                     <div key={i} className={line.type === 'input' ? 'text-[var(--fintheon-accent)]' : 'text-zinc-500'}>
-                      {line.type === 'input' ? `> ${line.text}` : line.text}
+                      {line.type === 'input' ? `> ${line.text}` : renderOutputLine(line.text, (cmd) => { setCliInput(cmd); inputRef.current?.focus(); })}
                     </div>
                   ))}
                   <div ref={terminalEndRef} />
@@ -415,6 +439,7 @@ export function FooterToolbar({
                         >
                           <span className="text-[var(--fintheon-accent)]/70">/{item.slug}</span>
                           <span className="ml-2 text-zinc-500">{item.label}</span>
+                          <span className="ml-auto pl-3 text-zinc-600 text-[10px] truncate max-w-[45%] inline-block align-bottom">{item.command}</span>
                         </button>
                       ))}
                     </div>
@@ -541,6 +566,7 @@ export function FooterToolbar({
                 >
                   <span className="text-[var(--fintheon-accent)]/70">/{item.slug}</span>
                   <span className="ml-2 text-zinc-500">{item.label}</span>
+                  <span className="ml-auto pl-3 text-zinc-600 text-[10px] truncate max-w-[45%] inline-block align-bottom">{item.command}</span>
                 </button>
               ))}
             </div>
