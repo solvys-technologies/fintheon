@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: renamed from useOpenClawChat.ts
 /**
  * useHermesChat Hook
  * Simple chat hook for Hermes AI processing

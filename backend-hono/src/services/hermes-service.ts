@@ -339,5 +339,4 @@ export const HERMES_MODELS = {
   RESEARCH: 'anthropic/claude-opus-4.6',
 } as const
 
-// Backward compat
 export type HermesModelId = (typeof HERMES_MODELS)[keyof typeof HERMES_MODELS]

@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration: OpenClaw -> Hermes references
 /**
  * IV Agent Integration for Fintheon
  *

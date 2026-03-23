@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
 import type { Context } from 'hono';
 import * as conversationStore from '../../services/ai/conversation-store.js';
 import { handleHermesChat } from '../../services/hermes-handler.js';
