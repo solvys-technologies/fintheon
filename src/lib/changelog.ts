@@ -1,4 +1,4 @@
-// [claude-code 2026-02-26] Shared change log for multi-agent coordination.
+// [claude-code 2026-03-23] Shared change log for multi-agent coordination.
 
 export type ChangelogEntry = {
   date: string;
@@ -8,6 +8,53 @@ export type ChangelogEntry = {
 };
 
 export const changelog: ChangelogEntry[] = [
+  {
+    date: '2026-03-23T18:00:00',
+    agent: 'claude-code',
+    summary: 'chore(autoresearch): unify types and resolve cross-track conflicts — canonical types.ts, scoring-weights.json, all T2/T3 modules import from types.ts',
+    files: [
+      'backend-hono/src/services/autoresearch/types.ts',
+      'backend-hono/src/services/autoresearch/observation-store.ts',
+      'backend-hono/src/services/autoresearch/price-resolver.ts',
+      'backend-hono/src/services/autoresearch/scoring-observer.ts',
+      'backend-hono/src/services/autoresearch/fitness.ts',
+      'backend-hono/src/services/autoresearch/backtest-scoring.ts',
+      'backend-hono/src/services/autoresearch/run-backtest.ts',
+      'backend-hono/src/config/scoring-weights.json',
+    ],
+  },
+  {
+    date: '2026-03-23T17:30:00',
+    agent: 'claude-code',
+    summary: 'feat(autoresearch/T3): backtest engine — fitness.ts evaluates prediction accuracy, backtest-scoring.ts replays observations, run-backtest.ts CLI entry point, program.md docs',
+    files: [
+      'backend-hono/src/services/autoresearch/fitness.ts',
+      'backend-hono/src/services/autoresearch/backtest-scoring.ts',
+      'backend-hono/src/services/autoresearch/run-backtest.ts',
+      'backend-hono/src/services/autoresearch/program.md',
+    ],
+  },
+  {
+    date: '2026-03-23T17:00:00',
+    agent: 'claude-code',
+    summary: 'feat(autoresearch/T2): observation pipeline — observation-store.ts persists scored events, price-resolver.ts fetches outcome prices via Yahoo intraday bars, scoring-observer.ts hooks into news pipeline',
+    files: [
+      'backend-hono/src/services/autoresearch/observation-store.ts',
+      'backend-hono/src/services/autoresearch/price-resolver.ts',
+      'backend-hono/src/services/autoresearch/scoring-observer.ts',
+      'backend-hono/src/services/riskflow/news-cache.ts',
+    ],
+  },
+  {
+    date: '2026-03-23T16:30:00',
+    agent: 'claude-code',
+    summary: 'feat(autoresearch/T1): canonical types + scoring config — types.ts defines ScoringObservation/FitnessResult/BacktestConfig, config/scoring-weights.json for backtest weights, getIntradayBars/getPriceNear added to yahoo-market.ts',
+    files: [
+      'backend-hono/src/services/autoresearch/types.ts',
+      'backend-hono/src/config/scoring-weights.json',
+      'backend-hono/src/services/market-data/yahoo-market.ts',
+    ],
+  },
   {
     date: '2026-03-23T15:00:00',
     agent: 'claude-code',

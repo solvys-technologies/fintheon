@@ -1,4 +1,5 @@
-// [claude-code 2026-03-14] Yahoo Finance market data client — replaces FMP
+// [claude-code 2026-03-23] Yahoo Finance market data client — replaces FMP
+// [claude-code 2026-03-14] Original implementation
 // No API key needed. Uses Yahoo Finance v8 chart API.
 import type { StockQuote, VixData } from './types.js';
 
@@ -34,6 +35,67 @@ export async function getQuote(symbol: string): Promise<StockQuote> {
     volume: meta?.regularMarketVolume ?? 0,
     timestamp: new Date().toISOString(),
   };
+}
+
+/**
+ * Fetch intraday bars for a symbol (used by autoresearch price-resolver).
+ * Returns array of { timestamp, close } sorted by time ascending.
+ */
+export async function getIntradayBars(
+  symbol: string,
+  range: string = '1d',
+  interval: string = '1m',
+): Promise<Array<{ timestamp: number; close: number }>> {
+  const url = `${YAHOO_BASE}/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(5000),
+    headers: HEADERS,
+  });
+  if (!res.ok) throw new Error(`Yahoo HTTP ${res.status}`);
+  const json = await res.json();
+  const result = json?.chart?.result?.[0];
+  if (!result) throw new Error(`No Yahoo data for ${symbol}`);
+
+  const timestamps: number[] = result.timestamp ?? [];
+  const closes: number[] = result.indicators?.quote?.[0]?.close ?? [];
+
+  const bars: Array<{ timestamp: number; close: number }> = [];
+  for (let i = 0; i < timestamps.length; i++) {
+    if (closes[i] != null) {
+      bars.push({ timestamp: timestamps[i] * 1000, close: closes[i] });
+    }
+  }
+  return bars;
+}
+
+/**
+ * Get the price nearest to a specific timestamp using intraday bars.
+ * Returns null if no bars are available.
+ */
+export async function getPriceNear(
+  symbol: string,
+  targetTime: Date,
+): Promise<number | null> {
+  try {
+    const bars = await getIntradayBars(symbol, '5d', '5m');
+    if (bars.length === 0) return null;
+
+    const targetMs = targetTime.getTime();
+    let closest = bars[0];
+    let closestDiff = Math.abs(bars[0].timestamp - targetMs);
+
+    for (const bar of bars) {
+      const diff = Math.abs(bar.timestamp - targetMs);
+      if (diff < closestDiff) {
+        closest = bar;
+        closestDiff = diff;
+      }
+    }
+
+    return closest.close;
+  } catch {
+    return null;
+  }
 }
 
 export async function getVix(): Promise<VixData> {
