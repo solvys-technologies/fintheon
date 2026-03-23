@@ -20,11 +20,11 @@ type PanelTab = 'terminal' | 'changelog' | 'errors';
 
 /** Slash-command suggestions (like Claude Code skills) for the Fintheon CLI */
 const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
-  { slug: 'start-backend', label: 'Start backend', command: 'cd backend-hono && npm run dev' },
-  { slug: 'frontend', label: 'Start frontend dev', command: 'npx vite' },
-  { slug: 'install', label: 'Install all deps', command: 'npm install && npm --prefix frontend install && npm --prefix backend-hono install' },
-  { slug: 'build', label: 'Build frontend', command: 'npx vite build' },
-  { slug: 'typecheck', label: 'Typecheck backend', command: 'cd backend-hono && npx tsc --noEmit' },
+  { slug: 'start-backend', label: 'Start backend', command: 'cd backend-hono && bun run dev' },
+  { slug: 'frontend', label: 'Start frontend dev', command: 'bunx vite' },
+  { slug: 'install', label: 'Install all deps', command: 'bun install && cd frontend && bun install && cd ../backend-hono && bun install' },
+  { slug: 'build', label: 'Build frontend', command: 'bunx vite build' },
+  { slug: 'typecheck', label: 'Typecheck backend', command: 'cd backend-hono && bunx tsc --noEmit' },
 ];
 
 function resolveSlashCommand(input: string): string | null {
@@ -179,7 +179,7 @@ export function FooterToolbar({
       .catch((err) => {
         setCliHistory((prev) => [
           ...prev,
-          { type: 'output', text: `Backend unavailable: ${err instanceof Error ? err.message : String(err)}` },
+          { type: 'output', text: `Backend unavailable — start it with \`cd backend-hono && bun run dev\`` },
         ]);
       });
   }, []);

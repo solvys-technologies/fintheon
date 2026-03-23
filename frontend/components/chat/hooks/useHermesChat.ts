@@ -150,7 +150,7 @@ export function useHermesChat(
         const msg = error instanceof Error ? error.message : 'Chat request failed';
         // Replace browser-level network errors with a friendlier message
         if (/failed to fetch|networkerror|load failed/i.test(msg)) {
-          setLastError('Backend unavailable — start it with `cd backend-hono && npm run dev`');
+          setLastError('Backend unavailable — start it with `cd backend-hono && bun run dev`');
         } else {
           setLastError(msg);
         }

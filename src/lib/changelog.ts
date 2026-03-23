@@ -9,6 +9,15 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-22T23:30:00',
+    agent: 'claude-code',
+    summary: 'refactor: Replace "The Tape" in Castra with RiskFlowPanel + smooth slide transition for sidebar chat. Chat panel now uses translate-x transition instead of mount/unmount for fluid open/close.',
+    files: [
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/components/layout/TopHeader.tsx',
+    ],
+  },
+  {
     date: '2026-03-22T22:00:00',
     agent: 'claude-code',
     summary: 'fix: Refresh button auth + 30-day feed TTL + agent feed injection. Frontend: RiskFlowContext now uses auth-aware useBackend() instead of unauthenticated baseBackend default export. frontend/lib/backend.ts unified with root lib/backend.ts (Supabase getAccessToken). Backend: forcePoll() waits for active poll instead of silently returning, cleanupOldItems default changed from 72h to 30 days with daily auto-schedule in boot + cron, agent chat system prompts now include live RiskFlow headlines via buildFeedContext().',
