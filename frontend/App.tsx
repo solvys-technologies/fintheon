@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { ThreadProvider } from './contexts/ThreadContext';
@@ -20,6 +20,7 @@ import { ApiErrorToastBridge } from './components/ApiErrorToastBridge';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SystemStatusProvider } from './contexts/SystemStatusContext';
 import { migrateStorageKeys } from './lib/storage-migration';
+import { AuthShell } from './components/auth/AuthShell';
 
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();
@@ -56,10 +57,20 @@ function VoiceBorderPulse() {
 }
 
 /**
- * Fintheon - Local Single-User Trading Platform
- * No authentication required - company internal use only
+ * Fintheon — Branded login gate → main app
+ * AuthShell shows on launch; clicking LOGIN proceeds to the platform.
  */
 export default function App() {
+  const [authenticated, setAuthenticated] = useState(false);
+
+  if (!authenticated) {
+    return (
+      <AuthShell onAuthenticated={() => setAuthenticated(true)}>
+        {null}
+      </AuthShell>
+    );
+  }
+
   return (
     <ErrorBoundary>
     <ThemeProvider>

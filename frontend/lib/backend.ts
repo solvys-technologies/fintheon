@@ -3,9 +3,10 @@ import { getAccessToken } from '../../lib/supabase';
 import ApiClient from "./apiClient";
 import { createBackendClient, type BackendClient } from "./services";
 
-// Development mode: bypass authentication ONLY when explicitly enabled
+// Bypass auth in Electron (file:// or localhost) or when explicitly enabled in dev
+const IS_ELECTRON = typeof window !== 'undefined' && (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && window.location.port !== ''));
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
+const BYPASS_AUTH = IS_ELECTRON || import.meta.env.VITE_BYPASS_AUTH === 'true' || DEV_MODE;
 
 // Create base API client (unauthenticated — used only in bypass mode)
 const baseApiClient = new ApiClient();

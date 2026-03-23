@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-23T14:00:00',
+    agent: 'claude-code',
+    summary: 'fix: Login screen gate + freeze fix — AuthShell shows on Electron launch (click LOGIN to proceed), fixed BYPASS_AUTH in production (was gated behind DEV_MODE causing 401 cascade), removed dead vendor_clerk chunk, copied auth components to frontend.',
+    files: [
+      'frontend/App.tsx',
+      'frontend/lib/backend.ts',
+      'frontend/components/auth/AuthShell.tsx',
+      'frontend/components/auth/FluidCursor.tsx',
+      'frontend/vite.config.ts',
+    ],
+  },
+  {
     date: '2026-03-23T13:00:00',
     agent: 'claude-code',
     summary: 'fix: Manual refresh bypasses autoRefresh + event window gates — manualRefreshTweets() always fetches FJ/InsiderWire/Trusted, dedupes via DB. Also rebuilt backend so NightPoller compiles into dist.',

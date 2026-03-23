@@ -12,6 +12,7 @@
     "@clerk/themes": "^2.2.26",
     "@sentry/react": "^8.55.0",
     "@sentry/vite-plugin": "^4.6.1",
+    "@supabase/supabase-js": "^2.100.0",
     "@tailwindcss/vite": "^4.1.11",
     "clsx": "^2.1.1",
     "framer-motion": "^12.35.2",
