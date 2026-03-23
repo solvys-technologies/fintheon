@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-23T13:00:00',
+    agent: 'claude-code',
+    summary: 'fix: Manual refresh bypasses autoRefresh + event window gates — manualRefreshTweets() always fetches FJ/InsiderWire/Trusted, dedupes via DB. Also rebuilt backend so NightPoller compiles into dist.',
+    files: [
+      'backend-hono/src/services/twitter-cli/econ-triggered-poller.ts',
+      'backend-hono/src/services/twitter-cli/index.ts',
+      'backend-hono/src/services/riskflow/feed-poller.ts',
+    ],
+  },
+  {
     date: '2026-03-23T12:30:00',
     agent: 'claude-code',
     summary: 'feat: Night poller — X CLI polls FJ/InsiderWire/Trusted hourly 7PM-7AM EST regardless of autoRefresh, stores to DB for all users.',

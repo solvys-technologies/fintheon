@@ -9,7 +9,7 @@ import * as newsCache from './news-cache.js';
 import { enrichFeedWithAnalysis } from './feed-service.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import { fetchEconomicFeed } from './economic-feed.js';
-import { isTwitterCliInstalled, pollTwitterForEconNews } from '../twitter-cli/index.js';
+import { isTwitterCliInstalled, pollTwitterForEconNews, manualRefreshTweets } from '../twitter-cli/index.js';
 import type { FeedItem } from '../../types/riskflow.js';
 import { createLogger } from '../../lib/logger.js';
 
@@ -109,6 +109,7 @@ export function stopFeedPoller(): void {
 
 /**
  * Force an immediate poll cycle (used by manual refresh endpoint).
+ * Uses manualRefreshTweets which bypasses autoRefresh + event window gates.
  * Waits for any active poll to finish before running, so the refresh
  * is never silently dropped.
  */
@@ -119,7 +120,39 @@ export async function forcePoll(): Promise<void> {
     await new Promise(r => setTimeout(r, 250));
     waited += 250;
   }
-  await pollForNewItems();
+
+  isPolling = true;
+  try {
+    // Manual refresh: bypass autoRefresh + event window via manualRefreshTweets
+    const [twitterCliItems, econItems] = await Promise.all([
+      manualRefreshTweets().catch(() => []),
+      fetchEconomicFeed().catch(() => []),
+    ]);
+
+    const rawItems: FeedItem[] = [...econItems, ...twitterCliItems];
+    if (rawItems.length === 0) return;
+
+    const itemIds = rawItems.map(i => i.id);
+    const cachedIds = await newsCache.getCachedTweetIds(itemIds);
+    const newItems = rawItems.filter(i => !cachedIds.has(i.id));
+
+    if (newItems.length === 0) return;
+
+    log.info(` Manual refresh: ${newItems.length} new items (${cachedIds.size} already cached)`);
+
+    const enrichedItems = await enrichFeedWithAnalysis(newItems);
+    await newsCache.storeFeedItems(enrichedItems);
+
+    const level4Items = enrichedItems.filter(item => item.macroLevel === 4);
+    for (const item of level4Items) {
+      log.info(` Broadcasting Level 4 item: ${item.headline}`);
+      broadcastLevel4(item);
+    }
+  } catch (error) {
+    log.error(' Manual refresh error:', error);
+  } finally {
+    isPolling = false;
+  }
 }
 
 /**

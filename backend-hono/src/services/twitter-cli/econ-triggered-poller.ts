@@ -592,6 +592,66 @@ export function getWarmCacheItems(): FeedItem[] {
   return warmCache;
 }
 
+// ── Manual Refresh (bypasses autoRefresh + event window) ─────────────────────
+
+/**
+ * Manual refresh: fetches FJ/InsiderWire/Trusted timelines on demand.
+ * Bypasses autoRefresh setting AND econ event window — always runs.
+ * Stores to DB with dedup so all users see the data.
+ * Called by the manual refresh button endpoint.
+ */
+export async function manualRefreshTweets(): Promise<FeedItem[]> {
+  const installed = await isTwitterCliInstalled();
+  if (!installed) {
+    console.debug('[ManualRefresh] twitter-cli not installed, skipping');
+    return [];
+  }
+
+  console.log('[ManualRefresh] Fetching FJ/InsiderWire/Trusted timelines...');
+
+  const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
+  const batches = await Promise.allSettled(
+    allAccounts.map((account) => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }))
+  );
+  const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+
+  // Dedupe
+  const seenIds = new Set<string>();
+  const uniqueTweets = allTweets.filter((t) => {
+    if (seenIds.has(t.id)) return false;
+    seenIds.add(t.id);
+    return true;
+  });
+
+  if (uniqueTweets.length === 0) {
+    console.log('[ManualRefresh] No tweets fetched');
+    return [];
+  }
+
+  // Apply FJ emoji tier filter (medium+)
+  const classified = filterByTier(uniqueTweets, 'medium');
+  const feedItems: FeedItem[] = classified.map((t) =>
+    tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
+  );
+
+  if (feedItems.length > 0) {
+    console.log(`[ManualRefresh] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw) — storing to DB`);
+    await storeFeedItems(feedItems).catch((err) =>
+      console.warn('[ManualRefresh] Failed to store items:', err)
+    );
+    await pushToSupabase(feedItems).catch(() => {});
+    // Update warm cache
+    const newItems = feedItems.filter((f) => !warmCache.some((w) => w.id === f.id));
+    if (newItems.length > 0) {
+      warmCache = [...newItems, ...warmCache].slice(0, 50);
+    }
+  } else {
+    console.log('[ManualRefresh] 0 items passed filter');
+  }
+
+  return feedItems;
+}
+
 // ── Night Poller (7PM–7AM EST, hourly, ignores autoRefresh) ─────────────────
 
 const NIGHT_POLL_INTERVAL_MS = 60 * 60 * 1000; // 1 hour

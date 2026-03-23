@@ -17,6 +17,7 @@ export {
 
 export {
   pollTwitterForEconNews,
+  manualRefreshTweets,
   startEconTwitterPoller,
   stopEconTwitterPoller,
   getWarmCacheItems,
