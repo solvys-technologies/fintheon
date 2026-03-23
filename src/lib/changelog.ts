@@ -9,6 +9,14 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-23T12:00:00',
+    agent: 'claude-code',
+    summary: 'feat: Polish login screen — remove background image (plain #050402 black), add FINTHEON title with Cinzel/Solvys Gold, clean up Clerk → showAuth naming. Also rebranded fintheon-landing repo (Pulse → Fintheon, pushed).',
+    files: [
+      'components/auth/AuthShell.tsx',
+    ],
+  },
+  {
     date: '2026-03-22T23:30:00',
     agent: 'claude-code',
     summary: 'refactor: Replace "The Tape" in Castra with RiskFlowPanel + smooth slide transition for sidebar chat. Chat panel now uses translate-x transition instead of mount/unmount for fluid open/close.',
