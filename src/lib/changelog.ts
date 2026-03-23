@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-23T15:00:00',
+    agent: 'claude-code',
+    summary: 'feat: Default browser layout + platform settings — users can choose Zen/Castra and default iFrame platform in Settings > iFrames tab. MainLayout reads from settings on mount.',
+    files: [
+      'frontend/contexts/SettingsContext.tsx',
+      'frontend/components/SettingsPanel.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+    ],
+  },
+  {
     date: '2026-03-23T14:00:00',
     agent: 'claude-code',
     summary: 'fix: Login screen gate + freeze fix — AuthShell shows on Electron launch (click LOGIN to proceed), fixed BYPASS_AUTH in production (was gated behind DEV_MODE causing 401 cascade), removed dead vendor_clerk chunk, copied auth components to frontend.',

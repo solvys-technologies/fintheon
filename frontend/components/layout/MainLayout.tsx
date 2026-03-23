@@ -83,7 +83,7 @@ export function MainLayout() {
 
 // Main layout component - no authentication needed
 function MainLayoutInner() {
-  const { iframeUrls } = useSettings();
+  const { iframeUrls, defaultLayout, defaultPlatform } = useSettings();
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('executive');
   const [layoutEditMode, setLayoutEditMode] = useState(false);
@@ -102,10 +102,10 @@ function MainLayoutInner() {
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [prevTab, setPrevTab] = useState<NavTab | null>(null);
   const [topStepXEnabled, setTopStepXEnabled] = useState(false);
-  const [selectedPlatform, setSelectedPlatform] = useState<TradingPlatform>('topstepx');
+  const [selectedPlatform, setSelectedPlatform] = useState<TradingPlatform>(defaultPlatform);
   const [secondaryPlatform, setSecondaryPlatform] = useState<TradingPlatform>('research');
   const [splitBrowserView, setSplitBrowserView] = useState(false);
-  const [layoutOption, setLayoutOption] = useState<LayoutOption>('combined');
+  const [layoutOption, setLayoutOption] = useState<LayoutOption>(defaultLayout);
   const [prevLayoutOption, setPrevLayoutOption] = useState<LayoutOption | null>(null);
   const [missionControlPosition, setMissionControlPosition] = useState<PanelPosition>('right');
   const [tapePosition, setTapePosition] = useState<PanelPosition>('right');
