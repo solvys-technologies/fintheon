@@ -36,10 +36,10 @@
   },
   "main": "electron/main.cjs",
   "scripts": {
-    "frontend:install": "npm --prefix frontend install",
-    "frontend:build": "npm --prefix frontend run build",
-    "desktop:build": "npm run frontend:build && electron-builder --mac dmg",
-    "release:mac": "npm run frontend:build && cd backend-hono && npm run build && cd .. && npx electron-builder --mac dmg",
+    "frontend:install": "cd frontend && bun install",
+    "frontend:build": "cd frontend && bun run build",
+    "desktop:build": "bun run frontend:build && electron-builder --mac dmg",
+    "release:mac": "bun run frontend:build && cd backend-hono && bun run build && cd .. && bunx electron-builder --mac dmg",
     "release": "bash scripts/build-release.sh",
     "setup": "bun run scripts/setup.ts",
     "update": "bun run scripts/update.ts"

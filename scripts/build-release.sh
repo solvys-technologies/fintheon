@@ -7,18 +7,18 @@ echo "=== Building Fintheon v$VERSION ==="
 
 # 1. Build frontend
 echo "[1/3] Building frontend..."
-npm run frontend:build
+bun run frontend:build
 
 # 2. Build backend
 echo "[2/3] Building backend..."
-cd backend-hono && npm run build && cd ..
+cd backend-hono && bun run build && cd ..
 
 # 3. Build Mac DMG
 echo "[3/3] Building Mac DMG..."
-npx electron-builder --mac dmg
+bunx electron-builder --mac dmg
 
 # Windows NSIS (uncomment on Windows or cross-compile CI)
-# npx electron-builder --win nsis
+# bunx electron-builder --win nsis
 
 echo ""
 echo "=== Artifacts ==="
