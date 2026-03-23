@@ -1,3 +1,4 @@
+// @ts-nocheck
 //@version=2
 // Priced In Research — Suite 1: Liquidity Swings + Volume Delta Candles + EMA Cross (MMT Port)
 
@@ -109,18 +110,18 @@ function onBar(index) {
         phVol[0] = 0
 
         // Draw swing zone
-        Box(`sh_zone_${bi}`, {
+        Box("sh_zone_" + bi, {
           x1: bi - lengthLS, y1: pivotH,
           x2: bi, y2: pivotBody,
           color: topAreaCss, borderColor: color.transparent
         })
       } else {
-        phTop[0] = nz(phTop[0], phTop(1))
-        phBtm[0] = nz(phBtm[0], phBtm(1))
-        phX1[0] = nz(phX1[0], phX1(1))
-        phCrossed[0] = nz(phCrossed[0], phCrossed(1))
-        phCount[0] = nz(phCount[0], phCount(1))
-        phVol[0] = nz(phVol[0], phVol(1))
+        phTop[0] = nz(phTop[0], phTop[1])
+        phBtm[0] = nz(phBtm[0], phBtm[1])
+        phX1[0] = nz(phX1[0], phX1[1])
+        phCrossed[0] = nz(phCrossed[0], phCrossed[1])
+        phCount[0] = nz(phCount[0], phCount[1])
+        phVol[0] = nz(phVol[0], phVol[1])
 
         // Count touches
         if (l < phTop[0] && h > phBtm[0]) {
@@ -137,7 +138,7 @@ function onBar(index) {
       // Draw level line if filter passes
       const phTarget = filterMode === "Count" ? phCount[0] : phVol[0]
       if (phTarget > filterValue && phCrossed[0] === 0) {
-        Line(`sh_lvl_${nz(phX1[0], bi)}`, {
+        Line("sh_lvl_" + nz(phX1[0], bi), {
           x1: nz(phX1[0], bi), y1: phTop[0],
           x2: bi + 3, y2: phTop[0],
           color: topCss, width: 1
@@ -160,18 +161,18 @@ function onBar(index) {
         plCount[0] = 0
         plVol[0] = 0
 
-        Box(`sl_zone_${bi}`, {
+        Box("sl_zone_" + bi, {
           x1: bi - lengthLS, y1: pivotBody,
           x2: bi, y2: pivotL,
           color: btmAreaCss, borderColor: color.transparent
         })
       } else {
-        plTop[0] = nz(plTop[0], plTop(1))
-        plBtm[0] = nz(plBtm[0], plBtm(1))
-        plX1[0] = nz(plX1[0], plX1(1))
-        plCrossed[0] = nz(plCrossed[0], plCrossed(1))
-        plCount[0] = nz(plCount[0], plCount(1))
-        plVol[0] = nz(plVol[0], plVol(1))
+        plTop[0] = nz(plTop[0], plTop[1])
+        plBtm[0] = nz(plBtm[0], plBtm[1])
+        plX1[0] = nz(plX1[0], plX1[1])
+        plCrossed[0] = nz(plCrossed[0], plCrossed[1])
+        plCount[0] = nz(plCount[0], plCount[1])
+        plVol[0] = nz(plVol[0], plVol[1])
 
         if (l < plTop[0] && h > plBtm[0]) {
           plCount[0] = plCount[0] + 1
@@ -185,7 +186,7 @@ function onBar(index) {
 
       const plTarget = filterMode === "Count" ? plCount[0] : plVol[0]
       if (plTarget > filterValue && plCrossed[0] === 0) {
-        Line(`sl_lvl_${nz(plX1[0], bi)}`, {
+        Line("sl_lvl_" + nz(plX1[0], bi), {
           x1: nz(plX1[0], bi), y1: plBtm[0],
           x2: bi + 3, y2: plBtm[0],
           color: btmCss, width: 1
@@ -251,8 +252,8 @@ function onBar(index) {
       pendingBull[0] = 0
       pendingBear[0] = 0
     } else {
-      pendingBull[0] = nz(pendingBull(1), 0)
-      pendingBear[0] = nz(pendingBear(1), 0)
+      pendingBull[0] = nz(pendingBull[1], 0)
+      pendingBear[0] = nz(pendingBear[1], 0)
     }
 
     if (ta.crossover(fEMA, sEMA)) {
@@ -270,13 +271,13 @@ function onBar(index) {
 
     if (bullRetest) {
       plotMarker("Bull Retest", l, { color: colUpVD, marker: shape.up, size: 10 })
-      Label(`br_${bi}`, { x: bi, y: l, text: "Retest", color: colUpVD, size: size.xs })
+      Label("br_" + bi, { x: bi, y: l, text: "Retest", color: colUpVD, size: size.xs })
       pendingBull[0] = 0
     }
 
     if (bearRetest) {
       plotMarker("Bear Retest", h, { color: colDnVD, marker: shape.down, size: 10 })
-      Label(`brr_${bi}`, { x: bi, y: h, text: "Retest", color: colDnVD, size: size.xs })
+      Label("brr_" + bi, { x: bi, y: h, text: "Retest", color: colDnVD, size: size.xs })
       pendingBear[0] = 0
     }
   }
