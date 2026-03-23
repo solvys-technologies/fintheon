@@ -197,7 +197,7 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
               <p className="text-xs text-[var(--fintheon-muted)]">
                 {tab === 'riskflow'
                   ? `${alerts.length} RiskFlow alerts available to score`
-                  : 'Fetch and parse the daily brief from Notion'}
+                  : 'Fetch and parse the daily brief'}
               </p>
               <button
                 onClick={tab === 'riskflow' ? handleScoreRiskflow : handleScoreBrief}

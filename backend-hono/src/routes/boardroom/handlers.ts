@@ -13,7 +13,7 @@ import {
 } from '../../services/hermes-sessions.js';
 import { getBoardroomMeetingSchedule } from '../../services/boardroom-schedule.js';
 import type { InterventionType, InterventionSeverity, BoardroomAgent } from '../../types/boardroom.js';
-import { spawnBoardroomStandup, spawnBoardroomNewsResponse, type StandupTask } from '../../services/boardroom-spawner.js';
+import { spawnBoardroomStandup, spawnBoardroomNewsResponse, spawnBoardroomBroadcast, type StandupTask } from '../../services/boardroom-spawner.js';
 import { triggerBoardroomForNews, createHeraldAlert } from '../../services/boardroom-news-trigger.js';
 import { getBoardroomSchedulerStatus } from '../../services/cron/boardroom-scheduler.js';
 
@@ -24,6 +24,7 @@ interface SendInterventionBody {
 interface SendMentionBody {
   message?: string;
   agent?: string;
+  thinkHarder?: boolean;
 }
 
 /**
@@ -93,18 +94,30 @@ export async function handleSendInterventionMessage(c: Context) {
 /**
  * POST /api/boardroom/mention/send
  * Send a @mention message directly to the boardroom thread targeting a specific agent.
+ * When agent is '@everyone', triggers all agents to respond hierarchically
+ * (most relevant sub-agent first → CAO last).
  */
 export async function handleSendMentionMessage(c: Context) {
   try {
     const body = await c.req.json<SendMentionBody>().catch(() => null);
     const message = typeof body?.message === 'string' ? body.message.trim() : '';
     const agent = typeof body?.agent === 'string' ? body.agent.trim() : '';
+    const thinkHarder = body?.thinkHarder === true;
 
     if (!message) {
       return c.json({ error: 'message is required' }, 400);
     }
     if (!agent) {
       return c.json({ error: 'agent is required' }, 400);
+    }
+
+    // @everyone broadcast: all agents respond hierarchically
+    if (agent === '@everyone') {
+      // Fire-and-forget — responses stream into boardroom as each agent finishes
+      spawnBoardroomBroadcast(message, thinkHarder).catch((err) => {
+        console.error('[Boardroom] @everyone broadcast failed:', err);
+      });
+      return c.json({ success: true, broadcast: true });
     }
 
     await sendMentionToBoardroom(message, agent);

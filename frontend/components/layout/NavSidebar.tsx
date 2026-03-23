@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Target, Cpu, Bell, BellOff } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Bell, BellOff } from 'lucide-react';
 import { useDND } from '../../contexts/DNDContext';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
@@ -15,15 +15,12 @@ interface NavSidebarProps {
   onNotificationCenterToggle?: () => void;
 }
 
-const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
+const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom' | 'narrative' | 'apparatus' | 'proposals'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
   executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
   analysis: { id: 'analysis', icon: Landmark, label: 'Consilium', description: 'AI-powered trade counsel' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
   notion: { id: 'notion', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
-  apparatus: { id: 'apparatus', icon: Cpu, label: 'Apparatus', description: 'Agent intelligence layer' },
-  narrative: { id: 'narrative', icon: GitBranch, label: 'Narratives', description: 'Market narrative flow' },
-  proposals: { id: 'proposals', icon: Target, label: 'Proposals', description: 'Trade proposals & model glossary' },
   earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
 };
 
@@ -111,7 +108,7 @@ export function NavSidebar({
   }, []);
 
   const orderedItems = order
-    .filter((id): id is Exclude<NavTabId, 'chatroom'> => id in NAV_ITEMS_MAP && id !== 'chatroom' && id !== 'earnings')
+    .filter((id): id is keyof typeof NAV_ITEMS_MAP => id in NAV_ITEMS_MAP && id !== 'earnings')
     .map((tabId) => ({
       tabId,
       icon: NAV_ITEMS_MAP[tabId].icon,
@@ -206,8 +203,8 @@ export function NavSidebar({
       </div>
 
       <div className="space-y-1 px-1.5">
-        {/* DND / Notification Center */}
-        <button
+        {/* DND / Notification Center — hidden when iFrame active (moved to TopHeader) */}
+        {!topStepXEnabled && <button
           onClick={() => {
             if (queueCount > 0) {
               onNotificationCenterToggle?.();
@@ -244,7 +241,7 @@ export function NavSidebar({
               </div>
             </div>
           )}
-        </button>
+        </button>}
         {/* Performance */}
         <button
           onClick={() => onTabChange('earnings')}

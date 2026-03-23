@@ -1,12 +1,13 @@
+// [claude-code 2026-03-22] Added @everyone broadcast with hierarchical relevance ordering
 // [claude-code 2026-03-20] Boardroom agent spawner — triggers agent discussions for standup/breaking news
 /**
  * Boardroom Spawner
  *
- * Spawns P.I.C. agents to discuss market conditions during morning standup
- * and breaking news events. Each agent posts its response to the boardroom
- * session via hermes-sessions.ts.
+ * Spawns P.I.C. agents to discuss market conditions during morning standup,
+ * breaking news events, and @everyone broadcasts. Each agent posts its
+ * response to the boardroom session via hermes-sessions.ts.
  *
- * Agent roster: Harper-Hermes (CAO), Feucht (Futures), Consul (Fundamentals), Oracle (Quant)
+ * Agent roster: Harper-Hermes (CAO), Feucht (Futures), Consul (Fundamentals), Oracle (Quant), Herald (Sentiment)
  */
 
 import { appendToBoardroom } from './hermes-sessions.js';
@@ -144,4 +145,123 @@ What action should we take? Be concise and decisive.`;
   );
 
   console.log(`[BoardroomSpawner] Breaking news response complete`);
+}
+
+// ─── @everyone Broadcast ─────────────────────────────────────────────
+
+/** Keyword sets for determining agent relevance to a user message */
+const AGENT_KEYWORDS: Record<string, string[]> = {
+  'futures-desk': [
+    'futures', 'nq', 'es', 'mnq', 'mes', 'risk', 'position', 'stop', 'vix',
+    'volatility', 'trade', 'entry', 'exit', 'drawdown', 'topstep', 'level',
+    'price', 'bid', 'ask', 'fill', 'execution', 'contract', 'lot', 'size',
+  ],
+  'pma-merged': [
+    'prediction', 'probability', 'kalshi', 'forecast', 'cycle', 'correlation',
+    'model', 'quant', 'spx', 'btc', 'crypto', 'regime', 'statistical',
+    'backtest', 'alpha', 'signal', 'indicator', 'pattern',
+  ],
+  'fundamentals-desk': [
+    'earnings', 'revenue', 'pe', 'valuation', 'company', 'stock', 'nvda',
+    'aapl', 'fundamental', 'thesis', 'sec', 'antitrust', 'gdp', 'rate',
+    'fed', 'fomc', 'inflation', 'cpi', 'ppi', 'macro', 'economic',
+  ],
+  herald: [
+    'news', 'sentiment', 'twitter', 'aaii', 'survey', 'headline', 'breaking',
+    'media', 'bearish', 'bullish', 'fear', 'greed', 'narrative', 'flow',
+    'put', 'call', 'skew', 'crowd', 'retail',
+  ],
+};
+
+/** Sub-agents only (excludes Harper — she always goes last as CAO) */
+const SUB_AGENTS = BOARDROOM_AGENTS.filter(a => a.role !== 'harper-cao');
+
+/**
+ * Score agent relevance to a message based on keyword frequency.
+ * Returns a map of role → score.
+ */
+function scoreAgentRelevance(message: string): Map<string, number> {
+  const lower = message.toLowerCase();
+  const scores = new Map<string, number>();
+
+  for (const [role, keywords] of Object.entries(AGENT_KEYWORDS)) {
+    let score = 0;
+    for (const kw of keywords) {
+      if (lower.includes(kw)) score++;
+    }
+    scores.set(role, score);
+  }
+
+  return scores;
+}
+
+/**
+ * Order sub-agents by relevance to the message (descending score).
+ * Ties broken by default order. Harper is excluded — she always goes last.
+ */
+function orderByRelevance(message: string): AgentStandupConfig[] {
+  const scores = scoreAgentRelevance(message);
+
+  return [...SUB_AGENTS].sort((a, b) => {
+    const sa = scores.get(a.role) ?? 0;
+    const sb = scores.get(b.role) ?? 0;
+    if (sb !== sa) return sb - sa;
+    // Tie-break: preserve default order
+    return SUB_AGENTS.indexOf(a) - SUB_AGENTS.indexOf(b);
+  });
+}
+
+/**
+ * @everyone broadcast — all agents respond sequentially, most relevant first, CAO last.
+ * Each agent sees the user message + all prior agent responses for context.
+ */
+export async function spawnBoardroomBroadcast(
+  userMessage: string,
+  thinkHarder = false,
+): Promise<void> {
+  console.log(`[BoardroomSpawner] @everyone broadcast: "${userMessage.slice(0, 80)}..."`);
+
+  // Post the user's message to boardroom
+  await appendToBoardroom(`**Human Executive** (@everyone): ${userMessage}`, 'user');
+
+  // Order sub-agents by relevance
+  const ordered = orderByRelevance(userMessage);
+  const harper = BOARDROOM_AGENTS.find(a => a.role === 'harper-cao')!;
+
+  // Collect responses for context chain
+  const responses: string[] = [];
+
+  // Sub-agents respond sequentially, most relevant first
+  for (const agent of ordered) {
+    const contextBlock = responses.length
+      ? `\n\nPrior agent responses (for context):\n${responses.join('\n---\n')}`
+      : '';
+
+    const prompt = `[BOARDROOM — @everyone broadcast from the Human Executive]
+Message: "${userMessage}"
+${contextBlock}
+
+Respond to the Human Executive's message from your desk's perspective.${
+  thinkHarder ? ' Think deeper — provide extra analysis and reasoning.' : ''
+} Be concise but substantive. 3-5 sentences max unless the topic demands more.`;
+
+    await spawnAgentResponse(agent, prompt);
+    responses.push(`${agent.displayName}: [responded]`);
+  }
+
+  // Harper (CAO) always responds last — synthesizes and moderates
+  const allResponses = responses.join('\n');
+  const harperPrompt = `[BOARDROOM — @everyone broadcast from the Human Executive]
+Message: "${userMessage}"
+
+All sub-agents have reported in:
+${allResponses}
+
+You are the CAO. Synthesize the team's input, resolve any conflicts, and provide the final word.${
+    thinkHarder ? ' Think deeper — provide extra analysis.' : ''
+  } Address the Human Executive directly.`;
+
+  await spawnAgentResponse(harper, harperPrompt);
+
+  console.log(`[BoardroomSpawner] @everyone broadcast complete (${ordered.length + 1} agents responded)`);
 }

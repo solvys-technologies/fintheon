@@ -1,10 +1,12 @@
 // [claude-code 2026-03-20] Diagnostics endpoint — service status, missing env vars, suggested fixes
+// [claude-code 2026-03-22] Add POST /hermes/restart for frontend-triggered Hermes re-initialization
 
 import { Hono } from 'hono';
 import { pingDb } from '../../db/optimized.js';
-import { clerkHealth } from '../../services/clerk-auth.js';
+import { supabaseAuthHealth } from '../../services/supabase-auth.js';
 import { isPollingActive } from '../../services/riskflow/feed-poller.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
+import { initHermesAgent } from '../../services/hermes-handler.js';
 import { createLogger } from '../../lib/logger.js';
 
 const log = createLogger('Diagnostics');
@@ -121,19 +123,19 @@ async function checkTwitterCli(): Promise<ServiceDiagnostic> {
   }
 }
 
-function checkClerkAuth(): ServiceDiagnostic {
-  const health = clerkHealth();
-  if (health.hasSecret) {
-    return { name: 'Clerk Auth', status: 'ok', detail: 'Secret configured' };
+function checkSupabaseAuth(): ServiceDiagnostic {
+  const health = supabaseAuthHealth();
+  if (health.hasCredentials) {
+    return { name: 'Supabase Auth', status: 'ok', detail: 'Credentials configured' };
   }
   if (health.mockMode) {
-    return { name: 'Clerk Auth', status: 'degraded', detail: 'Dev mock mode (no CLERK_SECRET_KEY)' };
+    return { name: 'Supabase Auth', status: 'degraded', detail: 'Dev mock mode (no SUPABASE_URL)' };
   }
   return {
-    name: 'Clerk Auth',
+    name: 'Supabase Auth',
     status: 'error',
-    detail: 'CLERK_SECRET_KEY missing in production',
-    fix: 'Add CLERK_SECRET_KEY to backend-hono/.env or Fly secrets',
+    detail: 'SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing in production',
+    fix: 'Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to backend-hono/.env',
   };
 }
 
@@ -184,7 +186,7 @@ export function createDiagnosticsRoutes(): Hono {
       checkDatabase(),
       Promise.resolve(checkRiskFlowPoller()),
       checkTwitterCli(),
-      Promise.resolve(checkClerkAuth()),
+      Promise.resolve(checkSupabaseAuth()),
       Promise.resolve(checkTradingView()),
     ]);
 
@@ -205,6 +207,34 @@ export function createDiagnosticsRoutes(): Hono {
 
     const statusCode = overall === 'ok' ? 200 : overall === 'degraded' ? 207 : 503;
     return c.json(response, statusCode);
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  Hermes restart — rate-limited to once per 30s                      */
+  /* ------------------------------------------------------------------ */
+
+  let lastRestartAt = 0;
+
+  router.post('/hermes/restart', async (c) => {
+    const now = Date.now();
+    if (now - lastRestartAt < 30_000) {
+      return c.json({
+        success: false,
+        message: 'Rate limited — wait 30s between restart attempts',
+      }, 429);
+    }
+
+    lastRestartAt = now;
+    log.info('Hermes restart requested by frontend');
+
+    try {
+      await initHermesAgent();
+      return c.json({ success: true, message: 'Hermes re-initialization complete' });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      log.warn('Hermes restart failed', { error: detail });
+      return c.json({ success: false, message: detail }, 500);
+    }
   });
 
   return router;

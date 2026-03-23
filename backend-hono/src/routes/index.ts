@@ -34,11 +34,17 @@ import { createAutopilotRoutes } from './autopilot/index.js';
 import { createProposalRoutes } from './proposals/index.js';
 import cloudRoutes from './cloud/index.js';
 import { createDiagnosticsRoutes } from './diagnostics/index.js';
+import { createTerminalRoutes } from './terminal/index.js';
+import { createSetupRoutes } from './setup/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
   // Diagnostics — service status, missing env vars, suggested fixes
   app.route('/api/diagnostics', createDiagnosticsRoutes());
+  // Terminal — local-dev shell execution (localhost guard inside handler)
+  app.route('/api/terminal', createTerminalRoutes());
+  // Setup — CLI onboarding welcome endpoint (localhost guard inside handler)
+  app.route('/api/setup', createSetupRoutes());
   // Version check (public, used by auto-update prompt)
   app.route('/api/version', createVersionRoutes());
   // Phase 2: Market routes - VIX is public

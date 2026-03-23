@@ -54,7 +54,7 @@ export function EconTickerFooter() {
       items.push(generateUpcomingAlert(event));
     }
 
-    return items.length > 0 ? items : ['Economic calendar loading -- awaiting data from Notion...'];
+    return items.length > 0 ? items : ['Economic calendar loading...'];
   }, [events]);
 
   const tickerText = tickerItems.join('  \u2022  ');

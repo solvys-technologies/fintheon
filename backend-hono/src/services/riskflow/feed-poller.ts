@@ -108,9 +108,17 @@ export function stopFeedPoller(): void {
 }
 
 /**
- * Force an immediate poll cycle (used by manual refresh endpoint)
+ * Force an immediate poll cycle (used by manual refresh endpoint).
+ * Waits for any active poll to finish before running, so the refresh
+ * is never silently dropped.
  */
 export async function forcePoll(): Promise<void> {
+  // Wait for any in-flight poll to complete (max ~5s)
+  let waited = 0;
+  while (isPolling && waited < 5000) {
+    await new Promise(r => setTimeout(r, 250));
+    waited += 250;
+  }
   await pollForNewItems();
 }
 

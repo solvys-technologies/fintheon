@@ -2,22 +2,24 @@
 import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
 import { useSettings } from '../contexts/SettingsContext';
 
-export type TradingPlatform = 'topstepx' | 'hyperliquid' | 'kalshi' | 'research' | 'tradesea';
+export type TradingPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate';
 
 export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
   topstepx: 'TopStepX',
-  hyperliquid: 'Hyperliquid',
+  mmt: 'MMT',
   kalshi: 'Kalshi',
   research: 'Research',
   tradesea: 'TradeSea',
+  tradovate: 'Tradovate',
 };
 
 export const PLATFORM_URLS: Record<TradingPlatform, string> = {
   topstepx: 'https://www.topstepx.com',
-  hyperliquid: 'https://app.hyperliquid.xyz',
+  mmt: 'https://app.mmt.gg',
   kalshi: 'https://kalshi.com/markets',
   research: import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so',
   tradesea: 'https://app.tradesea.ai/trade',
+  tradovate: 'https://trader.tradovate.com',
 };
 
 interface TopStepXBrowserProps {

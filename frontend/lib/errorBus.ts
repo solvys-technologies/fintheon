@@ -1,10 +1,14 @@
 // [claude-code 2026-03-16] Global error event bus — bridges apiClient errors to React toast system
+// [claude-code 2026-03-22] Wire emitApiError → error log ring buffer for persistent error history
+
+import { pushError } from './errorLog';
 
 export interface ApiErrorEvent {
   code: string;
   message: string;
   status?: number;
   endpoint?: string;
+  stack?: string;
 }
 
 type ErrorListener = (error: ApiErrorEvent) => void;
@@ -17,9 +21,20 @@ export function onApiError(listener: ErrorListener): () => void {
   return () => listeners.delete(listener);
 }
 
-/** Emit an API error to all listeners */
+/** Emit an API error to all listeners + persist to error log */
 export function emitApiError(error: ApiErrorEvent): void {
   listeners.forEach((fn) => fn(error));
+
+  pushError({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: new Date().toISOString(),
+    code: error.code,
+    message: error.message,
+    status: error.status,
+    endpoint: error.endpoint,
+    fix: getFixDescription(error.code, error.status),
+    stack: error.stack,
+  });
 }
 
 /* ------------------------------------------------------------------ */

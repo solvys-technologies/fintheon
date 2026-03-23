@@ -26,7 +26,7 @@ export function SetupWizard({ visible, onClose }: SetupWizardProps) {
   const [checks, setChecks] = useState<CheckStatus[]>([
     { label: 'Backend API', description: 'Hono server on port 8080', status: 'checking', command: 'cd backend-hono && npm install && npm run dev' },
     { label: 'Hermes / OpenRouter', description: 'AI inference key configured', status: 'checking', helpUrl: 'https://openrouter.ai' },
-    { label: 'Notion API', description: 'Notion polling active', status: 'checking' },
+    { label: 'Data Layer', description: 'Trade ideas & briefs endpoint', status: 'checking' },
     { label: 'Market Data', description: 'IV score endpoint responding', status: 'checking' },
   ]);
   const [copied, setCopied] = useState<number | null>(null);

@@ -3,7 +3,7 @@
  * Scaffold for Rithmic broker integration (Autopilot primary)
  */
 
-export type PrimaryBroker = 'rithmic' | 'projectx' | 'hyperliquid';
+export type PrimaryBroker = 'rithmic' | 'projectx' | 'mmt';
 
 export interface RithmicCredentials {
   /** Placeholder for future Rithmic API credentials */

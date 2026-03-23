@@ -1,11 +1,12 @@
-// [claude-code 2026-03-20] Memory card — satellite fact card orbiting agent nodes
+// [claude-code 2026-03-22] Theme-consistent styling — CSS vars, no hardcoded hex
+// [claude-code 2026-03-20] Memory card — intelligence fact card for agent briefing grid
 import { useState } from 'react';
-import { Twitter, NotebookText, BarChart3, TrendingUp, MessageSquare, Pencil, History } from 'lucide-react';
+import { Twitter, Database, BarChart3, TrendingUp, MessageSquare, Pencil, History } from 'lucide-react';
 import type { AgentMemory, MemorySource } from './types';
 
 const SOURCE_ICONS: Record<MemorySource, typeof Twitter> = {
   twitter: Twitter,
-  notion: NotebookText,
+  data: Database,
   mirofish: BarChart3,
   trade: TrendingUp,
   boardroom: MessageSquare,
@@ -14,7 +15,7 @@ const SOURCE_ICONS: Record<MemorySource, typeof Twitter> = {
 
 const SOURCE_LABELS: Record<MemorySource, string> = {
   twitter: 'Twitter',
-  notion: 'Notion',
+  data: 'Data',
   mirofish: 'MiroFish',
   trade: 'Trade',
   boardroom: 'Boardroom',
@@ -31,47 +32,44 @@ export function MemoryCard({ memory }: MemoryCardProps) {
   const elapsed = getElapsed(memory.timestamp);
 
   return (
-    <div className="w-full h-full bg-[#0a0a00]/95 border border-[#c79f4a]/20 rounded-md px-2 py-1.5 flex flex-col gap-0.5 text-[#f0ead6] overflow-hidden">
+    <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded px-2.5 py-2 flex flex-col gap-1">
       {/* Top row: source icon + version + timestamp */}
-      <div className="flex items-center justify-between gap-1 shrink-0">
-        <div className="flex items-center gap-1">
-          <SourceIcon size={8} className="text-[#c79f4a]/60 shrink-0" />
-          <span className="text-[7px] text-[#c79f4a]/50 uppercase tracking-wider">{SOURCE_LABELS[memory.source]}</span>
+      <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1.5">
+          <SourceIcon size={10} className="text-[var(--fintheon-accent)]/50 shrink-0" />
+          <span className="text-[8px] text-[var(--fintheon-accent)]/40 uppercase tracking-wider font-mono">{SOURCE_LABELS[memory.source]}</span>
         </div>
-        <div className="flex items-center gap-1">
-          {memory.history && memory.history.length > 0 && (
+        <div className="flex items-center gap-1.5">
+          {memory.history && memory.history.length > 0 ? (
             <button
               onClick={(e) => { e.stopPropagation(); setShowHistory(!showHistory); }}
-              className="text-[7px] text-[#c79f4a]/40 hover:text-[#c79f4a] flex items-center gap-0.5"
+              className="text-[8px] text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)] flex items-center gap-0.5 font-mono"
               title="View version history"
             >
-              <History size={7} />
+              <History size={8} />
               v{memory.version}
             </button>
+          ) : (
+            <span className="text-[8px] text-[var(--fintheon-accent)]/30 font-mono">v{memory.version}</span>
           )}
-          {(!memory.history || memory.history.length === 0) && (
-            <span className="text-[7px] text-[#c79f4a]/30">v{memory.version}</span>
-          )}
+          <span className="text-[7px] text-[var(--fintheon-text)]/25 font-mono">{elapsed}</span>
         </div>
       </div>
 
       {/* Fact text */}
-      <div className="text-[8px] leading-tight line-clamp-2 flex-1 min-h-0">
+      <p className="text-[9px] text-[var(--fintheon-text)]/70 leading-relaxed line-clamp-3">
         {showHistory && memory.history ? memory.history[0]?.fact : memory.fact}
-      </div>
+      </p>
 
-      {/* Bottom row: confidence bar + elapsed */}
-      <div className="flex items-center justify-between gap-1 shrink-0">
-        <div className="flex items-center gap-1 flex-1 min-w-0">
-          <div className="w-12 h-1 rounded-full bg-[#c79f4a]/10 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[#c79f4a]"
-              style={{ width: `${memory.confidence * 100}%`, opacity: 0.6 + memory.confidence * 0.4 }}
-            />
-          </div>
-          <span className="text-[6px] text-[#c79f4a]/40">{Math.round(memory.confidence * 100)}%</span>
+      {/* Bottom row: confidence bar */}
+      <div className="flex items-center gap-1.5">
+        <div className="w-14 h-1 rounded-full bg-[var(--fintheon-accent)]/10 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-[var(--fintheon-accent)]"
+            style={{ width: `${memory.confidence * 100}%`, opacity: 0.5 + memory.confidence * 0.5 }}
+          />
         </div>
-        <span className="text-[6px] text-[#f0ead6]/25 shrink-0">{elapsed}</span>
+        <span className="text-[7px] text-[var(--fintheon-accent)]/40 font-mono">{Math.round(memory.confidence * 100)}%</span>
       </div>
     </div>
   );

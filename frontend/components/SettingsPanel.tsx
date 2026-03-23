@@ -1,3 +1,6 @@
+// [claude-code 2026-03-22] T5: Wire Change Plan → UpgradeModal, add logout button in Danger Zone
+// [claude-code 2026-03-20] S3:T3 — merged Connection+Hermes tabs into Hermes:Admin, added backend status cards + handoff CTA
+// [claude-code 2026-03-13] Hermes migration: OpenClaw Gateway -> Hermes Agent in UI text
 // [claude-code 2026-03-11] T5: added mic device selector to notifications tab
 import React from 'react';
 import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Palette, Users, AlertTriangle, ArrowLeft, Globe, Mic, Copy, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
@@ -15,6 +18,7 @@ import { useVoiceMemory } from '../hooks/useVoiceMemory';
 import { ClawnalystDesk } from './settings/ClawnalystDesk';
 import { ThemeSettings } from './settings/ThemeSettings';
 import { HermesSettings } from './settings/HermesSettings';
+import { UpgradeModal } from './UpgradeModal';
 
 type SettingsTab = 'general' | 'hermes-admin' | 'appearance' | 'desk' | 'notifications' | 'trading' | 'api' | 'iframes' | 'developer' | 'danger';
 
@@ -104,6 +108,7 @@ export function SettingsPage() {
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -182,7 +187,7 @@ export function SettingsPage() {
     { id: 'trading' as const, label: 'Trading', icon: CreditCard, description: 'Risk management, autopilot, and strategy toggles' },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
     { id: 'api' as const, label: 'API', icon: Code, description: 'API keys and external service credentials' },
-    { id: 'iframes' as const, label: 'iFrames', icon: Globe, description: 'Notion embed URLs for Boardroom, Research, and more' },
+    { id: 'iframes' as const, label: 'iFrames', icon: Globe, description: 'Embed URLs for Boardroom, Research, and more' },
     { id: 'developer' as const, label: 'Developer', icon: Terminal, description: 'Mock data, test tools, and tier management' },
     { id: 'danger' as const, label: 'Danger Zone', icon: AlertTriangle, description: 'Reset analysts, clear data, and export config' },
   ];
@@ -512,18 +517,18 @@ export function SettingsPage() {
                           ProjectX
                         </button>
                         <button
-                          onClick={() => setPrimaryBroker('hyperliquid')}
+                          onClick={() => setPrimaryBroker('mmt')}
                           className={`px-3 py-2 rounded-lg border text-sm transition-all ${
-                            primaryBroker === 'hyperliquid'
+                            primaryBroker === 'mmt'
                               ? 'bg-[var(--fintheon-accent)]/20 border-[var(--fintheon-accent)]/40 text-[var(--fintheon-accent)]'
                               : 'bg-[var(--fintheon-bg)] border-zinc-800 hover:border-zinc-700 text-gray-400'
                           }`}
                         >
-                          Hyperliquid (perps)
+                          MMT (crypto)
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
-                        Autopilot execution uses the selected broker. Rithmic for futures, ProjectX for sim, Hyperliquid for crypto perps.
+                        Autopilot execution uses the selected broker. Rithmic for futures, ProjectX for sim, MMT for crypto order flow.
                       </p>
                     </div>
 
@@ -727,7 +732,7 @@ export function SettingsPage() {
                             <p className="text-lg font-bold text-[var(--fintheon-accent)]">{tier.replace('_', ' ').toUpperCase()}</p>
                             <p className="text-xs text-gray-500">Active subscription</p>
                           </div>
-                          <Button variant="secondary" className="text-xs">
+                          <Button variant="secondary" className="text-xs" onClick={() => setShowUpgradeModal(true)}>
                             Change Plan
                           </Button>
                         </div>
@@ -842,7 +847,7 @@ export function SettingsPage() {
               <div key="iframes" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
                   <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">iFrames</h3>
-                  <p className="text-xs text-gray-500 mb-4">Set Notion page URLs for embedded views. Leave blank to use defaults from environment variables.</p>
+                  <p className="text-xs text-gray-500 mb-4">Set embed URLs for integrated views. Leave blank to use defaults from environment variables.</p>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm text-gray-300 mb-2">Boardroom URL</label>
@@ -924,6 +929,22 @@ export function SettingsPage() {
                       <h4 className="text-sm font-medium text-white mb-1">Export Configuration</h4>
                       <p className="text-xs text-gray-500 mb-3">Download your agent and settings configuration as JSON.</p>
                       <Button variant="secondary" className="text-xs text-[var(--fintheon-accent)] border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/10">Export</Button>
+                    </div>
+                    <div className="bg-[var(--fintheon-bg)] border border-red-500/20 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-white mb-1">Log Out</h4>
+                      <p className="text-xs text-gray-500 mb-3">Sign out and clear your local session. You will need to re-authenticate.</p>
+                      <Button
+                        variant="secondary"
+                        className="text-xs text-red-500 border-red-500/30 hover:bg-red-500/10"
+                        onClick={() => {
+                          localStorage.removeItem('github_token');
+                          localStorage.removeItem('github_user');
+                          localStorage.removeItem('clerk_token');
+                          window.location.reload();
+                        }}
+                      >
+                        Log Out
+                      </Button>
                     </div>
                   </div>
                 </section>
@@ -1086,6 +1107,7 @@ export function SettingsPage() {
         </div>
       </div>
       )}
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     </div>
   );
 }
@@ -1135,7 +1157,7 @@ function HermesAdminTab() {
       setDiagnostics(data);
 
       // Check for errors and trigger handoff CTA
-      const errors = data.services.filter(s => s.status === 'error');
+      const errors = (data.services ?? []).filter(s => s.status === 'error');
       if (errors.length > 0) {
         const errorNames = errors.map(e => e.name).join(', ');
         const simpleFixable = errors.every(e => e.fix && !e.fix.includes('Claude Code'));
@@ -1287,7 +1309,7 @@ function HermesAdminTab() {
         {diagnostics && (
           <>
             <div className="grid grid-cols-2 gap-2">
-              {diagnostics.services.map((svc) => (
+              {(diagnostics.services ?? []).map((svc) => (
                 <div
                   key={svc.name}
                   className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded-lg p-3"
@@ -1309,11 +1331,11 @@ function HermesAdminTab() {
             </div>
 
             {/* Missing env vars */}
-            {diagnostics.missingEnvVars.length > 0 && (
+            {(diagnostics.missingEnvVars ?? []).length > 0 && (
               <div className="mt-3 bg-[var(--fintheon-bg)] border border-red-500/20 rounded-lg p-3">
                 <div className="text-[11px] font-semibold text-red-400 mb-1">Missing Environment Variables</div>
                 <div className="text-[10px] text-gray-500 font-mono space-y-0.5">
-                  {diagnostics.missingEnvVars.map(v => (
+                  {(diagnostics.missingEnvVars ?? []).map(v => (
                     <div key={v}>{v}</div>
                   ))}
                 </div>
@@ -1321,7 +1343,7 @@ function HermesAdminTab() {
             )}
 
             {/* Handoff Prompt CTA — shown when there are errors */}
-            {diagnostics.services.some(s => s.status === 'error') && (
+            {(diagnostics.services ?? []).some(s => s.status === 'error') && (
               <button
                 onClick={handleCopyHandoff}
                 className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] text-[11px] font-semibold hover:bg-[var(--fintheon-accent)]/20 transition-colors"

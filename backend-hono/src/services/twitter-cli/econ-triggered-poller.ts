@@ -8,6 +8,7 @@ import { filterByTier } from './fj-emoji-filter.js';
 import { fetchEconCalendar, updateEventActual, writeEconPrint } from '../econ-calendar-service.js';
 import { writeConsiliumMessage } from '../supabase-service.js';
 import { injectEconPrintToFeed } from '../riskflow/econ-bridge.js';
+import { storeFeedItems } from '../riskflow/news-cache.js';
 import type { EconEvent } from '../econ-calendar-service.js';
 import type { FeedItem, NewsSource } from '../../types/riskflow.js';
 import { getUserSettings } from '../settings-store.js';
@@ -576,6 +577,10 @@ async function initFetchHighPriorityPosts(): Promise<void> {
     );
 
     console.log(`[EconTwitterPoller] Init warm cache: ${warmCache.length} Medium+ posts seeded`);
+    // Write to local DB cache so feed-service/feed-poller can serve them immediately
+    await storeFeedItems(warmCache).catch((err) =>
+      console.warn('[EconTwitterPoller] Failed to store warm cache in news_feed_cache:', err)
+    );
     await pushToSupabase(warmCache);
   } catch (err) {
     console.warn('[EconTwitterPoller] Init fetch failed:', err);

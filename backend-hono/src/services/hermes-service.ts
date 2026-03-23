@@ -181,6 +181,7 @@ export const createHermesClient = (modelId?: string) => {
   return hermes(modelId ?? 'anthropic/claude-opus-4.6')
 }
 
+
 /**
  * Get agent definition by role
  */

@@ -49,12 +49,12 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
 
   const getSubtitle = () => {
     switch (agent.name) {
-      case 'Harper-Hermes': return "I'm Harper-Hermes, your Chief Agentic Officer. What needs orchestrating today?";
-      case 'Oracle': return "I'm Oracle, the All-Seer. What patterns shall we divine?";
-      case 'Feucht': return "I'm Feucht, your Futures, Execution & Risk desk. What exposure needs attention?";
-      case 'Consul': return "I'm Consul, your Fundamentals desk. What shall we analyze?";
-      case 'Herald': return "I'm Herald, your News & Sentiment analyst. What signals are you tracking?";
-      default: return `I'm ${agent.name}. What needs orchestrating today?`;
+      case 'Harper-Hermes': return "What needs orchestrating today?";
+      case 'Oracle': return "What patterns shall we divine?";
+      case 'Feucht': return "What exposure needs attention?";
+      case 'Consul': return "What shall we analyze?";
+      case 'Herald': return "What signals are you tracking?";
+      default: return "What needs orchestrating today?";
     }
   };
 

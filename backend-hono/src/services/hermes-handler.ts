@@ -11,7 +11,7 @@
 
 import { execFile, spawn as spawnProcess } from 'node:child_process'
 import type { HermesAgentRole } from './hermes-service.js'
-import { getAgentSystemPrompt, extractSkillTag } from './ai/agent-instructions.js'
+import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from './ai/agent-instructions/index.js'
 import { createLogger } from '../lib/logger.js'
 
 const log = createLogger('Hermes')
@@ -394,7 +394,10 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
     : detectAgent(request.message)
 
   const skillTag = extractSkillTag(request.message)
-  const systemPrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
+  const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
+  // Inject live RiskFlow headlines so agents can reference real-time data
+  const feedContext = await buildFeedContext()
+  const systemPrompt = basePrompt + feedContext
   const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: 'system', content: systemPrompt }
   ]
@@ -478,13 +481,22 @@ export async function initHermesAgent(): Promise<void> {
 
   try {
     const gatewayRunning = await new Promise<boolean>((resolve) => {
-      execFile(hermesBin, ['gateway', 'status'], { timeout: 5_000 }, (err, stdout) => {
+      const child = execFile(hermesBin, ['gateway', 'status'], { timeout: 5_000 }, (err, stdout) => {
         if (err) { resolve(false); return }
         resolve(stdout.toLowerCase().includes('running'))
       })
+      child.on('error', () => resolve(false))
     })
     if (!gatewayRunning) {
-      log.info('No local gateway — routing via OpenRouter directly')
+      log.info('Gateway not running — starting')
+      try {
+        const gw = spawnProcess(hermesBin, ['gateway', 'start'], { stdio: 'ignore', detached: true })
+        gw.on('error', () => {}) // swallow spawn errors (binary not found in production)
+        gw.unref()
+        log.info('Gateway start dispatched', { pid: gw.pid })
+      } catch {
+        log.warn('Hermes binary not found — gateway launch skipped (expected in cloud deployment)')
+      }
     } else {
       log.info('Gateway already running')
     }
@@ -543,3 +555,5 @@ export async function* streamHermesChat(request: HermesChatRequest): AsyncGenera
     await new Promise(resolve => setTimeout(resolve, 10))
   }
 }
+
+

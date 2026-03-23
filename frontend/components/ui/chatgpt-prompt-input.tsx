@@ -1,4 +1,5 @@
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, RiskFlow drag-drop
+// [claude-code 2026-03-22] Track 4: persona/tools slots, icon-only Think, removed Plug2+Wrench
 // Based on 21st.dev ChatGPT prompt input, rewritten without Radix
 import {
   useState,
@@ -17,18 +18,13 @@ import {
   Mic,
   MicOff,
   X,
-  Plug2,
-  Wrench,
   Maximize2,
   Loader2,
   Clock,
 } from 'lucide-react';
 import { FintheonSlashPicker } from '../chat/FintheonSlashPicker';
 import { FintheonAttachPopup } from '../chat/FintheonAttachPopup';
-import { McpConnectorPopup } from '../chat/McpConnectorPopup';
-import { FintheonSkillsPopup } from '../chat/FintheonSkillsPopup';
 import { SkillBadge } from '../chat/SkillBadge';
-import { useMcpConnectors } from '../../hooks/useMcpConnectors';
 
 /* ------------------------------------------------------------------ */
 /*  Think Harder SVG — Claude-style sparkle shape                     */
@@ -80,6 +76,9 @@ export interface PromptBoxProps {
   // Queue chips
   queueJobs?: Array<{ jobId: string; status: string; position: number }>;
   onCancelJob?: (jobId: string) => void;
+  // Slots for persona + tools dropdowns
+  personaSlot?: React.ReactNode;
+  toolsSlot?: React.ReactNode;
 }
 
 /* ------------------------------------------------------------------ */
@@ -107,18 +106,17 @@ export function PromptBox({
   onToggleVoice,
   queueJobs,
   onCancelJob,
+  personaSlot,
+  toolsSlot,
 }: PromptBoxProps) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [vanishing, setVanishing] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
-  const [showConnectors, setShowConnectors] = useState(false);
   const [slashQuery, setSlashQuery] = useState<string | null>(null);
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
-
-  const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
 
   /* Draft persistence — load on mount */
   useEffect(() => {
@@ -283,15 +281,6 @@ export function PromptBox({
           </div>
         )}
 
-        {/* Skills popup */}
-        <FintheonSkillsPopup
-          open={showSkills}
-          onClose={onToggleSkills}
-          activeSkill={activeSkill}
-          onSelectSkill={onSelectSkill}
-          disabledSkills={disabledSkills}
-        />
-
         {/* Slash-command picker */}
         {slashQuery !== null && (
           <FintheonSlashPicker
@@ -317,14 +306,6 @@ export function PromptBox({
           onAttachImage={handleAttachImage}
         />
 
-        {/* MCP connector popup */}
-        <McpConnectorPopup
-          open={showConnectors}
-          servers={servers}
-          activeIds={activeIds}
-          onToggle={toggleConnector}
-          onClose={() => setShowConnectors(false)}
-        />
 
         {/* Image preview strip */}
         {images.length > 0 && (
@@ -431,33 +412,8 @@ export function PromptBox({
                 <Plus size={16} />
               </button>
 
-              {/* Connectors (hide in compact mode) */}
-              {!compact && (
-                <button
-                  type="button"
-                  onClick={() => setShowConnectors((v) => !v)}
-                  className="relative flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-                  style={{ width: '32px', height: '32px' }}
-                  title="Connectors"
-                >
-                  <Plug2 size={14} />
-                  {activeIds.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--fintheon-accent)] text-[8px] text-[var(--fintheon-bg)] flex items-center justify-center font-bold leading-none">
-                      {activeIds.length > 9 ? '9+' : activeIds.length}
-                    </span>
-                  )}
-                </button>
-              )}
-
-              {/* Skills */}
-              <button
-                onClick={onToggleSkills}
-                className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-                style={{ width: '32px', height: '32px' }}
-                title="Skills"
-              >
-                <Wrench size={14} />
-              </button>
+              {/* Tools (combined Skills + Connectors) */}
+              {toolsSlot}
 
               {/* Mic button */}
               {onToggleVoice && !compact && (
@@ -475,26 +431,26 @@ export function PromptBox({
                 </button>
               )}
 
-              {/* Think Harder toggle */}
+              {/* Think Harder toggle (icon only) */}
               <button
                 onClick={() => setThinkHarder(!thinkHarder)}
                 title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
                 className={[
-                  'flex items-center gap-1.5 px-2 py-1 rounded-full transition-all text-[11px] font-medium',
+                  'flex items-center justify-center rounded-lg transition-all',
                   thinkHarder
                     ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15 think-harder-active'
                     : 'text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10',
                 ].join(' ')}
+                style={{ width: '32px', height: '32px' }}
               >
                 <ThinkHarderIcon active={thinkHarder} />
-                {!compact && (
-                  <span>{thinkHarder ? 'Thinking' : 'Think'}</span>
-                )}
               </button>
             </div>
 
-            {/* Right: Send / Stop */}
-            <button
+            {/* Right: Persona + Send/Stop */}
+            <div className="flex items-center gap-2">
+              {personaSlot}
+              <button
               onClick={isProcessing && onStop ? onStop : handleSend}
               disabled={!text.trim() && images.length === 0 && !isProcessing}
               className={`flex items-center justify-center rounded-full transition-all ${
@@ -511,6 +467,7 @@ export function PromptBox({
                 <ArrowUp size={16} strokeWidth={2.5} />
               )}
             </button>
+            </div>
           </div>
         </div>
       </div>

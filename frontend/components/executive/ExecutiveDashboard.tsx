@@ -12,6 +12,7 @@ import TradeIdeaModal from '../TradeIdeaModal';
 import { RegimeCard } from '../dashboard/RegimeCard';
 import { RegimeTrackerModal } from '../regimes/RegimeTrackerModal';
 import { SetupGuideCard, shouldShowSetupGuide } from '../onboarding/SetupGuideCard';
+import { BlindspotsInterview } from '../onboarding/BlindspotsInterview';
 import { RefreshCw } from 'lucide-react';
 import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -30,7 +31,8 @@ function briefTypeToLabel(bt: string): string {
 
 export function ExecutiveDashboard() {
   const backend = useBackend();
-  const { autoRefresh } = useSettings();
+  const settings = useSettings();
+  const { autoRefresh } = settings;
   const [activePage, setActivePage] = useState(0); // default to Briefing
   const containerRef = useRef<HTMLDivElement>(null);
   const [ntnText, setNtnText] = useState('');
@@ -40,6 +42,39 @@ export function ExecutiveDashboard() {
   const [ntnRefreshing, setNtnRefreshing] = useState(false);
   const [kpisLoaded, setKpisLoaded] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(() => shouldShowSetupGuide());
+  const [showInterview, setShowInterview] = useState(false);
+
+  const handleInterviewComplete = useCallback(
+    (data: { name: string; discord: string; instruments: string[]; roadblocks: string[]; customRoadblock: string; dailyTarget: string; weeklyGoal: string; accountSize: string }) => {
+      const allRoadblocks = [...data.roadblocks];
+      if (data.customRoadblock.trim()) allRoadblocks.push(data.customRoadblock.trim());
+
+      localStorage.setItem('fintheon:interview-completed', 'true');
+      localStorage.setItem('fintheon:interview-data', JSON.stringify(data));
+
+      settings.setTraderName(data.name);
+      settings.setDiscordUsername(data.discord);
+      settings.setInstrumentsTraded(data.instruments);
+      settings.setTradingRoadblocks(allRoadblocks);
+      settings.setTradingGoals(`Daily: $${data.dailyTarget}, Weekly: $${data.weeklyGoal}, Account: $${data.accountSize}`);
+      settings.setInterviewCompleted(true);
+
+      fetch('/api/blindspots/interview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: data.name, roadblocks: allRoadblocks, goals: `Daily: $${data.dailyTarget}, Weekly: $${data.weeklyGoal}, Account: $${data.accountSize}`, instruments: data.instruments, discord: data.discord }),
+      }).catch(() => {});
+
+      fetch('/api/blindspots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blindspots: allRoadblocks.map((rb) => ({ text: rb, severity: rb.toLowerCase().includes('overtrad') || rb.toLowerCase().includes('revenge') ? 'high' : 'medium' })) }),
+      }).catch(() => {});
+
+      setShowInterview(false);
+    },
+    [settings]
+  );
 
   // Brief type: TOTT (Sun>=17:00 through Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
   const getBriefLabel = () => {
@@ -55,7 +90,7 @@ export function ExecutiveDashboard() {
   };
   const [briefLabel, setBriefLabel] = useState(getBriefLabel);
 
-  // Daily Brief from Notion — rotates MDB/ADB/PMDB, label from backend
+  // Daily Brief — rotates MDB/ADB/PMDB, label from backend
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -82,7 +117,7 @@ export function ExecutiveDashboard() {
     };
   }, [backend, autoRefresh]);
 
-  // Core KPIs from Notion Daily P&L database
+  // Core KPIs from Daily P&L data
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -122,7 +157,7 @@ export function ExecutiveDashboard() {
   }, [backend]);
 
   // RiskFlow: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
-  const { alerts, markAllSeen, isSeen, notionPollStatus, refresh, refreshing } = useRiskFlow();
+  const { alerts, markAllSeen, isSeen, refresh, refreshing } = useRiskFlow();
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
   const [showRegimeTracker, setShowRegimeTracker] = useState(false);
   const tapeAlerts = useMemo(() => alerts.slice(0, 50), [alerts]);
@@ -188,7 +223,7 @@ export function ExecutiveDashboard() {
           {/* Setup Guide — first-time onboarding */}
           {showSetupGuide && (
             <div className="shrink-0 mb-5">
-              <SetupGuideCard onDismiss={() => setShowSetupGuide(false)} />
+              <SetupGuideCard onDismiss={() => setShowSetupGuide(false)} onStartInterview={() => setShowInterview(true)} />
             </div>
           )}
           {/* Row 1: Need-to-Know Brief (left) + Session Calendar (right) */}
@@ -222,9 +257,7 @@ export function ExecutiveDashboard() {
               />
               {ntnLoaded && !ntnText.trim() && (
                 <p className="mt-2 text-xs text-zinc-500">
-                  {notionPollStatus?.running
-                    ? 'Notion connected. Awaiting brief…'
-                    : 'No brief data available. Connect Notion/AI source to populate this field.'}
+                  Awaiting AI-generated brief...
                 </p>
               )}
             </div>
@@ -396,6 +429,19 @@ export function ExecutiveDashboard() {
         ))}
       </div>
     </div>
+
+    {/* Blindspots Interview — triggered by SetupGuideCard CTA */}
+    {showInterview && (
+      <BlindspotsInterview
+        visible={true}
+        onComplete={handleInterviewComplete}
+        onSkip={() => {
+          localStorage.setItem('fintheon:interview-completed', 'skipped');
+          setShowInterview(false);
+        }}
+        initialName={settings.traderName}
+      />
+    )}
     </>
   );
 }

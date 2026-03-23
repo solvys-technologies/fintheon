@@ -122,7 +122,7 @@ function timeAgo(iso: string): string {
 }
 
 export function NewsSection() {
-  const { alerts, markAllSeen, isSeen, notionPollStatus } = useRiskFlow();
+  const { alerts, markAllSeen, isSeen } = useRiskFlow();
   const sourceStatus = useSourceStatus();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
@@ -165,10 +165,6 @@ export function NewsSection() {
       <div className="flex items-center justify-between mb-2 mt-1">
         <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em]">
           <span className="flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${notionPollStatus?.running ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
-            <span className={notionPollStatus?.running ? 'text-emerald-400/90' : 'text-zinc-500'}>Notion</span>
-          </span>
-          <span className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.twitterCli ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
             <span className={sourceStatus.twitterCli ? 'text-emerald-400/90' : 'text-zinc-500'}>X CLI</span>
           </span>
@@ -203,7 +199,6 @@ export function NewsSection() {
           className="text-[10px] px-2 py-1 rounded bg-[var(--fintheon-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--fintheon-accent)]/40 cursor-pointer"
         >
           <option value="all">Source: All</option>
-          <option value="notion">Notion</option>
           <option value="twitter">X / FJ</option>
         </select>
         <button

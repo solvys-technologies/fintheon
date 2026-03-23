@@ -58,7 +58,7 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
   };
 
   return (
-    <div className="h-12 flex-1 flex items-center justify-between px-3 border-b border-[var(--fintheon-border)]/20 bg-[var(--fintheon-surface)]">
+    <div className="h-12 flex-1 flex items-center justify-between px-3 border-b border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)]">
       {/* Left group: Zoom + Navigation */}
       <div className="flex items-center gap-3">
         {/* Zoom level toggle */}
@@ -71,7 +71,7 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
                 onClick={() => dispatch({ type: 'SET_ZOOM', level: z.value })}
                 className={`px-2.5 py-1 text-xs font-medium transition-colors ${
                   active
-                    ? 'bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] border-r border-[var(--fintheon-accent)]/30'
+                    ? 'text-[var(--fintheon-accent)] border-r border-[var(--fintheon-accent)]/30'
                     : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] border-r border-[var(--fintheon-border)]/20'
                 } last:border-r-0`}
               >
@@ -118,7 +118,7 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
             onClick={() => setFilterOpen(!filterOpen)}
             className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
               state.filterSentiment !== 'all'
-                ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                ? 'text-[var(--fintheon-accent)]'
                 : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]'
             }`}
           >

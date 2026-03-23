@@ -2,14 +2,21 @@
 // [claude-code 2026-03-07] Slide-up panel with Terminal + Changelog tabs
 // [claude-code 2026-03-10] Notion + X CLI status indicators in toolbar strip.
 // [claude-code 2026-03-14] Fintheon CLI: run shell commands via Electron; "/" slash-command suggestions.
+// [claude-code 2026-03-20] Terminal now works in browser via backend SSE (not just Electron)
+// [claude-code 2026-03-22] Add errors tab to slide-up panel for persistent error log with expandable details
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText } from 'lucide-react';
+import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText, AlertTriangle } from 'lucide-react';
 import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TopStepXBrowser';
 import { changelog } from '../../../src/lib/changelog';
 import { useSourceStatus } from '../../hooks/useSourceStatus';
+import { useErrorLog } from '../../hooks/useErrorLog';
+import { useSystemStatus } from '../../hooks/useSystemStatus';
+import { useGateway } from '../../contexts/GatewayContext';
 import { EPOCH_VERSION } from '../../lib/epoch-version';
+import { ErrorLogPanel } from '../ui/ErrorLogPanel';
+import { StatusIndicator } from '../ui/StatusIndicator';
 
-type PanelTab = 'terminal' | 'changelog';
+type PanelTab = 'terminal' | 'changelog' | 'errors';
 
 /** Slash-command suggestions (like Claude Code skills) for the Fintheon CLI */
 const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
@@ -28,6 +35,8 @@ function resolveSlashCommand(input: string): string | null {
   );
   return match?.command ?? null;
 }
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 interface FooterToolbarProps {
   topStepXEnabled?: boolean;
@@ -65,6 +74,7 @@ export function FooterToolbar({
   const inputRef = useRef<HTMLInputElement>(null);
   const cliContainerRef = useRef<HTMLDivElement>(null);
   const prevPanelOpenRef = useRef(false);
+  const activeProcessRef = useRef<{ processId: string; es: EventSource } | null>(null);
 
   const isElectron = typeof window !== 'undefined' && window.electron?.runShellCommand != null;
   const slashFilter = cliInput.startsWith('/') ? cliInput.slice(1).toLowerCase().trim() : '';
@@ -129,18 +139,82 @@ export function FooterToolbar({
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [showSlashSuggestions]);
 
-  const runShellCommand = useCallback((cmd: string) => {
-    if (!window.electron?.runShellCommand) return;
-    setCliHistory((prev) => [...prev, { type: 'input', text: cmd }, { type: 'output', text: 'Running...' }]);
-    window.electron.runShellCommand(cmd).then((r) => {
-      if (!r.ok) {
-        setCliHistory((prev) => [...prev, { type: 'output', text: r.error ?? 'Failed to run command' }]);
-      }
-    });
+  const runViaBackend = useCallback((cmd: string) => {
+    fetch(`${API_BASE}/api/terminal/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: cmd }),
+    })
+      .then((r) => r.json())
+      .then((data: { ok?: boolean; processId?: string; error?: string }) => {
+        if (!data.ok || !data.processId) {
+          setCliHistory((prev) => [...prev, { type: 'output', text: data.error ?? 'Failed to start command' }]);
+          return;
+        }
+        const es = new EventSource(`${API_BASE}/api/terminal/stream/${data.processId}`);
+        activeProcessRef.current = { processId: data.processId, es };
+
+        const onData = (e: MessageEvent) => {
+          const lines = String(e.data).split('\n').filter(Boolean);
+          setCliHistory((prev) => [...prev, ...lines.map((text) => ({ type: 'output' as const, text }))]);
+        };
+        es.addEventListener('stdout', onData);
+        es.addEventListener('stderr', onData);
+        es.addEventListener('exit', (e: MessageEvent) => {
+          try {
+            const { code, signal } = JSON.parse(e.data);
+            const exitVal = code ?? signal ?? '?';
+            setCliHistory((prev) => [...prev, { type: 'output', text: `[exit ${exitVal}]` }]);
+          } catch {
+            setCliHistory((prev) => [...prev, { type: 'output', text: '[exit]' }]);
+          }
+          es.close();
+          activeProcessRef.current = null;
+        });
+        es.onerror = () => {
+          es.close();
+          activeProcessRef.current = null;
+        };
+      })
+      .catch((err) => {
+        setCliHistory((prev) => [
+          ...prev,
+          { type: 'output', text: `Backend unavailable: ${err instanceof Error ? err.message : String(err)}` },
+        ]);
+      });
   }, []);
+
+  const killActiveProcess = useCallback(() => {
+    const active = activeProcessRef.current;
+    if (!active) return;
+    fetch(`${API_BASE}/api/terminal/kill/${active.processId}`, { method: 'POST' }).catch(() => {});
+    active.es.close();
+    activeProcessRef.current = null;
+    setCliHistory((prev) => [...prev, { type: 'output', text: '^C' }]);
+  }, []);
+
+  const runShellCommand = useCallback((cmd: string) => {
+    setCliHistory((prev) => [...prev, { type: 'input', text: cmd }, { type: 'output', text: 'Running...' }]);
+    if (window.electron?.runShellCommand) {
+      window.electron.runShellCommand(cmd).then((r) => {
+        if (!r.ok) {
+          setCliHistory((prev) => [...prev, { type: 'output', text: r.error ?? 'Failed to run command' }]);
+        }
+      });
+    } else {
+      runViaBackend(cmd);
+    }
+  }, [runViaBackend]);
 
   const handleCli = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Ctrl+C kills the active process
+      if (e.key === 'c' && e.ctrlKey) {
+        e.preventDefault();
+        killActiveProcess();
+        return;
+      }
+
       const cmd = cliInput.trim();
 
       if (showSlashSuggestions && slashSuggestions.length > 0) {
@@ -189,7 +263,7 @@ export function FooterToolbar({
         });
         newHistory.push({
           type: 'output',
-          text: isElectron ? 'In Electron, any line runs as a shell command.' : 'Run Fintheon in Electron (npm run desktop) to run slash commands.',
+          text: 'Any line runs as a shell command. Ctrl+C to kill a running process.',
         });
         setCliHistory(newHistory);
         return;
@@ -210,22 +284,14 @@ export function FooterToolbar({
         return;
       }
       if (lower === 'version') {
-        newHistory.push({ type: 'output', text: 'Fintheon Epoch {EPOCH_VERSION} | Build 2026-03-14' });
+        newHistory.push({ type: 'output', text: `Fintheon Epoch ${EPOCH_VERSION} | Build 2026-03-14` });
         setCliHistory(newHistory);
         return;
       }
-      if (isElectron) {
-        setCliHistory(newHistory);
-        runShellCommand(commandToRun);
-        return;
-      }
-      newHistory.push({
-        type: 'output',
-        text: `Run Fintheon in Electron (npm run desktop) to execute: ${displayCmd}`,
-      });
       setCliHistory(newHistory);
+      runShellCommand(commandToRun);
     },
-    [cliInput, cliHistory, isElectron, runShellCommand, showSlashSuggestions, slashSuggestions, slashSuggestionsIndex]
+    [cliInput, cliHistory, runShellCommand, killActiveProcess, showSlashSuggestions, slashSuggestions, slashSuggestionsIndex]
   );
 
   const onCliInputChange = (value: string) => {
@@ -239,6 +305,9 @@ export function FooterToolbar({
   };
 
   const sourceStatus = useSourceStatus();
+  const { errorCount } = useErrorLog();
+  const { overall: systemOverall, services } = useSystemStatus();
+  const { status: gatewayStatus } = useGateway();
   const togglePanel = () => setPanelOpen((v) => !v);
 
   const openTab = (tab: PanelTab) => {
@@ -281,6 +350,22 @@ export function FooterToolbar({
             >
               <FileText className="w-3 h-3" />
               Changelog
+            </button>
+            <button
+              onClick={() => setActiveTab('errors')}
+              className={`relative flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
+                activeTab === 'errors'
+                  ? 'border-red-400 text-red-400 bg-red-500/5'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <AlertTriangle className="w-3 h-3" />
+              Errors
+              {errorCount > 0 && (
+                <span className="ml-1 px-1 py-px text-[8px] font-mono rounded-full bg-red-500/20 text-red-400 leading-none">
+                  {errorCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -353,6 +438,8 @@ export function FooterToolbar({
                 ))}
               </div>
             )}
+
+            {activeTab === 'errors' && <ErrorLogPanel />}
           </div>
         </div>
       </div>
@@ -393,6 +480,24 @@ export function FooterToolbar({
           title="Changelog"
         >
           <FileText className="w-3 h-3" />
+        </button>
+        <button
+          onClick={() => openTab('errors')}
+          className={`relative flex items-center gap-1 text-[10px] transition-colors ${
+            panelOpen && activeTab === 'errors'
+              ? 'text-red-400'
+              : errorCount > 0
+                ? 'text-red-400/60 hover:text-red-400'
+                : 'text-zinc-600 hover:text-zinc-400'
+          }`}
+          title="Error Log"
+        >
+          <AlertTriangle className="w-3 h-3" />
+          {errorCount > 0 && (
+            <span className="absolute -top-1 -right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 text-[7px] text-white flex items-center justify-center leading-none">
+              {errorCount > 9 ? '!' : errorCount}
+            </span>
+          )}
         </button>
 
         <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
@@ -504,35 +609,29 @@ export function FooterToolbar({
           </>
         )}
 
-        {/* Source status indicators */}
-        <div className="flex items-center gap-2 shrink-0">
-          <span
-            className="flex items-center gap-1 text-[10px]"
-            title={`Notion: ${sourceStatus.notion ? 'connected' : 'disconnected'}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.notion ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
-            <span className={sourceStatus.notion ? 'text-emerald-400/60' : 'text-zinc-700'}>Notion</span>
-          </span>
-          <span
-            className="flex items-center gap-1 text-[10px]"
-            title={`X CLI: ${sourceStatus.twitterCli ? 'connected' : 'disconnected'}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.twitterCli ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
-            <span className={sourceStatus.twitterCli ? 'text-emerald-400/60' : 'text-zinc-700'}>X</span>
-          </span>
+        {/* System status indicators — real-time from /api/diagnostics */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <StatusIndicator
+            label="Gateway"
+            status={gatewayStatus === 'connected' ? 'ok' : gatewayStatus === 'connecting' ? 'degraded' : 'error'}
+            detail={gatewayStatus === 'connected' ? 'Backend reachable' : gatewayStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
+          />
+          {services.map((svc) => (
+            <StatusIndicator
+              key={svc.key}
+              label={svc.name}
+              status={svc.status}
+              detail={svc.detail}
+            />
+          ))}
         </div>
         <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-        {/* Heartbeat */}
-        <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
-          <span>heartbeat</span>
-        </div>
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-        {/* System status dot */}
-        <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-          <span>fintheon</span>
-        </div>
+        {/* Overall system status */}
+        <StatusIndicator
+          label="fintheon"
+          status={gatewayStatus !== 'connected' ? 'error' : systemOverall}
+          detail={gatewayStatus !== 'connected' ? 'Backend offline' : systemOverall === 'ok' ? 'All systems nominal' : systemOverall === 'degraded' ? 'Some services degraded' : 'Services unavailable'}
+        />
       </div>
     </div>
   );

@@ -78,7 +78,8 @@ function parseTweetJson(stdout: string): TwitterCliTweet[] {
   try {
     // Try array format first
     const raw = JSON.parse(stdout.trim());
-    const items: any[] = Array.isArray(raw) ? raw : raw.tweets ?? raw.results ?? [];
+    // twitter-cli v0.7.0 wraps in {ok, schema_version, data: [...]}
+    const items: any[] = Array.isArray(raw) ? raw : raw.data ?? raw.tweets ?? raw.results ?? [];
     return items.map(normalizeTweet).filter(Boolean) as TwitterCliTweet[];
   } catch {
     // Try newline-delimited JSON (NDJSON)

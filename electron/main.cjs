@@ -3,7 +3,10 @@
 
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
 // [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
+// [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
+// [claude-code 2026-03-22] Source of Truth fusion — Browser Control Phase 1 (agent-view-handlers)
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const { setupAgentViewHandlers } = require("./agent-view-handlers.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
@@ -11,6 +14,30 @@ const { autoUpdater } = require("electron-updater");
 
 let mainWindow = null;
 let backendProcess = null;
+
+/* ------------------------------------------------------------------ */
+/*  Startup config — persisted to userData/fintheon-startup.json       */
+/* ------------------------------------------------------------------ */
+
+const CONFIG_PATH = path.join(app.getPath("userData"), "fintheon-startup.json");
+const DEFAULT_CONFIG = { backendAutostart: true, launchOnLogin: false };
+
+function readStartupConfig() {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      return { ...DEFAULT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")) };
+    }
+  } catch {}
+  return { ...DEFAULT_CONFIG };
+}
+
+function writeStartupConfig(cfg) {
+  try {
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), "utf8");
+  } catch (err) {
+    console.error("[Config] Failed to write startup config:", err.message);
+  }
+}
 
 // [claude-code 2026-03-20] Check if backend is already running (LaunchAgent or manual)
 async function isBackendAlive() {
@@ -163,6 +190,15 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "discordapp.com") return true;
     if (host.endsWith(".discordapp.com")) return true;
 
+    // TopStepX (trading platform)
+    if (host === "topstepx.com") return true;
+    if (host.endsWith(".topstepx.com")) return true;
+
+    // Google auth relay domains
+    if (host.endsWith(".google.com")) return true;
+    if (host.endsWith(".gstatic.com")) return true;
+    if (host.endsWith(".googleapis.com")) return true;
+
     return false;
   } catch {
     return false;
@@ -189,9 +225,16 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  startBackend();
+  const cfg = readStartupConfig();
+  if (cfg.backendAutostart) {
+    startBackend();
+  } else {
+    console.log("[Electron] Backend autostart disabled — skipping");
+  }
   createWindow();
   setupAutoUpdater();
+  // Browser Control Phase 1 — read-only agent view for TopStep X observation
+  if (mainWindow) setupAgentViewHandlers(mainWindow);
 
   // Handle window.open from embedded <webview> tags.
   app.on("web-contents-created", (_event, contents) => {
@@ -199,7 +242,8 @@ app.whenReady().then(() => {
       if (contents.getType && contents.getType() === "webview") {
         contents.setWindowOpenHandler(({ url }) => {
           if (shouldAllowInAppPopup(url)) {
-            // Allow an in-app popup so the auth session stays in the same partition.
+            // Allow an in-app popup — share the webview's partition so the
+            // auth session cookies carry over (fixes Google OAuth in iframes).
             return {
               action: "allow",
               overrideBrowserWindowOptions: {
@@ -212,6 +256,7 @@ app.whenReady().then(() => {
                   contextIsolation: true,
                   nodeIntegration: false,
                   nativeWindowOpen: true,
+                  partition: "persist:fintheon",
                 },
               },
             };
@@ -220,6 +265,42 @@ app.whenReady().then(() => {
           // For non-auth links, open externally to avoid popup spam.
           shell.openExternal(url).catch(() => {});
           return { action: "deny" };
+        });
+
+        // Intercept in-page navigations to Google OAuth inside webviews —
+        // Google blocks sign-in in embedded frames. Open in a popup instead.
+        contents.on("will-navigate", (navEvent, navUrl) => {
+          try {
+            const parsed = new URL(navUrl);
+            if (parsed.hostname === "accounts.google.com") {
+              navEvent.preventDefault();
+              const popup = new BrowserWindow({
+                width: 520,
+                height: 760,
+                parent: mainWindow ?? undefined,
+                modal: false,
+                title: "Sign in with Google",
+                webPreferences: {
+                  contextIsolation: true,
+                  nodeIntegration: false,
+                  nativeWindowOpen: true,
+                  partition: "persist:fintheon",
+                },
+              });
+              popup.loadURL(navUrl);
+              // When Google redirects back to the service, close the popup
+              popup.webContents.on("will-redirect", (_rEvent, redirectUrl) => {
+                try {
+                  const rParsed = new URL(redirectUrl);
+                  if (rParsed.hostname !== "accounts.google.com" &&
+                      !rParsed.hostname.endsWith(".google.com")) {
+                    // Auth complete — redirect happened back to the service
+                    setTimeout(() => popup.close(), 1500);
+                  }
+                } catch {}
+              });
+            }
+          } catch {}
         });
       }
     } catch {
@@ -269,6 +350,41 @@ ipcMain.handle("get-app-version", () => {
   return app.getVersion();
 });
 
+// Startup config IPC
+ipcMain.handle("get-startup-config", () => {
+  const cfg = readStartupConfig();
+  // Also read actual login-item state from OS
+  const loginSettings = app.getLoginItemSettings();
+  cfg.launchOnLogin = loginSettings.openAtLogin;
+  return cfg;
+});
+
+ipcMain.handle("set-startup-config", (_event, patch) => {
+  const cfg = readStartupConfig();
+  if (typeof patch.backendAutostart === "boolean") cfg.backendAutostart = patch.backendAutostart;
+  if (typeof patch.launchOnLogin === "boolean") {
+    cfg.launchOnLogin = patch.launchOnLogin;
+    app.setLoginItemSettings({ openAtLogin: patch.launchOnLogin });
+  }
+  writeStartupConfig(cfg);
+  return cfg;
+});
+
+// Manual backend start/stop from renderer
+ipcMain.handle("start-backend", async () => {
+  if (backendProcess) return { ok: true, detail: "already running" };
+  await startBackend();
+  return { ok: true };
+});
+
+ipcMain.handle("stop-backend", () => {
+  stopBackend();
+  return { ok: true };
+});
+
+ipcMain.handle("is-backend-alive", async () => {
+  return { alive: await isBackendAlive() };
+});
 
 // Fintheon CLI: run shell command from project root and stream output to renderer
 const projectRoot = path.join(__dirname, "..");

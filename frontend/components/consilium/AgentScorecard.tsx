@@ -1,3 +1,4 @@
+// [claude-code 2026-03-22] Theme-consistent styling — CSS vars, no hardcoded hex
 // [claude-code 2026-03-19] Per-agent win rate dashboard for Consilium
 import { useState, useEffect } from 'react';
 import { AgentBadge, type BoardroomAgent } from './AgentBadge';
@@ -45,7 +46,7 @@ export function AgentScorecard() {
     return (
       <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-[180px] animate-pulse rounded-xl border border-[#c79f4a]/15 bg-[#0a0a00]" />
+          <div key={i} className="h-[180px] animate-pulse rounded-xl border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]" />
         ))}
       </div>
     );
@@ -54,8 +55,8 @@ export function AgentScorecard() {
   if (scorecards.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-8">
-        <span className="text-sm text-[#c79f4a]/40">No predictions tracked yet</span>
-        <span className="text-center text-xs text-[#f0ead6]/20">
+        <span className="text-sm text-[var(--fintheon-accent)]/40">No predictions tracked yet</span>
+        <span className="text-center text-xs text-[var(--fintheon-text)]/20">
           Post trade ideas to start tracking agent performance
         </span>
       </div>
@@ -65,7 +66,7 @@ export function AgentScorecard() {
   return (
     <div className="grid grid-cols-1 gap-3 overflow-y-auto p-4 sm:grid-cols-2">
       {scorecards.map((sc) => (
-        <div key={sc.agent} className="rounded-xl border border-[#c79f4a]/15 bg-[#0a0a00] p-4">
+        <div key={sc.agent} className="rounded-xl border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] p-4">
           {/* Header */}
           <div className="mb-3">
             <AgentBadge agent={sc.agent} size="md" />
@@ -74,38 +75,38 @@ export function AgentScorecard() {
           {/* Stats grid */}
           <div className="mb-3 grid grid-cols-2 gap-3">
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-[#f0ead6]/30">Win Rate</div>
-              <div className="text-2xl font-bold text-[#c79f4a]">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/30">Win Rate</div>
+              <div className="text-2xl font-bold text-[var(--fintheon-accent)]">
                 {Math.round(sc.winRate)}<span className="text-sm">%</span>
               </div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-[#f0ead6]/30">Total</div>
-              <div className="text-lg font-medium text-[#f0ead6]/80">{sc.totalPredictions}</div>
+              <div className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/30">Total</div>
+              <div className="text-lg font-medium text-[var(--fintheon-text)]/80">{sc.totalPredictions}</div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-[#f0ead6]/30">Streak</div>
-              <div className="text-lg font-medium text-[#f0ead6]/80">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/30">Streak</div>
+              <div className="text-lg font-medium text-[var(--fintheon-text)]/80">
                 {sc.streakCurrent}
-                <span className="ml-1 text-[10px] text-[#f0ead6]/30">best: {sc.bestStreak}</span>
+                <span className="ml-1 text-[10px] text-[var(--fintheon-text)]/30">best: {sc.bestStreak}</span>
               </div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-[#f0ead6]/30">Avg P&L</div>
-              <div className={`text-lg font-medium ${sc.avgPnlPerPrediction >= 0 ? 'text-[#c79f4a]' : 'text-red-400/80'}`}>
+              <div className="text-[10px] uppercase tracking-wider text-[var(--fintheon-text)]/30">Avg P&L</div>
+              <div className={`text-lg font-medium ${sc.avgPnlPerPrediction >= 0 ? 'text-[var(--fintheon-accent)]' : 'text-red-400/80'}`}>
                 {formatCurrency(sc.avgPnlPerPrediction)}
               </div>
             </div>
           </div>
 
           {/* Win rate bar */}
-          <div className="mb-1.5 h-1 overflow-hidden rounded-full bg-[#c79f4a]/10">
+          <div className="mb-1.5 h-1 overflow-hidden rounded-full bg-[var(--fintheon-accent)]/10">
             <div
-              className="h-full rounded-full bg-[#c79f4a]"
+              className="h-full rounded-full bg-[var(--fintheon-accent)]"
               style={{ width: `${Math.min(sc.winRate, 100)}%` }}
             />
           </div>
-          <div className="flex gap-3 text-[10px] text-[#f0ead6]/30">
+          <div className="flex gap-3 text-[10px] text-[var(--fintheon-text)]/30">
             <span>{sc.correctCount} correct</span>
             <span>{sc.incorrectCount} incorrect</span>
             <span>{sc.partialCount} partial</span>

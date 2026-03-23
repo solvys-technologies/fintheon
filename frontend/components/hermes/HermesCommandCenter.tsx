@@ -171,7 +171,7 @@ function HermesChatInner({
 
 export function HermesCommandCenter() {
   const { agents, activeAgent, setActiveAgent } = useFintheonAgents();
-  const [thinkHarder, setThinkHarder] = useState(true);
+  const [thinkHarder, setThinkHarder] = useState(false);
   const { entries, logActivity } = useActivityLog();
 
   const { runtime, lastError, lastRequestId } = useHermesRuntime(

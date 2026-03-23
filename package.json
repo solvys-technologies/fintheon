@@ -5,9 +5,8 @@
   "packageManager": "bun",
   "dependencies": {
     "@ai-sdk/react": "^3.0.3",
-    "@clerk/clerk-react": "^5.35.2",
-    "@clerk/themes": "^2.2.26",
     "@sentry/react": "^10.32.1",
+    "@supabase/supabase-js": "^2.99.3",
     "ai": "^6.0.3",
     "electron-updater": "^6.8.3",
     "lucide-react": "^0.484.0",
@@ -17,6 +16,7 @@
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
+    "@clack/prompts": "^0.9.1",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/oxide": "^4.1.11",
     "@tailwindcss/vite": "^4.1.11",
@@ -40,7 +40,9 @@
     "frontend:build": "npm --prefix frontend run build",
     "desktop:build": "npm run frontend:build && electron-builder --mac dmg",
     "release:mac": "npm run frontend:build && cd backend-hono && npm run build && cd .. && npx electron-builder --mac dmg",
-    "release": "bash scripts/build-release.sh"
+    "release": "bash scripts/build-release.sh",
+    "setup": "bun run scripts/setup.ts",
+    "update": "bun run scripts/update.ts"
   },
   "build": {
     "appId": "io.solvys.fintheon",

@@ -18,9 +18,6 @@ export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'econ',
   'chatroom',
   'notion',
-  'apparatus',
-  'narrative',
-  'proposals',
   'earnings',
 ];
 

@@ -17,6 +17,8 @@ import { PreMarketReminder } from './components/PreMarketReminder';
 import { GitHubOAuthCallback } from './components/GitHubOAuthCallback';
 import { UpdateBanner } from './components/UpdateBanner';
 import { ApiErrorToastBridge } from './components/ApiErrorToastBridge';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { SystemStatusProvider } from './contexts/SystemStatusContext';
 import { migrateStorageKeys } from './lib/storage-migration';
 
 // Run storage migration before any providers read localStorage
@@ -59,11 +61,13 @@ function VoiceBorderPulse() {
  */
 export default function App() {
   return (
+    <ErrorBoundary>
     <ThemeProvider>
     <AuthProvider>
       <SettingsProvider>
         <ToastProvider>
           <GatewayProvider>
+          <SystemStatusProvider>
             <FintheonAgentProvider>
               <RiskFlowProvider>
               <ContextBankProvider>
@@ -121,10 +125,12 @@ export default function App() {
               </ContextBankProvider>
               </RiskFlowProvider>
             </FintheonAgentProvider>
+          </SystemStatusProvider>
           </GatewayProvider>
         </ToastProvider>
       </SettingsProvider>
     </AuthProvider>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }

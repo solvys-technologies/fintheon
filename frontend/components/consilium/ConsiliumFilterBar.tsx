@@ -1,6 +1,7 @@
-// [claude-code 2026-03-19] Search/filter controls for Consilium message history
+// [claude-code 2026-03-22] Track 3: Filter bar with agent dropdown (replaces chips)
 import { Search } from 'lucide-react';
-import { AgentBadge, type BoardroomAgent } from './AgentBadge';
+import type { BoardroomAgent } from './AgentBadge';
+import { AgentFilterDropdown } from './AgentFilterDropdown';
 
 interface ConsiliumFilterBarProps {
   agents: BoardroomAgent[];
@@ -25,49 +26,24 @@ export function ConsiliumFilterBar({
   onDateRangeChange,
   resultCount,
 }: ConsiliumFilterBarProps) {
-  const toggleAgent = (agent: BoardroomAgent) => {
-    if (selectedAgents.includes(agent)) {
-      onAgentsChange(selectedAgents.filter((a) => a !== agent));
-    } else {
-      onAgentsChange([...selectedAgents, agent]);
-    }
-  };
-
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-[#c79f4a]/10 bg-[#0a0a00] px-4 py-2">
+    <div className="flex flex-wrap items-center gap-3 border-b border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)] px-4 py-2">
       {/* Search input */}
       <div className="relative flex-shrink-0">
-        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#f0ead6]/30" />
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--fintheon-text)]/30" />
         <input
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search messages..."
-          className="w-[180px] rounded-full border border-[#c79f4a]/15 bg-[#050402] py-1.5 pl-8 pr-3 text-xs text-[#f0ead6] placeholder-[#f0ead6]/20 outline-none transition-colors focus:border-[#c79f4a]/40"
+          className="w-[180px] rounded-full border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] py-1.5 pl-8 pr-3 text-xs text-[var(--fintheon-text)] placeholder-[var(--fintheon-text)]/20 outline-none transition-colors focus:border-[var(--fintheon-accent)]/40"
         />
       </div>
 
-      {/* Agent chips */}
-      <div className="flex flex-1 flex-wrap items-center justify-center gap-1.5">
-        {agents.map((agent) => {
-          const active = selectedAgents.includes(agent);
-          return (
-            <button
-              key={agent}
-              onClick={() => toggleAgent(agent)}
-              className={`rounded-full border px-2.5 py-1 transition-colors ${
-                active
-                  ? 'border-[#c79f4a]/50 bg-[#c79f4a]/15'
-                  : 'border-[#c79f4a]/15 bg-transparent hover:border-[#c79f4a]/30'
-              }`}
-            >
-              <AgentBadge agent={agent} size="sm" />
-            </button>
-          );
-        })}
-      </div>
+      {/* Agent filter dropdown */}
+      <AgentFilterDropdown agents={agents} selected={selectedAgents} onChange={onAgentsChange} />
 
-      {/* Date range buttons */}
+      {/* Date range pills */}
       <div className="flex items-center gap-1">
         {DATE_OPTIONS.map((range) => (
           <button
@@ -75,8 +51,8 @@ export function ConsiliumFilterBar({
             onClick={() => onDateRangeChange(range)}
             className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider transition-colors ${
               dateRange === range
-                ? 'border border-[#c79f4a]/50 bg-[#c79f4a]/15 text-[#c79f4a]'
-                : 'border border-[#c79f4a]/15 text-[#f0ead6]/30 hover:text-[#f0ead6]/60'
+                ? 'border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)]'
+                : 'border border-[var(--fintheon-accent)]/10 text-[var(--fintheon-text)]/30 hover:text-[var(--fintheon-text)]/60'
             }`}
           >
             {range === 'today' ? 'Today' : range === 'all' ? 'All' : range}
@@ -85,7 +61,7 @@ export function ConsiliumFilterBar({
       </div>
 
       {/* Result count */}
-      <span className="text-[10px] text-[#f0ead6]/30">{resultCount} messages</span>
+      <span className="text-[10px] text-[var(--fintheon-text)]/30">{resultCount} messages</span>
     </div>
   );
 }

@@ -2,68 +2,18 @@
 // [claude-code 2026-03-11] T3b: MCP auto-activation when skill selected
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, always full PromptBox
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
-// [claude-code 2026-03-16] Persona selector pills added above PromptBox
+// [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
 import { useEffect, useState, useCallback } from 'react';
 import { useThread, useThreadRuntime } from '@assistant-ui/react';
 import { PromptBox } from '../ui/chatgpt-prompt-input';
 import { SKILL_PREFIXES } from '../../lib/skillPrefixes';
 import { SKILLS } from '../../lib/skills';
 import { useVoice } from '../../contexts/VoiceContext';
-import { useFintheonAgents, type FintheonAgent } from '../../contexts/FintheonAgentContext';
+import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
+import { useMcpConnectors } from '../../hooks/useMcpConnectors';
+import { PersonaDropdown } from './PersonaDropdown';
+import { ToolsDropdown } from './ToolsDropdown';
 import { API_BASE_URL } from './constants';
-
-/* ------------------------------------------------------------------ */
-/*  Persona data for the 5 agents                                      */
-/* ------------------------------------------------------------------ */
-
-const PERSONA_META: Record<string, { label: string }> = {
-  'harper-hermes': { label: 'CAO' },
-  oracle:          { label: 'All-Seer' },
-  feucht:          { label: 'Futures & Risk' },
-  consul:          { label: 'Fundamentals' },
-  herald:          { label: 'News & Sentiment' },
-};
-
-function statusColor(status: string): string {
-  switch (status) {
-    case 'working': return '#22c55e';
-    case 'idle':    return '#eab308';
-    case 'blocked': return '#ef4444';
-    default:        return '#52525b';
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/*  PersonaPill                                                        */
-/* ------------------------------------------------------------------ */
-
-function PersonaPill({ agent, isActive, onClick }: { agent: FintheonAgent; isActive: boolean; onClick: () => void }) {
-  const meta = PERSONA_META[agent.id] ?? { label: agent.sector };
-  return (
-    <button
-      onClick={onClick}
-      className={[
-        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all shrink-0',
-        isActive
-          ? 'border border-[var(--fintheon-accent)]/60 bg-[var(--fintheon-accent)]/10'
-          : 'border border-zinc-800/60 hover:border-zinc-700 bg-transparent',
-      ].join(' ')}
-    >
-      {/* Status dot */}
-      <span
-        className="w-[6px] h-[6px] rounded-full shrink-0"
-        style={{ backgroundColor: statusColor(agent.status) }}
-      />
-      {/* Name + description */}
-      <span className="flex flex-col items-start leading-none">
-        <span className={`text-[10px] font-bold tracking-wide ${isActive ? 'text-[var(--fintheon-accent)]' : 'text-zinc-300'}`}>
-          {agent.name}
-        </span>
-        <span className="text-[8px] text-zinc-500 mt-[1px]">{meta.label}</span>
-      </span>
-    </button>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /*  FintheonComposer                                                      */
@@ -96,7 +46,8 @@ export function FintheonComposer({
   const isRunning = useThread((t) => t.isRunning);
   const [apiDisabledSkills, setApiDisabledSkills] = useState<Record<string, { reason: string }>>({});
   const voice = useVoice();
-  const { agents, activeAgent, setActiveAgent } = useFintheonAgents();
+  const { activeAgent } = useFintheonAgents();
+  const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
 
   // Fetch skills from backend — merge with prop-level disabled skills
   useEffect(() => {
@@ -157,37 +108,39 @@ export function FintheonComposer({
     runtime.cancelRun();
   }, [runtime]);
 
-  return (
-    <div>
-      {/* Persona selector row */}
-      <div className="flex items-center gap-1.5 px-4 pb-1 pt-2 max-w-3xl mx-auto overflow-x-auto scrollbar-none">
-        {agents.map((agent) => (
-          <PersonaPill
-            key={agent.id}
-            agent={agent}
-            isActive={activeAgent?.id === agent.id}
-            onClick={() => setActiveAgent(agent)}
-          />
-        ))}
-      </div>
+  const personaEl = <PersonaDropdown />;
 
-      <PromptBox
-        onSend={handleSend}
-        onStop={handleStop}
-        isProcessing={isRunning}
-        thinkHarder={thinkHarder}
-        setThinkHarder={setThinkHarder}
-        lastError={lastError}
-        activeSkill={activeSkill}
-        onSelectSkill={onSelectSkill}
-        showSkills={showSkills}
-        onToggleSkills={onToggleSkills}
-        disabledSkills={mergedDisabledSkills}
-        compact={compact}
-        voiceEnabled={voice.enabled}
-        voiceState={voice.runtimeState}
-        onToggleVoice={voice.toggleEnabled}
-      />
-    </div>
+  const toolsEl = (
+    <ToolsDropdown
+      skills={SKILLS}
+      activeSkill={activeSkill}
+      onSelectSkill={onSelectSkill}
+      disabledSkills={mergedDisabledSkills}
+      servers={servers}
+      activeConnectorIds={activeIds}
+      onToggleConnector={toggleConnector}
+    />
+  );
+
+  return (
+    <PromptBox
+      onSend={handleSend}
+      onStop={handleStop}
+      isProcessing={isRunning}
+      thinkHarder={thinkHarder}
+      setThinkHarder={setThinkHarder}
+      lastError={lastError}
+      activeSkill={activeSkill}
+      onSelectSkill={onSelectSkill}
+      showSkills={showSkills}
+      onToggleSkills={onToggleSkills}
+      disabledSkills={mergedDisabledSkills}
+      compact={compact}
+      voiceEnabled={voice.enabled}
+      voiceState={voice.runtimeState}
+      onToggleVoice={voice.toggleEnabled}
+      personaSlot={personaEl}
+      toolsSlot={toolsEl}
+    />
   );
 }

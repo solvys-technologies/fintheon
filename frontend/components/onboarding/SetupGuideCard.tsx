@@ -16,12 +16,12 @@ interface ServiceCheck {
 
 const STORAGE_KEY = 'fintheon:setup-dismissed';
 
-export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
+export function SetupGuideCard({ onDismiss, onStartInterview }: { onDismiss?: () => void; onStartInterview?: () => void }) {
   const backend = useBackend();
   const { status: gatewayStatus } = useGateway();
 
   const [backendStatus, setBackendStatus] = useState<ServiceStatus>('connecting');
-  const [notionStatus, setNotionStatus] = useState<ServiceStatus>('connecting');
+  const [dataLayerStatus, setDataLayerStatus] = useState<ServiceStatus>('connecting');
   const [marketDataStatus, setMarketDataStatus] = useState<ServiceStatus>('connecting');
   const [checking, setChecking] = useState(false);
 
@@ -36,12 +36,12 @@ export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
       setBackendStatus('disconnected');
     }
 
-    // Notion check — try polling status
+    // Data layer check — try fetching trade ideas
     try {
-      const res = await backend.notion.getPollStatus();
-      setNotionStatus(res?.running ? 'connected' : 'disconnected');
+      const res = await fetch('http://localhost:8080/api/data/trade-ideas', { signal: AbortSignal.timeout(5000) });
+      setDataLayerStatus(res.ok ? 'connected' : 'disconnected');
     } catch {
-      setNotionStatus('disconnected');
+      setDataLayerStatus('disconnected');
     }
 
     // Market data check — try fetching IV score
@@ -71,7 +71,7 @@ export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
   const services: ServiceCheck[] = [
     { id: 'backend', label: 'Backend API', description: 'Hono server on port 8080', icon: Server, status: backendStatus },
     { id: 'gateway', label: 'Hermes Agent', description: 'AI agent router', icon: Globe, status: gwStatus },
-    { id: 'notion', label: 'Notion Integration', description: 'Trade ideas & briefs', icon: FileText, status: notionStatus },
+    { id: 'data-layer', label: 'Data Layer', description: 'Trade ideas & briefs', icon: FileText, status: dataLayerStatus },
     { id: 'market', label: 'Market Data (VIX)', description: 'Yahoo Finance for IV scoring', icon: TrendingUp, status: marketDataStatus },
   ];
 
@@ -89,6 +89,14 @@ export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
           </span>
         </div>
         <div className="flex items-center gap-1.5">
+          {onStartInterview && !localStorage.getItem('fintheon:interview-completed') && localStorage.getItem('fintheon:tour-completed') && (
+            <button
+              onClick={onStartInterview}
+              className="px-2.5 py-1 rounded-md text-[10px] font-medium bg-[var(--fintheon-accent)]/15 border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/25 transition-colors"
+            >
+              Complete Setup
+            </button>
+          )}
           <button
             onClick={runChecks}
             disabled={checking}

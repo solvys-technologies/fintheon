@@ -535,6 +535,11 @@ export async function handleCronPrefetch(c: Context) {
   }
 
   const result = await preFetchFeed();
+
+  // Piggyback 30-day cleanup on cron cycle
+  const { cleanupOldItems } = await import('../../services/riskflow/news-cache.js');
+  await cleanupOldItems().catch(() => {});
+
   const statusCode = result.success ? 200 : 500;
   return c.json(result, statusCode);
 }

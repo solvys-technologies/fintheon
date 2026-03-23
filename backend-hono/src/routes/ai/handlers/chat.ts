@@ -21,7 +21,7 @@ import { defaultAiConfig } from '../../../config/ai-config.js'
 import type { ChatRequest } from '../../../types/ai-chat.js'
 import type { HermesAgentRole } from '../../../services/hermes-service.js'
 import { handleHermesChat, detectAgent, type ContentPart } from '../../../services/hermes-handler.js'
-import { getAgentSystemPrompt, extractSkillTag } from '../../../services/ai/agent-instructions.js'
+import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from '../../../services/ai/agent-instructions/index.js'
 import { extractSkillFromMessage, isSkillEnabled, getSkillDisabledReason } from '../../../config/feature-flags.js'
 import { createRequestCognition } from '../../../services/cognition-emitter.js'
 import { enqueue, completeJob } from '../../../services/chat-queue.js'
@@ -275,7 +275,10 @@ export async function handleChat(c: Context) {
       const augmentedMessage = message
 
       const skillTag = extractSkillTag(message)
-      const systemPrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: true })
+      const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: true })
+      // Inject live RiskFlow headlines so agents can reference real-time data
+      const feedContext = await buildFeedContext()
+      const systemPrompt = basePrompt + feedContext
       const openRouterMessages: { role: string; content: string | unknown[] }[] = [
         { role: 'system', content: systemPrompt },
         ...history.map(h => ({ role: h.role, content: h.content })),
@@ -310,7 +313,8 @@ export async function handleChat(c: Context) {
           const uiMessageId = `assistant-${Date.now()}`
           const uiReasoningId = `reasoning-${Date.now()}`
           let fullText = ''
-          let reasoningStarted = false
+          let reasoningOpened = false
+          let reasoningClosed = false
           let textEndSent = false
 
           const stream = new ReadableStream({
@@ -319,7 +323,9 @@ export async function handleChat(c: Context) {
                 const reader = res.body!.getReader()
                 const decoder = new TextDecoder()
                 let buffer = ''
-                controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+                // Don't emit reasoning-start until we see actual reasoning deltas.
+                // Emitting it unconditionally with no reasoning-end breaks the AI SDK
+                // stream parser (it stays in "reasoning mode" and swallows text events).
                 while (true) {
                   const { value, done } = await reader.read()
                   if (done) break
@@ -334,20 +340,27 @@ export async function handleChat(c: Context) {
                         }
                         const delta = json.choices?.[0]?.delta
                         if (delta?.reasoning) {
-                          reasoningStarted = true
+                          if (!reasoningOpened) {
+                            controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+                            reasoningOpened = true
+                          }
                           controller.enqueue({ type: 'reasoning-delta', id: uiReasoningId, delta: delta.reasoning })
                         }
                         if (delta?.content) {
-                          if (reasoningStarted) {
+                          // Close reasoning before first text content
+                          if (reasoningOpened && !reasoningClosed) {
                             controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
-                            reasoningStarted = false
+                            reasoningClosed = true
                           }
                           if (fullText === '') controller.enqueue({ type: 'text-start', id: uiMessageId })
                           fullText += delta.content
                           controller.enqueue({ type: 'text-delta', id: uiMessageId, delta: delta.content })
                         }
                         if (json.choices?.[0]?.finish_reason) {
-                          if (reasoningStarted) controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                          if (reasoningOpened && !reasoningClosed) {
+                            controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                            reasoningClosed = true
+                          }
                           if (!textEndSent) {
                             controller.enqueue({ type: 'text-end', id: uiMessageId })
                             textEndSent = true
@@ -357,7 +370,7 @@ export async function handleChat(c: Context) {
                     }
                   }
                 }
-                if (reasoningStarted) controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                if (reasoningOpened && !reasoningClosed) controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
                 if (fullText && !textEndSent) controller.enqueue({ type: 'text-end', id: uiMessageId })
                 if (fullText) {
                   await conversationStore.addMessage(conversation.id, {
