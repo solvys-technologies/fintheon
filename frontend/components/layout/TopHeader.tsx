@@ -173,7 +173,7 @@ export function TopHeader({
   const platformOptions: Array<{ value: TradingPlatform; label: string; description: string }> = [
     { value: 'tradesea', label: 'TradeSea', description: 'TradeSea Trading' },
     { value: 'topstepx', label: 'TopStepX', description: 'Real-Time Futures Trading Platform' },
-    { value: 'hyperliquid', label: 'Hyperliquid', description: 'Perpetual Futures DEX' },
+    { value: 'mmt', label: 'MMT', description: 'Market Monkey Terminal — Crypto Order Flow' },
     { value: 'kalshi', label: 'Kalshi', description: 'Prediction Market' },
     { value: 'tradovate', label: 'Tradovate', description: 'Futures Trading Platform' },
     { value: 'research', label: 'Research', description: 'Notion Research iFrame' },

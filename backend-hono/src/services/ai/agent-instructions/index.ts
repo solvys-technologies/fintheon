@@ -91,3 +91,27 @@ export function extractSkillTag(message: string): string | null {
   const match = message.match(/\[SKILL:(\w+)\]/i)
   return match ? match[1].toUpperCase() : null
 }
+
+/**
+ * Build a live RiskFlow feed context block for agent chat prompts.
+ * Returns recent headlines so agents can reference real-time data
+ * when analyzing narratives, risk events, and econ prints.
+ */
+export async function buildFeedContext(): Promise<string> {
+  try {
+    const { getFeed } = await import('../../riskflow/feed-service.js')
+    const feed = await getFeed('system', { limit: 10 })
+    if (feed.items.length === 0) return ''
+
+    const headlines = feed.items
+      .map(
+        (item: any, i: number) =>
+          `${i + 1}. [${item.macroLevel >= 3 ? 'HIGH' : item.macroLevel >= 2 ? 'MED' : 'LOW'}] ${item.headline} (${item.source}${item.sentiment ? ', ' + item.sentiment : ''})`
+      )
+      .join('\n')
+
+    return `\n\n## Live RiskFlow Headlines (recent)\n${headlines}\n\nReference these headlines when discussing current market conditions, narratives, or risk events.`
+  } catch {
+    return ''
+  }
+}

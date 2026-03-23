@@ -1,13 +1,13 @@
-// [claude-code 2026-03-20] Re-implement Clerk JWT auth middleware with BYPASS_AUTH fallback
+// [claude-code 2026-03-22] Supabase JWT auth middleware — replaces Clerk
 import type { Context, Next } from 'hono';
-import { verifyClerkToken } from '../services/clerk-auth.js';
+import { verifySupabaseToken } from '../services/supabase-auth.js';
 
 const BYPASS_AUTH = process.env.BYPASS_AUTH === 'true';
 
 /**
- * Auth Middleware — Clerk JWT verification
+ * Auth Middleware — Supabase JWT verification
  * When BYPASS_AUTH=true: sets local-user (dev/electron mode)
- * Otherwise: extracts Bearer token, verifies with Clerk, sets userId/email
+ * Otherwise: extracts Bearer token, verifies with Supabase auth.getUser(), sets userId/email
  */
 export const authMiddleware = async (c: Context, next: Next) => {
   if (BYPASS_AUTH) {
@@ -25,9 +25,9 @@ export const authMiddleware = async (c: Context, next: Next) => {
   const token = authHeader.slice(7);
 
   try {
-    const payload = await verifyClerkToken(token);
-    const userId = payload.sub || (payload as any).userId || '';
-    const email = (payload as any).email || '';
+    const payload = await verifySupabaseToken(token);
+    const userId = payload.sub;
+    const email = payload.email;
 
     c.set('auth', { userId, email });
     c.set('userId', userId);

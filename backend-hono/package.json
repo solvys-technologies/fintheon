@@ -16,7 +16,6 @@
     "@ai-sdk/groq": "^3.0.2",
     "@ai-sdk/openai": "^3.0.2",
     "@ai-sdk/xai": "^3.0.3",
-    "@clerk/backend": "^1.27.0",
     "@hono/node-server": "^1.13.0",
     "@neondatabase/serverless": "^0.10.4",
     "@sentry/node": "^10.32.1",

@@ -1,6 +1,6 @@
 import { pingDb } from '../db/optimized.js'
 import { defaultAiConfig } from '../config/ai-config.js'
-import { clerkHealth } from './clerk-auth.js'
+import { supabaseAuthHealth } from './supabase-auth.js'
 
 type ComponentStatus = 'ok' | 'degraded' | 'error'
 
@@ -8,7 +8,7 @@ export interface HealthStatus {
   status: ComponentStatus
   timestamp: string
   components: Record<
-    'database' | 'aiGateway' | 'clerk',
+    'database' | 'aiGateway' | 'auth',
     {
       status: ComponentStatus
       details?: Record<string, unknown>
@@ -91,23 +91,23 @@ const checkAiGateway = async () => {
   }
 }
 
-const checkClerk = () => {
-  const details = clerkHealth()
+const checkAuth = () => {
+  const details = supabaseAuthHealth()
   return {
-    status: details.hasSecret ? ('ok' as ComponentStatus) : ('degraded' as ComponentStatus),
+    status: details.hasCredentials ? ('ok' as ComponentStatus) : ('degraded' as ComponentStatus),
     details
   }
 }
 
 export const createHealthService = () => {
   const checkAll = async (): Promise<HealthStatus> => {
-    const [database, aiGateway, clerk] = await Promise.all([
+    const [database, aiGateway, auth] = await Promise.all([
       checkDatabase(),
       checkAiGateway(),
-      checkClerk()
+      checkAuth()
     ])
 
-    const components = { database, aiGateway, clerk }
+    const components = { database, aiGateway, auth }
     const hasError = Object.values(components).some((component) => component.status === 'error')
     const hasDegraded = Object.values(components).some((component) => component.status === 'degraded')
 

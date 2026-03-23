@@ -193,9 +193,10 @@ export async function getLastFetchTime(): Promise<Date | null> {
 }
 
 /**
- * Cleanup old items (run periodically)
+ * Cleanup old items (run periodically).
+ * Default: 30 days (720 hours). Called on boot + daily interval.
  */
-export async function cleanupOldItems(hoursOld: number = 72): Promise<number> {
+export async function cleanupOldItems(hoursOld: number = 720): Promise<number> {
   if (!isDatabaseAvailable() || !sql) {
     const cutoff = new Date(Date.now() - hoursOld * 60 * 60 * 1000);
     const before = memoryCache.length;

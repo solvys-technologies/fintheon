@@ -11,7 +11,7 @@
 
 import { execFile, spawn as spawnProcess } from 'node:child_process'
 import type { HermesAgentRole } from './hermes-service.js'
-import { getAgentSystemPrompt, extractSkillTag } from './ai/agent-instructions/index.js'
+import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from './ai/agent-instructions/index.js'
 import { createLogger } from '../lib/logger.js'
 
 const log = createLogger('Hermes')
@@ -394,7 +394,10 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
     : detectAgent(request.message)
 
   const skillTag = extractSkillTag(request.message)
-  const systemPrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
+  const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
+  // Inject live RiskFlow headlines so agents can reference real-time data
+  const feedContext = await buildFeedContext()
+  const systemPrompt = basePrompt + feedContext
   const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: 'system', content: systemPrompt }
   ]

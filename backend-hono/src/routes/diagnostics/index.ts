@@ -3,7 +3,7 @@
 
 import { Hono } from 'hono';
 import { pingDb } from '../../db/optimized.js';
-import { clerkHealth } from '../../services/clerk-auth.js';
+import { supabaseAuthHealth } from '../../services/supabase-auth.js';
 import { isPollingActive } from '../../services/riskflow/feed-poller.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
 import { initHermesAgent } from '../../services/hermes-handler.js';
@@ -123,19 +123,19 @@ async function checkTwitterCli(): Promise<ServiceDiagnostic> {
   }
 }
 
-function checkClerkAuth(): ServiceDiagnostic {
-  const health = clerkHealth();
-  if (health.hasSecret) {
-    return { name: 'Clerk Auth', status: 'ok', detail: 'Secret configured' };
+function checkSupabaseAuth(): ServiceDiagnostic {
+  const health = supabaseAuthHealth();
+  if (health.hasCredentials) {
+    return { name: 'Supabase Auth', status: 'ok', detail: 'Credentials configured' };
   }
   if (health.mockMode) {
-    return { name: 'Clerk Auth', status: 'degraded', detail: 'Dev mock mode (no CLERK_SECRET_KEY)' };
+    return { name: 'Supabase Auth', status: 'degraded', detail: 'Dev mock mode (no SUPABASE_URL)' };
   }
   return {
-    name: 'Clerk Auth',
+    name: 'Supabase Auth',
     status: 'error',
-    detail: 'CLERK_SECRET_KEY missing in production',
-    fix: 'Add CLERK_SECRET_KEY to backend-hono/.env or Fly secrets',
+    detail: 'SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing in production',
+    fix: 'Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to backend-hono/.env',
   };
 }
 
@@ -186,7 +186,7 @@ export function createDiagnosticsRoutes(): Hono {
       checkDatabase(),
       Promise.resolve(checkRiskFlowPoller()),
       checkTwitterCli(),
-      Promise.resolve(checkClerkAuth()),
+      Promise.resolve(checkSupabaseAuth()),
       Promise.resolve(checkTradingView()),
     ]);
 

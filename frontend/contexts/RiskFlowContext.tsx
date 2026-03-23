@@ -5,7 +5,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { RiskFlowAlert } from '../lib/riskflow-feed';
 import { ensureScoring, downgradeNonFinancialBreaking } from '../lib/riskflow-feed';
-import baseBackend from '../lib/backend';
+import { useBackend } from '../lib/backend';
 import { decodeHtmlEntities } from '../lib/html-entities';
 import { useSettings } from './SettingsContext';
 import type { NotionPollStatus } from '../lib/services';
@@ -89,6 +89,7 @@ function persistIds(key: string, ids: Set<string>): void {
 }
 
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
+  const backend = useBackend();
   const { selectedSymbol, autoRefresh } = useSettings();
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
@@ -103,8 +104,8 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const pollNotion = useCallback(async () => {
     try {
       const [ideas, pollStatus] = await Promise.all([
-        baseBackend.notion.getTradeIdeas(),
-        baseBackend.notion.getPollStatus(),
+        backend.notion.getTradeIdeas(),
+        backend.notion.getPollStatus(),
       ]);
       const converted: RiskFlowAlert[] = ideas.map((idea) => {
         const displayName = idea.title || idea.ticker || 'Trade Idea';
@@ -147,7 +148,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.warn('[RiskFlowContext] Notion poll error:', err);
     }
-  }, []);
+  }, [backend]);
 
   useEffect(() => {
     void pollNotion();
@@ -163,7 +164,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   // Backend feed polling (twitter-cli, Polymarket, Economic Calendar)
   const pollBackendFeed = useCallback(async () => {
     try {
-      const response = await baseBackend.riskflow.list({ minMacroLevel: 0, limit: 30, instrument: selectedSymbol.symbol });
+      const response = await backend.riskflow.list({ minMacroLevel: 0, limit: 30, instrument: selectedSymbol.symbol });
       const alerts: RiskFlowAlert[] = response.items.map((item) => ({
         id: `backend-${item.id}`,
         headline: item.title,
@@ -189,7 +190,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.warn('[RiskFlowContext] Backend feed poll error:', err);
     }
-  }, [selectedSymbol.symbol]);
+  }, [backend, selectedSymbol.symbol]);
 
   useEffect(() => {
     void pollBackendFeed();
@@ -272,7 +273,9 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     setRefreshing(true);
     try {
       // Trigger backend to poll sources for fresh items
-      await baseBackend.riskflow.refresh().catch(() => {});
+      await backend.riskflow.refresh().catch((err: unknown) => {
+        console.warn('[RiskFlow] Manual refresh failed:', err);
+      });
       // Re-fetch both sources in parallel
       await Promise.all([
         pollNotion(),
@@ -281,7 +284,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setRefreshing(false);
     }
-  }, [pollNotion, pollBackendFeed]);
+  }, [backend, pollNotion, pollBackendFeed]);
 
   useEffect(() => {
     persistIds(DISMISSED_STORAGE_KEY, dismissedIds);

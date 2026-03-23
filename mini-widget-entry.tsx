@@ -1,19 +1,11 @@
+// [claude-code 2026-03-22] Mini widget — Supabase auth (replaces Clerk)
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ClerkProvider } from '@clerk/clerk-react';
-import { dark } from '@clerk/themes';
 import { AuthProvider } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { FloatingWidget } from './components/layout/FloatingWidget';
 import { useBackend } from './lib/backend';
 import './index.css';
-
-const DEFAULT_CLERK_DOMAIN = 'clerk.app.pricedinresearch.io';
-const DEFAULT_CLERK_PROXY_URL = 'https://clerk.app.pricedinresearch.io';
-
-const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const CLERK_DOMAIN = import.meta.env.VITE_CLERK_DOMAIN || DEFAULT_CLERK_DOMAIN;
-const CLERK_PROXY_URL = import.meta.env.VITE_CLERK_PROXY_URL || DEFAULT_CLERK_PROXY_URL;
 
 /**
  * Mini Widget App - Standalone floating widget for persistent display
@@ -56,19 +48,15 @@ function MiniWidgetApp() {
   }, []);
 
   const handleClose = () => {
-    // Hide the widget window via Electron
     window.electron?.toggleMiniWidget();
   };
 
   return (
     <div className="min-h-screen bg-transparent">
-      {/* Draggable area for moving the window */}
-      <div 
+      <div
         className="fixed top-0 left-0 right-0 h-4 cursor-move"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       />
-      
-      {/* Widget content - positioned to account for drag area */}
       <div className="pt-2">
         <FloatingWidget
           vix={vix}
@@ -82,32 +70,12 @@ function MiniWidgetApp() {
 }
 
 function MiniWidgetRoot() {
-  if (!CLERK_PUBLISHABLE_KEY) {
-    return (
-      <div className="min-h-screen bg-[#050500] flex items-center justify-center text-red-500">
-        Missing Clerk publishable key
-      </div>
-    );
-  }
-
   return (
-    <ClerkProvider
-      publishableKey={CLERK_PUBLISHABLE_KEY}
-      domain={CLERK_DOMAIN}
-      proxyUrl={CLERK_PROXY_URL}
-      appearance={{
-        baseTheme: dark,
-        variables: {
-          colorPrimary: '#D4AF37',
-        },
-      }}
-    >
-      <AuthProvider>
-        <SettingsProvider>
-          <MiniWidgetApp />
-        </SettingsProvider>
-      </AuthProvider>
-    </ClerkProvider>
+    <AuthProvider>
+      <SettingsProvider>
+        <MiniWidgetApp />
+      </SettingsProvider>
+    </AuthProvider>
   );
 }
 

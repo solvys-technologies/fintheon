@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useClerk } from '@clerk/clerk-react';
+import { signOut } from '../../lib/supabase';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
@@ -453,21 +453,8 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
   );
 }
 
-// Wrapper component that uses Clerk (only rendered when ClerkProvider is available)
-function MainLayoutWithClerk({ onSettingsClick }: MainLayoutProps) {
-  const clerk = useClerk();
-  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={clerk.signOut} />;
-}
-
-// Wrapper component for dev mode without Clerk
-function MainLayoutWithoutClerk({ onSettingsClick }: MainLayoutProps) {
-  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={undefined} />;
-}
-
-// Main export that chooses the right implementation
+// Main export — uses Supabase signOut (no Clerk wrapper needed)
 export function MainLayout({ onSettingsClick }: MainLayoutProps) {
-  if (BYPASS_AUTH) {
-    return <MainLayoutWithoutClerk onSettingsClick={onSettingsClick} />;
-  }
-  return <MainLayoutWithClerk onSettingsClick={onSettingsClick} />;
+  const handleSignOut = BYPASS_AUTH ? undefined : signOut;
+  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={handleSignOut} />;
 }

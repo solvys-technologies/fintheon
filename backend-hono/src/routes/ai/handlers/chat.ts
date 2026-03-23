@@ -22,7 +22,7 @@ import { defaultAiConfig } from '../../../config/ai-config.js'
 import type { ChatRequest } from '../../../types/ai-chat.js'
 import type { HermesAgentRole } from '../../../services/hermes-service.js'
 import { handleHermesChat, detectAgent, type ContentPart } from '../../../services/hermes-handler.js'
-import { getAgentSystemPrompt, extractSkillTag } from '../../../services/ai/agent-instructions/index.js'
+import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from '../../../services/ai/agent-instructions/index.js'
 import { extractSkillFromMessage, isSkillEnabled, getSkillDisabledReason } from '../../../config/feature-flags.js'
 import { createRequestCognition } from '../../../services/cognition-emitter.js'
 import { enqueue, completeJob } from '../../../services/chat-queue.js'
@@ -276,7 +276,10 @@ export async function handleChat(c: Context) {
       const augmentedMessage = message
 
       const skillTag = extractSkillTag(message)
-      const systemPrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: true })
+      const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: true })
+      // Inject live RiskFlow headlines so agents can reference real-time data
+      const feedContext = await buildFeedContext()
+      const systemPrompt = basePrompt + feedContext
       const openRouterMessages: { role: string; content: string | unknown[] }[] = [
         { role: 'system', content: systemPrompt },
         ...history.map(h => ({ role: h.role, content: h.content })),

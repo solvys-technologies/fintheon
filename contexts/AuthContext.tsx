@@ -1,6 +1,6 @@
-// [claude-code 2026-03-20] S3:T3e — upsert user_settings on Clerk sign-in
+// [claude-code 2026-03-22] Supabase auth context — replaces Clerk useUser/useAuth hooks
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { supabase, type Session } from '../lib/supabase';
 import { useBackend } from '../lib/backend';
 import { pullCloudSettings } from '../lib/user-sync';
 
@@ -25,29 +25,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Development mode: bypass Clerk authentication
+// Development mode: bypass authentication
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
 const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
 
-// Auth provider without Clerk (for dev mode)
-function AuthProviderNoClerk({ children }: { children: ReactNode }) {
-  const backend = useBackend();
+// Auth provider without Supabase (for dev mode)
+function AuthProviderNoAuth({ children }: { children: ReactNode }) {
   const [tier, setTierState] = useState<UserTier>('free');
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     hasCompletedOnboarding: false,
   });
-  const [isLoading] = useState(false); // No loading in dev mode
-
-  const setTier = (newTier: UserTier) => {
-    setTierState(newTier);
-    // In dev mode, just update local state
-  };
 
   return (
     <AuthContext.Provider
       value={{
-        tier: tier,
-        setTier: setTier,
+        tier,
+        setTier: setTierState,
         onboardingData,
         setOnboardingData,
         isAuthenticated: true,
@@ -60,26 +53,39 @@ function AuthProviderNoClerk({ children }: { children: ReactNode }) {
   );
 }
 
-// Auth provider with Clerk (for production)
-function AuthProviderWithClerk({ children }: { children: ReactNode }) {
-  const { isSignedIn, user } = useUser();
-  const clerkUserId = user?.id;
-  
+// Auth provider with Supabase (for production)
+function AuthProviderWithSupabase({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const supabaseUserId = session?.user?.id ?? null;
+  const isSignedIn = !!session;
+
   const backend = useBackend();
   const [tier, setTierState] = useState<UserTier>('free');
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     hasCompletedOnboarding: false,
   });
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Listen for Supabase auth state
+  useEffect(() => {
+    supabase?.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+    });
+
+    const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Wrapper to persist tier changes to backend
   const setTier = (newTier: UserTier) => {
     setTierState(newTier);
-    // Persist to backend asynchronously (fire-and-forget for immediate UI update)
-    if (isSignedIn && clerkUserId) {
+    if (isSignedIn && supabaseUserId) {
       backend.account.updateTier({ tier: newTier }).catch((error) => {
         console.error('Failed to update tier:', error);
-        // Revert on error
         backend.account.get()
           .then((account) => {
             if (account.tier) {
@@ -95,24 +101,21 @@ function AuthProviderWithClerk({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function initializeUser() {
-      if (isSignedIn && clerkUserId) {
+      if (isSignedIn && supabaseUserId) {
         try {
           const account = await backend.account.get();
-          // Always load tier from backend account (persistent across sessions)
           if (account.tier) {
             setTierState(account.tier);
           } else {
-            // Fallback to free if tier is somehow missing
             setTierState('free');
           }
           // Hydrate cloud settings (non-blocking)
-          pullCloudSettings(clerkUserId).catch(() => {});
+          pullCloudSettings(supabaseUserId).catch(() => {});
         } catch (error: any) {
           if (error?.message?.includes('not found') || error?.code === 'not_found') {
             try {
               const newAccount = await backend.account.create({ initialBalance: 10000 });
               await backend.projectx.syncProjectXAccounts();
-              // Set tier from newly created account (defaults to 'free')
               if (newAccount.tier) {
                 setTierState(newAccount.tier);
               } else {
@@ -124,29 +127,26 @@ function AuthProviderWithClerk({ children }: { children: ReactNode }) {
             }
           } else {
             console.error('Failed to get account:', error);
-            // Don't reset tier on error - keep current state
           }
         }
       } else {
-        // Reset to free tier when signed out
         setTierState('free');
       }
       setIsLoading(false);
     }
 
-    // Always initialize when auth state changes
     initializeUser();
-  }, [isSignedIn, clerkUserId, backend]);
+  }, [isSignedIn, supabaseUserId, backend]);
 
   return (
     <AuthContext.Provider
       value={{
-        tier: tier,
-        setTier: setTier,
+        tier,
+        setTier,
         onboardingData,
         setOnboardingData,
-        isAuthenticated: isSignedIn || false,
-        userId: clerkUserId || null,
+        isAuthenticated: isSignedIn,
+        userId: supabaseUserId,
         isLoading,
       }}
     >
@@ -158,9 +158,9 @@ function AuthProviderWithClerk({ children }: { children: ReactNode }) {
 // Main AuthProvider that chooses the right implementation
 export function AuthProvider({ children }: { children: ReactNode }) {
   if (BYPASS_AUTH) {
-    return <AuthProviderNoClerk>{children}</AuthProviderNoClerk>;
+    return <AuthProviderNoAuth>{children}</AuthProviderNoAuth>;
   }
-  return <AuthProviderWithClerk>{children}</AuthProviderWithClerk>;
+  return <AuthProviderWithSupabase>{children}</AuthProviderWithSupabase>;
 }
 
 export function useAuth() {

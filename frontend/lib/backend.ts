@@ -1,21 +1,33 @@
+// [claude-code 2026-03-22] Supabase auth token — mirrors root lib/backend.ts
+import { getAccessToken } from '../../lib/supabase';
 import ApiClient from "./apiClient";
 import { createBackendClient, type BackendClient } from "./services";
 
-/**
- * Backend Client - Local Single-User Mode
- * No authentication required
- */
+// Development mode: bypass authentication ONLY when explicitly enabled
+const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
+const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
 
-// Create base API client
+// Create base API client (unauthenticated — used only in bypass mode)
 const baseApiClient = new ApiClient();
 const baseBackendClient = createBackendClient(baseApiClient);
 
-// Simple hook that returns the backend client
-export function useBackend(): BackendClient {
+// Hook for when Supabase auth is available (normal mode)
+function useBackendWithSupabase(): BackendClient {
+  const authenticatedClient = baseApiClient.withAuth(async () => {
+    return getAccessToken();
+  });
+  return createBackendClient(authenticatedClient);
+}
+
+// Hook for dev mode without auth
+function useBackendWithoutAuth(): BackendClient {
   return baseBackendClient;
 }
 
-// Export default client for non-hook usage
+// Export the appropriate hook based on environment
+export const useBackend = BYPASS_AUTH ? useBackendWithoutAuth : useBackendWithSupabase;
+
+// Export default client for non-hook usage (unauthenticated — prefer useBackend())
 export default baseBackendClient;
 
 // Re-export types and services

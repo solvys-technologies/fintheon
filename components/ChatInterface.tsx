@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowRight, Paperclip, Image, FileText, Link2, AlertTriangle, TrendingUp, History, X, Pin, Archive, Edit2, MoreVertical, ChevronDown } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useAuth, useUser } from "@clerk/clerk-react";
+import { getAccessToken } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
 import { useBackend } from "../lib/backend";
 import { healingBowlPlayer } from "../utils/healingBowlSounds";
 import { useSettings } from "../contexts/SettingsContext";
@@ -90,8 +91,7 @@ interface ConversationSession {
 export default function ChatInterface() {
   const backend = useBackend();
   const { alertConfig } = useSettings();
-  const { getToken } = useAuth();
-  const { user } = useUser();
+  const { userId } = useAuth();
   const { orientationRequired, openOrientationModal } = usePsych();
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -114,11 +114,11 @@ export default function ChatInterface() {
   const [showModelSelector, setShowModelSelector] = useState(false);
 
   // Admin detection (hidden tier - not visible to regular users)
-  const isAdmin = user?.publicMetadata?.role === 'admin';
+  const isAdmin = false; // TODO: check Supabase user app_metadata.role if needed
 
   // Custom fetch function for useChat with auth
   const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const token = await getToken({ template: 'neon' });
+    const token = await getAccessToken();
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
     // If URL is relative, prepend API_BASE_URL
@@ -160,7 +160,7 @@ export default function ChatInterface() {
     }
 
     return response;
-  }, [getToken, conversationId]);
+  }, [conversationId]);
 
   // Track loading state manually
   const [isStreaming, setIsStreaming] = useState(false);

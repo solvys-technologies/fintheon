@@ -10,6 +10,7 @@ import { startAutopilotScheduler } from '../services/autopilot/autopilot-schedul
 import { startContextBankTicker } from '../services/context-bank/context-bank-service.js';
 import { startBoardroomScheduler } from '../services/cron/boardroom-scheduler.js';
 import { startDispatchScheduler } from '../services/cron/dispatch-scheduler.js';
+import { cleanupOldItems } from '../services/riskflow/news-cache.js';
 
 const log = createLogger('Boot');
 
@@ -53,6 +54,17 @@ export async function bootServices(): Promise<void> {
   initClaudeSDK().catch((err) =>
     log.warn('Claude SDK init failed (non-fatal)', { error: String(err) })
   );
+
+  // News feed cleanup — purge items older than 30 days on startup, then daily
+  cleanupOldItems().catch((err) =>
+    log.warn('Initial feed cleanup failed (non-fatal)', { error: String(err) })
+  );
+  setInterval(() => {
+    cleanupOldItems().catch((err) =>
+      log.warn('Scheduled feed cleanup failed', { error: String(err) })
+    );
+  }, 24 * 60 * 60 * 1000);
+  log.info('FeedCleanup scheduled (30-day TTL, daily cycle)');
 
   log.info('All services initialized');
 }

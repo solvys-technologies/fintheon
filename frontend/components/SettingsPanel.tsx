@@ -517,18 +517,18 @@ export function SettingsPage() {
                           ProjectX
                         </button>
                         <button
-                          onClick={() => setPrimaryBroker('hyperliquid')}
+                          onClick={() => setPrimaryBroker('mmt')}
                           className={`px-3 py-2 rounded-lg border text-sm transition-all ${
-                            primaryBroker === 'hyperliquid'
+                            primaryBroker === 'mmt'
                               ? 'bg-[var(--fintheon-accent)]/20 border-[var(--fintheon-accent)]/40 text-[var(--fintheon-accent)]'
                               : 'bg-[var(--fintheon-bg)] border-zinc-800 hover:border-zinc-700 text-gray-400'
                           }`}
                         >
-                          Hyperliquid (perps)
+                          MMT (crypto)
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
-                        Autopilot execution uses the selected broker. Rithmic for futures, ProjectX for sim, Hyperliquid for crypto perps.
+                        Autopilot execution uses the selected broker. Rithmic for futures, ProjectX for sim, MMT for crypto order flow.
                       </p>
                     </div>
 
