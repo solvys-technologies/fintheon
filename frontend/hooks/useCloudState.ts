@@ -55,8 +55,8 @@ export function useCloudState<T>(
         });
         if (!res.ok || cancelled) { setIsLoading(false); return; }
 
-        const data = await res.json() as { app_state?: Record<string, unknown> };
-        const cloudValue = data.app_state?.[key];
+        const data = await res.json() as Record<string, unknown>;
+        const cloudValue = data?.[key];
         if (cloudValue !== undefined && !cancelled) {
           setValueInternal(cloudValue as T);
           localStorage.setItem(fallbackKey, JSON.stringify(cloudValue));

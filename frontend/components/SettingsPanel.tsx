@@ -1104,6 +1104,14 @@ export function SettingsPage() {
                     <p className="text-xs text-gray-500">
                       Allow agents to automatically generate and submit trade proposals without manual trigger
                     </p>
+                    <Toggle
+                      label="Account Tracker Polling"
+                      enabled={developerSettings.accountTrackerEnabled ?? false}
+                      onChange={(val) => setDeveloperSettings({ ...developerSettings, accountTrackerEnabled: val })}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Enable polling for ProjectX account data (balance, P&L, algo status). Disable if you don't use ProjectX.
+                    </p>
                   </div>
                 </section>
               </div>

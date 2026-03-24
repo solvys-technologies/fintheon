@@ -84,7 +84,7 @@ export function MainLayout() {
 
 // Main layout component - no authentication needed
 function MainLayoutInner() {
-  const { iframeUrls, defaultLayout, defaultPlatform } = useSettings();
+  const { iframeUrls, defaultLayout, defaultPlatform, developerSettings } = useSettings();
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('executive');
   const [layoutEditMode, setLayoutEditMode] = useState(false);

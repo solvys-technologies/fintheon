@@ -52,16 +52,21 @@ export function createProfileRoutes(): Hono {
     return c.json(state);
   });
 
-  // PUT /api/profile/app-state — Upsert app_state JSONB
+  // PUT /api/profile/app-state — Upsert app_state JSONB (merges into existing state)
   router.put('/app-state', async (c: Context) => {
     const supabaseUid = c.get('supabaseUid') as string;
-    const state = await c.req.json<Record<string, unknown>>();
+    const body = await c.req.json<{ state?: Record<string, unknown> }>();
+    const incoming = body.state ?? body as Record<string, unknown>;
 
     // Ensure profile exists before upserting state
     const email = c.get('email') as string | undefined;
     await getOrCreateProfile(supabaseUid, email);
 
-    const ok = await upsertAppState(supabaseUid, state);
+    // Merge incoming keys into existing app_state
+    const existing = await getAppState(supabaseUid);
+    const merged = { ...(existing ?? {}), ...incoming };
+
+    const ok = await upsertAppState(supabaseUid, merged);
     if (!ok) {
       return c.json({ error: 'Failed to update app state' }, 500);
     }
