@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Added RunningAnalysisSnapshot, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary
 // [claude-code 2026-03-23] MiroFish simulation engine types
 // [claude-code 2026-03-16] Extended with risk categories, time series, generated events for Auditorium
 // [claude-code 2026-03-23] Added SimulationContext, Briefing, RunRecord, preset types
@@ -174,4 +175,44 @@ export interface MiroFishRunRecord {
   scenarios: MiroFishScenario[];
   context_snapshot: SimulationContext;
   created_at: string;
+}
+
+// --- Running Analysis + Rolling Window Types ---
+
+export interface RunningAnalysisSnapshot {
+  compositeIV: number;
+  categoryScores: MiroFishCategoryScore[];
+  confidence: number;
+  adjustmentCount: number;
+  lastUpdateAt: string;
+  baselineRunId: string | null;
+  accumulatedItemCount: number;
+}
+
+export interface RollingWindowQuery {
+  days: 1 | 7 | 14 | 30;
+  preset?: AuditoriumPreset;
+  limit?: number;
+}
+
+export interface AggregatedRollingData {
+  runs: MiroFishRunSummary[];
+  avgCompositeIV: number;
+  avgConfidence: number;
+  avgRegimeShift: number;
+  trendDirection: 'rising' | 'falling' | 'stable';
+  periodStart: string;
+  periodEnd: string;
+}
+
+export interface MiroFishRunSummary {
+  simulationId: string;
+  preset: AuditoriumPreset;
+  compositeIV: number;
+  confidence: number;
+  regimeShiftProbability: number;
+  briefingText: string;
+  categoryScores: MiroFishCategoryScore[];
+  scenarios: MiroFishScenario[];
+  createdAt: string;
 }

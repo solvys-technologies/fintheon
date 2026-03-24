@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Added reactive MiroFish adjustment loop for high-impact items (macroLevel >= 3)
 // [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
 // Gated by ENABLE_CENTRAL_SCORING=true (only TP's instance should set this)
 // Phase T4: wired recordObservation() to feed autoresearch scoring pipeline
@@ -13,6 +14,7 @@ import type { FeedItem } from '../../types/riskflow.js';
 import { createLogger } from '../../lib/logger.js';
 import { recordObservation } from '../autoresearch/scoring-observer.js';
 import { fetchVIX } from '../vix-service.js';
+import { shouldTriggerReactiveAdjustment, adjustScoresForRiskFlow, getRunningState, setRunningState } from '../mirofish/mirofish-reactive.js';
 
 const log = createLogger('CentralScorer');
 
@@ -116,6 +118,25 @@ async function scoringCycle(): Promise<void> {
 
     if (observationCount > 0) {
       log.info(` Recorded ${observationCount} autoresearch observations`);
+    }
+
+    // Reactive MiroFish adjustment: high-impact items trigger running analysis update
+    for (const item of enrichedItems) {
+      if (item.macroLevel && shouldTriggerReactiveAdjustment(item.macroLevel)) {
+        const currentState = getRunningState();
+        if (currentState) {
+          const updated = adjustScoresForRiskFlow(currentState, {
+            id: item.id,
+            headline: item.headline,
+            tags: item.tags || [],
+            ivScore: item.ivScore || 0,
+            macroLevel: item.macroLevel,
+            sentiment: item.sentiment || 'neutral',
+          });
+          setRunningState(updated);
+          log.info(` Reactive MiroFish adjustment: ${item.headline.slice(0, 60)}... → composite ${updated.compositeIV.toFixed(1)}`);
+        }
+      }
     }
 
     // Convert back to scored format and write to Supabase

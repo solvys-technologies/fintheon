@@ -22,7 +22,7 @@ import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
 import { ModelDashboard } from '../models/ModelDashboard';
 
-// [claude-code 2026-03-20] Auth bypass forced — Clerk stripped for Sprint 1
+// Auth bypass forced — Supabase auth gated in App.tsx
 const BYPASS_AUTH = true;
 
 type NavTab = 'feed' | 'analysis' | 'news' | 'models';
@@ -32,7 +32,7 @@ interface MainLayoutProps {
   onSettingsClick: () => void;
 }
 
-// Inner component that doesn't use Clerk hooks directly
+// Inner component that receives signOut as a prop
 function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signOut?: () => Promise<void> }) {
   const { selectedSymbol } = useSettings();
   const [activeTab, setActiveTab] = useState<NavTab>('feed');
@@ -179,7 +179,7 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
     }
     try {
       await signOut();
-      // Clerk will automatically redirect to sign-in page
+      // Supabase session cleared — App.tsx auth gate redirects to sign-in
     } catch (error) {
       console.error('Logout failed:', error);
     }

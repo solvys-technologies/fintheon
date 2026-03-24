@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Updated weights to 50% VIX + 30% headline + 20% MiroFish
 // [claude-code 2026-03-12] Task 2C: startIVScoreTicker reads PRIMARY_INSTRUMENT env var
 // [claude-code 2026-03-11] IV Score Ticker — persistent background scorer
 // Runs every 60s, computes blended IV score, caches to DB.
@@ -191,7 +192,8 @@ async function restoreFromDB(): Promise<void> {
             score: data.score,
             vixComponent: data.vixComponent,
             headlineComponent: data.headlineComponent,
-            weights: { vix: 0.6, headlines: 0.4 },
+            mirofishComponent: data.mirofishComponent ?? 0,
+            weights: { vix: 0.5, headlines: 0.3, mirofish: 0.2 },
             vix: {
               level: data.vixLevel,
               percentChange: 0,

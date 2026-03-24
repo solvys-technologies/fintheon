@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Widened RiskFlow window to 72h/40 with configurable params
 // [claude-code 2026-03-23] MiroFish context assembly — fetches VIX, FRED, RiskFlow in parallel
 import type { AuditoriumPreset, SimulationContext, RiskFlowHeadline } from './mirofish-types.js';
 import { fetchFredIndicators, getCachedFredIndicators, getFredFetchedAt } from '../systemic/fred-service.js';
@@ -36,13 +37,13 @@ export async function assembleSimulationContext(
 }
 
 /**
- * Fetch scored RiskFlow headlines from Supabase — last 48h, macro level 2+, limit 20.
+ * Fetch scored RiskFlow headlines from Supabase — configurable window (default 72h, limit 40).
  */
-async function fetchRiskFlowHeadlines(): Promise<RiskFlowHeadline[]> {
+async function fetchRiskFlowHeadlines(sinceHours = 72, limit = 40): Promise<RiskFlowHeadline[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
-  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  const cutoff = new Date(Date.now() - sinceHours * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await sb
     .from('scored_riskflow_items')
@@ -50,7 +51,7 @@ async function fetchRiskFlowHeadlines(): Promise<RiskFlowHeadline[]> {
     .gte('created_at', cutoff)
     .gte('macro_level', 2)
     .order('created_at', { ascending: false })
-    .limit(20);
+    .limit(limit);
 
   if (error) {
     console.warn('[MiroFish Context] RiskFlow fetch failed:', error.message);

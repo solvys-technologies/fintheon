@@ -18,7 +18,7 @@ interface HealthResponse {
   components: {
     database: { status: string; details?: string };
     aiGateway: { status: string; details?: string };
-    clerk: { status: string; details?: string };
+    auth: { status: string; details?: string };
   };
 }
 

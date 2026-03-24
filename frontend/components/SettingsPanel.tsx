@@ -980,7 +980,6 @@ export function SettingsPage() {
                         onClick={() => {
                           localStorage.removeItem('github_token');
                           localStorage.removeItem('github_user');
-                          localStorage.removeItem('clerk_token');
                           window.location.reload();
                         }}
                       >

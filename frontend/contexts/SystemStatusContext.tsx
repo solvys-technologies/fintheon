@@ -46,7 +46,7 @@ const KEY_MAP: Record<string, string> = {
   'Supabase': 'database',
   'RiskFlow Feed Poller': 'feed',
   'Twitter CLI': 'x-cli',
-  'Clerk Auth': 'auth',
+  'Supabase Auth': 'auth',
   'TradingView': 'chart',
 };
 
@@ -55,7 +55,7 @@ const SHORT_NAMES: Record<string, string> = {
   'Supabase': 'Database',
   'RiskFlow Feed Poller': 'Feed',
   'Twitter CLI': 'X',
-  'Clerk Auth': 'Auth',
+  'Supabase Auth': 'Auth',
   'TradingView': 'Chart',
 };
 

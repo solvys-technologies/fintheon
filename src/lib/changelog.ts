@@ -9,6 +9,50 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-24T16:00:00',
+    agent: 'claude-code',
+    summary: 'feat(mirofish): Deterministic reactive score adjustment engine + 3-component IV formula (50% VIX + 30% headlines + 20% MiroFish running analysis). New mirofish-reactive.ts maps RiskFlow items to 6 risk categories with rule-based scoring. Central scorer wired to trigger reactive adjustments for macroLevel >= 3 items.',
+    files: [
+      'backend-hono/src/services/mirofish/mirofish-reactive.ts',
+      'backend-hono/src/services/market-data/iv-scorer.ts',
+      'backend-hono/src/services/market-data/iv-score-ticker.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+    ],
+  },
+  {
+    date: '2026-03-24T15:30:00',
+    agent: 'claude-code',
+    summary: 'feat(auditorium): T3 chart redesign — implied points smooth bezier line (top 55%) + stacked category IV volume bars (bottom 45%) + theme-aware neon/gradient effects + hover tooltip with colored dots. 239 lines, canvas-only, retina-aware.',
+    files: ['frontend/components/narrative/AuditoriumChart.tsx'],
+  },
+  {
+    date: '2026-03-24T14:00:00',
+    agent: 'claude-code',
+    summary: 'feat(mirofish): T2 backend — rolling window queries, auto-run detection, running state endpoint, widened RiskFlow context to 72h/40 items. Added RunningAnalysisSnapshot, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary types. 3 new API routes: /rolling-window, /auto-run-check, /running-state.',
+    files: [
+      'backend-hono/src/services/mirofish/mirofish-types.ts',
+      'backend-hono/src/services/mirofish/mirofish-service.ts',
+      'backend-hono/src/services/mirofish/mirofish-context.ts',
+      'backend-hono/src/routes/mirofish/handlers.ts',
+      'backend-hono/src/routes/mirofish/index.ts',
+    ],
+  },
+  {
+    date: '2026-03-24T12:00:00',
+    agent: 'claude-code',
+    summary: 'chore(auth): Remove all Clerk remnants — deleted dead lib/clerk-hooks.ts and components/auth/fintheonAppearance.ts stubs, removed @clerk/clerk-react and @clerk/themes from frontend/package.json, cleaned Clerk env vars from secrets.env.example, fixed GatewayContext HealthResponse type (clerk→auth), updated SystemStatusContext key maps (Clerk Auth→Supabase Auth), removed clerk_token from SettingsPanel logout, updated stale Clerk comments in MainLayout.tsx.',
+    files: [
+      'lib/clerk-hooks.ts',
+      'components/auth/fintheonAppearance.ts',
+      'frontend/package.json',
+      'secrets.env.example',
+      'frontend/contexts/GatewayContext.tsx',
+      'frontend/contexts/SystemStatusContext.tsx',
+      'frontend/components/SettingsPanel.tsx',
+      'components/layout/MainLayout.tsx',
+    ],
+  },
+  {
     date: '2026-03-24T06:00:00',
     agent: 'claude-code',
     summary: 'feat(psychassist): Deterministic ER scoring engine — replaces slow Claude sentiment analysis with instant client-side regex-based curse/breathing detection. Scale: 12.5→0→-12.5, flat -1.25 per curse, 5x decay multiplier. Persists every trigger event to Supabase er_events table via fire-and-forget POST. Wired into voice pipeline (processRecording → processTranscript → sendText). Claude sentiment analysis kept as secondary background signal.',

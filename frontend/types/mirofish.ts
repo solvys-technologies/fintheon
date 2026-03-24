@@ -20,6 +20,7 @@ export interface MiroFishTimePoint {
   date: string;
   composite: number;
   categories: Record<MiroFishRiskCategory, number>;
+  impliedPoints?: number;
 }
 
 export interface MiroFishGeneratedEvent {
@@ -181,4 +182,38 @@ export interface MiroFishRunRecord {
   confidence: number;
   briefing_text: string;
   created_at: string;
+}
+
+// ── Running Analysis Types ──
+
+export interface RunningAnalysisSnapshot {
+  compositeIV: number;
+  categoryScores: MiroFishCategoryScore[];
+  confidence: number;
+  adjustmentCount: number;
+  lastUpdateAt: string;
+  baselineRunId: string | null;
+  accumulatedItemCount: number;
+}
+
+export interface RollingWindowData {
+  runs: MiroFishRunSummary[];
+  avgCompositeIV: number;
+  avgConfidence: number;
+  avgRegimeShift: number;
+  trendDirection: 'rising' | 'falling' | 'stable';
+  periodStart: string;
+  periodEnd: string;
+}
+
+export interface MiroFishRunSummary {
+  simulationId: string;
+  preset: AuditoriumPreset;
+  compositeIV: number;
+  confidence: number;
+  regimeShiftProbability: number;
+  briefingText: string;
+  categoryScores: MiroFishCategoryScore[];
+  scenarios: MiroFishScenario[];
+  createdAt: string;
 }
