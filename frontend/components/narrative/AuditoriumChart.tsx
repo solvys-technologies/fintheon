@@ -1,8 +1,5 @@
-// [claude-code 2026-03-24] Chart overhaul — TradingView top pane (~75%), compact heat-mapped IV bars bottom pane (~25%)
-import { useRef, useEffect, useLayoutEffect, useCallback, useState } from 'react';
-import { AdvancedRealTimeChart as _AdvancedRealTimeChart } from 'react-ts-tradingview-widgets';
-// Cast to accept overrides + Compare studies that exist on TradingView widget but aren't in the type defs
-const AdvancedRealTimeChart = _AdvancedRealTimeChart as any;
+// [claude-code 2026-03-24] Chart overhaul — TradingView iframe embed + compact heat-mapped IV bars
+import { useRef, useEffect, useLayoutEffect, useCallback, useState, useMemo } from 'react';
 import type { MiroFishTimePoint, MiroFishRiskCategory } from '../../types/mirofish';
 import { RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/mirofish';
 
@@ -91,16 +88,29 @@ export function AuditoriumChart({ timeSeries, rollingDays, selectedSymbol = '/MN
 
   const tvSymbol = mapSymbol(selectedSymbol);
 
-  // Filter main symbol out of compare list to avoid duplicate overlay
-  const compareStudies = COMPARE_SYMBOLS
-    .filter(s => s !== tvSymbol)
-    .map(s => `Compare@tv-basicstudies|0|${s}`);
-
-  // Smooth fade-in for TradingView iframe
-  useEffect(() => {
-    const t = setTimeout(() => setTvLoaded(true), 800);
-    return () => clearTimeout(t);
-  }, []);
+  // Build TradingView embed URL — works reliably in Electron file:// context
+  const tvEmbedUrl = useMemo(() => {
+    const studies = COMPARE_SYMBOLS
+      .filter(s => s !== tvSymbol)
+      .map(s => `Compare@tv-basicstudies|0|${s}`);
+    const params = new URLSearchParams({
+      symbol: tvSymbol,
+      interval: '15',
+      theme: 'dark',
+      style: '3',
+      locale: 'en',
+      timezone: 'America/New_York',
+      toolbar_bg: '000000',
+      enable_publishing: '0',
+      hide_side_toolbar: '0',
+      allow_symbol_change: '1',
+      save_image: '0',
+      hide_volume: '0',
+      withdateranges: '1',
+    });
+    if (studies.length > 0) params.set('studies', JSON.stringify(studies));
+    return `https://s.tradingview.com/widgetembed/?${params.toString()}`;
+  }, [tvSymbol]);
 
   // ── IV bars canvas drawing ──
   const draw = useCallback(() => {
@@ -156,37 +166,18 @@ export function AuditoriumChart({ timeSeries, rollingDays, selectedSymbol = '/MN
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* TradingView pane — ~75% */}
+      {/* TradingView pane — ~75% via direct iframe (reliable in Electron) */}
       <div
         className="flex-[3] min-h-0 rounded-t overflow-hidden border border-[var(--fintheon-accent)]/10 transition-opacity duration-700"
         style={{ opacity: tvLoaded ? 1 : 0 }}
       >
-        <AdvancedRealTimeChart
-          symbol={tvSymbol}
-          theme="dark"
-          autosize
-          interval="15"
-          timezone="America/New_York"
-          style="3"
-          locale="en"
-          toolbar_bg="#000000"
-          enable_publishing={false}
-          hide_side_toolbar={false}
-          allow_symbol_change={true}
-          studies={compareStudies}
-          overrides={{
-            'paneProperties.background': '#000000',
-            'paneProperties.vertGridProperties.color': 'rgba(255, 255, 255, 0.05)',
-            'paneProperties.horzGridProperties.color': 'rgba(255, 255, 255, 0.05)',
-            'scalesProperties.textColor': '#AAA',
-            'mainSeriesProperties.areaStyle.color1': 'rgba(199, 159, 74, 0.28)',
-            'mainSeriesProperties.areaStyle.color2': 'rgba(199, 159, 74, 0.02)',
-            'mainSeriesProperties.areaStyle.linecolor': '#c79f4a',
-            'mainSeriesProperties.areaStyle.linewidth': 2,
-          }}
-          copyrightStyles={{
-            parent: { display: 'none' },
-          }}
+        <iframe
+          src={tvEmbedUrl}
+          className="w-full h-full border-0"
+          allow="autoplay; encrypted-media"
+          sandbox="allow-scripts allow-same-origin allow-popups"
+          onLoad={() => setTvLoaded(true)}
+          title="TradingView Chart"
         />
       </div>
 

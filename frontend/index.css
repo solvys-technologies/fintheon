@@ -4,6 +4,15 @@
 
 @import "./fonts.css";
 
+/* Hide all scrollbars app-wide — pagination dots serve as position indicators */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+*::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Electron */
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @utility container {

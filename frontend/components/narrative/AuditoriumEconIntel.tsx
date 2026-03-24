@@ -1,12 +1,14 @@
-// [claude-code 2026-03-24] Econ Intel — 2-col grid, expandable cards with countdown + history
+// [claude-code 2026-03-24] Econ Intel — 2-col grid, expandable cards with countdown + history + risk category sub-cards
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Minus, CalendarClock, ChevronDown } from 'lucide-react';
-import type { EconCardData, SimulationContext } from '../../types/mirofish';
+import type { EconCardData, SimulationContext, MiroFishCategoryScore } from '../../types/mirofish';
+import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const ECON_TICKERS: EconCardData[] = [
   { name: 'Consumer Price Index', ticker: 'CPI' },
+  { name: 'Producer Price Index', ticker: 'PPI' },
   { name: 'Personal Income', ticker: 'PI' },
   { name: 'Gross Domestic Product', ticker: 'GDP' },
   { name: 'Purchasing Mgrs Index', ticker: 'PMI' },
@@ -62,7 +64,7 @@ function EconCard({ data, expanded, onToggle }: { data: EconCardData; expanded: 
     <div
       className={`flex flex-col rounded border bg-[var(--fintheon-surface)]/40 transition-all duration-300 cursor-pointer ${
         expanded
-          ? 'border-[var(--fintheon-accent)]/30 sm:col-span-2 shadow-[0_0_12px_rgba(199,159,74,0.15)]'
+          ? 'border-[var(--fintheon-accent)]/30 shadow-[0_0_12px_rgba(199,159,74,0.15)]'
           : 'border-[var(--fintheon-border)]/15 hover:border-[var(--fintheon-accent)]/20'
       }`}
       onClick={onToggle}
@@ -153,7 +155,7 @@ function EconCard({ data, expanded, onToggle }: { data: EconCardData; expanded: 
       <div
         className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out"
         style={{
-          maxHeight: expanded ? '280px' : '0px',
+          maxHeight: expanded ? '400px' : '0px',
           opacity: expanded ? 1 : 0,
         }}
       >
@@ -223,9 +225,10 @@ function EconCard({ data, expanded, onToggle }: { data: EconCardData; expanded: 
 interface AuditoriumEconIntelProps {
   expanded?: boolean;
   context?: SimulationContext | null;
+  categoryScores?: MiroFishCategoryScore[];
 }
 
-export function AuditoriumEconIntel({ expanded, context }: AuditoriumEconIntelProps) {
+export function AuditoriumEconIntel({ expanded, context, categoryScores }: AuditoriumEconIntelProps) {
   const [cards, setCards] = useState<EconCardData[]>(ECON_TICKERS);
   const [loading, setLoading] = useState(true);
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
@@ -289,6 +292,102 @@ export function AuditoriumEconIntel({ expanded, context }: AuditoriumEconIntelPr
         <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center mt-2">
           Fetching economic data...
         </p>
+      )}
+
+      {/* Risk Category Cards — expandable, same style as econ cards */}
+      {categoryScores && categoryScores.length > 0 && (
+        <div className="mt-4">
+          <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
+            Risk Sectors — IV by Category
+          </div>
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+            {categoryScores.map(cs => {
+              const color = ivHeatColor(cs.ivScore);
+              const label = RISK_CATEGORY_LABELS[cs.category];
+              const isExpanded = expandedTicker === `risk-${cs.category}`;
+              const deltaColor = cs.delta > 0 ? '#EF4444' : cs.delta < 0 ? '#34D399' : 'var(--fintheon-muted)';
+              const deltaSign = cs.delta > 0 ? '+' : '';
+              const confPct = Math.round(cs.confidence * 100);
+
+              return (
+                <div
+                  key={cs.category}
+                  className={`flex flex-col rounded border bg-[var(--fintheon-surface)]/40 transition-all duration-300 cursor-pointer border-l-2 ${
+                    isExpanded
+                      ? 'border-[var(--fintheon-accent)]/30 shadow-[0_0_12px_rgba(199,159,74,0.15)]'
+                      : 'border-[var(--fintheon-border)]/15 hover:border-[var(--fintheon-accent)]/20'
+                  }`}
+                  style={{ borderLeftColor: color }}
+                  onClick={() => setExpandedTicker(prev => prev === `risk-${cs.category}` ? null : `risk-${cs.category}`)}
+                >
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                        <span className="text-[11px] font-mono text-[var(--fintheon-text)]/80 uppercase tracking-wider">{label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono font-bold" style={{ color: deltaColor }}>
+                          {deltaSign}{cs.delta.toFixed(1)}
+                        </span>
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 text-[var(--fintheon-muted)]/30 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-end justify-between">
+                      <span className="text-2xl font-mono font-bold" style={{ color, textShadow: `0 0 12px ${color}40` }}>
+                        {cs.ivScore.toFixed(1)}
+                      </span>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase">Conf</span>
+                        <div className="w-16 h-[3px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${confPct}%`,
+                              backgroundColor: confPct >= 70 ? '#34D399' : confPct >= 50 ? '#F59E0B' : '#EF4444',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded detail */}
+                  <div
+                    className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out"
+                    style={{ maxHeight: isExpanded ? '200px' : '0px', opacity: isExpanded ? 1 : 0 }}
+                  >
+                    <div className="border-t border-[var(--fintheon-border)]/10 px-4 py-3 flex flex-col gap-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">IV Score</span>
+                          <span className="text-xs font-mono text-[var(--fintheon-text)]">{cs.ivScore.toFixed(2)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">Delta</span>
+                          <span className="text-xs font-mono" style={{ color: deltaColor }}>{deltaSign}{cs.delta.toFixed(2)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">Confidence</span>
+                          <span className="text-xs font-mono text-[var(--fintheon-text)]">{confPct}%</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-[var(--fintheon-muted)]/50 leading-relaxed">
+                        {cs.delta > 0.5
+                          ? `${label} risk is elevated and rising — IV delta of ${deltaSign}${cs.delta.toFixed(1)} indicates increasing implied volatility pressure.`
+                          : cs.delta < -0.5
+                            ? `${label} risk is subsiding — IV contracting with delta ${cs.delta.toFixed(1)} suggesting reduced uncertainty.`
+                            : `${label} risk is stable — minimal IV change with delta ${deltaSign}${cs.delta.toFixed(1)}.`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* FRED Macro Indicators */}

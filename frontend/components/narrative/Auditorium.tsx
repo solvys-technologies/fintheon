@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Thread selectedSymbol prop for TradingView chart, taller chart container (65vh)
 // [claude-code 2026-03-24] Auditorium — 3-page dashboard (merged Risk + Narratives), expandable econ cards
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { Zap, Loader2 } from 'lucide-react';
@@ -32,6 +33,7 @@ interface AuditoriumProps {
   riskflowItems?: RiskFlowCatalyst[];
   macroContext?: SimulationContext | null;
   narratives?: AuditoriumNarrative[];
+  selectedSymbol?: string;
 }
 
 type MiroFishRiskCategory = 'geopolitical' | 'political' | 'monetary-policy' | 'earnings-corporate' | 'market-structure' | 'black-swan';
@@ -40,7 +42,7 @@ const CATEGORIES: MiroFishRiskCategory[] = [
   'earnings-corporate', 'market-structure', 'black-swan',
 ];
 
-export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext, narratives }: AuditoriumProps) {
+export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext, narratives, selectedSymbol = '/MNQ' }: AuditoriumProps) {
   const [rollingDays, setRollingDays] = useState<7 | 14 | 30>(14);
   const [running, setRunning] = useState(false);
   const [preset, setPreset] = useState<AuditoriumPreset>(() => {
@@ -158,10 +160,10 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                   {/* Hero chart */}
                   <div className="shrink-0">
                     <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
-                      Predicted IV by Risk Type
+                      {selectedSymbol} — Price Action + IV Risk Bars
                     </div>
-                    <div className="h-[49vh]">
-                      <AuditoriumChart timeSeries={data.timeSeries} rollingDays={rollingDays} />
+                    <div className="h-[65vh]">
+                      <AuditoriumChart timeSeries={data.timeSeries} rollingDays={rollingDays} selectedSymbol={selectedSymbol} />
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                       {CATEGORIES.map(cat => {
@@ -180,9 +182,9 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                     </div>
                   </div>
 
-                  {/* KPI Row 1: Core metrics + Macro strip */}
-                  <div className="shrink-0 flex flex-col gap-3">
-                    <div className="grid grid-cols-3 xl:grid-cols-4 gap-3">
+                  {/* KPI Row: Core metrics — center justified */}
+                  <div className="shrink-0 flex justify-center">
+                    <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
                       <div className="rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/40 px-5 py-3 flex items-center justify-between" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
                         <div>
                           <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Composite IV</span>
@@ -200,21 +202,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                         <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Model Confidence</span>
                         <span className="text-2xl font-mono font-bold text-[var(--fintheon-text)]">{(data.confidence * 100).toFixed(0)}%</span>
                       </div>
-                      <div className="hidden xl:flex items-center">
-                        <AuditoriumMacroStrip context={displayContext} />
-                      </div>
                     </div>
-                    {/* Mobile macro strip */}
-                    <div className="xl:hidden">
-                      <AuditoriumMacroStrip context={displayContext} />
-                    </div>
-                  </div>
-
-                  {/* KPI Row 2: Category score cards */}
-                  <div className="shrink-0 grid grid-cols-3 xl:grid-cols-6 gap-4">
-                    {data.categoryScores.map(cs => (
-                      <CategoryScoreCard key={cs.category} category={cs.category} score={cs.ivScore} delta={cs.delta} confidence={cs.confidence} />
-                    ))}
                   </div>
 
                   {/* Briefing */}
@@ -246,7 +234,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                 />
               </div>
               <div className="flex-1">
-                <AuditoriumEconIntel expanded={preset === 'econ-watch'} context={displayContext} />
+                <AuditoriumEconIntel expanded={preset === 'econ-watch'} context={displayContext} categoryScores={data?.categoryScores} />
               </div>
             </div>
           )}
