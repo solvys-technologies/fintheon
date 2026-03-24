@@ -367,6 +367,14 @@ ipcMain.handle("toggle-mini-widget", () => {
   return { ok: true };
 });
 
+// [claude-code 2026-03-24] Open URL in system browser (for OAuth flows)
+ipcMain.handle("open-external", (_event, url) => {
+  if (typeof url === "string" && (url.startsWith("https://") || url.startsWith("http://"))) {
+    shell.openExternal(url);
+  }
+  return { ok: true };
+});
+
 // Auto-update IPC handlers
 ipcMain.handle("update-download", () => {
   autoUpdater.downloadUpdate().catch((err) => {

@@ -132,8 +132,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async () => {
     const data = await signInWithGoogle();
     if (data.url) {
-      // Open in system browser — Electron will receive the deep link callback
-      window.open(data.url, '_blank');
+      // Open in system browser via Electron shell.openExternal (NOT window.open,
+      // which opens inside Electron and causes Vercel/wrong-page redirects)
+      if (window.electron?.openExternal) {
+        window.electron.openExternal(data.url);
+      } else {
+        // Fallback for non-Electron (web) environments
+        window.location.href = data.url;
+      }
     }
   }, []);
 

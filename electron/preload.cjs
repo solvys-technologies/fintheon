@@ -64,10 +64,11 @@ contextBridge.exposeInMainWorld("electron", {
     updateDownloadedCallback = typeof cb === "function" ? cb : null;
   },
 
-  // Auth deep link callback
+  // Auth — deep link callback + open URL in system browser
   onAuthCallback: (cb) => {
     authCallbackHandler = typeof cb === "function" ? cb : null;
   },
+  openExternal: (url) => ipcRenderer.invoke("open-external", url),
 
   // [claude-code 2026-03-23] Browser Use Phase 2 — CLI command bridge
   browserUse: {
