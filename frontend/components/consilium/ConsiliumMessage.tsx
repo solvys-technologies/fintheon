@@ -1,4 +1,6 @@
-// [claude-code 2026-03-19] Individual message bubble for Consilium agent discussion panel — onClick + special prefix rendering
+// [claude-code 2026-03-24] Boardroom UX overhaul — removed hover discoloration, added inline copy, date+time timestamps
+import { useState, useCallback } from 'react';
+import { Copy, Check } from 'lucide-react';
 import { AgentBadge, type BoardroomAgent } from './AgentBadge';
 
 export interface BoardroomMessage {
@@ -12,25 +14,37 @@ export interface BoardroomMessage {
 
 interface ConsiliumMessageProps {
   message: BoardroomMessage;
-  onClick?: () => void;
 }
 
-function formatTime(iso: string): string {
+function formatTimestamp(iso: string): string {
   try {
     const d = new Date(iso);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `${mm}/${dd}/${yy} ${time}`;
   } catch {
     return '';
   }
 }
 
-export function ConsiliumMessage({ message, onClick }: ConsiliumMessageProps) {
+export function ConsiliumMessage({ message }: ConsiliumMessageProps) {
+  const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
 
   const isHuddle = message.content.startsWith('[HUDDLE TRIGGERED]');
   const isBriefing = message.content.startsWith('[PRE-MARKET BRIEF]') || message.content.startsWith('[POST-MARKET BRIEF]');
   const isStandup = message.content.startsWith('[STANDUP]');
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard unavailable */ }
+  }, [message.content]);
 
   if (isSystem) {
     return (
@@ -52,8 +66,7 @@ export function ConsiliumMessage({ message, onClick }: ConsiliumMessageProps) {
 
   return (
     <div
-      className={`group flex gap-3 px-4 py-3 transition-colors hover:bg-[#c79f4a]/[0.03] cursor-pointer ${isUser ? 'flex-row-reverse' : ''}`}
-      onClick={onClick}
+      className={`group/msg flex gap-3 px-4 py-3 ${isUser ? 'flex-row-reverse' : ''}`}
     >
       {!isUser && <AgentBadge agent={message.agent} size="sm" />}
       <div className={`flex ${maxWidth} flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}>
@@ -76,9 +89,19 @@ export function ConsiliumMessage({ message, onClick }: ConsiliumMessageProps) {
         >
           <p className={`whitespace-pre-wrap break-words ${isStandup ? 'italic' : ''}`}>{message.content}</p>
         </div>
-        <span className="px-1 text-[10px] text-[#f0ead6]/25 opacity-0 transition-opacity group-hover:opacity-100">
-          {formatTime(message.timestamp)}
-        </span>
+        {/* Timestamp + copy — visible on hover */}
+        <div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover/msg:opacity-100">
+          <span className="px-1 text-[10px] tabular-nums text-[#f0ead6]/25">
+            {formatTimestamp(message.timestamp)}
+          </span>
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] text-[#f0ead6]/25 transition-colors hover:bg-[#c79f4a]/10 hover:text-[#c79f4a]"
+            title={copied ? 'Copied' : 'Copy'}
+          >
+            {copied ? <Check size={10} /> : <Copy size={10} />}
+          </button>
+        </div>
       </div>
     </div>
   );

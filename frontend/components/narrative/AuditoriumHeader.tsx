@@ -1,4 +1,6 @@
+// [claude-code 2026-03-24] Persistence refactor: Run → Update button label when data exists
 // [claude-code 2026-03-23] Persistent Auditorium header — presets, run button, status, rolling period
+// [claude-code 2026-03-25] Theme-sensitive fonts — use var(--font-heading) and var(--font-body)
 import { Zap, Loader2 } from 'lucide-react';
 import type { AuditoriumPreset } from '../../types/mirofish';
 import { AuditoriumPresets } from './AuditoriumPresets';
@@ -9,6 +11,7 @@ interface AuditoriumHeaderProps {
   onRun: () => void;
   isLoading: boolean;
   status: 'idle' | 'running' | 'complete' | 'error';
+  hasData: boolean;
   rollingDays: 7 | 14 | 30;
   onRollingChange: (d: 7 | 14 | 30) => void;
 }
@@ -16,21 +19,24 @@ interface AuditoriumHeaderProps {
 const ROLLING_OPTIONS = [7, 14, 30] as const;
 
 export function AuditoriumHeader({
-  preset, onPresetChange, onRun, isLoading, status, rollingDays, onRollingChange,
+  preset, onPresetChange, onRun, isLoading, status, hasData, rollingDays, onRollingChange,
 }: AuditoriumHeaderProps) {
   return (
     <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-border)]/10">
       <div className="flex items-center gap-3">
-        <span className="text-[10px] font-mono font-bold text-[var(--fintheon-accent)]/70 uppercase tracking-widest">
+        <span
+          className="text-[10px] font-bold text-[var(--fintheon-accent)]/70 uppercase tracking-widest"
+          style={{ fontFamily: 'var(--font-heading)' }}
+        >
           MiroFish
         </span>
         {status === 'complete' && (
-          <span className="text-[9px] px-2 py-0.5 rounded bg-[#34D399]/10 text-[#34D399] font-mono font-bold">
+          <span className="text-[9px] px-2 py-0.5 rounded bg-[var(--fintheon-low)]/10 text-[var(--fintheon-low)] font-bold" style={{ fontFamily: 'var(--font-body)' }}>
             LIVE
           </span>
         )}
         {status === 'error' && (
-          <span className="text-[9px] px-2 py-0.5 rounded bg-[#EF4444]/10 text-[#EF4444] font-mono font-bold">
+          <span className="text-[9px] px-2 py-0.5 rounded bg-[var(--fintheon-severe)]/10 text-[var(--fintheon-severe)] font-bold" style={{ fontFamily: 'var(--font-body)' }}>
             ERROR
           </span>
         )}
@@ -44,11 +50,12 @@ export function AuditoriumHeader({
             <button
               key={d}
               onClick={() => onRollingChange(d)}
-              className={`px-2 py-1 text-[10px] font-mono transition-colors ${
+              className={`px-2 py-1 text-[10px] transition-colors ${
                 rollingDays === d
                   ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8'
                   : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]'
               }`}
+              style={{ fontFamily: 'var(--font-body)' }}
             >
               {d}d
             </button>
@@ -58,10 +65,11 @@ export function AuditoriumHeader({
         <button
           onClick={onRun}
           disabled={isLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] font-mono font-bold transition-colors border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-40"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] font-bold transition-colors border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-40"
+          style={{ fontFamily: 'var(--font-body)' }}
         >
           {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-          {isLoading ? 'Running...' : 'Run MiroFish'}
+          {isLoading ? 'Updating...' : (hasData ? 'Update' : 'Run MiroFish')}
         </button>
       </div>
     </div>

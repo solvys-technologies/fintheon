@@ -11,15 +11,15 @@ interface AuditoriumNarrativesProps {
 }
 
 function directionIcon(bias: string) {
-  if (bias === 'bullish') return <TrendingUp className="w-3.5 h-3.5 text-[#34D399]" />;
-  if (bias === 'bearish') return <TrendingDown className="w-3.5 h-3.5 text-[#EF4444]" />;
-  return <Minus className="w-3.5 h-3.5 text-[#F59E0B]" />;
+  if (bias === 'bullish') return <TrendingUp className="w-3.5 h-3.5 text-[var(--fintheon-low)]" />;
+  if (bias === 'bearish') return <TrendingDown className="w-3.5 h-3.5 text-[var(--fintheon-severe)]" />;
+  return <Minus className="w-3.5 h-3.5 text-[var(--fintheon-neutral-severe)]" />;
 }
 
 function healthColor(score: number): string {
-  if (score >= 70) return '#34D399';
-  if (score >= 40) return '#F59E0B';
-  return '#EF4444';
+  if (score >= 70) return 'var(--fintheon-low)';
+  if (score >= 40) return 'var(--fintheon-neutral-severe)';
+  return 'var(--fintheon-severe)';
 }
 
 function NarrativeCard({ narrative }: { narrative: AuditoriumNarrative }) {
@@ -89,7 +89,7 @@ function RunHistoryRow({ run }: { run: MiroFishRunRecord }) {
         conf {((run.confidence ?? 0) * 100).toFixed(0)}%
       </span>
       {(run.regime_shift_probability ?? 0) >= 0.3 && (
-        <span className="text-[8px] font-mono font-bold px-1 py-0.5 rounded bg-[#EF4444]/10 text-[#EF4444]">
+        <span className="text-[8px] font-mono font-bold px-1 py-0.5 rounded bg-[var(--fintheon-severe)]/10 text-[var(--fintheon-severe)]">
           REGIME
         </span>
       )}

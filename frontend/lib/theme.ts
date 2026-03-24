@@ -11,6 +11,12 @@ export interface ThemeConfig {
   surface: string;
   border: string;
   muted: string;
+  // Severity colors — used by RiskFlow badges, alerts, status indicators
+  severe?: string;
+  neutralSevere?: string;
+  neutral?: string;
+  lowNeutral?: string;
+  low?: string;
 }
 
 export const THEME_PRESETS: Record<string, ThemeConfig> = {
@@ -65,14 +71,26 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
   'miami-heat': {
     name: 'miami-heat',
     label: 'Miami Heat',
-    accent: '#F9A825',
-    bg: '#1A0A0A',
-    text: '#FFF8E1',
-    bullish: '#98201C',
-    bearish: '#000000',
-    surface: '#221010',
-    border: '#F9A825',
-    muted: '#A1887F',
+    accent: '#F4005F',
+    bg: '#0A0A0A',
+    text: '#FFFFFF',
+    bullish: '#00BCD4',
+    bearish: '#F4005F',
+    surface: '#141014',
+    border: '#F4005F',
+    muted: '#888888',
+  },
+  'miami-dolphins': {
+    name: 'miami-dolphins',
+    label: 'Miami Dolphins',
+    accent: '#008E97',
+    bg: '#0A1628',
+    text: '#FFFFFF',
+    bullish: '#008E97',
+    bearish: '#F26522',
+    surface: '#0F1F35',
+    border: '#008E97',
+    muted: '#FC4C02',
   },
   monocolor: {
     name: 'monocolor',
@@ -97,6 +115,23 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
     surface: '#151310',
     border: '#3d3826',
     muted: '#6b6455',
+  },
+  'solvys-stone': {
+    name: 'solvys-stone',
+    label: 'Solvys Stone',
+    accent: '#c79f4a',
+    bg: '#0d0c09',
+    text: '#c38f25',
+    bullish: '#d49616',
+    bearish: '#824d4d',
+    surface: '#151310',
+    border: '#c79f4a',
+    muted: '#6b6455',
+    severe: '#da0000',
+    neutralSevere: '#ac5318',
+    neutral: '#c79f4a',
+    lowNeutral: '#526089',
+    low: '#073c00',
   },
 };
 

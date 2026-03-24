@@ -1,9 +1,10 @@
-// [claude-code 2026-03-14] Theme settings — font style with samples + color presets + custom HEX
+// [claude-code 2026-03-24] Theme settings — font style, color presets, custom color picker, severity colors, save custom themes
 import { useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Save, Plus } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { type ThemeConfig, DEFAULT_THEME } from '../../lib/theme';
 import { DEFAULT_FONT_THEME } from '../../lib/font-theme';
+import { ColorSwatchInput } from '../ui/ColorPicker';
 
 const COLOR_FIELDS: { key: keyof ThemeConfig; label: string }[] = [
   { key: 'accent', label: 'Accent' },
@@ -13,16 +14,35 @@ const COLOR_FIELDS: { key: keyof ThemeConfig; label: string }[] = [
   { key: 'bearish', label: 'Bearish' },
 ];
 
+const SEVERITY_FIELDS: { key: keyof ThemeConfig; label: string }[] = [
+  { key: 'severe', label: 'Severe' },
+  { key: 'neutralSevere', label: 'Neutral Severe' },
+  { key: 'neutral', label: 'Neutral' },
+  { key: 'lowNeutral', label: 'Low Neutral' },
+  { key: 'low', label: 'Low' },
+];
+
+const DEFAULT_SEVERITY: Record<string, string> = {
+  severe: '#EF4444',
+  neutralSevere: '#F59E0B',
+  neutral: '#6B7280',
+  lowNeutral: '#3B82F6',
+  low: '#34D399',
+};
+
 function isValidHex(v: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(v);
 }
 
-const SAMPLE_HEADING = 'The quick brown fox';
-const SAMPLE_BODY = 'Market conditions remain volatile as traders assess incoming economic data and geopolitical developments.';
+const SAMPLE_HEADING = 'AAPL 189.42  +2.31%';
+const SAMPLE_BODY = 'ES broke above 5,420 resistance — watching $1,234.56 target with 62% probability. Risk/reward favors long above the VWAP.';
 
 export function ThemeSettings() {
   const { theme, setTheme, presets, fontTheme, setFontTheme, fontThemes, pompaEnabled, setPompaEnabled } = useTheme();
   const [customDraft, setCustomDraft] = useState<Record<string, string>>({});
+  const [customThemes, setCustomThemes] = useState<ThemeConfig[]>(() => {
+    try { return JSON.parse(localStorage.getItem('fintheon-custom-themes') || '[]'); } catch { return []; }
+  });
 
   const presetList = Object.values(presets);
 
@@ -34,7 +54,7 @@ export function ThemeSettings() {
   };
 
   const getFieldValue = (key: keyof ThemeConfig): string => {
-    return customDraft[key] ?? (theme[key] as string);
+    return customDraft[key] ?? (theme[key] as string) ?? DEFAULT_SEVERITY[key] ?? '#333333';
   };
 
   return (
@@ -93,19 +113,19 @@ export function ThemeSettings() {
                   </div>
                 )}
                 <div className="text-[12px] font-medium text-white">{ft.label}</div>
-                <div className="text-[9px] text-zinc-500 mt-0.5">{ft.description}</div>
-                {/* Inline font sample per card */}
+                <div className="text-[11px] text-zinc-500 mt-0.5">{ft.description}</div>
+                {/* Inline font sample — trading context */}
                 <div
                   className="mt-2 text-[14px] font-semibold text-zinc-300 leading-tight"
                   style={{ fontFamily: ft.fontHeading }}
                 >
-                  Aa Bb Cc
+                  $1,234.56
                 </div>
                 <div
                   className="text-[11px] text-zinc-500 mt-0.5"
                   style={{ fontFamily: ft.fontBody }}
                 >
-                  0123456789
+                  AAPL +2.3%
                 </div>
               </button>
             );
@@ -122,7 +142,11 @@ export function ThemeSettings() {
           Ceremonial mode — Roman-themed effects, sounds &amp; animations
         </p>
         <button
+          role="switch"
+          aria-checked={pompaEnabled}
+          aria-label="Toggle Pompa ceremonial mode"
           onClick={() => setPompaEnabled(!pompaEnabled)}
+          onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setPompaEnabled(!pompaEnabled); } }}
           className="flex items-center gap-3 w-full p-3 rounded-lg border transition-all"
           style={{
             borderColor: pompaEnabled ? '#c79f4a' : 'rgba(255,255,255,0.08)',
@@ -130,12 +154,12 @@ export function ThemeSettings() {
           }}
         >
           <div
-            className="relative w-10 h-5 rounded-full transition-colors"
+            className="relative w-10 h-5 rounded-full transition-colors duration-200"
             style={{ backgroundColor: pompaEnabled ? '#c79f4a' : '#3f3f46' }}
           >
             <div
-              className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform"
-              style={{ transform: pompaEnabled ? 'translateX(22px)' : 'translateX(2px)' }}
+              className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200"
+              style={{ transform: pompaEnabled ? 'translateX(20px)' : 'translateX(0)' }}
             />
           </div>
           <span className="text-[13px] font-medium" style={{ color: pompaEnabled ? '#f0ead6' : '#71717a' }}>
@@ -173,16 +197,22 @@ export function ThemeSettings() {
                     <Check size={12} className="text-black" />
                   </div>
                 )}
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex -space-x-1">
-                    {[preset.accent, preset.bg, preset.bullish, preset.bearish].map((c, i) => (
-                      <div
-                        key={i}
-                        className="w-4 h-4 rounded-full border border-black/30"
-                        style={{ backgroundColor: c }}
-                      />
-                    ))}
-                  </div>
+                {/* Color swatch strip */}
+                <div className="flex gap-0 rounded overflow-hidden mb-2 h-5">
+                  {[
+                    { color: preset.accent, label: 'Accent' },
+                    { color: preset.bg, label: 'BG' },
+                    { color: preset.bullish, label: 'Bull' },
+                    { color: preset.bearish, label: 'Bear' },
+                    { color: preset.text, label: 'Text' },
+                  ].map((s, i) => (
+                    <div
+                      key={i}
+                      className="flex-1"
+                      style={{ backgroundColor: s.color }}
+                      title={`${s.label}: ${s.color}`}
+                    />
+                  ))}
                 </div>
                 <div className="text-[12px] font-medium text-white">{preset.label}</div>
               </button>
@@ -191,58 +221,131 @@ export function ThemeSettings() {
         </div>
       </section>
 
-      {/* Custom Colors */}
+      {/* Custom Colors — in-app color picker */}
       <section>
         <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--fintheon-accent)' }}>
           Custom Colors
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {COLOR_FIELDS.map(({ key, label }) => {
             const value = getFieldValue(key);
-            const valid = isValidHex(value);
             return (
-              <div key={key} className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-md border border-white/10 shrink-0"
-                  style={{ backgroundColor: valid ? value : '#333' }}
-                />
-                <div className="flex-1">
-                  <label className="text-[11px] text-gray-500 uppercase tracking-wider">{label}</label>
-                  <input
-                    type="text"
-                    value={value}
-                    onChange={(e) => handleCustomChange(key, e.target.value)}
-                    onFocus={() => {
-                      if (!customDraft[key]) setCustomDraft((d) => ({ ...d, [key]: theme[key] as string }));
-                    }}
-                    className="w-full bg-transparent border-b text-[13px] text-white py-0.5 outline-none font-mono"
-                    style={{ borderColor: valid ? 'var(--fintheon-accent)' : '#EF4444' }}
-                    placeholder="#000000"
-                    spellCheck={false}
-                  />
-                </div>
-              </div>
+              <ColorSwatchInput
+                key={key}
+                color={value}
+                label={label}
+                onChange={(hex) => handleCustomChange(key, hex)}
+              />
             );
           })}
         </div>
       </section>
 
-      <div className="pt-2">
+      {/* Severity Colors */}
+      <section>
+        <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--fintheon-accent)' }}>
+          Severity Colors
+        </h3>
+        <p className="text-[11px] text-zinc-500 mb-3">
+          Controls RiskFlow badges, alerts, and status indicators across the app
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {SEVERITY_FIELDS.map(({ key, label }) => {
+            const value = getFieldValue(key);
+            return (
+              <ColorSwatchInput
+                key={key}
+                color={value}
+                label={label}
+                onChange={(hex) => handleCustomChange(key, hex)}
+              />
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Save Custom Theme + Reset */}
+      <div className="pt-4 flex items-center gap-3 flex-wrap">
+        <button
+          onClick={() => {
+            const name = prompt('Theme name:');
+            if (!name) return;
+            const custom: ThemeConfig = { ...theme, name: `custom-${Date.now()}`, label: name };
+            const saved = JSON.parse(localStorage.getItem('fintheon-custom-themes') || '[]') as ThemeConfig[];
+            saved.push(custom);
+            localStorage.setItem('fintheon-custom-themes', JSON.stringify(saved));
+            setCustomThemes(saved);
+          }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-medium transition-colors border"
+          style={{
+            color: 'var(--fintheon-accent)',
+            borderColor: 'color-mix(in srgb, var(--fintheon-accent) 30%, transparent)',
+          }}
+        >
+          <Save className="w-3.5 h-3.5" />
+          Save as Custom Theme
+        </button>
         <button
           onClick={() => {
             setTheme(DEFAULT_THEME);
             setFontTheme(DEFAULT_FONT_THEME);
             setCustomDraft({});
           }}
-          className="px-4 py-2 rounded-md text-xs font-medium transition-colors border"
-          style={{
-            color: 'var(--fintheon-accent)',
-            borderColor: 'color-mix(in srgb, var(--fintheon-accent) 30%, transparent)',
-          }}
+          className="px-4 py-2 rounded-md text-xs font-medium transition-colors border border-zinc-700 text-zinc-500 hover:text-zinc-300"
         >
           Reset to Default
         </button>
       </div>
+
+      {/* Saved Custom Themes */}
+      {customThemes.length > 0 && (
+        <section>
+          <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--fintheon-accent)' }}>
+            Your Saved Themes
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {customThemes.map((ct, i) => {
+              const active = theme.name === ct.name;
+              return (
+                <button
+                  key={ct.name}
+                  onClick={() => { setTheme(ct); setCustomDraft({}); }}
+                  className="relative text-left p-3 rounded-lg border transition-all hover:scale-[1.01]"
+                  style={{
+                    borderColor: active ? ct.accent : 'rgba(255,255,255,0.08)',
+                    backgroundColor: active ? `${ct.accent}10` : 'rgba(10,10,0,0.4)',
+                  }}
+                >
+                  {active && (
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: ct.accent }}>
+                      <Check size={12} className="text-black" />
+                    </div>
+                  )}
+                  <div className="flex gap-0 rounded overflow-hidden mb-2 h-4">
+                    {[ct.accent, ct.bg, ct.bullish, ct.bearish].map((c, j) => (
+                      <div key={j} className="flex-1" style={{ backgroundColor: c }} />
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-medium text-white">{ct.label}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const updated = customThemes.filter((_, idx) => idx !== i);
+                        localStorage.setItem('fintheon-custom-themes', JSON.stringify(updated));
+                        setCustomThemes(updated);
+                      }}
+                      className="text-[10px] text-zinc-600 hover:text-red-400 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

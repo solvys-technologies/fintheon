@@ -46,7 +46,7 @@ export function AuditoriumBriefing({ briefing, isLoading }: AuditoriumBriefingPr
             MiroFish Briefing
           </span>
           {briefing.riskAlerts.length > 0 && (
-            <span className="flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded bg-[#EF4444]/10 text-[#EF4444] font-mono font-bold">
+            <span className="flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded bg-[var(--fintheon-severe)]/10 text-[var(--fintheon-severe)] font-mono font-bold">
               <AlertTriangle className="w-2.5 h-2.5" />
               {briefing.riskAlerts.length} ALERT{briefing.riskAlerts.length > 1 ? 'S' : ''}
             </span>
@@ -81,12 +81,12 @@ export function AuditoriumBriefing({ briefing, isLoading }: AuditoriumBriefingPr
           {/* Risk Alerts */}
           {briefing.riskAlerts.length > 0 && (
             <div>
-              <span className="text-[8px] text-[#EF4444]/60 uppercase tracking-wider font-mono">
+              <span className="text-[8px] text-[var(--fintheon-severe)]/60 uppercase tracking-wider font-mono">
                 Risk Alerts
               </span>
               <ul className="mt-1 flex flex-col gap-1">
                 {briefing.riskAlerts.map((a, i) => (
-                  <li key={i} className="text-[10px] text-[#F59E0B]/80 font-mono pl-3 relative before:content-['!'] before:absolute before:left-0 before:text-[#EF4444]/60 before:font-bold">
+                  <li key={i} className="text-[10px] text-[var(--fintheon-neutral-severe)]/80 font-mono pl-3 relative before:content-['!'] before:absolute before:left-0 before:text-[var(--fintheon-severe)]/60 before:font-bold">
                     {a}
                   </li>
                 ))}

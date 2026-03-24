@@ -9,6 +9,72 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-25T09:30:00',
+    agent: 'claude-code',
+    summary: 'fix(backend): Resolve 404 error spew — bypass riskflow auth for /sources (public endpoint), guard account polling with isAuthenticated to prevent pre-auth 401 cascade. Stub ProjectXService (backend never implemented). Remove orphaned root lib/, components/, contexts/, hooks/, App.tsx. Boardroom UX overhaul: remove hover discoloration, replace sidebar with inline copy button, date+time timestamps, right-aligned green WiFi status with pulse animation.',
+    files: [
+      'backend-hono/src/routes/index.ts',
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/lib/services.ts',
+      'frontend/components/consilium/ConsiliumMessage.tsx',
+      'frontend/components/consilium/AgentChattr.tsx',
+      'mini-widget-entry.tsx',
+    ],
+  },
+  {
+    date: '2026-03-24T19:00:00',
+    agent: 'claude-code',
+    summary: 'feat(mirofish): Persistence refactor — reports survive app close. Extended persistRun() to store full report payload (time_series, generated_events, briefing JSONB). Added GET /api/mirofish/latest endpoint that returns most recent report from cache or Supabase. ConsiliumHub loads persisted report on mount. Auditorium renders immediately from persisted data, never shows idle state if report exists. "Run MiroFish" button becomes "Update" when data exists, "Updating..." during refresh. Background update threshold reduced from 1hr to 30min. Existing data stays visible during background updates.',
+    files: [
+      'backend-hono/src/services/mirofish/mirofish-service.ts',
+      'backend-hono/src/routes/mirofish/handlers.ts',
+      'backend-hono/src/routes/mirofish/index.ts',
+      'frontend/components/consilium/ConsiliumHub.tsx',
+      'frontend/components/narrative/Auditorium.tsx',
+      'frontend/components/narrative/AuditoriumHeader.tsx',
+    ],
+  },
+  {
+    date: '2026-03-25T06:00:00',
+    agent: 'claude-code',
+    summary: 'feat(theme): Wire severity colors (severe/neutralSevere/neutral/lowNeutral/low) through ThemeContext→CSS variables. Replace hardcoded #EF4444/#F59E0B/#34D399/#3B82F6 with var(--fintheon-severe) etc in Auditorium narrative components. Restructure Auditorium Page 2: DevelopmentsTimeline replaces Kanban, add AgentScorecard+RiskAssessment split grid. Remove bottom-left AgentDropdown from boardroom, keep top toolbar filter. Smooth Strategium collapse/expand via CSS width transition. Remove Proposals tab from Consilium (sidebar-only). Enhanced TradeIdeaModal with consensus/contrarian trade views, act/pass recommendation, expected print analysis. Smooth settings landing↔tab transitions. Fix Save Settings error toast — backend sync is now best-effort, localStorage always persists.',
+    files: [
+      'frontend/contexts/ThemeContext.tsx',
+      'frontend/index.css',
+      'frontend/components/narrative/Auditorium.tsx',
+      'frontend/components/narrative/AuditoriumNarratives.tsx',
+      'frontend/components/narrative/AuditoriumEconIntel.tsx',
+      'frontend/components/narrative/AuditoriumTheses.tsx',
+      'frontend/components/narrative/AuditoriumRiskAssessment.tsx',
+      'frontend/components/narrative/AuditoriumBriefing.tsx',
+      'frontend/components/consilium/ConsiliumHub.tsx',
+      'frontend/components/consilium/AgentChattr.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/components/TradeIdeaModal.tsx',
+      'frontend/components/SettingsPanel.tsx',
+    ],
+  },
+  {
+    date: '2026-03-25T04:00:00',
+    agent: 'claude-code',
+    summary: 'feat(auditorium): replace custom canvas price chart with TradingView AdvancedRealTimeChart (area style, gold gradient). Top pane (~75%) shows live price with GC/ES/NQ comparison overlays. Bottom pane (~25%) keeps compact heat-mapped IV risk bars. Symbol mapped from user settings (/MNQ→CME_MINI:NQ1! etc). Threaded selectedSymbol from SettingsContext→ConsiliumHub→Auditorium→AuditoriumChart.',
+    files: [
+      'frontend/components/narrative/AuditoriumChart.tsx',
+      'frontend/components/narrative/Auditorium.tsx',
+      'frontend/components/consilium/ConsiliumHub.tsx',
+    ],
+  },
+  {
+    date: '2026-03-25T03:15:00',
+    agent: 'claude-code',
+    summary: 'feat(auditorium): 2-col econ grid with expandable cards (countdown, history, agent reasoning), merged Risk+Narratives into single page (4→3 pages), updated AUDITORIUM_PAGES constant and preset→page mapping.',
+    files: [
+      'frontend/components/narrative/AuditoriumEconIntel.tsx',
+      'frontend/components/narrative/Auditorium.tsx',
+      'frontend/types/mirofish.ts',
+    ],
+  },
+  {
     date: '2026-03-25T02:30:00',
     agent: 'claude-code',
     summary: 'feat(riskflow): unified VIX scoring + rescore integration — wired startVIXPolling, startCentralScorer, startIVScoreTicker, initVIXRescore into boot sequence. Fixed pre-existing type error in central-scorer. Full pipeline: VIX polls → triggers fire → rescore cycle runs → items re-enriched with VIX-weighted scoring + sub-score breakdown.',

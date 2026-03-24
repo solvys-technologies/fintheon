@@ -40,7 +40,7 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
   const upcoming = getUpcomingRegimes(regimes, 120, now);
 
   return (
-    <div className="bg-[var(--fintheon-bg)] p-3">
+    <div className="p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />

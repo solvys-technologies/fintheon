@@ -1,12 +1,12 @@
-// [claude-code 2026-03-24] Extracted CategoryScoreCard — 30% bigger with neon-edge glow
-import { RISK_CATEGORY_COLORS, RISK_CATEGORY_LABELS } from '../../types/mirofish';
+// [claude-code 2026-03-24] Heat-map colors — ivHeatColor(score) replaces static RISK_CATEGORY_COLORS
+import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
 
 type MiroFishRiskCategory = 'geopolitical' | 'political' | 'monetary-policy' | 'earnings-corporate' | 'market-structure' | 'black-swan';
 
 export function CategoryScoreCard({ category, score, delta, confidence }: {
   category: MiroFishRiskCategory; score: number; delta: number; confidence: number;
 }) {
-  const color = RISK_CATEGORY_COLORS[category];
+  const color = ivHeatColor(score);
   const label = RISK_CATEGORY_LABELS[category];
   const deltaColor = delta > 0 ? '#EF4444' : delta < 0 ? '#34D399' : 'var(--fintheon-muted)';
   const deltaSign = delta > 0 ? '+' : '';

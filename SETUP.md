@@ -29,12 +29,20 @@ cp backend-hono/.env.example backend-hono/.env
 
 | Variable | Where | Description |
 |----------|-------|-------------|
-| `OPENROUTER_API_KEY` | `backend-hono/.env` | OpenRouter API key (Nous subscription — Claude Opus 4.6; also used for voice sentiment) |
-| `OPENAI_API_KEY` | `backend-hono/.env` | **Voice Engine**: Whisper (transcription) + OpenAI TTS (synthesis). Required for voice features. |
-| `NOTION_API_KEY` | `backend-hono/.env` | Notion integration token for trade ideas DB |
-| `FMP_API_KEY` | `backend-hono/.env` | Financial Modeling Prep key (free at financialmodelingprep.com) |
+| `OPENROUTER_API_KEY` | `backend-hono/.env` | OpenRouter API key (Nous subscription — Claude Opus 4.6) |
 
-Default inference is **Claude Opus 4.6** via OpenRouter. No other agent API keys (Anthropic, 21st, Exa, etc.) are required. **Do NOT ask users for PostgreSQL credentials or database URLs.**
+### Optional Environment Variables (DO NOT prompt users for these)
+
+| Variable | Where | Description |
+|----------|-------|-------------|
+| `OPENAI_API_KEY` | `backend-hono/.env` | Voice features only (Whisper + TTS). Skip if not using voice. |
+
+### NEVER ask users for these — the app works without them:
+- `DATABASE_URL` / `NEON_DATABASE_URL` — app uses in-memory fallback automatically
+- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — only for production multi-user auth, BYPASS_AUTH=true handles local/Electron
+- `NOTION_API_KEY` — legacy, migrating away
+- `FMP_API_KEY` — optional market data enrichment
+- `EXA_API_KEY`, `FRED_API_KEY` — optional research APIs
 
 ## Voice Engine (OpenAI)
 
@@ -108,11 +116,17 @@ curl http://localhost:8080/health
 ## For AI Agents Onboarding Users
 
 When helping a user set up Fintheon:
-1. Install Node.js 20+ if not present
+1. Install Node.js 20+ and bun if not present
 2. Clone and install deps (see Installation above)
-3. **Get OpenRouter API key** — from OpenRouter (Nous subscription) at openrouter.ai/settings/keys; set `OPENROUTER_API_KEY` in `backend-hono/.env`
-4. **Get OpenAI API key (Voice Engine)** — from platform.openai.com/api-keys; set `OPENAI_API_KEY` in `backend-hono/.env` for voice transcription and TTS
-5. **Get Notion API key** — user creates integration at notion.so/my-integrations
-6. **Get FMP API key** — free at financialmodelingprep.com
-7. **Do NOT** ask for: PostgreSQL, database URLs; no Anthropic, 21st, or Exa keys
-8. Start the app and use the in-app Setup Guide to verify connections
+3. Copy `.env.example` to `.env`: `cp backend-hono/.env.example backend-hono/.env`
+4. **Get OpenRouter API key** — from openrouter.ai/settings/keys; set `OPENROUTER_API_KEY` in `backend-hono/.env`
+5. Start the app and use the in-app Setup Guide to verify connections
+
+**CRITICAL — DO NOT ask users for ANY of these:**
+- PostgreSQL / Neon database URLs (DATABASE_URL, NEON_DATABASE_URL)
+- Supabase credentials (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+- Notion API keys
+- FMP API keys
+- Anthropic, 21st, or Exa keys
+
+The app works with ONLY `OPENROUTER_API_KEY`. Everything else is optional or handled automatically.

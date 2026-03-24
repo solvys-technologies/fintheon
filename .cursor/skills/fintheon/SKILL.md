@@ -31,12 +31,12 @@ description: FINTHEON is the world's first true AI-powered Integrated Trading En
 - **Framer** for landing pages (limited deps: Framer Motion, Framer React only)
 
 ### Backend
-- **Encore.dev** (TypeScript runtime)
-- **PostgreSQL** (Encore managed)
-- **AWS Bedrock** (session management)
-- **Clerk** (`@clerk/clerk-sdk-node`) for auth
-- **LangChain v0.3.x** for AI orchestration
-- **VectorDB** for embeddings/semantic search
+- **Hono** (TypeScript, port 8080)
+- **PostgreSQL** (optional — app works without DATABASE_URL via in-memory fallback)
+- **OpenRouter** (Claude Opus 4.6 via Nous subscription)
+- **Supabase** auth (optional — BYPASS_AUTH=true for local/Electron)
+- ONLY required env var: `OPENROUTER_API_KEY`
+- Do NOT ask users for DATABASE_URL, SUPABASE_URL, Neon credentials, or Clerk keys
 
 ### DevOps
 - **GitHub Actions** for CI/CD

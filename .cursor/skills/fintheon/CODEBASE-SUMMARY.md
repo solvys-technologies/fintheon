@@ -6,7 +6,7 @@ FINTHEON is an integrated trading workspace with:
 
 - React 19 + Vite frontend (`frontend/`)
 - Hono backend API (`backend-hono/`)
-- Neon/Postgres persistence
+- Optional PostgreSQL persistence (works without DATABASE_URL — in-memory fallback)
 - OpenClaw/boardroom integration paths
 
 ## Current Backend Reality

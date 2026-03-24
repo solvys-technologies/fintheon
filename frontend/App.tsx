@@ -135,7 +135,7 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
     >
       <div className="flex flex-col items-center gap-6">
         <img
-          src="/logo.png"
+          src="./logo.png"
           alt="Fintheon"
           className="h-20 w-20 object-contain opacity-80 drop-shadow-[0_0_18px_rgba(199,159,74,0.4)]"
         />
@@ -207,7 +207,7 @@ function AuthGate() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#050402]">
         <div className="flex flex-col items-center gap-4">
-          <img src="/logo.png" alt="Fintheon" className="h-16 w-16 animate-pulse opacity-60" />
+          <img src="./logo.png" alt="Fintheon" className="h-16 w-16 animate-pulse opacity-60" />
           <p className="text-xs tracking-[0.3em] text-[#c79f4a]/50">LOADING</p>
         </div>
       </div>

@@ -510,18 +510,9 @@ export class TradingService {
 export class ProjectXService {
   constructor(private client: ApiClient) { }
 
+  // STUB: Backend routes for /api/projectx/* were never implemented — gracefully degrade
   async listAccounts(): Promise<ProjectXAccountsResponse> {
-    const response = await this.client.get<{ accounts: any[] }>('/api/projectx/accounts');
-    // Transform backend response to match frontend expectations
-    return {
-      accounts: response.accounts.map(acc => ({
-        accountId: acc.accountId?.toString() || acc.id?.toString() || '',
-        accountName: acc.accountName || '',
-        balance: acc.balance,
-        provider: acc.provider || 'projectx',
-        isPaper: acc.isPaper || false,
-      })),
-    };
+    return { accounts: [] };
   }
 
   async uplinkProjectX(): Promise<UplinkResponse> {
@@ -534,15 +525,13 @@ export class ProjectXService {
   }
 
   async syncProjectXAccounts(): Promise<void> {
-    return this.client.post('/api/projectx/sync', {});
+    // STUB: No backend route
+    return;
   }
 
-  async getActivity(accountId: string | number, params?: { windowMinutes?: number; limit?: number }): Promise<ProjectXActivityResponse> {
-    const query = new URLSearchParams();
-    if (params?.windowMinutes) query.append('windowMinutes', params.windowMinutes.toString());
-    if (params?.limit) query.append('limit', params.limit.toString());
-    const suffix = query.toString() ? `?${query.toString()}` : '';
-    return this.client.get<ProjectXActivityResponse>(`/api/projectx/activity/${accountId}${suffix}`);
+  async getActivity(_accountId: string | number, _params?: { windowMinutes?: number; limit?: number }): Promise<ProjectXActivityResponse> {
+    // STUB: No backend route
+    return { orders: [], fills: [] } as unknown as ProjectXActivityResponse;
   }
 }
 

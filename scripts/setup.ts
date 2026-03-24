@@ -266,22 +266,10 @@ async function collectApiKeys() {
     ctx.openAiKey = openAiKey || '';
   }
 
-  // --- Database URL (optional) ---
+  // --- Database URL — NOT prompted (cloud backend handles persistence) ---
   if (existing.DATABASE_URL) {
     p.log.success(`${pc.green('✓')} Database URL already configured`);
     ctx.databaseUrl = existing.DATABASE_URL;
-  } else {
-    const dbUrl = await p.text({
-      message: 'PostgreSQL URL (optional — press Enter for in-memory mode):',
-      placeholder: 'postgresql://...',
-      validate: (v) => {
-        if (v && !v.startsWith('postgres://') && !v.startsWith('postgresql://')) {
-          return 'Must start with postgres:// or postgresql://';
-        }
-      },
-    });
-    if (p.isCancel(dbUrl)) { p.cancel('Setup cancelled.'); process.exit(0); }
-    ctx.databaseUrl = dbUrl || '';
   }
 }
 
