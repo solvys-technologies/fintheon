@@ -468,7 +468,7 @@ function MainLayoutInner() {
         <div
           ref={missionDeckRef}
           onScroll={handleMissionDeckScroll}
-          className="h-full overflow-y-auto snap-y snap-mandatory border-y border-[var(--fintheon-accent)]/15"
+          className="h-full overflow-y-auto snap-y snap-mandatory"
         >
           {missionWidgetPages.map((page, pageIdx) => (
             <section
@@ -591,7 +591,7 @@ function MainLayoutInner() {
             </div>
           ) : (
             <>
-              <div className={`${riskFlowCollapsed ? 'flex-1' : 'h-1/2'} flex flex-col border-b border-[var(--fintheon-accent)]/20 transition-all duration-300`}>
+              <div className={`${riskFlowCollapsed ? 'flex-1' : 'h-1/2'} flex flex-col transition-all duration-300`}>
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   <div className="p-3 h-full">
                     {missionControlContent(() => setMissionControlCollapsed(true))}
