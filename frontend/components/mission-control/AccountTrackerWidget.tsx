@@ -205,7 +205,7 @@ No accounts
         </div>
         <div className="text-right">
           <p className="text-[10px] text-gray-500">Day P&L</p>
-          <span className={`text-sm font-bold ${currentPnL >= 0 ? 'text-emerald-400' : 'text-red-500'}`}>
+          <span className="text-sm font-bold" style={{ color: currentPnL >= 0 ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
             {currentPnL >= 0 ? '+' : ''}${currentPnL.toFixed(2)}
           </span>
         </div>

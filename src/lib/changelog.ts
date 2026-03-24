@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-24T21:00:00',
+    agent: 'claude-code',
+    summary: 'feat(appearance): Bullish/bearish custom colors from appearance settings now propagate throughout the app — RiskFlow direction indicators, daily P&L displays, position colors, proposal modals, and session status bar all use CSS vars instead of hardcoded Tailwind/hex colors. Theme (including bullish/bearish) now syncs to backend settings for per-user persistence.',
+    files: [
+      'frontend/components/RiskFlowPanel.tsx',
+      'frontend/components/CompactRiskFlowCard.tsx',
+      'frontend/components/feed/CompactRiskFlowCard.tsx',
+      'frontend/components/executive/ExpandableTapeItem.tsx',
+      'frontend/components/ProposalModal.tsx',
+      'frontend/components/mission-control/CompactPnLDisplay.tsx',
+      'frontend/components/AccountSummary.tsx',
+      'frontend/components/mission-control/AccountTrackerWidget.tsx',
+      'frontend/components/PositionsList.tsx',
+      'frontend/components/SessionStatusBar.tsx',
+      'frontend/contexts/ThemeContext.tsx',
+    ],
+  },
+  {
     date: '2026-03-24T19:30:00',
     agent: 'claude-code',
     summary: 'fix(topheader): VIX risk toast now fires at scheduled pre-market-open times (9:20, 9:50, 11:20, 12:15 EST weekdays + 5:50 PM Sundays) instead of on every threshold crossing. Deduplicates per window per day.',

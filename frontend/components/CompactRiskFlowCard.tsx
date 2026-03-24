@@ -108,7 +108,7 @@ function MiniCard({ alert, onDismiss, seen }: CompactRiskFlowCardProps) {
       </a>
       {(() => {
         const dir = inferDirection(alert);
-        return <span className={`text-[8px] font-semibold flex-shrink-0 ${dir === 'Bullish' ? 'text-emerald-500' : 'text-red-400'}`}>{dir === 'Bullish' ? '▲' : '▼'}</span>;
+        return <span className="text-[8px] font-semibold flex-shrink-0" style={{ color: dir === 'Bullish' ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>{dir === 'Bullish' ? '▲' : '▼'}</span>;
       })()}
       <span className="text-[8px] text-zinc-600 tabular-nums flex-shrink-0">
         {alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}` : '0-5'}
@@ -211,7 +211,7 @@ function MinimalCard({
         )}
         {(() => {
           const dir = inferDirection(alert);
-          return <span className={`text-[9px] font-semibold ${dir === 'Bullish' ? 'text-emerald-500' : 'text-red-400'}`}>{dir === 'Bullish' ? '▲' : '▼'} {dir}</span>;
+          return <span className="text-[9px] font-semibold" style={{ color: dir === 'Bullish' ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>{dir === 'Bullish' ? '▲' : '▼'} {dir}</span>;
         })()}
         <span className="text-[9px] text-zinc-500 tabular-nums">
           {alert.instrument ? `${alert.instrument} ` : ''}{alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)} pts` : '0-5 pts'}

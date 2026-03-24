@@ -91,7 +91,7 @@ export function CompactRiskFlowCard({ alert, seen = false, onDismiss }: CompactR
             const dir = inferDirection(alert);
             const isBull = dir === 'Bullish';
             return (
-              <span className={`text-[9px] font-semibold ${isBull ? 'text-emerald-500' : 'text-red-400'}`}>
+              <span className="text-[9px] font-semibold" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
                 {isBull ? '▲' : '▼'}
               </span>
             );
