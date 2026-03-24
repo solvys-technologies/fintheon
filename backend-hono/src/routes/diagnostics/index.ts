@@ -72,10 +72,9 @@ async function checkHermesAI(): Promise<ServiceDiagnostic> {
 async function checkDatabase(): Promise<ServiceDiagnostic> {
   if (!process.env.DATABASE_URL) {
     return {
-      name: 'Supabase',
-      status: 'error',
-      detail: 'DATABASE_URL not set',
-      fix: 'Add DATABASE_URL (Neon/Supabase connection string) to backend-hono/.env',
+      name: 'Database',
+      status: 'unavailable',
+      detail: 'No DATABASE_URL — using cloud backend (fintheon.fly.dev)',
     };
   }
 
@@ -153,10 +152,10 @@ function checkTradingView(): ServiceDiagnostic {
 
 const REQUIRED_ENV_VARS = [
   'OPENROUTER_API_KEY',
-  'DATABASE_URL',
 ];
 
 const RECOMMENDED_ENV_VARS = [
+  'DATABASE_URL',
   'OPENAI_API_KEY',
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
