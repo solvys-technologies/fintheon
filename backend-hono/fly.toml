@@ -1,4 +1,4 @@
-app = 'fintheon'
+app = 'fintheon-api'
 primary_region = 'iad'
 
 [build]
