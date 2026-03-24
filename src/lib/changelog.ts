@@ -9,6 +9,37 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-25T02:30:00',
+    agent: 'claude-code',
+    summary: 'feat(riskflow): unified VIX scoring + rescore integration — wired startVIXPolling, startCentralScorer, startIVScoreTicker, initVIXRescore into boot sequence. Fixed pre-existing type error in central-scorer. Full pipeline: VIX polls → triggers fire → rescore cycle runs → items re-enriched with VIX-weighted scoring + sub-score breakdown.',
+    files: [
+      'backend-hono/src/boot/index.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+    ],
+  },
+  {
+    date: '2026-03-25T02:00:00',
+    agent: 'claude-code',
+    summary: 'feat(riskflow): VIX-weighted item scoring + sub-score breakdown + finer event weights. continuousVIXMultiplier() piecewise curve replaces 4-tier step function for per-item scoring. SubScoreBreakdown on every FeedItem (eventWeight/timing/deviation/momentum/vixContext). EVENT_WEIGHTS filled with half-point granularity (2.0-10.0 range). calculateIVScore() now accepts VIXData and applies continuous curve multiplier. Macro level thresholds adjust in elevated VIX (>22). VIX fetched once per batch in feed enrichment.',
+    files: [
+      'backend-hono/src/types/riskflow.ts',
+      'backend-hono/src/services/iv-scoring-v2.ts',
+      'backend-hono/src/services/analysis/iv-scorer.ts',
+      'backend-hono/src/config/scoring-weights.json',
+      'backend-hono/src/services/riskflow/feed-service.ts',
+    ],
+  },
+  {
+    date: '2026-03-25T01:15:00',
+    agent: 'claude-code',
+    summary: 'feat(riskflow): VIX-triggered rescore engine — spike threshold lowered to 2.5%, velocity tracking (sustained >0.2pt/min), regime detection (low/normal/elevated/crisis), onVIXTrigger callback system, rescoreCycle() re-enriches last 4h of scored items, 2-min cooldown prevents storms',
+    files: [
+      'backend-hono/src/services/vix-service.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+      'backend-hono/src/services/riskflow/vix-rescore.ts',
+    ],
+  },
+  {
     date: '2026-03-25T00:30:00',
     agent: 'claude-code',
     summary: 'feat(auth): unify T1-T4 login system + init screen with fade-in. Merged all 4 parallel tracks (Electron deep link, login UI redesign, backend profiles, data migration). Added InitScreen component with 4-step loading sequence (session → backend → sync → workspace), progress dots, and skip option. App content fades in softly via opacity transition. Session persists across Electron restarts (Supabase persistSession + autoRefreshToken). Fixed supabase import path in backend.ts. Added getAccessToken to frontend/lib/supabase.ts.',

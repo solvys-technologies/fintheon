@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Added VIX polling, central scorer, IV ticker, VIX rescore to boot sequence
 // [claude-code 2026-03-20] Service boot consolidation — single entry point for all background services
 
 import { createLogger } from '../lib/logger.js';
@@ -11,15 +12,35 @@ import { startContextBankTicker } from '../services/context-bank/context-bank-se
 import { startBoardroomScheduler } from '../services/cron/boardroom-scheduler.js';
 import { startDispatchScheduler, catchUpMissedBriefs } from '../services/cron/dispatch-scheduler.js';
 import { cleanupOldItems } from '../services/riskflow/news-cache.js';
+import { startVIXPolling } from '../services/vix-service.js';
+import { startCentralScorer } from '../services/riskflow/central-scorer.js';
+import { startIVScoreTicker } from '../services/market-data/iv-score-ticker.js';
+import { initVIXRescore } from '../services/riskflow/vix-rescore.js';
 
 const log = createLogger('Boot');
 
 export async function bootServices(): Promise<void> {
   log.info('Starting background services');
 
+  // VIX background polling (60s interval — must start before rescore triggers)
+  startVIXPolling();
+  log.info('VIX polling started');
+
   // RiskFlow Level 4 detection feed
   startFeedPoller();
   log.info('FeedPoller started');
+
+  // Central scorer (30s — scores unscored items, gated by ENABLE_CENTRAL_SCORING env)
+  startCentralScorer();
+
+  // IV score ticker (60s — computes blended IV score, persists to DB)
+  const instrument = process.env.PRIMARY_INSTRUMENT || '/ES';
+  startIVScoreTicker(instrument);
+  log.info(`IVScoreTicker started (${instrument})`);
+
+  // VIX-triggered rescore (rescores last 4h of items on spike/velocity/regime change)
+  initVIXRescore();
+  log.info('VIXRescore initialized');
 
   // Econ calendar enricher (Notion calendar → RiskFlow feed)
   startEconEnricher();

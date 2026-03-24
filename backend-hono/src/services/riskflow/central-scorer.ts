@@ -5,6 +5,7 @@
 import { enrichFeedWithAnalysis } from './feed-service.js';
 import {
   readUnscoredItems,
+  readScoredItems,
   writeScoredItems,
   type RawRiskFlowItem,
   type ScoredRiskFlowItem,
@@ -148,10 +149,53 @@ async function scoringCycle(): Promise<void> {
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
   } catch (err) {
-    log.error(' Scoring cycle error:', err);
+    log.error(' Scoring cycle error:', { error: err instanceof Error ? err.message : String(err) });
   } finally {
     isScoring = false;
   }
+}
+
+/**
+ * Convert a ScoredRiskFlowItem back into a FeedItem for re-enrichment
+ */
+function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
+  return {
+    id: scored.tweet_id,
+    source: (scored.source as FeedItem['source']) || 'TwitterCli',
+    headline: scored.headline || '',
+    body: scored.body,
+    symbols: scored.symbols || [],
+    tags: scored.tags || [],
+    isBreaking: scored.is_breaking || false,
+    urgency: (scored.urgency as FeedItem['urgency']) || 'normal',
+    publishedAt: scored.published_at || new Date().toISOString(),
+    sentiment: scored.sentiment as FeedItem['sentiment'],
+    ivScore: scored.iv_score,
+    macroLevel: scored.macro_level as FeedItem['macroLevel'],
+    analyzedAt: scored.analyzed_at,
+  };
+}
+
+/**
+ * Re-enrich already-scored items from the last 4 hours.
+ * Called by VIX trigger system when market conditions change.
+ * Returns the number of items updated.
+ */
+export async function rescoreCycle(): Promise<number> {
+  const since = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+  const scoredItems = await readScoredItems({ since, limit: 30 });
+  if (scoredItems.length === 0) return 0;
+
+  const feedItems = scoredItems.map(scoredToFeedItem);
+  const reEnriched = await enrichFeedWithAnalysis(feedItems);
+
+  const updatedScored = reEnriched.map((item, i) =>
+    feedItemToScored(item, scoredItems[i].raw_item_id || '')
+  );
+  const written = await writeScoredItems(updatedScored);
+
+  log.info(`Rescore complete: ${written}/${scoredItems.length} items updated`);
+  return written;
 }
 
 /**
