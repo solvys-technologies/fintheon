@@ -83,7 +83,7 @@ export function MainLayout() {
 
 // Main layout component - no authentication needed
 function MainLayoutInner() {
-  const { iframeUrls, defaultLayout, defaultPlatform } = useSettings();
+  const { iframeUrls, defaultLayout, defaultPlatform, developerSettings } = useSettings();
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('executive');
   const [layoutEditMode, setLayoutEditMode] = useState(false);
@@ -270,6 +270,7 @@ function MainLayoutInner() {
 
   // Fetch account data for combined panel collapsed state
   useEffect(() => {
+    if (!developerSettings.accountTrackerEnabled) return;
     const fetchAccount = async () => {
       try {
         const account = await backend.account.get();
@@ -282,7 +283,7 @@ function MainLayoutInner() {
     fetchAccount();
     const interval = setInterval(fetchAccount, 5000);
     return () => clearInterval(interval);
-  }, [backend]);
+  }, [backend, developerSettings.accountTrackerEnabled]);
 
   // Listen for ER score updates for combined panel
   useEffect(() => {
