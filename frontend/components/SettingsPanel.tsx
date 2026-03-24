@@ -74,8 +74,13 @@ export function SettingsPage() {
     }, 300);
   };
 
+  const [landingTransition, setLandingTransition] = useState(false);
   const handleBackToLanding = () => {
-    setShowLanding(true);
+    setLandingTransition(true);
+    setTimeout(() => {
+      setShowLanding(true);
+      setLandingTransition(false);
+    }, 200);
   };
 
   const availableSymbols = [
@@ -253,7 +258,7 @@ export function SettingsPage() {
           </div>
         ) : (
         /* ===== SUBSECTION CONTENT ===== */
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className={`flex-1 flex flex-col min-h-0 transition-all duration-200 ${landingTransition ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
           {/* Back button + section title */}
           <div className="shrink-0 flex items-center gap-3 px-8 pt-5 pb-3">
             <button
@@ -374,7 +379,7 @@ export function SettingsPage() {
                   </div>
                 </section>
 
-                <section className="pt-6 border-t border-zinc-800">
+                <section className="pt-6">
                   <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3 flex items-center gap-2">
                     <Mic className="w-4 h-4" />
                     Microphone Device

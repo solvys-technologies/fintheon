@@ -11,6 +11,12 @@ export interface ThemeConfig {
   surface: string;
   border: string;
   muted: string;
+  // Severity colors — used by RiskFlow badges, alerts, status indicators
+  severe?: string;
+  neutralSevere?: string;
+  neutral?: string;
+  lowNeutral?: string;
+  low?: string;
 }
 
 export const THEME_PRESETS: Record<string, ThemeConfig> = {
@@ -65,14 +71,38 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
   'miami-heat': {
     name: 'miami-heat',
     label: 'Miami Heat',
-    accent: '#F9A825',
-    bg: '#1A0A0A',
-    text: '#FFF8E1',
-    bullish: '#98201C',
-    bearish: '#000000',
-    surface: '#221010',
-    border: '#F9A825',
-    muted: '#A1887F',
+    accent: '#F4005F',
+    bg: '#0A0A0A',
+    text: '#FFFFFF',
+    bullish: '#00BCD4',
+    bearish: '#F4005F',
+    surface: '#141014',
+    border: '#F4005F',
+    muted: '#888888',
+  },
+  'miami-vice': {
+    name: 'miami-vice',
+    label: 'Miami Vice',
+    accent: '#FF6EC7',
+    bg: '#0D0221',
+    text: '#E0F7FA',
+    bullish: '#00E5FF',
+    bearish: '#FF6EC7',
+    surface: '#1A0533',
+    border: '#FF6EC7',
+    muted: '#7C4DFF',
+  },
+  'miami-dolphins': {
+    name: 'miami-dolphins',
+    label: 'Miami Dolphins',
+    accent: '#008E97',
+    bg: '#0A1628',
+    text: '#FFFFFF',
+    bullish: '#008E97',
+    bearish: '#F26522',
+    surface: '#0F1F35',
+    border: '#008E97',
+    muted: '#FC4C02',
   },
   monocolor: {
     name: 'monocolor',
