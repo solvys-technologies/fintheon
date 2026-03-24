@@ -5,6 +5,7 @@
 // [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
 // [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
 // [claude-code 2026-03-23] Browser Use Phase 2 — CDP + browser-use CLI bridge
+// [claude-code 2026-03-24] Supabase Google OAuth deep link: fintheon:// protocol + open-url handler
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
@@ -13,6 +14,7 @@ const { autoUpdater } = require("electron-updater");
 
 let mainWindow = null;
 let backendProcess = null;
+let pendingAuthUrl = null;
 
 /* ------------------------------------------------------------------ */
 /*  Startup config — persisted to userData/fintheon-startup.json       */
@@ -226,7 +228,38 @@ function createWindow() {
 // [claude-code 2026-03-23] Browser Use Phase 2 — enable CDP for browser-use CLI
 app.commandLine.appendSwitch('remote-debugging-port', '9222');
 
+// macOS: handle fintheon:// URLs when app is already running
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  console.log("[Electron] open-url received:", url);
+  if (mainWindow) {
+    mainWindow.webContents.send("auth-callback", url);
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  } else {
+    pendingAuthUrl = url;
+  }
+});
+
+// Windows/Linux: second-instance receives the deep link URL in argv
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv) => {
+    const url = argv.find((arg) => arg.startsWith("fintheon://"));
+    if (url && mainWindow) {
+      mainWindow.webContents.send("auth-callback", url);
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
 app.whenReady().then(() => {
+  // Register fintheon:// as a custom protocol for OAuth callbacks
+  app.setAsDefaultProtocolClient("fintheon");
+
   const cfg = readStartupConfig();
   if (cfg.backendAutostart) {
     startBackend();
@@ -235,6 +268,12 @@ app.whenReady().then(() => {
   }
   createWindow();
   setupAutoUpdater();
+
+  // Forward any pending auth URL that arrived before the window was ready
+  if (pendingAuthUrl && mainWindow) {
+    mainWindow.webContents.send("auth-callback", pendingAuthUrl);
+    pendingAuthUrl = null;
+  }
   // Browser Use Phase 2 — CDP enabled via commandLine switch, no in-process handlers needed
 
   // Handle window.open from embedded <webview> tags.

@@ -1,5 +1,5 @@
 // [claude-code 2026-03-22] Supabase auth token — mirrors root lib/backend.ts
-import { getAccessToken } from '../../lib/supabase';
+import { getAccessToken } from './supabase';
 import ApiClient from "./apiClient";
 import { createBackendClient, type BackendClient } from "./services";
 

@@ -1,10 +1,17 @@
 // [claude-code 2026-03-16] Added auto-update IPC bridge
 // [claude-code 2026-03-23] Browser Use Phase 2 — browserUse IPC bridge
+// [claude-code 2026-03-24] Auth deep link callback bridge for Supabase OAuth
 const { contextBridge, ipcRenderer } = require("electron");
 
 let cliOutputCallback = null;
 ipcRenderer.on("cli-output", (_event, data) => {
   if (typeof cliOutputCallback === "function") cliOutputCallback(data);
+});
+
+// Auth deep link callback (fintheon://auth/callback?code=...)
+let authCallbackHandler = null;
+ipcRenderer.on("auth-callback", (_event, url) => {
+  if (typeof authCallbackHandler === "function") authCallbackHandler(url);
 });
 
 // Auto-update event forwarding
@@ -55,6 +62,11 @@ contextBridge.exposeInMainWorld("electron", {
   },
   onUpdateDownloaded: (cb) => {
     updateDownloadedCallback = typeof cb === "function" ? cb : null;
+  },
+
+  // Auth deep link callback
+  onAuthCallback: (cb) => {
+    authCallbackHandler = typeof cb === "function" ? cb : null;
   },
 
   // [claude-code 2026-03-23] Browser Use Phase 2 — CLI command bridge

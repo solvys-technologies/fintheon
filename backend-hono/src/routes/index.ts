@@ -37,6 +37,7 @@ import { createDiagnosticsRoutes } from './diagnostics/index.js';
 import { createTerminalRoutes } from './terminal/index.js';
 import { createSetupRoutes } from './setup/index.js';
 import { createTradeIdeasRoutes } from './trade-ideas/index.js';
+import { createProfileRoutes } from './profile/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -121,6 +122,8 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/voice/*', authMiddleware);
   app.use('/api/settings', authMiddleware);
   app.use('/api/settings/*', authMiddleware);
+  app.use('/api/profile', authMiddleware);
+  app.use('/api/profile/*', authMiddleware);
   // Journal — public (local Electron app, no user auth needed)
 
   // Phase 1: Account routes
@@ -159,6 +162,9 @@ export function registerRoutes(app: Hono): void {
 
   // User settings persistence
   app.route('/api/settings', createSettingsRoutes());
+
+  // User profiles + app state (localStorage migration target)
+  app.route('/api/profile', createProfileRoutes());
 
   // Trading journal (human psych + agent performance)
   app.route('/api/journal', createJournalRoutes());

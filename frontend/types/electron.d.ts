@@ -52,6 +52,9 @@ export interface ElectronAPI {
   downloadUpdate: () => Promise<{ ok: boolean }>;
   installUpdate: () => Promise<{ ok: boolean }>;
 
+  // [claude-code 2026-03-24] Auth deep link callback (fintheon://auth/callback)
+  onAuthCallback: (cb: ((url: string) => void) | null) => void;
+
   // [claude-code 2026-03-23] Browser Use Phase 2 — CLI command bridge
   browserUse: {
     runCommand: (args: string[]) => Promise<{ ok: boolean; data?: any; error?: string; stderr?: string }>;

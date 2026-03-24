@@ -1,169 +1,79 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { FluidCursor, FluidCursorHandle } from './FluidCursor';
+// [claude-code 2026-03-24] T2 — Login screen redesign: split layout, ASCII background, time quotes
+import React from 'react';
+import { AsciiBackground } from './AsciiBackground';
+import { TimeQuote } from './TimeQuote';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 type AuthShellProps = {
-  children: React.ReactNode;
-  /** Called when user clicks LOGIN — proceeds into the app after transition */
-  onAuthenticated?: () => void;
+  onSignIn: () => void;
+  isLoading?: boolean;
 };
 
-type AuthPhase = 'landing' | 'transitioning' | 'auth';
+export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = false }) => (
+  <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-white selection:bg-yellow-500/30">
+    <AsciiBackground />
 
-// [claude-code 2026-03-23] Added onAuthenticated callback for Electron login gate
-export const AuthShell: React.FC<AuthShellProps> = ({ children, onAuthenticated }) => {
-  const [phase, setPhase] = useState<AuthPhase>('landing');
-  const [showAuth, setShowAuth] = useState(false);
-  const cursorRef = useRef<FluidCursorHandle>(null);
-  const logoRef = useRef<HTMLDivElement>(null);
-  const transitionTimers = useRef<number[]>([]);
+    {/* Subtle radial vignette */}
+    <div className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(5,4,2,0.85)_100%)]" />
 
-  const showCursor = phase !== 'auth';
-
-  const clearTimers = () => {
-    transitionTimers.current.forEach((id) => window.clearTimeout(id));
-    transitionTimers.current = [];
-  };
-
-  const handleLoginClick = () => {
-    if (phase !== 'landing') return;
-
-    clearTimers();
-    setPhase('transitioning');
-
-    // Snap the cursor into the logo to mimic the in-universe transition.
-    requestAnimationFrame(() => {
-      const rect = logoRef.current?.getBoundingClientRect();
-      if (rect) {
-        cursorRef.current?.snapTo(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      }
-    });
-
-    // If onAuthenticated is provided (Electron gate mode), proceed after transition
-    if (onAuthenticated) {
-      const proceedTimer = window.setTimeout(() => onAuthenticated(), 1200);
-      transitionTimers.current.push(proceedTimer);
-      return;
-    }
-
-    // Otherwise reveal the auth widget (web mode with Supabase sign-in)
-    const showTimer = window.setTimeout(() => setShowAuth(true), 600);
-    const authTimer = window.setTimeout(() => setPhase('auth'), 1150);
-    transitionTimers.current.push(showTimer, authTimer);
-  };
-
-  useEffect(() => {
-    if (phase !== 'transitioning') {
-      setShowAuth(phase === 'auth');
-    }
-  }, [phase]);
-
-  useEffect(() => () => clearTimers(), []);
-
-  return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-white selection:bg-yellow-500/30">
-      {showCursor && (
-        <div className="hidden md:block">
-          <FluidCursor ref={cursorRef} />
+    <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 md:flex-row md:items-stretch md:px-0">
+      {/* Left — Branding column (60%) */}
+      <div className="flex w-full flex-col items-center justify-center gap-6 py-16 md:w-[60%] md:items-start md:py-0 md:pl-[10%]">
+        <div className="flex flex-col items-center gap-5 md:items-start">
+          <img
+            src="/logo.png"
+            alt="Fintheon logo"
+            className="h-20 w-20 object-contain opacity-95 drop-shadow-[0_0_18px_rgba(199,159,74,0.5)]"
+          />
+          <h1
+            className="text-3xl font-light tracking-[0.5em] text-[#c79f4a] drop-shadow-[0_0_12px_rgba(199,159,74,0.4)]"
+            style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
+          >
+            FINTHEON
+          </h1>
+          <p
+            className="text-xs tracking-[0.3em] text-[#f0ead6]/70"
+            style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
+          >
+            Integrated Trading Environment
+          </p>
         </div>
-      )}
 
-      {/* Background — plain black with subtle radial vignette */}
-      <div className="absolute inset-0 z-0 bg-[#050402]">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.6)_100%)]" />
+        <div className="mt-4">
+          <TimeQuote />
+        </div>
       </div>
 
-      <main className="relative z-10 flex min-h-screen flex-col items-center justify-end px-6 pb-12 md:justify-center">
-        <div
-          className={`flex w-full max-w-5xl flex-col items-center gap-10 transition-all duration-700 ${
-            phase === 'auth' ? 'md:items-start md:gap-12' : ''
-          }`}
-        >
-          {/* Logo + FINTHEON title */}
-          <div
-            ref={logoRef}
-            className={`relative mb-2 flex flex-col items-center gap-5 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-              phase === 'landing'
-                ? 'logo-landing translate-y-0'
-                : 'logo-auth -translate-y-32 md:-translate-y-40 md:self-start md:pl-2'
-            }`}
+      {/* Right — Login card (40%) */}
+      <div className="flex w-full flex-col items-center justify-center py-12 md:w-[40%] md:py-0 md:pr-[8%]">
+        <div className="w-full max-w-sm rounded-2xl border border-[#c79f4a]/20 bg-[#0a0906]/90 px-8 py-10 shadow-[0_25px_55px_rgba(0,0,0,0.65)] backdrop-blur-lg">
+          <p
+            className="mb-8 text-center text-xs font-semibold uppercase tracking-[0.4em] text-[#c79f4a]/70"
+            style={{ fontVariant: 'small-caps' }}
           >
-            <div
-              className="pointer-events-none absolute top-1/2 left-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-yellow-500/30 animate-pulse-radiate"
-              style={{ boxShadow: '0 0 60px rgba(199,159,74,0.3)' }}
-            />
-            <div className="relative z-10 opacity-95 drop-shadow-[0_0_18px_rgba(199,159,74,0.5)]">
-              <img src="/logo.png" alt="Fintheon logo" className="h-32 w-32 object-contain" />
-            </div>
-            <h1
-              className="relative z-10 text-3xl font-light tracking-[0.5em] text-[#c79f4a] drop-shadow-[0_0_12px_rgba(199,159,74,0.4)]"
-              style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
-            >
-              FINTHEON
-            </h1>
-          </div>
+            Access Terminal
+          </p>
 
-          {/* Login button (landing only) */}
-          <div
-            className={`group relative flex items-center justify-center overflow-hidden rounded-full p-[2px] transition-all duration-500 ${
-              phase === 'landing' ? 'opacity-100' : 'pointer-events-none opacity-0'
-            }`}
-          >
-            <div className="absolute inset-[-100%] animate-spin-slow bg-[conic-gradient(from_0deg,transparent_0_85%,#B45309_92%,#EAB308_100%)] opacity-100" />
-            <button
-              onClick={handleLoginClick}
-              className="relative z-10 rounded-full bg-black px-14 py-5 text-lg font-bold tracking-[0.25em] text-yellow-500 transition-colors duration-700 ease-out hover:bg-yellow-500 hover:text-black hover:shadow-[0_0_30px_rgba(234,179,8,0.6)]"
-            >
-              LOGIN
-            </button>
-          </div>
-
-          {/* Footer Links */}
-          <footer
-            className={`flex gap-6 text-[11px] font-medium uppercase tracking-[0.25em] text-yellow-600/90 transition-opacity duration-500 ${
-              phase === 'landing' ? 'opacity-100' : 'pointer-events-none opacity-0'
-            }`}
-          >
-            <a href="#" className="transition-all duration-500 hover:text-yellow-400 hover:drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]">
-              Terms of Use
-            </a>
-            <span className="text-yellow-800">•</span>
-            <a href="#" className="transition-all duration-500 hover:text-yellow-400 hover:drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]">
-              Privacy Policy
-            </a>
-          </footer>
-
-          {/* Auth window */}
-          <div
-            className={`relative w-full max-w-xl overflow-hidden rounded-[32px] p-[1px] transition-all duration-700 ${
-              phase === 'landing' ? 'pointer-events-none opacity-0 translate-y-6' : 'opacity-100 translate-y-0'
-            } ${phase === 'auth' ? 'md:self-start' : ''}`}
-          >
-            <div className="absolute inset-[-200%] animate-spin-slow bg-[conic-gradient(from_0deg,transparent_0_85%,#B45309_92%,#EAB308_100%)] opacity-80" />
-            <div className="relative z-10 flex flex-col gap-6 rounded-[32px] bg-black/80 px-8 py-10 shadow-[0_25px_55px_rgba(0,0,0,0.65)] backdrop-blur-lg">
-              <div className="space-y-2 text-center">
-                <p className="text-xs uppercase tracking-[0.5em] text-yellow-500/70">Fintheon Terminal</p>
-                <h1 className="text-2xl font-semibold tracking-[0.2em] text-yellow-50">Access Control</h1>
-              </div>
-              <div className={`transition-all duration-500 ${showAuth ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
-                {showAuth ? children : null}
-              </div>
-            </div>
-          </div>
+          <GoogleSignInButton onClick={onSignIn} isLoading={isLoading} />
         </div>
-      </main>
 
-      <style>{`
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes pulse-radiate {
-          0% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
-          100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
-        }
-        .animate-spin-slow { animation: spin-slow 4s linear infinite; }
-        .animate-pulse-radiate { animation: pulse-radiate 2s infinite ease-out; }
-      `}</style>
-    </div>
-  );
-};
+        {/* Footer links */}
+        <footer className="mt-6 flex gap-6 text-[11px] font-medium uppercase tracking-[0.25em] text-yellow-600/90">
+          <a
+            href="#"
+            className="transition-all duration-300 hover:text-yellow-400"
+          >
+            Terms of Use
+          </a>
+          <span className="text-yellow-800">&bull;</span>
+          <a
+            href="#"
+            className="transition-all duration-300 hover:text-yellow-400"
+          >
+            Privacy Policy
+          </a>
+        </footer>
+      </div>
+    </main>
+  </div>
+);

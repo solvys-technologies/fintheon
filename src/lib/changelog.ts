@@ -9,6 +9,54 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-25T00:30:00',
+    agent: 'claude-code',
+    summary: 'feat(auth): unify T1-T4 login system + init screen with fade-in. Merged all 4 parallel tracks (Electron deep link, login UI redesign, backend profiles, data migration). Added InitScreen component with 4-step loading sequence (session → backend → sync → workspace), progress dots, and skip option. App content fades in softly via opacity transition. Session persists across Electron restarts (Supabase persistSession + autoRefreshToken). Fixed supabase import path in backend.ts. Added getAccessToken to frontend/lib/supabase.ts.',
+    files: [
+      'frontend/App.tsx',
+      'frontend/lib/supabase.ts',
+      'frontend/lib/backend.ts',
+      'frontend/contexts/AuthContext.tsx',
+    ],
+  },
+  {
+    date: '2026-03-24T23:45:00',
+    agent: 'claude-code',
+    summary: 'feat(auth): T4 — localStorage → Supabase data migration engine + cloud state hook. Created data-migration.ts that reads all critical localStorage keys (threads, narrative, regime, layouts, checkpoints, voice transcripts, gateway) and PUTs them to /api/profile/app-state. Idempotent via fintheon:migration-complete flag. Created useCloudState hook for generic cloud read/write with debounced persistence and localStorage fallback. Updated App.tsx to trigger migration on first login with "Syncing your data" overlay. Updated ThreadContext to load/persist threads from cloud with debounced PUT.',
+    files: [
+      'frontend/lib/data-migration.ts',
+      'frontend/hooks/useCloudState.ts',
+      'frontend/App.tsx',
+      'frontend/contexts/ThreadContext.tsx',
+    ],
+  },
+  {
+    date: '2026-03-24T22:30:00',
+    agent: 'claude-code',
+    summary: 'feat(auth): T1 — wire Supabase Google OAuth + Electron deep link protocol. Registered fintheon:// custom protocol in electron/main.cjs with open-url + second-instance handlers. Added onAuthCallback IPC bridge in preload.cjs. Created frontend/lib/supabase.ts with signInWithGoogle (skipBrowserRedirect for Electron PKCE). Rewrote AuthContext with Supabase session management, deep link code exchange, getAccessToken(). Refactored App.tsx — AuthProvider wraps entire app, AuthGate component uses real isAuthenticated/isLoading state.',
+    files: [
+      'electron/main.cjs',
+      'electron/preload.cjs',
+      'frontend/lib/supabase.ts',
+      'frontend/contexts/AuthContext.tsx',
+      'frontend/App.tsx',
+      'frontend/types/electron.d.ts',
+      'frontend/.env.development',
+      'frontend/.env.production',
+    ],
+  },
+  {
+    date: '2026-03-24T22:00:00',
+    agent: 'claude-code',
+    summary: 'feat(auth): T2 login screen redesign — split layout (branding left, login card right), deep dither background with embedded Roman trading motifs (seeded PRNG), time-of-day trading quotes, styled Google sign-in button. Removed FluidCursor, spinning conic border, and AuthPhase state machine.',
+    files: [
+      'frontend/components/auth/AuthShell.tsx',
+      'frontend/components/auth/AsciiBackground.tsx',
+      'frontend/components/auth/TimeQuote.tsx',
+      'frontend/components/auth/GoogleSignInButton.tsx',
+    ],
+  },
+  {
     date: '2026-03-24T21:00:00',
     agent: 'claude-code',
     summary: 'feat(appearance): Bullish/bearish custom colors from appearance settings now propagate throughout the app — RiskFlow direction indicators, daily P&L displays, position colors, proposal modals, and session status bar all use CSS vars instead of hardcoded Tailwind/hex colors. Theme (including bullish/bearish) now syncs to backend settings for per-user persistence.',

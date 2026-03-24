@@ -634,6 +634,117 @@ export async function readEREvents(userId: string, limit = 50): Promise<(EREvent
   return data ?? [];
 }
 
+// ─── User Profiles ─────────────────────────────────────────────
+
+export interface UserProfileRecord {
+  id?: string;
+  supabase_uid: string;
+  email?: string;
+  display_name?: string;
+  avatar_url?: string;
+  tier?: 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
+  onboarding_complete?: boolean;
+  app_state?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function getOrCreateProfile(
+  supabaseUid: string,
+  email?: string,
+  displayName?: string,
+  avatarUrl?: string
+): Promise<UserProfileRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  // Try to fetch existing profile
+  const { data: existing, error: fetchErr } = await sb
+    .from('user_profiles')
+    .select('*')
+    .eq('supabase_uid', supabaseUid)
+    .single();
+
+  if (existing) return existing;
+
+  // PGRST116 = not found — create new profile
+  if (fetchErr && fetchErr.code !== 'PGRST116') {
+    console.error('[Supabase] getOrCreateProfile fetch error:', fetchErr.message);
+    return null;
+  }
+
+  const { data: created, error: createErr } = await sb
+    .from('user_profiles')
+    .insert({ supabase_uid: supabaseUid, email, display_name: displayName, avatar_url: avatarUrl })
+    .select()
+    .single();
+
+  if (createErr) {
+    console.error('[Supabase] getOrCreateProfile create error:', createErr.message);
+    return null;
+  }
+  return created;
+}
+
+export async function updateProfile(
+  supabaseUid: string,
+  fields: Partial<Pick<UserProfileRecord, 'email' | 'display_name' | 'avatar_url' | 'tier' | 'onboarding_complete'>>
+): Promise<UserProfileRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('user_profiles')
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('supabase_uid', supabaseUid)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] updateProfile error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function getAppState(supabaseUid: string): Promise<Record<string, unknown> | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('user_profiles')
+    .select('app_state')
+    .eq('supabase_uid', supabaseUid)
+    .single();
+
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.error('[Supabase] getAppState error:', error.message);
+    }
+    return null;
+  }
+  return (data?.app_state as Record<string, unknown>) ?? {};
+}
+
+export async function upsertAppState(
+  supabaseUid: string,
+  state: Record<string, unknown>
+): Promise<boolean> {
+  const sb = getSupabaseClient();
+  if (!sb) return false;
+
+  const { error } = await sb
+    .from('user_profiles')
+    .update({ app_state: state, updated_at: new Date().toISOString() })
+    .eq('supabase_uid', supabaseUid);
+
+  if (error) {
+    console.error('[Supabase] upsertAppState error:', error.message);
+    return false;
+  }
+  return true;
+}
+
 // ─── Health Check ───────────────────────────────────────────────
 
 export async function checkSupabaseHealth(): Promise<boolean> {
