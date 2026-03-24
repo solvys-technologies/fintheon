@@ -1,4 +1,4 @@
-// [claude-code 2026-03-10] MCP registry shared types — T1 foundation
+// [claude-code 2026-03-23] MCP registry shared types — T1 foundation (removed alpha-vantage, twitter-cli→riskflow)
 
 export type McpServerId =
   | 'playwright'
@@ -6,8 +6,7 @@ export type McpServerId =
   | 'notion'
   | 'unusual-whales'
   | 'yahoo-finance'
-  | 'twitter-cli'
-  | 'alpha-vantage';
+  | 'riskflow';
 
 export type McpTransport = 'stdio' | 'sse' | 'http';
 
@@ -26,6 +25,7 @@ export interface McpServerConfig {
   hasApiKey: boolean;
   toolCount?: number;
   category: 'data' | 'search' | 'browser' | 'productivity' | 'social';
+  locked?: boolean;
 }
 
 export interface McpRegistryState {

@@ -1,4 +1,4 @@
-// [claude-code 2026-03-22] Source of Truth fusion — modular prompt composition
+// [claude-code 2026-03-23] Source of Truth fusion — modular prompt composition + capability awareness injection
 import type { HermesAgentRole } from '../../hermes-service.js'
 import { BASE_PROMPTS } from './base-prompts.js'
 import { SHARED_BELIEFS } from './shared-beliefs.js'
@@ -10,6 +10,24 @@ import { getCommandmentGates } from './commandment-gates.js'
 type CacheEntry = { prompt: string; expiresAt: number }
 const promptCache = new Map<string, CacheEntry>()
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+/**
+ * Capability awareness block — tells agents what data and tools they have access to.
+ * Without this, agents respond with generic "awaiting data sync" placeholders.
+ */
+const CAPABILITIES_BLOCK = `
+
+## Your Capabilities — USE THEM
+You have access to the following live data sources and tools. Do NOT say "awaiting data sync" or "connecting to..." — your data is live. Use it.
+
+- **RiskFlow Feed**: Live news headlines with macro-level scoring (HIGH/MED/LOW) and sentiment are injected at the end of this prompt when available. Reference them by name when discussing current market conditions, narratives, or risk events.
+- **Exa Search**: Neural web search for financial research, news, analysis, and real-time information.
+- **Notion**: Trade ideas database, daily P&L logs, economic events calendar, and meeting notes.
+- **Yahoo Finance**: Real-time quotes, options chains, fundamentals, and company data.
+- **Playwright Browser**: Headless browser for chart screenshots, TopStepX chart interaction, and web scraping.
+
+When live data appears below (e.g., RiskFlow headlines), weave it into your analysis. Cite specific headlines, scores, and sources. You are a live analyst — act like one.
+`
 
 /**
  * Build a dynamic system prompt for the given agent role + context.
@@ -52,6 +70,9 @@ export function getAgentSystemPrompt(
 
   // 2. Shared beliefs — the neural web
   prompt += SHARED_BELIEFS
+
+  // 2.5. Capability awareness — what tools and data the agent has access to
+  prompt += CAPABILITIES_BLOCK
 
   // 3. Agent-specific philosophy block
   const philosophy = AGENT_PHILOSOPHY[role]

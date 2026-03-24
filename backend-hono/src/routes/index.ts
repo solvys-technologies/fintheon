@@ -36,6 +36,7 @@ import cloudRoutes from './cloud/index.js';
 import { createDiagnosticsRoutes } from './diagnostics/index.js';
 import { createTerminalRoutes } from './terminal/index.js';
 import { createSetupRoutes } from './setup/index.js';
+import { createTradeIdeasRoutes } from './trade-ideas/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -74,6 +75,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/mirofish', createMirofishRoutes());
   // Proposal charting — Playwright automation for TopStepX (public, local only)
   app.route('/api/proposals', createProposalRoutes());
+  // Trade ideas — merged proposals + Supabase trade ideas (public)
+  app.route('/api/trade-ideas', createTradeIdeasRoutes());
 
   // Cloud API — Supabase-backed scored items, ER sessions, settings, consilium
   app.route('/api/cloud', cloudRoutes);

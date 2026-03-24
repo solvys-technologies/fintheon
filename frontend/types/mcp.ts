@@ -1,4 +1,4 @@
-// [claude-code 2026-03-10] MCP registry frontend types — mirror of backend types/mcp.ts
+// [claude-code 2026-03-23] MCP registry frontend types — mirror of backend types/mcp.ts (removed alpha-vantage, twitter-cli→riskflow)
 
 export type McpServerId =
   | 'playwright'
@@ -7,8 +7,7 @@ export type McpServerId =
   | 'notion'
   | 'unusual-whales'
   | 'yahoo-finance'
-  | 'twitter-cli'
-  | 'alpha-vantage';
+  | 'riskflow';
 
 export type McpTransport = 'stdio' | 'sse' | 'http';
 
@@ -27,6 +26,7 @@ export interface McpServerConfig {
   hasApiKey: boolean;
   toolCount?: number;
   category: 'data' | 'search' | 'browser' | 'productivity' | 'social';
+  locked?: boolean;
 }
 
 export interface McpRegistryState {

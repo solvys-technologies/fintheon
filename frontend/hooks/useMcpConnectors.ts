@@ -1,4 +1,4 @@
-// [claude-code 2026-03-10] T3: Hook for MCP connector state — localStorage-persisted, backend-synced
+// [claude-code 2026-03-23] T3: Hook for MCP connector state — removed alpha-vantage, twitter-cli→riskflow, playwright always-on
 import { useState, useEffect, useCallback } from 'react';
 import type { McpServerConfig, McpServerId, McpServerListResponse } from '../types/mcp';
 import { API_BASE_URL } from '../components/chat/constants';
@@ -67,34 +67,18 @@ const DEFAULT_SERVERS: McpServerConfig[] = [
     category: 'data',
   },
   {
-    id: 'alpha-vantage',
-    name: 'Alpha Vantage',
-    description: 'Technical indicators, forex, crypto',
+    id: 'riskflow',
+    name: 'RiskFlow',
+    description: 'Live news headlines, macro events, and sentiment from the RiskFlow feed',
     transport: 'stdio',
-    command: 'npx',
-    args: ['-y', 'mcp-alpha-vantage'],
+    command: 'internal',
+    args: [],
     enabled: false,
-    installed: false,
-    requiresApiKey: true,
-    apiKeyEnvVar: 'ALPHA_VANTAGE_API_KEY',
-    hasApiKey: false,
-    toolCount: 50,
+    installed: true,
+    requiresApiKey: false,
+    hasApiKey: true,
+    toolCount: 4,
     category: 'data',
-  },
-  {
-    id: 'twitter-cli',
-    name: 'Twitter / X',
-    description: 'Trending tickers, analyst tweets, sentiment',
-    transport: 'stdio',
-    command: 'npx',
-    args: ['-y', 'mcp-twitter-cli'],
-    enabled: false,
-    installed: false,
-    requiresApiKey: true,
-    apiKeyEnvVar: 'TWITTER_BEARER_TOKEN',
-    hasApiKey: false,
-    toolCount: 6,
-    category: 'social',
   },
   {
     id: 'playwright',
@@ -103,12 +87,13 @@ const DEFAULT_SERVERS: McpServerConfig[] = [
     transport: 'stdio',
     command: 'npx',
     args: ['-y', '@playwright/mcp'],
-    enabled: false,
-    installed: false,
+    enabled: true,
+    installed: true,
     requiresApiKey: false,
     hasApiKey: true,
     toolCount: 20,
     category: 'browser',
+    locked: true,
   },
 ];
 
@@ -123,6 +108,14 @@ export function useMcpConnectors() {
   useEffect(() => {
     let cancelled = false;
 
+    /** Ensure locked connectors are always in the active set */
+    const ensureLocked = (list: McpServerConfig[], ids: McpServerId[]): McpServerId[] => {
+      const lockedIds = list.filter((s) => s.locked && s.enabled).map((s) => s.id);
+      const merged = new Set(ids);
+      for (const id of lockedIds) merged.add(id);
+      return Array.from(merged);
+    };
+
     (async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/mcp`);
@@ -132,14 +125,18 @@ export function useMcpConnectors() {
         if (cancelled) return;
         setServers(list);
         if (!localStorage.getItem(STORAGE_KEY)) {
-          setActiveIds(list.filter((s) => s.enabled).map((s) => s.id));
+          setActiveIds(ensureLocked(list, list.filter((s) => s.enabled).map((s) => s.id)));
+        } else {
+          setActiveIds((prev) => ensureLocked(list, prev));
         }
       } catch {
         // T1 backend not yet deployed — use static defaults
         if (cancelled) return;
         setServers(DEFAULT_SERVERS);
         if (!localStorage.getItem(STORAGE_KEY)) {
-          setActiveIds(DEFAULT_SERVERS.filter((s) => s.enabled).map((s) => s.id));
+          setActiveIds(ensureLocked(DEFAULT_SERVERS, DEFAULT_SERVERS.filter((s) => s.enabled).map((s) => s.id)));
+        } else {
+          setActiveIds((prev) => ensureLocked(DEFAULT_SERVERS, prev));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -150,6 +147,10 @@ export function useMcpConnectors() {
   }, []);
 
   const toggle = useCallback((id: McpServerId, enabled: boolean) => {
+    // Locked connectors can't be toggled
+    const server = servers.find((s) => s.id === id);
+    if (server?.locked) return;
+
     setActiveIds((prev) => {
       const next = enabled ? [...prev, id] : prev.filter((x) => x !== id);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));

@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-24T02:30:00',
+    agent: 'claude-code',
+    summary: 'fix(hermes+connectors): Inject capability awareness into agent prompts so Harper stops saying "awaiting data sync". Replaced Twitter/X connector with RiskFlow (toggleable, off by default). Removed Alpha Vantage. Made Playwright always-on and non-toggleable (locked). Added locked field to McpServerConfig.',
+    files: [
+      'backend-hono/src/services/ai/agent-instructions/index.ts',
+      'backend-hono/src/types/mcp.ts',
+      'frontend/types/mcp.ts',
+      'frontend/hooks/useMcpConnectors.ts',
+      'frontend/components/chat/McpConnectorPopup.tsx',
+    ],
+  },
+  {
     date: '2026-03-24T01:00:00',
     agent: 'claude-code',
     summary: 'feat(trade-ideas): Merged API endpoint GET /api/trade-ideas — combines autopilot proposals + Supabase trade_ideas into unified TradeIdeaCard[], with deduplication by instrument+direction+entry within 2hr window, sorted by createdAt DESC',

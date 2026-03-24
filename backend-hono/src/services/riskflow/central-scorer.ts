@@ -1,5 +1,6 @@
-// [claude-code 2026-03-19] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
+// [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
 // Gated by ENABLE_CENTRAL_SCORING=true (only TP's instance should set this)
+// Phase T4: wired recordObservation() to feed autoresearch scoring pipeline
 import { enrichFeedWithAnalysis } from './feed-service.js';
 import {
   readUnscoredItems,
@@ -10,6 +11,8 @@ import {
 import { isSupabaseConfigured } from '../../config/supabase.js';
 import type { FeedItem } from '../../types/riskflow.js';
 import { createLogger } from '../../lib/logger.js';
+import { recordObservation } from '../autoresearch/scoring-observer.js';
+import { fetchVIX } from '../vix-service.js';
 
 const log = createLogger('CentralScorer');
 
@@ -85,6 +88,35 @@ async function scoringCycle(): Promise<void> {
 
     // Run through the existing AI enrichment pipeline (Grok analyzer)
     const enrichedItems = await enrichFeedWithAnalysis(feedItems);
+
+    // Phase T4: Record autoresearch observations for items with IV scores
+    const instrument = process.env.PRIMARY_INSTRUMENT || '/ES';
+    let observationCount = 0;
+    const vixData = await fetchVIX().catch(() => null);
+    const vixLevel = vixData?.level ?? 0;
+
+    for (const item of enrichedItems) {
+      if (!item.ivScore || item.ivScore <= 0) continue;
+      observationCount++;
+      recordObservation({
+        id: item.id,
+        headline: item.headline,
+        eventType: item.tags?.[0] || 'news',
+        ivScore: item.ivScore,
+        vixLevel,
+        instrument,
+        currentPrice: 0,
+        publishedAt: item.publishedAt,
+        source: item.source,
+        tags: item.tags,
+      }).catch((err) => {
+        log.error(` Observation recording failed for ${item.id}:`, err);
+      });
+    }
+
+    if (observationCount > 0) {
+      log.info(` Recorded ${observationCount} autoresearch observations`);
+    }
 
     // Convert back to scored format and write to Supabase
     const scoredItems = enrichedItems.map((item) => {
