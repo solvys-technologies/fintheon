@@ -277,26 +277,9 @@ export function AuditoriumEconIntel({ expanded, context, categoryScores }: Audit
 
   return (
     <div className={expanded ? 'flex flex-col gap-4' : ''}>
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-        {cards.map(card => (
-          <EconCard
-            key={card.ticker}
-            data={card}
-            expanded={expandedTicker === card.ticker}
-            onToggle={() => setExpandedTicker(prev => prev === card.ticker ? null : card.ticker)}
-          />
-        ))}
-      </div>
-
-      {loading && (
-        <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center mt-2">
-          Fetching economic data...
-        </p>
-      )}
-
-      {/* Risk Category Cards — expandable, same style as econ cards */}
+      {/* Risk Category Cards — shown first, above econ event cards */}
       {categoryScores && categoryScores.length > 0 && (
-        <div className="mt-4">
+        <div className="mb-4">
           <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
             Risk Sectors — IV by Category
           </div>
@@ -388,6 +371,24 @@ export function AuditoriumEconIntel({ expanded, context, categoryScores }: Audit
             })}
           </div>
         </div>
+      )}
+
+      {/* Economic Event Cards */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+        {cards.map(card => (
+          <EconCard
+            key={card.ticker}
+            data={card}
+            expanded={expandedTicker === card.ticker}
+            onToggle={() => setExpandedTicker(prev => prev === card.ticker ? null : card.ticker)}
+          />
+        ))}
+      </div>
+
+      {loading && (
+        <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center mt-2">
+          Fetching economic data...
+        </p>
       )}
 
       {/* FRED Macro Indicators */}

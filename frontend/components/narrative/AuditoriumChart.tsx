@@ -43,7 +43,7 @@ const CATS: MiroFishRiskCategory[] = [
   'geopolitical', 'political', 'monetary-policy',
   'earnings-corporate', 'market-structure', 'black-swan',
 ];
-const PAD = { top: 8, right: 48, bottom: 24, left: 48 };
+const PAD = { top: 4, right: 36, bottom: 20, left: 4 };
 const AXIS_COLOR = 'rgba(240, 234, 214, 0.3)';
 const GOLD_ACCENTS = ['#d4af37', '#c79f4a'];
 
@@ -65,13 +65,17 @@ function roundTopRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: nu
 }
 
 /** Layered IV bars — highest IV drawn first (back, full opacity, widest) → lowest IV on top (narrow, translucent).
- *  Creates a depth effect where the most dangerous category visually dominates. */
+ *  Rich gradient fill: base color → brighter highlight at top → fade to transparent at peak.
+ *  Bars fill edge-to-edge within the plot area. */
 function drawBars(
   ctx: CanvasRenderingContext2D, data: MiroFishTimePoint[],
   pL: number, pW: number, bTop: number, bH: number, _gold: boolean,
 ) {
   const n = data.length;
-  const maxBarW = Math.max(6, (pW / Math.max(n, 1)) * 0.7);
+  // Bars fill the full slot width with only 1px gap between
+  const slotW = pW / Math.max(n, 1);
+  const gap = Math.min(1, slotW * 0.05);
+  const maxBarW = slotW - gap;
 
   for (let i = 0; i < n; i++) {
     const cx = pL + (i / Math.max(n - 1, 1)) * pW;
@@ -90,12 +94,11 @@ function drawBars(
       const barH = (val / 10) * bH;
       if (barH < 1) continue;
 
-      // Width: back layers wider, front layers narrower (depth cue)
-      const widthScale = 1 - (layer / sorted.length) * 0.5; // 1.0 → 0.5
+      // Width: back layers fill full slot, front layers progressively narrower
+      const widthScale = 1 - (layer / sorted.length) * 0.45;
       const bW = maxBarW * widthScale;
 
-      // Opacity: back layer (highest IV) = 100% solid, each subsequent layer loses opacity
-      // Layer 0 (highest IV) = 1.0, layer 1 = 0.6, layer 2 = 0.35, etc.
+      // Opacity: back layer (highest IV) = 100% solid, each subsequent layer fades
       const alpha = layer === 0 ? 1.0 : Math.max(0.15, 0.7 / (layer + 0.5));
 
       const sy = bTop + bH - barH;
@@ -103,28 +106,52 @@ function drawBars(
       ctx.save();
       ctx.globalAlpha = alpha;
 
-      // Back layer: fully solid. Front layers: slight gradient fade at top for depth
+      // Rich vertical gradient: solid base → bright highlight band → transparent fade at peak
       const grad = ctx.createLinearGradient(0, sy + barH, 0, sy);
-      grad.addColorStop(0, color);
-      grad.addColorStop(0.8, color);
-      grad.addColorStop(1, layer === 0 ? color : color + '60');
+      grad.addColorStop(0, color);                                          // solid base
+      grad.addColorStop(0.3, color);                                        // hold solid
+      grad.addColorStop(0.6, lightenColor(color, layer === 0 ? 25 : 15));   // highlight band
+      grad.addColorStop(0.85, color + (layer === 0 ? 'cc' : '80'));         // start fade
+      grad.addColorStop(1, color + (layer === 0 ? '60' : '20'));            // transparent peak
       ctx.fillStyle = grad;
 
       // Rounded top
-      roundTopRect(ctx, cx - bW / 2, sy, bW, barH, 2);
+      roundTopRect(ctx, cx - bW / 2, sy, bW, barH, 3);
       ctx.fill();
 
-      // Subtle glow on top edge for high-IV bars
-      if (val >= 6) {
+      // Inner highlight shimmer — thin bright line at ~60% height for glass effect
+      if (barH > 8) {
+        const shimmerY = sy + barH * 0.35;
+        ctx.save();
+        ctx.globalAlpha = layer === 0 ? 0.25 : 0.12;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(cx - bW / 2 + 1, shimmerY, bW - 2, 1);
+        ctx.restore();
+      }
+
+      // Top-edge glow for high-IV bars
+      if (val >= 5) {
+        ctx.save();
         ctx.shadowColor = color;
-        ctx.shadowBlur = 8;
-        ctx.fillRect(cx - bW / 2, sy, bW, Math.min(3, barH));
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur = val >= 7 ? 12 : 6;
+        ctx.globalAlpha = layer === 0 ? 0.6 : 0.2;
+        ctx.fillStyle = color;
+        ctx.fillRect(cx - bW / 2, sy, bW, Math.min(2, barH));
+        ctx.restore();
       }
 
       ctx.restore();
     }
   }
+}
+
+/** Lighten a hex color by a percentage (0-100). */
+function lightenColor(hex: string, pct: number): string {
+  const h = hex.replace('#', '');
+  const r = Math.min(255, parseInt(h.substring(0, 2), 16) + Math.round(255 * pct / 100));
+  const g = Math.min(255, parseInt(h.substring(2, 4), 16) + Math.round(255 * pct / 100));
+  const b = Math.min(255, parseInt(h.substring(4, 6), 16) + Math.round(255 * pct / 100));
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 /* ── Projection overlay: draws expected move path + confidence band on top of TradingView ── */
