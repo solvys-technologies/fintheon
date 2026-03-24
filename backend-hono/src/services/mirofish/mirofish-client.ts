@@ -363,6 +363,20 @@ function formatSeedContext(seed: MiroFishSeed): string {
     }
   }
 
+  // Include Federal Reserve debate board signal if available
+  const fedSignal = ctx.fedReserveSignal as { monetaryPolicySignal?: number; rateDecision?: string; consensusStrength?: number; forwardGuidanceSignal?: string; dissentCount?: number; medianDotPlot?: number; regimeShiftProbability?: number } | undefined;
+  if (fedSignal?.monetaryPolicySignal != null) {
+    sections.push('\n--- FEDERAL RESERVE BOARD SIGNAL ---');
+    sections.push(`Monetary Policy Signal: ${fedSignal.monetaryPolicySignal}/10`);
+    sections.push(`Rate Decision: ${fedSignal.rateDecision}`);
+    sections.push(`Consensus Strength: ${((fedSignal.consensusStrength ?? 0) * 100).toFixed(0)}%`);
+    sections.push(`Forward Guidance: ${fedSignal.forwardGuidanceSignal}`);
+    sections.push(`Dissent Count: ${fedSignal.dissentCount}`);
+    sections.push(`Median Dot Plot: ${fedSignal.medianDotPlot}%`);
+    sections.push(`Regime Shift Probability (monetary): ${((fedSignal.regimeShiftProbability ?? 0) * 100).toFixed(0)}%`);
+    sections.push('NOTE: This signal comes from the FOMC deliberation simulation. Weight it heavily for monetary-policy category scoring.');
+  }
+
   sections.push('\n--- TASK ---');
   sections.push('Analyze the above context. For each of the 6 risk categories (geopolitical, political, monetary-policy, earnings-corporate, market-structure, black-swan), provide an IV score (0-10), confidence (0-1), and delta from current baseline.');
   sections.push('Also provide 2-4 scenarios with probabilities, and 1-3 upcoming events you predict within the next 30 days.');

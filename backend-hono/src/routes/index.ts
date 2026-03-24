@@ -19,6 +19,7 @@ import { createHyperliquidRoutes } from './hyperliquid/index.js';
 import { createDataRoutes } from './data/index.js';
 import { createNarrativeRoutes } from './narrative/index.js';
 import { createMirofishRoutes } from './mirofish/index.js';
+import { createFedReserveRoutes } from './fed-reserve/index.js';
 import { createERRoutes } from './er/index.js';
 import { createVoiceRoutes } from './voice/index.js';
 import { createRegimeRoutes } from './regimes/index.js';
@@ -75,6 +76,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/context-bank', createContextBankRoutes());
   // MiroFish multi-agent simulation — feature-flagged via MIROFISH_ENABLED
   app.route('/api/mirofish', createMirofishRoutes());
+  // Federal Reserve FOMC debate board — MiroShark-inspired multi-agent deliberation
+  app.route('/api/fed-reserve', createFedReserveRoutes());
   // Proposal charting — Playwright automation for TopStepX (public, local only)
   app.route('/api/proposals', createProposalRoutes());
   // Trade ideas — merged proposals + Supabase trade ideas (public)

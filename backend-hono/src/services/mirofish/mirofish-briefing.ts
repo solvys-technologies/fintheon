@@ -88,6 +88,16 @@ export function generateBriefing(
       riskAlerts.push(`${highImpact.length} high-impact headline(s) in last 48h`);
     }
   }
+  if (context.fedReserveSignal) {
+    const fed = context.fedReserveSignal;
+    keyFindings.push(`Fed Reserve Board: ${fed.rateDecision} (${(fed.consensusStrength * 100).toFixed(0)}% consensus), fwd guidance: ${fed.forwardGuidanceSignal}`);
+    if (fed.dissentCount >= 3) {
+      riskAlerts.push(`High Fed dissent (${fed.dissentCount} dissenters) — monetary policy uncertainty elevated`);
+    }
+    if (fed.monetaryPolicySignal >= 7) {
+      riskAlerts.push(`Fed Reserve signal hawkish at ${fed.monetaryPolicySignal}/10 — tightening risk`);
+    }
+  }
 
   // Agent consensus
   const votes = report.agentVotes;

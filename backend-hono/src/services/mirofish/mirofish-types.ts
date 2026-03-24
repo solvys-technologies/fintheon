@@ -147,10 +147,24 @@ export interface RiskFlowHeadline {
   created_at: string;
 }
 
+export interface FedReserveSignal {
+  monetaryPolicySignal: number;
+  signalConfidence: number;
+  regimeShiftProbability: number;
+  rateDecision: string;
+  consensusStrength: number;
+  forwardGuidanceSignal: string;
+  dissentCount: number;
+  medianDotPlot: number;
+  sessionId: string;
+  generatedAt: string;
+}
+
 export interface SimulationContext {
   vixLevel: number | null;
   fredIndicators: Record<string, number>;
   riskflowHeadlines: RiskFlowHeadline[];
+  fedReserveSignal: FedReserveSignal | null;
   fredFetchedAt: string | null;
   fetchedAt: string;
 }

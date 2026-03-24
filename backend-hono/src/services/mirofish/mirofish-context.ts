@@ -1,9 +1,10 @@
 // [claude-code 2026-03-24] Widened RiskFlow window to 72h/40 with configurable params
 // [claude-code 2026-03-23] MiroFish context assembly — fetches VIX, FRED, RiskFlow in parallel
-import type { AuditoriumPreset, SimulationContext, RiskFlowHeadline } from './mirofish-types.js';
+import type { AuditoriumPreset, SimulationContext, RiskFlowHeadline, FedReserveSignal } from './mirofish-types.js';
 import { fetchFredIndicators, getCachedFredIndicators, getFredFetchedAt } from '../systemic/fred-service.js';
 import { getVix } from '../market-data/yahoo-market.js';
 import { getSupabaseClient } from '../../config/supabase.js';
+import { getLatestFedSignal } from '../fed-reserve/fed-reserve-service.js';
 
 /**
  * Assemble a SimulationContext bundle by fetching live data from all available sources.
@@ -16,21 +17,25 @@ export async function assembleSimulationContext(
   const fetchVix = preset !== 'econ-watch';
   const fetchFred = preset !== 'risk-scan';
   const fetchRiskFlow = preset === 'full-brief' || preset === 'risk-scan';
+  const fetchFedSignal = preset === 'full-brief' || preset === 'econ-watch';
 
-  const [vixResult, fredResult, riskflowResult] = await Promise.allSettled([
+  const [vixResult, fredResult, riskflowResult, fedSignalResult] = await Promise.allSettled([
     fetchVix ? getVix().then(v => v.value) : Promise.resolve(null),
     fetchFred ? fetchFredIndicators() : Promise.resolve(getCachedFredIndicators()),
     fetchRiskFlow ? fetchRiskFlowHeadlines() : Promise.resolve([]),
+    fetchFedSignal ? Promise.resolve(getLatestFedSignal()) : Promise.resolve(null),
   ]);
 
   const vixLevel = vixResult.status === 'fulfilled' ? vixResult.value : null;
   const fredIndicators = fredResult.status === 'fulfilled' ? (fredResult.value as Record<string, number>) : getCachedFredIndicators();
   const riskflowHeadlines = riskflowResult.status === 'fulfilled' ? riskflowResult.value : [];
+  const fedReserveSignal = fedSignalResult.status === 'fulfilled' ? (fedSignalResult.value as FedReserveSignal | null) : null;
 
   return {
     vixLevel,
     fredIndicators,
     riskflowHeadlines,
+    fedReserveSignal,
     fredFetchedAt: getFredFetchedAt()?.toISOString() ?? null,
     fetchedAt: new Date().toISOString(),
   };
