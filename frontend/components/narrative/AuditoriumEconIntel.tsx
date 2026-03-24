@@ -18,14 +18,14 @@ const ECON_TICKERS: EconCardData[] = [
 ];
 
 const DIRECTION_CONFIG = {
-  beat: { icon: TrendingUp, color: '#34D399', label: 'BEAT' },
-  miss: { icon: TrendingDown, color: '#EF4444', label: 'MISS' },
-  inline: { icon: Minus, color: '#F59E0B', label: 'INLINE' },
+  beat: { icon: TrendingUp, color: 'var(--fintheon-low)', label: 'BEAT' },
+  miss: { icon: TrendingDown, color: 'var(--fintheon-severe)', label: 'MISS' },
+  inline: { icon: Minus, color: 'var(--fintheon-neutral-severe)', label: 'INLINE' },
 } as const;
 
 function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
-  const color = pct >= 70 ? '#34D399' : pct >= 50 ? '#F59E0B' : '#EF4444';
+  const color = pct >= 70 ? 'var(--fintheon-low)' : pct >= 50 ? 'var(--fintheon-neutral-severe)' : 'var(--fintheon-severe)';
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-[3px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">

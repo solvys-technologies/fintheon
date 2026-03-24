@@ -572,56 +572,44 @@ function MainLayoutInner() {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
     const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'earnings' || activeTab === 'proposals' || activeTab === 'settings';
     if (!hideRightPanel) {
-      if (missionControlCollapsed) {
-        // Strategium collapsed — entire right panel collapses (RiskFlow always collapses with it)
-        rightPanels.push(
-          <div key="right-stack" className="w-12 flex-shrink-0 h-full min-w-0 flex flex-col items-center justify-center border-l border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]">
-            <button
-              onClick={() => setMissionControlCollapsed(false)}
-              className="p-2 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
-              title="Expand Strategium"
-            >
-              <ChevronLeft className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
-            </button>
-          </div>
-        );
-      } else if (riskFlowCollapsed) {
-        rightPanels.push(
-          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15">
-            <div className="flex-1 min-h-0 overflow-y-auto border-b border-[var(--fintheon-accent)]/20">
-              <div className="p-3 h-full">
-                {missionControlContent(() => setMissionControlCollapsed(true))}
-              </div>
+      rightPanels.push(
+        <div
+          key="right-stack"
+          className={`flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15 transition-[width] duration-300 ease-in-out overflow-hidden ${
+            missionControlCollapsed ? 'w-12 bg-[var(--fintheon-bg)]' : 'w-[380px]'
+          }`}
+        >
+          {missionControlCollapsed ? (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <button
+                onClick={() => setMissionControlCollapsed(false)}
+                className="p-2 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
+                title="Expand Strategium"
+              >
+                <ChevronLeft className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
+              </button>
             </div>
-            <div className="h-[168px] shrink-0 border-t border-[var(--fintheon-accent)]/20">
-              <RiskFlowPanel
-                collapsed={riskFlowCollapsed}
-                onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
-              />
-            </div>
-          </div>
-        );
-      } else {
-        rightPanels.push(
-          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15">
-            <div className="h-1/2 flex flex-col border-b border-[var(--fintheon-accent)]/20">
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <div className="p-3 h-full">
-                  {missionControlContent(() => setMissionControlCollapsed(true))}
+          ) : (
+            <>
+              <div className={`${riskFlowCollapsed ? 'flex-1' : 'h-1/2'} flex flex-col border-b border-[var(--fintheon-accent)]/20 transition-all duration-300`}>
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <div className="p-3 h-full">
+                    {missionControlContent(() => setMissionControlCollapsed(true))}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="h-1/2 flex flex-col">
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <RiskFlowPanel
-                  collapsed={riskFlowCollapsed}
-                  onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
-                />
+              <div className={`${riskFlowCollapsed ? 'h-[168px] shrink-0' : 'h-1/2'} flex flex-col transition-all duration-300`}>
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <RiskFlowPanel
+                    collapsed={riskFlowCollapsed}
+                    onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-        );
-      }
+            </>
+          )}
+        </div>
+      );
     }
   }
 

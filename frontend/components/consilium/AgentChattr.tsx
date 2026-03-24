@@ -280,11 +280,8 @@ export function AgentChattr() {
       {/* Expanded message slide-over */}
       <ConsiliumMessageExpanded message={expandedMessage} onClose={() => setExpandedMessage(null)} />
 
-      {/* Input area — AgentDropdown for @-mention + universal PromptBox */}
+      {/* Input area — universal PromptBox */}
       <div className="px-2">
-        <div className="flex items-end gap-2 mb-1">
-          <AgentDropdown selectedAgent={selectedAgent} onSelect={setSelectedAgent} />
-        </div>
         <PromptBox
           compact
           onSend={(msg) => sendMessage(msg)}

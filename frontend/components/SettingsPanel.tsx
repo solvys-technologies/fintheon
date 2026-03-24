@@ -59,9 +59,20 @@ export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [showLanding, setShowLanding] = useState(true);
 
+  const [landingExiting, setLandingExiting] = useState(false);
+
   const handleTabChange = (tab: SettingsTab) => {
     if (!showLanding && tab === activeTab && !tabTransitioning) return;
-    setShowLanding(false);
+    if (showLanding) {
+      // Landing → tab: fade out landing, then show tab content
+      setLandingExiting(true);
+      setActiveTab(tab);
+      setTimeout(() => {
+        setShowLanding(false);
+        setLandingExiting(false);
+      }, 200);
+      return;
+    }
     if (tab === activeTab) return;
     setTabTransitioning(true);
     setPrevTab(activeTab);
@@ -80,7 +91,7 @@ export function SettingsPage() {
     setTimeout(() => {
       setShowLanding(true);
       setLandingTransition(false);
-    }, 200);
+    }, 250);
   };
 
   const availableSymbols = [
@@ -123,16 +134,21 @@ export function SettingsPage() {
     setIsSaving(true);
     setSaveMessage(null);
     try {
-      // Sync to backend only when authenticated
+      // Settings are always persisted to localStorage via SettingsContext
+      // Backend sync is best-effort when authenticated
       if (isAuthenticated) {
-        await backend.account.updateSettings({
-          dailyTarget: riskSettings.dailyProfitTarget,
-          dailyLossLimit: riskSettings.dailyLossLimit,
-          topstepxUsername: apiKeys.topstepxUsername,
-          topstepxApiKey: apiKeys.topstepxApiKey,
-          selectedSymbol: selectedSymbol.symbol,
-          contractsPerTrade: contractsPerTrade,
-        });
+        try {
+          await backend.account.updateSettings({
+            dailyTarget: riskSettings.dailyProfitTarget,
+            dailyLossLimit: riskSettings.dailyLossLimit,
+            topstepxUsername: apiKeys.topstepxUsername,
+            topstepxApiKey: apiKeys.topstepxApiKey,
+            selectedSymbol: selectedSymbol.symbol,
+            contractsPerTrade: contractsPerTrade,
+          });
+        } catch (backendErr) {
+          console.warn('Backend settings sync failed (saved locally):', backendErr);
+        }
 
         // ProjectX credentials are optional — don't block save on failure
         if (apiKeys.topstepxUsername || apiKeys.topstepxApiKey) {
@@ -143,8 +159,9 @@ export function SettingsPage() {
             });
           } catch (pxError) {
             console.warn('ProjectX credential sync failed:', pxError);
-            setSaveMessage('Settings saved. ProjectX credentials failed \u2014 check API key.');
+            setSaveMessage('Settings saved. ProjectX credentials failed — check API key.');
             setTimeout(() => setSaveMessage(null), 5000);
+            setIsSaving(false);
             return;
           }
         }
@@ -154,7 +171,8 @@ export function SettingsPage() {
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
       console.error('Failed to save settings:', error);
-      setSaveMessage('Failed to save settings. Please try again.');
+      setSaveMessage('Settings saved locally. Backend sync unavailable.');
+      setTimeout(() => setSaveMessage(null), 4000);
     } finally {
       setIsSaving(false);
     }
@@ -208,7 +226,7 @@ export function SettingsPage() {
 
         {/* ===== LANDING PAGE ===== */}
         {showLanding ? (
-          <div className="flex-1 overflow-y-auto px-8 py-8 flex items-center justify-center">
+          <div className={`flex-1 overflow-y-auto px-8 py-8 flex items-center justify-center transition-all duration-200 ${landingExiting ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'}`}>
             <div className="max-w-3xl w-full">
               <div className="text-center mb-8">
                 <h1 className="text-[22px] font-semibold text-white tracking-tight mb-1">Settings</h1>

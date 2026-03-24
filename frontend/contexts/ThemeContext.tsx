@@ -42,6 +42,12 @@ function applyThemeToDOM(theme: ThemeConfig) {
   root.style.setProperty('--fintheon-surface', theme.surface);
   root.style.setProperty('--fintheon-border', theme.border);
   root.style.setProperty('--fintheon-muted', theme.muted);
+  // Severity colors — used by RiskFlow badges, alerts, status indicators
+  root.style.setProperty('--fintheon-severe', theme.severe ?? '#EF4444');
+  root.style.setProperty('--fintheon-neutral-severe', theme.neutralSevere ?? '#F59E0B');
+  root.style.setProperty('--fintheon-neutral', theme.neutral ?? '#6B7280');
+  root.style.setProperty('--fintheon-low-neutral', theme.lowNeutral ?? '#3B82F6');
+  root.style.setProperty('--fintheon-low', theme.low ?? '#34D399');
 }
 
 function applyFontThemeToDOM(fontTheme: FontTheme) {

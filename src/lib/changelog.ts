@@ -9,6 +9,46 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-25T06:00:00',
+    agent: 'claude-code',
+    summary: 'feat(theme): Wire severity colors (severe/neutralSevere/neutral/lowNeutral/low) through ThemeContext→CSS variables. Replace hardcoded #EF4444/#F59E0B/#34D399/#3B82F6 with var(--fintheon-severe) etc in Auditorium narrative components. Restructure Auditorium Page 2: DevelopmentsTimeline replaces Kanban, add AgentScorecard+RiskAssessment split grid. Remove bottom-left AgentDropdown from boardroom, keep top toolbar filter. Smooth Strategium collapse/expand via CSS width transition. Remove Proposals tab from Consilium (sidebar-only). Enhanced TradeIdeaModal with consensus/contrarian trade views, act/pass recommendation, expected print analysis. Smooth settings landing↔tab transitions. Fix Save Settings error toast — backend sync is now best-effort, localStorage always persists.',
+    files: [
+      'frontend/contexts/ThemeContext.tsx',
+      'frontend/index.css',
+      'frontend/components/narrative/Auditorium.tsx',
+      'frontend/components/narrative/AuditoriumNarratives.tsx',
+      'frontend/components/narrative/AuditoriumEconIntel.tsx',
+      'frontend/components/narrative/AuditoriumTheses.tsx',
+      'frontend/components/narrative/AuditoriumRiskAssessment.tsx',
+      'frontend/components/narrative/AuditoriumBriefing.tsx',
+      'frontend/components/consilium/ConsiliumHub.tsx',
+      'frontend/components/consilium/AgentChattr.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/components/TradeIdeaModal.tsx',
+      'frontend/components/SettingsPanel.tsx',
+    ],
+  },
+  {
+    date: '2026-03-25T04:00:00',
+    agent: 'claude-code',
+    summary: 'feat(auditorium): replace custom canvas price chart with TradingView AdvancedRealTimeChart (area style, gold gradient). Top pane (~75%) shows live price with GC/ES/NQ comparison overlays. Bottom pane (~25%) keeps compact heat-mapped IV risk bars. Symbol mapped from user settings (/MNQ→CME_MINI:NQ1! etc). Threaded selectedSymbol from SettingsContext→ConsiliumHub→Auditorium→AuditoriumChart.',
+    files: [
+      'frontend/components/narrative/AuditoriumChart.tsx',
+      'frontend/components/narrative/Auditorium.tsx',
+      'frontend/components/consilium/ConsiliumHub.tsx',
+    ],
+  },
+  {
+    date: '2026-03-25T03:15:00',
+    agent: 'claude-code',
+    summary: 'feat(auditorium): 2-col econ grid with expandable cards (countdown, history, agent reasoning), merged Risk+Narratives into single page (4→3 pages), updated AUDITORIUM_PAGES constant and preset→page mapping.',
+    files: [
+      'frontend/components/narrative/AuditoriumEconIntel.tsx',
+      'frontend/components/narrative/Auditorium.tsx',
+      'frontend/types/mirofish.ts',
+    ],
+  },
+  {
     date: '2026-03-25T02:30:00',
     agent: 'claude-code',
     summary: 'feat(riskflow): unified VIX scoring + rescore integration — wired startVIXPolling, startCentralScorer, startIVScoreTicker, initVIXRescore into boot sequence. Fixed pre-existing type error in central-scorer. Full pipeline: VIX polls → triggers fire → rescore cycle runs → items re-enriched with VIX-weighted scoring + sub-score breakdown.',

@@ -5,7 +5,6 @@ import { Zap, Loader2 } from 'lucide-react';
 import type { AuditoriumData, AuditoriumPreset, SimulationContext, RiskFlowCatalyst, AuditoriumNarrative } from '../../types/mirofish';
 import { AUDITORIUM_PAGES, RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/mirofish';
 import { AuditoriumChart } from './AuditoriumChart';
-import { AuditoriumKanban } from './AuditoriumKanban';
 import { AuditoriumTheses } from './AuditoriumTheses';
 import { AuditoriumEconIntel } from './AuditoriumEconIntel';
 import { AuditoriumHeader } from './AuditoriumHeader';
@@ -15,6 +14,8 @@ import { AuditoriumNarratives } from './AuditoriumNarratives';
 import { AuditoriumRiskAssessment } from './AuditoriumRiskAssessment';
 import { CategoryScoreCard } from './CategoryScoreCard';
 import { KanbanTitle } from '../ui/KanbanTitle';
+import { DevelopmentsTimeline } from '../consilium/DevelopmentsTimeline';
+import { AgentScorecard } from '../consilium/AgentScorecard';
 
 interface CatalystInput {
   id: string;
@@ -212,7 +213,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
 
               {status === 'error' && data?.error && (
                 <div className="flex-1 flex items-center justify-center">
-                  <p className="text-sm text-[#EF4444]/70 text-center max-w-md">{data.error}</p>
+                  <p className="text-sm text-[var(--fintheon-severe)]/70 text-center max-w-md">{data.error}</p>
                 </div>
               )}
             </div>
@@ -248,6 +249,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
 
               {status === 'complete' && data && !isLoading ? (
                 <div className="flex-1 flex flex-col gap-6">
+                  {/* Top Volatile Theses */}
                   <div>
                     <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
                       Top Volatile Theses
@@ -255,37 +257,54 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                     <AuditoriumTheses scenarios={data.scenarios} categoryScores={data.categoryScores} expanded={preset === 'risk-scan'} />
                   </div>
 
+                  {/* Developments Timeline (replaces Kanban) */}
                   <div>
                     <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
-                      Upcoming Events by Risk Category
+                      Developments Timeline
                     </div>
-                    <AuditoriumKanban
-                      catalysts={catalysts}
-                      generatedEvents={data.generatedEvents}
-                      riskflowItems={riskflowItems}
-                      expanded={preset === 'risk-scan'}
-                    />
+                    <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden max-h-[400px]">
+                      <DevelopmentsTimeline />
+                    </div>
                   </div>
 
-                  {/* Geopolitical & Fiscal Risk */}
-                  {(riskflowItems?.length ?? 0) > 0 && (
-                    <div>
-                      <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
-                        Geopolitical & Fiscal Risk Assessment
-                      </div>
-                      <AuditoriumRiskAssessment riskflowItems={riskflowItems ?? []} categoryScores={data.categoryScores} />
-                    </div>
-                  )}
-
-                  {/* ── Section divider ── */}
+                  {/* Active Narratives */}
                   <div className="flex items-center gap-3 py-2">
                     <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
                     <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/30 uppercase tracking-widest">Narratives</span>
                     <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
                   </div>
-
-                  {/* Active Narratives */}
                   <AuditoriumNarratives narratives={narratives} expanded={preset === 'full-brief'} />
+
+                  {/* ── Scorecards + Simulation History (split) ── */}
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
+                    <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/30 uppercase tracking-widest">Performance</span>
+                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 min-h-[300px]">
+                    {/* Agent Scorecards */}
+                    <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
+                      <div className="px-4 py-2 border-b border-[var(--fintheon-border)]/10">
+                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono uppercase tracking-wider">Agent Scorecards</span>
+                      </div>
+                      <div className="max-h-[350px] overflow-y-auto">
+                        <AgentScorecard />
+                      </div>
+                    </div>
+                    {/* Geopolitical & Fiscal Risk */}
+                    <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
+                      <div className="px-4 py-2 border-b border-[var(--fintheon-border)]/10">
+                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono uppercase tracking-wider">Geopolitical & Fiscal Risk</span>
+                      </div>
+                      <div className="p-3 max-h-[350px] overflow-y-auto">
+                        {(riskflowItems?.length ?? 0) > 0 ? (
+                          <AuditoriumRiskAssessment riskflowItems={riskflowItems ?? []} categoryScores={data.categoryScores} />
+                        ) : (
+                          <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center py-4">No risk signals in current window</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center">

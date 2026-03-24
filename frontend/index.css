@@ -34,6 +34,12 @@
   --fintheon-surface: #0a0a00;
   --fintheon-border: #D4AF37;
   --fintheon-muted: #6B7280;
+  /* Severity colors — overridden by ThemeProvider */
+  --fintheon-severe: #EF4444;
+  --fintheon-neutral-severe: #F59E0B;
+  --fintheon-neutral: #6B7280;
+  --fintheon-low-neutral: #3B82F6;
+  --fintheon-low: #34D399;
 
   --font-body: 'Readable Digits', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-heading: 'Readable Digits', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
