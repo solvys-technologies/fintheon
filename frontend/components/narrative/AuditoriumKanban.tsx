@@ -1,6 +1,6 @@
 // [claude-code 2026-03-23] Auditorium kanban — dashboard-grade timeline strips + live RiskFlow catalysts
 import type { MiroFishRiskCategory, MiroFishGeneratedEvent, RiskFlowCatalyst } from '../../types/mirofish';
-import { RISK_CATEGORY_LABELS, RISK_CATEGORY_COLORS } from '../../types/mirofish';
+import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
 
 interface CatalystInput {
   id: string;
@@ -49,9 +49,7 @@ interface KanbanCard {
 }
 
 function getImpactColor(score: number): string {
-  if (score >= 7) return '#EF4444';
-  if (score >= 5) return '#F59E0B';
-  return '#34D399';
+  return ivHeatColor(score);
 }
 
 function severityToScore(sev: string): number {
@@ -129,7 +127,8 @@ export function AuditoriumKanban({ catalysts, generatedEvents, riskflowItems, ex
     <div className="flex flex-col gap-3">
       {CATEGORIES.map(cat => {
         const cards = lanes.get(cat)!;
-        const color = RISK_CATEGORY_COLORS[cat];
+        const maxIv = cards.length > 0 ? Math.max(...cards.map(c => c.impactScore)) : 5;
+        const color = ivHeatColor(maxIv);
 
         return (
           <div

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-23] Geopolitical & fiscal risk section for Page 2
 import type { RiskFlowCatalyst, MiroFishCategoryScore } from '../../types/mirofish';
-import { RISK_CATEGORY_COLORS, RISK_CATEGORY_LABELS } from '../../types/mirofish';
+import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
 
 interface AuditoriumRiskAssessmentProps {
   riskflowItems: RiskFlowCatalyst[];
@@ -50,11 +50,11 @@ export function AuditoriumRiskAssessment({ riskflowItems, categoryScores }: Audi
               key={cs.category}
               className="flex items-center gap-3 rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-2"
             >
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: RISK_CATEGORY_COLORS[cs.category] }} />
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ivHeatColor(cs.ivScore) }} />
               <span className="text-[10px] font-mono text-[var(--fintheon-text)]/80 uppercase tracking-wider">
                 {RISK_CATEGORY_LABELS[cs.category]}
               </span>
-              <span className="text-lg font-mono font-bold" style={{ color: RISK_CATEGORY_COLORS[cs.category] }}>
+              <span className="text-lg font-mono font-bold" style={{ color: ivHeatColor(cs.ivScore) }}>
                 {cs.ivScore.toFixed(1)}
               </span>
             </div>

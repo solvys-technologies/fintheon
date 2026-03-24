@@ -1,8 +1,8 @@
-// [claude-code 2026-03-24] Auditorium — 4-page dashboard, 30% bigger cards, auto-run, all pages always visible
+// [claude-code 2026-03-24] Auditorium — 3-page dashboard (merged Risk + Narratives), expandable econ cards
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { Zap, Loader2 } from 'lucide-react';
 import type { AuditoriumData, AuditoriumPreset, SimulationContext, RiskFlowCatalyst, AuditoriumNarrative } from '../../types/mirofish';
-import { AUDITORIUM_PAGES, RISK_CATEGORY_COLORS, RISK_CATEGORY_LABELS, COMPOSITE_COLOR } from '../../types/mirofish';
+import { AUDITORIUM_PAGES, RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/mirofish';
 import { AuditoriumChart } from './AuditoriumChart';
 import { AuditoriumKanban } from './AuditoriumKanban';
 import { AuditoriumTheses } from './AuditoriumTheses';
@@ -87,7 +87,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
   const handlePresetChange = useCallback((p: AuditoriumPreset) => {
     setPreset(p);
     try { localStorage.setItem('fintheon:auditorium-preset', p); } catch {}
-    const focusPage = p === 'chart-focus' ? 0 : p === 'econ-watch' ? 1 : p === 'risk-scan' ? 2 : 0;
+    const focusPage = p === 'chart-focus' ? 0 : p === 'econ-watch' ? 1 : p === 'risk-scan' ? 2 : 0; // 3 pages: 0=Command, 1=Econ, 2=Risk&Narratives
     scrollToPage(focusPage);
     handleRun(p);
   }, [handleRun, scrollToPage]);
@@ -110,7 +110,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
   // All pages always render — preset controls which page scrolls into focus
   const showPage = useCallback((_pageIdx: number) => true, []);
 
-  const visiblePages = [0, 1, 2, 3].filter(showPage);
+  const visiblePages = [0, 1, 2].filter(showPage);
 
   const displayContext = data?.contextSnapshot ?? macroContext ?? null;
 
@@ -164,12 +164,15 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                       <AuditoriumChart timeSeries={data.timeSeries} rollingDays={rollingDays} />
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                      {CATEGORIES.map(cat => (
-                        <div key={cat} className="flex items-center gap-1.5">
-                          <div className="w-3 h-[2px]" style={{ backgroundColor: RISK_CATEGORY_COLORS[cat] }} />
-                          <span className="text-[9px] text-[var(--fintheon-muted)]/50">{RISK_CATEGORY_LABELS[cat]}</span>
-                        </div>
-                      ))}
+                      {CATEGORIES.map(cat => {
+                        const cs = data.categoryScores.find(s => s.category === cat);
+                        return (
+                          <div key={cat} className="flex items-center gap-1.5">
+                            <div className="w-3 h-[2px]" style={{ backgroundColor: ivHeatColor(cs?.ivScore ?? 5) }} />
+                            <span className="text-[9px] text-[var(--fintheon-muted)]/50">{RISK_CATEGORY_LABELS[cat]}</span>
+                          </div>
+                        );
+                      })}
                       <div className="flex items-center gap-1.5">
                         <div className="w-3 h-[2px]" style={{ backgroundColor: COMPOSITE_COLOR }} />
                         <span className="text-[9px] text-[var(--fintheon-accent)]/70 font-bold">Composite</span>
@@ -248,11 +251,11 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
             </div>
           )}
 
-          {/* ── Page 2: Risk Sectors & Scenarios ── */}
+          {/* ── Page 2: Risk & Narratives (merged) ── */}
           {showPage(2) && (
             <div data-aud-page="2" className="min-h-full snap-start p-5 flex flex-col">
               <div className="shrink-0 mb-4">
-                <KanbanTitle title="Risk Sectors & Scenarios" tone="emerald" tag="Risk Scan" />
+                <KanbanTitle title="Risk & Narratives" tone="emerald" tag="Risk Scan" />
               </div>
 
               {status === 'complete' && data && !isLoading ? (
@@ -285,24 +288,22 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                       <AuditoriumRiskAssessment riskflowItems={riskflowItems ?? []} categoryScores={data.categoryScores} />
                     </div>
                   )}
+
+                  {/* ── Section divider ── */}
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
+                    <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/30 uppercase tracking-widest">Narratives</span>
+                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
+                  </div>
+
+                  {/* Active Narratives */}
+                  <AuditoriumNarratives narratives={narratives} expanded={preset === 'full-brief'} />
                 </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
                   <p className="text-sm text-[var(--fintheon-muted)]/30">Run MiroFish to populate risk data</p>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* ── Page 3: Active Narratives & Large Moves ── */}
-          {showPage(3) && (
-            <div data-aud-page="3" className="min-h-full snap-start p-5 flex flex-col">
-              <div className="shrink-0 mb-4">
-                <KanbanTitle title="Active Narratives & Large Moves" tone="gold" tag="Narratives" />
-              </div>
-              <div className="flex-1">
-                <AuditoriumNarratives narratives={narratives} expanded={preset === 'full-brief'} />
-              </div>
             </div>
           )}
         </div>

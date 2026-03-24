@@ -1,4 +1,4 @@
-// [claude-code 2026-03-14] Theme settings — font style with samples + color presets + custom HEX
+// [claude-code 2026-03-24] Theme settings — font style with samples + color presets + custom HEX + a11y fixes
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -17,8 +17,8 @@ function isValidHex(v: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(v);
 }
 
-const SAMPLE_HEADING = 'The quick brown fox';
-const SAMPLE_BODY = 'Market conditions remain volatile as traders assess incoming economic data and geopolitical developments.';
+const SAMPLE_HEADING = 'AAPL 189.42  +2.31%';
+const SAMPLE_BODY = 'ES broke above 5,420 resistance — watching $1,234.56 target with 62% probability. Risk/reward favors long above the VWAP.';
 
 export function ThemeSettings() {
   const { theme, setTheme, presets, fontTheme, setFontTheme, fontThemes, pompaEnabled, setPompaEnabled } = useTheme();
@@ -93,19 +93,19 @@ export function ThemeSettings() {
                   </div>
                 )}
                 <div className="text-[12px] font-medium text-white">{ft.label}</div>
-                <div className="text-[9px] text-zinc-500 mt-0.5">{ft.description}</div>
-                {/* Inline font sample per card */}
+                <div className="text-[11px] text-zinc-500 mt-0.5">{ft.description}</div>
+                {/* Inline font sample — trading context */}
                 <div
                   className="mt-2 text-[14px] font-semibold text-zinc-300 leading-tight"
                   style={{ fontFamily: ft.fontHeading }}
                 >
-                  Aa Bb Cc
+                  $1,234.56
                 </div>
                 <div
                   className="text-[11px] text-zinc-500 mt-0.5"
                   style={{ fontFamily: ft.fontBody }}
                 >
-                  0123456789
+                  AAPL +2.3%
                 </div>
               </button>
             );
@@ -122,7 +122,11 @@ export function ThemeSettings() {
           Ceremonial mode — Roman-themed effects, sounds &amp; animations
         </p>
         <button
+          role="switch"
+          aria-checked={pompaEnabled}
+          aria-label="Toggle Pompa ceremonial mode"
           onClick={() => setPompaEnabled(!pompaEnabled)}
+          onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setPompaEnabled(!pompaEnabled); } }}
           className="flex items-center gap-3 w-full p-3 rounded-lg border transition-all"
           style={{
             borderColor: pompaEnabled ? '#c79f4a' : 'rgba(255,255,255,0.08)',
@@ -130,12 +134,12 @@ export function ThemeSettings() {
           }}
         >
           <div
-            className="relative w-10 h-5 rounded-full transition-colors"
+            className="relative w-10 h-5 rounded-full transition-colors duration-200"
             style={{ backgroundColor: pompaEnabled ? '#c79f4a' : '#3f3f46' }}
           >
             <div
-              className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform"
-              style={{ transform: pompaEnabled ? 'translateX(22px)' : 'translateX(2px)' }}
+              className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200"
+              style={{ transform: pompaEnabled ? 'translateX(20px)' : 'translateX(0)' }}
             />
           </div>
           <span className="text-[13px] font-medium" style={{ color: pompaEnabled ? '#f0ead6' : '#71717a' }}>
@@ -173,16 +177,22 @@ export function ThemeSettings() {
                     <Check size={12} className="text-black" />
                   </div>
                 )}
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex -space-x-1">
-                    {[preset.accent, preset.bg, preset.bullish, preset.bearish].map((c, i) => (
-                      <div
-                        key={i}
-                        className="w-4 h-4 rounded-full border border-black/30"
-                        style={{ backgroundColor: c }}
-                      />
-                    ))}
-                  </div>
+                {/* Color swatch strip */}
+                <div className="flex gap-0 rounded overflow-hidden mb-2 h-5">
+                  {[
+                    { color: preset.accent, label: 'Accent' },
+                    { color: preset.bg, label: 'BG' },
+                    { color: preset.bullish, label: 'Bull' },
+                    { color: preset.bearish, label: 'Bear' },
+                    { color: preset.text, label: 'Text' },
+                  ].map((s, i) => (
+                    <div
+                      key={i}
+                      className="flex-1"
+                      style={{ backgroundColor: s.color }}
+                      title={`${s.label}: ${s.color}`}
+                    />
+                  ))}
                 </div>
                 <div className="text-[12px] font-medium text-white">{preset.label}</div>
               </button>
@@ -202,10 +212,19 @@ export function ThemeSettings() {
             const valid = isValidHex(value);
             return (
               <div key={key} className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-md border border-white/10 shrink-0"
-                  style={{ backgroundColor: valid ? value : '#333' }}
-                />
+                <label className="relative w-8 h-8 rounded-md border border-white/10 shrink-0 cursor-pointer overflow-hidden">
+                  <div
+                    className="absolute inset-0"
+                    style={{ backgroundColor: valid ? value : '#333' }}
+                  />
+                  <input
+                    type="color"
+                    value={valid ? value : '#333333'}
+                    onChange={(e) => handleCustomChange(key, e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    tabIndex={-1}
+                  />
+                </label>
                 <div className="flex-1">
                   <label className="text-[11px] text-gray-500 uppercase tracking-wider">{label}</label>
                   <input
@@ -227,7 +246,7 @@ export function ThemeSettings() {
         </div>
       </section>
 
-      <div className="pt-2">
+      <div className="pt-4 flex items-center gap-3">
         <button
           onClick={() => {
             setTheme(DEFAULT_THEME);
@@ -242,6 +261,7 @@ export function ThemeSettings() {
         >
           Reset to Default
         </button>
+        <span className="text-[11px] text-zinc-600">Restores Solvys Gold theme, default font, and all colors</span>
       </div>
     </div>
   );

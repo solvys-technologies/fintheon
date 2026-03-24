@@ -1,6 +1,6 @@
-// [claude-code 2026-03-23] Auditorium Page 2 — Economic Intelligence cards
+// [claude-code 2026-03-24] Econ Intel — 2-col grid, expandable cards with countdown + history
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Minus, CalendarClock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, CalendarClock, ChevronDown } from 'lucide-react';
 import type { EconCardData, SimulationContext } from '../../types/mirofish';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -39,86 +39,183 @@ function ConfidenceBar({ value }: { value: number }) {
   );
 }
 
-function EconCard({ data }: { data: EconCardData }) {
+function daysUntil(dateStr: string): number {
+  const now = new Date();
+  const target = new Date(dateStr);
+  return Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
+function countdownLabel(dateStr: string): string {
+  const days = daysUntil(dateStr);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  return `${days}d away`;
+}
+
+function EconCard({ data, expanded, onToggle }: { data: EconCardData; expanded: boolean; onToggle: () => void }) {
   const direction = data.agentConsensus ?? 'inline';
   const cfg = DIRECTION_CONFIG[direction];
   const Icon = cfg.icon;
   const hasAgent = data.agentConsensus != null;
 
   return (
-    <div className="flex flex-col rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 p-4 hover:border-[var(--fintheon-accent)]/20 transition-colors">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <span className="text-[13px] font-mono font-bold text-[var(--fintheon-accent)]">
-            {data.ticker}
-          </span>
-          <p className="text-[10px] text-[var(--fintheon-muted)]/50 mt-0.5">
-            {data.name}
-          </p>
+    <div
+      className={`flex flex-col rounded border bg-[var(--fintheon-surface)]/40 transition-all duration-300 cursor-pointer ${
+        expanded
+          ? 'border-[var(--fintheon-accent)]/30 sm:col-span-2 shadow-[0_0_12px_rgba(199,159,74,0.15)]'
+          : 'border-[var(--fintheon-border)]/15 hover:border-[var(--fintheon-accent)]/20'
+      }`}
+      onClick={onToggle}
+    >
+      <div className="p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <span className="text-[13px] font-mono font-bold text-[var(--fintheon-accent)]">
+              {data.ticker}
+            </span>
+            <p className="text-[10px] text-[var(--fintheon-muted)]/50 mt-0.5">
+              {data.name}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {hasAgent && (
+              <div
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono font-bold"
+                style={{ color: cfg.color, backgroundColor: `${cfg.color}15` }}
+              >
+                <Icon className="w-3 h-3" />
+                {cfg.label}
+              </div>
+            )}
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-[var(--fintheon-muted)]/30 transition-transform duration-300 ${
+                expanded ? 'rotate-180' : ''
+              }`}
+            />
+          </div>
         </div>
-        {hasAgent && (
-          <div
-            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono font-bold"
-            style={{ color: cfg.color, backgroundColor: `${cfg.color}15` }}
-          >
-            <Icon className="w-3 h-3" />
-            {cfg.label}
+
+        {/* Last print data */}
+        {data.lastPrint ? (
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div>
+              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
+                Actual
+              </span>
+              <span className="text-xs font-mono text-[var(--fintheon-text)]">
+                {data.lastPrint.actual}
+              </span>
+            </div>
+            <div>
+              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
+                Forecast
+              </span>
+              <span className="text-xs font-mono text-[var(--fintheon-text)]/70">
+                {data.lastPrint.forecast}
+              </span>
+            </div>
+            <div>
+              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
+                Previous
+              </span>
+              <span className="text-xs font-mono text-[var(--fintheon-text)]/50">
+                {data.lastPrint.previous}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="text-[10px] text-[var(--fintheon-muted)]/30 italic mb-3">
+            Awaiting data...
+          </div>
+        )}
+
+        {/* Next print date */}
+        {data.nextDate && (
+          <div className="flex items-center gap-1.5 text-[9px] text-[var(--fintheon-muted)]/50 mb-2">
+            <CalendarClock className="w-3 h-3" />
+            <span className="font-mono">Next: {data.nextDate}</span>
+          </div>
+        )}
+
+        {/* Agent confidence */}
+        {data.agentConfidence != null && (
+          <div>
+            <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
+              Agent Confidence
+            </span>
+            <ConfidenceBar value={data.agentConfidence} />
           </div>
         )}
       </div>
 
-      {/* Last print data */}
-      {data.lastPrint ? (
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          <div>
-            <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-              Actual
-            </span>
-            <span className="text-xs font-mono text-[var(--fintheon-text)]">
-              {data.lastPrint.actual}
-            </span>
-          </div>
-          <div>
-            <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-              Forecast
-            </span>
-            <span className="text-xs font-mono text-[var(--fintheon-text)]/70">
-              {data.lastPrint.forecast}
-            </span>
-          </div>
-          <div>
-            <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-              Previous
-            </span>
-            <span className="text-xs font-mono text-[var(--fintheon-text)]/50">
-              {data.lastPrint.previous}
-            </span>
-          </div>
-        </div>
-      ) : (
-        <div className="text-[10px] text-[var(--fintheon-muted)]/30 italic mb-3">
-          Awaiting data...
-        </div>
-      )}
+      {/* ── Expanded detail panel ── */}
+      <div
+        className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out"
+        style={{
+          maxHeight: expanded ? '280px' : '0px',
+          opacity: expanded ? 1 : 0,
+        }}
+      >
+        <div className="border-t border-[var(--fintheon-border)]/10 px-4 py-3 flex flex-col gap-3">
+          {/* Countdown */}
+          {data.nextDate && (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <CalendarClock className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />
+                <span className="text-[10px] font-mono text-[var(--fintheon-text)]/80">
+                  Next print: {data.nextDate}
+                </span>
+              </div>
+              <span
+                className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded"
+                style={{
+                  color: daysUntil(data.nextDate) <= 2 ? '#EF4444' : daysUntil(data.nextDate) <= 7 ? '#F59E0B' : '#34D399',
+                  backgroundColor: daysUntil(data.nextDate) <= 2 ? '#EF444415' : daysUntil(data.nextDate) <= 7 ? '#F59E0B15' : '#34D39915',
+                }}
+              >
+                {countdownLabel(data.nextDate)}
+              </span>
+            </div>
+          )}
 
-      {/* Next print date */}
-      {data.nextDate && (
-        <div className="flex items-center gap-1.5 text-[9px] text-[var(--fintheon-muted)]/50 mb-2">
-          <CalendarClock className="w-3 h-3" />
-          <span className="font-mono">Next: {data.nextDate}</span>
-        </div>
-      )}
+          {/* Historical prints (last print shown as single row — API currently provides one) */}
+          {data.lastPrint && (
+            <div>
+              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
+                Recent Print History
+              </span>
+              <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 overflow-hidden">
+                <div className="grid grid-cols-5 gap-0 text-[8px] font-mono text-[var(--fintheon-muted)]/40 uppercase tracking-wider px-3 py-1.5 border-b border-[var(--fintheon-border)]/5">
+                  <span>Date</span><span>Actual</span><span>Forecast</span><span>Previous</span><span>Result</span>
+                </div>
+                <div className="grid grid-cols-5 gap-0 text-[10px] font-mono px-3 py-2">
+                  <span className="text-[var(--fintheon-muted)]/60">{data.lastPrint.date?.slice(5) ?? '—'}</span>
+                  <span className="text-[var(--fintheon-text)]">{data.lastPrint.actual}</span>
+                  <span className="text-[var(--fintheon-text)]/70">{data.lastPrint.forecast}</span>
+                  <span className="text-[var(--fintheon-text)]/50">{data.lastPrint.previous}</span>
+                  <span style={{ color: DIRECTION_CONFIG[data.lastPrint.direction ?? 'inline']?.color ?? '#F59E0B' }}>
+                    {data.lastPrint.surprise != null ? (data.lastPrint.surprise > 0 ? '+' : '') + data.lastPrint.surprise.toFixed(2) : '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
-      {/* Agent confidence */}
-      {data.agentConfidence != null && (
-        <div>
-          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
-            Agent Confidence
-          </span>
-          <ConfidenceBar value={data.agentConfidence} />
+          {/* Agent reasoning placeholder */}
+          {hasAgent && data.agentConfidence != null && (
+            <div>
+              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1">
+                Agent Reasoning
+              </span>
+              <p className="text-[10px] text-[var(--fintheon-muted)]/50 leading-relaxed">
+                Model projects <span className="font-bold" style={{ color: cfg.color }}>{cfg.label}</span> with{' '}
+                {Math.round((data.agentConfidence ?? 0) * 100)}% confidence based on recent macro signals and historical print patterns.
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -131,6 +228,7 @@ interface AuditoriumEconIntelProps {
 export function AuditoriumEconIntel({ expanded, context }: AuditoriumEconIntelProps) {
   const [cards, setCards] = useState<EconCardData[]>(ECON_TICKERS);
   const [loading, setLoading] = useState(true);
+  const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -176,9 +274,14 @@ export function AuditoriumEconIntel({ expanded, context }: AuditoriumEconIntelPr
 
   return (
     <div className={expanded ? 'flex flex-col gap-4' : ''}>
-      <div className={`grid gap-3 ${expanded ? 'grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4' : 'grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'}`}>
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
         {cards.map(card => (
-          <EconCard key={card.ticker} data={card} />
+          <EconCard
+            key={card.ticker}
+            data={card}
+            expanded={expandedTicker === card.ticker}
+            onToggle={() => setExpandedTicker(prev => prev === card.ticker ? null : card.ticker)}
+          />
         ))}
       </div>
 
