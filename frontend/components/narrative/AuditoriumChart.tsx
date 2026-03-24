@@ -1,5 +1,6 @@
 // [claude-code 2026-03-24] Chart redesign — implied pts line + stacked IV bars + theme-aware gradients
-import { useRef, useEffect, useCallback, useState } from 'react';
+// [claude-code 2026-03-24] Fix: stable ResizeObserver ref, zero-dim guard, remove as-any cast
+import { useRef, useEffect, useLayoutEffect, useCallback, useState } from 'react';
 import type { MiroFishTimePoint, MiroFishRiskCategory } from '../../types/mirofish';
 import { RISK_CATEGORY_COLORS, RISK_CATEGORY_LABELS, COMPOSITE_COLOR } from '../../types/mirofish';
 
@@ -22,7 +23,7 @@ type Pt = { x: number; y: number };
 function isGold(c: HTMLCanvasElement) {
   return GOLD_ACCENTS.includes(getComputedStyle(c).getPropertyValue('--fintheon-accent').trim().toLowerCase());
 }
-function iPts(p: MiroFishTimePoint) { return (p as any).impliedPoints ?? p.composite * 5; }
+function iPts(p: MiroFishTimePoint): number { return p.impliedPoints ?? p.composite * 5; }
 
 function bezierCPs(pts: Pt[]) {
   const out: { c1: Pt; c2: Pt }[] = [];
@@ -157,6 +158,7 @@ export function AuditoriumChart({ timeSeries, rollingDays }: AuditoriumChartProp
     const canvas = canvasRef.current, container = containerRef.current;
     if (!canvas || !container || data.length === 0) return;
     const rect = container.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    if (rect.width === 0 || rect.height === 0) return; // skip zero-dimension frame
     canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
     canvas.style.width = `${rect.width}px`; canvas.style.height = `${rect.height}px`;
     const ctx = canvas.getContext('2d');
@@ -215,12 +217,16 @@ export function AuditoriumChart({ timeSeries, rollingDays }: AuditoriumChartProp
     }
   }, [data, hoverIdx]);
 
+  const drawRef = useRef(draw);
+  useLayoutEffect(() => { drawRef.current = draw; }, [draw]);
+
   useEffect(() => { draw(); }, [draw]);
   useEffect(() => {
     const c = containerRef.current; if (!c) return;
-    const obs = new ResizeObserver(() => draw()); obs.observe(c);
+    const obs = new ResizeObserver(() => drawRef.current());
+    obs.observe(c);
     return () => obs.disconnect();
-  }, [draw]);
+  }, []); // stable — never re-registers
 
   const onMove = useCallback((e: React.MouseEvent) => {
     const c = canvasRef.current; if (!c || data.length === 0) return;

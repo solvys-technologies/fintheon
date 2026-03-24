@@ -1,4 +1,5 @@
 // [claude-code 2026-03-24] useRunningAnalysis — polls backend for reactive MiroFish state + rolling window
+// [claude-code 2026-03-24] Fix: AbortController cancels in-flight fetches on rollingDays change
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { RunningAnalysisSnapshot, RollingWindowData } from '../types/mirofish';
@@ -27,13 +28,12 @@ export function useRunningAnalysis(options: UseRunningAnalysisOptions = {}): Use
   const [isPolling, setIsPolling] = useState(false);
   const [lastFetchedAt, setLastFetchedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
     try {
       const [stateRes, rollingRes] = await Promise.allSettled([
-        fetch(`${API_BASE}/api/mirofish/running-state`).then(r => r.ok ? r.json() : null),
-        fetch(`${API_BASE}/api/mirofish/rolling-window?days=${rollingDays}`).then(r => r.ok ? r.json() : null),
+        fetch(`${API_BASE}/api/mirofish/running-state`, { signal }).then(r => r.ok ? r.json() : null),
+        fetch(`${API_BASE}/api/mirofish/rolling-window?days=${rollingDays}`, { signal }).then(r => r.ok ? r.json() : null),
       ]);
 
       if (stateRes.status === 'fulfilled' && stateRes.value) {
@@ -46,6 +46,7 @@ export function useRunningAnalysis(options: UseRunningAnalysisOptions = {}): Use
       setLastFetchedAt(new Date().toISOString());
       setError(null);
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       setError(err instanceof Error ? err.message : 'Failed to fetch running analysis');
     }
   }, [rollingDays]);
@@ -53,16 +54,20 @@ export function useRunningAnalysis(options: UseRunningAnalysisOptions = {}): Use
   useEffect(() => {
     if (!enabled) return;
 
+    const controller = new AbortController();
     setIsPolling(true);
-    fetchData();
+    fetchData(controller.signal);
 
-    intervalRef.current = setInterval(fetchData, POLL_INTERVAL);
+    const id = setInterval(() => fetchData(controller.signal), POLL_INTERVAL);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      clearInterval(id);
+      controller.abort();
       setIsPolling(false);
     };
   }, [enabled, fetchData]);
 
-  return { runningState, rollingData, isPolling, lastFetchedAt, error, refresh: fetchData };
+  const refresh = useCallback(() => fetchData(), [fetchData]);
+
+  return { runningState, rollingData, isPolling, lastFetchedAt, error, refresh };
 }

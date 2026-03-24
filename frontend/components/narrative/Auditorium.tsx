@@ -1,5 +1,5 @@
 // [claude-code 2026-03-24] Auditorium — 4-page dashboard, 30% bigger cards, auto-run, all pages always visible
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { Zap, Loader2 } from 'lucide-react';
 import type { AuditoriumData, AuditoriumPreset, SimulationContext, RiskFlowCatalyst, AuditoriumNarrative } from '../../types/mirofish';
 import { AUDITORIUM_PAGES, RISK_CATEGORY_COLORS, RISK_CATEGORY_LABELS, COMPOSITE_COLOR } from '../../types/mirofish';
@@ -55,19 +55,19 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
   const status = data?.status ?? 'idle';
   const isLoading = running || status === 'running';
 
+  // Stable ref for onRun to avoid stale closure in mount effect
+  const onRunRef = useRef(onRun);
+  useLayoutEffect(() => { onRunRef.current = onRun; }, [onRun]);
+
   // Auto-run on mount if no data
   useEffect(() => {
-    if (status === 'idle' && !running) {
-      fetch('/api/mirofish/auto-run-check')
-        .then(r => r.json())
-        .then(({ shouldRun }) => {
-          if (shouldRun) onRun(preset);
-        })
-        .catch(() => {
-          // Endpoint unavailable — auto-run anyway
-          onRun(preset);
-        });
-    }
+    if (status !== 'idle' || running) return;
+    let cancelled = false;
+    fetch('/api/mirofish/auto-run-check')
+      .then(r => r.json())
+      .then(({ shouldRun }) => { if (!cancelled && shouldRun) onRunRef.current(preset); })
+      .catch(() => { if (!cancelled) onRunRef.current(preset); });
+    return () => { cancelled = true; };
   }, []); // Run once on mount — intentional empty deps
 
   const handleRun = useCallback(async (p?: AuditoriumPreset) => {
@@ -313,7 +313,9 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
             {visiblePages.map((pageIdx, i) => (
               <button
                 key={pageIdx}
-                onClick={() => scrollToPage(i)}
+                onClick={() => scrollToPage(pageIdx)}
+                aria-label={`Go to ${AUDITORIUM_PAGES[pageIdx]}`}
+                aria-pressed={activePage === i}
                 className="group relative flex items-center justify-center"
                 title={AUDITORIUM_PAGES[pageIdx]}
               >
