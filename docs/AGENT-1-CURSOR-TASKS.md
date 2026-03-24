@@ -314,13 +314,9 @@
 - [ ] Update Fly.io deployment configuration
 - [ ] Configure production environment variables:
   ```bash
-  DATABASE_URL=
-  CLERK_SECRET_KEY=
-  PROJECTX_API_KEY=
-  PROJECTX_USERNAME=
-  X_API_BEARER_TOKEN=
-  X_API_BASE_URL=https://api.twitter.com/2
-  REDIS_URL=
+  # ONLY required:
+  OPENROUTER_API_KEY=
+  # All other env vars are OPTIONAL — see SETUP.md
   ```
 - [ ] Run database migrations
 - [ ] Deploy to Fly.io production

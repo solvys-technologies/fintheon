@@ -27,31 +27,26 @@ Copy the example env and fill in your credentials:
 cp backend-hono/.env.example backend-hono/.env
 ```
 
-Required variables:
+Required (only 1 key needed):
 
 | Variable | Description |
 |----------|-------------|
-| `OPENROUTER_API_KEY` | OpenRouter API key (Nous subscription — Claude Opus 4.6) |
-| `OPENAI_API_KEY` | OpenAI key for Voice Engine (Whisper + TTS) |
-| `DATABASE_URL` | PostgreSQL connection string (optional — in-memory fallback for dev) |
+| `OPENROUTER_API_KEY` | OpenRouter API key — the only key needed to run Fintheon |
 
-Optional variables:
+Optional (skip unless you need specific features):
 
 | Variable | Description |
 |----------|-------------|
-| `FMP_API_KEY` | Financial Modeling Prep API key |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth for Models |
-| `CLERK_SECRET_KEY` | Clerk auth (backend) |
+| `OPENAI_API_KEY` | Voice features only (Whisper + TTS) |
+
+**Do NOT set** `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, or `CLERK_SECRET_KEY` — the app works without them.
 
 ### 3. Frontend Environment
 
-```bash
-cp frontend-vercel.env.example frontend/.env.local
-```
+No frontend env file needed. Defaults work out of the box.
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk publishable key (frontend auth) |
 | `VITE_API_URL` | Backend API URL (default: `http://localhost:8080`) |
 
 ### 4. Run Development

@@ -11,5 +11,7 @@
 
 ## Global Environment
 - Frontend: Vercel (Auto-deploy)
-- Backend: Fly.io (App: pulse-api-withered-dust-1394)
-- DB: Neon (Migrations in backend-hono/migrations)
+- Backend: Fly.io (App: fintheon)
+- DB: Optional — app works without DATABASE_URL (in-memory fallback)
+- Auth: BYPASS_AUTH=true for local/Electron — no Supabase credentials needed
+- ONLY required env var: OPENROUTER_API_KEY
