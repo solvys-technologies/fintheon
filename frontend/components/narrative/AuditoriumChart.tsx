@@ -1,6 +1,8 @@
 // [claude-code 2026-03-24] Chart overhaul — TradingView top pane (~75%), compact heat-mapped IV bars bottom pane (~25%)
 import { useRef, useEffect, useLayoutEffect, useCallback, useState } from 'react';
-import { AdvancedRealTimeChart } from 'react-ts-tradingview-widgets';
+import { AdvancedRealTimeChart as _AdvancedRealTimeChart } from 'react-ts-tradingview-widgets';
+// Cast to accept overrides + Compare studies that exist on TradingView widget but aren't in the type defs
+const AdvancedRealTimeChart = _AdvancedRealTimeChart as any;
 import type { MiroFishTimePoint, MiroFishRiskCategory } from '../../types/mirofish';
 import { RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/mirofish';
 
@@ -172,7 +174,6 @@ export function AuditoriumChart({ timeSeries, rollingDays, selectedSymbol = '/MN
           hide_side_toolbar={false}
           allow_symbol_change={true}
           studies={compareStudies}
-          // @ts-expect-error — overrides prop exists on TradingView widget but isn't typed in the wrapper
           overrides={{
             'paneProperties.background': '#000000',
             'paneProperties.vertGridProperties.color': 'rgba(255, 255, 255, 0.05)',
