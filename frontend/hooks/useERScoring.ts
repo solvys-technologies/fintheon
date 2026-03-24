@@ -103,11 +103,21 @@ function persistState(state: ERScoringState): void {
 
 // ─── Detection ─────────────────────────────────────────────────────────────
 
+/**
+ * Greedy consume: compound phrases matched first blank out their region,
+ * so "what the fuck" doesn't also match "fuck" as a second hit.
+ */
 function detectCurses(text: string): string[] {
   const matches: string[] = [];
+  let remaining = text.toLowerCase();
+
   for (const pattern of CURSE_PATTERNS) {
-    const match = text.match(pattern);
-    if (match) matches.push(match[0]);
+    const match = remaining.match(pattern);
+    if (match) {
+      matches.push(match[0]);
+      // Blank out the matched region so shorter patterns can't re-match
+      remaining = remaining.slice(0, match.index!) + ' '.repeat(match[0].length) + remaining.slice(match.index! + match[0].length);
+    }
   }
   return matches;
 }
@@ -200,79 +210,78 @@ export function useERScoring(options?: UseERScoringOptions) {
     const now = Date.now();
     const indicators: string[] = [];
 
-    setState((prev) => {
-      let current = { ...prev };
+    // Compute new state synchronously from ref (not inside setState updater)
+    // so we can dispatch events IMMEDIATELY without waiting for React's batch flush
+    let current = { ...stateRef.current };
 
-      // Process each curse as a flat penalty
-      for (const match of curseMatches) {
-        const scoreBefore = current.score;
-        const newCurseCount = current.curseCount + 1;
-        const scoreAfter = clamp(scoreBefore + CURSE_PENALTY, ER_MIN, ER_MAX);
+    // Process each curse as a flat penalty
+    for (const match of curseMatches) {
+      const scoreBefore = current.score;
+      const newCurseCount = current.curseCount + 1;
+      const scoreAfter = clamp(scoreBefore + CURSE_PENALTY, ER_MIN, ER_MAX);
 
-        current = {
-          score: scoreAfter,
-          curseCount: newCurseCount,
-          lastTriggerAt: now,
-        };
+      current = {
+        score: scoreAfter,
+        curseCount: newCurseCount,
+        lastTriggerAt: now,
+      };
 
-        indicators.push(match);
+      indicators.push(match);
 
-        const event: EREvent = {
-          eventType: 'curse',
-          triggerText: match,
-          penalty: CURSE_PENALTY,
-          scoreBefore,
-          scoreAfter,
-          curseCount: newCurseCount,
-          decayWindowMinutes: BASE_DECAY_MINUTES * Math.pow(DECAY_MULTIPLIER, newCurseCount - 1),
-          transcriptSnippet: snippet,
-        };
+      onEventRef.current?.({
+        eventType: 'curse',
+        triggerText: match,
+        penalty: CURSE_PENALTY,
+        scoreBefore,
+        scoreAfter,
+        curseCount: newCurseCount,
+        decayWindowMinutes: BASE_DECAY_MINUTES * Math.pow(DECAY_MULTIPLIER, newCurseCount - 1),
+        transcriptSnippet: snippet,
+      });
+    }
 
-        onEventRef.current?.(event);
-      }
+    // Process breathing markers (flat penalty, no curse count bump)
+    for (const match of breathingMatches) {
+      const scoreBefore = current.score;
+      const scoreAfter = clamp(scoreBefore + BREATHING_PENALTY, ER_MIN, ER_MAX);
 
-      // Process breathing markers (flat penalty, no curse count bump)
-      for (const match of breathingMatches) {
-        const scoreBefore = current.score;
-        const scoreAfter = clamp(scoreBefore + BREATHING_PENALTY, ER_MIN, ER_MAX);
+      current = {
+        ...current,
+        score: scoreAfter,
+        // lastTriggerAt NOT updated for breathing — spec says breathing doesn't affect decay timer
+      };
 
-        current = {
-          ...current,
-          score: scoreAfter,
-          // lastTriggerAt NOT updated for breathing — spec says breathing doesn't affect decay timer
-        };
+      indicators.push(match);
 
-        indicators.push(match);
+      onEventRef.current?.({
+        eventType: 'breathing',
+        triggerText: match,
+        penalty: BREATHING_PENALTY,
+        scoreBefore,
+        scoreAfter,
+        curseCount: current.curseCount,
+        decayWindowMinutes: null,
+        transcriptSnippet: snippet,
+      });
+    }
 
-        const event: EREvent = {
-          eventType: 'breathing',
-          triggerText: match,
-          penalty: BREATHING_PENALTY,
-          scoreBefore,
-          scoreAfter,
-          curseCount: current.curseCount,
-          decayWindowMinutes: null,
-          transcriptSnippet: snippet,
-        };
+    // Persist + update ref synchronously BEFORE dispatching events
+    persistState(current);
+    stateRef.current = current;
 
-        onEventRef.current?.(event);
-      }
+    // Dispatch events IMMEDIATELY (synchronous, not deferred by React batching)
+    window.dispatchEvent(new CustomEvent('psychassist:score', {
+      detail: { score: current.score, timestamp: now },
+    }));
 
-      persistState(current);
-
-      // Dispatch events on the existing event bus
-      window.dispatchEvent(new CustomEvent('psychassist:score', {
-        detail: { score: current.score, timestamp: now },
+    if (indicators.length > 0) {
+      window.dispatchEvent(new CustomEvent('psychassist:infraction', {
+        detail: { timestamp: now, indicators },
       }));
+    }
 
-      if (indicators.length > 0) {
-        window.dispatchEvent(new CustomEvent('psychassist:infraction', {
-          detail: { timestamp: now, indicators },
-        }));
-      }
-
-      return current;
-    });
+    // Then update React state (can be batched — UI will catch up, but event bus is already hot)
+    setState(current);
   }, []);
 
   // ─── Manual reset (for testing / session boundaries) ─────────────────────

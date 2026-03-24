@@ -1,7 +1,10 @@
+// [claude-code 2026-03-24] Added getRollingWindowData, shouldAutoRun, running state init hook
 // [claude-code 2026-03-23] MiroFish simulation lifecycle orchestrator
 // [claude-code 2026-03-23] Auto-enriches with VIX/FRED/RiskFlow context, generates briefing, persists to Supabase
 
-import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection, AuditoriumPreset, SimulationContext } from './mirofish-types.js';
+import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection, AuditoriumPreset, SimulationContext, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary } from './mirofish-types.js';
+// @ts-ignore — T1 creates this file
+import { resetRunningState } from './mirofish-reactive.js';
 import { isMiroFishEnabled, runDebate } from './mirofish-client.js';
 import { convertNarrativeToSeed } from './mirofish-seed.js';
 import { assembleSimulationContext } from './mirofish-context.js';
@@ -107,6 +110,14 @@ export async function startPrediction(
 
     const prediction = reportToPrediction(simId, report);
     predictionCache.set(simId, prediction);
+
+    // Initialize running analysis state from fresh debate result
+    // Convert MiroFishCategoryScore[] → Record<MiroFishRiskCategory, number>
+    const categoryRecord = report.categoryScores.reduce((acc, cs) => {
+      acc[cs.category] = cs.ivScore;
+      return acc;
+    }, {} as Record<string, number>);
+    resetRunningState(simId, categoryRecord as Record<import('./mirofish-types.js').MiroFishRiskCategory, number>, report.nextSessionProjection);
 
     activeSimulations.set(simId, {
       id: simId, status: 'complete', progress: 100,
@@ -269,4 +280,76 @@ async function persistRun(
     scenarios: report.scenarios,
     context_snapshot: context,
   });
+}
+
+// ── Rolling Window Query ──
+
+export async function getRollingWindowData(query: RollingWindowQuery): Promise<AggregatedRollingData> {
+  const sb = getSupabaseClient();
+  if (!sb) return emptyAggregation(query.days);
+
+  const cutoff = new Date(Date.now() - query.days * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await sb
+    .from('mirofish_runs')
+    .select('simulation_id, preset, composite_iv, confidence, regime_shift_probability, briefing_text, category_scores, scenarios, created_at')
+    .gte('created_at', cutoff)
+    .order('created_at', { ascending: false })
+    .limit(query.limit ?? 50);
+
+  if (error || !data?.length) return emptyAggregation(query.days);
+
+  const runs: MiroFishRunSummary[] = data.map(row => ({
+    simulationId: row.simulation_id,
+    preset: row.preset,
+    compositeIV: row.composite_iv,
+    confidence: row.confidence,
+    regimeShiftProbability: row.regime_shift_probability,
+    briefingText: row.briefing_text,
+    categoryScores: row.category_scores,
+    scenarios: row.scenarios,
+    createdAt: row.created_at,
+  }));
+
+  const avgCompositeIV = runs.reduce((s, r) => s + r.compositeIV, 0) / runs.length;
+  const avgConfidence = runs.reduce((s, r) => s + r.confidence, 0) / runs.length;
+  const avgRegimeShift = runs.reduce((s, r) => s + r.regimeShiftProbability, 0) / runs.length;
+
+  // Trend: compare first-half avg vs second-half avg
+  const mid = Math.floor(runs.length / 2);
+  const recentAvg = runs.slice(0, mid).reduce((s, r) => s + r.compositeIV, 0) / Math.max(mid, 1);
+  const olderAvg = runs.slice(mid).reduce((s, r) => s + r.compositeIV, 0) / Math.max(runs.length - mid, 1);
+  const trendDirection = recentAvg > olderAvg + 0.3 ? 'rising' : recentAvg < olderAvg - 0.3 ? 'falling' : 'stable';
+
+  return { runs, avgCompositeIV, avgConfidence, avgRegimeShift, trendDirection, periodStart: cutoff, periodEnd: new Date().toISOString() };
+}
+
+// ── Auto-run Detection ──
+
+export async function shouldAutoRun(): Promise<{ shouldRun: boolean; lastRunAt: string | null; staleness: number }> {
+  const sb = getSupabaseClient();
+  if (!sb) return { shouldRun: true, lastRunAt: null, staleness: Infinity };
+
+  const { data } = await sb
+    .from('mirofish_runs')
+    .select('created_at')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (!data?.length) return { shouldRun: true, lastRunAt: null, staleness: Infinity };
+
+  const lastRunAt = data[0].created_at;
+  const staleness = (Date.now() - new Date(lastRunAt).getTime()) / (60 * 60 * 1000); // hours
+  return { shouldRun: staleness > 1, lastRunAt, staleness };
+}
+
+function emptyAggregation(days: number): AggregatedRollingData {
+  return {
+    runs: [],
+    avgCompositeIV: 0,
+    avgConfidence: 0,
+    avgRegimeShift: 0,
+    trendDirection: 'stable',
+    periodStart: new Date(Date.now() - days * 86400000).toISOString(),
+    periodEnd: new Date().toISOString(),
+  };
 }
