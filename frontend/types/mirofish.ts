@@ -52,6 +52,8 @@ export interface AuditoriumData {
   timeSeries: MiroFishTimePoint[];
   generatedEvents: MiroFishGeneratedEvent[];
   scenarios: MiroFishScenario[];
+  briefing?: MiroFishBriefing;
+  contextSnapshot?: SimulationContext;
 }
 
 export const RISK_CATEGORY_LABELS: Record<MiroFishRiskCategory, string> = {
@@ -85,7 +87,7 @@ export const AUDITORIUM_PRESETS: { id: AuditoriumPreset; label: string; descript
   { id: 'risk-scan', label: 'Risk Scan', description: 'Sectors & scenarios' },
 ];
 
-export const AUDITORIUM_PAGES = ['Command Center', 'Econ Intel', 'Risk & Scenarios'] as const;
+export const AUDITORIUM_PAGES = ['Command Center', 'Econ Intel', 'Risk & Scenarios', 'Narratives'] as const;
 
 // --- Economic Intelligence Types ---
 
@@ -120,4 +122,63 @@ export interface EconCardData {
   lastPrint?: EconPrint;
   agentConsensus?: 'beat' | 'miss' | 'inline';
   agentConfidence?: number;
+}
+
+// --- Simulation Context & Briefing ---
+
+export interface RiskFlowCatalyst {
+  id: string;
+  title: string;
+  summary: string;
+  macro_level: number;
+  sentiment: string;
+  iv_score: number;
+  category?: string;
+  created_at: string;
+}
+
+export interface SimulationContext {
+  vixLevel: number | null;
+  fredIndicators: Record<string, number>;
+  riskflowHeadlines: RiskFlowCatalyst[];
+  fredFetchedAt: string | null;
+  fetchedAt: string;
+}
+
+export interface MiroFishBriefing {
+  summary: string;
+  keyFindings: string[];
+  riskAlerts: string[];
+  agentConsensus: string;
+  generatedAt: string;
+}
+
+export interface MacroIndicator {
+  key: string;
+  label: string;
+  value: number;
+  unit: string;
+  stressLevel: 'low' | 'moderate' | 'elevated' | 'high';
+}
+
+export interface AuditoriumNarrative {
+  id: string;
+  title: string;
+  category: string;
+  directionBias: string;
+  healthScore: number;
+  instruments: string[];
+  status: string;
+  dateRange: { start: string; end: string | null };
+}
+
+export interface MiroFishRunRecord {
+  id: string;
+  simulation_id: string;
+  preset: AuditoriumPreset;
+  composite_iv: number;
+  regime_shift_probability: number;
+  confidence: number;
+  briefing_text: string;
+  created_at: string;
 }

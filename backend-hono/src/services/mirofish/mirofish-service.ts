@@ -1,9 +1,12 @@
-// [claude-code 2026-03-16] MiroFish simulation lifecycle orchestrator
-// [claude-code 2026-03-16] Rewired to use local debate engine instead of external HTTP
+// [claude-code 2026-03-23] MiroFish simulation lifecycle orchestrator
+// [claude-code 2026-03-23] Auto-enriches with VIX/FRED/RiskFlow context, generates briefing, persists to Supabase
 
-import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection } from './mirofish-types.js';
+import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection, AuditoriumPreset, SimulationContext } from './mirofish-types.js';
 import { isMiroFishEnabled, runDebate } from './mirofish-client.js';
 import { convertNarrativeToSeed } from './mirofish-seed.js';
+import { assembleSimulationContext } from './mirofish-context.js';
+import { generateBriefing } from './mirofish-briefing.js';
+import { getSupabaseClient } from '../../config/supabase.js';
 
 /** In-memory prediction cache (simId → prediction) */
 const predictionCache = new Map<string, MiroFishPrediction>();
@@ -37,12 +40,14 @@ interface ContextBank {
 }
 
 /**
- * Start a MiroFish prediction simulation from narrative state.
- * Runs the local debate engine and returns immediately with results.
+ * Start a MiroFish prediction simulation.
+ * Auto-fetches live market context (VIX, FRED, RiskFlow) based on preset.
+ * Generates briefing text. Persists run to Supabase.
  */
 export async function startPrediction(
   narrativeState: NarrativeState,
   contextBank?: ContextBank,
+  preset: AuditoriumPreset = 'full-brief',
 ): Promise<{ simulationId: string } | { error: string }> {
   if (!isMiroFishEnabled()) {
     return { error: 'MiroFish is not enabled' };
@@ -50,24 +55,55 @@ export async function startPrediction(
 
   const simId = crypto.randomUUID();
 
-  // Mark as running
   activeSimulations.set(simId, {
     id: simId, status: 'running', progress: 0,
     startedAt: new Date().toISOString(),
   });
 
   try {
+    // Auto-fetch live context
+    const context = await assembleSimulationContext(preset);
+
+    // Merge auto-fetched context with any explicit contextBank
+    const mergedContext: ContextBank = {
+      vixLevel: contextBank?.vixLevel ?? context.vixLevel ?? undefined,
+      gexNet: contextBank?.gexNet,
+      macroIndicators: {
+        ...(contextBank?.macroIndicators ?? {}),
+        ...context.fredIndicators,
+      },
+    };
+
+    // Convert RiskFlow headlines into catalyst entities
+    const enrichedCatalysts = [
+      ...narrativeState.catalysts,
+      ...context.riskflowHeadlines.map(h => ({
+        id: h.id,
+        title: h.title,
+        description: h.summary || h.title,
+        date: h.created_at.slice(0, 10),
+        sentiment: h.sentiment || 'neutral',
+        severity: h.macro_level >= 4 ? 'critical' : h.macro_level >= 3 ? 'high' : 'medium',
+        narrativeIds: [] as string[],
+      })),
+    ];
+
     const seed = convertNarrativeToSeed(
       narrativeState.lanes,
-      narrativeState.catalysts,
+      enrichedCatalysts,
       narrativeState.ropes,
-      contextBank,
+      mergedContext,
     );
 
     seedCache.set(simId, seed);
 
     const report = await runDebate(seed);
     report.simulationId = simId;
+
+    // Generate briefing
+    const briefing = generateBriefing(report, context);
+    report.briefing = briefing;
+    report.contextSnapshot = context;
 
     const prediction = reportToPrediction(simId, report);
     predictionCache.set(simId, prediction);
@@ -76,6 +112,11 @@ export async function startPrediction(
       id: simId, status: 'complete', progress: 100,
       startedAt: activeSimulations.get(simId)!.startedAt,
       completedAt: new Date().toISOString(),
+    });
+
+    // Persist to Supabase (fire-and-forget)
+    persistRun(simId, preset, report, context, briefing).catch(err => {
+      console.warn('[MiroFish] Failed to persist run:', err);
     });
 
     return { simulationId: simId };
@@ -93,7 +134,7 @@ export async function startPrediction(
   }
 }
 
-/** Get simulation status (always complete or error for local engine) */
+/** Get simulation status */
 export function pollStatus(simId: string): MiroFishSimulation | null {
   return activeSimulations.get(simId) ?? null;
 }
@@ -103,7 +144,7 @@ export function getPredictions(simId: string): MiroFishPrediction | null {
   return predictionCache.get(simId) ?? null;
 }
 
-/** Inject a "God's Eye View" variable and re-run the debate */
+/** Inject a scenario variable and re-run the debate */
 export async function injectScenarioVariable(
   simId: string,
   injection: MiroFishInjection,
@@ -114,7 +155,6 @@ export async function injectScenarioVariable(
   if (!cachedSeed) return null;
 
   try {
-    // Add injection as a new entity to the seed
     const modifiedSeed = {
       ...cachedSeed,
       entities: [
@@ -144,7 +184,6 @@ export async function injectScenarioVariable(
       completedAt: new Date().toISOString(),
     };
     activeSimulations.set(simId, sim);
-
     return sim;
   } catch (err) {
     console.error('[MiroFish] injectScenarioVariable failed:', err);
@@ -152,17 +191,14 @@ export async function injectScenarioVariable(
   }
 }
 
-/** Get cached simulation status */
 export function getCachedSimulation(simId: string): MiroFishSimulation | undefined {
   return activeSimulations.get(simId);
 }
 
-/** Get cached prediction */
 export function getCachedPrediction(simId: string): MiroFishPrediction | undefined {
   return predictionCache.get(simId);
 }
 
-/** Get the most recent cached prediction (for IV scorer integration) */
 export function getLatestCachedPrediction(): MiroFishPrediction | undefined {
   let latest: MiroFishPrediction | undefined;
   for (const pred of predictionCache.values()) {
@@ -171,6 +207,24 @@ export function getLatestCachedPrediction(): MiroFishPrediction | undefined {
     }
   }
   return latest;
+}
+
+/** Get history of past runs from Supabase */
+export async function getRunHistory(limit = 20): Promise<unknown[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const { data, error } = await sb
+    .from('mirofish_runs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.warn('[MiroFish] History fetch failed:', error.message);
+    return [];
+  }
+  return data ?? [];
 }
 
 function reportToPrediction(simId: string, report: MiroFishReport): MiroFishPrediction {
@@ -187,7 +241,32 @@ function reportToPrediction(simId: string, report: MiroFishReport): MiroFishPred
     categoryScores: report.categoryScores,
     timeSeries: report.timeSeries,
     generatedEvents: report.generatedEvents,
+    briefing: report.briefing,
+    contextSnapshot: report.contextSnapshot,
     source: 'mirofish',
     generatedAt: report.generatedAt,
   };
+}
+
+async function persistRun(
+  simId: string,
+  preset: AuditoriumPreset,
+  report: MiroFishReport,
+  context: SimulationContext,
+  briefing: { summary: string },
+): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+
+  await sb.from('mirofish_runs').insert({
+    simulation_id: simId,
+    preset,
+    composite_iv: report.nextSessionProjection,
+    regime_shift_probability: report.regimeShiftProbability,
+    confidence: report.confidence,
+    briefing_text: briefing.summary,
+    category_scores: report.categoryScores,
+    scenarios: report.scenarios,
+    context_snapshot: context,
+  });
 }

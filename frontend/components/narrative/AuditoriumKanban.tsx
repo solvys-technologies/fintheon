@@ -1,5 +1,5 @@
-// [claude-code 2026-03-23] Auditorium kanban — dashboard-grade timeline strips
-import type { MiroFishRiskCategory, MiroFishGeneratedEvent } from '../../types/mirofish';
+// [claude-code 2026-03-23] Auditorium kanban — dashboard-grade timeline strips + live RiskFlow catalysts
+import type { MiroFishRiskCategory, MiroFishGeneratedEvent, RiskFlowCatalyst } from '../../types/mirofish';
 import { RISK_CATEGORY_LABELS, RISK_CATEGORY_COLORS } from '../../types/mirofish';
 
 interface CatalystInput {
@@ -15,6 +15,7 @@ interface CatalystInput {
 interface AuditoriumKanbanProps {
   catalysts: CatalystInput[];
   generatedEvents: MiroFishGeneratedEvent[];
+  riskflowItems?: RiskFlowCatalyst[];
   expanded?: boolean;
 }
 
@@ -41,6 +42,7 @@ interface KanbanCard {
   title: string;
   date: string;
   isAi: boolean;
+  isLive?: boolean;
   impactColor: string;
   impactScore: number;
   description?: string;
@@ -58,7 +60,18 @@ function severityToScore(sev: string): number {
   return 3;
 }
 
-export function AuditoriumKanban({ catalysts, generatedEvents, expanded }: AuditoriumKanbanProps) {
+function inferCategory(title: string, summary?: string): MiroFishRiskCategory {
+  const text = `${title} ${summary ?? ''}`.toLowerCase();
+  if (text.match(/tariff|sanction|war|nato|china|russia|israel/)) return 'geopolitical';
+  if (text.match(/fed|rate|inflation|cpi|pce|fomc|treasury/)) return 'monetary-policy';
+  if (text.match(/earnings|revenue|guidance|eps|profit/)) return 'earnings-corporate';
+  if (text.match(/election|congress|regulation|law|policy/)) return 'political';
+  if (text.match(/liquidity|margin|vix|volatil|squeeze/)) return 'market-structure';
+  if (text.match(/pandemic|crash|default|nuclear|catastroph/)) return 'black-swan';
+  return 'geopolitical';
+}
+
+export function AuditoriumKanban({ catalysts, generatedEvents, riskflowItems, expanded }: AuditoriumKanbanProps) {
   const lanes = new Map<MiroFishRiskCategory, KanbanCard[]>();
   for (const cat of CATEGORIES) lanes.set(cat, []);
 
@@ -73,6 +86,24 @@ export function AuditoriumKanban({ catalysts, generatedEvents, expanded }: Audit
       impactColor: getImpactColor(score),
       impactScore: score,
     });
+  }
+
+  // Live RiskFlow headlines
+  for (const item of (riskflowItems ?? [])) {
+    const riskCat = CATEGORY_MAP[item.category ?? ''] ?? inferCategory(item.title, item.summary);
+    const cards = lanes.get(riskCat);
+    if (cards) {
+      cards.push({
+        id: item.id,
+        title: item.title,
+        date: item.created_at.slice(0, 10),
+        isAi: false,
+        isLive: true,
+        impactColor: getImpactColor(item.iv_score),
+        impactScore: item.iv_score,
+        description: item.summary,
+      });
+    }
   }
 
   for (const e of generatedEvents) {
@@ -157,6 +188,11 @@ export function AuditoriumKanban({ catalysts, generatedEvents, expanded }: Audit
                       {card.isAi && (
                         <span className="text-[7px] font-bold px-1 rounded bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]">
                           AI
+                        </span>
+                      )}
+                      {card.isLive && (
+                        <span className="text-[7px] font-bold px-1 rounded bg-[#06B6D4]/15 text-[#06B6D4]">
+                          LIVE
                         </span>
                       )}
                     </div>

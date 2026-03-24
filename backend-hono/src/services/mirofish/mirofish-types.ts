@@ -1,5 +1,6 @@
-// [claude-code 2026-03-16] MiroFish simulation engine types
+// [claude-code 2026-03-23] MiroFish simulation engine types
 // [claude-code 2026-03-16] Extended with risk categories, time series, generated events for Auditorium
+// [claude-code 2026-03-23] Added SimulationContext, Briefing, RunRecord, preset types
 
 export type MiroFishRiskCategory =
   | 'geopolitical'
@@ -101,6 +102,8 @@ export interface MiroFishReport {
   timeSeries: MiroFishTimePoint[];
   generatedEvents: MiroFishGeneratedEvent[];
   generatedAt: string;
+  briefing?: MiroFishBriefing;
+  contextSnapshot?: SimulationContext;
 }
 
 export interface MiroFishPrediction {
@@ -116,6 +119,8 @@ export interface MiroFishPrediction {
   categoryScores?: MiroFishCategoryScore[];
   timeSeries?: MiroFishTimePoint[];
   generatedEvents?: MiroFishGeneratedEvent[];
+  briefing?: MiroFishBriefing;
+  contextSnapshot?: SimulationContext;
   source: 'mirofish';
   generatedAt: string;
 }
@@ -124,4 +129,49 @@ export interface MiroFishInjection {
   variable: string;
   targetNarrativeIds: string[];
   description: string;
+}
+
+// --- Preset & Context Types ---
+
+export type AuditoriumPreset = 'full-brief' | 'chart-focus' | 'econ-watch' | 'risk-scan';
+
+export interface RiskFlowHeadline {
+  id: string;
+  title: string;
+  summary: string;
+  macro_level: number;
+  sentiment: string;
+  iv_score: number;
+  category?: string;
+  created_at: string;
+}
+
+export interface SimulationContext {
+  vixLevel: number | null;
+  fredIndicators: Record<string, number>;
+  riskflowHeadlines: RiskFlowHeadline[];
+  fredFetchedAt: string | null;
+  fetchedAt: string;
+}
+
+export interface MiroFishBriefing {
+  summary: string;
+  keyFindings: string[];
+  riskAlerts: string[];
+  agentConsensus: string;
+  generatedAt: string;
+}
+
+export interface MiroFishRunRecord {
+  id: string;
+  simulation_id: string;
+  preset: AuditoriumPreset;
+  composite_iv: number;
+  regime_shift_probability: number;
+  confidence: number;
+  briefing_text: string;
+  category_scores: MiroFishCategoryScore[];
+  scenarios: MiroFishScenario[];
+  context_snapshot: SimulationContext;
+  created_at: string;
 }

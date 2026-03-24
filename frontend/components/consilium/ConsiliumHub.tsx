@@ -1,4 +1,4 @@
-// [claude-code 2026-03-23] Auditorium refactor — renamed predictions→auditorium, full-screen dashboard
+// [claude-code 2026-03-23] ConsiliumHub — wired Auditorium with real data, auto-run on preset change
 // [claude-code 2026-03-22] Theme-consistent styling + tab fade cross-dissolve (350ms)
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { MessageSquare, Users, LineChart, Clock, Trophy, Target, GitBranch, Cpu, PanelRightOpen, PanelRightClose } from 'lucide-react';
@@ -11,7 +11,7 @@ import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { ApparatusPage } from '../apparatus/ApparatusPage';
 import { AiLoader } from '../chat/FintheonThread';
-import type { AuditoriumData } from '../../types/mirofish';
+import type { AuditoriumData, AuditoriumPreset, SimulationContext, RiskFlowCatalyst } from '../../types/mirofish';
 
 const ChatInterface = lazy(() => import('../ChatInterface'));
 
@@ -54,6 +54,8 @@ export function ConsiliumHub() {
   const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>('chat');
   const [transitioning, setTransitioning] = useState(false);
   const [mirofishData, setMirofishData] = useState<AuditoriumData | null>(null);
+  const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
+  const [macroContext, setMacroContext] = useState<SimulationContext | null>(null);
   const [showProposals, toggleProposals] = usePanelState('fintheon:consilium:proposals-panel', false);
   const tabBarRef = useRef<HTMLDivElement>(null);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,7 +69,7 @@ export function ConsiliumHub() {
     }
   }, [activeTab]);
 
-  // Tab transition: fade out (150ms) → swap content → fade in (200ms) = ~350ms cross-dissolve
+  // Tab transition: fade out (150ms) → swap content → fade in (200ms)
   const handleTabChange = useCallback((tab: ConsiliumTab) => {
     if (tab === activeTab) return;
     setTransitioning(true);
@@ -79,12 +81,27 @@ export function ConsiliumHub() {
     }, 150);
   }, [activeTab]);
 
-  // Cleanup transition timeout on unmount
   useEffect(() => {
     return () => { if (transitionRef.current) clearTimeout(transitionRef.current); };
   }, []);
 
-  const handleRunMiroFish = useCallback(async () => {
+  // Fetch market context on mount
+  const fetchContext = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/mirofish/context`);
+      if (res.ok) {
+        const ctx = await res.json();
+        setMacroContext(ctx);
+        if (ctx.riskflowHeadlines) setRiskflowItems(ctx.riskflowHeadlines);
+      }
+    } catch (err) {
+      console.warn('[ConsiliumHub] Context fetch failed:', err);
+    }
+  }, []);
+
+  useEffect(() => { fetchContext(); }, [fetchContext]);
+
+  const handleRunMiroFish = useCallback(async (preset?: AuditoriumPreset) => {
     setMirofishData(prev => prev
       ? { ...prev, status: 'running' }
       : { simulationId: '', status: 'running', compositeIV: 0, confidence: 0, regimeShiftProbability: 0, categoryScores: [], timeSeries: [], generatedEvents: [], scenarios: [] }
@@ -94,7 +111,10 @@ export function ConsiliumHub() {
       const simRes = await fetch(`${API_BASE}/api/mirofish/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ narrativeState: { lanes: [], catalysts: [], ropes: [] } }),
+        body: JSON.stringify({
+          preset: preset ?? 'full-brief',
+          narrativeState: { lanes: [], catalysts: [], ropes: [] },
+        }),
       });
 
       if (!simRes.ok) throw new Error(`Simulation failed: ${simRes.status}`);
@@ -114,7 +134,12 @@ export function ConsiliumHub() {
         timeSeries: report.timeSeries ?? [],
         generatedEvents: report.generatedEvents ?? [],
         scenarios: report.scenarios ?? [],
+        briefing: report.briefing ?? null,
+        contextSnapshot: report.contextSnapshot ?? null,
       });
+
+      // Refresh context after simulation
+      fetchContext();
     } catch (err) {
       console.error('[MiroFish] Run failed:', err);
       setMirofishData(prev => prev
@@ -122,17 +147,16 @@ export function ConsiliumHub() {
         : null
       );
     }
-  }, []);
+  }, [fetchContext]);
 
   return (
     <div className="flex h-full flex-col bg-[var(--fintheon-bg)]">
-      {/* Floating tab bar — no borders, no separators, theme-sensitive */}
+      {/* Floating tab bar */}
       <div className="flex items-center gap-0.5 px-4 pt-3 pb-1">
         <h2 className="mr-3 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]" style={{ fontFamily: 'var(--font-heading, Roboto, sans-serif)' }}>
           Consilium
         </h2>
 
-        {/* Scrollable tab strip */}
         <div
           ref={tabBarRef}
           className="flex items-center gap-0.5 overflow-x-auto scrollbar-none"
@@ -157,7 +181,6 @@ export function ConsiliumHub() {
 
         <div className="flex-1" />
 
-        {/* Proposals panel toggle */}
         <button
           onClick={toggleProposals}
           className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
@@ -172,9 +195,8 @@ export function ConsiliumHub() {
         </button>
       </div>
 
-      {/* Tab content + Proposals panel — no border between tab bar and content */}
+      {/* Tab content + Proposals panel */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Main content area with fade transition */}
         <div
           className="flex-1 min-h-0 min-w-0 overflow-hidden"
           style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 200ms ease' }}
@@ -190,6 +212,8 @@ export function ConsiliumHub() {
               data={mirofishData}
               onRun={handleRunMiroFish}
               catalysts={[]}
+              riskflowItems={riskflowItems}
+              macroContext={macroContext}
             />
           )}
           {displayedTab === 'timeline' && <DevelopmentsTimeline />}

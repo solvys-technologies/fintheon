@@ -349,10 +349,18 @@ function formatSeedContext(seed: MiroFishSeed): string {
 
   const ctx = seed.environmentalContext;
   if (Object.keys(ctx).length > 0) {
-    sections.push('\n--- ENVIRONMENT ---');
-    if (ctx.vixLevel) sections.push(`VIX: ${ctx.vixLevel}`);
-    if (ctx.gexNet) sections.push(`GEX Net: ${ctx.gexNet}`);
-    if (ctx.macro) sections.push(`Macro: ${JSON.stringify(ctx.macro)}`);
+    sections.push('\n--- LIVE MARKET ENVIRONMENT ---');
+    if (ctx.vixLevel) sections.push(`VIX Level: ${ctx.vixLevel}`);
+    if (ctx.gexNet) sections.push(`GEX Net Exposure: ${ctx.gexNet}`);
+    const macro = ctx.macro as Record<string, number> | undefined;
+    if (macro && Object.keys(macro).length > 0) {
+      sections.push('FRED Macro Indicators:');
+      if (macro.hyOasSpread != null) sections.push(`  HY OAS Spread: ${macro.hyOasSpread.toFixed(2)}% (credit stress — >5% = distress)`);
+      if (macro.yieldCurve2s10s != null) sections.push(`  10Y-2Y Yield Curve: ${macro.yieldCurve2s10s.toFixed(2)}% (${macro.yieldCurve2s10s < 0 ? 'INVERTED — recession signal' : 'normal'})`);
+      if (macro.yieldCurve3m10y != null) sections.push(`  10Y-3M Yield Curve: ${macro.yieldCurve3m10y.toFixed(2)}% (${macro.yieldCurve3m10y < 0 ? 'INVERTED' : 'normal'})`);
+      if (macro.tedSpread != null) sections.push(`  TED Spread: ${macro.tedSpread.toFixed(2)}% (interbank stress — >0.5% = elevated)`);
+      if (macro.fedFundsRate != null) sections.push(`  Fed Funds Rate: ${macro.fedFundsRate.toFixed(2)}%`);
+    }
   }
 
   sections.push('\n--- TASK ---');

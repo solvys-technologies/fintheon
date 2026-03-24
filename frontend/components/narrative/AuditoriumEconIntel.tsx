@@ -1,7 +1,7 @@
 // [claude-code 2026-03-23] Auditorium Page 2 — Economic Intelligence cards
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Minus, CalendarClock } from 'lucide-react';
-import type { EconCardData } from '../../types/mirofish';
+import type { EconCardData, SimulationContext } from '../../types/mirofish';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -125,9 +125,10 @@ function EconCard({ data }: { data: EconCardData }) {
 
 interface AuditoriumEconIntelProps {
   expanded?: boolean;
+  context?: SimulationContext | null;
 }
 
-export function AuditoriumEconIntel({ expanded }: AuditoriumEconIntelProps) {
+export function AuditoriumEconIntel({ expanded, context }: AuditoriumEconIntelProps) {
   const [cards, setCards] = useState<EconCardData[]>(ECON_TICKERS);
   const [loading, setLoading] = useState(true);
 
@@ -185,6 +186,34 @@ export function AuditoriumEconIntel({ expanded }: AuditoriumEconIntelProps) {
         <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center mt-2">
           Fetching economic data...
         </p>
+      )}
+
+      {/* FRED Macro Indicators */}
+      {expanded && context && Object.keys(context.fredIndicators).length > 0 && (
+        <div className="mt-6">
+          <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
+            Macro Stress Indicators (FRED)
+          </div>
+          <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
+            {context.vixLevel != null && (
+              <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-3">
+                <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">VIX</span>
+                <span className="text-lg font-mono font-bold text-[var(--fintheon-text)]">{context.vixLevel.toFixed(1)}</span>
+              </div>
+            )}
+            {Object.entries(context.fredIndicators).map(([key, val]) => (
+              <div key={key} className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-3">
+                <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">{key}</span>
+                <span className="text-lg font-mono font-bold text-[var(--fintheon-text)]">{val?.toFixed(2) ?? '—'}</span>
+              </div>
+            ))}
+          </div>
+          {context.fredFetchedAt && (
+            <p className="text-[8px] text-[var(--fintheon-muted)]/20 font-mono mt-1">
+              Last updated: {new Date(context.fredFetchedAt).toLocaleString()}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

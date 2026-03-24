@@ -1,4 +1,4 @@
-// [claude-code 2026-03-16] MiroFish route handlers
+// [claude-code 2026-03-23] MiroFish route handlers — preset-aware, context endpoint, history
 // [claude-code 2026-03-16] Switched to feature flag, local debate engine
 
 import type { Context } from 'hono';
@@ -7,8 +7,11 @@ import {
   pollStatus,
   getPredictions,
   injectScenarioVariable,
+  getRunHistory,
 } from '../../services/mirofish/mirofish-service.js';
+import { assembleSimulationContext } from '../../services/mirofish/mirofish-context.js';
 import { isSkillEnabled } from '../../config/feature-flags.js';
+import type { AuditoriumPreset } from '../../services/mirofish/mirofish-types.js';
 
 function checkEnabled(c: Context): Response | null {
   if (!isSkillEnabled('mirofish')) {
@@ -23,6 +26,7 @@ export async function handleSimulate(c: Context) {
   if (blocked) return blocked;
 
   const body = await c.req.json<{
+    preset?: AuditoriumPreset;
     narrativeState: {
       lanes: Array<{
         id: string; title: string; instruments: string[];
@@ -49,7 +53,11 @@ export async function handleSimulate(c: Context) {
     return c.json({ error: 'narrativeState.lanes is required' }, 400);
   }
 
-  const result = await startPrediction(body.narrativeState, body.contextBank);
+  const result = await startPrediction(
+    body.narrativeState,
+    body.contextBank,
+    body.preset ?? 'full-brief',
+  );
   if ('error' in result) {
     return c.json({ error: result.error }, 500);
   }
@@ -108,4 +116,28 @@ export async function handleInject(c: Context) {
     return c.json({ error: 'Injection failed — simulation may not exist' }, 400);
   }
   return c.json(sim);
+}
+
+/** GET /context — fetch current market context bundle */
+export async function handleGetContext(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  try {
+    const context = await assembleSimulationContext('full-brief');
+    return c.json(context);
+  } catch (err) {
+    console.error('[MiroFish] Context assembly failed:', err);
+    return c.json({ error: 'Failed to assemble context' }, 500);
+  }
+}
+
+/** GET /history — fetch past simulation runs */
+export async function handleGetHistory(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  const limit = parseInt(c.req.query('limit') ?? '20', 10);
+  const history = await getRunHistory(Math.min(limit, 50));
+  return c.json({ runs: history });
 }
