@@ -20,11 +20,6 @@ export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = fals
       {/* Left — Branding column (60%) */}
       <div className="flex w-full flex-col items-center justify-center gap-6 py-16 md:w-[60%] md:items-start md:py-0 md:pl-[10%]">
         <div className="flex flex-col items-center gap-5 md:items-start">
-          <img
-            src="/logo.png"
-            alt="Fintheon logo"
-            className="h-20 w-20 object-contain opacity-95 drop-shadow-[0_0_18px_rgba(199,159,74,0.5)]"
-          />
           <h1
             className="text-3xl font-light tracking-[0.5em] text-[#c79f4a] drop-shadow-[0_0_12px_rgba(199,159,74,0.4)]"
             style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
