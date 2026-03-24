@@ -3,24 +3,33 @@ import { useRef, useEffect, useLayoutEffect, useCallback, useState, useMemo } fr
 import type { MiroFishTimePoint, MiroFishRiskCategory } from '../../types/mirofish';
 import { RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/mirofish';
 
-/** Map user-facing futures symbols to TradingView symbol format */
+/** Map user-facing futures symbols to TradingView widget-compatible symbols.
+ *  Free TradingView widget doesn't support micro futures (MNQ/MES) — use index equivalents. */
 const SYMBOL_MAP: Record<string, string> = {
-  '/MNQ': 'CME_MINI:NQ1!',
-  '/NQ':  'CME:NQ1!',
-  '/ES':  'CME_MINI:ES1!',
-  '/MES': 'CME_MINI:ES1!',
+  '/MNQ': 'NASDAQ:NDX',     // NAS100 index (MNQ not available on free widget)
+  '/NQ':  'NASDAQ:NDX',
+  '/ES':  'SP:SPX',         // S&P 500 index
+  '/MES': 'SP:SPX',
   '/GC':  'COMEX:GC1!',
-  '/MGC': 'COMEX:MGC1!',
-  '/YM':  'CBOT_MINI:YM1!',
+  '/MGC': 'COMEX:GC1!',
+  '/YM':  'DJ:DJI',         // Dow Jones index
+  '/RTY': 'RUSSELL:RUT',    // Russell 2000 index
   '/CL':  'NYMEX:CL1!',
+  'MNQ':  'NASDAQ:NDX',
+  'NQ':   'NASDAQ:NDX',
+  'ES':   'SP:SPX',
+  'MES':  'SP:SPX',
+  'YM':   'DJ:DJI',
+  'RTY':  'RUSSELL:RUT',
 };
 
 function mapSymbol(sym: string): string {
-  return SYMBOL_MAP[sym] ?? SYMBOL_MAP['/MNQ']!;
+  // Try exact match, then with / prefix, then default to NAS100
+  return SYMBOL_MAP[sym] ?? SYMBOL_MAP[`/${sym}`] ?? 'NASDAQ:NDX';
 }
 
-/** Compare symbols always overlaid alongside the main instrument */
-const COMPARE_SYMBOLS = ['COMEX:GC1!', 'CME_MINI:ES1!', 'CME_MINI:NQ1!'];
+/** Compare symbols overlaid alongside the main instrument */
+const COMPARE_SYMBOLS = ['COMEX:GC1!', 'SP:SPX', 'NASDAQ:NDX'];
 
 interface AuditoriumChartProps {
   timeSeries: MiroFishTimePoint[];
