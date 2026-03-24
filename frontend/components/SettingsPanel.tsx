@@ -977,7 +977,11 @@ export function SettingsPage() {
                       <Button
                         variant="secondary"
                         className="text-xs text-red-500 border-red-500/30 hover:bg-red-500/10"
-                        onClick={() => {
+                        onClick={async () => {
+                          try {
+                            const { signOut } = await import('../lib/supabase');
+                            await signOut();
+                          } catch { /* proceed with reload */ }
                           localStorage.removeItem('github_token');
                           localStorage.removeItem('github_user');
                           window.location.reload();

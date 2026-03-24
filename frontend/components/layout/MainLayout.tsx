@@ -312,8 +312,14 @@ function MainLayoutInner() {
   };
 
   const handleLogout = async () => {
-    // No-op in local single-user mode
-    console.log('Logout not available in local mode');
+    try {
+      const { signOut } = await import('../../lib/supabase');
+      await signOut();
+      // Force reload to reset all state and show login screen
+      window.location.reload();
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
   };
 
   // Determine layout based on TopStepX state and layout option
