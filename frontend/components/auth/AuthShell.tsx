@@ -11,9 +11,9 @@ type AuthShellProps = {
 export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = false }) => (
   <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-white selection:bg-yellow-500/30">
 
-    <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 md:flex-row md:items-stretch md:px-0">
-      {/* Left — Branding column (60%) */}
-      <div className="flex w-full flex-col items-center justify-center gap-6 py-16 md:w-[60%] md:items-start md:py-0 md:pl-[10%]">
+    <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 md:flex-row md:items-start md:px-0">
+      {/* Left — Branding column (60%), top-aligned with login card */}
+      <div className="flex w-full flex-col items-center justify-center gap-6 py-16 md:mt-[calc(50vh-80px)] md:w-[60%] md:items-start md:justify-start md:py-0 md:pl-[10%]">
         <div className="flex flex-col items-center gap-5 md:items-start">
           <h1
             className="text-3xl font-light tracking-[0.5em] text-[#c79f4a] drop-shadow-[0_0_12px_rgba(199,159,74,0.4)]"
@@ -34,8 +34,8 @@ export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = fals
         </div>
       </div>
 
-      {/* Right — Login card (40%) */}
-      <div className="flex w-full flex-col items-center justify-center py-12 md:w-[40%] md:py-0 md:pr-[8%]">
+      {/* Right — Login card (40%), top-aligned with branding */}
+      <div className="flex w-full flex-col items-center justify-center py-12 md:mt-[calc(50vh-80px)] md:w-[40%] md:justify-start md:py-0 md:pr-[8%]">
         <div className="w-full max-w-sm rounded-2xl border border-[#c79f4a]/20 bg-[#0a0906]/90 px-8 py-10 shadow-[0_25px_55px_rgba(0,0,0,0.65)] backdrop-blur-lg">
           <p
             className="mb-8 text-center text-xs font-semibold uppercase tracking-[0.4em] text-[#c79f4a]/70"
