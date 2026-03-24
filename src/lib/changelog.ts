@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-23T22:00:00',
+    agent: 'claude-code',
+    summary: 'feat(auditorium): Full refactor — snap-scroll 3-page dashboard (Command Center, Econ Intel, Risk & Scenarios), preset selector (Full Brief/Chart Focus/Econ Watch/Risk Scan), responsive chart height, category score cards, economic event cards with beat/miss predictions, expanded theses and kanban, page indicators, tab renamed from Predictions to Auditorium',
+    files: [
+      'frontend/components/narrative/Auditorium.tsx',
+      'frontend/components/narrative/AuditoriumChart.tsx',
+      'frontend/components/narrative/AuditoriumKanban.tsx',
+      'frontend/components/narrative/AuditoriumTheses.tsx',
+      'frontend/components/narrative/AuditoriumPresets.tsx',
+      'frontend/components/narrative/AuditoriumEconIntel.tsx',
+      'frontend/components/consilium/ConsiliumHub.tsx',
+      'frontend/types/mirofish.ts',
+    ],
+  },
+  {
     date: '2026-03-23T20:00:00',
     agent: 'claude-code',
     summary: 'feat(browser-use): Phase 2 — Browser Use CLI integration via CDP, chart automation (Playwright → browser-use), ProposalCard feed component, [SKILL:CHARTLEVELS] skill, auto-trigger charting on proposal creation, SSE broadcast proposals to RiskFlow feed',

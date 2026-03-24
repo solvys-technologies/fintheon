@@ -1,4 +1,4 @@
-// [claude-code 2026-03-16] MiroFish Auditorium frontend types
+// [claude-code 2026-03-23] MiroFish Auditorium frontend types — expanded for snap-scroll dashboard + presets
 
 export type MiroFishRiskCategory =
   | 'geopolitical'
@@ -73,3 +73,51 @@ export const RISK_CATEGORY_COLORS: Record<MiroFishRiskCategory, string> = {
 };
 
 export const COMPOSITE_COLOR = '#c79f4a';
+
+// --- Auditorium Preset System ---
+
+export type AuditoriumPreset = 'full-brief' | 'chart-focus' | 'econ-watch' | 'risk-scan';
+
+export const AUDITORIUM_PRESETS: { id: AuditoriumPreset; label: string; description: string }[] = [
+  { id: 'full-brief', label: 'Full Brief', description: 'All pages' },
+  { id: 'chart-focus', label: 'Chart Focus', description: 'IV chart expanded' },
+  { id: 'econ-watch', label: 'Econ Watch', description: 'Economic events' },
+  { id: 'risk-scan', label: 'Risk Scan', description: 'Sectors & scenarios' },
+];
+
+export const AUDITORIUM_PAGES = ['Command Center', 'Econ Intel', 'Risk & Scenarios'] as const;
+
+// --- Economic Intelligence Types ---
+
+export interface EconEvent {
+  id: string;
+  name: string;
+  date: string;
+  time?: string;
+  country: string;
+  importance: 1 | 2 | 3;
+  forecast?: string;
+  previous?: string;
+  actual?: string;
+  category?: string;
+}
+
+export interface EconPrint {
+  id: string;
+  eventName: string;
+  date: string;
+  actual: number;
+  forecast: number;
+  previous: number;
+  surprise: number;
+  direction: 'beat' | 'miss' | 'inline';
+}
+
+export interface EconCardData {
+  name: string;
+  ticker: string;
+  nextDate?: string;
+  lastPrint?: EconPrint;
+  agentConsensus?: 'beat' | 'miss' | 'inline';
+  agentConfidence?: number;
+}

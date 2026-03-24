@@ -1,5 +1,5 @@
+// [claude-code 2026-03-23] Auditorium refactor — renamed predictions→auditorium, full-screen dashboard
 // [claude-code 2026-03-22] Theme-consistent styling + tab fade cross-dissolve (350ms)
-// [claude-code 2026-03-20] S3-FIX:T2 — Consilium mega-merge: 8 sub-tabs, floating tab bar, agent dropdown, UI polish
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { MessageSquare, Users, LineChart, Clock, Trophy, Target, GitBranch, Cpu, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { AgentChattr } from './AgentChattr';
@@ -17,12 +17,12 @@ const ChatInterface = lazy(() => import('../ChatInterface'));
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-type ConsiliumTab = 'chat' | 'boardroom' | 'predictions' | 'timeline' | 'scorecards' | 'proposals' | 'narratives' | 'apparatus';
+type ConsiliumTab = 'chat' | 'boardroom' | 'auditorium' | 'timeline' | 'scorecards' | 'proposals' | 'narratives' | 'apparatus';
 
 const TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquare }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
   { id: 'boardroom', label: 'Boardroom', icon: Users },
-  { id: 'predictions', label: 'Predictions', icon: LineChart },
+  { id: 'auditorium', label: 'Auditorium', icon: LineChart },
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { id: 'scorecards', label: 'Scorecards', icon: Trophy },
   { id: 'proposals', label: 'Proposals', icon: Target },
@@ -185,14 +185,12 @@ export function ConsiliumHub() {
             </Suspense>
           )}
           {displayedTab === 'boardroom' && <AgentChattr />}
-          {displayedTab === 'predictions' && (
-            <div className="h-full [&>div]:w-full [&>div]:border-l-0">
-              <Auditorium
-                data={mirofishData}
-                onRun={handleRunMiroFish}
-                catalysts={[]}
-              />
-            </div>
+          {displayedTab === 'auditorium' && (
+            <Auditorium
+              data={mirofishData}
+              onRun={handleRunMiroFish}
+              catalysts={[]}
+            />
           )}
           {displayedTab === 'timeline' && <DevelopmentsTimeline />}
           {displayedTab === 'scorecards' && <AgentScorecard />}

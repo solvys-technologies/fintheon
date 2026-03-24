@@ -1,4 +1,4 @@
-// [claude-code 2026-03-16] Auditorium events kanban — 6 swim lanes by risk category
+// [claude-code 2026-03-23] Auditorium kanban — dashboard-grade timeline strips
 import type { MiroFishRiskCategory, MiroFishGeneratedEvent } from '../../types/mirofish';
 import { RISK_CATEGORY_LABELS, RISK_CATEGORY_COLORS } from '../../types/mirofish';
 
@@ -15,6 +15,7 @@ interface CatalystInput {
 interface AuditoriumKanbanProps {
   catalysts: CatalystInput[];
   generatedEvents: MiroFishGeneratedEvent[];
+  expanded?: boolean;
 }
 
 const CATEGORIES: MiroFishRiskCategory[] = [
@@ -22,7 +23,6 @@ const CATEGORIES: MiroFishRiskCategory[] = [
   'earnings-corporate', 'market-structure', 'black-swan',
 ];
 
-/** Map narrative categories to MiroFish risk categories */
 const CATEGORY_MAP: Record<string, MiroFishRiskCategory> = {
   geopolitical: 'geopolitical',
   'supply-chain': 'geopolitical',
@@ -42,6 +42,8 @@ interface KanbanCard {
   date: string;
   isAi: boolean;
   impactColor: string;
+  impactScore: number;
+  description?: string;
 }
 
 function getImpactColor(score: number): string {
@@ -56,25 +58,23 @@ function severityToScore(sev: string): number {
   return 3;
 }
 
-export function AuditoriumKanban({ catalysts, generatedEvents }: AuditoriumKanbanProps) {
-  // Build cards per category
+export function AuditoriumKanban({ catalysts, generatedEvents, expanded }: AuditoriumKanbanProps) {
   const lanes = new Map<MiroFishRiskCategory, KanbanCard[]>();
   for (const cat of CATEGORIES) lanes.set(cat, []);
 
-  // Map existing catalysts
   for (const c of catalysts) {
     const riskCat = CATEGORY_MAP[c.category ?? ''] ?? 'geopolitical';
-    const cards = lanes.get(riskCat)!;
-    cards.push({
+    const score = severityToScore(c.severity);
+    lanes.get(riskCat)!.push({
       id: c.id,
       title: c.title,
       date: c.date,
       isAi: false,
-      impactColor: getImpactColor(severityToScore(c.severity)),
+      impactColor: getImpactColor(score),
+      impactScore: score,
     });
   }
 
-  // Add AI-generated events
   for (const e of generatedEvents) {
     const cards = lanes.get(e.category);
     if (cards) {
@@ -84,65 +84,92 @@ export function AuditoriumKanban({ catalysts, generatedEvents }: AuditoriumKanba
         date: e.date,
         isAi: true,
         impactColor: getImpactColor(e.impactScore),
+        impactScore: e.impactScore,
+        description: e.description,
       });
     }
   }
 
-  // Sort each lane by date
   for (const cards of lanes.values()) {
     cards.sort((a, b) => a.date.localeCompare(b.date));
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-3">
       {CATEGORIES.map(cat => {
         const cards = lanes.get(cat)!;
+        const color = RISK_CATEGORY_COLORS[cat];
+
         return (
-          <div key={cat} className="flex items-start gap-2 min-h-[32px]">
-            {/* Category label */}
-            <div
-              className="w-[90px] shrink-0 text-[9px] font-mono py-1 text-right pr-2 truncate"
-              style={{ color: RISK_CATEGORY_COLORS[cat] }}
-            >
-              {RISK_CATEGORY_LABELS[cat]}
+          <div
+            key={cat}
+            className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-surface)]/20 p-3"
+          >
+            {/* Lane header */}
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+              <span
+                className="text-[10px] font-mono font-bold uppercase tracking-wider"
+                style={{ color }}
+              >
+                {RISK_CATEGORY_LABELS[cat]}
+              </span>
+              <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/30">
+                {cards.length} event{cards.length !== 1 ? 's' : ''}
+              </span>
             </div>
 
-            {/* Scrollable card strip */}
-            <div className="flex-1 overflow-x-auto flex gap-1.5 py-0.5 scrollbar-thin">
-              {cards.length === 0 ? (
-                <span className="text-[9px] text-[var(--fintheon-muted)]/40 italic py-1">
-                  No events
-                </span>
-              ) : (
-                cards.map(card => (
+            {/* Cards */}
+            {cards.length === 0 ? (
+              <span className="text-[10px] text-[var(--fintheon-muted)]/30 italic pl-4">
+                No upcoming events
+              </span>
+            ) : (
+              <div className={`flex gap-2 ${expanded ? 'flex-wrap' : 'overflow-x-auto scrollbar-thin'}`}>
+                {cards.map(card => (
                   <div
                     key={card.id}
-                    className="shrink-0 flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-bg)]/60 max-w-[160px]"
+                    className={`shrink-0 flex flex-col gap-1 rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-bg)]/60 ${
+                      expanded ? 'p-3 w-[220px]' : 'px-3 py-2 max-w-[200px]'
+                    }`}
                   >
-                    {/* Impact dot */}
-                    <div
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ backgroundColor: card.impactColor }}
-                    />
-                    {/* Title + date */}
-                    <div className="min-w-0">
-                      <div className="text-[9px] text-[var(--fintheon-text)] truncate leading-tight">
+                    <div className="flex items-center gap-2">
+                      {/* Impact indicator */}
+                      <div
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: card.impactColor }}
+                      />
+                      <span className="text-[10px] text-[var(--fintheon-text)] truncate leading-tight font-medium">
                         {card.title}
-                      </div>
-                      <div className="text-[8px] text-[var(--fintheon-muted)]/50 font-mono">
-                        {card.date.slice(5)}
-                      </div>
-                    </div>
-                    {/* AI badge */}
-                    {card.isAi && (
-                      <span className="shrink-0 text-[7px] font-bold px-1 rounded bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]">
-                        AI
                       </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pl-4">
+                      <span className="text-[9px] text-[var(--fintheon-muted)]/50 font-mono">
+                        {card.date.slice(5)}
+                      </span>
+                      <span
+                        className="text-[8px] font-mono font-bold"
+                        style={{ color: card.impactColor }}
+                      >
+                        IV {card.impactScore.toFixed(0)}
+                      </span>
+                      {card.isAi && (
+                        <span className="text-[7px] font-bold px-1 rounded bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]">
+                          AI
+                        </span>
+                      )}
+                    </div>
+
+                    {expanded && card.description && (
+                      <p className="text-[9px] text-[var(--fintheon-muted)]/40 pl-4 line-clamp-2">
+                        {card.description}
+                      </p>
                     )}
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
