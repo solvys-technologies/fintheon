@@ -47,7 +47,7 @@ export function SessionStatusBar({ status }: SessionStatusBarProps) {
   const dailyPnL = status?.dailyPnL ?? 0
 
   const sessionLabel = activeSession || (isRTH ? 'All RTH' : 'Market Closed')
-  const pnlColor = dailyPnL > 0 ? 'text-green-400' : dailyPnL < 0 ? 'text-red-400' : 'text-[#f0ead680]'
+  const pnlCssColor = dailyPnL > 0 ? 'var(--fintheon-bullish)' : dailyPnL < 0 ? 'var(--fintheon-bearish)' : undefined
 
   return (
     <div className="bg-[#0a0906] border-b border-[#c79f4a20] px-4 py-2 flex items-center justify-between gap-4 font-mono text-xs">
@@ -78,7 +78,7 @@ export function SessionStatusBar({ status }: SessionStatusBarProps) {
       {/* Daily P&L */}
       <div className="flex items-center gap-1.5">
         <span className="text-[#f0ead680]">P&L:</span>
-        <span className={`font-bold ${pnlColor}`}>{formatCurrency(dailyPnL)}</span>
+        <span className="font-bold" style={pnlCssColor ? { color: pnlCssColor } : { color: '#f0ead680' }}>{formatCurrency(dailyPnL)}</span>
       </div>
 
       {/* EST Clock */}

@@ -4,6 +4,7 @@
 // [claude-code 2026-03-20] S3:T4b: Merge platform/layout into one toolbar slot; DND moves to header when iFrame active
 // [claude-code 2026-03-20] S3:T4c: createPortal for platform/layout dropdowns — fixes z-index behind Strategium panel
 // [claude-code 2026-03-20] S3:T5 — VIX spike toast trigger when VIX crosses above threshold
+// [claude-code 2026-03-24] Change VIX risk toast from threshold-crossing to scheduled pre-market-open times (EST)
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -97,8 +98,6 @@ export function TopHeader({
   const [layoutDropdownPos, setLayoutDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const [platformDropdownPos, setPlatformDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const { dndActive, toggleManualDnd, queueCount } = useDND();
-  const vixWasBelowRef = useRef(true);
-
   useEffect(() => {
     setToolbarOrderState(getToolbarOrder());
   }, []);
@@ -215,23 +214,63 @@ export function TopHeader({
     return () => clearInterval(interval);
   }, [backend, selectedSymbol.symbol]);
 
-  // VIX spike toast — fires once when VIX crosses above threshold, resets when it drops below
+  // VIX risk toast — fires ~5-10 min before each market session open (EST), only when VIX is elevated
+  // Sessions: 9:30 AM, 10:00 AM(?), 11:30 AM(?), 12:25 PM(?), 6:00 PM Sun futures open
+  const firedWindowsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!ivData) return;
     const threshold = alertConfig.vixSpikeThreshold ?? 22;
     const vixLevel = ivData.vix.level;
 
-    if (vixLevel >= threshold && vixWasBelowRef.current) {
-      vixWasBelowRef.current = false;
-      addToast(
-        `VIX at ${vixLevel.toFixed(1)} — consider reducing risk`,
-        'vix',
-        `Crossed above ${threshold} threshold`,
-        'vix-spike',
-      );
-    } else if (vixLevel < threshold) {
-      vixWasBelowRef.current = true;
-    }
+    const checkSchedule = () => {
+      if (vixLevel < threshold) return;
+
+      const now = new Date();
+      // Convert to EST (UTC-5) / EDT (UTC-4)
+      const estStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+      const est = new Date(estStr);
+      const h = est.getHours();
+      const m = est.getMinutes();
+      const day = est.getDay(); // 0=Sun
+
+      // Pre-market-open alert windows (EST): 9:20, 9:50, 11:20, 12:15, 5:50 (Sun only)
+      const windows: Array<{ h: number; m: number; sunOnly?: boolean; label: string }> = [
+        { h: 9,  m: 20, label: '9:30 AM open' },
+        { h: 9,  m: 50, label: '10:00 AM session' },
+        { h: 11, m: 20, label: '11:30 AM session' },
+        { h: 12, m: 15, label: '12:25 PM session' },
+        { h: 17, m: 50, sunOnly: true, label: '6:00 PM futures open' },
+      ];
+
+      const dateKey = `${est.getFullYear()}-${est.getMonth()}-${est.getDate()}`;
+
+      for (const w of windows) {
+        if (w.sunOnly && day !== 0) continue;
+        // Fire within a 3-minute window (e.g. 9:20-9:22)
+        if (h === w.h && m >= w.m && m <= w.m + 2) {
+          const key = `${dateKey}-${w.h}:${w.m}`;
+          if (!firedWindowsRef.current.has(key)) {
+            firedWindowsRef.current.add(key);
+            addToast(
+              `VIX at ${vixLevel.toFixed(1)} — consider reducing risk`,
+              'vix',
+              `Elevated ahead of ${w.label}`,
+              'vix-spike',
+            );
+            break; // one toast per check
+          }
+        }
+      }
+
+      // Clean stale keys from previous days
+      for (const key of firedWindowsRef.current) {
+        if (!key.startsWith(dateKey)) firedWindowsRef.current.delete(key);
+      }
+    };
+
+    checkSchedule();
+    const interval = setInterval(checkSchedule, 30_000); // check every 30s
+    return () => clearInterval(interval);
   }, [ivData, alertConfig.vixSpikeThreshold, addToast]);
 
   const getTierDisplayName = () => {

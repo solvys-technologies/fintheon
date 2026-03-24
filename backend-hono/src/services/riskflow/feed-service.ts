@@ -4,6 +4,7 @@
  * Day 17 - Phase 5 Integration
  */
 
+// [claude-code 2026-03-24] Pass VIX data into calculateIVScore for continuous curve multiplier + sub-scores
 // [claude-code 2026-03-11] Integrated point estimator for commentary point ranges + VIX feed
 // [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
 // [claude-code 2026-03-12] Task 2A: Polymarket sentiment inference + failed enrichment fallback
@@ -69,14 +70,16 @@ function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
     Kalshi: 'Custom',
     TwitterCli: 'FinancialJuice', // FJ emoji-filtered tweets treated as FJ quality
     Custom: 'Custom',
+    Hermes: 'Custom',
   };
   return sourceMap[source] ?? 'Custom';
 }
 
 /**
- * Enrich a feed item with AI analysis
+ * Enrich a feed item with AI analysis.
+ * Accepts pre-fetched VIX data to avoid redundant fetches across batch items.
  */
-async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
+async function enrichWithAnalysis(item: FeedItem, prefetchedVIX?: Awaited<ReturnType<typeof fetchVIX>> | null): Promise<FeedItem> {
   try {
     const analysisSource = mapToAnalysisSource(item.source);
     const analyzed = await analyzeHeadline(item.headline, analysisSource);
@@ -89,18 +92,21 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
       analyzed.parsed.eventType = v2EventType;
     }
 
-    // Calculate IV score using parsed data (now with V3-aware event types)
+    // Fetch VIX once (use prefetched if available)
+    const vixData = prefetchedVIX ?? await fetchVIX().catch(() => null);
+
+    // Calculate IV score using parsed data (now with VIX-weighted continuous curve)
     const ivResult = calculateIVScore({
       parsed: analyzed.parsed,
       hotPrint: analyzed.hotPrint,
       timestamp: new Date(item.publishedAt),
+      vixData: vixData ?? undefined,
     });
 
     // Compute point estimation from IV score × live VIX
     let priceBrainScore: FeedItem['priceBrainScore'] = undefined;
-    if (ivResult.score >= 2) {
+    if (ivResult.score >= 2 && vixData) {
       try {
-        const vixData = await fetchVIX();
         const feedInstrument = process.env.PRIMARY_INSTRUMENT || '/ES';
         const pts = estimatePoints(ivResult.score, vixData.level, feedInstrument);
         const sentimentMap: Record<string, 'Bullish' | 'Bearish' | 'Neutral'> = {
@@ -113,7 +119,7 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
           instrument: feedInstrument,
         };
       } catch {
-        // VIX unavailable — skip point estimation
+        // Point estimation failed — skip
       }
     }
 
@@ -127,6 +133,7 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
       urgency: getHigherUrgency(item.urgency, analyzed.parsed.urgency),
       sentiment: ivResult.sentiment as SentimentDirection,
       ivScore: ivResult.score,
+      subScores: ivResult.subScores,
       // Preserve item's original macroLevel if it was explicitly set higher (e.g. from FJ keyword classifier)
       macroLevel: Math.max(ivResult.macroLevel, item.macroLevel ?? 1) as MacroLevel,
       analyzedAt: new Date().toISOString(),
@@ -162,21 +169,25 @@ function getHigherUrgency(a: UrgencyLevel, b: UrgencyLevel): UrgencyLevel {
 }
 
 /**
- * Batch enrich feed items with analysis
- * Exported for use by feed poller
+ * Batch enrich feed items with analysis.
+ * Fetches VIX once and shares across all items to avoid redundant API calls.
+ * Exported for use by feed poller.
  */
 export async function enrichFeedWithAnalysis(items: FeedItem[]): Promise<FeedItem[]> {
   if (!ENABLE_AI_ANALYSIS || items.length === 0) {
     return items;
   }
 
+  // Fetch VIX once for the entire batch
+  const vixData = await fetchVIX().catch(() => null);
+
   // Process in parallel with concurrency limit
   const CONCURRENCY = 5;
   const enriched: FeedItem[] = [];
-  
+
   for (let i = 0; i < items.length; i += CONCURRENCY) {
     const batch = items.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(batch.map(enrichWithAnalysis));
+    const results = await Promise.all(batch.map(item => enrichWithAnalysis(item, vixData)));
     enriched.push(...results);
   }
 

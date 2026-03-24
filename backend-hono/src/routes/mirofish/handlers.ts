@@ -1,4 +1,5 @@
-// [claude-code 2026-03-16] MiroFish route handlers
+// [claude-code 2026-03-24] Added rolling-window, auto-run-check, running-state endpoints
+// [claude-code 2026-03-23] MiroFish route handlers — preset-aware, context endpoint, history
 // [claude-code 2026-03-16] Switched to feature flag, local debate engine
 
 import type { Context } from 'hono';
@@ -7,8 +8,15 @@ import {
   pollStatus,
   getPredictions,
   injectScenarioVariable,
+  getRunHistory,
+  getRollingWindowData,
+  shouldAutoRun,
 } from '../../services/mirofish/mirofish-service.js';
+import { assembleSimulationContext } from '../../services/mirofish/mirofish-context.js';
 import { isSkillEnabled } from '../../config/feature-flags.js';
+import type { AuditoriumPreset } from '../../services/mirofish/mirofish-types.js';
+// @ts-ignore — T1 creates this file
+import { getRunningState } from '../../services/mirofish/mirofish-reactive.js';
 
 function checkEnabled(c: Context): Response | null {
   if (!isSkillEnabled('mirofish')) {
@@ -23,6 +31,7 @@ export async function handleSimulate(c: Context) {
   if (blocked) return blocked;
 
   const body = await c.req.json<{
+    preset?: AuditoriumPreset;
     narrativeState: {
       lanes: Array<{
         id: string; title: string; instruments: string[];
@@ -49,7 +58,11 @@ export async function handleSimulate(c: Context) {
     return c.json({ error: 'narrativeState.lanes is required' }, 400);
   }
 
-  const result = await startPrediction(body.narrativeState, body.contextBank);
+  const result = await startPrediction(
+    body.narrativeState,
+    body.contextBank,
+    body.preset ?? 'full-brief',
+  );
   if ('error' in result) {
     return c.json({ error: result.error }, 500);
   }
@@ -108,4 +121,59 @@ export async function handleInject(c: Context) {
     return c.json({ error: 'Injection failed — simulation may not exist' }, 400);
   }
   return c.json(sim);
+}
+
+/** GET /context — fetch current market context bundle */
+export async function handleGetContext(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  try {
+    const context = await assembleSimulationContext('full-brief');
+    return c.json(context);
+  } catch (err) {
+    console.error('[MiroFish] Context assembly failed:', err);
+    return c.json({ error: 'Failed to assemble context' }, 500);
+  }
+}
+
+/** GET /history — fetch past simulation runs */
+export async function handleGetHistory(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  const limit = parseInt(c.req.query('limit') ?? '20', 10);
+  const history = await getRunHistory(Math.min(limit, 50));
+  return c.json({ runs: history });
+}
+
+/** GET /rolling-window?days=7 — aggregated historical data over a rolling window */
+export async function handleRollingWindow(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  const daysParam = parseInt(c.req.query('days') ?? '7', 10);
+  const validDays = [1, 7, 14, 30].includes(daysParam) ? daysParam as 1 | 7 | 14 | 30 : 7;
+  const limit = parseInt(c.req.query('limit') ?? '50', 10);
+
+  const data = await getRollingWindowData({ days: validDays, limit: Math.min(limit, 100) });
+  return c.json(data);
+}
+
+/** GET /auto-run-check — should the frontend trigger a new auto-run? */
+export async function handleAutoRunCheck(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  const result = await shouldAutoRun();
+  return c.json(result);
+}
+
+/** GET /running-state — current running analysis snapshot */
+export async function handleRunningState(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  const state = getRunningState();
+  return c.json({ state: state ?? null });
 }

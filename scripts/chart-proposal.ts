@@ -1,5 +1,5 @@
-// [claude-code 2026-03-20] T5b: Playwright automation for charting proposals on TopStepX
-import { chromium, type BrowserContext, type Page } from 'playwright';
+// [claude-code 2026-03-23] Browser Use Phase 2 — chart-proposal via browser-use CLI
+import { execFileSync } from 'child_process';
 import { isBlackoutPeriod } from './chart-blackout.js';
 
 interface ChartProposalInput {
@@ -10,160 +10,131 @@ interface ChartProposalInput {
   takeProfit: number;
 }
 
-const TOPSTEPX_URL = 'https://app.topstepx.com';
-const USER_DATA_DIR = './playwright-session';
+const CDP_URL = 'http://localhost:9222';
 
-async function getContext(): Promise<BrowserContext> {
-  return chromium.launchPersistentContext(USER_DATA_DIR, {
-    headless: false,
-    viewport: { width: 1920, height: 1080 },
-    args: ['--disable-blink-features=AutomationControlled'],
+function runBrowserUse(args: string[]): string {
+  return execFileSync('browser-use', ['--cdp-url', CDP_URL, '--json', ...args], {
+    timeout: 30000,
+    encoding: 'utf-8',
+    env: { ...process.env },
   });
 }
 
-async function switchToPractice(page: Page): Promise<void> {
-  // Click the account/platform dropdown and select Practice
-  const dropdown = page.locator('[data-testid="account-selector"], .account-dropdown, .platform-selector').first();
-  if (await dropdown.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await dropdown.click();
-    await page.waitForTimeout(500);
-    const practiceOption = page.getByText('Practice', { exact: false }).first();
-    if (await practiceOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await practiceOption.click();
-      await page.waitForTimeout(1000);
-    }
+function drawLevels(input: ChartProposalInput): { success: boolean; screenshotPath?: string; error?: string } {
+  // Get current page state
+  let stateRaw: string;
+  try {
+    stateRaw = runBrowserUse(['state']);
+  } catch {
+    return { success: false, error: 'Failed to get browser state — is Fintheon running?' };
   }
-}
 
-async function openChart(page: Page, ticker: string): Promise<void> {
-  // Use the symbol search to navigate to the ticker's chart
-  const searchInput = page.locator('[data-testid="symbol-search"], input[placeholder*="symbol"], input[placeholder*="Search"]').first();
-  if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await searchInput.click();
-    await searchInput.fill(ticker);
-    await page.waitForTimeout(1000);
-    // Select the first matching result
-    const result = page.locator('.symbol-result, [data-testid="symbol-result"]').first();
-    if (await result.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await result.click();
-      await page.waitForTimeout(2000);
-    } else {
-      await searchInput.press('Enter');
-      await page.waitForTimeout(2000);
-    }
+  let state: { url?: string };
+  try {
+    state = JSON.parse(stateRaw);
+  } catch {
+    state = { url: '' };
   }
-}
 
-async function drawHorizontalRay(page: Page, _price: number, template: string): Promise<void> {
-  // Open drawing tools menu
-  const drawingTool = page.locator('[data-testid="drawing-tools"], .drawing-tools-btn, [title*="Drawing"]').first();
-  if (await drawingTool.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await drawingTool.click();
-    await page.waitForTimeout(500);
-
-    // Select Horizontal Ray tool
-    const rayTool = page.getByText('Horizontal Ray', { exact: false }).first();
-    if (await rayTool.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await rayTool.click();
-      await page.waitForTimeout(500);
+  // Check if we're on TopStep X — if not, navigate
+  const currentUrl = state.url || '';
+  if (!currentUrl.includes('topstepx.com')) {
+    try {
+      runBrowserUse(['open', 'https://app.topstepx.com']);
+      // Brief pause for page load
+      execFileSync('sleep', ['3']);
+    } catch (err: any) {
+      return { success: false, error: `Failed to navigate to TopStep X: ${err.message}` };
     }
   }
 
-  // Apply the saved template (Bullish LQ / Bearish LQ)
-  const templateSelector = page.locator('[data-testid="template-selector"], .template-dropdown').first();
-  if (await templateSelector.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await templateSelector.click();
-    await page.waitForTimeout(500);
-    const templateOption = page.getByText(template, { exact: false }).first();
-    if (await templateOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await templateOption.click();
-      await page.waitForTimeout(500);
-    }
-  }
+  // Build the TradingView createShape eval script for all three levels
+  // TopStep X uses TradingView charting — access via iframe or direct widget
+  const drawScript = `
+    (function() {
+      var chart;
+      var iframe = document.querySelector('iframe[id*="tradingview"], iframe[src*="tradingview"]');
+      if (iframe && iframe.contentWindow) {
+        var w = iframe.contentWindow;
+        chart = (w.tvWidget && w.tvWidget.activeChart ? w.tvWidget.activeChart() : null)
+          || (w.TradingView && w.TradingView.widget && w.TradingView.widget.activeChart ? w.TradingView.widget.activeChart() : null);
+      }
+      if (!chart) {
+        chart = (window.tvWidget && window.tvWidget.activeChart ? window.tvWidget.activeChart() : null)
+          || (window.TradingView && window.TradingView.widget && window.TradingView.widget.activeChart ? window.TradingView.widget.activeChart() : null);
+      }
+      if (!chart) return JSON.stringify({ ok: false, error: 'TradingView chart not found' });
 
-  // Click on the chart at the price level
-  // Note: Exact pixel mapping depends on chart scale; the platform's
-  // "Price Level" input field is used when available
-  const priceInput = page.locator('input[data-testid="price-level"], input[placeholder*="Price"]').first();
-  if (await priceInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await priceInput.fill(_price.toString());
-    await priceInput.press('Enter');
-    await page.waitForTimeout(500);
-  }
-}
+      var now = Math.floor(Date.now() / 1000);
 
-async function chartProposal(input: ChartProposalInput): Promise<{ success: boolean; error?: string }> {
-  // Check blackout period
-  if (isBlackoutPeriod()) {
-    console.log('[chart-proposal] Blackout period active, exiting gracefully.');
-    return { success: false, error: 'Blackout period (8:30a-12p EST)' };
-  }
+      chart.createShape(
+        { time: now, price: ${input.entry} },
+        { shape: 'horizontal_line', lock: true, disableSelection: false,
+          overrides: { linecolor: '#22c55e', linewidth: 2, linestyle: 0, showLabel: true, text: 'ENTRY ${input.entry}' } }
+      );
 
-  let context: BrowserContext | null = null;
+      chart.createShape(
+        { time: now, price: ${input.stopLoss} },
+        { shape: 'horizontal_line', lock: true, disableSelection: false,
+          overrides: { linecolor: '#ef4444', linewidth: 2, linestyle: 2, showLabel: true, text: 'STOP ${input.stopLoss}' } }
+      );
+
+      chart.createShape(
+        { time: now, price: ${input.takeProfit} },
+        { shape: 'horizontal_line', lock: true, disableSelection: false,
+          overrides: { linecolor: '#3b82f6', linewidth: 2, linestyle: 0, showLabel: true, text: 'TARGET ${input.takeProfit}' } }
+      );
+
+      return JSON.stringify({ ok: true });
+    })()
+  `.replace(/\n/g, ' ');
 
   try {
-    context = await getContext();
-    const page = context.pages()[0] || await context.newPage();
-
-    // Navigate to TopStepX if not already there
-    const currentUrl = page.url();
-    if (!currentUrl.includes('topstepx.com')) {
-      await page.goto(TOPSTEPX_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForTimeout(3000);
+    const evalResult = runBrowserUse(['eval', drawScript]);
+    const parsed = JSON.parse(evalResult);
+    if (parsed.ok === false) {
+      return { success: false, error: parsed.error || 'Failed to draw levels' };
     }
-
-    // Switch to Practice account
-    await switchToPractice(page);
-
-    // Open chart for ticker
-    await openChart(page, input.ticker);
-
-    // Draw Entry ray — use Bullish LQ template
-    await drawHorizontalRay(page, input.entry, 'Bullish LQ');
-
-    // Draw Stop Loss ray — dark dim red
-    await drawHorizontalRay(page, input.stopLoss, 'Stop Loss');
-
-    // Draw Take Profit ray — use Bearish LQ template
-    await drawHorizontalRay(page, input.takeProfit, 'Bearish LQ');
-
-    console.log(`[chart-proposal] Charted ${input.ticker} ${input.direction} — Entry: ${input.entry}, SL: ${input.stopLoss}, TP: ${input.takeProfit}`);
-    return { success: true };
   } catch (err: any) {
-    console.error('[chart-proposal] Error:', err.message);
-    return { success: false, error: err.message };
-  } finally {
-    // Keep context open (persistent session) — don't close
+    return { success: false, error: `Eval failed: ${err.message}` };
   }
+
+  // Take screenshot
+  const timestamp = Date.now();
+  const screenshotPath = `/tmp/proposal-chart-${input.ticker}-${timestamp}.png`;
+  try {
+    runBrowserUse(['screenshot', screenshotPath]);
+  } catch {
+    // Screenshot is non-critical — continue without it
+  }
+
+  console.error(`[chart-proposal] Charted ${input.ticker} ${input.direction} — Entry: ${input.entry}, SL: ${input.stopLoss}, TP: ${input.takeProfit}`);
+  return { success: true, screenshotPath };
 }
 
 // CLI entry: bun run scripts/chart-proposal.ts '{"ticker":"MNQ","direction":"long","entry":19250,"stopLoss":19220,"takeProfit":19300}'
 async function main() {
   const rawInput = process.argv[2];
   if (!rawInput) {
-    // Try reading from stdin
-    const chunks: Buffer[] = [];
-    for await (const chunk of process.stdin) {
-      chunks.push(chunk as Buffer);
-    }
-    const stdinData = Buffer.concat(chunks).toString('utf-8').trim();
-    if (!stdinData) {
-      console.error('Usage: bun run scripts/chart-proposal.ts \'{"ticker":"MNQ","direction":"long","entry":19250,"stopLoss":19220,"takeProfit":19300}\'');
-      process.exit(1);
-    }
-    const input = JSON.parse(stdinData) as ChartProposalInput;
-    const result = await chartProposal(input);
+    console.error('Usage: bun run scripts/chart-proposal.ts \'{"ticker":"MNQ","direction":"long","entry":19250,"stopLoss":19220,"takeProfit":19300}\'');
+    process.exit(1);
+  }
+
+  const input = JSON.parse(rawInput) as ChartProposalInput;
+
+  if (isBlackoutPeriod()) {
+    console.log(JSON.stringify({ success: false, error: 'Blackout period (8:30a-12p EST)' }));
+    process.exit(1);
+  }
+
+  try {
+    const result = drawLevels(input);
     console.log(JSON.stringify(result));
     process.exit(result.success ? 0 : 1);
-  } else {
-    const input = JSON.parse(rawInput) as ChartProposalInput;
-    const result = await chartProposal(input);
-    console.log(JSON.stringify(result));
-    process.exit(result.success ? 0 : 1);
+  } catch (err: any) {
+    console.log(JSON.stringify({ success: false, error: err.message }));
+    process.exit(1);
   }
 }
 
-main().catch((err) => {
-  console.error('[chart-proposal] Fatal:', err);
-  process.exit(1);
-});
+main();

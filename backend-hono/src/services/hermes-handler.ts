@@ -71,6 +71,8 @@ const INTENT_PATTERNS: { pattern: RegExp; agent: HermesAgentRole; intent: string
   { pattern: /(\/nq|\/mnq|\/es|futures|topstep)/i, agent: 'futures-desk', intent: 'futures-trade' },
   { pattern: /\b(fa.?ripper|ripper|setup|entry|exit)\b/i, agent: 'futures-desk', intent: 'setup-analysis' },
   { pattern: /\b(technical|chart|support|resistance|ema|vwap)\b/i, agent: 'futures-desk', intent: 'technical' },
+  // [claude-code 2026-03-23] Browser Use Phase 2 — chart levels skill trigger
+  { pattern: /\b(chart.?level|draw.?line|plot.?entry|plot.?level|mark.?chart|chart.?proposal)\b/i, agent: 'futures-desk', intent: 'chart-levels' },
 
   // Fundamentals Desk triggers
   { pattern: /\b(aapl|apple|msft|microsoft|nvda|nvidia|googl|google|meta|amzn|amazon|tsla|tesla)\b/i, agent: 'fundamentals-desk', intent: 'stock-analysis' },

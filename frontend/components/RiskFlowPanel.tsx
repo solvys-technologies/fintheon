@@ -91,7 +91,7 @@ function DirectionBadge({ alert }: { alert: RiskFlowAlert }) {
   const dir = inferDirection(alert);
   const isBull = dir === 'Bullish';
   return (
-    <span className={`text-[9px] font-semibold ${isBull ? 'text-emerald-500' : 'text-red-400'}`}>
+    <span className="text-[9px] font-semibold" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
       {isBull ? '▲' : '▼'}
     </span>
   );
@@ -231,7 +231,7 @@ function TradeIdeaRow({
   );
 }
 
-// ── Alert Row (news — rounded card with bottom-hero footer) ─────────────────
+// ── Alert Row (news — square edge-to-edge card with bottom-hero footer) ──────
 
 function AlertRow({
   alert,
@@ -263,7 +263,7 @@ function AlertRow({
     <div
       draggable
       onDragStart={handleDragStart}
-      className={`group relative rounded-xl border border-zinc-800/60 mx-2 my-1.5 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
+      className={`group relative border-b border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
     >
       {/* Main content area */}
       <a
@@ -323,7 +323,7 @@ function AlertRow({
       {/* Bottom hero footer — time (left), direction (center), points (right) */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40">
         <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
-        <span className={`text-[11px] font-bold tracking-wider uppercase ${isBull ? 'text-emerald-500' : 'text-red-400'}`}>
+        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
           {isBull ? '▲ BULLISH' : '▼ BEARISH'}
         </span>
         <span className="text-[10px] text-zinc-500 tabular-nums" title={`Implied ${alert.instrument ?? ''} move`}>

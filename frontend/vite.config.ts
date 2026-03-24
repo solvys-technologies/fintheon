@@ -45,7 +45,6 @@ export default defineConfig(() => {
           manualChunks: {
             vendor_react: ['react', 'react-dom'],
             vendor_sentry: ['@sentry/react'],
-            vendor_clerk: ['@clerk/clerk-react', '@clerk/themes'],
             vendor_markdown: ['react-markdown'],
             vendor_tv: ['react-ts-tradingview-widgets']
           }

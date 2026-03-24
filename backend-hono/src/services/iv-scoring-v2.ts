@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Added continuousVIXMultiplier() piecewise curve, finer EVENT_WEIGHTS with half-point granularity
 // [claude-code 2026-03-12] Task 2B: Aligned leading indicator weights (ISM/PMI >= 7), VIX thresholds to playbook, multi-instrument support
 // [claude-code 2026-03-11] IV Scoring V3: Added volatility taxonomy, regime-aware decay, new event types
 // [claude-code 2026-03-09] Added config-driven scoring: IVScoringConfig type, loadIVScoringConfig(), config param on calculateIVScoreV2
@@ -205,51 +206,61 @@ export function resetVolatilityTaxonomy(): void {
 // ============================================================================
 
 export const EVENT_WEIGHTS: Record<string, number> = {
-  // Black Swan events - rare, extreme volatility
+  // Black Swan events — rare, extreme volatility (10)
   blackSwan: 10,
+  majorCrisis: 10,
   datacenterHalt: 10,
   governmentShutdown: 10,
-  majorCrisis: 10,
-  
-  // Fed/Policy - 8 points
-  fedDecision: 8,
+
+  // Systemic stress (9-9.5)
+  liquidityStress: 9.5,
+  bankStress: 9,
+
+  // Fed/Policy + Geopolitical (8-8.5)
+  geopolitical: 8.5,
+  fedDecision: 8.5,
   fomc: 8,
   powellSpeak: 8,
-  
-  // Geopolitical - 8 points (Volfefe risk)
-  geopolitical: 8,
   tariffs: 8,
   chinaTrade: 8,
   conflict: 8,
-  
-  // Inflation/Employment - 7 points
-  cpiPrint: 7,
+
+  // Credit/Inflation/Employment (7-7.5)
+  creditSpreadWidening: 7.5,
+  cpiPrint: 7.5,
+  nfpPrint: 7.5,
   pcePrint: 7,
-  nfpPrint: 7,
   jolts: 7,
-  earningsHighImpact: 7, // Mag7
-  
-  // Economic Health — leading indicators score >= 7 (forward signal per Playbook)
+  earningsHighImpact: 7,
+  ismPrint: 7,
+
+  // Yield/GDP/Political (5.5-6.5)
+  yieldCurveSignal: 6.5,
   gdpPrint: 6,
-  ismPrint: 7,      // Leading indicator (PMI/ISM) — forward signal, bumped from 6
-  politicalCommentary: 6, // Lutnick/Bessent/Trump
-  
-  // Mid-tier - 5 points
+  leverageWarning: 6,
+  politicalCommentary: 5.5,
+
+  // Mid-tier (5)
   earningsMidCap: 5,
   retailSales: 5,
-  
-  // Other - 3 points
+
+  // Lower-tier (3-4)
+  technicalBreak: 4,
+  jobless: 4,
+  housing: 4,
   sectorNews: 3,
   merger: 3,
-  other: 3,
-  default: 3,
+  other: 2.5,
+  default: 2,
 
-  // V3: Credit/Yield/Liquidity/Bank events
-  creditSpreadWidening: 8,
-  yieldCurveSignal: 7,
-  liquidityStress: 9,
-  bankStress: 9,
-  leverageWarning: 6,
+  // Legacy aliases (keep for backward compat with headline parser)
+  bankingCrisis: 9,
+  tariffEscalation: 8,
+  economicData: 5,
+  earnings: 5,
+  ism: 7,
+  trade: 5,
+  ppiPrint: 7,
 }
 
 // ============================================================================
@@ -323,6 +334,39 @@ export function getVIXMultiplier(vixLevel: number): { multiplier: number; contex
     }
   }
   return { multiplier: 1.5, context: 'Extreme volatility' }
+}
+
+/**
+ * Continuous VIX multiplier via piecewise linear interpolation.
+ * Replaces the 4-tier step function for per-item scoring.
+ * getVIXMultiplier() is kept unchanged for the blended scorer.
+ */
+const VIX_CURVE: { vix: number; multiplier: number }[] = [
+  { vix: 10, multiplier: 0.70 },
+  { vix: 13, multiplier: 0.78 },
+  { vix: 15, multiplier: 0.85 },
+  { vix: 18, multiplier: 1.00 },
+  { vix: 20, multiplier: 1.08 },
+  { vix: 22, multiplier: 1.15 },
+  { vix: 25, multiplier: 1.25 },
+  { vix: 30, multiplier: 1.40 },
+  { vix: 40, multiplier: 1.50 },
+]
+
+export function continuousVIXMultiplier(vix: number): number {
+  if (vix <= VIX_CURVE[0].vix) return VIX_CURVE[0].multiplier
+  if (vix >= VIX_CURVE[VIX_CURVE.length - 1].vix) return VIX_CURVE[VIX_CURVE.length - 1].multiplier
+
+  for (let i = 0; i < VIX_CURVE.length - 1; i++) {
+    const lo = VIX_CURVE[i]
+    const hi = VIX_CURVE[i + 1]
+    if (vix >= lo.vix && vix <= hi.vix) {
+      const t = (vix - lo.vix) / (hi.vix - lo.vix)
+      return lo.multiplier + t * (hi.multiplier - lo.multiplier)
+    }
+  }
+
+  return 1.0 // fallback (shouldn't reach)
 }
 
 export function calculateVIXSpikeAdjustment(

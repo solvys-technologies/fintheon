@@ -68,7 +68,7 @@ export function CompactPnLDisplay({ showAccount = true }: CompactPnLDisplayProps
     };
   }, [backend, isAuthenticated, showAccount]);
 
-  const pnlColor = currentPnL >= 0 ? 'text-emerald-400' : 'text-red-500';
+  const pnlCssColor = currentPnL >= 0 ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)';
   const pnlSign = currentPnL >= 0 ? '+' : '';
 
   return (
@@ -76,7 +76,7 @@ export function CompactPnLDisplay({ showAccount = true }: CompactPnLDisplayProps
       {/* P&L Display */}
       <div className="flex flex-col items-end">
         <span className="text-[9px] text-gray-500">Day P&L</span>
-        <span className={`text-sm font-bold ${pnlColor}`}>
+        <span className="text-sm font-bold" style={{ color: pnlCssColor }}>
           {pnlSign}${currentPnL.toFixed(2)}
         </span>
       </div>

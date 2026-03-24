@@ -8,6 +8,7 @@ export type NewsSource =
   | 'Kalshi'
   | 'TwitterCli'
   | 'Custom'
+  | 'Hermes'
 
 export type UrgencyLevel = 'immediate' | 'high' | 'normal'
 

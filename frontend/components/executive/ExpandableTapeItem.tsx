@@ -119,7 +119,7 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
         <div className="shrink-0 flex items-center gap-1.5">
           {(() => {
             const dir = inferDirection(alert);
-            return <span className={`text-[9px] font-semibold ${dir === 'Bullish' ? 'text-emerald-500' : 'text-red-400'}`}>{dir === 'Bullish' ? '▲' : '▼'}</span>;
+            return <span className="text-[9px] font-semibold" style={{ color: dir === 'Bullish' ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>{dir === 'Bullish' ? '▲' : '▼'}</span>;
           })()}
           <span className="text-[9px] text-zinc-500 tabular-nums">
             {alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}pt` : '0-5pt'}
@@ -154,13 +154,13 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
                 {alert.tradeIdea.stopLoss != null && (
                   <div>
                     <span className="text-gray-600 uppercase tracking-wider">Stop</span>
-                    <div className="mt-0.5 text-red-400/80">${alert.tradeIdea.stopLoss}</div>
+                    <div className="mt-0.5" style={{ color: 'color-mix(in srgb, var(--fintheon-bearish) 80%, transparent)' }}>${alert.tradeIdea.stopLoss}</div>
                   </div>
                 )}
                 {alert.tradeIdea.takeProfit != null && (
                   <div>
                     <span className="text-gray-600 uppercase tracking-wider">Target</span>
-                    <div className="mt-0.5 text-emerald-400/80">${alert.tradeIdea.takeProfit}</div>
+                    <div className="mt-0.5" style={{ color: 'color-mix(in srgb, var(--fintheon-bullish) 80%, transparent)' }}>${alert.tradeIdea.takeProfit}</div>
                   </div>
                 )}
               </div>

@@ -65,8 +65,10 @@ export function ProposalModal({ proposal, onClose, onApprove, onReject }: Propos
 
   const isLong = proposal.direction === 'long';
   const isShort = proposal.direction === 'short';
-  const directionColor = isLong ? 'text-green-400' : isShort ? 'text-red-400' : 'text-zinc-400';
-  const directionBg = isLong ? 'bg-green-500/10 border-green-500/30' : isShort ? 'bg-red-500/10 border-red-500/30' : 'bg-zinc-500/10 border-zinc-500/30';
+  const directionCssColor = isLong ? 'var(--fintheon-bullish)' : isShort ? 'var(--fintheon-bearish)' : undefined;
+  const directionBg = isLong
+    ? '' : isShort
+    ? '' : 'bg-zinc-500/10 border-zinc-500/30';
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm ${isClosing ? 'animate-fade-out-backdrop' : 'animate-fade-in-backdrop'}`}>
@@ -76,7 +78,14 @@ export function ProposalModal({ proposal, onClose, onApprove, onReject }: Propos
           <div className="flex items-center gap-3">
             <Zap className="w-5 h-5 text-[var(--fintheon-accent)]" />
             <h2 className="text-lg font-bold text-[var(--fintheon-accent)]">Trading Proposal</h2>
-            <span className={`text-xs px-2 py-0.5 rounded border ${directionBg} ${directionColor}`}>
+            <span
+              className="text-xs px-2 py-0.5 rounded border"
+              style={directionCssColor ? {
+                color: directionCssColor,
+                backgroundColor: `color-mix(in srgb, ${directionCssColor} 10%, transparent)`,
+                borderColor: `color-mix(in srgb, ${directionCssColor} 30%, transparent)`,
+              } : undefined}
+            >
               {proposal.direction.toUpperCase()}
             </span>
           </div>
@@ -102,18 +111,24 @@ export function ProposalModal({ proposal, onClose, onApprove, onReject }: Propos
           </div>
 
           {/* Direction & Confidence */}
-          <div className={`p-4 rounded-lg border ${directionBg}`}>
+          <div
+            className={`p-4 rounded-lg border ${directionBg}`}
+            style={directionCssColor ? {
+              backgroundColor: `color-mix(in srgb, ${directionCssColor} 10%, transparent)`,
+              borderColor: `color-mix(in srgb, ${directionCssColor} 30%, transparent)`,
+            } : undefined}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {isLong ? (
-                  <TrendingUp className="w-8 h-8 text-green-400" />
+                  <TrendingUp className="w-8 h-8" style={{ color: 'var(--fintheon-bullish)' }} />
                 ) : isShort ? (
-                  <TrendingDown className="w-8 h-8 text-red-400" />
+                  <TrendingDown className="w-8 h-8" style={{ color: 'var(--fintheon-bearish)' }} />
                 ) : (
                   <AlertTriangle className="w-8 h-8 text-zinc-400" />
                 )}
                 <div>
-                  <div className={`text-2xl font-bold ${directionColor}`}>
+                  <div className="text-2xl font-bold" style={directionCssColor ? { color: directionCssColor } : undefined}>
                     {proposal.direction === 'flat' ? 'NO TRADE' : proposal.direction.toUpperCase()}
                   </div>
                   <div className="text-sm text-zinc-400">{proposal.setupType}</div>
@@ -121,7 +136,7 @@ export function ProposalModal({ proposal, onClose, onApprove, onReject }: Propos
               </div>
               <div className="text-right">
                 <div className="text-xs text-zinc-500 mb-1">Confidence</div>
-                <div className={`text-3xl font-bold ${proposal.confidence >= 70 ? 'text-green-400' : proposal.confidence >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                <div className="text-3xl font-bold" style={{ color: proposal.confidence >= 70 ? 'var(--fintheon-bullish)' : proposal.confidence >= 50 ? '#FBBF24' : 'var(--fintheon-bearish)' }}>
                   {proposal.confidence}%
                 </div>
               </div>

@@ -158,7 +158,10 @@ const REQUIRED_ENV_VARS = [
 
 const RECOMMENDED_ENV_VARS = [
   'OPENAI_API_KEY',
-  'CLERK_SECRET_KEY',
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'EXA_API_KEY',
+  'FRED_API_KEY',
 ];
 
 function auditEnvVars(): string[] {

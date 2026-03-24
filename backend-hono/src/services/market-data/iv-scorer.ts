@@ -1,4 +1,4 @@
-// [claude-code 2026-03-11] Blended IV score service — 60% VIX + 40% headline heat + systemic overlay
+// [claude-code 2026-03-24] Blended IV score service — 50% VIX + 30% headline heat + 20% MiroFish running analysis + systemic overlay
 // Provides a single 0-10 composite score for the /api/market-data/iv-score endpoint.
 // V3: adds systemic risk overlay (causal chains, historical rhyming, credit signals)
 
@@ -7,16 +7,19 @@ import { calculateIVScoreV2, classifyEventType, type StackedEvent } from '../iv-
 import { getCachedAssessment } from '../systemic/risk-detector.js';
 import { generateIVPrediction } from './iv-prediction.js';
 import type { IVPrediction } from './iv-prediction-types.js';
+import { getRunningAnalysisScore } from '../mirofish/mirofish-reactive.js';
 
 export interface BlendedIVScore {
-  /** Composite 0-10 score (60% VIX component + 40% headline component + systemic overlay) */
+  /** Composite 0-10 score (50% VIX + 30% headline + 20% MiroFish + systemic overlay) */
   score: number;
   /** VIX-only component score (0-10) */
   vixComponent: number;
   /** Headline-only component score (0-10) */
   headlineComponent: number;
+  /** MiroFish running analysis component score (0-10) */
+  mirofishComponent: number;
   /** Weight breakdown */
-  weights: { vix: number; headlines: number };
+  weights: { vix: number; headlines: number; mirofish: number };
   /** VIX snapshot */
   vix: {
     level: number;
@@ -50,8 +53,9 @@ export interface BlendedIVScore {
   prediction?: IVPrediction;
 }
 
-const VIX_WEIGHT = 0.6;
-const HEADLINE_WEIGHT = 0.4;
+const VIX_WEIGHT = 0.5;
+const HEADLINE_WEIGHT = 0.3;
+const MIROFISH_WEIGHT = 0.2;
 
 /**
  * Map VIX level to a 0-10 score.
@@ -87,8 +91,9 @@ function vixToScore(vix: number): number {
 }
 
 /**
- * Calculate a blended IV score: 60% VIX + 40% headline heat.
+ * Calculate a blended IV score: 50% VIX + 30% headline heat + 20% MiroFish running analysis.
  * Headline heat comes from the V2 scoring engine applied to recent DB events.
+ * MiroFish component comes from the deterministic reactive scoring engine.
  */
 export async function calculateBlendedIVScore(
   recentEvents: StackedEvent[],
@@ -120,12 +125,26 @@ export async function calculateBlendedIVScore(
     rationale.push('No recent headline events → headline component 0');
   }
 
-  // Dynamic weights: below VIX 16, headlines have less impact (market is "stubborn")
-  const effectiveVixWeight = vixData.level < 16 ? 0.75 : VIX_WEIGHT;
-  const effectiveHeadlineWeight = vixData.level < 16 ? 0.25 : HEADLINE_WEIGHT;
+  // MiroFish running analysis component
+  const mirofishScore = getRunningAnalysisScore();
+  if (mirofishScore > 0) {
+    rationale.push(`MiroFish running analysis → component score ${mirofishScore.toFixed(1)}/10`);
+  } else {
+    rationale.push('No MiroFish running analysis → component 0');
+  }
+
+  // Dynamic weights: below VIX 16, headlines + mirofish have less impact (market is "stubborn")
+  let effectiveVixWeight = VIX_WEIGHT;
+  let effectiveHeadlineWeight = HEADLINE_WEIGHT;
+  let effectiveMfWeight = MIROFISH_WEIGHT;
+  if (vixData.level < 16) {
+    effectiveVixWeight = 0.65;
+    effectiveHeadlineWeight = 0.20;
+    effectiveMfWeight = 0.15;
+  }
 
   // Blend
-  const blended = vixScore * effectiveVixWeight + headlineScore * effectiveHeadlineWeight;
+  const blended = vixScore * effectiveVixWeight + headlineScore * effectiveHeadlineWeight + mirofishScore * effectiveMfWeight;
   // VIX floor: elevated VIX guarantees minimum score (e.g. VIX 24 → vixScore 9 → floor 7)
   const vixFloor = Math.max(0, vixScore - 2);
   let finalScore = Math.max(blended, vixFloor);
@@ -157,13 +176,14 @@ export async function calculateBlendedIVScore(
   }
 
   const clamped = Math.min(10, Math.max(0, Number(finalScore.toFixed(1))));
-  rationale.push(`Blended: (${vixScore.toFixed(1)} × ${effectiveVixWeight}) + (${headlineScore.toFixed(1)} × ${effectiveHeadlineWeight}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)}${systemicAssessment?.ivScoreOverlay ? ` + systemic ${systemicAssessment.ivScoreOverlay.toFixed(1)}` : ''} → ${clamped}`);
+  rationale.push(`Blended: (${vixScore.toFixed(1)} × ${effectiveVixWeight}) + (${headlineScore.toFixed(1)} × ${effectiveHeadlineWeight}) + (${mirofishScore.toFixed(1)} × ${effectiveMfWeight}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)}${systemicAssessment?.ivScoreOverlay ? ` + systemic ${systemicAssessment.ivScoreOverlay.toFixed(1)}` : ''} → ${clamped}`);
 
   const result: BlendedIVScore = {
     score: clamped,
     vixComponent: Number(vixScore.toFixed(1)),
     headlineComponent: Number(headlineScore.toFixed(1)),
-    weights: { vix: VIX_WEIGHT, headlines: HEADLINE_WEIGHT },
+    mirofishComponent: Number(mirofishScore.toFixed(1)),
+    weights: { vix: effectiveVixWeight, headlines: effectiveHeadlineWeight, mirofish: effectiveMfWeight },
     vix: {
       level: vixData.level,
       percentChange: vixData.percentChange,

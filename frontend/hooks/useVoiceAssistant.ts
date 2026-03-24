@@ -1,4 +1,6 @@
 // [claude-code 2026-03-09] Added: useMicPermission, useMicArbitration, error state with auto-recovery, cancel/interrupt support
+// [claude-code 2026-03-23] Replaced SpeechRecognition with getUserMedia + MediaRecorder + Whisper transcription.
+//   Added greeting on first enable, mic device selection, silence-based VAD.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBackend } from '../lib/backend';
 import { hermesConversationStorageKey } from '../lib/hermesAgentRouting';
@@ -7,6 +9,13 @@ import type { VoiceRuntimeState, MicPermissionState } from '../types/voice';
 const VOICE_ENABLED_STORAGE_KEY = 'fintheon:voice-assistant-enabled:v1';
 const HARPER_CONVERSATION_STORAGE_KEY = hermesConversationStorageKey('harper');
 const ERROR_AUTO_RECOVERY_MS = 5000;
+
+// VAD (Voice Activity Detection) settings
+const VAD_SILENCE_THRESHOLD = 0.015; // RMS level below this = silence
+const VAD_SILENCE_DURATION_MS = 1800; // 1.8s of silence = done speaking
+const VAD_MAX_RECORDING_MS = 30_000; // Max 30s recording
+const VAD_CHECK_INTERVAL_MS = 100; // Check audio level every 100ms
+const MIC_DEVICE_STORAGE_KEY = 'fintheon:voice-mic-device:v1';
 
 interface VoiceSendResult {
   conversationId?: string;
@@ -113,9 +122,25 @@ export function useMicArbitration() {
   return { requestMic, getCurrentHolder: () => currentMicHolder };
 }
 
+// ─── Audio Recording Engine ──────────────────────────────────────────────────
+
+interface RecordingSession {
+  mediaRecorder: MediaRecorder;
+  stream: MediaStream;
+  audioContext: AudioContext;
+  analyser: AnalyserNode;
+  vadInterval: ReturnType<typeof setInterval>;
+  maxTimer: ReturnType<typeof setTimeout>;
+}
+
 // ─── Voice Assistant Hook ──────────────────────────────────────────────────────
 
-export function useVoiceAssistant() {
+interface UseVoiceAssistantOptions {
+  /** Called with every Whisper transcript before sendText — used for ER scoring */
+  onTranscript?: (text: string) => void;
+}
+
+export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
   const backend = useBackend();
 
   const [enabled, setEnabledState] = useState(false);
@@ -124,37 +149,40 @@ export function useVoiceAssistant() {
   const [lastUserText, setLastUserText] = useState('');
   const [lastAssistantText, setLastAssistantText] = useState('');
 
-  const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const enabledRef = useRef(false);
   const busyRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const micReleaseRef = useRef<(() => void) | null>(null);
   const errorRecoveryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const startRecognitionRef = useRef<() => void>(() => {});
+  const recordingRef = useRef<RecordingSession | null>(null);
+  const greetedRef = useRef(false);
+  const startListeningRef = useRef<() => void>(() => {});
+  const onTranscriptRef = useRef(options?.onTranscript);
 
   const { permission } = useMicPermission();
   const { requestMic } = useMicArbitration();
 
-  const speechRecognitionSupported = useMemo(
+  // Keep onTranscript ref in sync
+  onTranscriptRef.current = options?.onTranscript;
+
+  // Always supported now — we use getUserMedia + Whisper, not SpeechRecognition
+  const isSupported = useMemo(
     () =>
-      typeof window !== 'undefined' &&
-      (typeof (window as any).webkitSpeechRecognition !== 'undefined' ||
-        typeof (window as any).SpeechRecognition !== 'undefined'),
+      typeof navigator !== 'undefined' &&
+      typeof navigator.mediaDevices?.getUserMedia === 'function' &&
+      typeof MediaRecorder !== 'undefined',
     []
   );
 
-  // [claude-code 2026-03-14] Guard: don't fire error when speechRecognition is simply absent (expected in Electron)
   const setErrorWithRecovery = useCallback(() => {
-    if (!speechRecognitionSupported) return; // not an error — expected in Electron
     setRuntimeState('error');
-    // Clear any existing recovery timer
     if (errorRecoveryRef.current) clearTimeout(errorRecoveryRef.current);
     errorRecoveryRef.current = setTimeout(() => {
       errorRecoveryRef.current = null;
       setRuntimeState(enabledRef.current ? 'listening' : 'idle');
     }, ERROR_AUTO_RECOVERY_MS);
-  }, [speechRecognitionSupported]);
+  }, []);
 
   const stopPlayback = useCallback(() => {
     if (audioRef.current) {
@@ -168,14 +196,17 @@ export function useVoiceAssistant() {
     }
   }, []);
 
-  const stopRecognition = useCallback(() => {
-    if (!recognitionRef.current) return;
-    try {
-      recognitionRef.current.stop();
-    } catch {
-      // ignore
-    }
-    recognitionRef.current = null;
+  const stopRecording = useCallback(() => {
+    const session = recordingRef.current;
+    if (!session) return;
+
+    clearInterval(session.vadInterval);
+    clearTimeout(session.maxTimer);
+
+    try { session.mediaRecorder.stop(); } catch { /* already stopped */ }
+    try { session.audioContext.close(); } catch { /* ignore */ }
+    session.stream.getTracks().forEach((t) => t.stop());
+    recordingRef.current = null;
 
     // Release mic lock
     if (micReleaseRef.current) {
@@ -225,13 +256,12 @@ export function useVoiceAssistant() {
     });
   }, []);
 
-  // [claude-code 2026-03-13] Analyze user speech for tilt indicators, dispatch PsychAssist events
+  // Analyze user speech for tilt indicators, dispatch PsychAssist events
   const analyzeSpeechForTilt = useCallback(async (transcript: string) => {
     try {
       const result = await backend.voice.analyzeSentiment({ transcript });
       if (!result) return;
 
-      // Dispatch score update
       if (typeof result.sentiment === 'number') {
         window.dispatchEvent(new CustomEvent('psychassist:score', {
           detail: { score: result.sentiment, timestamp: Date.now() }
@@ -239,7 +269,6 @@ export function useVoiceAssistant() {
         try { localStorage.setItem('psychassist_current_score', String(result.sentiment)); } catch {}
       }
 
-      // If tilt indicators found, dispatch infraction
       if (result.tiltIndicators && result.tiltIndicators.length > 0) {
         window.dispatchEvent(new CustomEvent('psychassist:infraction', {
           detail: { timestamp: Date.now(), indicators: result.tiltIndicators }
@@ -251,22 +280,19 @@ export function useVoiceAssistant() {
   }, [backend]);
 
   const cancel = useCallback(() => {
-    // Abort any in-flight request
     if (abortRef.current) {
       abortRef.current.abort();
       abortRef.current = null;
     }
-    // Stop playback and recognition
     stopPlayback();
-    stopRecognition();
+    stopRecording();
     busyRef.current = false;
-    // Clear error recovery timer
     if (errorRecoveryRef.current) {
       clearTimeout(errorRecoveryRef.current);
       errorRecoveryRef.current = null;
     }
     setRuntimeState(enabledRef.current ? 'listening' : 'idle');
-  }, [stopPlayback, stopRecognition]);
+  }, [stopPlayback, stopRecording]);
 
   const sendText = useCallback(
     async (text: string, mode: 'chat' | 'infraction' = 'chat'): Promise<VoiceSendResult | null> => {
@@ -277,7 +303,6 @@ export function useVoiceAssistant() {
       setLastUserText(prompt);
       setRuntimeState('thinking');
 
-      // Create abort controller for this request
       const controller = new AbortController();
       abortRef.current = controller;
 
@@ -290,7 +315,6 @@ export function useVoiceAssistant() {
           agent: 'harper-cao',
         })) as VoiceSendResult;
 
-        // Check if cancelled during the request
         if (controller.signal.aborted) return null;
 
         if (response.conversationId) {
@@ -312,17 +336,16 @@ export function useVoiceAssistant() {
         }
 
         if (!controller.signal.aborted) {
-          // Analyze user's speech for tilt indicators (non-blocking)
           if (prompt && mode === 'chat') {
             analyzeSpeechForTilt(prompt).catch(() => {});
           }
 
           setRuntimeState(enabledRef.current ? 'listening' : 'idle');
 
-          // Restart recognition after TTS playback completes
+          // Restart listening after TTS playback completes
           if (enabledRef.current) {
             await new Promise(r => setTimeout(r, 300));
-            startRecognitionRef.current();
+            startListeningRef.current();
           }
         }
         return response;
@@ -354,98 +377,201 @@ export function useVoiceAssistant() {
     [sendText]
   );
 
-  const startRecognition = useCallback(() => {
-    if (!enabledRef.current || !speechRecognitionSupported || recognitionRef.current) return;
+  // ─── Core: getUserMedia + MediaRecorder + Whisper VAD pipeline ───────────────
 
-    // Check mic permission — if denied, show error state
+  const processRecording = useCallback(
+    async (chunks: Blob[]) => {
+      if (chunks.length === 0 || !enabledRef.current) return;
+
+      // Combine chunks into a single blob
+      const blob = new Blob(chunks, { type: 'audio/webm;codecs=opus' });
+
+      // Skip very short recordings (< 0.5s of audio ≈ < 8KB)
+      if (blob.size < 8000) {
+        console.log('[VoiceAssistant] Recording too short, skipping');
+        if (enabledRef.current && !busyRef.current) {
+          startListeningRef.current();
+        }
+        return;
+      }
+
+      // Convert to base64 and send to Whisper
+      const arrayBuffer = await blob.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+
+      try {
+        setRuntimeState('thinking');
+        busyRef.current = true;
+        const result = await backend.voice.transcribe({
+          audioBase64: base64,
+          mimeType: 'audio/webm',
+        });
+
+        const transcript = result?.text?.trim();
+        if (!transcript) {
+          console.log('[VoiceAssistant] Whisper returned empty transcript');
+          busyRef.current = false;
+          if (enabledRef.current) {
+            setRuntimeState('listening');
+            startListeningRef.current();
+          }
+          return;
+        }
+
+        busyRef.current = false;
+
+        // ER scoring: instant deterministic tilt detection BEFORE Claude
+        onTranscriptRef.current?.(transcript);
+
+        setLastUserText(transcript);
+        void sendText(transcript, 'chat');
+      } catch (err) {
+        console.error('[VoiceAssistant] Transcription failed:', err);
+        busyRef.current = false;
+        setErrorWithRecovery();
+      }
+    },
+    [backend, sendText, setErrorWithRecovery]
+  );
+
+  const startListening = useCallback(() => {
+    if (!enabledRef.current || !isSupported || recordingRef.current || busyRef.current) return;
+
     if (permission === 'denied') {
       setErrorWithRecovery();
       console.warn('[VoiceAssistant] Microphone permission denied');
       return;
     }
 
-    // Acquire mic lock via arbitration (priority 10 = high for voice assistant)
+    // Acquire mic lock
     const { acquired, release } = requestMic('voice-assistant', 10);
     if (!acquired) {
-      console.warn('[VoiceAssistant] Mic arbitration denied — another consumer has priority');
+      console.warn('[VoiceAssistant] Mic arbitration denied');
       return;
     }
     micReleaseRef.current = release;
 
-    const SpeechRecognitionCtor =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    // Read selected mic device from localStorage
+    const selectedDeviceId = safeLocalStorageGet(MIC_DEVICE_STORAGE_KEY);
+    const audioConstraints: MediaTrackConstraints = selectedDeviceId
+      ? { deviceId: { exact: selectedDeviceId }, echoCancellation: true, noiseSuppression: true }
+      : { echoCancellation: true, noiseSuppression: true };
 
-    if (!SpeechRecognitionCtor) return;
-
-    const recognition = new SpeechRecognitionCtor();
-    recognition.continuous = true;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
-
-    recognition.onstart = () => {
-      if (enabledRef.current && !busyRef.current) {
-        setRuntimeState('listening');
-      }
-    };
-
-    recognition.onresult = (event: any) => {
-      let finalText = '';
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const result = event.results[i];
-        if (result?.isFinal) {
-          finalText += `${result[0]?.transcript ?? ''} `;
+    navigator.mediaDevices
+      .getUserMedia({ audio: audioConstraints })
+      .then((stream) => {
+        if (!enabledRef.current) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
         }
-      }
 
-      const trimmed = finalText.trim();
-      if (!trimmed) return;
-
-      stopRecognition();
-      void sendText(trimmed, 'chat');
-    };
-
-    recognition.onerror = (event: any) => {
-      const errorType = event?.error;
-      // 'not-allowed' means mic denied, 'aborted' is intentional stop — don't error on those
-      if (errorType === 'not-allowed') {
-        setErrorWithRecovery();
-        return;
-      }
-      if (enabledRef.current && !busyRef.current) {
         setRuntimeState('listening');
-      }
-    };
 
-    recognition.onend = () => {
-      recognitionRef.current = null;
+        // Set up audio analysis for VAD
+        const audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 512;
+        source.connect(analyser);
 
-      if (!enabledRef.current) {
-        setRuntimeState('idle');
-        // Release mic lock
+        const dataArray = new Float32Array(analyser.fftSize);
+        let silenceStart: number | null = null;
+        let hasSpeech = false;
+
+        // Start recording
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? 'audio/webm;codecs=opus'
+            : 'audio/webm',
+        });
+        const chunks: Blob[] = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          void processRecording(chunks);
+        };
+
+        mediaRecorder.start(250); // Collect chunks every 250ms
+
+        // VAD: monitor audio level
+        const vadInterval = setInterval(() => {
+          analyser.getFloatTimeDomainData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i] * dataArray[i];
+          }
+          const rms = Math.sqrt(sum / dataArray.length);
+
+          if (rms > VAD_SILENCE_THRESHOLD) {
+            hasSpeech = true;
+            silenceStart = null;
+          } else if (hasSpeech) {
+            // Speech was detected, now silence
+            if (!silenceStart) {
+              silenceStart = Date.now();
+            } else if (Date.now() - silenceStart >= VAD_SILENCE_DURATION_MS) {
+              // Silence long enough — stop recording and process
+              stopRecording();
+            }
+          }
+        }, VAD_CHECK_INTERVAL_MS);
+
+        // Max recording safety valve
+        const maxTimer = setTimeout(() => {
+          if (recordingRef.current) {
+            console.log('[VoiceAssistant] Max recording duration reached');
+            stopRecording();
+          }
+        }, VAD_MAX_RECORDING_MS);
+
+        recordingRef.current = {
+          mediaRecorder,
+          stream,
+          audioContext,
+          analyser,
+          vadInterval,
+          maxTimer,
+        };
+      })
+      .catch((err) => {
+        console.error('[VoiceAssistant] getUserMedia failed:', err);
         if (micReleaseRef.current) {
           micReleaseRef.current();
           micReleaseRef.current = null;
         }
-        return;
+        setErrorWithRecovery();
+      });
+  }, [isSupported, permission, requestMic, setErrorWithRecovery, stopRecording, processRecording]);
+
+  // Keep ref in sync so sendText can restart listening without circular deps
+  startListeningRef.current = startListening;
+
+  // ─── Greeting on first enable ───────────────────────────────────────────────
+
+  const sendGreeting = useCallback(async () => {
+    // Read trader name from settings
+    let name = '';
+    try {
+      const raw = localStorage.getItem('fintheon:settings:v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        name = parsed?.traderName || '';
       }
+    } catch { /* ignore */ }
 
-      if (busyRef.current) {
-        return;
-      }
+    const greeting = name
+      ? `The trader "${name}" just activated the voice assistant. Greet them by name — keep it casual and brief. Mention the current time and that you're ready. One or two sentences max.`
+      : `The trader just activated the voice assistant. Give a brief, casual greeting. Mention the current time and that you're ready. One or two sentences max.`;
 
-      window.setTimeout(() => {
-        if (enabledRef.current && !busyRef.current) {
-          startRecognition();
-        }
-      }, 220);
-    };
+    await sendText(greeting, 'chat');
+  }, [sendText]);
 
-    recognitionRef.current = recognition;
-    recognition.start();
-  }, [sendText, speechRecognitionSupported, stopRecognition, permission, requestMic, setErrorWithRecovery]);
-
-  // Keep ref in sync so sendText can restart recognition without circular deps
-  startRecognitionRef.current = startRecognition;
+  // ─── Enable / Disable ──────────────────────────────────────────────────────
 
   const setEnabled = useCallback(
     (nextEnabled: boolean) => {
@@ -455,12 +581,19 @@ export function useVoiceAssistant() {
 
       if (!nextEnabled) {
         cancel();
+        greetedRef.current = false;
         return;
       }
 
-      startRecognition();
+      // Send greeting on first enable (not on restore from localStorage)
+      if (!greetedRef.current) {
+        greetedRef.current = true;
+        void sendGreeting();
+      } else {
+        startListening();
+      }
     },
-    [startRecognition, cancel]
+    [startListening, cancel, sendGreeting]
   );
 
   const toggleEnabled = useCallback(() => {
@@ -471,6 +604,7 @@ export function useVoiceAssistant() {
     enabledRef.current = enabled;
   }, [enabled]);
 
+  // Restore saved state on mount
   useEffect(() => {
     const savedEnabled = safeLocalStorageGet(VOICE_ENABLED_STORAGE_KEY) === 'true';
     const savedConversationId = safeLocalStorageGet(HARPER_CONVERSATION_STORAGE_KEY);
@@ -480,29 +614,37 @@ export function useVoiceAssistant() {
     }
 
     if (savedEnabled) {
-      setEnabled(savedEnabled);
+      // On restore, skip greeting — just start listening
+      greetedRef.current = true;
+      setEnabledState(true);
+      enabledRef.current = true;
+      safeLocalStorageSet(VOICE_ENABLED_STORAGE_KEY, 'true');
+      startListening();
     }
-  }, [setEnabled]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // Auto-restart listening if state gets stuck
   useEffect(() => {
     if (
       enabled &&
-      speechRecognitionSupported &&
+      isSupported &&
       runtimeState === 'listening' &&
-      !recognitionRef.current &&
+      !recordingRef.current &&
       !busyRef.current
     ) {
-      startRecognition();
+      startListening();
     }
-  }, [enabled, runtimeState, speechRecognitionSupported, startRecognition]);
+  }, [enabled, runtimeState, isSupported, startListening]);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopRecognition();
+      stopRecording();
       stopPlayback();
       if (errorRecoveryRef.current) clearTimeout(errorRecoveryRef.current);
     };
-  }, [stopPlayback, stopRecognition]);
+  }, [stopPlayback, stopRecording]);
 
   return {
     enabled,
@@ -510,7 +652,7 @@ export function useVoiceAssistant() {
     conversationId,
     lastUserText,
     lastAssistantText,
-    isSupported: speechRecognitionSupported,
+    isSupported,
     micPermission: permission,
     setEnabled,
     toggleEnabled,

@@ -36,6 +36,9 @@ import cloudRoutes from './cloud/index.js';
 import { createDiagnosticsRoutes } from './diagnostics/index.js';
 import { createTerminalRoutes } from './terminal/index.js';
 import { createSetupRoutes } from './setup/index.js';
+import { createTradeIdeasRoutes } from './trade-ideas/index.js';
+import { createProfileRoutes } from './profile/index.js';
+import { createAuthCallbackRoute } from './auth-callback.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -74,6 +77,11 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/mirofish', createMirofishRoutes());
   // Proposal charting — Playwright automation for TopStepX (public, local only)
   app.route('/api/proposals', createProposalRoutes());
+  // Trade ideas — merged proposals + Supabase trade ideas (public)
+  app.route('/api/trade-ideas', createTradeIdeasRoutes());
+
+  // Supabase OAuth callback relay — serves HTML that deep-links back to Electron
+  app.route('/api/auth/supabase', createAuthCallbackRoute());
 
   // Cloud API — Supabase-backed scored items, ER sessions, settings, consilium
   app.route('/api/cloud', cloudRoutes);
@@ -118,6 +126,8 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/voice/*', authMiddleware);
   app.use('/api/settings', authMiddleware);
   app.use('/api/settings/*', authMiddleware);
+  app.use('/api/profile', authMiddleware);
+  app.use('/api/profile/*', authMiddleware);
   // Journal — public (local Electron app, no user auth needed)
 
   // Phase 1: Account routes
@@ -156,6 +166,9 @@ export function registerRoutes(app: Hono): void {
 
   // User settings persistence
   app.route('/api/settings', createSettingsRoutes());
+
+  // User profiles + app state (localStorage migration target)
+  app.route('/api/profile', createProfileRoutes());
 
   // Trading journal (human psych + agent performance)
   app.route('/api/journal', createJournalRoutes());

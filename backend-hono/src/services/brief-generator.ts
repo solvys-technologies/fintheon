@@ -1,4 +1,5 @@
 // [claude-code 2026-03-22] Extracted brief generation logic — shared by data routes + dispatch scheduler
+// [claude-code 2026-03-23] Fix: use createModelClient() instead of passing raw model key to generateText
 import { generateText } from 'ai';
 import {
   writeBrief,
@@ -8,7 +9,7 @@ import {
   type BriefRecord,
 } from './supabase-service.js';
 import { getFeed } from './riskflow/feed-service.js';
-import { selectModel } from './ai/model-selector.js';
+import { selectModel, createModelClient, type AiModelKey } from './ai/model-selector.js';
 import { createLogger } from '../lib/logger.js';
 
 const log = createLogger('BriefGenerator');
@@ -150,10 +151,11 @@ ${
     : 'Write 3-5 bullet points covering ONLY new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 200 words.'
 }`;
 
-  const { model, provider } = selectModel({
+  const selection = selectModel({
     taskType: 'analysis',
     maxBudgetUsd: isFull ? 0.05 : 0.01,
   });
+  const model = createModelClient(selection.model as AiModelKey);
   const { text } = await generateText({ model, prompt });
 
   // Store in Supabase
@@ -166,7 +168,7 @@ ${
 
   log.info(`Brief generated: ${briefType}`, {
     supabaseId: stored?.id,
-    provider,
+    provider: selection.provider,
     length: text.length,
   });
 
@@ -175,7 +177,7 @@ ${
     briefType,
     generatedAt: new Date().toISOString(),
     supabaseId: stored?.id ?? null,
-    provider,
+    provider: selection.provider,
   };
 }
 

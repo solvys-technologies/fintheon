@@ -65,6 +65,8 @@ export interface IframeUrls {
 }
 
 export type PrimaryBroker = 'rithmic' | 'projectx' | 'mmt';
+export type DefaultLayout = 'combined' | 'tickers-only';
+export type DefaultPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate';
 
 interface SettingsContextType {
   apiKeys: APIKeys;
@@ -106,6 +108,10 @@ interface SettingsContextType {
   /** 8g: Auto-start all PsychAssist features EXCEPT mic-based ER monitoring */
   psychAssistAutoStart: boolean;
   setPsychAssistAutoStart: (enabled: boolean) => void;
+  defaultLayout: DefaultLayout;
+  setDefaultLayout: (layout: DefaultLayout) => void;
+  defaultPlatform: DefaultPlatform;
+  setDefaultPlatform: (platform: DefaultPlatform) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -243,6 +249,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [psychAssistAutoStart, setPsychAssistAutoStart] = useState<boolean>(() =>
     loadFromStorage('psychAssistAutoStart', true)
   );
+  const [defaultLayout, setDefaultLayout] = useState<DefaultLayout>(() =>
+    loadFromStorage('defaultLayout', 'combined' as DefaultLayout)
+  );
+  const [defaultPlatform, setDefaultPlatform] = useState<DefaultPlatform>(() =>
+    loadFromStorage('defaultPlatform', 'topstepx' as DefaultPlatform)
+  );
 
   // Track whether initial backend fetch has completed to avoid saving back stale data
   const backendSynced = useRef(false);
@@ -269,6 +281,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.instrumentsTraded) setInstrumentsTraded(remote.instrumentsTraded as string[]);
         if (remote.discordUsername) setDiscordUsername(remote.discordUsername as string);
         if (remote.tradingRoadblocks) setTradingRoadblocks(remote.tradingRoadblocks as string[]);
+        if (remote.defaultLayout) setDefaultLayout(remote.defaultLayout as DefaultLayout);
+        if (remote.defaultPlatform) setDefaultPlatform(remote.defaultPlatform as DefaultPlatform);
       }
       backendSynced.current = true;
     });
@@ -296,6 +310,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       discordUsername,
       tradingRoadblocks,
       psychAssistAutoStart,
+      defaultLayout,
+      defaultPlatform,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -306,7 +322,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (backendSynced.current) {
       saveBackendSettings(settings);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName, autoRefresh, interviewCompleted, tradingGoals, instrumentsTraded, discordUsername, tradingRoadblocks]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName, autoRefresh, interviewCompleted, tradingGoals, instrumentsTraded, discordUsername, tradingRoadblocks, defaultLayout, defaultPlatform]);
 
   return (
     <SettingsContext.Provider
@@ -349,6 +365,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setTradingRoadblocks,
         psychAssistAutoStart,
         setPsychAssistAutoStart,
+        defaultLayout,
+        setDefaultLayout,
+        defaultPlatform,
+        setDefaultPlatform,
       }}
     >
       {children}

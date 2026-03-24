@@ -17,6 +17,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   maintenance: { enabled: true },
   quick_fintheon: { enabled: true },
   mirofish: { enabled: true },
+  chart_levels: { enabled: true },
 }
 
 let cachedFlags: FeatureFlags | null = null
@@ -70,6 +71,7 @@ export function extractSkillFromMessage(message: string): string | null {
     quickfintheon: 'quick_fintheon',
     narrative: 'narrative',
     mirofish: 'mirofish',
+    chartlevels: 'chart_levels',
   }
   return map[raw] ?? null
 }

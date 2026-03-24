@@ -4,9 +4,9 @@
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
 // [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
 // [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
-// [claude-code 2026-03-22] Source of Truth fusion — Browser Control Phase 1 (agent-view-handlers)
+// [claude-code 2026-03-23] Browser Use Phase 2 — CDP + browser-use CLI bridge
+// [claude-code 2026-03-24] Supabase Google OAuth deep link: fintheon:// protocol + open-url handler
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
-const { setupAgentViewHandlers } = require("./agent-view-handlers.cjs");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
@@ -14,6 +14,7 @@ const { autoUpdater } = require("electron-updater");
 
 let mainWindow = null;
 let backendProcess = null;
+let pendingAuthUrl = null;
 
 /* ------------------------------------------------------------------ */
 /*  Startup config — persisted to userData/fintheon-startup.json       */
@@ -224,7 +225,41 @@ function createWindow() {
   mainWindow = win;
 }
 
+// [claude-code 2026-03-23] Browser Use Phase 2 — enable CDP for browser-use CLI
+app.commandLine.appendSwitch('remote-debugging-port', '9222');
+
+// macOS: handle fintheon:// URLs when app is already running
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  console.log("[Electron] open-url received:", url);
+  if (mainWindow) {
+    mainWindow.webContents.send("auth-callback", url);
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  } else {
+    pendingAuthUrl = url;
+  }
+});
+
+// Windows/Linux: second-instance receives the deep link URL in argv
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv) => {
+    const url = argv.find((arg) => arg.startsWith("fintheon://"));
+    if (url && mainWindow) {
+      mainWindow.webContents.send("auth-callback", url);
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
 app.whenReady().then(() => {
+  // Register fintheon:// as a custom protocol for OAuth callbacks
+  app.setAsDefaultProtocolClient("fintheon");
+
   const cfg = readStartupConfig();
   if (cfg.backendAutostart) {
     startBackend();
@@ -233,8 +268,19 @@ app.whenReady().then(() => {
   }
   createWindow();
   setupAutoUpdater();
-  // Browser Control Phase 1 — read-only agent view for TopStep X observation
-  if (mainWindow) setupAgentViewHandlers(mainWindow);
+
+  // Forward any pending auth URL AFTER the renderer finishes loading
+  // (sending before did-finish-load means the IPC message is lost)
+  if (mainWindow) {
+    mainWindow.webContents.on("did-finish-load", () => {
+      if (pendingAuthUrl) {
+        console.log("[Electron] Forwarding pending auth URL:", pendingAuthUrl);
+        mainWindow.webContents.send("auth-callback", pendingAuthUrl);
+        pendingAuthUrl = null;
+      }
+    });
+  }
+  // Browser Use Phase 2 — CDP enabled via commandLine switch, no in-process handlers needed
 
   // Handle window.open from embedded <webview> tags.
   app.on("web-contents-created", (_event, contents) => {
@@ -324,6 +370,14 @@ app.on("before-quit", () => {
 
 ipcMain.handle("toggle-mini-widget", () => {
   // Placeholder for widget toggle behavior.
+  return { ok: true };
+});
+
+// [claude-code 2026-03-24] Open URL in system browser (for OAuth flows)
+ipcMain.handle("open-external", (_event, url) => {
+  if (typeof url === "string" && (url.startsWith("https://") || url.startsWith("http://"))) {
+    shell.openExternal(url);
+  }
   return { ok: true };
 });
 
@@ -423,4 +477,31 @@ ipcMain.handle("run-shell-command", (event, command) => {
     } catch (_) {}
   });
   return { ok: true };
+});
+
+// [claude-code 2026-03-23] Browser Use Phase 2 — CLI command bridge
+ipcMain.handle("browser-use-command", async (_event, args) => {
+  const { execFile } = require("child_process");
+  return new Promise((resolve) => {
+    execFile("browser-use", ["--cdp-url", "http://localhost:9222", "--json", ...args], {
+      timeout: 30000,
+      env: { ...process.env },
+    }, (error, stdout, stderr) => {
+      if (error) resolve({ ok: false, error: error.message, stderr });
+      else {
+        try { resolve({ ok: true, data: JSON.parse(stdout) }); }
+        catch { resolve({ ok: true, data: stdout.trim() }); }
+      }
+    });
+  });
+});
+
+ipcMain.handle("browser-use-status", async () => {
+  const { execFile } = require("child_process");
+  return new Promise((resolve) => {
+    execFile("browser-use", ["--json", "sessions"], { timeout: 5000 }, (error, stdout) => {
+      if (error) resolve({ running: false });
+      else resolve({ running: true, sessions: stdout.trim() });
+    });
+  });
 });

@@ -90,10 +90,10 @@ export default function AccountSummary() {
         <div className="flex justify-between items-baseline mb-2">
           <span className="text-[10px] text-zinc-500">Daily P&L</span>
           <div className="text-right">
-            <div className={`text-sm font-mono font-bold ${isPositive ? "text-[#00FF85]" : "text-[#FF4040]"}`}>
+            <div className="text-sm font-mono font-bold" style={{ color: isPositive ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
               {isPositive ? "+" : ""}{(account.dailyPnl ?? 0).toFixed(2)}
             </div>
-            <div className={`text-[9px] ${isPositive ? "text-[#00FF85]/70" : "text-[#FF4040]/70"}`}>
+            <div className="text-[9px]" style={{ color: isPositive ? 'color-mix(in srgb, var(--fintheon-bullish) 70%, transparent)' : 'color-mix(in srgb, var(--fintheon-bearish) 70%, transparent)' }}>
               {isPositive ? "+" : ""}{pnlPercentage.toFixed(2)}%
             </div>
           </div>
@@ -101,8 +101,9 @@ export default function AccountSummary() {
 
         <div className="h-1 bg-zinc-900 rounded-full overflow-hidden">
           <div
-            className={`h-full transition-all ${isPositive ? "bg-[#00FF85]" : "bg-[#FF4040]"}`}
+            className="h-full transition-all"
             style={{
+              backgroundColor: isPositive ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)',
               width: `${barWidth}%`,
               marginLeft: isPositive ? "50%" : `${50 - barWidth}%`,
             }}

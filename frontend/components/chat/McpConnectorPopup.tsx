@@ -1,4 +1,4 @@
-// [claude-code 2026-03-10] T3: MCP Connector Popup — toggle active MCP servers per session
+// [claude-code 2026-03-23] T3: MCP Connector Popup — locked connectors (always-on), removed alpha-vantage, twitter→riskflow
 import { X, Plug2, AlertTriangle } from 'lucide-react';
 import type { McpServerConfig, McpServerId } from '../../types/mcp';
 
@@ -103,7 +103,8 @@ export function McpConnectorPopup({ open, servers, activeIds, onToggle, onClose 
               {/* Server cards */}
               {items.map((server) => {
                 const isActive = activeIds.includes(server.id);
-                const canToggle = server.installed;
+                const isLocked = Boolean(server.locked);
+                const canToggle = server.installed && !isLocked;
 
                 return (
                   <div
@@ -134,13 +135,17 @@ export function McpConnectorPopup({ open, servers, activeIds, onToggle, onClose 
                       )}
                     </div>
 
-                    {/* Toggle */}
+                    {/* Toggle or "Always on" label */}
                     <div className="mt-1 flex-shrink-0">
-                      <Toggle
-                        checked={isActive && canToggle}
-                        onChange={(v) => onToggle(server.id, v)}
-                        disabled={!canToggle}
-                      />
+                      {isLocked ? (
+                        <span className="text-[9px] text-emerald-500/70 font-medium uppercase tracking-wider">Always on</span>
+                      ) : (
+                        <Toggle
+                          checked={isActive && canToggle}
+                          onChange={(v) => onToggle(server.id, v)}
+                          disabled={!canToggle}
+                        />
+                      )}
                     </div>
                   </div>
                 );

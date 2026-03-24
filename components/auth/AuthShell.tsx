@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FluidCursor, FluidCursorHandle } from './FluidCursor';
 
 type AuthShellProps = {
@@ -10,7 +10,7 @@ type AuthPhase = 'landing' | 'transitioning' | 'auth';
 // [claude-code 2026-03-20] Removed onBypass prop — Sprint 1 bypass no longer needed
 export const AuthShell: React.FC<AuthShellProps> = ({ children }) => {
   const [phase, setPhase] = useState<AuthPhase>('landing');
-  const [showClerk, setShowClerk] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const cursorRef = useRef<FluidCursorHandle>(null);
   const logoRef = useRef<HTMLDivElement>(null);
   const transitionTimers = useRef<number[]>([]);
@@ -36,45 +36,31 @@ export const AuthShell: React.FC<AuthShellProps> = ({ children }) => {
       }
     });
 
-    // Reveal the Clerk widget slightly after the cursor locks in.
-    const clerkTimer = window.setTimeout(() => setShowClerk(true), 600);
+    // Reveal the auth widget slightly after the cursor locks in.
+    const showTimer = window.setTimeout(() => setShowAuth(true), 600);
     const authTimer = window.setTimeout(() => setPhase('auth'), 1150);
-    transitionTimers.current.push(clerkTimer, authTimer);
+    transitionTimers.current.push(showTimer, authTimer);
   };
 
   useEffect(() => {
     if (phase !== 'transitioning') {
-      setShowClerk(phase === 'auth');
+      setShowAuth(phase === 'auth');
     }
   }, [phase]);
 
   useEffect(() => () => clearTimers(), []);
 
-  const backgroundStyle = useMemo(
-    () => ({
-      backgroundImage: 'url(/background.png)',
-    }),
-    []
-  );
-
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-black text-white selection:bg-yellow-500/30">
+    <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-white selection:bg-yellow-500/30">
       {showCursor && (
         <div className="hidden md:block">
           <FluidCursor ref={cursorRef} />
         </div>
       )}
 
-      {/* Background Layer */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat blur-[3px] scale-105 transition-transform duration-700" style={backgroundStyle} />
-        <div className="absolute inset-0 bg-black/40 transition-opacity duration-700" />
-        <div
-          className={`absolute inset-0 transition-all duration-700 ${
-            phase === 'landing' ? 'bg-gradient-to-t from-black via-black/50 to-transparent' : 'bg-gradient-to-r from-black/80 via-black/30 to-transparent'
-          }`}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-transparent via-black/30 to-black/90" />
+      {/* Background — plain black with subtle radial vignette */}
+      <div className="absolute inset-0 z-0 bg-[#050402]">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.6)_100%)]" />
       </div>
 
       <main className="relative z-10 flex min-h-screen flex-col items-center justify-end px-6 pb-12 md:justify-center">
@@ -83,10 +69,10 @@ export const AuthShell: React.FC<AuthShellProps> = ({ children }) => {
             phase === 'auth' ? 'md:items-start md:gap-12' : ''
           }`}
         >
-          {/* Logo + Fintheon glow */}
+          {/* Logo + FINTHEON title */}
           <div
             ref={logoRef}
-            className={`relative mb-2 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            className={`relative mb-2 flex flex-col items-center gap-5 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               phase === 'landing'
                 ? 'logo-landing translate-y-0'
                 : 'logo-auth -translate-y-32 md:-translate-y-40 md:self-start md:pl-2'
@@ -94,11 +80,17 @@ export const AuthShell: React.FC<AuthShellProps> = ({ children }) => {
           >
             <div
               className="pointer-events-none absolute top-1/2 left-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-yellow-500/30 animate-pulse-radiate"
-              style={{ boxShadow: '0 0 60px rgba(234,179,8,0.35)' }}
+              style={{ boxShadow: '0 0 60px rgba(199,159,74,0.3)' }}
             />
-            <div className="relative z-10 opacity-95 drop-shadow-[0_0_18px_rgba(234,179,8,0.55)]">
+            <div className="relative z-10 opacity-95 drop-shadow-[0_0_18px_rgba(199,159,74,0.5)]">
               <img src="/logo.png" alt="Fintheon logo" className="h-32 w-32 object-contain" />
             </div>
+            <h1
+              className="relative z-10 text-3xl font-light tracking-[0.5em] text-[#c79f4a] drop-shadow-[0_0_12px_rgba(199,159,74,0.4)]"
+              style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
+            >
+              FINTHEON
+            </h1>
           </div>
 
           {/* Login button (landing only) */}
@@ -143,8 +135,8 @@ export const AuthShell: React.FC<AuthShellProps> = ({ children }) => {
                 <p className="text-xs uppercase tracking-[0.5em] text-yellow-500/70">Fintheon Terminal</p>
                 <h1 className="text-2xl font-semibold tracking-[0.2em] text-yellow-50">Access Control</h1>
               </div>
-              <div className={`transition-all duration-500 ${showClerk ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
-                {showClerk ? children : null}
+              <div className={`transition-all duration-500 ${showAuth ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
+                {showAuth ? children : null}
               </div>
             </div>
           </div>

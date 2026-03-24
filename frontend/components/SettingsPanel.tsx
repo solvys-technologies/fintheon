@@ -47,6 +47,10 @@ export function SettingsPage() {
     setIframeUrls,
     traderName,
     setTraderName,
+    defaultLayout,
+    setDefaultLayout,
+    defaultPlatform,
+    setDefaultPlatform,
   } = useSettings();
   const backend = useBackend();
   const voiceMemory = useVoiceMemory();
@@ -845,8 +849,45 @@ export function SettingsPage() {
 
             {activeTab === 'iframes' && (
               <div key="iframes" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
+                {/* Browser Defaults */}
+                <section className="mb-6">
+                  <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">Browser Defaults</h3>
+                  <p className="text-xs text-gray-500 mb-4">Set the default layout and platform when the Browser is opened.</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-2">Default Layout</label>
+                      <select
+                        value={defaultLayout}
+                        onChange={(e) => setDefaultLayout(e.target.value as any)}
+                        className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30"
+                      >
+                        <option value="combined">Castra</option>
+                        <option value="tickers-only">Zen</option>
+                      </select>
+                      <p className="text-[10px] text-gray-600 mt-1">Castra = Mission Control + RiskFlow panels. Zen = clean minimal view.</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-2">Default Platform</label>
+                      <select
+                        value={defaultPlatform}
+                        onChange={(e) => setDefaultPlatform(e.target.value as any)}
+                        className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30"
+                      >
+                        <option value="tradesea">TradeSea</option>
+                        <option value="topstepx">TopStepX</option>
+                        <option value="mmt">MMT</option>
+                        <option value="kalshi">Kalshi</option>
+                        <option value="tradovate">Tradovate</option>
+                        <option value="research">Research</option>
+                      </select>
+                      <p className="text-[10px] text-gray-600 mt-1">Which platform loads when you open the Browser.</p>
+                    </div>
+                  </div>
+                </section>
+
+                {/* iFrame URLs */}
                 <section>
-                  <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">iFrames</h3>
+                  <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-4">iFrame URLs</h3>
                   <p className="text-xs text-gray-500 mb-4">Set embed URLs for integrated views. Leave blank to use defaults from environment variables.</p>
                   <div className="space-y-4">
                     <div>
@@ -936,10 +977,13 @@ export function SettingsPage() {
                       <Button
                         variant="secondary"
                         className="text-xs text-red-500 border-red-500/30 hover:bg-red-500/10"
-                        onClick={() => {
+                        onClick={async () => {
+                          try {
+                            const { signOut } = await import('../lib/supabase');
+                            await signOut();
+                          } catch { /* proceed with reload */ }
                           localStorage.removeItem('github_token');
                           localStorage.removeItem('github_user');
-                          localStorage.removeItem('clerk_token');
                           window.location.reload();
                         }}
                       >

@@ -1,16 +1,17 @@
 // [claude-code 2026-03-16] Agent backend v7.9: updated agent names (Harper-Hermes, Consul, Herald)
 // [claude-code 2026-03-20] Added standup triggers, breaking news, herald alert, scheduler status routes
 // [claude-code 2026-03-20] T2: Consilium routes — filter params on /messages, developments, scorecards, predictions
+// [claude-code 2026-03-23] fix(boardroom): switch message fetching from JSONL to Supabase boardroom-store
 import type { Context } from 'hono';
 import {
-  getBoardroomMessages,
   getInterventionMessages,
   sendToIntervention,
   sendMentionToBoardroom,
   checkBoardroomStatus,
   appendToBoardroom,
-  type BoardroomFilter,
 } from '../../services/hermes-sessions.js';
+import { getOrCreateTodaySession, getSessionMessages } from '../../services/boardroom-store.js';
+import { toLegacyMessage, type BoardroomSessionFilter } from '../../types/boardroom-db.js';
 import { getBoardroomMeetingSchedule } from '../../services/boardroom-schedule.js';
 import type { InterventionType, InterventionSeverity, BoardroomAgent } from '../../types/boardroom.js';
 import { spawnBoardroomStandup, spawnBoardroomNewsResponse, spawnBoardroomBroadcast, type StandupTask } from '../../services/boardroom-spawner.js';
@@ -40,16 +41,20 @@ export async function handleGetBoardroomMessages(c: Context) {
     const limitParam = c.req.query('limit');
     const offsetParam = c.req.query('offset');
 
-    const filter: BoardroomFilter = {};
-    if (agentParam) filter.agents = agentParam.split(',') as BoardroomAgent[];
+    const session = await getOrCreateTodaySession();
+
+    const filter: BoardroomSessionFilter = {};
+    if (agentParam) filter.agent = agentParam.split(',')[0] as BoardroomAgent;
     if (search) filter.search = search;
     if (since) filter.since = since;
     if (until) filter.until = until;
     if (limitParam) filter.limit = parseInt(limitParam, 10);
     if (offsetParam) filter.offset = parseInt(offsetParam, 10);
 
-    const result = await getBoardroomMessages('pic-boardroom', Object.keys(filter).length ? filter : undefined);
-    return c.json({ messages: result.messages, total: result.total });
+    const dbMessages = await getSessionMessages(session.id, Object.keys(filter).length ? filter : undefined);
+    const messages = dbMessages.map(toLegacyMessage);
+
+    return c.json({ messages, total: messages.length });
   } catch (error) {
     console.error('[Boardroom] Failed to fetch boardroom messages:', error);
     return c.json({ error: 'Failed to fetch boardroom messages' }, 500);

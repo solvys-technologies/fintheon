@@ -1,12 +1,18 @@
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { FeedItem as FeedItemType } from '../../types/feed';
 import { decodeHtmlEntities } from '../../lib/html-entities';
+import { ProposalCard } from './ProposalCard';
 
 interface FeedItemProps {
   item: FeedItemType;
 }
 
 export function FeedItem({ item }: FeedItemProps) {
+  // [claude-code 2026-03-23] Browser Use Phase 2 — render proposal cards
+  if (item.type === 'proposal' && item.proposal) {
+    return <ProposalCard proposal={item.proposal} timestamp={item.time} />;
+  }
+
   // Safety check: ensure iv exists and value is a number
   const ivValue = item?.iv?.value != null 
     ? (typeof item.iv.value === 'number' ? item.iv.value : Number(item.iv.value) || 0)

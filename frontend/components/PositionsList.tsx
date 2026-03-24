@@ -47,9 +47,9 @@ export default function PositionsList() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   {position.side === "long" ? (
-                    <TrendingUp className="w-3 h-3 text-[#00FF85]" />
+                    <TrendingUp className="w-3 h-3" style={{ color: 'var(--fintheon-bullish)' }} />
                   ) : (
-                    <TrendingDown className="w-3 h-3 text-[#FF4040]" />
+                    <TrendingDown className="w-3 h-3" style={{ color: 'var(--fintheon-bearish)' }} />
                   )}
                   <span className="text-xs font-medium text-white">{position.symbol}</span>
                 </div>
@@ -64,10 +64,10 @@ export default function PositionsList() {
               <div className="flex justify-between items-center pt-1 border-t border-zinc-900/50">
                 <span className="text-[9px] text-zinc-600">P&L</span>
                 <div className="text-right">
-                  <div className={`text-xs font-mono font-bold ${isProfit ? "text-[#00FF85]" : "text-[#FF4040]"}`}>
+                  <div className="text-xs font-mono font-bold" style={{ color: isProfit ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
                     {isProfit ? "+" : ""}{(position.pnl ?? 0).toFixed(2)}
                   </div>
-                  <div className={`text-[8px] ${isProfit ? "text-[#00FF85]/70" : "text-[#FF4040]/70"}`}>
+                  <div className="text-[8px]" style={{ color: isProfit ? 'color-mix(in srgb, var(--fintheon-bullish) 70%, transparent)' : 'color-mix(in srgb, var(--fintheon-bearish) 70%, transparent)' }}>
                     {isProfit ? "+" : ""}{(position.pnlPercentage ?? 0).toFixed(2)}%
                   </div>
                 </div>
