@@ -159,8 +159,8 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                 <div className="flex-1 flex flex-col gap-4">
                   {/* Hero chart */}
                   <div className="shrink-0">
-                    <div className="text-[9px] text-[var(--fintheon-muted)]/40 mb-2 uppercase tracking-wider">
-                      {selectedSymbol} — Price Action + IV Risk Bars
+                    <div className="text-[10px] text-[var(--fintheon-text)]/60 mb-2 uppercase tracking-wider font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+                      Price Projections
                     </div>
                     <div className="h-[65vh]">
                       <AuditoriumChart timeSeries={data.timeSeries} rollingDays={rollingDays} selectedSymbol={selectedSymbol} />
