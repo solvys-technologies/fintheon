@@ -269,10 +269,16 @@ app.whenReady().then(() => {
   createWindow();
   setupAutoUpdater();
 
-  // Forward any pending auth URL that arrived before the window was ready
-  if (pendingAuthUrl && mainWindow) {
-    mainWindow.webContents.send("auth-callback", pendingAuthUrl);
-    pendingAuthUrl = null;
+  // Forward any pending auth URL AFTER the renderer finishes loading
+  // (sending before did-finish-load means the IPC message is lost)
+  if (mainWindow) {
+    mainWindow.webContents.on("did-finish-load", () => {
+      if (pendingAuthUrl) {
+        console.log("[Electron] Forwarding pending auth URL:", pendingAuthUrl);
+        mainWindow.webContents.send("auth-callback", pendingAuthUrl);
+        pendingAuthUrl = null;
+      }
+    });
   }
   // Browser Use Phase 2 — CDP enabled via commandLine switch, no in-process handlers needed
 

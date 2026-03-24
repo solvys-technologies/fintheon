@@ -1,5 +1,5 @@
 // [claude-code 2026-03-24] Supabase Google OAuth + Electron deep link + GitHub Models OAuth
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { supabase, signInWithGoogle, signOut as supabaseSignOut } from '../lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -107,19 +107,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Exchange an auth code for a Supabase session
+  const exchangeCode = useCallback(async (code: string) => {
+    if (!supabase) return;
+    console.log('[Auth] Exchanging code:', code.slice(0, 8) + '...');
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        console.error('[Auth] Code exchange failed:', error.message);
+      } else {
+        console.log('[Auth] Session established:', data.session?.user?.email);
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+      }
+    } catch (err) {
+      console.error('[Auth] Exchange error:', err);
+    }
+    setIsLoading(false);
+  }, []);
+
   // Listen for Electron deep link callback (fintheon://auth/callback?code=...)
   useEffect(() => {
     if (!supabase || BYPASS_AUTH) return;
 
-    const client = supabase; // narrowed for closure
     const handleDeepLink = async (url: string) => {
+      console.log('[Auth] Deep link received:', url);
       try {
         const parsed = new URL(url);
         const code = parsed.searchParams.get('code');
-        if (code) {
-          const { error } = await client.auth.exchangeCodeForSession(code);
-          if (error) console.error('[Auth] Code exchange failed:', error.message);
-        }
+        if (code) await exchangeCode(code);
       } catch (err) {
         console.error('[Auth] Deep link parse error:', err);
       }
@@ -127,21 +144,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     window.electron?.onAuthCallback(handleDeepLink);
     return () => window.electron?.onAuthCallback(null);
+  }, [exchangeCode]);
+
+  // Fallback: poll backend for pending auth code (in case deep link doesn't fire)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startPolling = useCallback(() => {
+    if (pollingRef.current) return;
+    console.log('[Auth] Starting code poll...');
+    pollingRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/supabase/pending`);
+        if (!res.ok) return;
+        const { code } = await res.json() as { code: string | null };
+        if (code) {
+          console.log('[Auth] Poll found code');
+          if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+          await exchangeCode(code);
+        }
+      } catch { /* silent */ }
+    }, 1500);
+    // Stop polling after 2 minutes
+    setTimeout(() => {
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+    }, 120_000);
+  }, [exchangeCode]);
+
+  // Cleanup polling on unmount
+  useEffect(() => () => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
   }, []);
 
   const signIn = useCallback(async () => {
     const data = await signInWithGoogle();
     if (data.url) {
-      // Open in system browser via Electron shell.openExternal (NOT window.open,
-      // which opens inside Electron and causes Vercel/wrong-page redirects)
+      // Open in system browser via Electron shell.openExternal
       if (window.electron?.openExternal) {
         window.electron.openExternal(data.url);
       } else {
-        // Fallback for non-Electron (web) environments
         window.location.href = data.url;
       }
+      // Start polling backend for the auth code as fallback
+      // (deep link may not fire reliably on all macOS versions)
+      startPolling();
     }
-  }, []);
+  }, [startPolling]);
 
   const signOut = useCallback(async () => {
     await supabaseSignOut();
