@@ -107,9 +107,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Exchange an auth code for a Supabase session
-  const exchangeCode = useCallback(async (code: string) => {
+  // Set session from tokens (implicit flow — access_token + refresh_token)
+  const setSessionFromTokens = useCallback(async (accessToken: string, refreshToken: string) => {
     if (!supabase) return;
+    console.log('[Auth] Setting session from tokens...');
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (error) {
+        console.error('[Auth] setSession failed:', error.message);
+      } else {
+        console.log('[Auth] Session established:', data.session?.user?.email);
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+      }
+    } catch (err) {
+      console.error('[Auth] setSession error:', err);
+    }
+    setIsLoading(false);
+  }, []);
+
+  // Exchange a PKCE auth code for a Supabase session
+  const exchangeCode = useCallback(async (code: string) => {
+    if (!supabase || !code) return;
     console.log('[Auth] Exchanging code:', code.slice(0, 8) + '...');
     setIsLoading(true);
     try {
@@ -127,7 +150,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  // Listen for Electron deep link callback (fintheon://auth/callback?code=...)
+  // Handle auth data from deep link or polling (code OR tokens)
+  const handleAuthData = useCallback(async (params: Record<string, string>) => {
+    if (params.access_token && params.refresh_token) {
+      await setSessionFromTokens(params.access_token, params.refresh_token);
+    } else if (params.code) {
+      await exchangeCode(params.code);
+    }
+  }, [setSessionFromTokens, exchangeCode]);
+
+  // Listen for Electron deep link callback
   useEffect(() => {
     if (!supabase || BYPASS_AUTH) return;
 
@@ -135,8 +167,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[Auth] Deep link received:', url);
       try {
         const parsed = new URL(url);
-        const code = parsed.searchParams.get('code');
-        if (code) await exchangeCode(code);
+        const params: Record<string, string> = {};
+        parsed.searchParams.forEach((v, k) => { params[k] = v; });
+        // Also check hash fragment
+        if (parsed.hash) {
+          parsed.hash.substring(1).split('&').forEach(pair => {
+            const [k, v] = pair.split('=');
+            if (k) params[decodeURIComponent(k)] = decodeURIComponent(v || '');
+          });
+        }
+        await handleAuthData(params);
       } catch (err) {
         console.error('[Auth] Deep link parse error:', err);
       }
@@ -144,30 +184,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     window.electron?.onAuthCallback(handleDeepLink);
     return () => window.electron?.onAuthCallback(null);
-  }, [exchangeCode]);
+  }, [handleAuthData]);
 
-  // Fallback: poll backend for pending auth code (in case deep link doesn't fire)
+  // Fallback: poll backend for pending auth data
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startPolling = useCallback(() => {
     if (pollingRef.current) return;
-    console.log('[Auth] Starting code poll...');
+    console.log('[Auth] Starting auth poll...');
     pollingRef.current = setInterval(async () => {
       try {
         const res = await fetch(`${API_BASE}/api/auth/supabase/pending`);
         if (!res.ok) return;
-        const { code } = await res.json() as { code: string | null };
-        if (code) {
-          console.log('[Auth] Poll found code');
+        const data = await res.json() as Record<string, string | null>;
+        // Check if we got tokens or a code
+        if (data.access_token || (data.code && data.code !== null)) {
+          console.log('[Auth] Poll found auth data');
           if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-          await exchangeCode(code);
+          await handleAuthData(data as Record<string, string>);
         }
       } catch { /* silent */ }
     }, 1500);
-    // Stop polling after 2 minutes
     setTimeout(() => {
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
     }, 120_000);
-  }, [exchangeCode]);
+  }, [handleAuthData]);
 
   // Cleanup polling on unmount
   useEffect(() => () => {
