@@ -1,7 +1,7 @@
 // [claude-code 2026-03-24] Thread selectedSymbol prop for TradingView chart, taller chart container (65vh)
 // [claude-code 2026-03-24] Auditorium — 3-page dashboard (merged Risk + Narratives), expandable econ cards
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
-import { Zap, Loader2 } from 'lucide-react';
+import { Zap, Loader2, Eye, EyeOff } from 'lucide-react';
 import type { AuditoriumData, AuditoriumPreset, SimulationContext, RiskFlowCatalyst, AuditoriumNarrative } from '../../types/mirofish';
 import { AUDITORIUM_PAGES, RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/mirofish';
 import { AuditoriumChart } from './AuditoriumChart';
@@ -52,6 +52,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
     } catch { return 'full-brief'; }
   });
   const [activePage, setActivePage] = useState(0);
+  const [showProjection, setShowProjection] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const status = data?.status ?? 'idle';
@@ -159,11 +160,34 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                 <div className="flex-1 flex flex-col gap-4">
                   {/* Hero chart */}
                   <div className="shrink-0">
-                    <div className="text-[10px] text-[var(--fintheon-text)]/60 mb-2 uppercase tracking-wider font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
-                      Price Projections
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] text-[var(--fintheon-text)]/60 uppercase tracking-wider font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+                        Price Projections
+                      </span>
+                      <button
+                        onClick={() => setShowProjection(v => !v)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[9px] font-medium transition-colors ${
+                          showProjection
+                            ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8'
+                            : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]/70 hover:bg-[var(--fintheon-accent)]/5'
+                        }`}
+                        style={{ fontFamily: 'var(--font-body)' }}
+                        title={showProjection ? 'Hide projection overlay' : 'Show projection overlay'}
+                      >
+                        {showProjection ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                        Projection
+                      </button>
                     </div>
                     <div className="h-[65vh]">
-                      <AuditoriumChart timeSeries={data.timeSeries} rollingDays={rollingDays} selectedSymbol={selectedSymbol} />
+                      <AuditoriumChart
+                        timeSeries={data.timeSeries}
+                        rollingDays={rollingDays}
+                        selectedSymbol={selectedSymbol}
+                        compositeIV={showProjection ? data.compositeIV : undefined}
+                        confidence={showProjection ? data.confidence : undefined}
+                        regimeShiftProbability={showProjection ? data.regimeShiftProbability : undefined}
+                        scenarios={showProjection ? data.scenarios : undefined}
+                      />
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                       {CATEGORIES.map(cat => {
