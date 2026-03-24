@@ -1,6 +1,6 @@
 // [claude-code 2026-03-23] Geopolitical & fiscal risk section for Page 2
 import type { RiskFlowCatalyst, MiroFishCategoryScore } from '../../types/mirofish';
-import { RISK_CATEGORY_COLORS, RISK_CATEGORY_LABELS } from '../../types/mirofish';
+import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
 
 interface AuditoriumRiskAssessmentProps {
   riskflowItems: RiskFlowCatalyst[];
@@ -10,9 +10,9 @@ interface AuditoriumRiskAssessmentProps {
 const RISK_CATEGORIES = ['geopolitical', 'political'] as const;
 
 function sentimentColor(s: string): string {
-  if (s === 'bearish') return '#EF4444';
-  if (s === 'bullish') return '#34D399';
-  return '#F59E0B';
+  if (s === 'bearish') return 'var(--fintheon-severe)';
+  if (s === 'bullish') return 'var(--fintheon-low)';
+  return 'var(--fintheon-neutral-severe)';
 }
 
 function macroLevelLabel(level: number): string {
@@ -50,11 +50,11 @@ export function AuditoriumRiskAssessment({ riskflowItems, categoryScores }: Audi
               key={cs.category}
               className="flex items-center gap-3 rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-2"
             >
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: RISK_CATEGORY_COLORS[cs.category] }} />
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ivHeatColor(cs.ivScore) }} />
               <span className="text-[10px] font-mono text-[var(--fintheon-text)]/80 uppercase tracking-wider">
                 {RISK_CATEGORY_LABELS[cs.category]}
               </span>
-              <span className="text-lg font-mono font-bold" style={{ color: RISK_CATEGORY_COLORS[cs.category] }}>
+              <span className="text-lg font-mono font-bold" style={{ color: ivHeatColor(cs.ivScore) }}>
                 {cs.ivScore.toFixed(1)}
               </span>
             </div>
@@ -91,8 +91,8 @@ export function AuditoriumRiskAssessment({ riskflowItems, categoryScores }: Audi
                 IV {item.iv_score.toFixed(0)}
               </span>
               <span className={`text-[7px] font-mono font-bold px-1 py-0.5 rounded ${
-                item.macro_level >= 4 ? 'bg-[#EF4444]/15 text-[#EF4444]' :
-                item.macro_level >= 3 ? 'bg-[#F59E0B]/15 text-[#F59E0B]' :
+                item.macro_level >= 4 ? 'bg-[var(--fintheon-severe)]/15 text-[var(--fintheon-severe)]' :
+                item.macro_level >= 3 ? 'bg-[var(--fintheon-neutral-severe)]/15 text-[var(--fintheon-neutral-severe)]' :
                 'bg-[var(--fintheon-border)]/10 text-[var(--fintheon-muted)]/50'
               }`}>
                 {macroLevelLabel(item.macro_level)}

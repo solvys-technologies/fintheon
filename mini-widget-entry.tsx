@@ -1,10 +1,10 @@
 // [claude-code 2026-03-22] Mini widget — Supabase auth (replaces Clerk)
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AuthProvider } from './contexts/AuthContext';
-import { SettingsProvider } from './contexts/SettingsContext';
-import { FloatingWidget } from './components/layout/FloatingWidget';
-import { useBackend } from './lib/backend';
+import { AuthProvider } from './frontend/contexts/AuthContext';
+import { SettingsProvider } from './frontend/contexts/SettingsContext';
+import { FloatingWidget } from './frontend/components/layout/FloatingWidget';
+import { useBackend } from './frontend/lib/backend';
 import './index.css';
 
 /**

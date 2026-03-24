@@ -13,17 +13,14 @@ import type { CreateAccountRequest, UpdateSettingsRequest, SelectTierRequest } f
  */
 export async function handleGetAccount(c: Context) {
   const userId = c.get('userId') as string | undefined;
+  const email = (c.get('email') as string | undefined) ?? '';
 
   if (!userId) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
-  const account = await accountService.getAccount(userId);
-
-  if (!account) {
-    return c.json({ error: 'Account not found' }, 404);
-  }
-
+  // Auto-create account on first access (prevents 404 spew from polling)
+  const account = await accountService.getOrCreateAccount(userId, email);
   return c.json(account);
 }
 

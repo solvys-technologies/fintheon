@@ -17,6 +17,7 @@ import { TopStepXBrowser, type TradingPlatform } from '../TopStepXBrowser';
 import { FloatingWidget } from './FloatingWidget';
 import { PanelPosition } from './DraggablePanel';
 import { useBackend } from '../../lib/backend';
+import { useAuth } from '../../contexts/AuthContext';
 import { EmotionalResonanceMonitor } from '../mission-control/EmotionalResonanceMonitor';
 import { BlindspotsWidget } from '../mission-control/BlindspotsWidget';
 import { AccountTrackerWidget } from '../mission-control/AccountTrackerWidget';
@@ -176,6 +177,7 @@ function MainLayoutInner() {
   };
 
   const backend = useBackend();
+  const { isAuthenticated } = useAuth();
   const { alerts: riskFlowAlerts, removeAlert } = useRiskFlow();
   const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
 
@@ -268,9 +270,9 @@ function MainLayoutInner() {
     return () => clearInterval(interval);
   }, [backend]);
 
-  // Fetch account data for combined panel collapsed state
+  // Fetch account data for combined panel collapsed state (waits for auth)
   useEffect(() => {
-    if (!developerSettings.accountTrackerEnabled) return;
+    if (!isAuthenticated) return;
     const fetchAccount = async () => {
       try {
         const account = await backend.account.get();
@@ -283,7 +285,7 @@ function MainLayoutInner() {
     fetchAccount();
     const interval = setInterval(fetchAccount, 5000);
     return () => clearInterval(interval);
-  }, [backend, developerSettings.accountTrackerEnabled]);
+  }, [backend, isAuthenticated]);
 
   // Listen for ER score updates for combined panel
   useEffect(() => {
@@ -469,7 +471,7 @@ function MainLayoutInner() {
         <div
           ref={missionDeckRef}
           onScroll={handleMissionDeckScroll}
-          className="h-full overflow-y-auto snap-y snap-mandatory border-y border-[var(--fintheon-accent)]/15"
+          className="h-full overflow-y-auto snap-y snap-mandatory"
         >
           {missionWidgetPages.map((page, pageIdx) => (
             <section
@@ -541,8 +543,8 @@ function MainLayoutInner() {
                     {missionControlContent(() => setCombinedPanelCollapsed(true))}
                   </div>
                 </section>
-                {/* RiskFlow: 50% when expanded, collapsed when hidden */}
-                <section className={`${combinedTapeCollapsed ? 'flex-shrink-0' : 'h-1/2'} min-h-0 flex flex-col`}>
+                {/* RiskFlow: 50% when expanded, 168px collapsed preview at bottom */}
+                <section className={`${combinedTapeCollapsed ? 'h-[168px] shrink-0' : 'h-1/2'} min-h-0 flex flex-col`}>
                   <RiskFlowPanel
                     collapsed={combinedTapeCollapsed}
                     onToggleCollapsed={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}
@@ -573,56 +575,44 @@ function MainLayoutInner() {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
     const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'earnings' || activeTab === 'proposals' || activeTab === 'settings';
     if (!hideRightPanel) {
-      if (missionControlCollapsed) {
-        // Strategium collapsed — entire right panel collapses (RiskFlow always collapses with it)
-        rightPanels.push(
-          <div key="right-stack" className="w-12 flex-shrink-0 h-full min-w-0 flex flex-col items-center justify-center border-l border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]">
-            <button
-              onClick={() => setMissionControlCollapsed(false)}
-              className="p-2 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
-              title="Expand Strategium"
-            >
-              <ChevronLeft className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
-            </button>
-          </div>
-        );
-      } else if (riskFlowCollapsed) {
-        rightPanels.push(
-          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15">
-            <div className="flex-1 min-h-0 overflow-y-auto border-b border-[var(--fintheon-accent)]/20">
-              <div className="p-3 h-full">
-                {missionControlContent(() => setMissionControlCollapsed(true))}
-              </div>
+      rightPanels.push(
+        <div
+          key="right-stack"
+          className={`flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15 transition-[width] duration-300 ease-in-out overflow-hidden ${
+            missionControlCollapsed ? 'w-12 bg-[var(--fintheon-bg)]' : 'w-[380px]'
+          }`}
+        >
+          {missionControlCollapsed ? (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <button
+                onClick={() => setMissionControlCollapsed(false)}
+                className="p-2 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
+                title="Expand Strategium"
+              >
+                <ChevronLeft className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
+              </button>
             </div>
-            <div className="h-[168px] shrink-0 border-t border-[var(--fintheon-accent)]/20">
-              <RiskFlowPanel
-                collapsed={riskFlowCollapsed}
-                onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
-              />
-            </div>
-          </div>
-        );
-      } else {
-        rightPanels.push(
-          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15">
-            <div className="h-1/2 flex flex-col border-b border-[var(--fintheon-accent)]/20">
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <div className="p-3 h-full">
-                  {missionControlContent(() => setMissionControlCollapsed(true))}
+          ) : (
+            <>
+              <div className={`${riskFlowCollapsed ? 'flex-1' : 'h-1/2'} flex flex-col transition-all duration-300 bg-[var(--fintheon-surface)]`}>
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <div className="p-3 h-full">
+                    {missionControlContent(() => setMissionControlCollapsed(true))}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="h-1/2 flex flex-col">
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <RiskFlowPanel
-                  collapsed={riskFlowCollapsed}
-                  onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
-                />
+              <div className={`${riskFlowCollapsed ? 'h-[168px] shrink-0' : 'h-1/2'} flex flex-col transition-all duration-300`}>
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <RiskFlowPanel
+                    collapsed={riskFlowCollapsed}
+                    onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-        );
-      }
+            </>
+          )}
+        </div>
+      );
     }
   }
 

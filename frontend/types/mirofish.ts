@@ -66,6 +66,7 @@ export const RISK_CATEGORY_LABELS: Record<MiroFishRiskCategory, string> = {
   'black-swan': 'Black Swan',
 };
 
+/** @deprecated Use ivHeatColor(score) instead — dynamic heat-map coloring based on IV value */
 export const RISK_CATEGORY_COLORS: Record<MiroFishRiskCategory, string> = {
   'geopolitical': '#EF4444',
   'political': '#8B5CF6',
@@ -74,6 +75,27 @@ export const RISK_CATEGORY_COLORS: Record<MiroFishRiskCategory, string> = {
   'market-structure': '#F59E0B',
   'black-swan': '#EC4899',
 };
+
+/**
+ * Dynamic heat-map color: low IV → teal, mid → amber, high → red.
+ * Score expected 0–10. Clamps to range.
+ */
+export function ivHeatColor(score: number): string {
+  const t = Math.max(0, Math.min(1, score / 10));
+  // 0.0 → teal #14B8A6, 0.5 → amber #F59E0B, 1.0 → red #EF4444
+  if (t <= 0.5) {
+    const p = t / 0.5; // 0→1 within low–mid
+    const r = Math.round(0x14 + (0xF5 - 0x14) * p);
+    const g = Math.round(0xB8 + (0x9E - 0xB8) * p);
+    const b = Math.round(0xA6 + (0x0B - 0xA6) * p);
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  }
+  const p = (t - 0.5) / 0.5; // 0→1 within mid–high
+  const r = Math.round(0xF5 + (0xEF - 0xF5) * p);
+  const g = Math.round(0x9E + (0x44 - 0x9E) * p);
+  const b = Math.round(0x0B + (0x44 - 0x0B) * p);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
 
 export const COMPOSITE_COLOR = '#c79f4a';
 
@@ -88,7 +110,7 @@ export const AUDITORIUM_PRESETS: { id: AuditoriumPreset; label: string; descript
   { id: 'risk-scan', label: 'Risk Scan', description: 'Sectors & scenarios' },
 ];
 
-export const AUDITORIUM_PAGES = ['Command Center', 'Econ Intel', 'Risk & Scenarios', 'Narratives'] as const;
+export const AUDITORIUM_PAGES = ['Command Center', 'Econ Intel', 'Risk & Narratives'] as const;
 
 // --- Economic Intelligence Types ---
 

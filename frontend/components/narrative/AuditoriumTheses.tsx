@@ -9,15 +9,15 @@ interface AuditoriumThesesProps {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 7) return '#EF4444';
-  if (score >= 5) return '#F59E0B';
-  return '#34D399';
+  if (score >= 7) return 'var(--fintheon-severe)';
+  if (score >= 5) return 'var(--fintheon-neutral-severe)';
+  return 'var(--fintheon-low)';
 }
 
 function getConfidenceColor(conf: number): string {
-  if (conf >= 0.7) return '#34D399';
-  if (conf >= 0.5) return '#F59E0B';
-  return '#EF4444';
+  if (conf >= 0.7) return 'var(--fintheon-low)';
+  if (conf >= 0.5) return 'var(--fintheon-neutral-severe)';
+  return 'var(--fintheon-severe)';
 }
 
 export function AuditoriumTheses({ scenarios, categoryScores, expanded }: AuditoriumThesesProps) {

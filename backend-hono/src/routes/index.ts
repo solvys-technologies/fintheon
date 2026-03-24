@@ -4,7 +4,7 @@
  */
 
 import type { Hono } from 'hono';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, requireAuth } from '../middleware/auth.js';
 import { createAccountRoutes } from './account/index.js';
 import { createMarketRoutes } from './market/index.js';
 import { createNotificationRoutes } from './notifications/index.js';
@@ -87,33 +87,19 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/cloud', cloudRoutes);
 
   // Autopilot — signal-ingest/status/signals are public (QC/TV webhooks), proposal mgmt needs auth
-  app.use('/api/autopilot/proposals', authMiddleware);
-  app.use('/api/autopilot/proposals/*', authMiddleware);
-  app.use('/api/autopilot/acknowledge', authMiddleware);
-  app.use('/api/autopilot/execute', authMiddleware);
-  app.use('/api/autopilot/history', authMiddleware);
+  app.use('/api/autopilot/proposals', authMiddleware, requireAuth);
+  app.use('/api/autopilot/proposals/*', authMiddleware, requireAuth);
+  app.use('/api/autopilot/acknowledge', authMiddleware, requireAuth);
+  app.use('/api/autopilot/execute', authMiddleware, requireAuth);
+  app.use('/api/autopilot/history', authMiddleware, requireAuth);
   app.route('/api/autopilot', createAutopilotRoutes());
 
-  // Protected routes (auth required) — use base path so exact path (e.g. GET /api/account) is covered
-  app.use('/api/account', authMiddleware);
-  app.use('/api/account/*', authMiddleware);
+  // Optional auth — sets user context if token present, anonymous if not
+  // All routes below get user identity when available
   app.use('/api/notifications', authMiddleware);
   app.use('/api/notifications/*', authMiddleware);
-  app.use('/api/trading', authMiddleware);
-  app.use('/api/trading/*', authMiddleware);
-  app.use('/api/rithmic', authMiddleware);
-  app.use('/api/rithmic/*', authMiddleware);
-  app.use('/api/hyperliquid', authMiddleware);
-  app.use('/api/hyperliquid/*', authMiddleware);
-  // RiskFlow routes - exclude cron endpoint from auth
-  const riskflowAuth = async (c: Parameters<typeof authMiddleware>[0], next: Parameters<typeof authMiddleware>[1]) => {
-    if (c.req.path.includes('/cron/')) {
-      return next();
-    }
-    return authMiddleware(c, next);
-  };
-  app.use('/api/riskflow', riskflowAuth);
-  app.use('/api/riskflow/*', riskflowAuth);
+  app.use('/api/riskflow', authMiddleware);
+  app.use('/api/riskflow/*', authMiddleware);
   app.use('/api/psych', authMiddleware);
   app.use('/api/psych/*', authMiddleware);
   app.use('/api/ai', authMiddleware);
@@ -122,12 +108,22 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/agents/*', authMiddleware);
   app.use('/api/er', authMiddleware);
   app.use('/api/er/*', authMiddleware);
-  app.use('/api/voice', authMiddleware);
-  app.use('/api/voice/*', authMiddleware);
-  app.use('/api/settings', authMiddleware);
-  app.use('/api/settings/*', authMiddleware);
-  app.use('/api/profile', authMiddleware);
-  app.use('/api/profile/*', authMiddleware);
+
+  // Hard auth required — these endpoints MUST have a verified identity
+  app.use('/api/account', authMiddleware, requireAuth);
+  app.use('/api/account/*', authMiddleware, requireAuth);
+  app.use('/api/trading', authMiddleware, requireAuth);
+  app.use('/api/trading/*', authMiddleware, requireAuth);
+  app.use('/api/rithmic', authMiddleware, requireAuth);
+  app.use('/api/rithmic/*', authMiddleware, requireAuth);
+  app.use('/api/hyperliquid', authMiddleware, requireAuth);
+  app.use('/api/hyperliquid/*', authMiddleware, requireAuth);
+  app.use('/api/voice', authMiddleware, requireAuth);
+  app.use('/api/voice/*', authMiddleware, requireAuth);
+  app.use('/api/settings', authMiddleware, requireAuth);
+  app.use('/api/settings/*', authMiddleware, requireAuth);
+  app.use('/api/profile', authMiddleware, requireAuth);
+  app.use('/api/profile/*', authMiddleware, requireAuth);
   // Journal — public (local Electron app, no user auth needed)
 
   // Phase 1: Account routes

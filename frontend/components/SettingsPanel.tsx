@@ -59,9 +59,20 @@ export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [showLanding, setShowLanding] = useState(true);
 
+  const [landingExiting, setLandingExiting] = useState(false);
+
   const handleTabChange = (tab: SettingsTab) => {
     if (!showLanding && tab === activeTab && !tabTransitioning) return;
-    setShowLanding(false);
+    if (showLanding) {
+      // Landing → tab: fade out landing, then show tab content
+      setLandingExiting(true);
+      setActiveTab(tab);
+      setTimeout(() => {
+        setShowLanding(false);
+        setLandingExiting(false);
+      }, 200);
+      return;
+    }
     if (tab === activeTab) return;
     setTabTransitioning(true);
     setPrevTab(activeTab);
@@ -74,8 +85,13 @@ export function SettingsPage() {
     }, 300);
   };
 
+  const [landingTransition, setLandingTransition] = useState(false);
   const handleBackToLanding = () => {
-    setShowLanding(true);
+    setLandingTransition(true);
+    setTimeout(() => {
+      setShowLanding(true);
+      setLandingTransition(false);
+    }, 250);
   };
 
   const availableSymbols = [
@@ -106,8 +122,8 @@ export function SettingsPage() {
     },
   ];
 
+  const { addToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [prevTab, setPrevTab] = useState<SettingsTab | null>(null);
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
@@ -116,18 +132,23 @@ export function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    setSaveMessage(null);
+    const startTime = Date.now();
     try {
-      // Sync to backend only when authenticated
+      // Settings are always persisted to localStorage via SettingsContext
+      // Backend sync is best-effort when authenticated
       if (isAuthenticated) {
-        await backend.account.updateSettings({
-          dailyTarget: riskSettings.dailyProfitTarget,
-          dailyLossLimit: riskSettings.dailyLossLimit,
-          topstepxUsername: apiKeys.topstepxUsername,
-          topstepxApiKey: apiKeys.topstepxApiKey,
-          selectedSymbol: selectedSymbol.symbol,
-          contractsPerTrade: contractsPerTrade,
-        });
+        try {
+          await backend.account.updateSettings({
+            dailyTarget: riskSettings.dailyProfitTarget,
+            dailyLossLimit: riskSettings.dailyLossLimit,
+            topstepxUsername: apiKeys.topstepxUsername,
+            topstepxApiKey: apiKeys.topstepxApiKey,
+            selectedSymbol: selectedSymbol.symbol,
+            contractsPerTrade: contractsPerTrade,
+          });
+        } catch (backendErr) {
+          console.warn('Backend settings sync failed (saved locally):', backendErr);
+        }
 
         // ProjectX credentials are optional — don't block save on failure
         if (apiKeys.topstepxUsername || apiKeys.topstepxApiKey) {
@@ -138,20 +159,33 @@ export function SettingsPage() {
             });
           } catch (pxError) {
             console.warn('ProjectX credential sync failed:', pxError);
-            setSaveMessage('Settings saved. ProjectX credentials failed \u2014 check API key.');
-            setTimeout(() => setSaveMessage(null), 5000);
+            // Minimum 1.2s visual feedback before re-enabling button
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, 1200 - elapsed);
+            setTimeout(() => {
+              addToast('Settings saved. ProjectX credentials failed — check API key.', 'info');
+              setIsSaving(false);
+            }, remaining);
             return;
           }
         }
       }
 
-      setSaveMessage('Settings saved successfully!');
-      setTimeout(() => setSaveMessage(null), 3000);
+      // Minimum 1.2s visual feedback before re-enabling button
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 1200 - elapsed);
+      setTimeout(() => {
+        addToast('Settings saved successfully', 'success');
+        setIsSaving(false);
+      }, remaining);
     } catch (error) {
       console.error('Failed to save settings:', error);
-      setSaveMessage('Failed to save settings. Please try again.');
-    } finally {
-      setIsSaving(false);
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 1200 - elapsed);
+      setTimeout(() => {
+        addToast('Settings saved locally. Backend sync unavailable.', 'info');
+        setIsSaving(false);
+      }, remaining);
     }
   };
 
@@ -203,7 +237,7 @@ export function SettingsPage() {
 
         {/* ===== LANDING PAGE ===== */}
         {showLanding ? (
-          <div className="flex-1 overflow-y-auto px-8 py-8 flex items-center justify-center">
+          <div className={`flex-1 overflow-y-auto px-8 py-8 flex items-center justify-center transition-all duration-200 ${landingExiting ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'}`}>
             <div className="max-w-3xl w-full">
               <div className="text-center mb-8">
                 <h1 className="text-[22px] font-semibold text-white tracking-tight mb-1">Settings</h1>
@@ -253,7 +287,7 @@ export function SettingsPage() {
           </div>
         ) : (
         /* ===== SUBSECTION CONTENT ===== */
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className={`flex-1 flex flex-col min-h-0 transition-all duration-200 ${landingTransition ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
           {/* Back button + section title */}
           <div className="shrink-0 flex items-center gap-3 px-8 pt-5 pb-3">
             <button
@@ -374,7 +408,7 @@ export function SettingsPage() {
                   </div>
                 </section>
 
-                <section className="pt-6 border-t border-zinc-800">
+                <section className="pt-6">
                   <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3 flex items-center gap-2">
                     <Mic className="w-4 h-4" />
                     Microphone Device
@@ -1086,14 +1120,6 @@ export function SettingsPage() {
 
           {/* Sticky save bar */}
           <div className="sticky bottom-0 bg-[var(--fintheon-bg)] backdrop-blur-sm border-t border-[var(--fintheon-accent)]/10 px-8 py-3">
-            {saveMessage && (
-              <div className={`mb-3 px-4 py-2 rounded text-sm ${saveMessage.includes('success')
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                }`}>
-                {saveMessage}
-              </div>
-            )}
             <div className="flex items-center justify-end gap-3">
               <Button variant="primary" onClick={handleSave} className="px-6 py-2" disabled={isSaving}>
                 {isSaving ? 'Saving...' : 'Save Changes'}

@@ -1,7 +1,9 @@
+// [claude-code 2026-03-24] Persistence refactor: load latest report on mount, persist after simulation
+// [claude-code 2026-03-24] Thread selectedSymbol from settings into Auditorium for TradingView chart
 // [claude-code 2026-03-23] ConsiliumHub — wired Auditorium with real data, auto-run on preset change
-// [claude-code 2026-03-22] Theme-consistent styling + tab fade cross-dissolve (350ms)
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { MessageSquare, Users, LineChart, Clock, Trophy, Target, GitBranch, Cpu, PanelRightOpen, PanelRightClose } from 'lucide-react';
+import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
 import { DevelopmentsTimeline } from './DevelopmentsTimeline';
 import { AgentScorecard } from './AgentScorecard';
@@ -25,7 +27,6 @@ const TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquare }[] = 
   { id: 'auditorium', label: 'Auditorium', icon: LineChart },
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { id: 'scorecards', label: 'Scorecards', icon: Trophy },
-  { id: 'proposals', label: 'Proposals', icon: Target },
   { id: 'narratives', label: 'Narratives', icon: GitBranch },
   { id: 'apparatus', label: 'Apparatus', icon: Cpu },
 ];
@@ -50,6 +51,7 @@ function usePanelState(key: string, defaultValue: boolean): [boolean, () => void
 }
 
 export function ConsiliumHub() {
+  const { selectedSymbol } = useSettings();
   const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
   const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>('chat');
   const [transitioning, setTransitioning] = useState(false);
@@ -100,6 +102,35 @@ export function ConsiliumHub() {
   }, []);
 
   useEffect(() => { fetchContext(); }, [fetchContext]);
+
+  // Load persisted MiroFish report on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/mirofish/latest`);
+        if (!res.ok) return;
+        const report = await res.json();
+        if (cancelled || !report) return;
+        setMirofishData({
+          simulationId: report.simulationId ?? '',
+          status: 'complete',
+          compositeIV: report.compositeIV ?? 0,
+          confidence: report.confidence ?? 0,
+          regimeShiftProbability: report.regimeShiftProbability ?? 0,
+          categoryScores: report.categoryScores ?? [],
+          timeSeries: report.timeSeries ?? [],
+          generatedEvents: report.generatedEvents ?? [],
+          scenarios: report.scenarios ?? [],
+          briefing: report.briefing ?? null,
+          contextSnapshot: report.contextSnapshot ?? null,
+        });
+      } catch (err) {
+        console.warn('[ConsiliumHub] Failed to load persisted MiroFish report:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleRunMiroFish = useCallback(async (preset?: AuditoriumPreset) => {
     setMirofishData(prev => prev
@@ -214,15 +245,11 @@ export function ConsiliumHub() {
               catalysts={[]}
               riskflowItems={riskflowItems}
               macroContext={macroContext}
+              selectedSymbol={selectedSymbol.symbol}
             />
           )}
           {displayedTab === 'timeline' && <DevelopmentsTimeline />}
           {displayedTab === 'scorecards' && <AgentScorecard />}
-          {displayedTab === 'proposals' && (
-            <div className="h-full overflow-y-auto">
-              <ProposalWidget />
-            </div>
-          )}
           {displayedTab === 'narratives' && (
             <NarrativeProvider>
               <NarrativeFlow />
