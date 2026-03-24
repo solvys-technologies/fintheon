@@ -1,5 +1,5 @@
-// [claude-code 2026-03-23] Auditorium — 4-page snap-scroll dashboard with persistent header + real data
-import { useState, useCallback, useRef } from 'react';
+// [claude-code 2026-03-24] Auditorium — 4-page dashboard, 30% bigger cards, auto-run, all pages always visible
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Zap, Loader2 } from 'lucide-react';
 import type { AuditoriumData, AuditoriumPreset, SimulationContext, RiskFlowCatalyst, AuditoriumNarrative } from '../../types/mirofish';
 import { AUDITORIUM_PAGES, RISK_CATEGORY_COLORS, RISK_CATEGORY_LABELS, COMPOSITE_COLOR } from '../../types/mirofish';
@@ -12,6 +12,7 @@ import { AuditoriumMacroStrip } from './AuditoriumMacroStrip';
 import { AuditoriumBriefing } from './AuditoriumBriefing';
 import { AuditoriumNarratives } from './AuditoriumNarratives';
 import { AuditoriumRiskAssessment } from './AuditoriumRiskAssessment';
+import { CategoryScoreCard } from './CategoryScoreCard';
 import { KanbanTitle } from '../ui/KanbanTitle';
 
 interface CatalystInput {
@@ -39,45 +40,6 @@ const CATEGORIES: MiroFishRiskCategory[] = [
   'earnings-corporate', 'market-structure', 'black-swan',
 ];
 
-function CategoryScoreCard({ category, score, delta, confidence }: {
-  category: MiroFishRiskCategory; score: number; delta: number; confidence: number;
-}) {
-  const color = RISK_CATEGORY_COLORS[category];
-  const label = RISK_CATEGORY_LABELS[category];
-  const deltaColor = delta > 0 ? '#EF4444' : delta < 0 ? '#34D399' : 'var(--fintheon-muted)';
-  const deltaSign = delta > 0 ? '+' : '';
-  const confPct = Math.round(confidence * 100);
-
-  return (
-    <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-          <span className="text-[10px] font-mono text-[var(--fintheon-text)]/80 uppercase tracking-wider">{label}</span>
-        </div>
-        <span className="text-[10px] font-mono font-bold" style={{ color: deltaColor }}>
-          {deltaSign}{delta.toFixed(1)}
-        </span>
-      </div>
-      <div className="flex items-end justify-between">
-        <span className="text-2xl font-mono font-bold" style={{ color }}>{score.toFixed(1)}</span>
-        <div className="flex flex-col items-end gap-0.5">
-          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase">Conf</span>
-          <div className="w-16 h-[3px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${confPct}%`,
-                backgroundColor: confPct >= 70 ? '#34D399' : confPct >= 50 ? '#F59E0B' : '#EF4444',
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext, narratives }: AuditoriumProps) {
   const [rollingDays, setRollingDays] = useState<7 | 14 | 30>(14);
   const [running, setRunning] = useState(false);
@@ -93,21 +55,27 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
   const status = data?.status ?? 'idle';
   const isLoading = running || status === 'running';
 
+  // Auto-run on mount if no data
+  useEffect(() => {
+    if (status === 'idle' && !running) {
+      fetch('/api/mirofish/auto-run-check')
+        .then(r => r.json())
+        .then(({ shouldRun }) => {
+          if (shouldRun) onRun(preset);
+        })
+        .catch(() => {
+          // Endpoint unavailable — auto-run anyway
+          onRun(preset);
+        });
+    }
+  }, []); // Run once on mount — intentional empty deps
+
   const handleRun = useCallback(async (p?: AuditoriumPreset) => {
     if (running) return;
     setRunning(true);
     try { await onRun(p ?? preset); } finally { setRunning(false); }
   }, [onRun, preset, running]);
 
-  const handlePresetChange = useCallback((p: AuditoriumPreset) => {
-    setPreset(p);
-    try { localStorage.setItem('fintheon:auditorium-preset', p); } catch {}
-    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-    // Auto-run simulation with new preset
-    handleRun(p);
-  }, [handleRun]);
-
-  // Snap-scroll page detection
   const scrollToPage = useCallback((idx: number) => {
     setActivePage(idx);
     const el = containerRef.current;
@@ -115,6 +83,14 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
     const pages = el.querySelectorAll('[data-aud-page]');
     if (pages[idx]) pages[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
+
+  const handlePresetChange = useCallback((p: AuditoriumPreset) => {
+    setPreset(p);
+    try { localStorage.setItem('fintheon:auditorium-preset', p); } catch {}
+    const focusPage = p === 'chart-focus' ? 0 : p === 'econ-watch' ? 1 : p === 'risk-scan' ? 2 : 0;
+    scrollToPage(focusPage);
+    handleRun(p);
+  }, [handleRun, scrollToPage]);
 
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
@@ -131,14 +107,8 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
     setActivePage(closest);
   }, []);
 
-  // Determine which pages to show based on preset
-  const showPage = useCallback((pageIdx: number) => {
-    if (preset === 'full-brief') return true;
-    if (preset === 'chart-focus') return pageIdx === 0;
-    if (preset === 'econ-watch') return pageIdx === 0 || pageIdx === 1;
-    if (preset === 'risk-scan') return pageIdx === 0 || pageIdx === 2;
-    return true;
-  }, [preset]);
+  // All pages always render — preset controls which page scrolls into focus
+  const showPage = useCallback((_pageIdx: number) => true, []);
 
   const visiblePages = [0, 1, 2, 3].filter(showPage);
 
@@ -190,7 +160,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                     <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
                       Predicted IV by Risk Type
                     </div>
-                    <div className="h-[75vh]">
+                    <div className="h-[49vh]">
                       <AuditoriumChart timeSeries={data.timeSeries} rollingDays={rollingDays} />
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
@@ -210,7 +180,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                   {/* KPI Row 1: Core metrics + Macro strip */}
                   <div className="shrink-0 flex flex-col gap-3">
                     <div className="grid grid-cols-3 xl:grid-cols-4 gap-3">
-                      <div className="rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/40 px-5 py-3 flex items-center justify-between">
+                      <div className="rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/40 px-5 py-3 flex items-center justify-between" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
                         <div>
                           <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Composite IV</span>
                           <span className="text-3xl font-mono font-bold text-[var(--fintheon-accent)]">{data.compositeIV.toFixed(1)}</span>
@@ -219,11 +189,11 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                           <Zap className="w-5 h-5 text-[var(--fintheon-accent)]" />
                         </div>
                       </div>
-                      <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3">
+                      <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
                         <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Regime Shift</span>
                         <span className="text-2xl font-mono font-bold text-[var(--fintheon-text)]">{(data.regimeShiftProbability * 100).toFixed(0)}%</span>
                       </div>
-                      <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3">
+                      <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
                         <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Model Confidence</span>
                         <span className="text-2xl font-mono font-bold text-[var(--fintheon-text)]">{(data.confidence * 100).toFixed(0)}%</span>
                       </div>
@@ -238,7 +208,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                   </div>
 
                   {/* KPI Row 2: Category score cards */}
-                  <div className="shrink-0 grid grid-cols-3 xl:grid-cols-6 gap-3">
+                  <div className="shrink-0 grid grid-cols-3 xl:grid-cols-6 gap-4">
                     {data.categoryScores.map(cs => (
                       <CategoryScoreCard key={cs.category} category={cs.category} score={cs.ivScore} delta={cs.delta} confidence={cs.confidence} />
                     ))}
