@@ -2,8 +2,22 @@
 // [claude-code 2026-03-10] Warm cache: filter 'high'→'medium', slice(10)→slice(30) for broader seed
 // [claude-code 2026-03-10] Burst polling: 5s interval for 30s after econ release, actual extraction from FJ tweets
 // [claude-code 2026-03-16] Smart polling: event-window-only (T-5min to T+15min), autoRefresh gate
+// [claude-code 2026-03-23] Wired rate limiter for Twitter CLI calls
 
 import { searchTweets, fetchUserTimeline, isTwitterCliInstalled } from './twitter-cli-service.js';
+import { createRateLimiter } from '../rate-limiter.js';
+
+// Rate limiter: prevent CLI subprocess spam (6 timelines/min, 4 searches/min)
+const twitterLimiter = createRateLimiter({
+  defaultRule: { limit: 10, windowMs: 60_000 },
+  buckets: {
+    'twitter-timeline': { limit: 6, windowMs: 60_000 },
+    'twitter-search': { limit: 4, windowMs: 60_000 },
+  },
+  baseBackoffMs: 500,
+  maxBackoffMs: 20_000,
+  logger: (msg, data) => console.log(`[TwitterRateLimiter] ${msg}`, JSON.stringify(data ?? {})),
+});
 import { filterByTier } from './fj-emoji-filter.js';
 import { fetchEconCalendar, updateEventActual, writeEconPrint } from '../econ-calendar-service.js';
 import { writeConsiliumMessage } from '../supabase-service.js';
@@ -417,19 +431,19 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
   // 3. Collect all tweets: FJ + InsiderWire + Trusted accounts + event-triggered searches
   const allTweetPromises: Promise<Array<{ id: string; text: string; author: string; publishedAt: string }>>[] = [];
 
-  // Always fetch FJ and InsiderWire timelines
+  // Always fetch FJ and InsiderWire timelines (rate-limited)
   for (const account of FJ_ACCOUNTS) {
-    allTweetPromises.push(fetchUserTimeline(account, { limit: TIMELINE_LIMIT }));
+    allTweetPromises.push(twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }));
   }
 
   // Always fetch trusted accounts (NickTimiraos, etc.)
   for (const account of TRUSTED_ACCOUNTS) {
-    allTweetPromises.push(fetchUserTimeline(account, { limit: TIMELINE_LIMIT }));
+    allTweetPromises.push(twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }));
   }
 
   // Event-triggered searches (only when events are active)
   for (const query of searchQueries) {
-    allTweetPromises.push(searchTweets(query, { limit: SEARCH_LIMIT, filter: 'latest' }));
+    allTweetPromises.push(twitterLimiter.schedule(() => searchTweets(query, { limit: SEARCH_LIMIT, filter: 'latest' }), { bucket: 'twitter-search' }));
   }
 
   const tweetBatches = await Promise.allSettled(allTweetPromises);
@@ -492,9 +506,9 @@ function scheduleBurst(event: EconEvent): void {
       }
 
       try {
-        // Rapid-fire: only fetch FJ + InsiderWire (fastest actual sources)
+        // Rapid-fire: only fetch FJ + InsiderWire (fastest actual sources, rate-limited)
         const batches = await Promise.allSettled(
-          FJ_ACCOUNTS.map((account) => fetchUserTimeline(account, { limit: 10 }))
+          FJ_ACCOUNTS.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: 10 }), { bucket: 'twitter-timeline' }))
         );
         const tweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 
@@ -556,7 +570,7 @@ async function initFetchHighPriorityPosts(): Promise<void> {
 
     const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
     const batches = await Promise.allSettled(
-      allAccounts.map((account) => fetchUserTimeline(account, { limit: 50 }))
+      allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: 50 }), { bucket: 'twitter-timeline' }))
     );
     const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 
@@ -592,6 +606,11 @@ export function getWarmCacheItems(): FeedItem[] {
   return warmCache;
 }
 
+/** Return rate limiter queue depth for diagnostics */
+export function getTwitterRateLimiterStatus() {
+  return { pending: twitterLimiter.pending() };
+}
+
 // ── Manual Refresh (bypasses autoRefresh + event window) ─────────────────────
 
 /**
@@ -607,11 +626,11 @@ export async function manualRefreshTweets(): Promise<FeedItem[]> {
     return [];
   }
 
-  console.log('[ManualRefresh] Fetching FJ/InsiderWire/Trusted timelines...');
+  console.log('[ManualRefresh] Fetching FJ/InsiderWire/Trusted timelines (rate-limited)...');
 
   const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
   const batches = await Promise.allSettled(
-    allAccounts.map((account) => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }))
+    allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
   );
   const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 
@@ -686,11 +705,11 @@ async function nightPoll(): Promise<void> {
     return;
   }
 
-  console.log('[NightPoller] Hourly night poll running (7PM-7AM EST)');
+  console.log('[NightPoller] Hourly night poll running (7PM-7AM EST, rate-limited)');
 
   const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
   const batches = await Promise.allSettled(
-    allAccounts.map((account) => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }))
+    allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
   );
   const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 
