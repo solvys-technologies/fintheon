@@ -1,7 +1,9 @@
 // [claude-code 2026-03-19] T1: Herald pattern, BoardroomFilter, paginated getBoardroomMessages
+// [claude-code 2026-03-23] fix(boardroom): appendToBoardroom now writes to Supabase via boardroom-store
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { BoardroomMessage, InterventionMessage, BoardroomAgent } from '../types/boardroom.js';
+import { getOrCreateTodaySession, addBoardroomMessage } from './boardroom-store.js';
 
 const HERMES_SESSIONS_DIR = join(process.env.HOME ?? '', '.hermes/agents/main/sessions');
 const HERMES_SEND_URL = process.env.HERMES_SESSIONS_SEND_URL ?? 'http://localhost:47832/api/sessions/send';
@@ -161,7 +163,19 @@ export async function appendToBoardroom(
   content: string,
   role: 'user' | 'assistant' = 'assistant'
 ): Promise<void> {
-  await appendToSession('pic-boardroom', content, role);
+  // Primary: write to Supabase via boardroom-store
+  try {
+    const session = await getOrCreateTodaySession();
+    const { agent } = inferAgent(content);
+    await addBoardroomMessage(session.id, { agent, role, content });
+  } catch (err) {
+    console.error('[Boardroom] Supabase write failed, falling back to JSONL:', err);
+  }
+
+  // Non-blocking JSONL fallback (fire-and-forget)
+  appendToSession('pic-boardroom', content, role).catch((err) => {
+    console.error('[Boardroom] JSONL fallback write failed:', err);
+  });
 }
 
 async function appendToSession(
@@ -199,7 +213,7 @@ export async function sendToIntervention(message: string, sessionKey = 'pic-inte
   await appendToSession(sessionKey, message.trim(), 'user');
 
   // Also relay to boardroom so agents and the boardroom thread can see it
-  await appendToSession('pic-boardroom', `Human Executive (Intervention): ${message.trim()}`, 'user');
+  await appendToBoardroom(`Human Executive (Intervention): ${message.trim()}`, 'user');
 }
 
 /**
@@ -211,7 +225,7 @@ export async function sendMentionToBoardroom(
   mentionedAgent: string
 ): Promise<void> {
   const content = `@${mentionedAgent} ${message.trim()}`;
-  await appendToSession('pic-boardroom', content, 'user');
+  await appendToBoardroom(content, 'user');
 }
 
 export async function checkBoardroomStatus(): Promise<{ boardroomActive: boolean; interventionActive: boolean }> {

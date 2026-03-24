@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-24T01:00:00',
+    agent: 'claude-code',
+    summary: 'feat(trade-ideas): Merged API endpoint GET /api/trade-ideas — combines autopilot proposals + Supabase trade_ideas into unified TradeIdeaCard[], with deduplication by instrument+direction+entry within 2hr window, sorted by createdAt DESC',
+    files: [
+      'backend-hono/src/routes/trade-ideas/handlers.ts',
+      'backend-hono/src/routes/trade-ideas/index.ts',
+      'backend-hono/src/routes/index.ts',
+    ],
+  },
+  {
+    date: '2026-03-24T00:30:00',
+    agent: 'claude-code',
+    summary: 'fix(boardroom): Switch boardroom message fetching + writing from file-based JSONL (hermes-sessions) to Supabase-backed boardroom-store. Fixes blank boardroom chat — JSONL files never existed. JSONL kept as non-blocking fallback.',
+    files: [
+      'backend-hono/src/routes/boardroom/handlers.ts',
+      'backend-hono/src/services/hermes-sessions.ts',
+    ],
+  },
+  {
+    date: '2026-03-23T23:30:00',
+    agent: 'claude-code',
+    summary: 'feat(autoresearch): Wire recordObservation() into central-scorer scoringCycle — Phase T4 integration. Enriched items with ivScore > 0 now emit ScoringObservations with VIX from vix-service, enabling automated fitness tracking and outcome resolution.',
+    files: ['backend-hono/src/services/riskflow/central-scorer.ts'],
+  },
+  {
     date: '2026-03-23T22:00:00',
     agent: 'claude-code',
     summary: 'feat(auditorium): Full refactor — snap-scroll 3-page dashboard (Command Center, Econ Intel, Risk & Scenarios), preset selector (Full Brief/Chart Focus/Econ Watch/Risk Scan), responsive chart height, category score cards, economic event cards with beat/miss predictions, expanded theses and kanban, page indicators, tab renamed from Predictions to Auditorium',
