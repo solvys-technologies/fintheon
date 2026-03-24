@@ -27,6 +27,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    if (!developerSettings.accountTrackerEnabled) { setLoading(false); return; }
     const fetchProjectXAccounts = async () => {
       try {
         const result = await backend.projectx.listAccounts();
@@ -41,10 +42,11 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
       }
     };
     fetchProjectXAccounts();
-  }, [backend, isAuthenticated]);
+  }, [backend, isAuthenticated, developerSettings.accountTrackerEnabled]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    if (!developerSettings.accountTrackerEnabled) return;
 
     let interval: NodeJS.Timeout;
 
@@ -78,7 +80,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [backend, isAuthenticated]);
+  }, [backend, isAuthenticated, developerSettings.accountTrackerEnabled]);
 
   const handleUplink = async () => {
     setUplinking(true);
