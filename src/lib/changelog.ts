@@ -9,6 +9,12 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-24T19:30:00',
+    agent: 'claude-code',
+    summary: 'fix(topheader): VIX risk toast now fires at scheduled pre-market-open times (9:20, 9:50, 11:20, 12:15 EST weekdays + 5:50 PM Sundays) instead of on every threshold crossing. Deduplicates per window per day.',
+    files: ['frontend/components/layout/TopHeader.tsx'],
+  },
+  {
     date: '2026-03-24T16:00:00',
     agent: 'claude-code',
     summary: 'feat(mirofish): Deterministic reactive score adjustment engine + 3-component IV formula (50% VIX + 30% headlines + 20% MiroFish running analysis). New mirofish-reactive.ts maps RiskFlow items to 6 risk categories with rule-based scoring. Central scorer wired to trigger reactive adjustments for macroLevel >= 3 items.',
