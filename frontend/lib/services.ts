@@ -675,6 +675,25 @@ export class ERService {
   async checkOvertrading(params?: { windowMinutes?: number; threshold?: number }): Promise<any> {
     return this.client.post('/api/er/check-overtrading', params ?? {});
   }
+
+  /** Fire-and-forget: persist an ER scoring event to Supabase */
+  async postEREvent(event: {
+    eventType: string;
+    triggerText: string | null;
+    penalty: number;
+    scoreBefore: number;
+    scoreAfter: number;
+    curseCount: number;
+    decayWindowMinutes: number | null;
+    transcriptSnippet: string | null;
+  }): Promise<{ ok: boolean }> {
+    return this.client.post('/api/psych/er-event', event);
+  }
+
+  /** Fetch recent ER events for dashboard */
+  async getERHistory(limit = 50): Promise<{ events: any[] }> {
+    return this.client.get(`/api/psych/er-history?limit=${limit}`);
+  }
 }
 
 export interface VoiceSentimentResponse {

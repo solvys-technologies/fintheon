@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-24T06:00:00',
+    agent: 'claude-code',
+    summary: 'feat(psychassist): Deterministic ER scoring engine — replaces slow Claude sentiment analysis with instant client-side regex-based curse/breathing detection. Scale: 12.5→0→-12.5, flat -1.25 per curse, 5x decay multiplier. Persists every trigger event to Supabase er_events table via fire-and-forget POST. Wired into voice pipeline (processRecording → processTranscript → sendText). Claude sentiment analysis kept as secondary background signal.',
+    files: [
+      'frontend/hooks/useERScoring.ts',
+      'frontend/hooks/useVoiceAssistant.ts',
+      'frontend/contexts/VoiceContext.tsx',
+      'frontend/lib/services.ts',
+      'backend-hono/src/routes/psych-assist.ts',
+      'backend-hono/src/services/supabase-service.ts',
+      'backend-hono/migrations/017_er_events.sql',
+    ],
+  },
+  {
+    date: '2026-03-24T04:00:00',
+    agent: 'claude-code',
+    summary: 'fix(voice): Replaced dead SpeechRecognition API with getUserMedia + MediaRecorder + Whisper transcription pipeline. Voice assistant now works in Electron. Added greeting on orb click (reads traderName from settings). Wired mic device selection from Settings into audio capture via deviceId constraint. Added silence-based VAD (1.8s silence threshold). fix(briefs): brief-generator was passing raw model key string to generateText — now uses createModelClient(). Added catch-up mechanism to dispatch-scheduler: on boot, checks which briefs were due today but missed (backend not running at cron time) and generates them.',
+    files: [
+      'frontend/hooks/useVoiceAssistant.ts',
+      'backend-hono/src/services/brief-generator.ts',
+      'backend-hono/src/services/cron/dispatch-scheduler.ts',
+      'backend-hono/src/boot/index.ts',
+    ],
+  },
+  {
     date: '2026-03-24T02:30:00',
     agent: 'claude-code',
     summary: 'fix(hermes+connectors): Inject capability awareness into agent prompts so Harper stops saying "awaiting data sync". Replaced Twitter/X connector with RiskFlow (toggleable, off by default). Removed Alpha Vantage. Made Playwright always-on and non-toggleable (locked). Added locked field to McpServerConfig.',

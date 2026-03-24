@@ -9,7 +9,7 @@ import { initHermesAgent } from '../services/hermes-handler.js';
 import { startAutopilotScheduler } from '../services/autopilot/autopilot-scheduler.js';
 import { startContextBankTicker } from '../services/context-bank/context-bank-service.js';
 import { startBoardroomScheduler } from '../services/cron/boardroom-scheduler.js';
-import { startDispatchScheduler } from '../services/cron/dispatch-scheduler.js';
+import { startDispatchScheduler, catchUpMissedBriefs } from '../services/cron/dispatch-scheduler.js';
 import { cleanupOldItems } from '../services/riskflow/news-cache.js';
 
 const log = createLogger('Boot');
@@ -44,6 +44,11 @@ export async function bootServices(): Promise<void> {
   // Dispatch scheduler (cron-driven MDB/ADB/PMDB/TOTT briefing generation)
   startDispatchScheduler();
   log.info('DispatchScheduler started');
+
+  // Catch-up: generate any briefs that should have fired today but were missed (backend wasn't running)
+  catchUpMissedBriefs().catch((err) =>
+    log.warn('Brief catch-up failed (non-fatal)', { error: String(err) })
+  );
 
   // Hermes/OpenRouter connection (non-blocking)
   initHermesAgent().catch((err) =>

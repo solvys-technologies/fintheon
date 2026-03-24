@@ -590,6 +590,50 @@ export async function readEconPrints(filter?: {
   return data ?? [];
 }
 
+// ─── ER Events (PsychAssist deterministic scoring) ─────────────
+
+export interface EREventRecord {
+  user_id: string;
+  event_type: string;      // 'curse' | 'breathing' | 'decay_reset'
+  trigger_text: string | null;
+  penalty: number;
+  score_before: number;
+  score_after: number;
+  curse_count: number;
+  decay_window_minutes: number | null;
+  transcript_snippet: string | null;
+}
+
+export async function writeEREvent(record: EREventRecord): Promise<boolean> {
+  const sb = getSupabaseClient();
+  if (!sb) return false;
+
+  const { error } = await sb.from('er_events').insert(record);
+  if (error) {
+    console.error('[Supabase] writeEREvent error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function readEREvents(userId: string, limit = 50): Promise<(EREventRecord & { id: string; created_at: string })[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const { data, error } = await sb
+    .from('er_events')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('[Supabase] readEREvents error:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 // ─── Health Check ───────────────────────────────────────────────
 
 export async function checkSupabaseHealth(): Promise<boolean> {

@@ -144,6 +144,75 @@ export function stopDispatchScheduler(): void {
 }
 
 /**
+ * Catch-up: on boot, check if any scheduled briefs were missed today and generate them.
+ * This handles the common case where the local backend wasn't running at cron time.
+ */
+export async function catchUpMissedBriefs(): Promise<void> {
+  if (process.env.DISPATCH_SCHEDULER_ENABLED === 'false') return;
+
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const timeVal = h * 60 + m;
+
+  // Determine which briefs SHOULD have fired by now
+  const dueJobs: DispatchJob[] = [];
+
+  for (const job of DISPATCH_JOBS) {
+    // Parse cron day-of-week field (e.g. '1-5' or '0')
+    const cronParts = job.cronExpression.split(' ');
+    const cronMin = parseInt(cronParts[0], 10);
+    const cronHour = parseInt(cronParts[1], 10);
+    const cronDow = cronParts[4]; // day-of-week field
+
+    // Check if today matches the day-of-week
+    const dowMatch = cronDow === '*' || cronDow.split(',').some((seg) => {
+      if (seg.includes('-')) {
+        const [lo, hi] = seg.split('-').map(Number);
+        return day >= lo && day <= hi;
+      }
+      return parseInt(seg, 10) === day;
+    });
+    if (!dowMatch) continue;
+
+    // Check if the scheduled time has already passed
+    const jobTimeVal = cronHour * 60 + cronMin;
+    if (timeVal >= jobTimeVal) {
+      dueJobs.push(job);
+    }
+  }
+
+  if (dueJobs.length === 0) {
+    log.info('Catch-up: no missed briefs for today');
+    return;
+  }
+
+  log.info(`Catch-up: checking ${dueJobs.length} briefs that should exist by now`);
+
+  for (const job of dueJobs) {
+    try {
+      const alreadyDone = await wasBriefGeneratedToday(job.briefType);
+      if (alreadyDone) {
+        log.info(`Catch-up: ${job.briefType} already exists — skip`);
+        continue;
+      }
+
+      log.info(`Catch-up: generating missed ${job.briefType}`);
+      const result = await generateBrief(job.briefType);
+
+      try {
+        await appendToBoardroom(`[${job.briefType}]\n${result.content}`, 'assistant');
+      } catch { /* non-fatal */ }
+
+      log.info(`Catch-up: ${job.briefType} generated`, { supabaseId: result.supabaseId });
+    } catch (err) {
+      log.error(`Catch-up: ${job.briefType} failed:`, err);
+    }
+  }
+}
+
+/**
  * Check if the dispatch scheduler is running.
  */
 export function isDispatchSchedulerActive(): boolean {
