@@ -543,8 +543,8 @@ function MainLayoutInner() {
                     {missionControlContent(() => setCombinedPanelCollapsed(true))}
                   </div>
                 </section>
-                {/* RiskFlow: 50% when expanded, collapsed when hidden */}
-                <section className={`${combinedTapeCollapsed ? 'flex-shrink-0' : 'h-1/2'} min-h-0 flex flex-col`}>
+                {/* RiskFlow: 50% when expanded, 168px collapsed preview at bottom */}
+                <section className={`${combinedTapeCollapsed ? 'h-[168px] shrink-0' : 'h-1/2'} min-h-0 flex flex-col`}>
                   <RiskFlowPanel
                     collapsed={combinedTapeCollapsed}
                     onToggleCollapsed={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}

@@ -123,7 +123,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
     : (projectxAccounts.length > 0 ? 'Select an account' : 'No uplink');
 
   return (
-    <div className="bg-[var(--fintheon-bg)] p-2.5">
+    <div className="p-2.5">
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           <h3 className="text-xs font-semibold text-[var(--fintheon-accent)]">Account Tracker</h3>

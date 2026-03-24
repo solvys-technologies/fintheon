@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Persistence refactor: added GET /latest endpoint
 // [claude-code 2026-03-24] Added rolling-window, auto-run-check, running-state endpoints
 // [claude-code 2026-03-23] MiroFish route handlers — preset-aware, context endpoint, history
 // [claude-code 2026-03-16] Switched to feature flag, local debate engine
@@ -9,6 +10,7 @@ import {
   getPredictions,
   injectScenarioVariable,
   getRunHistory,
+  getLatestReport,
   getRollingWindowData,
   shouldAutoRun,
 } from '../../services/mirofish/mirofish-service.js';
@@ -145,6 +147,18 @@ export async function handleGetHistory(c: Context) {
   const limit = parseInt(c.req.query('limit') ?? '20', 10);
   const history = await getRunHistory(Math.min(limit, 50));
   return c.json({ runs: history });
+}
+
+/** GET /latest — most recent persisted report (cache → Supabase fallback) */
+export async function handleGetLatest(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  const report = await getLatestReport();
+  if (!report) {
+    return c.json(null);
+  }
+  return c.json(report);
 }
 
 /** GET /rolling-window?days=7 — aggregated historical data over a rolling window */

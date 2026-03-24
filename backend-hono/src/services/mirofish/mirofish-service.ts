@@ -1,8 +1,9 @@
+// [claude-code 2026-03-24] Persistence refactor: getLatestReport(), full report JSONB in persistRun(), 30min staleness
 // [claude-code 2026-03-24] Added getRollingWindowData, shouldAutoRun, running state init hook
 // [claude-code 2026-03-23] MiroFish simulation lifecycle orchestrator
 // [claude-code 2026-03-23] Auto-enriches with VIX/FRED/RiskFlow context, generates briefing, persists to Supabase
 
-import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection, AuditoriumPreset, SimulationContext, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary } from './mirofish-types.js';
+import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection, AuditoriumPreset, SimulationContext, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary, MiroFishBriefing } from './mirofish-types.js';
 // @ts-ignore — T1 creates this file
 import { resetRunningState } from './mirofish-reactive.js';
 import { isMiroFishEnabled, runDebate } from './mirofish-client.js';
@@ -238,6 +239,61 @@ export async function getRunHistory(limit = 20): Promise<unknown[]> {
   return data ?? [];
 }
 
+/** Get the latest persisted MiroFish report (reconstructed as AuditoriumData-compatible shape) */
+export async function getLatestReport(): Promise<Record<string, unknown> | null> {
+  // First check in-memory cache
+  const cached = getLatestCachedPrediction();
+  if (cached) {
+    return {
+      simulationId: cached.simulationId,
+      status: 'complete',
+      compositeIV: cached.nextSessionScore,
+      confidence: cached.confidence,
+      regimeShiftProbability: cached.regimeShiftProbability,
+      categoryScores: cached.categoryScores ?? [],
+      timeSeries: cached.timeSeries ?? [],
+      generatedEvents: cached.generatedEvents ?? [],
+      scenarios: cached.scenarios ?? [],
+      briefing: cached.briefing ?? null,
+      contextSnapshot: cached.contextSnapshot ?? null,
+      generatedAt: cached.generatedAt,
+      source: 'cache',
+    };
+  }
+
+  // Fall back to Supabase
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('mirofish_runs')
+    .select('simulation_id, preset, composite_iv, confidence, regime_shift_probability, category_scores, scenarios, context_snapshot, time_series, generated_events, briefing, briefing_text, created_at')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error || !data?.length) {
+    if (error) console.warn('[MiroFish] Latest report fetch failed:', error.message);
+    return null;
+  }
+
+  const row = data[0];
+  return {
+    simulationId: row.simulation_id,
+    status: 'complete',
+    compositeIV: row.composite_iv,
+    confidence: row.confidence,
+    regimeShiftProbability: row.regime_shift_probability,
+    categoryScores: row.category_scores ?? [],
+    timeSeries: row.time_series ?? [],
+    generatedEvents: row.generated_events ?? [],
+    scenarios: row.scenarios ?? [],
+    briefing: row.briefing ?? (row.briefing_text ? { summary: row.briefing_text, keyFindings: [], riskAlerts: [], agentConsensus: '', generatedAt: row.created_at } : null),
+    contextSnapshot: row.context_snapshot ?? null,
+    generatedAt: row.created_at,
+    source: 'persisted',
+  };
+}
+
 function reportToPrediction(simId: string, report: MiroFishReport): MiroFishPrediction {
   return {
     simulationId: simId,
@@ -264,7 +320,7 @@ async function persistRun(
   preset: AuditoriumPreset,
   report: MiroFishReport,
   context: SimulationContext,
-  briefing: { summary: string },
+  briefing: MiroFishBriefing,
 ): Promise<void> {
   const sb = getSupabaseClient();
   if (!sb) return;
@@ -279,6 +335,9 @@ async function persistRun(
     category_scores: report.categoryScores,
     scenarios: report.scenarios,
     context_snapshot: context,
+    time_series: report.timeSeries,
+    generated_events: report.generatedEvents,
+    briefing: briefing,
   });
 }
 
@@ -339,7 +398,7 @@ export async function shouldAutoRun(): Promise<{ shouldRun: boolean; lastRunAt: 
 
   const lastRunAt = data[0].created_at;
   const staleness = (Date.now() - new Date(lastRunAt).getTime()) / (60 * 60 * 1000); // hours
-  return { shouldRun: staleness > 1, lastRunAt, staleness };
+  return { shouldRun: staleness > 0.5, lastRunAt, staleness };
 }
 
 function emptyAggregation(days: number): AggregatedRollingData {

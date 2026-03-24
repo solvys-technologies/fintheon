@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Persistence refactor: load latest report on mount, persist after simulation
 // [claude-code 2026-03-24] Thread selectedSymbol from settings into Auditorium for TradingView chart
 // [claude-code 2026-03-23] ConsiliumHub — wired Auditorium with real data, auto-run on preset change
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
@@ -101,6 +102,35 @@ export function ConsiliumHub() {
   }, []);
 
   useEffect(() => { fetchContext(); }, [fetchContext]);
+
+  // Load persisted MiroFish report on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/mirofish/latest`);
+        if (!res.ok) return;
+        const report = await res.json();
+        if (cancelled || !report) return;
+        setMirofishData({
+          simulationId: report.simulationId ?? '',
+          status: 'complete',
+          compositeIV: report.compositeIV ?? 0,
+          confidence: report.confidence ?? 0,
+          regimeShiftProbability: report.regimeShiftProbability ?? 0,
+          categoryScores: report.categoryScores ?? [],
+          timeSeries: report.timeSeries ?? [],
+          generatedEvents: report.generatedEvents ?? [],
+          scenarios: report.scenarios ?? [],
+          briefing: report.briefing ?? null,
+          contextSnapshot: report.contextSnapshot ?? null,
+        });
+      } catch (err) {
+        console.warn('[ConsiliumHub] Failed to load persisted MiroFish report:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleRunMiroFish = useCallback(async (preset?: AuditoriumPreset) => {
     setMirofishData(prev => prev

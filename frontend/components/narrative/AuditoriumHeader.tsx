@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Persistence refactor: Run → Update button label when data exists
 // [claude-code 2026-03-23] Persistent Auditorium header — presets, run button, status, rolling period
 // [claude-code 2026-03-25] Theme-sensitive fonts — use var(--font-heading) and var(--font-body)
 import { Zap, Loader2 } from 'lucide-react';
@@ -10,6 +11,7 @@ interface AuditoriumHeaderProps {
   onRun: () => void;
   isLoading: boolean;
   status: 'idle' | 'running' | 'complete' | 'error';
+  hasData: boolean;
   rollingDays: 7 | 14 | 30;
   onRollingChange: (d: 7 | 14 | 30) => void;
 }
@@ -17,7 +19,7 @@ interface AuditoriumHeaderProps {
 const ROLLING_OPTIONS = [7, 14, 30] as const;
 
 export function AuditoriumHeader({
-  preset, onPresetChange, onRun, isLoading, status, rollingDays, onRollingChange,
+  preset, onPresetChange, onRun, isLoading, status, hasData, rollingDays, onRollingChange,
 }: AuditoriumHeaderProps) {
   return (
     <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-border)]/10">
@@ -67,7 +69,7 @@ export function AuditoriumHeader({
           style={{ fontFamily: 'var(--font-body)' }}
         >
           {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-          {isLoading ? 'Running...' : 'Run MiroFish'}
+          {isLoading ? 'Updating...' : (hasData ? 'Update' : 'Run MiroFish')}
         </button>
       </div>
     </div>

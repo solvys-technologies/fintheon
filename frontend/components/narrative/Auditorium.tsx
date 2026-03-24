@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state
 // [claude-code 2026-03-24] Thread selectedSymbol prop for TradingView chart, taller chart container (65vh)
 // [claude-code 2026-03-24] Auditorium — 3-page dashboard (merged Risk + Narratives), expandable econ cards
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
@@ -62,14 +63,18 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
   const onRunRef = useRef(onRun);
   useLayoutEffect(() => { onRunRef.current = onRun; }, [onRun]);
 
-  // Auto-run on mount if no data
+  // Background update check on mount — triggers update if report is stale (>30min)
+  // If data already loaded from persistence, skip cold-start; only refresh if stale
   useEffect(() => {
-    if (status !== 'idle' || running) return;
+    if (running) return;
+    // If we already have complete data, check staleness for background update
+    // If no data (idle), check if we should auto-run (first time ever)
+    if (status !== 'idle' && status !== 'complete') return;
     let cancelled = false;
     fetch('/api/mirofish/auto-run-check')
       .then(r => r.json())
       .then(({ shouldRun }) => { if (!cancelled && shouldRun) onRunRef.current(preset); })
-      .catch(() => { if (!cancelled) onRunRef.current(preset); });
+      .catch(() => { /* If check fails with existing data, don't force re-run */ if (!cancelled && status === 'idle') onRunRef.current(preset); });
     return () => { cancelled = true; };
   }, []); // Run once on mount — intentional empty deps
 
@@ -126,6 +131,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
         onRun={() => handleRun()}
         isLoading={isLoading}
         status={status}
+        hasData={!!data && data.compositeIV > 0}
         rollingDays={rollingDays}
         onRollingChange={setRollingDays}
       />
@@ -143,12 +149,12 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
               {status === 'idle' && !isLoading && (
                 <div className="flex-1 flex flex-col items-center justify-center text-center">
                   <Zap className="w-12 h-12 text-[var(--fintheon-accent)]/15 mb-4" />
-                  <p className="text-sm text-[var(--fintheon-muted)]/40">Run MiroFish to generate predictions</p>
-                  <p className="text-[10px] text-[var(--fintheon-muted)]/25 mt-1">5-agent debate simulation across 6 risk categories</p>
+                  <p className="text-sm text-[var(--fintheon-muted)]/40">Loading predictions...</p>
+                  <p className="text-[10px] text-[var(--fintheon-muted)]/25 mt-1">Fetching latest MiroFish report</p>
                 </div>
               )}
 
-              {isLoading && (
+              {isLoading && !data?.compositeIV && (
                 <div className="flex-1 flex flex-col items-center justify-center">
                   <Loader2 className="w-8 h-8 text-[var(--fintheon-accent)] animate-spin mb-4" />
                   <p className="text-sm text-[var(--fintheon-muted)]/50">Agents debating...</p>
@@ -156,7 +162,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                 </div>
               )}
 
-              {status === 'complete' && data && !isLoading && (
+              {data && data.compositeIV > 0 && (status === 'complete' || (isLoading && data.compositeIV)) && (
                 <div className="flex-1 flex flex-col gap-4">
                   {/* Hero chart */}
                   <div className="shrink-0">
@@ -270,7 +276,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                 <KanbanTitle title="Risk & Narratives" tone="emerald" tag="Risk Scan" />
               </div>
 
-              {status === 'complete' && data && !isLoading ? (
+              {data && data.compositeIV > 0 ? (
                 <div className="flex-1 flex flex-col gap-6">
                   {/* Top Volatile Theses */}
                   <div>
@@ -321,7 +327,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                 </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
-                  <p className="text-sm text-[var(--fintheon-muted)]/30">Run MiroFish to populate risk data</p>
+                  <p className="text-sm text-[var(--fintheon-muted)]/30">Loading risk data...</p>
                 </div>
               )}
             </div>

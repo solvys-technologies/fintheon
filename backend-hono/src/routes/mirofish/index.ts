@@ -1,10 +1,11 @@
+// [claude-code 2026-03-24] Persistence refactor: added GET /latest route
 // [claude-code 2026-03-24] Added rolling-window, auto-run-check, running-state routes
 // [claude-code 2026-03-23] MiroFish simulation routes — added context + history endpoints
 
 import { Hono } from 'hono';
 import {
   handleSimulate, handleStatus, handleReport, handleInject,
-  handleGetContext, handleGetHistory,
+  handleGetContext, handleGetHistory, handleGetLatest,
   handleRollingWindow, handleAutoRunCheck, handleRunningState,
 } from './handlers.js';
 
@@ -16,6 +17,7 @@ export function createMirofishRoutes(): Hono {
   app.get('/report/:id', handleReport);
   app.post('/inject/:id', handleInject);
   app.get('/context', handleGetContext);
+  app.get('/latest', handleGetLatest);
   app.get('/history', handleGetHistory);
   app.get('/rolling-window', handleRollingWindow);
   app.get('/auto-run-check', handleAutoRunCheck);
