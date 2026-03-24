@@ -106,8 +106,9 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/hyperliquid', authMiddleware);
   app.use('/api/hyperliquid/*', authMiddleware);
   // RiskFlow routes - exclude cron endpoint from auth
+  // [claude-code 2026-03-24] Bypass auth for /cron/ and /sources (public, non-user-specific data)
   const riskflowAuth = async (c: Parameters<typeof authMiddleware>[0], next: Parameters<typeof authMiddleware>[1]) => {
-    if (c.req.path.includes('/cron/')) {
+    if (c.req.path.includes('/cron/') || c.req.path.endsWith('/sources')) {
       return next();
     }
     return authMiddleware(c, next);

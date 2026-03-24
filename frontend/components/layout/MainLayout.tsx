@@ -17,6 +17,7 @@ import { TopStepXBrowser, type TradingPlatform } from '../TopStepXBrowser';
 import { FloatingWidget } from './FloatingWidget';
 import { PanelPosition } from './DraggablePanel';
 import { useBackend } from '../../lib/backend';
+import { useAuth } from '../../contexts/AuthContext';
 import { EmotionalResonanceMonitor } from '../mission-control/EmotionalResonanceMonitor';
 import { BlindspotsWidget } from '../mission-control/BlindspotsWidget';
 import { AccountTrackerWidget } from '../mission-control/AccountTrackerWidget';
@@ -176,6 +177,7 @@ function MainLayoutInner() {
   };
 
   const backend = useBackend();
+  const { isAuthenticated } = useAuth();
   const { alerts: riskFlowAlerts, removeAlert } = useRiskFlow();
   const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
 
@@ -268,8 +270,9 @@ function MainLayoutInner() {
     return () => clearInterval(interval);
   }, [backend]);
 
-  // Fetch account data for combined panel collapsed state
+  // Fetch account data for combined panel collapsed state (waits for auth)
   useEffect(() => {
+    if (!isAuthenticated) return;
     const fetchAccount = async () => {
       try {
         const account = await backend.account.get();
@@ -282,7 +285,7 @@ function MainLayoutInner() {
     fetchAccount();
     const interval = setInterval(fetchAccount, 5000);
     return () => clearInterval(interval);
-  }, [backend]);
+  }, [backend, isAuthenticated]);
 
   // Listen for ER score updates for combined panel
   useEffect(() => {

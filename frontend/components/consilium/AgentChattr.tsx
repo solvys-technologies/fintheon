@@ -1,11 +1,10 @@
+// [claude-code 2026-03-24] Boardroom UX overhaul — removed sidebar, inline copy, green WiFi pulse, status bar right-aligned
 // [claude-code 2026-03-22] Track 3: Boardroom with PromptBox replacing built-in textarea
-// [claude-code 2026-03-20] Consilium — agent chat panel (chat-only, sub-tabs moved to ConsiliumHub)
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { RefreshCw, Wifi, WifiOff, ChevronDown } from 'lucide-react';
+import { RefreshCw, WifiOff, ChevronDown } from 'lucide-react';
 import { ConsiliumMessage, type BoardroomMessage } from './ConsiliumMessage';
 import { AGENT_MAP, type BoardroomAgent } from './AgentBadge';
 import { ConsiliumFilterBar } from './ConsiliumFilterBar';
-import { ConsiliumMessageExpanded } from './ConsiliumMessageExpanded';
 import { PromptBox } from '../ui/chatgpt-prompt-input';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -22,6 +21,23 @@ const PERSONA_META: Record<BoardroomAgent, { label: string }> = {
   Herald: { label: 'News & Sentiment' },
   Unknown: { label: 'Unknown' },
 };
+
+/** Animated WiFi bars — pulses 1→2→3 bars when connected */
+function WifiBars() {
+  return (
+    <div className="flex items-end gap-[2px] h-3">
+      <div className="w-[2px] rounded-full bg-emerald-400 animate-[wifi-pulse_1.2s_ease-in-out_infinite]" style={{ height: 4 }} />
+      <div className="w-[2px] rounded-full bg-emerald-400 animate-[wifi-pulse_1.2s_ease-in-out_0.2s_infinite]" style={{ height: 7 }} />
+      <div className="w-[2px] rounded-full bg-emerald-400 animate-[wifi-pulse_1.2s_ease-in-out_0.4s_infinite]" style={{ height: 10 }} />
+      <style>{`
+        @keyframes wifi-pulse {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 function getAgentColor(agent: BoardroomAgent): string {
   const info = AGENT_MAP[agent];
@@ -144,7 +160,6 @@ export function AgentChattr() {
   const [filterSearch, setFilterSearch] = useState('');
   const [filterDateRange, setFilterDateRange] = useState<'today' | '7d' | '30d' | 'all'>('all');
   const [totalMessages, setTotalMessages] = useState(0);
-  const [expandedMessage, setExpandedMessage] = useState<BoardroomMessage | null>(null);
   const [isVisible, setIsVisible] = useState(!document.hidden);
 
   // Pause polling when tab not visible
@@ -224,18 +239,8 @@ export function AgentChattr() {
 
   return (
     <div className="relative flex h-full flex-col">
-      {/* Status bar — floating, no harsh border */}
-      <div className="flex items-center justify-between px-4 py-2">
-        <div className="flex items-center gap-1.5">
-          {isOnline ? (
-            <Wifi size={12} className="text-[var(--fintheon-accent)]/60" />
-          ) : (
-            <WifiOff size={12} className="text-red-500/60" />
-          )}
-          <span className="text-[10px] text-[var(--fintheon-text)]/30">
-            {isOnline ? 'Connected' : 'Offline'}
-          </span>
-        </div>
+      {/* Status bar — right-aligned: refresh + wifi + status */}
+      <div className="flex items-center justify-end gap-2 px-4 py-2">
         <button
           onClick={fetchMessages}
           className="rounded-full p-1.5 text-[var(--fintheon-accent)]/40 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
@@ -243,6 +248,16 @@ export function AgentChattr() {
         >
           <RefreshCw size={14} />
         </button>
+        <div className="flex items-center gap-1.5">
+          {isOnline ? (
+            <WifiBars />
+          ) : (
+            <WifiOff size={12} className="text-red-500/60" />
+          )}
+          <span className={`text-[10px] ${isOnline ? 'text-emerald-400/70' : 'text-[var(--fintheon-text)]/30'}`}>
+            {isOnline ? 'Connected' : 'Offline'}
+          </span>
+        </div>
       </div>
 
       {/* Filter bar */}
@@ -272,13 +287,11 @@ export function AgentChattr() {
           </div>
         ) : (
           messages.map((msg) => (
-            <ConsiliumMessage key={msg.id} message={msg} onClick={() => setExpandedMessage(msg)} />
+            <ConsiliumMessage key={msg.id} message={msg} />
           ))
         )}
       </div>
 
-      {/* Expanded message slide-over */}
-      <ConsiliumMessageExpanded message={expandedMessage} onClose={() => setExpandedMessage(null)} />
 
       {/* Input area — universal PromptBox */}
       <div className="px-2">
