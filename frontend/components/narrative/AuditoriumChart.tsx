@@ -105,7 +105,7 @@ export function AuditoriumChart({ timeSeries, rollingDays, selectedSymbol = '/MN
       hide_side_toolbar: '0',
       allow_symbol_change: '1',
       save_image: '0',
-      hide_volume: '0',
+      hide_volume: '1',
       withdateranges: '1',
     });
     if (studies.length > 0) params.set('studies', JSON.stringify(studies));

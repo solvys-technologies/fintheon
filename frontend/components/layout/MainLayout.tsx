@@ -591,7 +591,7 @@ function MainLayoutInner() {
             </div>
           ) : (
             <>
-              <div className={`${riskFlowCollapsed ? 'flex-1' : 'h-1/2'} flex flex-col transition-all duration-300`}>
+              <div className={`${riskFlowCollapsed ? 'flex-1' : 'h-1/2'} flex flex-col transition-all duration-300 bg-[var(--fintheon-surface)]`}>
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   <div className="p-3 h-full">
                     {missionControlContent(() => setMissionControlCollapsed(true))}

@@ -14,7 +14,7 @@ export function AuditoriumPresets({ active, onChange }: AuditoriumPresetsProps) 
         <button
           key={id}
           onClick={() => onChange(id)}
-          className={`px-3 py-1 text-[10px] font-mono tracking-wide transition-colors ${
+          className={`px-3 py-1 text-[10px] tracking-wide transition-colors ${
             active === id
               ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8'
               : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-accent)]/4'
