@@ -122,8 +122,8 @@ export function SettingsPage() {
     },
   ];
 
+  const { addToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [prevTab, setPrevTab] = useState<SettingsTab | null>(null);
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
@@ -132,7 +132,7 @@ export function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    setSaveMessage(null);
+    const startTime = Date.now();
     try {
       // Settings are always persisted to localStorage via SettingsContext
       // Backend sync is best-effort when authenticated
@@ -159,22 +159,33 @@ export function SettingsPage() {
             });
           } catch (pxError) {
             console.warn('ProjectX credential sync failed:', pxError);
-            setSaveMessage('Settings saved. ProjectX credentials failed — check API key.');
-            setTimeout(() => setSaveMessage(null), 5000);
-            setIsSaving(false);
+            // Minimum 1.2s visual feedback before re-enabling button
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, 1200 - elapsed);
+            setTimeout(() => {
+              addToast('Settings saved. ProjectX credentials failed — check API key.', 'warning');
+              setIsSaving(false);
+            }, remaining);
             return;
           }
         }
       }
 
-      setSaveMessage('Settings saved successfully!');
-      setTimeout(() => setSaveMessage(null), 3000);
+      // Minimum 1.2s visual feedback before re-enabling button
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 1200 - elapsed);
+      setTimeout(() => {
+        addToast('Settings saved successfully', 'success');
+        setIsSaving(false);
+      }, remaining);
     } catch (error) {
       console.error('Failed to save settings:', error);
-      setSaveMessage('Settings saved locally. Backend sync unavailable.');
-      setTimeout(() => setSaveMessage(null), 4000);
-    } finally {
-      setIsSaving(false);
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 1200 - elapsed);
+      setTimeout(() => {
+        addToast('Settings saved locally. Backend sync unavailable.', 'warning');
+        setIsSaving(false);
+      }, remaining);
     }
   };
 
@@ -1101,14 +1112,6 @@ export function SettingsPage() {
 
           {/* Sticky save bar */}
           <div className="sticky bottom-0 bg-[var(--fintheon-bg)] backdrop-blur-sm border-t border-[var(--fintheon-accent)]/10 px-8 py-3">
-            {saveMessage && (
-              <div className={`mb-3 px-4 py-2 rounded text-sm ${saveMessage.includes('success')
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                }`}>
-                {saveMessage}
-              </div>
-            )}
             <div className="flex items-center justify-end gap-3">
               <Button variant="primary" onClick={handleSave} className="px-6 py-2" disabled={isSaving}>
                 {isSaving ? 'Saving...' : 'Save Changes'}
