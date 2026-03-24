@@ -25,10 +25,13 @@ export { supabase };
  */
 export async function signInWithGoogle() {
   if (!supabase) throw new Error('Supabase not configured — check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+  // Redirect to backend callback page which will relay the auth code
+  // back to the Electron app via fintheon:// deep link
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: 'fintheon://auth/callback',
+      redirectTo: `${API_BASE}/api/auth/supabase/callback`,
       skipBrowserRedirect: true,
     },
   });

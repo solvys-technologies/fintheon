@@ -38,6 +38,7 @@ import { createTerminalRoutes } from './terminal/index.js';
 import { createSetupRoutes } from './setup/index.js';
 import { createTradeIdeasRoutes } from './trade-ideas/index.js';
 import { createProfileRoutes } from './profile/index.js';
+import { createAuthCallbackRoute } from './auth-callback.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -78,6 +79,9 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/proposals', createProposalRoutes());
   // Trade ideas — merged proposals + Supabase trade ideas (public)
   app.route('/api/trade-ideas', createTradeIdeasRoutes());
+
+  // Supabase OAuth callback relay — serves HTML that deep-links back to Electron
+  app.route('/api/auth/supabase', createAuthCallbackRoute());
 
   // Cloud API — Supabase-backed scored items, ER sessions, settings, consilium
   app.route('/api/cloud', cloudRoutes);

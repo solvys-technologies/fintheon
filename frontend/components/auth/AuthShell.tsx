@@ -1,6 +1,5 @@
 // [claude-code 2026-03-24] T2 — Login screen redesign: split layout, ASCII background, time quotes
 import React from 'react';
-import { AsciiBackground } from './AsciiBackground';
 import { TimeQuote } from './TimeQuote';
 import { GoogleSignInButton } from './GoogleSignInButton';
 
@@ -11,10 +10,6 @@ type AuthShellProps = {
 
 export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = false }) => (
   <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-white selection:bg-yellow-500/30">
-    <AsciiBackground />
-
-    {/* Subtle radial vignette */}
-    <div className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(5,4,2,0.85)_100%)]" />
 
     <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 md:flex-row md:items-stretch md:px-0">
       {/* Left — Branding column (60%) */}
