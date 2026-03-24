@@ -163,7 +163,7 @@ export function SettingsPage() {
             const elapsed = Date.now() - startTime;
             const remaining = Math.max(0, 1200 - elapsed);
             setTimeout(() => {
-              addToast('Settings saved. ProjectX credentials failed — check API key.', 'warning');
+              addToast('Settings saved. ProjectX credentials failed — check API key.', 'info');
               setIsSaving(false);
             }, remaining);
             return;
@@ -183,7 +183,7 @@ export function SettingsPage() {
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, 1200 - elapsed);
       setTimeout(() => {
-        addToast('Settings saved locally. Backend sync unavailable.', 'warning');
+        addToast('Settings saved locally. Backend sync unavailable.', 'info');
         setIsSaving(false);
       }, remaining);
     }
