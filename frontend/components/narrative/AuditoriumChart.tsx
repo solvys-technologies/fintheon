@@ -64,34 +64,65 @@ function roundTopRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: nu
   ctx.closePath();
 }
 
+/** Layered IV bars — highest IV drawn first (back, full opacity, widest) → lowest IV on top (narrow, translucent).
+ *  Creates a depth effect where the most dangerous category visually dominates. */
 function drawBars(
   ctx: CanvasRenderingContext2D, data: MiroFishTimePoint[],
-  pL: number, pW: number, bTop: number, bH: number, gold: boolean,
+  pL: number, pW: number, bTop: number, bH: number, _gold: boolean,
 ) {
   const n = data.length;
-  const bW = Math.max(4, (pW / Math.max(n, 1)) * 0.6);
+  const maxBarW = Math.max(6, (pW / Math.max(n, 1)) * 0.7);
+
   for (let i = 0; i < n; i++) {
     const cx = pL + (i / Math.max(n - 1, 1)) * pW;
-    let yOff = 0;
-    for (let c = 0; c < CATS.length; c++) {
-      const cat = CATS[c], val = data[i].categories[cat], segH = (val / 10) * bH;
-      if (segH < 0.5) { yOff += segH; continue; }
-      const sy = bTop + bH - yOff - segH, color = ivHeatColor(val);
-      const top = c === CATS.length - 1 || CATS.slice(c + 1).every(k => data[i].categories[k] < 0.05);
-      if (gold) {
-        ctx.fillStyle = color;
-        top ? roundTopRect(ctx, cx - bW / 2, sy, bW, segH, 2) : (ctx.beginPath(), ctx.rect(cx - bW / 2, sy, bW, segH));
-        ctx.fill();
-        ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = 6;
-        ctx.fillRect(cx - bW / 2, sy, bW, Math.min(2, segH)); ctx.restore();
-      } else {
-        const g = ctx.createLinearGradient(0, sy + segH, 0, sy);
-        g.addColorStop(0, color); g.addColorStop(1, color + '99');
-        ctx.fillStyle = g;
-        top ? roundTopRect(ctx, cx - bW / 2, sy, bW, segH, 2) : (ctx.beginPath(), ctx.rect(cx - bW / 2, sy, bW, segH));
-        ctx.fill();
+
+    // Sort categories by IV score descending — highest (most dangerous) drawn first in back
+    const sorted = CATS
+      .map(cat => ({ cat, val: data[i].categories[cat] }))
+      .filter(c => c.val > 0.1)
+      .sort((a, b) => b.val - a.val);
+
+    for (let layer = 0; layer < sorted.length; layer++) {
+      const { val } = sorted[layer];
+      const color = ivHeatColor(val);
+
+      // Height: proportional to IV score (full pane height at 10)
+      const barH = (val / 10) * bH;
+      if (barH < 1) continue;
+
+      // Width: back layers wider, front layers narrower (depth cue)
+      const widthScale = 1 - (layer / sorted.length) * 0.5; // 1.0 → 0.5
+      const bW = maxBarW * widthScale;
+
+      // Opacity: back layer (highest IV) = 100% solid, each subsequent layer loses opacity
+      // Layer 0 (highest IV) = 1.0, layer 1 = 0.6, layer 2 = 0.35, etc.
+      const alpha = layer === 0 ? 1.0 : Math.max(0.15, 0.7 / (layer + 0.5));
+
+      const sy = bTop + bH - barH;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+
+      // Back layer: fully solid. Front layers: slight gradient fade at top for depth
+      const grad = ctx.createLinearGradient(0, sy + barH, 0, sy);
+      grad.addColorStop(0, color);
+      grad.addColorStop(0.8, color);
+      grad.addColorStop(1, layer === 0 ? color : color + '60');
+      ctx.fillStyle = grad;
+
+      // Rounded top
+      roundTopRect(ctx, cx - bW / 2, sy, bW, barH, 2);
+      ctx.fill();
+
+      // Subtle glow on top edge for high-IV bars
+      if (val >= 6) {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.fillRect(cx - bW / 2, sy, bW, Math.min(3, barH));
+        ctx.shadowBlur = 0;
       }
-      yOff += segH;
+
+      ctx.restore();
     }
   }
 }
