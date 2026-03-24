@@ -2,8 +2,8 @@
 
 import { execFileNoThrow } from '../../utils/execFileNoThrow.js';
 
-// Absolute path required — Pulse backend runs with restricted PATH (/usr/local/bin only)
-// uv installs to ~/.local/bin which is not in the Pulse process PATH
+// Absolute path required — Fintheon backend runs with restricted PATH (/usr/local/bin only)
+// uv installs to ~/.local/bin which is not in the Fintheon process PATH
 const TWITTER_BIN =
   process.env.TWITTER_CLI_PATH ??
   `${process.env.HOME ?? '/Users/tifos'}/.local/bin/twitter`;
@@ -78,7 +78,8 @@ function parseTweetJson(stdout: string): TwitterCliTweet[] {
   try {
     // Try array format first
     const raw = JSON.parse(stdout.trim());
-    const items: any[] = Array.isArray(raw) ? raw : raw.tweets ?? raw.results ?? [];
+    // twitter-cli v0.7.0 wraps in {ok, schema_version, data: [...]}
+    const items: any[] = Array.isArray(raw) ? raw : raw.data ?? raw.tweets ?? raw.results ?? [];
     return items.map(normalizeTweet).filter(Boolean) as TwitterCliTweet[];
   } catch {
     // Try newline-delimited JSON (NDJSON)

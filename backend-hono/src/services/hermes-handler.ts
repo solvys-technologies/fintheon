@@ -11,7 +11,10 @@
 
 import { execFile, spawn as spawnProcess } from 'node:child_process'
 import type { HermesAgentRole } from './hermes-service.js'
-import { getAgentSystemPrompt, extractSkillTag } from './ai/agent-instructions.js'
+import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from './ai/agent-instructions/index.js'
+import { createLogger } from '../lib/logger.js'
+
+const log = createLogger('Hermes')
 
 export type ContentPart =
   | { type: 'text'; text: string }
@@ -22,9 +25,6 @@ export interface HermesMessage {
   content: string | ContentPart[]
 }
 
-// Backward compat
-export type OpenClawMessage = HermesMessage
-
 export interface HermesChatRequest {
   message: string
   multimodalContent?: ContentPart[]
@@ -33,9 +33,6 @@ export interface HermesChatRequest {
   agentOverride?: HermesAgentRole
   thinkHarder?: boolean
 }
-
-// Backward compat
-export type OpenClawChatRequest = HermesChatRequest
 
 export interface HermesChatResponse {
   content: string
@@ -48,9 +45,6 @@ export interface HermesChatResponse {
     riskLevel?: 'low' | 'medium' | 'high'
   }
 }
-
-// Backward compat
-export type OpenClawChatResponse = HermesChatResponse
 
 // Intent detection patterns
 const INTENT_PATTERNS: { pattern: RegExp; agent: HermesAgentRole; intent: string }[] = [
@@ -77,6 +71,8 @@ const INTENT_PATTERNS: { pattern: RegExp; agent: HermesAgentRole; intent: string
   { pattern: /(\/nq|\/mnq|\/es|futures|topstep)/i, agent: 'futures-desk', intent: 'futures-trade' },
   { pattern: /\b(fa.?ripper|ripper|setup|entry|exit)\b/i, agent: 'futures-desk', intent: 'setup-analysis' },
   { pattern: /\b(technical|chart|support|resistance|ema|vwap)\b/i, agent: 'futures-desk', intent: 'technical' },
+  // [claude-code 2026-03-23] Browser Use Phase 2 — chart levels skill trigger
+  { pattern: /\b(chart.?level|draw.?line|plot.?entry|plot.?level|mark.?chart|chart.?proposal)\b/i, agent: 'futures-desk', intent: 'chart-levels' },
 
   // Fundamentals Desk triggers
   { pattern: /\b(aapl|apple|msft|microsoft|nvda|nvidia|googl|google|meta|amzn|amazon|tsla|tesla)\b/i, agent: 'fundamentals-desk', intent: 'stock-analysis' },
@@ -400,7 +396,10 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
     : detectAgent(request.message)
 
   const skillTag = extractSkillTag(request.message)
-  const systemPrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
+  const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
+  // Inject live RiskFlow headlines so agents can reference real-time data
+  const feedContext = await buildFeedContext()
+  const systemPrompt = basePrompt + feedContext
   const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: 'system', content: systemPrompt }
   ]
@@ -419,11 +418,11 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
   const baseUrl = 'https://openrouter.ai/api/v1'
 
   if (!apiKey) {
-    console.warn('[Hermes] OPENROUTER_API_KEY not set, using local fallback')
+    log.warn('OPENROUTER_API_KEY not set, using local fallback')
     return generateLocalResponse(request, agentInfo)
   }
 
-  console.log(`[Hermes] Calling OpenRouter (Sonnet 4.6) for agent ${agentInfo.agent} (${messages.length} messages)`)
+  log.info('Calling OpenRouter', { agent: agentInfo.agent, messages: messages.length })
 
   try {
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -443,7 +442,7 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`[Hermes] OpenRouter error ${response.status}: ${errorText}`)
+      log.error('OpenRouter error', { status: response.status, body: errorText })
       return generateLocalResponse(request, agentInfo)
     }
 
@@ -453,11 +452,11 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
     const content = data.choices?.[0]?.message?.content ?? ''
 
     if (!content) {
-      console.warn('[Hermes] Empty response from OpenRouter, using local fallback')
+      log.warn('Empty response from OpenRouter, using local fallback')
       return generateLocalResponse(request, agentInfo)
     }
 
-    console.log(`[Hermes] OpenRouter (Sonnet 4.6) response received: ${content.substring(0, 50)}...`)
+    log.info('OpenRouter response received', { preview: content.substring(0, 50) })
 
     return {
       content,
@@ -469,13 +468,10 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
       }
     }
   } catch (error) {
-    console.error('[Hermes] OpenRouter request failed:', error)
+    log.error('OpenRouter request failed', { error: String(error) })
     return generateLocalResponse(request, agentInfo)
   }
 }
-
-// Backward compat
-export const handleOpenClawChat = handleHermesChat
 
 /**
  * Initialize Hermes agent on startup:
@@ -487,26 +483,32 @@ export async function initHermesAgent(): Promise<void> {
 
   try {
     const gatewayRunning = await new Promise<boolean>((resolve) => {
-      execFile(hermesBin, ['gateway', 'status'], { timeout: 5_000 }, (err, stdout) => {
+      const child = execFile(hermesBin, ['gateway', 'status'], { timeout: 5_000 }, (err, stdout) => {
         if (err) { resolve(false); return }
         resolve(stdout.toLowerCase().includes('running'))
       })
+      child.on('error', () => resolve(false))
     })
     if (!gatewayRunning) {
-      console.log('[Hermes] Gateway not running — starting...')
-      const gw = spawnProcess(hermesBin, ['gateway', 'start'], { stdio: 'ignore', detached: true })
-      gw.unref()
-      console.log('[Hermes] Gateway start dispatched (PID:', gw.pid, ')')
+      log.info('Gateway not running — starting')
+      try {
+        const gw = spawnProcess(hermesBin, ['gateway', 'start'], { stdio: 'ignore', detached: true })
+        gw.on('error', () => {}) // swallow spawn errors (binary not found in production)
+        gw.unref()
+        log.info('Gateway start dispatched', { pid: gw.pid })
+      } catch {
+        log.warn('Hermes binary not found — gateway launch skipped (expected in cloud deployment)')
+      }
     } else {
-      console.log('[Hermes] Gateway already running')
+      log.info('Gateway already running')
     }
   } catch (err) {
-    console.warn(`[Hermes] Gateway launch skipped (non-fatal): ${err instanceof Error ? err.message : String(err)}`)
+    log.warn('Gateway launch skipped (non-fatal)', { error: err instanceof Error ? err.message : String(err) })
   }
 
   const apiKey = process.env.OPENROUTER_API_KEY ?? ''
   if (!apiKey) {
-    console.log('[Hermes] OPENROUTER_API_KEY not set — skipping OpenRouter warm-up')
+    log.info('OPENROUTER_API_KEY not set — skipping warm-up')
     return
   }
 
@@ -533,17 +535,14 @@ export async function initHermesAgent(): Promise<void> {
     })
     clearTimeout(timeout)
     if (response.ok) {
-      console.log('[Hermes] OpenRouter (Sonnet 4.6) warm-up complete (harper-cao ready)')
+      log.info('OpenRouter warm-up complete (harper-cao ready)')
     } else {
-      console.warn(`[Hermes] OpenRouter warm-up failed (non-fatal): HTTP ${response.status}`)
+      log.warn('OpenRouter warm-up failed (non-fatal)', { status: response.status })
     }
   } catch (error) {
-    console.warn(`[Hermes] OpenRouter warm-up failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`)
+    log.warn('OpenRouter warm-up failed (non-fatal)', { error: error instanceof Error ? error.message : String(error) })
   }
 }
-
-// Backward compat
-export const initOpenClawAgent = initHermesAgent
 
 /**
  * Stream Hermes response
@@ -559,5 +558,4 @@ export async function* streamHermesChat(request: HermesChatRequest): AsyncGenera
   }
 }
 
-// Backward compat
-export const streamOpenClawChat = streamHermesChat
+

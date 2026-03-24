@@ -1,4 +1,4 @@
-// [claude-code 2026-03-10] Playwright screenshot service for QuickPulse
+// [claude-code 2026-03-10] Playwright screenshot service for QuickFintheon
 import { spawn } from 'node:child_process'
 import { writeFile, readFile, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
 export interface ScreenshotOptions {
-  url?: string       // defaults to PULSE_APP_URL or localhost:5173
+  url?: string       // defaults to FINTHEON_APP_URL or localhost:5173
   fullPage?: boolean // defaults to true
   selector?: string  // CSS selector for element screenshot
   width?: number     // viewport width, default 1920
@@ -25,10 +25,10 @@ export interface ScreenshotResult {
  * Spawns a minimal Node inline script — no MCP server needed for simple screenshots.
  */
 export async function takeScreenshot(options?: ScreenshotOptions): Promise<ScreenshotResult> {
-  const url = options?.url ?? process.env.PULSE_APP_URL ?? 'http://localhost:5173'
+  const url = options?.url ?? process.env.FINTHEON_APP_URL ?? 'http://localhost:5173'
   const width = options?.width ?? 1920
   const height = options?.height ?? 1080
-  const outPath = join(tmpdir(), `pulse-screenshot-${randomUUID()}.png`)
+  const outPath = join(tmpdir(), `fintheon-screenshot-${randomUUID()}.png`)
 
   const selectorLine = options?.selector
     ? `await page.locator(${JSON.stringify(options.selector)}).screenshot({ path: outPath });`

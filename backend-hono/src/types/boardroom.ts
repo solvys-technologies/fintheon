@@ -1,4 +1,4 @@
-// [claude-code 2026-03-19] Agent backend v8.0: updated BoardroomAgent roster (4 agents)
+// [claude-code 2026-03-19] T1: Added huddle/standup/briefing InterventionTypes
 /**
  * Boardroom types
  * Shared backend contracts for boardroom and intervention messages.
@@ -45,7 +45,10 @@ export type InterventionType =
   | 'overtrading_warning'
   | 'rule_violation'
   | 'market_event'
-  | 'position_check';
+  | 'position_check'
+  | 'huddle'
+  | 'standup'
+  | 'briefing';
 
 export type InterventionSeverity = 'info' | 'warning' | 'critical';
 

@@ -3,49 +3,80 @@
 
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
 // [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
+// [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
+// [claude-code 2026-03-23] Browser Use Phase 2 — CDP + browser-use CLI bridge
+// [claude-code 2026-03-24] Supabase Google OAuth deep link: fintheon:// protocol + open-url handler
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
-// electron-updater lazy-loaded inside setupAutoUpdater() to avoid crash before app.ready
-let autoUpdater = null;
+const { autoUpdater } = require("electron-updater");
 
 let mainWindow = null;
 let backendProcess = null;
+let pendingAuthUrl = null;
 
-// [claude-code 2026-03-16] Resolve backend path for both dev and packaged DMG
-function getBackendDir() {
-  if (app.isPackaged) {
-    // In packaged app, extraResources are at process.resourcesPath
-    return path.join(process.resourcesPath, "backend-hono");
-  }
-  // In dev, backend-hono is a sibling of electron/
-  return path.join(__dirname, "..", "backend-hono");
+/* ------------------------------------------------------------------ */
+/*  Startup config — persisted to userData/fintheon-startup.json       */
+/* ------------------------------------------------------------------ */
+
+const CONFIG_PATH = path.join(app.getPath("userData"), "fintheon-startup.json");
+const DEFAULT_CONFIG = { backendAutostart: true, launchOnLogin: false };
+
+function readStartupConfig() {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      return { ...DEFAULT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")) };
+    }
+  } catch {}
+  return { ...DEFAULT_CONFIG };
 }
 
-function startBackend() {
-  const backendDir = getBackendDir();
+function writeStartupConfig(cfg) {
+  try {
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), "utf8");
+  } catch (err) {
+    console.error("[Config] Failed to write startup config:", err.message);
+  }
+}
+
+// [claude-code 2026-03-20] Check if backend is already running (LaunchAgent or manual)
+async function isBackendAlive() {
+  try {
+    const http = require("http");
+    return new Promise((resolve) => {
+      const req = http.get("http://localhost:8080/health", (res) => {
+        resolve(res.statusCode < 500);
+      });
+      req.on("error", () => resolve(false));
+      req.setTimeout(2000, () => { req.destroy(); resolve(false); });
+    });
+  } catch {
+    return false;
+  }
+}
+
+async function startBackend() {
+  // If backend is already running (via LaunchAgent or manually), skip spawn
+  const alive = await isBackendAlive();
+  if (alive) {
+    console.log("[Electron] Backend already running on :8080 — skipping spawn");
+    return;
+  }
+
+  const backendDir = path.join(__dirname, "..", "backend-hono");
   const distEntry = path.join(backendDir, "dist", "index.js");
 
   if (!fs.existsSync(distEntry)) {
-    if (app.isPackaged) {
-      // Packaged app should always have the backend built — fatal error
-      dialog.showErrorBox(
-        "Backend Missing",
-        "The backend was not bundled correctly.\nPlease reinstall the app."
-      );
-      return;
-    }
-    // Dev mode — try to compile
     console.warn("[Electron] Backend dist not found — attempting build...");
     try {
-      execFileSync("npm", ["run", "build"], { cwd: backendDir, stdio: "inherit" });
+      execFileSync("bun", ["run", "build"], { cwd: backendDir, stdio: "inherit" });
       console.log("[Electron] Backend build succeeded");
     } catch (buildErr) {
       console.error("[Electron] Backend build failed:", buildErr.message);
       dialog.showErrorBox(
         "Backend Not Built",
-        "The backend could not be compiled.\n\nRun manually:\n  cd backend-hono && npm run build\n\nThen relaunch the app."
+        "The backend could not be compiled.\n\nRun manually:\n  cd backend-hono && bun run build\n\nThen relaunch the app."
       );
       return;
     }
@@ -53,10 +84,9 @@ function startBackend() {
 
   const envPath = path.join(backendDir, ".env");
   console.log(`[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`);
-  // Use Electron's own Node runtime in packaged apps (no system `node` on PATH)
-  backendProcess = spawn(process.execPath, [distEntry], {
+  backendProcess = spawn("node", [distEntry], {
     cwd: backendDir,
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", NODE_ENV: "production", DOTENV_CONFIG_PATH: envPath },
+    env: { ...process.env, NODE_ENV: "production", DOTENV_CONFIG_PATH: envPath },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
@@ -87,12 +117,6 @@ function stopBackend() {
 /* ------------------------------------------------------------------ */
 
 function setupAutoUpdater() {
-  try {
-    autoUpdater = require("electron-updater").autoUpdater;
-  } catch (err) {
-    console.warn("[Updater] electron-updater not available:", err.message);
-    return;
-  }
   // Don't auto-download — let the user decide via the modal
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -167,32 +191,20 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "discordapp.com") return true;
     if (host.endsWith(".discordapp.com")) return true;
 
-    // Clerk authentication (Google OAuth + Clerk hosted UI)
-    if (host.endsWith(".clerk.accounts.dev")) return true;
-    if (host.endsWith(".pricedinresearch.io")) return true;
-    if (host === "clerk.app.pricedinresearch.io") return true;
+    // TopStepX (trading platform)
+    if (host === "topstepx.com") return true;
+    if (host.endsWith(".topstepx.com")) return true;
+
+    // Google auth relay domains
+    if (host.endsWith(".google.com")) return true;
+    if (host.endsWith(".gstatic.com")) return true;
+    if (host.endsWith(".googleapis.com")) return true;
 
     return false;
   } catch {
     return false;
   }
 };
-
-// [claude-code 2026-03-16] Load from localhost:8080 for Clerk auth (needs HTTP origin, not file://)
-const BACKEND_URL = "http://localhost:8080";
-
-async function waitForBackend(url, maxRetries = 30, delayMs = 1000) {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const res = await fetch(`${url}/health`);
-      if (res.ok || res.status === 207 || res.status === 503) return true;
-    } catch {
-      // Backend not ready yet
-    }
-    await new Promise((r) => setTimeout(r, delayMs));
-  }
-  return false;
-}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -208,25 +220,67 @@ function createWindow() {
     },
   });
 
-  // Dev: load Vite dev server. Production: load built dist/index.html
-  if (!app.isPackaged) {
-    const VITE_DEV_URL = "http://localhost:5173";
-    console.log("[Electron] Dev mode — loading Vite dev server at", VITE_DEV_URL);
-    win.loadURL(VITE_DEV_URL);
-  } else {
-    waitForBackend(BACKEND_URL).then(() => {
-      const rendererPath = path.join(__dirname, "..", "dist", "index.html");
-      win.loadFile(rendererPath);
-    });
-  }
-
+  const rendererPath = path.join(__dirname, "..", "frontend", "dist", "index.html");
+  win.loadFile(rendererPath);
   mainWindow = win;
 }
 
+// [claude-code 2026-03-23] Browser Use Phase 2 — enable CDP for browser-use CLI
+app.commandLine.appendSwitch('remote-debugging-port', '9222');
+
+// macOS: handle fintheon:// URLs when app is already running
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  console.log("[Electron] open-url received:", url);
+  if (mainWindow) {
+    mainWindow.webContents.send("auth-callback", url);
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  } else {
+    pendingAuthUrl = url;
+  }
+});
+
+// Windows/Linux: second-instance receives the deep link URL in argv
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv) => {
+    const url = argv.find((arg) => arg.startsWith("fintheon://"));
+    if (url && mainWindow) {
+      mainWindow.webContents.send("auth-callback", url);
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
 app.whenReady().then(() => {
-  startBackend();
+  // Register fintheon:// as a custom protocol for OAuth callbacks
+  app.setAsDefaultProtocolClient("fintheon");
+
+  const cfg = readStartupConfig();
+  if (cfg.backendAutostart) {
+    startBackend();
+  } else {
+    console.log("[Electron] Backend autostart disabled — skipping");
+  }
   createWindow();
   setupAutoUpdater();
+
+  // Forward any pending auth URL AFTER the renderer finishes loading
+  // (sending before did-finish-load means the IPC message is lost)
+  if (mainWindow) {
+    mainWindow.webContents.on("did-finish-load", () => {
+      if (pendingAuthUrl) {
+        console.log("[Electron] Forwarding pending auth URL:", pendingAuthUrl);
+        mainWindow.webContents.send("auth-callback", pendingAuthUrl);
+        pendingAuthUrl = null;
+      }
+    });
+  }
+  // Browser Use Phase 2 — CDP enabled via commandLine switch, no in-process handlers needed
 
   // Handle window.open from embedded <webview> tags.
   app.on("web-contents-created", (_event, contents) => {
@@ -234,7 +288,8 @@ app.whenReady().then(() => {
       if (contents.getType && contents.getType() === "webview") {
         contents.setWindowOpenHandler(({ url }) => {
           if (shouldAllowInAppPopup(url)) {
-            // Allow an in-app popup so the auth session stays in the same partition.
+            // Allow an in-app popup — share the webview's partition so the
+            // auth session cookies carry over (fixes Google OAuth in iframes).
             return {
               action: "allow",
               overrideBrowserWindowOptions: {
@@ -247,6 +302,7 @@ app.whenReady().then(() => {
                   contextIsolation: true,
                   nodeIntegration: false,
                   nativeWindowOpen: true,
+                  partition: "persist:fintheon",
                 },
               },
             };
@@ -255,6 +311,42 @@ app.whenReady().then(() => {
           // For non-auth links, open externally to avoid popup spam.
           shell.openExternal(url).catch(() => {});
           return { action: "deny" };
+        });
+
+        // Intercept in-page navigations to Google OAuth inside webviews —
+        // Google blocks sign-in in embedded frames. Open in a popup instead.
+        contents.on("will-navigate", (navEvent, navUrl) => {
+          try {
+            const parsed = new URL(navUrl);
+            if (parsed.hostname === "accounts.google.com") {
+              navEvent.preventDefault();
+              const popup = new BrowserWindow({
+                width: 520,
+                height: 760,
+                parent: mainWindow ?? undefined,
+                modal: false,
+                title: "Sign in with Google",
+                webPreferences: {
+                  contextIsolation: true,
+                  nodeIntegration: false,
+                  nativeWindowOpen: true,
+                  partition: "persist:fintheon",
+                },
+              });
+              popup.loadURL(navUrl);
+              // When Google redirects back to the service, close the popup
+              popup.webContents.on("will-redirect", (_rEvent, redirectUrl) => {
+                try {
+                  const rParsed = new URL(redirectUrl);
+                  if (rParsed.hostname !== "accounts.google.com" &&
+                      !rParsed.hostname.endsWith(".google.com")) {
+                    // Auth complete — redirect happened back to the service
+                    setTimeout(() => popup.close(), 1500);
+                  }
+                } catch {}
+              });
+            }
+          } catch {}
         });
       }
     } catch {
@@ -269,7 +361,7 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   stopBackend();
-  app.quit();
+  if (process.platform !== "darwin") app.quit();
 });
 
 app.on("before-quit", () => {
@@ -281,9 +373,16 @@ ipcMain.handle("toggle-mini-widget", () => {
   return { ok: true };
 });
 
+// [claude-code 2026-03-24] Open URL in system browser (for OAuth flows)
+ipcMain.handle("open-external", (_event, url) => {
+  if (typeof url === "string" && (url.startsWith("https://") || url.startsWith("http://"))) {
+    shell.openExternal(url);
+  }
+  return { ok: true };
+});
+
 // Auto-update IPC handlers
 ipcMain.handle("update-download", () => {
-  if (!autoUpdater) return { ok: false, error: "updater not available" };
   autoUpdater.downloadUpdate().catch((err) => {
     console.error("[Updater] Download failed:", err.message);
   });
@@ -291,20 +390,54 @@ ipcMain.handle("update-download", () => {
 });
 
 ipcMain.handle("update-install", () => {
-  if (!autoUpdater) return { ok: false, error: "updater not available" };
   stopBackend();
   autoUpdater.quitAndInstall(false, true);
   return { ok: true };
 });
 
 ipcMain.handle("update-check", () => {
-  if (!autoUpdater) return { ok: false, error: "updater not available" };
   autoUpdater.checkForUpdates().catch(() => {});
   return { ok: true };
 });
 
 ipcMain.handle("get-app-version", () => {
   return app.getVersion();
+});
+
+// Startup config IPC
+ipcMain.handle("get-startup-config", () => {
+  const cfg = readStartupConfig();
+  // Also read actual login-item state from OS
+  const loginSettings = app.getLoginItemSettings();
+  cfg.launchOnLogin = loginSettings.openAtLogin;
+  return cfg;
+});
+
+ipcMain.handle("set-startup-config", (_event, patch) => {
+  const cfg = readStartupConfig();
+  if (typeof patch.backendAutostart === "boolean") cfg.backendAutostart = patch.backendAutostart;
+  if (typeof patch.launchOnLogin === "boolean") {
+    cfg.launchOnLogin = patch.launchOnLogin;
+    app.setLoginItemSettings({ openAtLogin: patch.launchOnLogin });
+  }
+  writeStartupConfig(cfg);
+  return cfg;
+});
+
+// Manual backend start/stop from renderer
+ipcMain.handle("start-backend", async () => {
+  if (backendProcess) return { ok: true, detail: "already running" };
+  await startBackend();
+  return { ok: true };
+});
+
+ipcMain.handle("stop-backend", () => {
+  stopBackend();
+  return { ok: true };
+});
+
+ipcMain.handle("is-backend-alive", async () => {
+  return { alive: await isBackendAlive() };
 });
 
 // Fintheon CLI: run shell command from project root and stream output to renderer
@@ -344,4 +477,31 @@ ipcMain.handle("run-shell-command", (event, command) => {
     } catch (_) {}
   });
   return { ok: true };
+});
+
+// [claude-code 2026-03-23] Browser Use Phase 2 — CLI command bridge
+ipcMain.handle("browser-use-command", async (_event, args) => {
+  const { execFile } = require("child_process");
+  return new Promise((resolve) => {
+    execFile("browser-use", ["--cdp-url", "http://localhost:9222", "--json", ...args], {
+      timeout: 30000,
+      env: { ...process.env },
+    }, (error, stdout, stderr) => {
+      if (error) resolve({ ok: false, error: error.message, stderr });
+      else {
+        try { resolve({ ok: true, data: JSON.parse(stdout) }); }
+        catch { resolve({ ok: true, data: stdout.trim() }); }
+      }
+    });
+  });
+});
+
+ipcMain.handle("browser-use-status", async () => {
+  const { execFile } = require("child_process");
+  return new Promise((resolve) => {
+    execFile("browser-use", ["--json", "sessions"], { timeout: 5000 }, (error, stdout) => {
+      if (error) resolve({ running: false });
+      else resolve({ running: true, sessions: stdout.trim() });
+    });
+  });
 });

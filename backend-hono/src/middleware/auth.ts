@@ -1,38 +1,43 @@
-// [claude-code 2026-03-16] Clerk JWT verification with dev fallback
+// [claude-code 2026-03-24] Supabase JWT auth middleware — sets supabaseUid for profile lookups
 import type { Context, Next } from 'hono';
-import { verifyClerkToken } from '../services/clerk-auth.js';
+import { verifySupabaseToken } from '../services/supabase-auth.js';
 
-const isDev = process.env.NODE_ENV !== 'production';
-const hasClerkSecret = Boolean(process.env.CLERK_SECRET_KEY);
+const BYPASS_AUTH = process.env.BYPASS_AUTH === 'true';
 
 /**
- * Auth Middleware — Clerk JWT verification
- * Falls back to local-user in dev mode when Clerk is not configured
+ * Auth Middleware — Supabase JWT verification
+ * When BYPASS_AUTH=true: sets local-user (dev/electron mode)
+ * Otherwise: extracts Bearer token, verifies with Supabase auth.getUser(), sets userId/email/supabaseUid
  */
 export const authMiddleware = async (c: Context, next: Next) => {
-  const authHeader = c.req.header('Authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-  if (!token) {
-    // Dev fallback: allow unauthenticated requests when Clerk isn't configured
-    if (isDev && !hasClerkSecret) {
-      c.set('auth', { userId: 'local-user', email: 'user@local' });
-      c.set('userId', 'local-user');
-      c.set('email', 'user@local');
-      return await next();
-    }
-    return c.json({ error: 'Unauthorized' }, 401);
+  if (BYPASS_AUTH) {
+    c.set('auth', { userId: 'local-user', email: 'user@local' });
+    c.set('userId', 'local-user');
+    c.set('supabaseUid', 'local-user');
+    c.set('email', 'user@local');
+    return await next();
   }
 
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: 'Missing or invalid Authorization header' }, 401);
+  }
+
+  const token = authHeader.slice(7);
+
   try {
-    const payload = await verifyClerkToken(token);
-    const userId = payload.sub || (payload as any).userId || 'clerk-user';
-    c.set('auth', payload);
+    const payload = await verifySupabaseToken(token);
+    const userId = payload.sub;
+    const email = payload.email;
+
+    c.set('auth', { userId, email });
     c.set('userId', userId);
-    c.set('email', (payload as any).email || '');
+    c.set('supabaseUid', userId);
+    c.set('email', email);
+
     return await next();
   } catch (error) {
-    console.warn('[Auth] Token verification failed:', (error as Error).message);
-    return c.json({ error: 'Invalid token' }, 401);
+    console.error('[auth] Token verification failed:', error);
+    return c.json({ error: 'Invalid or expired token' }, 401);
   }
 };

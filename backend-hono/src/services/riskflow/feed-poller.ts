@@ -9,8 +9,11 @@ import * as newsCache from './news-cache.js';
 import { enrichFeedWithAnalysis } from './feed-service.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import { fetchEconomicFeed } from './economic-feed.js';
-import { getWarmCacheItems } from '../twitter-cli/index.js';
+import { isTwitterCliInstalled, pollTwitterForEconNews, manualRefreshTweets } from '../twitter-cli/index.js';
 import type { FeedItem } from '../../types/riskflow.js';
+import { createLogger } from '../../lib/logger.js';
+
+const log = createLogger('FeedPoller');
 
 const POLL_INTERVAL_MS = 15_000; // Poll every 15 seconds for instant Level 4 detection
 let pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -27,9 +30,9 @@ async function pollForNewItems(): Promise<void> {
   isPolling = true;
 
   try {
-    // Gather items from warm cache (fed by econ-triggered-poller on its own schedule) + economic feed
+    // Gather items from twitter-cli + economic feed
     const [twitterCliItems, econItems] = await Promise.all([
-      Promise.resolve(getWarmCacheItems()),
+      isTwitterCliInstalled().then(ok => ok ? pollTwitterForEconNews() : []).catch(() => []),
       fetchEconomicFeed().catch(() => []),
     ]);
 
@@ -48,7 +51,7 @@ async function pollForNewItems(): Promise<void> {
       return; // No new items
     }
 
-    console.log(`[FeedPoller] Found ${newItems.length} new items (${cachedIds.size} already cached)`);
+    log.info(` Found ${newItems.length} new items (${cachedIds.size} already cached)`);
 
     // Enrich with AI analysis (this calculates IV scores and macro levels)
     const enrichedItems = await enrichFeedWithAnalysis(newItems);
@@ -59,15 +62,15 @@ async function pollForNewItems(): Promise<void> {
     // Broadcast Level 4 items immediately via SSE
     const level4Items = enrichedItems.filter(item => item.macroLevel === 4);
     for (const item of level4Items) {
-      console.log(`[FeedPoller] Broadcasting Level 4 item: ${item.headline}`);
+      log.info(` Broadcasting Level 4 item: ${item.headline}`);
       broadcastLevel4(item);
     }
 
     if (level4Items.length > 0) {
-      console.log(`[FeedPoller] Broadcast ${level4Items.length} Level 4 items via SSE`);
+      log.info(` Broadcast ${level4Items.length} Level 4 items via SSE`);
     }
   } catch (error) {
-    console.error('[FeedPoller] Poll error:', error);
+    log.error(' Poll error:', error);
   } finally {
     isPolling = false;
   }
@@ -82,7 +85,7 @@ export function startFeedPoller(): void {
     return;
   }
 
-  console.log(`[FeedPoller] Starting continuous polling (every ${POLL_INTERVAL_MS / 1000}s)`);
+  log.info(` Starting continuous polling (every ${POLL_INTERVAL_MS / 1000}s)`);
 
   // Poll immediately on startup
   pollForNewItems();
@@ -105,10 +108,51 @@ export function stopFeedPoller(): void {
 }
 
 /**
- * Force an immediate poll cycle (used by manual refresh endpoint)
+ * Force an immediate poll cycle (used by manual refresh endpoint).
+ * Uses manualRefreshTweets which bypasses autoRefresh + event window gates.
+ * Waits for any active poll to finish before running, so the refresh
+ * is never silently dropped.
  */
 export async function forcePoll(): Promise<void> {
-  await pollForNewItems();
+  // Wait for any in-flight poll to complete (max ~5s)
+  let waited = 0;
+  while (isPolling && waited < 5000) {
+    await new Promise(r => setTimeout(r, 250));
+    waited += 250;
+  }
+
+  isPolling = true;
+  try {
+    // Manual refresh: bypass autoRefresh + event window via manualRefreshTweets
+    const [twitterCliItems, econItems] = await Promise.all([
+      manualRefreshTweets().catch(() => []),
+      fetchEconomicFeed().catch(() => []),
+    ]);
+
+    const rawItems: FeedItem[] = [...econItems, ...twitterCliItems];
+    if (rawItems.length === 0) return;
+
+    const itemIds = rawItems.map(i => i.id);
+    const cachedIds = await newsCache.getCachedTweetIds(itemIds);
+    const newItems = rawItems.filter(i => !cachedIds.has(i.id));
+
+    if (newItems.length === 0) return;
+
+    log.info(` Manual refresh: ${newItems.length} new items (${cachedIds.size} already cached)`);
+
+    const enrichedItems = await enrichFeedWithAnalysis(newItems);
+    await newsCache.storeFeedItems(enrichedItems);
+
+    const level4Items = enrichedItems.filter(item => item.macroLevel === 4);
+    for (const item of level4Items) {
+      log.info(` Broadcasting Level 4 item: ${item.headline}`);
+      broadcastLevel4(item);
+    }
+  } catch (error) {
+    log.error(' Manual refresh error:', error);
+  } finally {
+    isPolling = false;
+  }
 }
 
 /**

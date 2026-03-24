@@ -1,14 +1,23 @@
-// [claude-code 2026-03-19] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
+// [claude-code 2026-03-24] Added reactive MiroFish adjustment loop for high-impact items (macroLevel >= 3)
+// [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
 // Gated by ENABLE_CENTRAL_SCORING=true (only TP's instance should set this)
+// Phase T4: wired recordObservation() to feed autoresearch scoring pipeline
 import { enrichFeedWithAnalysis } from './feed-service.js';
 import {
   readUnscoredItems,
+  readScoredItems,
   writeScoredItems,
   type RawRiskFlowItem,
   type ScoredRiskFlowItem,
 } from '../supabase-service.js';
 import { isSupabaseConfigured } from '../../config/supabase.js';
 import type { FeedItem } from '../../types/riskflow.js';
+import { createLogger } from '../../lib/logger.js';
+import { recordObservation } from '../autoresearch/scoring-observer.js';
+import { fetchVIX } from '../vix-service.js';
+import { shouldTriggerReactiveAdjustment, adjustScoresForRiskFlow, getRunningState, setRunningState } from '../mirofish/mirofish-reactive.js';
+
+const log = createLogger('CentralScorer');
 
 const SCORING_INTERVAL = 30_000; // 30 seconds
 const BATCH_SIZE = 20;
@@ -71,7 +80,7 @@ async function scoringCycle(): Promise<void> {
       return;
     }
 
-    console.log(`[Central Scorer] Processing ${unscoredItems.length} unscored items`);
+    log.info(` Processing ${unscoredItems.length} unscored items`);
 
     // Build a map of tweet_id → raw Supabase id for linking
     const rawIdMap = new Map<string, string>();
@@ -83,6 +92,54 @@ async function scoringCycle(): Promise<void> {
     // Run through the existing AI enrichment pipeline (Grok analyzer)
     const enrichedItems = await enrichFeedWithAnalysis(feedItems);
 
+    // Phase T4: Record autoresearch observations for items with IV scores
+    const instrument = process.env.PRIMARY_INSTRUMENT || '/ES';
+    let observationCount = 0;
+    const vixData = await fetchVIX().catch(() => null);
+    const vixLevel = vixData?.level ?? 0;
+
+    for (const item of enrichedItems) {
+      if (!item.ivScore || item.ivScore <= 0) continue;
+      observationCount++;
+      recordObservation({
+        id: item.id,
+        headline: item.headline,
+        eventType: item.tags?.[0] || 'news',
+        ivScore: item.ivScore,
+        vixLevel,
+        instrument,
+        currentPrice: 0,
+        publishedAt: item.publishedAt,
+        source: item.source,
+        tags: item.tags,
+      }).catch((err) => {
+        log.error(` Observation recording failed for ${item.id}:`, err);
+      });
+    }
+
+    if (observationCount > 0) {
+      log.info(` Recorded ${observationCount} autoresearch observations`);
+    }
+
+    // Reactive MiroFish adjustment: high-impact items trigger running analysis update
+    for (const item of enrichedItems) {
+      if (item.macroLevel && shouldTriggerReactiveAdjustment(item.macroLevel)) {
+        const currentState = getRunningState();
+        if (currentState) {
+          const updated = adjustScoresForRiskFlow(currentState, {
+            id: item.id,
+            headline: item.headline,
+            tags: item.tags || [],
+            ivScore: item.ivScore || 0,
+            macroLevel: item.macroLevel,
+            sentiment: item.sentiment || 'neutral',
+          });
+          setRunningState(updated);
+          log.info(` Reactive MiroFish adjustment: ${item.headline.slice(0, 60)}... → composite ${updated.compositeIV.toFixed(1)}`);
+        }
+      }
+    }
+
     // Convert back to scored format and write to Supabase
     const scoredItems = enrichedItems.map((item) => {
       const rawId = rawIdMap.get(item.id) || '';
@@ -90,12 +147,55 @@ async function scoringCycle(): Promise<void> {
     });
 
     const written = await writeScoredItems(scoredItems);
-    console.log(`[Central Scorer] Wrote ${written} scored items to Supabase`);
+    log.info(` Wrote ${written} scored items to Supabase`);
   } catch (err) {
-    console.error('[Central Scorer] Scoring cycle error:', err);
+    log.error(' Scoring cycle error:', { error: err instanceof Error ? err.message : String(err) });
   } finally {
     isScoring = false;
   }
+}
+
+/**
+ * Convert a ScoredRiskFlowItem back into a FeedItem for re-enrichment
+ */
+function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
+  return {
+    id: scored.tweet_id,
+    source: (scored.source as FeedItem['source']) || 'TwitterCli',
+    headline: scored.headline || '',
+    body: scored.body,
+    symbols: scored.symbols || [],
+    tags: scored.tags || [],
+    isBreaking: scored.is_breaking || false,
+    urgency: (scored.urgency as FeedItem['urgency']) || 'normal',
+    publishedAt: scored.published_at || new Date().toISOString(),
+    sentiment: scored.sentiment as FeedItem['sentiment'],
+    ivScore: scored.iv_score,
+    macroLevel: scored.macro_level as FeedItem['macroLevel'],
+    analyzedAt: scored.analyzed_at,
+  };
+}
+
+/**
+ * Re-enrich already-scored items from the last 4 hours.
+ * Called by VIX trigger system when market conditions change.
+ * Returns the number of items updated.
+ */
+export async function rescoreCycle(): Promise<number> {
+  const since = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+  const scoredItems = await readScoredItems({ since, limit: 30 });
+  if (scoredItems.length === 0) return 0;
+
+  const feedItems = scoredItems.map(scoredToFeedItem);
+  const reEnriched = await enrichFeedWithAnalysis(feedItems);
+
+  const updatedScored = reEnriched.map((item, i) =>
+    feedItemToScored(item, scoredItems[i].raw_item_id || '')
+  );
+  const written = await writeScoredItems(updatedScored);
+
+  log.info(`Rescore complete: ${written}/${scoredItems.length} items updated`);
+  return written;
 }
 
 /**
@@ -103,16 +203,16 @@ async function scoringCycle(): Promise<void> {
  */
 export function startCentralScorer(): void {
   if (!ENABLE_CENTRAL_SCORING) {
-    console.log('[Central Scorer] Disabled (set ENABLE_CENTRAL_SCORING=true to enable)');
+    log.info(' Disabled (set ENABLE_CENTRAL_SCORING=true to enable)');
     return;
   }
 
   if (!isSupabaseConfigured()) {
-    console.warn('[Central Scorer] Supabase not configured — cannot start');
+    log.warn(' Supabase not configured — cannot start');
     return;
   }
 
-  console.log(`[Central Scorer] Starting (interval: ${SCORING_INTERVAL / 1000}s, batch: ${BATCH_SIZE})`);
+  log.info(` Starting (interval: ${SCORING_INTERVAL / 1000}s, batch: ${BATCH_SIZE})`);
 
   // Run immediately, then on interval
   scoringCycle();
@@ -126,7 +226,7 @@ export function stopCentralScorer(): void {
   if (scoringTimer) {
     clearInterval(scoringTimer);
     scoringTimer = null;
-    console.log('[Central Scorer] Stopped');
+    log.info(' Stopped');
   }
 }
 

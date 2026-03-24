@@ -1,7 +1,12 @@
-// [claude-code 2026-03-16] MiroFish simulation routes
+// [claude-code 2026-03-24] Added rolling-window, auto-run-check, running-state routes
+// [claude-code 2026-03-23] MiroFish simulation routes — added context + history endpoints
 
 import { Hono } from 'hono';
-import { handleSimulate, handleStatus, handleReport, handleInject } from './handlers.js';
+import {
+  handleSimulate, handleStatus, handleReport, handleInject,
+  handleGetContext, handleGetHistory,
+  handleRollingWindow, handleAutoRunCheck, handleRunningState,
+} from './handlers.js';
 
 export function createMirofishRoutes(): Hono {
   const app = new Hono();
@@ -10,6 +15,11 @@ export function createMirofishRoutes(): Hono {
   app.get('/status/:id', handleStatus);
   app.get('/report/:id', handleReport);
   app.post('/inject/:id', handleInject);
+  app.get('/context', handleGetContext);
+  app.get('/history', handleGetHistory);
+  app.get('/rolling-window', handleRollingWindow);
+  app.get('/auto-run-check', handleAutoRunCheck);
+  app.get('/running-state', handleRunningState);
 
   return app;
 }

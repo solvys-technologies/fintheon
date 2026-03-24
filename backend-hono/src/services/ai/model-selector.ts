@@ -40,7 +40,7 @@ const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
   chat: ['openrouter-sonnet', 'openrouter-opus'],
   general: ['openrouter-sonnet', 'openrouter-opus'],
   technical: ['openrouter-sonnet', 'openrouter-opus'],
-  quickpulse: ['openrouter-sonnet', 'openrouter-opus'],
+  quickfintheon: ['openrouter-sonnet', 'openrouter-opus'],
   research: ['openrouter-sonnet', 'openrouter-opus'],
   reasoning: ['openrouter-sonnet', 'openrouter-opus'],
   'harper-cao': ['openrouter-sonnet', 'openrouter-opus'],

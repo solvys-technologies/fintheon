@@ -1,3 +1,4 @@
+// [claude-code 2026-03-24] VIX-weighted scoring: continuousVIXMultiplier, SubScoreBreakdown, finer EVENT_WEIGHTS, macro threshold adjustment
 /**
  * IV Scorer Service
  * Calculate Implied Volatility impact scores for news events
@@ -5,41 +6,61 @@
  */
 
 import type { ParsedHeadline, HotPrint, IVScoreResult } from '../../types/news-analysis.js'
+import type { SubScoreBreakdown } from '../../types/riskflow.js'
+import type { VIXData } from '../vix-service.js'
 import { hasLevel4Emoji, MAJOR_MACRO_PRINTS } from '../headline-parser.js'
-import { INSTRUMENT_BETAS } from '../iv-scoring-v2.js'
+import { INSTRUMENT_BETAS, continuousVIXMultiplier } from '../iv-scoring-v2.js'
 
-// [claude-code 2026-03-12] Task 2C: Multi-instrument scoreToPoints, ExtendedIVScore uses impliedPoints + instrument
-// [claude-code 2026-03-12] Aligned V1 weights with V3 scoring matrix
-// Base impact weights by event type
+// [claude-code 2026-03-24] Synced with iv-scoring-v2 finer granularity (half-point steps, 2.0-10.0 range)
+// Base impact weights by event type — must stay in sync with iv-scoring-v2.ts EVENT_WEIGHTS
 const EVENT_WEIGHTS: Record<string, number> = {
-  fedDecision: 10,
-  cpiPrint: 8,
-  ppiPrint: 7,
-  nfpPrint: 7,
-  gdpPrint: 6,
-  earnings: 5,
-  geopolitical: 9,
+  // Black Swan (10)
+  blackSwan: 10,
+  majorCrisis: 10,
+  datacenterHalt: 10,
+  governmentShutdown: 10,
+  // Systemic stress (9-9.5)
+  liquidityStress: 9.5,
+  bankStress: 9,
   bankingCrisis: 9,
-  technicalBreak: 4,
+  // Fed/Policy + Geopolitical (8-8.5)
+  geopolitical: 8.5,
+  fedDecision: 8.5,
+  fomc: 8,
+  powellSpeak: 8,
+  tariffs: 8,
+  tariffEscalation: 8,
+  chinaTrade: 8,
+  conflict: 8,
+  // Credit/Inflation/Employment (7-7.5)
+  creditSpreadWidening: 7.5,
+  cpiPrint: 7.5,
+  nfpPrint: 7.5,
+  ppiPrint: 7,
+  pcePrint: 7,
+  jolts: 7,
+  earningsHighImpact: 7,
+  ismPrint: 7,
+  ism: 7,
+  // Yield/GDP/Political (5.5-6.5)
+  yieldCurveSignal: 6.5,
+  gdpPrint: 6,
+  leverageWarning: 6,
+  politicalCommentary: 5.5,
+  // Mid-tier (5)
+  earningsMidCap: 5,
+  earnings: 5,
   economicData: 5,
   retailSales: 5,
-  ism: 7,  // Leading indicator (PMI/ISM) — forward signal, aligned with V2
+  trade: 5,
+  // Lower-tier (3-4)
+  technicalBreak: 4,
   jobless: 4,
   housing: 4,
-  trade: 5,
-  // V3 event types — must match iv-scoring-v2 and iv-scoring-config.json
-  creditSpreadWidening: 8,
-  yieldCurveSignal: 7,
-  liquidityStress: 9,
-  bankStress: 9,
-  leverageWarning: 6,
-  // V2 event types
-  tariffEscalation: 8,
-  datacenterHalt: 9,
-  governmentShutdown: 7,
-  majorCrisis: 10,
-  powellSpeak: 8,
-  default: 3,
+  sectorNews: 3,
+  merger: 3,
+  other: 2.5,
+  default: 2,
 }
 
 // Urgency multipliers
@@ -68,6 +89,7 @@ export interface IVScoreInput {
   parsed: ParsedHeadline
   hotPrint?: HotPrint | null
   timestamp?: Date
+  vixData?: VIXData
 }
 
 export interface ExtendedIVScore extends IVScoreResult {
@@ -78,48 +100,62 @@ export interface ExtendedIVScore extends IVScoreResult {
   macroLevel: 1 | 2 | 3 | 4
   sentiment: 'bullish' | 'bearish' | 'neutral'
   tradingImplication: string
+  /** Per-item sub-score breakdown */
+  subScores?: SubScoreBreakdown
 }
 
 /**
  * Calculate IV impact score for a parsed headline
  */
 export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
-  const { parsed, hotPrint, timestamp = new Date() } = input
+  const { parsed, hotPrint, timestamp = new Date(), vixData } = input
   const rationale: string[] = []
-  
+
+  // --- Sub-score tracking ---
+  let subTiming = 0
+  let subDeviation = 0
+  let subMomentum = 0
+
   // Get base weight from event type
   const eventType = parsed.eventType ?? 'default'
-  let score = EVENT_WEIGHTS[eventType] ?? EVENT_WEIGHTS.default
+  const baseEventWeight = EVENT_WEIGHTS[eventType] ?? EVENT_WEIGHTS.default
+  let score = baseEventWeight
   rationale.push(`Base weight for ${eventType}: ${score}`)
 
-  // Breaking news boost
+  // Breaking news boost (momentum)
   if (parsed.isBreaking) {
     score += 1.5
+    subMomentum += 0.75
     rationale.push('Breaking headline: +1.5')
   }
 
-  // Urgency multiplier
+  // Urgency multiplier (momentum)
   const urgencyMult = URGENCY_MULTIPLIERS[parsed.urgency] ?? 1.0
   if (urgencyMult > 1.0) {
+    const urgencyBoost = score * (urgencyMult - 1)
+    subMomentum += Math.min(0.75, urgencyBoost / score)
     score *= urgencyMult
     rationale.push(`Urgency (${parsed.urgency}): ×${urgencyMult}`)
   }
 
-  // Market reaction language
+  // Market reaction language (momentum)
   if (parsed.marketReaction?.direction) {
-    const intensityBoost = parsed.marketReaction.intensity === 'severe' ? 1.5 : 
+    const intensityBoost = parsed.marketReaction.intensity === 'severe' ? 1.5 :
                            parsed.marketReaction.intensity === 'moderate' ? 0.75 : 0.25
     score += intensityBoost
+    subMomentum += Math.min(0.5, intensityBoost / 3)
     rationale.push(`Market reaction (${parsed.marketReaction.intensity}): +${intensityBoost}`)
   }
 
-  // Magnitude adjustment
+  // Magnitude adjustment (deviation)
   if (parsed.magnitude) {
     if (parsed.magnitude > 50) {
       score += 2
+      subDeviation += 1
       rationale.push('Large magnitude (>50): +2')
     } else if (parsed.magnitude > 25) {
       score += 1
+      subDeviation += 0.5
       rationale.push('Moderate magnitude (>25): +1')
     }
   }
@@ -129,28 +165,32 @@ export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
     const deviation = Math.abs(parsed.numbers.actual - parsed.numbers.forecast)
     const forecastValue = Math.abs(parsed.numbers.forecast) || 1
     const deviationPct = (deviation / forecastValue) * 100
-    
+
     if (deviationPct > 50) {
       score += 2.5
+      subDeviation += 2
       rationale.push(`Large deviation (${deviationPct.toFixed(1)}%): +2.5`)
     } else if (deviationPct > 20) {
       score += 1.5
+      subDeviation += 1
       rationale.push(`Moderate deviation (${deviationPct.toFixed(1)}%): +1.5`)
     } else if (deviationPct > 10) {
       score += 0.75
+      subDeviation += 0.5
       rationale.push(`Mild deviation (${deviationPct.toFixed(1)}%): +0.75`)
     }
   }
 
-  // Hot print boost
+  // Hot print boost (deviation)
   if (hotPrint) {
-    const impactBoost = hotPrint.impact === 'high' ? 2.5 : 
+    const impactBoost = hotPrint.impact === 'high' ? 2.5 :
                         hotPrint.impact === 'medium' ? 1.5 : 0.75
     score += impactBoost
+    subDeviation += Math.min(1, impactBoost / 2.5)
     rationale.push(`Hot print (${hotPrint.impact}): +${impactBoost}`)
   }
 
-  // Time-based adjustments
+  // Time-based adjustments (timing)
   const easternHour = getEasternHour(timestamp)
   for (const window of VOLATILITY_WINDOWS) {
     if (easternHour >= window.start && easternHour < window.end) {
@@ -158,14 +198,42 @@ export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
       if (window.label === 'FOMC window' && eventType !== 'fedDecision') {
         continue
       }
+      const timingBoost = score * (window.multiplier - 1)
+      subTiming += Math.min(3, timingBoost)
       score *= window.multiplier
       rationale.push(`${window.label} timing: ×${window.multiplier}`)
       break
     }
   }
 
+  // --- VIX continuous curve multiplier ---
+  let vixMult = 1.0
+  let vixContextScore = 0
+  if (vixData) {
+    vixMult = continuousVIXMultiplier(vixData.level)
+    score *= vixMult
+    vixContextScore = Math.min(10, vixData.level / 4) // 0-10 scale based on VIX level
+    rationale.push(`VIX ${vixData.level.toFixed(1)} → ×${vixMult.toFixed(2)}`)
+
+    if (vixData.isSpike) {
+      const spikeAdj = vixData.spikeDirection === 'up' ? 2 : -1
+      score += spikeAdj
+      rationale.push(`VIX spike ${vixData.spikeDirection}: ${spikeAdj > 0 ? '+' : ''}${spikeAdj}`)
+    }
+  }
+
   // Clamp final score
   score = Math.min(10, Math.max(0, score))
+
+  // Build sub-score breakdown
+  const subScores: SubScoreBreakdown = {
+    eventWeight: baseEventWeight,
+    timing: Math.min(3, subTiming),
+    deviation: Math.min(3, subDeviation),
+    momentum: Math.min(2, subMomentum),
+    vixContext: Number(vixContextScore.toFixed(1)),
+    vixMultiplier: Number(vixMult.toFixed(2)),
+  }
 
   // Calculate implied points (uses PRIMARY_INSTRUMENT env var or defaults to /ES)
   const primaryInstrument = process.env.PRIMARY_INSTRUMENT || '/ES'
@@ -175,8 +243,8 @@ export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
   const esResult = scoreToPoints(score, '/ES')
   const nqResult = scoreToPoints(score, '/NQ')
 
-  // Determine macro level (1-4 scale)
-  const macroLevel = calculateMacroLevel(score, parsed, hotPrint)
+  // Determine macro level (1-4 scale) — VIX-aware thresholds
+  const macroLevel = calculateMacroLevel(score, parsed, hotPrint, vixData)
 
   // Determine sentiment
   const sentiment = determineSentiment(parsed, hotPrint)
@@ -196,6 +264,7 @@ export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
     macroLevel,
     sentiment,
     tradingImplication,
+    subScores,
   }
 }
 
@@ -241,17 +310,23 @@ function scoreToPoints(score: number, instrument: string = '/ES'): { points: num
 
 /**
  * Calculate macro level (1-4)
+ * In elevated VIX (>22), the Level 3 threshold drops from 6 → 5
  */
 function calculateMacroLevel(
   score: number,
   parsed: ParsedHeadline,
-  hotPrint: HotPrint | null | undefined
+  hotPrint: HotPrint | null | undefined,
+  vixData?: VIXData
 ): 1 | 2 | 3 | 4 {
   const hasEmoji = hasLevel4Emoji(parsed.raw)
   const isMajorPrint = MAJOR_MACRO_PRINTS.includes(parsed.eventType ?? '')
 
   if (hasEmoji || isMajorPrint) return 4
-  if (hotPrint?.impact === 'medium' || score >= 6) return 3
+
+  // In elevated VIX, events matter more — lower the Level 3 threshold
+  const level3Threshold = (vixData && vixData.level > 22) ? 5 : 6
+
+  if (hotPrint?.impact === 'medium' || score >= level3Threshold) return 3
   if (score >= 4) return 2
   return 1
 }

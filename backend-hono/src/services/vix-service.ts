@@ -1,7 +1,9 @@
+// [claude-code 2026-03-24] VIX velocity tracking, regime detection, trigger callback system; spike threshold lowered to 2.5%
 // [claude-code 2026-03-14] VIX via Yahoo Finance — 60s polling, no API key needed
 /**
  * VIX Service
- * Real-time VIX fetching with caching, spike detection, and multiplier logic
+ * Real-time VIX fetching with caching, spike detection, velocity tracking,
+ * regime detection, and trigger callback system.
  * Source: Yahoo Finance (no API key required)
  */
 
@@ -14,6 +16,45 @@ export interface VIXData {
   spikeDirection: 'up' | 'down' | 'none'
   staleMinutes: number
 }
+
+export interface VIXVelocity {
+  pointsPerMinute: number
+  sustained: boolean       // >0.2pt/min for 3+ consecutive readings
+  regime: 'low' | 'normal' | 'elevated' | 'crisis'
+  previousRegime: 'low' | 'normal' | 'elevated' | 'crisis'
+  regimeChanged: boolean
+}
+
+export interface VIXTrigger {
+  type: 'spike' | 'velocity' | 'regime_change'
+  vixLevel: number
+  previousLevel: number
+  detail: string
+  timestamp: Date
+}
+
+type VIXTriggerCallback = (trigger: VIXTrigger) => void
+const _triggerCallbacks: VIXTriggerCallback[] = []
+
+/**
+ * Register a callback for VIX trigger events (spike, velocity, regime change).
+ * Returns an unsubscribe function.
+ */
+export function onVIXTrigger(cb: VIXTriggerCallback): () => void {
+  _triggerCallbacks.push(cb)
+  return () => {
+    const idx = _triggerCallbacks.indexOf(cb)
+    if (idx >= 0) _triggerCallbacks.splice(idx, 1)
+  }
+}
+
+function fireTrigger(trigger: VIXTrigger): void {
+  for (const cb of _triggerCallbacks) {
+    try { cb(trigger) } catch { /* callback errors must not crash polling */ }
+  }
+}
+
+let _previousRegime: VIXVelocity['regime'] = 'normal'
 
 interface VIXCache {
   level: number
@@ -115,24 +156,55 @@ function buildVIXData(cache: VIXCache, now: Date): VIXData {
     ? ((cache.level - cache.previousLevel) / cache.previousLevel) * 100
     : 0
   
-  // Spike detection: >5% change in 15 minutes
+  // Spike detection: >2.5% change in 15 minutes (lowered from 5%)
   let isSpike = false
   let spikeDirection: 'up' | 'down' | 'none' = 'none'
-  
+
   if (vixHistory.length >= 2) {
     const oldest = vixHistory[0]
     const newest = vixHistory[vixHistory.length - 1]
     const minutesElapsed = (newest.timestamp.getTime() - oldest.timestamp.getTime()) / 60000
-    
+
     if (minutesElapsed <= 15) {
       const historicalChange = ((newest.level - oldest.level) / oldest.level) * 100
-      if (Math.abs(historicalChange) > 5) {
+      if (Math.abs(historicalChange) > 2.5) {
         isSpike = true
         spikeDirection = historicalChange > 0 ? 'up' : 'down'
+
+        fireTrigger({
+          type: 'spike',
+          vixLevel: newest.level,
+          previousLevel: oldest.level,
+          detail: `${historicalChange > 0 ? '+' : ''}${historicalChange.toFixed(1)}% in ${minutesElapsed.toFixed(0)}min`,
+          timestamp: newest.timestamp,
+        })
       }
     }
   }
-  
+
+  // Velocity + regime triggers (only when we have enough history)
+  if (vixHistory.length >= 3) {
+    const velocity = getVIXVelocity()
+    if (velocity.sustained) {
+      fireTrigger({
+        type: 'velocity',
+        vixLevel: cache.level,
+        previousLevel: cache.previousLevel,
+        detail: `Sustained ${velocity.pointsPerMinute.toFixed(2)} pts/min`,
+        timestamp: cache.timestamp,
+      })
+    }
+    if (velocity.regimeChanged) {
+      fireTrigger({
+        type: 'regime_change',
+        vixLevel: cache.level,
+        previousLevel: cache.previousLevel,
+        detail: `${velocity.previousRegime} → ${velocity.regime}`,
+        timestamp: cache.timestamp,
+      })
+    }
+  }
+
   return {
     level: cache.level,
     previousLevel: cache.previousLevel,
@@ -168,9 +240,68 @@ function getFallbackVIX(now: Date): VIXData {
 }
 
 /**
+ * Compute VIX velocity from recent history.
+ * Uses last 5 readings (≈5 min at 60s intervals).
+ */
+export function getVIXVelocity(): VIXVelocity {
+  const regime = levelToRegime(vixCache?.level ?? 20)
+
+  if (vixHistory.length < 2) {
+    const vel: VIXVelocity = {
+      pointsPerMinute: 0,
+      sustained: false,
+      regime,
+      previousRegime: _previousRegime,
+      regimeChanged: regime !== _previousRegime,
+    }
+    if (vel.regimeChanged) _previousRegime = regime
+    return vel
+  }
+
+  // Take last 5 readings for velocity window
+  const window = vixHistory.slice(-5)
+  const first = window[0]
+  const last = window[window.length - 1]
+  const minutesElapsed = (last.timestamp.getTime() - first.timestamp.getTime()) / 60000
+  const pointsPerMinute = minutesElapsed > 0
+    ? (last.level - first.level) / minutesElapsed
+    : 0
+
+  // Sustained = rate > 0.2 pts/min for 3+ consecutive readings
+  let sustained = false
+  if (window.length >= 3) {
+    let consecutiveCount = 0
+    for (let i = 1; i < window.length; i++) {
+      const dt = (window[i].timestamp.getTime() - window[i - 1].timestamp.getTime()) / 60000
+      if (dt <= 0) continue
+      const rate = Math.abs(window[i].level - window[i - 1].level) / dt
+      if (rate > 0.2) {
+        consecutiveCount++
+      } else {
+        consecutiveCount = 0
+      }
+    }
+    sustained = consecutiveCount >= 3
+  }
+
+  const regimeChanged = regime !== _previousRegime
+  const previousRegime = _previousRegime
+  if (regimeChanged) _previousRegime = regime
+
+  return { pointsPerMinute, sustained, regime, previousRegime, regimeChanged }
+}
+
+function levelToRegime(level: number): VIXVelocity['regime'] {
+  if (level < 15) return 'low'
+  if (level < 22) return 'normal'
+  if (level < 30) return 'elevated'
+  return 'crisis'
+}
+
+/**
  * Get VIX spike adjustment for scoring
- * +2 if VIX spiked up >5% in 15 min
- * -1 if VIX dropped >5% in 15 min
+ * +2 if VIX spiked up >2.5% in 15 min
+ * -1 if VIX dropped >2.5% in 15 min
  */
 export function getVIXSpikeAdjustment(vixData: VIXData): number {
   if (!vixData.isSpike) return 0

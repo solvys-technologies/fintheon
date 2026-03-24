@@ -1,4 +1,15 @@
+// [claude-code 2026-03-23] Wired lockout-protocol + tilt-detector into psych-assist-service
 import { query } from '../db/optimized.js'
+import { detectTiltSignals, computeTiltRisk } from './psych-assist/tilt-detector.js'
+import type { TiltSignal, TiltDetectorContext } from './psych-assist/tilt-detector.js'
+import {
+  evaluateLockout,
+  isTradeBlocked,
+  dismissLockout,
+  submitDebrief,
+  createLockoutSession,
+} from './psych-assist/lockout-protocol.js'
+import type { LockoutState, LockoutSessionState } from './psych-assist/lockout-protocol.js'
 
 export type PsychScores = {
   executions: number
@@ -146,9 +157,72 @@ export const createPsychAssistService = () => {
     return mapProfile(result.rows[0] as Record<string, unknown>)
   }
 
+  // Per-user lockout session tracking (in-memory, resets on server restart)
+  const sessions = new Map<string, LockoutSessionState>()
+
+  const getSession = (userId: string): LockoutSessionState => {
+    if (!sessions.has(userId)) {
+      sessions.set(userId, createLockoutSession())
+    }
+    return sessions.get(userId)!
+  }
+
+  const assessTradingReadiness = async (userId: string, context: TiltDetectorContext) => {
+    const profile = await ensureProfile(userId)
+    const session = getSession(userId)
+
+    // Detect tilt signals
+    const signals = detectTiltSignals(context)
+    const riskScore = computeTiltRisk(signals)
+
+    // Evaluate lockout (only if not already locked out)
+    let lockout: LockoutState | null = session.activeLockout
+    if (!lockout) {
+      lockout = evaluateLockout({
+        consecutiveLosses: context.consecutiveLosses,
+        previousLockoutsToday: session.lockoutCount,
+        currentPnL: context.currentPnL,
+        accountResetsToday: context.accountResetsToday,
+      })
+      if (lockout) {
+        session.lockoutCount++
+        session.activeLockout = lockout
+      }
+    }
+
+    return {
+      profile,
+      signals,
+      riskScore,
+      lockout,
+      isBlocked: isTradeBlocked(session),
+    }
+  }
+
+  const handleDismissLockout = (userId: string): LockoutSessionState => {
+    const session = getSession(userId)
+    const updated = dismissLockout(session)
+    sessions.set(userId, updated)
+    return updated
+  }
+
+  const handleSubmitDebrief = (userId: string, answers: Record<string, string>): LockoutSessionState => {
+    const session = getSession(userId)
+    const updated = submitDebrief(session, answers)
+    sessions.set(userId, updated)
+    return updated
+  }
+
   return {
     getProfile: ensureProfile,
     updateProfile,
-    updateScores
+    updateScores,
+    assessTradingReadiness,
+    dismissLockout: handleDismissLockout,
+    submitDebrief: handleSubmitDebrief,
+    getSession,
   }
 }
+
+// Re-export types for route consumers
+export type { TiltSignal, TiltDetectorContext, LockoutState, LockoutSessionState }

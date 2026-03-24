@@ -16,7 +16,6 @@
     "@ai-sdk/groq": "^3.0.2",
     "@ai-sdk/openai": "^3.0.2",
     "@ai-sdk/xai": "^3.0.3",
-    "@clerk/backend": "^1.27.0",
     "@hono/node-server": "^1.13.0",
     "@neondatabase/serverless": "^0.10.4",
     "@sentry/node": "^10.32.1",
@@ -26,6 +25,7 @@
     "cron-parser": "^5.5.0",
     "dotenv": "^16.5.0",
     "hono": "^4.6.0",
+    "node-cron": "^4.2.1",
     "pg": "^8.16.3",
     "pino": "^9.6.0",
     "pino-pretty": "^11.0.0",
@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/node-cron": "^3.0.11",
     "typescript": "^5.8.3"
   },
   "engines": {

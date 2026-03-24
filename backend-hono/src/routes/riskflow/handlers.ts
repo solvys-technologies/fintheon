@@ -11,7 +11,7 @@ import * as watchlistService from '../../services/riskflow/watchlist-service.js'
 import { addClient, removeClient } from '../../services/riskflow/sse-broadcaster.js';
 import { corsConfig } from '../../config/cors.js';
 import type { FeedFilters, WatchlistUpdateRequest, NewsSource, MacroLevel } from '../../types/riskflow.js';
-import { getNotionPollerStatus } from '../../services/notion-poller.js';
+import { isSupabaseConfigured } from '../../config/supabase.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
 import { forcePoll } from '../../services/riskflow/feed-poller.js';
 import { fetchVIX, getVIXSpikeAdjustment, getVIXScoringMultiplier, getVIXBaseline } from '../../services/vix-service.js';
@@ -535,6 +535,11 @@ export async function handleCronPrefetch(c: Context) {
   }
 
   const result = await preFetchFeed();
+
+  // Piggyback 30-day cleanup on cron cycle
+  const { cleanupOldItems } = await import('../../services/riskflow/news-cache.js');
+  await cleanupOldItems().catch(() => {});
+
   const statusCode = result.success ? 200 : 500;
   return c.json(result, statusCode);
 }
@@ -695,9 +700,9 @@ export async function handleGetSources(c: Context) {
   const [twitterCli] = await Promise.all([
     isTwitterCliInstalled().catch(() => false),
   ]);
-  const notionStatus = getNotionPollerStatus();
+  const supabaseUp = isSupabaseConfigured();
   return c.json({
-    notion: notionStatus.running,
+    notion: supabaseUp, // Now backed by Supabase instead of Notion poller
     twitterCli,
     xApi: false, // Deprecated — replaced by twitter-cli
   });

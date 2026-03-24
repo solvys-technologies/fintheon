@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Activity, Newspaper, Settings, LogOut, Sparkles, Crosshair, Users } from 'lucide-react';
+import { Activity, Newspaper, Settings, LogOut, Sparkles, Crosshair } from 'lucide-react';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'models' | 'consilium';
+type NavTab = 'feed' | 'analysis' | 'news' | 'models';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -19,7 +19,6 @@ export function NavSidebar({ activeTab, onTabChange, onSettingsClick, onLogout, 
     { id: 'analysis' as NavTab, icon: Sparkles, label: 'Analysis' },
     { id: 'news' as NavTab, icon: Newspaper, label: 'Market News & Events' },
     { id: 'models' as NavTab, icon: Crosshair, label: 'Trading Models' },
-    { id: 'consilium' as NavTab, icon: Users, label: 'Consilium' },
   ];
 
   // Auto-hide after tab selection

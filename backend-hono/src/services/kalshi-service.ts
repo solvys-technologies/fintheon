@@ -1,104 +1,114 @@
-// [claude-code 2026-03-16] Kalshi whale tracker service — RSA-PSS auth, market polling, whale detection
-import crypto from 'node:crypto'
+// [claude-code 2026-03-20] 8b: Kalshi prediction market service — positions, market data, execution
 import type {
-  KalshiRawTrade, KalshiRawMarket, KalshiRawEvent,
-  KalshiMarket, KalshiTrade, WhaleAlert, WhaleAlertType,
-  KalshiMarketsResponse, KalshiWhaleResponse,
+  KalshiRawTrade,
+  KalshiRawMarket,
+  KalshiRawEvent,
+  KalshiMarket,
+  KalshiTrade,
+  WhaleAlert,
+  KalshiMarketsResponse,
+  KalshiWhaleResponse,
 } from '../types/kalshi.js'
 
-const BASE_URL = 'https://api.elections.kalshi.com/trade-api/v2'
+const KALSHI_API_BASE = process.env.KALSHI_API_URL || 'https://trading-api.kalshi.com/trade-api/v2'
+const WHALE_THRESHOLD_CONTRACTS = 100
+const WHALE_THRESHOLD_NOTIONAL = 5000 // USD
+const CLUSTER_WINDOW_MS = 60_000
 
-// ── Cache config ────────────────────────────────────────────────────────────
-const MARKETS_CACHE_TTL = 5 * 60_000   // 5 minutes
-const WHALE_CACHE_TTL = 90_000          // 90 seconds
-
-// ── Whale thresholds ────────────────────────────────────────────────────────
-const WHALE_MIN_CONTRACTS = 500
-const WHALE_MIN_NOTIONAL = 500          // $500
-const WHALE_OI_PERCENT = 0.05           // 5% of open interest
-const CLUSTER_WINDOW_MS = 5 * 60_000    // 5-minute window
-const CLUSTER_MIN_TRADES = 3
-
-// ── Macro keyword filter (matches polymarket-service pattern) ───────────────
-const MACRO_KEYWORDS = [
-  'fed', 'fomc', 'inflation', 'cpi', 'ppi', 'election', 'recession', 'rate',
-  'nfp', 'gdp', 'tariff', 'war', 'sanction', 'nato', 'china', 'russia',
-  'iran', 'opec', 'debt ceiling', 'government shutdown', 'geopolitic',
-  'treasury', 'unemployment', 'jobs', 'housing', 'pce', 'consumer',
-  'trump', 'biden', 'congress', 'senate', 'scotus', 'impeach',
-]
-
-// ── Target categories ───────────────────────────────────────────────────────
-const TARGET_CATEGORIES = ['Economics', 'Politics', 'Financials']
-
-// ── Internal state ──────────────────────────────────────────────────────────
-let marketsCache: { data: KalshiMarketsResponse; expires: number } | null = null
-let whaleCache: { data: KalshiWhaleResponse; expires: number } | null = null
-let lastTradePollTs: number = Date.now() - 10 * 60_000 // start 10min back
-
-// ── RSA-PSS Signing ─────────────────────────────────────────────────────────
-
-function getCredentials() {
-  const apiKey = process.env.KALSHI_API_KEY
-  const rawKey = process.env.KALSHI_RSA_PRIVATE_KEY
-  if (!apiKey || !rawKey) throw new Error('KALSHI_API_KEY and KALSHI_RSA_PRIVATE_KEY required')
-  const privateKey = rawKey.replace(/\\n/g, '\n')
-  return { apiKey, privateKey }
+interface KalshiCredentials {
+  email: string
+  password: string
+  token?: string
+  tokenExpiresAt?: number
 }
 
-function signRequest(method: string, path: string): Record<string, string> {
-  const { apiKey, privateKey } = getCredentials()
-  const ts = Date.now().toString()
-  const message = ts + method.toUpperCase() + path
+let credentials: KalshiCredentials | null = null
 
-  const signature = crypto.sign('sha256', Buffer.from(message), {
-    key: privateKey,
-    padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-    saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST,
-  }).toString('base64')
+function getCredentials(): KalshiCredentials | null {
+  if (credentials) return credentials
+  const email = process.env.KALSHI_EMAIL
+  const password = process.env.KALSHI_PASSWORD
+  if (email && password) {
+    credentials = { email, password }
+    return credentials
+  }
+  return null
+}
 
-  return {
-    'KALSHI-ACCESS-KEY': apiKey,
-    'KALSHI-ACCESS-TIMESTAMP': ts,
-    'KALSHI-ACCESS-SIGNATURE': signature,
-    'Content-Type': 'application/json',
+async function getAuthToken(): Promise<string | null> {
+  const creds = getCredentials()
+  if (!creds) return null
+
+  // Return cached token if still valid (with 5min buffer)
+  if (creds.token && creds.tokenExpiresAt && Date.now() < creds.tokenExpiresAt - 300_000) {
+    return creds.token
+  }
+
+  try {
+    const res = await fetch(`${KALSHI_API_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: creds.email, password: creds.password }),
+    })
+    if (!res.ok) {
+      console.error(`[Kalshi] Auth failed: ${res.status}`)
+      return null
+    }
+    const data = await res.json() as { token: string; member_id: string }
+    creds.token = data.token
+    creds.tokenExpiresAt = Date.now() + 24 * 60 * 60 * 1000 // 24h
+    return data.token
+  } catch (err) {
+    console.error('[Kalshi] Auth error:', err)
+    return null
   }
 }
 
-async function kalshiFetch<T>(method: string, path: string, params?: Record<string, string>): Promise<T> {
-  const url = new URL(BASE_URL + path)
-  if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
-  const headers = signRequest(method, path)
-  const resp = await fetch(url.toString(), { method, headers })
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => '')
-    throw new Error(`Kalshi ${method} ${path} failed: ${resp.status} ${body}`)
+async function kalshiFetch<T>(path: string, options?: RequestInit): Promise<T | null> {
+  const token = await getAuthToken()
+  if (!token) return null
+
+  try {
+    const res = await fetch(`${KALSHI_API_BASE}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options?.headers,
+      },
+    })
+    if (!res.ok) {
+      console.error(`[Kalshi] ${path} failed: ${res.status}`)
+      return null
+    }
+    return await res.json() as T
+  } catch (err) {
+    console.error(`[Kalshi] ${path} error:`, err)
+    return null
   }
-  return resp.json() as Promise<T>
 }
 
-// ── Normalization ───────────────────────────────────────────────────────────
-
-function normalizeMarket(raw: KalshiRawMarket, category: string): KalshiMarket {
+function normalizeMarket(raw: KalshiRawMarket): KalshiMarket {
   return {
     ticker: raw.ticker,
     eventTicker: raw.event_ticker,
-    title: raw.title || raw.ticker,
-    category,
-    status: raw.status as KalshiMarket['status'],
-    lastPrice: parseFloat(raw.last_price_dollars) || 0,
-    volume24h: parseFloat(raw.volume_24h_fp) || 0,
-    openInterest: parseFloat(raw.open_interest_fp) || 0,
-    closeTime: raw.close_time || undefined,
+    title: raw.title,
+    category: raw.market_type,
+    status: raw.status as 'open' | 'closed' | 'settled',
+    lastPrice: parseFloat(raw.last_price_dollars),
+    volume24h: parseFloat(raw.volume_24h_fp),
+    openInterest: parseFloat(raw.open_interest_fp),
+    closeTime: raw.close_time,
     url: `https://kalshi.com/markets/${raw.ticker}`,
   }
 }
 
 function normalizeTrade(raw: KalshiRawTrade): KalshiTrade {
-  const contracts = parseFloat(raw.count_fp) || 0
-  const yesPrice = parseFloat(raw.yes_price_dollars) || 0
-  const noPrice = parseFloat(raw.no_price_dollars) || 0
+  const contracts = Math.round(parseFloat(raw.count_fp))
+  const yesPrice = parseFloat(raw.yes_price_dollars)
+  const noPrice = parseFloat(raw.no_price_dollars)
   const takerPrice = raw.taker_side === 'yes' ? yesPrice : noPrice
+
   return {
     tradeId: raw.trade_id,
     ticker: raw.ticker,
@@ -111,180 +121,127 @@ function normalizeTrade(raw: KalshiRawTrade): KalshiTrade {
   }
 }
 
-// ── Market Fetching ─────────────────────────────────────────────────────────
-
-async function fetchMarketsForCategory(category: string): Promise<KalshiMarket[]> {
-  const resp = await kalshiFetch<{ events: KalshiRawEvent[] }>('GET', '/events', {
-    category,
-    status: 'open',
-    with_nested_markets: 'true',
-    limit: '200',
-  })
-  const markets: KalshiMarket[] = []
-  for (const event of resp.events || []) {
-    for (const m of event.markets || []) {
-      if (m.status === 'open') {
-        markets.push(normalizeMarket(m, event.category || category))
-      }
-    }
-  }
-  return markets
-}
-
-export async function fetchKalshiMarkets(): Promise<KalshiMarketsResponse> {
-  if (marketsCache && Date.now() < marketsCache.expires) return marketsCache.data
-
-  const batches = await Promise.all(
-    TARGET_CATEGORIES.map(cat => fetchMarketsForCategory(cat).catch(() => [] as KalshiMarket[]))
-  )
-  let markets = batches.flat()
-
-  // For Politics category, further filter to macro-relevant titles
-  markets = markets.filter(m => {
-    if (m.category === 'Economics' || m.category === 'Financials') return true
-    const lower = m.title.toLowerCase()
-    return MACRO_KEYWORDS.some(kw => lower.includes(kw))
-  })
-
-  // Sort by 24h volume descending
-  markets.sort((a, b) => b.volume24h - a.volume24h)
-
-  const data: KalshiMarketsResponse = { markets, fetchedAt: new Date().toISOString() }
-  marketsCache = { data, expires: Date.now() + MARKETS_CACHE_TTL }
-  return data
-}
-
-// ── Trade Fetching + Whale Detection ────────────────────────────────────────
-
-function runWhaleDetection(trades: KalshiTrade[], marketsMap: Map<string, KalshiMarket>): WhaleAlert[] {
+function detectWhales(trades: KalshiTrade[], markets: KalshiMarket[]): WhaleAlert[] {
   const alerts: WhaleAlert[] = []
-  const clusterAccum = new Map<string, { trades: KalshiTrade[]; windowStart: number }>()
-  const now = new Date().toISOString()
+  const marketMap = new Map(markets.map(m => [m.ticker, m]))
 
   for (const trade of trades) {
-    const market = marketsMap.get(trade.ticker)
-    const alertTypes: WhaleAlertType[] = []
+    const alertTypes: WhaleAlert['alertTypes'] = []
 
-    // Absolute threshold
-    if (trade.contracts >= WHALE_MIN_CONTRACTS) alertTypes.push('absolute')
-    // Notional threshold
-    if (trade.notionalUsd >= WHALE_MIN_NOTIONAL) alertTypes.push('notional')
-    // Relative to OI
-    if (market && market.openInterest > 0 && trade.contracts / market.openInterest >= WHALE_OI_PERCENT) {
-      alertTypes.push('relative')
-    }
+    if (trade.contracts >= WHALE_THRESHOLD_CONTRACTS) alertTypes.push('absolute')
+    if (trade.notionalUsd >= WHALE_THRESHOLD_NOTIONAL) alertTypes.push('notional')
 
-    const isLarge = alertTypes.length > 0
+    if (alertTypes.length === 0) continue
 
-    // Cluster accumulation
-    if (isLarge) {
-      const tradeTs = new Date(trade.createdAt).getTime()
-      const existing = clusterAccum.get(trade.ticker)
-      if (existing && tradeTs - existing.windowStart <= CLUSTER_WINDOW_MS) {
-        existing.trades.push(trade)
-      } else {
-        clusterAccum.set(trade.ticker, { trades: [trade], windowStart: tradeTs })
-      }
-    }
-
-    if (isLarge) {
-      alerts.push({
-        id: `whale-${trade.tradeId}`,
-        ticker: trade.ticker,
-        marketTitle: market?.title || trade.ticker,
-        category: market?.category || 'Unknown',
-        contracts: trade.contracts,
-        notionalUsd: trade.notionalUsd,
-        takerSide: trade.takerSide,
-        lastPrice: market?.lastPrice || trade.yesPrice,
-        alertTypes,
-        openInterest: market?.openInterest,
-        createdAt: trade.createdAt,
-        detectedAt: now,
-      })
-    }
+    const market = marketMap.get(trade.ticker)
+    alerts.push({
+      id: `whale-${trade.tradeId}`,
+      ticker: trade.ticker,
+      marketTitle: market?.title ?? trade.ticker,
+      category: market?.category ?? 'unknown',
+      contracts: trade.contracts,
+      notionalUsd: trade.notionalUsd,
+      takerSide: trade.takerSide,
+      lastPrice: market?.lastPrice ?? 0,
+      alertTypes,
+      openInterest: market?.openInterest,
+      createdAt: trade.createdAt,
+      detectedAt: new Date().toISOString(),
+    })
   }
 
-  // Emit cluster alerts
-  for (const [ticker, { trades: clusterTrades, windowStart }] of clusterAccum) {
-    if (clusterTrades.length >= CLUSTER_MIN_TRADES) {
-      const market = marketsMap.get(ticker)
-      const totalContracts = clusterTrades.reduce((s, t) => s + t.contracts, 0)
-      const totalNotional = clusterTrades.reduce((s, t) => s + t.notionalUsd, 0)
-      const dominantSide = clusterTrades.filter(t => t.takerSide === 'yes').length >= clusterTrades.length / 2 ? 'yes' : 'no'
-      alerts.push({
-        id: `whale-cluster-${ticker}-${windowStart}`,
-        ticker,
-        marketTitle: market?.title || ticker,
-        category: market?.category || 'Unknown',
-        contracts: totalContracts,
-        notionalUsd: totalNotional,
-        takerSide: dominantSide,
-        lastPrice: market?.lastPrice || 0,
-        alertTypes: ['cluster'],
-        openInterest: market?.openInterest,
-        clusterSize: clusterTrades.length,
-        createdAt: new Date(windowStart).toISOString(),
-        detectedAt: now,
-      })
-    }
-  }
-
-  // Sort by notional descending
-  alerts.sort((a, b) => b.notionalUsd - a.notionalUsd)
   return alerts
 }
 
-export async function fetchKalshiWhales(): Promise<KalshiWhaleResponse> {
-  if (whaleCache && Date.now() < whaleCache.expires) return whaleCache.data
+export function createKalshiService() {
+  return {
+    async getMarkets(category?: string): Promise<KalshiMarketsResponse> {
+      const params = new URLSearchParams({ limit: '50', status: 'open' })
+      if (category) params.set('series_ticker', category)
 
-  const marketsResp = await fetchKalshiMarkets()
-  const marketsMap = new Map(marketsResp.markets.map(m => [m.ticker, m]))
-  const targetTickers = new Set(marketsResp.markets.map(m => m.ticker))
+      const data = await kalshiFetch<{ markets: KalshiRawMarket[] }>(`/markets?${params}`)
+      return {
+        markets: data?.markets?.map(normalizeMarket) ?? [],
+        fetchedAt: new Date().toISOString(),
+      }
+    },
 
-  // Fetch recent trades
-  const minTs = Math.floor(lastTradePollTs / 1000) // Kalshi uses seconds for min_ts
-  let allTrades: KalshiTrade[] = []
-  let cursor: string | undefined
+    async getRecentTrades(ticker?: string): Promise<KalshiTrade[]> {
+      const params = new URLSearchParams({ limit: '100' })
+      if (ticker) params.set('ticker', ticker)
 
-  // Paginate through trades (max 3 pages to avoid rate limits)
-  for (let page = 0; page < 3; page++) {
-    const params: Record<string, string> = { min_ts: minTs.toString(), limit: '1000' }
-    if (cursor) params.cursor = cursor
+      const data = await kalshiFetch<{ trades: KalshiRawTrade[] }>(`/markets/trades?${params}`)
+      return data?.trades?.map(normalizeTrade) ?? []
+    },
 
-    const resp = await kalshiFetch<{ trades: KalshiRawTrade[]; cursor?: string }>(
-      'GET', '/markets/trades', params
-    )
-    const trades = (resp.trades || []).map(normalizeTrade)
-    // Filter to our target macro markets
-    const relevant = trades.filter(t => targetTickers.has(t.ticker))
-    allTrades.push(...relevant)
+    async getWhaleAlerts(): Promise<KalshiWhaleResponse> {
+      const [marketsRes, trades] = await Promise.all([
+        this.getMarkets(),
+        this.getRecentTrades(),
+      ])
 
-    cursor = resp.cursor
-    if (!cursor || (resp.trades || []).length < 1000) break
+      const alerts = detectWhales(trades, marketsRes.markets)
+      return {
+        alerts,
+        markets: marketsRes.markets,
+        lastTradeFetchedAt: new Date().toISOString(),
+      }
+    },
+
+    /** Place an order (agentic mode). Returns order ID or null on failure. */
+    async placeOrder(params: {
+      ticker: string
+      side: 'yes' | 'no'
+      contracts: number
+      limitPrice?: number
+    }): Promise<{ orderId: string } | null> {
+      const body: Record<string, unknown> = {
+        ticker: params.ticker,
+        action: 'buy',
+        side: params.side,
+        count: params.contracts,
+        type: params.limitPrice ? 'limit' : 'market',
+      }
+      if (params.limitPrice) body.yes_price = Math.round(params.limitPrice * 100)
+
+      const data = await kalshiFetch<{ order: { order_id: string } }>('/portfolio/orders', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      })
+      return data?.order ? { orderId: data.order.order_id } : null
+    },
+
+    /** Get current positions */
+    async getPositions(): Promise<Array<{
+      ticker: string
+      side: 'yes' | 'no'
+      contracts: number
+      avgPrice: number
+      marketTitle?: string
+    }>> {
+      const data = await kalshiFetch<{
+        market_positions: Array<{
+          ticker: string
+          position: number
+          market_exposure: number
+          realized_pnl: number
+        }>
+      }>('/portfolio/positions')
+
+      if (!data?.market_positions) return []
+
+      return data.market_positions
+        .filter(p => p.position !== 0)
+        .map(p => ({
+          ticker: p.ticker,
+          side: p.position > 0 ? 'yes' as const : 'no' as const,
+          contracts: Math.abs(p.position),
+          avgPrice: p.market_exposure / Math.abs(p.position) || 0,
+        }))
+    },
+
+    isConfigured(): boolean {
+      return !!(process.env.KALSHI_EMAIL && process.env.KALSHI_PASSWORD)
+    },
   }
-
-  lastTradePollTs = Date.now()
-  const whaleAlerts = runWhaleDetection(allTrades, marketsMap)
-
-  const data: KalshiWhaleResponse = {
-    alerts: whaleAlerts,
-    markets: marketsResp.markets,
-    lastTradeFetchedAt: new Date().toISOString(),
-  }
-  whaleCache = { data, expires: Date.now() + WHALE_CACHE_TTL }
-  return data
-}
-
-/** Get whale alerts since a given timestamp (for incremental feed polling) */
-export function getWhaleAlertsSince(isoTimestamp: string): WhaleAlert[] {
-  if (!whaleCache) return []
-  const cutoff = new Date(isoTimestamp).getTime()
-  return whaleCache.data.alerts.filter(a => new Date(a.detectedAt).getTime() > cutoff)
-}
-
-/** Force cache clear for sync endpoint */
-export function clearKalshiCache(): void {
-  marketsCache = null
-  whaleCache = null
 }

@@ -2,94 +2,62 @@
 // [claude-code 2026-03-10] Warm cache: filter 'high'→'medium', slice(10)→slice(30) for broader seed
 // [claude-code 2026-03-10] Burst polling: 5s interval for 30s after econ release, actual extraction from FJ tweets
 // [claude-code 2026-03-16] Smart polling: event-window-only (T-5min to T+15min), autoRefresh gate
+// [claude-code 2026-03-23] Wired rate limiter for Twitter CLI calls
 
 import { searchTweets, fetchUserTimeline, isTwitterCliInstalled } from './twitter-cli-service.js';
+import { createRateLimiter } from '../rate-limiter.js';
+
+// Rate limiter: prevent CLI subprocess spam (6 timelines/min, 4 searches/min)
+const twitterLimiter = createRateLimiter({
+  defaultRule: { limit: 10, windowMs: 60_000 },
+  buckets: {
+    'twitter-timeline': { limit: 6, windowMs: 60_000 },
+    'twitter-search': { limit: 4, windowMs: 60_000 },
+  },
+  baseBackoffMs: 500,
+  maxBackoffMs: 20_000,
+  logger: (msg, data) => console.log(`[TwitterRateLimiter] ${msg}`, JSON.stringify(data ?? {})),
+});
 import { filterByTier } from './fj-emoji-filter.js';
 import { fetchEconCalendar, updateEventActual, writeEconPrint } from '../econ-calendar-service.js';
-import { notionCreatePage } from '../notion-service.js';
+import { writeConsiliumMessage } from '../supabase-service.js';
 import { injectEconPrintToFeed } from '../riskflow/econ-bridge.js';
+import { storeFeedItems } from '../riskflow/news-cache.js';
 import type { EconEvent } from '../econ-calendar-service.js';
 import type { FeedItem, NewsSource } from '../../types/riskflow.js';
 import { getUserSettings } from '../settings-store.js';
 
-// Notion: write high-priority tweets to Harper Messages DB for persistence + agent visibility
-const HARPER_MESSAGES_DB = '30c141b0da7d81ba8bb6e319a0c4c309';
+// In-memory dedup — don't re-post same item to Supabase across polls
+const postedIds = new Set<string>();
 
-// In-memory dedup — don't re-post same tweet ID to Notion across polls
-const notionPostedIds = new Set<string>();
-
-/** Push Critical/High FeedItems to Notion Harper Messages DB (fire-and-forget, deduplicated) */
-async function pushToNotion(items: FeedItem[]): Promise<void> {
+/** Push Critical/High FeedItems to Supabase consilium_messages (fire-and-forget, deduplicated) */
+async function pushToSupabase(items: FeedItem[]): Promise<void> {
   const newItems = items.filter(
-    (item) => (item.macroLevel ?? 1) >= 3 && !notionPostedIds.has(item.id)
+    (item) => (item.macroLevel ?? 1) >= 3 && !postedIds.has(item.id)
   );
   if (newItems.length === 0) return;
 
   for (const item of newItems) {
-    notionPostedIds.add(item.id);
+    postedIds.add(item.id);
     const tier = item.macroLevel === 4 ? 'Critical' : 'High';
-    const headline = item.headline.slice(0, 200);
 
-    notionCreatePage(HARPER_MESSAGES_DB, {
-      Name: { title: [{ text: { content: `[${tier}] ${headline}` } }] },
-      Message: { rich_text: [{ text: { content: item.headline.slice(0, 2000) } }] },
-      Category: { select: { name: `RiskFlow-${tier}` } },
-      Source: { select: { name: item.source === 'FinancialJuice' ? 'FinancialJuice' : 'TwitterCli' } },
-      Status: { status: { name: 'Active' } },
-    }).catch((err) => console.warn('[EconTwitterPoller] Notion push failed:', err));
+    writeConsiliumMessage({
+      agent_name: 'EconTwitterPoller',
+      agent_role: 'econ-monitor',
+      content: `[${tier}] ${item.headline}`,
+      message_type: `RiskFlow-${tier}`,
+      metadata: { source: item.source, tweetId: item.id },
+    }).catch((err) => console.warn('[EconTwitterPoller] Supabase push failed:', err));
   }
 
-  console.log(`[EconTwitterPoller] Pushed ${newItems.length} ${newItems.map(i => i.macroLevel === 4 ? 'Critical' : 'High').join('/')} items to Notion`);
+  console.log(`[EconTwitterPoller] Pushed ${newItems.length} items to Supabase consilium`);
 }
 
-// ── Polling Modes ────────────────────────────────────────────────────────────
-// IDLE:   Check Notion econ calendar only (no Twitter calls). Every 60s.
-// ACTIVE: Poll FJ/InsiderWire/Trusted timelines + event searches. Every 60s.
-//         Triggered only when a Tier-3 major event is within ±15 min.
-// BURST:  5s rapid-fire FJ-only polling for 30s after release time.
-//
-// Tier-3 events that trigger ACTIVE mode:
-//   CPI, PPI, NFP, GDP, PCE, FED RATE/FOMC, PMI, Trump-related
-//
-// Set TWITTER_POLLING_ENABLED=false to disable all Twitter polling entirely.
-
-const IDLE_INTERVAL_MS = 60_000;    // 60s — check calendar, no Twitter calls
-const ACTIVE_INTERVAL_MS = 60_000;  // 60s — full Twitter polling during event window
-const BURST_INTERVAL_MS = 5_000;    // 5s — rapid FJ-only during release
-const BURST_DURATION_MS = 30_000;   // 30s burst window after release time
-const EVENT_WINDOW_MINUTES = 15;    // ±15 min around event = ACTIVE mode
-
-const TWITTER_POLLING_ENABLED = (process.env.TWITTER_POLLING_ENABLED ?? 'true').toLowerCase() !== 'false';
-
-/** Check if we're in the Twitter polling window: Mon-Fri, 7:00 AM - 6:00 PM ET */
-function isInPollingWindow(): boolean {
-  const now = new Date();
-  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const day = et.getDay(); // 0=Sun, 6=Sat
-  if (day === 0 || day === 6) return false;
-  const hour = et.getHours();
-  return hour >= 7 && hour < 18; // 7:00 AM - 5:59 PM ET
-}
-
-// ── Tier-3 Major Event Keywords ──────────────────────────────────────────────
-// Only these events trigger ACTIVE Twitter polling. Everything else stays IDLE.
-
-const TIER3_EVENT_KEYWORDS = [
-  'CPI', 'INFLATION',
-  'PPI', 'PRODUCER PRICE',
-  'NFP', 'NONFARM', 'NON-FARM', 'PAYROLL',
-  'GDP',
-  'PCE', 'PERSONAL CONSUMPTION',
-  'FOMC', 'FED RATE', 'INTEREST RATE', 'FEDERAL RESERVE',
-  'PMI',
-  'TRUMP', 'TARIFF',
-] as const;
-
-/** Check if an event name matches a Tier-3 major event */
-function isTier3Event(eventName: string): boolean {
-  const upper = eventName.toUpperCase();
-  return TIER3_EVENT_KEYWORDS.some((kw) => upper.includes(kw));
-}
+const PRE_EVENT_MINUTES = 5;      // Start polling 5 min before print
+const POST_EVENT_MINUTES = 15;    // Stop 15 min after print
+const POLL_INTERVAL_MS = 60_000;  // 60s standard polling
+const BURST_INTERVAL_MS = 5_000; // 5s burst polling during releases
+const BURST_DURATION_MS = 30_000; // 30s burst window after release time
 
 // Financial Juice and InsiderWire screen names to always fetch
 const FJ_ACCOUNTS = ['financialjuice', 'InsiderWire'] as const;
@@ -313,13 +281,13 @@ function buildEventQueries(eventNames: string[]): string[] {
 /**
  * Check if an econ event is within the polling window: T-5min to T+15min.
  */
-function isEventActive(eventDate?: string, eventTime?: string): boolean {
+function isInEventWindow(eventDate?: string, eventTime?: string): boolean {
   if (!eventDate || !eventTime) return false;
   try {
     const eventMs = new Date(`${eventDate}T${eventTime}`).getTime();
     const nowMs = Date.now();
     const diffMin = (nowMs - eventMs) / 60_000;
-    return diffMin >= -EVENT_WINDOW_MINUTES && diffMin <= EVENT_WINDOW_MINUTES;
+    return diffMin >= -PRE_EVENT_MINUTES && diffMin <= POST_EVENT_MINUTES;
   } catch {
     return false;
   }
@@ -403,30 +371,14 @@ function extractTagsFromText(text: string): string[] {
   return tags;
 }
 
-// ── Polling Mode State ───────────────────────────────────────────────────────
-
-type PollingMode = 'idle' | 'active';
-let currentMode: PollingMode = 'idle';
-
-/** Exported for status/debug endpoints */
-export function getPollingMode(): PollingMode {
-  return currentMode;
-}
-
 // ── Main Poll Function ───────────────────────────────────────────────────────
 
 /**
- * Event-driven poll function. Each 60s tick:
- *   1. Always checks Notion econ calendar (cheap, no Twitter calls)
- *   2. If a Tier-3 major event is within ±15 min → ACTIVE mode (poll Twitter)
- *   3. Otherwise → IDLE mode (no Twitter calls, serve warm cache)
- *
- * This reduces Twitter CLI invocations from ~2,000/day to ~50-100/day
- * (only around CPI, NFP, FOMC, etc. releases).
+ * Main poll function: fetches FJ/InsiderWire/Trusted timelines + event-triggered search results.
+ * Only returns items that pass the FJ emoji filter (medium+).
+ * Also extracts "Actual" values from FJ tweets and writes them to Notion.
  */
 export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
-  if (!TWITTER_POLLING_ENABLED) return [];
-
   // Respect autoRefresh setting
   try {
     const settings = await getUserSettings('default');
@@ -436,90 +388,68 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
     }
   } catch { /* proceed if settings unavailable */ }
 
-  if (!isInPollingWindow()) {
-    if (currentMode !== 'idle') {
-      console.log('[EconTwitterPoller] Outside polling window — switching to IDLE');
-      currentMode = 'idle';
-    }
-    return [];
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  // 1. Always check Notion econ calendar (no Twitter calls)
-  let tier3ActiveEvents: EconEvent[] = [];
-  let tier3ActiveNames: string[] = [];
-  try {
-    const events = await fetchEconCalendar({ from: today, to: today });
-    const highImportance = events.filter((e) => (e.importance ?? 1) >= 2);
-
-    // Filter to Tier-3 major events that are within the event window
-    const tier3Events = highImportance.filter((e) => isTier3Event(e.name));
-    tier3ActiveEvents = tier3Events.filter((e) => isEventActive(e.date, e.time));
-    tier3ActiveNames = tier3ActiveEvents.map((e) => e.name);
-
-    // Schedule burst polling for upcoming Tier-3 events (within next 2 min)
-    for (const event of tier3Events) {
-      const msUntil = msUntilRelease(event.date, event.time);
-      if (msUntil !== null && msUntil > 0 && msUntil <= 120_000) {
-        scheduleBurst(event);
-      }
-    }
-
-  } catch (err) {
-    console.warn('[EconTwitterPoller] Failed to fetch econ calendar:', err);
-  }
-
-  // 2. Determine polling mode
-  const shouldBeActive = tier3ActiveEvents.length > 0;
-
-  if (shouldBeActive && currentMode !== 'active') {
-    console.log(`[EconTwitterPoller] ACTIVE MODE: Tier-3 events in window — ${tier3ActiveNames.join(', ')}`);
-    currentMode = 'active';
-  } else if (!shouldBeActive && currentMode !== 'idle') {
-    console.log('[EconTwitterPoller] IDLE MODE: No Tier-3 events in window — pausing Twitter calls');
-    currentMode = 'idle';
-  }
-
-  // 3. IDLE mode — no Twitter calls, just return warm cache
-  if (currentMode === 'idle') {
-    return [];
-  }
-
-  // 4. ACTIVE mode — poll Twitter (only reached when Tier-3 event is near)
   const installed = await isTwitterCliInstalled();
   if (!installed) {
     console.debug('[EconTwitterPoller] twitter-cli not installed, skipping');
     return [];
   }
 
-  // Build search queries from active Tier-3 events
-  const searchQueries = buildEventQueries(tier3ActiveNames);
+  const today = new Date().toISOString().slice(0, 10);
 
-  // Collect tweets: FJ + InsiderWire + Trusted + event searches
-  // Stagger calls with small delays to reduce scraping fingerprint
-  const allTweets: Array<{ id: string; text: string; author: string; publishedAt: string }> = [];
+  // 1. Fetch today's econ events from Notion
+  let activeEvents: EconEvent[] = [];
+  let activeEventNames: string[] = [];
+  try {
+    const events = await fetchEconCalendar({ from: today, to: today });
+    const highImportance = events.filter((e) => (e.importance ?? 1) >= 2);
+    activeEvents = highImportance.filter((e) => isInEventWindow(e.date, e.time));
+    activeEventNames = activeEvents.map((e) => e.name);
+    if (activeEvents.length > 0) {
+      console.log(`[EconTwitterPoller] ${activeEvents.length} events in window (T-5min to T+15min): ${activeEventNames.join(', ')}`);
+    }
 
-  // Sequential with 3s delays between calls (Grok recommendation)
+    // Schedule burst polling for upcoming events (within next 2 min)
+    for (const event of highImportance) {
+      const msUntil = msUntilRelease(event.date, event.time);
+      if (msUntil !== null && msUntil > 0 && msUntil <= 120_000) {
+        scheduleBurst(event);
+      }
+    }
+
+    // If no events in window, skip X CLI calls entirely
+    if (activeEvents.length === 0) {
+      console.debug('[EconTwitterPoller] No events in window (T-5min to T+15min), skipping X CLI calls');
+      return [];
+    }
+  } catch (err) {
+    console.warn('[EconTwitterPoller] Failed to fetch econ calendar:', err);
+  }
+
+  // 2. Build search queries from active events
+  const searchQueries = buildEventQueries(activeEventNames);
+
+  // 3. Collect all tweets: FJ + InsiderWire + Trusted accounts + event-triggered searches
+  const allTweetPromises: Promise<Array<{ id: string; text: string; author: string; publishedAt: string }>>[] = [];
+
+  // Always fetch FJ and InsiderWire timelines (rate-limited)
   for (const account of FJ_ACCOUNTS) {
-    const tweets = await fetchUserTimeline(account, { limit: TIMELINE_LIMIT }).catch(() => []);
-    allTweets.push(...tweets);
-    await delay(3_000);
+    allTweetPromises.push(twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }));
   }
 
+  // Always fetch trusted accounts (NickTimiraos, etc.)
   for (const account of TRUSTED_ACCOUNTS) {
-    const tweets = await fetchUserTimeline(account, { limit: TIMELINE_LIMIT }).catch(() => []);
-    allTweets.push(...tweets);
-    await delay(3_000);
+    allTweetPromises.push(twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }));
   }
 
+  // Event-triggered searches (only when events are active)
   for (const query of searchQueries) {
-    const tweets = await searchTweets(query, { limit: SEARCH_LIMIT, filter: 'latest' }).catch(() => []);
-    allTweets.push(...tweets);
-    await delay(3_000);
+    allTweetPromises.push(twitterLimiter.schedule(() => searchTweets(query, { limit: SEARCH_LIMIT, filter: 'latest' }), { bucket: 'twitter-search' }));
   }
 
-  // Dedupe by tweet id
+  const tweetBatches = await Promise.allSettled(allTweetPromises);
+  const allTweets = tweetBatches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+
+  // 4. Dedupe by tweet id
   const seenIds = new Set<string>();
   const uniqueTweets = allTweets.filter((t) => {
     if (seenIds.has(t.id)) return false;
@@ -527,30 +457,25 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
     return true;
   });
 
-  // Extract actuals from FJ tweets and write to Notion (fire-and-forget)
-  processActualsFromTweets(uniqueTweets, tier3ActiveEvents).catch((err) =>
+  // 5. Extract actuals from FJ tweets and write to Notion (fire-and-forget)
+  processActualsFromTweets(uniqueTweets, activeEvents).catch((err) =>
     console.warn('[EconTwitterPoller] Actual extraction error:', err)
   );
 
-  // Apply FJ emoji tier filter (medium+)
+  // 6. Apply FJ emoji tier filter (medium+)
   const classified = filterByTier(uniqueTweets, 'medium');
 
-  // Convert to FeedItem[]
+  // 7. Convert to FeedItem[]
   const feedItems: FeedItem[] = classified.map((t) =>
     tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
   );
 
   if (feedItems.length > 0) {
-    console.log(`[EconTwitterPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw, mode=ACTIVE)`);
-    pushToNotion(feedItems).catch(() => {});
+    console.log(`[EconTwitterPoller] ${feedItems.length} items passed FJ emoji filter (from ${uniqueTweets.length} raw tweets)`);
+    pushToSupabase(feedItems).catch(() => {});
   }
 
   return feedItems;
-}
-
-/** Small delay helper for staggering Twitter calls */
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ── Burst Polling ────────────────────────────────────────────────────────────
@@ -581,9 +506,9 @@ function scheduleBurst(event: EconEvent): void {
       }
 
       try {
-        // Rapid-fire: only fetch FJ + InsiderWire (fastest actual sources)
+        // Rapid-fire: only fetch FJ + InsiderWire (fastest actual sources, rate-limited)
         const batches = await Promise.allSettled(
-          FJ_ACCOUNTS.map((account) => fetchUserTimeline(account, { limit: 10 }))
+          FJ_ACCOUNTS.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: 10 }), { bucket: 'twitter-timeline' }))
         );
         const tweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 
@@ -609,7 +534,7 @@ function scheduleBurst(event: EconEvent): void {
           const newItems = feedItems.filter((f) => !warmCache.some((w) => w.id === f.id));
           if (newItems.length > 0) {
             warmCache = [...newItems, ...warmCache].slice(0, 50);
-            pushToNotion(newItems).catch(() => {});
+            pushToSupabase(newItems).catch(() => {});
           }
         }
       } catch (err) {
@@ -637,8 +562,6 @@ function scheduleBurst(event: EconEvent): void {
 let warmCache: FeedItem[] = [];
 
 async function initFetchHighPriorityPosts(): Promise<void> {
-  if (!TWITTER_POLLING_ENABLED || !isInPollingWindow()) return;
-
   const installed = await isTwitterCliInstalled();
   if (!installed) return;
 
@@ -647,7 +570,7 @@ async function initFetchHighPriorityPosts(): Promise<void> {
 
     const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
     const batches = await Promise.allSettled(
-      allAccounts.map((account) => fetchUserTimeline(account, { limit: 50 }))
+      allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: 50 }), { bucket: 'twitter-timeline' }))
     );
     const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 
@@ -668,7 +591,11 @@ async function initFetchHighPriorityPosts(): Promise<void> {
     );
 
     console.log(`[EconTwitterPoller] Init warm cache: ${warmCache.length} Medium+ posts seeded`);
-    await pushToNotion(warmCache);
+    // Write to local DB cache so feed-service/feed-poller can serve them immediately
+    await storeFeedItems(warmCache).catch((err) =>
+      console.warn('[EconTwitterPoller] Failed to store warm cache in news_feed_cache:', err)
+    );
+    await pushToSupabase(warmCache);
   } catch (err) {
     console.warn('[EconTwitterPoller] Init fetch failed:', err);
   }
@@ -679,19 +606,173 @@ export function getWarmCacheItems(): FeedItem[] {
   return warmCache;
 }
 
+/** Return rate limiter queue depth for diagnostics */
+export function getTwitterRateLimiterStatus() {
+  return { pending: twitterLimiter.pending() };
+}
+
+// ── Manual Refresh (bypasses autoRefresh + event window) ─────────────────────
+
+/**
+ * Manual refresh: fetches FJ/InsiderWire/Trusted timelines on demand.
+ * Bypasses autoRefresh setting AND econ event window — always runs.
+ * Stores to DB with dedup so all users see the data.
+ * Called by the manual refresh button endpoint.
+ */
+export async function manualRefreshTweets(): Promise<FeedItem[]> {
+  const installed = await isTwitterCliInstalled();
+  if (!installed) {
+    console.debug('[ManualRefresh] twitter-cli not installed, skipping');
+    return [];
+  }
+
+  console.log('[ManualRefresh] Fetching FJ/InsiderWire/Trusted timelines (rate-limited)...');
+
+  const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
+  const batches = await Promise.allSettled(
+    allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
+  );
+  const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+
+  // Dedupe
+  const seenIds = new Set<string>();
+  const uniqueTweets = allTweets.filter((t) => {
+    if (seenIds.has(t.id)) return false;
+    seenIds.add(t.id);
+    return true;
+  });
+
+  if (uniqueTweets.length === 0) {
+    console.log('[ManualRefresh] No tweets fetched');
+    return [];
+  }
+
+  // Apply FJ emoji tier filter (medium+)
+  const classified = filterByTier(uniqueTweets, 'medium');
+  const feedItems: FeedItem[] = classified.map((t) =>
+    tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
+  );
+
+  if (feedItems.length > 0) {
+    console.log(`[ManualRefresh] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw) — storing to DB`);
+    await storeFeedItems(feedItems).catch((err) =>
+      console.warn('[ManualRefresh] Failed to store items:', err)
+    );
+    await pushToSupabase(feedItems).catch(() => {});
+    // Update warm cache
+    const newItems = feedItems.filter((f) => !warmCache.some((w) => w.id === f.id));
+    if (newItems.length > 0) {
+      warmCache = [...newItems, ...warmCache].slice(0, 50);
+    }
+  } else {
+    console.log('[ManualRefresh] 0 items passed filter');
+  }
+
+  return feedItems;
+}
+
+// ── Night Poller (7PM–7AM EST, hourly, ignores autoRefresh) ─────────────────
+
+const NIGHT_POLL_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+let nightPollerInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Check if current time is within the night window: 7PM–7AM EST (Eastern).
+ * EST = UTC-5, EDT = UTC-4. We use America/New_York to handle DST automatically.
+ */
+function isNightWindowEST(): boolean {
+  const nowEST = new Date(
+    new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+  );
+  const hour = nowEST.getHours();
+  // 7PM (19) through midnight (23), or midnight (0) through 7AM (6)
+  return hour >= 19 || hour < 7;
+}
+
+/**
+ * Night poll: fetches FJ/InsiderWire/Trusted timelines regardless of autoRefresh.
+ * Stores to DB so all users get fresh data when they open the app.
+ */
+async function nightPoll(): Promise<void> {
+  if (!isNightWindowEST()) {
+    console.debug('[NightPoller] Outside 7PM-7AM EST window, skipping');
+    return;
+  }
+
+  const installed = await isTwitterCliInstalled();
+  if (!installed) {
+    console.debug('[NightPoller] twitter-cli not installed, skipping');
+    return;
+  }
+
+  console.log('[NightPoller] Hourly night poll running (7PM-7AM EST, rate-limited)');
+
+  const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
+  const batches = await Promise.allSettled(
+    allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
+  );
+  const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+
+  // Dedupe
+  const seenIds = new Set<string>();
+  const uniqueTweets = allTweets.filter((t) => {
+    if (seenIds.has(t.id)) return false;
+    seenIds.add(t.id);
+    return true;
+  });
+
+  if (uniqueTweets.length === 0) {
+    console.log('[NightPoller] No tweets fetched');
+    return;
+  }
+
+  // Apply FJ emoji tier filter (medium+)
+  const classified = filterByTier(uniqueTweets, 'medium');
+  const feedItems: FeedItem[] = classified.map((t) =>
+    tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
+  );
+
+  if (feedItems.length > 0) {
+    console.log(`[NightPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw) — storing to DB`);
+    await storeFeedItems(feedItems).catch((err) =>
+      console.warn('[NightPoller] Failed to store items:', err)
+    );
+    await pushToSupabase(feedItems).catch(() => {});
+    // Update warm cache so feed-service can serve them
+    const newItems = feedItems.filter((f) => !warmCache.some((w) => w.id === f.id));
+    if (newItems.length > 0) {
+      warmCache = [...newItems, ...warmCache].slice(0, 50);
+    }
+  } else {
+    console.log('[NightPoller] 0 items passed filter');
+  }
+}
+
+function startNightPoller(): void {
+  if (nightPollerInterval) return;
+  console.log('[NightPoller] Starting (hourly, 7PM-7AM EST, ignores autoRefresh)');
+  // Run immediately on boot if in window
+  nightPoll().catch((err) => console.warn('[NightPoller] Initial poll error:', err));
+  nightPollerInterval = setInterval(() => {
+    nightPoll().catch((err) => console.warn('[NightPoller] Poll error:', err));
+  }, NIGHT_POLL_INTERVAL_MS);
+}
+
+function stopNightPoller(): void {
+  if (nightPollerInterval) {
+    clearInterval(nightPollerInterval);
+    nightPollerInterval = null;
+    console.log('[NightPoller] Stopped');
+  }
+}
+
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
 let pollerInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startEconTwitterPoller(): void {
   if (pollerInterval) return;
-
-  if (!TWITTER_POLLING_ENABLED) {
-    console.log('[EconTwitterPoller] Disabled via TWITTER_POLLING_ENABLED=false');
-    return;
-  }
-
-  console.log('[EconTwitterPoller] Starting (IDLE by default, ACTIVE only for Tier-3 events: CPI/PPI/NFP/GDP/PCE/FOMC/PMI/Trump)');
+  console.log('[EconTwitterPoller] Starting (60s interval, 5s burst on releases)');
 
   initFetchHighPriorityPosts().then(() => {
     pollTwitterForEconNews().catch((err) =>
@@ -703,7 +784,10 @@ export function startEconTwitterPoller(): void {
     pollTwitterForEconNews().catch((err) =>
       console.warn('[EconTwitterPoller] Poll error:', err)
     );
-  }, IDLE_INTERVAL_MS);
+  }, POLL_INTERVAL_MS);
+
+  // Start the night poller alongside — independent of autoRefresh
+  startNightPoller();
 }
 
 export function stopEconTwitterPoller(): void {
@@ -716,5 +800,7 @@ export function stopEconTwitterPoller(): void {
     clearInterval(interval);
     activeBursts.delete(key);
   }
-  console.log('[EconTwitterPoller] Stopped (all burst intervals cleared)');
+  // Stop night poller
+  stopNightPoller();
+  console.log('[EconTwitterPoller] Stopped (all intervals cleared)');
 }

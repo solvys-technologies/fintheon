@@ -1,0 +1,26 @@
+// [claude-code 2026-03-22] Source of Truth fusion — skill instruction blocks (moved from agent-instructions.ts)
+
+/**
+ * Skill instruction blocks — appended when [SKILL:*] is detected in message
+ */
+export const SKILL_INSTRUCTIONS: Record<string, string> = {
+  BRIEF: `\n\n[Skill: Brief]\nSearch for the latest information about the instrument mentioned. Summarize findings and interpret implications for the user's position or thesis. Check active trading regimes for timing context. Be concise and actionable.`,
+  VALIDATE: `\n\n[Skill: Validate]\nAct as Herald (risk validation). Analyze thesis validity against: (1) current research narratives, (2) published memos, (3) current news, (4) active trading regimes. Provide a confidence-weighted verdict.`,
+  REPORT: `\n\n[Skill: Report]\nGenerate an HTML dashboard report using the Solvys Gold palette (#D4AF37 accent, #050402 bg, #f0ead6 text). Self-contained HTML with <!-- FINTHEON_REPORT --> as first comment. Include inline CSS.`,
+  TRACK: `\n\n[Skill: Track]\nBuild a new narrative thread. Identify key thesis, relevant instruments, catalysts, and timeline. Format as a structured narrative entry.`,
+  PSYCH: `\n\n[Skill: Psych Assist]\nRun psychological/performance analysis. Evaluate trading behavior against the 14 Commandments. Detect tilt triggers (funded creep, revenge trading, skipped routine). Provide actionable coaching — empathetic but direct. Reference specific commandments when violations are detected.`,
+  MAINTENANCE: `\n\n[Skill: Maintenance]\nPerform app maintenance. Review recent changes, update changelog, report status as structured messages.`,
+  QUICKFINTHEON: `\n\n[Skill: QuickFintheon]\nAnalyze the provided chart/screenshot. Provide: Bias, Confidence %, Rationale, Entry 1, Entry 2, Stop Loss, Target. Reference IPEC phase and 1000-tick synchronicity. Be concise like a SnapTrader.`,
+  NARRATIVE: `\n\n[Skill: Narrative]\nAnalyze current NarrativeFlow board state. Identify active narratives in the data cycle (PMI>PPI>CPI>PCE>GDP), recent catalysts, suggest new connections or flag stale theses. Apply third-order thinking.`,
+  // [claude-code 2026-03-23] Browser Use Phase 2
+  CHARTLEVELS: `\n\n[Skill: Chart Levels]\nDraw horizontal price lines on the TopStep X chart via Browser Use CLI. Extract entry, stop loss, and take profit levels from the current trade proposal or user message. Call POST /api/proposals/chart with { ticker, direction, entry, stopLoss, takeProfit }. Lines are drawn as colored horizontal rays: entry (green #22c55e), stop (red #ef4444), target (blue #3b82f6). Confirm back to the user with the plotted levels. Respects blackout period (8:30a-12p EST). If the user provides a ticker and levels, format the API call. If a recent proposal exists, use its levels automatically.`,
+}
+
+export const DEEP_ANALYSIS_BLOCK = `\n\n[Deep Analysis Mode]
+You have been asked to think harder. Apply rigorous analytical reasoning:
+- Consider multiple perspectives and counter-arguments
+- Cite specific data points, levels, or probabilities where relevant
+- Flag assumptions and uncertainty ranges
+- Provide structured output with clear sections
+- If research context is provided, synthesize it into your analysis
+- Apply third-order thinking: What does the crowd think? What does the crowd NOT see?`

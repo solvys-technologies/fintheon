@@ -1,6 +1,6 @@
 import { pingDb } from '../db/optimized.js'
 import { defaultAiConfig } from '../config/ai-config.js'
-import { clerkHealth } from './clerk-auth.js'
+import { supabaseAuthHealth } from './supabase-auth.js'
 
 type ComponentStatus = 'ok' | 'degraded' | 'error'
 
@@ -8,7 +8,7 @@ export interface HealthStatus {
   status: ComponentStatus
   timestamp: string
   components: Record<
-    'database' | 'aiGateway' | 'clerk',
+    'database' | 'aiGateway' | 'auth',
     {
       status: ComponentStatus
       details?: Record<string, unknown>
@@ -36,8 +36,9 @@ const checkDatabase = async () => {
     await pingDb()
     return { status: 'ok' as ComponentStatus }
   } catch (error) {
+    // Database is optional in cloud (Supabase handles persistence) — degraded, not error
     return {
-      status: 'error' as ComponentStatus,
+      status: 'degraded' as ComponentStatus,
       details: {
         message: error instanceof Error ? error.message : String(error)
       }
@@ -90,23 +91,23 @@ const checkAiGateway = async () => {
   }
 }
 
-const checkClerk = () => {
-  const details = clerkHealth()
+const checkAuth = () => {
+  const details = supabaseAuthHealth()
   return {
-    status: details.hasSecret ? ('ok' as ComponentStatus) : ('error' as ComponentStatus),
+    status: details.hasCredentials ? ('ok' as ComponentStatus) : ('degraded' as ComponentStatus),
     details
   }
 }
 
 export const createHealthService = () => {
   const checkAll = async (): Promise<HealthStatus> => {
-    const [database, aiGateway, clerk] = await Promise.all([
+    const [database, aiGateway, auth] = await Promise.all([
       checkDatabase(),
       checkAiGateway(),
-      checkClerk()
+      checkAuth()
     ])
 
-    const components = { database, aiGateway, clerk }
+    const components = { database, aiGateway, auth }
     const hasError = Object.values(components).some((component) => component.status === 'error')
     const hasDegraded = Object.values(components).some((component) => component.status === 'degraded')
 

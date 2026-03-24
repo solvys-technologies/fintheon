@@ -1,4 +1,3 @@
-// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
 // [claude-code 2026-03-14] thinkHarder maps to Claude Opus deep thought via OpenRouter (no reasoning param)
 // [claude-code 2026-03-14] Model routing fix: default→Sonnet, thinkHarder→Opus
 /**
@@ -22,7 +21,7 @@ import { defaultAiConfig } from '../../../config/ai-config.js'
 import type { ChatRequest } from '../../../types/ai-chat.js'
 import type { HermesAgentRole } from '../../../services/hermes-service.js'
 import { handleHermesChat, detectAgent, type ContentPart } from '../../../services/hermes-handler.js'
-import { getAgentSystemPrompt, extractSkillTag } from '../../../services/ai/agent-instructions.js'
+import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from '../../../services/ai/agent-instructions/index.js'
 import { extractSkillFromMessage, isSkillEnabled, getSkillDisabledReason } from '../../../config/feature-flags.js'
 import { createRequestCognition } from '../../../services/cognition-emitter.js'
 import { enqueue, completeJob } from '../../../services/chat-queue.js'
@@ -192,11 +191,11 @@ export async function handleChat(c: Context) {
       cognition.step('skill-check', `Skill active: ${detectedSkill}`)
     }
 
-    // Auto-screenshot for QUICKPULSE when no image parts present
-    if (detectedSkill === 'QUICKPULSE' && !multimodalContent?.some(p => p.type === 'image_url')) {
+    // Auto-screenshot for QUICKFINTHEON when no image parts present
+    if (detectedSkill === 'QUICKFINTHEON' && !multimodalContent?.some(p => p.type === 'image_url')) {
       try {
         if (await isPlaywrightReady()) {
-          cognition.step('tool-dispatch', 'Playwright screenshot', 'Auto-capturing dashboard for QuickPulse')
+          cognition.step('tool-dispatch', 'Playwright screenshot', 'Auto-capturing dashboard for QuickFintheon')
           const shot = await takeScreenshot()
           const imgPart: ContentPart = { type: 'image_url', image_url: { url: `data:image/png;base64,${shot.base64}` } }
           if (multimodalContent) {
@@ -207,10 +206,10 @@ export async function handleChat(c: Context) {
               imgPart,
             ]
           }
-          console.log(`[Hermes][${requestId}] QuickPulse auto-screenshot captured`)
+          console.log(`[Hermes][${requestId}] QuickFintheon auto-screenshot captured`)
         }
       } catch (err) {
-        console.warn(`[Hermes][${requestId}] QuickPulse auto-screenshot failed, proceeding without:`, err)
+        console.warn(`[Hermes][${requestId}] QuickFintheon auto-screenshot failed, proceeding without:`, err)
       }
     }
 
@@ -276,7 +275,10 @@ export async function handleChat(c: Context) {
       const augmentedMessage = message
 
       const skillTag = extractSkillTag(message)
-      const systemPrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: true })
+      const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: true })
+      // Inject live RiskFlow headlines so agents can reference real-time data
+      const feedContext = await buildFeedContext()
+      const systemPrompt = basePrompt + feedContext
       const openRouterMessages: { role: string; content: string | unknown[] }[] = [
         { role: 'system', content: systemPrompt },
         ...history.map(h => ({ role: h.role, content: h.content })),
@@ -311,7 +313,8 @@ export async function handleChat(c: Context) {
           const uiMessageId = `assistant-${Date.now()}`
           const uiReasoningId = `reasoning-${Date.now()}`
           let fullText = ''
-          let reasoningStarted = false
+          let reasoningOpened = false
+          let reasoningClosed = false
           let textEndSent = false
 
           const stream = new ReadableStream({
@@ -320,7 +323,9 @@ export async function handleChat(c: Context) {
                 const reader = res.body!.getReader()
                 const decoder = new TextDecoder()
                 let buffer = ''
-                controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+                // Don't emit reasoning-start until we see actual reasoning deltas.
+                // Emitting it unconditionally with no reasoning-end breaks the AI SDK
+                // stream parser (it stays in "reasoning mode" and swallows text events).
                 while (true) {
                   const { value, done } = await reader.read()
                   if (done) break
@@ -335,20 +340,27 @@ export async function handleChat(c: Context) {
                         }
                         const delta = json.choices?.[0]?.delta
                         if (delta?.reasoning) {
-                          reasoningStarted = true
+                          if (!reasoningOpened) {
+                            controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+                            reasoningOpened = true
+                          }
                           controller.enqueue({ type: 'reasoning-delta', id: uiReasoningId, delta: delta.reasoning })
                         }
                         if (delta?.content) {
-                          if (reasoningStarted) {
+                          // Close reasoning before first text content
+                          if (reasoningOpened && !reasoningClosed) {
                             controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
-                            reasoningStarted = false
+                            reasoningClosed = true
                           }
                           if (fullText === '') controller.enqueue({ type: 'text-start', id: uiMessageId })
                           fullText += delta.content
                           controller.enqueue({ type: 'text-delta', id: uiMessageId, delta: delta.content })
                         }
                         if (json.choices?.[0]?.finish_reason) {
-                          if (reasoningStarted) controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                          if (reasoningOpened && !reasoningClosed) {
+                            controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                            reasoningClosed = true
+                          }
                           if (!textEndSent) {
                             controller.enqueue({ type: 'text-end', id: uiMessageId })
                             textEndSent = true
@@ -358,7 +370,7 @@ export async function handleChat(c: Context) {
                     }
                   }
                 }
-                if (reasoningStarted) controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                if (reasoningOpened && !reasoningClosed) controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
                 if (fullText && !textEndSent) controller.enqueue({ type: 'text-end', id: uiMessageId })
                 if (fullText) {
                   await conversationStore.addMessage(conversation.id, {
@@ -381,15 +393,17 @@ export async function handleChat(c: Context) {
           })
 
           c.header('X-Conversation-Id', conversation.id)
+          c.header('X-Request-Id', requestId)
           c.header('X-Hermes-Agent', 'claude-opus-deep')
           return createUIMessageStreamResponse({
             stream,
             headers: {
               'X-Conversation-Id': conversation.id,
+              'X-Request-Id': requestId,
               'X-Hermes-Agent': 'claude-opus-deep',
               'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
               'Access-Control-Allow-Credentials': 'true',
-              'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Hermes-Agent, X-Research-Sources',
+              'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Request-Id, X-Hermes-Agent, X-Research-Sources',
             },
           })
         }
@@ -432,6 +446,7 @@ export async function handleChat(c: Context) {
 
       // Set conversation ID header
       c.header('X-Conversation-Id', conversation.id)
+      c.header('X-Request-Id', requestId)
       c.header('X-Hermes-Agent', hermesResponse.agent)
 
       // Stream using AI SDK UI message event stream (SSE with JSON payloads).
@@ -495,10 +510,11 @@ export async function handleChat(c: Context) {
         stream,
         headers: {
           'X-Conversation-Id': conversation.id,
+          'X-Request-Id': requestId,
           'X-Hermes-Agent': hermesResponse.agent,
           'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
           'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Hermes-Agent, X-Research-Sources',
+          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Request-Id, X-Hermes-Agent, X-Research-Sources',
         }
       })
     }
@@ -569,16 +585,18 @@ export async function handleChat(c: Context) {
       })
 
       c.header('X-Conversation-Id', conversation.id)
+      c.header('X-Request-Id', requestId)
       c.header('X-Hermes-Agent', 'claude-opus-local')
 
       return createUIMessageStreamResponse({
         stream,
         headers: {
           'X-Conversation-Id': conversation.id,
+          'X-Request-Id': requestId,
           'X-Hermes-Agent': 'claude-opus-local',
           'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
           'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Hermes-Agent, X-Research-Sources',
+          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Request-Id, X-Hermes-Agent, X-Research-Sources',
         },
       })
     }

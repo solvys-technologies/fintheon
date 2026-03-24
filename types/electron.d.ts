@@ -20,6 +20,11 @@ export interface UpdateProgress {
   total: number;
 }
 
+export interface StartupConfig {
+  backendAutostart: boolean;
+  launchOnLogin: boolean;
+}
+
 export interface ElectronAPI {
   platform: 'electron';
   isElectron: true;
@@ -33,6 +38,13 @@ export interface ElectronAPI {
   runShellCommand: (command: string) => Promise<{ ok: boolean; error?: string }>;
   setCliOutputCallback: (cb: ((event: CliOutputEvent) => void) | null) => void;
 
+  // Startup config
+  getStartupConfig: () => Promise<StartupConfig>;
+  setStartupConfig: (patch: Partial<StartupConfig>) => Promise<StartupConfig>;
+  startBackend: () => Promise<{ ok: boolean; detail?: string }>;
+  stopBackend: () => Promise<{ ok: boolean }>;
+  isBackendAlive: () => Promise<{ alive: boolean }>;
+
   // Auto-update
   checkForUpdate: () => Promise<{ ok: boolean }>;
   downloadUpdate: () => Promise<{ ok: boolean }>;
@@ -40,6 +52,12 @@ export interface ElectronAPI {
   onUpdateAvailable: (cb: ((info: UpdateInfo) => void) | null) => void;
   onUpdateProgress: (cb: ((progress: UpdateProgress) => void) | null) => void;
   onUpdateDownloaded: (cb: (() => void) | null) => void;
+
+  // [claude-code 2026-03-23] Browser Use Phase 2 — CLI command bridge
+  browserUse: {
+    runCommand: (args: string[]) => Promise<{ ok: boolean; data?: any; error?: string; stderr?: string }>;
+    getStatus: () => Promise<{ running: boolean; sessions?: string }>;
+  };
 }
 
 declare global {

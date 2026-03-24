@@ -112,10 +112,6 @@ const getHermesOpenAIBaseUrl = (): string => {
   return base.includes('openrouter') ? `${base}/v1` : `${base}/v1`
 }
 
-// Backward compat
-const normalizeOpenClawGatewayBaseUrl = normalizeHermesBaseUrl
-const getOpenClawOpenAIBaseUrl = getHermesOpenAIBaseUrl
-
 // Model aliases for backward compatibility
 const modelAliases: Record<string, AiModelKey> = {
   // Vercel Gateway models
@@ -148,11 +144,6 @@ const modelAliases: Record<string, AiModelKey> = {
   'hermes-realtime': 'openrouter-opus',
   'pic-realtime': 'openrouter-opus',
   'pma': 'openrouter-opus',
-  // Backward compat — old openclaw aliases resolve to Opus 4.6
-  'openclaw-cao': 'openrouter-opus',
-  'openclaw-research': 'openrouter-opus',
-  'openclaw-fast': 'openrouter-opus',
-  'openclaw-realtime': 'openrouter-opus',
   // Claude Code SDK Bridge (Max subscription)
   'claude-local': 'claude-local',
   'claude-sdk': 'claude-local',
@@ -175,7 +166,7 @@ const getPrimaryProvider = (): AiProviderType => {
   const envValue = getEnv('AI_PRIMARY_PROVIDER')
   if (envValue === 'vercel-gateway') return 'vercel-gateway'
   if (envValue === 'openrouter') return 'openrouter'
-  if (envValue === 'hermes' || envValue === 'openclaw') return 'hermes'
+  if (envValue === 'hermes') return 'hermes'
   // Default to openrouter if API key is present
   return getEnv('OPENROUTER_API_KEY') ? 'openrouter' : 'vercel-gateway'
 }
@@ -382,8 +373,8 @@ export const defaultAiConfig: AiConfig = {
       research: 'openrouter-opus',
       reasoning: 'openrouter-opus',
       technical: 'openrouter-opus',
-      'quick-pulse': 'openrouter-opus',
-      quickpulse: 'openrouter-opus',
+      'quick-fintheon': 'openrouter-opus',
+      quickfintheon: 'openrouter-opus',
       news: 'openrouter-opus',
       sentiment: 'openrouter-opus',
       chat: 'openrouter-opus',
@@ -465,9 +456,6 @@ export const isHermesModel = (modelKey: AiModelKey): boolean => {
   return modelKey.startsWith('hermes-')
 }
 
-// Backward compat
-export const isOpenClawModel = isHermesModel
-
 // Helper to check if a model uses GitHub Models
 export const isGitHubModelsModel = (modelKey: AiModelKey): boolean => {
   return modelKey.startsWith('github-')
@@ -483,9 +471,6 @@ export const getHermesModelId = (modelKey: AiModelKey): string => {
   const config = defaultAiConfig.models[modelKey]
   return config?.id ?? 'anthropic/claude-opus-4.6'
 }
-
-// Backward compat
-export const getOpenClawGatewayModel = getHermesModelId
 
 // Helper to get equivalent model across providers
 export const getCrossProviderEquivalent = (

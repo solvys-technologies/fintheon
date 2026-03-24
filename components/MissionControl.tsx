@@ -105,7 +105,7 @@ export default function MissionControl({ onClose }: MissionControlProps) {
 
         <div className="bg-[#140a00] rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Analyst Pulse</h3>
+            <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Analyst Fintheon</h3>
             <button
               onClick={refreshAnalystReports}
               className="text-[10px] text-[#D4AF37] uppercase tracking-widest disabled:opacity-50"

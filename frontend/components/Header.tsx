@@ -1,0 +1,29 @@
+import { Settings } from "lucide-react";
+import { useState } from "react";
+import SettingsModal from "./SettingsModal";
+
+export default function Header() {
+  const [showSettings, setShowSettings] = useState(false);
+  
+  return (
+    <>
+      <header className="h-14 bg-[var(--fintheon-bg)] border-b border-zinc-900 flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-[#00FF85] shadow-[0_0_8px_rgba(0,255,133,0.5)]" />
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Online</span>
+        </div>
+        
+        <h1 className="text-2xl font-bold text-[var(--fintheon-accent)] tracking-widest">FINTHEON</h1>
+        
+        <button
+          onClick={() => setShowSettings(true)}
+          className="p-2 rounded hover:bg-zinc-900/50 transition-colors"
+        >
+          <Settings className="w-5 h-5 text-[var(--fintheon-accent)]" />
+        </button>
+      </header>
+      
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+    </>
+  );
+}

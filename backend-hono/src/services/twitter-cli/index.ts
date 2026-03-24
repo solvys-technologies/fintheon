@@ -17,8 +17,8 @@ export {
 
 export {
   pollTwitterForEconNews,
+  manualRefreshTweets,
   startEconTwitterPoller,
   stopEconTwitterPoller,
   getWarmCacheItems,
-  getPollingMode,
 } from './econ-triggered-poller.js';

@@ -1,4 +1,4 @@
-// [claude-code 2026-03-19] Unified Context Bank types — updated for 4-agent structure
+// [claude-code 2026-03-11] Unified Context Bank types — shared snapshot for all PIC agents
 // All agents consume the same versioned snapshot to guarantee sync.
 
 import type { VixRegime } from './volatility-taxonomy.js'
@@ -188,12 +188,12 @@ export interface WhaleAlertSummary {
 
 // ── Desk Reports ─────────────────────────────────────────────────────────────
 
-// [claude-code 2026-03-19] Agent backend v8.0: updated desk IDs and agent names for 4-agent structure
-export type DeskId = 'futures' | 'pma-1' | 'pma-2' | 'coordination'
-export type AgentName = 'Harper-Hermes' | 'Feucht' | 'Consul' | 'Oracle'
+// [claude-code 2026-03-16] Agent backend v7.9: updated desk IDs and agent names
+export type DeskId = 'fundamentals' | 'futures' | 'pma-merged' | 'news-sentiment'
+export type AgentName = 'Harper-Hermes' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald'
 
-export const VALID_DESKS: DeskId[] = ['futures', 'pma-1', 'pma-2', 'coordination']
-export const VALID_AGENTS: AgentName[] = ['Harper-Hermes', 'Feucht', 'Consul', 'Oracle']
+export const VALID_DESKS: DeskId[] = ['fundamentals', 'futures', 'pma-merged', 'news-sentiment']
+export const VALID_AGENTS: AgentName[] = ['Harper-Hermes', 'Oracle', 'Feucht', 'Consul', 'Herald']
 
 export interface DeskAlert {
   severity: 'info' | 'warning' | 'critical'

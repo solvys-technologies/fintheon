@@ -3,7 +3,7 @@
 
 ## What This Is
 
-A Python microservice (`rithmic-gateway/gateway.py`) that bridges Pulse ↔ Rithmic's execution network. It wraps `async_rithmic` (Python, MIT, production-stable) and exposes a tiny HTTP API that the Hono backend calls for all order execution.
+A Python microservice (`rithmic-gateway/gateway.py`) that bridges Fintheon ↔ Rithmic's execution network. It wraps `async_rithmic` (Python, MIT, production-stable) and exposes a tiny HTTP API that the Hono backend calls for all order execution.
 
 **Port:** `localhost:3002`
 **Library:** [async_rithmic](https://github.com/rundef/async_rithmic) — Protocol Buffer WebSocket client for Rithmic's four "plants"
@@ -116,7 +116,7 @@ Agent Pipeline runs (analysts → researchers → debate → trader → risk)
     ▼  POST /api/autopilot/generate
 Proposal created (status: "pending", TTL: 5 min)
     │
-    ▼  Pulse UI displays ProposalModal to trader
+    ▼  Fintheon UI displays ProposalModal to trader
 Trader reviews → Approve / Reject
     │  POST /api/autopilot/acknowledge  {decision: "approved"}
     ▼
@@ -138,7 +138,7 @@ Proposal created
     ▼  Auto-acknowledge: skip ProposalModal
     POST /api/autopilot/execute  (called programmatically)
     │
-    ▼  Rithmic Gateway places order → notifies via Pulse feed
+    ▼  Rithmic Gateway places order → notifies via Fintheon feed
 ```
 
 **Use when:** TP steps away, sets autonomous trading rules in advance.
@@ -156,7 +156,7 @@ AUTOPILOT_DAILY_LOSS_LIMIT=1500 # USD — hard stop for the day
 
 ## Harper's Checklist — Integrating Autopilot into QC Algo
 
-The QuantConnect algo (C#, Lean) should coordinate with Pulse rather than place orders independently. Recommended pattern:
+The QuantConnect algo (C#, Lean) should coordinate with Fintheon rather than place orders independently. Recommended pattern:
 
 1. **QC detects setup** (Antilag fires, Fib level sweep confirmed)
 2. **QC calls Pulse** → `POST /api/autopilot/generate` with market context
@@ -167,7 +167,7 @@ The QuantConnect algo (C#, Lean) should coordinate with Pulse rather than place 
 6. **QC** monitors fills via Rithmic PNL_PLANT for trailing stop management
 
 QC handles: setup detection, trailing stops, scale-in confirmation
-Pulse handles: debate, risk assessment, order placement, proposal history
+Fintheon handles: debate, risk assessment, order placement, proposal history
 
 ---
 
@@ -206,7 +206,7 @@ Set `RITHMIC_GATEWAY_URL=http://rithmic-gateway:3002` in the Hono backend's Fly.
 ## Known Gaps (Phase 2)
 
 - [ ] Bracket orders (stopLoss + takeProfit auto-wired from proposal)
-- [ ] Fill confirmation webhook back to Pulse
+- [ ] Fill confirmation webhook back to Fintheon
 - [ ] PNL_PLANT connection for live P&L streaming
 - [ ] TICKER_PLANT for Antilag signal feed (1000T tick velocity)
 - [ ] Footprint chart data (post-MVP, see HANDOFF-PROMPT.md)

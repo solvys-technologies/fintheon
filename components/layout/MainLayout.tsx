@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSafeClerk as useClerk } from '../../lib/clerk-hooks';
+import { signOut } from '../../lib/supabase';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
@@ -21,20 +21,18 @@ import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
 import { ModelDashboard } from '../models/ModelDashboard';
-import { AgentChattr } from '../consilium/AgentChattr';
 
-// Development mode: bypass Clerk authentication ONLY when explicitly enabled
-const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
+// Auth bypass forced — Supabase auth gated in App.tsx
+const BYPASS_AUTH = true;
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'models' | 'consilium';
+type NavTab = 'feed' | 'analysis' | 'news' | 'models';
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
 
 interface MainLayoutProps {
   onSettingsClick: () => void;
 }
 
-// Inner component that doesn't use Clerk hooks directly
+// Inner component that receives signOut as a prop
 function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signOut?: () => Promise<void> }) {
   const { selectedSymbol } = useSettings();
   const [activeTab, setActiveTab] = useState<NavTab>('feed');
@@ -181,7 +179,7 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
     }
     try {
       await signOut();
-      // Clerk will automatically redirect to sign-in page
+      // Supabase session cleared — App.tsx auth gate redirects to sign-in
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -403,11 +401,6 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
                   <ModelDashboard />
                 </div>
               )}
-              {activeTab === 'consilium' && (
-                <div key="consilium" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <AgentChattr />
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -460,21 +453,8 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
   );
 }
 
-// Wrapper component that uses Clerk (only rendered when ClerkProvider is available)
-function MainLayoutWithClerk({ onSettingsClick }: MainLayoutProps) {
-  const clerk = useClerk();
-  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={clerk.signOut} />;
-}
-
-// Wrapper component for dev mode without Clerk
-function MainLayoutWithoutClerk({ onSettingsClick }: MainLayoutProps) {
-  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={undefined} />;
-}
-
-// Main export that chooses the right implementation
+// Main export — uses Supabase signOut (no Clerk wrapper needed)
 export function MainLayout({ onSettingsClick }: MainLayoutProps) {
-  if (BYPASS_AUTH) {
-    return <MainLayoutWithoutClerk onSettingsClick={onSettingsClick} />;
-  }
-  return <MainLayoutWithClerk onSettingsClick={onSettingsClick} />;
+  const handleSignOut = BYPASS_AUTH ? undefined : signOut;
+  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={handleSignOut} />;
 }
