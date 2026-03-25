@@ -9,6 +9,12 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-25T10:00:00',
+    agent: 'claude-code',
+    summary: 'feat(ui): Add smooth crossfade transition for browser iframe open/close via power button. Replaces hard ternary swap with layered rendering + CSS scale/opacity animations matching existing tab transition easing.',
+    files: ['index.css', 'frontend/components/layout/MainLayout.tsx'],
+  },
+  {
     date: '2026-03-25T09:30:00',
     agent: 'claude-code',
     summary: 'fix(backend): Resolve 404 error spew — bypass riskflow auth for /sources (public endpoint), guard account polling with isAuthenticated to prevent pre-auth 401 cascade. Stub ProjectXService (backend never implemented). Remove orphaned root lib/, components/, contexts/, hooks/, App.tsx. Boardroom UX overhaul: remove hover discoloration, replace sidebar with inline copy button, date+time timestamps, right-aligned green WiFi status with pulse animation.',

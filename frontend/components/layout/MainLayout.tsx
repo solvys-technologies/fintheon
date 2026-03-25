@@ -103,6 +103,8 @@ function MainLayoutInner() {
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [prevTab, setPrevTab] = useState<NavTab | null>(null);
   const [topStepXEnabled, setTopStepXEnabled] = useState(false);
+  const [browserTransitioning, setBrowserTransitioning] = useState(false);
+  const [browserVisible, setBrowserVisible] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<TradingPlatform>(defaultPlatform);
   const [secondaryPlatform, setSecondaryPlatform] = useState<TradingPlatform>('research');
   const [splitBrowserView, setSplitBrowserView] = useState(false);
@@ -300,6 +302,37 @@ function MainLayoutInner() {
 
   // Normalize ER score from -10 to 10 range to 0-1 range for display
   const normalizedCombinedPanelResonance = Math.max(0, Math.min(1, (combinedPanelErScore + 10) / 20));
+
+  // Smooth browser open/close transition
+  const handleBrowserToggle = useCallback(() => {
+    if (browserTransitioning) return;
+    setBrowserTransitioning(true);
+    if (topStepXEnabled) {
+      // Closing: fade out browser, then swap
+      setBrowserVisible(false);
+      setTimeout(() => {
+        setTopStepXEnabled(false);
+        setBrowserTransitioning(false);
+      }, 300);
+    } else {
+      // Opening: swap immediately, then fade in
+      setTopStepXEnabled(true);
+      setBrowserVisible(true);
+      setTimeout(() => {
+        setBrowserTransitioning(false);
+      }, 400);
+    }
+  }, [topStepXEnabled, browserTransitioning]);
+
+  const handleBrowserEnable = useCallback(() => {
+    if (topStepXEnabled || browserTransitioning) return;
+    setBrowserTransitioning(true);
+    setTopStepXEnabled(true);
+    setBrowserVisible(true);
+    setTimeout(() => {
+      setBrowserTransitioning(false);
+    }, 400);
+  }, [topStepXEnabled, browserTransitioning]);
 
   const handleTabChange = (tab: NavTab) => {
     if (tab === activeTab || tabTransitioning) return;
@@ -621,8 +654,8 @@ function MainLayoutInner() {
     <div className="h-screen flex flex-col bg-[var(--fintheon-bg)] text-white">
       <TopHeader
         topStepXEnabled={topStepXEnabled}
-        onTopStepXToggle={() => setTopStepXEnabled(true)} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
-        onTopStepXDisable={() => setTopStepXEnabled(prev => !prev)}
+        onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
+        onTopStepXDisable={handleBrowserToggle}
         selectedPlatform={selectedPlatform}
         onPlatformSelect={setSelectedPlatform}
         layoutOption={layoutOption}
@@ -677,10 +710,11 @@ function MainLayoutInner() {
           </div>
         )}
 
-        {/* Center Content - TopStepX or Main Content */}
+        {/* Center Content - TopStepX or Main Content with crossfade */}
         <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
-          {topStepXEnabled ? (
-            <div className="h-full w-full flex-1 p-0 min-h-0">
+          {/* Browser layer */}
+          {topStepXEnabled && (
+            <div className={`absolute inset-0 z-10 ${browserVisible ? 'animate-browser-in' : 'animate-browser-out'}`}>
               <TopStepXBrowser
                 primaryPlatform={selectedPlatform}
                 onPrimaryPlatformChange={setSelectedPlatform}
@@ -691,8 +725,10 @@ function MainLayoutInner() {
                 allowSplitView={topStepXEnabled}
               />
             </div>
-          ) : (
-            <div className="h-full relative flex-1 flex flex-col">
+          )}
+
+          {/* Main content layer */}
+          <div className={`h-full relative flex-1 flex flex-col ${topStepXEnabled ? 'pointer-events-none' : ''}`} style={{ opacity: topStepXEnabled ? 0 : 1, transition: 'opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)' }}>
               <div className="flex-1 min-h-0 overflow-hidden">
               {activeTab === 'executive' && (
                 <div key="executive" data-tour-target="executive" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
@@ -750,7 +786,6 @@ function MainLayoutInner() {
               )}
               </div>
             </div>
-          )}
         </div>
 
         {/* Right Panels */}
@@ -832,7 +867,7 @@ function MainLayoutInner() {
         splitViewEnabled={splitBrowserView}
         onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
         allowSplitView={topStepXEnabled}
-        onPowerOff={() => setTopStepXEnabled(false)}
+        onPowerOff={handleBrowserToggle}
       />
 
       {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}
