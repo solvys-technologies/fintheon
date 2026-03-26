@@ -137,6 +137,11 @@ export function NewsSection() {
           50% { box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.08); }
         }
         .riskflow-fintheon-row { animation: riskflow-pulse 3s ease-in-out infinite; }
+        @keyframes riskflow-expand-pulse {
+          0%, 100% { border-color: color-mix(in srgb, var(--fintheon-accent) 40%, transparent); }
+          50% { border-color: color-mix(in srgb, var(--fintheon-accent) 80%, transparent); }
+        }
+        .riskflow-expand-pulse { animation: riskflow-expand-pulse 2.5s ease-in-out infinite; }
       `}</style>
     </div>
   );

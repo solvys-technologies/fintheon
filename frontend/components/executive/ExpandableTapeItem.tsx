@@ -89,14 +89,14 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
 
   return (
     <div
-      className={`border-l-2 ${
+      className={`border-l-2 border-l-[var(--fintheon-accent)] ${
         isTradeIdea
           ? 'border-l-[var(--fintheon-accent)]/50 bg-[#0b0b08]'
           : isVivid
-            ? 'bg-[#0b0b08] border-emerald-500/40'
+            ? 'bg-[#0b0b08] border-l-[var(--fintheon-accent)]/40'
             : 'bg-[#080806]'
       }`}
-      style={isVivid || isTradeIdea ? undefined : { opacity, borderLeftColor: `rgba(16, 185, 129, ${borderOpacity})` }}
+      style={isVivid || isTradeIdea ? undefined : { opacity, borderLeftColor: `color-mix(in srgb, var(--fintheon-accent) ${Math.round(borderOpacity * 100)}%, transparent)` }}
     >
       {/* Collapsed row */}
       <button

@@ -84,11 +84,15 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
 
   return (
     <div
-      className={`group relative border-b border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
+      className={`group relative mb-[3px] overflow-hidden transition-all duration-300 ${
+        expanded
+          ? 'border border-[var(--fintheon-accent)]/60 riskflow-expand-pulse'
+          : 'border border-transparent'
+      } ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
     >
       {/* ── Collapsed: headline + source icon top-right ─────────────────────── */}
       <div
-        className="block px-3 pt-2.5 pb-2 cursor-pointer"
+        className="block px-3 pt-3.5 pb-3 cursor-pointer"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-start gap-2">
@@ -155,7 +159,7 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
         style={{ gridTemplateRows: expanded ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-          <div className="px-4 py-3 border-t border-zinc-800/40 bg-zinc-900/40">
+          <div className="px-4 py-3 border-t border-zinc-800/40 bg-[#000]/90">
 
             {/* 1. Agent Note (or Generate CTA) */}
             {alert.agentNote ? (

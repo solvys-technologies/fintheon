@@ -335,7 +335,7 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
                 </button>
               </div>
             } />
-            <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
+            <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 space-y-0">
               {tapeAlerts.length === 0 ? (
                 <div className="text-xs text-gray-500 px-1 py-4">No actions in the feed right now.</div>
               ) : (
@@ -382,7 +382,7 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
                 </button>
               </div>
             } />
-          <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
+          <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1 space-y-0">
             {tapeAlerts.length === 0 ? (
               <div className="text-xs text-gray-500 px-1 py-8 text-center">No actions in the feed right now.</div>
             ) : (
