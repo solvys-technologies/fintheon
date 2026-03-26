@@ -364,7 +364,7 @@ function AlertRow({
         onClick={() => { onMarkSeen(alert.id); onToggleExpand(); }}
       >
         <div className="flex items-start gap-2">
-          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ''} flex-shrink-0 mt-0.5`}>
+          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ''} flex-shrink-0 mt-0.5`}>
             {sev.label}
           </span>
           <div className="flex-1 min-w-0">
@@ -374,9 +374,8 @@ function AlertRow({
             {alert.summary && alert.summary !== alert.headline && (
               <p className="text-[10px] text-zinc-600 line-clamp-1 mt-0.5">{alert.summary}</p>
             )}
-            {/* Source + cyclical badge row */}
+            {/* Cyclical badge + risk type + author row */}
             <div className="flex items-center gap-1.5 mt-1">
-              <SourceIcon source={alert.source} className="w-2.5 h-2.5 text-zinc-600" />
               {alert.cyclical && alert.cyclical !== 'Neutral' && (
                 <CyclicalBadge classification={alert.cyclical} />
               )}

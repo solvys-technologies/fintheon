@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-26T20:00:00',
+    agent: 'claude-code',
+    summary: 'fix(riskflow): v2 card rewrite — collapsible cards matching Strategium AlertRow layout (headline + dark footer bar with direction/points/priority/risk-type), smooth grid-template-rows expand, source icon top-right of card, removed source from Strategium, full-bleed zero-padding layout, expanded state: Oracle Note → Econ Data → Sub-Scores → Summary → Tags',
+    files: [
+      'frontend/components/feed/RiskFlowDetailCard.tsx',
+      'frontend/components/feed/NewsSection.tsx',
+      'frontend/components/RiskFlowPanel.tsx',
+    ],
+  },
+  {
     date: '2026-03-26T19:00:00',
     agent: 'claude-code',
     summary: 'fix(riskflow): IV score inflation — tier-based score ceiling (base+4 cap prevents jobless@200pts), recalibrated scoreToPoints curve (max 99pts down from 229pts), fixed currentPrice:0 in central scorer breaking autoresearch feedback loop',

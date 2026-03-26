@@ -1,7 +1,9 @@
-// [claude-code 2026-03-26] T4: RiskFlow detail card with beat/miss, sub-scores, agent notes
-import React from 'react';
-import { ExternalLink, TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
+// [claude-code 2026-03-26] T4v2: Collapsible RiskFlow detail card matching Strategium AlertRow layout
+// Source icon top-right, footer bar with direction/points/priority/risk-type, smooth grid expand
+import { useState, useCallback } from 'react';
+import { ChevronDown, ChevronUp, ExternalLink, Sparkles } from 'lucide-react';
 import type { RiskFlowAlert } from '../../lib/riskflow-feed';
+import { inferDirection } from '../../lib/riskflow-feed';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
 import { BeatMissBadge } from './BeatMissBadge';
 import { SubScoreBar } from './SubScoreBar';
@@ -24,6 +26,8 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+// ── SVG Source Logos ──────────────────────────────────────────────────────────
+
 function XLogo({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-label="X">
@@ -42,13 +46,11 @@ function NotionLogo({ className }: { className?: string }) {
 
 function SourceIcon({ source, className }: { source: string; className?: string }) {
   const s = source.toLowerCase();
-  if (s === 'notion-trade-idea' || s.includes('notion')) {
-    return <NotionLogo className={className} />;
-  }
+  if (s === 'notion-trade-idea' || s.includes('notion')) return <NotionLogo className={className} />;
   return <XLogo className={className} />;
 }
 
-// ── Risk type pill colors ────────────────────────────────────────────────────
+// ── Risk type styles ─────────────────────────────────────────────────────────
 
 const RISK_TYPE_STYLE: Record<string, string> = {
   Macro:        'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
@@ -63,166 +65,192 @@ const RISK_TYPE_STYLE: Record<string, string> = {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDetailCardProps) {
+  const [expanded, setExpanded] = useState(false);
   const sev = SEVERITY_CONFIG[alert.severity];
-  const isHighSev = alert.severity === 'high' || alert.severity === 'critical';
-  const isBullish = alert.direction === 'Bullish';
-  const isBearish = alert.direction === 'Bearish';
+  const isHigh = alert.severity === 'high' || alert.severity === 'critical';
+  const dir = inferDirection(alert);
+  const isBull = dir === 'Bullish';
   const hasEconData = alert.econData && alert.econData.beatMiss;
   const hasSubScores = !!alert.subScores;
   const pts = alert.pointRange ?? 0;
 
+  const handleGenerateNote = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onGenerateNote) {
+      const rawId = alert.id.replace(/^backend-/, '');
+      onGenerateNote(rawId);
+    }
+  }, [alert.id, onGenerateNote]);
+
   return (
     <div
-      className={`group bg-[var(--fintheon-bg)] border border-zinc-800/60 px-4 py-3.5 transition-colors hover:border-[var(--fintheon-accent)]/30 ${
-        seen ? 'opacity-60' : ''
-      } ${isHighSev ? 'riskflow-fintheon-row' : ''}`}
+      className={`group relative border-b border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
     >
-      {/* Row 1: Severity + Risk type pills + Time */}
-      <div className="flex items-center gap-1.5 mb-2">
-        <span
-          className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ''} flex-shrink-0`}
-        >
+      {/* ── Collapsed: headline + source icon top-right ─────────────────────── */}
+      <div
+        className="block px-3 pt-2.5 pb-2 cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-start gap-2">
+          <div className="flex-1 min-w-0">
+            <p className={`text-xs leading-snug font-medium line-clamp-3 break-words ${
+              alert.severity === 'critical' ? 'text-orange-300' : isHigh ? 'text-red-300' : 'text-zinc-300'
+            } group-hover:text-white transition-colors`}>
+              {alert.headline}
+            </p>
+            {alert.summary && alert.summary !== alert.headline && (
+              <p className="text-[10px] text-zinc-600 line-clamp-1 mt-0.5">{alert.summary}</p>
+            )}
+          </div>
+
+          {/* Source icon — top right */}
+          <SourceIcon source={alert.source} className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0 mt-0.5" />
+        </div>
+      </div>
+
+      {/* ── Footer bar: time / direction / points / priority / risk-type / chevron ── */}
+      <div
+        className="flex items-center px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40 cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
+
+        <span className="flex-1" />
+
+        {/* Direction */}
+        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
+          {isBull ? '▲ BULLISH' : '▼ BEARISH'}
+        </span>
+
+        <span className="flex-1" />
+
+        {/* Points */}
+        <span className="text-[10px] text-zinc-500 tabular-nums">
+          {alert.instrument ? `${alert.instrument} ` : ''}{pts > 0 ? `±${pts.toFixed(0)} pts` : '0-5 pts'}
+        </span>
+
+        {/* Priority badge — rounded */}
+        <span className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border`}>
           {sev.label}
         </span>
+
+        {/* Risk type tag */}
         {alert.riskType && (
-          <span
-            className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium tracking-wide border rounded-sm ${
-              RISK_TYPE_STYLE[alert.riskType] ?? RISK_TYPE_STYLE.Commentary
-            }`}
-          >
+          <span className={`ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-medium tracking-wide border ${
+            RISK_TYPE_STYLE[alert.riskType] ?? RISK_TYPE_STYLE.Commentary
+          }`}>
             {alert.riskType}
           </span>
         )}
-        {hasEconData && (
-          <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium tracking-wide bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20 rounded-sm">
-            Econ
-          </span>
-        )}
-        <span className="ml-auto text-[10px] text-zinc-600 flex-shrink-0 tabular-nums">
-          {timeAgo(alert.publishedAt)}
+
+        {/* Expand chevron */}
+        <span className="ml-2 text-zinc-600">
+          {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </span>
       </div>
 
-      {/* Headline */}
-      <p
-        className={`text-sm leading-snug font-medium mb-1 ${
-          alert.severity === 'critical'
-            ? 'text-orange-300'
-            : isHighSev
-              ? 'text-red-300'
-              : 'text-zinc-200'
-        } group-hover:text-white transition-colors`}
+      {/* ── Expanded content: smooth grid-template-rows transition ────────── */}
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+        style={{ gridTemplateRows: expanded ? '1fr' : '0fr' }}
       >
-        {alert.headline}
-      </p>
+        <div className="overflow-hidden">
+          <div className="px-4 py-3 border-t border-zinc-800/40 bg-zinc-900/40">
 
-      {/* Summary */}
-      {alert.summary && alert.summary !== alert.headline && (
-        <p className="text-[11px] text-zinc-400 line-clamp-3 mb-2.5">{alert.summary}</p>
-      )}
-
-      {/* Econ data + Sub-scores row */}
-      {(hasEconData || hasSubScores) && (
-        <div className="flex gap-3 mb-2.5">
-          {/* Beat/Miss panel */}
-          {hasEconData && alert.econData && (
-            <div className="flex flex-col gap-1.5 min-w-[120px]">
-              <BeatMissBadge
-                status={alert.econData.beatMiss!}
-                surprisePercent={alert.econData.surprisePercent}
-              />
-              <div className="text-[10px] text-zinc-500 tabular-nums space-y-0.5 pl-0.5">
-                {alert.econData.actual != null && (
-                  <div>A: <span className="text-zinc-300">{alert.econData.actual}</span></div>
-                )}
-                {alert.econData.forecast != null && (
-                  <div>F: <span className="text-zinc-300">{alert.econData.forecast}</span></div>
-                )}
-                {alert.econData.previous != null && (
-                  <div>P: <span className="text-zinc-300">{alert.econData.previous}</span></div>
+            {/* 1. Agent Note (or Generate CTA) */}
+            {alert.agentNote ? (
+              <div className="border border-zinc-800/60 px-3 py-2.5 mb-3 bg-[var(--fintheon-bg)]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Sparkles className="w-3 h-3 text-[var(--fintheon-accent)]" />
+                  <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">Oracle</span>
+                </div>
+                <p className="text-[11px] text-zinc-300 leading-relaxed">{alert.agentNote}</p>
+                {alert.agentNoteGeneratedAt && (
+                  <p className="text-[8px] text-zinc-600 mt-1.5 tabular-nums">{timeAgo(alert.agentNoteGeneratedAt)}</p>
                 )}
               </div>
+            ) : onGenerateNote ? (
+              <button
+                onClick={handleGenerateNote}
+                className="flex items-center gap-1.5 text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors mb-3 px-1"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>Generate Note +</span>
+              </button>
+            ) : null}
+
+            {/* 2. Econ Data — beat/miss + A/F/P (econ items only) */}
+            {hasEconData && alert.econData && (
+              <div className="flex items-start gap-4 mb-3">
+                <BeatMissBadge
+                  status={alert.econData.beatMiss!}
+                  surprisePercent={alert.econData.surprisePercent}
+                />
+                <div className="flex items-center gap-4 text-[10px] tabular-nums">
+                  {alert.econData.actual != null && (
+                    <div>
+                      <span className="text-zinc-600 uppercase tracking-wider text-[9px]">Actual</span>
+                      <div className="text-zinc-300 font-medium">{alert.econData.actual}</div>
+                    </div>
+                  )}
+                  {alert.econData.forecast != null && (
+                    <div>
+                      <span className="text-zinc-600 uppercase tracking-wider text-[9px]">Forecast</span>
+                      <div className="text-zinc-300 font-medium">{alert.econData.forecast}</div>
+                    </div>
+                  )}
+                  {alert.econData.previous != null && (
+                    <div>
+                      <span className="text-zinc-600 uppercase tracking-wider text-[9px]">Previous</span>
+                      <div className="text-zinc-300 font-medium">{alert.econData.previous}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 3. Sub-Scores */}
+            {hasSubScores && alert.subScores && (
+              <div className="mb-3">
+                <SubScoreBar subScores={alert.subScores} />
+              </div>
+            )}
+
+            {/* 4. Summary (if exists and differs from headline) */}
+            {alert.summary && alert.summary !== alert.headline && (
+              <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">{alert.summary}</p>
+            )}
+
+            {/* 5. Tags + Author + Source link */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {alert.tags.length > 0 && (
+                <div className="flex gap-1">
+                  {alert.tags.slice(0, 4).map((tag) => (
+                    <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-zinc-800/50 text-zinc-500 border border-zinc-800/40">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {alert.authorHandle && (
+                <span className="text-[9px] text-zinc-600">@{alert.authorHandle}</span>
+              )}
+              {alert.url && (
+                <a
+                  href={alert.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-auto text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Source
+                </a>
+              )}
             </div>
-          )}
 
-          {/* Sub-score bar */}
-          {hasSubScores && alert.subScores && (
-            <div className="flex-1 min-w-0 pt-1">
-              <SubScoreBar subScores={alert.subScores} />
-            </div>
-          )}
+          </div>
         </div>
-      )}
-
-      {/* Agent note */}
-      {alert.agentNote ? (
-        <div className="border border-zinc-800/60 rounded px-3 py-2 mb-2.5 bg-zinc-900/30">
-          <p className="text-[11px] text-zinc-300 italic leading-relaxed">{alert.agentNote}</p>
-          {alert.agentNoteGeneratedAt && (
-            <p className="text-[8px] text-zinc-600 mt-1 tabular-nums">
-              {timeAgo(alert.agentNoteGeneratedAt)}
-            </p>
-          )}
-        </div>
-      ) : onGenerateNote ? (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onGenerateNote(alert.id);
-          }}
-          className="flex items-center gap-1 text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors mb-2.5 group/note"
-        >
-          <Sparkles className="w-3 h-3 group-hover/note:text-[var(--fintheon-accent)]" />
-          Generate Note +
-        </button>
-      ) : null}
-
-      {/* Bottom meta row */}
-      <div className="flex items-center gap-2 text-[10px]">
-        <SourceIcon source={alert.source} className="w-3 h-3 text-zinc-500" />
-
-        {/* Direction */}
-        {(isBullish || isBearish) && (
-          <>
-            <span className={`font-semibold flex items-center gap-0.5 ${isBullish ? 'text-emerald-400' : 'text-red-400'}`}>
-              {isBullish ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              {alert.direction}
-            </span>
-            <span className="text-zinc-700">&middot;</span>
-          </>
-        )}
-
-        {/* Points */}
-        {pts > 0 && (
-          <>
-            <span className="text-zinc-500 tabular-nums">
-              /{alert.instrument || 'ES'} &plusmn;{pts} pts
-            </span>
-            <span className="text-zinc-700">&middot;</span>
-          </>
-        )}
-
-        {/* Author handle */}
-        {alert.authorHandle && (
-          <>
-            <span className="text-zinc-600">@{alert.authorHandle}</span>
-            <span className="text-zinc-700">&middot;</span>
-          </>
-        )}
-
-        {/* External link */}
-        {alert.url && (
-          <a
-            href={alert.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-auto flex-shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ExternalLink className="w-3 h-3 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </a>
-        )}
       </div>
     </div>
   );

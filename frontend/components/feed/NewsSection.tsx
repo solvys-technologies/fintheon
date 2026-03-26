@@ -39,9 +39,7 @@ export function NewsSection() {
 
   const handleGenerateNote = async (itemId: string) => {
     try {
-      const rawId = itemId.replace('backend-', '');
-      await backend.riskflow.refresh(); // Trigger backend refresh as proxy for note generation
-      console.log('[RiskFlow] Note generation requested for:', rawId);
+      await backend.riskflow.generateNote(itemId);
     } catch (err) {
       console.warn('[RiskFlow] Failed to generate note:', err);
     }
@@ -62,8 +60,8 @@ export function NewsSection() {
   }, [alerts, priorityFilter, sourceFilter, showProposals]);
 
   return (
-    <div className="h-full overflow-y-auto px-5 pt-4 pb-4">
-      <div className="flex items-center justify-between mb-2 mt-1">
+    <div className="h-full overflow-y-auto px-0 pt-0 pb-0">
+      <div className="flex items-center justify-between mb-2 mt-1 px-3">
         <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em]">
           <span className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.twitterCli ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
@@ -84,7 +82,7 @@ export function NewsSection() {
       </div>
 
       {/* Filter row: Priority dropdown + Source dropdown + Proposals tab */}
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-3 px-3">
         <select
           value={showProposals ? 'all' : priorityFilter}
           onChange={(e) => { setShowProposals(false); setPriorityFilter(e.target.value as PriorityFilter); }}
@@ -114,7 +112,7 @@ export function NewsSection() {
         </button>
       </div>
 
-      <div className="space-y-2">
+      <div>
         {items.length === 0 ? (
           <div className="text-center text-gray-500 py-12">
             <p>No RiskFlow items available</p>
