@@ -183,6 +183,11 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         cyclical: item.priceBrainScore?.classification ?? null,
         instrument: item.priceBrainScore?.instrument ?? null,
         authorHandle: item.authorHandle ?? null,
+        subScores: item.subScores ?? null,
+        riskType: (item.riskType as RiskFlowAlert['riskType']) ?? null,
+        agentNote: item.agentNote ?? null,
+        agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
+        econData: item.econData ?? null,
       }));
       setBackendAlerts(alerts);
       console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items (instrument=${selectedSymbol.symbol})`);

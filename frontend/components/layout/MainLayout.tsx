@@ -581,6 +581,7 @@ function MainLayoutInner() {
                   <RiskFlowPanel
                     collapsed={combinedTapeCollapsed}
                     onToggleCollapsed={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}
+                    onNavigateToFeed={() => navigateTab('news')}
                   />
                 </section>
               </div>
@@ -639,6 +640,7 @@ function MainLayoutInner() {
                   <RiskFlowPanel
                     collapsed={riskFlowCollapsed}
                     onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
+                    onNavigateToFeed={() => navigateTab('news')}
                   />
                 </div>
               </div>
@@ -732,7 +734,7 @@ function MainLayoutInner() {
               <div className="flex-1 min-h-0 overflow-hidden">
               {activeTab === 'executive' && (
                 <div key="executive" data-tour-target="executive" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ExecutiveDashboard />
+                  <ExecutiveDashboard onNavigateTab={(tab) => navigateTab(tab as NavTab)} />
                 </div>
               )}
               {activeTab === 'analysis' && (

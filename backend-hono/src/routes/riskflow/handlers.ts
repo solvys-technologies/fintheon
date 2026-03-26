@@ -26,6 +26,7 @@ import {
   type StackedEvent
 } from '../../services/iv-scoring-v2.js';
 import { estimatePoints } from '../../services/market-data/point-estimator.js';
+import { generateNoteForItem } from '../../services/riskflow/agent-notes.js';
 
 /**
  * Internal function to trigger feed pre-fetching
@@ -692,6 +693,22 @@ export async function handleRefresh(c: Context) {
   } catch (error) {
     console.error('[RiskFlow] Refresh error:', error);
     return c.json({ error: 'Refresh failed' }, 500);
+  }
+}
+
+/** POST /api/riskflow/:id/generate-note — manual agent note generation trigger */
+export async function handleGenerateNote(c: Context) {
+  try {
+    const itemId = c.req.param('id');
+    if (!itemId) return c.json({ error: 'Missing item ID' }, 400);
+
+    const note = await generateNoteForItem(itemId);
+    if (!note) return c.json({ error: 'Item not found or generation failed' }, 404);
+
+    return c.json({ note });
+  } catch (err) {
+    console.error('[RiskFlow] Generate note error:', err);
+    return c.json({ error: 'Failed to generate note' }, 500);
   }
 }
 

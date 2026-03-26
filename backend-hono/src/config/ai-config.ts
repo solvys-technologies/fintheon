@@ -26,6 +26,8 @@ export type AiModelKey =
   | 'claude-local'      // Claude Opus via local CLI bridge
   // GitHub Models (free, OAuth-powered)
   | 'github-deepseek'   // DeepSeek R1 via GitHub Models
+  // Nous Research direct inference (fallback when OpenRouter DNS fails)
+  | 'nous-direct'       // Hermes 4 405B via inference-api.nousresearch.com
 
 export type AiProvider = 'openai-compatible'
 
@@ -153,7 +155,12 @@ const modelAliases: Record<string, AiModelKey> = {
   'github-deepseek': 'github-deepseek',
   'github-gpt4o': 'github-deepseek',
   'github-models': 'github-deepseek',
-  'gpt4o-free': 'github-deepseek'
+  'gpt4o-free': 'github-deepseek',
+  // Nous Direct (fallback)
+  'nous-direct': 'nous-direct',
+  'nous': 'nous-direct',
+  'hermes-direct': 'nous-direct',
+  'nous-fallback': 'nous-direct'
 }
 
 export const resolveModelKey = (value?: string): AiModelKey | undefined => {
@@ -346,6 +353,24 @@ export const defaultAiConfig: AiConfig = {
       supportsVision: true
     },
 
+    // Nous Research direct inference — fallback when OpenRouter DNS is unreachable
+    'nous-direct': {
+      id: 'nousresearch/hermes-4-405b',
+      displayName: 'Hermes 4 405B (Nous Direct)',
+      provider: 'openai-compatible',
+      providerType: 'nous-direct',
+      apiKeyEnv: 'NOUS_API_KEY',
+      baseUrl: 'https://inference-api.nousresearch.com/v1',
+      temperature: 0.4,
+      maxTokens: 4096,
+      timeoutMs: 60_000,
+      costPer1kInputUsd: 0.001,
+      costPer1kOutputUsd: 0.003,
+      contextWindow: 128_000,
+      supportsStreaming: true,
+      supportsVision: false
+    },
+
     // Claude Code SDK Bridge (free via Max subscription — $0 per-token cost)
     // [claude-code 2026-03-10] Local CLI bridge using claude --print --output-format stream-json
     'claude-local': {
@@ -397,7 +422,7 @@ export const defaultAiConfig: AiConfig = {
       sonnet: 'openrouter-sonnet',
       grok: 'openrouter-grok',
       'openrouter-sonnet': 'openrouter-opus',
-      'openrouter-opus': 'openrouter-sonnet',
+      'openrouter-opus': 'nous-direct',
       'openrouter-grok': 'openrouter-sonnet',
       // Hermes fallbacks (fall back to OpenRouter equivalents)
       'hermes-cao': 'openrouter-opus',
@@ -407,7 +432,9 @@ export const defaultAiConfig: AiConfig = {
       // Claude Local SDK fallback to OpenRouter Opus
       'claude-local': 'openrouter-opus',
       // GitHub Models fallback to OpenRouter
-      'github-deepseek': 'openrouter-sonnet'
+      'github-deepseek': 'openrouter-sonnet',
+      // Nous Direct is terminal — no further fallback
+      'nous-direct': 'openrouter-sonnet'
     },
     // Cross-provider fallbacks (all within OpenRouter now)
     crossProviderFallbacks: []
@@ -464,6 +491,11 @@ export const isGitHubModelsModel = (modelKey: AiModelKey): boolean => {
 // Helper to check if a model uses Claude Local SDK bridge
 export const isClaudeLocalModel = (modelKey: AiModelKey): boolean => {
   return modelKey === 'claude-local'
+}
+
+// Helper to check if a model uses Nous Research direct inference
+export const isNousDirectModel = (modelKey: AiModelKey): boolean => {
+  return modelKey === 'nous-direct'
 }
 
 // Get the model ID for Hermes agent keys (OpenRouter Opus 4.6)

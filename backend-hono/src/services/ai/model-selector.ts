@@ -17,6 +17,7 @@ import {
   isOpenRouterModel,
   isHermesModel,
   isGitHubModelsModel,
+  isNousDirectModel,
   getHermesModelId,
 } from '../../config/ai-config.js'
 
@@ -272,6 +273,15 @@ export function createModelClient(modelKey: AiModelKey) {
         'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
         'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
       },
+    })
+    return client(config.id)
+  }
+
+  // Nous Research direct inference (fallback when OpenRouter DNS fails)
+  if (isNousDirectModel(modelKey)) {
+    const client = createOpenAI({
+      apiKey,
+      baseURL: config.baseUrl,
     })
     return client(config.id)
   }

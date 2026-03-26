@@ -16,6 +16,7 @@ import { startVIXPolling } from '../services/vix-service.js';
 import { startCentralScorer } from '../services/riskflow/central-scorer.js';
 import { startIVScoreTicker } from '../services/market-data/iv-score-ticker.js';
 import { initVIXRescore } from '../services/riskflow/vix-rescore.js';
+import { startAgentNotesCron } from '../services/riskflow/agent-notes.js';
 
 const log = createLogger('Boot');
 
@@ -80,6 +81,10 @@ export async function bootServices(): Promise<void> {
   initClaudeSDK().catch((err) =>
     log.warn('Claude SDK init failed (non-fatal)', { error: String(err) })
   );
+
+  // Agent notes cron (3min — generates Oracle tactical notes for high/critical items)
+  startAgentNotesCron();
+  log.info('AgentNotesCron started');
 
   // News feed cleanup — purge items older than 30 days on startup, then daily
   cleanupOldItems().catch((err) =>

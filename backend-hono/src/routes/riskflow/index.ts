@@ -18,6 +18,7 @@ import {
   handleGetIVAggregate,
   handleGetSources,
   handleRefresh,
+  handleGenerateNote,
 } from './handlers.js';
 
 export function createRiskFlowRoutes(): Hono {
@@ -58,6 +59,9 @@ export function createRiskFlowRoutes(): Hono {
 
   // POST /api/riskflow/refresh - Manual refresh trigger
   router.post('/refresh', handleRefresh);
+
+  // POST /api/riskflow/:id/generate-note - Manual agent note generation
+  router.post('/:id/generate-note', handleGenerateNote);
 
   // GET /api/riskflow/sources - Connection status for data source indicators (public)
   router.get('/sources', handleGetSources);

@@ -1,3 +1,4 @@
+// [claude-code 2026-03-26] Tier-based score ceiling + recalibrated scoreToPoints curve (was producing 200+ pts for jobless claims)
 // [claude-code 2026-03-24] VIX-weighted scoring: continuousVIXMultiplier, SubScoreBreakdown, finer EVENT_WEIGHTS, macro threshold adjustment
 /**
  * IV Scorer Service
@@ -222,6 +223,12 @@ export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
     }
   }
 
+  // Tier-based score ceiling: prevents low-tier events from reaching crisis scores via boost stacking
+  // e.g. jobless (base 4) caps at 8, cpiPrint (base 7.5) caps at 10
+  const maxBoostedScore = Math.min(10, baseEventWeight + 4)
+  score = Math.min(maxBoostedScore, score)
+  rationale.push(`Tier ceiling (base ${baseEventWeight} + 4 = ${maxBoostedScore}): capped at ${maxBoostedScore}`)
+
   // Clamp final score
   score = Math.min(10, Math.max(0, score))
 
@@ -284,17 +291,17 @@ function getEasternHour(date: Date): number {
 function scoreToPoints(score: number, instrument: string = '/ES'): { points: number; instrument: string } {
   if (score <= 0) return { points: 0, instrument }
 
-  // Non-linear scaling — steeper for high-impact events (geopolitical, crisis)
-  // Base curve calibrated for /ES (beta 1.0)
+  // Non-linear scaling calibrated for /ES (beta 1.0)
+  // Curve: 0-15-45-69-99 pts across score 0-3-6-8-10
   let basePoints: number
   if (score <= 3) {
-    basePoints = score * 8
+    basePoints = score * 5
   } else if (score <= 6) {
-    basePoints = 24 + (score - 3) * 15
+    basePoints = 15 + (score - 3) * 10
   } else if (score <= 8) {
-    basePoints = 69 + (score - 6) * 30
+    basePoints = 45 + (score - 6) * 12
   } else {
-    basePoints = 129 + (score - 8) * 50
+    basePoints = 69 + (score - 8) * 15
   }
 
   // Apply instrument beta from INSTRUMENT_BETAS (defaults to 1.0 for unknown instruments)

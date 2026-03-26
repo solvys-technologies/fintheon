@@ -38,6 +38,20 @@ export interface FeedItem {
   authorHandle?: string;
   /** Per-item sub-score breakdown (VIX-weighted) */
   subScores?: SubScoreBreakdown;
+  /** Risk classification category */
+  riskType?: 'Macro' | 'Geopolitical' | 'Earnings' | 'Technical' | 'Credit' | 'Liquidity' | 'Commentary' | null;
+  /** Agent-generated analytical note */
+  agentNote?: string | null;
+  /** Timestamp when agentNote was generated */
+  agentNoteGeneratedAt?: string | null;
+  /** Structured economic data for econ prints */
+  econData?: {
+    actual?: number | null;
+    forecast?: number | null;
+    previous?: number | null;
+    beatMiss?: 'beat' | 'miss' | 'inline' | null;
+    surprisePercent?: number | null;
+  } | null;
   /** Point estimation from IV score × VIX */
   priceBrainScore?: {
     sentiment: 'Bullish' | 'Bearish' | 'Neutral';

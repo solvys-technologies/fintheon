@@ -363,6 +363,10 @@ export class RiskFlowService {
   async fetchVIX(): Promise<{ value: number }> {
     return this.client.get<{ value: number }>('/api/market/vix');
   }
+
+  async generateNote(itemId: string): Promise<{ note: string }> {
+    return this.client.post<{ note: string }>(`/api/riskflow/${itemId}/generate-note`, {});
+  }
 }
 
 // AI Service

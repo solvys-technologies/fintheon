@@ -96,7 +96,9 @@ export function BriefMiniWidget() {
     const h = now.getHours();
     const t = h * 60 + now.getMinutes();
     // TOTT: Sunday >= 17:00 through Monday < 07:00
-    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'Tale of the Tape';
+    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'The Weekly Tribune';
+    // PMDB stays active overnight until MDB fires at 6:30 AM
+    if (t < 6 * 60 + 30) return 'Post-Market Brief';
     if (t >= 17 * 60 + 30) return 'Post-Market Brief';
     if (t >= 11 * 60) return 'Afternoon Brief';
     return 'Morning Brief';

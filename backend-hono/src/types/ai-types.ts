@@ -6,7 +6,7 @@
  */
 
 // Provider type discriminator
-export type AiProviderType = 'openrouter' | 'vercel-gateway' | 'hermes' | 'github-models' | 'claude-local'
+export type AiProviderType = 'openrouter' | 'vercel-gateway' | 'hermes' | 'github-models' | 'claude-local' | 'nous-direct'
 
 // Circuit breaker states
 export type CircuitState = 'closed' | 'open' | 'half-open'

@@ -151,30 +151,34 @@ export function createDataRoutes(): Hono {
   // ── Briefs ──────────────────────────────────────────────────────
 
   // GET /api/data/brief?type=MDB|ADB|PMDB|TOTT
+  // No type param → returns most recent brief of any type (so overnight shows PMDB, not stale MDB)
   app.get('/brief', async (c) => {
     try {
       const typeParam = c.req.query('type')?.toUpperCase() as BriefType | undefined;
       const validTypes = ['MDB', 'ADB', 'PMDB', 'TOTT'];
-      const briefType = typeParam && validTypes.includes(typeParam) ? typeParam : getCurrentBriefType();
 
-      const brief = await readLatestBrief(briefType);
-      if (brief) {
-        return c.json({
-          items: [{ title: `${briefType} — Brief`, detail: brief.content }],
-          briefType,
-        });
+      if (typeParam && validTypes.includes(typeParam)) {
+        // Explicit type requested — fetch that specific brief
+        const brief = await readLatestBrief(typeParam);
+        if (brief) {
+          return c.json({
+            items: [{ title: `${typeParam} — Brief`, detail: brief.content }],
+            briefType: typeParam,
+          });
+        }
+      } else {
+        // No type specified — return the most recent brief regardless of type
+        const latest = await readBriefs(undefined, 1);
+        if (latest.length > 0) {
+          const bt = latest[0].brief_type;
+          return c.json({
+            items: [{ title: `${bt} — Brief`, detail: latest[0].content }],
+            briefType: bt,
+          });
+        }
       }
 
-      // Fallback: any active brief
-      const fallback = await readBriefs(undefined, 1);
-      if (fallback.length > 0) {
-        return c.json({
-          items: [{ title: `Latest — ${fallback[0].brief_type}`, detail: fallback[0].content }],
-          briefType,
-        });
-      }
-
-      return c.json({ items: [], briefType });
+      return c.json({ items: [], briefType: typeParam ?? getCurrentBriefType() });
     } catch (err) {
       console.error('[Data] /brief error:', err);
       return c.json({ items: [] }, 500);

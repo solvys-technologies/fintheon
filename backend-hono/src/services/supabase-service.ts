@@ -25,6 +25,11 @@ export interface ScoredRiskFlowItem extends RawRiskFlowItem {
   analyzed_at?: string;
   scored_by?: string;
   price_brain_score?: Record<string, unknown>;
+  sub_scores?: Record<string, unknown>;
+  risk_type?: string;
+  agent_note?: string;
+  agent_note_generated_at?: string;
+  econ_data?: Record<string, unknown>;
 }
 
 export interface ERScoreRecord {

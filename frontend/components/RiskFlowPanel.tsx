@@ -7,9 +7,10 @@
 // [claude-code 2026-03-11] T5: drag-drop support for chat injection (application/x-riskflow)
 // [claude-code 2026-03-16] T2: AlertRow bottom-hero redesign, toolbar consolidation, shared inferDirection
 // [claude-code 2026-03-20] S3:T4d: Swapped chevron directions — expanded=ChevronDown, collapsed=ChevronUp
+// [claude-code 2026-03-26] T3: Card expand/collapse with agent notes, risk type tags, smooth transitions
 import React, { useState, useCallback } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
-import { Zap, ExternalLink, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, MessageSquare, Check, XCircle, RefreshCw } from 'lucide-react';
+import { Zap, ExternalLink, ChevronDown, ChevronUp, ChevronRight, Trash2, X, TrendingUp, TrendingDown, MessageSquare, Check, XCircle, RefreshCw, Sparkles } from 'lucide-react';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
 import { inferDirection } from '../lib/riskflow-feed';
 import TradeIdeaModal from './TradeIdeaModal';
@@ -106,6 +107,49 @@ function PointRangeBadge({ points, instrument }: { points?: number | null; instr
   );
 }
 
+// ── Risk Type Badge ──────────────────────────────────────────────────────────
+
+function RiskTypeBadge({ riskType }: { riskType: string }) {
+  return (
+    <span className="text-[9px] font-medium tracking-wider uppercase px-1.5 py-0.5 border border-zinc-700 text-zinc-400">
+      {riskType}
+    </span>
+  );
+}
+
+// ── Agent Note Section ──────────────────────────────────────────────────────
+
+function AgentNoteSection({
+  alert,
+  onGenerate,
+}: {
+  alert: RiskFlowAlert;
+  onGenerate: (alertId: string) => void;
+}) {
+  // T1 will add these fields
+  const agentNote = (alert as any).agentNote as string | null | undefined;
+
+  if (agentNote) {
+    return (
+      <div className="mt-2 px-3 py-2 bg-zinc-900/60 border border-zinc-800/50 text-[11px] text-zinc-300 leading-relaxed">
+        <span className="text-[9px] text-zinc-600 uppercase tracking-wider block mb-1">Agent Note</span>
+        {agentNote}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onGenerate(alert.id); }}
+      className="mt-2 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+    >
+      <Sparkles className="w-3 h-3" />
+      Generate Note +
+    </button>
+  );
+}
+
 // ── Time formatting ────────────────────────────────────────────────────────────
 
 function timeAgo(iso: string): string {
@@ -128,6 +172,9 @@ function TradeIdeaRow({
   onApprove,
   onDeny,
   seen,
+  expanded,
+  onToggleExpand,
+  onGenerateNote,
 }: {
   alert: RiskFlowAlert;
   onDelete: (id: string) => void;
@@ -136,10 +183,15 @@ function TradeIdeaRow({
   onApprove?: (alert: RiskFlowAlert) => void;
   onDeny?: (alert: RiskFlowAlert) => void;
   seen: boolean;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onGenerateNote: (alertId: string) => void;
 }) {
   const idea = alert.tradeIdea!;
   const isLong = idea.direction === 'long';
   const isShort = idea.direction === 'short';
+  // T1 will add these fields
+  const riskType = (alert as any).riskType as string | null | undefined;
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('application/x-riskflow', JSON.stringify({
@@ -155,77 +207,108 @@ function TradeIdeaRow({
     <div
       draggable
       onDragStart={handleDragStart}
-      className={`group relative flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 border-l-2 border-l-[var(--fintheon-accent)]/50 hover:bg-[var(--fintheon-accent)]/5 transition-colors cursor-pointer ${
+      className={`group relative border-b border-zinc-800/50 border-l-2 border-l-[var(--fintheon-accent)]/50 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
         seen ? 'opacity-70' : ''
       }`}
-      onClick={() => {
-        onMarkSeen(alert.id);
-        onOpen(idea);
-      }}
     >
-      {/* Cyclical badge — top right */}
-      {alert.cyclical && alert.cyclical !== 'Neutral' && (
-        <div className="absolute top-1.5 right-9">
-          <CyclicalBadge classification={alert.cyclical} />
-        </div>
-      )}
+      <div
+        className="flex items-start gap-2 px-3 py-2.5 cursor-pointer"
+        onClick={() => {
+          onMarkSeen(alert.id);
+          onOpen(idea);
+        }}
+      >
+        {/* Cyclical badge — top right */}
+        {alert.cyclical && alert.cyclical !== 'Neutral' && (
+          <div className="absolute top-1.5 right-9">
+            <CyclicalBadge classification={alert.cyclical} />
+          </div>
+        )}
 
-      <div className="flex-1 min-w-0 flex items-start gap-2">
-        {/* Source logo */}
-        <span className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10">
-          {isLong
-            ? <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
-            : isShort
-              ? <TrendingDown className="w-3 h-3 text-zinc-400" />
-              : <NotionLogo className="w-3 h-3 text-[var(--fintheon-accent)]" />
-          }
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs leading-snug font-medium line-clamp-2 text-[var(--fintheon-text)] group-hover:text-white transition-colors">
-            {alert.headline}
-          </p>
-          {alert.summary && alert.summary !== alert.headline && (
-            <p className="text-[10px] text-zinc-600 line-clamp-1 mt-0.5">{alert.summary}</p>
-          )}
-          <div className="flex items-center gap-2 mt-1">
-            <NotionLogo className="w-2.5 h-2.5 text-zinc-600" />
-            <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
-            <span className="text-[10px] text-zinc-700">&middot;</span>
-            <span className="text-[10px] text-[var(--fintheon-accent)]/60 uppercase tracking-wider">
-              {idea.sourceAgent ?? 'Proposal'}
-            </span>
-            {idea.riskRewardRatio && (
-              <>
-                <span className="text-[10px] text-zinc-700">&middot;</span>
-                <span className="text-[10px] text-zinc-500">R/R {idea.riskRewardRatio.toFixed(1)}:1</span>
-              </>
+        <div className="flex-1 min-w-0 flex items-start gap-2">
+          {/* Source logo */}
+          <span className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10">
+            {isLong
+              ? <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
+              : isShort
+                ? <TrendingDown className="w-3 h-3 text-zinc-400" />
+                : <NotionLogo className="w-3 h-3 text-[var(--fintheon-accent)]" />
+            }
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs leading-snug font-medium line-clamp-2 text-[var(--fintheon-text)] group-hover:text-white transition-colors">
+              {alert.headline}
+            </p>
+            {alert.summary && alert.summary !== alert.headline && (
+              <p className="text-[10px] text-zinc-600 line-clamp-1 mt-0.5">{alert.summary}</p>
             )}
-            <span className="text-[10px] text-zinc-700">&middot;</span>
-            <DirectionBadge alert={alert} />
-            <span className="text-[10px] text-zinc-700">&middot;</span>
-            <PointRangeBadge points={alert.pointRange} instrument={alert.instrument} />
+            <div className="flex items-center gap-2 mt-1">
+              <NotionLogo className="w-2.5 h-2.5 text-zinc-600" />
+              <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
+              <span className="text-[10px] text-zinc-700">&middot;</span>
+              <span className="text-[10px] text-[var(--fintheon-accent)]/60 uppercase tracking-wider">
+                {idea.sourceAgent ?? 'Proposal'}
+              </span>
+              {idea.riskRewardRatio && (
+                <>
+                  <span className="text-[10px] text-zinc-700">&middot;</span>
+                  <span className="text-[10px] text-zinc-500">R/R {idea.riskRewardRatio.toFixed(1)}:1</span>
+                </>
+              )}
+              <span className="text-[10px] text-zinc-700">&middot;</span>
+              <DirectionBadge alert={alert} />
+              <span className="text-[10px] text-zinc-700">&middot;</span>
+              <PointRangeBadge points={alert.pointRange} instrument={alert.instrument} />
+            </div>
+          </div>
+        </div>
+
+        {/* Expand chevron + Approve / Deny CTA */}
+        <div className="flex-shrink-0 flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
+            className="p-1 rounded text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+            title={expanded ? 'Collapse' : 'Expand'}
+          >
+            {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+          </button>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onApprove?.(alert); }}
+              className="p-1 rounded text-emerald-600 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+              title="Approve proposal"
+            >
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDeny?.(alert); }}
+              className="p-1 rounded text-red-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              title="Deny proposal"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Approve / Deny CTA */}
-      <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onApprove?.(alert); }}
-          className="p-1 rounded text-emerald-600 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-          title="Approve proposal"
-        >
-          <Check className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onDeny?.(alert); }}
-          className="p-1 rounded text-red-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-          title="Deny proposal"
-        >
-          <XCircle className="w-3.5 h-3.5" />
-        </button>
+      {/* Expanded content — smooth CSS grid transition */}
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+        style={{ gridTemplateRows: expanded ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="px-3 py-2.5 border-t border-zinc-800/40 bg-zinc-900/40">
+            <AgentNoteSection alert={alert} onGenerate={onGenerateNote} />
+            {riskType && (
+              <div className="flex items-center gap-1.5 mt-2">
+                <RiskTypeBadge riskType={riskType} />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -239,17 +322,27 @@ function AlertRow({
   onMarkSeen,
   onChat,
   seen,
+  expanded,
+  onToggleExpand,
+  onGenerateNote,
+  onNavigateToFeed,
 }: {
   alert: RiskFlowAlert;
   onDelete: (id: string) => void;
   onMarkSeen: (id: string) => void;
   onChat?: (alert: RiskFlowAlert) => void;
   seen: boolean;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onGenerateNote: (alertId: string) => void;
+  onNavigateToFeed?: () => void;
 }) {
   const sev = SEVERITY_CONFIG[alert.severity];
   const isHigh = alert.severity === 'high' || alert.severity === 'critical';
   const dir = inferDirection(alert);
   const isBull = dir === 'Bullish';
+  // T1 will add these fields
+  const riskType = (alert as any).riskType as string | null | undefined;
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('application/x-riskflow', JSON.stringify({
@@ -266,12 +359,9 @@ function AlertRow({
       className={`group relative border-b border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
     >
       {/* Main content area */}
-      <a
-        href={alert.url}
-        target="_blank"
-        rel="noopener noreferrer"
+      <div
         className="block px-3 pt-2.5 pb-2 cursor-pointer"
-        onClick={() => onMarkSeen(alert.id)}
+        onClick={() => { onMarkSeen(alert.id); onToggleExpand(); }}
       >
         <div className="flex items-start gap-2">
           <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ''} flex-shrink-0 mt-0.5`}>
@@ -290,6 +380,7 @@ function AlertRow({
               {alert.cyclical && alert.cyclical !== 'Neutral' && (
                 <CyclicalBadge classification={alert.cyclical} />
               )}
+              {riskType && <RiskTypeBadge riskType={riskType} />}
               {alert.authorHandle && (
                 <span className="text-[9px] text-zinc-500">@{alert.authorHandle}</span>
               )}
@@ -318,7 +409,7 @@ function AlertRow({
             </button>
           </div>
         </div>
-      </a>
+      </div>
 
       {/* Bottom hero footer — time (left), direction (center), points (right) */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40">
@@ -329,6 +420,38 @@ function AlertRow({
         <span className="text-[10px] text-zinc-500 tabular-nums" title={`Implied ${alert.instrument ?? ''} move`}>
           {alert.instrument ? `${alert.instrument} ` : ''}{alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)} pts` : '0-5 pts'}
         </span>
+      </div>
+
+      {/* Expanded content — smooth CSS grid transition */}
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+        style={{ gridTemplateRows: expanded ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="px-3 py-2.5 border-t border-zinc-800/40 bg-zinc-900/40">
+            <AgentNoteSection alert={alert} onGenerate={onGenerateNote} />
+
+            {/* Risk type + View in RiskFlow CTA */}
+            <div className="flex items-center justify-between mt-2.5">
+              <div className="flex items-center gap-1.5">
+                {riskType && <RiskTypeBadge riskType={riskType} />}
+                {alert.cyclical && alert.cyclical !== 'Neutral' && (
+                  <CyclicalBadge classification={alert.cyclical} />
+                )}
+              </div>
+              {onNavigateToFeed && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onNavigateToFeed(); }}
+                  className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
+                >
+                  View in RiskFlow
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -381,11 +504,14 @@ export default function RiskFlowPanel({
   collapsed,
   onToggleCollapsed,
   onChatAlert,
+  onNavigateToFeed,
 }: {
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
   /** Called when user clicks "Chat" CTA on a news alert */
   onChatAlert?: (alert: RiskFlowAlert) => void;
+  /** Called when user clicks "View in RiskFlow" in expanded card */
+  onNavigateToFeed?: () => void;
 }) {
   const { alerts, highCount, mediumCount, clearAll, removeAlert, markSeen, markAllSeen, isSeen, refresh, refreshing } = useRiskFlow();
   const backend = useBackend();
@@ -394,7 +520,17 @@ export default function RiskFlowPanel({
   const [showProposals, setShowProposals] = useState(false);
   const [expandedInternal, setExpandedInternal] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const sourceStatus = useSourceStatus();
+
+  const handleGenerateNote = useCallback(async (alertId: string) => {
+    const rawId = alertId.replace(/^backend-/, '');
+    try {
+      await backend.riskflow.generateNote(rawId);
+    } catch (err) {
+      console.warn('[RiskFlowPanel] Generate note failed:', err);
+    }
+  }, [backend]);
 
   /** Extract Notion page ID from the alert ID (format: notion-ti-{pageId}) */
   const getNotionPageId = (alertId: string) => alertId.replace('notion-ti-', '');
@@ -531,6 +667,9 @@ export default function RiskFlowPanel({
                       onApprove={handleApprove}
                       onDeny={handleDeny}
                       seen={isSeen(alert.id)}
+                      expanded={expandedId === alert.id}
+                      onToggleExpand={() => setExpandedId(expandedId === alert.id ? null : alert.id)}
+                      onGenerateNote={handleGenerateNote}
                     />
                   ) : (
                     <AlertRow
@@ -540,6 +679,10 @@ export default function RiskFlowPanel({
                       onMarkSeen={markSeen}
                       onChat={onChatAlert}
                       seen={isSeen(alert.id)}
+                      expanded={expandedId === alert.id}
+                      onToggleExpand={() => setExpandedId(expandedId === alert.id ? null : alert.id)}
+                      onGenerateNote={handleGenerateNote}
+                      onNavigateToFeed={onNavigateToFeed}
                     />
                   )
                 )

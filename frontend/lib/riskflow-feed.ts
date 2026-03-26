@@ -33,6 +33,16 @@ export interface TradeIdeaDetail {
   notionUrl: string;
 }
 
+/** Per-item scoring breakdown showing how each factor contributed */
+export interface SubScoreBreakdown {
+  eventWeight: number;
+  timing: number;
+  deviation: number;
+  momentum: number;
+  vixContext: number;
+  vixMultiplier: number;
+}
+
 export interface RiskFlowAlert {
   id: string;
   headline: string;
@@ -55,6 +65,22 @@ export interface RiskFlowAlert {
   instrument?: string | null;
   /** X/Twitter author handle for attribution */
   authorHandle?: string | null;
+  /** Per-item sub-score breakdown (VIX-weighted) */
+  subScores?: SubScoreBreakdown | null;
+  /** Risk classification category */
+  riskType?: 'Macro' | 'Geopolitical' | 'Earnings' | 'Technical' | 'Credit' | 'Liquidity' | 'Commentary' | null;
+  /** Agent-generated analytical note */
+  agentNote?: string | null;
+  /** Timestamp when agentNote was generated */
+  agentNoteGeneratedAt?: string | null;
+  /** Structured economic data for econ prints */
+  econData?: {
+    actual?: number | null;
+    forecast?: number | null;
+    previous?: number | null;
+    beatMiss?: 'beat' | 'miss' | 'inline' | null;
+    surprisePercent?: number | null;
+  } | null;
 }
 
 // [claude-code 2026-03-11] Overhauled severity classification — strict contextual matching,

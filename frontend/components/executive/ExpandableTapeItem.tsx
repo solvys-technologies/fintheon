@@ -1,9 +1,11 @@
 // [claude-code 2026-03-05] Expandable tape item for ExecutiveDashboard — shows full RiskFlow detail on click
 // [claude-code 2026-03-11] Replace text source label with SVG icons (X/Notion)
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+// [claude-code 2026-03-26] T3: Smooth expand transitions, agent notes, risk type, sub-scores, beat/miss
+import { useState, useCallback } from 'react';
+import { ChevronDown, ChevronUp, ChevronRight, ExternalLink, TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../../lib/riskflow-feed';
+import { useBackend } from '../../lib/backend';
 
 function XLogo({ className }: { className?: string }) {
   return (
@@ -62,12 +64,28 @@ interface ExpandableTapeItemProps {
   borderOpacity: number;
   seen: boolean;
   onOpenIdea: (idea: TradeIdeaDetail) => void;
+  onNavigateToFeed?: () => void;
 }
 
-export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, seen, onOpenIdea }: ExpandableTapeItemProps) {
+export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, seen, onOpenIdea, onNavigateToFeed }: ExpandableTapeItemProps) {
   const [expanded, setExpanded] = useState(false);
+  const backend = useBackend();
   const isTradeIdea = alert.source === 'notion-trade-idea' && !!alert.tradeIdea;
   const sev = SEVERITY_CONFIG[alert.severity];
+  // T1 will add these fields
+  const riskType = (alert as any).riskType as string | null | undefined;
+  const subScores = (alert as any).subScores as { eventWeight: number; momentum: number; vixContext: number } | null | undefined;
+  const agentNote = (alert as any).agentNote as string | null | undefined;
+  const econData = (alert as any).econData as { beatMiss?: string | null; surprisePercent?: number | null } | null | undefined;
+
+  const handleGenerateNote = useCallback(async () => {
+    const rawId = alert.id.replace(/^backend-/, '');
+    try {
+      await backend.riskflow.generateNote(rawId);
+    } catch (err) {
+      console.warn('[ExpandableTapeItem] Generate note failed:', err);
+    }
+  }, [alert.id, backend]);
 
   return (
     <div
@@ -133,79 +151,158 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
         </div>
       </button>
 
-      {/* Expanded detail */}
-      {expanded && (
-        <div className="px-4 pb-3 border-t border-zinc-800/40">
-          {/* Summary */}
-          {alert.summary && (
-            <p className="mt-2 text-[11px] text-gray-400 leading-relaxed">{alert.summary}</p>
-          )}
+      {/* Expanded detail — smooth CSS grid transition */}
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+        style={{ gridTemplateRows: expanded ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="px-4 pb-3 border-t border-zinc-800/40">
+            {/* Summary */}
+            {alert.summary && (
+              <p className="mt-2 text-[11px] text-gray-400 leading-relaxed">{alert.summary}</p>
+            )}
 
-          {/* Trade Idea detail */}
-          {isTradeIdea && alert.tradeIdea && (
-            <div className="mt-2 space-y-2">
-              <div className="grid grid-cols-3 gap-2 text-[10px]">
-                {alert.tradeIdea.entry != null && (
-                  <div>
-                    <span className="text-gray-600 uppercase tracking-wider">Entry</span>
-                    <div className="mt-0.5 text-gray-300">${alert.tradeIdea.entry}</div>
-                  </div>
-                )}
-                {alert.tradeIdea.stopLoss != null && (
-                  <div>
-                    <span className="text-gray-600 uppercase tracking-wider">Stop</span>
-                    <div className="mt-0.5" style={{ color: 'color-mix(in srgb, var(--fintheon-bearish) 80%, transparent)' }}>${alert.tradeIdea.stopLoss}</div>
-                  </div>
-                )}
-                {alert.tradeIdea.takeProfit != null && (
-                  <div>
-                    <span className="text-gray-600 uppercase tracking-wider">Target</span>
-                    <div className="mt-0.5" style={{ color: 'color-mix(in srgb, var(--fintheon-bullish) 80%, transparent)' }}>${alert.tradeIdea.takeProfit}</div>
-                  </div>
-                )}
-              </div>
-              {alert.tradeIdea.riskRewardRatio != null && (
-                <div className="text-[10px] text-zinc-500">
-                  R/R {alert.tradeIdea.riskRewardRatio.toFixed(1)}:1
-                  {alert.tradeIdea.confidence && ` · ${alert.tradeIdea.confidence}% confidence`}
+            {/* Trade Idea detail */}
+            {isTradeIdea && alert.tradeIdea && (
+              <div className="mt-2 space-y-2">
+                <div className="grid grid-cols-3 gap-2 text-[10px]">
+                  {alert.tradeIdea.entry != null && (
+                    <div>
+                      <span className="text-gray-600 uppercase tracking-wider">Entry</span>
+                      <div className="mt-0.5 text-gray-300">${alert.tradeIdea.entry}</div>
+                    </div>
+                  )}
+                  {alert.tradeIdea.stopLoss != null && (
+                    <div>
+                      <span className="text-gray-600 uppercase tracking-wider">Stop</span>
+                      <div className="mt-0.5" style={{ color: 'color-mix(in srgb, var(--fintheon-bearish) 80%, transparent)' }}>${alert.tradeIdea.stopLoss}</div>
+                    </div>
+                  )}
+                  {alert.tradeIdea.takeProfit != null && (
+                    <div>
+                      <span className="text-gray-600 uppercase tracking-wider">Target</span>
+                      <div className="mt-0.5" style={{ color: 'color-mix(in srgb, var(--fintheon-bullish) 80%, transparent)' }}>${alert.tradeIdea.takeProfit}</div>
+                    </div>
+                  )}
                 </div>
-              )}
+                {alert.tradeIdea.riskRewardRatio != null && (
+                  <div className="text-[10px] text-zinc-500">
+                    R/R {alert.tradeIdea.riskRewardRatio.toFixed(1)}:1
+                    {alert.tradeIdea.confidence && ` · ${alert.tradeIdea.confidence}% confidence`}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onOpenIdea(alert.tradeIdea!); }}
+                  className="mt-1 text-[10px] text-[var(--fintheon-accent)] hover:text-[#dbb85c] transition-colors uppercase tracking-wider"
+                >
+                  View Full Proposal →
+                </button>
+              </div>
+            )}
+
+            {/* Regular alert detail */}
+            {!isTradeIdea && (
+              <>
+                <div className="mt-2 flex items-center gap-3">
+                  <SourceIcon source={alert.source} className="w-3 h-3 text-zinc-500 flex-shrink-0" />
+                  {riskType && (
+                    <span className="text-[9px] font-medium tracking-wider uppercase px-1.5 py-0.5 border border-zinc-700 text-zinc-400">
+                      {riskType}
+                    </span>
+                  )}
+                  {alert.tags.length > 0 && (
+                    <div className="flex gap-1">
+                      {alert.tags.slice(0, 3).map((tag) => (
+                        <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800/50 text-zinc-500">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  {alert.url && (
+                    <a
+                      href={alert.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-2.5 h-2.5" />
+                      Source
+                    </a>
+                  )}
+                </div>
+
+                {/* Sub-score mini KPIs */}
+                {subScores && (
+                  <div className="mt-2 flex items-center gap-3 text-[10px]">
+                    <div>
+                      <span className="text-zinc-600 uppercase tracking-wider">Event</span>
+                      <div className="mt-0.5 text-zinc-300 tabular-nums">{subScores.eventWeight}</div>
+                    </div>
+                    <div>
+                      <span className="text-zinc-600 uppercase tracking-wider">Momentum</span>
+                      <div className="mt-0.5 text-zinc-300 tabular-nums">{subScores.momentum}</div>
+                    </div>
+                    <div>
+                      <span className="text-zinc-600 uppercase tracking-wider">VIX</span>
+                      <div className="mt-0.5 text-zinc-300 tabular-nums">{subScores.vixContext}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Econ beat/miss badge */}
+                {econData?.beatMiss && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className={`text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 border ${
+                      econData.beatMiss === 'beat' ? 'border-emerald-600/40 text-emerald-400 bg-emerald-500/5'
+                      : econData.beatMiss === 'miss' ? 'border-red-600/40 text-red-400 bg-red-500/5'
+                      : 'border-zinc-700 text-zinc-400'
+                    }`}>
+                      {econData.beatMiss.toUpperCase()}
+                    </span>
+                    {econData.surprisePercent != null && (
+                      <span className="text-[10px] text-zinc-500 tabular-nums">
+                        {econData.surprisePercent > 0 ? '+' : ''}{econData.surprisePercent.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Agent Note — shared for both trade ideas and regular alerts */}
+            {agentNote ? (
+              <div className="mt-2 px-3 py-2 bg-zinc-900/60 border border-zinc-800/50 text-[11px] text-zinc-300 leading-relaxed">
+                <span className="text-[9px] text-zinc-600 uppercase tracking-wider block mb-1">Agent Note</span>
+                {agentNote}
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onOpenIdea(alert.tradeIdea!); }}
-                className="mt-1 text-[10px] text-[var(--fintheon-accent)] hover:text-[#dbb85c] transition-colors uppercase tracking-wider"
+                onClick={(e) => { e.stopPropagation(); void handleGenerateNote(); }}
+                className="mt-2 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
               >
-                View Full Proposal →
+                <Sparkles className="w-3 h-3" />
+                Generate Note +
               </button>
-            </div>
-          )}
+            )}
 
-          {/* Regular alert detail */}
-          {!isTradeIdea && (
-            <div className="mt-2 flex items-center gap-3">
-              <SourceIcon source={alert.source} className="w-3 h-3 text-zinc-500 flex-shrink-0" />
-              {alert.tags.length > 0 && (
-                <div className="flex gap-1">
-                  {alert.tags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800/50 text-zinc-500">{tag}</span>
-                  ))}
-                </div>
-              )}
-              {alert.url && (
-                <a
-                  href={alert.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-auto text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1"
+            {/* View in RiskFlow CTA */}
+            {onNavigateToFeed && (
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onNavigateToFeed(); }}
+                  className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
                 >
-                  <ExternalLink className="w-2.5 h-2.5" />
-                  Source
-                </a>
-              )}
-            </div>
-          )}
+                  View in RiskFlow
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

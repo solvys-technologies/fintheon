@@ -9,6 +9,92 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-26T19:00:00',
+    agent: 'claude-code',
+    summary: 'fix(riskflow): IV score inflation — tier-based score ceiling (base+4 cap prevents jobless@200pts), recalibrated scoreToPoints curve (max 99pts down from 229pts), fixed currentPrice:0 in central scorer breaking autoresearch feedback loop',
+    files: [
+      'backend-hono/src/services/analysis/iv-scorer.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+    ],
+  },
+  {
+    date: '2026-03-26T16:00:00',
+    agent: 'claude-code',
+    summary: 'feat(riskflow): T3 — Strategium + Dashboard card expanded state with agent notes, risk type tags, sub-score KPIs, beat/miss badges, View in RiskFlow CTA, smooth CSS grid transitions. Added generateNote API method.',
+    files: [
+      'frontend/components/RiskFlowPanel.tsx',
+      'frontend/components/executive/ExpandableTapeItem.tsx',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/lib/services.ts',
+    ],
+  },
+  {
+    date: '2026-03-26T15:00:00',
+    agent: 'claude-code',
+    summary: 'feat(riskflow): T4 — RiskFlow tab detail cards with BeatMissBadge, SubScoreBar, agent notes, risk type tags. Replaced inline card rendering in NewsSection with RiskFlowDetailCard. Deleted dead CompactRiskFlowCard files (zero imports).',
+    files: [
+      'frontend/components/feed/BeatMissBadge.tsx',
+      'frontend/components/feed/SubScoreBar.tsx',
+      'frontend/components/feed/RiskFlowDetailCard.tsx',
+      'frontend/components/feed/NewsSection.tsx',
+      'frontend/components/CompactRiskFlowCard.tsx',
+      'frontend/components/feed/CompactRiskFlowCard.tsx',
+    ],
+  },
+  {
+    date: '2026-03-26T14:00:00',
+    agent: 'claude-code',
+    summary: 'feat(riskflow): T1 — thread subScores, econData, riskType, agentNote from backend through API to frontend RiskFlowAlert type. Added classifyRiskType keyword matcher in central-scorer, structured econData in econ-bridge INSERT, extended NewsFeedRow/ScoredRiskFlowItem/FeedItem/RiskFlowItem/RiskFlowAlert types, updated news-cache store+read and central-scorer mapping functions.',
+    files: [
+      'backend-hono/src/types/riskflow.ts',
+      'backend-hono/src/services/supabase-service.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+      'backend-hono/src/services/riskflow/econ-bridge.ts',
+      'backend-hono/src/services/riskflow/news-cache.ts',
+      'frontend/types/api.ts',
+      'frontend/lib/riskflow-feed.ts',
+      'frontend/contexts/RiskFlowContext.tsx',
+    ],
+  },
+  {
+    date: '2026-03-26T00:15:00',
+    agent: 'claude-code',
+    summary: 'fix(briefs): Overnight dispatch visibility — GET /api/data/brief with no type now returns most recent brief of any type instead of filtering by getCurrentBriefType(). Extended PMDB window overnight (5:30 PM through 6:29 AM) so Dusk Dispatch stays active until Dawn fires. Fixed frontend getBriefLabel() in both ExecutiveDashboard and BriefMiniWidget to match corrected windows.',
+    files: [
+      'backend-hono/src/routes/data/index.ts',
+      'backend-hono/src/services/brief-generator.ts',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+      'frontend/components/mission-control/BriefMiniWidget.tsx',
+    ],
+  },
+  {
+    date: '2026-03-25T22:00:00',
+    agent: 'claude-code',
+    summary: 'docs(strategy): MAJOR REWRITE of STRATEGY-40-40-CLUB.md with 13 corrections from live trade video analysis (Sprint 0 model refinement). Key changes: Antilag redefined as ATR spike + engulfing candle (NQ primary, ES intuition — NOT cross-instrument velocity), trailing stop anchors to butt of engulfing candle (NOT EMA distance/cycle levels), new Access Denied pattern documented, even-price-level exit rule, reverse trailing TP, cross-instrument divergence as alternate setup, scale-in simplified to mid-trade ATR spike, blackout rule refined (5pt tight stop under wick at 50% reclaim for limit orders). Also saved algo engine migration project memory and updated sprint plan to 4 sprints (Sprint 0: model refinement via video analysis).',
+    files: ['docs/quantconnect/STRATEGY-40-40-CLUB.md'],
+  },
+  {
+    date: '2026-03-25T20:00:00',
+    agent: 'claude-code',
+    summary: 'docs(scheduled-tasks): Complete 10-task Claude Desktop scheduled task suite with aligned Fintheon backend timing. Tasks: (1) Pre-market news monitor 4-6:29AM/15min sentinel, (2) Dispatch MDB 6:30AM, (3) Morning standup+trade proposal+chart 7:15AM — the big one with Phase A backend curl, Phase B playbook model selection + DOM/LTF-HTF liquidity analysis, Phase C computer use TopStepX charting, Phase D boardroom @everyone report, (4) Boardroom checkin 8:00AM, (5) Econ scan 8:35AM (5min after prints), (6) Premarket 9:00AM, (7) Market open 9:35AM (5min after bell), (8) Dispatch ADB 10:45AM, (9) Dispatch PMDB 5:15PM, (10) Dispatch TOTT Sunday 4:30PM. Dual-scheduling with backend node-cron (dispatch-scheduler + boardroom-scheduler) as belt-and-suspenders. Idempotency guards on dispatches. Timing offset on econ/market-open to capture data after it drops.',
+    files: [
+      'docs/scheduled-tasks/morning-standup-prompt.md',
+    ],
+  },
+  {
+    date: '2026-03-25T14:30:00',
+    agent: 'claude-code',
+    summary: 'feat(ai): Add Nous Research direct inference fallback for brief generation. When OpenRouter DNS fails (EAI_AGAIN/ENOTFOUND), brief-generator.ts now catches network errors and falls back to Hermes 4 405B via inference-api.nousresearch.com. New nous-direct model key in ai-config, model-selector handler, and NOUS_API_KEY env var.',
+    files: [
+      'backend-hono/src/services/brief-generator.ts',
+      'backend-hono/src/config/ai-config.ts',
+      'backend-hono/src/services/ai/model-selector.ts',
+      'backend-hono/src/types/ai-types.ts',
+      'backend-hono/.env.example',
+    ],
+  },
+  {
     date: '2026-03-25T10:00:00',
     agent: 'claude-code',
     summary: 'feat(ui): Add smooth crossfade transition for browser iframe open/close via power button. Replaces hard ternary swap with layered rendering + CSS scale/opacity animations matching existing tab transition easing.',

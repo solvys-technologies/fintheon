@@ -29,7 +29,7 @@ function briefTypeToLabel(bt: string): string {
   }
 }
 
-export function ExecutiveDashboard() {
+export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string) => void }) {
   const backend = useBackend();
   const settings = useSettings();
   const { autoRefresh } = settings;
@@ -76,17 +76,19 @@ export function ExecutiveDashboard() {
     [settings]
   );
 
-  // Brief type: TOTT (Sun>=17:00 through Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
+  // Brief type windows: TOTT (Sun>=17:00 through Mon<7AM), PMDB (5:30PM through 6:29AM), ADB (11AM-5:29PM), MDB (6:30AM-10:59AM)
   const getBriefLabel = () => {
     const now = new Date();
     const day = now.getDay();
     const h = now.getHours();
     const t = h * 60 + now.getMinutes();
     // TOTT: Sunday >= 17:00 through Monday < 07:00
-    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'Tale of the Tape';
-    if (t >= 17 * 60 + 30) return 'Post-Market Brief';
-    if (t >= 11 * 60) return 'Afternoon Brief';
-    return 'Morning Brief';
+    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'The Weekly Tribune';
+    // PMDB stays active overnight until MDB fires at 6:30 AM
+    if (t < 6 * 60 + 30) return 'Dusk Dispatch';
+    if (t >= 17 * 60 + 30) return 'Dusk Dispatch';
+    if (t >= 11 * 60) return 'Midday Dispatch';
+    return 'Dawn Dispatch';
   };
   const [briefLabel, setBriefLabel] = useState(getBriefLabel);
 
@@ -355,6 +357,7 @@ export function ExecutiveDashboard() {
                       borderOpacity={borderOpacity}
                       seen={seen}
                       onOpenIdea={setSelectedIdea}
+                      onNavigateToFeed={onNavigateTab ? () => onNavigateTab('news') : undefined}
                     />
                   );
                 })

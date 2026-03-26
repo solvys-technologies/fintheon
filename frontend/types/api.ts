@@ -72,6 +72,12 @@ export interface RiskFlowItem {
     status: 'pending' | 'approved' | 'rejected' | 'executed' | 'expired';
     screenshotUrl?: string;
   };
+  // [claude-code 2026-03-26] T1: Rich scoring data threaded from backend
+  subScores?: { eventWeight: number; timing: number; deviation: number; momentum: number; vixContext: number; vixMultiplier: number } | null;
+  riskType?: string | null;
+  agentNote?: string | null;
+  agentNoteGeneratedAt?: string | null;
+  econData?: { actual?: number | null; forecast?: number | null; previous?: number | null; beatMiss?: 'beat' | 'miss' | 'inline' | null; surprisePercent?: number | null } | null;
 }
 
 // Alias for backward compatibility

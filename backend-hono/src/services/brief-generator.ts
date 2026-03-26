@@ -1,5 +1,6 @@
 // [claude-code 2026-03-22] Extracted brief generation logic — shared by data routes + dispatch scheduler
 // [claude-code 2026-03-23] Fix: use createModelClient() instead of passing raw model key to generateText
+// [claude-code 2026-03-25] Add Nous Direct fallback when OpenRouter DNS fails (EAI_AGAIN)
 import { generateText } from 'ai';
 import {
   writeBrief,
@@ -9,7 +10,7 @@ import {
   type BriefRecord,
 } from './supabase-service.js';
 import { getFeed } from './riskflow/feed-service.js';
-import { selectModel, createModelClient, type AiModelKey } from './ai/model-selector.js';
+import { selectModel, createModelClient, getFallbackModel, markProviderUnhealthy, type AiModelKey } from './ai/model-selector.js';
 import { createLogger } from '../lib/logger.js';
 
 const log = createLogger('BriefGenerator');
@@ -30,8 +31,11 @@ export function getCurrentBriefType(): BriefType {
   const day = now.getDay();
   const h = now.getHours();
   const timeVal = h * 60 + now.getMinutes();
+  // TOTT: Sunday >= 17:00 through Monday < 07:00
   if (day === 0 && timeVal >= 17 * 60) return 'TOTT';
   if (day === 1 && h < 7) return 'TOTT';
+  // PMDB stays active overnight until MDB fires at 6:30 AM
+  if (timeVal < 6 * 60 + 30) return 'PMDB';
   if (timeVal >= 17 * 60 + 30) return 'PMDB';
   if (timeVal >= 11 * 60) return 'ADB';
   return 'MDB';
@@ -155,8 +159,36 @@ ${
     taskType: 'analysis',
     maxBudgetUsd: isFull ? 0.05 : 0.01,
   });
-  const model = createModelClient(selection.model as AiModelKey);
-  const { text } = await generateText({ model, prompt });
+
+  let text: string;
+  let usedProvider = selection.provider;
+
+  try {
+    const model = createModelClient(selection.model as AiModelKey);
+    const result = await generateText({ model, prompt });
+    text = result.text;
+  } catch (err: any) {
+    const isNetworkError = ['EAI_AGAIN', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNREFUSED', 'ECONNRESET', 'fetch failed']
+      .some((code) => err?.message?.includes(code) || err?.cause?.code === code);
+
+    if (!isNetworkError) throw err;
+
+    log.warn(`Primary provider network error, attempting Nous Direct fallback`, {
+      primaryModel: selection.model,
+      error: err?.message ?? String(err),
+    });
+    markProviderUnhealthy(selection.provider);
+
+    // Try fallback chain via model-selector
+    const fallback = getFallbackModel(selection.model as AiModelKey);
+    if (!fallback) throw err;
+
+    const fallbackModel = createModelClient(fallback.model as AiModelKey);
+    const fallbackResult = await generateText({ model: fallbackModel, prompt });
+    text = fallbackResult.text;
+    usedProvider = fallback.provider;
+    log.info(`Fallback succeeded via ${fallback.model}`, { provider: fallback.provider });
+  }
 
   // Store in Supabase
   const stored = await writeBrief({
@@ -168,7 +200,7 @@ ${
 
   log.info(`Brief generated: ${briefType}`, {
     supabaseId: stored?.id,
-    provider: selection.provider,
+    provider: usedProvider,
     length: text.length,
   });
 
@@ -177,7 +209,7 @@ ${
     briefType,
     generatedAt: new Date().toISOString(),
     supabaseId: stored?.id ?? null,
-    provider: selection.provider,
+    provider: usedProvider,
   };
 }
 
