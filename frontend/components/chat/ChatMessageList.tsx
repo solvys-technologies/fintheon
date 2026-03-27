@@ -34,7 +34,7 @@ export function ChatMessageList({
 
   return (
     <div className="flex-1 overflow-y-auto p-6 pb-8">
-      <div className="max-w-3xl mx-auto space-y-4 mb-8">
+      <div className="max-w-5xl mx-auto space-y-4 mb-8">
         {showGreeting && messages.length === 0 && (
           <ChatGreeting onSend={onSend} isLoading={isLoading} />
         )}

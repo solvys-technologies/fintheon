@@ -253,7 +253,11 @@ export async function getLatestReport(): Promise<Record<string, unknown> | null>
       categoryScores: cached.categoryScores ?? [],
       timeSeries: cached.timeSeries ?? [],
       generatedEvents: cached.generatedEvents ?? [],
-      scenarios: cached.scenarios ?? [],
+      scenarios: (cached.scenarios ?? []).map(s => ({
+        label: s.label,
+        probability: s.probability,
+        projectedScore: s.projectedScore,
+      })),
       briefing: cached.briefing ?? null,
       contextSnapshot: cached.contextSnapshot ?? null,
       generatedAt: cached.generatedAt,
@@ -261,13 +265,13 @@ export async function getLatestReport(): Promise<Record<string, unknown> | null>
     };
   }
 
-  // Fall back to Supabase
+  // Fall back to Supabase — use select('*') to avoid failing on missing columns
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
     .from('mirofish_runs')
-    .select('simulation_id, preset, composite_iv, confidence, regime_shift_probability, category_scores, scenarios, context_snapshot, time_series, generated_events, briefing, briefing_text, created_at')
+    .select('*')
     .order('created_at', { ascending: false })
     .limit(1);
 
@@ -276,7 +280,23 @@ export async function getLatestReport(): Promise<Record<string, unknown> | null>
     return null;
   }
 
-  const row = data[0];
+  const row = data[0] as Record<string, any>;
+
+  // Map scenarios: Supabase stores backend shape (projectedIVScore), frontend expects projectedScore
+  const rawScenarios = (row.scenarios ?? []) as Array<Record<string, any>>;
+  const scenarios = rawScenarios.map(s => ({
+    label: s.label ?? '',
+    probability: s.probability ?? 0,
+    projectedScore: s.projectedScore ?? s.projectedIVScore ?? 0,
+    description: s.description,
+    agentConsensus: s.agentConsensus,
+  }));
+
+  // Reconstruct briefing — try full object first, fall back to briefing_text
+  const briefing = row.briefing ?? (row.briefing_text
+    ? { summary: row.briefing_text, keyFindings: [], riskAlerts: [], agentConsensus: '', generatedAt: row.created_at }
+    : null);
+
   return {
     simulationId: row.simulation_id,
     status: 'complete',
@@ -286,8 +306,8 @@ export async function getLatestReport(): Promise<Record<string, unknown> | null>
     categoryScores: row.category_scores ?? [],
     timeSeries: row.time_series ?? [],
     generatedEvents: row.generated_events ?? [],
-    scenarios: row.scenarios ?? [],
-    briefing: row.briefing ?? (row.briefing_text ? { summary: row.briefing_text, keyFindings: [], riskAlerts: [], agentConsensus: '', generatedAt: row.created_at } : null),
+    scenarios,
+    briefing,
     contextSnapshot: row.context_snapshot ?? null,
     generatedAt: row.created_at,
     source: 'persisted',
@@ -325,7 +345,8 @@ async function persistRun(
   const sb = getSupabaseClient();
   if (!sb) return;
 
-  await sb.from('mirofish_runs').insert({
+  // Base payload (columns that always exist)
+  const basePayload = {
     simulation_id: simId,
     preset,
     composite_iv: report.nextSessionProjection,
@@ -335,10 +356,20 @@ async function persistRun(
     category_scores: report.categoryScores,
     scenarios: report.scenarios,
     context_snapshot: context,
+  };
+
+  // Try insert with full payload (new JSONB columns). Fall back to base if columns don't exist.
+  const { error } = await sb.from('mirofish_runs').insert({
+    ...basePayload,
     time_series: report.timeSeries,
     generated_events: report.generatedEvents,
     briefing: briefing,
   });
+
+  if (error) {
+    console.warn('[MiroFish] Full persist failed, retrying with base columns:', error.message);
+    await sb.from('mirofish_runs').insert(basePayload);
+  }
 }
 
 // ── Rolling Window Query ──

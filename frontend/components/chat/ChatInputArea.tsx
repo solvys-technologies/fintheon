@@ -64,7 +64,7 @@ export function ChatInputArea({
 
   return (
     <div className="pt-4 pb-4 px-4 bg-[linear-gradient(180deg,rgba(5,5,0,0.15),rgba(5,5,0,0.88))] backdrop-blur-xl">
-      <div className="relative w-full max-w-3xl mx-auto">
+      <div className="relative w-full max-w-5xl mx-auto">
         {activeSkill && (
           <div className="mb-2">
             <SkillBadge skillId={activeSkill} onDismiss={() => onSelectSkill(null)} />
