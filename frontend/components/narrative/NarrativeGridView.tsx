@@ -36,11 +36,13 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
   const anchorDate = useMemo(() => new Date(state.currentWeekStart), [state.currentWeekStart]);
   const columns = useMemo(() => getGridColumns(state.zoomLevel, anchorDate), [state.zoomLevel, anchorDate]);
 
-  // Filter lanes by visibility
+  // Always show all risk category rows — filter by lane visibility if lanes exist
   const visibleLanes = useMemo(() => {
     return RISK_LANES.filter(cat => {
       const lane = activeLanes.find(l => l.category === cat);
-      return lane && visibleLaneIds.has(lane.id);
+      // Show the row if: no lanes exist at all, OR the matching lane is visible
+      if (activeLanes.length === 0) return true;
+      return !lane || visibleLaneIds.has(lane.id);
     });
   }, [activeLanes, visibleLaneIds]);
 
@@ -166,10 +168,10 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
         >
           {visibleLanes.map((cat, idx) => {
             const lane = laneByCategory.get(cat);
-            if (!lane) return null;
             return (
               <div
                 key={cat}
+                className="flex items-center px-3"
                 style={{
                   height: `${LANE_ROW_HEIGHT}px`,
                   marginBottom: `${LANE_ROW_GAP}px`,
@@ -178,11 +180,17 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
                     : 'color-mix(in srgb, var(--fintheon-surface) 40%, transparent)',
                 }}
               >
-                <NarrativeLaneHeader
-                  lane={lane}
-                  selected={state.selectedLaneId === lane.id}
-                  onSelect={handleSelectLane}
-                />
+                {lane ? (
+                  <NarrativeLaneHeader
+                    lane={lane}
+                    selected={state.selectedLaneId === lane.id}
+                    onSelect={handleSelectLane}
+                  />
+                ) : (
+                  <span className="text-[11px] font-medium" style={{ color: 'var(--fintheon-muted)' }}>
+                    {RISK_LANE_LABELS[cat]}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -196,10 +204,17 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
           <div style={{ width: `${gridWidth}px` }}>
             {visibleLanes.map((cat, idx) => {
               const lane = laneByCategory.get(cat);
-              if (!lane) return null;
 
+              // Match catalysts by category field OR by lane membership
               const laneCatalysts = filterByTags(
-                catalystsForLane(lane.id).filter(c => c.drillDepth === 0),
+                state.catalysts.filter(c => {
+                  if (c.drillDepth !== 0) return false;
+                  // Direct category match
+                  if (c.category === cat) return true;
+                  // Fallback: check if any of the card's lanes has this category
+                  if (lane && c.narrativeIds.includes(lane.id)) return true;
+                  return false;
+                }),
               );
 
               const aggs = state.zoomLevel !== 'week'

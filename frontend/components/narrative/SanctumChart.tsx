@@ -6,8 +6,8 @@ import { RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/
 
 /** Map user-facing futures symbols to TradingView widget-compatible symbols. */
 const SYMBOL_MAP: Record<string, string> = {
-  '/MNQ': 'NASDAQ:NDX',
-  '/NQ':  'NASDAQ:NDX',
+  '/MNQ': 'NASDAQ:QQQ',
+  '/NQ':  'NASDAQ:QQQ',
   '/ES':  'SP:SPX',
   '/MES': 'SP:SPX',
   '/GC':  'COMEX:GC1!',
@@ -15,8 +15,8 @@ const SYMBOL_MAP: Record<string, string> = {
   '/YM':  'DJ:DJI',
   '/RTY': 'RUSSELL:RUT',
   '/CL':  'NYMEX:CL1!',
-  'MNQ':  'NASDAQ:NDX',
-  'NQ':   'NASDAQ:NDX',
+  'MNQ':  'NASDAQ:QQQ',
+  'NQ':   'NASDAQ:QQQ',
   'ES':   'SP:SPX',
   'MES':  'SP:SPX',
   'YM':   'DJ:DJI',
@@ -24,10 +24,10 @@ const SYMBOL_MAP: Record<string, string> = {
 };
 
 function mapSymbol(sym: string): string {
-  return SYMBOL_MAP[sym] ?? SYMBOL_MAP[`/${sym}`] ?? 'NASDAQ:NDX';
+  return SYMBOL_MAP[sym] ?? SYMBOL_MAP[`/${sym}`] ?? 'NASDAQ:QQQ';
 }
 
-const COMPARE_SYMBOLS = ['COMEX:GC1!', 'SP:SPX', 'NASDAQ:NDX'];
+const COMPARE_SYMBOLS = ['COMEX:GC1!', 'SP:SPX', 'NASDAQ:QQQ'];
 
 interface SanctumChartProps {
   timeSeries: MiroFishTimePoint[];
@@ -330,14 +330,19 @@ export function SanctumChart({
   const tvSymbol = mapSymbol(selectedSymbol);
 
   const tvEmbedUrl = useMemo(() => {
-    const studies = COMPARE_SYMBOLS
-      .filter(s => s !== tvSymbol)
-      .map(s => `Compare@tv-basicstudies|0|${s}`);
+    const studies: string[] = [
+      // 20 EMA overlay
+      'MAExp@tv-basicstudies|0|20',
+      // Compare symbols
+      ...COMPARE_SYMBOLS
+        .filter(s => s !== tvSymbol)
+        .map(s => `Compare@tv-basicstudies|0|${s}`),
+    ];
     const params = new URLSearchParams({
       symbol: tvSymbol,
       interval: '240',
       theme: 'dark',
-      style: '3',
+      style: '1',  // 1 = candlestick (was 3 = area)
       locale: 'en',
       timezone: 'America/New_York',
       toolbar_bg: '000000',
@@ -348,7 +353,7 @@ export function SanctumChart({
       hide_volume: '1',
       withdateranges: '1',
     });
-    if (studies.length > 0) params.set('studies', JSON.stringify(studies));
+    params.set('studies', JSON.stringify(studies));
     return `https://s.tradingview.com/widgetembed/?${params.toString()}`;
   }, [tvSymbol]);
 

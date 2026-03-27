@@ -209,6 +209,14 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
           onSelect={(templateType: CatalystTemplateType) => {
             const tpl = CATALYST_TEMPLATES.find((t) => t.type === templateType);
             if (!tpl) return;
+            // Map template type to risk category for grid placement
+            const templateCategoryMap: Record<string, string> = {
+              fomc: 'monetary',
+              cpi: 'macroeconomic',
+              earnings: 'earnings',
+              geopolitical: 'geopolitical',
+              custom: 'macroeconomic',
+            };
             dispatch({
               type: 'ADD_CATALYST',
               catalyst: {
@@ -222,6 +230,7 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
                 isGhost: false,
                 templateType,
                 position: null,
+                category: (templateCategoryMap[templateType] ?? 'macroeconomic') as any,
               },
             });
           }}
