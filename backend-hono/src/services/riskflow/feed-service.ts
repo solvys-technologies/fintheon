@@ -405,19 +405,43 @@ async function getCachedFeed(): Promise<FeedItem[]> {
       log.info(` Stored ${enrichedNewItems.length} enriched items in database`);
     }
 
-    // Merge new items with existing database items
-    const allItems = [...enrichedNewItems, ...dbItems]
-      .filter((item, index, self) => 
-        index === self.findIndex(i => i.id === item.id)
-      )
-      .slice(0, MAX_FEED_ITEMS);
+    // Merge: scored in-memory items take priority over unscored DB items
+    // [claude-code 2026-03-27] Preserve IV scores from rescoreInMemoryFeed across cache refreshes
+    const scoredMap = new Map<string, FeedItem>();
+    // 1. Start with previous in-memory scored items (if any)
+    for (const item of feedCache?.items ?? []) {
+      if (item.ivScore != null) scoredMap.set(item.id, item);
+    }
+    // 2. Layer newly enriched items (overwrite with fresh scores)
+    for (const item of enrichedNewItems) {
+      scoredMap.set(item.id, item);
+    }
+    // 3. Fill gaps with DB items (only if we don't already have a scored version)
+    for (const item of dbItems) {
+      if (!scoredMap.has(item.id)) scoredMap.set(item.id, item);
+    }
+    const allItems = Array.from(scoredMap.values()).slice(0, MAX_FEED_ITEMS);
 
     feedCache = { items: allItems, fetchedAt: Date.now() };
-    log.info(` Returning ${allItems.length} total items (${enrichedNewItems.length} new, ${dbItems.length} cached)`);
+    log.info(` Returning ${allItems.length} total items (${enrichedNewItems.length} new, ${scoredMap.size} merged)`);
     return allItems;
   }
 
-  // Use database cache (we have enough items and don't need to fetch)
+  // Use database cache — but preserve any scored in-memory items
+  // [claude-code 2026-03-27] Don't overwrite scored cache with unscored DB items
+  if (feedCache && feedCache.items.some(i => i.ivScore != null)) {
+    const scoredMap = new Map<string, FeedItem>();
+    for (const item of feedCache.items) {
+      if (item.ivScore != null) scoredMap.set(item.id, item);
+    }
+    for (const item of dbItems) {
+      if (!scoredMap.has(item.id)) scoredMap.set(item.id, item);
+    }
+    const merged = Array.from(scoredMap.values()).slice(0, MAX_FEED_ITEMS);
+    feedCache = { items: merged, fetchedAt: Date.now() };
+    log.info(` Preserved ${scoredMap.size} scored items, merged with ${dbItems.length} DB items`);
+    return merged;
+  }
   log.info(` Using ${dbItems.length} items from database cache (no fresh fetch needed)`);
   feedCache = { items: dbItems, fetchedAt: Date.now() };
   return dbItems;
