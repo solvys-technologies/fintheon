@@ -88,6 +88,7 @@ export default function NarrativeWeekView() {
         isGhost: false,
         templateType: null,
         position: null,
+        drillDepth: 0,
       },
     });
     setPillInput(null);

@@ -26,6 +26,8 @@ interface ComputedRope {
   path: ReturnType<typeof computeCatenary>;
   filtered: boolean;
   isNew: boolean;
+  isCrossLane: boolean;
+  hasDrillDepthEndpoint: boolean;
 }
 
 export function RopeRenderer({
@@ -136,11 +138,25 @@ export function RopeRenderer({
         };
 
         const path = computeCatenary(from, to);
+
+        // Cross-lane detection: endpoints in different risk categories
+        const fromCatalyst = catalysts.find(c => c.id === rope.fromId);
+        const toCatalyst = catalysts.find(c => c.id === rope.toId);
+        const isCrossLane =
+          !!fromCatalyst?.category && !!toCatalyst?.category &&
+          fromCatalyst.category !== toCatalyst.category;
+
+        // Drill-depth: reduce emphasis for ropes touching branched cards
+        const hasDrillDepthEndpoint =
+          (fromCatalyst?.drillDepth ?? 0) > 0 || (toCatalyst?.drillDepth ?? 0) > 0;
+
         return {
           rope,
           path,
           filtered: isRopeFiltered(rope),
           isNew: newRopeIds.has(rope.id),
+          isCrossLane,
+          hasDrillDepthEndpoint,
         };
       })
       .filter((r): r is ComputedRope => r !== null);
@@ -197,10 +213,12 @@ export function RopeRenderer({
           overflow: 'visible',
         }}
       >
-        {computedRopes.map(({ rope, path, filtered, isNew }) => {
+        {computedRopes.map(({ rope, path, filtered, isNew, isCrossLane, hasDrillDepthEndpoint }) => {
           const isHovered = hoveredRopeId === rope.id;
           const color = getRopeColor(rope);
-          const opacity = isHovered ? 1 : filtered ? 0.15 : 0.7;
+          const baseOpacity = hasDrillDepthEndpoint ? 0.5 : 0.7;
+          const opacity = isHovered ? 1 : filtered ? 0.15 : baseOpacity;
+          const strokeW = isCrossLane ? 2 : rope.weight;
 
           // Replay: draw-in effect via stroke-dashoffset
           const replayDash = replayMode
@@ -235,9 +253,15 @@ export function RopeRenderer({
                 d={path.d}
                 fill="none"
                 stroke={color}
-                strokeWidth={rope.weight}
+                strokeWidth={strokeW}
                 strokeDasharray={
-                  !replayMode && rope.polarity === 'contradicting' ? '8 4' : undefined
+                  !replayMode
+                    ? isCrossLane
+                      ? '12 6'
+                      : rope.polarity === 'contradicting'
+                        ? '8 4'
+                        : undefined
+                    : undefined
                 }
                 opacity={opacity}
                 style={{
@@ -246,6 +270,31 @@ export function RopeRenderer({
                   ...replayDash,
                 }}
               />
+              {/* Cross-lane label at midpoint */}
+              {isCrossLane && (
+                <>
+                  <rect
+                    x={path.midpoint.x - 32}
+                    y={path.midpoint.y - 18}
+                    width={64}
+                    height={14}
+                    rx={3}
+                    fill="var(--fintheon-surface)"
+                    opacity={isHovered ? 0.95 : 0.7}
+                  />
+                  <text
+                    x={path.midpoint.x}
+                    y={path.midpoint.y - 8}
+                    textAnchor="middle"
+                    fill="var(--fintheon-muted)"
+                    fontSize={8}
+                    fontFamily="monospace"
+                    opacity={isHovered ? 1 : 0.6}
+                  >
+                    cross-lane
+                  </text>
+                </>
+              )}
             </g>
           );
         })}

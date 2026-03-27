@@ -241,9 +241,9 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
             </div>
           )}
           {/* Row 1: Need-to-Know Brief (left) + Session Calendar (right) */}
-          <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5" style={{ height: 'clamp(448px, 48vh, 600px)' }}>
+          <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5 xl:h-[clamp(448px,48vh,600px)]">
             {/* Need-to-Know Brief */}
-            <div className="flex flex-col h-full min-h-0">
+            <div className="flex flex-col h-[clamp(320px,38vh,480px)] xl:h-full min-h-0">
               <KanbanTitle
                 title={briefLabel}
                 tone="gold"
@@ -277,7 +277,7 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
             </div>
 
             {/* Session Calendar */}
-            <div className="flex flex-col h-full min-h-0">
+            <div className="flex flex-col h-[280px] xl:h-full min-h-0">
               <KanbanTitle
                 title="Session Calendar"
                 tone="cyan"

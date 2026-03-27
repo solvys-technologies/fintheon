@@ -471,6 +471,25 @@ html *::-webkit-scrollbar {
   animation: ghost-solidify 800ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* [claude-code 2026-03-27] NarrativeResearchCard — highlight selection + agent border pulse */
+.research-bullet::selection {
+  background: color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
+}
+
+@keyframes agent-border-pulse {
+  0%, 100% { border-color: color-mix(in srgb, var(--fintheon-accent) 30%, transparent); }
+  50% { border-color: var(--fintheon-accent); }
+}
+
+.research-card-agent {
+  animation: agent-border-pulse 2s ease-in-out infinite;
+}
+
+.research-card-selected {
+  --fintheon-glow-color: var(--fintheon-accent);
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
 /* NarrativeFlow — pulsing border glow for selected items */
 @keyframes pulse-border {
   0%, 100% { box-shadow: 0 0 0 0 var(--fintheon-glow-color); }

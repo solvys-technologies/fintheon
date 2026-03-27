@@ -1,10 +1,12 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
 // [claude-code 2026-03-16] Added Manage button for NarrativeManageModal
 // [claude-code 2026-03-20] S3:T4e: Made toolbar flex-1 for full width
+// [claude-code 2026-03-27] S4-T2: Updated zoom controls with read-only indicators for quarter/year
 import { useState, useRef } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  Lock,
   Map,
   Plus,
   RotateCcw,
@@ -14,11 +16,13 @@ import {
   Download,
   Settings2,
   Zap,
+  Highlighter,
 } from 'lucide-react';
 import type { NarrativeFlowState, ZoomLevel, CatalystSentiment, CatalystTemplateType } from '../../lib/narrative-types';
 import { formatWeekLabel, shiftWeek } from '../../lib/narrative-time';
 import { CATALYST_TEMPLATES } from '../../lib/narrative-templates';
 import { CatalystTemplateMenu } from './CatalystTemplateMenu';
+import { useHighlight } from './NarrativeHighlightProvider';
 
 interface NarrativeToolbarProps {
   state: NarrativeFlowState;
@@ -46,6 +50,7 @@ const SENTIMENT_OPTIONS: { value: CatalystSentiment | 'all'; label: string }[] =
 ];
 
 export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport, onManage, onMiroFish, mirofishActive }: NarrativeToolbarProps) {
+  const { highlightMode, toggleHighlightMode } = useHighlight();
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
@@ -63,23 +68,45 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
       <div className="flex items-center gap-3">
         {/* Zoom level toggle */}
         <div className="flex items-center rounded-md border border-[var(--fintheon-border)]/20 overflow-hidden">
-          {ZOOM_LEVELS.map((z) => {
+          {ZOOM_LEVELS.map((z, i) => {
             const active = state.zoomLevel === z.value;
+            const isReadOnly = z.value === 'quarter' || z.value === 'year';
+            // Visual separator between editable (week/month) and read-only (quarter/year)
+            const showSep = i === 2;
             return (
-              <button
-                key={z.value}
-                onClick={() => dispatch({ type: 'SET_ZOOM', level: z.value })}
-                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                  active
-                    ? 'text-[var(--fintheon-accent)] border-r border-[var(--fintheon-accent)]/30'
-                    : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] border-r border-[var(--fintheon-border)]/20'
-                } last:border-r-0`}
-              >
-                {z.label}
-              </button>
+              <div key={z.value} className="flex items-center">
+                {showSep && (
+                  <div className="w-px h-4 bg-[var(--fintheon-border)]/40 mx-0.5" />
+                )}
+                <button
+                  onClick={() => dispatch({ type: 'SET_ZOOM', level: z.value })}
+                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors ${
+                    active
+                      ? 'text-[var(--fintheon-accent)] border-r border-[var(--fintheon-accent)]/30'
+                      : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] border-r border-[var(--fintheon-border)]/20'
+                  } last:border-r-0`}
+                >
+                  {z.label}
+                  {isReadOnly && <Lock className="w-2.5 h-2.5 opacity-50" />}
+                </button>
+              </div>
             );
           })}
         </div>
+
+        {/* Highlight mode toggle */}
+        <button
+          onClick={toggleHighlightMode}
+          className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+            highlightMode
+              ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+              : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]'
+          }`}
+          title={highlightMode ? 'Exit highlight mode' : 'Highlight to branch'}
+        >
+          <Highlighter className="w-3.5 h-3.5" />
+          {highlightMode && <span>Highlighting...</span>}
+        </button>
 
         {/* Current range label */}
         <span className="text-xs text-[var(--fintheon-muted)] font-mono min-w-[140px]">

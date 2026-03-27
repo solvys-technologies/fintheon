@@ -8,6 +8,7 @@ import type {
   NarrativeAction,
   NarrativeLane,
   CatalystCard,
+  Rope,
 } from './narrative-types';
 
 const STORAGE_KEY = 'fintheon:narrative:v1';
@@ -146,7 +147,7 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
       return { ...state, lanes: [...state.lanes, fork] };
     }
     case 'ADD_CATALYST': {
-      const catalyst: CatalystCard = { ...action.catalyst, id: generateId(), createdAt: now, updatedAt: now };
+      const catalyst: CatalystCard = { ...action.catalyst, drillDepth: action.catalyst.drillDepth ?? 0, id: generateId(), createdAt: now, updatedAt: now };
       return { ...state, catalysts: [...state.catalysts, catalyst] };
     }
     case 'IMPORT_CATALYSTS': {
@@ -212,6 +213,58 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
         ...state,
         conflicts: state.conflicts.map((c) => (c.id === action.id ? { ...c, resolved: true } : c)),
       };
+    case 'HIGHLIGHT_BRANCH': {
+      const parent = state.catalysts.find(c => c.id === action.parentId);
+      if (!parent) return state;
+      const childId = generateId();
+      const child: CatalystCard = {
+        ...action.childCard,
+        id: childId,
+        parentCardId: action.parentId,
+        parentHighlight: action.highlightText,
+        drillDepth: parent.drillDepth + 1,
+        source: 'research',
+        createdAt: now,
+        updatedAt: now,
+      };
+      const updatedParent: CatalystCard = {
+        ...parent,
+        childCardIds: [...(parent.childCardIds ?? []), childId],
+        updatedAt: now,
+      };
+      const rope: Rope = {
+        id: generateId(),
+        fromId: action.parentId,
+        fromType: 'catalyst',
+        toId: childId,
+        toType: 'catalyst',
+        polarity: 'reinforcing',
+        weight: 1,
+        approved: true,
+        createdAt: now,
+      };
+      return {
+        ...state,
+        catalysts: [...state.catalysts.map(c => c.id === action.parentId ? updatedParent : c), child],
+        ropes: [...state.ropes, rope],
+      };
+    }
+    case 'ADD_RESEARCH_BULLETS': {
+      return {
+        ...state,
+        catalysts: state.catalysts.map(c =>
+          c.id === action.cardId ? { ...c, researchBullets: action.bullets, updatedAt: now } : c
+        ),
+      };
+    }
+    case 'MOVE_CARD_TO_LANE': {
+      return {
+        ...state,
+        catalysts: state.catalysts.map(c =>
+          c.id === action.cardId ? { ...c, narrativeIds: [action.targetLaneId], updatedAt: now } : c
+        ),
+      };
+    }
     case 'SET_ZOOM':
       return { ...state, zoomLevel: action.level };
     case 'SET_WEEK':

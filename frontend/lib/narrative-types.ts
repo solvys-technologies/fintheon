@@ -1,7 +1,7 @@
 // [claude-code 2026-03-06] NarrativeFlow shared types — all tracks import from here
 export type CatalystSentiment = 'bullish' | 'bearish';
 export type NarrativeCategory = 'geopolitical' | 'macroeconomic' | 'monetary' | 'market-structure' | 'supply-chain' | 'black-swan' | 'earnings';
-export type CatalystSource = 'rss' | 'user' | 'agent' | 'riskflow' | 'brief';
+export type CatalystSource = 'rss' | 'user' | 'agent' | 'riskflow' | 'brief' | 'research';
 export type CatalystSeverity = 'high' | 'medium' | 'low';
 export type NarrativeStatus = 'active' | 'watching' | 'archived' | 'decayed';
 export type DirectionBias = 'long' | 'short' | 'neutral';
@@ -27,6 +27,25 @@ export interface NarrativeLane {
   updatedAt: string;
 }
 
+export interface ResearchBullet {
+  id: string;
+  boldPhrase: string;
+  explanation: string;
+  source: 'ai' | 'user' | 'riskflow';
+  highlightable: boolean;
+}
+
+export interface NarrativeAggregateCard {
+  id: string;
+  title: string;
+  riskCategory: NarrativeCategory;
+  timeBucket: string;
+  constituentCardIds: string[];
+  severity: CatalystSeverity;
+  sentiment: CatalystSentiment;
+  cardCount: number;
+}
+
 export interface CatalystCard {
   id: string;
   title: string;
@@ -41,6 +60,11 @@ export interface CatalystCard {
   position: { x: number; y: number } | null;
   tags?: string[];  // user-defined tags for filtering/organizing
   category?: NarrativeCategory;
+  researchBullets?: ResearchBullet[];
+  parentHighlight?: string;
+  parentCardId?: string;
+  childCardIds?: string[];
+  drillDepth: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -133,4 +157,7 @@ export type NarrativeAction =
   | { type: 'IMPORT_CATALYSTS'; catalysts: Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'>[] }
   | { type: 'TAG_CATALYST'; catalystId: string; tags: string[] }
   | { type: 'TAKE_SNAPSHOT' }
-  | { type: 'RESTORE_SNAPSHOT' };
+  | { type: 'RESTORE_SNAPSHOT' }
+  | { type: 'HIGHLIGHT_BRANCH'; parentId: string; highlightText: string; childCard: Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'> }
+  | { type: 'ADD_RESEARCH_BULLETS'; cardId: string; bullets: ResearchBullet[] }
+  | { type: 'MOVE_CARD_TO_LANE'; cardId: string; targetLaneId: string };

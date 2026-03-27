@@ -17,6 +17,9 @@ interface NarrativeContextValue {
   snapshot: NarrativeSnapshot | null;
   dispatch: (action: NarrativeAction) => void;
   catalystsForDay: (date: Date) => CatalystCard[];
+  catalystsForLane: (laneId: string) => CatalystCard[];
+  cardChildren: (cardId: string) => CatalystCard[];
+  cardParent: (cardId: string) => CatalystCard | undefined;
   ropesForCatalyst: (id: string) => Rope[];
   lanesFiltered: NarrativeLane[];
   activeLanes: NarrativeLane[];
@@ -30,6 +33,24 @@ export function NarrativeProvider({ children }: { children: React.ReactNode }) {
 
   const catalystsForDay = useMemo(
     () => (date: Date) => state.catalysts.filter((c) => isSameDay(new Date(c.date), date)),
+    [state.catalysts]
+  );
+
+  const catalystsForLane = useMemo(
+    () => (laneId: string) => state.catalysts.filter(c => c.narrativeIds.includes(laneId)),
+    [state.catalysts]
+  );
+
+  const cardChildren = useMemo(
+    () => (cardId: string) => state.catalysts.filter(c => c.parentCardId === cardId),
+    [state.catalysts]
+  );
+
+  const cardParent = useMemo(
+    () => (cardId: string) => {
+      const card = state.catalysts.find(c => c.id === cardId);
+      return card?.parentCardId ? state.catalysts.find(c => c.id === card.parentCardId) : undefined;
+    },
     [state.catalysts]
   );
 
@@ -60,8 +81,8 @@ export function NarrativeProvider({ children }: { children: React.ReactNode }) {
   }, [state.lanes, state.catalysts, state.ropes, state.conflicts]);
 
   const value = useMemo<NarrativeContextValue>(
-    () => ({ state, snapshot, dispatch, catalystsForDay, ropesForCatalyst, lanesFiltered, activeLanes, healthScores }),
-    [state, snapshot, dispatch, catalystsForDay, ropesForCatalyst, lanesFiltered, activeLanes, healthScores]
+    () => ({ state, snapshot, dispatch, catalystsForDay, catalystsForLane, cardChildren, cardParent, ropesForCatalyst, lanesFiltered, activeLanes, healthScores }),
+    [state, snapshot, dispatch, catalystsForDay, catalystsForLane, cardChildren, cardParent, ropesForCatalyst, lanesFiltered, activeLanes, healthScores]
   );
 
   return <NarrativeCtx.Provider value={value}>{children}</NarrativeCtx.Provider>;

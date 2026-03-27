@@ -9,6 +9,38 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-27T00:00:00',
+    agent: 'claude-code',
+    summary: 'S4-T2: Built NarrativeGridView (2D time x risk grid), NarrativeLaneRow, semantic zoom aggregator. Replaced Canvas/WeekView toggle in NarrativeFlow with unified grid view. Updated toolbar zoom controls with read-only indicators.',
+    files: ['frontend/components/narrative/NarrativeGridView.tsx', 'frontend/components/narrative/NarrativeLaneRow.tsx', 'frontend/lib/narrative-aggregator.ts', 'frontend/components/narrative/NarrativeFlow.tsx', 'frontend/components/narrative/NarrativeToolbar.tsx'],
+  },
+  {
+    date: '2026-03-28T00:30:00',
+    agent: 'claude-code',
+    summary:
+      'S4-T4: Built NarrativeConnectionOverlay (SVG branch arrows with labels + cross-lane ropes), narrative-ai-wiring.ts (drill-deeper + highlight-branch → AI endpoint orchestration). Extended RopeRenderer with cross-lane visual distinction and labeled connections.',
+    files: [
+      'frontend/components/narrative/NarrativeConnectionOverlay.tsx',
+      'frontend/lib/narrative-ai-wiring.ts',
+      'frontend/components/narrative/RopeRenderer.tsx',
+    ],
+  },
+  {
+    date: '2026-03-27T23:30:00',
+    agent: 'claude-code',
+    summary:
+      'S4-T1: Extended narrative types with ResearchBullet, CatalystCard research fields, new reducer actions (HIGHLIGHT_BRANCH, ADD_RESEARCH_BULLETS, MOVE_CARD_TO_LANE), grid layout math, and POST /api/narrative/research-drill endpoint',
+    files: [
+      'frontend/lib/narrative-types.ts',
+      'frontend/lib/narrative-store.ts',
+      'frontend/contexts/NarrativeContext.tsx',
+      'frontend/lib/narrative-grid-layout.ts',
+      'frontend/lib/narrative-research.ts',
+      'backend-hono/src/routes/narrative/handlers.ts',
+      'backend-hono/src/routes/narrative/index.ts',
+    ],
+  },
+  {
     date: '2026-03-27T22:00:00',
     agent: 'claude-code',
     summary:

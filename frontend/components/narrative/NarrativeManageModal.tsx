@@ -71,6 +71,7 @@ export function NarrativeTimelineModal({ open, onClose }: NarrativeTimelineModal
         templateType: null,
         position: null,
         tags: [],
+        drillDepth: 0,
       },
     });
   }, [dispatch]);

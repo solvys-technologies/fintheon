@@ -1,17 +1,18 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
 // [claude-code 2026-03-16] Wired NarrativeManageModal and tag filter state
 // [claude-code 2026-03-16] MiroFish Sanctum split view integration
+// [claude-code 2026-03-27] S4-T2: Replaced Canvas/WeekView with unified NarrativeGridView
 import { useState, useCallback, useMemo } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import { NarrativeToolbar } from './NarrativeToolbar';
-import NarrativeWeekView from './NarrativeWeekView';
-import { NarrativeCanvas } from './NarrativeCanvas';
+import NarrativeGridView from './NarrativeGridView';
 import { NarrativeDropdown } from './NarrativeDropdown';
 import { TimelineScrubber } from './TimelineScrubber';
 import { NarrativeSaveModal } from './NarrativeSaveModal';
 import { RiskFlowImportModal } from './RiskFlowImportModal';
 import { NarrativeTimelineModal } from './NarrativeManageModal';
 import { Sanctum } from './Sanctum';
+import { NarrativeHighlightProvider } from './NarrativeHighlightProvider';
 import type { SanctumData } from '../../types/mirofish';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -129,8 +130,6 @@ export function NarrativeFlow() {
     }
   }, [state]);
 
-  const isCanvasView = state.zoomLevel !== 'week';
-
   const catalystsForKanban = useMemo(() =>
     state.catalysts.map(c => ({
       id: c.id,
@@ -146,6 +145,7 @@ export function NarrativeFlow() {
   );
 
   return (
+    <NarrativeHighlightProvider>
     <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--fintheon-bg)' }}>
       <div className="flex items-center gap-2 w-full">
         <NarrativeToolbar
@@ -159,9 +159,8 @@ export function NarrativeFlow() {
           onMiroFish={() => setSanctumOpen(!auditoriumOpen)}
           mirofishActive={auditoriumOpen}
         />
-        {isCanvasView && (
-          <div className="pr-2">
-            <NarrativeDropdown
+        <div className="pr-2">
+          <NarrativeDropdown
               visibleLaneIds={visibleLaneIds}
               onToggleLane={handleToggleLane}
               onSelectAll={handleSelectAll}
@@ -170,7 +169,6 @@ export function NarrativeFlow() {
               onToggleTag={handleToggleTag}
             />
           </div>
-        )}
       </div>
 
       <div className="flex-1 min-h-0 relative overflow-hidden flex">
@@ -178,11 +176,7 @@ export function NarrativeFlow() {
           className={auditoriumOpen ? 'w-[60%]' : 'w-full'}
           style={{ transition: 'width 0.3s ease' }}
         >
-          {isCanvasView ? (
-            <NarrativeCanvas visibleLaneIds={visibleLaneIds} />
-          ) : (
-            <NarrativeWeekView />
-          )}
+          <NarrativeGridView visibleLaneIds={visibleLaneIds} activeTags={activeTags} />
         </div>
         {auditoriumOpen && (
           <Sanctum
@@ -217,5 +211,6 @@ export function NarrativeFlow() {
         onClose={() => setManageModalOpen(false)}
       />
     </div>
+    </NarrativeHighlightProvider>
   );
 }
