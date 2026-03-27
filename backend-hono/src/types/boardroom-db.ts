@@ -118,6 +118,7 @@ export function toLegacyMessage(msg: BoardroomDBMessage): BoardroomMessage {
     content: msg.content,
     timestamp: msg.createdAt,
     role: msg.role as 'user' | 'assistant' | 'system',
+    metadata: msg.metadata,
   }
 }
 

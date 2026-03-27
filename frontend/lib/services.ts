@@ -763,6 +763,7 @@ export interface BoardroomMessage {
   content: string;
   timestamp: string;
   role: 'user' | 'assistant' | 'system';
+  metadata?: Record<string, unknown>;
 }
 
 export interface InterventionMessage {
@@ -1076,6 +1077,14 @@ export class BoardroomService {
       nextMeeting: res.nextMeetingIso || '',
       live: res.live ?? false,
     };
+  }
+
+  async getThought(thoughtId: string): Promise<any> {
+    return this.client.get(`/api/boardroom/thoughts/${thoughtId}`);
+  }
+
+  async showFullAnalysis(messageId: string): Promise<any> {
+    return this.client.post(`/api/boardroom/thoughts/${messageId}/full`, {});
   }
 }
 

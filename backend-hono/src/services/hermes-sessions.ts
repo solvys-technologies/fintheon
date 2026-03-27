@@ -159,15 +159,20 @@ export async function getInterventionMessages(sessionLabel = 'pic-intervention')
   return messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 }
 
+// [claude-code 2026-03-26] T2: appendToBoardroom now accepts optional metadata and returns message ID
 export async function appendToBoardroom(
   content: string,
-  role: 'user' | 'assistant' = 'assistant'
-): Promise<void> {
+  role: 'user' | 'assistant' | 'system' = 'assistant',
+  metadata?: Record<string, unknown>
+): Promise<string | undefined> {
+  let messageId: string | undefined;
+
   // Primary: write to Supabase via boardroom-store
   try {
     const session = await getOrCreateTodaySession();
     const { agent } = inferAgent(content);
-    await addBoardroomMessage(session.id, { agent, role, content });
+    const msg = await addBoardroomMessage(session.id, { agent, role, content, metadata });
+    messageId = msg.id;
   } catch (err) {
     console.error('[Boardroom] Supabase write failed, falling back to JSONL:', err);
   }
@@ -176,12 +181,14 @@ export async function appendToBoardroom(
   appendToSession('pic-boardroom', content, role).catch((err) => {
     console.error('[Boardroom] JSONL fallback write failed:', err);
   });
+
+  return messageId;
 }
 
 async function appendToSession(
   sessionLabel: string,
   content: string,
-  role: 'user' | 'assistant' = 'assistant'
+  role: 'user' | 'assistant' | 'system' = 'assistant'
 ): Promise<void> {
   const files = await findSessionFilesByLabel(sessionLabel);
   const targetFile = files[0] ?? join(HERMES_SESSIONS_DIR, `${sessionLabel}.jsonl`);

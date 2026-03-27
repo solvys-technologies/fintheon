@@ -1,11 +1,13 @@
 // [claude-code 2026-03-22] Added @everyone broadcast with hierarchical relevance ordering
 // [claude-code 2026-03-20] Boardroom agent spawner — triggers agent discussions for standup/breaking news
+// [claude-code 2026-03-26] T2: Rewrite — full analysis → thought bank, brief → boardroom
 /**
  * Boardroom Spawner
  *
  * Spawns P.I.C. agents to discuss market conditions during morning standup,
- * breaking news events, and @everyone broadcasts. Each agent posts its
- * response to the boardroom session via hermes-sessions.ts.
+ * breaking news events, and @everyone broadcasts. Each agent generates a full
+ * analysis (stored in the Thought Bank) and posts a brief conversational take
+ * to the boardroom.
  *
  * Agent roster: Harper-Hermes (CAO), Feucht (Futures), Consul (Fundamentals), Oracle (Quant), Herald (Sentiment)
  */
@@ -13,6 +15,9 @@
 import { appendToBoardroom } from './hermes-sessions.js';
 import { handleHermesChat } from './hermes-handler.js';
 import type { HermesAgentRole } from './hermes-service.js';
+import { storeThought, updateThoughtMessageId } from './thought-bank-store.js';
+import type { ThoughtCategory } from '../types/thought-bank.js';
+import type { AgentName } from '../types/context-bank.js';
 
 /** Standup task types matching boardroom-cron.ts schedule IDs */
 export type StandupTask =
@@ -64,23 +69,83 @@ Update key levels based on opening print. Any immediate setups triggered?
 Brief summary — what's the plan for the first 30 minutes of RTH?`,
 };
 
+// ─── Thought Bank Structured Output ─────────────────────────────────
+
+const THOUGHT_BANK_GENERATION_PROMPT = `
+
+IMPORTANT: Structure your response using these XML tags:
+<THOUGHT_TITLE>A brief title for this analysis (5-10 words)</THOUGHT_TITLE>
+<FULL_ANALYSIS>
+Your complete, detailed analysis here. Be thorough — this is stored for reference by you and other agents.
+</FULL_ANALYSIS>
+<BRIEF>
+A 2-3 sentence conversational take for the boardroom chat. Be natural, like you're talking to colleagues at the trading desk. No bullet points, no headers — just a quick, sharp observation.
+</BRIEF>
+`;
+
+interface ParsedThought {
+  title: string | null;
+  fullAnalysis: string;
+  briefSummary: string;
+}
+
+function parseThoughtBankResponse(rawResponse: string): ParsedThought {
+  const titleMatch = rawResponse.match(/<THOUGHT_TITLE>([\s\S]*?)<\/THOUGHT_TITLE>/i);
+  const fullMatch = rawResponse.match(/<FULL_ANALYSIS>([\s\S]*?)<\/FULL_ANALYSIS>/i);
+  const briefMatch = rawResponse.match(/<BRIEF>([\s\S]*?)<\/BRIEF>/i);
+
+  const title = titleMatch ? titleMatch[1].trim() : null;
+  const fullAnalysis = fullMatch ? fullMatch[1].trim() : rawResponse.trim();
+
+  // Fallback: if no BRIEF tag, take first 3 sentences from full analysis
+  let briefSummary: string;
+  if (briefMatch) {
+    briefSummary = briefMatch[1].trim();
+  } else {
+    const sentences = fullAnalysis.split(/(?<=[.!?])\s+/).slice(0, 3);
+    briefSummary = sentences.join(' ');
+  }
+
+  return { title, fullAnalysis, briefSummary };
+}
+
+// ─── Agent Spawning ─────────────────────────────────────────────────
+
 /**
- * Spawn a single agent to post to the boardroom.
- * Calls OpenRouter via handleHermesChat and appends the response.
+ * Spawn a single agent: generate full analysis → store in thought bank → post brief to boardroom.
  */
 async function spawnAgentResponse(
   agent: AgentStandupConfig,
-  prompt: string
+  prompt: string,
+  category: ThoughtCategory = 'spontaneous'
 ): Promise<void> {
   try {
     const response = await handleHermesChat({
-      message: prompt,
+      message: prompt + THOUGHT_BANK_GENERATION_PROMPT,
       agentOverride: agent.role,
     });
 
-    const content = `${agent.emoji} **${agent.displayName}**:\n\n${response.content}`;
-    await appendToBoardroom(content, 'assistant');
-    console.log(`[BoardroomSpawner] ${agent.displayName} posted to boardroom`);
+    const parsed = parseThoughtBankResponse(response.content);
+
+    // Store full analysis in thought bank
+    const thought = await storeThought({
+      agent: agent.displayName as AgentName,
+      category,
+      title: parsed.title ?? undefined,
+      fullAnalysis: parsed.fullAnalysis,
+      briefSummary: parsed.briefSummary,
+    });
+
+    // Post brief to boardroom with thought ID in metadata
+    const briefContent = `${agent.emoji} **${agent.displayName}**: ${parsed.briefSummary}`;
+    const messageId = await appendToBoardroom(briefContent, 'assistant', { thoughtId: thought.id });
+
+    // Link thought to its boardroom message
+    if (messageId) {
+      await updateThoughtMessageId(thought.id, messageId);
+    }
+
+    console.log(`[BoardroomSpawner] ${agent.displayName} posted brief (thought: ${thought.id})`);
   } catch (error) {
     console.error(`[BoardroomSpawner] ${agent.displayName} failed:`, error);
     const fallback = `${agent.emoji} **${agent.displayName}**: _[Agent unavailable — check OpenRouter connection]_`;
@@ -112,12 +177,12 @@ export async function spawnBoardroomStandup(task: StandupTask): Promise<{ succes
   await appendToBoardroom(openingMessage, 'assistant');
 
   // Spawn Harper first (as moderator)
-  await spawnAgentResponse(harper, prompt + '\n\nYou are moderating this standup. Set the tone and ask agents to report.');
+  await spawnAgentResponse(harper, prompt + '\n\nYou are moderating this standup. Set the tone and ask agents to report.', 'standup');
 
   // Spawn remaining agents in parallel
   const otherAgents = BOARDROOM_AGENTS.slice(1);
   await Promise.allSettled(
-    otherAgents.map((agent) => spawnAgentResponse(agent, prompt))
+    otherAgents.map((agent) => spawnAgentResponse(agent, prompt, 'standup'))
   );
 
   console.log(`[BoardroomSpawner] ${task} complete`);
@@ -141,7 +206,7 @@ What action should we take? Be concise and decisive.`;
 
   // All agents respond in parallel for breaking news (speed matters)
   await Promise.allSettled(
-    BOARDROOM_AGENTS.map((agent) => spawnAgentResponse(agent, prompt))
+    BOARDROOM_AGENTS.map((agent) => spawnAgentResponse(agent, prompt, 'news-response'))
   );
 
   console.log(`[BoardroomSpawner] Breaking news response complete`);
@@ -224,6 +289,13 @@ export async function spawnBoardroomBroadcast(
   // Post the user's message to boardroom
   await appendToBoardroom(`**Human Executive** (@everyone): ${userMessage}`, 'user');
 
+  // Build cross-agent thought context for richer responses
+  let thoughtContext = '';
+  try {
+    const { buildThoughtBankPromptBlock } = await import('./ai/agent-instructions/thought-bank-awareness.js');
+    thoughtContext = await buildThoughtBankPromptBlock('Harper-Hermes');
+  } catch { /* graceful degradation */ }
+
   // Order sub-agents by relevance
   const ordered = orderByRelevance(userMessage);
   const harper = BOARDROOM_AGENTS.find(a => a.role === 'harper-cao')!;
@@ -240,12 +312,13 @@ export async function spawnBoardroomBroadcast(
     const prompt = `[BOARDROOM — @everyone broadcast from the Human Executive]
 Message: "${userMessage}"
 ${contextBlock}
+${thoughtContext ? `\n${thoughtContext}` : ''}
 
 Respond to the Human Executive's message from your desk's perspective.${
   thinkHarder ? ' Think deeper — provide extra analysis and reasoning.' : ''
 } Be concise but substantive. 3-5 sentences max unless the topic demands more.`;
 
-    await spawnAgentResponse(agent, prompt);
+    await spawnAgentResponse(agent, prompt, 'broadcast');
     responses.push(`${agent.displayName}: [responded]`);
   }
 
@@ -261,7 +334,7 @@ You are the CAO. Synthesize the team's input, resolve any conflicts, and provide
     thinkHarder ? ' Think deeper — provide extra analysis.' : ''
   } Address the Human Executive directly.`;
 
-  await spawnAgentResponse(harper, harperPrompt);
+  await spawnAgentResponse(harper, harperPrompt, 'broadcast');
 
   console.log(`[BoardroomSpawner] @everyone broadcast complete (${ordered.length + 1} agents responded)`);
 }

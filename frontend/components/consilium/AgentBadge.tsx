@@ -48,4 +48,13 @@ export function AgentBadge({ agent, size = 'md' }: AgentBadgeProps) {
   );
 }
 
+export const AGENT_ACCENT_HEX: Record<BoardroomAgent, string> = {
+  'Harper-Hermes': '#c79f4a',
+  'Oracle': '#a89060',
+  'Feucht': '#d4af37',
+  'Consul': '#8a7a50',
+  'Herald': '#b8963a',
+  'Unknown': '#6b6040',
+};
+
 export { AGENT_MAP };

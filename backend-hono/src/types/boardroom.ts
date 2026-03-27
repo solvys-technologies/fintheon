@@ -27,6 +27,7 @@ export interface BoardroomMessage {
   content: string;
   timestamp: string;
   role: 'user' | 'assistant' | 'system';
+  metadata?: Record<string, unknown>;
 }
 
 export interface InterventionMessage {

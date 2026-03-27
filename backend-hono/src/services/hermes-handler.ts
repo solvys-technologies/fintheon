@@ -12,6 +12,7 @@
 import { execFile, spawn as spawnProcess } from 'node:child_process'
 import type { HermesAgentRole } from './hermes-service.js'
 import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from './ai/agent-instructions/index.js'
+import { buildThoughtBankPromptBlock } from './ai/agent-instructions/thought-bank-awareness.js'
 import { createLogger } from '../lib/logger.js'
 
 const log = createLogger('Hermes')
@@ -387,6 +388,15 @@ ${agent === 'herald' ? '- News sentiment analysis\n- Social signal detection\n- 
 
 const OPENROUTER_OPUS_MODEL = 'anthropic/claude-sonnet-4-6'
 
+/** Map HermesAgentRole to display name for thought bank queries */
+const BOARDROOM_AGENT_NAMES: Record<string, string> = {
+  'harper-cao': 'Harper-Hermes',
+  'futures-desk': 'Feucht',
+  'fundamentals-desk': 'Consul',
+  'pma-merged': 'Oracle',
+  'herald': 'Herald',
+}
+
 /**
  * Main handler — routes through OpenRouter (Nous subscription) + Claude Sonnet 4.6
  */
@@ -399,7 +409,10 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
   const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
   // Inject live RiskFlow headlines so agents can reference real-time data
   const feedContext = await buildFeedContext()
-  const systemPrompt = basePrompt + feedContext
+  // Cross-agent thought bank awareness — what other agents are thinking
+  const agentDisplayName = BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? 'Harper-Hermes'
+  const thoughtBankBlock = await buildThoughtBankPromptBlock(agentDisplayName)
+  const systemPrompt = basePrompt + feedContext + thoughtBankBlock
   const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: 'system', content: systemPrompt }
   ]
