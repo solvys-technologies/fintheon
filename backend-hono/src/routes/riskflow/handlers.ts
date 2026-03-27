@@ -677,7 +677,9 @@ export async function handleGetIVAggregate(c: Context) {
 
 /**
  * POST /api/riskflow/refresh
- * Manually trigger a feed poll cycle and return fresh items
+ * Manually trigger a feed poll cycle, rescore with current weights,
+ * and auto-generate agent notes for critical items.
+ * [claude-code 2026-03-27] S3: Full refresh = poll + score + auto-notes
  */
 export async function handleRefresh(c: Context) {
   const userId = c.get('userId') as string | undefined;
@@ -686,8 +688,24 @@ export async function handleRefresh(c: Context) {
   }
 
   try {
+    // 1. Poll for fresh items (writes raw → raw_riskflow_items)
     await forcePoll();
-    return c.json({ success: true, refreshedAt: new Date().toISOString() });
+
+    // 2. Re-score in-memory feed with current regime/calibration weights
+    const { rescoreInMemoryFeed } = await import('../../services/riskflow/feed-service.js');
+    const rescored = await rescoreInMemoryFeed().catch((err: unknown) => {
+      console.warn('[RiskFlow] Rescore during refresh failed:', err);
+      return 0;
+    });
+
+    // 3. Auto-generate agent notes for critical items (fire-and-forget)
+    import('../../services/riskflow/agent-notes.js').then(({ generateNotesForCriticalItems }) => {
+      generateNotesForCriticalItems().catch((err: unknown) => {
+        console.warn('[RiskFlow] Auto-notes during refresh failed:', err);
+      });
+    });
+
+    return c.json({ success: true, rescored, refreshedAt: new Date().toISOString() });
   } catch (error) {
     console.error('[RiskFlow] Refresh error:', error);
     return c.json({ error: 'Refresh failed' }, 500);

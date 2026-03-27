@@ -5,13 +5,32 @@
  */
 // [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
 
+// [claude-code 2026-03-27] S3: Write raw items to raw_riskflow_items for central scorer pipeline
 import * as newsCache from './news-cache.js';
 import { enrichFeedWithAnalysis } from './feed-service.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import { fetchEconomicFeed } from './economic-feed.js';
 import { isTwitterCliInstalled, pollTwitterForEconNews, manualRefreshTweets } from '../twitter-cli/index.js';
+import { writeRawItems, type RawRiskFlowItem } from '../supabase-service.js';
+import { isSupabaseConfigured } from '../../config/supabase.js';
 import type { FeedItem } from '../../types/riskflow.js';
 import { createLogger } from '../../lib/logger.js';
+
+/** Convert a FeedItem to a RawRiskFlowItem for the raw_riskflow_items inbox */
+function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
+  return {
+    tweet_id: item.id,
+    source: item.source,
+    headline: item.headline,
+    body: item.body,
+    symbols: item.symbols,
+    tags: item.tags,
+    is_breaking: item.isBreaking,
+    urgency: item.urgency,
+    published_at: item.publishedAt,
+    submitted_by: 'feed-poller',
+  };
+}
 
 const log = createLogger('FeedPoller');
 
@@ -53,10 +72,17 @@ async function pollForNewItems(): Promise<void> {
 
     log.info(` Found ${newItems.length} new items (${cachedIds.size} already cached)`);
 
+    // S3: Write raw (unenriched) items to raw_riskflow_items for central scorer
+    if (isSupabaseConfigured()) {
+      const rawRows = newItems.map(feedItemToRaw);
+      const written = await writeRawItems(rawRows);
+      log.info(` Wrote ${written} raw items to raw_riskflow_items`);
+    }
+
     // Enrich with AI analysis (this calculates IV scores and macro levels)
     const enrichedItems = await enrichFeedWithAnalysis(newItems);
 
-    // Store all items in database
+    // Store all items in legacy news_feed_items (kept for backward compat during migration)
     await newsCache.storeFeedItems(enrichedItems);
 
     // Broadcast Level 4 items immediately via SSE
@@ -139,6 +165,13 @@ export async function forcePoll(): Promise<void> {
     if (newItems.length === 0) return;
 
     log.info(` Manual refresh: ${newItems.length} new items (${cachedIds.size} already cached)`);
+
+    // S3: Write raw items to raw_riskflow_items for central scorer
+    if (isSupabaseConfigured()) {
+      const rawRows = newItems.map(feedItemToRaw);
+      const written = await writeRawItems(rawRows);
+      log.info(` Manual refresh: wrote ${written} raw items to raw_riskflow_items`);
+    }
 
     const enrichedItems = await enrichFeedWithAnalysis(newItems);
     await newsCache.storeFeedItems(enrichedItems);

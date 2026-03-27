@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-27T22:00:00',
+    agent: 'claude-code',
+    summary:
+      'S3: Rewire data pipeline (raw→scored), DetailFooter, dashboard layout, refresh=poll+score+auto-notes, appwide refresh, first row height +60%/+25%',
+    files: [
+      'backend-hono/src/services/riskflow/feed-service.ts',
+      'backend-hono/src/services/riskflow/feed-poller.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+      'frontend/components/feed/DetailFooter.tsx',
+      'frontend/components/feed/RiskFlowDetailCard.tsx',
+      'frontend/components/executive/ExpandableTapeItem.tsx',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+      'frontend/components/refinement/AnnotatableItem.tsx',
+    ],
+  },
+  {
     date: '2026-03-27T16:00:00',
     agent: 'claude-code',
     summary:

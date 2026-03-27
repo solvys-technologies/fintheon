@@ -1,12 +1,12 @@
+// [claude-code 2026-03-27] S3: Plain text DetailFooter replaces SubScoreBar, expanded border-l-4 + ring
 // [claude-code 2026-03-26] T4v2: Collapsible RiskFlow detail card matching Strategium AlertRow layout
-// Source icon top-right, footer bar with direction/points/priority/risk-type, smooth grid expand
 import { useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp, ExternalLink, Sparkles } from 'lucide-react';
 import type { RiskFlowAlert } from '../../lib/riskflow-feed';
 import { inferDirection } from '../../lib/riskflow-feed';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
 import { BeatMissBadge } from './BeatMissBadge';
-import { SubScoreBar } from './SubScoreBar';
+import { DetailFooter } from './DetailFooter';
 
 interface RiskFlowDetailCardProps {
   alert: RiskFlowAlert;
@@ -86,9 +86,10 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
     <div
       className={`group relative mb-[3px] overflow-hidden transition-all duration-300 ${
         expanded
-          ? 'border border-[var(--fintheon-accent)]/60 riskflow-expand-pulse'
-          : 'border border-transparent'
-      } ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
+          ? 'border-l-4 border border-[var(--fintheon-accent)]/60 ring-1 riskflow-expand-pulse'
+          : 'border-l-2 border border-transparent'
+      } border-l-[var(--fintheon-accent)] ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
+      style={expanded ? { '--tw-ring-color': 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' } as React.CSSProperties : undefined}
     >
       {/* ── Collapsed: headline + source icon top-right ─────────────────────── */}
       <div
@@ -213,14 +214,7 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
               </div>
             )}
 
-            {/* 3. Sub-Scores */}
-            {hasSubScores && alert.subScores && (
-              <div className="mb-3">
-                <SubScoreBar subScores={alert.subScores} />
-              </div>
-            )}
-
-            {/* 4. Summary (if exists and differs from headline) */}
+            {/* 3. Summary (if exists and differs from headline) */}
             {alert.summary && alert.summary !== alert.headline && (
               <p className="text-[11px] text-[var(--fintheon-text)]/70 leading-relaxed mb-3">{alert.summary}</p>
             )}
@@ -254,6 +248,9 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
             </div>
 
           </div>
+
+          {/* S3: Plain text detail footer — IV, deviation, beat/miss, sub-scores, speaker, regime */}
+          <DetailFooter alert={alert} />
         </div>
       </div>
     </div>

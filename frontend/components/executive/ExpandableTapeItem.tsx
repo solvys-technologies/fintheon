@@ -1,11 +1,13 @@
 // [claude-code 2026-03-05] Expandable tape item for ExecutiveDashboard — shows full RiskFlow detail on click
 // [claude-code 2026-03-11] Replace text source label with SVG icons (X/Notion)
+// [claude-code 2026-03-27] S3: Plain text DetailFooter, expanded border-l-4 + ring highlight
 // [claude-code 2026-03-26] T3: Smooth expand transitions, agent notes, risk type, sub-scores, beat/miss
 import { useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp, ChevronRight, ExternalLink, TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../../lib/riskflow-feed';
 import { useBackend } from '../../lib/backend';
+import { DetailFooter } from '../feed/DetailFooter';
 
 function XLogo({ className }: { className?: string }) {
   return (
@@ -89,14 +91,22 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
 
   return (
     <div
-      className={`border-l-2 border-l-[var(--fintheon-accent)] ${
-        isTradeIdea
-          ? 'border-l-[var(--fintheon-accent)]/50 bg-[#0b0b08]'
-          : isVivid
-            ? 'bg-[#0b0b08] border-l-[var(--fintheon-accent)]/40'
-            : 'bg-[#080806]'
+      className={`transition-all duration-300 ${expanded ? 'border-l-4 ring-1' : 'border-l-2'} border-l-[var(--fintheon-accent)] ${
+        expanded
+          ? 'bg-[#0b0b08]'
+          : isTradeIdea
+            ? 'border-l-[var(--fintheon-accent)]/50 bg-[#0b0b08]'
+            : isVivid
+              ? 'bg-[#0b0b08] border-l-[var(--fintheon-accent)]/40'
+              : 'bg-[#080806]'
       }`}
-      style={isVivid || isTradeIdea ? undefined : { opacity, borderLeftColor: `color-mix(in srgb, var(--fintheon-accent) ${Math.round(borderOpacity * 100)}%, transparent)` }}
+      style={
+        expanded
+          ? { '--tw-ring-color': 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' } as React.CSSProperties
+          : isVivid || isTradeIdea
+            ? undefined
+            : { opacity, borderLeftColor: `color-mix(in srgb, var(--fintheon-accent) ${Math.round(borderOpacity * 100)}%, transparent)` }
+      }
     >
       {/* Collapsed row */}
       <button
@@ -232,41 +242,6 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
                   )}
                 </div>
 
-                {/* Sub-score mini KPIs */}
-                {subScores && (
-                  <div className="mt-2 flex items-center gap-3 text-[10px]">
-                    <div>
-                      <span className="text-zinc-600 uppercase tracking-wider">Event</span>
-                      <div className="mt-0.5 text-zinc-300 tabular-nums">{subScores.eventWeight}</div>
-                    </div>
-                    <div>
-                      <span className="text-zinc-600 uppercase tracking-wider">Momentum</span>
-                      <div className="mt-0.5 text-zinc-300 tabular-nums">{subScores.momentum}</div>
-                    </div>
-                    <div>
-                      <span className="text-zinc-600 uppercase tracking-wider">VIX</span>
-                      <div className="mt-0.5 text-zinc-300 tabular-nums">{subScores.vixContext}</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Econ beat/miss badge */}
-                {econData?.beatMiss && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className={`text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 border ${
-                      econData.beatMiss === 'beat' ? 'border-emerald-600/40 text-emerald-400 bg-emerald-500/5'
-                      : econData.beatMiss === 'miss' ? 'border-red-600/40 text-red-400 bg-red-500/5'
-                      : 'border-zinc-700 text-zinc-400'
-                    }`}>
-                      {econData.beatMiss.toUpperCase()}
-                    </span>
-                    {econData.surprisePercent != null && (
-                      <span className="text-[10px] text-zinc-500 tabular-nums">
-                        {econData.surprisePercent > 0 ? '+' : ''}{econData.surprisePercent.toFixed(1)}%
-                      </span>
-                    )}
-                  </div>
-                )}
               </>
             )}
 
@@ -301,6 +276,9 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
               </div>
             )}
           </div>
+
+          {/* S3: Plain text detail footer — IV, deviation, beat/miss, sub-scores, speaker, regime */}
+          <DetailFooter alert={alert} />
         </div>
       </div>
     </div>

@@ -232,6 +232,55 @@ export function stopAgentNotesCron(): void {
 }
 
 /**
+ * Auto-generate notes for all Critical (macroLevel 4) items missing notes.
+ * Called during manual refresh to ensure every CRIT item gets an Oracle note immediately.
+ * [claude-code 2026-03-27] S3: Auto-notes for critical items on refresh
+ */
+export async function generateNotesForCriticalItems(): Promise<number> {
+  const sb = getSupabaseClient();
+  if (!sb) return 0;
+
+  const cutoff = new Date(Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await sb
+    .from('scored_riskflow_items')
+    .select('id, headline, body, macro_level, tags, econ_data, sub_scores')
+    .eq('macro_level', 4)
+    .is('agent_note', null)
+    .gte('published_at', cutoff)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error || !data?.length) return 0;
+
+  let generated = 0;
+  for (const item of data as ScoredRow[]) {
+    try {
+      const note = await generateAgentNote({
+        headline: item.headline,
+        summary: item.body ?? undefined,
+        severity: 'Critical',
+        tags: item.tags ?? [],
+        econData: item.econ_data,
+        subScores: item.sub_scores,
+      });
+      const ok = await writeNoteToItem(item.id, note);
+      if (ok) generated++;
+    } catch (err) {
+      log.warn('Auto-note for critical item failed', {
+        itemId: item.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  if (generated > 0) {
+    log.info(`Auto-generated ${generated} notes for critical items`);
+  }
+  return generated;
+}
+
+/**
  * Manual trigger: generate a note for a specific item by ID
  * Returns the generated note or null if the item doesn't exist / generation fails
  */

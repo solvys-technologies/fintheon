@@ -145,29 +145,33 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
     };
   }, [backend, autoRefresh]);
 
+  // RiskFlow: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
+  const { alerts, markAllSeen, isSeen, refresh, refreshing } = useRiskFlow();
+
+  // [claude-code 2026-03-27] S3: Brief refresh also triggers appwide feed refresh
   const refreshBrief = useCallback(async () => {
     setNtnRefreshing(true);
     try {
-      // First try fetching existing brief
+      // Trigger appwide feed refresh in parallel with brief refresh
+      const feedRefreshPromise = refresh().catch(() => {});
+
+      // Fetch brief
       let res = await backend.notion.getMdbBrief();
       if (!res.items[0]?.detail) {
-        // No brief exists — trigger generation then re-fetch
         await fetch(`${(import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '')}/api/data/brief/generate`, { method: 'POST' }).catch(() => {});
-        // Wait a moment for generation, then re-fetch
         await new Promise(r => setTimeout(r, 2000));
         res = await backend.notion.getMdbBrief();
       }
       setNtnText(res.items[0]?.detail ?? '');
       if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
+
+      await feedRefreshPromise;
     } catch (error) {
       console.warn('[Dashboard] Brief refresh failed:', error);
     } finally {
       setNtnRefreshing(false);
     }
-  }, [backend]);
-
-  // RiskFlow: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
-  const { alerts, markAllSeen, isSeen, refresh, refreshing } = useRiskFlow();
+  }, [backend, refresh]);
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
   const [showRegimeTracker, setShowRegimeTracker] = useState(false);
   const tapeAlerts = useMemo(() => alerts.slice(0, 50), [alerts]);
@@ -229,7 +233,7 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
         className="flex-1 overflow-y-auto scroll-smooth snap-y snap-mandatory"
       >
         {/* Page 1: Briefing (default) — NTK Brief + Session Calendar + Core KPIs + Action Tape */}
-        <div data-dash-page="0" className="min-h-full snap-start p-5 flex flex-col">
+        <div data-dash-page="0" className="min-h-full snap-start px-2.5 py-3 flex flex-col">
           {/* Setup Guide — first-time onboarding */}
           {showSetupGuide && (
             <div className="shrink-0 mb-5">
@@ -237,7 +241,7 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
             </div>
           )}
           {/* Row 1: Need-to-Know Brief (left) + Session Calendar (right) */}
-          <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5" style={{ height: 'clamp(280px, 30vh, 480px)' }}>
+          <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5" style={{ height: 'clamp(448px, 48vh, 600px)' }}>
             {/* Need-to-Know Brief */}
             <div className="flex flex-col h-full min-h-0">
               <KanbanTitle
@@ -349,12 +353,14 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
               ) : (
                 tapeAlerts.map((alert, idx) => {
                   const total = tapeAlerts.length;
-                  const ratio = total <= 1 ? 0 : idx / (total - 1);
-                  const baseOpacity = Math.max(0.3, 1 - ratio * 0.7);
+                  // S3: Fade starts at bottom 15% of the list — top 85% is fully readable
+                  const fadeStart = Math.floor(total * 0.85);
+                  const ratio = idx < fadeStart ? 0 : (idx - fadeStart) / Math.max(1, total - fadeStart - 1);
+                  const baseOpacity = Math.max(0.35, 1 - ratio * 0.65);
                   const seen = isSeen(alert.id);
-                  const opacity = seen ? Math.max(0.2, baseOpacity * 0.55) : baseOpacity;
-                  const borderOpacity = Math.max(0.15, 0.4 - ratio * 0.25);
-                  const isVivid = idx < 4 && !seen;
+                  const opacity = seen ? Math.max(0.25, baseOpacity * 0.6) : baseOpacity;
+                  const borderOpacity = Math.max(0.2, 0.4 - ratio * 0.2);
+                  const isVivid = idx < fadeStart && !seen;
 
                   return (
                     <ExpandableTapeItem
@@ -375,7 +381,7 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
         </div>
 
         {/* Page 2: Full RiskFlow */}
-        <div data-dash-page="1" className="min-h-full snap-start p-5 flex flex-col">
+        <div data-dash-page="1" className="min-h-full snap-start px-2.5 py-3 flex flex-col">
           <KanbanTitle title="RiskFlow" tag="Full Feed" tone="emerald" headerRight={
               <div className="flex items-center gap-1">
                 <AutoRefreshToggle size="xs" />
@@ -396,12 +402,14 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
             ) : (
               tapeAlerts.map((alert, idx) => {
                 const total = tapeAlerts.length;
-                const ratio = total <= 1 ? 0 : idx / (total - 1);
+                // S3: Fade starts at bottom 15% — top 85% fully readable
+                const fadeStart = Math.floor(total * 0.85);
+                const ratio = idx < fadeStart ? 0 : (idx - fadeStart) / Math.max(1, total - fadeStart - 1);
                 const baseOpacity = Math.max(0.35, 1 - ratio * 0.65);
                 const seen = isSeen(alert.id);
                 const opacity = seen ? Math.max(0.25, baseOpacity * 0.6) : baseOpacity;
-                const borderOpacity = Math.max(0.15, 0.4 - ratio * 0.25);
-                const isVivid = idx < 6 && !seen;
+                const borderOpacity = Math.max(0.2, 0.4 - ratio * 0.2);
+                const isVivid = idx < fadeStart && !seen;
 
                 return (
                   <ExpandableTapeItem

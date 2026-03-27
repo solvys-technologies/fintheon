@@ -16,6 +16,7 @@ import { analyzeHeadline, type AnalyzedHeadline } from '../analysis/grok-analyze
 import { calculateIVScore } from '../analysis/iv-scorer.js';
 import { classifyEventType } from '../iv-scoring-v2.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
+// [claude-code 2026-03-27] S3: Rewired data pipeline — raw → scored Supabase tables, deprecating news_feed_items
 import * as newsCache from './news-cache.js';
 import { fetchEconomicFeed } from './economic-feed.js';
 import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
@@ -23,6 +24,9 @@ import { isTwitterCliInstalled, pollTwitterForEconNews, getWarmCacheItems } from
 import { estimatePoints } from '../market-data/point-estimator.js';
 import { fetchVIX } from '../vix-service.js';
 import { createLogger } from '../../lib/logger.js';
+import { writeRawItems, readScoredItems, type RawRiskFlowItem, type ScoredRiskFlowItem } from '../supabase-service.js';
+import { isSupabaseConfigured } from '../../config/supabase.js';
+import { scoredToFeedItem } from './central-scorer.js';
 
 const log = createLogger('RiskFlow');
 const MAX_FEED_ITEMS = 50;
@@ -48,6 +52,22 @@ function inferSentimentFromKeywords(text: string): 'bullish' | 'bearish' {
 
 // Enable/disable AI analysis (can be toggled via env)
 const ENABLE_AI_ANALYSIS = process.env.ENABLE_AI_ANALYSIS !== 'false';
+
+/** Convert a FeedItem to a RawRiskFlowItem for the raw_riskflow_items inbox */
+function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
+  return {
+    tweet_id: item.id,
+    source: item.source,
+    headline: item.headline,
+    body: item.body,
+    symbols: item.symbols,
+    tags: item.tags,
+    is_breaking: item.isBreaking,
+    urgency: item.urgency,
+    published_at: item.publishedAt,
+    submitted_by: 'feed-service',
+  };
+}
 
 // In-memory cache (short-term) - DB cache is primary
 let feedCache: { items: FeedItem[]; fetchedAt: number } | null = null;
@@ -253,6 +273,15 @@ async function fetchFreshFeed(): Promise<FeedItem[]> {
     );
 
     log.info(` fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${twitterCliItems.length} twcli)`);
+
+    // S3: Write raw items to raw_riskflow_items for central scorer pipeline
+    if (isSupabaseConfigured() && merged.length > 0) {
+      const rawRows = merged.map(feedItemToRaw);
+      writeRawItems(rawRows).then(n => {
+        if (n > 0) log.info(` fetchFreshFeed: wrote ${n} raw items to raw_riskflow_items`);
+      }).catch(err => log.warn('fetchFreshFeed: raw write failed', { error: String(err) }));
+    }
+
     return merged;
   } catch (error) {
     log.error('Fetch error', { error: String(error) });
@@ -327,8 +356,12 @@ function generateMockFeed(): FeedItem[] {
 }
 
 /**
- * Get feed items with database caching (shared across all users)
- * Only fetches fresh data if enough time has passed
+ * Get feed items — reads from scored_riskflow_items (Supabase) as source of truth.
+ * In-memory feedCache is a read-through cache on top of the scored table.
+ * Falls back to legacy news_feed_items if Supabase is unavailable.
+ *
+ * [claude-code 2026-03-27] S3: Rewired to read from scored table instead of news_feed_items.
+ * Scores now persist across restarts because they live in Supabase.
  */
 async function getCachedFeed(): Promise<FeedItem[]> {
   // Check in-memory cache first (fast path)
@@ -344,13 +377,23 @@ async function getCachedFeed(): Promise<FeedItem[]> {
     return enrichedItems;
   }
 
-  // Try to get from database first (shared across users)
-  const dbItems = await newsCache.getCachedFeed({ 
-    limit: MAX_FEED_ITEMS, 
-    hoursBack: 48 
-  });
-  
-  log.info(` getCachedFeed: Found ${dbItems.length} items in database cache`);
+  // ── Primary read: scored_riskflow_items (Supabase) ──────────────────────
+  let scoredDbItems: FeedItem[] = [];
+  if (isSupabaseConfigured()) {
+    const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const scored = await readScoredItems({ since, limit: MAX_FEED_ITEMS });
+    scoredDbItems = scored.map(scoredToFeedItem);
+    log.info(` getCachedFeed: Found ${scoredDbItems.length} items in scored_riskflow_items`);
+  }
+
+  // ── Fallback: legacy news_feed_items (for migration period) ─────────────
+  let legacyItems: FeedItem[] = [];
+  if (scoredDbItems.length === 0) {
+    legacyItems = await newsCache.getCachedFeed({ limit: MAX_FEED_ITEMS, hoursBack: 48 });
+    log.info(` getCachedFeed: Fallback — ${legacyItems.length} items from legacy news_feed_items`);
+  }
+
+  const dbItems = scoredDbItems.length > 0 ? scoredDbItems : legacyItems;
 
   // Check if we need to fetch fresh data
   const shouldFetchFresh = Date.now() - lastFreshFetch >= FETCH_INTERVAL_MS;
@@ -360,28 +403,26 @@ async function getCachedFeed(): Promise<FeedItem[]> {
   if (isDatabaseEmpty || dbItems.length < 15 || shouldFetchFresh) {
     log.info(` Fetching fresh data (empty: ${isDatabaseEmpty}, count: ${dbItems.length}, shouldFetch: ${shouldFetchFresh})...`);
     lastFreshFetch = Date.now();
-    
+
     const rawItems = await fetchFreshFeed();
     log.info(` Fetched ${rawItems.length} raw items`);
 
     // If fetch failed and we have database items, use them
     if (rawItems.length === 0 && dbItems.length > 0) {
-      log.info(` Fresh fetch returned 0 items, using ${dbItems.length} items from database cache`);
+      log.info(` Fresh fetch returned 0 items, using ${dbItems.length} items from database`);
       feedCache = { items: dbItems, fetchedAt: Date.now() };
       return dbItems;
     }
 
-    // If fetch failed and database is empty, return empty unless explicit mock fallback is enabled
+    // If fetch failed and database is empty, return empty unless mock fallback
     if (rawItems.length === 0 && dbItems.length === 0) {
       log.warn(` No items from fresh fetch and database is empty`);
-      log.warn(` Environment: ${process.env.NODE_ENV}`);
 
       if (ALLOW_MOCK_FALLBACK) {
         log.warn(` RISKFLOW_ALLOW_MOCK_FALLBACK=true — generating fallback mock data`);
         const mockItems = generateMockFeed();
         const enrichedItems = await enrichFeedWithAnalysis(mockItems);
         await newsCache.storeFeedItems(enrichedItems);
-        log.info(` Stored ${enrichedItems.length} fallback mock items in database`);
         feedCache = { items: enrichedItems, fetchedAt: Date.now() };
         return enrichedItems;
       }
@@ -390,59 +431,62 @@ async function getCachedFeed(): Promise<FeedItem[]> {
       return [];
     }
 
-    // Check which items are already in cache
-    const existingIds = await newsCache.getCachedTweetIds(rawItems.map(i => i.id));
-    const newItems = rawItems.filter(item => !existingIds.has(item.id));
+    // Dedupe against what we already have in the scored table
+    const dbIdSet = new Set(dbItems.map(i => i.id));
+    const newItems = rawItems.filter(item => !dbIdSet.has(item.id));
 
-    log.info(` ${newItems.length} new items to analyze (${existingIds.size} already cached)`);
+    log.info(` ${newItems.length} new items to analyze (${dbIdSet.size} already in scored DB)`);
 
-    // Only analyze new items
+    // Only analyze new items (for immediate in-memory display while central scorer catches up)
     let enrichedNewItems: FeedItem[] = [];
     if (newItems.length > 0) {
       enrichedNewItems = await enrichFeedWithAnalysis(newItems);
-      // Store new items in database
-      await newsCache.storeFeedItems(enrichedNewItems);
-      log.info(` Stored ${enrichedNewItems.length} enriched items in database`);
+      // Also store in legacy cache for backward compat
+      await newsCache.storeFeedItems(enrichedNewItems).catch(() => {});
+      log.info(` Enriched ${enrichedNewItems.length} new items (in-memory fast path)`);
     }
 
-    // Merge: scored in-memory items take priority over unscored DB items
-    // [claude-code 2026-03-27] Preserve IV scores from rescoreInMemoryFeed across cache refreshes
+    // Merge: scored DB items (source of truth) + newly enriched in-memory items
     const scoredMap = new Map<string, FeedItem>();
-    // 1. Start with previous in-memory scored items (if any)
-    for (const item of feedCache?.items ?? []) {
-      if (item.ivScore != null) scoredMap.set(item.id, item);
-    }
-    // 2. Layer newly enriched items (overwrite with fresh scores)
-    for (const item of enrichedNewItems) {
+    // 1. Scored DB items are canonical
+    for (const item of dbItems) {
       scoredMap.set(item.id, item);
     }
-    // 3. Fill gaps with DB items (only if we don't already have a scored version)
-    for (const item of dbItems) {
+    // 2. Newly enriched items fill gaps (not yet in scored table)
+    for (const item of enrichedNewItems) {
       if (!scoredMap.has(item.id)) scoredMap.set(item.id, item);
+    }
+    // 3. Preserve any in-memory scored items not yet written to DB
+    for (const item of feedCache?.items ?? []) {
+      if (item.ivScore != null && !scoredMap.has(item.id)) {
+        scoredMap.set(item.id, item);
+      }
     }
     const allItems = Array.from(scoredMap.values()).slice(0, MAX_FEED_ITEMS);
 
     feedCache = { items: allItems, fetchedAt: Date.now() };
-    log.info(` Returning ${allItems.length} total items (${enrichedNewItems.length} new, ${scoredMap.size} merged)`);
+    log.info(` Returning ${allItems.length} total items (${scoredDbItems.length} scored DB, ${enrichedNewItems.length} new)`);
     return allItems;
   }
 
-  // Use database cache — but preserve any scored in-memory items
-  // [claude-code 2026-03-27] Don't overwrite scored cache with unscored DB items
+  // Use database items — merge with any in-memory scored items not yet persisted
   if (feedCache && feedCache.items.some(i => i.ivScore != null)) {
     const scoredMap = new Map<string, FeedItem>();
-    for (const item of feedCache.items) {
-      if (item.ivScore != null) scoredMap.set(item.id, item);
-    }
     for (const item of dbItems) {
-      if (!scoredMap.has(item.id)) scoredMap.set(item.id, item);
+      scoredMap.set(item.id, item);
+    }
+    for (const item of feedCache.items) {
+      if (item.ivScore != null && !scoredMap.has(item.id)) {
+        scoredMap.set(item.id, item);
+      }
     }
     const merged = Array.from(scoredMap.values()).slice(0, MAX_FEED_ITEMS);
     feedCache = { items: merged, fetchedAt: Date.now() };
-    log.info(` Preserved ${scoredMap.size} scored items, merged with ${dbItems.length} DB items`);
+    log.info(` Merged ${merged.length} items (scored DB primary, in-memory supplements)`);
     return merged;
   }
-  log.info(` Using ${dbItems.length} items from database cache (no fresh fetch needed)`);
+
+  log.info(` Using ${dbItems.length} items from scored database`);
   feedCache = { items: dbItems, fetchedAt: Date.now() };
   return dbItems;
 }

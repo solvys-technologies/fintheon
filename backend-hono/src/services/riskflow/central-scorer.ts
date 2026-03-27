@@ -19,6 +19,7 @@ import { resolvePriceAt } from '../autoresearch/price-resolver.js';
 import { getInstrumentConfig } from '../iv-scoring-v2.js';
 import { fetchVIX } from '../vix-service.js';
 import { shouldTriggerReactiveAdjustment, adjustScoresForRiskFlow, getRunningState, setRunningState } from '../mirofish/mirofish-reactive.js';
+import { generateNotesForCriticalItems } from './agent-notes.js';
 
 const log = createLogger('CentralScorer');
 
@@ -198,6 +199,14 @@ async function scoringCycle(): Promise<void> {
 
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
+
+    // S3: Auto-generate agent notes for any critical items that were just scored
+    const hasCritical = enrichedItems.some(i => i.macroLevel === 4);
+    if (hasCritical) {
+      generateNotesForCriticalItems().catch(err =>
+        log.warn('Auto-notes after scoring failed', { error: String(err) })
+      );
+    }
   } catch (err) {
     log.error(' Scoring cycle error:', { error: err instanceof Error ? err.message : String(err) });
   } finally {
@@ -206,9 +215,10 @@ async function scoringCycle(): Promise<void> {
 }
 
 /**
- * Convert a ScoredRiskFlowItem back into a FeedItem for re-enrichment
+ * Convert a ScoredRiskFlowItem back into a FeedItem for re-enrichment.
+ * Exported for reuse by getCachedFeed() when reading from the scored table.
  */
-function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
+export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
   return {
     id: scored.tweet_id,
     source: (scored.source as FeedItem['source']) || 'TwitterCli',

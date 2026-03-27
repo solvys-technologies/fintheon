@@ -1,10 +1,11 @@
+// [claude-code 2026-03-27] S3: DetailFooter replaces SubScoreBar, darker card bg
 // [claude-code 2026-03-27] S2-T7: Annotatable feed item with comment, flaw tag, suggested score
 import { useState, useEffect } from 'react';
 import { MessageSquare, Tag, Save, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import type { RiskFlowAlert } from '../../lib/riskflow-feed';
 import type { FlawTag } from '../../../backend-hono/src/types/calibration';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
-import { SubScoreBar } from '../feed/SubScoreBar';
+import { DetailFooter } from '../feed/DetailFooter';
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 interface AnnotatableItemProps {
@@ -79,7 +80,7 @@ export function AnnotatableItem({ item, onAnnotationSaved }: AnnotatableItemProp
   }, [savedMsg]);
 
   return (
-    <div className={`rounded border ${sev.border} ${sev.bg} p-2.5 space-y-2`}>
+    <div className={`rounded border ${sev.border} bg-[#080806] p-2.5 space-y-2`}>
       {/* Header: headline + severity + time */}
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
@@ -123,36 +124,8 @@ export function AnnotatableItem({ item, onAnnotationSaved }: AnnotatableItemProp
         </div>
       )}
 
-      {/* Sub-scores breakdown */}
-      {sub && <SubScoreBar subScores={sub} />}
-
-      {/* Points + direction */}
-      {(item.pointRange || item.instrument) && (
-        <div className="flex items-center gap-2 text-[9px]">
-          {item.pointRange && (
-            <span className="text-zinc-400 font-mono">\u00b1{item.pointRange} pts</span>
-          )}
-          {item.instrument && (
-            <span className="text-zinc-500">/{item.instrument}</span>
-          )}
-        </div>
-      )}
-
-      {/* Regime + commentator multipliers */}
-      {sub && (
-        <div className="flex flex-wrap gap-2 text-[8px]">
-          {sub.regimeName && sub.regimeMultiplier && (
-            <span className="text-cyan-400/70">
-              Regime: {sub.regimeName} ({sub.regimeMultiplier}x)
-            </span>
-          )}
-          {sub.speaker && sub.commentatorMultiplier && (
-            <span className="text-[var(--fintheon-accent)]/70">
-              Speaker: {sub.speaker} ({sub.commentatorMultiplier}x)
-            </span>
-          )}
-        </div>
-      )}
+      {/* S3: Plain text detail footer — replaces SubScoreBar and regime/commentator display */}
+      <DetailFooter alert={item} />
 
       {/* Expanded annotation area */}
       {expanded && (
