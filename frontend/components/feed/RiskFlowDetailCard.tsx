@@ -168,7 +168,7 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
                   <Sparkles className="w-3 h-3 text-[var(--fintheon-accent)]" />
                   <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">Oracle</span>
                 </div>
-                <p className="text-[11px] text-zinc-300 leading-relaxed">{alert.agentNote}</p>
+                <p className="text-[11px] text-[var(--fintheon-text)] leading-relaxed">{alert.agentNote}</p>
                 {alert.agentNoteGeneratedAt && (
                   <p className="text-[8px] text-zinc-600 mt-1.5 tabular-nums">{timeAgo(alert.agentNoteGeneratedAt)}</p>
                 )}
@@ -193,20 +193,20 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
                 <div className="flex items-center gap-4 text-[10px] tabular-nums">
                   {alert.econData.actual != null && (
                     <div>
-                      <span className="text-zinc-600 uppercase tracking-wider text-[9px]">Actual</span>
-                      <div className="text-zinc-300 font-medium">{alert.econData.actual}</div>
+                      <span className="text-[var(--fintheon-accent)]/60 uppercase tracking-wider text-[9px]">Actual</span>
+                      <div className="text-[var(--fintheon-text)] font-medium">{alert.econData.actual}</div>
                     </div>
                   )}
                   {alert.econData.forecast != null && (
                     <div>
-                      <span className="text-zinc-600 uppercase tracking-wider text-[9px]">Forecast</span>
-                      <div className="text-zinc-300 font-medium">{alert.econData.forecast}</div>
+                      <span className="text-[var(--fintheon-accent)]/60 uppercase tracking-wider text-[9px]">Forecast</span>
+                      <div className="text-[var(--fintheon-text)] font-medium">{alert.econData.forecast}</div>
                     </div>
                   )}
                   {alert.econData.previous != null && (
                     <div>
-                      <span className="text-zinc-600 uppercase tracking-wider text-[9px]">Previous</span>
-                      <div className="text-zinc-300 font-medium">{alert.econData.previous}</div>
+                      <span className="text-[var(--fintheon-accent)]/60 uppercase tracking-wider text-[9px]">Previous</span>
+                      <div className="text-[var(--fintheon-text)] font-medium">{alert.econData.previous}</div>
                     </div>
                   )}
                 </div>
@@ -222,7 +222,7 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
 
             {/* 4. Summary (if exists and differs from headline) */}
             {alert.summary && alert.summary !== alert.headline && (
-              <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">{alert.summary}</p>
+              <p className="text-[11px] text-[var(--fintheon-text)]/70 leading-relaxed mb-3">{alert.summary}</p>
             )}
 
             {/* 5. Tags + Author + Source link */}
@@ -230,14 +230,14 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
               {alert.tags.length > 0 && (
                 <div className="flex gap-1">
                   {alert.tags.slice(0, 4).map((tag) => (
-                    <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-zinc-800/50 text-zinc-500 border border-zinc-800/40">
+                    <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20">
                       {tag}
                     </span>
                   ))}
                 </div>
               )}
               {alert.authorHandle && (
-                <span className="text-[9px] text-zinc-600">@{alert.authorHandle}</span>
+                <span className="text-[9px] text-[var(--fintheon-accent)]/60">@{alert.authorHandle}</span>
               )}
               {alert.url && (
                 <a

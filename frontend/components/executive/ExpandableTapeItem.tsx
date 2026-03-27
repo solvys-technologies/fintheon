@@ -102,7 +102,7 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-start gap-3 px-3 py-2 text-left hover:bg-white/[0.02] transition-colors"
+        className="w-full flex items-start gap-3 px-3 py-3 text-left hover:bg-white/[0.02] transition-colors"
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
