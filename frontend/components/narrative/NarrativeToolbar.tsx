@@ -219,7 +219,7 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
           <Settings2 className="w-3.5 h-3.5" />
         </button>
 
-        {/* MiroFish Auditorium */}
+        {/* MiroFish Sanctum */}
         <button
           onClick={onMiroFish}
           className={`p-1.5 rounded transition-colors ${
@@ -227,7 +227,7 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
               ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
               : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10'
           }`}
-          title="MiroFish Auditorium"
+          title="MiroFish Sanctum"
         >
           <Zap className="w-3.5 h-3.5" />
         </button>

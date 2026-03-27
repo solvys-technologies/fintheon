@@ -44,6 +44,7 @@ import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { TradingJournal } from '../journal/TradingJournal';
 import { ProposalWidget } from '../proposals/ProposalWidget';
 import { ApparatusPage } from '../apparatus/ApparatusPage';
+import { RefinementEngine } from '../refinement/RefinementEngine';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 // [claude-code 2026-03-16] Hermes moved from standalone page into Settings tab
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
@@ -89,6 +90,9 @@ function MainLayoutInner() {
   const [activeTab, setActiveTab] = useState<NavTab>('executive');
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
+  const [showRefinement, setShowRefinement] = useState(false);
+  const refinementEnabled = typeof window !== 'undefined' &&
+    localStorage.getItem('fintheon-refinement-enabled') === 'true';
   const [missionControlCollapsed, setMissionControlCollapsedRaw] = useState(false);
   // 4c: Link Strategium ↔ RiskFlow collapse — always in sync
   const setMissionControlCollapsed = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
@@ -607,7 +611,7 @@ function MainLayoutInner() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'earnings' || activeTab === 'proposals' || activeTab === 'settings';
+    const hideRightPanel = showRefinement || activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'earnings' || activeTab === 'proposals' || activeTab === 'settings';
     if (!hideRightPanel) {
       rightPanels.push(
         <div
@@ -692,12 +696,15 @@ function MainLayoutInner() {
         <div className="relative">
           <NavSidebar
             activeTab={activeTab}
-            onTabChange={handleTabChange}
+            onTabChange={(tab) => { setShowRefinement(false); handleTabChange(tab); }}
             onLogout={handleLogout}
             topStepXEnabled={topStepXEnabled}
             onOverlayVisibilityChange={setSidebarOverlayVisible}
             onEditModeChange={setLayoutEditMode}
             onNotificationCenterToggle={() => setNotificationCenterOpen((v) => !v)}
+            onRefinementClick={() => setShowRefinement((v) => !v)}
+            refinementEnabled={refinementEnabled}
+            refinementActive={showRefinement}
           />
           <NotificationCenter
             open={notificationCenterOpen}
@@ -732,56 +739,61 @@ function MainLayoutInner() {
           {/* Main content layer */}
           <div className={`h-full relative flex-1 flex flex-col ${topStepXEnabled ? 'pointer-events-none' : ''}`} style={{ opacity: topStepXEnabled ? 0 : 1, transition: 'opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)' }}>
               <div className="flex-1 min-h-0 overflow-hidden">
-              {activeTab === 'executive' && (
+              {showRefinement && (
+                <div key="refinement" className="h-full w-full animate-fade-in-tab">
+                  <RefinementEngine />
+                </div>
+              )}
+              {!showRefinement && activeTab === 'executive' && (
                 <div key="executive" data-tour-target="executive" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ExecutiveDashboard onNavigateTab={(tab) => navigateTab(tab as NavTab)} />
                 </div>
               )}
-              {activeTab === 'analysis' && (
+              {!showRefinement && activeTab === 'analysis' && (
                 <div key="analysis" data-tour-target="chat" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ConsiliumHub />
                 </div>
               )}
-              {activeTab === 'news' && (
+              {!showRefinement && activeTab === 'news' && (
                 <div key="news" data-tour-target="riskflow" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <NewsSection />
                 </div>
               )}
-              {activeTab === 'econ' && (
+              {!showRefinement && activeTab === 'econ' && (
                 <div key="econ" data-tour-target="econ" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <EconCalendarProvider>
                     <EconCalendar />
                   </EconCalendarProvider>
                 </div>
               )}
-              {activeTab === 'narrative' && (
+              {!showRefinement && activeTab === 'narrative' && (
                 <div key="narrative" data-tour-target="narrative" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <NarrativeProvider>
                     <NarrativeFlow />
                   </NarrativeProvider>
                 </div>
               )}
-              {activeTab === 'apparatus' && (
+              {!showRefinement && activeTab === 'apparatus' && (
                 <div key="apparatus" data-tour-target="apparatus" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ApparatusPage />
                 </div>
               )}
-              {activeTab === 'notion' && (
+              {!showRefinement && activeTab === 'notion' && (
                 <div key="notion" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ResearchDepartment />
                 </div>
               )}
-              {activeTab === 'proposals' && (
+              {!showRefinement && activeTab === 'proposals' && (
                 <div key="proposals" data-tour-target="proposals" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ProposalWidget />
                 </div>
               )}
-              {activeTab === 'earnings' && (
+              {!showRefinement && activeTab === 'earnings' && (
                 <div key="earnings" data-tour-target="performance" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <TradingJournal />
                 </div>
               )}
-              {activeTab === 'settings' && (
+              {!showRefinement && activeTab === 'settings' && (
                 <div key="settings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <SettingsPage />
                 </div>

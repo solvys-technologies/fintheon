@@ -1,4 +1,5 @@
 import type { ParsedHeadline, NewsSource, UrgencyLevel, MarketDirection } from '../types/news-analysis.js'
+import { extractSpeaker } from './commentator/speaker-extractor.js'
 
 const breakingPatterns = [/^BREAKING[:\s-]/i, /^JUST IN[:\s-]/i, /^ALERT[:\s-]/i, /^URGENT[:\s-]/i]
 const econDataPatterns = [
@@ -154,6 +155,14 @@ export const parseHeadline = (text: string, options?: ParseHeadlineOptions): Hea
     parsed.confidence += 0.25
     parsed.tags.push('economic-data')
     parsed.eventType ??= 'economicData'
+  }
+
+  // Speaker extraction — adds speaker/institution fields but does NOT affect scoring (T5 scope)
+  const speakerInfo = extractSpeaker(trimmed)
+  if (speakerInfo.speaker) {
+    parsed.speaker = speakerInfo.speaker
+    parsed.speakerInstitution = speakerInfo.institution ?? undefined
+    parsed.isOfficialStatement = speakerInfo.isOfficial
   }
 
   if (parsed.symbols.length > 0) {

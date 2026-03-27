@@ -29,7 +29,7 @@ function mapSymbol(sym: string): string {
 
 const COMPARE_SYMBOLS = ['COMEX:GC1!', 'SP:SPX', 'NASDAQ:NDX'];
 
-interface AuditoriumChartProps {
+interface SanctumChartProps {
   timeSeries: MiroFishTimePoint[];
   rollingDays: 7 | 14 | 30;
   selectedSymbol?: string;
@@ -316,10 +316,10 @@ function drawProjectionOverlay(
   ctx.restore();
 }
 
-export function AuditoriumChart({
-  timeSeries, rollingDays, selectedSymbol = '/MNQ',
+export function SanctumChart({
+  timeSeries, rollingDays, selectedSymbol = 'QQQ',
   compositeIV, confidence, regimeShiftProbability, scenarios,
-}: AuditoriumChartProps) {
+}: SanctumChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -335,7 +335,7 @@ export function AuditoriumChart({
       .map(s => `Compare@tv-basicstudies|0|${s}`);
     const params = new URLSearchParams({
       symbol: tvSymbol,
-      interval: '15',
+      interval: '240',
       theme: 'dark',
       style: '3',
       locale: 'en',

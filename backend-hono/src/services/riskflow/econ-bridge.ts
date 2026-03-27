@@ -39,7 +39,7 @@ export async function injectEconPrintToFeed(print: EconPrintEvent): Promise<void
     let macroLevel = 2;
     try {
       const parsed = { raw: headline, eventType: null, isBreaking: true };
-      const ivResult = calculateIVScore({ parsed: parsed as any, timestamp: new Date() });
+      const ivResult = await calculateIVScore({ parsed: parsed as any, timestamp: new Date() });
       macroLevel = ivResult.macroLevel;
     } catch {
       // Fallback: econ prints are at least level 2

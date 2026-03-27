@@ -22,6 +22,7 @@ import { createMirofishRoutes } from './mirofish/index.js';
 import { createERRoutes } from './er/index.js';
 import { createVoiceRoutes } from './voice/index.js';
 import { createRegimeRoutes } from './regimes/index.js';
+import { createMarketRegimeRoutes } from './regime/index.js';
 
 import { createVersionRoutes } from './version/index.js';
 import { createMarketDataRoutes } from './market-data/index.js';
@@ -39,6 +40,8 @@ import { createSetupRoutes } from './setup/index.js';
 import { createTradeIdeasRoutes } from './trade-ideas/index.js';
 import { createProfileRoutes } from './profile/index.js';
 import { createAuthCallbackRoute } from './auth-callback.js';
+import { createCommentatorRoutes } from './commentator/index.js';
+import { createCalibrationRoutes } from './calibration/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -61,8 +64,10 @@ export function registerRoutes(app: Hono): void {
     const query = c.req.url.includes('?') ? '?' + c.req.url.split('?')[1] : '';
     return c.redirect(suffix + query, 301);
   });
-  // Regime tracker — public, returns active trading regimes
+  // Regime tracker — public, returns active trading regimes (session-based time windows)
   app.route('/api/regimes', createRegimeRoutes());
+  // Market regime engine — public, macro regime classification (CRUD + detect)
+  app.route('/api/regime', createMarketRegimeRoutes());
   // Market data — Yahoo Finance quotes/VIX + Unusual Whales GEX/walls/flow (public)
   app.route('/api/market-data', createMarketDataRoutes());
   // Narrative scoring — LLM-scored catalyst candidates
@@ -79,6 +84,10 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/proposals', createProposalRoutes());
   // Trade ideas — merged proposals + Supabase trade ideas (public)
   app.route('/api/trade-ideas', createTradeIdeasRoutes());
+  // Commentator registry — speaker tagging, tier management (public, admin CRUD)
+  app.route('/api/commentator', createCommentatorRoutes());
+  // Calibration — scoring weight management, annotations, observations, bulk ingest (public, admin)
+  app.route('/api/calibration', createCalibrationRoutes());
 
   // Supabase OAuth callback relay — serves HTML that deep-links back to Electron
   app.route('/api/auth/supabase', createAuthCallbackRoute());

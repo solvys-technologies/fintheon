@@ -1,0 +1,11 @@
+{
+  "_note": "Regime multiplier defaults. Overridable via Refinement Engine UI.",
+  "version": "1.0.0",
+  "defaultRegime": "CONSOLIDATION",
+  "tierMultipliers": {
+    "1": 1.5,
+    "2": 1.2,
+    "3": 1.0,
+    "untagged": 0.8
+  }
+}

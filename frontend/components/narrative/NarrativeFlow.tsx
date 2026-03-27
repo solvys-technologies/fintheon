@@ -1,6 +1,6 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
 // [claude-code 2026-03-16] Wired NarrativeManageModal and tag filter state
-// [claude-code 2026-03-16] MiroFish Auditorium split view integration
+// [claude-code 2026-03-16] MiroFish Sanctum split view integration
 import { useState, useCallback, useMemo } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import { NarrativeToolbar } from './NarrativeToolbar';
@@ -11,8 +11,8 @@ import { TimelineScrubber } from './TimelineScrubber';
 import { NarrativeSaveModal } from './NarrativeSaveModal';
 import { RiskFlowImportModal } from './RiskFlowImportModal';
 import { NarrativeTimelineModal } from './NarrativeManageModal';
-import { Auditorium } from './Auditorium';
-import type { AuditoriumData } from '../../types/mirofish';
+import { Sanctum } from './Sanctum';
+import type { SanctumData } from '../../types/mirofish';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -25,8 +25,8 @@ export function NarrativeFlow() {
     new Set(state.lanes.map(l => l.id))
   );
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
-  const [auditoriumOpen, setAuditoriumOpen] = useState(false);
-  const [mirofishData, setMirofishData] = useState<AuditoriumData | null>(null);
+  const [auditoriumOpen, setSanctumOpen] = useState(false);
+  const [mirofishData, setMirofishData] = useState<SanctumData | null>(null);
 
   const handleSave = useCallback(() => {
     setSaveModalOpen(true);
@@ -156,7 +156,7 @@ export function NarrativeFlow() {
           hasSnapshot={!!snapshot}
           onImport={() => setImportModalOpen(true)}
           onManage={() => setManageModalOpen(true)}
-          onMiroFish={() => setAuditoriumOpen(!auditoriumOpen)}
+          onMiroFish={() => setSanctumOpen(!auditoriumOpen)}
           mirofishActive={auditoriumOpen}
         />
         {isCanvasView && (
@@ -185,7 +185,7 @@ export function NarrativeFlow() {
           )}
         </div>
         {auditoriumOpen && (
-          <Auditorium
+          <Sanctum
             data={mirofishData}
             onRun={handleRunMiroFish}
             catalysts={catalystsForKanban}

@@ -181,7 +181,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         pointRange: item.priceBrainScore?.impliedPoints ?? null,
         direction: item.priceBrainScore?.sentiment ?? null,
         cyclical: item.priceBrainScore?.classification ?? null,
-        instrument: item.priceBrainScore?.instrument ?? null,
+        instrument: selectedSymbol.symbol,
         authorHandle: item.authorHandle ?? null,
         subScores: item.subScores ?? null,
         riskType: (item.riskType as RiskFlowAlert['riskType']) ?? null,

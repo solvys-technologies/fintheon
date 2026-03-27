@@ -222,13 +222,13 @@ function EconCard({ data, expanded, onToggle }: { data: EconCardData; expanded: 
   );
 }
 
-interface AuditoriumEconIntelProps {
+interface SanctumEconIntelProps {
   expanded?: boolean;
   context?: SimulationContext | null;
   categoryScores?: MiroFishCategoryScore[];
 }
 
-export function AuditoriumEconIntel({ expanded, context, categoryScores }: AuditoriumEconIntelProps) {
+export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumEconIntelProps) {
   const [cards, setCards] = useState<EconCardData[]>(ECON_TICKERS);
   const [loading, setLoading] = useState(true);
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);

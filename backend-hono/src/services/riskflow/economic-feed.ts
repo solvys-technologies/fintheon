@@ -62,7 +62,7 @@ export async function fetchEconomicFeed(): Promise<FeedItem[]> {
         confidence: 0.9,
       }
 
-      const iv = calculateIVScore({ parsed, hotPrint, timestamp: new Date() })
+      const iv = await calculateIVScore({ parsed, hotPrint, timestamp: new Date() })
 
       items.push({
         id: `econ-${event.id ?? event.name}-${today}`,

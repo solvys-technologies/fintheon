@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Bell, BellOff } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Bell, BellOff, Wrench } from 'lucide-react';
 import { useDND } from '../../contexts/DNDContext';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
@@ -13,6 +13,9 @@ interface NavSidebarProps {
   onOverlayVisibilityChange?: (visible: boolean) => void;
   onEditModeChange?: (editing: boolean) => void;
   onNotificationCenterToggle?: () => void;
+  onRefinementClick?: () => void;
+  refinementEnabled?: boolean;
+  refinementActive?: boolean;
 }
 
 const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom' | 'narrative' | 'apparatus' | 'proposals'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
@@ -36,6 +39,9 @@ export function NavSidebar({
   onOverlayVisibilityChange,
   onEditModeChange,
   onNotificationCenterToggle,
+  onRefinementClick,
+  refinementEnabled = false,
+  refinementActive = false,
 }: NavSidebarProps) {
   const { dndActive, toggleManualDnd, queueCount } = useDND();
   const [hovered, setHovered] = useState(false);
@@ -203,6 +209,32 @@ export function NavSidebar({
       </div>
 
       <div className="space-y-1 px-1.5">
+        {/* Refinement Engine — conditionally visible via Developer Settings toggle */}
+        {refinementEnabled && (
+          <button
+            onClick={onRefinementClick}
+            className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
+              expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+            } ${
+              refinementActive
+                ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
+                : 'fintheon-nav-inactive'
+            }`}
+            title={expanded ? undefined : 'Refinement Engine'}
+          >
+            <Wrench className="w-4 h-4 shrink-0" />
+            {expanded && (
+              <div className="min-w-0 text-left">
+                <div className={`text-[11px] font-semibold truncate ${refinementActive ? 'text-[var(--fintheon-accent)]' : ''}`}>
+                  Refinement
+                </div>
+                <div className={`text-[9px] truncate ${refinementActive ? 'text-[var(--fintheon-accent)]/60' : 'text-gray-500'}`}>
+                  Scoring calibration
+                </div>
+              </div>
+            )}
+          </button>
+        )}
         {/* DND / Notification Center — hidden when iFrame active (moved to TopHeader) */}
         {!topStepXEnabled && <button
           onClick={() => {

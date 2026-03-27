@@ -1,12 +1,12 @@
 // [claude-code 2026-03-23] Active Narratives & Large Moves — Page 3
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Minus, History, Zap } from 'lucide-react';
-import type { AuditoriumNarrative, MiroFishRunRecord } from '../../types/mirofish';
+import type { SanctumNarrative, MiroFishRunRecord } from '../../types/mirofish';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-interface AuditoriumNarrativesProps {
-  narratives?: AuditoriumNarrative[];
+interface SanctumNarrativesProps {
+  narratives?: SanctumNarrative[];
   expanded?: boolean;
 }
 
@@ -22,7 +22,7 @@ function healthColor(score: number): string {
   return 'var(--fintheon-severe)';
 }
 
-function NarrativeCard({ narrative }: { narrative: AuditoriumNarrative }) {
+function NarrativeCard({ narrative }: { narrative: SanctumNarrative }) {
   return (
     <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 p-4">
       <div className="flex items-center justify-between mb-2">
@@ -97,7 +97,7 @@ function RunHistoryRow({ run }: { run: MiroFishRunRecord }) {
   );
 }
 
-export function AuditoriumNarratives({ narratives, expanded }: AuditoriumNarrativesProps) {
+export function SanctumNarratives({ narratives, expanded }: SanctumNarrativesProps) {
   const [history, setHistory] = useState<MiroFishRunRecord[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 

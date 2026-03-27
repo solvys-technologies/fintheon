@@ -12,12 +12,16 @@ export type MacroLevel = 1 | 2 | 3 | 4;
 
 /** Per-item scoring breakdown showing how each factor contributed */
 export interface SubScoreBreakdown {
-  eventWeight: number;      // 0-10, from EVENT_WEIGHTS
+  eventWeight: number;      // 0-10, from calibration table or EVENT_WEIGHTS fallback
   timing: number;           // 0-3, session + time window effect
   deviation: number;        // 0-3, actual vs forecast
   momentum: number;         // 0-2, breaking + urgency + reaction
   vixContext: number;       // 0-10, continuous VIX curve score
   vixMultiplier: number;    // the multiplier applied (e.g. 1.15)
+  regimeMultiplier?: number;     // regime × sentiment scaling
+  regimeName?: string;           // current market regime label
+  commentatorMultiplier?: number; // speaker tier scaling
+  speaker?: string | null;       // extracted speaker name
 }
 
 export interface FeedItem {

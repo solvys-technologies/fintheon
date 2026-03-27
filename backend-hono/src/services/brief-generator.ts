@@ -1,6 +1,7 @@
 // [claude-code 2026-03-22] Extracted brief generation logic — shared by data routes + dispatch scheduler
 // [claude-code 2026-03-23] Fix: use createModelClient() instead of passing raw model key to generateText
 // [claude-code 2026-03-25] Add Nous Direct fallback when OpenRouter DNS fails (EAI_AGAIN)
+// [claude-code 2026-03-26] S2-T2: Add regime classification to MDB prompt + auto-parse after generation
 import { generateText } from 'ai';
 import {
   writeBrief,
@@ -12,6 +13,8 @@ import {
 import { getFeed } from './riskflow/feed-service.js';
 import { selectModel, createModelClient, getFallbackModel, markProviderUnhealthy, type AiModelKey } from './ai/model-selector.js';
 import { createLogger } from '../lib/logger.js';
+import { MARKET_REGIMES, type MarketRegime } from '../types/regime.js';
+import { setRegime } from './regime/regime-service.js';
 
 const log = createLogger('BriefGenerator');
 
@@ -118,6 +121,8 @@ ${
 **Pressure Summary:** Current price action, key levels, consolidation vs breakout
 **Market Risks & VIX:** Event risk status, VIX level and direction, what it means
 **Overall Sentiment:** One punchy sentence
+**Market Regime:** [BULL_TREND | BEAR_TREND | CONSOLIDATION | GEO_TENSIONS | MACRO_ECON | RISK_OFF | EARNINGS_SEASON | ILLIQUID_STUPIDITY]
+One-line justification for regime classification.
 **Best Intraday Approach:** Specific strategy recommendation (Ripper, AWV, Snipe, etc.)
 
 Be direct, use financial shorthand. Anchor ONLY to key macro events. No scattergun anchoring. 400-600 words.`
@@ -188,6 +193,22 @@ ${
     text = fallbackResult.text;
     usedProvider = fallback.provider;
     log.info(`Fallback succeeded via ${fallback.model}`, { provider: fallback.provider });
+  }
+
+  // Auto-detect regime from MDB output (MDB only — parse after generation)
+  if (briefType === 'MDB') {
+    try {
+      const regimeMatch = text.match(/\*\*Market Regime:\*\*\s*(\w+)/);
+      if (regimeMatch) {
+        const detected = regimeMatch[1] as MarketRegime;
+        if (MARKET_REGIMES.includes(detected)) {
+          await setRegime(detected, 'mdb_agent', 0.8, 'Auto-detected from MDB');
+          log.info(`Regime auto-set from MDB: ${detected}`);
+        }
+      }
+    } catch (err) {
+      log.warn('Regime auto-detection from MDB failed (non-fatal)', { error: String(err) });
+    }
   }
 
   // Store in Supabase

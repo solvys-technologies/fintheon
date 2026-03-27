@@ -56,6 +56,10 @@ export interface ParsedHeadline {
   }
   numbers?: ParsedHeadlineNumbers
   confidence: number // 0-1 scale indicating deterministic parse confidence
+  speaker?: string
+  speakerInstitution?: string
+  isOfficialStatement?: boolean
+  narrativePressure?: 0 | 1 | 2 | 3
 }
 
 export interface EconomicPrint {

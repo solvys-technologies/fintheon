@@ -1,6 +1,7 @@
+// [claude-code 2026-03-27] S2-T4: Added addCalibrationContext for calibration upload pipeline
 // [claude-code 2026-03-24] Widened RiskFlow window to 72h/40 with configurable params
 // [claude-code 2026-03-23] MiroFish context assembly — fetches VIX, FRED, RiskFlow in parallel
-import type { AuditoriumPreset, SimulationContext, RiskFlowHeadline } from './mirofish-types.js';
+import type { SanctumPreset, SimulationContext, RiskFlowHeadline } from './mirofish-types.js';
 import { fetchFredIndicators, getCachedFredIndicators, getFredFetchedAt } from '../systemic/fred-service.js';
 import { getVix } from '../market-data/yahoo-market.js';
 import { getSupabaseClient } from '../../config/supabase.js';
@@ -11,7 +12,7 @@ import { getSupabaseClient } from '../../config/supabase.js';
  * Preset controls which sources are fetched.
  */
 export async function assembleSimulationContext(
-  preset: AuditoriumPreset = 'full-brief',
+  preset: SanctumPreset = 'full-brief',
 ): Promise<SimulationContext> {
   const fetchVix = preset !== 'econ-watch';
   const fetchFred = preset !== 'risk-scan';
@@ -59,4 +60,36 @@ async function fetchRiskFlowHeadlines(sinceHours = 72, limit = 40): Promise<Risk
   }
 
   return (data ?? []) as RiskFlowHeadline[];
+}
+
+// ─── Calibration Upload Context ─────────────────────────────────
+
+interface CalibrationContextEntry {
+  source: 'calibration_upload';
+  items: Array<{ headline: string; eventType: string; symbols: string[] }>;
+  uploadedAt: string;
+}
+
+let calibrationContext: CalibrationContextEntry | null = null;
+
+/**
+ * Stores parsed calibration items in MiroFish's running context so they influence analysis.
+ * Called by the Upload Context pipeline after bulk-ingest.
+ */
+export function addCalibrationContext(
+  items: Array<{ headline: string; eventType: string; symbols: string[] }>
+): void {
+  calibrationContext = {
+    source: 'calibration_upload',
+    items,
+    uploadedAt: new Date().toISOString(),
+  };
+  console.log(`[MiroFish Context] Calibration context updated: ${items.length} items`);
+}
+
+/**
+ * Retrieve the current calibration context (consumed by simulation engine).
+ */
+export function getCalibrationContext(): CalibrationContextEntry | null {
+  return calibrationContext;
 }

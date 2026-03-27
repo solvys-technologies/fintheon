@@ -9,6 +9,85 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-27T16:00:00',
+    agent: 'claude-code',
+    summary:
+      'S2-T7: Refinement Engine — own sidebar tab with annotatable feed, inline weight editor, regime control, commentator manager, re-score trigger',
+    files: [
+      'frontend/components/refinement/RefinementEngine.tsx',
+      'frontend/components/refinement/AnnotatableItem.tsx',
+      'frontend/components/refinement/RegimeControl.tsx',
+      'frontend/components/refinement/QuickWeightEditor.tsx',
+      'frontend/components/refinement/CommentatorManager.tsx',
+      'frontend/components/layout/NavSidebar.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+    ],
+  },
+  {
+    date: '2026-03-26T23:30:00',
+    agent: 'claude-code',
+    summary:
+      'S2-T5: IV Scorer V3 — regime-aware scoring with dynamic calibration weights, commentator tier multipliers, re-score endpoint, scheduled-data breaking block, ISM/PMI weight reduction, narrativePressure cap on point estimates, GEOPOLITICAL_TERMS fix, instrument propagation fix',
+    files: [
+      'backend-hono/src/services/analysis/iv-scorer.ts',
+      'backend-hono/src/types/riskflow.ts',
+      'backend-hono/src/types/news-analysis.ts',
+      'backend-hono/src/config/scoring-weights.json',
+      'backend-hono/src/services/market-data/point-estimator.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+      'backend-hono/src/services/riskflow/feed-service.ts',
+      'backend-hono/src/services/riskflow/economic-feed.ts',
+      'backend-hono/src/services/riskflow/econ-bridge.ts',
+      'backend-hono/src/routes/riskflow/handlers.ts',
+      'backend-hono/src/routes/riskflow/index.ts',
+      'frontend/lib/riskflow-feed.ts',
+      'frontend/contexts/RiskFlowContext.tsx',
+    ],
+  },
+  {
+    date: '2026-03-27T14:00:00',
+    agent: 'claude-code',
+    summary:
+      'S2-T6: Developer Settings overhaul — password gate (SHA-256, session + localStorage), RiskFlow calibration UI with event weight sliders grouped by category, regime display with manual override dropdown, commentator tier filter checkboxes, refinement engine toggle',
+    files: [
+      'frontend/components/settings/RiskFlowSettings.tsx',
+      'frontend/components/settings/DevPasswordGate.tsx',
+      'frontend/lib/dev-settings-auth.ts',
+      'frontend/components/SettingsPanel.tsx',
+    ],
+  },
+  {
+    date: '2026-03-26T22:30:00',
+    agent: 'claude-code',
+    summary:
+      'S2-T2: Regime engine — service (state mgmt + 60s cache + multipliers), detector (news flow heuristics for GEO/MACRO/EARNINGS/RISK_OFF/ILLIQUID), CRUD routes at /api/regime, MDB prompt integration with auto-parse regime classification',
+    files: [
+      'backend-hono/src/services/regime/regime-service.ts',
+      'backend-hono/src/services/regime/regime-detector.ts',
+      'backend-hono/src/routes/regime/handlers.ts',
+      'backend-hono/src/routes/regime/index.ts',
+      'backend-hono/src/services/supabase-service.ts',
+      'backend-hono/src/services/brief-generator.ts',
+      'backend-hono/src/routes/index.ts',
+    ],
+  },
+  {
+    date: '2026-03-26T21:00:00',
+    agent: 'claude-code',
+    summary:
+      'S2-T3: Commentator infrastructure — speaker extractor (regex-based), tier registry service with in-memory cache, CRUD routes, /identify test endpoint, ParsedHeadline speaker field integration',
+    files: [
+      'backend-hono/src/services/commentator/speaker-extractor.ts',
+      'backend-hono/src/services/commentator/commentator-service.ts',
+      'backend-hono/src/routes/commentator/handlers.ts',
+      'backend-hono/src/routes/commentator/index.ts',
+      'backend-hono/src/services/headline-parser.ts',
+      'backend-hono/src/types/news-analysis.ts',
+      'backend-hono/src/services/supabase-service.ts',
+      'backend-hono/src/routes/index.ts',
+    ],
+  },
+  {
     date: '2026-03-26T20:00:00',
     agent: 'claude-code',
     summary: 'fix(riskflow): v2 card rewrite — collapsible cards matching Strategium AlertRow layout (headline + dark footer bar with direction/points/priority/risk-type), smooth grid-template-rows expand, source icon top-right of card, removed source from Strategium, full-bleed zero-padding layout, expanded state: Oracle Note → Econ Data → Sub-Scores → Summary → Tags',

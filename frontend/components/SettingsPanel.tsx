@@ -19,6 +19,9 @@ import { ClawnalystDesk } from './settings/ClawnalystDesk';
 import { ThemeSettings } from './settings/ThemeSettings';
 import { HermesSettings } from './settings/HermesSettings';
 import { UpgradeModal } from './UpgradeModal';
+import { DevPasswordGate } from './settings/DevPasswordGate';
+import { RiskFlowSettings } from './settings/RiskFlowSettings';
+import { isDevAuthenticated } from '../lib/dev-settings-auth';
 
 type SettingsTab = 'general' | 'hermes-admin' | 'appearance' | 'desk' | 'notifications' | 'trading' | 'api' | 'iframes' | 'developer' | 'danger';
 
@@ -58,6 +61,7 @@ export function SettingsPage() {
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [showLanding, setShowLanding] = useState(true);
+  const [devAuthenticated, setDevAuthenticated] = useState(isDevAuthenticated());
 
   const [landingExiting, setLandingExiting] = useState(false);
 
@@ -226,7 +230,7 @@ export function SettingsPage() {
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
     { id: 'api' as const, label: 'API', icon: Code, description: 'API keys and external service credentials' },
     { id: 'iframes' as const, label: 'iFrames', icon: Globe, description: 'Embed URLs for Boardroom, Research, and more' },
-    { id: 'developer' as const, label: 'Developer', icon: Terminal, description: 'Mock data, test tools, and tier management' },
+    { id: 'developer' as const, label: 'Developer', icon: Terminal, description: 'RiskFlow calibration, mock data, test tools, and tier management' },
     { id: 'danger' as const, label: 'Danger Zone', icon: AlertTriangle, description: 'Reset analysts, clear data, and export config' },
   ];
 
@@ -1031,81 +1035,91 @@ export function SettingsPage() {
 
             {activeTab === 'developer' && (
               <div key="developer" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
-                <section>
-                  <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Account Tier</h3>
-                  <div className="flex gap-2">
-                    {(['free', 'fintheon', 'fintheon_plus', 'fintheon_pro'] as const).map(t => (
-                      <Button
-                        key={t}
-                        variant={tier === t ? 'primary' : 'secondary'}
-                        onClick={() => setTier(t)}
-                        className="text-xs"
-                      >
-                        {t.replace('_', ' ').toUpperCase()}
-                      </Button>
-                    ))}
-                  </div>
-                </section>
+                {devAuthenticated ? (
+                  <div className="space-y-6">
+                    {/* RiskFlow Settings — new T6 section */}
+                    <RiskFlowSettings />
 
-                <section className="pt-6">
-                  <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Developer Settings</h3>
-                  <div className="space-y-3">
-                    <Toggle
-                      label="Enable Mock Data Feed"
-                      enabled={mockDataEnabled}
-                      onChange={setMockDataEnabled}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Generates simulated market data and news items for testing
-                    </p>
-                    <Toggle
-                      label="Show Test Trade Button"
-                      enabled={developerSettings.showTestTradeButton}
-                      onChange={(val) => setDeveloperSettings({ ...developerSettings, showTestTradeButton: val })}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Display test trade button for firing mock market orders to TopstepX
-                    </p>
-                    <Toggle
-                      label="Show Mock Proposal Trigger"
-                      enabled={developerSettings.showMockProposal}
-                      onChange={(val) => setDeveloperSettings({ ...developerSettings, showMockProposal: val })}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Show a button on the Tape to trigger a mock trading proposal for UX testing
-                    </p>
-                  </div>
-                </section>
+                    {/* Existing Developer Settings below */}
+                    <section>
+                      <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Account Tier</h3>
+                      <div className="flex gap-2">
+                        {(['free', 'fintheon', 'fintheon_plus', 'fintheon_pro'] as const).map(t => (
+                          <Button
+                            key={t}
+                            variant={tier === t ? 'primary' : 'secondary'}
+                            onClick={() => setTier(t)}
+                            className="text-xs"
+                          >
+                            {t.replace('_', ' ').toUpperCase()}
+                          </Button>
+                        ))}
+                      </div>
+                    </section>
 
-                <section className="pt-6">
-                  <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Feature Flags</h3>
-                  <div className="space-y-3">
-                    <Toggle
-                      label="Show placeholder briefings"
-                      enabled={developerSettings.showPlaceholderBriefings ?? false}
-                      onChange={(val) => setDeveloperSettings({ ...developerSettings, showPlaceholderBriefings: val })}
-                    />
-                    <p className="text-xs text-gray-500">
-                      When off, empty briefs show "No brief available" instead of "Awaiting AI-generated brief..."
-                    </p>
-                    <Toggle
-                      label="MiroFish simulations"
-                      enabled={developerSettings.mirofishSimulations ?? false}
-                      onChange={(val) => setDeveloperSettings({ ...developerSettings, mirofishSimulations: val })}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Enable MiroFish simulation layer for narrative and IV prediction testing
-                    </p>
-                    <Toggle
-                      label="Agent auto-proposals"
-                      enabled={developerSettings.agentAutoProposals ?? false}
-                      onChange={(val) => setDeveloperSettings({ ...developerSettings, agentAutoProposals: val })}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Allow agents to automatically generate and submit trade proposals without manual trigger
-                    </p>
+                    <section>
+                      <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Developer Settings</h3>
+                      <div className="space-y-3">
+                        <Toggle
+                          label="Enable Mock Data Feed"
+                          enabled={mockDataEnabled}
+                          onChange={setMockDataEnabled}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Generates simulated market data and news items for testing
+                        </p>
+                        <Toggle
+                          label="Show Test Trade Button"
+                          enabled={developerSettings.showTestTradeButton}
+                          onChange={(val) => setDeveloperSettings({ ...developerSettings, showTestTradeButton: val })}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Display test trade button for firing mock market orders to TopstepX
+                        </p>
+                        <Toggle
+                          label="Show Mock Proposal Trigger"
+                          enabled={developerSettings.showMockProposal}
+                          onChange={(val) => setDeveloperSettings({ ...developerSettings, showMockProposal: val })}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Show a button on the Tape to trigger a mock trading proposal for UX testing
+                        </p>
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Feature Flags</h3>
+                      <div className="space-y-3">
+                        <Toggle
+                          label="Show placeholder briefings"
+                          enabled={developerSettings.showPlaceholderBriefings ?? false}
+                          onChange={(val) => setDeveloperSettings({ ...developerSettings, showPlaceholderBriefings: val })}
+                        />
+                        <p className="text-xs text-gray-500">
+                          When off, empty briefs show "No brief available" instead of "Awaiting AI-generated brief..."
+                        </p>
+                        <Toggle
+                          label="MiroFish simulations"
+                          enabled={developerSettings.mirofishSimulations ?? false}
+                          onChange={(val) => setDeveloperSettings({ ...developerSettings, mirofishSimulations: val })}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Enable MiroFish simulation layer for narrative and IV prediction testing
+                        </p>
+                        <Toggle
+                          label="Agent auto-proposals"
+                          enabled={developerSettings.agentAutoProposals ?? false}
+                          onChange={(val) => setDeveloperSettings({ ...developerSettings, agentAutoProposals: val })}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Allow agents to automatically generate and submit trade proposals without manual trigger
+                        </p>
+                      </div>
+                    </section>
                   </div>
-                </section>
+                ) : (
+                  <DevPasswordGate onAuthenticated={() => setDevAuthenticated(true)} />
+                )}
               </div>
             )}
           </div>

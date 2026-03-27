@@ -16,7 +16,7 @@ import {
 } from '../../services/mirofish/mirofish-service.js';
 import { assembleSimulationContext } from '../../services/mirofish/mirofish-context.js';
 import { isSkillEnabled } from '../../config/feature-flags.js';
-import type { AuditoriumPreset } from '../../services/mirofish/mirofish-types.js';
+import type { SanctumPreset } from '../../services/mirofish/mirofish-types.js';
 // @ts-ignore — T1 creates this file
 import { getRunningState } from '../../services/mirofish/mirofish-reactive.js';
 
@@ -33,7 +33,7 @@ export async function handleSimulate(c: Context) {
   if (blocked) return blocked;
 
   const body = await c.req.json<{
-    preset?: AuditoriumPreset;
+    preset?: SanctumPreset;
     narrativeState: {
       lanes: Array<{
         id: string; title: string; instruments: string[];

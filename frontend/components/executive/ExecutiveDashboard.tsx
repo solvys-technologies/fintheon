@@ -148,7 +148,15 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
   const refreshBrief = useCallback(async () => {
     setNtnRefreshing(true);
     try {
-      const res = await backend.notion.getMdbBrief();
+      // First try fetching existing brief
+      let res = await backend.notion.getMdbBrief();
+      if (!res.items[0]?.detail) {
+        // No brief exists — trigger generation then re-fetch
+        await fetch(`${(import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '')}/api/data/brief/generate`, { method: 'POST' }).catch(() => {});
+        // Wait a moment for generation, then re-fetch
+        await new Promise(r => setTimeout(r, 2000));
+        res = await backend.notion.getMdbBrief();
+      }
       setNtnText(res.items[0]?.detail ?? '');
       if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
     } catch (error) {
@@ -229,7 +237,7 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
             </div>
           )}
           {/* Row 1: Need-to-Know Brief (left) + Session Calendar (right) */}
-          <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5" style={{ height: '380px' }}>
+          <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5" style={{ height: 'clamp(280px, 30vh, 480px)' }}>
             {/* Need-to-Know Brief */}
             <div className="flex flex-col h-full min-h-0">
               <KanbanTitle

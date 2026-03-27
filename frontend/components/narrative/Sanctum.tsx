@@ -1,18 +1,18 @@
 // [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state
 // [claude-code 2026-03-24] Thread selectedSymbol prop for TradingView chart, taller chart container (65vh)
-// [claude-code 2026-03-24] Auditorium — 3-page dashboard (merged Risk + Narratives), expandable econ cards
+// [claude-code 2026-03-24] Sanctum — 3-page dashboard (merged Risk + Narratives), expandable econ cards
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { Zap, Loader2, Eye, EyeOff } from 'lucide-react';
-import type { AuditoriumData, AuditoriumPreset, SimulationContext, RiskFlowCatalyst, AuditoriumNarrative } from '../../types/mirofish';
+import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/mirofish';
 import { AUDITORIUM_PAGES, RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/mirofish';
-import { AuditoriumChart } from './AuditoriumChart';
-import { AuditoriumTheses } from './AuditoriumTheses';
-import { AuditoriumEconIntel } from './AuditoriumEconIntel';
-import { AuditoriumHeader } from './AuditoriumHeader';
-import { AuditoriumMacroStrip } from './AuditoriumMacroStrip';
-import { AuditoriumBriefing } from './AuditoriumBriefing';
-import { AuditoriumNarratives } from './AuditoriumNarratives';
-import { AuditoriumRiskAssessment } from './AuditoriumRiskAssessment';
+import { SanctumChart } from './SanctumChart';
+import { SanctumTheses } from './SanctumTheses';
+import { SanctumEconIntel } from './SanctumEconIntel';
+import { SanctumHeader } from './SanctumHeader';
+import { SanctumMacroStrip } from './SanctumMacroStrip';
+import { SanctumBriefing } from './SanctumBriefing';
+import { SanctumNarratives } from './SanctumNarratives';
+import { SanctumRiskAssessment } from './SanctumRiskAssessment';
 import { CategoryScoreCard } from './CategoryScoreCard';
 import { KanbanTitle } from '../ui/KanbanTitle';
 import { AgentScorecard } from '../consilium/AgentScorecard';
@@ -27,13 +27,13 @@ interface CatalystInput {
   narrativeIds?: string[];
 }
 
-interface AuditoriumProps {
-  data: AuditoriumData | null;
-  onRun: (preset?: AuditoriumPreset) => Promise<void>;
+interface SanctumProps {
+  data: SanctumData | null;
+  onRun: (preset?: SanctumPreset) => Promise<void>;
   catalysts: CatalystInput[];
   riskflowItems?: RiskFlowCatalyst[];
   macroContext?: SimulationContext | null;
-  narratives?: AuditoriumNarrative[];
+  narratives?: SanctumNarrative[];
   selectedSymbol?: string;
 }
 
@@ -43,17 +43,17 @@ const CATEGORIES: MiroFishRiskCategory[] = [
   'earnings-corporate', 'market-structure', 'black-swan',
 ];
 
-export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext, narratives, selectedSymbol = '/MNQ' }: AuditoriumProps) {
+export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, narratives, selectedSymbol = '/MNQ' }: SanctumProps) {
   const [rollingDays, setRollingDays] = useState<7 | 14 | 30>(14);
   const [running, setRunning] = useState(false);
-  const [preset, setPreset] = useState<AuditoriumPreset>(() => {
+  const [preset, setPreset] = useState<SanctumPreset>(() => {
     try {
       const stored = localStorage.getItem('fintheon:auditorium-preset');
-      return (stored as AuditoriumPreset) || 'full-brief';
+      return (stored as SanctumPreset) || 'full-brief';
     } catch { return 'full-brief'; }
   });
   const [activePage, setActivePage] = useState(0);
-  const [showProjection, setShowProjection] = useState(true);
+  const [showProjection, setShowProjection] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const status = data?.status ?? 'idle';
@@ -78,7 +78,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
     return () => { cancelled = true; };
   }, []); // Run once on mount — intentional empty deps
 
-  const handleRun = useCallback(async (p?: AuditoriumPreset) => {
+  const handleRun = useCallback(async (p?: SanctumPreset) => {
     if (running) return;
     setRunning(true);
     try { await onRun(p ?? preset); } finally { setRunning(false); }
@@ -92,7 +92,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
     if (pages[idx]) pages[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  const handlePresetChange = useCallback((p: AuditoriumPreset) => {
+  const handlePresetChange = useCallback((p: SanctumPreset) => {
     setPreset(p);
     try { localStorage.setItem('fintheon:auditorium-preset', p); } catch {}
     const focusPage = p === 'chart-focus' ? 0 : p === 'econ-watch' ? 1 : p === 'risk-scan' ? 2 : 0; // 3 pages: 0=Command, 1=Econ, 2=Risk&Narratives
@@ -125,7 +125,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
   return (
     <div className="h-full w-full flex flex-col bg-[var(--fintheon-bg)]">
       {/* Persistent header — always visible */}
-      <AuditoriumHeader
+      <SanctumHeader
         preset={preset}
         onPresetChange={handlePresetChange}
         onRun={() => handleRun()}
@@ -185,7 +185,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                       </button>
                     </div>
                     <div className="h-[65vh]">
-                      <AuditoriumChart
+                      <SanctumChart
                         timeSeries={data.timeSeries}
                         rollingDays={rollingDays}
                         selectedSymbol={selectedSymbol}
@@ -236,7 +236,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                   </div>
 
                   {/* Briefing */}
-                  <AuditoriumBriefing briefing={data.briefing ?? null} isLoading={false} />
+                  <SanctumBriefing briefing={data.briefing ?? null} isLoading={false} />
                 </div>
               )}
 
@@ -264,7 +264,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                 />
               </div>
               <div className="flex-1">
-                <AuditoriumEconIntel expanded={preset === 'econ-watch'} context={displayContext} categoryScores={data?.categoryScores} />
+                <SanctumEconIntel expanded={preset === 'econ-watch'} context={displayContext} categoryScores={data?.categoryScores} />
               </div>
             </div>
           )}
@@ -283,7 +283,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                     <div className="text-[9px] text-[var(--fintheon-muted)]/40 mb-2 uppercase tracking-wider">
                       Top Volatile Theses
                     </div>
-                    <AuditoriumTheses scenarios={data.scenarios} categoryScores={data.categoryScores} expanded={preset === 'risk-scan'} />
+                    <SanctumTheses scenarios={data.scenarios} categoryScores={data.categoryScores} expanded={preset === 'risk-scan'} />
                   </div>
 
                   {/* Active Narratives */}
@@ -292,7 +292,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                     <span className="text-[8px] text-[var(--fintheon-muted)]/30 uppercase tracking-widest">Narratives</span>
                     <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
                   </div>
-                  <AuditoriumNarratives narratives={narratives} expanded={preset === 'full-brief'} />
+                  <SanctumNarratives narratives={narratives} expanded={preset === 'full-brief'} />
 
                   {/* ── Scorecards + Simulation History (split) ── */}
                   <div className="flex items-center gap-3 py-2">
@@ -317,7 +317,7 @@ export function Auditorium({ data, onRun, catalysts, riskflowItems, macroContext
                       </div>
                       <div className="p-3 max-h-[350px] overflow-y-auto">
                         {(riskflowItems?.length ?? 0) > 0 ? (
-                          <AuditoriumRiskAssessment riskflowItems={riskflowItems ?? []} categoryScores={data.categoryScores} />
+                          <SanctumRiskAssessment riskflowItems={riskflowItems ?? []} categoryScores={data.categoryScores} />
                         ) : (
                           <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center py-4">No risk signals in current window</p>
                         )}

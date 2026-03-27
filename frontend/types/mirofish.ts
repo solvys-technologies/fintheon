@@ -1,4 +1,4 @@
-// [claude-code 2026-03-23] MiroFish Auditorium frontend types — expanded for snap-scroll dashboard + presets
+// [claude-code 2026-03-23] MiroFish Sanctum frontend types — expanded for snap-scroll dashboard + presets
 
 export type MiroFishRiskCategory =
   | 'geopolitical'
@@ -42,7 +42,7 @@ export interface MiroFishScenario {
   agentConsensus?: number;
 }
 
-export interface AuditoriumData {
+export interface SanctumData {
   simulationId: string;
   status: 'idle' | 'running' | 'complete' | 'error';
   error?: string;
@@ -99,11 +99,11 @@ export function ivHeatColor(score: number): string {
 
 export const COMPOSITE_COLOR = '#c79f4a';
 
-// --- Auditorium Preset System ---
+// --- Sanctum Preset System ---
 
-export type AuditoriumPreset = 'full-brief' | 'chart-focus' | 'econ-watch' | 'risk-scan';
+export type SanctumPreset = 'full-brief' | 'chart-focus' | 'econ-watch' | 'risk-scan';
 
-export const AUDITORIUM_PRESETS: { id: AuditoriumPreset; label: string; description: string }[] = [
+export const AUDITORIUM_PRESETS: { id: SanctumPreset; label: string; description: string }[] = [
   { id: 'full-brief', label: 'Full Brief', description: 'All pages' },
   { id: 'chart-focus', label: 'Chart Focus', description: 'IV chart expanded' },
   { id: 'econ-watch', label: 'Econ Watch', description: 'Economic events' },
@@ -184,7 +184,7 @@ export interface MacroIndicator {
   stressLevel: 'low' | 'moderate' | 'elevated' | 'high';
 }
 
-export interface AuditoriumNarrative {
+export interface SanctumNarrative {
   id: string;
   title: string;
   category: string;
@@ -198,7 +198,7 @@ export interface AuditoriumNarrative {
 export interface MiroFishRunRecord {
   id: string;
   simulation_id: string;
-  preset: AuditoriumPreset;
+  preset: SanctumPreset;
   composite_iv: number;
   regime_shift_probability: number;
   confidence: number;
@@ -230,7 +230,7 @@ export interface RollingWindowData {
 
 export interface MiroFishRunSummary {
   simulationId: string;
-  preset: AuditoriumPreset;
+  preset: SanctumPreset;
   compositeIV: number;
   confidence: number;
   regimeShiftProbability: number;

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-24] Added RunningAnalysisSnapshot, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary
 // [claude-code 2026-03-23] MiroFish simulation engine types
-// [claude-code 2026-03-16] Extended with risk categories, time series, generated events for Auditorium
+// [claude-code 2026-03-16] Extended with risk categories, time series, generated events for Sanctum
 // [claude-code 2026-03-23] Added SimulationContext, Briefing, RunRecord, preset types
 
 export type MiroFishRiskCategory =
@@ -134,7 +134,7 @@ export interface MiroFishInjection {
 
 // --- Preset & Context Types ---
 
-export type AuditoriumPreset = 'full-brief' | 'chart-focus' | 'econ-watch' | 'risk-scan';
+export type SanctumPreset = 'full-brief' | 'chart-focus' | 'econ-watch' | 'risk-scan';
 
 export interface RiskFlowHeadline {
   id: string;
@@ -166,7 +166,7 @@ export interface MiroFishBriefing {
 export interface MiroFishRunRecord {
   id: string;
   simulation_id: string;
-  preset: AuditoriumPreset;
+  preset: SanctumPreset;
   composite_iv: number;
   regime_shift_probability: number;
   confidence: number;
@@ -191,7 +191,7 @@ export interface RunningAnalysisSnapshot {
 
 export interface RollingWindowQuery {
   days: 1 | 7 | 14 | 30;
-  preset?: AuditoriumPreset;
+  preset?: SanctumPreset;
   limit?: number;
 }
 
@@ -207,7 +207,7 @@ export interface AggregatedRollingData {
 
 export interface MiroFishRunSummary {
   simulationId: string;
-  preset: AuditoriumPreset;
+  preset: SanctumPreset;
   compositeIV: number;
   confidence: number;
   regimeShiftProbability: number;

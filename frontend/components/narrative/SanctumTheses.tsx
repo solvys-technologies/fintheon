@@ -1,8 +1,8 @@
-// [claude-code 2026-03-23] Auditorium theses — dashboard-grade expanded cards
+// [claude-code 2026-03-23] Sanctum theses — dashboard-grade expanded cards
 import type { MiroFishScenario, MiroFishCategoryScore } from '../../types/mirofish';
 import { COMPOSITE_COLOR } from '../../types/mirofish';
 
-interface AuditoriumThesesProps {
+interface SanctumThesesProps {
   scenarios: MiroFishScenario[];
   categoryScores: MiroFishCategoryScore[];
   expanded?: boolean;
@@ -20,7 +20,7 @@ function getConfidenceColor(conf: number): string {
   return 'var(--fintheon-severe)';
 }
 
-export function AuditoriumTheses({ scenarios, categoryScores, expanded }: AuditoriumThesesProps) {
+export function SanctumTheses({ scenarios, categoryScores, expanded }: SanctumThesesProps) {
   const compositeAvg = categoryScores.length > 0
     ? categoryScores.reduce((s, c) => s + c.ivScore, 0) / categoryScores.length
     : 5;

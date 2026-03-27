@@ -537,9 +537,7 @@ export async function handleCronPrefetch(c: Context) {
 
   const result = await preFetchFeed();
 
-  // Piggyback 30-day cleanup on cron cycle
-  const { cleanupOldItems } = await import('../../services/riskflow/news-cache.js');
-  await cleanupOldItems().catch(() => {});
+  // [claude-code 2026-03-27] Cleanup disabled — items retained for calibration DB
 
   const statusCode = result.success ? 200 : 500;
   return c.json(result, statusCode);
@@ -709,6 +707,27 @@ export async function handleGenerateNote(c: Context) {
   } catch (err) {
     console.error('[RiskFlow] Generate note error:', err);
     return c.json({ error: 'Failed to generate note' }, 500);
+  }
+}
+
+/**
+ * POST /api/riskflow/rescore
+ * Re-processes current cached feed items with current regime/calibration weights.
+ * Returns the number of items rescored and the updated items.
+ */
+export async function handleRescore(c: Context) {
+  const userId = c.get('userId') as string | undefined;
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const { rescoreCycle } = await import('../../services/riskflow/central-scorer.js');
+    const rescored = await rescoreCycle();
+    return c.json({ success: true, rescored, rescoredAt: new Date().toISOString() });
+  } catch (error) {
+    console.error('[RiskFlow] Rescore error:', error);
+    return c.json({ error: error instanceof Error ? error.message : 'Rescore failed' }, 500);
   }
 }
 

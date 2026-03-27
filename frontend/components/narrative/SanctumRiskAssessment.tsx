@@ -2,7 +2,7 @@
 import type { RiskFlowCatalyst, MiroFishCategoryScore } from '../../types/mirofish';
 import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
 
-interface AuditoriumRiskAssessmentProps {
+interface SanctumRiskAssessmentProps {
   riskflowItems: RiskFlowCatalyst[];
   categoryScores?: MiroFishCategoryScore[];
 }
@@ -21,7 +21,7 @@ function macroLevelLabel(level: number): string {
   return 'MEDIUM';
 }
 
-export function AuditoriumRiskAssessment({ riskflowItems, categoryScores }: AuditoriumRiskAssessmentProps) {
+export function SanctumRiskAssessment({ riskflowItems, categoryScores }: SanctumRiskAssessmentProps) {
   const geoItems = riskflowItems.filter(item => {
     const cat = item.category?.toLowerCase() ?? '';
     return cat.includes('geopolitical') || cat.includes('political') || cat.includes('fiscal')

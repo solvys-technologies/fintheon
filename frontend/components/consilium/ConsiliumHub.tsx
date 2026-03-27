@@ -1,19 +1,19 @@
 // [claude-code 2026-03-24] Persistence refactor: load latest report on mount, persist after simulation
-// [claude-code 2026-03-24] Thread selectedSymbol from settings into Auditorium for TradingView chart
-// [claude-code 2026-03-23] ConsiliumHub — wired Auditorium with real data, auto-run on preset change
+// [claude-code 2026-03-24] Thread selectedSymbol from settings into Sanctum for TradingView chart
+// [claude-code 2026-03-23] ConsiliumHub — wired Sanctum with real data, auto-run on preset change
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { MessageSquare, Users, LineChart, Clock, Trophy, Target, GitBranch, Cpu, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
 import { DevelopmentsTimeline } from './DevelopmentsTimeline';
 import { AgentScorecard } from './AgentScorecard';
-import { Auditorium } from '../narrative/Auditorium';
+import { Sanctum } from '../narrative/Sanctum';
 import { ProposalWidget } from '../proposals/ProposalWidget';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { ApparatusPage } from '../apparatus/ApparatusPage';
 import { AiLoader } from '../chat/FintheonThread';
-import type { AuditoriumData, AuditoriumPreset, SimulationContext, RiskFlowCatalyst } from '../../types/mirofish';
+import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst } from '../../types/mirofish';
 
 const ChatInterface = lazy(() => import('../ChatInterface'));
 
@@ -24,7 +24,7 @@ type ConsiliumTab = 'chat' | 'boardroom' | 'auditorium' | 'timeline' | 'scorecar
 const TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquare }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
   { id: 'boardroom', label: 'Boardroom', icon: Users },
-  { id: 'auditorium', label: 'Auditorium', icon: LineChart },
+  { id: 'auditorium', label: 'Sanctum', icon: LineChart },
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { id: 'scorecards', label: 'Scorecards', icon: Trophy },
   { id: 'narratives', label: 'Narratives', icon: GitBranch },
@@ -55,7 +55,7 @@ export function ConsiliumHub() {
   const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
   const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>('chat');
   const [transitioning, setTransitioning] = useState(false);
-  const [mirofishData, setMirofishData] = useState<AuditoriumData | null>(null);
+  const [mirofishData, setMirofishData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
   const [macroContext, setMacroContext] = useState<SimulationContext | null>(null);
   const [showProposals, toggleProposals] = usePanelState('fintheon:consilium:proposals-panel', false);
@@ -132,7 +132,7 @@ export function ConsiliumHub() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleRunMiroFish = useCallback(async (preset?: AuditoriumPreset) => {
+  const handleRunMiroFish = useCallback(async (preset?: SanctumPreset) => {
     setMirofishData(prev => prev
       ? { ...prev, status: 'running' }
       : { simulationId: '', status: 'running', compositeIV: 0, confidence: 0, regimeShiftProbability: 0, categoryScores: [], timeSeries: [], generatedEvents: [], scenarios: [] }
@@ -239,7 +239,7 @@ export function ConsiliumHub() {
           )}
           {displayedTab === 'boardroom' && <AgentChattr />}
           {displayedTab === 'auditorium' && (
-            <Auditorium
+            <Sanctum
               data={mirofishData}
               onRun={handleRunMiroFish}
               catalysts={[]}

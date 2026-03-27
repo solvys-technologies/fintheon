@@ -750,6 +750,408 @@ export async function upsertAppState(
   return true;
 }
 
+// ─── Commentator Registry ──────────────────────────────────────
+
+export async function writeCommentator(
+  entry: Omit<import('../types/commentator.js').CommentatorEntry, 'id' | 'createdAt'>
+): Promise<string | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('commentator_registry')
+    .insert({
+      name: entry.name,
+      aliases: entry.aliases,
+      tier: entry.tier,
+      role: entry.role ?? null,
+      institution: entry.institution ?? null,
+      weight_multiplier: entry.weightMultiplier,
+      rank: entry.rank ?? 999,
+      active: entry.active,
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('[Supabase] writeCommentator error:', error.message);
+    return null;
+  }
+  return data?.id ?? null;
+}
+
+export async function readCommentatorRegistry(): Promise<import('../types/commentator.js').CommentatorEntry[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const { data, error } = await sb
+    .from('commentator_registry')
+    .select('*')
+    .eq('active', true)
+    .order('rank', { ascending: true });
+
+  if (error) {
+    console.error('[Supabase] readCommentatorRegistry error:', error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    name: row.name as string,
+    aliases: (row.aliases as string[]) ?? [],
+    tier: row.tier as import('../types/commentator.js').CommentatorTier,
+    role: (row.role as string) ?? undefined,
+    institution: (row.institution as string) ?? undefined,
+    weightMultiplier: Number(row.weight_multiplier ?? 1.0),
+    rank: Number(row.rank ?? 999),
+    active: row.active as boolean,
+    createdAt: row.created_at as string,
+  }));
+}
+
+export async function updateCommentatorEntry(
+  id: string,
+  updates: Record<string, unknown>
+): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from('commentator_registry')
+    .update(updates)
+    .eq('id', id);
+
+  if (error) {
+    console.error('[Supabase] updateCommentatorEntry error:', error.message);
+  }
+}
+
+export async function deactivateCommentator(id: string): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from('commentator_registry')
+    .update({ active: false })
+    .eq('id', id);
+
+  if (error) {
+    console.error('[Supabase] deactivateCommentator error:', error.message);
+  }
+}
+
+// [claude-code 2026-03-27] Batch reorder + seed for commentator drag-and-drop ranking
+export async function reorderCommentators(orderedIds: string[]): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+
+  // Update rank for each commentator based on array position
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      sb.from('commentator_registry').update({ rank: index + 1 }).eq('id', id)
+    )
+  );
+}
+
+export async function seedDefaultCommentators(): Promise<number> {
+  const sb = getSupabaseClient();
+  if (!sb) return 0;
+
+  // Check if registry already has entries
+  const existing = await readCommentatorRegistry();
+  if (existing.length > 0) return 0;
+
+  const { DEFAULT_COMMENTATORS } = await import('../types/commentator.js');
+  let seeded = 0;
+  for (const entry of DEFAULT_COMMENTATORS) {
+    const id = await writeCommentator(entry);
+    if (id) seeded++;
+  }
+  return seeded;
+}
+
+// ─── Market Regimes ────────────────────────────────────────────
+
+export interface MarketRegimeRecord {
+  id?: string;
+  regime_type: string;
+  detected_by: string;
+  confidence?: number;
+  notes?: string;
+  active?: boolean;
+  created_at?: string;
+}
+
+export async function writeRegimeState(
+  record: Omit<MarketRegimeRecord, 'id' | 'created_at'>
+): Promise<MarketRegimeRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('market_regimes')
+    .insert({ ...record, active: record.active ?? true })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] writeRegimeState error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function readActiveRegime(): Promise<MarketRegimeRecord | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('market_regimes')
+    .select('*')
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.error('[Supabase] readActiveRegime error:', error.message);
+    }
+    return null;
+  }
+  return data;
+}
+
+export async function deactivateCurrentRegime(): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from('market_regimes')
+    .update({ active: false })
+    .eq('active', true);
+
+  if (error) {
+    console.error('[Supabase] deactivateCurrentRegime error:', error.message);
+  }
+}
+
+export async function readRegimeHistory(limit = 20): Promise<MarketRegimeRecord[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const { data, error } = await sb
+    .from('market_regimes')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('[Supabase] readRegimeHistory error:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+// ─── Scoring Calibration ────────────────────────────────────────
+
+import type { CalibrationEntry, RefinementAnnotation, CalibrationObservation } from '../types/calibration.js';
+
+export async function readCalibrationEntries(): Promise<CalibrationEntry[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const { data, error } = await sb
+    .from('scoring_calibration')
+    .select('*')
+    .order('event_type', { ascending: true });
+
+  if (error) {
+    console.error('[Supabase] readCalibrationEntries error:', error.message);
+    return [];
+  }
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    eventType: row.event_type as string,
+    baseWeight: Number(row.base_weight),
+    regimeOverrides: (row.regime_overrides as Record<string, number>) ?? {},
+    updatedAt: row.updated_at as string,
+    updatedBy: (row.updated_by as string) ?? 'system',
+  }));
+}
+
+export async function upsertCalibrationWeight(
+  eventType: string,
+  baseWeight: number,
+  regimeOverrides?: Record<string, number>,
+  updatedBy?: string
+): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from('scoring_calibration')
+    .upsert(
+      {
+        event_type: eventType,
+        base_weight: baseWeight,
+        regime_overrides: regimeOverrides ?? {},
+        updated_at: new Date().toISOString(),
+        updated_by: updatedBy ?? 'system',
+      },
+      { onConflict: 'event_type' }
+    );
+
+  if (error) {
+    console.error('[Supabase] upsertCalibrationWeight error:', error.message);
+  }
+}
+
+// ─── Refinement Annotations ─────────────────────────────────────
+
+export async function writeAnnotation(
+  ann: Omit<RefinementAnnotation, 'id' | 'createdAt'>
+): Promise<string | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('refinement_annotations')
+    .insert({
+      riskflow_item_id: ann.riskflowItemId,
+      comment: ann.comment ?? null,
+      flaw_tag: ann.flawTag ?? null,
+      suggested_score: ann.suggestedScore ?? null,
+      created_by: ann.createdBy ?? 'tp',
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('[Supabase] writeAnnotation error:', error.message);
+    return null;
+  }
+  return data?.id ?? null;
+}
+
+export async function readAnnotationsForItem(itemId: string): Promise<RefinementAnnotation[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const { data, error } = await sb
+    .from('refinement_annotations')
+    .select('*')
+    .eq('riskflow_item_id', itemId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('[Supabase] readAnnotationsForItem error:', error.message);
+    return [];
+  }
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    riskflowItemId: row.riskflow_item_id as string,
+    comment: (row.comment as string) ?? undefined,
+    flawTag: (row.flaw_tag as RefinementAnnotation['flawTag']) ?? undefined,
+    suggestedScore: row.suggested_score != null ? Number(row.suggested_score) : undefined,
+    createdAt: row.created_at as string,
+    createdBy: (row.created_by as string) ?? 'tp',
+  }));
+}
+
+// ─── Calibration Observations ───────────────────────────────────
+
+export async function writeObservation(
+  obs: Omit<CalibrationObservation, 'id' | 'createdAt'>
+): Promise<string | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from('calibration_observations')
+    .insert({
+      headline: obs.headline,
+      event_type: obs.eventType ?? null,
+      predicted_iv_score: obs.predictedIVScore ?? null,
+      actual_points_move: obs.actualPointsMove ?? null,
+      instrument: obs.instrument ?? '/ES',
+      regime_at_time: obs.regimeAtTime ?? null,
+      vix_at_time: obs.vixAtTime ?? null,
+      observed_at: obs.observedAt ?? null,
+      notes: obs.notes ?? null,
+      source: obs.source ?? 'manual',
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('[Supabase] writeObservation error:', error.message);
+    return null;
+  }
+  return data?.id ?? null;
+}
+
+export async function readObservations(limit = 50): Promise<CalibrationObservation[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const { data, error } = await sb
+    .from('calibration_observations')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('[Supabase] readObservations error:', error.message);
+    return [];
+  }
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    headline: row.headline as string,
+    eventType: (row.event_type as string) ?? undefined,
+    predictedIVScore: row.predicted_iv_score != null ? Number(row.predicted_iv_score) : undefined,
+    actualPointsMove: row.actual_points_move != null ? Number(row.actual_points_move) : undefined,
+    instrument: (row.instrument as string) ?? '/ES',
+    regimeAtTime: (row.regime_at_time as CalibrationObservation['regimeAtTime']) ?? undefined,
+    vixAtTime: row.vix_at_time != null ? Number(row.vix_at_time) : undefined,
+    observedAt: (row.observed_at as string) ?? undefined,
+    notes: (row.notes as string) ?? undefined,
+    source: (row.source as CalibrationObservation['source']) ?? 'manual',
+    createdAt: row.created_at as string,
+  }));
+}
+
+export async function writeObservationsBatch(
+  observations: Omit<CalibrationObservation, 'id' | 'createdAt'>[]
+): Promise<number> {
+  const sb = getSupabaseClient();
+  if (!sb || observations.length === 0) return 0;
+
+  const rows = observations.map(obs => ({
+    headline: obs.headline,
+    event_type: obs.eventType ?? null,
+    predicted_iv_score: obs.predictedIVScore ?? null,
+    actual_points_move: obs.actualPointsMove ?? null,
+    instrument: obs.instrument ?? '/ES',
+    regime_at_time: obs.regimeAtTime ?? null,
+    vix_at_time: obs.vixAtTime ?? null,
+    observed_at: obs.observedAt ?? null,
+    notes: obs.notes ?? null,
+    source: obs.source ?? 'manual',
+  }));
+
+  const { data, error } = await sb
+    .from('calibration_observations')
+    .upsert(rows, { onConflict: 'headline', ignoreDuplicates: true })
+    .select('id');
+
+  if (error) {
+    console.error('[Supabase] writeObservationsBatch error:', error.message);
+    return 0;
+  }
+  return data?.length ?? 0;
+}
+
 // ─── Health Check ───────────────────────────────────────────────
 
 export async function checkSupabaseHealth(): Promise<boolean> {

@@ -1,13 +1,13 @@
-// [claude-code 2026-03-23] Auditorium preset selector toolbar
-import type { AuditoriumPreset } from '../../types/mirofish';
+// [claude-code 2026-03-23] Sanctum preset selector toolbar
+import type { SanctumPreset } from '../../types/mirofish';
 import { AUDITORIUM_PRESETS } from '../../types/mirofish';
 
-interface AuditoriumPresetsProps {
-  active: AuditoriumPreset;
-  onChange: (preset: AuditoriumPreset) => void;
+interface SanctumPresetsProps {
+  active: SanctumPreset;
+  onChange: (preset: SanctumPreset) => void;
 }
 
-export function AuditoriumPresets({ active, onChange }: AuditoriumPresetsProps) {
+export function SanctumPresets({ active, onChange }: SanctumPresetsProps) {
   return (
     <div className="flex items-center rounded border border-[var(--fintheon-border)]/15 overflow-hidden">
       {AUDITORIUM_PRESETS.map(({ id, label }) => (

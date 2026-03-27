@@ -7,7 +7,7 @@ interface SubScoreBarProps {
 }
 
 const SEGMENTS: Array<{
-  key: keyof Omit<SubScoreBreakdown, 'vixMultiplier'>;
+  key: keyof Omit<SubScoreBreakdown, 'vixMultiplier' | 'regimeMultiplier' | 'regimeName' | 'commentatorMultiplier' | 'speaker'>;
   label: string;
   max: number;
   color: string;

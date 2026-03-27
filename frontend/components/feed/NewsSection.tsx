@@ -2,17 +2,18 @@
 // [claude-code 2026-03-10] Dropdown filters (Priority + Source), X/FJ filter, X CLI status dot.
 // [claude-code 2026-03-26] T4: Replace inline cards with RiskFlowDetailCard, remove dead helpers
 import { useEffect, useState, useMemo } from 'react';
-import { Bell, BellOff } from 'lucide-react';
+import { Bell, BellOff, RefreshCw } from 'lucide-react';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { useSourceStatus } from '../../hooks/useSourceStatus';
 import { useBackend } from '../../lib/backend';
 import { RiskFlowDetailCard } from './RiskFlowDetailCard';
+import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
 
 type PriorityFilter = 'all' | 'high' | 'medium';
 type SourceFilter = 'all' | 'notion' | 'twitter';
 
 export function NewsSection() {
-  const { alerts, markAllSeen, isSeen } = useRiskFlow();
+  const { alerts, markAllSeen, isSeen, refresh, refreshing } = useRiskFlow();
   const sourceStatus = useSourceStatus();
   const backend = useBackend();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -68,17 +69,29 @@ export function NewsSection() {
             <span className={sourceStatus.twitterCli ? 'text-emerald-400/90' : 'text-zinc-500'}>X CLI</span>
           </span>
         </div>
-        <button
-          onClick={requestNotifications}
-          className="flex items-center gap-2 text-xs text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors px-2 py-1"
-        >
-          {notificationsEnabled ? (
-            <Bell className="w-3.5 h-3.5" />
-          ) : (
-            <BellOff className="w-3.5 h-3.5" />
-          )}
-          {notificationsEnabled ? 'Notifications On' : 'Notifications'}
-        </button>
+        <div className="flex items-center gap-1">
+          <AutoRefreshToggle size="xs" />
+          <button
+            type="button"
+            onClick={() => { void refresh(); }}
+            disabled={refreshing}
+            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
+            title="Refresh feeds"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={requestNotifications}
+            className="flex items-center gap-2 text-xs text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors px-2 py-1"
+          >
+            {notificationsEnabled ? (
+              <Bell className="w-3.5 h-3.5" />
+            ) : (
+              <BellOff className="w-3.5 h-3.5" />
+            )}
+            {notificationsEnabled ? 'Notifications On' : 'Notifications'}
+          </button>
+        </div>
       </div>
 
       {/* Filter row: Priority dropdown + Source dropdown + Proposals tab */}

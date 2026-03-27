@@ -3,7 +3,7 @@
 // [claude-code 2026-03-23] MiroFish simulation lifecycle orchestrator
 // [claude-code 2026-03-23] Auto-enriches with VIX/FRED/RiskFlow context, generates briefing, persists to Supabase
 
-import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection, AuditoriumPreset, SimulationContext, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary, MiroFishBriefing } from './mirofish-types.js';
+import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection, SanctumPreset, SimulationContext, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary, MiroFishBriefing } from './mirofish-types.js';
 // @ts-ignore — T1 creates this file
 import { resetRunningState } from './mirofish-reactive.js';
 import { isMiroFishEnabled, runDebate } from './mirofish-client.js';
@@ -51,7 +51,7 @@ interface ContextBank {
 export async function startPrediction(
   narrativeState: NarrativeState,
   contextBank?: ContextBank,
-  preset: AuditoriumPreset = 'full-brief',
+  preset: SanctumPreset = 'full-brief',
 ): Promise<{ simulationId: string } | { error: string }> {
   if (!isMiroFishEnabled()) {
     return { error: 'MiroFish is not enabled' };
@@ -239,7 +239,7 @@ export async function getRunHistory(limit = 20): Promise<unknown[]> {
   return data ?? [];
 }
 
-/** Get the latest persisted MiroFish report (reconstructed as AuditoriumData-compatible shape) */
+/** Get the latest persisted MiroFish report (reconstructed as SanctumData-compatible shape) */
 export async function getLatestReport(): Promise<Record<string, unknown> | null> {
   // First check in-memory cache
   const cached = getLatestCachedPrediction();
@@ -337,7 +337,7 @@ function reportToPrediction(simId: string, report: MiroFishReport): MiroFishPred
 
 async function persistRun(
   simId: string,
-  preset: AuditoriumPreset,
+  preset: SanctumPreset,
   report: MiroFishReport,
   context: SimulationContext,
   briefing: MiroFishBriefing,

@@ -96,7 +96,7 @@ async function enrichWithAnalysis(item: FeedItem, prefetchedVIX?: Awaited<Return
     const vixData = prefetchedVIX ?? await fetchVIX().catch(() => null);
 
     // Calculate IV score using parsed data (now with VIX-weighted continuous curve)
-    const ivResult = calculateIVScore({
+    const ivResult = await calculateIVScore({
       parsed: analyzed.parsed,
       hotPrint: analyzed.hotPrint,
       timestamp: new Date(item.publishedAt),

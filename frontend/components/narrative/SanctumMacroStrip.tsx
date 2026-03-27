@@ -1,7 +1,7 @@
 // [claude-code 2026-03-23] FRED macro indicator strip — VIX + 5 FRED indicators with stress colors
 import type { SimulationContext } from '../../types/mirofish';
 
-interface AuditoriumMacroStripProps {
+interface SanctumMacroStripProps {
   context: SimulationContext | null;
 }
 
@@ -61,7 +61,7 @@ function Pill({ label, value, unit, stressLevel }: {
   );
 }
 
-export function AuditoriumMacroStrip({ context }: AuditoriumMacroStripProps) {
+export function SanctumMacroStrip({ context }: SanctumMacroStripProps) {
   if (!context) {
     return (
       <div className="flex items-center gap-2 text-[10px] text-[var(--fintheon-muted)]/30 italic">

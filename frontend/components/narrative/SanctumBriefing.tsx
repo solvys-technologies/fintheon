@@ -3,12 +3,12 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, AlertTriangle, FileText } from 'lucide-react';
 import type { MiroFishBriefing } from '../../types/mirofish';
 
-interface AuditoriumBriefingProps {
+interface SanctumBriefingProps {
   briefing: MiroFishBriefing | null;
   isLoading?: boolean;
 }
 
-export function AuditoriumBriefing({ briefing, isLoading }: AuditoriumBriefingProps) {
+export function SanctumBriefing({ briefing, isLoading }: SanctumBriefingProps) {
   const [expanded, setExpanded] = useState(true);
 
   if (isLoading) {

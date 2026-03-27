@@ -1,4 +1,4 @@
-// [claude-code 2026-03-23] Auditorium kanban — dashboard-grade timeline strips + live RiskFlow catalysts
+// [claude-code 2026-03-23] Sanctum kanban — dashboard-grade timeline strips + live RiskFlow catalysts
 import type { MiroFishRiskCategory, MiroFishGeneratedEvent, RiskFlowCatalyst } from '../../types/mirofish';
 import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
 
@@ -12,7 +12,7 @@ interface CatalystInput {
   narrativeIds?: string[];
 }
 
-interface AuditoriumKanbanProps {
+interface SanctumKanbanProps {
   catalysts: CatalystInput[];
   generatedEvents: MiroFishGeneratedEvent[];
   riskflowItems?: RiskFlowCatalyst[];
@@ -69,7 +69,7 @@ function inferCategory(title: string, summary?: string): MiroFishRiskCategory {
   return 'geopolitical';
 }
 
-export function AuditoriumKanban({ catalysts, generatedEvents, riskflowItems, expanded }: AuditoriumKanbanProps) {
+export function SanctumKanban({ catalysts, generatedEvents, riskflowItems, expanded }: SanctumKanbanProps) {
   const lanes = new Map<MiroFishRiskCategory, KanbanCard[]>();
   for (const cat of CATEGORIES) lanes.set(cat, []);
 
