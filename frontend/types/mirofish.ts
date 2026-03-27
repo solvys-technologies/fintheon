@@ -138,11 +138,51 @@ export interface EconPrint {
   direction: 'beat' | 'miss' | 'inline';
 }
 
+export interface EconHistoryPrint {
+  id?: string;
+  date: string | null;
+  actual: number | null;
+  forecast: number | null;
+  previous: number | null;
+  surprise: number | null;
+  direction: 'beat' | 'miss' | 'inline' | null;
+  ivScore: number | null;
+}
+
+export interface EconScoredItem {
+  id: string;
+  headline: string;
+  ivScore: number | null;
+  macroLevel: number | null;
+  sentiment: string | null;
+  riskType: string | null;
+  subScores: {
+    eventWeight?: number;
+    timing?: number;
+    deviation?: number;
+    momentum?: number;
+    vixContext?: number;
+    vixMultiplier?: number;
+    regimeMultiplier?: number;
+    regimeName?: string;
+  } | null;
+  econData: {
+    actual?: number;
+    forecast?: number;
+    previous?: number;
+    beatMiss?: 'beat' | 'miss' | 'inline';
+    surprisePercent?: number;
+  } | null;
+  publishedAt: string | null;
+}
+
 export interface EconCardData {
   name: string;
   ticker: string;
   nextDate?: string;
   lastPrint?: EconPrint;
+  printHistory?: EconHistoryPrint[];
+  scoredItems?: EconScoredItem[];
   agentConsensus?: 'beat' | 'miss' | 'inline';
   agentConfidence?: number;
 }
@@ -160,10 +200,22 @@ export interface RiskFlowCatalyst {
   created_at: string;
 }
 
+export interface EconPrintStat {
+  eventName: string;
+  actual: number | null;
+  forecast: number | null;
+  previous: number | null;
+  surprise: number | null;
+  direction: 'beat' | 'miss' | 'inline' | null;
+  ivScore: number | null;
+  printedAt: string | null;
+}
+
 export interface SimulationContext {
   vixLevel: number | null;
   fredIndicators: Record<string, number>;
   riskflowHeadlines: RiskFlowCatalyst[];
+  econPrintHistory?: EconPrintStat[];
   fredFetchedAt: string | null;
   fetchedAt: string;
 }

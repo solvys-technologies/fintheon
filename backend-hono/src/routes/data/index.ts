@@ -1,5 +1,6 @@
 // [claude-code 2026-03-20] Data routes — Supabase-backed, replaces /api/notion/* endpoints
 // [claude-code 2026-03-22] Refactored brief generation to use shared brief-generator service
+// [claude-code 2026-03-27] Added /econ-history/:ticker for Sanctum expanded cards with prints + scoring
 import { Hono } from 'hono';
 import {
   readTradeIdeas,
@@ -11,6 +12,7 @@ import {
   readEconPrints,
   writeEconPrint,
   updateEconEventActual,
+  readEconHistory,
   type BriefType,
   type TradeIdeaRecord,
   type DailyPnlRecord,
@@ -356,6 +358,60 @@ export function createDataRoutes(): Hono {
       });
     } catch (err) {
       return c.json({ active: false, autoRefresh: true, nextEvent: null, todayEventCount: 0, eventsInWindow: 0 }, 500);
+    }
+  });
+
+  // ── Econ History (for Sanctum expanded cards) ─────────────────
+
+  // GET /api/data/econ-history/:ticker — historical prints + scored items for a ticker
+  app.get('/econ-history/:ticker', async (c) => {
+    try {
+      const ticker = c.req.param('ticker');
+      const limit = parseInt(c.req.query('limit') ?? '10', 10);
+      const { prints, scoredItems } = await readEconHistory(ticker, limit);
+
+      // Transform prints into frontend-friendly shape
+      const history = prints.map((p) => {
+        const actual = p.actual_value != null ? parseFloat(p.actual_value) : null;
+        const forecast = p.forecast_value != null ? parseFloat(p.forecast_value) : null;
+        const previous = p.previous_value != null ? parseFloat(p.previous_value) : null;
+        let surprise: number | null = null;
+        let direction: 'beat' | 'miss' | 'inline' | null = null;
+
+        if (actual != null && forecast != null && forecast !== 0) {
+          surprise = ((actual - forecast) / Math.abs(forecast)) * 100;
+          direction = Math.abs(surprise) < 2 ? 'inline' : surprise > 0 ? 'beat' : 'miss';
+        }
+
+        return {
+          id: p.id,
+          date: p.printed_at ? new Date(p.printed_at).toISOString().slice(0, 10) : null,
+          actual,
+          forecast,
+          previous,
+          surprise: surprise != null ? Math.round(surprise * 100) / 100 : null,
+          direction,
+          ivScore: p.iv_score ?? null,
+        };
+      });
+
+      // Transform scored items — extract sub-score breakdowns
+      const scoring = scoredItems.map((s) => ({
+        id: s.tweet_id,
+        headline: s.headline,
+        ivScore: s.iv_score ?? null,
+        macroLevel: s.macro_level ?? null,
+        sentiment: s.sentiment ?? null,
+        riskType: s.risk_type ?? null,
+        subScores: s.sub_scores ?? null,
+        econData: s.econ_data ?? null,
+        publishedAt: s.published_at ?? null,
+      }));
+
+      return c.json({ ticker, history, scoring, fetchedAt: new Date().toISOString() });
+    } catch (err) {
+      console.error('[Data] /econ-history error:', err);
+      return c.json({ ticker: c.req.param('ticker'), history: [], scoring: [], fetchedAt: new Date().toISOString() }, 500);
     }
   });
 

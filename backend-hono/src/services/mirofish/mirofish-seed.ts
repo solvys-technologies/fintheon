@@ -36,10 +36,21 @@ interface RopeInput {
   weight: number;
 }
 
+interface EconPrintSnapshot {
+  eventName: string;
+  actual: number | null;
+  forecast: number | null;
+  surprise: number | null;
+  direction: 'beat' | 'miss' | 'inline' | null;
+  ivScore: number | null;
+  printedAt: string | null;
+}
+
 interface ContextSnapshot {
   vixLevel?: number;
   gexNet?: number;
   macroIndicators?: Record<string, number>;
+  econPrintHistory?: EconPrintSnapshot[];
 }
 
 /** Map narrative categories to MiroFish agent roles */
@@ -141,6 +152,33 @@ export function convertNarrativeToSeed(
   if (context?.vixLevel != null) environmentalContext.vixLevel = context.vixLevel;
   if (context?.gexNet != null) environmentalContext.gexNet = context.gexNet;
   if (context?.macroIndicators) environmentalContext.macro = context.macroIndicators;
+  if (context?.econPrintHistory?.length) {
+    // Aggregate beat/miss patterns for agent debate context
+    const beats = context.econPrintHistory.filter(p => p.direction === 'beat').length;
+    const misses = context.econPrintHistory.filter(p => p.direction === 'miss').length;
+    const avgSurprise = context.econPrintHistory
+      .filter(p => p.surprise != null)
+      .reduce((sum, p) => sum + Math.abs(p.surprise!), 0) / Math.max(1, context.econPrintHistory.filter(p => p.surprise != null).length);
+    const avgIV = context.econPrintHistory
+      .filter(p => p.ivScore != null)
+      .reduce((sum, p) => sum + p.ivScore!, 0) / Math.max(1, context.econPrintHistory.filter(p => p.ivScore != null).length);
+
+    environmentalContext.econPrintStats = {
+      totalPrints: context.econPrintHistory.length,
+      beats,
+      misses,
+      inlines: context.econPrintHistory.length - beats - misses,
+      avgAbsSurprise: Math.round(avgSurprise * 100) / 100,
+      avgIVScore: Math.round(avgIV * 100) / 100,
+      beatRatio: Math.round((beats / Math.max(1, context.econPrintHistory.length)) * 100) / 100,
+      recentPrints: context.econPrintHistory.slice(0, 5).map(p => ({
+        event: p.eventName,
+        direction: p.direction,
+        surprise: p.surprise,
+        iv: p.ivScore,
+      })),
+    };
+  }
 
   return {
     entities: buildEntities(lanes, catalysts),

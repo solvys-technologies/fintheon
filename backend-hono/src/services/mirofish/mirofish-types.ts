@@ -147,10 +147,22 @@ export interface RiskFlowHeadline {
   created_at: string;
 }
 
+export interface EconPrintStat {
+  eventName: string;
+  actual: number | null;
+  forecast: number | null;
+  previous: number | null;
+  surprise: number | null;
+  direction: 'beat' | 'miss' | 'inline' | null;
+  ivScore: number | null;
+  printedAt: string | null;
+}
+
 export interface SimulationContext {
   vixLevel: number | null;
   fredIndicators: Record<string, number>;
   riskflowHeadlines: RiskFlowHeadline[];
+  econPrintHistory?: EconPrintStat[];
   fredFetchedAt: string | null;
   fetchedAt: string;
 }

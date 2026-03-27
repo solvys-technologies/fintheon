@@ -1,10 +1,12 @@
+// [claude-code 2026-03-27] S4: Added econPrintHistory to context for MiroFish aggregation
 // [claude-code 2026-03-27] S2-T4: Added addCalibrationContext for calibration upload pipeline
 // [claude-code 2026-03-24] Widened RiskFlow window to 72h/40 with configurable params
 // [claude-code 2026-03-23] MiroFish context assembly — fetches VIX, FRED, RiskFlow in parallel
-import type { SanctumPreset, SimulationContext, RiskFlowHeadline } from './mirofish-types.js';
+import type { SanctumPreset, SimulationContext, RiskFlowHeadline, EconPrintStat } from './mirofish-types.js';
 import { fetchFredIndicators, getCachedFredIndicators, getFredFetchedAt } from '../systemic/fred-service.js';
 import { getVix } from '../market-data/yahoo-market.js';
 import { getSupabaseClient } from '../../config/supabase.js';
+import { readRecentEconPrintStats } from '../supabase-service.js';
 
 /**
  * Assemble a SimulationContext bundle by fetching live data from all available sources.
@@ -17,24 +19,59 @@ export async function assembleSimulationContext(
   const fetchVix = preset !== 'econ-watch';
   const fetchFred = preset !== 'risk-scan';
   const fetchRiskFlow = preset === 'full-brief' || preset === 'risk-scan';
+  const fetchEconHistory = preset === 'full-brief' || preset === 'econ-watch';
 
-  const [vixResult, fredResult, riskflowResult] = await Promise.allSettled([
+  const [vixResult, fredResult, riskflowResult, econResult] = await Promise.allSettled([
     fetchVix ? getVix().then(v => v.value) : Promise.resolve(null),
     fetchFred ? fetchFredIndicators() : Promise.resolve(getCachedFredIndicators()),
     fetchRiskFlow ? fetchRiskFlowHeadlines() : Promise.resolve([]),
+    fetchEconHistory ? fetchEconPrintHistory() : Promise.resolve([]),
   ]);
 
   const vixLevel = vixResult.status === 'fulfilled' ? vixResult.value : null;
   const fredIndicators = fredResult.status === 'fulfilled' ? (fredResult.value as Record<string, number>) : getCachedFredIndicators();
   const riskflowHeadlines = riskflowResult.status === 'fulfilled' ? riskflowResult.value : [];
+  const econPrintHistory = econResult.status === 'fulfilled' ? econResult.value : [];
 
   return {
     vixLevel,
     fredIndicators,
     riskflowHeadlines,
+    econPrintHistory: econPrintHistory.length > 0 ? econPrintHistory : undefined,
     fredFetchedAt: getFredFetchedAt()?.toISOString() ?? null,
     fetchedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Fetch recent econ print history (7 days) and transform for MiroFish consumption.
+ * Aggregates beat/miss/inline patterns for simulation context.
+ */
+async function fetchEconPrintHistory(): Promise<EconPrintStat[]> {
+  const prints = await readRecentEconPrintStats(168); // 7 days
+  return prints.map((p) => {
+    const actual = p.actual_value != null ? parseFloat(p.actual_value) : null;
+    const forecast = p.forecast_value != null ? parseFloat(p.forecast_value) : null;
+    const previous = p.previous_value != null ? parseFloat(p.previous_value) : null;
+    let surprise: number | null = null;
+    let direction: 'beat' | 'miss' | 'inline' | null = null;
+
+    if (actual != null && forecast != null && forecast !== 0) {
+      surprise = ((actual - forecast) / Math.abs(forecast)) * 100;
+      direction = Math.abs(surprise) < 2 ? 'inline' : surprise > 0 ? 'beat' : 'miss';
+    }
+
+    return {
+      eventName: p.headline.split('|')[0].trim(),
+      actual,
+      forecast,
+      previous,
+      surprise: surprise != null ? Math.round(surprise * 100) / 100 : null,
+      direction,
+      ivScore: p.iv_score ?? null,
+      printedAt: p.printed_at ?? null,
+    };
+  });
 }
 
 /**

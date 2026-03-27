@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-27T14:00:00',
+    agent: 'claude-code',
+    summary: 'S4: Econ history pipeline — backend /econ-history/:ticker endpoint returns historical prints + scored items. SanctumEconIntel expanded cards show multi-row print history table, IV scores, scoring engine sub-score breakdown, and related scored items. MiroFish context assembly now fetches 7d econ print stats (beat/miss patterns, avg surprise, avg IV) for agent debate enrichment. Fixed frontend calling nonexistent /econ-events → /econ-calendar.',
+    files: [
+      'backend-hono/src/services/supabase-service.ts',
+      'backend-hono/src/routes/data/index.ts',
+      'backend-hono/src/services/mirofish/mirofish-context.ts',
+      'backend-hono/src/services/mirofish/mirofish-types.ts',
+      'backend-hono/src/services/mirofish/mirofish-seed.ts',
+      'backend-hono/src/services/mirofish/mirofish-service.ts',
+      'frontend/types/mirofish.ts',
+      'frontend/components/narrative/SanctumEconIntel.tsx',
+    ],
+  },
+  {
     date: '2026-03-27T00:00:00',
     agent: 'claude-code',
     summary: 'S4-T2: Built NarrativeGridView (2D time x risk grid), NarrativeLaneRow, semantic zoom aggregator. Replaced Canvas/WeekView toggle in NarrativeFlow with unified grid view. Updated toolbar zoom controls with read-only indicators.',

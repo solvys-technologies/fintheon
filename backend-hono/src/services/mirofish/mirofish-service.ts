@@ -3,7 +3,7 @@
 // [claude-code 2026-03-23] MiroFish simulation lifecycle orchestrator
 // [claude-code 2026-03-23] Auto-enriches with VIX/FRED/RiskFlow context, generates briefing, persists to Supabase
 
-import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection, SanctumPreset, SimulationContext, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary, MiroFishBriefing } from './mirofish-types.js';
+import type { MiroFishPrediction, MiroFishReport, MiroFishSimulation, MiroFishInjection, SanctumPreset, SimulationContext, EconPrintStat, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary, MiroFishBriefing } from './mirofish-types.js';
 // @ts-ignore — T1 creates this file
 import { resetRunningState } from './mirofish-reactive.js';
 import { isMiroFishEnabled, runDebate } from './mirofish-client.js';
@@ -69,13 +69,14 @@ export async function startPrediction(
     const context = await assembleSimulationContext(preset);
 
     // Merge auto-fetched context with any explicit contextBank
-    const mergedContext: ContextBank = {
+    const mergedContext: ContextBank & { econPrintHistory?: EconPrintStat[] } = {
       vixLevel: contextBank?.vixLevel ?? context.vixLevel ?? undefined,
       gexNet: contextBank?.gexNet,
       macroIndicators: {
         ...(contextBank?.macroIndicators ?? {}),
         ...context.fredIndicators,
       },
+      econPrintHistory: context.econPrintHistory,
     };
 
     // Convert RiskFlow headlines into catalyst entities

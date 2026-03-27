@@ -595,6 +595,67 @@ export async function readEconPrints(filter?: {
   return data ?? [];
 }
 
+/**
+ * Fetch historical econ prints + related scored items for a specific ticker.
+ * Used by Sanctum expanded cards to show print history with scoring breakdown.
+ */
+export async function readEconHistory(ticker: string, limit = 10): Promise<{
+  prints: EconPrintRecord[];
+  scoredItems: ScoredRiskFlowItem[];
+}> {
+  const sb = getSupabaseClient();
+  if (!sb) return { prints: [], scoredItems: [] };
+
+  const [printsResult, scoredResult] = await Promise.allSettled([
+    sb
+      .from('econ_prints')
+      .select('*')
+      .ilike('headline', `%${ticker}%`)
+      .order('printed_at', { ascending: false })
+      .limit(limit),
+    sb
+      .from('scored_riskflow_items')
+      .select('*')
+      .contains('tags', ['ECON_DATA'])
+      .ilike('headline', `%${ticker}%`)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+  ]);
+
+  const prints = printsResult.status === 'fulfilled' && !printsResult.value.error
+    ? (printsResult.value.data ?? [])
+    : [];
+  const scoredItems = scoredResult.status === 'fulfilled' && !scoredResult.value.error
+    ? (scoredResult.value.data ?? [])
+    : [];
+
+  return { prints, scoredItems };
+}
+
+/**
+ * Fetch aggregated econ print stats for MiroFish context enrichment.
+ * Returns recent prints with beat/miss patterns grouped by event type.
+ */
+export async function readRecentEconPrintStats(sinceHours = 168): Promise<EconPrintRecord[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const cutoff = new Date(Date.now() - sinceHours * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await sb
+    .from('econ_prints')
+    .select('*')
+    .gte('printed_at', cutoff)
+    .order('printed_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('[Supabase] readRecentEconPrintStats error:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 // ─── ER Events (PsychAssist deterministic scoring) ─────────────
 
 export interface EREventRecord {

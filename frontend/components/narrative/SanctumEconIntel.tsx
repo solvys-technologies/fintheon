@@ -1,7 +1,8 @@
+// [claude-code 2026-03-27] Econ Intel — historical prints, scoring breakdown, MiroFish-ready aggregation
 // [claude-code 2026-03-24] Econ Intel — 2-col grid, expandable cards with countdown + history + risk category sub-cards
-import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Minus, CalendarClock, ChevronDown } from 'lucide-react';
-import type { EconCardData, SimulationContext, MiroFishCategoryScore } from '../../types/mirofish';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { TrendingUp, TrendingDown, Minus, CalendarClock, ChevronDown, Activity, BarChart3 } from 'lucide-react';
+import type { EconCardData, EconHistoryPrint, EconScoredItem, SimulationContext, MiroFishCategoryScore } from '../../types/mirofish';
 import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -54,11 +55,70 @@ function countdownLabel(dateStr: string): string {
   return `${days}d away`;
 }
 
-function EconCard({ data, expanded, onToggle }: { data: EconCardData; expanded: boolean; onToggle: () => void }) {
+/** Compute beat/miss streak from history */
+function computeStreak(history: EconHistoryPrint[]): { type: 'beat' | 'miss' | 'inline' | null; count: number } {
+  if (history.length === 0) return { type: null, count: 0 };
+  const first = history[0].direction;
+  if (!first) return { type: null, count: 0 };
+  let count = 0;
+  for (const p of history) {
+    if (p.direction === first) count++;
+    else break;
+  }
+  return { type: first, count };
+}
+
+/** Sub-score bar for scoring breakdown */
+function SubScoreBar({ label, value, max }: { label: string; value: number; max: number }) {
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+  const color = ivHeatColor(value);
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/50 w-[52px] truncate">{label}</span>
+      <div className="flex-1 h-[4px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+      <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60 w-[24px] text-right">
+        {value.toFixed(1)}
+      </span>
+    </div>
+  );
+}
+
+function EconCard({
+  data,
+  expanded,
+  onToggle,
+  historyCache,
+  onFetchHistory,
+}: {
+  data: EconCardData;
+  expanded: boolean;
+  onToggle: () => void;
+  historyCache: Record<string, { prints: EconHistoryPrint[]; scored: EconScoredItem[] }>;
+  onFetchHistory: (ticker: string) => void;
+}) {
   const direction = data.agentConsensus ?? 'inline';
   const cfg = DIRECTION_CONFIG[direction];
   const Icon = cfg.icon;
   const hasAgent = data.agentConsensus != null;
+
+  // Fetch history when expanding
+  const prevExpanded = useRef(expanded);
+  useEffect(() => {
+    if (expanded && !prevExpanded.current && !historyCache[data.ticker]) {
+      onFetchHistory(data.ticker);
+    }
+    prevExpanded.current = expanded;
+  }, [expanded, data.ticker, historyCache, onFetchHistory]);
+
+  const cached = historyCache[data.ticker];
+  const history = data.printHistory ?? cached?.prints ?? [];
+  const scoredItems = data.scoredItems ?? cached?.scored ?? [];
+  const streak = computeStreak(history);
+
+  // Show most recent scored item's sub-scores
+  const latestScored = scoredItems[0];
 
   return (
     <div
@@ -155,7 +215,7 @@ function EconCard({ data, expanded, onToggle }: { data: EconCardData; expanded: 
       <div
         className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out"
         style={{
-          maxHeight: expanded ? '400px' : '0px',
+          maxHeight: expanded ? '700px' : '0px',
           opacity: expanded ? 1 : 0,
         }}
       >
@@ -181,8 +241,52 @@ function EconCard({ data, expanded, onToggle }: { data: EconCardData; expanded: 
             </div>
           )}
 
-          {/* Historical prints (last print shown as single row — API currently provides one) */}
-          {data.lastPrint && (
+          {/* ── Historical Print Table ── */}
+          {history.length > 0 ? (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider flex items-center gap-1">
+                  <BarChart3 className="w-3 h-3" />
+                  Print History ({history.length} prints)
+                </span>
+                {streak.type && streak.count > 1 && (
+                  <span
+                    className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
+                    style={{
+                      color: DIRECTION_CONFIG[streak.type]?.color ?? '#F59E0B',
+                      backgroundColor: `${DIRECTION_CONFIG[streak.type]?.color ?? '#F59E0B'}15`,
+                    }}
+                  >
+                    {streak.count}x {streak.type.toUpperCase()} streak
+                  </span>
+                )}
+              </div>
+              <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 overflow-hidden">
+                <div className="grid grid-cols-6 gap-0 text-[8px] font-mono text-[var(--fintheon-muted)]/40 uppercase tracking-wider px-3 py-1.5 border-b border-[var(--fintheon-border)]/5">
+                  <span>Date</span><span>Actual</span><span>Forecast</span><span>Previous</span><span>Surprise</span><span>IV</span>
+                </div>
+                {history.map((p, i) => (
+                  <div
+                    key={p.id ?? i}
+                    className={`grid grid-cols-6 gap-0 text-[10px] font-mono px-3 py-1.5 ${
+                      i > 0 ? 'border-t border-[var(--fintheon-border)]/5' : ''
+                    }`}
+                  >
+                    <span className="text-[var(--fintheon-muted)]/60">{p.date?.slice(5) ?? '—'}</span>
+                    <span className="text-[var(--fintheon-text)]">{p.actual ?? '—'}</span>
+                    <span className="text-[var(--fintheon-text)]/70">{p.forecast ?? '—'}</span>
+                    <span className="text-[var(--fintheon-text)]/50">{p.previous ?? '—'}</span>
+                    <span style={{ color: p.direction ? DIRECTION_CONFIG[p.direction]?.color ?? '#F59E0B' : 'var(--fintheon-muted)' }}>
+                      {p.surprise != null ? (p.surprise > 0 ? '+' : '') + p.surprise.toFixed(2) + '%' : '—'}
+                    </span>
+                    <span style={{ color: p.ivScore != null ? ivHeatColor(p.ivScore) : 'var(--fintheon-muted)' }}>
+                      {p.ivScore != null ? p.ivScore.toFixed(1) : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : data.lastPrint ? (
             <div>
               <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
                 Recent Print History
@@ -202,9 +306,97 @@ function EconCard({ data, expanded, onToggle }: { data: EconCardData; expanded: 
                 </div>
               </div>
             </div>
+          ) : null}
+
+          {/* ── Scoring Breakdown (from most recent scored item) ── */}
+          {latestScored && latestScored.subScores && (
+            <div>
+              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider flex items-center gap-1 mb-1.5">
+                <Activity className="w-3 h-3" />
+                Scoring Engine Breakdown
+              </span>
+              <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 px-3 py-2.5 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-mono text-[var(--fintheon-text)]/80">
+                    IV: <span className="font-bold" style={{ color: ivHeatColor(latestScored.ivScore ?? 0) }}>
+                      {latestScored.ivScore?.toFixed(1) ?? '—'}
+                    </span>
+                    /10
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {latestScored.macroLevel && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]">
+                        L{latestScored.macroLevel}
+                      </span>
+                    )}
+                    {latestScored.sentiment && (
+                      <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/50">
+                        {latestScored.sentiment}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <SubScoreBar label="Event Wt" value={latestScored.subScores.eventWeight ?? 0} max={10} />
+                <SubScoreBar label="Timing" value={latestScored.subScores.timing ?? 0} max={3} />
+                <SubScoreBar label="Deviation" value={latestScored.subScores.deviation ?? 0} max={3} />
+                <SubScoreBar label="Momentum" value={latestScored.subScores.momentum ?? 0} max={2} />
+                <SubScoreBar label="VIX Ctx" value={latestScored.subScores.vixContext ?? 0} max={10} />
+                {latestScored.subScores.vixMultiplier != null && latestScored.subScores.vixMultiplier !== 1 && (
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/40">VIX Multiplier</span>
+                    <span className="text-[9px] font-mono text-[var(--fintheon-accent)]">
+                      {latestScored.subScores.vixMultiplier.toFixed(2)}x
+                    </span>
+                  </div>
+                )}
+                {latestScored.subScores.regimeName && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/40">Regime</span>
+                    <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60">
+                      {latestScored.subScores.regimeName}
+                      {latestScored.subScores.regimeMultiplier != null && latestScored.subScores.regimeMultiplier !== 1
+                        ? ` (${latestScored.subScores.regimeMultiplier.toFixed(2)}x)`
+                        : ''}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
-          {/* Agent reasoning placeholder */}
+          {/* ── Scored Items Feed (related RiskFlow items) ── */}
+          {scoredItems.length > 1 && (
+            <div>
+              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
+                Related Scored Items ({scoredItems.length})
+              </span>
+              <div className="flex flex-col gap-1">
+                {scoredItems.slice(0, 5).map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-2 px-2 py-1 rounded bg-[var(--fintheon-bg)]/30 border border-[var(--fintheon-border)]/5"
+                  >
+                    <span
+                      className="text-[10px] font-mono font-bold w-[28px]"
+                      style={{ color: ivHeatColor(s.ivScore ?? 0) }}
+                    >
+                      {s.ivScore?.toFixed(1) ?? '—'}
+                    </span>
+                    <span className="text-[9px] text-[var(--fintheon-text)]/60 truncate flex-1">
+                      {s.headline}
+                    </span>
+                    {s.publishedAt && (
+                      <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/30 flex-shrink-0">
+                        {new Date(s.publishedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Agent reasoning */}
           {hasAgent && data.agentConfidence != null && (
             <div>
               <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1">
@@ -213,6 +405,11 @@ function EconCard({ data, expanded, onToggle }: { data: EconCardData; expanded: 
               <p className="text-[10px] text-[var(--fintheon-muted)]/50 leading-relaxed">
                 Model projects <span className="font-bold" style={{ color: cfg.color }}>{cfg.label}</span> with{' '}
                 {Math.round((data.agentConfidence ?? 0) * 100)}% confidence based on recent macro signals and historical print patterns.
+                {streak.type && streak.count > 1 && (
+                  <> Current {streak.count}x {streak.type} streak suggests {
+                    streak.type === 'beat' ? 'upward bias' : streak.type === 'miss' ? 'downward pressure' : 'range-bound action'
+                  }.</>
+                )}
               </p>
             </div>
           )}
@@ -232,13 +429,14 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
   const [cards, setCards] = useState<EconCardData[]>(ECON_TICKERS);
   const [loading, setLoading] = useState(true);
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
+  const [historyCache, setHistoryCache] = useState<Record<string, { prints: EconHistoryPrint[]; scored: EconScoredItem[] }>>({});
 
   useEffect(() => {
     let cancelled = false;
 
     async function fetchEconData() {
       try {
-        const res = await fetch(`${API_BASE}/api/data/econ-events`);
+        const res = await fetch(`${API_BASE}/api/data/econ-calendar`);
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
 
@@ -274,6 +472,25 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
     fetchEconData();
     return () => { cancelled = true; };
   }, []);
+
+  /** Fetch historical prints + scoring for a ticker on-demand */
+  const fetchHistory = useCallback(async (ticker: string) => {
+    if (historyCache[ticker]) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/data/econ-history/${encodeURIComponent(ticker)}?limit=10`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setHistoryCache(prev => ({
+        ...prev,
+        [ticker]: {
+          prints: data.history ?? [],
+          scored: data.scoring ?? [],
+        },
+      }));
+    } catch {
+      // Silent fail — expanded cards will show fallback
+    }
+  }, [historyCache]);
 
   return (
     <div className={expanded ? 'flex flex-col gap-4' : ''}>
@@ -381,6 +598,8 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
             data={card}
             expanded={expandedTicker === card.ticker}
             onToggle={() => setExpandedTicker(prev => prev === card.ticker ? null : card.ticker)}
+            historyCache={historyCache}
+            onFetchHistory={fetchHistory}
           />
         ))}
       </div>
