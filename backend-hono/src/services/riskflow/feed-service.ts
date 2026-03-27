@@ -424,6 +424,32 @@ async function getCachedFeed(): Promise<FeedItem[]> {
 }
 
 /**
+ * Re-score all in-memory feed items with current regime/calibration/commentator weights.
+ * Called by the /api/riskflow/rescore endpoint.
+ * Forces re-enrichment of ALL cached items (not just new ones).
+ */
+// [claude-code 2026-03-27] Rescore in-memory feed for regime-aware V3 scoring
+export async function rescoreInMemoryFeed(): Promise<number> {
+  const items = feedCache?.items ?? [];
+  if (items.length === 0) {
+    log.info('rescoreInMemoryFeed: no cached items to rescore');
+    return 0;
+  }
+
+  log.info(`rescoreInMemoryFeed: re-enriching ${items.length} cached items`);
+  const reEnriched = await enrichFeedWithAnalysis(items);
+  feedCache = { items: reEnriched, fetchedAt: Date.now() };
+
+  // Also update the database cache
+  await newsCache.storeFeedItems(reEnriched).catch((err: unknown) =>
+    log.warn('rescoreInMemoryFeed: failed to persist to DB cache', { error: String(err) })
+  );
+
+  log.info(`rescoreInMemoryFeed: done — ${reEnriched.length} items updated`);
+  return reEnriched.length;
+}
+
+/**
  * Get feed with user watchlist applied
  * Default: Only returns macroLevel 3+ (high importance headlines)
  * If no items found with minMacroLevel 3+, falls back to all items (for initial load)

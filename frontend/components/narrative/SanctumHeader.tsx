@@ -7,7 +7,7 @@ import { Zap, Loader2, Upload, X } from 'lucide-react';
 import type { SanctumPreset } from '../../types/mirofish';
 import { SanctumPresets } from './SanctumPresets';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 interface SanctumHeaderProps {
   preset: SanctumPreset;

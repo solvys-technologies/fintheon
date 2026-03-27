@@ -32,16 +32,27 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [overriding, setOverriding] = useState(false);
   const [hint, setHint] = useState('');
+  // Optimistic local override — shows selection immediately, not after parent refetch
+  const [localOverride, setLocalOverride] = useState<MarketRegime | null>(null);
+
+  // Clear local override when parent regime updates to match
+  useEffect(() => {
+    if (regime?.regime && localOverride && regime.regime === localOverride) {
+      setLocalOverride(null);
+    }
+  }, [regime?.regime, localOverride]);
 
   const handleOverride = async (newRegime: MarketRegime) => {
     setOverriding(true);
     setDropdownOpen(false);
+    setLocalOverride(newRegime); // Show selection immediately
     try {
       await fetch(`${API_BASE}/api/regime/set`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ regime: newRegime, notes: 'Manual override from Refinement Engine' }) }).then(r => r.json());
-      setHint('Regime changed \u2014 Re-Score All to apply');
+      setHint('Regime changed — Re-Score All to apply');
       onRegimeChanged();
     } catch (err) {
       console.error('[RegimeControl] Override failed:', err);
+      setLocalOverride(null); // Revert on failure
     } finally {
       setOverriding(false);
     }
@@ -54,7 +65,7 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
     return () => clearTimeout(t);
   }, [hint]);
 
-  const currentRegime = regime?.regime ?? 'CONSOLIDATION';
+  const currentRegime = localOverride ?? regime?.regime ?? 'CONSOLIDATION';
   const colorClass = REGIME_COLORS[currentRegime] ?? REGIME_COLORS.CONSOLIDATION;
 
   return (

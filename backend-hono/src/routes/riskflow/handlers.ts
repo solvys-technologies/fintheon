@@ -722,8 +722,9 @@ export async function handleRescore(c: Context) {
   }
 
   try {
-    const { rescoreCycle } = await import('../../services/riskflow/central-scorer.js');
-    const rescored = await rescoreCycle();
+    // Re-enrich in-memory feed cache with current regime/calibration/commentator weights
+    const { rescoreInMemoryFeed } = await import('../../services/riskflow/feed-service.js');
+    const rescored = await rescoreInMemoryFeed();
     return c.json({ success: true, rescored, rescoredAt: new Date().toISOString() });
   } catch (error) {
     console.error('[RiskFlow] Rescore error:', error);
