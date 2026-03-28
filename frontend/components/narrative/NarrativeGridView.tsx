@@ -102,31 +102,19 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
-  const preSpaceZoomRef = useRef<typeof state.zoomLevel | null>(null);
 
-  // Spacebar hold = zoom out (temporary), release = snap back
+  // Spacebar hold = pan mode (grab cursor + drag). No zoom change.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !e.repeat && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
         e.preventDefault();
         setSpaceHeld(true);
-        // Save current zoom and zoom out one level
-        const currentIdx = ZOOM_LEVELS.indexOf(state.zoomLevel);
-        if (currentIdx < ZOOM_LEVELS.length - 1) {
-          preSpaceZoomRef.current = state.zoomLevel;
-          dispatch({ type: 'SET_ZOOM', level: ZOOM_LEVELS[currentIdx + 1] });
-        }
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
         setSpaceHeld(false);
-        // Snap back to pre-space zoom level
-        if (preSpaceZoomRef.current) {
-          dispatch({ type: 'SET_ZOOM', level: preSpaceZoomRef.current });
-          preSpaceZoomRef.current = null;
-        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -135,7 +123,7 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [state.zoomLevel, dispatch]);
+  }, []);
 
   // Mouse wheel zoom (Ctrl/Cmd+wheel or pinch) + plain wheel = horizontal pan
   useEffect(() => {

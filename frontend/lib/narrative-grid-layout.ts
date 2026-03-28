@@ -71,7 +71,9 @@ export function getGridColumns(zoomLevel: ZoomLevel, anchorDate: Date): GridColu
     }
     case 'month': {
       // Week columns for current month + 1 month before and after
+      // Deduplicate: weeks spanning month boundaries appear in both months
       const columns: GridColumn[] = [];
+      const seenKeys = new Set<string>();
       const year = anchorDate.getFullYear();
       const month = anchorDate.getMonth();
       for (let mOff = -1; mOff <= 1; mOff++) {
@@ -80,11 +82,14 @@ export function getGridColumns(zoomLevel: ZoomLevel, anchorDate: Date): GridColu
         const adjMonth = ((m % 12) + 12) % 12;
         const weeks = getMonthWeeks(adjYear, adjMonth);
         for (const monday of weeks) {
+          const key = `w-${monday.toISOString().slice(0, 10)}`;
+          if (seenKeys.has(key)) continue; // skip duplicate week
+          seenKeys.add(key);
           const friday = new Date(monday);
           friday.setDate(monday.getDate() + 4);
           friday.setHours(23, 59, 59, 999);
           columns.push({
-            key: `w-${monday.toISOString().slice(0, 10)}`,
+            key,
             label: `Week of ${MONTH_NAMES[monday.getMonth()]} ${monday.getDate()}`,
             startDate: monday,
             endDate: friday,
