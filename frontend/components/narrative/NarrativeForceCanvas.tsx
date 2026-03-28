@@ -229,7 +229,8 @@ function layoutNodes(catalysts: CatalystCard[]): { nodes: Node[]; edges: Edge[] 
       draggable: true,
     });
 
-    // Child event nodes
+    // Child event nodes — positioned absolutely (no parentId so edges work across groups)
+    const groupX = 0;
     for (let i = 0; i < sorted.length; i++) {
       const col = i % COLS;
       const row = Math.floor(i / COLS);
@@ -237,11 +238,9 @@ function layoutNodes(catalysts: CatalystCard[]): { nodes: Node[]; edges: Edge[] 
         id: sorted[i].id,
         type: 'eventCard',
         position: {
-          x: GROUP_PAD + col * CARD_W,
-          y: GROUP_PAD + 30 + row * CARD_H,
+          x: groupX + GROUP_PAD + col * CARD_W,
+          y: groupY + GROUP_PAD + 30 + row * CARD_H,
         },
-        parentId: groupId,
-        extent: 'parent' as const,
         data: { ...sorted[i], isLocked: sorted[i].source !== 'user' },
         draggable: true,
       });
@@ -250,27 +249,29 @@ function layoutNodes(catalysts: CatalystCard[]): { nodes: Node[]; edges: Edge[] 
     groupY += groupH + GROUP_GAP;
   }
 
-  // Compute edges from rope connections
+  // Compute rope edges — CROSS-GROUP connections via shared tags
   const ropeConnections = computeRopeConnections(catalysts, 150);
-  const nodeIds = new Set(nodes.map(n => n.id));
-  const edges: Edge[] = ropeConnections
-    .filter(c => nodeIds.has(c.fromId) && nodeIds.has(c.toId))
-    .map(c => ({
-      id: c.id,
-      source: c.fromId,
-      target: c.toId,
-      type: 'default',
-      animated: c.strength > 0.5,
-      style: {
-        stroke: '#c79f4a',
-        strokeWidth: 1 + c.strength * 1.5,
-        opacity: 0.15 + c.strength * 0.3,
-      },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#c79f4a40' },
-      label: c.sharedTags.slice(0, 2).join(' · '),
-      labelStyle: { fontSize: 8, fill: '#c79f4a80', fontFamily: 'var(--font-mono)' },
-      labelBgStyle: { fill: '#050402', fillOpacity: 0.8 },
-    }));
+  const nodeIds = new Set(nodes.filter(n => n.type === 'eventCard').map(n => n.id));
+  const validRopes = ropeConnections.filter(c => nodeIds.has(c.fromId) && nodeIds.has(c.toId));
+
+  console.debug(`[NarrativeFlow] Rope engine: ${ropeConnections.length} connections computed, ${validRopes.length} valid (${nodeIds.size} nodes)`);
+
+  const edges: Edge[] = validRopes.map(c => ({
+    id: c.id,
+    source: c.fromId,
+    target: c.toId,
+    type: 'default',
+    animated: c.strength > 0.5,
+    style: {
+      stroke: '#c79f4a',
+      strokeWidth: 1.5 + c.strength * 2,
+      opacity: 0.25 + c.strength * 0.4,
+    },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#c79f4a60', width: 8, height: 8 },
+    label: c.sharedTags.slice(0, 2).join(' · '),
+    labelStyle: { fontSize: 8, fill: '#c79f4a80', fontFamily: 'var(--font-mono)' },
+    labelBgStyle: { fill: '#050402', fillOpacity: 0.85 },
+  }));
 
   return { nodes, edges };
 }
