@@ -145,7 +145,15 @@ class ApiClient {
   ): Promise<T> {
     const execute = async (attempt: number): Promise<T> => {
       // Skip request if auth has failed recently (prevents error cascade)
-      if (shouldSkipRequest()) {
+      // But exempt public endpoints that don't require auth
+      const isPublicEndpoint = endpoint.startsWith('/api/riskflow/') ||
+        endpoint.startsWith('/api/predictions/') ||
+        endpoint.startsWith('/api/data/') ||
+        endpoint.startsWith('/api/mirofish/') ||
+        endpoint.startsWith('/api/diagnostics/') ||
+        endpoint.startsWith('/api/market-data/') ||
+        endpoint.startsWith('/api/market/');
+      if (!isPublicEndpoint && shouldSkipRequest()) {
         const err: ApiError = {
           code: 'auth_skipped',
           message: 'Skipping request due to recent auth failure. Will retry in 30s.',

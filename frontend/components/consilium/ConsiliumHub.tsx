@@ -1,11 +1,11 @@
-// [claude-code 2026-03-28] S7: Sanctum overhaul — dropdown nav, NarrativeFlow default, Aquarium rename
+// [claude-code 2026-03-28] S7: Sanctum dropdown (NarrativeFlow/Aquarium/Timeline) inside Consilium tab bar
 // [claude-code 2026-03-24] Persistence refactor: load latest report on mount, persist after simulation
 // [claude-code 2026-03-24] Thread selectedSymbol from settings into Sanctum for TradingView chart
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
-import { MessageSquare, Users, LineChart, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish } from 'lucide-react';
+import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Trophy, Zap } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
-import { DevelopmentsTimeline } from './DevelopmentsTimeline';
+import { AgentScorecard } from './AgentScorecard';
 import { Sanctum } from '../narrative/Sanctum';
 import { TimelinePanel } from '../narrative/TimelinePanel';
 import { ProposalWidget } from '../proposals/ProposalWidget';
@@ -19,15 +19,22 @@ const ChatInterface = lazy(() => import('../ChatInterface'));
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-type SanctumView = 'narratives' | 'aquarium' | 'timeline' | 'chat' | 'boardroom' | 'apparatus';
+// Top-level tabs: Sanctum is a dropdown, others are direct tabs
+type ConsiliumTab = 'sanctum' | 'chat' | 'boardroom' | 'scorecards' | 'apparatus';
+// Sanctum sub-views (inside the dropdown)
+type SanctumSubView = 'narratives' | 'aquarium' | 'timeline';
 
-const SANCTUM_VIEWS: { id: SanctumView; label: string; subtitle?: string; icon: typeof MessageSquare }[] = [
+const REGULAR_TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquare }[] = [
+  { id: 'chat', label: 'Ask Harp', icon: MessageSquare },
+  { id: 'boardroom', label: 'Boardroom', icon: Users },
+  { id: 'scorecards', label: 'Scorecards', icon: Trophy },
+  { id: 'apparatus', label: 'Apparatus', icon: Cpu },
+];
+
+const SANCTUM_SUB_VIEWS: { id: SanctumSubView; label: string; subtitle?: string; icon: typeof GitBranch }[] = [
   { id: 'narratives', label: 'NarrativeFlow', icon: GitBranch },
   { id: 'aquarium', label: 'Aquarium', subtitle: 'shark tank', icon: Fish },
   { id: 'timeline', label: 'Timeline', icon: Clock },
-  { id: 'chat', label: 'Ask Harp', icon: MessageSquare },
-  { id: 'boardroom', label: 'Boardroom', icon: Users },
-  { id: 'apparatus', label: 'Apparatus', icon: Cpu },
 ];
 
 function usePanelState(key: string, defaultValue: boolean): [boolean, () => void] {
@@ -51,9 +58,11 @@ function usePanelState(key: string, defaultValue: boolean): [boolean, () => void
 
 export function ConsiliumHub() {
   const { selectedSymbol } = useSettings();
-  const [activeView, setActiveView] = useState<SanctumView>('narratives');
-  const [displayedView, setDisplayedView] = useState<SanctumView>('narratives');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ConsiliumTab>('sanctum');
+  const [sanctumSubView, setSanctumSubView] = useState<SanctumSubView>('narratives');
+  const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>('sanctum');
+  const [displayedSubView, setDisplayedSubView] = useState<SanctumSubView>('narratives');
+  const [sanctumDropdownOpen, setSanctumDropdownOpen] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [mirofishData, setMirofishData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
@@ -61,31 +70,45 @@ export function ConsiliumHub() {
   const [showProposals, toggleProposals] = usePanelState('fintheon:consilium:proposals-panel', false);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Close dropdown on outside click
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  // Close Sanctum dropdown on outside click
+  const sanctumDropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!dropdownOpen) return;
+    if (!sanctumDropdownOpen) return;
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
+      if (sanctumDropdownRef.current && !sanctumDropdownRef.current.contains(e.target as Node)) {
+        setSanctumDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [dropdownOpen]);
+  }, [sanctumDropdownOpen]);
 
-  // View transition: fade out (150ms) → swap content → fade in (200ms)
-  const handleViewChange = useCallback((view: SanctumView) => {
-    if (view === activeView) return;
+  // Tab transition: fade out (150ms) → swap content → fade in (200ms)
+  const handleTabChange = useCallback((tab: ConsiliumTab) => {
+    if (tab === activeTab && tab !== 'sanctum') return;
     setTransitioning(true);
-    setActiveView(view);
-    setDropdownOpen(false);
+    setActiveTab(tab);
     if (transitionRef.current) clearTimeout(transitionRef.current);
     transitionRef.current = setTimeout(() => {
-      setDisplayedView(view);
+      setDisplayedTab(tab);
       setTransitioning(false);
     }, 150);
-  }, [activeView]);
+  }, [activeTab]);
+
+  const handleSanctumSubChange = useCallback((sub: SanctumSubView) => {
+    setSanctumSubView(sub);
+    setSanctumDropdownOpen(false);
+    if (activeTab !== 'sanctum') {
+      setActiveTab('sanctum');
+    }
+    setTransitioning(true);
+    if (transitionRef.current) clearTimeout(transitionRef.current);
+    transitionRef.current = setTimeout(() => {
+      setDisplayedTab('sanctum');
+      setDisplayedSubView(sub);
+      setTransitioning(false);
+    }, 150);
+  }, [activeTab]);
 
   useEffect(() => {
     return () => { if (transitionRef.current) clearTimeout(transitionRef.current); };
@@ -184,40 +207,41 @@ export function ConsiliumHub() {
     }
   }, [fetchContext]);
 
-  const activeViewConfig = SANCTUM_VIEWS.find(v => v.id === activeView) ?? SANCTUM_VIEWS[0];
-  const ActiveIcon = activeViewConfig.icon;
+  const activeSanctumSub = SANCTUM_SUB_VIEWS.find(v => v.id === sanctumSubView) ?? SANCTUM_SUB_VIEWS[0];
+  const SanctumIcon = activeSanctumSub.icon;
 
   return (
     <div className="flex h-full flex-col bg-[var(--fintheon-bg)]">
-      {/* Header: Sanctum title + dropdown + Proposals toggle */}
-      <div className="flex items-center gap-2 px-4 pt-3 pb-1">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]" style={{ fontFamily: 'var(--font-heading, Roboto, sans-serif)' }}>
-          Sanctum
+      {/* Tab bar: Sanctum dropdown + regular tabs + Proposals toggle */}
+      <div className="flex items-center gap-0.5 px-4 pt-3 pb-1">
+        <h2 className="mr-3 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]" style={{ fontFamily: 'var(--font-heading, Roboto, sans-serif)' }}>
+          Consilium
         </h2>
 
-        {/* View selector dropdown */}
-        <div ref={dropdownRef} className="relative">
+        {/* Sanctum tab with dropdown */}
+        <div ref={sanctumDropdownRef} className="relative">
           <button
-            onClick={() => setDropdownOpen(v => !v)}
-            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/5"
+            onClick={() => { handleTabChange('sanctum'); setSanctumDropdownOpen(v => !v); }}
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeTab === 'sanctum'
+                ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
+                : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
+            }`}
             style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
           >
-            <ActiveIcon size={13} />
-            <span>{activeViewConfig.label}</span>
-            {activeViewConfig.subtitle && (
-              <span className="italic text-[var(--fintheon-accent)]/50 text-[10px]">{activeViewConfig.subtitle}</span>
-            )}
-            <ChevronDown size={12} className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+            <Zap size={13} />
+            Sanctum
+            <ChevronDown size={10} className={`opacity-50 transition-transform ${sanctumDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
-          {dropdownOpen && (
-            <div className="absolute top-full left-0 mt-1 z-50 min-w-[200px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden">
-              {SANCTUM_VIEWS.map(({ id, label, subtitle, icon: Icon }) => (
+          {sanctumDropdownOpen && (
+            <div className="absolute top-full left-0 mt-1 z-50 min-w-[180px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden">
+              {SANCTUM_SUB_VIEWS.map(({ id, label, subtitle, icon: Icon }) => (
                 <button
                   key={id}
-                  onClick={() => handleViewChange(id)}
+                  onClick={() => handleSanctumSubChange(id)}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
-                    activeView === id
+                    sanctumSubView === id && activeTab === 'sanctum'
                       ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
                       : 'text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5'
                   }`}
@@ -230,6 +254,23 @@ export function ConsiliumHub() {
             </div>
           )}
         </div>
+
+        {/* Regular tabs: Chat, Boardroom, Scorecards, Apparatus */}
+        {REGULAR_TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => handleTabChange(id)}
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeTab === id
+                ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
+                : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
+            }`}
+            style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
+          >
+            <Icon size={13} />
+            {label}
+          </button>
+        ))}
 
         <div className="flex-1" />
 
@@ -247,18 +288,19 @@ export function ConsiliumHub() {
         </button>
       </div>
 
-      {/* View content + Proposals panel */}
+      {/* Tab content + Proposals panel */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <div
           className="flex-1 min-h-0 min-w-0 overflow-hidden"
           style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 200ms ease' }}
         >
-          {displayedView === 'narratives' && (
+          {/* Sanctum sub-views */}
+          {displayedTab === 'sanctum' && displayedSubView === 'narratives' && (
             <NarrativeProvider>
               <NarrativeFlow />
             </NarrativeProvider>
           )}
-          {displayedView === 'aquarium' && (
+          {displayedTab === 'sanctum' && displayedSubView === 'aquarium' && (
             <Sanctum
               data={mirofishData}
               onRun={handleRunMiroFish}
@@ -268,18 +310,21 @@ export function ConsiliumHub() {
               selectedSymbol={selectedSymbol.symbol}
             />
           )}
-          {displayedView === 'timeline' && (
+          {displayedTab === 'sanctum' && displayedSubView === 'timeline' && (
             <NarrativeProvider>
               <TimelinePanel />
             </NarrativeProvider>
           )}
-          {displayedView === 'chat' && (
+
+          {/* Regular tabs */}
+          {displayedTab === 'chat' && (
             <Suspense fallback={<AiLoader />}>
               <ChatInterface surfaceId="askharp" />
             </Suspense>
           )}
-          {displayedView === 'boardroom' && <AgentChattr />}
-          {displayedView === 'apparatus' && <ApparatusPage />}
+          {displayedTab === 'boardroom' && <AgentChattr />}
+          {displayedTab === 'scorecards' && <AgentScorecard />}
+          {displayedTab === 'apparatus' && <ApparatusPage />}
         </div>
 
         {/* Collapsible Proposals + Scorecards right panel */}
