@@ -23,8 +23,8 @@
   },
   {
     "id": "seed-045",
-    "title": "Cliff Kicker — NFP Was Stinky",
-    "description": "August NFP came in weak, triggering recession fears. First 'cliff kicker' — market drops off a ledge",
+    "title": "Cliff Kicker \u2014 NFP Was Stinky",
+    "description": "August NFP came in weak, triggering recession fears. First 'cliff kicker' \u2014 market drops off a ledge",
     "date": "2024-08-02",
     "category": "macroeconomic",
     "severity": "high",
@@ -88,8 +88,8 @@
   },
   {
     "id": "seed-048",
-    "title": "Cliff Kicker — Weak PMI",
-    "description": "ISM Manufacturing PMI comes in weak. Second cliff kicker event — market drops sharply on growth fears",
+    "title": "Cliff Kicker \u2014 Weak PMI",
+    "description": "ISM Manufacturing PMI comes in weak. Second cliff kicker event \u2014 market drops sharply on growth fears",
     "date": "2024-09-03",
     "category": "macroeconomic",
     "severity": "high",
@@ -129,7 +129,7 @@
   },
   {
     "id": "seed-050",
-    "title": "Fed's First Cut — 50bps",
+    "title": "Fed's First Cut \u2014 50bps",
     "description": "Federal Reserve cuts rates by 50bps in first cut of the cycle. Larger than expected. Market rallies on dovish surprise",
     "date": "2024-09-18",
     "category": "monetary",
@@ -194,8 +194,8 @@
   },
   {
     "id": "seed-053",
-    "title": "People Bet on Trump — War Tactics",
-    "description": "Polymarket and prediction markets show surging Trump odds. 'War tactics' positioning — defense, energy, financials bid",
+    "title": "People Bet on Trump \u2014 War Tactics",
+    "description": "Polymarket and prediction markets show surging Trump odds. 'War tactics' positioning \u2014 defense, energy, financials bid",
     "date": "2024-10-14",
     "category": "geopolitical",
     "severity": "medium",
@@ -216,8 +216,8 @@
   },
   {
     "id": "seed-054",
-    "title": "Election 2024 — Trump II",
-    "description": "Donald Trump wins 2024 presidential election. Markets rip higher on 'Trump Trade' — financials, energy, small caps lead. Mega-cap tech mixed",
+    "title": "Election 2024 \u2014 Trump II",
+    "description": "Donald Trump wins 2024 presidential election. Markets rip higher on 'Trump Trade' \u2014 financials, energy, small caps lead. Mega-cap tech mixed",
     "date": "2024-11-05",
     "category": "geopolitical",
     "severity": "high",
@@ -262,7 +262,7 @@
   {
     "id": "seed-003",
     "title": "CPI Print +/-",
-    "description": "November CPI release — mixed data, market digesting post-election macro picture",
+    "description": "November CPI release \u2014 mixed data, market digesting post-election macro picture",
     "date": "2024-11-13",
     "category": "macroeconomic",
     "severity": "medium",
@@ -280,7 +280,7 @@
   },
   {
     "id": "seed-004",
-    "title": "Strong Data — Trump Trade Frenzy",
+    "title": "Strong Data \u2014 Trump Trade Frenzy",
     "description": "More strong economic data fueling the post-election Trump trade momentum. Markets ripping higher",
     "date": "2024-12-03",
     "category": "macroeconomic",
@@ -387,7 +387,7 @@
   },
   {
     "id": "seed-009",
-    "title": "Strong NFP Beat — Less Cuts?",
+    "title": "Strong NFP Beat \u2014 Less Cuts?",
     "description": "January NFP came in strong. Markets repricing fewer rate cuts in 2025. Good-news-is-bad-news dynamic",
     "date": "2025-01-10",
     "category": "macroeconomic",
@@ -428,7 +428,7 @@
   },
   {
     "id": "seed-011",
-    "title": "Strong Earnings — CES '25",
+    "title": "Strong Earnings \u2014 CES '25",
     "description": "Strong earnings season kicks off, coinciding with CES 2025 tech showcase. AI narrative still dominant",
     "date": "2025-01-16",
     "category": "earnings",
@@ -558,7 +558,7 @@
   },
   {
     "id": "seed-017",
-    "title": "First Hot CPI in a While — Trump Trade Value Buy",
+    "title": "First Hot CPI in a While \u2014 Trump Trade Value Buy",
     "description": "CPI came in hot but market treated it as a dip-buying opportunity. Trump trade rotation into value continued",
     "date": "2025-02-12",
     "category": "macroeconomic",
@@ -627,7 +627,7 @@
   {
     "id": "seed-020",
     "title": "NVDA Earnings",
-    "description": "Nvidia earnings report — key bellwether for AI capex narrative post-DeepSeek scare",
+    "description": "Nvidia earnings report \u2014 key bellwether for AI capex narrative post-DeepSeek scare",
     "date": "2025-02-26",
     "category": "earnings",
     "severity": "high",
@@ -711,7 +711,7 @@
   },
   {
     "id": "seed-024",
-    "title": "Good CPI — Rejection",
+    "title": "Good CPI \u2014 Rejection",
     "description": "CPI came in good (soft) but market rejected the move higher. Tariff uncertainty overriding macro data",
     "date": "2025-03-12",
     "category": "macroeconomic",
@@ -730,7 +730,7 @@
   },
   {
     "id": "seed-025",
-    "title": "Good PPI — Rejection",
+    "title": "Good PPI \u2014 Rejection",
     "description": "PPI came in soft but market again rejected. Tariff narrative dominating all macro prints",
     "date": "2025-03-13",
     "category": "macroeconomic",
@@ -749,7 +749,7 @@
   },
   {
     "id": "seed-026",
-    "title": "Dovish Fed — Tariffs Are Transitory?",
+    "title": "Dovish Fed \u2014 Tariffs Are Transitory?",
     "description": "FOMC meeting: Fed takes dovish stance, signals tariff inflation impact is transitory. Market briefly rallies",
     "date": "2025-03-19",
     "category": "monetary",
@@ -790,7 +790,7 @@
   {
     "id": "seed-028",
     "title": "LIBERATION DAY",
-    "description": "Trump declares 'Liberation Day' with sweeping reciprocal tariffs — 10% baseline on all countries, 60+ countries hit with higher rates. Market crashes",
+    "description": "Trump declares 'Liberation Day' with sweeping reciprocal tariffs \u2014 10% baseline on all countries, 60+ countries hit with higher rates. Market crashes",
     "date": "2025-04-02",
     "category": "geopolitical",
     "severity": "high",
@@ -812,7 +812,7 @@
   },
   {
     "id": "seed-029",
-    "title": "90-Day Tariff Pause — 'Now's a Good Time to Buy'",
+    "title": "90-Day Tariff Pause \u2014 'Now's a Good Time to Buy'",
     "description": "Trump pauses reciprocal tariffs for 90 days (except China at 125%). Market rips 10%+ in historic rally. 'Now is a good time to buy'",
     "date": "2025-04-09",
     "category": "geopolitical",
@@ -1005,7 +1005,7 @@
   {
     "id": "seed-038",
     "title": "Operation Midnight Hammer",
-    "description": "Hold my beer moment — overnight market structure event. Dramatic move in thin liquidity",
+    "description": "Hold my beer moment \u2014 overnight market structure event. Dramatic move in thin liquidity",
     "date": "2025-06-17",
     "category": "market-structure",
     "severity": "high",
@@ -1150,14 +1150,14 @@
     "tags": [
       "sectorNews"
     ],
-    "narrative": "sectorNews",
+    "narrative": "Sector Rotation",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-055",
-    "title": "CeraWeek Venezuela opposition leader Machado — Venezuelan state would get out of the way in oil industry under eventual opposition led new government",
-    "description": "CeraWeek Venezuela opposition leader Machado — Venezuelan state would get out of the way in oil industry under eventual opposition led new government",
+    "title": "CeraWeek Venezuela opposition leader Machado \u2014 Venezuelan state would get out of the way in oil industry under eventual opposition led new government",
+    "description": "CeraWeek Venezuela opposition leader Machado \u2014 Venezuelan state would get out of the way in oil industry under eventual opposition led new government",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -1171,7 +1171,7 @@
     "tags": [
       "sectorNews"
     ],
-    "narrative": "sectorNews",
+    "narrative": "Sector Rotation",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1192,14 +1192,14 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-057",
-    "title": "US said to have sent Iran a plan to end the Mideast war — NYT",
-    "description": "US said to have sent Iran a plan to end the Mideast war — NYT",
+    "title": "US said to have sent Iran a plan to end the Mideast war \u2014 NYT",
+    "description": "US said to have sent Iran a plan to end the Mideast war \u2014 NYT",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -1212,14 +1212,14 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-058",
-    "title": "Federal Reserves Goolsbee energy shocks can pose risks to both sides of Federal Reserve mandate — PBS NewsHour",
-    "description": "Federal Reserves Goolsbee energy shocks can pose risks to both sides of Federal Reserve mandate — PBS NewsHour",
+    "title": "Federal Reserves Goolsbee energy shocks can pose risks to both sides of Federal Reserve mandate \u2014 PBS NewsHour",
+    "description": "Federal Reserves Goolsbee energy shocks can pose risks to both sides of Federal Reserve mandate \u2014 PBS NewsHour",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "medium",
@@ -1232,14 +1232,14 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-059",
-    "title": "Trump I will also host Xi in Washington DC this year — Truth Social",
-    "description": "Trump I will also host Xi in Washington DC this year — Truth Social",
+    "title": "Trump I will also host Xi in Washington DC this year \u2014 Truth Social",
+    "description": "Trump I will also host Xi in Washington DC this year \u2014 Truth Social",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1252,7 +1252,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1272,7 +1272,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1292,7 +1292,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1312,7 +1312,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1332,7 +1332,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1352,14 +1352,14 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-065",
-    "title": "Cyprus demands new security deal regarding British bases following Iranian drone attack on UK military facilities on the island — The Telegraph",
-    "description": "Cyprus demands new security deal regarding British bases following Iranian drone attack on UK military facilities on the island — The Telegraph",
+    "title": "Cyprus demands new security deal regarding British bases following Iranian drone attack on UK military facilities on the island \u2014 The Telegraph",
+    "description": "Cyprus demands new security deal regarding British bases following Iranian drone attack on UK military facilities on the island \u2014 The Telegraph",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1372,7 +1372,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1392,7 +1392,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1412,7 +1412,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1432,7 +1432,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1453,7 +1453,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1473,7 +1473,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1493,14 +1493,14 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-072",
-    "title": "Trump tech panel to weigh in on AI policy other issues — WSJ",
-    "description": "Trump tech panel to weigh in on AI policy other issues — WSJ",
+    "title": "Trump tech panel to weigh in on AI policy other issues \u2014 WSJ",
+    "description": "Trump tech panel to weigh in on AI policy other issues \u2014 WSJ",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1513,7 +1513,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1534,7 +1534,7 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1554,7 +1554,7 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1574,7 +1574,7 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1594,7 +1594,7 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1614,14 +1614,14 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-078",
-    "title": "Oil and Gas activity in Texas Louisiana and New Mexico increased in the first quarter of 2026 — Dallas Fed survey",
-    "description": "Oil and Gas activity in Texas Louisiana and New Mexico increased in the first quarter of 2026 — Dallas Fed survey",
+    "title": "Oil and Gas activity in Texas Louisiana and New Mexico increased in the first quarter of 2026 \u2014 Dallas Fed survey",
+    "description": "Oil and Gas activity in Texas Louisiana and New Mexico increased in the first quarter of 2026 \u2014 Dallas Fed survey",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "medium",
@@ -1635,7 +1635,7 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1655,7 +1655,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1675,7 +1675,7 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1696,7 +1696,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1717,7 +1717,7 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1737,7 +1737,7 @@
     "tags": [
       "cpiPrint"
     ],
-    "narrative": "cpiPrint",
+    "narrative": "Inflation Watch",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1757,7 +1757,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1777,14 +1777,14 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-086",
-    "title": "Trump receives daily briefings with video footage of the largest and most successful strikes on Iranian targets — NBC citing US officials",
-    "description": "Trump receives daily briefings with video footage of the largest and most successful strikes on Iranian targets — NBC citing US officials",
+    "title": "Trump receives daily briefings with video footage of the largest and most successful strikes on Iranian targets \u2014 NBC citing US officials",
+    "description": "Trump receives daily briefings with video footage of the largest and most successful strikes on Iranian targets \u2014 NBC citing US officials",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1797,7 +1797,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1817,7 +1817,7 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1837,14 +1837,14 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-089",
-    "title": "Iraq orders further oil output cuts asking BP and ENI to slash production at major southern fields — Three Iraqi oil officials",
-    "description": "Iraq orders further oil output cuts asking BP and ENI to slash production at major southern fields — Three Iraqi oil officials",
+    "title": "Iraq orders further oil output cuts asking BP and ENI to slash production at major southern fields \u2014 Three Iraqi oil officials",
+    "description": "Iraq orders further oil output cuts asking BP and ENI to slash production at major southern fields \u2014 Three Iraqi oil officials",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -1858,14 +1858,14 @@
     "tags": [
       "sectorNews"
     ],
-    "narrative": "sectorNews",
+    "narrative": "Sector Rotation",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-090",
-    "title": "Trump rejected Israels Prime Minister Netanyahus idea to call for Iran uprising — Axios",
-    "description": "Trump rejected Israels Prime Minister Netanyahus idea to call for Iran uprising — Axios",
+    "title": "Trump rejected Israels Prime Minister Netanyahus idea to call for Iran uprising \u2014 Axios",
+    "description": "Trump rejected Israels Prime Minister Netanyahus idea to call for Iran uprising \u2014 Axios",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1878,14 +1878,14 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-091",
-    "title": "Israels working assumption Trump may announce a ceasefire by next Saturday — Israels N12 News",
-    "description": "Israels working assumption Trump may announce a ceasefire by next Saturday — Israels N12 News",
+    "title": "Israels working assumption Trump may announce a ceasefire by next Saturday \u2014 Israels N12 News",
+    "description": "Israels working assumption Trump may announce a ceasefire by next Saturday \u2014 Israels N12 News",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1898,7 +1898,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1918,7 +1918,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1938,7 +1938,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1958,7 +1958,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1978,7 +1978,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -1998,14 +1998,14 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-097",
-    "title": "Top Transportation Security Administration official will tell Congress funding standoff is raising major security risks — written testimony",
-    "description": "Top Transportation Security Administration official will tell Congress funding standoff is raising major security risks — written testimony",
+    "title": "Top Transportation Security Administration official will tell Congress funding standoff is raising major security risks \u2014 written testimony",
+    "description": "Top Transportation Security Administration official will tell Congress funding standoff is raising major security risks \u2014 written testimony",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -2018,7 +2018,7 @@
     "tags": [
       "politicalCommentary"
     ],
-    "narrative": "politicalCommentary",
+    "narrative": "Political Landscape",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -2038,7 +2038,7 @@
     "tags": [
       "geopolitical"
     ],
-    "narrative": "geopolitical",
+    "narrative": "Geopolitical Risk",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -2059,7 +2059,7 @@
     "tags": [
       "fedDecision"
     ],
-    "narrative": "fedDecision",
+    "narrative": "Fed Rate Cycle",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -2107,8 +2107,8 @@
   },
   {
     "id": "seed-102",
-    "title": "Iran will end the war at the time of its own choosing — Press TV",
-    "description": "Iran will end the war at the time of its own choosing — Press TV",
+    "title": "Iran will end the war at the time of its own choosing \u2014 Press TV",
+    "description": "Iran will end the war at the time of its own choosing \u2014 Press TV",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -2148,8 +2148,8 @@
   },
   {
     "id": "seed-104",
-    "title": "EIA Crude Oil Inventories Actual 6926M Forecast — 125M Previous 6156M",
-    "description": "EIA Crude Oil Inventories Actual 6926M Forecast — 125M Previous 6156M",
+    "title": "EIA Crude Oil Inventories Actual 6926M Forecast \u2014 125M Previous 6156M",
+    "description": "EIA Crude Oil Inventories Actual 6926M Forecast \u2014 125M Previous 6156M",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -2258,8 +2258,8 @@
   },
   {
     "id": "seed-109",
-    "title": "Trump Meeting Chinas President Xi rescheduled for May 14th — 15th in Beijing due to Iran conflict — Truth Social",
-    "description": "Trump Meeting Chinas President Xi rescheduled for May 14th — 15th in Beijing due to Iran conflict — Truth Social",
+    "title": "Trump Meeting Chinas President Xi rescheduled for May 14th \u2014 15th in Beijing due to Iran conflict \u2014 Truth Social",
+    "description": "Trump Meeting Chinas President Xi rescheduled for May 14th \u2014 15th in Beijing due to Iran conflict \u2014 Truth Social",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -2280,8 +2280,8 @@
   },
   {
     "id": "seed-110",
-    "title": "Oil companies expect Henry Hub Natural Gas prices of 360 per million British thermal units at year end 2026 — Dallas Fed Survey",
-    "description": "Oil companies expect Henry Hub Natural Gas prices of 360 per million British thermal units at year end 2026 — Dallas Fed Survey",
+    "title": "Oil companies expect Henry Hub Natural Gas prices of 360 per million British thermal units at year end 2026 \u2014 Dallas Fed Survey",
+    "description": "Oil companies expect Henry Hub Natural Gas prices of 360 per million British thermal units at year end 2026 \u2014 Dallas Fed Survey",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -2325,8 +2325,8 @@
   },
   {
     "id": "seed-112",
-    "title": "Companies expect a West Texas intermediate oil price of 74 per barrel at year end 2026 — Dallas Fed survey",
-    "description": "Companies expect a West Texas intermediate oil price of 74 per barrel at year end 2026 — Dallas Fed survey",
+    "title": "Companies expect a West Texas intermediate oil price of 74 per barrel at year end 2026 \u2014 Dallas Fed survey",
+    "description": "Companies expect a West Texas intermediate oil price of 74 per barrel at year end 2026 \u2014 Dallas Fed survey",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -2714,8 +2714,8 @@
   },
   {
     "id": "seed-130",
-    "title": "Russias oil export capacity has shrunk by 40 after attacks on infrastructure and tanker seizures — Calculations based on data from sources show",
-    "description": "Russias oil export capacity has shrunk by 40 after attacks on infrastructure and tanker seizures — Calculations based on data from sources show",
+    "title": "Russias oil export capacity has shrunk by 40 after attacks on infrastructure and tanker seizures \u2014 Calculations based on data from sources show",
+    "description": "Russias oil export capacity has shrunk by 40 after attacks on infrastructure and tanker seizures \u2014 Calculations based on data from sources show",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -2757,8 +2757,8 @@
   },
   {
     "id": "seed-132",
-    "title": "US shale Oil and Gas executives said production was little changed in the first quarter of 2026 — Dallas Fed Survey",
-    "description": "US shale Oil and Gas executives said production was little changed in the first quarter of 2026 — Dallas Fed Survey",
+    "title": "US shale Oil and Gas executives said production was little changed in the first quarter of 2026 \u2014 Dallas Fed Survey",
+    "description": "US shale Oil and Gas executives said production was little changed in the first quarter of 2026 \u2014 Dallas Fed Survey",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "low",
@@ -2780,8 +2780,8 @@
   },
   {
     "id": "seed-133",
-    "title": "Trump I may call up the national guard to help airports — Truth Social",
-    "description": "Trump I may call up the national guard to help airports — Truth Social",
+    "title": "Trump I may call up the national guard to help airports \u2014 Truth Social",
+    "description": "Trump I may call up the national guard to help airports \u2014 Truth Social",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -2869,8 +2869,8 @@
   },
   {
     "id": "seed-137",
-    "title": "White House executive order — further continuation of Federal Emergency Management Agency Review Council",
-    "description": "White House executive order — further continuation of Federal Emergency Management Agency Review Council",
+    "title": "White House executive order \u2014 further continuation of Federal Emergency Management Agency Review Council",
+    "description": "White House executive order \u2014 further continuation of Federal Emergency Management Agency Review Council",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "high",
@@ -2889,8 +2889,8 @@
   },
   {
     "id": "seed-138",
-    "title": "Iran Lawmakers call to continue war until the enemy is deterred — ISNA",
-    "description": "Iran Lawmakers call to continue war until the enemy is deterred — ISNA",
+    "title": "Iran Lawmakers call to continue war until the enemy is deterred \u2014 ISNA",
+    "description": "Iran Lawmakers call to continue war until the enemy is deterred \u2014 ISNA",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -2932,8 +2932,8 @@
   },
   {
     "id": "seed-140",
-    "title": "Iraqs oil output plunges further as storage fills and Hormuz exports are blocked by conflict — Three Iraqi energy officials",
-    "description": "Iraqs oil output plunges further as storage fills and Hormuz exports are blocked by conflict — Three Iraqi energy officials",
+    "title": "Iraqs oil output plunges further as storage fills and Hormuz exports are blocked by conflict \u2014 Three Iraqi energy officials",
+    "description": "Iraqs oil output plunges further as storage fills and Hormuz exports are blocked by conflict \u2014 Three Iraqi energy officials",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "high",
@@ -2976,8 +2976,8 @@
   },
   {
     "id": "seed-142",
-    "title": "Trump administration expected to lift summer gasoline regulations to curb energy prices as soon as Wednesday — sources",
-    "description": "Trump administration expected to lift summer gasoline regulations to curb energy prices as soon as Wednesday — sources",
+    "title": "Trump administration expected to lift summer gasoline regulations to curb energy prices as soon as Wednesday \u2014 sources",
+    "description": "Trump administration expected to lift summer gasoline regulations to curb energy prices as soon as Wednesday \u2014 sources",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -3104,8 +3104,8 @@
   },
   {
     "id": "seed-148",
-    "title": "Kansas City Fed Manufacturing Actual 11 Forecast — Previous 10",
-    "description": "Kansas City Fed Manufacturing Actual 11 Forecast — Previous 10",
+    "title": "Kansas City Fed Manufacturing Actual 11 Forecast \u2014 Previous 10",
+    "description": "Kansas City Fed Manufacturing Actual 11 Forecast \u2014 Previous 10",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "medium",
@@ -3170,8 +3170,8 @@
   },
   {
     "id": "seed-151",
-    "title": "White House downplays reports Iran rejected Trump peace proposal — Axios",
-    "description": "White House downplays reports Iran rejected Trump peace proposal — Axios",
+    "title": "White House downplays reports Iran rejected Trump peace proposal \u2014 Axios",
+    "description": "White House downplays reports Iran rejected Trump peace proposal \u2014 Axios",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -3212,8 +3212,8 @@
   },
   {
     "id": "seed-153",
-    "title": "Iran will end the war at a time of its own choosing only if its own conditions are met — Irans Press TV citing official",
-    "description": "Iran will end the war at a time of its own choosing only if its own conditions are met — Irans Press TV citing official",
+    "title": "Iran will end the war at a time of its own choosing only if its own conditions are met \u2014 Irans Press TV citing official",
+    "description": "Iran will end the war at a time of its own choosing only if its own conditions are met \u2014 Irans Press TV citing official",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -3255,8 +3255,8 @@
   },
   {
     "id": "seed-155",
-    "title": "Israeli army is currently working on establishing 18 new forward operating bases in southern Lebanon — Israeli Channel 14",
-    "description": "Israeli army is currently working on establishing 18 new forward operating bases in southern Lebanon — Israeli Channel 14",
+    "title": "Israeli army is currently working on establishing 18 new forward operating bases in southern Lebanon \u2014 Israeli Channel 14",
+    "description": "Israeli army is currently working on establishing 18 new forward operating bases in southern Lebanon \u2014 Israeli Channel 14",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -3276,8 +3276,8 @@
   },
   {
     "id": "seed-156",
-    "title": "US weekly crude oil inventories rose in the latest week to the highest since June 2024 — EIA",
-    "description": "US weekly crude oil inventories rose in the latest week to the highest since June 2024 — EIA",
+    "title": "US weekly crude oil inventories rose in the latest week to the highest since June 2024 \u2014 EIA",
+    "description": "US weekly crude oil inventories rose in the latest week to the highest since June 2024 \u2014 EIA",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -3320,8 +3320,8 @@
   },
   {
     "id": "seed-158",
-    "title": "EIA Crude Cushing Inventories — Actual 3421M Forecast — Previous 0944M",
-    "description": "EIA Crude Cushing Inventories — Actual 3421M Forecast — Previous 0944M",
+    "title": "EIA Crude Cushing Inventories \u2014 Actual 3421M Forecast \u2014 Previous 0944M",
+    "description": "EIA Crude Cushing Inventories \u2014 Actual 3421M Forecast \u2014 Previous 0944M",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -3388,8 +3388,8 @@
   },
   {
     "id": "seed-161",
-    "title": "Idle Russias Ust Luga oil products terminal may force major refineries to cut runs — Sources",
-    "description": "Idle Russias Ust Luga oil products terminal may force major refineries to cut runs — Sources",
+    "title": "Idle Russias Ust Luga oil products terminal may force major refineries to cut runs \u2014 Sources",
+    "description": "Idle Russias Ust Luga oil products terminal may force major refineries to cut runs \u2014 Sources",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -3411,8 +3411,8 @@
   },
   {
     "id": "seed-162",
-    "title": "Iran wont allow Trump to dictate timing of wars end — Press TV",
-    "description": "Iran wont allow Trump to dictate timing of wars end — Press TV",
+    "title": "Iran wont allow Trump to dictate timing of wars end \u2014 Press TV",
+    "description": "Iran wont allow Trump to dictate timing of wars end \u2014 Press TV",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -3498,8 +3498,8 @@
   },
   {
     "id": "seed-166",
-    "title": "Press TV has access to information about Irans response to the American plan and Irans conditions for ending the war which will be published in a few moments — — Mehr News",
-    "description": "Press TV has access to information about Irans response to the American plan and Irans conditions for ending the war which will be published in a few moments — — Mehr News",
+    "title": "Press TV has access to information about Irans response to the American plan and Irans conditions for ending the war which will be published in a few moments \u2014 \u2014 Mehr News",
+    "description": "Press TV has access to information about Irans response to the American plan and Irans conditions for ending the war which will be published in a few moments \u2014 \u2014 Mehr News",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -3586,8 +3586,8 @@
   },
   {
     "id": "seed-170",
-    "title": "Brussels plans carbon price brake as Iran war squeezes industry — FT",
-    "description": "Brussels plans carbon price brake as Iran war squeezes industry — FT",
+    "title": "Brussels plans carbon price brake as Iran war squeezes industry \u2014 FT",
+    "description": "Brussels plans carbon price brake as Iran war squeezes industry \u2014 FT",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -3630,8 +3630,8 @@
   },
   {
     "id": "seed-172",
-    "title": "Meta awards stock options and restricted stock units to chief operating officer Javier Olivan — filing",
-    "description": "Meta awards stock options and restricted stock units to chief operating officer Javier Olivan — filing",
+    "title": "Meta awards stock options and restricted stock units to chief operating officer Javier Olivan \u2014 filing",
+    "description": "Meta awards stock options and restricted stock units to chief operating officer Javier Olivan \u2014 filing",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "high",
@@ -4163,8 +4163,8 @@
   },
   {
     "id": "seed-197",
-    "title": "Feds Miran Speaks — WATCH LIVE",
-    "description": "Feds Miran Speaks — WATCH LIVE",
+    "title": "Feds Miran Speaks \u2014 WATCH LIVE",
+    "description": "Feds Miran Speaks \u2014 WATCH LIVE",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -4206,8 +4206,8 @@
   },
   {
     "id": "seed-199",
-    "title": "FinancialJuice Widget – Get this Extension for Firefox (en-CA)",
-    "description": "FinancialJuice Widget – Get this Extension for Firefox (en-CA)",
+    "title": "FinancialJuice Widget \u2013 Get this Extension for Firefox (en-CA)",
+    "description": "FinancialJuice Widget \u2013 Get this Extension for Firefox (en-CA)",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6151,7 +6151,7 @@
   {
     "id": "seed-289",
     "title": "US PPI YOY ACTUAL 2.4% (FORECAST 2.5%, PREVIOUS 2.7% ...",
-    "description": "🔴 US PPI YOY ACTUAL 2.4% (FORECAST 2.5%, PREVIOUS 2.7% ...",
+    "description": "\ud83d\udd34 US PPI YOY ACTUAL 2.4% (FORECAST 2.5%, PREVIOUS 2.7% ...",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -6446,10 +6446,10 @@
   },
   {
     "id": "seed-303",
-    "title": "Japanese Foreign Bond Investment Actual — 6353B Forecast — Previous — 9920B",
-    "description": "Japanese Foreign Bond Investment Actual — 6353B Forecast — Previous — 9920B",
+    "title": "Japanese Foreign Bond Investment Actual \u2014 6353B Forecast \u2014 Previous \u2014 9920B",
+    "description": "Japanese Foreign Bond Investment Actual \u2014 6353B Forecast \u2014 Previous \u2014 9920B",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -6458,26 +6458,10 @@
       "/ES",
       "/ZN"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-304",
-    "title": "UN Sec General Guterres A number of initiatives for dialogue and peace are underway and must succeed",
-    "description": "UN Sec General Guterres A number of initiatives for dialogue and peace are underway and must succeed",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "boj-japan"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "BOJ & Japan Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -6529,7 +6513,7 @@
     "title": "UK government to prioritise British shipbuilding steel aluminum and energy infrastructure for government contracts for national security",
     "description": "UK government to prioritise British shipbuilding steel aluminum and energy infrastructure for government contracts for national security",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -6537,15 +6521,17 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "boe-uk"
+    ],
+    "narrative": "BOE & UK Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-308",
-    "title": "Mexico to announce support package for transportation industry during presidential press conference on Thursday — Economy Ministry",
-    "description": "Mexico to announce support package for transportation industry during presidential press conference on Thursday — Economy Ministry",
+    "title": "Mexico to announce support package for transportation industry during presidential press conference on Thursday \u2014 Economy Ministry",
+    "description": "Mexico to announce support package for transportation industry during presidential press conference on Thursday \u2014 Economy Ministry",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6589,8 +6575,8 @@
   },
   {
     "id": "seed-310",
-    "title": "Various points seen as next to impossible for Iran to accept another said it mirrored the points the US tabled with Iran in past talks — CNN Reporter citing source on 15 point plan",
-    "description": "Various points seen as next to impossible for Iran to accept another said it mirrored the points the US tabled with Iran in past talks — CNN Reporter citing source on 15 point plan",
+    "title": "Various points seen as next to impossible for Iran to accept another said it mirrored the points the US tabled with Iran in past talks \u2014 CNN Reporter citing source on 15 point plan",
+    "description": "Various points seen as next to impossible for Iran to accept another said it mirrored the points the US tabled with Iran in past talks \u2014 CNN Reporter citing source on 15 point plan",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6613,7 +6599,7 @@
     "title": "OpenAI CFO Friar We have to build a company ready to be a public company this round de risks",
     "description": "OpenAI CFO Friar We have to build a company ready to be a public company this round de risks",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "earnings",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -6621,8 +6607,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "nasdaq-bigwigs"
+    ],
+    "narrative": "Corporate Leaders & Earnings",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -6673,7 +6661,7 @@
     "title": "WH Press Sec Leavitt Control of uranium is point of conversation still",
     "description": "WH Press Sec Leavitt Control of uranium is point of conversation still",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "geopolitical",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -6681,8 +6669,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "us-government"
+    ],
+    "narrative": "US Government & Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -6731,8 +6721,8 @@
   },
   {
     "id": "seed-317",
-    "title": "China PBOC expected to set yuan mid point near 69108 per dollar — source estimate",
-    "description": "China PBOC expected to set yuan mid point near 69108 per dollar — source estimate",
+    "title": "China PBOC expected to set yuan mid point near 69108 per dollar \u2014 source estimate",
+    "description": "China PBOC expected to set yuan mid point near 69108 per dollar \u2014 source estimate",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6756,7 +6746,7 @@
     "title": "BoEs Greene It might take a year to judge any second round effects",
     "description": "BoEs Greene It might take a year to judge any second round effects",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "bullish",
     "direction": "bullish",
@@ -6764,8 +6754,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "boe-uk"
+    ],
+    "narrative": "BOE & UK Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -6793,8 +6785,8 @@
   },
   {
     "id": "seed-320",
-    "title": "The Israeli army intensifies its strikes in Iran amid growing possibilities of holding talks between — NYT citing sources",
-    "description": "The Israeli army intensifies its strikes in Iran amid growing possibilities of holding talks between — NYT citing sources",
+    "title": "The Israeli army intensifies its strikes in Iran amid growing possibilities of holding talks between \u2014 NYT citing sources",
+    "description": "The Israeli army intensifies its strikes in Iran amid growing possibilities of holding talks between \u2014 NYT citing sources",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6835,27 +6827,9 @@
     "status": "resolved"
   },
   {
-    "id": "seed-322",
-    "title": "Taiwan overnight interbank rate opens at 0805 percent versus 0805 percent at previous session open",
-    "description": "Taiwan overnight interbank rate opens at 0805 percent versus 0805 percent at previous session open",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-323",
-    "title": "EIA Gasoline Inventories Actual — 2593M Forecast — 2M Previous — 5436M",
-    "description": "EIA Gasoline Inventories Actual — 2593M Forecast — 2M Previous — 5436M",
+    "title": "EIA Gasoline Inventories Actual \u2014 2593M Forecast \u2014 2M Previous \u2014 5436M",
+    "description": "EIA Gasoline Inventories Actual \u2014 2593M Forecast \u2014 2M Previous \u2014 5436M",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -6865,15 +6839,17 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "macro-data"
+    ],
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-324",
-    "title": "EIA Distillate Inventories Actual 3032M Forecast — 195M Previous — 2527M",
-    "description": "EIA Distillate Inventories Actual 3032M Forecast — 195M Previous — 2527M",
+    "title": "EIA Distillate Inventories Actual 3032M Forecast \u2014 195M Previous \u2014 2527M",
+    "description": "EIA Distillate Inventories Actual 3032M Forecast \u2014 195M Previous \u2014 2527M",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -6883,15 +6859,17 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "macro-data"
+    ],
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-325",
-    "title": "The agreement with Iran is very similar to the understandings in Gaza and Lebanon — Israeli Channel 12",
-    "description": "The agreement with Iran is very similar to the understandings in Gaza and Lebanon — Israeli Channel 12",
+    "title": "The agreement with Iran is very similar to the understandings in Gaza and Lebanon \u2014 Israeli Channel 12",
+    "description": "The agreement with Iran is very similar to the understandings in Gaza and Lebanon \u2014 Israeli Channel 12",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6994,24 +6972,6 @@
     "status": "resolved"
   },
   {
-    "id": "seed-330",
-    "title": "Chiles central bank Inflation could reach around 4 year over year in second quarter",
-    "description": "Chiles central bank Inflation could reach around 4 year over year in second quarter",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "low",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-331",
     "title": "BOJ minutes one member said yen depreciation and rise in long term interest rates largely reflected fundamentals such as inflation expectations which meant only prescription from monetary policy side was to",
     "description": "BOJ minutes one member said yen depreciation and rise in long term interest rates largely reflected fundamentals such as inflation expectations which meant only prescription from monetary policy side was to",
@@ -7035,8 +6995,8 @@
   },
   {
     "id": "seed-332",
-    "title": "Senior Iranian Official Irans initial response to the US proposal is not positive but Tehran is still reviewing the proposal — Sources",
-    "description": "Senior Iranian Official Irans initial response to the US proposal is not positive but Tehran is still reviewing the proposal — Sources",
+    "title": "Senior Iranian Official Irans initial response to the US proposal is not positive but Tehran is still reviewing the proposal \u2014 Sources",
+    "description": "Senior Iranian Official Irans initial response to the US proposal is not positive but Tehran is still reviewing the proposal \u2014 Sources",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7056,8 +7016,8 @@
   },
   {
     "id": "seed-333",
-    "title": "Some US troops in the Middle East relocated to hotels and offices — NYT",
-    "description": "Some US troops in the Middle East relocated to hotels and offices — NYT",
+    "title": "Some US troops in the Middle East relocated to hotels and offices \u2014 NYT",
+    "description": "Some US troops in the Middle East relocated to hotels and offices \u2014 NYT",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7077,10 +7037,10 @@
   },
   {
     "id": "seed-334",
-    "title": "SpaceX aims to file for IPO as soon as this week — The Information",
-    "description": "SpaceX aims to file for IPO as soon as this week — The Information",
+    "title": "SpaceX aims to file for IPO as soon as this week \u2014 The Information",
+    "description": "SpaceX aims to file for IPO as soon as this week \u2014 The Information",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "earnings",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -7088,26 +7048,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-335",
-    "title": "A US Department of Defense official told Al Jazeera Approximately 1000 soldiers from the 82nd Airborne Division representing the vanguard of the force are expected to arrive by the end of the week",
-    "description": "A US Department of Defense official told Al Jazeera Approximately 1000 soldiers from the 82nd Airborne Division representing the vanguard of the force are expected to arrive by the end of the week",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "nasdaq-bigwigs"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Corporate Leaders & Earnings",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7138,7 +7082,7 @@
     "title": "RBA Kent need to ensure initial rise in prices does not lead to rise in longer term inflationary expectations",
     "description": "RBA Kent need to ensure initial rise in prices does not lead to rise in longer term inflationary expectations",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "low",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -7146,26 +7090,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-338",
-    "title": "French Military Frances Armed Forces chief Mandon to hold technical meeting by videoconference soon with army chiefs keen to play a role in restoring maritime navigation in Hormuz",
-    "description": "French Military Frances Armed Forces chief Mandon to hold technical meeting by videoconference soon with army chiefs keen to play a role in restoring maritime navigation in Hormuz",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "foreign-central-banks"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Global Central Banks",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7192,8 +7120,8 @@
   },
   {
     "id": "seed-340",
-    "title": "US 7 Year High Yield Actual 4255 Forecast — Previous 3790",
-    "description": "US 7 Year High Yield Actual 4255 Forecast — Previous 3790",
+    "title": "US 7 Year High Yield Actual 4255 Forecast \u2014 Previous 3790",
+    "description": "US 7 Year High Yield Actual 4255 Forecast \u2014 Previous 3790",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -7204,26 +7132,10 @@
       "/ES",
       "/ZN"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-341",
-    "title": "Denmark left wing bloc set to win 83 seats in parliament election right wing 78 seats moderates party 14 seats TV2 projects as 90 percent of votes counted",
-    "description": "Denmark left wing bloc set to win 83 seats in parliament election right wing 78 seats moderates party 14 seats TV2 projects as 90 percent of votes counted",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "macro-data"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7272,47 +7184,11 @@
     "status": "resolved"
   },
   {
-    "id": "seed-344",
-    "title": "Denmark prime minister after election it will be difficult to form government",
-    "description": "Denmark prime minister after election it will be difficult to form government",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-345",
-    "title": "NYMEX Diesel April futures settle at 40063 a gallon",
-    "description": "NYMEX Diesel April futures settle at 40063 a gallon",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-346",
     "title": "ECBs Villeroy There are no particular financial stability concerns at present",
     "description": "ECBs Villeroy There are no particular financial stability concerns at present",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -7320,15 +7196,17 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-347",
-    "title": "US Central Command Our forces are striking targets to weaken the Iranian regimes infrastructure and military capabilities — Al Jazeera",
-    "description": "US Central Command Our forces are striking targets to weaken the Iranian regimes infrastructure and military capabilities — Al Jazeera",
+    "title": "US Central Command Our forces are striking targets to weaken the Iranian regimes infrastructure and military capabilities \u2014 Al Jazeera",
+    "description": "US Central Command Our forces are striking targets to weaken the Iranian regimes infrastructure and military capabilities \u2014 Al Jazeera",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7347,29 +7225,11 @@
     "status": "resolved"
   },
   {
-    "id": "seed-348",
-    "title": "German Finance Minister The German society will have to work more",
-    "description": "German Finance Minister The German society will have to work more",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-349",
     "title": "OpenAI CFO Sarah Friar Andreessen Horowitz DE Shaw Ventures MGX TPG and T Rowe Price are joining funding round",
     "description": "OpenAI CFO Sarah Friar Andreessen Horowitz DE Shaw Ventures MGX TPG and T Rowe Price are joining funding round",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "earnings",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -7377,8 +7237,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "nasdaq-bigwigs"
+    ],
+    "narrative": "Corporate Leaders & Earnings",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7409,7 +7271,7 @@
     "title": "ECBs Villeroy The ECB will do what is needed to get inflation to 2",
     "description": "ECBs Villeroy The ECB will do what is needed to get inflation to 2",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "low",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -7417,8 +7279,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7445,8 +7309,8 @@
   },
   {
     "id": "seed-353",
-    "title": "Meta platforms to lay off hundreds — Information",
-    "description": "Meta platforms to lay off hundreds — Information",
+    "title": "Meta platforms to lay off hundreds \u2014 Information",
+    "description": "Meta platforms to lay off hundreds \u2014 Information",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -7466,8 +7330,8 @@
   },
   {
     "id": "seed-354",
-    "title": "US 4 Week Bill High Yield Actual 362 Forecast — Previous 3615",
-    "description": "US 4 Week Bill High Yield Actual 362 Forecast — Previous 3615",
+    "title": "US 4 Week Bill High Yield Actual 362 Forecast \u2014 Previous 3615",
+    "description": "US 4 Week Bill High Yield Actual 362 Forecast \u2014 Previous 3615",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -7478,8 +7342,10 @@
       "/ES",
       "/ZN"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "macro-data"
+    ],
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7527,10 +7393,10 @@
   },
   {
     "id": "seed-357",
-    "title": "OpenAI CFO Sarah Friar We are going to raise more than 120 billion — CNBC interview",
-    "description": "OpenAI CFO Sarah Friar We are going to raise more than 120 billion — CNBC interview",
+    "title": "OpenAI CFO Sarah Friar We are going to raise more than 120 billion \u2014 CNBC interview",
+    "description": "OpenAI CFO Sarah Friar We are going to raise more than 120 billion \u2014 CNBC interview",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "earnings",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -7538,15 +7404,17 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "nasdaq-bigwigs"
+    ],
+    "narrative": "Corporate Leaders & Earnings",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-358",
-    "title": "US 5 Year Note Bid to Cover Actual 2290 Forecast — Previous 2320",
-    "description": "US 5 Year Note Bid to Cover Actual 2290 Forecast — Previous 2320",
+    "title": "US 5 Year Note Bid to Cover Actual 2290 Forecast \u2014 Previous 2320",
+    "description": "US 5 Year Note Bid to Cover Actual 2290 Forecast \u2014 Previous 2320",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -7556,8 +7424,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "macro-data"
+    ],
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7584,8 +7454,8 @@
   },
   {
     "id": "seed-360",
-    "title": "Residential area targeted in Iranian capital Tehran rescuers searching rubble — semi official SNN news agency",
-    "description": "Residential area targeted in Iranian capital Tehran rescuers searching rubble — semi official SNN news agency",
+    "title": "Residential area targeted in Iranian capital Tehran rescuers searching rubble \u2014 semi official SNN news agency",
+    "description": "Residential area targeted in Iranian capital Tehran rescuers searching rubble \u2014 semi official SNN news agency",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7605,8 +7475,8 @@
   },
   {
     "id": "seed-361",
-    "title": "The US is working to arrange Iran talks in Pakistan this weekend — CNN citing two senior administration officials",
-    "description": "The US is working to arrange Iran talks in Pakistan this weekend — CNN citing two senior administration officials",
+    "title": "The US is working to arrange Iran talks in Pakistan this weekend \u2014 CNN citing two senior administration officials",
+    "description": "The US is working to arrange Iran talks in Pakistan this weekend \u2014 CNN citing two senior administration officials",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7625,27 +7495,9 @@
     "status": "resolved"
   },
   {
-    "id": "seed-362",
-    "title": "Italys PM Meloni sees boost in gas flows from Algeria — ANSA",
-    "description": "Italys PM Meloni sees boost in gas flows from Algeria — ANSA",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-363",
-    "title": "Meta grants stock options and restricted stock units to chief product officer Chris Cox — filing",
-    "description": "Meta grants stock options and restricted stock units to chief product officer Chris Cox — filing",
+    "title": "Meta grants stock options and restricted stock units to chief product officer Chris Cox \u2014 filing",
+    "description": "Meta grants stock options and restricted stock units to chief product officer Chris Cox \u2014 filing",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -7664,27 +7516,9 @@
     "status": "resolved"
   },
   {
-    "id": "seed-364",
-    "title": "Joint statement by Kuwait UAE Bahrain Saudi Arabia Qatar and Jordan calls on Iraq to take necessary measures to stop attacks launched against neighbouring countries from Iraqi territory",
-    "description": "Joint statement by Kuwait UAE Bahrain Saudi Arabia Qatar and Jordan calls on Iraq to take necessary measures to stop attacks launched against neighbouring countries from Iraqi territory",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-365",
-    "title": "There is no confirmed date or venue for possible US Iran talks in Islamabad and Iran has not yet agreed to talks — Pakistani officials",
-    "description": "There is no confirmed date or venue for possible US Iran talks in Islamabad and Iran has not yet agreed to talks — Pakistani officials",
+    "title": "There is no confirmed date or venue for possible US Iran talks in Islamabad and Iran has not yet agreed to talks \u2014 Pakistani officials",
+    "description": "There is no confirmed date or venue for possible US Iran talks in Islamabad and Iran has not yet agreed to talks \u2014 Pakistani officials",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7699,24 +7533,6 @@
       "geopolitical"
     ],
     "narrative": "Middle East Tensions",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-366",
-    "title": "Chiles central bank — inflation seen returning to levels near target in 2027",
-    "description": "Chiles central bank — inflation seen returning to levels near target in 2027",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "low",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7789,7 +7605,7 @@
     "title": "US Interior Secretary Doug Burgum Brought back 100 mln in physical gold from Venezuela visit",
     "description": "US Interior Secretary Doug Burgum Brought back 100 mln in physical gold from Venezuela visit",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "geopolitical",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -7798,44 +7614,10 @@
       "/ES",
       "/GC"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-371",
-    "title": "NYMEX Gasoline April futures settle at 30124 a gallon",
-    "description": "NYMEX Gasoline April futures settle at 30124 a gallon",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "us-government"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-372",
-    "title": "UK Downing Street Prime Minister spoke to His Royal Highness Mohammed bin Salman Crown Prince of Saudi Arabia this evening",
-    "description": "UK Downing Street Prime Minister spoke to His Royal Highness Mohammed bin Salman Crown Prince of Saudi Arabia this evening",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "bearish",
-    "direction": "bearish",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "US Government & Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7865,7 +7647,7 @@
     "title": "Downing Street UK PM in call with crown prince of Saudi Arabia reaffirmed UKs support for Kingdom of Saudi Arabia",
     "description": "Downing Street UK PM in call with crown prince of Saudi Arabia reaffirmed UKs support for Kingdom of Saudi Arabia",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "bearish",
     "direction": "bearish",
@@ -7873,8 +7655,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "boe-uk"
+    ],
+    "narrative": "BOE & UK Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7946,7 +7730,7 @@
     "title": "rba kent this implies a decline in short run neutral rates here and offshore",
     "description": "rba kent this implies a decline in short run neutral rates here and offshore",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "bearish",
     "direction": "bearish",
@@ -7955,8 +7739,10 @@
       "/ES",
       "/CL"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "foreign-central-banks"
+    ],
+    "narrative": "Global Central Banks",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -7983,24 +7769,6 @@
     "status": "resolved"
   },
   {
-    "id": "seed-380",
-    "title": "Taiwan stocks increase over 2",
-    "description": "Taiwan stocks increase over 2",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-381",
     "title": "BOJ minutes on pace of policy adjustment most members agreed it was desirable to make decisions as appropriate at each monetary policy meeting without having a specific pace in mind",
     "description": "BOJ minutes on pace of policy adjustment most members agreed it was desirable to make decisions as appropriate at each monetary policy meeting without having a specific pace in mind",
@@ -8023,8 +7791,8 @@
   },
   {
     "id": "seed-382",
-    "title": "Ships loaded with LNG and stuck in the Middle East are losing product to evaporation — Mitsui OSK Lines",
-    "description": "Ships loaded with LNG and stuck in the Middle East are losing product to evaporation — Mitsui OSK Lines",
+    "title": "Ships loaded with LNG and stuck in the Middle East are losing product to evaporation \u2014 Mitsui OSK Lines",
+    "description": "Ships loaded with LNG and stuck in the Middle East are losing product to evaporation \u2014 Mitsui OSK Lines",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -8068,7 +7836,7 @@
     "title": "ECBs Villeroy It is premature to debate when rates may rise",
     "description": "ECBs Villeroy It is premature to debate when rates may rise",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -8076,8 +7844,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -8086,7 +7856,7 @@
     "title": "ECBs President Lagarde The markets are maybe overly optimistic",
     "description": "ECBs President Lagarde The markets are maybe overly optimistic",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -8094,15 +7864,17 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-386",
-    "title": "Crypto Fear — Greed Index 14100 — Extreme Fear",
-    "description": "Crypto Fear — Greed Index 14100 — Extreme Fear",
+    "title": "Crypto Fear \u2014 Greed Index 14100 \u2014 Extreme Fear",
+    "description": "Crypto Fear \u2014 Greed Index 14100 \u2014 Extreme Fear",
     "date": "2026-03-28",
     "category": "market-structure",
     "severity": "medium",
@@ -8117,24 +7889,6 @@
       "volatility"
     ],
     "narrative": "Volatility Regime",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-387",
-    "title": "Kuwait General Authority of Civil Aviation — Drones targeted fuel tanks at Kuwait International Airport causing fire",
-    "description": "Kuwait General Authority of Civil Aviation — Drones targeted fuel tanks at Kuwait International Airport causing fire",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -8162,8 +7916,8 @@
   },
   {
     "id": "seed-389",
-    "title": "Israels Prime Minister Netanyahu ordered maximum effort to be made in the next 48 hours to destroy as much as possible of Irans weapons industry — NYT citing sources",
-    "description": "Israels Prime Minister Netanyahu ordered maximum effort to be made in the next 48 hours to destroy as much as possible of Irans weapons industry — NYT citing sources",
+    "title": "Israels Prime Minister Netanyahu ordered maximum effort to be made in the next 48 hours to destroy as much as possible of Irans weapons industry \u2014 NYT citing sources",
+    "description": "Israels Prime Minister Netanyahu ordered maximum effort to be made in the next 48 hours to destroy as much as possible of Irans weapons industry \u2014 NYT citing sources",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -8182,47 +7936,11 @@
     "status": "resolved"
   },
   {
-    "id": "seed-390",
-    "title": "Bank of France cuts 2026 growth forecast to 09 vs 1",
-    "description": "Bank of France cuts 2026 growth forecast to 09 vs 1",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-391",
-    "title": "BoEs Taylor The latest decision is not a change in direction",
-    "description": "BoEs Taylor The latest decision is not a change in direction",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-392",
-    "title": "OpenAI backed company at 650 million valuation Isara said — WSJ",
-    "description": "OpenAI backed company at 650 million valuation Isara said — WSJ",
+    "title": "OpenAI backed company at 650 million valuation Isara said \u2014 WSJ",
+    "description": "OpenAI backed company at 650 million valuation Isara said \u2014 WSJ",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "earnings",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -8230,8 +7948,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "nasdaq-bigwigs"
+    ],
+    "narrative": "Corporate Leaders & Earnings",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -8281,8 +8001,8 @@
   },
   {
     "id": "seed-395",
-    "title": "Meta CEO Mark Zuckerberg Oracles Larry Ellison to be named to Trumps tech panel White House official says — WSJ",
-    "description": "Meta CEO Mark Zuckerberg Oracles Larry Ellison to be named to Trumps tech panel White House official says — WSJ",
+    "title": "Meta CEO Mark Zuckerberg Oracles Larry Ellison to be named to Trumps tech panel White House official says \u2014 WSJ",
+    "description": "Meta CEO Mark Zuckerberg Oracles Larry Ellison to be named to Trumps tech panel White House official says \u2014 WSJ",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -8306,7 +8026,7 @@
     "title": "UK government David Reed appointed trade commissioner for Eastern Europe Reed will take up his position April 13",
     "description": "UK government David Reed appointed trade commissioner for Eastern Europe Reed will take up his position April 13",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "bearish",
     "direction": "bearish",
@@ -8315,34 +8035,17 @@
       "/ES",
       "DXY"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-397",
-    "title": "IAEA reiterates call for maximum restraint so as to avoid nuclear safety risks during conflict",
-    "description": "IAEA reiterates call for maximum restraint so as to avoid nuclear safety risks during conflict",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES",
-      "/CL"
+    "tags": [
+      "boe-uk"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "BOE & UK Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-398",
-    "title": "Meta — expanding Facebook affiliate partnerships to more test partners such as Amazon and eBay in United States Mercado Libre in Latin America Shopee in Asia",
-    "description": "Meta — expanding Facebook affiliate partnerships to more test partners such as Amazon and eBay in United States Mercado Libre in Latin America Shopee in Asia",
+    "title": "Meta \u2014 expanding Facebook affiliate partnerships to more test partners such as Amazon and eBay in United States Mercado Libre in Latin America Shopee in Asia",
+    "description": "Meta \u2014 expanding Facebook affiliate partnerships to more test partners such as Amazon and eBay in United States Mercado Libre in Latin America Shopee in Asia",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -8404,10 +8107,10 @@
   },
   {
     "id": "seed-401",
-    "title": "Foreign Investment Japanese Stocks Actual — 25097B Forecast — Previous — 17726B",
-    "description": "Foreign Investment Japanese Stocks Actual — 25097B Forecast — Previous — 17726B",
+    "title": "Foreign Investment Japanese Stocks Actual \u2014 25097B Forecast \u2014 Previous \u2014 17726B",
+    "description": "Foreign Investment Japanese Stocks Actual \u2014 25097B Forecast \u2014 Previous \u2014 17726B",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -8415,33 +8118,17 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-402",
-    "title": "BoEs Taylor Labor market different to acute heating of 2022 Signs of strain visible across corporate sector",
-    "description": "BoEs Taylor Labor market different to acute heating of 2022 Signs of strain visible across corporate sector",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "boj-japan"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "BOJ & Japan Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-403",
-    "title": "Wittkov and Kushner are working on a mechanism to stop the fighting in Iran — Israeli Channel 12",
-    "description": "Wittkov and Kushner are working on a mechanism to stop the fighting in Iran — Israeli Channel 12",
+    "title": "Wittkov and Kushner are working on a mechanism to stop the fighting in Iran \u2014 Israeli Channel 12",
+    "description": "Wittkov and Kushner are working on a mechanism to stop the fighting in Iran \u2014 Israeli Channel 12",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -8485,7 +8172,7 @@
     "title": "RBA Kent This could push short run neutral rates higher necessitate more restrictive policy",
     "description": "RBA Kent This could push short run neutral rates higher necessitate more restrictive policy",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -8493,26 +8180,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-406",
-    "title": "Italys PM Meloni Italy and Algeria to deepen energy cooperation",
-    "description": "Italys PM Meloni Italy and Algeria to deepen energy cooperation",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "foreign-central-banks"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Global Central Banks",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -8538,25 +8209,6 @@
     "status": "resolved"
   },
   {
-    "id": "seed-408",
-    "title": "Barr if job market stays stable would need to see evidence of sustainable decline in inflation before cutting rates again",
-    "description": "Barr if job market stays stable would need to see evidence of sustainable decline in inflation before cutting rates again",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "low",
-    "sentiment": "bearish",
-    "direction": "bearish",
-    "instruments": [
-      "/NQ",
-      "/ES",
-      "/CL"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-409",
     "title": "Ukraines President Zelenskiy Ukraine hopes to agree long term drone deals with most Gulf nations",
     "description": "Ukraines President Zelenskiy Ukraine hopes to agree long term drone deals with most Gulf nations",
@@ -8574,42 +8226,6 @@
       "ukraine"
     ],
     "narrative": "Russia-Ukraine Conflict",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-410",
-    "title": "French Military The meeting would be completely unrelated to the United States approach and in the framework of a defensive posture",
-    "description": "French Military The meeting would be completely unrelated to the United States approach and in the framework of a defensive posture",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-411",
-    "title": "USPS will impose an 8 surcharge on packages to cover the rising cost of fuel — WSJ",
-    "description": "USPS will impose an 8 surcharge on packages to cover the rising cost of fuel — WSJ",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -8635,48 +8251,11 @@
     "status": "resolved"
   },
   {
-    "id": "seed-413",
-    "title": "Chiles central bank the board will be particularly attentive to signs of greater transmission or persistence of the shocks being faced to inflation",
-    "description": "Chiles central bank the board will be particularly attentive to signs of greater transmission or persistence of the shocks being faced to inflation",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "low",
-    "sentiment": "bearish",
-    "direction": "bearish",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-414",
-    "title": "Turkey sold or swapped 58 tons of gold in 2 weeks to March 20th with sales worth about 8 billion",
-    "description": "Turkey sold or swapped 58 tons of gold in 2 weeks to March 20th with sales worth about 8 billion",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES",
-      "/GC"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-415",
     "title": "RBA Kent however the supply shock also poses risk to inflation inflation expectations",
     "description": "RBA Kent however the supply shock also poses risk to inflation inflation expectations",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "low",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -8684,26 +8263,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-416",
-    "title": "BoCs Senior Dep Gov Rogers The banks forecasts suggest the Canadian labour force will see almost no growth over the next few years",
-    "description": "BoCs Senior Dep Gov Rogers The banks forecasts suggest the Canadian labour force will see almost no growth over the next few years",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "foreign-central-banks"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Global Central Banks",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -8712,7 +8275,7 @@
     "title": "ECBs Villeroy The ECB are not pre committed to any rate path",
     "description": "ECBs Villeroy The ECB are not pre committed to any rate path",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -8720,8 +8283,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -8769,24 +8334,6 @@
     "status": "resolved"
   },
   {
-    "id": "seed-420",
-    "title": "BoEs Taylor The growth inflation trade off is now more acute",
-    "description": "BoEs Taylor The growth inflation trade off is now more acute",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "low",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-421",
     "title": "Irans Foreign Minister Araghchi There are no talks with the US",
     "description": "Irans Foreign Minister Araghchi There are no talks with the US",
@@ -8809,8 +8356,8 @@
   },
   {
     "id": "seed-422",
-    "title": "US 4 Week Bill Bid to Cover Actual 303 Forecast — Previous 3120",
-    "description": "US 4 Week Bill Bid to Cover Actual 303 Forecast — Previous 3120",
+    "title": "US 4 Week Bill Bid to Cover Actual 303 Forecast \u2014 Previous 3120",
+    "description": "US 4 Week Bill Bid to Cover Actual 303 Forecast \u2014 Previous 3120",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -8820,33 +8367,17 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-423",
-    "title": "Western intelligence source notes in recent weeks Mojtaba Khamenei has issued instructions to lower the threshold for action — Jerusalem Post",
-    "description": "Western intelligence source notes in recent weeks Mojtaba Khamenei has issued instructions to lower the threshold for action — Jerusalem Post",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "macro-data"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-424",
-    "title": "Fear — Greed Index 21100 — Extreme Fear",
-    "description": "Fear — Greed Index 21100 — Extreme Fear",
+    "title": "Fear \u2014 Greed Index 21100 \u2014 Extreme Fear",
+    "description": "Fear \u2014 Greed Index 21100 \u2014 Extreme Fear",
     "date": "2026-03-28",
     "category": "market-structure",
     "severity": "medium",
@@ -8907,30 +8438,11 @@
     "status": "resolved"
   },
   {
-    "id": "seed-427",
-    "title": "BoEs Taylor Holding policy steady preferable until the impact of the energy shock becomes clearer",
-    "description": "BoEs Taylor Holding policy steady preferable until the impact of the energy shock becomes clearer",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "low",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES",
-      "/CL"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-428",
     "title": "SpaceX could try to raise more than 75 billion in the IPO the Information",
     "description": "SpaceX could try to raise more than 75 billion in the IPO the Information",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "earnings",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -8938,8 +8450,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "nasdaq-bigwigs"
+    ],
+    "narrative": "Corporate Leaders & Earnings",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9008,8 +8522,8 @@
   },
   {
     "id": "seed-432",
-    "title": "US Envoy Witkoff We will see where things lead and — if we can convince Iran that there are no other good alternatives",
-    "description": "US Envoy Witkoff We will see where things lead and — if we can convince Iran that there are no other good alternatives",
+    "title": "US Envoy Witkoff We will see where things lead and \u2014 if we can convince Iran that there are no other good alternatives",
+    "description": "US Envoy Witkoff We will see where things lead and \u2014 if we can convince Iran that there are no other good alternatives",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -9029,10 +8543,10 @@
   },
   {
     "id": "seed-433",
-    "title": "White House Official Presidents Council of Advisors on Science and Technology will start with 13 members — WSJ",
-    "description": "White House Official Presidents Council of Advisors on Science and Technology will start with 13 members — WSJ",
+    "title": "White House Official Presidents Council of Advisors on Science and Technology will start with 13 members \u2014 WSJ",
+    "description": "White House Official Presidents Council of Advisors on Science and Technology will start with 13 members \u2014 WSJ",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "geopolitical",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -9040,17 +8554,19 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "us-government"
+    ],
+    "narrative": "US Government & Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
   {
     "id": "seed-434",
-    "title": "The council will weigh in on AI policy and other tech issues White House official says — WSJ",
-    "description": "The council will weigh in on AI policy and other tech issues White House official says — WSJ",
+    "title": "The council will weigh in on AI policy and other tech issues White House official says \u2014 WSJ",
+    "description": "The council will weigh in on AI policy and other tech issues White House official says \u2014 WSJ",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "geopolitical",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -9058,44 +8574,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-435",
-    "title": "Bank of France raises 2026 inflation forecast to 17 vs 13",
-    "description": "Bank of France raises 2026 inflation forecast to 17 vs 13",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "low",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "us-government"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-436",
-    "title": "Barr labor market appears to be stabilizing",
-    "description": "Barr labor market appears to be stabilizing",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "US Government & Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9122,8 +8604,8 @@
   },
   {
     "id": "seed-438",
-    "title": "US 30 year fixed rate mortgage averages 638 March 26th week highest since September 4th 2025 week vs 622 prior week — Freddie Mac",
-    "description": "US 30 year fixed rate mortgage averages 638 March 26th week highest since September 4th 2025 week vs 622 prior week — Freddie Mac",
+    "title": "US 30 year fixed rate mortgage averages 638 March 26th week highest since September 4th 2025 week vs 622 prior week \u2014 Freddie Mac",
+    "description": "US 30 year fixed rate mortgage averages 638 March 26th week highest since September 4th 2025 week vs 622 prior week \u2014 Freddie Mac",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -9142,8 +8624,8 @@
   },
   {
     "id": "seed-439",
-    "title": "Drones from Russian airspace hit Estonian and Latvian territory — NYT Reporter citing Authorities",
-    "description": "Drones from Russian airspace hit Estonian and Latvian territory — NYT Reporter citing Authorities",
+    "title": "Drones from Russian airspace hit Estonian and Latvian territory \u2014 NYT Reporter citing Authorities",
+    "description": "Drones from Russian airspace hit Estonian and Latvian territory \u2014 NYT Reporter citing Authorities",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -9166,7 +8648,7 @@
     "title": "WH Press Sec Leavitt ends news briefing",
     "description": "WH Press Sec Leavitt ends news briefing",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "geopolitical",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -9174,8 +8656,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "us-government"
+    ],
+    "narrative": "US Government & Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9205,7 +8689,7 @@
     "title": "ECBs Villeroy Dont over interpret statements on rate hikes",
     "description": "ECBs Villeroy Dont over interpret statements on rate hikes",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -9213,8 +8697,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9237,24 +8723,6 @@
       "trade"
     ],
     "narrative": "US-China Trade Tensions",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-444",
-    "title": "Frances Armed Forces Chief held a video conference call with 35 countries from all continents on ways to reopen the Strait of Hormuz — Defence Ministry",
-    "description": "Frances Armed Forces Chief held a video conference call with 35 countries from all continents on ways to reopen the Strait of Hormuz — Defence Ministry",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9303,10 +8771,10 @@
   },
   {
     "id": "seed-447",
-    "title": "ECBs President Lagarde We are facing a real shock — The Economist",
-    "description": "ECBs President Lagarde We are facing a real shock — The Economist",
+    "title": "ECBs President Lagarde We are facing a real shock \u2014 The Economist",
+    "description": "ECBs President Lagarde We are facing a real shock \u2014 The Economist",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -9314,8 +8782,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9342,10 +8812,10 @@
   },
   {
     "id": "seed-449",
-    "title": "US House Speaker Johnson Operation Epic Fury is almost done — Politico Reporter on X",
-    "description": "US House Speaker Johnson Operation Epic Fury is almost done — Politico Reporter on X",
+    "title": "US House Speaker Johnson Operation Epic Fury is almost done \u2014 Politico Reporter on X",
+    "description": "US House Speaker Johnson Operation Epic Fury is almost done \u2014 Politico Reporter on X",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "geopolitical",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -9353,26 +8823,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-450",
-    "title": "BoEs Taylor The economy is set for wider slack in the very near future",
-    "description": "BoEs Taylor The economy is set for wider slack in the very near future",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "us-government"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "US Government & Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9486,7 +8940,7 @@
     "title": "UK government departments will either use British Steel or be required to provide justification if the steel is to be sourced from overseas",
     "description": "UK government departments will either use British Steel or be required to provide justification if the steel is to be sourced from overseas",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "bearish",
     "direction": "bearish",
@@ -9494,26 +8948,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-457",
-    "title": "North Koreas Kim Jong Un met Belarus President Lukashenko — KCNA",
-    "description": "North Koreas Kim Jong Un met Belarus President Lukashenko — KCNA",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "boe-uk"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "BOE & UK Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9565,7 +9003,7 @@
     "title": "Reserve Bank of Australia Kent we will continue to assess the countervailing forces operating on the economy",
     "description": "Reserve Bank of Australia Kent we will continue to assess the countervailing forces operating on the economy",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "geopolitical",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -9573,27 +9011,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-461",
-    "title": "Al Badawi Gulf states are considering alternative solutions if the Strait of Hormuz remains closed — AL Jazeera",
-    "description": "Al Badawi Gulf states are considering alternative solutions if the Strait of Hormuz remains closed — AL Jazeera",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES",
-      "/CL"
+    "tags": [
+      "us-government"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "US Government & Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9619,45 +9040,9 @@
     "status": "resolved"
   },
   {
-    "id": "seed-463",
-    "title": "BoEs Taylor The current energy shock looks more like 2011 than 2022 in terms of magnitude",
-    "description": "BoEs Taylor The current energy shock looks more like 2011 than 2022 in terms of magnitude",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-464",
-    "title": "UK Defence Ministry Sovereign base areas have never been part of Republic of Cyprus we have no plans to change this",
-    "description": "UK Defence Ministry Sovereign base areas have never been part of Republic of Cyprus we have no plans to change this",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-465",
-    "title": "US 7 Year Bid to Cover Actual 243 Forecast — Previous 2500",
-    "description": "US 7 Year Bid to Cover Actual 243 Forecast — Previous 2500",
+    "title": "US 7 Year Bid to Cover Actual 243 Forecast \u2014 Previous 2500",
+    "description": "US 7 Year Bid to Cover Actual 243 Forecast \u2014 Previous 2500",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -9667,63 +9052,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-466",
-    "title": "BoEs Taylor I currently see a high bar to hiking rates",
-    "description": "BoEs Taylor I currently see a high bar to hiking rates",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "macro-data"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-467",
-    "title": "BoEs Taylor If disruptions persist and the shock grows the MPC will face a tougher choice between high inflation and weaker growth",
-    "description": "BoEs Taylor If disruptions persist and the shock grows the MPC will face a tougher choice between high inflation and weaker growth",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "low",
-    "sentiment": "bearish",
-    "direction": "bearish",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-468",
-    "title": "EU commission clears French Defence plan for 15b safe loans",
-    "description": "EU commission clears French Defence plan for 15b safe loans",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "bearish",
-    "direction": "bearish",
-    "instruments": [
-      "/NQ",
-      "/ES",
-      "/CL"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9771,8 +9103,8 @@
   },
   {
     "id": "seed-471",
-    "title": "Mossads Director Bamea believes that regime change in Iran will take a full year — The Jerusalem Post",
-    "description": "Mossads Director Bamea believes that regime change in Iran will take a full year — The Jerusalem Post",
+    "title": "Mossads Director Bamea believes that regime change in Iran will take a full year \u2014 The Jerusalem Post",
+    "description": "Mossads Director Bamea believes that regime change in Iran will take a full year \u2014 The Jerusalem Post",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -9812,42 +9144,6 @@
     "status": "resolved"
   },
   {
-    "id": "seed-473",
-    "title": "BoEs Taylor The UK faces low risks of inflation becoming unanchored given the weakening labour market and slowing wage growth",
-    "description": "BoEs Taylor The UK faces low risks of inflation becoming unanchored given the weakening labour market and slowing wage growth",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "low",
-    "sentiment": "bearish",
-    "direction": "bearish",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-474",
-    "title": "The objective of the call is to see how to restart navigation in the Strait of Hormuz once combat ends — French Defence Ministry",
-    "description": "The objective of the call is to see how to restart navigation in the Strait of Hormuz once combat ends — French Defence Ministry",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-475",
     "title": "Channel 12 News Mujtaba Khamenei is alive and it seems he is involved in decision making in Iran",
     "description": "Channel 12 News Mujtaba Khamenei is alive and it seems he is involved in decision making in Iran",
@@ -9870,10 +9166,10 @@
   },
   {
     "id": "seed-476",
-    "title": "Japanese Foreign Stock Investment Actual 312B Forecast — Previous 9507B",
-    "description": "Japanese Foreign Stock Investment Actual 312B Forecast — Previous 9507B",
+    "title": "Japanese Foreign Stock Investment Actual 312B Forecast \u2014 Previous 9507B",
+    "description": "Japanese Foreign Stock Investment Actual 312B Forecast \u2014 Previous 9507B",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -9881,8 +9177,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "boj-japan"
+    ],
+    "narrative": "BOJ & Japan Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9891,7 +9189,7 @@
     "title": "OpenAI CFO Friar Think by the end of this year we will be evenly split between enterprise and consumer",
     "description": "OpenAI CFO Friar Think by the end of this year we will be evenly split between enterprise and consumer",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "earnings",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -9899,8 +9197,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "nasdaq-bigwigs"
+    ],
+    "narrative": "Corporate Leaders & Earnings",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -9926,29 +9226,11 @@
     "status": "resolved"
   },
   {
-    "id": "seed-479",
-    "title": "You Cant Do That",
-    "description": "You Cant Do That",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-480",
     "title": "ECB Economic Bulletin 8112018",
     "description": "ECB Economic Bulletin 8112018",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -9956,44 +9238,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-481",
-    "title": "Refiners And Petrochemical Long Plays",
-    "description": "Refiners And Petrochemical Long Plays",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "ecb-europe"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-482",
-    "title": "DealBook Online Summit",
-    "description": "DealBook Online Summit",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10002,7 +9250,7 @@
     "title": "ECB Presser today",
     "description": "ECB Presser today",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10010,8 +9258,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10020,7 +9270,7 @@
     "title": "ECB Lending Survey",
     "description": "ECB Lending Survey",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10028,44 +9278,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-485",
-    "title": "Building A Legacy",
-    "description": "Building A Legacy",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "ecb-europe"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-486",
-    "title": "ECBs Economic Bulletin",
-    "description": "ECBs Economic Bulletin",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10074,7 +9290,7 @@
     "title": "ECB Meeting Minutes",
     "description": "ECB Meeting Minutes",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10082,8 +9298,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10092,7 +9310,7 @@
     "title": "RBNZ Annual Report",
     "description": "RBNZ Annual Report",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10100,8 +9318,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "foreign-central-banks"
+    ],
+    "narrative": "Global Central Banks",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10110,7 +9330,7 @@
     "title": "ECB Forecaster Survey",
     "description": "ECB Forecaster Survey",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10118,8 +9338,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10128,7 +9350,7 @@
     "title": "ECBs Lane Speech",
     "description": "ECBs Lane Speech",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10136,26 +9358,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-491",
-    "title": "Transcript Fran Kinniry",
-    "description": "Transcript Fran Kinniry",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "bullish",
-    "direction": "bullish",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "ecb-europe"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10164,7 +9370,7 @@
     "title": "ECBs de Guindos Speech",
     "description": "ECBs de Guindos Speech",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10172,8 +9378,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10182,7 +9390,7 @@
     "title": "Interview with ECBs Lane",
     "description": "Interview with ECBs Lane",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10190,8 +9398,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10200,7 +9410,7 @@
     "title": "ECBs President Lagarde Interview",
     "description": "ECBs President Lagarde Interview",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10208,8 +9418,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10235,29 +9447,11 @@
     "status": "resolved"
   },
   {
-    "id": "seed-496",
-    "title": "Wanderers by Carl Sagan",
-    "description": "Wanderers by Carl Sagan",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-497",
     "title": "BoE Credit Conditions Survey",
     "description": "BoE Credit Conditions Survey",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "bearish",
     "direction": "bearish",
@@ -10265,26 +9459,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-498",
-    "title": "Financial Planning Can Help",
-    "description": "Financial Planning Can Help",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "boe-uk"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "BOE & UK Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10293,7 +9471,7 @@
     "title": "ECB Bank Lending Survey",
     "description": "ECB Bank Lending Survey",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10301,62 +9479,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-500",
-    "title": "Invesco Eliminating PowerShares Brand",
-    "description": "Invesco Eliminating PowerShares Brand",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "ecb-europe"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-501",
-    "title": "ECBs Cipollone Full Speech",
-    "description": "ECBs Cipollone Full Speech",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-502",
-    "title": "INTC%C2%A0From Breakout to Reset",
-    "description": "INTC%C2%A0From Breakout to Reset",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10365,7 +9491,7 @@
     "title": "ECBs Lanes Full Interview",
     "description": "ECBs Lanes Full Interview",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10373,26 +9499,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-504",
-    "title": "ECBs Elderson Media Interview",
-    "description": "ECBs Elderson Media Interview",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "ecb-europe"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10422,7 +9532,7 @@
     "title": "ECB Inflation Expectation Survey",
     "description": "ECB Inflation Expectation Survey",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "low",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10430,8 +9540,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10461,7 +9573,7 @@
     "title": "ECB Survey of Professional Forecasters",
     "description": "ECB Survey of Professional Forecasters",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10469,8 +9581,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10500,7 +9614,7 @@
     "title": "RBA Rate Statement October 2022",
     "description": "RBA Rate Statement October 2022",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10508,8 +9622,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "foreign-central-banks"
+    ],
+    "narrative": "Global Central Banks",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10518,7 +9634,7 @@
     "title": "Japans Exports Fell in November",
     "description": "Japans Exports Fell in November",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10526,44 +9642,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-512",
-    "title": "Raghees Fourth Indicator of TOPS",
-    "description": "Raghees Fourth Indicator of TOPS",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "boj-japan"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-513",
-    "title": "How to Reduce Trading Fees",
-    "description": "How to Reduce Trading Fees",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "bearish",
-    "direction": "bearish",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "BOJ & Japan Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10572,7 +9654,7 @@
     "title": "How Secure Is Bidens Lead",
     "description": "How Secure Is Bidens Lead",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "geopolitical",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10580,8 +9662,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "us-government"
+    ],
+    "narrative": "US Government & Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10598,26 +9682,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-516",
-    "title": "The Dow 123 Reversal Pattern",
-    "description": "The Dow 123 Reversal Pattern",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "macro-data"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10646,7 +9714,7 @@
     "title": "ECBs President Lagardes Full Speech",
     "description": "ECBs President Lagardes Full Speech",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10654,26 +9722,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-519",
-    "title": "Day Trading Strategies Emini Futures",
-    "description": "Day Trading Strategies Emini Futures",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "ecb-europe"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10703,7 +9755,7 @@
     "title": "Eurozone Money M3 Annual Growth",
     "description": "Eurozone Money M3 Annual Growth",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10712,26 +9764,10 @@
       "/ES",
       "DXY"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-522",
-    "title": "Interactive Brokers vs TD Ameritrade",
-    "description": "Interactive Brokers vs TD Ameritrade",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "ecb-europe"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10740,7 +9776,7 @@
     "title": "ECBs President Lagarde Full Speech",
     "description": "ECBs President Lagarde Full Speech",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -10748,8 +9784,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -10776,385 +9814,6 @@
     "status": "resolved"
   },
   {
-    "id": "seed-525",
-    "title": "Know your ticks and bricks",
-    "description": "Know your ticks and bricks",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-526",
-    "title": "Building The Worlds Largest Battery",
-    "description": "Building The Worlds Largest Battery",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-527",
-    "title": "I Cant Understand My Professor",
-    "description": "I Cant Understand My Professor",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-528",
-    "title": "iFX EXPO LATAM is Back",
-    "description": "iFX EXPO LATAM is Back",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-529",
-    "title": "The Energy Crisis Isnt Real",
-    "description": "The Energy Crisis Isnt Real",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "high",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-530",
-    "title": "2020 BMW M8 Coupe Competition",
-    "description": "2020 BMW M8 Coupe Competition",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-531",
-    "title": "15 Upside For Juniper Networks",
-    "description": "15 Upside For Juniper Networks",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-532",
-    "title": "How to Earn Passive Income",
-    "description": "How to Earn Passive Income",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-533",
-    "title": "15 Downside For Paychex Stock",
-    "description": "15 Downside For Paychex Stock",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "bearish",
-    "direction": "bearish",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-534",
-    "title": "The Frozen Market For Homes",
-    "description": "The Frozen Market For Homes",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-535",
-    "title": "Removing The Great From Britain",
-    "description": "Removing The Great From Britain",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-536",
-    "title": "US CB Consumer Confidence May Report",
-    "description": "US CB Consumer Confidence May Report",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-537",
-    "title": "FinancialJuice | Your Financial Universe In One Place & In Real-Time",
-    "description": "FinancialJuice | Your Financial Universe In One Place & In Real-Time",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-538",
-    "title": "FAQs",
-    "description": "FAQs - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-539",
-    "title": "News Search",
-    "description": "News Search - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-540",
-    "title": "FinancialJuice: Articles",
-    "description": "FinancialJuice: Articles",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES",
-      "/CL"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-541",
-    "title": "FinancialJuice - YouTube",
-    "description": "FinancialJuice - YouTube",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-542",
-    "title": "FinancialJuice (@financialjuice) / Posts / X - Twitter",
-    "description": "FinancialJuice (@financialjuice) / Posts / X - Twitter",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-543",
-    "title": "Discord",
-    "description": "Discord - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-544",
-    "title": "Risk-on Risk-off pt.2",
-    "description": "Risk-on Risk-off pt.2 - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-545",
-    "title": "US Archives",
-    "description": "US Archives - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-546",
     "title": "FinancialJuice - Apps on Google Play",
     "description": "FinancialJuice - Apps on Google Play",
@@ -11172,852 +9831,6 @@
       "earnings"
     ],
     "narrative": "Mag 7 Earnings",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-547",
-    "title": "Calendar",
-    "description": "Calendar - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-548",
-    "title": "Read Customer Service Reviews of www.financialjuice.com",
-    "description": "Read Customer Service Reviews of www.financialjuice.com",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-549",
-    "title": "Daily Dose",
-    "description": "Daily Dose - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-550",
-    "title": "How to use the FinancialJuice Features",
-    "description": "How to use the FinancialJuice Features",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-551",
-    "title": "News Feed",
-    "description": "News Feed - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-552",
-    "title": "FinancialJuice Widget - Chrome Web Store",
-    "description": "FinancialJuice Widget - Chrome Web Store",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-553",
-    "title": "Your Financial Universe In One Place & In Real-Time",
-    "description": "Your Financial Universe In One Place & In Real-Time - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-554",
-    "title": "12min0DTE",
-    "description": "12min0DTE - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-555",
-    "title": "FinancialJuice — Trading Ideas and Scripts - TradingView",
-    "description": "FinancialJuice — Trading Ideas and Scripts - TradingView",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "bullish",
-    "direction": "bullish",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-556",
-    "title": "financialjuice trial page",
-    "description": "financialjuice trial page",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-557",
-    "title": "FinancialJuice | Trading News (@financial.juice) - Instagram",
-    "description": "FinancialJuice | Trading News (@financial.juice) - Instagram",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-558",
-    "title": "FinancialJuice | Trading News (@financial.juice)",
-    "description": "FinancialJuice | Trading News (@financial.juice)",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-559",
-    "title": "FinancialJuice - Crunchbase Company Profile & Funding",
-    "description": "FinancialJuice - Crunchbase Company Profile & Funding",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-560",
-    "title": "FinancialJuice - Desktop App for Mac, Windows (PC)",
-    "description": "FinancialJuice - Desktop App for Mac, Windows (PC)",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-561",
-    "title": "FinancialJuice | London - Facebook",
-    "description": "FinancialJuice | London - Facebook",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-562",
-    "title": "financialjuice.co",
-    "description": "financialjuice.co",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-563",
-    "title": "newssite",
-    "description": "newssite - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-564",
-    "title": "FinancialJuice Reviews and Pricing 2026 - F6S",
-    "description": "FinancialJuice Reviews and Pricing 2026 - F6S",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-565",
-    "title": "FinancialJuice (@financialjuice) / Highlights / X - Twitter",
-    "description": "FinancialJuice (@financialjuice) / Highlights / X - Twitter",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-566",
-    "title": "Daily Dose - Page 193 of 269",
-    "description": "Daily Dose - Page 193 of 269 - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-567",
-    "title": "News Desk",
-    "description": "News Desk - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-568",
-    "title": "Voice News",
-    "description": "Voice News - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-569",
-    "title": "FinancialJuice Review Breaking Voice and Text Headlines in Real ...",
-    "description": "FinancialJuice Review Breaking Voice and Text Headlines in Real ...",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "high",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-570",
-    "title": "TraderTV Live",
-    "description": "TraderTV Live - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-571",
-    "title": "Trade Economic Releases",
-    "description": "Trade Economic Releases - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-572",
-    "title": "Alternatives to FinancialJuice (2026) - Find My Moat",
-    "description": "Alternatives to FinancialJuice (2026) - Find My Moat",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-573",
-    "title": "FinancialJuice (@financialjuice) / Posts / X",
-    "description": "FinancialJuice (@financialjuice) / Posts / X",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-574",
-    "title": "Example sections",
-    "description": "Example sections - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-575",
-    "title": "FJ Pro Sign Up",
-    "description": "FJ Pro Sign Up - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-576",
-    "title": "Morning Juice - US Session Prep (1st October)",
-    "description": "Morning Juice - US Session Prep (1st October) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-577",
-    "title": "US Archives - Page 58 of 130",
-    "description": "US Archives - Page 58 of 130 - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-578",
-    "title": "Morning Juice - US Session Prep (25th August)",
-    "description": "Morning Juice - US Session Prep (25th August) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-579",
-    "title": "save 81% on a lifetime subscription. - FJ Pro Sign Up",
-    "description": "save 81% on a lifetime subscription. - FJ Pro Sign Up - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "bullish",
-    "direction": "bullish",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-580",
-    "title": "FinancialJuice (@financialjuice) / Posts and Replies / X - Twitter",
-    "description": "FinancialJuice (@financialjuice) / Posts and Replies / X - Twitter",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-581",
-    "title": "Morning Juice - US Session Prep (11th August)",
-    "description": "Morning Juice - US Session Prep (11th August) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-582",
-    "title": "Morning Juice - US Session Prep",
-    "description": "Morning Juice - US Session Prep - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-583",
-    "title": "We're currently fixing the FinancialJuice site, which may result in the ...",
-    "description": "We're currently fixing the FinancialJuice site, which may result in the ...",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-584",
-    "title": "WATCH LIVE: Momentum Continues| PreMarket Prep",
-    "description": "WATCH LIVE: Momentum Continues| PreMarket Prep - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-585",
-    "title": "ZeroHedge",
-    "description": "ZeroHedge - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-586",
-    "title": "Forex Crunch",
-    "description": "Forex Crunch - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-587",
-    "title": "Gorilla Futures",
-    "description": "Gorilla Futures - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-588",
-    "title": "Unusual Activity",
-    "description": "Unusual Activity - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-589",
-    "title": "NinjaTrader",
-    "description": "NinjaTrader - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-590",
-    "title": "FJ EliteSign Up - FJ Pro Sign Up",
-    "description": "FJ EliteSign Up - FJ Pro Sign Up - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-591",
-    "title": "TheBlueCollarTrader",
-    "description": "TheBlueCollarTrader - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-592",
-    "title": "Quick Look Across Markets After The Open - FJ Elite",
-    "description": "Quick Look Across Markets After The Open - FJ Elite - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-593",
-    "title": "To prevent significant fluctuations in policies",
-    "description": "To prevent significant fluctuations in policies - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -12067,43 +9880,6 @@
     "status": "resolved"
   },
   {
-    "id": "seed-596",
-    "title": "Morning Juice - US Session Prep (30th June)",
-    "description": "Morning Juice - US Session Prep (30th June) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-597",
-    "title": "The Treasury has big toolkit, could boost buybacks.",
-    "description": "The Treasury has big toolkit, could boost buybacks. - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES",
-      "/ZN"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-598",
     "title": "US Treasury Secretary Bessent: Dollar reserve currency is part of ...",
     "description": "US Treasury Secretary Bessent: Dollar reserve currency is part of ...",
@@ -12148,24 +9924,6 @@
     "status": "resolved"
   },
   {
-    "id": "seed-600",
-    "title": "FinancialJuice - Telegram",
-    "description": "FinancialJuice - Telegram",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-601",
     "title": "US Treasury Secretary Bessent: We think there is a possibility of ...",
     "description": "US Treasury Secretary Bessent: We think there is a possibility of ...",
@@ -12192,7 +9950,7 @@
     "title": "ECB's President Lagarde: I can't say precisely what we will decide ...",
     "description": "ECB's President Lagarde: I can't say precisely what we will decide ...",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -12200,8 +9958,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -12210,7 +9970,7 @@
     "title": "ECB Interest Rate Prep",
     "description": "ECB Interest Rate Prep - FinancialJuice",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -12218,8 +9978,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -12245,30 +10007,11 @@
     "status": "resolved"
   },
   {
-    "id": "seed-605",
-    "title": "Morning Juice - Europe Session Prep",
-    "description": "Morning Juice - Europe Session Prep - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES",
-      "DXY"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-606",
     "title": "ECB's President Lagarde: The ECB decision was unanimous. - X",
     "description": "ECB's President Lagarde: The ECB decision was unanimous. - X",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -12276,8 +10019,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -12286,7 +10031,7 @@
     "title": "ECB's President Lagarde: We don't target the exchange rate.",
     "description": "ECB's President Lagarde: We don't target the exchange rate.",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -12294,8 +10039,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -12304,7 +10051,7 @@
     "title": "ECB's President Lagarde: The decision was unanimous. - X",
     "description": "ECB's President Lagarde: The decision was unanimous. - X",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -12312,8 +10059,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "ecb-europe"
+    ],
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -12322,7 +10071,7 @@
     "title": "ECB's President Lagarde: ECB doesn't target exchange rate",
     "description": "ECB's President Lagarde: ECB doesn't target exchange rate",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -12330,98 +10079,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-610",
-    "title": "Morning Juice - US Session Prep (25th March)",
-    "description": "Morning Juice - US Session Prep (25th March) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "ecb-europe"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-611",
-    "title": "Morning Juice - US Session Prep (24th March)",
-    "description": "Morning Juice - US Session Prep (24th March) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-612",
-    "title": "Morning Juice - US Session Prep (6th March)",
-    "description": "Morning Juice - US Session Prep (6th March) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-613",
-    "title": "Morning Juice - US Session Prep (5th May)",
-    "description": "Morning Juice - US Session Prep (5th May) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-614",
-    "title": "Morning Juice - US Session Prep (7th January)",
-    "description": "Morning Juice - US Session Prep (7th January) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -12438,422 +10099,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-616",
-    "title": "FinancialJuice | Your Financial Universe In One Place & In ...",
-    "description": "FinancialJuice | Your Financial Universe In One Place & In ...",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "macro-data"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-617",
-    "title": "Major Event Archives",
-    "description": "Major Event Archives - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-618",
-    "title": "US Interest Prep",
-    "description": "US Interest Prep - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-619",
-    "title": "Forex Live",
-    "description": "Forex Live - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-620",
-    "title": "US Interest Rate Prep (Wednesday 30th July)",
-    "description": "US Interest Rate Prep (Wednesday 30th July) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-621",
-    "title": "Trading Pub",
-    "description": "Trading Pub - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-622",
-    "title": "Week Ahead: Economic Indicators (US)",
-    "description": "Week Ahead: Economic Indicators (US) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-623",
-    "title": "Morning Juice - US Session Prep (3rd October)",
-    "description": "Morning Juice - US Session Prep (3rd October) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-624",
-    "title": "Morning Juice - US Session Prep (3rd June)",
-    "description": "Morning Juice - US Session Prep (3rd June) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-625",
-    "title": "US Week Ahead Archives",
-    "description": "US Week Ahead Archives - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-626",
-    "title": "Daily Dose - Page 192 of 267",
-    "description": "Daily Dose - Page 192 of 267 - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-627",
-    "title": "US Interest Rate Prep",
-    "description": "US Interest Rate Prep - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-628",
-    "title": "Morning Juice - US Session Prep (26th June)",
-    "description": "Morning Juice - US Session Prep (26th June) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-629",
-    "title": "Morning Juice - US Session Prep (23rd September)",
-    "description": "Morning Juice - US Session Prep (23rd September) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-630",
-    "title": "Daily Dose - Page 275 of 275",
-    "description": "Daily Dose - Page 275 of 275 - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-631",
-    "title": "Morning Juice - US Session Prep (19th May)",
-    "description": "Morning Juice - US Session Prep (19th May) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-632",
-    "title": "Morning Juice - US Session Prep (9th October)",
-    "description": "Morning Juice - US Session Prep (9th October) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-633",
-    "title": "The published data shows an economy that is on the same trajectory ...",
-    "description": "The published data shows an economy that is on the same trajectory ...",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-634",
-    "title": "IF WE STAY RESTRICTIVE FOR TOO LONG, WE WILL LIKELY SEE ...",
-    "description": "IF WE STAY RESTRICTIVE FOR TOO LONG, WE WILL LIKELY SEE ...",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-635",
-    "title": "US Interest Rate Decision Prep",
-    "description": "US Interest Rate Decision Prep - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-636",
-    "title": "The possibility that the next move might be a hike did come up.",
-    "description": "The possibility that the next move might be a hike did come up.",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-637",
-    "title": "US Interest Rate & SEP Prep",
-    "description": "US Interest Rate & SEP Prep - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-638",
-    "title": "Daily Dose - Page 270 of 270",
-    "description": "Daily Dose - Page 270 of 270 - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -12900,24 +10149,6 @@
     "status": "resolved"
   },
   {
-    "id": "seed-641",
-    "title": "FinancialJuice (@financialjuice) on X",
-    "description": "FinancialJuice (@financialjuice) on X",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
     "id": "seed-642",
     "title": "Israel interested in a wide-scale attacks on Iran's energy facilities ...",
     "description": "Israel interested in a wide-scale attacks on Iran's energy facilities ...",
@@ -12952,116 +10183,10 @@
       "/ES",
       "/ZN"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-644",
-    "title": "MOC Imbalance",
-    "description": "MOC Imbalance - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "macro-data"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-645",
-    "title": "Today's Economic Calendar - FJElite",
-    "description": "Today's Economic Calendar - FJElite - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-646",
-    "title": "US Commerce Secretary Lutnick: Fundamentals of trade with EU are ...",
-    "description": "US Commerce Secretary Lutnick: Fundamentals of trade with EU are ...",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-647",
-    "title": "The first trade deal got to be with a top 10 economy - Fox Business.",
-    "description": "The first trade deal got to be with a top 10 economy - Fox Business.",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-648",
-    "title": "FinancialJuice – Telegram",
-    "description": "FinancialJuice – Telegram",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-649",
-    "title": "Morning Juice - US Session Prep (5th June)",
-    "description": "Morning Juice - US Session Prep (5th June) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -13078,8 +10203,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "macro-data"
+    ],
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -13096,170 +10223,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-652",
-    "title": "Morning Juice - US Session Prep (8th August)",
-    "description": "Morning Juice - US Session Prep (8th August) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "macro-data"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-653",
-    "title": "FinancialJuice 日本語翻訳ログ｜2026年1月21日",
-    "description": "FinancialJuice 日本語翻訳ログ｜2026年1月21日",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-654",
-    "title": "Chinese Trade Negotiator Li, on talks with the US - X",
-    "description": "Chinese Trade Negotiator Li, on talks with the US - X",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-655",
-    "title": "FinancialJuice 日本語翻訳ログ｜2026年1月16日 - note",
-    "description": "FinancialJuice 日本語翻訳ログ｜2026年1月16日 - note",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-656",
-    "title": "FinancialJuice 日本語翻訳ログ｜2026年1月21日 - note",
-    "description": "FinancialJuice 日本語翻訳ログ｜2026年1月21日 - note",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-657",
-    "title": "Morning Juice - US Session Prep (30th October)",
-    "description": "Morning Juice - US Session Prep (30th October) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-658",
-    "title": "US Index Futures Implied Volatility",
-    "description": "US Index Futures Implied Volatility - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-659",
-    "title": "FX Implied Volatility",
-    "description": "FX Implied Volatility - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-660",
-    "title": "Today's implied volatility daily ranges - FJElite",
-    "description": "Today's implied volatility daily ranges - FJElite - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
-    ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "Macro Data Prints",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -13268,7 +10235,7 @@
     "title": "ECB President Lagarde: have enormous respect for ...",
     "description": "ECB President Lagarde: have enormous respect for ... - FinancialJuice",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "monetary",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -13276,26 +10243,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
-    "source": "calibration-backfill",
-    "status": "resolved"
-  },
-  {
-    "id": "seed-662",
-    "title": "Morning Juice - US Session Prep (27th October)",
-    "description": "Morning Juice - US Session Prep (27th October) - FinancialJuice",
-    "date": "2026-03-28",
-    "category": "macroeconomic",
-    "severity": "medium",
-    "sentiment": "neutral",
-    "direction": "neutral",
-    "instruments": [
-      "/NQ",
-      "/ES"
+    "tags": [
+      "ecb-europe"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "narrative": "ECB & European Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
@@ -13347,7 +10298,7 @@
     "title": "White House Envoys Kushner and Witkoff were disappointed by ... - X",
     "description": "White House Envoys Kushner and Witkoff were disappointed by ... - X",
     "date": "2026-03-28",
-    "category": "macroeconomic",
+    "category": "geopolitical",
     "severity": "medium",
     "sentiment": "neutral",
     "direction": "neutral",
@@ -13355,8 +10306,10 @@
       "/NQ",
       "/ES"
     ],
-    "tags": [],
-    "narrative": "Market Commentary",
+    "tags": [
+      "us-government"
+    ],
+    "narrative": "US Government & Policy",
     "source": "calibration-backfill",
     "status": "resolved"
   },
