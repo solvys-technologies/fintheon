@@ -1,7 +1,7 @@
 // [claude-code 2026-03-28] S7: Forward-looking performance prediction endpoint
 // Aggregates scored FJ items + scheduled econ events → per-instrument outlook
 import { Hono } from 'hono';
-import { getSupabaseClient } from '../services/supabase-service';
+import { getSupabaseClient } from '../services/supabase-service.js';
 
 const app = new Hono();
 

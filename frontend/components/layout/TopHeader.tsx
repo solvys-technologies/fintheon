@@ -28,7 +28,7 @@ type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | '
 const TAB_LABELS: Record<NavTab, string> = {
   executive: 'Dashboard',
   feed: 'Dashboard', // feed section removed; fallback for history
-  analysis: 'Sanctum',
+  analysis: 'Consilium',
   proposals: 'Proposals',
   apparatus: 'Apparatus',
   news: 'RiskFlow',

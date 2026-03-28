@@ -20,7 +20,7 @@ interface NavSidebarProps {
 
 const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom' | 'narrative' | 'apparatus' | 'proposals'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
   executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
-  analysis: { id: 'analysis', icon: Landmark, label: 'Sanctum', description: 'NarrativeFlow, Aquarium, Timeline' },
+  analysis: { id: 'analysis', icon: Landmark, label: 'Consilium', description: 'Narrative analytics center' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
   notion: { id: 'notion', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },

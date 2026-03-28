@@ -47,6 +47,8 @@ function groupByDate(cards: CatalystCard[]): [string, CatalystCard[]][] {
 export function TimelinePanel() {
   const { state } = useNarrative();
   const [pageIndex, setPageIndex] = useState(0);
+  const [transitioning, setTransitioning] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [tagFilterOpen, setTagFilterOpen] = useState(false);
 
@@ -97,13 +99,22 @@ export function TimelinePanel() {
     }));
   }, [visibleThreads, cardsByThread]);
 
-  const handlePrev = useCallback(() => {
-    setPageIndex(p => Math.max(0, p - 1));
+  const changePage = useCallback((direction: 'left' | 'right', newIndex: number) => {
+    setSlideDirection(direction);
+    setTransitioning(true);
+    setTimeout(() => {
+      setPageIndex(newIndex);
+      setTransitioning(false);
+    }, 200);
   }, []);
 
+  const handlePrev = useCallback(() => {
+    if (pageIndex > 0) changePage('right', pageIndex - 1);
+  }, [pageIndex, changePage]);
+
   const handleNext = useCallback(() => {
-    setPageIndex(p => Math.min(TOTAL_PAGES - 1, p + 1));
-  }, []);
+    if (pageIndex < TOTAL_PAGES - 1) changePage('left', pageIndex + 1);
+  }, [pageIndex, changePage]);
 
   return (
     <div className="h-full flex flex-col bg-[var(--fintheon-bg)]">
@@ -182,8 +193,16 @@ export function TimelinePanel() {
         </div>
       </div>
 
-      {/* Two-column narrative view */}
-      <div className="flex-1 min-h-0 flex gap-0 overflow-hidden">
+      {/* Two-column narrative view with slide transition */}
+      <div
+        className="flex-1 min-h-0 flex gap-0 overflow-hidden transition-all duration-200 ease-out"
+        style={{
+          opacity: transitioning ? 0 : 1,
+          transform: transitioning
+            ? `translateX(${slideDirection === 'left' ? '-20px' : '20px'})`
+            : 'translateX(0)',
+        }}
+      >
         {visibleThreads.map((thread, colIdx) => {
           const cards = cardsByThread.get(thread.slug) ?? [];
           const dateGroups = groupByDate(cards);
