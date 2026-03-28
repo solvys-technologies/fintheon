@@ -1,18 +1,25 @@
-// [claude-code 2026-03-28] S7: Elegant chronological timeline panel for NarrativeFlow events
+// [claude-code 2026-03-28] S7: Paginated 2-column narrative timeline — structured view of NarrativeFlow
 import { useState, useMemo, useCallback } from 'react';
-import { Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Filter } from 'lucide-react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import type { CatalystCard, NarrativeCategory } from '../../lib/narrative-types';
 
-const CATEGORY_COLORS: Record<NarrativeCategory, string> = {
-  geopolitical: '#F59E0B',
-  monetary: '#8B5CF6',
-  macroeconomic: '#3B82F6',
-  'market-structure': '#EC4899',
-  earnings: '#34D399',
-  'supply-chain': '#14B8A6',
-  'black-swan': '#EF4444',
-};
+// The 10 real narrative threads (must match migration 027)
+const NARRATIVE_THREADS = [
+  { slug: 'middle-east-conflict', title: 'Middle Eastern Conflict', color: '#F59E0B' },
+  { slug: 'liquidity-credit-contraction', title: 'Liquidity & Credit', color: '#8B5CF6' },
+  { slug: 'ai-singularity', title: 'The Singularity', color: '#3B82F6' },
+  { slug: 'usd-jpy-carry-trade', title: 'USD-JPY Carry Trade', color: '#EC4899' },
+  { slug: 'trade-war', title: 'Trade War', color: '#EF4444' },
+  { slug: 'us-china-relations', title: 'US-China Relations', color: '#14B8A6' },
+  { slug: 'rate-cut-cycle', title: 'Rate Cut Cycle', color: '#34D399' },
+  { slug: 'trump-presidency', title: 'Trump Presidency', color: '#F97316' },
+  { slug: 'price-stability', title: 'Price Stability', color: '#FBBF24' },
+  { slug: 'maximum-employment', title: 'Max Employment', color: '#A78BFA' },
+] as const;
+
+const COLS_PER_PAGE = 2;
+const TOTAL_PAGES = Math.ceil(NARRATIVE_THREADS.length / COLS_PER_PAGE);
 
 const SEVERITY_DOT: Record<string, string> = {
   high: '#EF4444',
@@ -20,18 +27,15 @@ const SEVERITY_DOT: Record<string, string> = {
   low: '#6B7280',
 };
 
-function formatDateHeader(dateStr: string): string {
+function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - d.getTime()) / 86400000);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Yesterday';
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
 }
 
-function groupByDate(catalysts: CatalystCard[]): [string, CatalystCard[]][] {
+// Group cards by date for a column
+function groupByDate(cards: CatalystCard[]): [string, CatalystCard[]][] {
   const map = new Map<string, CatalystCard[]>();
-  for (const c of catalysts) {
+  for (const c of cards) {
     const key = c.date?.slice(0, 10) ?? 'unknown';
     const arr = map.get(key) ?? [];
     arr.push(c);
@@ -40,260 +44,261 @@ function groupByDate(catalysts: CatalystCard[]): [string, CatalystCard[]][] {
   return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
 }
 
-interface InlineEditState {
-  id: string;
-  field: 'title' | 'description' | 'tags';
-  value: string;
-}
-
 export function TimelinePanel() {
-  const { state, dispatch } = useNarrative();
-  const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
-  const [editState, setEditState] = useState<InlineEditState | null>(null);
-  const [filterCategory, setFilterCategory] = useState<NarrativeCategory | 'all'>('all');
+  const { state } = useNarrative();
+  const [pageIndex, setPageIndex] = useState(0);
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+  const [tagFilterOpen, setTagFilterOpen] = useState(false);
 
-  const filteredCatalysts = useMemo(() => {
-    let cards = state.catalysts.filter(c => c.drillDepth === 0);
-    if (filterCategory !== 'all') {
-      cards = cards.filter(c => c.category === filterCategory);
+  // Current 2 narratives to display
+  const visibleThreads = useMemo(() => {
+    const start = pageIndex * COLS_PER_PAGE;
+    return NARRATIVE_THREADS.slice(start, start + COLS_PER_PAGE);
+  }, [pageIndex]);
+
+  // All unique tags from catalysts
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of state.catalysts) {
+      for (const t of (c.tags ?? [])) set.add(t);
     }
-    return cards.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
-  }, [state.catalysts, filterCategory]);
+    return [...set].sort();
+  }, [state.catalysts]);
 
-  const dateGroups = useMemo(() => groupByDate(filteredCatalysts), [filteredCatalysts]);
+  // Cards grouped by narrative thread
+  const cardsByThread = useMemo(() => {
+    const map = new Map<string, CatalystCard[]>();
+    for (const thread of NARRATIVE_THREADS) {
+      const cards = state.catalysts.filter(c => {
+        const threads = c.narrativeThreads ?? (c.narrative ? [c.narrative] : []);
+        if (!threads.includes(thread.slug)) return false;
+        if (activeTagFilter && !(c.tags ?? []).includes(activeTagFilter)) return false;
+        return true;
+      });
+      map.set(thread.slug, cards.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')));
+    }
+    return map;
+  }, [state.catalysts, activeTagFilter]);
 
-  const toggleDate = useCallback((date: string) => {
-    setCollapsedDates(prev => {
-      const next = new Set(prev);
-      next.has(date) ? next.delete(date) : next.add(date);
-      return next;
-    });
+  // Find cross-column connections (cards that appear in both visible threads)
+  const crossConnections = useMemo(() => {
+    if (visibleThreads.length < 2) return [];
+    const leftCards = cardsByThread.get(visibleThreads[0].slug) ?? [];
+    const rightCards = cardsByThread.get(visibleThreads[1].slug) ?? [];
+    const rightIds = new Set(rightCards.map(c => c.id));
+    // Cards that appear in both columns via narrativeThreads
+    return leftCards.filter(c => {
+      const threads = c.narrativeThreads ?? [];
+      return threads.includes(visibleThreads[1].slug);
+    }).map(c => ({
+      id: c.id,
+      title: c.title,
+      existsInRight: rightIds.has(c.id),
+    }));
+  }, [visibleThreads, cardsByThread]);
+
+  const handlePrev = useCallback(() => {
+    setPageIndex(p => Math.max(0, p - 1));
   }, []);
 
-  const startEdit = useCallback((id: string, field: 'title' | 'description' | 'tags', currentValue: string) => {
-    setEditState({ id, field, value: currentValue });
+  const handleNext = useCallback(() => {
+    setPageIndex(p => Math.min(TOTAL_PAGES - 1, p + 1));
   }, []);
-
-  const commitEdit = useCallback(() => {
-    if (!editState) return;
-    const { id, field, value } = editState;
-    if (field === 'tags') {
-      const newTags = value.split(',').map(t => t.trim()).filter(Boolean);
-      dispatch({ type: 'UPDATE_CATALYST', id, updates: { tags: newTags } });
-    } else {
-      dispatch({ type: 'UPDATE_CATALYST', id, updates: { [field]: value } });
-    }
-    setEditState(null);
-  }, [editState, dispatch]);
-
-  const handleAddNew = useCallback(() => {
-    dispatch({
-      type: 'ADD_CATALYST',
-      catalyst: {
-        title: 'New Event',
-        description: '',
-        date: new Date().toISOString().slice(0, 10),
-        sentiment: 'bearish',
-        severity: 'medium',
-        source: 'user',
-        narrativeIds: [],
-        isGhost: false,
-        templateType: null,
-        position: null,
-        tags: [],
-        category: 'macroeconomic',
-        drillDepth: 0,
-      },
-    });
-  }, [dispatch]);
 
   return (
     <div className="h-full flex flex-col bg-[var(--fintheon-bg)]">
-      {/* Header */}
-      <div className="shrink-0 px-5 py-4 border-b border-[var(--fintheon-border)]/10">
-        <h2 className="text-sm font-bold text-[var(--fintheon-accent)] uppercase tracking-widest"
-          style={{ fontFamily: 'var(--font-heading)' }}>
-          Timeline
-        </h2>
-        <p className="text-[9px] text-[var(--fintheon-muted)]/40 mt-1">
-          Your narrative timeline. Click any event to edit inline.
-        </p>
+      {/* Header with navigation */}
+      <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-border)]/10">
+        <div>
+          <h2 className="text-sm font-bold text-[var(--fintheon-accent)] uppercase tracking-widest"
+            style={{ fontFamily: 'var(--font-heading)' }}>
+            Timeline
+          </h2>
+          <p className="text-[8px] text-[var(--fintheon-muted)]/40 mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
+            Structured narrative view — {state.catalysts.length} events across {NARRATIVE_THREADS.length} narratives
+          </p>
+        </div>
 
-        {/* Category filter */}
-        <div className="flex flex-wrap gap-1 mt-3">
-          <button
-            onClick={() => setFilterCategory('all')}
-            className={`text-[8px] px-2 py-0.5 rounded-full border transition-colors ${
-              filterCategory === 'all'
-                ? 'text-[var(--fintheon-accent)] border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/10'
-                : 'text-[var(--fintheon-muted)]/40 border-transparent hover:text-[var(--fintheon-text)]/60'
-            }`}
-          >
-            All ({filteredCatalysts.length})
-          </button>
-          {(Object.keys(CATEGORY_COLORS) as NarrativeCategory[]).map(cat => {
-            const count = state.catalysts.filter(c => c.category === cat && c.drillDepth === 0).length;
-            if (count === 0) return null;
-            return (
-              <button
-                key={cat}
-                onClick={() => setFilterCategory(cat)}
-                className={`text-[8px] px-2 py-0.5 rounded-full border transition-colors ${
-                  filterCategory === cat
-                    ? 'border-current bg-current/10'
-                    : 'border-transparent hover:border-current/20'
-                }`}
-                style={{ color: CATEGORY_COLORS[cat] }}
-              >
-                {cat.replace('-', ' ')} ({count})
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-2">
+          {/* Tag filter */}
+          <div className="relative">
+            <button
+              onClick={() => setTagFilterOpen(v => !v)}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-[9px] transition-colors ${
+                activeTagFilter
+                  ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                  : 'text-[var(--fintheon-muted)]/40 hover:text-[var(--fintheon-text)]/60'
+              }`}
+              style={{ fontFamily: 'var(--font-body)' }}
+            >
+              <Filter className="w-3 h-3" />
+              {activeTagFilter ? `#${activeTagFilter}` : 'Filter'}
+            </button>
+            {tagFilterOpen && (
+              <div className="absolute top-full right-0 mt-1 z-50 w-48 max-h-48 overflow-y-auto rounded-lg border bg-[var(--fintheon-bg)] shadow-lg"
+                style={{ borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' }}>
+                <button
+                  onClick={() => { setActiveTagFilter(null); setTagFilterOpen(false); }}
+                  className={`w-full text-left px-3 py-1.5 text-[9px] transition-colors ${!activeTagFilter ? 'text-[var(--fintheon-accent)]' : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]'}`}
+                >
+                  All tags
+                </button>
+                {allTags.slice(0, 30).map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => { setActiveTagFilter(tag); setTagFilterOpen(false); }}
+                    className={`w-full text-left px-3 py-1.5 text-[9px] transition-colors ${activeTagFilter === tag ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/5' : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]'}`}
+                    style={{ fontFamily: 'var(--font-mono)' }}
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Page navigation */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handlePrev}
+              disabled={pageIndex === 0}
+              className="p-1 rounded transition-colors hover:bg-[var(--fintheon-accent)]/5 disabled:opacity-20"
+              style={{ color: 'var(--fintheon-accent)' }}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-[9px] text-[var(--fintheon-muted)]/40 min-w-[40px] text-center" style={{ fontFamily: 'var(--font-mono)' }}>
+              {pageIndex + 1}/{TOTAL_PAGES}
+            </span>
+            <button
+              onClick={handleNext}
+              disabled={pageIndex >= TOTAL_PAGES - 1}
+              className="p-1 rounded transition-colors hover:bg-[var(--fintheon-accent)]/5 disabled:opacity-20"
+              style={{ color: 'var(--fintheon-accent)' }}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Timeline body */}
-      <div className="flex-1 overflow-y-auto px-5 py-3">
-        {dateGroups.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-[10px] text-[var(--fintheon-muted)]/40">No events to display</p>
-          </div>
-        )}
-
-        {dateGroups.map(([date, events]) => {
-          const isCollapsed = collapsedDates.has(date);
+      {/* Two-column narrative view */}
+      <div className="flex-1 min-h-0 flex gap-0 overflow-hidden">
+        {visibleThreads.map((thread, colIdx) => {
+          const cards = cardsByThread.get(thread.slug) ?? [];
+          const dateGroups = groupByDate(cards);
           return (
-            <div key={date} className="mb-4">
-              {/* Date header */}
-              <button
-                onClick={() => toggleDate(date)}
-                className="flex items-center gap-2 w-full text-left mb-2 group"
-              >
-                {isCollapsed
-                  ? <ChevronRight className="w-3 h-3 text-[var(--fintheon-muted)]/30" />
-                  : <ChevronDown className="w-3 h-3 text-[var(--fintheon-muted)]/30" />
-                }
-                <span className="text-[10px] font-bold text-[var(--fintheon-accent)]/60 uppercase tracking-wider">
-                  {formatDateHeader(date)}
-                </span>
-                <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
-                <span className="text-[8px] text-[var(--fintheon-muted)]/30">{events.length}</span>
-              </button>
+            <div
+              key={thread.slug}
+              className="flex-1 min-w-0 flex flex-col border-r last:border-r-0 overflow-hidden"
+              style={{ borderColor: 'color-mix(in srgb, var(--fintheon-border) 10%, transparent)' }}
+            >
+              {/* Column header */}
+              <div className="shrink-0 px-4 py-3 border-b" style={{ borderColor: `${thread.color}20` }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: thread.color }} />
+                  <h3 className="text-[11px] font-bold uppercase tracking-wider" style={{ color: thread.color, fontFamily: 'var(--font-heading)' }}>
+                    {thread.title}
+                  </h3>
+                </div>
+                <p className="text-[8px] mt-0.5 opacity-40" style={{ color: 'var(--fintheon-muted)', fontFamily: 'var(--font-mono)' }}>
+                  {cards.length} events
+                </p>
+              </div>
 
-              {/* Events */}
-              {!isCollapsed && (
-                <div className="ml-3 border-l border-[var(--fintheon-border)]/10 pl-4 space-y-2">
-                  {events.map(event => (
-                    <div
-                      key={event.id}
-                      className="relative rounded-lg border px-3 py-2 transition-colors hover:border-[var(--fintheon-accent)]/20 group/card"
-                      style={{
-                        borderColor: 'color-mix(in srgb, var(--fintheon-border) 15%, transparent)',
-                        backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 40%, transparent)',
-                      }}
-                    >
-                      {/* Timeline dot */}
-                      <div
-                        className="absolute -left-[21px] top-3 w-2.5 h-2.5 rounded-full border-2 border-[var(--fintheon-bg)]"
-                        style={{ backgroundColor: SEVERITY_DOT[event.severity] ?? '#6B7280' }}
-                      />
+              {/* Cards chronologically */}
+              <div className="flex-1 overflow-y-auto px-3 py-2 space-y-3">
+                {dateGroups.length === 0 && (
+                  <p className="text-[9px] text-[var(--fintheon-muted)]/30 text-center py-8" style={{ fontFamily: 'var(--font-body)' }}>
+                    No events in this narrative
+                  </p>
+                )}
 
-                      {/* Title — inline editable */}
-                      <div className="flex items-start gap-2">
-                        {editState?.id === event.id && editState.field === 'title' ? (
-                          <input
-                            autoFocus
-                            value={editState.value}
-                            onChange={e => setEditState({ ...editState, value: e.target.value })}
-                            onBlur={commitEdit}
-                            onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditState(null); }}
-                            className="flex-1 text-[11px] font-semibold bg-transparent border-b border-[var(--fintheon-accent)]/30 outline-none px-0 py-0"
-                            style={{ color: 'var(--fintheon-text)' }}
-                          />
-                        ) : (
-                          <p
-                            className="flex-1 text-[11px] font-semibold cursor-text"
-                            style={{ color: 'var(--fintheon-text)' }}
-                            onClick={() => startEdit(event.id, 'title', event.title)}
+                {dateGroups.map(([date, events]) => (
+                  <div key={date}>
+                    {/* Date separator */}
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[8px] font-bold uppercase tracking-wider" style={{ color: `${thread.color}60`, fontFamily: 'var(--font-mono)' }}>
+                        {formatDate(date)}
+                      </span>
+                      <div className="flex-1 h-px" style={{ backgroundColor: `${thread.color}15` }} />
+                    </div>
+
+                    {/* Event cards */}
+                    <div className="space-y-1.5 ml-1">
+                      {events.map(event => {
+                        const isBullish = event.sentiment === 'bullish';
+                        const isMultiNarrative = (event.narrativeThreads ?? []).length > 1;
+                        return (
+                          <div
+                            key={event.id}
+                            className="rounded-lg border px-3 py-2 transition-colors hover:border-[var(--fintheon-accent)]/15"
+                            style={{
+                              borderColor: 'color-mix(in srgb, var(--fintheon-border) 12%, transparent)',
+                              backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 40%, transparent)',
+                              borderLeft: `3px solid ${SEVERITY_DOT[event.severity] ?? '#6B7280'}`,
+                            }}
                           >
-                            {event.title}
-                          </p>
-                        )}
-
-                        {/* Sentiment arrow */}
-                        <span className={`text-[9px] font-bold ${event.sentiment === 'bullish' ? 'text-green-400' : 'text-red-400'}`}>
-                          {event.sentiment === 'bullish' ? '▲' : '▼'}
-                        </span>
-                      </div>
-
-                      {/* Description — inline editable */}
-                      {editState?.id === event.id && editState.field === 'description' ? (
-                        <textarea
-                          autoFocus
-                          value={editState.value}
-                          onChange={e => setEditState({ ...editState, value: e.target.value })}
-                          onBlur={commitEdit}
-                          rows={2}
-                          className="w-full mt-1 text-[9px] bg-transparent border border-[var(--fintheon-accent)]/20 rounded outline-none px-1 py-0.5 resize-none"
-                          style={{ color: 'var(--fintheon-muted)' }}
-                        />
-                      ) : event.description ? (
-                        <p
-                          className="text-[9px] mt-0.5 line-clamp-2 cursor-text"
-                          style={{ color: 'var(--fintheon-muted)' }}
-                          onClick={() => startEdit(event.id, 'description', event.description ?? '')}
-                        >
-                          {event.description}
-                        </p>
-                      ) : null}
-
-                      {/* Meta row */}
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        <span
-                          className="text-[7px] px-1.5 py-0.5 rounded-full font-medium uppercase"
-                          style={{
-                            color: CATEGORY_COLORS[(event.category ?? 'macroeconomic') as NarrativeCategory],
-                            backgroundColor: `${CATEGORY_COLORS[(event.category ?? 'macroeconomic') as NarrativeCategory]}20`,
-                          }}
-                        >
-                          {event.category ?? 'macro'}
-                        </span>
-                        <span className="text-[7px] font-mono text-[var(--fintheon-muted)]/30">
-                          {event.severity}
-                        </span>
-                        {event.tags && event.tags.length > 0 && (
-                          <div className="flex gap-0.5">
-                            {event.tags.slice(0, 3).map(t => (
-                              <span key={t} className="text-[6px] px-1 py-0.5 rounded bg-[var(--fintheon-accent)]/5 text-[var(--fintheon-accent)]/40">
-                                {t}
+                            {/* Title + sentiment */}
+                            <div className="flex items-start gap-1.5">
+                              <p className="flex-1 text-[10px] font-semibold leading-tight" style={{ color: 'var(--fintheon-text)', fontFamily: 'var(--font-body)' }}>
+                                {event.title}
+                              </p>
+                              <span className="text-[9px] font-bold shrink-0" style={{ color: isBullish ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
+                                {isBullish ? '▲' : '▼'}
                               </span>
-                            ))}
-                            {event.tags.length > 3 && (
-                              <span className="text-[6px] text-[var(--fintheon-muted)]/20">+{event.tags.length - 3}</span>
+                            </div>
+
+                            {/* Description */}
+                            {event.description && (
+                              <p className="text-[8px] mt-0.5 line-clamp-2 opacity-50" style={{ color: 'var(--fintheon-muted)', fontFamily: 'var(--font-body)' }}>
+                                {event.description}
+                              </p>
+                            )}
+
+                            {/* Tags */}
+                            {event.tags && event.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-0.5 mt-1">
+                                {event.tags.slice(0, 4).map(t => (
+                                  <span key={t} className="text-[6px] px-1 py-0.5 rounded" style={{ color: `${thread.color}80`, backgroundColor: `${thread.color}08`, fontFamily: 'var(--font-mono)' }}>
+                                    #{t}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Multi-narrative indicator (rope connection) */}
+                            {isMultiNarrative && (
+                              <div className="flex items-center gap-1 mt-1 pt-1 border-t" style={{ borderColor: '#c79f4a15' }}>
+                                <div className="w-8 h-px" style={{ backgroundColor: '#c79f4a40' }} />
+                                <span className="text-[6px] italic" style={{ color: '#c79f4a60', fontFamily: 'var(--font-body)' }}>
+                                  also in: {(event.narrativeThreads ?? []).filter(s => s !== thread.slug).map(s =>
+                                    NARRATIVE_THREADS.find(t => t.slug === s)?.title ?? s
+                                  ).join(', ')}
+                                </span>
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Add button */}
-      <div className="shrink-0 px-5 py-3 border-t border-[var(--fintheon-border)]/10">
-        <button
-          onClick={handleAddNew}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed transition-colors hover:bg-[var(--fintheon-accent)]/5"
-          style={{ borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)', color: 'var(--fintheon-accent)' }}
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span className="text-[10px] font-medium">Add Event</span>
-        </button>
-      </div>
+      {/* Cross-column connections indicator */}
+      {crossConnections.length > 0 && (
+        <div className="shrink-0 px-4 py-2 border-t border-[var(--fintheon-border)]/10 flex items-center gap-2">
+          <div className="w-6 h-px bg-[var(--fintheon-accent)]/30" />
+          <span className="text-[7px] text-[var(--fintheon-accent)]/40" style={{ fontFamily: 'var(--font-mono)' }}>
+            {crossConnections.length} shared events between these narratives
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -68,7 +68,8 @@ export interface CatalystCard {
     ym: { points: number; percent: number } | null;
     asOf: string; // ISO date of the close
   };
-  narrative?: string; // broader narrative theme (e.g. "Trump Tariff War", "Fed Rate Cycle")
+  narrative?: string; // primary narrative thread slug (e.g. "middle-east-conflict", "rate-cut-cycle")
+  narrativeThreads?: string[]; // all narrative thread slugs this card belongs to (for rope connections)
   directionBias?: 'bullish' | 'bearish' | 'neutral';
   status?: 'active' | 'monitoring' | 'resolved';
   dateRange?: { start: string; end: string | null };

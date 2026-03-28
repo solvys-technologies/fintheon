@@ -27,8 +27,8 @@ import { Loader2, Send, Lock } from 'lucide-react';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // ─── Category Group Node ──────────────────────────────────────
-function CategoryGroupNode({ data }: { data: { label: string; category: NarrativeCategory; count: number } }) {
-  const color = CATEGORY_COLORS[data.category] ?? '#6B7280';
+function CategoryGroupNode({ data }: { data: { label: string; category: string; count: number } }) {
+  const color = THREAD_COLOR_MAP[data.category] ?? CATEGORY_COLORS[data.category as NarrativeCategory] ?? '#6B7280';
   return (
     <div
       className="rounded-2xl border-2 border-dashed p-4 min-w-[300px] min-h-[200px]"
@@ -167,15 +167,31 @@ const nodeTypes: NodeTypes = {
   eventCard: EventCardNode,
 };
 
-// ─── Layout helper: position nodes in grid within groups ──────
+// The 10 real narrative threads (must match migration 027 + TimelinePanel)
+const NARRATIVE_THREADS = [
+  { slug: 'middle-east-conflict', title: 'Middle Eastern Conflict', color: '#F59E0B' },
+  { slug: 'liquidity-credit-contraction', title: 'Liquidity & Credit', color: '#8B5CF6' },
+  { slug: 'ai-singularity', title: 'The Singularity', color: '#3B82F6' },
+  { slug: 'usd-jpy-carry-trade', title: 'USD-JPY Carry Trade', color: '#EC4899' },
+  { slug: 'trade-war', title: 'Trade War', color: '#EF4444' },
+  { slug: 'us-china-relations', title: 'US-China Relations', color: '#14B8A6' },
+  { slug: 'rate-cut-cycle', title: 'Rate Cut Cycle', color: '#34D399' },
+  { slug: 'trump-presidency', title: 'Trump Presidency', color: '#F97316' },
+  { slug: 'price-stability', title: 'Price Stability', color: '#FBBF24' },
+  { slug: 'maximum-employment', title: 'Max Employment', color: '#A78BFA' },
+];
+
+const THREAD_COLOR_MAP = Object.fromEntries(NARRATIVE_THREADS.map(t => [t.slug, t.color]));
+
+// ─── Layout helper: position nodes in grid within narrative groups ──
 function layoutNodes(catalysts: CatalystCard[]): { nodes: Node[]; edges: Edge[] } {
-  // Group by category
-  const groups = new Map<NarrativeCategory, CatalystCard[]>();
+  // Group by primary narrative thread
+  const groups = new Map<string, CatalystCard[]>();
   for (const c of catalysts) {
-    const cat = (c.category ?? 'macroeconomic') as NarrativeCategory;
-    const arr = groups.get(cat) ?? [];
+    const thread = c.narrative ?? 'rate-cut-cycle';
+    const arr = groups.get(thread) ?? [];
     arr.push(c);
-    groups.set(cat, arr);
+    groups.set(thread, arr);
   }
 
   const nodes: Node[] = [];
@@ -187,14 +203,8 @@ function layoutNodes(catalysts: CatalystCard[]): { nodes: Node[]; edges: Edge[] 
 
   let groupY = 0;
 
-  // Sort categories for consistent layout
-  const categoryOrder: NarrativeCategory[] = [
-    'geopolitical', 'monetary', 'macroeconomic',
-    'market-structure', 'earnings', 'supply-chain', 'black-swan',
-  ];
-
-  for (const cat of categoryOrder) {
-    const cards = groups.get(cat);
+  for (const thread of NARRATIVE_THREADS) {
+    const cards = groups.get(thread.slug);
     if (!cards || cards.length === 0) continue;
 
     // Sort cards by date
@@ -205,14 +215,14 @@ function layoutNodes(catalysts: CatalystCard[]): { nodes: Node[]; edges: Edge[] 
     const groupH = rows * CARD_H + GROUP_PAD * 2 + 30; // +30 for header
 
     // Group node
-    const groupId = `group-${cat}`;
+    const groupId = `group-${thread.slug}`;
     nodes.push({
       id: groupId,
       type: 'categoryGroup',
       position: { x: 0, y: groupY },
       data: {
-        label: cat.replace('-', ' '),
-        category: cat,
+        label: thread.title,
+        category: thread.slug as NarrativeCategory,
         count: sorted.length,
       },
       style: { width: groupW, height: groupH },
@@ -464,8 +474,8 @@ function NarrativeFlowCanvas({
           position="bottom-right"
           nodeColor={(node) => {
             if (node.type === 'categoryGroup' && node.data && typeof node.data === 'object' && 'category' in node.data) {
-              const cat = (node.data as { category: NarrativeCategory }).category;
-              return CATEGORY_COLORS[cat] ?? '#6B7280';
+              const cat = (node.data as { category: string }).category;
+              return THREAD_COLOR_MAP[cat] ?? CATEGORY_COLORS[cat as NarrativeCategory] ?? '#6B7280';
             }
             return '#c79f4a40';
           }}
