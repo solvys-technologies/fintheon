@@ -381,6 +381,10 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
                     highlightMode={highlightMode}
                     onHighlightBranch={onHighlightBranch}
                     onDrillDeeper={onDrillDeeper}
+                    showTitle={showTitle}
+                    showDescription={showDescription}
+                    scale={scale}
+                    onCardHover={setHoveredCardId}
                   />
                 </div>
               );

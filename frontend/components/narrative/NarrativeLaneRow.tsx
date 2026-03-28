@@ -9,6 +9,7 @@ import type {
 import type { GridColumn } from '../../lib/narrative-grid-layout';
 import { getColumnKeyForDate, LANE_ROW_HEIGHT } from '../../lib/narrative-grid-layout';
 import NarrativeResearchCard from './NarrativeResearchCard';
+import NarrativeMiniCard from './NarrativeMiniCard';
 
 interface NarrativeLaneRowProps {
   category: NarrativeCategory;
@@ -24,6 +25,10 @@ interface NarrativeLaneRowProps {
   highlightMode?: boolean;
   onHighlightBranch?: (cardId: string, highlightedText: string) => void;
   onDrillDeeper?: (cardId: string, query: string) => void;
+  showTitle?: boolean;
+  showDescription?: boolean;
+  scale?: number;
+  onCardHover?: (id: string | null) => void;
 }
 
 const SEVERITY_BORDER: Record<string, string> = {
@@ -44,6 +49,10 @@ export default function NarrativeLaneRow({
   highlightMode = false,
   onHighlightBranch,
   onDrillDeeper,
+  showTitle = true,
+  showDescription = true,
+  scale = 1,
+  onCardHover,
 }: NarrativeLaneRowProps) {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
@@ -180,23 +189,49 @@ export default function NarrativeLaneRow({
                 );
               })()
             ) : (
-              // Individual cards at week zoom
-              (cardsByColumn.get(col.key) ?? []).map(c => (
+              // Individual cards — render style based on zoom scale
+              (cardsByColumn.get(col.key) ?? []).map((c, idx) => (
                 <div
                   key={c.id}
                   draggable={!isReadOnly && !highlightMode}
                   onDragStart={(e) => handleDragStart(e, c.id)}
+                  ref={(el) => { cardRefsMap.current[c.id] = el; }}
+                  onMouseEnter={() => onCardHover?.(c.id)}
+                  onMouseLeave={() => onCardHover?.(null)}
                 >
-                  <NarrativeResearchCard
-                    catalyst={c}
-                    compact
-                    selected={selectedCardId === c.id}
-                    highlightMode={highlightMode}
-                    onSelect={onSelectCard}
-                    onHighlightBranch={onHighlightBranch}
-                    onDrillDeeper={onDrillDeeper}
-                    cardRef={(el) => { cardRefsMap.current[c.id] = el; }}
-                  />
+                  {!showTitle ? (
+                    // Dots-only view at very far zoom (< 0.4x)
+                    <div
+                      className="w-3 h-3 rounded-full cursor-pointer"
+                      style={{
+                        backgroundColor: SEVERITY_BORDER[c.severity] ?? 'var(--fintheon-muted)',
+                        border: selectedCardId === c.id ? '2px solid var(--fintheon-accent)' : undefined,
+                      }}
+                      onClick={() => onSelectCard(c.id)}
+                      title={c.title}
+                    />
+                  ) : !showDescription ? (
+                    // Mini card at medium zoom (0.4x - 0.7x)
+                    <NarrativeMiniCard
+                      card={c}
+                      isSelected={selectedCardId === c.id}
+                      isImported={c.source === 'riskflow-import'}
+                      onClick={() => onSelectCard(c.id)}
+                      staggerIndex={idx}
+                    />
+                  ) : (
+                    // Full card at close zoom (>= 0.7x)
+                    <NarrativeResearchCard
+                      catalyst={c}
+                      compact
+                      selected={selectedCardId === c.id}
+                      highlightMode={highlightMode}
+                      onSelect={onSelectCard}
+                      onHighlightBranch={onHighlightBranch}
+                      onDrillDeeper={onDrillDeeper}
+                      cardRef={(el) => { cardRefsMap.current[c.id] = el; }}
+                    />
+                  )}
                 </div>
               ))
             )}
