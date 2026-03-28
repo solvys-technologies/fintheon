@@ -406,6 +406,7 @@ export function createDataRoutes(): Hono {
         subScores: s.sub_scores ?? null,
         econData: s.econ_data ?? null,
         publishedAt: s.published_at ?? null,
+        marketImpact: s.market_impact ?? null,
       }));
 
       return c.json({ ticker, history, scoring, fetchedAt: new Date().toISOString() });

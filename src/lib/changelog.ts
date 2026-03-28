@@ -9,6 +9,80 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-28T23:45:00',
+    agent: 'claude-code',
+    summary: 'S5-T5: Rope engine auto-connects cards by shared tags with SVG bezier paths. Living motion system — staggered entrances, spring zoom, severity pulse. Anti-default polish: severity-driven card weight (scale/opacity/border), gold-earned color discipline, editorial typography hierarchy.',
+    files: [
+      'frontend/lib/narrative-rope-engine.ts',
+      'frontend/components/narrative/NarrativeRopes.tsx',
+      'frontend/lib/narrative-motion.ts',
+      'frontend/index.css',
+      'frontend/components/narrative/NarrativeMiniCard.tsx',
+    ],
+  },
+  {
+    date: '2026-03-28T22:30:00',
+    agent: 'claude-code',
+    summary: 'S5-T4: Market impact pipeline — nightly cron fetches NQ/ES/YM daily close from Yahoo Finance for HIGH/CRITICAL scored items >24h. Writes market_impact JSONB to scored_riskflow_items. Backfill script for historical items. Migration 024 adds column + partial index.',
+    files: [
+      'backend-hono/src/services/market-data/daily-close-service.ts',
+      'backend-hono/src/services/cron/market-impact-enricher.ts',
+      'backend-hono/src/services/cron/dispatch-scheduler.ts',
+      'backend-hono/src/services/supabase-service.ts',
+      'backend-hono/src/boot/index.ts',
+      'backend-hono/scripts/backfill-market-impact.ts',
+      'backend-hono/migrations/024_market_impact_column.sql',
+    ],
+  },
+  {
+    date: '2026-03-28T23:59:00',
+    agent: 'claude-code',
+    summary: 'S5-T3: Rich CatalystModal with full trading fields (direction, instruments, severity, date range, status, tags). NarrativeMiniCard for dense display. Auto-seed pipeline loads 53 historical events + imports live RiskFlow items as editable copies. Store extended with BULK_ADD_CATALYSTS. Types extended with directionBias, status, dateRange on CatalystCard + riskflow-import source.',
+    files: [
+      'frontend/components/narrative/CatalystModal.tsx',
+      'frontend/components/narrative/NarrativeMiniCard.tsx',
+      'frontend/lib/narrative-seed-loader.ts',
+      'frontend/lib/narrative-store.ts',
+      'frontend/lib/narrative-types.ts',
+      'frontend/components/narrative/NarrativeFlow.tsx',
+    ],
+  },
+  {
+    date: '2026-03-28T23:55:00',
+    agent: 'claude-code',
+    summary: 'S5-T2: Converted Sanctum from push-panel to 50% overlay drawer. Map stays full-width underneath. Added Market Impact display (NQ/ES/YM close) to Econ Intel scored items. Updated econ-history endpoint to pass market_impact.',
+    files: [
+      'frontend/components/narrative/NarrativeFlow.tsx',
+      'frontend/components/narrative/SanctumEconIntel.tsx',
+      'frontend/types/mirofish.ts',
+      'backend-hono/src/routes/data/index.ts',
+    ],
+  },
+  {
+    date: '2026-03-28T23:45:00',
+    agent: 'claude-code',
+    summary: 'S5-T1: Foundation — extended catalyst types with marketImpact + riskflowItemId. New tree layout engine for structured mind-map. CSS transform zoom/pan hook with semantic zoom thresholds. Store extended with viewport + dateFilter state.',
+    files: [
+      'frontend/lib/narrative-types.ts',
+      'frontend/lib/narrative-tree-layout.ts',
+      'frontend/hooks/useCanvasViewport.ts',
+      'frontend/lib/narrative-store.ts',
+    ],
+  },
+  {
+    date: '2026-03-28T23:30:00',
+    agent: 'claude-code',
+    summary: 'Commentary scraper: Firecrawl-powered 30min scrape of FJ web, ZeroHedge, DeItaOne (ForexLive mirror) → raw_riskflow_items. Added ZeroHedge + DeItaOne to NewsSource union types. Geopolitical expansion: Twitter CLI now polls Bessent, Trump, ABORNEOFFICIAL accounts + Iran/Israel/IRGC search terms alongside FJ/InsiderWire/NickTimiraos.',
+    files: [
+      'backend-hono/src/services/riskflow/commentary-scraper.ts',
+      'backend-hono/src/services/twitter-cli/econ-triggered-poller.ts',
+      'backend-hono/src/services/riskflow/feed-service.ts',
+      'backend-hono/src/types/riskflow.ts',
+      'backend-hono/src/types/news-analysis.ts',
+      'backend-hono/src/boot/index.ts',
+    ],
+  },
+  {
     date: '2026-03-28T22:00:00',
     agent: 'claude-code',
     summary: 'S5-T2: Python FastAPI execution bridge wrapping TopStepX REST API for order placement, positions, account info, and cancellation',

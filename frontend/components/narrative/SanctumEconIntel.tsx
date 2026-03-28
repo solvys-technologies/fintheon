@@ -1,3 +1,4 @@
+// [claude-code 2026-03-28] S5-T2: Added Market Impact (NQ/ES/YM day close) display to expanded econ cards
 // [claude-code 2026-03-28] S4-T3: Category score interpretation with trading-specific context per risk sector
 // [claude-code 2026-03-27] Econ Intel — historical prints, scoring breakdown, MiroFish-ready aggregation
 // [claude-code 2026-03-24] Econ Intel — 2-col grid, expandable cards with countdown + history + risk category sub-cards
@@ -414,6 +415,33 @@ function EconCard({
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Market Impact — shows if scored items have marketImpact data */}
+          {scoredItems.some(s => s.marketImpact) && (
+            <div>
+              <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
+                Market Impact (Day Close)
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                {(['nq', 'es', 'ym'] as const).map(sym => {
+                  const impact = scoredItems.find(s => s.marketImpact?.[sym])?.marketImpact?.[sym];
+                  if (!impact) return null;
+                  const color = impact.percent > 0 ? 'var(--fintheon-low)' : impact.percent < 0 ? 'var(--fintheon-severe)' : 'var(--fintheon-muted)';
+                  return (
+                    <div key={sym} className="rounded bg-[var(--fintheon-bg)]/40 border border-[var(--fintheon-border)]/5 px-2 py-1.5">
+                      <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/40 uppercase block">{sym.toUpperCase()}</span>
+                      <span className="text-[11px] font-mono font-bold" style={{ color }}>
+                        {impact.points > 0 ? '+' : ''}{impact.points.toFixed(0)} pts
+                      </span>
+                      <span className="text-[9px] font-mono block" style={{ color }}>
+                        {impact.percent > 0 ? '+' : ''}{impact.percent.toFixed(2)}%
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

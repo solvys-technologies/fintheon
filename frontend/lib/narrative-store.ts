@@ -1,4 +1,5 @@
-// [claude-code 2026-03-06] NarrativeFlow localStorage CRUD + useNarrativeStore hook
+// [claude-code 2026-03-28] NarrativeFlow localStorage CRUD + useNarrativeStore hook
+// S5-T1: Added viewport + dateFilter state and SET_VIEWPORT / SET_DATE_FILTER actions
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getMonday } from './narrative-time';
 import type {
@@ -8,8 +9,10 @@ import type {
   NarrativeAction,
   NarrativeLane,
   CatalystCard,
+  CanvasViewport,
   Rope,
 } from './narrative-types';
+import { DEFAULT_VIEWPORT } from './narrative-types';
 
 const STORAGE_KEY = 'fintheon:narrative:v1';
 const SNAPSHOT_KEY = 'fintheon:narrative-snapshot:v1';
@@ -39,6 +42,8 @@ function defaultState(): NarrativeFlowState {
     replayMode: false,
     replayPosition: 0,
     agentProvider: { provider: 'manual', autoApprove: false },
+    viewport: { ...DEFAULT_VIEWPORT },
+    dateFilter: null,
   };
 }
 
@@ -149,6 +154,11 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
     case 'ADD_CATALYST': {
       const catalyst: CatalystCard = { ...action.catalyst, drillDepth: action.catalyst.drillDepth ?? 0, id: generateId(), createdAt: now, updatedAt: now };
       return { ...state, catalysts: [...state.catalysts, catalyst] };
+    }
+    case 'BULK_ADD_CATALYSTS': {
+      const existingIds = new Set(state.catalysts.map(c => c.id));
+      const newOnes = action.catalysts.filter(c => !existingIds.has(c.id));
+      return { ...state, catalysts: [...state.catalysts, ...newOnes] };
     }
     case 'IMPORT_CATALYSTS': {
       const now2 = new Date().toISOString();
@@ -277,6 +287,10 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
       return { ...state, replayMode: action.enabled };
     case 'SET_REPLAY_POSITION':
       return { ...state, replayPosition: action.position };
+    case 'SET_VIEWPORT':
+      return { ...state, viewport: { ...state.viewport, ...action.viewport } };
+    case 'SET_DATE_FILTER':
+      return { ...state, dateFilter: action.filter };
     case 'TAKE_SNAPSHOT':
       return state; // handled outside reducer
     case 'RESTORE_SNAPSHOT':

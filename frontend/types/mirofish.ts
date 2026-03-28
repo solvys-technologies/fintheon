@@ -174,6 +174,12 @@ export interface EconScoredItem {
     surprisePercent?: number;
   } | null;
   publishedAt: string | null;
+  marketImpact?: {
+    nq: { points: number; percent: number } | null;
+    es: { points: number; percent: number } | null;
+    ym: { points: number; percent: number } | null;
+    asOf: string;
+  };
 }
 
 export interface EconCardData {

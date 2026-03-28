@@ -89,6 +89,8 @@ function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
     Polymarket: 'Custom',
     Kalshi: 'Custom',
     TwitterCli: 'FinancialJuice', // FJ emoji-filtered tweets treated as FJ quality
+    ZeroHedge: 'Custom',
+    DeItaOne: 'Custom',
     Custom: 'Custom',
     Hermes: 'Custom',
   };

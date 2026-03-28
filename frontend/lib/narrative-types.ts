@@ -1,7 +1,8 @@
-// [claude-code 2026-03-06] NarrativeFlow shared types — all tracks import from here
+// [claude-code 2026-03-28] NarrativeFlow shared types — all tracks import from here
+// S5-T1: Added TreeNode, CanvasViewport, ZOOM_THRESHOLDS, marketImpact on CatalystCard
 export type CatalystSentiment = 'bullish' | 'bearish';
 export type NarrativeCategory = 'geopolitical' | 'macroeconomic' | 'monetary' | 'market-structure' | 'supply-chain' | 'black-swan' | 'earnings';
-export type CatalystSource = 'rss' | 'user' | 'agent' | 'riskflow' | 'brief' | 'research';
+export type CatalystSource = 'rss' | 'user' | 'agent' | 'riskflow' | 'riskflow-import' | 'brief' | 'research';
 export type CatalystSeverity = 'high' | 'medium' | 'low';
 export type NarrativeStatus = 'active' | 'watching' | 'archived' | 'decayed';
 export type DirectionBias = 'long' | 'short' | 'neutral';
@@ -60,6 +61,16 @@ export interface CatalystCard {
   position: { x: number; y: number } | null;
   tags?: string[];  // user-defined tags for filtering/organizing
   category?: NarrativeCategory;
+  riskflowItemId?: string;              // link back to scored_riskflow_items
+  marketImpact?: {
+    nq: { points: number; percent: number } | null;
+    es: { points: number; percent: number } | null;
+    ym: { points: number; percent: number } | null;
+    asOf: string; // ISO date of the close
+  };
+  directionBias?: 'bullish' | 'bearish' | 'neutral';
+  status?: 'active' | 'monitoring' | 'resolved';
+  dateRange?: { start: string; end: string | null };
   researchBullets?: ResearchBullet[];
   parentHighlight?: string;
   parentCardId?: string;
@@ -120,6 +131,8 @@ export interface NarrativeFlowState {
   replayMode: boolean;
   replayPosition: number;
   agentProvider: AgentProviderConfig;
+  viewport: CanvasViewport;
+  dateFilter: { start: string; end: string } | null;
 }
 
 export interface NarrativeSnapshot {
@@ -154,10 +167,46 @@ export type NarrativeAction =
   | { type: 'TOGGLE_HEATMAP' }
   | { type: 'SET_REPLAY_MODE'; enabled: boolean }
   | { type: 'SET_REPLAY_POSITION'; position: number }
+  | { type: 'BULK_ADD_CATALYSTS'; catalysts: CatalystCard[] }
   | { type: 'IMPORT_CATALYSTS'; catalysts: Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'>[] }
   | { type: 'TAG_CATALYST'; catalystId: string; tags: string[] }
   | { type: 'TAKE_SNAPSHOT' }
   | { type: 'RESTORE_SNAPSHOT' }
   | { type: 'HIGHLIGHT_BRANCH'; parentId: string; highlightText: string; childCard: Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'> }
   | { type: 'ADD_RESEARCH_BULLETS'; cardId: string; bullets: ResearchBullet[] }
-  | { type: 'MOVE_CARD_TO_LANE'; cardId: string; targetLaneId: string };
+  | { type: 'MOVE_CARD_TO_LANE'; cardId: string; targetLaneId: string }
+  | { type: 'SET_VIEWPORT'; viewport: Partial<CanvasViewport> }
+  | { type: 'SET_DATE_FILTER'; filter: { start: string; end: string } | null };
+
+// ── Tree-map layout types (S5-T1) ──────────────────────────────
+
+export interface TreeNode {
+  id: string;
+  label: string;
+  type: 'root' | 'category' | 'time-bucket' | 'card';
+  children: TreeNode[];
+  category?: NarrativeCategory;
+  timeBucket?: string; // column key
+  depth: number;
+}
+
+export interface CanvasViewport {
+  x: number;        // pan offset X
+  y: number;        // pan offset Y
+  scale: number;    // CSS transform scale (0.1 - 3.0)
+  zoomLevel: ZoomLevel; // semantic zoom level derived from scale thresholds
+}
+
+export const ZOOM_THRESHOLDS: Record<ZoomLevel, [number, number]> = {
+  'week': [1.5, 3.0],     // close zoom = individual cards
+  'month': [0.8, 1.5],    // medium = week aggregates
+  'quarter': [0.4, 0.8],  // far = month aggregates
+  'year': [0.1, 0.4],     // very far = quarter aggregates
+};
+
+export const DEFAULT_VIEWPORT: CanvasViewport = {
+  x: 0,
+  y: 0,
+  scale: 1.0,
+  zoomLevel: 'month',
+};

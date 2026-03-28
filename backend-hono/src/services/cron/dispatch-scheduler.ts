@@ -15,6 +15,7 @@
 import cron from 'node-cron';
 import { generateBrief, wasBriefGeneratedToday } from '../brief-generator.js';
 import { appendToBoardroom } from '../hermes-sessions.js';
+import { runMarketImpactEnrichment } from './market-impact-enricher.js';
 import { createLogger } from '../../lib/logger.js';
 import type { BriefType } from '../supabase-service.js';
 
@@ -125,6 +126,19 @@ export function startDispatchScheduler(): void {
     scheduledJobs.push(cronJob);
     log.info(`Registered: ${job.description} (${job.cronExpression} ${job.timezone})`);
   }
+
+  // Market impact enricher — 6 PM ET (22:00 UTC) weekdays
+  const marketImpactJob = cron.schedule(
+    '0 18 * * 1-5',
+    () => {
+      runMarketImpactEnrichment()
+        .then((r) => log.info(`Market impact: ${r.enriched}/${r.processed} enriched, ${r.errors} errors`))
+        .catch((err) => log.error('Market impact cron error:', err));
+    },
+    { timezone: 'America/New_York' }
+  );
+  scheduledJobs.push(marketImpactJob);
+  log.info('Registered: Market Impact Enricher (6:00 PM ET, weekdays)');
 
   isRunning = true;
   log.info(`Started ${scheduledJobs.length} dispatch cron jobs`);

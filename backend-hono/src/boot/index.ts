@@ -17,6 +17,8 @@ import { startCentralScorer } from '../services/riskflow/central-scorer.js';
 import { startIVScoreTicker } from '../services/market-data/iv-score-ticker.js';
 import { initVIXRescore } from '../services/riskflow/vix-rescore.js';
 import { startAgentNotesCron } from '../services/riskflow/agent-notes.js';
+import { startCommentaryScraper } from '../services/riskflow/commentary-scraper.js';
+import { startMarketImpactEnricher } from '../services/cron/market-impact-enricher.js';
 import * as projectxService from '../services/projectx-service.js';
 
 const log = createLogger('Boot');
@@ -86,6 +88,14 @@ export async function bootServices(): Promise<void> {
   // Agent notes cron (3min — generates Oracle tactical notes for high/critical items)
   startAgentNotesCron();
   log.info('AgentNotesCron started');
+
+  // Commentary scraper (30min — Firecrawl-powered FJ/ZeroHedge/DeItaOne web scrape)
+  startCommentaryScraper();
+  log.info('CommentaryScraper started');
+
+  // Market impact enricher (24h — enriches HIGH/CRITICAL scored items with NQ/ES/YM daily close)
+  startMarketImpactEnricher();
+  log.info('MarketImpactEnricher started');
 
   // [claude-code 2026-03-27] Feed cleanup DISABLED — items accumulate for calibration DB
   // cleanupOldItems() was purging items older than 30 days. Now we keep everything.

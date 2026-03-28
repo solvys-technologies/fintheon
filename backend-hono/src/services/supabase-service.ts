@@ -4,6 +4,13 @@ import { getSupabaseClient, isSupabaseConfigured } from '../config/supabase.js';
 
 // ─── Types ──────────────────────────────────────────────────────
 
+export interface MarketImpactData {
+  nq: { points: number; percent: number } | null;
+  es: { points: number; percent: number } | null;
+  ym: { points: number; percent: number } | null;
+  asOf: string;
+}
+
 export interface RawRiskFlowItem {
   tweet_id: string;
   source?: string;
@@ -30,6 +37,7 @@ export interface ScoredRiskFlowItem extends RawRiskFlowItem {
   agent_note?: string;
   agent_note_generated_at?: string;
   econ_data?: Record<string, unknown>;
+  market_impact?: MarketImpactData | null;
 }
 
 export interface ERScoreRecord {
@@ -164,6 +172,59 @@ export async function readScoredItems(options?: {
     return [];
   }
   return data ?? [];
+}
+
+// ─── Market Impact (daily close enrichment for scored items) ────
+
+/**
+ * Read scored items that need market impact enrichment:
+ * macro_level >= 3, no market_impact, older than 24h.
+ */
+export async function readItemsNeedingMarketImpact(limit = 50): Promise<ScoredRiskFlowItem[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await sb
+    .from('scored_riskflow_items')
+    .select('*')
+    .gte('macro_level', 3)
+    .is('market_impact', null)
+    .lt('created_at', cutoff)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('[Supabase] readItemsNeedingMarketImpact error:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+/**
+ * Write market_impact JSONB to scored items by tweet_id.
+ */
+export async function writeMarketImpact(
+  updates: Array<{ tweet_id: string; market_impact: MarketImpactData }>,
+): Promise<number> {
+  const sb = getSupabaseClient();
+  if (!sb || updates.length === 0) return 0;
+
+  let written = 0;
+  for (const { tweet_id, market_impact } of updates) {
+    const { error } = await sb
+      .from('scored_riskflow_items')
+      .update({ market_impact })
+      .eq('tweet_id', tweet_id);
+
+    if (error) {
+      console.error('[Supabase] writeMarketImpact error:', error.message, { tweet_id });
+    } else {
+      written++;
+    }
+  }
+  return written;
 }
 
 // ─── ER Scores ──────────────────────────────────────────────────

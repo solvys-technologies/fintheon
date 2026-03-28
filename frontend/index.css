@@ -623,6 +623,26 @@ html *::-webkit-scrollbar {
   100% { background-position: 200% center; }
 }
 
+/* ─── NarrativeFlow T5: Living Motion Keyframes ──────────────── */
+
+@keyframes card-enter {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-card-enter {
+  animation: card-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes severity-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  50% { box-shadow: 0 0 12px 2px rgba(239, 68, 68, 0.3); }
+}
+.animate-severity-pulse {
+  animation: severity-pulse 3s ease-in-out infinite;
+}
+
+/* ─── Agent Mention Effects ─────────────────────────────────────── */
+
 .agent-mention-shimmer {
   background-image: linear-gradient(
     90deg,

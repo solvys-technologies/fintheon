@@ -1,8 +1,8 @@
-// [claude-code 2026-03-16] Stone theme + narrative theme integration
-// [claude-code 2026-03-16] Wired NarrativeManageModal and tag filter state
-// [claude-code 2026-03-16] MiroFish Sanctum split view integration
+// [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
+// [claude-code 2026-03-28] S5-T2: Converted Sanctum from push-panel to 50% overlay drawer
 // [claude-code 2026-03-27] S4-T2: Replaced Canvas/WeekView with unified NarrativeGridView
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import { NarrativeToolbar } from './NarrativeToolbar';
 import NarrativeGridView from './NarrativeGridView';
@@ -11,9 +11,12 @@ import { TimelineScrubber } from './TimelineScrubber';
 import { NarrativeSaveModal } from './NarrativeSaveModal';
 import { RiskFlowImportModal } from './RiskFlowImportModal';
 import { NarrativeTimelineModal } from './NarrativeManageModal';
+import { CatalystModal } from './CatalystModal';
 import { Sanctum } from './Sanctum';
 import { NarrativeHighlightProvider } from './NarrativeHighlightProvider';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
+import { loadSeedEvents, importRiskFlowItems } from '../../lib/narrative-seed-loader';
+import type { CatalystCard } from '../../lib/narrative-types';
 import type { SanctumData, RiskFlowCatalyst } from '../../types/mirofish';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -29,7 +32,34 @@ export function NarrativeFlow() {
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [auditoriumOpen, setSanctumOpen] = useState(false);
   const [mirofishData, setMirofishData] = useState<SanctumData | null>(null);
+  const [catalystModalOpen, setCatalystModalOpen] = useState(false);
+  const [editingCard, setEditingCard] = useState<CatalystCard | null>(null);
   const { alerts } = useRiskFlow();
+  const seedLoadedRef = useRef(false);
+
+  // S5-T3: Auto-seed historical events on first boot
+  useEffect(() => {
+    if (seedLoadedRef.current) return;
+    seedLoadedRef.current = true;
+    const seeds = loadSeedEvents();
+    if (seeds.length > 0) {
+      dispatch({ type: 'BULK_ADD_CATALYSTS', catalysts: seeds });
+    }
+  }, [dispatch]);
+
+  // S5-T3: Auto-import top RiskFlow items as editable copies
+  useEffect(() => {
+    if (alerts.length === 0) return;
+    const highAlerts = alerts.filter(a => a.severity === 'high' || a.severity === 'critical');
+    if (highAlerts.length === 0) return;
+    const existingRfIds = new Set(
+      state.catalysts.filter(c => c.riskflowItemId).map(c => c.riskflowItemId!)
+    );
+    const imported = importRiskFlowItems(highAlerts, existingRfIds);
+    if (imported.length > 0) {
+      dispatch({ type: 'BULK_ADD_CATALYSTS', catalysts: imported });
+    }
+  }, [alerts, state.catalysts, dispatch]);
 
   // Map RiskFlow alerts → RiskFlowCatalyst shape for Sanctum
   const riskflowItems = useMemo((): RiskFlowCatalyst[] =>
@@ -229,22 +259,34 @@ export function NarrativeFlow() {
           </div>
       </div>
 
-      <div className="flex-1 min-h-0 relative overflow-hidden flex">
-        <div
-          className={auditoriumOpen ? 'w-[60%]' : 'w-full'}
-          style={{ transition: 'width 0.3s ease' }}
-        >
+      <div className="flex-1 min-h-0 relative overflow-hidden">
+        <div className="w-full h-full">
           <NarrativeGridView visibleLaneIds={visibleLaneIds} activeTags={activeTags} />
         </div>
-        {auditoriumOpen && (
-          <Sanctum
-            data={mirofishData}
-            onRun={handleRunMiroFish}
-            catalysts={catalystsForKanban}
-            riskflowItems={riskflowItems}
-            macroContext={mirofishData?.contextSnapshot ?? null}
-          />
-        )}
+
+        {/* Sanctum overlay — slides in from right, 50% width */}
+        <div
+          className={`fixed top-0 right-0 h-full z-40 transition-transform duration-300 ease-out ${
+            auditoriumOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+          style={{ width: '50vw' }}
+        >
+          <div className="h-full bg-[var(--fintheon-bg)] border-l border-[var(--fintheon-border)]/20 shadow-[-8px_0_32px_rgba(0,0,0,0.5)]">
+            <button
+              onClick={() => setSanctumOpen(false)}
+              className="absolute top-4 left-4 z-50 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--fintheon-surface)]/60 text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)] transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <Sanctum
+              data={mirofishData}
+              onRun={handleRunMiroFish}
+              catalysts={catalystsForKanban}
+              riskflowItems={riskflowItems}
+              macroContext={mirofishData?.contextSnapshot ?? null}
+            />
+          </div>
+        </div>
       </div>
 
       <TimelineScrubber
@@ -269,6 +311,12 @@ export function NarrativeFlow() {
       <NarrativeTimelineModal
         open={manageModalOpen}
         onClose={() => setManageModalOpen(false)}
+      />
+
+      <CatalystModal
+        open={catalystModalOpen}
+        onClose={() => { setCatalystModalOpen(false); setEditingCard(null); }}
+        editCard={editingCard}
       />
     </div>
     </NarrativeHighlightProvider>

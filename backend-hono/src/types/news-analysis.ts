@@ -7,6 +7,8 @@ export type NewsSource =
   | 'Polymarket'
   | 'Kalshi'
   | 'TwitterCli'
+  | 'ZeroHedge'
+  | 'DeItaOne'
   | 'Custom'
   | 'Hermes'
 
