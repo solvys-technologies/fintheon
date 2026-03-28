@@ -14,6 +14,7 @@ import { NarrativeTimelineModal } from './NarrativeManageModal';
 import { CatalystModal } from './CatalystModal';
 import { Sanctum } from './Sanctum';
 import { NarrativeHighlightProvider } from './NarrativeHighlightProvider';
+import { NarrativeFloatingToolbar, type CanvasTool } from './NarrativeFloatingToolbar';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { loadSeedEvents, importRiskFlowItems } from '../../lib/narrative-seed-loader';
 import type { CatalystCard } from '../../lib/narrative-types';
@@ -34,6 +35,8 @@ export function NarrativeFlow() {
   const [mirofishData, setMirofishData] = useState<SanctumData | null>(null);
   const [catalystModalOpen, setCatalystModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CatalystCard | null>(null);
+  const [canvasTool, setCanvasTool] = useState<CanvasTool>('select');
+  const [canvasScale, setCanvasScale] = useState(1.0);
   const { alerts } = useRiskFlow();
   const seedLoadedRef = useRef(false);
 
@@ -263,6 +266,24 @@ export function NarrativeFlow() {
         <div className="w-full h-full">
           <NarrativeGridView visibleLaneIds={visibleLaneIds} activeTags={activeTags} />
         </div>
+
+        {/* Figma-style floating toolbar — bottom center */}
+        <NarrativeFloatingToolbar
+          activeTool={canvasTool}
+          onToolChange={setCanvasTool}
+          onAddCatalyst={() => { setCatalystModalOpen(true); setEditingCard(null); }}
+          onImport={() => setImportModalOpen(true)}
+          onToggleSanctum={() => setSanctumOpen(!auditoriumOpen)}
+          onToggleHeatmap={() => dispatch({ type: 'TOGGLE_HEATMAP' })}
+          onToggleFilter={() => {
+            const next = state.filterSentiment === 'all' ? 'bearish' : state.filterSentiment === 'bearish' ? 'bullish' : 'all';
+            dispatch({ type: 'SET_FILTER', sentiment: next });
+          }}
+          sanctumActive={auditoriumOpen}
+          heatmapActive={state.heatmapEnabled}
+          filterActive={state.filterSentiment !== 'all'}
+          scale={canvasScale}
+        />
 
         {/* Sanctum overlay — slides in from right, 50% width */}
         <div
