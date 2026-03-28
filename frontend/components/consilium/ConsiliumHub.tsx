@@ -2,10 +2,9 @@
 // [claude-code 2026-03-24] Persistence refactor: load latest report on mount, persist after simulation
 // [claude-code 2026-03-24] Thread selectedSymbol from settings into Sanctum for TradingView chart
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
-import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Trophy, Zap } from 'lucide-react';
+import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
-import { AgentScorecard } from './AgentScorecard';
 import { Sanctum } from '../narrative/Sanctum';
 import { TimelinePanel } from '../narrative/TimelinePanel';
 import { ProposalWidget } from '../proposals/ProposalWidget';
@@ -20,14 +19,13 @@ const ChatInterface = lazy(() => import('../ChatInterface'));
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // Top-level tabs: Sanctum is a dropdown, others are direct tabs
-type ConsiliumTab = 'sanctum' | 'chat' | 'boardroom' | 'scorecards' | 'apparatus';
+type ConsiliumTab = 'sanctum' | 'chat' | 'boardroom' | 'apparatus';
 // Sanctum sub-views (inside the dropdown)
 type SanctumSubView = 'narratives' | 'aquarium' | 'timeline';
 
 const REGULAR_TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquare }[] = [
   { id: 'chat', label: 'Ask Harp', icon: MessageSquare },
   { id: 'boardroom', label: 'Boardroom', icon: Users },
-  { id: 'scorecards', label: 'Scorecards', icon: Trophy },
   { id: 'apparatus', label: 'Apparatus', icon: Cpu },
 ];
 
@@ -58,9 +56,9 @@ function usePanelState(key: string, defaultValue: boolean): [boolean, () => void
 
 export function ConsiliumHub() {
   const { selectedSymbol } = useSettings();
-  const [activeTab, setActiveTab] = useState<ConsiliumTab>('sanctum');
+  const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
   const [sanctumSubView, setSanctumSubView] = useState<SanctumSubView>('narratives');
-  const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>('sanctum');
+  const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>('chat');
   const [displayedSubView, setDisplayedSubView] = useState<SanctumSubView>('narratives');
   const [sanctumDropdownOpen, setSanctumDropdownOpen] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
@@ -323,7 +321,6 @@ export function ConsiliumHub() {
             </Suspense>
           )}
           {displayedTab === 'boardroom' && <AgentChattr />}
-          {displayedTab === 'scorecards' && <AgentScorecard />}
           {displayedTab === 'apparatus' && <ApparatusPage />}
         </div>
 
