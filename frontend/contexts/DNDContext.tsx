@@ -1,5 +1,5 @@
 // [claude-code 2026-03-20] S3:T10 — Do Not Disturb context: auto-suppress during trading, manual toggle, notification queue
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -126,11 +126,14 @@ export function DNDProvider({ children }: { children: ReactNode }) {
     [dndActive],
   );
 
+  const queueRef = useRef(queue);
+  queueRef.current = queue;
+
   const flushQueue = useCallback(() => {
-    const flushed = [...queue];
+    const flushed = [...queueRef.current];
     setQueue([]);
     return flushed;
-  }, [queue]);
+  }, []);
 
   const dismissQueued = useCallback((id: string) => {
     setQueue((prev) => prev.filter((n) => n.id !== id));

@@ -13,7 +13,8 @@ import { RiskFlowImportModal } from './RiskFlowImportModal';
 import { NarrativeTimelineModal } from './NarrativeManageModal';
 import { Sanctum } from './Sanctum';
 import { NarrativeHighlightProvider } from './NarrativeHighlightProvider';
-import type { SanctumData } from '../../types/mirofish';
+import { useRiskFlow } from '../../contexts/RiskFlowContext';
+import type { SanctumData, RiskFlowCatalyst } from '../../types/mirofish';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -28,6 +29,32 @@ export function NarrativeFlow() {
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [auditoriumOpen, setSanctumOpen] = useState(false);
   const [mirofishData, setMirofishData] = useState<SanctumData | null>(null);
+  const { alerts } = useRiskFlow();
+
+  // Map RiskFlow alerts → RiskFlowCatalyst shape for Sanctum
+  const riskflowItems = useMemo((): RiskFlowCatalyst[] =>
+    alerts.slice(0, 30).map(a => ({
+      id: a.id,
+      title: a.headline,
+      summary: a.summary ?? '',
+      macro_level: a.severity === 'critical' ? 4 : a.severity === 'high' ? 3 : a.severity === 'medium' ? 2 : 1,
+      sentiment: a.direction === 'Bullish' ? 'bullish' : a.direction === 'Bearish' ? 'bearish' : 'neutral',
+      iv_score: a.pointRange ? Math.min(10, Math.abs(a.pointRange) / 5) : 3,
+      category: (a.riskType ?? undefined) as string | undefined,
+      created_at: a.publishedAt,
+      sub_scores: a.subScores as RiskFlowCatalyst['sub_scores'],
+      econ_data: a.econData as RiskFlowCatalyst['econ_data'],
+      risk_type: (a.riskType ?? null) as string | null,
+      agent_note: (a.agentNote ?? null) as string | null,
+      price_brain_score: a.direction ? {
+        sentiment: a.direction ?? undefined,
+        classification: a.cyclical ?? undefined,
+        impliedPoints: a.pointRange ?? undefined,
+        instrument: a.instrument ?? undefined,
+      } : undefined,
+    }) satisfies RiskFlowCatalyst),
+    [alerts],
+  );
 
   // Seed chart with latest persisted MiroFish report on mount
   useEffect(() => {
@@ -149,6 +176,8 @@ export function NarrativeFlow() {
         timeSeries: report.timeSeries ?? [],
         generatedEvents: report.generatedEvents ?? [],
         scenarios: report.scenarios ?? [],
+        briefing: report.briefing,
+        contextSnapshot: report.contextSnapshot,
       });
     } catch (err) {
       console.error('[MiroFish] Run failed:', err);
@@ -212,6 +241,8 @@ export function NarrativeFlow() {
             data={mirofishData}
             onRun={handleRunMiroFish}
             catalysts={catalystsForKanban}
+            riskflowItems={riskflowItems}
+            macroContext={mirofishData?.contextSnapshot ?? null}
           />
         )}
       </div>

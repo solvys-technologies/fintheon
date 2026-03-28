@@ -228,18 +228,27 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const mediumCount = visibleAlerts.filter((a) => a.severity === 'medium').length;
   const lowCount = visibleAlerts.filter((a) => a.severity === 'low').length;
 
+  // Stabilize merged ids so clearAll doesn't change every render
+  const mergedIdsRef = useRef<string[]>([]);
+  const mergedIds = merged.map((a) => a.id);
+  const mergedIdsKey = mergedIds.join(',');
+  if (mergedIdsRef.current.join(',') !== mergedIdsKey) {
+    mergedIdsRef.current = mergedIds;
+  }
+
   const clearAll = useCallback(() => {
+    const ids = mergedIdsRef.current;
     setDismissedIds((prev) => {
       const next = new Set(prev);
-      merged.forEach((a) => next.add(a.id));
+      ids.forEach((id) => next.add(id));
       return next;
     });
     setSeenIds((prev) => {
       const next = new Set(prev);
-      merged.forEach((a) => next.add(a.id));
+      ids.forEach((id) => next.add(id));
       return next;
     });
-  }, [merged]);
+  }, [mergedIdsKey]);
 
   const removeAlert = useCallback((id: string) => {
     setDismissedIds((prev) => new Set(prev).add(id));

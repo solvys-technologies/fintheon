@@ -198,6 +198,33 @@ export interface RiskFlowCatalyst {
   iv_score: number;
   category?: string;
   created_at: string;
+  sub_scores?: {
+    eventWeight?: number;
+    timing?: number;
+    deviation?: number;
+    momentum?: number;
+    vixContext?: number;
+    vixMultiplier?: number;
+    regimeMultiplier?: number;
+    regimeName?: string;
+    commentatorMultiplier?: number;
+    speaker?: string | null;
+  } | null;
+  econ_data?: {
+    actual?: number;
+    forecast?: number;
+    previous?: number;
+    beatMiss?: 'beat' | 'miss' | 'inline';
+    surprisePercent?: number;
+  } | null;
+  risk_type?: string | null;
+  agent_note?: string | null;
+  price_brain_score?: {
+    sentiment?: string;
+    classification?: string;
+    impliedPoints?: number | null;
+    instrument?: string | null;
+  } | null;
 }
 
 export interface EconPrintStat {

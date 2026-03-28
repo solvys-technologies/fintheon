@@ -1,3 +1,4 @@
+// [claude-code 2026-03-28] S4-T3: Category score interpretation with trading-specific context per risk sector
 // [claude-code 2026-03-27] Econ Intel — historical prints, scoring breakdown, MiroFish-ready aggregation
 // [claude-code 2026-03-24] Econ Intel — 2-col grid, expandable cards with countdown + history + risk category sub-cards
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -17,6 +18,27 @@ const ECON_TICKERS: EconCardData[] = [
   { name: 'Fed Rate Decision', ticker: 'FOMC' },
   { name: 'Rate Cut Expectations', ticker: 'CUTS' },
 ];
+
+function categoryInterpretation(category: string, label: string, delta: number, ivScore: number): string {
+  const direction = delta > 0.5 ? 'rising' : delta < -0.5 ? 'subsiding' : 'stable';
+
+  const catContext: Record<string, string> = {
+    'geopolitical': 'Watch for gap risk on overnight holds.',
+    'political': 'Policy headlines may whipsaw intraday — trade smaller.',
+    'monetary-policy': 'Bonds leading — check /ZN before equity entries.',
+    'earnings-corporate': 'Single-stock vol elevated — favor spreads.',
+    'market-structure': 'Liquidity thinning — reduce size on breakouts.',
+    'black-swan': 'Tail risk active — consider hedges or flat.',
+  };
+
+  const base = direction === 'rising'
+    ? `${label} heat rising at ${ivScore.toFixed(1)} — momentum ${delta > 0 ? '+' : ''}${delta.toFixed(1)}.`
+    : direction === 'subsiding'
+      ? `${label} heat cooling — momentum ${delta.toFixed(1)}, uncertainty receding.`
+      : `${label} heat steady at ${ivScore.toFixed(1)} — no directional shift.`;
+
+  return `${base} ${catContext[category] ?? ''}`;
+}
 
 const DIRECTION_CONFIG = {
   beat: { icon: TrendingUp, color: 'var(--fintheon-low)', label: 'BEAT' },
@@ -575,11 +597,7 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
                         </div>
                       </div>
                       <p className="text-[10px] text-[var(--fintheon-muted)]/50 leading-relaxed">
-                        {cs.delta > 0.5
-                          ? `${label} risk is elevated and rising — IV delta of ${deltaSign}${cs.delta.toFixed(1)} indicates increasing implied volatility pressure.`
-                          : cs.delta < -0.5
-                            ? `${label} risk is subsiding — IV contracting with delta ${cs.delta.toFixed(1)} suggesting reduced uncertainty.`
-                            : `${label} risk is stable — minimal IV change with delta ${deltaSign}${cs.delta.toFixed(1)}.`}
+                        {categoryInterpretation(cs.category, label, cs.delta, cs.ivScore)}
                       </p>
                     </div>
                   </div>

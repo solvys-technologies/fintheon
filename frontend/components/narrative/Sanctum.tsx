@@ -1,3 +1,4 @@
+// [claude-code 2026-03-28] S4-T3: KPI labels rewritten to trading lingo with interpretive sub-text
 // [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state
 // [claude-code 2026-03-24] Thread selectedSymbol prop for TradingView chart, taller chart container (65vh)
 // [claude-code 2026-03-24] Sanctum — 3-page dashboard (merged Risk + Narratives), expandable econ cards
@@ -35,6 +36,30 @@ interface SanctumProps {
   macroContext?: SimulationContext | null;
   narratives?: SanctumNarrative[];
   selectedSymbol?: string;
+}
+
+function heatInterpretation(score: number): string {
+  if (score >= 9) return 'Extreme — capital preservation mode';
+  if (score >= 7) return 'High — reduce size, widen stops';
+  if (score >= 5) return 'Elevated — wider ranges, faster reversals';
+  if (score >= 3) return 'Moderate — normal conditions';
+  return 'Low — range-bound, fade extremes';
+}
+
+function regimeInterpretation(probability: number): string {
+  const pct = probability * 100;
+  if (pct >= 60) return 'Likely shifting — trend models unreliable';
+  if (pct >= 30) return 'Possible — tighten stops on trend trades';
+  if (pct >= 15) return 'Low risk — current regime holding';
+  return 'Stable — no structural change expected';
+}
+
+function confidenceInterpretation(confidence: number): string {
+  const pct = confidence * 100;
+  if (pct >= 80) return 'High conviction — size accordingly';
+  if (pct >= 60) return 'Moderate — standard positioning';
+  if (pct >= 40) return 'Uncertain — reduce exposure';
+  return 'Low — consider sitting out';
 }
 
 type MiroFishRiskCategory = 'geopolitical' | 'political' | 'monetary-policy' | 'earnings-corporate' | 'market-structure' | 'black-swan';
@@ -210,20 +235,23 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                     <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
                       <div className="rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/40 px-5 py-3 flex items-center justify-between" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
                         <div>
-                          <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Composite IV</span>
+                          <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Market Heat</span>
                           <span className="text-3xl font-bold text-[var(--fintheon-accent)]">{data.compositeIV.toFixed(1)}</span>
+                          <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">{heatInterpretation(data.compositeIV)}</span>
                         </div>
                         <div className="w-10 h-10 rounded-full border-2 border-[var(--fintheon-accent)]/30 flex items-center justify-center">
                           <Zap className="w-5 h-5 text-[var(--fintheon-accent)]" />
                         </div>
                       </div>
                       <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Regime Shift</span>
+                        <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Regime Risk</span>
                         <span className="text-2xl font-bold text-[var(--fintheon-text)]">{(data.regimeShiftProbability * 100).toFixed(0)}%</span>
+                        <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">{regimeInterpretation(data.regimeShiftProbability)}</span>
                       </div>
                       <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Model Confidence</span>
+                        <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Signal Strength</span>
                         <span className="text-2xl font-bold text-[var(--fintheon-text)]">{(data.confidence * 100).toFixed(0)}%</span>
+                        <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">{confidenceInterpretation(data.confidence)}</span>
                       </div>
                     </div>
                   </div>
@@ -308,7 +336,7 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                     {/* Geopolitical & Fiscal Risk */}
                     <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
                       <div className="px-4 py-2 border-b border-[var(--fintheon-border)]/10">
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">Geopolitical & Fiscal Risk</span>
+                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">Live Risk Signals</span>
                       </div>
                       <div className="p-3 max-h-[350px] overflow-y-auto">
                         {(riskflowItems?.length ?? 0) > 0 ? (

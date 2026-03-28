@@ -1,18 +1,104 @@
-// [claude-code 2026-03-28] S4-T4: Rich scored item display — expandable cards with agent notes,
-// econ data, sub-score breakdowns, PriceBrain direction. Grouped by risk_type with section headers.
-import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-import type { RiskFlowCatalyst, MiroFishCategoryScore } from '../../types/mirofish';
-import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
+# S4-T4: Rich Risk Assessment + Scored Items Display
 
-interface SanctumRiskAssessmentProps {
-  riskflowItems: RiskFlowCatalyst[];
-  categoryScores?: MiroFishCategoryScore[];
+**Sprint:** S4 — Sanctum Intelligence Overhaul
+**Track:** T4 (Frontend — Risk & Narratives Page)
+**Depends On:** T2 (widened RiskFlowCatalyst type) — but can code against planned interface now
+**Parallel With:** T2 (backend), T3 (frontend Command Center)
+
+---
+
+## Context
+
+The Sanctum Risk Assessment section (Page 2, "Geopolitical & Fiscal Risk" panel) currently shows a thin list of RiskFlow headlines with just headline text, sentiment badge, IV score, and macro level. The data is filtered to geopolitical/political items only.
+
+After T2 ships, `RiskFlowCatalyst` will include `sub_scores`, `econ_data`, `risk_type`, `agent_note`, and `price_brain_score`. This track upgrades the display to use that rich data — showing scoring breakdowns, agent notes, econ print data, and better categorization using the `risk_type` field.
+
+---
+
+## Files to Read First
+
+- `frontend/components/narrative/SanctumRiskAssessment.tsx` — current 106-line component
+- `frontend/components/narrative/Sanctum.tsx` — where SanctumRiskAssessment is rendered (~lines 313-326)
+- `frontend/types/mirofish.ts` — `RiskFlowCatalyst` type (will be widened by T2)
+- `frontend/components/feed/DetailFooter.tsx` — reference for how sub-scores are displayed in RiskFlow cards
+- `frontend/components/feed/RiskFlowDetailCard.tsx` — reference for agent note display pattern
+
+---
+
+## Planned RiskFlowCatalyst Type (T2 adds these fields)
+
+Code against this interface — T2 will update the actual type definition:
+
+```typescript
+export interface RiskFlowCatalyst {
+  id: string;
+  title: string;
+  summary: string;
+  macro_level: number;
+  sentiment: string;
+  iv_score: number;
+  category?: string;
+  created_at: string;
+  // ── New fields (all optional, may be null) ──
+  sub_scores?: {
+    eventWeight?: number;
+    timing?: number;
+    deviation?: number;
+    momentum?: number;
+    vixContext?: number;
+    vixMultiplier?: number;
+    regimeMultiplier?: number;
+    regimeName?: string;
+    commentatorMultiplier?: number;
+    speaker?: string | null;
+  } | null;
+  econ_data?: {
+    actual?: number;
+    forecast?: number;
+    previous?: number;
+    beatMiss?: 'beat' | 'miss' | 'inline';
+    surprisePercent?: number;
+  } | null;
+  risk_type?: string | null;
+  agent_note?: string | null;
+  price_brain_score?: {
+    sentiment?: string;
+    classification?: string;
+    impliedPoints?: number | null;
+    instrument?: string | null;
+  } | null;
 }
+```
 
-const RISK_CATEGORIES = ['geopolitical', 'political'] as const;
+---
 
-/** Classify item by risk_type, falling back to keyword matching */
+## Task 1: Rewrite SanctumRiskAssessment with Rich Cards
+
+**File:** `frontend/components/narrative/SanctumRiskAssessment.tsx`
+
+Complete rewrite. The new component should:
+
+1. **Filter using `risk_type`** instead of keyword matching — if `risk_type` exists, use it; fall back to keyword matching for items without `risk_type`
+2. **Show ALL risk types** (not just geo/political) — group items by `risk_type` with section headers
+3. **Expand on click** to show agent note, sub-scores, econ data
+4. **Keep it under 250 lines** — extract sub-components if needed
+
+### Updated Filter Logic
+
+Replace the current keyword-based filter:
+
+```typescript
+// BEFORE: keyword matching on title
+const geoItems = riskflowItems.filter(item => {
+  const cat = item.category?.toLowerCase() ?? '';
+  return cat.includes('geopolitical') || ...
+}).slice(0, 8);
+```
+
+With `risk_type`-aware grouping:
+
+```typescript
+// Group by risk_type, fall back to keyword classification
 function classifyItem(item: RiskFlowCatalyst): string {
   if (item.risk_type) return item.risk_type;
   const text = (item.title + ' ' + (item.category ?? '')).toLowerCase();
@@ -23,28 +109,30 @@ function classifyItem(item: RiskFlowCatalyst): string {
   return 'General';
 }
 
-function sentimentColor(s: string): string {
-  if (s === 'bearish') return 'var(--fintheon-severe)';
-  if (s === 'bullish') return 'var(--fintheon-low)';
-  return 'var(--fintheon-neutral-severe)';
+const grouped = new Map<string, RiskFlowCatalyst[]>();
+for (const item of riskflowItems.slice(0, 20)) {
+  const type = classifyItem(item);
+  if (!grouped.has(type)) grouped.set(type, []);
+  grouped.get(type)!.push(item);
 }
+```
 
-function fmt(n: number | undefined): string {
-  if (n == null) return '—';
-  return n.toFixed(n >= 10 ? 0 : n >= 1 ? 1 : 2);
-}
+### Rich Item Card
 
-// ── Expandable Risk Item ─────────────────────────────────────────────────────
+Each item should be expandable (click to toggle). Collapsed state shows what it shows now. Expanded state adds:
 
+```tsx
 function RiskItem({ item, isExpanded, onToggle }: { item: RiskFlowCatalyst; isExpanded: boolean; onToggle: () => void }) {
-  const dirColor = sentimentColor(item.sentiment);
+  const dirColor = item.sentiment === 'bearish' ? 'var(--fintheon-severe)'
+    : item.sentiment === 'bullish' ? 'var(--fintheon-low)'
+    : 'var(--fintheon-neutral-severe)';
 
   return (
     <div
       className="flex flex-col rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/60 transition-all cursor-pointer"
       onClick={onToggle}
     >
-      {/* Collapsed row */}
+      {/* Collapsed row — same as current */}
       <div className="flex items-center gap-3 px-3 py-2">
         <div className="w-1.5 h-6 rounded-full shrink-0" style={{ backgroundColor: dirColor }} />
         <div className="flex-1 min-w-0">
@@ -84,7 +172,7 @@ function RiskItem({ item, isExpanded, onToggle }: { item: RiskFlowCatalyst; isEx
             </div>
           )}
 
-          {/* Econ Data */}
+          {/* Econ Data (if this is an econ print) */}
           {item.econ_data && (
             <div className="grid grid-cols-4 gap-2">
               {item.econ_data.actual != null && (
@@ -126,10 +214,10 @@ function RiskItem({ item, isExpanded, onToggle }: { item: RiskFlowCatalyst; isEx
             <div>
               <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1">Score Breakdown</span>
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] font-mono text-[var(--fintheon-muted)]/50">
-                {item.sub_scores.eventWeight != null && <span>E:{fmt(item.sub_scores.eventWeight)}</span>}
-                {item.sub_scores.timing != null && <span>T:{fmt(item.sub_scores.timing)}</span>}
-                {item.sub_scores.deviation != null && <span>D:{fmt(item.sub_scores.deviation)}</span>}
-                {item.sub_scores.momentum != null && <span>M:{fmt(item.sub_scores.momentum)}</span>}
+                {item.sub_scores.eventWeight != null && <span>E:{item.sub_scores.eventWeight.toFixed(1)}</span>}
+                {item.sub_scores.timing != null && <span>T:{item.sub_scores.timing.toFixed(1)}</span>}
+                {item.sub_scores.deviation != null && <span>D:{item.sub_scores.deviation.toFixed(1)}</span>}
+                {item.sub_scores.momentum != null && <span>M:{item.sub_scores.momentum.toFixed(1)}</span>}
                 {item.sub_scores.vixMultiplier != null && item.sub_scores.vixMultiplier !== 1 && (
                   <span className="text-[var(--fintheon-accent)]">VIX:{item.sub_scores.vixMultiplier.toFixed(2)}x</span>
                 )}
@@ -161,9 +249,11 @@ function RiskItem({ item, isExpanded, onToggle }: { item: RiskFlowCatalyst; isEx
     </div>
   );
 }
+```
 
-// ── Main Component ───────────────────────────────────────────────────────────
+### Updated Main Component
 
+```tsx
 export function SanctumRiskAssessment({ riskflowItems, categoryScores }: SanctumRiskAssessmentProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -175,39 +265,13 @@ export function SanctumRiskAssessment({ riskflowItems, categoryScores }: Sanctum
     grouped.get(type)!.push(item);
   }
 
-  const relevantScores = (categoryScores ?? []).filter(cs =>
-    RISK_CATEGORIES.includes(cs.category as typeof RISK_CATEGORIES[number]),
-  );
+  // ... category score headers (keep existing)
 
-  if (grouped.size === 0 && relevantScores.length === 0) {
-    return (
-      <div className="text-[10px] text-[var(--fintheon-muted)]/30 italic text-center py-4">
-        No risk signals in current window
-      </div>
-    );
-  }
-
+  // Render grouped sections
   return (
     <div className="flex flex-col gap-3">
-      {/* Category score headers */}
-      {relevantScores.length > 0 && (
-        <div className="flex gap-3">
-          {relevantScores.map(cs => (
-            <div
-              key={cs.category}
-              className="flex items-center gap-3 rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-2"
-            >
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ivHeatColor(cs.ivScore) }} />
-              <span className="text-[10px] font-mono text-[var(--fintheon-text)]/80 uppercase tracking-wider">
-                {RISK_CATEGORY_LABELS[cs.category]}
-              </span>
-              <span className="text-lg font-mono font-bold" style={{ color: ivHeatColor(cs.ivScore) }}>
-                {cs.ivScore.toFixed(1)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Category scores — keep existing display */}
+      {relevantScores.length > 0 && (/* ... existing code ... */)}
 
       {/* Grouped risk items */}
       {[...grouped.entries()].map(([type, items]) => (
@@ -232,3 +296,66 @@ export function SanctumRiskAssessment({ riskflowItems, categoryScores }: Sanctum
     </div>
   );
 }
+```
+
+### Imports Needed
+
+Add to the imports:
+```typescript
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+```
+
+---
+
+## Task 2: Update Panel Title in Sanctum.tsx
+
+**File:** `frontend/components/narrative/Sanctum.tsx`
+
+The panel title at ~line 316 says "Geopolitical & Fiscal Risk". Since we now show all risk types, update:
+
+```tsx
+// BEFORE:
+<span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">Geopolitical & Fiscal Risk</span>
+
+// AFTER:
+<span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">Live Risk Signals</span>
+```
+
+---
+
+## Verification
+
+```bash
+# Type-check frontend
+cd frontend && npx tsc --noEmit
+
+# Build
+bun run build
+
+# Verify component renders grouped items
+grep -n "classifyItem\|risk_type\|grouped" frontend/components/narrative/SanctumRiskAssessment.tsx
+
+# Verify no keyword-only filtering remains as the primary path
+grep -n "cat.includes.*geopolitical\|title.toLowerCase().match" frontend/components/narrative/SanctumRiskAssessment.tsx
+# ^ Should be inside fallback only, not the primary filter
+```
+
+---
+
+## Changelog Entry
+
+```typescript
+{ date: '2026-03-27T__:__:__', agent: 'claude-code', summary: 'S4-T4: Upgraded SanctumRiskAssessment with rich scored item display — expandable cards showing agent notes, econ data, sub-score breakdowns, PriceBrain direction. Grouped by risk_type with section headers. Renamed panel to Live Risk Signals.', files: ['frontend/components/narrative/SanctumRiskAssessment.tsx', 'frontend/components/narrative/Sanctum.tsx'] }
+```
+
+---
+
+## DO NOT
+
+- Do NOT touch backend files — T2 scope
+- Do NOT modify `SanctumEconIntel.tsx` — T3 scope
+- Do NOT modify the KPI row or briefing display in Sanctum.tsx — T3 scope
+- Do NOT change the panel title "Geopolitical & Fiscal Risk" to anything other than "Live Risk Signals" (already discussed)
+- Do NOT add new API endpoints or fetch calls — the data is already passed via props
+- Do NOT change how `riskflowItems` is fetched — NarrativeFlow passes it through from context

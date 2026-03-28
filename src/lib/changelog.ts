@@ -9,6 +9,46 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-28T14:00:00',
+    agent: 'claude-code',
+    summary: 'S4-T4: Upgraded SanctumRiskAssessment with rich scored item display — expandable cards showing agent notes, econ data, sub-score breakdowns, PriceBrain direction. Grouped by risk_type with section headers. Renamed panel to Live Risk Signals.',
+    files: [
+      'frontend/components/narrative/SanctumRiskAssessment.tsx',
+      'frontend/components/narrative/Sanctum.tsx',
+    ],
+  },
+  {
+    date: '2026-03-28T12:00:00',
+    agent: 'claude-code',
+    summary: 'S4-T3: Rewrote KPI labels to trading lingo (Market Heat, Regime Risk, Signal Strength) with interpretive sub-text. Enhanced briefing display with structured sections and severity indicators. Updated category score interpretation with trading-specific context per risk sector.',
+    files: [
+      'frontend/components/narrative/Sanctum.tsx',
+      'frontend/components/narrative/SanctumBriefing.tsx',
+      'frontend/components/narrative/SanctumEconIntel.tsx',
+    ],
+  },
+  {
+    date: '2026-03-28T10:00:00',
+    agent: 'claude-code',
+    summary: 'S4-T2: Widened RiskFlow scored items query (sub_scores, econ_data, risk_type, agent_note, price_brain_score). Rewrote briefing generator with trader-friendly language (Market Heat, Regime Risk, Signal Strength). Added econ print pattern analysis and scored items integration to briefing output.',
+    files: [
+      'backend-hono/src/services/mirofish/mirofish-context.ts',
+      'backend-hono/src/services/mirofish/mirofish-types.ts',
+      'backend-hono/src/services/mirofish/mirofish-briefing.ts',
+      'frontend/types/mirofish.ts',
+    ],
+  },
+  {
+    date: '2026-03-27T21:00:00',
+    agent: 'claude-code',
+    summary: 'fix: Infinite re-render loop (Maximum update depth exceeded) — flushQueue in DNDContext depended on [queue], causing setState→new ref→new callback→effect re-fire loop. Fixed with useRef. Also stabilized clearAll in RiskFlowContext (merged array dep). Removed /api/mcp 404 noise — useMcpConnectors now uses static defaults since backend MCP routes are not yet deployed.',
+    files: [
+      'frontend/contexts/DNDContext.tsx',
+      'frontend/contexts/RiskFlowContext.tsx',
+      'frontend/hooks/useMcpConnectors.ts',
+    ],
+  },
+  {
     date: '2026-03-27T14:00:00',
     agent: 'claude-code',
     summary: 'S4: Econ history pipeline — backend /econ-history/:ticker endpoint returns historical prints + scored items. SanctumEconIntel expanded cards show multi-row print history table, IV scores, scoring engine sub-score breakdown, and related scored items. MiroFish context assembly now fetches 7d econ print stats (beat/miss patterns, avg surprise, avg IV) for agent debate enrichment. Fixed frontend calling nonexistent /econ-events → /econ-calendar.',

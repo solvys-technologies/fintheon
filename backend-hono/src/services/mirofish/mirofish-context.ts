@@ -1,3 +1,4 @@
+// [claude-code 2026-03-28] S4-T2: Widened RiskFlow select to include full scored metadata
 // [claude-code 2026-03-27] S4: Added econPrintHistory to context for MiroFish aggregation
 // [claude-code 2026-03-27] S2-T4: Added addCalibrationContext for calibration upload pipeline
 // [claude-code 2026-03-24] Widened RiskFlow window to 72h/40 with configurable params
@@ -85,7 +86,7 @@ async function fetchRiskFlowHeadlines(sinceHours = 72, limit = 40): Promise<Risk
 
   const { data, error } = await sb
     .from('scored_riskflow_items')
-    .select('id, title, summary, macro_level, sentiment, iv_score, category, created_at')
+    .select('id, title, summary, macro_level, sentiment, iv_score, category, created_at, sub_scores, econ_data, risk_type, agent_note, price_brain_score')
     .gte('created_at', cutoff)
     .gte('macro_level', 2)
     .order('created_at', { ascending: false })

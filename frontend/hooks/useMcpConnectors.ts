@@ -116,32 +116,17 @@ export function useMcpConnectors() {
       return Array.from(merged);
     };
 
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/mcp`);
-        if (!res.ok) throw new Error('mcp endpoint unavailable');
-        const data: McpServerListResponse = await res.json();
-        const list = data.servers ?? (data as unknown as McpServerConfig[]);
-        if (cancelled) return;
-        setServers(list);
-        if (!localStorage.getItem(STORAGE_KEY)) {
-          setActiveIds(ensureLocked(list, list.filter((s) => s.enabled).map((s) => s.id)));
-        } else {
-          setActiveIds((prev) => ensureLocked(list, prev));
-        }
-      } catch {
-        // T1 backend not yet deployed — use static defaults
-        if (cancelled) return;
-        setServers(DEFAULT_SERVERS);
-        if (!localStorage.getItem(STORAGE_KEY)) {
-          setActiveIds(ensureLocked(DEFAULT_SERVERS, DEFAULT_SERVERS.filter((s) => s.enabled).map((s) => s.id)));
-        } else {
-          setActiveIds((prev) => ensureLocked(DEFAULT_SERVERS, prev));
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+    // T1 backend MCP routes not yet deployed — use static defaults directly
+    // to avoid 404 network noise on every page load
+    if (!cancelled) {
+      setServers(DEFAULT_SERVERS);
+      if (!localStorage.getItem(STORAGE_KEY)) {
+        setActiveIds(ensureLocked(DEFAULT_SERVERS, DEFAULT_SERVERS.filter((s) => s.enabled).map((s) => s.id)));
+      } else {
+        setActiveIds((prev) => ensureLocked(DEFAULT_SERVERS, prev));
       }
-    })();
+      setLoading(false);
+    }
 
     return () => { cancelled = true; };
   }, []);
@@ -157,12 +142,8 @@ export function useMcpConnectors() {
       return next;
     });
 
-    // Best-effort backend sync — no-op if T1 routes not available
-    fetch(`${API_BASE_URL}/api/mcp/${id}/toggle`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled }),
-    }).catch(() => {/* T1 not deployed yet */});
+    // TODO: re-enable when T1 backend MCP routes are deployed
+    // fetch(`${API_BASE_URL}/api/mcp/${id}/toggle`, { ... });
   }, []);
 
   return { servers, activeIds, toggle, loading };
