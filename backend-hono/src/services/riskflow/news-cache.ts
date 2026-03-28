@@ -209,28 +209,12 @@ export async function getLastFetchTime(): Promise<Date | null> {
 }
 
 /**
- * Cleanup old items (run periodically).
- * Default: 30 days (720 hours). Called on boot + daily interval.
+ * DISABLED — RiskFlow items are NEVER deleted. Retained permanently for calibration + narrative tracking.
+ * @deprecated Do not call. Items are sacred. — TP directive 2026-03-28
  */
-export async function cleanupOldItems(hoursOld: number = 720): Promise<number> {
-  if (!isDatabaseAvailable() || !sql) {
-    const cutoff = new Date(Date.now() - hoursOld * 60 * 60 * 1000);
-    const before = memoryCache.length;
-    memoryCache = memoryCache.filter(i => new Date(i.publishedAt) >= cutoff);
-    return before - memoryCache.length;
-  }
-
-  try {
-    const cutoffDate = new Date(Date.now() - hoursOld * 60 * 60 * 1000).toISOString();
-    await sql`
-      DELETE FROM news_feed_items WHERE published_at < ${cutoffDate}
-    `;
-    // Neon doesn't return count on DELETE, just return 0
-    return 0;
-  } catch (error) {
-    console.error('[NewsCache] Cleanup failed:', error);
-    return 0;
-  }
+export async function cleanupOldItems(_hoursOld: number = 720): Promise<number> {
+  console.warn('[NewsCache] cleanupOldItems called but DISABLED — items are never deleted');
+  return 0;
 }
 
 /**

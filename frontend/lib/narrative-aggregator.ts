@@ -1,3 +1,4 @@
+// [claude-code 2026-03-28] Narrative-aware aggregation — groups by narrative theme at month/quarter/year zoom
 // [claude-code 2026-03-27] Semantic zoom aggregation — merges cards into narrative summaries at month/quarter/year zoom
 
 import type {
@@ -12,23 +13,24 @@ const SEVERITY_RANK: Record<CatalystSeverity, number> = { high: 3, medium: 2, lo
  * Aggregate cards into summary cards per lane x time bucket.
  *
  * Semantic zoom model:
- * - Week: "Liberation Day" (individual card)
- * - Month: "Trade Tensions Flare" (aggregates Liberation Day + China retaliates + EU responds)
- * - Quarter: "Trump Trade War" (aggregates all trade-tension month cards)
- * - Year: "2026 Geopolitical Realignment" (aggregates quarter themes)
+ * - Week: Individual cards ("Liberation Day", "CPI Hot Print")
+ * - Month: Narrative groups ("Trump Tariff War ×4", "Fed Rate Cycle ×2")
+ * - Quarter: Narrative themes merge further ("Trade War ×12")
+ * - Year: Category-level aggregates ("Geopolitical ×30")
  *
  * Rules:
  * 1. Group cards by riskCategory + column key
- * 2. Title = highest-severity card's title (user can edit later)
- * 3. Severity = max severity in group
- * 4. Sentiment = dominant sentiment (majority wins, tie -> bearish)
- * 5. Only aggregate root cards (drillDepth === 0)
+ * 2. Within each bucket, sub-group by narrative theme (if cards have `narrative` field)
+ * 3. Title = narrative name if available, else highest-severity card's title
+ * 4. Severity = max severity in group
+ * 5. Sentiment = dominant sentiment (majority wins, tie -> bearish)
+ * 6. Only aggregate root cards (drillDepth === 0)
  */
 export function aggregateCards(
   catalysts: CatalystCard[],
   columns: GridColumn[],
   riskCategory: NarrativeCategory,
-  _zoomLevel: ZoomLevel,
+  zoomLevel: ZoomLevel,
 ): NarrativeAggregateCard[] {
   // Only root cards for the given category
   const rootCards = catalysts.filter(
@@ -45,21 +47,52 @@ export function aggregateCards(
 
     if (inBucket.length === 0) continue;
 
-    // Pick title from highest-severity card
-    const sorted = [...inBucket].sort(
-      (a, b) => (SEVERITY_RANK[b.severity] ?? 0) - (SEVERITY_RANK[a.severity] ?? 0),
-    );
+    // At month/quarter/year zoom: sub-group by narrative theme for richer aggregates
+    if (zoomLevel !== 'week' && inBucket.some(c => c.narrative)) {
+      const byNarrative = new Map<string, CatalystCard[]>();
+      for (const card of inBucket) {
+        const key = card.narrative ?? '_ungrouped';
+        if (!byNarrative.has(key)) byNarrative.set(key, []);
+        byNarrative.get(key)!.push(card);
+      }
 
-    aggregates.push({
-      id: `agg-${riskCategory}-${col.key}`,
-      title: sorted[0].title,
-      riskCategory,
-      timeBucket: col.key,
-      constituentCardIds: inBucket.map(c => c.id),
-      severity: maxSeverity(inBucket),
-      sentiment: dominantSentiment(inBucket),
-      cardCount: inBucket.length,
-    });
+      for (const [narrative, cards] of byNarrative) {
+        const sorted = [...cards].sort(
+          (a, b) => (SEVERITY_RANK[b.severity] ?? 0) - (SEVERITY_RANK[a.severity] ?? 0),
+        );
+        // Use narrative name as title, fall back to highest-severity card's title
+        const title = narrative !== '_ungrouped'
+          ? `${narrative} (×${cards.length})`
+          : sorted[0].title;
+
+        aggregates.push({
+          id: `agg-${riskCategory}-${col.key}-${narrative.slice(0, 20)}`,
+          title,
+          riskCategory,
+          timeBucket: col.key,
+          constituentCardIds: cards.map(c => c.id),
+          severity: maxSeverity(cards),
+          sentiment: dominantSentiment(cards),
+          cardCount: cards.length,
+        });
+      }
+    } else {
+      // Week zoom or no narratives: single aggregate per bucket
+      const sorted = [...inBucket].sort(
+        (a, b) => (SEVERITY_RANK[b.severity] ?? 0) - (SEVERITY_RANK[a.severity] ?? 0),
+      );
+
+      aggregates.push({
+        id: `agg-${riskCategory}-${col.key}`,
+        title: sorted[0].title,
+        riskCategory,
+        timeBucket: col.key,
+        constituentCardIds: inBucket.map(c => c.id),
+        severity: maxSeverity(inBucket),
+        sentiment: dominantSentiment(inBucket),
+        cardCount: inBucket.length,
+      });
+    }
   }
 
   return aggregates;

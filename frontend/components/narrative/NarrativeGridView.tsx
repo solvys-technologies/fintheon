@@ -96,6 +96,37 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
     // no-op for now, lane selection via context
   }, []);
 
+  // Scroll zoom — mouse wheel changes zoom level (week ↔ month ↔ quarter ↔ year)
+  const ZOOM_LEVELS: typeof state.zoomLevel[] = ['week', 'month', 'quarter', 'year'];
+  const zoomTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const container = gridContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Only zoom on Ctrl+wheel or pinch (ctrlKey is true for trackpad pinch)
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+
+      // Debounce to prevent rapid zoom changes
+      if (zoomTimeoutRef.current) return;
+
+      const currentIdx = ZOOM_LEVELS.indexOf(state.zoomLevel);
+      const newIdx = e.deltaY > 0
+        ? Math.min(currentIdx + 1, ZOOM_LEVELS.length - 1)  // zoom out
+        : Math.max(currentIdx - 1, 0);                       // zoom in
+
+      if (newIdx !== currentIdx) {
+        dispatch({ type: 'SET_ZOOM', level: ZOOM_LEVELS[newIdx] });
+        zoomTimeoutRef.current = setTimeout(() => { zoomTimeoutRef.current = null; }, 300);
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [state.zoomLevel, dispatch]);
+
   const onDrillDeeper = useCallback((cardId: string, query: string) => {
     const card = state.catalysts.find(c => c.id === cardId);
     if (card) handleDrillDeeper(cardId, query, card, dispatch);
