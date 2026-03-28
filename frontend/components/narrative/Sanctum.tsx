@@ -64,17 +64,16 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
   useLayoutEffect(() => { onRunRef.current = onRun; }, [onRun]);
 
   // Background update check on mount — triggers update if report is stale (>30min)
-  // If data already loaded from persistence, skip cold-start; only refresh if stale
+  // Latest report is pre-loaded by NarrativeFlow (seeds mirofishData on mount)
   useEffect(() => {
     if (running) return;
-    // If we already have complete data, check staleness for background update
-    // If no data (idle), check if we should auto-run (first time ever)
     if (status !== 'idle' && status !== 'complete') return;
     let cancelled = false;
-    fetch('/api/mirofish/auto-run-check')
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    fetch(`${API_BASE}/api/mirofish/auto-run-check`)
       .then(r => r.json())
       .then(({ shouldRun }) => { if (!cancelled && shouldRun) onRunRef.current(preset); })
-      .catch(() => { /* If check fails with existing data, don't force re-run */ if (!cancelled && status === 'idle') onRunRef.current(preset); });
+      .catch(() => { if (!cancelled && status === 'idle') onRunRef.current(preset); });
     return () => { cancelled = true; };
   }, []); // Run once on mount — intentional empty deps
 
@@ -146,30 +145,19 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
           {/* ── Page 0: Command Center ── */}
           {showPage(0) && (
             <div data-aud-page="0" className="min-h-full snap-start p-5 flex flex-col">
-              {status === 'idle' && !isLoading && (
-                <div className="flex-1 flex flex-col items-center justify-center text-center">
-                  <Zap className="w-12 h-12 text-[var(--fintheon-accent)]/15 mb-4" />
-                  <p className="text-sm text-[var(--fintheon-muted)]/40">Loading predictions...</p>
-                  <p className="text-[10px] text-[var(--fintheon-muted)]/25 mt-1">Fetching latest MiroFish report</p>
-                </div>
-              )}
-
-              {isLoading && !data?.compositeIV && (
-                <div className="flex-1 flex flex-col items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-[var(--fintheon-accent)] animate-spin mb-4" />
-                  <p className="text-sm text-[var(--fintheon-muted)]/50">Agents debating...</p>
-                  <p className="text-[10px] text-[var(--fintheon-muted)]/25 mt-1">Fetching VIX, FRED, RiskFlow context...</p>
-                </div>
-              )}
-
-              {data && data.compositeIV > 0 && (status === 'complete' || (isLoading && data.compositeIV)) && (
-                <div className="flex-1 flex flex-col gap-4">
-                  {/* Hero chart */}
-                  <div className="shrink-0">
-                    <div className="flex items-center justify-between mb-2">
+              <div className="flex-1 flex flex-col gap-4">
+                {/* TradingView + Rolling IV bars — always visible */}
+                <div className="shrink-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
                       <span className="text-[10px] text-[var(--fintheon-text)]/60 uppercase tracking-wider font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
-                        Price Projections
+                        {selectedSymbol} — Rolling IV
                       </span>
+                      {isLoading && (
+                        <Loader2 className="w-3 h-3 text-[var(--fintheon-accent)] animate-spin" />
+                      )}
+                    </div>
+                    {data && data.compositeIV > 0 && (
                       <button
                         onClick={() => setShowProjection(v => !v)}
                         className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[9px] font-medium transition-colors ${
@@ -183,18 +171,21 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                         {showProjection ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                         Projection
                       </button>
-                    </div>
-                    <div className="h-[65vh]">
-                      <SanctumChart
-                        timeSeries={data.timeSeries}
-                        rollingDays={rollingDays}
-                        selectedSymbol={selectedSymbol}
-                        compositeIV={showProjection ? data.compositeIV : undefined}
-                        confidence={showProjection ? data.confidence : undefined}
-                        regimeShiftProbability={showProjection ? data.regimeShiftProbability : undefined}
-                        scenarios={showProjection ? data.scenarios : undefined}
-                      />
-                    </div>
+                    )}
+                  </div>
+                  <div className="h-[65vh]">
+                    <SanctumChart
+                      timeSeries={data?.timeSeries ?? []}
+                      rollingDays={rollingDays}
+                      selectedSymbol={selectedSymbol}
+                      compositeIV={showProjection && data ? data.compositeIV : undefined}
+                      confidence={showProjection && data ? data.confidence : undefined}
+                      regimeShiftProbability={showProjection && data ? data.regimeShiftProbability : undefined}
+                      scenarios={showProjection && data ? data.scenarios : undefined}
+                    />
+                  </div>
+                  {/* Category legend — show when data exists */}
+                  {data && data.categoryScores.length > 0 && (
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                       {CATEGORIES.map(cat => {
                         const cs = data.categoryScores.find(s => s.category === cat);
@@ -210,9 +201,11 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                         <span className="text-[9px] text-[var(--fintheon-accent)]/70 font-bold">Composite</span>
                       </div>
                     </div>
-                  </div>
+                  )}
+                </div>
 
-                  {/* KPI Row: Core metrics — center justified */}
+                {/* KPI Row — only when MiroFish data exists */}
+                {data && data.compositeIV > 0 && (
                   <div className="shrink-0 flex justify-center">
                     <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
                       <div className="rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/40 px-5 py-3 flex items-center justify-between" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
@@ -234,15 +227,17 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                       </div>
                     </div>
                   </div>
+                )}
 
-                  {/* Briefing */}
+                {/* Briefing — only when MiroFish data exists */}
+                {data && data.compositeIV > 0 && (
                   <SanctumBriefing briefing={data.briefing ?? null} isLoading={false} />
-                </div>
-              )}
+                )}
+              </div>
 
               {status === 'error' && data?.error && (
-                <div className="flex-1 flex items-center justify-center">
-                  <p className="text-sm text-[var(--fintheon-severe)]/70 text-center max-w-md">{data.error}</p>
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-[var(--fintheon-severe)]/70 max-w-md mx-auto">{data.error}</p>
                 </div>
               )}
             </div>

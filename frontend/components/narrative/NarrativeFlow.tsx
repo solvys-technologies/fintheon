@@ -2,7 +2,7 @@
 // [claude-code 2026-03-16] Wired NarrativeManageModal and tag filter state
 // [claude-code 2026-03-16] MiroFish Sanctum split view integration
 // [claude-code 2026-03-27] S4-T2: Replaced Canvas/WeekView with unified NarrativeGridView
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import { NarrativeToolbar } from './NarrativeToolbar';
 import NarrativeGridView from './NarrativeGridView';
@@ -28,6 +28,35 @@ export function NarrativeFlow() {
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [auditoriumOpen, setSanctumOpen] = useState(false);
   const [mirofishData, setMirofishData] = useState<SanctumData | null>(null);
+
+  // Seed chart with latest persisted MiroFish report on mount
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/api/mirofish/latest`)
+      .then(r => r.ok ? r.json() : null)
+      .then(report => {
+        if (cancelled || !report) return;
+        setMirofishData(prev => {
+          // Don't overwrite if a fresh run already completed
+          if (prev && prev.status === 'complete') return prev;
+          return {
+            simulationId: report.simulationId ?? '',
+            status: 'complete',
+            compositeIV: report.nextSessionScore ?? 0,
+            confidence: report.confidence ?? 0.5,
+            regimeShiftProbability: report.regimeShiftProbability ?? 0.1,
+            categoryScores: report.categoryScores ?? [],
+            timeSeries: report.timeSeries ?? [],
+            generatedEvents: report.generatedEvents ?? [],
+            scenarios: report.scenarios ?? [],
+            briefing: report.briefing,
+            contextSnapshot: report.contextSnapshot,
+          };
+        });
+      })
+      .catch(() => { /* silent — chart stays empty until a run triggers */ });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSave = useCallback(() => {
     setSaveModalOpen(true);
