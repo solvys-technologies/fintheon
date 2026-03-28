@@ -9,6 +9,50 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-28T22:00:00',
+    agent: 'claude-code',
+    summary: 'S5-T2: Python FastAPI execution bridge wrapping TopStepX REST API for order placement, positions, account info, and cancellation',
+    files: [
+      'execution-bridge/main.py',
+      'execution-bridge/auth.py',
+      'execution-bridge/models.py',
+      'execution-bridge/requirements.txt',
+      'execution-bridge/.env.example',
+    ],
+  },
+  {
+    date: '2026-03-28T20:00:00',
+    agent: 'claude-code',
+    summary: 'S5-T3: Reconciler state machine — duplicate guard, PDPT floor, hard stop, confirmation timeout, trade_runs logging',
+    files: [
+      'backend-hono/src/services/reconciler-service.ts',
+      'backend-hono/src/services/autopilot/proposal-service.ts',
+    ],
+  },
+  {
+    date: '2026-03-28T18:00:00',
+    agent: 'claude-code',
+    summary: 'S5-T4: ProjectX service client + trading route wiring + bridge health check on boot',
+    files: [
+      'backend-hono/src/services/projectx-service.ts',
+      'backend-hono/src/services/trading-service.ts',
+      'backend-hono/src/routes/trading/index.ts',
+      'backend-hono/src/routes/trading/handlers.ts',
+      'backend-hono/src/boot/index.ts',
+    ],
+  },
+  {
+    date: '2026-03-28T16:00:00',
+    agent: 'claude-code',
+    summary: 'S5-T1: Foundation types for execution bridge, reconciler state machine, trade_runs migration, PlaceOrder types for ProjectX, env var stubs for bridge + reconciler',
+    files: [
+      'backend-hono/src/types/execution-bridge.ts',
+      'backend-hono/migrations/023_trade_runs.sql',
+      'backend-hono/src/types/projectx.ts',
+      'backend-hono/.env.example',
+    ],
+  },
+  {
     date: '2026-03-28T14:00:00',
     agent: 'claude-code',
     summary: 'S4-T4: Upgraded SanctumRiskAssessment with rich scored item display — expandable cards showing agent notes, econ data, sub-score breakdowns, PriceBrain direction. Grouped by risk_type with section headers. Renamed panel to Live Risk Signals.',

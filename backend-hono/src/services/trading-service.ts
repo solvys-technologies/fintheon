@@ -12,6 +12,7 @@ import type {
 } from '../types/trading.js';
 import * as rithmicService from './rithmic-service.js';
 import * as hyperliquidService from './hyperliquid-service.js';
+import * as projectxService from './projectx-service.js';
 
 // In-memory store for algo status (per user)
 const algoStatusStore = new Map<string, AlgoStatus>();
@@ -85,9 +86,26 @@ export async function fireTestTrade(
     side: 'buy' | 'sell';
   }
 ): Promise<{ success: boolean; orderId?: string | number; message: string }> {
-  const broker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'hyperliquid';
+  const broker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'hyperliquid' | 'projectx';
   const symbolSearch = params.symbol.replace(/^\//, '');
   const direction = params.side === 'buy' ? 'long' : 'short';
+
+  if (broker === 'projectx') {
+    const result = await projectxService.executeOrder(userId, {
+      symbol: symbolSearch,
+      direction,
+      quantity: 1,
+    });
+    if (!result.success) {
+      throw new Error(result.error ?? 'ProjectX order failed');
+    }
+
+    return {
+      success: true,
+      orderId: result.orderId,
+      message: `Order #${result.orderId} placed — 1 ${symbolSearch} ${direction.toUpperCase()} @ Market (ProjectX)`,
+    };
+  }
 
   if (broker === 'hyperliquid') {
     const result = await hyperliquidService.executeOrder(userId, {

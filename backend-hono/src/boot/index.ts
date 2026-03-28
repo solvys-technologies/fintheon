@@ -17,6 +17,7 @@ import { startCentralScorer } from '../services/riskflow/central-scorer.js';
 import { startIVScoreTicker } from '../services/market-data/iv-score-ticker.js';
 import { initVIXRescore } from '../services/riskflow/vix-rescore.js';
 import { startAgentNotesCron } from '../services/riskflow/agent-notes.js';
+import * as projectxService from '../services/projectx-service.js';
 
 const log = createLogger('Boot');
 
@@ -89,6 +90,17 @@ export async function bootServices(): Promise<void> {
   // [claude-code 2026-03-27] Feed cleanup DISABLED — items accumulate for calibration DB
   // cleanupOldItems() was purging items older than 30 days. Now we keep everything.
   log.info('FeedCleanup DISABLED — items retained for historical calibration');
+
+  // Execution bridge health check (non-blocking)
+  projectxService.getConnectionStatus('system').then((status) => {
+    if (status.connected) {
+      log.info('Execution bridge connected');
+    } else {
+      log.info(`Execution bridge not available: ${status.message}`);
+    }
+  }).catch(() => {
+    log.info('Execution bridge not available (will retry on first use)');
+  });
 
   log.info('All services initialized');
 }

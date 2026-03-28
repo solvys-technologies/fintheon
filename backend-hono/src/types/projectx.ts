@@ -118,3 +118,23 @@ export interface SyncResponse {
   accountCount: number;
   syncedAt: string;
 }
+
+// ── Bridge Order Types (used by execution bridge → ProjectX) ──
+
+export interface PlaceOrderRequest {
+  accountId: number;
+  contractId: string;
+  type: OrderType;
+  side: OrderSide;
+  size: number;
+  limitPrice?: number;
+  stopPrice?: number;
+  customTag?: string;
+}
+
+export interface PlaceOrderResponse {
+  success: boolean;
+  orderId?: number;
+  errorCode?: number;
+  errorMessage?: string;
+}

@@ -279,6 +279,79 @@ export async function executeProposal(
 
   const primaryBroker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'projectx' | 'hyperliquid'
 
+  // [claude-code 2026-03-28] S5-T3: ProjectX path — reconciler gate before bridge call
+  if (primaryBroker === 'projectx') {
+    const { executeWithReconciliation } = await import('../reconciler-service.js');
+    const bridgeUrl = process.env.BRIDGE_URL ?? 'http://localhost:8001';
+
+    const bridgeCall = async (req: import('../../types/execution-bridge.js').BridgeExecuteRequest) => {
+      const res = await fetch(`${bridgeUrl}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req),
+      });
+      return res.json() as Promise<import('../../types/execution-bridge.js').BridgeExecuteResponse>;
+    };
+    const positionQuery = async () => {
+      const res = await fetch(`${bridgeUrl}/position`);
+      return res.json() as Promise<import('../../types/execution-bridge.js').BridgePositionResponse>;
+    };
+    const accountQuery = async () => {
+      const res = await fetch(`${bridgeUrl}/account`);
+      return res.json() as Promise<import('../../types/execution-bridge.js').BridgeAccountResponse>;
+    };
+
+    const result = await executeWithReconciliation(
+      {
+        model: proposal.setupType || '40_40_club',
+        direction: proposal.direction as 'long' | 'short',
+        symbol: proposal.instrument,
+        confluence_score: Math.round(proposal.confidenceScore * 15),
+        position_size: proposal.positionSize,
+        entry_price: proposal.entryPrice ?? null,
+        stop_loss_ticks: 12,  // TODO: derive from proposal.stopLoss
+        take_profit_ticks: 24, // TODO: derive from proposal.takeProfit
+      },
+      bridgeCall,
+      positionQuery,
+      accountQuery,
+    );
+
+    if (!result.success) {
+      return { success: false, error: result.order.lastError ?? 'Reconciler rejected' };
+    }
+
+    const now = new Date();
+    const executionResult = {
+      orderId: result.order.bridgeOrderId ?? `PX-${Date.now()}`,
+      filledAt: now.toISOString(),
+      fillPrice: proposal.entryPrice,
+      contracts: proposal.positionSize,
+      reconcilerStatus: result.order.state,
+      message: 'Order executed via ProjectX bridge',
+    };
+    const orderId = result.order.bridgeOrderId ?? executionResult.orderId;
+
+    if (isDatabaseAvailable() && sql) {
+      await sql`
+        UPDATE trading_proposals
+        SET status = 'executed',
+            executed_at = ${now.toISOString()},
+            execution_result = ${JSON.stringify(executionResult)}::jsonb,
+            projectx_order_id = ${orderId}
+        WHERE id = ${proposalId}
+      `;
+    } else {
+      proposal.status = 'executed';
+      proposal.executedAt = now.toISOString();
+      proposal.executionResult = executionResult;
+      proposal.updatedAt = now.toISOString();
+      proposalCache.set(proposalId, proposal);
+    }
+
+    return { success: true, orderId };
+  }
+
   if (primaryBroker === 'hyperliquid') {
     const result = await hyperliquidService.executeOrder(userId, {
       symbol: proposal.instrument,
@@ -359,35 +432,7 @@ export async function executeProposal(
     return { success: true, orderId }
   }
 
-  // ProjectX path: simulate execution until ProjectX client is wired
-  const mockOrderId = `ORD-${Date.now()}`
-  const now = new Date()
-  const executionResult = {
-    orderId: mockOrderId,
-    filledAt: now.toISOString(),
-    fillPrice: proposal.entryPrice,
-    contracts: proposal.positionSize,
-    message: 'Order executed (simulation)',
-  }
-
-  if (isDatabaseAvailable() && sql) {
-    await sql`
-      UPDATE trading_proposals
-      SET status = 'executed',
-          executed_at = ${now.toISOString()},
-          execution_result = ${JSON.stringify(executionResult)}::jsonb,
-          projectx_order_id = ${mockOrderId}
-      WHERE id = ${proposalId}
-    `
-  } else {
-    proposal.status = 'executed'
-    proposal.executedAt = now.toISOString()
-    proposal.executionResult = executionResult
-    proposal.updatedAt = now.toISOString()
-    proposalCache.set(proposalId, proposal)
-  }
-
-  return { success: true, orderId: mockOrderId }
+  return { success: false, error: `Unknown broker: ${primaryBroker}` }
 }
 
 /**
