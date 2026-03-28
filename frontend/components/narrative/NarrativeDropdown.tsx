@@ -80,19 +80,15 @@ export function NarrativeDropdown({
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs
-          border transition-colors duration-150"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors duration-150"
         style={{
-          borderColor: 'rgba(212, 175, 55, 0.25)',
           backgroundColor: open ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
           color: 'var(--fintheon-text)',
+          fontFamily: 'var(--font-body)',
         }}
       >
         <Filter className="w-3 h-3" style={{ color: 'var(--fintheon-accent)' }} />
-        <span>Narratives</span>
-        <span className="text-[10px] opacity-50">
-          {visibleCount}/{totalCount}
-        </span>
+        <span>Filter</span>
         <ChevronDown
           className="w-3 h-3 transition-transform duration-150"
           style={{ transform: open ? 'rotate(180deg)' : 'none' }}

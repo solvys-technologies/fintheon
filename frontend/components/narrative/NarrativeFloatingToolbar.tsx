@@ -152,7 +152,7 @@ export function NarrativeFloatingToolbar({
 
       {/* Zoom indicator */}
       <div className="px-2 py-1">
-        <span className="text-[10px] font-mono text-[var(--fintheon-muted)]/50">{Math.round(scale * 100)}%</span>
+        <span className="text-[10px] text-[var(--fintheon-muted)]/50" style={{ fontFamily: 'var(--font-mono)' }}>{Math.round(scale * 100)}%</span>
       </div>
     </div>
   );
