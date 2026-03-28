@@ -11,10 +11,12 @@ import {
   getColumnKeyForDate,
 } from '../../lib/narrative-grid-layout';
 import { aggregateCards } from '../../lib/narrative-aggregator';
+import { computeRopeConnections } from '../../lib/narrative-rope-engine';
 import { handleDrillDeeper, handleHighlightBranch } from '../../lib/narrative-ai-wiring';
 import NarrativeLaneRow from './NarrativeLaneRow';
 import NarrativeLaneHeader from './NarrativeLaneHeader';
 import { NarrativeConnectionOverlay } from './NarrativeConnectionOverlay';
+import NarrativeRopes from './NarrativeRopes';
 import { useHighlight } from './NarrativeHighlightProvider';
 import type { NarrativeCategory } from '../../lib/narrative-types';
 
@@ -96,14 +98,22 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
     // no-op for now, lane selection via context
   }, []);
 
-  // ── Canvas-like zoom/pan interactions ──
-  const ZOOM_LEVELS: typeof state.zoomLevel[] = ['week', 'month', 'quarter', 'year'];
-  const zoomTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ── Canvas zoom/pan system ──
+  // 4 stepped zoom levels with CSS transform scale (NOT semantic zoom level change)
+  const SCALE_STEPS = [1.0, 0.7, 0.4, 0.2] as const;
+  const [scaleIdx, setScaleIdx] = useState(0);
+  const scale = SCALE_STEPS[scaleIdx];
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
+  const zoomTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Spacebar hold = pan mode (grab cursor + drag). No zoom change.
+  // Text visibility based on zoom scale
+  const showDescription = scale >= 0.7;
+  const showTitle = scale >= 0.4;
+  // At 0.2x, only colored severity dots remain
+
+  // Spacebar hold = pan mode (grab cursor + drag)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !e.repeat && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
@@ -125,37 +135,27 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
     };
   }, []);
 
-  // Mouse wheel zoom (Ctrl/Cmd+wheel or pinch) + plain wheel = horizontal pan
+  // Mouse wheel = zoom (no modifier needed). Scroll = always zoom on canvas.
   useEffect(() => {
     const container = gridContainerRef.current;
-    const scroller = scrollRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        // Zoom: Ctrl+wheel or trackpad pinch
-        e.preventDefault();
-        if (zoomTimeoutRef.current) return;
+      e.preventDefault();
+      if (zoomTimeoutRef.current) return;
 
-        const currentIdx = ZOOM_LEVELS.indexOf(state.zoomLevel);
-        const newIdx = e.deltaY > 0
-          ? Math.min(currentIdx + 1, ZOOM_LEVELS.length - 1)
-          : Math.max(currentIdx - 1, 0);
-
-        if (newIdx !== currentIdx) {
-          dispatch({ type: 'SET_ZOOM', level: ZOOM_LEVELS[newIdx] });
-          zoomTimeoutRef.current = setTimeout(() => { zoomTimeoutRef.current = null; }, 250);
-        }
-      } else if (scroller && !e.shiftKey) {
-        // Plain scroll wheel = horizontal pan (canvas behavior)
-        e.preventDefault();
-        scroller.scrollLeft += e.deltaY * 2;
-      }
+      setScaleIdx(prev => {
+        const next = e.deltaY > 0
+          ? Math.min(prev + 1, SCALE_STEPS.length - 1)  // zoom out
+          : Math.max(prev - 1, 0);                       // zoom in
+        return next;
+      });
+      zoomTimeoutRef.current = setTimeout(() => { zoomTimeoutRef.current = null; }, 200);
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
-  }, [state.zoomLevel, dispatch]);
+  }, []);
 
   // Click-drag pan (spacebar held or middle mouse)
   useEffect(() => {
@@ -163,7 +163,7 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
     if (!scroller) return;
 
     const handlePointerDown = (e: PointerEvent) => {
-      if (spaceHeld || e.button === 1) { // spacebar + click or middle mouse
+      if (spaceHeld || e.button === 1) {
         e.preventDefault();
         setIsPanning(true);
         panStartRef.current = {
@@ -213,6 +213,34 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
     const card = state.catalysts.find(c => c.id === cardId);
     if (card) handleHighlightBranch(card, highlightedText, dispatch);
   }, [state.catalysts, dispatch]);
+
+  // ── Rope connections (tag-based) ──
+  const ropeConnections = useMemo(
+    () => computeRopeConnections(state.catalysts, 80),
+    [state.catalysts],
+  );
+
+  // Card positions for rope rendering (populated by NarrativeLaneRow card refs)
+  const cardPositions = useMemo(() => {
+    const map = new Map<string, { x: number; y: number; width: number; height: number }>();
+    for (const [id, el] of Object.entries(cardRefsMap.current)) {
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const containerRect = gridContainerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+          map.set(id, {
+            x: (rect.left - containerRect.left) / scale,
+            y: (rect.top - containerRect.top) / scale,
+            width: rect.width / scale,
+            height: rect.height / scale,
+          });
+        }
+      }
+    }
+    return map;
+  }, [state.catalysts, scale, scaleIdx]); // recompute when cards or zoom changes
+
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
 
   return (
     <div ref={gridContainerRef} className="h-full flex flex-col overflow-hidden" style={{ cursor: spaceHeld ? 'grab' : undefined }}>
@@ -304,12 +332,20 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
           })}
         </div>
 
-        {/* Scrollable grid area */}
+        {/* Scrollable grid area with CSS transform zoom */}
         <div
           ref={scrollRef}
           className="flex-1 overflow-auto"
         >
-          <div style={{ width: `${gridWidth}px` }}>
+          <div
+            style={{
+              width: `${gridWidth}px`,
+              transform: `scale(${scale})`,
+              transformOrigin: '0 0',
+              transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              willChange: 'transform',
+            }}
+          >
             {visibleLanes.map((cat, idx) => {
               const lane = laneByCategory.get(cat);
 
@@ -360,6 +396,29 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
           containerRef={gridContainerRef}
           highlightMode={highlightMode}
         />
+
+        {/* Tag-based rope connections (SVG bezier paths) */}
+        {ropeConnections.length > 0 && (
+          <NarrativeRopes
+            connections={ropeConnections}
+            cardPositions={cardPositions}
+            viewport={{ x: 0, y: 0, scale, zoomLevel: state.zoomLevel }}
+            hoveredCardId={hoveredCardId}
+          />
+        )}
+      </div>
+
+      {/* Zoom level indicator */}
+      <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2 py-1 rounded bg-[var(--fintheon-surface)]/60 border border-[var(--fintheon-border)]/10">
+        <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/50">
+          {Math.round(scale * 100)}%
+        </span>
+        {!showTitle && (
+          <span className="text-[8px] text-[var(--fintheon-muted)]/30 ml-1">dots only</span>
+        )}
+        {showTitle && !showDescription && (
+          <span className="text-[8px] text-[var(--fintheon-muted)]/30 ml-1">titles only</span>
+        )}
       </div>
     </div>
   );
