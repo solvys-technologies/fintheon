@@ -88,6 +88,16 @@ Hermes is the primary AI agent on the device. To enable:
 2. Configure Grok 4.20 fast as primary model in Settings → Agent Config
 3. Backend must be running for Hermes to access data APIs
 
+### Source of Truth Integration
+Agents follow the **PIC Source of Truth** — a neural web architecture where shared beliefs + per-agent philosophy blocks shape how each agent thinks. Located in:
+- `backend-hono/src/services/ai/agent-instructions/` — modular prompt architecture
+- `knowledge-base/source-of-truth/` — canonical knowledge base (5 files)
+- **14 Commandments** in `commandments-data.ts` — hard/soft/guidance block levels
+- **Risk Manager** — PDPT $1,550, 120s blackout, 11:30 AM circuit breaker
+- **PsychAssist** — tilt detector + lockout protocol (soft→hard escalation)
+
+When adding new agents, follow the modular architecture: new agents get a philosophy block in `philosophy-blocks.ts` and inherit shared beliefs automatically.
+
 ## Branching Convention
 Format: `v.{MONTH}.{DATE}.{PATCH}`
 - Current branch: `v.8.25.4`
