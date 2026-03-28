@@ -7,6 +7,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
 import { DevelopmentsTimeline } from './DevelopmentsTimeline';
 import { Sanctum } from '../narrative/Sanctum';
+import { TimelinePanel } from '../narrative/TimelinePanel';
 import { ProposalWidget } from '../proposals/ProposalWidget';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
@@ -267,7 +268,11 @@ export function ConsiliumHub() {
               selectedSymbol={selectedSymbol.symbol}
             />
           )}
-          {displayedView === 'timeline' && <DevelopmentsTimeline />}
+          {displayedView === 'timeline' && (
+            <NarrativeProvider>
+              <TimelinePanel />
+            </NarrativeProvider>
+          )}
           {displayedView === 'chat' && (
             <Suspense fallback={<AiLoader />}>
               <ChatInterface surfaceId="askharp" />
