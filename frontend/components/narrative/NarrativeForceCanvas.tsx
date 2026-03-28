@@ -3,7 +3,6 @@ import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
-  Controls,
   MiniMap,
   useNodesState,
   useEdgesState,
@@ -466,23 +465,6 @@ function NarrativeFlowCanvas({
         onMove={(_, viewport) => onScaleChange?.(viewport.zoom)}
       >
         <Background color="#c79f4a10" gap={40} size={1} />
-        <Controls
-          position="top-right"
-          showInteractive={false}
-          style={{ backgroundColor: 'var(--fintheon-surface)', borderColor: '#c79f4a20', borderRadius: 8 }}
-        />
-        <MiniMap
-          position="bottom-right"
-          nodeColor={(node) => {
-            if (node.type === 'categoryGroup' && node.data && typeof node.data === 'object' && 'category' in node.data) {
-              const cat = (node.data as { category: string }).category;
-              return THREAD_COLOR_MAP[cat] ?? CATEGORY_COLORS[cat as NarrativeCategory] ?? '#6B7280';
-            }
-            return '#c79f4a40';
-          }}
-          style={{ backgroundColor: '#050402', borderColor: '#c79f4a20', borderRadius: 8 }}
-          maskColor="#05040280"
-        />
 
         {/* AI Input Panel — bottom center */}
         <Panel position="bottom-center" className="mb-16">

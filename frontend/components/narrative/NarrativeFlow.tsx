@@ -2,9 +2,7 @@
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
-import { NarrativeToolbar } from './NarrativeToolbar';
 import NarrativeForceCanvas from './NarrativeForceCanvas';
-import { NarrativeDropdown } from './NarrativeDropdown';
 import { TimelineScrubber } from './TimelineScrubber';
 import { NarrativeSaveModal } from './NarrativeSaveModal';
 import { RiskFlowImportModal } from './RiskFlowImportModal';
@@ -111,30 +109,6 @@ export function NarrativeFlow() {
   return (
     <NarrativeHighlightProvider>
     <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--fintheon-bg)' }}>
-      <div className="flex items-center gap-2 w-full">
-        <NarrativeToolbar
-          state={state}
-          dispatch={dispatch}
-          onSave={handleSave}
-          onUndo={handleUndo}
-          hasSnapshot={!!snapshot}
-          onImport={() => setImportModalOpen(true)}
-          onManage={() => setManageModalOpen(true)}
-          onMiroFish={() => {/* Aquarium is now a separate view */}}
-          mirofishActive={false}
-        />
-        <div className="pr-2">
-          <NarrativeDropdown
-            visibleLaneIds={visibleLaneIds}
-            onToggleLane={handleToggleLane}
-            onSelectAll={handleSelectAll}
-            onClearAll={handleClearAll}
-            activeTags={activeTags}
-            onToggleTag={handleToggleTag}
-          />
-        </div>
-      </div>
-
       <div className="flex-1 min-h-0 relative overflow-hidden">
         {/* Force-directed mind map canvas */}
         <NarrativeForceCanvas
