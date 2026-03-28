@@ -91,6 +91,11 @@ export async function handleGetFeed(c: Context) {
       filters.limit = parseInt(limit, 10);
     }
 
+    const offset = c.req.query('offset');
+    if (offset) {
+      filters.offset = parseInt(offset, 10);
+    }
+
     // Allow override of minMacroLevel via query param (for debugging/fallback)
     const minMacroLevel = c.req.query('minMacroLevel');
     if (minMacroLevel) {

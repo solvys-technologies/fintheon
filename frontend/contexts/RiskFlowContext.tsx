@@ -26,6 +26,9 @@ interface RiskFlowContextValue {
   isSeen: (id: string) => boolean;
   refresh: () => Promise<void>;
   refreshing: boolean;
+  loadMore: () => Promise<void>;
+  loadingMore: boolean;
+  hasMore: boolean;
 }
 
 const RiskFlowContext = createContext<RiskFlowContextValue>({
@@ -41,6 +44,9 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   isSeen: () => false,
   refresh: async () => {},
   refreshing: false,
+  loadMore: async () => {},
+  loadingMore: false,
+  hasMore: false,
 });
 
 const NOTION_POLL_MS = 60_000;
@@ -96,6 +102,8 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => loadStoredIds(DISMISSED_STORAGE_KEY));
   const [seenIds, setSeenIds] = useState<Set<string>>(() => loadStoredIds(SEEN_STORAGE_KEY));
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const notionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -190,11 +198,58 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         econData: item.econData ?? null,
       }));
       setBackendAlerts(alerts);
-      console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items (instrument=${selectedSymbol.symbol})`);
+      setHasMore(response.hasMore ?? false);
+      console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items, hasMore: ${response.hasMore} (instrument=${selectedSymbol.symbol})`);
     } catch (err) {
       console.warn('[RiskFlowContext] Backend feed poll error:', err);
     }
   }, [backend, selectedSymbol.symbol]);
+
+  // Load more items (append to existing)
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const response = await backend.riskflow.list({
+        minMacroLevel: 0,
+        limit: 30,
+        offset: backendAlerts.length,
+        instrument: selectedSymbol.symbol,
+      });
+      const newAlerts: RiskFlowAlert[] = response.items.map((item) => ({
+        id: `backend-${item.id}`,
+        headline: item.title,
+        summary: item.summary || item.content || '',
+        url: item.url,
+        publishedAt:
+          typeof item.publishedAt === 'string'
+            ? item.publishedAt
+            : (item.publishedAt instanceof Date ? item.publishedAt : new Date(item.publishedAt)).toISOString(),
+        source: mapBackendSource(item.source),
+        severity: macroLevelToSeverity(item.macroLevel ?? 0),
+        symbols: item.symbols ?? [],
+        tags: (item as RiskFlowItem & { tags?: string[] }).tags ?? [],
+        isBreaking: item.isBreaking ?? false,
+        pointRange: item.priceBrainScore?.impliedPoints ?? null,
+        direction: item.priceBrainScore?.sentiment ?? null,
+        cyclical: item.priceBrainScore?.classification ?? null,
+        instrument: selectedSymbol.symbol,
+        authorHandle: item.authorHandle ?? null,
+        subScores: item.subScores ?? null,
+        riskType: (item.riskType as RiskFlowAlert['riskType']) ?? null,
+        agentNote: item.agentNote ?? null,
+        agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
+        econData: item.econData ?? null,
+      }));
+      setBackendAlerts(prev => [...prev, ...newAlerts]);
+      setHasMore(response.hasMore ?? false);
+      console.debug(`[RiskFlowContext] Loaded ${newAlerts.length} more items (total: ${backendAlerts.length + newAlerts.length})`);
+    } catch (err) {
+      console.warn('[RiskFlowContext] loadMore error:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [backend, selectedSymbol.symbol, backendAlerts.length, loadingMore, hasMore]);
 
   useEffect(() => {
     void pollBackendFeed();
@@ -322,6 +377,9 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         isSeen,
         refresh,
         refreshing,
+        loadMore,
+        loadingMore,
+        hasMore,
       }}
     >
       {children}

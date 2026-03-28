@@ -1,8 +1,9 @@
 // [claude-code 2026-03-27] S2-T4: Calibration service — weight management, annotations, observations
 import type { CalibrationEntry, RefinementAnnotation, CalibrationObservation } from '../../types/calibration.js';
 import type { MarketRegime } from '../../types/regime.js';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   readCalibrationEntries,
   upsertCalibrationWeight,
@@ -13,14 +14,19 @@ import {
   writeObservationsBatch,
 } from '../supabase-service.js';
 
+const __calDir = dirname(fileURLToPath(import.meta.url));
+
 function loadScoringWeights(): Record<string, Record<string, number>> {
-  try {
-    const base = (import.meta as any).dir ?? __dirname;
-    const configPath = resolve(base, '../../config/scoring-weights.json');
-    return JSON.parse(readFileSync(configPath, 'utf-8'));
-  } catch {
-    return { eventWeights: { default: 2 } };
+  // Try multiple paths — bun dev runs from project root, not from the file's directory
+  const candidates = [
+    resolve(__calDir, '../../config/scoring-weights.json'),
+    resolve(__calDir, '../../../src/config/scoring-weights.json'),
+    resolve(process.cwd(), 'src/config/scoring-weights.json'),
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) return JSON.parse(readFileSync(p, 'utf-8'));
   }
+  return { eventWeights: { default: 2 } };
 }
 
 // ─── In-memory cache ────────────────────────────────────────────

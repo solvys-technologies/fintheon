@@ -1,8 +1,8 @@
 // [claude-code 2026-03-05] Add filter tabs: All, High, Medium, Proposals
 // [claude-code 2026-03-10] Dropdown filters (Priority + Source), X/FJ filter, X CLI status dot.
 // [claude-code 2026-03-26] T4: Replace inline cards with RiskFlowDetailCard, remove dead helpers
-import { useEffect, useState, useMemo } from 'react';
-import { Bell, BellOff, RefreshCw } from 'lucide-react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { Bell, BellOff, RefreshCw, Loader2 } from 'lucide-react';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { useSourceStatus } from '../../hooks/useSourceStatus';
 import { useBackend } from '../../lib/backend';
@@ -13,7 +13,8 @@ type PriorityFilter = 'all' | 'high' | 'medium';
 type SourceFilter = 'all' | 'notion' | 'twitter';
 
 export function NewsSection() {
-  const { alerts, markAllSeen, isSeen, refresh, refreshing } = useRiskFlow();
+  const { alerts, markAllSeen, isSeen, refresh, refreshing, loadMore, loadingMore, hasMore } = useRiskFlow();
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const sourceStatus = useSourceStatus();
   const backend = useBackend();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -22,8 +23,24 @@ export function NewsSection() {
   const [showProposals, setShowProposals] = useState(false);
 
   useEffect(() => {
-    markAllSeen(alerts.slice(0, 50).map((a) => a.id));
+    markAllSeen(alerts.map((a) => a.id));
   }, [alerts, markAllSeen]);
+
+  // Infinite scroll — observe sentinel element at bottom of list
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !loadingMore) {
+          void loadMore();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loadMore]);
 
   const requestNotifications = async () => {
     if ('Notification' in window) {
@@ -51,8 +68,8 @@ export function NewsSection() {
   const proposalCount = alerts.filter((a) => a.source === 'notion-trade-idea').length;
 
   const items = useMemo(() => {
-    if (showProposals) return alerts.slice(0, 50).filter((a) => a.source === 'notion-trade-idea');
-    let base = alerts.slice(0, 50);
+    if (showProposals) return alerts.filter((a) => a.source === 'notion-trade-idea');
+    let base = [...alerts];
     if (priorityFilter === 'high') base = base.filter((a) => a.severity === 'high');
     else if (priorityFilter === 'medium') base = base.filter((a) => a.severity === 'medium');
     if (sourceFilter === 'notion') base = base.filter((a) => a.source === 'notion-trade-idea' || (a.source as string).toLowerCase().includes('notion'));
@@ -140,6 +157,22 @@ export function NewsSection() {
               onGenerateNote={handleGenerateNote}
             />
           ))
+        )}
+
+        {/* Infinite scroll sentinel */}
+        <div ref={sentinelRef} className="h-1" />
+
+        {loadingMore && (
+          <div className="flex items-center justify-center py-4 gap-2">
+            <Loader2 className="w-4 h-4 text-[var(--fintheon-accent)] animate-spin" />
+            <span className="text-[10px] text-[var(--fintheon-muted)]/40">Loading more items...</span>
+          </div>
+        )}
+
+        {!hasMore && items.length > 0 && (
+          <div className="text-center py-3">
+            <span className="text-[9px] text-[var(--fintheon-muted)]/25">All items loaded</span>
+          </div>
         )}
       </div>
 

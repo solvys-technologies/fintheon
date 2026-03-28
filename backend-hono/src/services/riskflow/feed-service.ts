@@ -600,15 +600,16 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
     return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
   });
 
-    // Apply pagination
+    // Apply pagination (offset + limit)
     const limit = Math.min(filters?.limit ?? MAX_FEED_ITEMS, MAX_FEED_ITEMS);
-    const paginatedItems = items.slice(0, limit);
+    const offset = filters?.offset ?? 0;
+    const paginatedItems = items.slice(offset, offset + limit);
 
     const response = {
       items: paginatedItems,
       total: items.length,
-      hasMore: items.length > limit,
-      nextCursor: items.length > limit ? paginatedItems[limit - 1]?.id : undefined,
+      hasMore: offset + limit < items.length,
+      nextCursor: offset + limit < items.length ? String(offset + limit) : undefined,
       fetchedAt: new Date().toISOString(),
     };
     

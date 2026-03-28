@@ -1264,7 +1264,7 @@ export async function writeObservationsBatch(
 
   const { data, error } = await sb
     .from('calibration_observations')
-    .upsert(rows, { onConflict: 'headline', ignoreDuplicates: true })
+    .insert(rows)
     .select('id');
 
   if (error) {

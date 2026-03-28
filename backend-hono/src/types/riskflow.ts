@@ -81,6 +81,7 @@ export interface FeedFilters {
   minIvScore?: number;
   minMacroLevel?: MacroLevel;
   limit?: number;
+  offset?: number;
   cursor?: string;
 }
 

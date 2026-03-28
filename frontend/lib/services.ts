@@ -34,6 +34,7 @@ import type { RiskFlowItem } from '../types/api';
 export interface RiskFlowListResponse {
   items: RiskFlowItem[];
   total?: number;
+  hasMore?: boolean;
 }
 
 export interface ChatResponse {
@@ -336,6 +337,7 @@ export class RiskFlowService {
           };
         }),
         total: response.total ?? items.length,
+        hasMore: response.hasMore ?? false,
       };
     } catch (error: any) {
       console.error('[RiskFlowService] Failed to fetch RiskFlow:', error);
@@ -343,6 +345,7 @@ export class RiskFlowService {
       return {
         items: [],
         total: 0,
+        hasMore: false,
       };
     }
   }
