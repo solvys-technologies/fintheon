@@ -9,6 +9,15 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-29T00:30:00',
+    agent: 'claude-code',
+    summary: 'Apparatus expanded cards: comedic agent bios, historical origin dossiers rooted in NarrativeFlow seed events (Jul 2024 — CPI rotation, Yen flash crash, BLS revision, rate cuts, election, Liberation Day), active narrative tracking per agent, Feucht combat record (47W/29L, 61.8% WR, +$14,280 P&L), notable intel bullets. New AgentNode type fields: bio, dossier, activeNarratives, record, notableInfo. Expanded cards now span full 3-col width.',
+    files: [
+      'frontend/components/apparatus/ApparatusPage.tsx',
+      'frontend/components/apparatus/types.ts',
+    ],
+  },
+  {
     date: '2026-03-28T23:45:00',
     agent: 'claude-code',
     summary: 'S5-T5: Rope engine auto-connects cards by shared tags with SVG bezier paths. Living motion system — staggered entrances, spring zoom, severity pulse. Anti-default polish: severity-driven card weight (scale/opacity/border), gold-earned color discipline, editorial typography hierarchy.',

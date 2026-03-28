@@ -6,6 +6,35 @@ export interface AgentNode {
   role: string;
   accentColor: string;
   memories: AgentMemory[];
+  /** Comedic expanded bio */
+  bio?: string;
+  /** Historical non-fiction-based fiction dossier */
+  dossier?: string;
+  /** Narrative threads this agent is actively tracking */
+  activeNarratives?: ActiveNarrative[];
+  /** Win/loss record (primarily for Feucht) */
+  record?: AgentRecord;
+  /** Other notable intel */
+  notableInfo?: string[];
+}
+
+export interface ActiveNarrative {
+  thread: string;
+  color: string;
+  stance: 'bullish' | 'bearish' | 'neutral' | 'watching';
+  note: string;
+}
+
+export interface AgentRecord {
+  wins: number;
+  losses: number;
+  breakeven: number;
+  winRate: number;
+  totalPnl: number;
+  avgRR: number;
+  streak: string;
+  bestTrade: string;
+  worstTrade: string;
 }
 
 export interface AgentMemory {
