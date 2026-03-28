@@ -1,5 +1,5 @@
 // [claude-code 2026-03-27] S4-T2: 2D grid layout — time columns (X) x risk category rows (Y)
-import { useRef, useMemo, useEffect, useCallback } from 'react';
+import { useRef, useMemo, useEffect, useCallback, useState } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import {
   RISK_LANES,
@@ -96,36 +96,125 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
     // no-op for now, lane selection via context
   }, []);
 
-  // Scroll zoom — mouse wheel changes zoom level (week ↔ month ↔ quarter ↔ year)
+  // ── Canvas-like zoom/pan interactions ──
   const ZOOM_LEVELS: typeof state.zoomLevel[] = ['week', 'month', 'quarter', 'year'];
   const zoomTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
+  const preSpaceZoomRef = useRef<typeof state.zoomLevel | null>(null);
 
+  // Spacebar hold = zoom out (temporary), release = snap back
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !e.repeat && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        setSpaceHeld(true);
+        // Save current zoom and zoom out one level
+        const currentIdx = ZOOM_LEVELS.indexOf(state.zoomLevel);
+        if (currentIdx < ZOOM_LEVELS.length - 1) {
+          preSpaceZoomRef.current = state.zoomLevel;
+          dispatch({ type: 'SET_ZOOM', level: ZOOM_LEVELS[currentIdx + 1] });
+        }
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setSpaceHeld(false);
+        // Snap back to pre-space zoom level
+        if (preSpaceZoomRef.current) {
+          dispatch({ type: 'SET_ZOOM', level: preSpaceZoomRef.current });
+          preSpaceZoomRef.current = null;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [state.zoomLevel, dispatch]);
+
+  // Mouse wheel zoom (Ctrl/Cmd+wheel or pinch) + plain wheel = horizontal pan
   useEffect(() => {
     const container = gridContainerRef.current;
+    const scroller = scrollRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
-      // Only zoom on Ctrl+wheel or pinch (ctrlKey is true for trackpad pinch)
-      if (!e.ctrlKey && !e.metaKey) return;
-      e.preventDefault();
+      if (e.ctrlKey || e.metaKey) {
+        // Zoom: Ctrl+wheel or trackpad pinch
+        e.preventDefault();
+        if (zoomTimeoutRef.current) return;
 
-      // Debounce to prevent rapid zoom changes
-      if (zoomTimeoutRef.current) return;
+        const currentIdx = ZOOM_LEVELS.indexOf(state.zoomLevel);
+        const newIdx = e.deltaY > 0
+          ? Math.min(currentIdx + 1, ZOOM_LEVELS.length - 1)
+          : Math.max(currentIdx - 1, 0);
 
-      const currentIdx = ZOOM_LEVELS.indexOf(state.zoomLevel);
-      const newIdx = e.deltaY > 0
-        ? Math.min(currentIdx + 1, ZOOM_LEVELS.length - 1)  // zoom out
-        : Math.max(currentIdx - 1, 0);                       // zoom in
-
-      if (newIdx !== currentIdx) {
-        dispatch({ type: 'SET_ZOOM', level: ZOOM_LEVELS[newIdx] });
-        zoomTimeoutRef.current = setTimeout(() => { zoomTimeoutRef.current = null; }, 300);
+        if (newIdx !== currentIdx) {
+          dispatch({ type: 'SET_ZOOM', level: ZOOM_LEVELS[newIdx] });
+          zoomTimeoutRef.current = setTimeout(() => { zoomTimeoutRef.current = null; }, 250);
+        }
+      } else if (scroller && !e.shiftKey) {
+        // Plain scroll wheel = horizontal pan (canvas behavior)
+        e.preventDefault();
+        scroller.scrollLeft += e.deltaY * 2;
       }
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
   }, [state.zoomLevel, dispatch]);
+
+  // Click-drag pan (spacebar held or middle mouse)
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (spaceHeld || e.button === 1) { // spacebar + click or middle mouse
+        e.preventDefault();
+        setIsPanning(true);
+        panStartRef.current = {
+          x: e.clientX,
+          y: e.clientY,
+          scrollLeft: scroller.scrollLeft,
+          scrollTop: scroller.scrollTop,
+        };
+        scroller.style.cursor = 'grabbing';
+        scroller.setPointerCapture(e.pointerId);
+      }
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!panStartRef.current) return;
+      const dx = e.clientX - panStartRef.current.x;
+      const dy = e.clientY - panStartRef.current.y;
+      scroller.scrollLeft = panStartRef.current.scrollLeft - dx;
+      scroller.scrollTop = panStartRef.current.scrollTop - dy;
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      if (panStartRef.current) {
+        panStartRef.current = null;
+        setIsPanning(false);
+        scroller.style.cursor = '';
+        scroller.releasePointerCapture(e.pointerId);
+      }
+    };
+
+    scroller.addEventListener('pointerdown', handlePointerDown);
+    scroller.addEventListener('pointermove', handlePointerMove);
+    scroller.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      scroller.removeEventListener('pointerdown', handlePointerDown);
+      scroller.removeEventListener('pointermove', handlePointerMove);
+      scroller.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [spaceHeld]);
 
   const onDrillDeeper = useCallback((cardId: string, query: string) => {
     const card = state.catalysts.find(c => c.id === cardId);
@@ -138,7 +227,7 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
   }, [state.catalysts, dispatch]);
 
   return (
-    <div ref={gridContainerRef} className="h-full flex flex-col overflow-hidden">
+    <div ref={gridContainerRef} className="h-full flex flex-col overflow-hidden" style={{ cursor: spaceHeld ? 'grab' : undefined }}>
       {/* Column headers */}
       <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid color-mix(in srgb, var(--fintheon-border) 20%, transparent)' }}>
         {/* Spacer for lane header column */}
