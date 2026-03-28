@@ -10,7 +10,7 @@ import { TimelinePanel } from '../narrative/TimelinePanel';
 import { ProposalWidget } from '../proposals/ProposalWidget';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
-import { ApparatusPage } from '../apparatus/ApparatusPage';
+import { ApparatusFlowMap } from '../apparatus/ApparatusFlowMap';
 import { AiLoader } from '../chat/FintheonThread';
 import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst } from '../../types/mirofish';
 
@@ -321,7 +321,7 @@ export function ConsiliumHub() {
             </Suspense>
           )}
           {displayedTab === 'boardroom' && <AgentChattr />}
-          {displayedTab === 'apparatus' && <ApparatusPage />}
+          {displayedTab === 'apparatus' && <ApparatusFlowMap />}
         </div>
 
         {/* Collapsible Proposals + Scorecards right panel */}
