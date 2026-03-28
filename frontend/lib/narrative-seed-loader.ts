@@ -3,7 +3,8 @@ import seedEvents from '../data/narrative-seed-events.json';
 import type { CatalystCard, NarrativeCategory, CatalystSeverity, CatalystSentiment } from './narrative-types';
 import type { RiskFlowAlert } from './riskflow-feed';
 
-const SEED_FLAG = 'fintheon:narrative-seeded';
+// Bump version when seed data changes to re-seed existing users
+const SEED_FLAG = 'fintheon:narrative-seeded:v3';
 
 /**
  * Load historical seed events into the narrative store.
@@ -27,6 +28,7 @@ export function loadSeedEvents(): CatalystCard[] {
     templateType: null,
     position: null,
     tags: e.tags ?? [],
+    narrative: e.narrative ?? undefined,
     directionBias: e.direction ?? 'neutral',
     status: 'resolved' as const,
     dateRange: { start: e.date, end: null },

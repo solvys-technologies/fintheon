@@ -23,8 +23,8 @@
   },
   {
     "id": "seed-045",
-    "title": "Cliff Kicker \u2014 NFP Was Stinky",
-    "description": "August NFP came in weak, triggering recession fears. First 'cliff kicker' \u2014 market drops off a ledge",
+    "title": "Cliff Kicker — NFP Was Stinky",
+    "description": "August NFP came in weak, triggering recession fears. First 'cliff kicker' — market drops off a ledge",
     "date": "2024-08-02",
     "category": "macroeconomic",
     "severity": "high",
@@ -88,8 +88,8 @@
   },
   {
     "id": "seed-048",
-    "title": "Cliff Kicker \u2014 Weak PMI",
-    "description": "ISM Manufacturing PMI comes in weak. Second cliff kicker event \u2014 market drops sharply on growth fears",
+    "title": "Cliff Kicker — Weak PMI",
+    "description": "ISM Manufacturing PMI comes in weak. Second cliff kicker event — market drops sharply on growth fears",
     "date": "2024-09-03",
     "category": "macroeconomic",
     "severity": "high",
@@ -129,7 +129,7 @@
   },
   {
     "id": "seed-050",
-    "title": "Fed's First Cut \u2014 50bps",
+    "title": "Fed's First Cut — 50bps",
     "description": "Federal Reserve cuts rates by 50bps in first cut of the cycle. Larger than expected. Market rallies on dovish surprise",
     "date": "2024-09-18",
     "category": "monetary",
@@ -194,8 +194,8 @@
   },
   {
     "id": "seed-053",
-    "title": "People Bet on Trump \u2014 War Tactics",
-    "description": "Polymarket and prediction markets show surging Trump odds. 'War tactics' positioning \u2014 defense, energy, financials bid",
+    "title": "People Bet on Trump — War Tactics",
+    "description": "Polymarket and prediction markets show surging Trump odds. 'War tactics' positioning — defense, energy, financials bid",
     "date": "2024-10-14",
     "category": "geopolitical",
     "severity": "medium",
@@ -216,8 +216,8 @@
   },
   {
     "id": "seed-054",
-    "title": "Election 2024 \u2014 Trump II",
-    "description": "Donald Trump wins 2024 presidential election. Markets rip higher on 'Trump Trade' \u2014 financials, energy, small caps lead. Mega-cap tech mixed",
+    "title": "Election 2024 — Trump II",
+    "description": "Donald Trump wins 2024 presidential election. Markets rip higher on 'Trump Trade' — financials, energy, small caps lead. Mega-cap tech mixed",
     "date": "2024-11-05",
     "category": "geopolitical",
     "severity": "high",
@@ -262,7 +262,7 @@
   {
     "id": "seed-003",
     "title": "CPI Print +/-",
-    "description": "November CPI release \u2014 mixed data, market digesting post-election macro picture",
+    "description": "November CPI release — mixed data, market digesting post-election macro picture",
     "date": "2024-11-13",
     "category": "macroeconomic",
     "severity": "medium",
@@ -280,7 +280,7 @@
   },
   {
     "id": "seed-004",
-    "title": "Strong Data \u2014 Trump Trade Frenzy",
+    "title": "Strong Data — Trump Trade Frenzy",
     "description": "More strong economic data fueling the post-election Trump trade momentum. Markets ripping higher",
     "date": "2024-12-03",
     "category": "macroeconomic",
@@ -387,7 +387,7 @@
   },
   {
     "id": "seed-009",
-    "title": "Strong NFP Beat \u2014 Less Cuts?",
+    "title": "Strong NFP Beat — Less Cuts?",
     "description": "January NFP came in strong. Markets repricing fewer rate cuts in 2025. Good-news-is-bad-news dynamic",
     "date": "2025-01-10",
     "category": "macroeconomic",
@@ -428,7 +428,7 @@
   },
   {
     "id": "seed-011",
-    "title": "Strong Earnings \u2014 CES '25",
+    "title": "Strong Earnings — CES '25",
     "description": "Strong earnings season kicks off, coinciding with CES 2025 tech showcase. AI narrative still dominant",
     "date": "2025-01-16",
     "category": "earnings",
@@ -558,7 +558,7 @@
   },
   {
     "id": "seed-017",
-    "title": "First Hot CPI in a While \u2014 Trump Trade Value Buy",
+    "title": "First Hot CPI in a While — Trump Trade Value Buy",
     "description": "CPI came in hot but market treated it as a dip-buying opportunity. Trump trade rotation into value continued",
     "date": "2025-02-12",
     "category": "macroeconomic",
@@ -627,7 +627,7 @@
   {
     "id": "seed-020",
     "title": "NVDA Earnings",
-    "description": "Nvidia earnings report \u2014 key bellwether for AI capex narrative post-DeepSeek scare",
+    "description": "Nvidia earnings report — key bellwether for AI capex narrative post-DeepSeek scare",
     "date": "2025-02-26",
     "category": "earnings",
     "severity": "high",
@@ -711,7 +711,7 @@
   },
   {
     "id": "seed-024",
-    "title": "Good CPI \u2014 Rejection",
+    "title": "Good CPI — Rejection",
     "description": "CPI came in good (soft) but market rejected the move higher. Tariff uncertainty overriding macro data",
     "date": "2025-03-12",
     "category": "macroeconomic",
@@ -730,7 +730,7 @@
   },
   {
     "id": "seed-025",
-    "title": "Good PPI \u2014 Rejection",
+    "title": "Good PPI — Rejection",
     "description": "PPI came in soft but market again rejected. Tariff narrative dominating all macro prints",
     "date": "2025-03-13",
     "category": "macroeconomic",
@@ -749,7 +749,7 @@
   },
   {
     "id": "seed-026",
-    "title": "Dovish Fed \u2014 Tariffs Are Transitory?",
+    "title": "Dovish Fed — Tariffs Are Transitory?",
     "description": "FOMC meeting: Fed takes dovish stance, signals tariff inflation impact is transitory. Market briefly rallies",
     "date": "2025-03-19",
     "category": "monetary",
@@ -790,7 +790,7 @@
   {
     "id": "seed-028",
     "title": "LIBERATION DAY",
-    "description": "Trump declares 'Liberation Day' with sweeping reciprocal tariffs \u2014 10% baseline on all countries, 60+ countries hit with higher rates. Market crashes",
+    "description": "Trump declares 'Liberation Day' with sweeping reciprocal tariffs — 10% baseline on all countries, 60+ countries hit with higher rates. Market crashes",
     "date": "2025-04-02",
     "category": "geopolitical",
     "severity": "high",
@@ -812,7 +812,7 @@
   },
   {
     "id": "seed-029",
-    "title": "90-Day Tariff Pause \u2014 'Now's a Good Time to Buy'",
+    "title": "90-Day Tariff Pause — 'Now's a Good Time to Buy'",
     "description": "Trump pauses reciprocal tariffs for 90 days (except China at 125%). Market rips 10%+ in historic rally. 'Now is a good time to buy'",
     "date": "2025-04-09",
     "category": "geopolitical",
@@ -1005,7 +1005,7 @@
   {
     "id": "seed-038",
     "title": "Operation Midnight Hammer",
-    "description": "Hold my beer moment \u2014 overnight market structure event. Dramatic move in thin liquidity",
+    "description": "Hold my beer moment — overnight market structure event. Dramatic move in thin liquidity",
     "date": "2025-06-17",
     "category": "market-structure",
     "severity": "high",
@@ -1156,8 +1156,8 @@
   },
   {
     "id": "seed-055",
-    "title": "CeraWeek Venezuela opposition leader Machado \u2014 Venezuelan state would get out of the way in oil industry under eventual opposition led new government",
-    "description": "CeraWeek Venezuela opposition leader Machado \u2014 Venezuelan state would get out of the way in oil industry under eventual opposition led new government",
+    "title": "CeraWeek Venezuela opposition leader Machado — Venezuelan state would get out of the way in oil industry under eventual opposition led new government",
+    "description": "CeraWeek Venezuela opposition leader Machado — Venezuelan state would get out of the way in oil industry under eventual opposition led new government",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -1198,8 +1198,8 @@
   },
   {
     "id": "seed-057",
-    "title": "US said to have sent Iran a plan to end the Mideast war \u2014 NYT",
-    "description": "US said to have sent Iran a plan to end the Mideast war \u2014 NYT",
+    "title": "US said to have sent Iran a plan to end the Mideast war — NYT",
+    "description": "US said to have sent Iran a plan to end the Mideast war — NYT",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -1218,8 +1218,8 @@
   },
   {
     "id": "seed-058",
-    "title": "Federal Reserves Goolsbee energy shocks can pose risks to both sides of Federal Reserve mandate \u2014 PBS NewsHour",
-    "description": "Federal Reserves Goolsbee energy shocks can pose risks to both sides of Federal Reserve mandate \u2014 PBS NewsHour",
+    "title": "Federal Reserves Goolsbee energy shocks can pose risks to both sides of Federal Reserve mandate — PBS NewsHour",
+    "description": "Federal Reserves Goolsbee energy shocks can pose risks to both sides of Federal Reserve mandate — PBS NewsHour",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "medium",
@@ -1238,8 +1238,8 @@
   },
   {
     "id": "seed-059",
-    "title": "Trump I will also host Xi in Washington DC this year \u2014 Truth Social",
-    "description": "Trump I will also host Xi in Washington DC this year \u2014 Truth Social",
+    "title": "Trump I will also host Xi in Washington DC this year — Truth Social",
+    "description": "Trump I will also host Xi in Washington DC this year — Truth Social",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1358,8 +1358,8 @@
   },
   {
     "id": "seed-065",
-    "title": "Cyprus demands new security deal regarding British bases following Iranian drone attack on UK military facilities on the island \u2014 The Telegraph",
-    "description": "Cyprus demands new security deal regarding British bases following Iranian drone attack on UK military facilities on the island \u2014 The Telegraph",
+    "title": "Cyprus demands new security deal regarding British bases following Iranian drone attack on UK military facilities on the island — The Telegraph",
+    "description": "Cyprus demands new security deal regarding British bases following Iranian drone attack on UK military facilities on the island — The Telegraph",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1499,8 +1499,8 @@
   },
   {
     "id": "seed-072",
-    "title": "Trump tech panel to weigh in on AI policy other issues \u2014 WSJ",
-    "description": "Trump tech panel to weigh in on AI policy other issues \u2014 WSJ",
+    "title": "Trump tech panel to weigh in on AI policy other issues — WSJ",
+    "description": "Trump tech panel to weigh in on AI policy other issues — WSJ",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1620,8 +1620,8 @@
   },
   {
     "id": "seed-078",
-    "title": "Oil and Gas activity in Texas Louisiana and New Mexico increased in the first quarter of 2026 \u2014 Dallas Fed survey",
-    "description": "Oil and Gas activity in Texas Louisiana and New Mexico increased in the first quarter of 2026 \u2014 Dallas Fed survey",
+    "title": "Oil and Gas activity in Texas Louisiana and New Mexico increased in the first quarter of 2026 — Dallas Fed survey",
+    "description": "Oil and Gas activity in Texas Louisiana and New Mexico increased in the first quarter of 2026 — Dallas Fed survey",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "medium",
@@ -1783,8 +1783,8 @@
   },
   {
     "id": "seed-086",
-    "title": "Trump receives daily briefings with video footage of the largest and most successful strikes on Iranian targets \u2014 NBC citing US officials",
-    "description": "Trump receives daily briefings with video footage of the largest and most successful strikes on Iranian targets \u2014 NBC citing US officials",
+    "title": "Trump receives daily briefings with video footage of the largest and most successful strikes on Iranian targets — NBC citing US officials",
+    "description": "Trump receives daily briefings with video footage of the largest and most successful strikes on Iranian targets — NBC citing US officials",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1843,8 +1843,8 @@
   },
   {
     "id": "seed-089",
-    "title": "Iraq orders further oil output cuts asking BP and ENI to slash production at major southern fields \u2014 Three Iraqi oil officials",
-    "description": "Iraq orders further oil output cuts asking BP and ENI to slash production at major southern fields \u2014 Three Iraqi oil officials",
+    "title": "Iraq orders further oil output cuts asking BP and ENI to slash production at major southern fields — Three Iraqi oil officials",
+    "description": "Iraq orders further oil output cuts asking BP and ENI to slash production at major southern fields — Three Iraqi oil officials",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -1864,8 +1864,8 @@
   },
   {
     "id": "seed-090",
-    "title": "Trump rejected Israels Prime Minister Netanyahus idea to call for Iran uprising \u2014 Axios",
-    "description": "Trump rejected Israels Prime Minister Netanyahus idea to call for Iran uprising \u2014 Axios",
+    "title": "Trump rejected Israels Prime Minister Netanyahus idea to call for Iran uprising — Axios",
+    "description": "Trump rejected Israels Prime Minister Netanyahus idea to call for Iran uprising — Axios",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -1884,8 +1884,8 @@
   },
   {
     "id": "seed-091",
-    "title": "Israels working assumption Trump may announce a ceasefire by next Saturday \u2014 Israels N12 News",
-    "description": "Israels working assumption Trump may announce a ceasefire by next Saturday \u2014 Israels N12 News",
+    "title": "Israels working assumption Trump may announce a ceasefire by next Saturday — Israels N12 News",
+    "description": "Israels working assumption Trump may announce a ceasefire by next Saturday — Israels N12 News",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -2004,8 +2004,8 @@
   },
   {
     "id": "seed-097",
-    "title": "Top Transportation Security Administration official will tell Congress funding standoff is raising major security risks \u2014 written testimony",
-    "description": "Top Transportation Security Administration official will tell Congress funding standoff is raising major security risks \u2014 written testimony",
+    "title": "Top Transportation Security Administration official will tell Congress funding standoff is raising major security risks — written testimony",
+    "description": "Top Transportation Security Administration official will tell Congress funding standoff is raising major security risks — written testimony",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -2107,8 +2107,8 @@
   },
   {
     "id": "seed-102",
-    "title": "Iran will end the war at the time of its own choosing \u2014 Press TV",
-    "description": "Iran will end the war at the time of its own choosing \u2014 Press TV",
+    "title": "Iran will end the war at the time of its own choosing — Press TV",
+    "description": "Iran will end the war at the time of its own choosing — Press TV",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -2148,8 +2148,8 @@
   },
   {
     "id": "seed-104",
-    "title": "EIA Crude Oil Inventories Actual 6926M Forecast \u2014 125M Previous 6156M",
-    "description": "EIA Crude Oil Inventories Actual 6926M Forecast \u2014 125M Previous 6156M",
+    "title": "EIA Crude Oil Inventories Actual 6926M Forecast — 125M Previous 6156M",
+    "description": "EIA Crude Oil Inventories Actual 6926M Forecast — 125M Previous 6156M",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -2258,8 +2258,8 @@
   },
   {
     "id": "seed-109",
-    "title": "Trump Meeting Chinas President Xi rescheduled for May 14th \u2014 15th in Beijing due to Iran conflict \u2014 Truth Social",
-    "description": "Trump Meeting Chinas President Xi rescheduled for May 14th \u2014 15th in Beijing due to Iran conflict \u2014 Truth Social",
+    "title": "Trump Meeting Chinas President Xi rescheduled for May 14th — 15th in Beijing due to Iran conflict — Truth Social",
+    "description": "Trump Meeting Chinas President Xi rescheduled for May 14th — 15th in Beijing due to Iran conflict — Truth Social",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -2280,8 +2280,8 @@
   },
   {
     "id": "seed-110",
-    "title": "Oil companies expect Henry Hub Natural Gas prices of 360 per million British thermal units at year end 2026 \u2014 Dallas Fed Survey",
-    "description": "Oil companies expect Henry Hub Natural Gas prices of 360 per million British thermal units at year end 2026 \u2014 Dallas Fed Survey",
+    "title": "Oil companies expect Henry Hub Natural Gas prices of 360 per million British thermal units at year end 2026 — Dallas Fed Survey",
+    "description": "Oil companies expect Henry Hub Natural Gas prices of 360 per million British thermal units at year end 2026 — Dallas Fed Survey",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -2325,8 +2325,8 @@
   },
   {
     "id": "seed-112",
-    "title": "Companies expect a West Texas intermediate oil price of 74 per barrel at year end 2026 \u2014 Dallas Fed survey",
-    "description": "Companies expect a West Texas intermediate oil price of 74 per barrel at year end 2026 \u2014 Dallas Fed survey",
+    "title": "Companies expect a West Texas intermediate oil price of 74 per barrel at year end 2026 — Dallas Fed survey",
+    "description": "Companies expect a West Texas intermediate oil price of 74 per barrel at year end 2026 — Dallas Fed survey",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -2714,8 +2714,8 @@
   },
   {
     "id": "seed-130",
-    "title": "Russias oil export capacity has shrunk by 40 after attacks on infrastructure and tanker seizures \u2014 Calculations based on data from sources show",
-    "description": "Russias oil export capacity has shrunk by 40 after attacks on infrastructure and tanker seizures \u2014 Calculations based on data from sources show",
+    "title": "Russias oil export capacity has shrunk by 40 after attacks on infrastructure and tanker seizures — Calculations based on data from sources show",
+    "description": "Russias oil export capacity has shrunk by 40 after attacks on infrastructure and tanker seizures — Calculations based on data from sources show",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -2757,8 +2757,8 @@
   },
   {
     "id": "seed-132",
-    "title": "US shale Oil and Gas executives said production was little changed in the first quarter of 2026 \u2014 Dallas Fed Survey",
-    "description": "US shale Oil and Gas executives said production was little changed in the first quarter of 2026 \u2014 Dallas Fed Survey",
+    "title": "US shale Oil and Gas executives said production was little changed in the first quarter of 2026 — Dallas Fed Survey",
+    "description": "US shale Oil and Gas executives said production was little changed in the first quarter of 2026 — Dallas Fed Survey",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "low",
@@ -2780,8 +2780,8 @@
   },
   {
     "id": "seed-133",
-    "title": "Trump I may call up the national guard to help airports \u2014 Truth Social",
-    "description": "Trump I may call up the national guard to help airports \u2014 Truth Social",
+    "title": "Trump I may call up the national guard to help airports — Truth Social",
+    "description": "Trump I may call up the national guard to help airports — Truth Social",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -2869,8 +2869,8 @@
   },
   {
     "id": "seed-137",
-    "title": "White House executive order \u2014 further continuation of Federal Emergency Management Agency Review Council",
-    "description": "White House executive order \u2014 further continuation of Federal Emergency Management Agency Review Council",
+    "title": "White House executive order — further continuation of Federal Emergency Management Agency Review Council",
+    "description": "White House executive order — further continuation of Federal Emergency Management Agency Review Council",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "high",
@@ -2889,8 +2889,8 @@
   },
   {
     "id": "seed-138",
-    "title": "Iran Lawmakers call to continue war until the enemy is deterred \u2014 ISNA",
-    "description": "Iran Lawmakers call to continue war until the enemy is deterred \u2014 ISNA",
+    "title": "Iran Lawmakers call to continue war until the enemy is deterred — ISNA",
+    "description": "Iran Lawmakers call to continue war until the enemy is deterred — ISNA",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -2932,8 +2932,8 @@
   },
   {
     "id": "seed-140",
-    "title": "Iraqs oil output plunges further as storage fills and Hormuz exports are blocked by conflict \u2014 Three Iraqi energy officials",
-    "description": "Iraqs oil output plunges further as storage fills and Hormuz exports are blocked by conflict \u2014 Three Iraqi energy officials",
+    "title": "Iraqs oil output plunges further as storage fills and Hormuz exports are blocked by conflict — Three Iraqi energy officials",
+    "description": "Iraqs oil output plunges further as storage fills and Hormuz exports are blocked by conflict — Three Iraqi energy officials",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "high",
@@ -2976,8 +2976,8 @@
   },
   {
     "id": "seed-142",
-    "title": "Trump administration expected to lift summer gasoline regulations to curb energy prices as soon as Wednesday \u2014 sources",
-    "description": "Trump administration expected to lift summer gasoline regulations to curb energy prices as soon as Wednesday \u2014 sources",
+    "title": "Trump administration expected to lift summer gasoline regulations to curb energy prices as soon as Wednesday — sources",
+    "description": "Trump administration expected to lift summer gasoline regulations to curb energy prices as soon as Wednesday — sources",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -3104,8 +3104,8 @@
   },
   {
     "id": "seed-148",
-    "title": "Kansas City Fed Manufacturing Actual 11 Forecast \u2014 Previous 10",
-    "description": "Kansas City Fed Manufacturing Actual 11 Forecast \u2014 Previous 10",
+    "title": "Kansas City Fed Manufacturing Actual 11 Forecast — Previous 10",
+    "description": "Kansas City Fed Manufacturing Actual 11 Forecast — Previous 10",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "medium",
@@ -3170,8 +3170,8 @@
   },
   {
     "id": "seed-151",
-    "title": "White House downplays reports Iran rejected Trump peace proposal \u2014 Axios",
-    "description": "White House downplays reports Iran rejected Trump peace proposal \u2014 Axios",
+    "title": "White House downplays reports Iran rejected Trump peace proposal — Axios",
+    "description": "White House downplays reports Iran rejected Trump peace proposal — Axios",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -3212,8 +3212,8 @@
   },
   {
     "id": "seed-153",
-    "title": "Iran will end the war at a time of its own choosing only if its own conditions are met \u2014 Irans Press TV citing official",
-    "description": "Iran will end the war at a time of its own choosing only if its own conditions are met \u2014 Irans Press TV citing official",
+    "title": "Iran will end the war at a time of its own choosing only if its own conditions are met — Irans Press TV citing official",
+    "description": "Iran will end the war at a time of its own choosing only if its own conditions are met — Irans Press TV citing official",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -3255,8 +3255,8 @@
   },
   {
     "id": "seed-155",
-    "title": "Israeli army is currently working on establishing 18 new forward operating bases in southern Lebanon \u2014 Israeli Channel 14",
-    "description": "Israeli army is currently working on establishing 18 new forward operating bases in southern Lebanon \u2014 Israeli Channel 14",
+    "title": "Israeli army is currently working on establishing 18 new forward operating bases in southern Lebanon — Israeli Channel 14",
+    "description": "Israeli army is currently working on establishing 18 new forward operating bases in southern Lebanon — Israeli Channel 14",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -3276,8 +3276,8 @@
   },
   {
     "id": "seed-156",
-    "title": "US weekly crude oil inventories rose in the latest week to the highest since June 2024 \u2014 EIA",
-    "description": "US weekly crude oil inventories rose in the latest week to the highest since June 2024 \u2014 EIA",
+    "title": "US weekly crude oil inventories rose in the latest week to the highest since June 2024 — EIA",
+    "description": "US weekly crude oil inventories rose in the latest week to the highest since June 2024 — EIA",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -3320,8 +3320,8 @@
   },
   {
     "id": "seed-158",
-    "title": "EIA Crude Cushing Inventories \u2014 Actual 3421M Forecast \u2014 Previous 0944M",
-    "description": "EIA Crude Cushing Inventories \u2014 Actual 3421M Forecast \u2014 Previous 0944M",
+    "title": "EIA Crude Cushing Inventories — Actual 3421M Forecast — Previous 0944M",
+    "description": "EIA Crude Cushing Inventories — Actual 3421M Forecast — Previous 0944M",
     "date": "2026-03-28",
     "category": "supply-chain",
     "severity": "medium",
@@ -3388,8 +3388,8 @@
   },
   {
     "id": "seed-161",
-    "title": "Idle Russias Ust Luga oil products terminal may force major refineries to cut runs \u2014 Sources",
-    "description": "Idle Russias Ust Luga oil products terminal may force major refineries to cut runs \u2014 Sources",
+    "title": "Idle Russias Ust Luga oil products terminal may force major refineries to cut runs — Sources",
+    "description": "Idle Russias Ust Luga oil products terminal may force major refineries to cut runs — Sources",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -3411,8 +3411,8 @@
   },
   {
     "id": "seed-162",
-    "title": "Iran wont allow Trump to dictate timing of wars end \u2014 Press TV",
-    "description": "Iran wont allow Trump to dictate timing of wars end \u2014 Press TV",
+    "title": "Iran wont allow Trump to dictate timing of wars end — Press TV",
+    "description": "Iran wont allow Trump to dictate timing of wars end — Press TV",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -3498,8 +3498,8 @@
   },
   {
     "id": "seed-166",
-    "title": "Press TV has access to information about Irans response to the American plan and Irans conditions for ending the war which will be published in a few moments \u2014 \u2014 Mehr News",
-    "description": "Press TV has access to information about Irans response to the American plan and Irans conditions for ending the war which will be published in a few moments \u2014 \u2014 Mehr News",
+    "title": "Press TV has access to information about Irans response to the American plan and Irans conditions for ending the war which will be published in a few moments — — Mehr News",
+    "description": "Press TV has access to information about Irans response to the American plan and Irans conditions for ending the war which will be published in a few moments — — Mehr News",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -3586,8 +3586,8 @@
   },
   {
     "id": "seed-170",
-    "title": "Brussels plans carbon price brake as Iran war squeezes industry \u2014 FT",
-    "description": "Brussels plans carbon price brake as Iran war squeezes industry \u2014 FT",
+    "title": "Brussels plans carbon price brake as Iran war squeezes industry — FT",
+    "description": "Brussels plans carbon price brake as Iran war squeezes industry — FT",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "high",
@@ -3630,8 +3630,8 @@
   },
   {
     "id": "seed-172",
-    "title": "Meta awards stock options and restricted stock units to chief operating officer Javier Olivan \u2014 filing",
-    "description": "Meta awards stock options and restricted stock units to chief operating officer Javier Olivan \u2014 filing",
+    "title": "Meta awards stock options and restricted stock units to chief operating officer Javier Olivan — filing",
+    "description": "Meta awards stock options and restricted stock units to chief operating officer Javier Olivan — filing",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "high",
@@ -4163,8 +4163,8 @@
   },
   {
     "id": "seed-197",
-    "title": "Feds Miran Speaks \u2014 WATCH LIVE",
-    "description": "Feds Miran Speaks \u2014 WATCH LIVE",
+    "title": "Feds Miran Speaks — WATCH LIVE",
+    "description": "Feds Miran Speaks — WATCH LIVE",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -4206,8 +4206,8 @@
   },
   {
     "id": "seed-199",
-    "title": "FinancialJuice Widget \u2013 Get this Extension for Firefox (en-CA)",
-    "description": "FinancialJuice Widget \u2013 Get this Extension for Firefox (en-CA)",
+    "title": "FinancialJuice Widget – Get this Extension for Firefox (en-CA)",
+    "description": "FinancialJuice Widget – Get this Extension for Firefox (en-CA)",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6151,7 +6151,7 @@
   {
     "id": "seed-289",
     "title": "US PPI YOY ACTUAL 2.4% (FORECAST 2.5%, PREVIOUS 2.7% ...",
-    "description": "\ud83d\udd34 US PPI YOY ACTUAL 2.4% (FORECAST 2.5%, PREVIOUS 2.7% ...",
+    "description": "🔴 US PPI YOY ACTUAL 2.4% (FORECAST 2.5%, PREVIOUS 2.7% ...",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -6446,8 +6446,8 @@
   },
   {
     "id": "seed-303",
-    "title": "Japanese Foreign Bond Investment Actual \u2014 6353B Forecast \u2014 Previous \u2014 9920B",
-    "description": "Japanese Foreign Bond Investment Actual \u2014 6353B Forecast \u2014 Previous \u2014 9920B",
+    "title": "Japanese Foreign Bond Investment Actual — 6353B Forecast — Previous — 9920B",
+    "description": "Japanese Foreign Bond Investment Actual — 6353B Forecast — Previous — 9920B",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "medium",
@@ -6530,8 +6530,8 @@
   },
   {
     "id": "seed-308",
-    "title": "Mexico to announce support package for transportation industry during presidential press conference on Thursday \u2014 Economy Ministry",
-    "description": "Mexico to announce support package for transportation industry during presidential press conference on Thursday \u2014 Economy Ministry",
+    "title": "Mexico to announce support package for transportation industry during presidential press conference on Thursday — Economy Ministry",
+    "description": "Mexico to announce support package for transportation industry during presidential press conference on Thursday — Economy Ministry",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6575,8 +6575,8 @@
   },
   {
     "id": "seed-310",
-    "title": "Various points seen as next to impossible for Iran to accept another said it mirrored the points the US tabled with Iran in past talks \u2014 CNN Reporter citing source on 15 point plan",
-    "description": "Various points seen as next to impossible for Iran to accept another said it mirrored the points the US tabled with Iran in past talks \u2014 CNN Reporter citing source on 15 point plan",
+    "title": "Various points seen as next to impossible for Iran to accept another said it mirrored the points the US tabled with Iran in past talks — CNN Reporter citing source on 15 point plan",
+    "description": "Various points seen as next to impossible for Iran to accept another said it mirrored the points the US tabled with Iran in past talks — CNN Reporter citing source on 15 point plan",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6721,8 +6721,8 @@
   },
   {
     "id": "seed-317",
-    "title": "China PBOC expected to set yuan mid point near 69108 per dollar \u2014 source estimate",
-    "description": "China PBOC expected to set yuan mid point near 69108 per dollar \u2014 source estimate",
+    "title": "China PBOC expected to set yuan mid point near 69108 per dollar — source estimate",
+    "description": "China PBOC expected to set yuan mid point near 69108 per dollar — source estimate",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6785,8 +6785,8 @@
   },
   {
     "id": "seed-320",
-    "title": "The Israeli army intensifies its strikes in Iran amid growing possibilities of holding talks between \u2014 NYT citing sources",
-    "description": "The Israeli army intensifies its strikes in Iran amid growing possibilities of holding talks between \u2014 NYT citing sources",
+    "title": "The Israeli army intensifies its strikes in Iran amid growing possibilities of holding talks between — NYT citing sources",
+    "description": "The Israeli army intensifies its strikes in Iran amid growing possibilities of holding talks between — NYT citing sources",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6828,8 +6828,8 @@
   },
   {
     "id": "seed-323",
-    "title": "EIA Gasoline Inventories Actual \u2014 2593M Forecast \u2014 2M Previous \u2014 5436M",
-    "description": "EIA Gasoline Inventories Actual \u2014 2593M Forecast \u2014 2M Previous \u2014 5436M",
+    "title": "EIA Gasoline Inventories Actual — 2593M Forecast — 2M Previous — 5436M",
+    "description": "EIA Gasoline Inventories Actual — 2593M Forecast — 2M Previous — 5436M",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -6848,8 +6848,8 @@
   },
   {
     "id": "seed-324",
-    "title": "EIA Distillate Inventories Actual 3032M Forecast \u2014 195M Previous \u2014 2527M",
-    "description": "EIA Distillate Inventories Actual 3032M Forecast \u2014 195M Previous \u2014 2527M",
+    "title": "EIA Distillate Inventories Actual 3032M Forecast — 195M Previous — 2527M",
+    "description": "EIA Distillate Inventories Actual 3032M Forecast — 195M Previous — 2527M",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -6868,8 +6868,8 @@
   },
   {
     "id": "seed-325",
-    "title": "The agreement with Iran is very similar to the understandings in Gaza and Lebanon \u2014 Israeli Channel 12",
-    "description": "The agreement with Iran is very similar to the understandings in Gaza and Lebanon \u2014 Israeli Channel 12",
+    "title": "The agreement with Iran is very similar to the understandings in Gaza and Lebanon — Israeli Channel 12",
+    "description": "The agreement with Iran is very similar to the understandings in Gaza and Lebanon — Israeli Channel 12",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -6995,8 +6995,8 @@
   },
   {
     "id": "seed-332",
-    "title": "Senior Iranian Official Irans initial response to the US proposal is not positive but Tehran is still reviewing the proposal \u2014 Sources",
-    "description": "Senior Iranian Official Irans initial response to the US proposal is not positive but Tehran is still reviewing the proposal \u2014 Sources",
+    "title": "Senior Iranian Official Irans initial response to the US proposal is not positive but Tehran is still reviewing the proposal — Sources",
+    "description": "Senior Iranian Official Irans initial response to the US proposal is not positive but Tehran is still reviewing the proposal — Sources",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7016,8 +7016,8 @@
   },
   {
     "id": "seed-333",
-    "title": "Some US troops in the Middle East relocated to hotels and offices \u2014 NYT",
-    "description": "Some US troops in the Middle East relocated to hotels and offices \u2014 NYT",
+    "title": "Some US troops in the Middle East relocated to hotels and offices — NYT",
+    "description": "Some US troops in the Middle East relocated to hotels and offices — NYT",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7037,8 +7037,8 @@
   },
   {
     "id": "seed-334",
-    "title": "SpaceX aims to file for IPO as soon as this week \u2014 The Information",
-    "description": "SpaceX aims to file for IPO as soon as this week \u2014 The Information",
+    "title": "SpaceX aims to file for IPO as soon as this week — The Information",
+    "description": "SpaceX aims to file for IPO as soon as this week — The Information",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -7120,8 +7120,8 @@
   },
   {
     "id": "seed-340",
-    "title": "US 7 Year High Yield Actual 4255 Forecast \u2014 Previous 3790",
-    "description": "US 7 Year High Yield Actual 4255 Forecast \u2014 Previous 3790",
+    "title": "US 7 Year High Yield Actual 4255 Forecast — Previous 3790",
+    "description": "US 7 Year High Yield Actual 4255 Forecast — Previous 3790",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -7205,8 +7205,8 @@
   },
   {
     "id": "seed-347",
-    "title": "US Central Command Our forces are striking targets to weaken the Iranian regimes infrastructure and military capabilities \u2014 Al Jazeera",
-    "description": "US Central Command Our forces are striking targets to weaken the Iranian regimes infrastructure and military capabilities \u2014 Al Jazeera",
+    "title": "US Central Command Our forces are striking targets to weaken the Iranian regimes infrastructure and military capabilities — Al Jazeera",
+    "description": "US Central Command Our forces are striking targets to weaken the Iranian regimes infrastructure and military capabilities — Al Jazeera",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7309,8 +7309,8 @@
   },
   {
     "id": "seed-353",
-    "title": "Meta platforms to lay off hundreds \u2014 Information",
-    "description": "Meta platforms to lay off hundreds \u2014 Information",
+    "title": "Meta platforms to lay off hundreds — Information",
+    "description": "Meta platforms to lay off hundreds — Information",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -7330,8 +7330,8 @@
   },
   {
     "id": "seed-354",
-    "title": "US 4 Week Bill High Yield Actual 362 Forecast \u2014 Previous 3615",
-    "description": "US 4 Week Bill High Yield Actual 362 Forecast \u2014 Previous 3615",
+    "title": "US 4 Week Bill High Yield Actual 362 Forecast — Previous 3615",
+    "description": "US 4 Week Bill High Yield Actual 362 Forecast — Previous 3615",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -7393,8 +7393,8 @@
   },
   {
     "id": "seed-357",
-    "title": "OpenAI CFO Sarah Friar We are going to raise more than 120 billion \u2014 CNBC interview",
-    "description": "OpenAI CFO Sarah Friar We are going to raise more than 120 billion \u2014 CNBC interview",
+    "title": "OpenAI CFO Sarah Friar We are going to raise more than 120 billion — CNBC interview",
+    "description": "OpenAI CFO Sarah Friar We are going to raise more than 120 billion — CNBC interview",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -7413,8 +7413,8 @@
   },
   {
     "id": "seed-358",
-    "title": "US 5 Year Note Bid to Cover Actual 2290 Forecast \u2014 Previous 2320",
-    "description": "US 5 Year Note Bid to Cover Actual 2290 Forecast \u2014 Previous 2320",
+    "title": "US 5 Year Note Bid to Cover Actual 2290 Forecast — Previous 2320",
+    "description": "US 5 Year Note Bid to Cover Actual 2290 Forecast — Previous 2320",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -7454,8 +7454,8 @@
   },
   {
     "id": "seed-360",
-    "title": "Residential area targeted in Iranian capital Tehran rescuers searching rubble \u2014 semi official SNN news agency",
-    "description": "Residential area targeted in Iranian capital Tehran rescuers searching rubble \u2014 semi official SNN news agency",
+    "title": "Residential area targeted in Iranian capital Tehran rescuers searching rubble — semi official SNN news agency",
+    "description": "Residential area targeted in Iranian capital Tehran rescuers searching rubble — semi official SNN news agency",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7475,8 +7475,8 @@
   },
   {
     "id": "seed-361",
-    "title": "The US is working to arrange Iran talks in Pakistan this weekend \u2014 CNN citing two senior administration officials",
-    "description": "The US is working to arrange Iran talks in Pakistan this weekend \u2014 CNN citing two senior administration officials",
+    "title": "The US is working to arrange Iran talks in Pakistan this weekend — CNN citing two senior administration officials",
+    "description": "The US is working to arrange Iran talks in Pakistan this weekend — CNN citing two senior administration officials",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7496,8 +7496,8 @@
   },
   {
     "id": "seed-363",
-    "title": "Meta grants stock options and restricted stock units to chief product officer Chris Cox \u2014 filing",
-    "description": "Meta grants stock options and restricted stock units to chief product officer Chris Cox \u2014 filing",
+    "title": "Meta grants stock options and restricted stock units to chief product officer Chris Cox — filing",
+    "description": "Meta grants stock options and restricted stock units to chief product officer Chris Cox — filing",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -7517,8 +7517,8 @@
   },
   {
     "id": "seed-365",
-    "title": "There is no confirmed date or venue for possible US Iran talks in Islamabad and Iran has not yet agreed to talks \u2014 Pakistani officials",
-    "description": "There is no confirmed date or venue for possible US Iran talks in Islamabad and Iran has not yet agreed to talks \u2014 Pakistani officials",
+    "title": "There is no confirmed date or venue for possible US Iran talks in Islamabad and Iran has not yet agreed to talks — Pakistani officials",
+    "description": "There is no confirmed date or venue for possible US Iran talks in Islamabad and Iran has not yet agreed to talks — Pakistani officials",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7791,8 +7791,8 @@
   },
   {
     "id": "seed-382",
-    "title": "Ships loaded with LNG and stuck in the Middle East are losing product to evaporation \u2014 Mitsui OSK Lines",
-    "description": "Ships loaded with LNG and stuck in the Middle East are losing product to evaporation \u2014 Mitsui OSK Lines",
+    "title": "Ships loaded with LNG and stuck in the Middle East are losing product to evaporation — Mitsui OSK Lines",
+    "description": "Ships loaded with LNG and stuck in the Middle East are losing product to evaporation — Mitsui OSK Lines",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7873,8 +7873,8 @@
   },
   {
     "id": "seed-386",
-    "title": "Crypto Fear \u2014 Greed Index 14100 \u2014 Extreme Fear",
-    "description": "Crypto Fear \u2014 Greed Index 14100 \u2014 Extreme Fear",
+    "title": "Crypto Fear — Greed Index 14100 — Extreme Fear",
+    "description": "Crypto Fear — Greed Index 14100 — Extreme Fear",
     "date": "2026-03-28",
     "category": "market-structure",
     "severity": "medium",
@@ -7916,8 +7916,8 @@
   },
   {
     "id": "seed-389",
-    "title": "Israels Prime Minister Netanyahu ordered maximum effort to be made in the next 48 hours to destroy as much as possible of Irans weapons industry \u2014 NYT citing sources",
-    "description": "Israels Prime Minister Netanyahu ordered maximum effort to be made in the next 48 hours to destroy as much as possible of Irans weapons industry \u2014 NYT citing sources",
+    "title": "Israels Prime Minister Netanyahu ordered maximum effort to be made in the next 48 hours to destroy as much as possible of Irans weapons industry — NYT citing sources",
+    "description": "Israels Prime Minister Netanyahu ordered maximum effort to be made in the next 48 hours to destroy as much as possible of Irans weapons industry — NYT citing sources",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -7937,8 +7937,8 @@
   },
   {
     "id": "seed-392",
-    "title": "OpenAI backed company at 650 million valuation Isara said \u2014 WSJ",
-    "description": "OpenAI backed company at 650 million valuation Isara said \u2014 WSJ",
+    "title": "OpenAI backed company at 650 million valuation Isara said — WSJ",
+    "description": "OpenAI backed company at 650 million valuation Isara said — WSJ",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -8001,8 +8001,8 @@
   },
   {
     "id": "seed-395",
-    "title": "Meta CEO Mark Zuckerberg Oracles Larry Ellison to be named to Trumps tech panel White House official says \u2014 WSJ",
-    "description": "Meta CEO Mark Zuckerberg Oracles Larry Ellison to be named to Trumps tech panel White House official says \u2014 WSJ",
+    "title": "Meta CEO Mark Zuckerberg Oracles Larry Ellison to be named to Trumps tech panel White House official says — WSJ",
+    "description": "Meta CEO Mark Zuckerberg Oracles Larry Ellison to be named to Trumps tech panel White House official says — WSJ",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -8044,8 +8044,8 @@
   },
   {
     "id": "seed-398",
-    "title": "Meta \u2014 expanding Facebook affiliate partnerships to more test partners such as Amazon and eBay in United States Mercado Libre in Latin America Shopee in Asia",
-    "description": "Meta \u2014 expanding Facebook affiliate partnerships to more test partners such as Amazon and eBay in United States Mercado Libre in Latin America Shopee in Asia",
+    "title": "Meta — expanding Facebook affiliate partnerships to more test partners such as Amazon and eBay in United States Mercado Libre in Latin America Shopee in Asia",
+    "description": "Meta — expanding Facebook affiliate partnerships to more test partners such as Amazon and eBay in United States Mercado Libre in Latin America Shopee in Asia",
     "date": "2026-03-28",
     "category": "earnings",
     "severity": "medium",
@@ -8107,8 +8107,8 @@
   },
   {
     "id": "seed-401",
-    "title": "Foreign Investment Japanese Stocks Actual \u2014 25097B Forecast \u2014 Previous \u2014 17726B",
-    "description": "Foreign Investment Japanese Stocks Actual \u2014 25097B Forecast \u2014 Previous \u2014 17726B",
+    "title": "Foreign Investment Japanese Stocks Actual — 25097B Forecast — Previous — 17726B",
+    "description": "Foreign Investment Japanese Stocks Actual — 25097B Forecast — Previous — 17726B",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "medium",
@@ -8127,8 +8127,8 @@
   },
   {
     "id": "seed-403",
-    "title": "Wittkov and Kushner are working on a mechanism to stop the fighting in Iran \u2014 Israeli Channel 12",
-    "description": "Wittkov and Kushner are working on a mechanism to stop the fighting in Iran \u2014 Israeli Channel 12",
+    "title": "Wittkov and Kushner are working on a mechanism to stop the fighting in Iran — Israeli Channel 12",
+    "description": "Wittkov and Kushner are working on a mechanism to stop the fighting in Iran — Israeli Channel 12",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -8356,8 +8356,8 @@
   },
   {
     "id": "seed-422",
-    "title": "US 4 Week Bill Bid to Cover Actual 303 Forecast \u2014 Previous 3120",
-    "description": "US 4 Week Bill Bid to Cover Actual 303 Forecast \u2014 Previous 3120",
+    "title": "US 4 Week Bill Bid to Cover Actual 303 Forecast — Previous 3120",
+    "description": "US 4 Week Bill Bid to Cover Actual 303 Forecast — Previous 3120",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -8376,8 +8376,8 @@
   },
   {
     "id": "seed-424",
-    "title": "Fear \u2014 Greed Index 21100 \u2014 Extreme Fear",
-    "description": "Fear \u2014 Greed Index 21100 \u2014 Extreme Fear",
+    "title": "Fear — Greed Index 21100 — Extreme Fear",
+    "description": "Fear — Greed Index 21100 — Extreme Fear",
     "date": "2026-03-28",
     "category": "market-structure",
     "severity": "medium",
@@ -8522,8 +8522,8 @@
   },
   {
     "id": "seed-432",
-    "title": "US Envoy Witkoff We will see where things lead and \u2014 if we can convince Iran that there are no other good alternatives",
-    "description": "US Envoy Witkoff We will see where things lead and \u2014 if we can convince Iran that there are no other good alternatives",
+    "title": "US Envoy Witkoff We will see where things lead and — if we can convince Iran that there are no other good alternatives",
+    "description": "US Envoy Witkoff We will see where things lead and — if we can convince Iran that there are no other good alternatives",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -8543,8 +8543,8 @@
   },
   {
     "id": "seed-433",
-    "title": "White House Official Presidents Council of Advisors on Science and Technology will start with 13 members \u2014 WSJ",
-    "description": "White House Official Presidents Council of Advisors on Science and Technology will start with 13 members \u2014 WSJ",
+    "title": "White House Official Presidents Council of Advisors on Science and Technology will start with 13 members — WSJ",
+    "description": "White House Official Presidents Council of Advisors on Science and Technology will start with 13 members — WSJ",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -8563,8 +8563,8 @@
   },
   {
     "id": "seed-434",
-    "title": "The council will weigh in on AI policy and other tech issues White House official says \u2014 WSJ",
-    "description": "The council will weigh in on AI policy and other tech issues White House official says \u2014 WSJ",
+    "title": "The council will weigh in on AI policy and other tech issues White House official says — WSJ",
+    "description": "The council will weigh in on AI policy and other tech issues White House official says — WSJ",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -8604,8 +8604,8 @@
   },
   {
     "id": "seed-438",
-    "title": "US 30 year fixed rate mortgage averages 638 March 26th week highest since September 4th 2025 week vs 622 prior week \u2014 Freddie Mac",
-    "description": "US 30 year fixed rate mortgage averages 638 March 26th week highest since September 4th 2025 week vs 622 prior week \u2014 Freddie Mac",
+    "title": "US 30 year fixed rate mortgage averages 638 March 26th week highest since September 4th 2025 week vs 622 prior week — Freddie Mac",
+    "description": "US 30 year fixed rate mortgage averages 638 March 26th week highest since September 4th 2025 week vs 622 prior week — Freddie Mac",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -8624,8 +8624,8 @@
   },
   {
     "id": "seed-439",
-    "title": "Drones from Russian airspace hit Estonian and Latvian territory \u2014 NYT Reporter citing Authorities",
-    "description": "Drones from Russian airspace hit Estonian and Latvian territory \u2014 NYT Reporter citing Authorities",
+    "title": "Drones from Russian airspace hit Estonian and Latvian territory — NYT Reporter citing Authorities",
+    "description": "Drones from Russian airspace hit Estonian and Latvian territory — NYT Reporter citing Authorities",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -8771,8 +8771,8 @@
   },
   {
     "id": "seed-447",
-    "title": "ECBs President Lagarde We are facing a real shock \u2014 The Economist",
-    "description": "ECBs President Lagarde We are facing a real shock \u2014 The Economist",
+    "title": "ECBs President Lagarde We are facing a real shock — The Economist",
+    "description": "ECBs President Lagarde We are facing a real shock — The Economist",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "medium",
@@ -8812,8 +8812,8 @@
   },
   {
     "id": "seed-449",
-    "title": "US House Speaker Johnson Operation Epic Fury is almost done \u2014 Politico Reporter on X",
-    "description": "US House Speaker Johnson Operation Epic Fury is almost done \u2014 Politico Reporter on X",
+    "title": "US House Speaker Johnson Operation Epic Fury is almost done — Politico Reporter on X",
+    "description": "US House Speaker Johnson Operation Epic Fury is almost done — Politico Reporter on X",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -9041,8 +9041,8 @@
   },
   {
     "id": "seed-465",
-    "title": "US 7 Year Bid to Cover Actual 243 Forecast \u2014 Previous 2500",
-    "description": "US 7 Year Bid to Cover Actual 243 Forecast \u2014 Previous 2500",
+    "title": "US 7 Year Bid to Cover Actual 243 Forecast — Previous 2500",
+    "description": "US 7 Year Bid to Cover Actual 243 Forecast — Previous 2500",
     "date": "2026-03-28",
     "category": "macroeconomic",
     "severity": "medium",
@@ -9103,8 +9103,8 @@
   },
   {
     "id": "seed-471",
-    "title": "Mossads Director Bamea believes that regime change in Iran will take a full year \u2014 The Jerusalem Post",
-    "description": "Mossads Director Bamea believes that regime change in Iran will take a full year \u2014 The Jerusalem Post",
+    "title": "Mossads Director Bamea believes that regime change in Iran will take a full year — The Jerusalem Post",
+    "description": "Mossads Director Bamea believes that regime change in Iran will take a full year — The Jerusalem Post",
     "date": "2026-03-28",
     "category": "geopolitical",
     "severity": "medium",
@@ -9166,8 +9166,8 @@
   },
   {
     "id": "seed-476",
-    "title": "Japanese Foreign Stock Investment Actual 312B Forecast \u2014 Previous 9507B",
-    "description": "Japanese Foreign Stock Investment Actual 312B Forecast \u2014 Previous 9507B",
+    "title": "Japanese Foreign Stock Investment Actual 312B Forecast — Previous 9507B",
+    "description": "Japanese Foreign Stock Investment Actual 312B Forecast — Previous 9507B",
     "date": "2026-03-28",
     "category": "monetary",
     "severity": "medium",
@@ -10418,6 +10418,2584 @@
       "auction"
     ],
     "narrative": "Bond Market Stress",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-494",
+    "title": "FinancialJuice YouTube Channel",
+    "description": "FinancialJuice operates a YouTube channel delivering real-time financial news and trading commentary to market participants.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "media",
+      "trading-news",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-495",
+    "title": "FinancialJuice Twitter/X Profile",
+    "description": "FinancialJuice maintains an active presence on X (Twitter) distributing breaking financial headlines to traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "media",
+      "social",
+      "trading-news"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-496",
+    "title": "FinancialJuice Discord Server",
+    "description": "FinancialJuice hosts a Discord community for real-time discussion of financial news and market events among traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "media",
+      "community",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-497",
+    "title": "Risk-on Risk-off Part 2",
+    "description": "FinancialJuice publishes educational content on risk-on and risk-off market dynamics relevant to cross-asset trading decisions.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY",
+      "/ZN"
+    ],
+    "tags": [
+      "risk-sentiment",
+      "education",
+      "macro"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-498",
+    "title": "US Markets Archive",
+    "description": "FinancialJuice maintains an archive of US market-related news headlines for historical reference and research.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ"
+    ],
+    "tags": [
+      "US-markets",
+      "archive",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-499",
+    "title": "FinancialJuice Android App on Google Play",
+    "description": "FinancialJuice is available as a mobile application on Android, extending real-time financial news access to mobile traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "mobile",
+      "platform",
+      "fintech"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-500",
+    "title": "FinancialJuice Economic Calendar",
+    "description": "FinancialJuice provides an integrated economic calendar to help traders anticipate and react to scheduled macro data releases.",
+    "date": "2026-03-01",
+    "category": "macroeconomic",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "economic-calendar",
+      "macro",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-501",
+    "title": "FinancialJuice Customer Reviews",
+    "description": "User reviews of FinancialJuice reflect the platform's reputation among active traders for speed and accuracy of financial news delivery.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "reviews",
+      "fintech"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-502",
+    "title": "FinancialJuice Daily Dose",
+    "description": "The Daily Dose is a recurring FinancialJuice feature summarizing key market themes and catalysts for the trading day.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ"
+    ],
+    "tags": [
+      "daily-brief",
+      "market-summary",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-503",
+    "title": "How to Use FinancialJuice Features",
+    "description": "FinancialJuice provides onboarding documentation to help traders maximize use of its real-time financial news and alert tools.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "education",
+      "onboarding"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-504",
+    "title": "FinancialJuice News Feed",
+    "description": "The FinancialJuice news feed aggregates breaking financial headlines in real time to support active trading decisions.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "news-feed",
+      "real-time"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-505",
+    "title": "FinancialJuice Chrome Extension",
+    "description": "The FinancialJuice Chrome widget delivers real-time financial news alerts directly within the browser for traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "browser",
+      "fintech"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-506",
+    "title": "FinancialJuice — Your Financial Universe In One Place In Real-Time",
+    "description": "FinancialJuice positions itself as an all-in-one real-time financial news aggregator serving active traders and investors.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "aggregator",
+      "real-time"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-507",
+    "title": "FinancialJuice 0DTE 12-Minute Feature",
+    "description": "FinancialJuice offers a specialized 0DTE options-focused news segment catering to intraday derivatives traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/SPX"
+    ],
+    "tags": [
+      "0DTE",
+      "options",
+      "intraday"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-508",
+    "title": "FinancialJuice Trading Ideas and Scripts on TradingView",
+    "description": "FinancialJuice publishes trading ideas and Pine Script indicators on TradingView to complement its news service.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "TradingView",
+      "scripts",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-509",
+    "title": "FinancialJuice Trial Page",
+    "description": "FinancialJuice offers a free trial subscription allowing traders to evaluate its real-time news and alert capabilities.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "subscription",
+      "trial"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-510",
+    "title": "FinancialJuice Instagram Profile",
+    "description": "FinancialJuice maintains an Instagram presence for trading news highlights and market commentary aimed at retail traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "social",
+      "media",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-511",
+    "title": "FinancialJuice Instagram Trading News Feed",
+    "description": "FinancialJuice's Instagram account distributes curated trading news and market sentiment snapshots to a broad audience.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "social",
+      "media",
+      "trading-news"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-512",
+    "title": "FinancialJuice Crunchbase Company Profile",
+    "description": "FinancialJuice is profiled on Crunchbase as a fintech media company providing real-time financial news for active traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "fintech",
+      "company",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-513",
+    "title": "FinancialJuice Desktop App for Mac and Windows",
+    "description": "FinancialJuice offers a dedicated desktop application for Mac and Windows providing persistent real-time news alerts for traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "desktop",
+      "platform",
+      "fintech"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-514",
+    "title": "FinancialJuice London Facebook Page",
+    "description": "FinancialJuice operates a Facebook page from London distributing financial news and market updates to its community.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "social",
+      "media",
+      "London"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-515",
+    "title": "FinancialJuice Alternative Domain",
+    "description": "FinancialJuice operates an alternative domain (financialjuice.co) as a secondary web presence for its trading news service.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "domain",
+      "fintech"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-516",
+    "title": "FinancialJuice News Site Overview",
+    "description": "FinancialJuice's primary news site aggregates financial headlines across asset classes for traders seeking real-time market intelligence.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "news",
+      "aggregator"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-517",
+    "title": "FinancialJuice Reviews and Pricing 2026",
+    "description": "Third-party review platform F6S profiles FinancialJuice's 2026 pricing and user ratings, reflecting its standing in the fintech news space.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "pricing",
+      "reviews"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-518",
+    "title": "FinancialJuice Twitter Highlights",
+    "description": "FinancialJuice curates highlight clips on X (Twitter) showcasing key market calls and real-time news alerts for traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "social",
+      "highlights",
+      "trading-news"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-519",
+    "title": "FinancialJuice Daily Dose Archive Page 193",
+    "description": "Archived Daily Dose content on FinancialJuice provides historical market commentary spanning over 269 editions for research purposes.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "archive",
+      "daily-brief",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-520",
+    "title": "FinancialJuice News Desk",
+    "description": "The FinancialJuice News Desk serves as the central hub for curated breaking news across equity, macro, and geopolitical categories.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "news-desk",
+      "platform",
+      "breaking-news"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-521",
+    "title": "FinancialJuice Voice News",
+    "description": "FinancialJuice offers a voice-based news delivery feature enabling traders to receive audio alerts for breaking financial headlines.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "voice",
+      "alerts",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-522",
+    "title": "FinancialJuice Review — Breaking Voice and Text Headlines",
+    "description": "A user review highlights FinancialJuice's dual voice and text headline delivery as a key differentiator for active traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "bullish",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "review",
+      "platform",
+      "real-time"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-523",
+    "title": "TraderTV Live — FinancialJuice",
+    "description": "FinancialJuice partners with TraderTV Live to deliver real-time market commentary and breaking news to active trading audiences.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "media",
+      "live-TV",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-524",
+    "title": "Trade Economic Releases with FinancialJuice",
+    "description": "FinancialJuice provides tools and alerts specifically designed to help traders position around scheduled economic data releases.",
+    "date": "2026-03-01",
+    "category": "macroeconomic",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY",
+      "/ZN"
+    ],
+    "tags": [
+      "economic-releases",
+      "trading",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-525",
+    "title": "Alternatives to FinancialJuice 2026",
+    "description": "Third-party site Find My Moat lists competing financial news platforms as alternatives to FinancialJuice, reflecting a competitive fintech media market.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "alternatives",
+      "fintech"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-526",
+    "title": "FinancialJuice X/Twitter Posts",
+    "description": "FinancialJuice's X (Twitter) posts feed delivers continuous breaking financial news and market-moving headlines to followers.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "social",
+      "breaking-news",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-527",
+    "title": "FinancialJuice Example Sections",
+    "description": "FinancialJuice provides example section demonstrations to prospective subscribers showcasing its real-time news layout and features.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "demo",
+      "onboarding"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-528",
+    "title": "FinancialJuice Pro Sign Up",
+    "description": "FinancialJuice Pro offers an upgraded subscription tier with enhanced real-time news features and alerts for professional traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "subscription",
+      "pro"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-529",
+    "title": "Morning Juice US Session Prep 1st October",
+    "description": "FinancialJuice's Morning Juice series provides pre-market session preparation for US equity and futures traders ahead of the open.",
+    "date": "2025-10-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "pre-market",
+      "morning-brief",
+      "US-session"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-530",
+    "title": "FinancialJuice US Markets Archive Page 58",
+    "description": "Archived US markets content on FinancialJuice spans 130 pages, providing a deep historical record of market-moving headlines.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ"
+    ],
+    "tags": [
+      "archive",
+      "US-markets",
+      "platform"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-531",
+    "title": "Morning Juice US Session Prep 25th August",
+    "description": "FinancialJuice's Morning Juice for August 25th covers key overnight developments and data catalysts for the upcoming US trading session.",
+    "date": "2025-08-25",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "pre-market",
+      "morning-brief",
+      "US-session"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-532",
+    "title": "FinancialJuice Pro Lifetime Subscription — 81% Off",
+    "description": "FinancialJuice is offering an 81% discount on a lifetime Pro subscription, significantly lowering the barrier for traders to access premium real-time news.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "bullish",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "subscription",
+      "discount"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-533",
+    "title": "FinancialJuice Twitter Posts and Replies",
+    "description": "FinancialJuice's Twitter posts and replies section captures real-time market reactions and interactive commentary with the trading community.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "social",
+      "community",
+      "trading-news"
+    ],
+    "narrative": "Financial Media Platforms",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-534",
+    "title": "Morning Juice - US Session Prep (11th August)",
+    "description": "Pre-market briefing covering overnight developments and key setups for the US trading session on August 11th.",
+    "date": "2025-08-11",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "session-prep",
+      "briefing",
+      "pre-market"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-535",
+    "title": "Morning Juice - US Session Prep",
+    "description": "Daily pre-market briefing providing an overview of overnight market conditions and key catalysts for the US session.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "session-prep",
+      "briefing",
+      "pre-market"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-536",
+    "title": "FinancialJuice site maintenance notice",
+    "description": "Temporary platform disruption at FinancialJuice may limit real-time news flow to traders relying on the service.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "maintenance",
+      "news-flow"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-537",
+    "title": "WATCH LIVE: Momentum Continues - PreMarket Prep",
+    "description": "Live pre-market show tracking continuation momentum across equities and futures ahead of the US open.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "bullish",
+    "direction": "bullish",
+    "instruments": [
+      "/ES",
+      "/NQ"
+    ],
+    "tags": [
+      "pre-market",
+      "momentum",
+      "live-show"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-538",
+    "title": "ZeroHedge",
+    "description": "ZeroHedge referenced as a source for bearish macro and market news content.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "media",
+      "source"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-539",
+    "title": "Forex Crunch",
+    "description": "Forex Crunch referenced as a currency-focused news and analysis source.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "DXY",
+      "/6E"
+    ],
+    "tags": [
+      "media",
+      "forex",
+      "source"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-540",
+    "title": "Gorilla Futures",
+    "description": "Gorilla Futures cited as a futures trading analysis and education resource.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ"
+    ],
+    "tags": [
+      "media",
+      "futures",
+      "source"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-541",
+    "title": "Unusual Activity",
+    "description": "Unusual options or futures activity tracker flagging potential institutional positioning or informed order flow.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ"
+    ],
+    "tags": [
+      "options",
+      "unusual-activity",
+      "order-flow"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-542",
+    "title": "NinjaTrader",
+    "description": "NinjaTrader referenced as a futures and forex trading platform used by active traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "trading",
+      "futures"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-543",
+    "title": "FJ Elite Sign Up - FJ Pro Sign Up",
+    "description": "FinancialJuice premium subscription tiers promoted for real-time market news and signals access.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "subscription",
+      "platform",
+      "news"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-544",
+    "title": "TheBlueCollarTrader",
+    "description": "TheBlueCollarTrader referenced as a retail-focused trading commentary and education resource.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "media",
+      "retail",
+      "trading"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-545",
+    "title": "Quick Look Across Markets After The Open",
+    "description": "Post-open market snapshot reviewing early price action and sector leadership across equities, bonds, and FX.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY",
+      "/ZN"
+    ],
+    "tags": [
+      "market-open",
+      "overview",
+      "multi-asset"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-546",
+    "title": "China pledges to prevent significant fluctuations in policies",
+    "description": "Chinese government officials signal commitment to policy stability, reducing uncertainty for global markets exposed to China.",
+    "date": "2026-03-05",
+    "category": "geopolitical",
+    "severity": "medium",
+    "sentiment": "bullish",
+    "direction": "bullish",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "china",
+      "policy-stability",
+      "NPC",
+      "government"
+    ],
+    "narrative": "US-China Trade Talks",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-547",
+    "title": "Treasury Secretary Bessent: The US trade deficit contracting",
+    "description": "Bessent frames a shrinking US trade deficit as a policy success under the tariff regime, signaling continued trade hawks stance.",
+    "date": "2025-05-12",
+    "category": "macroeconomic",
+    "severity": "high",
+    "sentiment": "neutral",
+    "direction": "bullish",
+    "instruments": [
+      "DXY",
+      "/ES",
+      "/NQ"
+    ],
+    "tags": [
+      "trade-deficit",
+      "tariffs",
+      "Bessent",
+      "USD"
+    ],
+    "narrative": "Trump Trade & Dollar Policy",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-548",
+    "title": "BREAKING: Treasury Secretary Bessent on the dollar",
+    "description": "Treasury Secretary Bessent makes a major statement on dollar policy, with implications for USD reserve status and FX markets.",
+    "date": "2025-04-22",
+    "category": "monetary",
+    "severity": "high",
+    "sentiment": "bullish",
+    "direction": "bullish",
+    "instruments": [
+      "DXY",
+      "/6E",
+      "/6J",
+      "/ES"
+    ],
+    "tags": [
+      "dollar",
+      "Bessent",
+      "USD",
+      "reserve-currency"
+    ],
+    "narrative": "Trump Trade & Dollar Policy",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-549",
+    "title": "Morning Juice - US Session Prep (30th June)",
+    "description": "Pre-market briefing covering key developments and market setups for the US trading session on June 30th.",
+    "date": "2025-06-30",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "session-prep",
+      "briefing",
+      "pre-market"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-550",
+    "title": "The Treasury has a big toolkit and could boost buybacks",
+    "description": "Bessent signals Treasury has tools to support markets including expanding bond buyback programs, which would be bullish for duration.",
+    "date": "2025-04-22",
+    "category": "monetary",
+    "severity": "high",
+    "sentiment": "bullish",
+    "direction": "bullish",
+    "instruments": [
+      "/ZN",
+      "/ZB",
+      "/ES",
+      "DXY"
+    ],
+    "tags": [
+      "Treasury",
+      "buybacks",
+      "fiscal",
+      "bonds"
+    ],
+    "narrative": "Trump Trade & Dollar Policy",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-551",
+    "title": "Treasury Secretary Bessent: Dollar reserve currency is part of America's strength",
+    "description": "Bessent reaffirms the US commitment to maintaining dollar reserve currency status, pushing back against de-dollarization fears.",
+    "date": "2025-05-12",
+    "category": "monetary",
+    "severity": "high",
+    "sentiment": "bullish",
+    "direction": "bullish",
+    "instruments": [
+      "DXY",
+      "/6E",
+      "/GC"
+    ],
+    "tags": [
+      "dollar",
+      "reserve-currency",
+      "Bessent",
+      "de-dollarization"
+    ],
+    "narrative": "Trump Trade & Dollar Policy",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-552",
+    "title": "US-China discussions: China receiving energy from the Gulf",
+    "description": "US-China trade talks touched on Gulf energy flows to China, highlighting energy diplomacy as a lever in broader trade negotiations.",
+    "date": "2025-05-12",
+    "category": "geopolitical",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/CL",
+      "/NG",
+      "DXY"
+    ],
+    "tags": [
+      "china",
+      "energy",
+      "gulf",
+      "trade-talks"
+    ],
+    "narrative": "US-China Trade Talks",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-553",
+    "title": "FinancialJuice - Telegram",
+    "description": "FinancialJuice promotes its Telegram channel as a real-time news delivery platform for active traders.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "telegram",
+      "news"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-554",
+    "title": "Treasury Secretary Bessent: We think there is a possibility of a trade deal",
+    "description": "Bessent signals optimism about reaching a trade agreement, potentially with China, offering a risk-on catalyst for equities.",
+    "date": "2025-05-09",
+    "category": "geopolitical",
+    "severity": "high",
+    "sentiment": "bullish",
+    "direction": "bullish",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY",
+      "/CL"
+    ],
+    "tags": [
+      "trade-deal",
+      "Bessent",
+      "tariffs",
+      "china"
+    ],
+    "narrative": "US-China Trade Talks",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-555",
+    "title": "ECB President Lagarde: Cannot say precisely what the ECB will decide next",
+    "description": "Lagarde emphasizes data-dependency and removes forward guidance, increasing near-term policy uncertainty for EUR and European rates.",
+    "date": "2025-06-05",
+    "category": "monetary",
+    "severity": "high",
+    "sentiment": "neutral",
+    "direction": "bearish",
+    "instruments": [
+      "/6E",
+      "DXY",
+      "/ZN"
+    ],
+    "tags": [
+      "ECB",
+      "Lagarde",
+      "forward-guidance",
+      "data-dependent"
+    ],
+    "narrative": "ECB Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-556",
+    "title": "ECB President Lagarde: Monetary policy cannot bring down energy prices",
+    "description": "Lagarde limits ECB's mandate scope on energy inflation, suggesting rate hikes alone won't resolve supply-side price pressures.",
+    "date": "2025-06-05",
+    "category": "monetary",
+    "severity": "medium",
+    "sentiment": "bearish",
+    "direction": "bearish",
+    "instruments": [
+      "/6E",
+      "DXY",
+      "/CL"
+    ],
+    "tags": [
+      "ECB",
+      "energy-inflation",
+      "monetary-policy",
+      "Lagarde"
+    ],
+    "narrative": "ECB Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-557",
+    "title": "Morning Juice - Europe Session Prep",
+    "description": "Pre-market European session briefing covering overnight Asia developments and key catalysts for European trading hours.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "session-prep",
+      "briefing",
+      "europe"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-558",
+    "title": "ECB President Lagarde: The ECB decision was unanimous",
+    "description": "Unanimous ECB vote signals strong internal consensus on the rate decision, reducing near-term dissent risk for EUR traders.",
+    "date": "2025-06-05",
+    "category": "monetary",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/6E",
+      "DXY"
+    ],
+    "tags": [
+      "ECB",
+      "unanimous",
+      "rate-decision",
+      "Lagarde"
+    ],
+    "narrative": "ECB Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-559",
+    "title": "ECB President Lagarde: The ECB does not target the exchange rate",
+    "description": "Lagarde reiterates ECB does not conduct FX policy, distancing the bank from currency manipulation concerns and affirming EUR is market-driven.",
+    "date": "2025-06-05",
+    "category": "monetary",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/6E",
+      "DXY"
+    ],
+    "tags": [
+      "ECB",
+      "exchange-rate",
+      "EUR",
+      "Lagarde"
+    ],
+    "narrative": "ECB Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-560",
+    "title": "ECB President Lagarde: The decision was unanimous",
+    "description": "Repeated confirmation of unanimous ECB decision reinforces policy cohesion and removes split-vote risk from the EUR outlook.",
+    "date": "2025-06-05",
+    "category": "monetary",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/6E",
+      "DXY"
+    ],
+    "tags": [
+      "ECB",
+      "unanimous",
+      "rate-decision",
+      "Lagarde"
+    ],
+    "narrative": "ECB Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-561",
+    "title": "ECB President Lagarde: ECB does not target exchange rate",
+    "description": "Lagarde's reiteration that the ECB has no EUR target reinforces the bank's inflation-first mandate and limits FX intervention speculation.",
+    "date": "2025-06-05",
+    "category": "monetary",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/6E",
+      "DXY"
+    ],
+    "tags": [
+      "ECB",
+      "EUR",
+      "exchange-rate",
+      "mandate"
+    ],
+    "narrative": "ECB Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-562",
+    "title": "Morning Juice - US Session Prep (25th March)",
+    "description": "Pre-market briefing covering overnight developments and key setups for the US trading session on March 25th.",
+    "date": "2026-03-25",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "session-prep",
+      "briefing",
+      "pre-market"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-563",
+    "title": "Morning Juice - US Session Prep (24th March)",
+    "description": "Pre-market briefing covering overnight developments and key setups for the US trading session on March 24th.",
+    "date": "2026-03-24",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "session-prep",
+      "briefing",
+      "pre-market"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-564",
+    "title": "Morning Juice - US Session Prep (6th March)",
+    "description": "Pre-market briefing covering overnight developments and key setups for the US trading session on March 6th.",
+    "date": "2026-03-06",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "session-prep",
+      "briefing",
+      "pre-market"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-565",
+    "title": "Morning Juice - US Session Prep (5th May)",
+    "description": "Pre-market briefing covering overnight developments and key setups for the US trading session on May 5th.",
+    "date": "2025-05-05",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "session-prep",
+      "briefing",
+      "pre-market"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-566",
+    "title": "Morning Juice - US Session Prep (7th January)",
+    "description": "Pre-market briefing covering overnight developments and key setups for the US trading session on January 7th.",
+    "date": "2026-01-07",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "session-prep",
+      "briefing",
+      "pre-market"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-567",
+    "title": "University of Michigan Sentiment Final: 56.6 (Forecast 57.3)",
+    "description": "Final UMich consumer sentiment missed expectations at 56.6 vs 57.3 forecast, reinforcing a trend of softening consumer confidence amid inflation and tariff concerns.",
+    "date": "2025-06-27",
+    "category": "macroeconomic",
+    "severity": "medium",
+    "sentiment": "bearish",
+    "direction": "bearish",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY",
+      "/ZN"
+    ],
+    "tags": [
+      "UMich",
+      "consumer-confidence",
+      "sentiment",
+      "miss"
+    ],
+    "narrative": "US Consumer Weakness",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-568",
+    "title": "FinancialJuice - Your Financial Universe In One Place",
+    "description": "FinancialJuice homepage tagline describing its aggregation of real-time financial news and market data.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "platform",
+      "news",
+      "aggregation"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-569",
+    "title": "Major Event Archives",
+    "description": "FinancialJuice archive of major market-moving events providing historical context for recurring macro and geopolitical catalysts.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [],
+    "tags": [
+      "archive",
+      "events",
+      "historical"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-570",
+    "title": "US Interest Rate Prep",
+    "description": "Pre-event briefing outlining Fed rate decision expectations, market positioning, and key macro data points ahead of the FOMC announcement.",
+    "date": "2026-03-01",
+    "category": "monetary",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ZN",
+      "/ZB",
+      "/ES",
+      "DXY"
+    ],
+    "tags": [
+      "Fed",
+      "FOMC",
+      "rate-decision",
+      "briefing"
+    ],
+    "narrative": "Fed Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-571",
+    "title": "Forex Live",
+    "description": "Forex Live cited as a real-time FX news and analysis source covering major currency pairs and central bank commentary.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "DXY",
+      "/6E",
+      "/6J"
+    ],
+    "tags": [
+      "media",
+      "forex",
+      "source"
+    ],
+    "narrative": "Market Information Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-572",
+    "title": "US Interest Rate Prep (Wednesday 30th July)",
+    "description": "Pre-FOMC briefing covering market expectations and positioning ahead of the July 30th Fed interest rate decision.",
+    "date": "2025-07-30",
+    "category": "monetary",
+    "severity": "high",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ZN",
+      "/ZB",
+      "/ES",
+      "DXY"
+    ],
+    "tags": [
+      "Fed",
+      "FOMC",
+      "rate-decision",
+      "July"
+    ],
+    "narrative": "Fed Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-573",
+    "title": "Trading Pub",
+    "description": "General trading publication digest with no specific market-moving event identified.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ"
+    ],
+    "tags": [
+      "general",
+      "market-prep"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-574",
+    "title": "Week Ahead: Economic Indicators (US)",
+    "description": "Preview of upcoming US economic data releases that will set the tone for macro trading decisions.",
+    "date": "2026-03-01",
+    "category": "macroeconomic",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "economic-calendar",
+      "week-ahead",
+      "macro-preview"
+    ],
+    "narrative": "US Macro Data Watch",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-575",
+    "title": "Morning Juice - US Session Prep (3rd October)",
+    "description": "Pre-market session briefing covering key levels, catalysts, and positioning for the US equity open.",
+    "date": "2024-10-03",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "session-prep",
+      "morning-brief",
+      "market-open"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-576",
+    "title": "Morning Juice - US Session Prep (3rd June)",
+    "description": "Pre-market session briefing covering key levels, catalysts, and positioning for the US equity open.",
+    "date": "2025-06-03",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "session-prep",
+      "morning-brief",
+      "market-open"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-577",
+    "title": "US Week Ahead Archives",
+    "description": "Historical archive of weekly US economic and market event previews used for backtesting and context.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN"
+    ],
+    "tags": [
+      "archive",
+      "week-ahead",
+      "macro-preview"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-578",
+    "title": "Daily Dose - Archive Page",
+    "description": "Archived daily market commentary digest with no specific market-moving event identified.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES"
+    ],
+    "tags": [
+      "archive",
+      "daily-brief"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-579",
+    "title": "US Interest Rate Prep",
+    "description": "Briefing note preparing traders for an upcoming Federal Reserve interest rate decision and its potential market impact.",
+    "date": "2026-03-01",
+    "category": "monetary",
+    "severity": "high",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "FOMC",
+      "interest-rates",
+      "fed-prep",
+      "monetary-policy"
+    ],
+    "narrative": "Fed Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-580",
+    "title": "Morning Juice - US Session Prep (26th June)",
+    "description": "Pre-market session briefing covering key levels, catalysts, and positioning for the US equity open.",
+    "date": "2025-06-26",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "session-prep",
+      "morning-brief",
+      "market-open"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-581",
+    "title": "Morning Juice - US Session Prep (23rd September)",
+    "description": "Pre-market briefing coinciding with a period of elevated Fed uncertainty ahead of the September FOMC decision.",
+    "date": "2024-09-23",
+    "category": "market-structure",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "session-prep",
+      "FOMC-week",
+      "morning-brief"
+    ],
+    "narrative": "Fed Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-582",
+    "title": "Daily Dose - Archive Page",
+    "description": "Archived daily market commentary digest with no specific market-moving event identified.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES"
+    ],
+    "tags": [
+      "archive",
+      "daily-brief"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-583",
+    "title": "Morning Juice - US Session Prep (19th May)",
+    "description": "Pre-market session briefing covering key levels, catalysts, and positioning for the US equity open.",
+    "date": "2025-05-19",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "session-prep",
+      "morning-brief",
+      "market-open"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-584",
+    "title": "Morning Juice - US Session Prep (9th October)",
+    "description": "Pre-market session briefing covering key levels, catalysts, and positioning for the US equity open.",
+    "date": "2024-10-09",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "session-prep",
+      "morning-brief",
+      "market-open"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-585",
+    "title": "Published data shows economy on the same trajectory",
+    "description": "Fed official or analyst notes that incoming data confirms the economy is tracking its prior path, reducing urgency for policy change.",
+    "date": "2025-06-01",
+    "category": "macroeconomic",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "fed-commentary",
+      "economic-data",
+      "gdp",
+      "macro-trajectory"
+    ],
+    "narrative": "Fed Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-586",
+    "title": "If we stay restrictive for too long, we will likely see economic damage",
+    "description": "Fed official warns that prolonged restrictive monetary policy risks unnecessary harm to the labor market and growth outlook.",
+    "date": "2025-03-01",
+    "category": "monetary",
+    "severity": "high",
+    "sentiment": "bearish",
+    "direction": "bullish",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "fed-warning",
+      "dovish-signal",
+      "rate-cut",
+      "over-tightening"
+    ],
+    "narrative": "Fed Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-587",
+    "title": "US Interest Rate Decision Prep",
+    "description": "Comprehensive briefing for traders ahead of a Federal Reserve interest rate announcement with rate path implications.",
+    "date": "2025-01-01",
+    "category": "monetary",
+    "severity": "high",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "FOMC",
+      "interest-rates",
+      "fed-prep",
+      "monetary-policy"
+    ],
+    "narrative": "Fed Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-588",
+    "title": "Possibility that the next Fed move might be a hike did come up",
+    "description": "FOMC minutes or commentary revealed internal discussion of a potential rate hike as an option, signaling a hawkish undercurrent in Fed deliberations.",
+    "date": "2024-11-01",
+    "category": "monetary",
+    "severity": "high",
+    "sentiment": "bearish",
+    "direction": "bearish",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "rate-hike-risk",
+      "FOMC",
+      "hawkish",
+      "fed-minutes"
+    ],
+    "narrative": "Fed Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-589",
+    "title": "US Interest Rate & SEP Prep",
+    "description": "Pre-FOMC briefing incorporating the Summary of Economic Projections (dot plot), setting expectations for rate path and terminal rate guidance.",
+    "date": "2024-12-01",
+    "category": "monetary",
+    "severity": "high",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "FOMC",
+      "SEP",
+      "dot-plot",
+      "rate-path"
+    ],
+    "narrative": "Fed Rate Cycle",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-590",
+    "title": "Daily Dose - Archive Page",
+    "description": "Archived daily market commentary digest with no specific market-moving event identified.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES"
+    ],
+    "tags": [
+      "archive",
+      "daily-brief"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-591",
+    "title": "Iran: US stepped up efforts to secure a ceasefire",
+    "description": "The United States intensified diplomatic engagement to broker a ceasefire in the Iran conflict, signaling potential de-escalation risk premium in oil.",
+    "date": "2025-10-01",
+    "category": "geopolitical",
+    "severity": "high",
+    "sentiment": "bullish",
+    "direction": "bullish",
+    "instruments": [
+      "/CL",
+      "/ES",
+      "/GC",
+      "DXY"
+    ],
+    "tags": [
+      "Iran",
+      "ceasefire",
+      "Middle-East",
+      "oil-risk"
+    ],
+    "narrative": "Middle East Tensions",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-592",
+    "title": "Iran will not accept a ceasefire or any deal that compromises its position",
+    "description": "Iran publicly rejected ceasefire terms, escalating geopolitical risk and threatening sustained supply disruption to regional oil infrastructure.",
+    "date": "2025-10-01",
+    "category": "geopolitical",
+    "severity": "high",
+    "sentiment": "bearish",
+    "direction": "bearish",
+    "instruments": [
+      "/CL",
+      "/ES",
+      "/GC",
+      "DXY"
+    ],
+    "tags": [
+      "Iran",
+      "no-ceasefire",
+      "escalation",
+      "oil-disruption"
+    ],
+    "narrative": "Middle East Tensions",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-593",
+    "title": "FinancialJuice on X",
+    "description": "Social media feed update from FinancialJuice with no specific standalone market event.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES"
+    ],
+    "tags": [
+      "social-media",
+      "market-commentary"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-594",
+    "title": "Israel interested in wide-scale attacks on Iran's energy facilities",
+    "description": "Reports of Israeli intent to strike Iranian energy infrastructure raised the prospect of a major oil supply shock and sharp geopolitical risk-off move.",
+    "date": "2025-10-15",
+    "category": "geopolitical",
+    "severity": "high",
+    "sentiment": "bearish",
+    "direction": "bearish",
+    "instruments": [
+      "/CL",
+      "/ES",
+      "/GC",
+      "DXY"
+    ],
+    "tags": [
+      "Israel",
+      "Iran",
+      "energy-strike",
+      "oil-shock"
+    ],
+    "narrative": "Middle East Tensions",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-595",
+    "title": "MOC Imbalance",
+    "description": "Market-on-close imbalance data released, indicating directional order flow pressure into the equity close that may create end-of-day volatility.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ"
+    ],
+    "tags": [
+      "MOC",
+      "close-imbalance",
+      "order-flow",
+      "equity-close"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-596",
+    "title": "Today's Economic Calendar",
+    "description": "Daily economic event schedule highlighting scheduled data releases and Fed speakers that will drive intraday market volatility.",
+    "date": "2026-03-01",
+    "category": "macroeconomic",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "economic-calendar",
+      "daily-schedule",
+      "data-releases"
+    ],
+    "narrative": "US Macro Data Watch",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-597",
+    "title": "US Commerce Secretary Lutnick: Fundamentals of trade with EU are sound",
+    "description": "Commerce Secretary Lutnick signaled constructive underlying conditions for a US-EU trade framework, tempering fears of a full transatlantic tariff escalation.",
+    "date": "2025-09-01",
+    "category": "geopolitical",
+    "severity": "medium",
+    "sentiment": "bullish",
+    "direction": "bullish",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY",
+      "EURUSD"
+    ],
+    "tags": [
+      "trade-deal",
+      "EU",
+      "Lutnick",
+      "tariff-relief"
+    ],
+    "narrative": "Trump Tariff War",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-598",
+    "title": "First trade deal must be with a top 10 economy",
+    "description": "Trump administration official stated the US would prioritize concluding its first trade agreement with a major top-10 global economy, shaping near-term bilateral negotiation timelines.",
+    "date": "2025-08-01",
+    "category": "geopolitical",
+    "severity": "medium",
+    "sentiment": "bullish",
+    "direction": "bullish",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "trade-deal",
+      "priority",
+      "bilateral",
+      "tariff-strategy"
+    ],
+    "narrative": "Trump Tariff War",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-599",
+    "title": "FinancialJuice Telegram Channel",
+    "description": "Telegram feed update from FinancialJuice with no specific standalone market event.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES"
+    ],
+    "tags": [
+      "social-media",
+      "market-commentary"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-600",
+    "title": "Morning Juice - US Session Prep (5th June)",
+    "description": "Pre-market session briefing covering key levels, catalysts, and positioning for the US equity open.",
+    "date": "2025-06-05",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "session-prep",
+      "morning-brief",
+      "market-open"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-601",
+    "title": "US Core PCE Prices Prelim Actual 2.7% (in-line with forecast)",
+    "description": "Preliminary Core PCE year-over-year came in at 2.7% as forecast, consistent with the Fed's view of sticky but stabilizing inflation above the 2% target.",
+    "date": "2025-09-01",
+    "category": "macroeconomic",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/ZN",
+      "DXY"
+    ],
+    "tags": [
+      "core-PCE",
+      "inflation",
+      "2pct-target",
+      "sticky-inflation"
+    ],
+    "narrative": "Inflation Watch",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-602",
+    "title": "Morning Juice - US Session Prep (8th August)",
+    "description": "Pre-market briefing during the August 2024 volatility spike driven by Yen carry trade unwind, covering elevated risk and key support levels.",
+    "date": "2024-08-08",
+    "category": "market-structure",
+    "severity": "high",
+    "sentiment": "bearish",
+    "direction": "bearish",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "USDJPY",
+      "/VX"
+    ],
+    "tags": [
+      "session-prep",
+      "yen-carry",
+      "volatility-spike",
+      "risk-off"
+    ],
+    "narrative": "Yen Carry Trade Unwind",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-603",
+    "title": "FinancialJuice Japanese Translation Log — 2026-01-21",
+    "description": "Japanese-language translation log of FinancialJuice content for the week of January 21, 2026, with no standalone market-moving event.",
+    "date": "2026-01-21",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "USDJPY"
+    ],
+    "tags": [
+      "japan",
+      "translation-log",
+      "market-commentary"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-604",
+    "title": "Chinese Trade Negotiator Li on talks with the US",
+    "description": "China's lead trade negotiator Li commented on the status of US-China trade discussions, with remarks likely indicating either progress or sticking points in tariff negotiations.",
+    "date": "2025-07-01",
+    "category": "geopolitical",
+    "severity": "high",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY",
+      "USDCNH"
+    ],
+    "tags": [
+      "US-China",
+      "trade-talks",
+      "tariffs",
+      "Li-negotiator"
+    ],
+    "narrative": "Trump Tariff War",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-605",
+    "title": "FinancialJuice Japanese Translation Log — 2026-01-16",
+    "description": "Japanese-language translation log of FinancialJuice content for the week of January 16, 2026, with no standalone market-moving event.",
+    "date": "2026-01-16",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "USDJPY"
+    ],
+    "tags": [
+      "japan",
+      "translation-log",
+      "market-commentary"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-606",
+    "title": "FinancialJuice Japanese Translation Log — 2026-01-21",
+    "description": "Japanese-language translation log of FinancialJuice content for the week of January 21, 2026, with no standalone market-moving event.",
+    "date": "2026-01-21",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "USDJPY"
+    ],
+    "tags": [
+      "japan",
+      "translation-log",
+      "market-commentary"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-607",
+    "title": "Morning Juice - US Session Prep (30th October)",
+    "description": "Pre-market session briefing in the final days before the November 2024 US election, covering elevated macro and political volatility.",
+    "date": "2024-10-30",
+    "category": "market-structure",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY"
+    ],
+    "tags": [
+      "session-prep",
+      "pre-election",
+      "morning-brief",
+      "political-risk"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-608",
+    "title": "US Index Futures Implied Volatility",
+    "description": "Snapshot of implied volatility levels across US equity index futures, indicating current market pricing of expected near-term price swings.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "/RTY",
+      "/VX"
+    ],
+    "tags": [
+      "implied-vol",
+      "options",
+      "volatility-surface",
+      "risk-pricing"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-609",
+    "title": "FX Implied Volatility",
+    "description": "FX options implied volatility update showing expected currency move magnitudes, useful for positioning around macro events and central bank decisions.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "medium",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "DXY",
+      "EURUSD",
+      "USDJPY",
+      "GBPUSD"
+    ],
+    "tags": [
+      "FX-vol",
+      "implied-vol",
+      "options",
+      "currency-risk"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-610",
+    "title": "Today's Implied Volatility Daily Ranges",
+    "description": "Daily expected move ranges derived from options implied volatility for key instruments, helping traders set intraday risk parameters.",
+    "date": "2026-03-01",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY",
+      "/CL"
+    ],
+    "tags": [
+      "implied-vol",
+      "daily-range",
+      "options",
+      "risk-management"
+    ],
+    "narrative": "Market Microstructure & Flow",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-611",
+    "title": "Morning Juice - US Session Prep (27th October)",
+    "description": "Daily US trading session preparation brief covering key macro themes, scheduled data releases, and overnight developments for October 27, 2025.",
+    "date": "2025-10-27",
+    "category": "market-structure",
+    "severity": "low",
+    "sentiment": "neutral",
+    "direction": "neutral",
+    "instruments": [
+      "/ES",
+      "/NQ",
+      "DXY",
+      "/ZN"
+    ],
+    "tags": [
+      "session prep",
+      "market brief",
+      "daily outlook",
+      "US session"
+    ],
+    "narrative": "Daily Market Briefing",
+    "source": "calibration-backfill",
+    "status": "resolved"
+  },
+  {
+    "id": "seed-612",
+    "title": "US Envoy Witkoff negotiating with speaker of the Iranian parliament",
+    "description": "Direct engagement between US special envoy Witkoff and senior Iranian legislative leadership signals active nuclear or sanctions deal negotiations with meaningful implications for oil supply and Middle East risk premium.",
+    "date": "2025-10-27",
+    "category": "geopolitical",
+    "severity": "medium",
+    "sentiment": "bullish",
+    "direction": "bullish",
+    "instruments": [
+      "/CL",
+      "DXY",
+      "/ES",
+      "/NQ"
+    ],
+    "tags": [
+      "Iran",
+      "nuclear deal",
+      "diplomacy",
+      "oil"
+    ],
+    "narrative": "US-Iran Nuclear Deal Talks",
     "source": "calibration-backfill",
     "status": "resolved"
   }
