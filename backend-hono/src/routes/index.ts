@@ -42,6 +42,7 @@ import { createProfileRoutes } from './profile/index.js';
 import { createAuthCallbackRoute } from './auth-callback.js';
 import { createCommentatorRoutes } from './commentator/index.js';
 import { createCalibrationRoutes } from './calibration/index.js';
+import predictionsRoutes from './predictions.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -88,6 +89,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/commentator', createCommentatorRoutes());
   // Calibration — scoring weight management, annotations, observations, bulk ingest (public, admin)
   app.route('/api/calibration', createCalibrationRoutes());
+  // Predictions — forward-looking instrument outlook from scored items + econ events
+  app.route('/api/predictions', predictionsRoutes);
 
   // Supabase OAuth callback relay — serves HTML that deep-links back to Electron
   app.route('/api/auth/supabase', createAuthCallbackRoute());

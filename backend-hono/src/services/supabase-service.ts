@@ -660,6 +660,18 @@ export async function readEconPrints(filter?: {
  * Fetch historical econ prints + related scored items for a specific ticker.
  * Used by Sanctum expanded cards to show print history with scoring breakdown.
  */
+// Keyword patterns per econ ticker — used to find relevant FJ tweets in scored items
+const ECON_KEYWORD_MAP: Record<string, string[]> = {
+  CPI: ['cpi', 'consumer price'],
+  PPI: ['ppi', 'producer price'],
+  PI: ['personal income'],
+  GDP: ['gdp', 'gross domestic'],
+  PMI: ['pmi', 'purchasing managers', 'ism manufacturing', 'ism services'],
+  PCE: ['pce', 'personal consumption'],
+  FOMC: ['fomc', 'fed rate', 'federal reserve', 'powell speaks', 'fed holds', 'fed cuts', 'fed hikes'],
+  CUTS: ['traders price in', 'rate cut', 'basis points', 'cuts priced', 'pricing in cuts', 'rate expectations'],
+};
+
 export async function readEconHistory(ticker: string, limit = 10): Promise<{
   prints: EconPrintRecord[];
   scoredItems: ScoredRiskFlowItem[];
@@ -667,20 +679,25 @@ export async function readEconHistory(ticker: string, limit = 10): Promise<{
   const sb = getSupabaseClient();
   if (!sb) return { prints: [], scoredItems: [] };
 
+  // Get keyword patterns for this ticker
+  const keywords = ECON_KEYWORD_MAP[ticker.toUpperCase()] ?? [ticker.toLowerCase()];
+
+  // Build OR filter: headline.ilike.%keyword1%,headline.ilike.%keyword2%,...
+  const orFilter = keywords.map(kw => `headline.ilike.%${kw}%`).join(',');
+
   const [printsResult, scoredResult] = await Promise.allSettled([
     sb
       .from('econ_prints')
       .select('*')
-      .ilike('headline', `%${ticker}%`)
+      .or(orFilter)
       .order('printed_at', { ascending: false })
       .limit(limit),
     sb
       .from('scored_riskflow_items')
       .select('*')
-      .contains('tags', ['ECON_DATA'])
-      .ilike('headline', `%${ticker}%`)
+      .or(orFilter)
       .order('created_at', { ascending: false })
-      .limit(limit),
+      .limit(limit * 2),
   ]);
 
   const prints = printsResult.status === 'fulfilled' && !printsResult.value.error

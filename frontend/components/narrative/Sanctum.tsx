@@ -17,6 +17,7 @@ import { SanctumRiskAssessment } from './SanctumRiskAssessment';
 import { CategoryScoreCard } from './CategoryScoreCard';
 import { KanbanTitle } from '../ui/KanbanTitle';
 import { AgentScorecard } from '../consilium/AgentScorecard';
+import { AquariumPredictionCards } from './AquariumPredictionCards';
 
 interface CatalystInput {
   id: string;
@@ -229,7 +230,10 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                   )}
                 </div>
 
-                {/* KPI Row — only when MiroFish data exists */}
+                {/* Prediction Cards — 5 instruments under the chart */}
+                <AquariumPredictionCards />
+
+                {/* KPI Row — only when data exists */}
                 {data && data.compositeIV > 0 && (
                   <div className="shrink-0 flex justify-center">
                     <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">

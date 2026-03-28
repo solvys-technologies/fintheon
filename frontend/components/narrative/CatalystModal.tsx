@@ -1,6 +1,7 @@
+// [claude-code 2026-03-28] S7: Proper dropdowns for instruments, tag autocomplete, styled selects
 // [claude-code 2026-03-28] S5-T3: Rich add/edit modal for catalyst cards
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { X, ChevronDown, Check } from 'lucide-react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import type { CatalystCard, NarrativeCategory } from '../../lib/narrative-types';
 
@@ -14,6 +15,15 @@ const CATEGORIES: { value: NarrativeCategory; label: string }[] = [
   { value: 'black-swan', label: 'Black Swan' },
 ];
 
+const ALL_INSTRUMENTS = [
+  '/NQ', '/ES', '/YM', '/RTY', '/CL', '/GC', '/ZB', '/ZN', '/VX',
+  '/6E', '/6J', '/NG', '/MNQ', '/MES', '/MCL',
+  'DXY', 'BTC', 'SPY', 'QQQ', 'IWM', 'TLT', 'GLD',
+  'NVDA', 'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'TSLA',
+  'AMD', 'PLTR', 'ASML', 'JPMC', 'WMT', 'XLE', 'XLF',
+  'VIX', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDCNH',
+];
+
 const DIRECTIONS = ['bullish', 'bearish', 'neutral'] as const;
 const SEVERITIES = ['low', 'medium', 'high'] as const;
 const STATUSES = ['active', 'monitoring', 'resolved'] as const;
@@ -25,7 +35,7 @@ interface CatalystModalProps {
 }
 
 export function CatalystModal({ open, onClose, editCard }: CatalystModalProps) {
-  const { dispatch } = useNarrative();
+  const { state, dispatch } = useNarrative();
   const backdropRef = useRef<HTMLDivElement>(null);
 
   const [title, setTitle] = useState('');
@@ -41,6 +51,10 @@ export function CatalystModal({ open, onClose, editCard }: CatalystModalProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [categoryError, setCategoryError] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [instrumentDropdownOpen, setInstrumentDropdownOpen] = useState(false);
+  const [instrumentFilter, setInstrumentFilter] = useState('');
+  const [tagSuggestionsOpen, setTagSuggestionsOpen] = useState(false);
+  const instrumentDropdownRef = useRef<HTMLDivElement>(null);
 
   // Populate fields when editing
   useEffect(() => {
@@ -96,6 +110,55 @@ export function CatalystModal({ open, onClose, editCard }: CatalystModalProps) {
   const removeTag = useCallback((t: string) => {
     setTags(prev => prev.filter(x => x !== t));
   }, []);
+
+  // Parse selected instruments from comma-separated string
+  const selectedInstruments = useMemo(() =>
+    instruments.split(',').map(s => s.trim()).filter(Boolean),
+    [instruments]
+  );
+
+  const toggleInstrument = useCallback((inst: string) => {
+    setInstruments(prev => {
+      const list = prev.split(',').map(s => s.trim()).filter(Boolean);
+      if (list.includes(inst)) return list.filter(i => i !== inst).join(', ');
+      return [...list, inst].join(', ');
+    });
+  }, []);
+
+  const filteredInstruments = useMemo(() =>
+    instrumentFilter
+      ? ALL_INSTRUMENTS.filter(i => i.toLowerCase().includes(instrumentFilter.toLowerCase()))
+      : ALL_INSTRUMENTS,
+    [instrumentFilter]
+  );
+
+  // Tag autocomplete from all existing tags in state
+  const allExistingTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const c of state.catalysts) {
+      for (const t of (c.tags ?? [])) tagSet.add(t);
+    }
+    return [...tagSet].sort();
+  }, [state.catalysts]);
+
+  const tagSuggestions = useMemo(() => {
+    if (!tagInput.trim()) return [];
+    return allExistingTags
+      .filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !tags.includes(t))
+      .slice(0, 8);
+  }, [tagInput, allExistingTags, tags]);
+
+  // Close instrument dropdown on outside click
+  useEffect(() => {
+    if (!instrumentDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (instrumentDropdownRef.current && !instrumentDropdownRef.current.contains(e.target as Node)) {
+        setInstrumentDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [instrumentDropdownOpen]);
 
   const handleSave = useCallback(() => {
     if (!category) {
@@ -239,11 +302,57 @@ export function CatalystModal({ open, onClose, editCard }: CatalystModalProps) {
             </fieldset>
           </div>
 
-          {/* Instruments */}
-          <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--fintheon-muted)' }}>Instruments (comma-separated)</span>
-            <input value={instruments} onChange={e => setInstruments(e.target.value)} placeholder="/NQ, /ES, SPY" className="text-xs font-mono bg-transparent border rounded px-2 py-1.5 outline-none focus:border-[var(--fintheon-accent)]" style={{ color: 'var(--fintheon-text)', borderColor: 'color-mix(in srgb, var(--fintheon-border) 40%, transparent)', colorScheme: 'dark' }} />
-          </label>
+          {/* Instruments — multi-select dropdown */}
+          <div className="flex flex-col gap-1" ref={instrumentDropdownRef}>
+            <span className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--fintheon-muted)' }}>Instruments</span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setInstrumentDropdownOpen(v => !v)}
+                className="w-full flex items-center justify-between text-xs font-mono bg-transparent border rounded px-2 py-1.5 outline-none text-left"
+                style={{ color: 'var(--fintheon-text)', borderColor: instrumentDropdownOpen ? 'var(--fintheon-accent)' : 'color-mix(in srgb, var(--fintheon-border) 40%, transparent)' }}
+              >
+                <span className={selectedInstruments.length ? '' : 'opacity-40'}>
+                  {selectedInstruments.length ? selectedInstruments.join(', ') : 'Select instruments...'}
+                </span>
+                <ChevronDown className="w-3 h-3 opacity-40" />
+              </button>
+              {instrumentDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-48 overflow-y-auto rounded border shadow-lg"
+                  style={{ backgroundColor: 'var(--fintheon-bg)', borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' }}>
+                  <input
+                    value={instrumentFilter}
+                    onChange={e => setInstrumentFilter(e.target.value)}
+                    placeholder="Search..."
+                    autoFocus
+                    className="w-full text-[10px] px-2 py-1.5 bg-transparent border-b outline-none"
+                    style={{ color: 'var(--fintheon-text)', borderColor: 'color-mix(in srgb, var(--fintheon-border) 20%, transparent)' }}
+                  />
+                  {filteredInstruments.map(inst => {
+                    const isSelected = selectedInstruments.includes(inst);
+                    return (
+                      <button
+                        key={inst}
+                        type="button"
+                        onClick={() => toggleInstrument(inst)}
+                        className="w-full flex items-center gap-2 px-2 py-1 text-[10px] font-mono hover:bg-[var(--fintheon-accent)]/5 transition-colors"
+                        style={{ color: isSelected ? 'var(--fintheon-accent)' : 'var(--fintheon-text)' }}
+                      >
+                        <span className="w-3 h-3 flex items-center justify-center rounded border text-[8px]"
+                          style={{
+                            borderColor: isSelected ? 'var(--fintheon-accent)' : 'var(--fintheon-border)',
+                            backgroundColor: isSelected ? 'color-mix(in srgb, var(--fintheon-accent) 15%, transparent)' : 'transparent',
+                          }}>
+                          {isSelected && <Check className="w-2 h-2" />}
+                        </span>
+                        {inst}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Date + End Date + Status row */}
           <div className="grid grid-cols-3 gap-3">
@@ -263,10 +372,10 @@ export function CatalystModal({ open, onClose, editCard }: CatalystModalProps) {
             </label>
           </div>
 
-          {/* Tags */}
-          <div className="flex flex-col gap-1">
+          {/* Tags — with autocomplete */}
+          <div className="flex flex-col gap-1 relative">
             <span className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--fintheon-muted)' }}>Tags</span>
-            <div className="flex flex-wrap items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1 p-1.5 rounded border" style={{ borderColor: 'color-mix(in srgb, var(--fintheon-border) 40%, transparent)' }}>
               {tags.map(t => (
                 <span key={t} className="text-[9px] font-mono px-1.5 py-0.5 rounded-full border inline-flex items-center gap-1" style={{ color: 'var(--fintheon-accent)', backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 15%, transparent)', borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' }}>
                   {t}
@@ -275,13 +384,37 @@ export function CatalystModal({ open, onClose, editCard }: CatalystModalProps) {
               ))}
               <input
                 value={tagInput}
-                onChange={e => setTagInput(e.target.value)}
+                onChange={e => { setTagInput(e.target.value); setTagSuggestionsOpen(true); }}
                 onKeyDown={handleTagKeyDown}
-                placeholder="+ tag (enter)"
-                className="text-[9px] w-20 px-1 py-0.5 rounded border bg-transparent outline-none"
-                style={{ color: 'var(--fintheon-text)', borderColor: 'color-mix(in srgb, var(--fintheon-accent) 15%, transparent)' }}
+                onFocus={() => setTagSuggestionsOpen(true)}
+                onBlur={() => setTimeout(() => setTagSuggestionsOpen(false), 150)}
+                placeholder="Type to add tag..."
+                className="text-[9px] flex-1 min-w-[80px] px-1 py-0.5 bg-transparent outline-none"
+                style={{ color: 'var(--fintheon-text)' }}
               />
             </div>
+            {/* Tag suggestions dropdown */}
+            {tagSuggestionsOpen && tagSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-32 overflow-y-auto rounded border shadow-lg"
+                style={{ backgroundColor: 'var(--fintheon-bg)', borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' }}>
+                {tagSuggestions.map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setTags(prev => [...prev, s]);
+                      setTagInput('');
+                      setTagSuggestionsOpen(false);
+                    }}
+                    className="w-full text-left px-2 py-1 text-[9px] font-mono hover:bg-[var(--fintheon-accent)]/5 transition-colors"
+                    style={{ color: 'var(--fintheon-accent)' }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

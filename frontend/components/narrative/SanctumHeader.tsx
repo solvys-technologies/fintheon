@@ -35,7 +35,10 @@ export function SanctumHeader({
             className="text-[10px] font-bold text-[var(--fintheon-accent)]/70 uppercase tracking-widest"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
-            MiroFish
+            Aquarium
+          </span>
+          <span className="text-[8px] italic text-[var(--fintheon-muted)]/40 tracking-wide" style={{ fontFamily: 'var(--font-body)' }}>
+            shark tank
           </span>
           {status === 'complete' && (
             <span className="text-[9px] px-2 py-0.5 rounded bg-[var(--fintheon-low)]/10 text-[var(--fintheon-low)] font-bold" style={{ fontFamily: 'var(--font-body)' }}>
@@ -85,7 +88,7 @@ export function SanctumHeader({
             style={{ fontFamily: 'var(--font-body)' }}
           >
             {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-            {isLoading ? 'Updating...' : (hasData ? 'Update' : 'Run MiroFish')}
+            {isLoading ? 'Updating...' : (hasData ? 'Update' : 'Run Analysis')}
           </button>
         </div>
       </div>

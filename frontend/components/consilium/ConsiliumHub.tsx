@@ -1,12 +1,11 @@
+// [claude-code 2026-03-28] S7: Sanctum overhaul — dropdown nav, NarrativeFlow default, Aquarium rename
 // [claude-code 2026-03-24] Persistence refactor: load latest report on mount, persist after simulation
 // [claude-code 2026-03-24] Thread selectedSymbol from settings into Sanctum for TradingView chart
-// [claude-code 2026-03-23] ConsiliumHub — wired Sanctum with real data, auto-run on preset change
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
-import { MessageSquare, Users, LineChart, Clock, Trophy, Target, GitBranch, Cpu, PanelRightOpen, PanelRightClose } from 'lucide-react';
+import { MessageSquare, Users, LineChart, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
 import { DevelopmentsTimeline } from './DevelopmentsTimeline';
-import { AgentScorecard } from './AgentScorecard';
 import { Sanctum } from '../narrative/Sanctum';
 import { ProposalWidget } from '../proposals/ProposalWidget';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
@@ -19,15 +18,14 @@ const ChatInterface = lazy(() => import('../ChatInterface'));
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-type ConsiliumTab = 'chat' | 'boardroom' | 'auditorium' | 'timeline' | 'scorecards' | 'proposals' | 'narratives' | 'apparatus';
+type SanctumView = 'narratives' | 'aquarium' | 'timeline' | 'chat' | 'boardroom' | 'apparatus';
 
-const TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquare }[] = [
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'boardroom', label: 'Boardroom', icon: Users },
-  { id: 'auditorium', label: 'Sanctum', icon: LineChart },
+const SANCTUM_VIEWS: { id: SanctumView; label: string; subtitle?: string; icon: typeof MessageSquare }[] = [
+  { id: 'narratives', label: 'NarrativeFlow', icon: GitBranch },
+  { id: 'aquarium', label: 'Aquarium', subtitle: 'shark tank', icon: Fish },
   { id: 'timeline', label: 'Timeline', icon: Clock },
-  { id: 'scorecards', label: 'Scorecards', icon: Trophy },
-  { id: 'narratives', label: 'Narratives', icon: GitBranch },
+  { id: 'chat', label: 'Ask Harp', icon: MessageSquare },
+  { id: 'boardroom', label: 'Boardroom', icon: Users },
   { id: 'apparatus', label: 'Apparatus', icon: Cpu },
 ];
 
@@ -52,36 +50,41 @@ function usePanelState(key: string, defaultValue: boolean): [boolean, () => void
 
 export function ConsiliumHub() {
   const { selectedSymbol } = useSettings();
-  const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
-  const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>('chat');
+  const [activeView, setActiveView] = useState<SanctumView>('narratives');
+  const [displayedView, setDisplayedView] = useState<SanctumView>('narratives');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [mirofishData, setMirofishData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
   const [macroContext, setMacroContext] = useState<SimulationContext | null>(null);
   const [showProposals, toggleProposals] = usePanelState('fintheon:consilium:proposals-panel', false);
-  const tabBarRef = useRef<HTMLDivElement>(null);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Scroll active tab into view when it changes
+  // Close dropdown on outside click
+  const dropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!tabBarRef.current) return;
-    const activeBtn = tabBarRef.current.querySelector('[data-active="true"]');
-    if (activeBtn) {
-      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  }, [activeTab]);
+    if (!dropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dropdownOpen]);
 
-  // Tab transition: fade out (150ms) → swap content → fade in (200ms)
-  const handleTabChange = useCallback((tab: ConsiliumTab) => {
-    if (tab === activeTab) return;
+  // View transition: fade out (150ms) → swap content → fade in (200ms)
+  const handleViewChange = useCallback((view: SanctumView) => {
+    if (view === activeView) return;
     setTransitioning(true);
-    setActiveTab(tab);
+    setActiveView(view);
+    setDropdownOpen(false);
     if (transitionRef.current) clearTimeout(transitionRef.current);
     transitionRef.current = setTimeout(() => {
-      setDisplayedTab(tab);
+      setDisplayedView(view);
       setTransitioning(false);
     }, 150);
-  }, [activeTab]);
+  }, [activeView]);
 
   useEffect(() => {
     return () => { if (transitionRef.current) clearTimeout(transitionRef.current); };
@@ -180,34 +183,51 @@ export function ConsiliumHub() {
     }
   }, [fetchContext]);
 
+  const activeViewConfig = SANCTUM_VIEWS.find(v => v.id === activeView) ?? SANCTUM_VIEWS[0];
+  const ActiveIcon = activeViewConfig.icon;
+
   return (
     <div className="flex h-full flex-col bg-[var(--fintheon-bg)]">
-      {/* Floating tab bar */}
-      <div className="flex items-center gap-0.5 px-4 pt-3 pb-1">
-        <h2 className="mr-3 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]" style={{ fontFamily: 'var(--font-heading, Roboto, sans-serif)' }}>
-          Consilium
+      {/* Header: Sanctum title + dropdown + Proposals toggle */}
+      <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]" style={{ fontFamily: 'var(--font-heading, Roboto, sans-serif)' }}>
+          Sanctum
         </h2>
 
-        <div
-          ref={tabBarRef}
-          className="flex items-center gap-0.5 overflow-x-auto scrollbar-none"
-        >
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              data-active={activeTab === id}
-              onClick={() => handleTabChange(id)}
-              className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                activeTab === id
-                  ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
-                  : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
-              }`}
-              style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
-            >
-              <Icon size={13} />
-              {label}
-            </button>
-          ))}
+        {/* View selector dropdown */}
+        <div ref={dropdownRef} className="relative">
+          <button
+            onClick={() => setDropdownOpen(v => !v)}
+            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/5"
+            style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
+          >
+            <ActiveIcon size={13} />
+            <span>{activeViewConfig.label}</span>
+            {activeViewConfig.subtitle && (
+              <span className="italic text-[var(--fintheon-accent)]/50 text-[10px]">{activeViewConfig.subtitle}</span>
+            )}
+            <ChevronDown size={12} className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {dropdownOpen && (
+            <div className="absolute top-full left-0 mt-1 z-50 min-w-[200px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden">
+              {SANCTUM_VIEWS.map(({ id, label, subtitle, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => handleViewChange(id)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                    activeView === id
+                      ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                      : 'text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5'
+                  }`}
+                >
+                  <Icon size={13} />
+                  <span className="font-medium">{label}</span>
+                  {subtitle && <span className="italic text-[10px] opacity-50">{subtitle}</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex-1" />
@@ -226,19 +246,18 @@ export function ConsiliumHub() {
         </button>
       </div>
 
-      {/* Tab content + Proposals panel */}
+      {/* View content + Proposals panel */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <div
           className="flex-1 min-h-0 min-w-0 overflow-hidden"
           style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 200ms ease' }}
         >
-          {displayedTab === 'chat' && (
-            <Suspense fallback={<AiLoader />}>
-              <ChatInterface surfaceId="askharp" />
-            </Suspense>
+          {displayedView === 'narratives' && (
+            <NarrativeProvider>
+              <NarrativeFlow />
+            </NarrativeProvider>
           )}
-          {displayedTab === 'boardroom' && <AgentChattr />}
-          {displayedTab === 'auditorium' && (
+          {displayedView === 'aquarium' && (
             <Sanctum
               data={mirofishData}
               onRun={handleRunMiroFish}
@@ -248,17 +267,17 @@ export function ConsiliumHub() {
               selectedSymbol={selectedSymbol.symbol}
             />
           )}
-          {displayedTab === 'timeline' && <DevelopmentsTimeline />}
-          {displayedTab === 'scorecards' && <AgentScorecard />}
-          {displayedTab === 'narratives' && (
-            <NarrativeProvider>
-              <NarrativeFlow />
-            </NarrativeProvider>
+          {displayedView === 'timeline' && <DevelopmentsTimeline />}
+          {displayedView === 'chat' && (
+            <Suspense fallback={<AiLoader />}>
+              <ChatInterface surfaceId="askharp" />
+            </Suspense>
           )}
-          {displayedTab === 'apparatus' && <ApparatusPage />}
+          {displayedView === 'boardroom' && <AgentChattr />}
+          {displayedView === 'apparatus' && <ApparatusPage />}
         </div>
 
-        {/* Collapsible Proposals right panel */}
+        {/* Collapsible Proposals + Scorecards right panel */}
         <div
           className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out border-l border-[var(--fintheon-accent)]/10 ${
             showProposals ? 'w-80' : 'w-0 border-l-0'

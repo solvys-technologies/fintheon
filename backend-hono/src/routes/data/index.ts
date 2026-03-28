@@ -254,15 +254,33 @@ export function createDataRoutes(): Hono {
   // ── Econ Calendar Sub-routes ────────────────────────────────────
 
   // GET /api/data/econ-calendar?from=YYYY-MM-DD&to=YYYY-MM-DD
+  // [claude-code 2026-03-28] S7: Enriched with latest scored FJ item per ticker for card display
   app.get('/econ-calendar', async (c) => {
     try {
       const from = c.req.query('from');
       const to = c.req.query('to');
       const events = await readEconEvents({ from: from ?? undefined, to: to ?? undefined });
-      return c.json({ events, count: events.length });
+
+      // Enrich each ECON_TICKER with latest scored item data
+      const tickerEnrichments: Record<string, { lastHeadline?: string; sentiment?: string; ivScore?: number; publishedAt?: string }> = {};
+      const ECON_TICKERS = ['CPI', 'PPI', 'PI', 'GDP', 'PMI', 'PCE', 'FOMC', 'CUTS'];
+      for (const ticker of ECON_TICKERS) {
+        const { scoredItems } = await readEconHistory(ticker, 1);
+        if (scoredItems.length > 0) {
+          const item = scoredItems[0];
+          tickerEnrichments[ticker] = {
+            lastHeadline: item.headline,
+            sentiment: item.sentiment ?? undefined,
+            ivScore: item.iv_score ?? undefined,
+            publishedAt: item.published_at ?? item.analyzed_at ?? undefined,
+          };
+        }
+      }
+
+      return c.json({ events, count: events.length, tickerEnrichments });
     } catch (err) {
       console.error('[Data] /econ-calendar error:', err);
-      return c.json({ events: [], count: 0 }, 500);
+      return c.json({ events: [], count: 0, tickerEnrichments: {} }, 500);
     }
   });
 

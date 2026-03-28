@@ -4,7 +4,7 @@ import type { CatalystCard, NarrativeCategory, CatalystSeverity, CatalystSentime
 import type { RiskFlowAlert } from './riskflow-feed';
 
 // Bump version when seed data changes to re-seed existing users
-const SEED_FLAG = 'fintheon:narrative-seeded:v3';
+const SEED_FLAG = 'fintheon:narrative-seeded:v4';
 
 /**
  * Load historical seed events into the narrative store.

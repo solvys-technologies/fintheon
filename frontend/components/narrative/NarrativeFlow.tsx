@@ -1,26 +1,20 @@
+// [claude-code 2026-03-28] S7: Force-directed canvas, removed Sanctum overlay (now separate view)
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
-// [claude-code 2026-03-28] S5-T2: Converted Sanctum from push-panel to 50% overlay drawer
-// [claude-code 2026-03-27] S4-T2: Replaced Canvas/WeekView with unified NarrativeGridView
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import { NarrativeToolbar } from './NarrativeToolbar';
-import NarrativeGridView from './NarrativeGridView';
+import NarrativeForceCanvas from './NarrativeForceCanvas';
 import { NarrativeDropdown } from './NarrativeDropdown';
 import { TimelineScrubber } from './TimelineScrubber';
 import { NarrativeSaveModal } from './NarrativeSaveModal';
 import { RiskFlowImportModal } from './RiskFlowImportModal';
 import { NarrativeTimelineModal } from './NarrativeManageModal';
 import { CatalystModal } from './CatalystModal';
-import { Sanctum } from './Sanctum';
 import { NarrativeHighlightProvider } from './NarrativeHighlightProvider';
 import { NarrativeFloatingToolbar, type CanvasTool } from './NarrativeFloatingToolbar';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { loadSeedEvents, importRiskFlowItems } from '../../lib/narrative-seed-loader';
 import type { CatalystCard } from '../../lib/narrative-types';
-import type { SanctumData, RiskFlowCatalyst } from '../../types/mirofish';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export function NarrativeFlow() {
   const { state, snapshot, dispatch } = useNarrative();
@@ -31,8 +25,6 @@ export function NarrativeFlow() {
     new Set(state.lanes.map(l => l.id))
   );
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
-  const [auditoriumOpen, setSanctumOpen] = useState(false);
-  const [mirofishData, setMirofishData] = useState<SanctumData | null>(null);
   const [catalystModalOpen, setCatalystModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CatalystCard | null>(null);
   const [canvasTool, setCanvasTool] = useState<CanvasTool>('select');
@@ -40,7 +32,7 @@ export function NarrativeFlow() {
   const { alerts } = useRiskFlow();
   const seedLoadedRef = useRef(false);
 
-  // S5-T3: Auto-seed historical events on first boot
+  // Auto-seed historical events on first boot
   useEffect(() => {
     if (seedLoadedRef.current) return;
     seedLoadedRef.current = true;
@@ -50,7 +42,7 @@ export function NarrativeFlow() {
     }
   }, [dispatch]);
 
-  // S5-T3: Auto-import top RiskFlow items as editable copies
+  // Auto-import top RiskFlow items as editable copies
   useEffect(() => {
     if (alerts.length === 0) return;
     const highAlerts = alerts.filter(a => a.severity === 'high' || a.severity === 'critical');
@@ -63,60 +55,6 @@ export function NarrativeFlow() {
       dispatch({ type: 'BULK_ADD_CATALYSTS', catalysts: imported });
     }
   }, [alerts, state.catalysts, dispatch]);
-
-  // Map RiskFlow alerts → RiskFlowCatalyst shape for Sanctum
-  const riskflowItems = useMemo((): RiskFlowCatalyst[] =>
-    alerts.slice(0, 30).map(a => ({
-      id: a.id,
-      title: a.headline,
-      summary: a.summary ?? '',
-      macro_level: a.severity === 'critical' ? 4 : a.severity === 'high' ? 3 : a.severity === 'medium' ? 2 : 1,
-      sentiment: a.direction === 'Bullish' ? 'bullish' : a.direction === 'Bearish' ? 'bearish' : 'neutral',
-      iv_score: a.pointRange ? Math.min(10, Math.abs(a.pointRange) / 5) : 3,
-      category: (a.riskType ?? undefined) as string | undefined,
-      created_at: a.publishedAt,
-      sub_scores: a.subScores as RiskFlowCatalyst['sub_scores'],
-      econ_data: a.econData as RiskFlowCatalyst['econ_data'],
-      risk_type: (a.riskType ?? null) as string | null,
-      agent_note: (a.agentNote ?? null) as string | null,
-      price_brain_score: a.direction ? {
-        sentiment: a.direction ?? undefined,
-        classification: a.cyclical ?? undefined,
-        impliedPoints: a.pointRange ?? undefined,
-        instrument: a.instrument ?? undefined,
-      } : undefined,
-    }) satisfies RiskFlowCatalyst),
-    [alerts],
-  );
-
-  // Seed chart with latest persisted MiroFish report on mount
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`${API_BASE}/api/mirofish/latest`)
-      .then(r => r.ok ? r.json() : null)
-      .then(report => {
-        if (cancelled || !report) return;
-        setMirofishData(prev => {
-          // Don't overwrite if a fresh run already completed
-          if (prev && prev.status === 'complete') return prev;
-          return {
-            simulationId: report.simulationId ?? '',
-            status: 'complete',
-            compositeIV: report.nextSessionScore ?? 0,
-            confidence: report.confidence ?? 0.5,
-            regimeShiftProbability: report.regimeShiftProbability ?? 0.1,
-            categoryScores: report.categoryScores ?? [],
-            timeSeries: report.timeSeries ?? [],
-            generatedEvents: report.generatedEvents ?? [],
-            scenarios: report.scenarios ?? [],
-            briefing: report.briefing,
-            contextSnapshot: report.contextSnapshot,
-          };
-        });
-      })
-      .catch(() => { /* silent — chart stays empty until a run triggers */ });
-    return () => { cancelled = true; };
-  }, []);
 
   const handleSave = useCallback(() => {
     setSaveModalOpen(true);
@@ -161,79 +99,14 @@ export function NarrativeFlow() {
     });
   }, []);
 
-  const handleRunMiroFish = useCallback(async () => {
-    setMirofishData(prev => prev
-      ? { ...prev, status: 'running' }
-      : { simulationId: '', status: 'running', compositeIV: 0, confidence: 0, regimeShiftProbability: 0, categoryScores: [], timeSeries: [], generatedEvents: [], scenarios: [] }
-    );
+  const handleSelectCard = useCallback((_id: string) => {
+    // Selection is visual-only, handled inside the force canvas
+  }, []);
 
-    try {
-      const narrativeState = {
-        lanes: state.lanes.map(l => ({
-          id: l.id, title: l.title, instruments: l.instruments,
-          directionBias: l.directionBias, category: l.category,
-          status: l.status, healthScore: l.healthScore,
-          dateRange: l.dateRange,
-        })),
-        catalysts: state.catalysts.map(c => ({
-          id: c.id, title: c.title, description: c.description ?? '',
-          date: c.date, sentiment: c.sentiment, severity: c.severity,
-          narrativeIds: c.narrativeIds ?? [],
-        })),
-        ropes: (state.ropes ?? []).map(r => ({
-          id: r.id, fromId: r.fromId, toId: r.toId,
-          polarity: r.polarity, weight: r.weight,
-        })),
-      };
-
-      const simRes = await fetch(`${API_BASE}/api/mirofish/simulate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ narrativeState }),
-      });
-
-      if (!simRes.ok) throw new Error(`Simulation failed: ${simRes.status}`);
-      const { simulationId } = await simRes.json();
-
-      const reportRes = await fetch(`${API_BASE}/api/mirofish/report/${simulationId}`);
-      if (!reportRes.ok) throw new Error(`Report fetch failed: ${reportRes.status}`);
-      const report = await reportRes.json();
-
-      setMirofishData({
-        simulationId,
-        status: 'complete',
-        compositeIV: report.nextSessionScore ?? 5,
-        confidence: report.confidence ?? 0.5,
-        regimeShiftProbability: report.regimeShiftProbability ?? 0.1,
-        categoryScores: report.categoryScores ?? [],
-        timeSeries: report.timeSeries ?? [],
-        generatedEvents: report.generatedEvents ?? [],
-        scenarios: report.scenarios ?? [],
-        briefing: report.briefing,
-        contextSnapshot: report.contextSnapshot,
-      });
-    } catch (err) {
-      console.error('[MiroFish] Run failed:', err);
-      setMirofishData(prev => prev
-        ? { ...prev, status: 'error', error: err instanceof Error ? err.message : 'Unknown error' }
-        : null
-      );
-    }
-  }, [state]);
-
-  const catalystsForKanban = useMemo(() =>
-    state.catalysts.map(c => ({
-      id: c.id,
-      title: c.title,
-      date: c.date,
-      sentiment: c.sentiment,
-      severity: c.severity,
-      category: c.narrativeIds?.[0]
-        ? state.lanes.find(l => l.id === c.narrativeIds[0])?.category
-        : undefined,
-    })),
-    [state.catalysts, state.lanes],
-  );
+  const handleEditCard = useCallback((card: CatalystCard) => {
+    setEditingCard(card);
+    setCatalystModalOpen(true);
+  }, []);
 
   return (
     <NarrativeHighlightProvider>
@@ -247,25 +120,31 @@ export function NarrativeFlow() {
           hasSnapshot={!!snapshot}
           onImport={() => setImportModalOpen(true)}
           onManage={() => setManageModalOpen(true)}
-          onMiroFish={() => setSanctumOpen(!auditoriumOpen)}
-          mirofishActive={auditoriumOpen}
+          onMiroFish={() => {/* Aquarium is now a separate view */}}
+          mirofishActive={false}
         />
         <div className="pr-2">
           <NarrativeDropdown
-              visibleLaneIds={visibleLaneIds}
-              onToggleLane={handleToggleLane}
-              onSelectAll={handleSelectAll}
-              onClearAll={handleClearAll}
-              activeTags={activeTags}
-              onToggleTag={handleToggleTag}
-            />
-          </div>
+            visibleLaneIds={visibleLaneIds}
+            onToggleLane={handleToggleLane}
+            onSelectAll={handleSelectAll}
+            onClearAll={handleClearAll}
+            activeTags={activeTags}
+            onToggleTag={handleToggleTag}
+          />
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 relative overflow-hidden">
-        <div className="w-full h-full">
-          <NarrativeGridView visibleLaneIds={visibleLaneIds} activeTags={activeTags} />
-        </div>
+        {/* Force-directed mind map canvas */}
+        <NarrativeForceCanvas
+          visibleLaneIds={visibleLaneIds}
+          activeTags={activeTags}
+          activeTool={canvasTool}
+          onScaleChange={setCanvasScale}
+          onSelectCard={handleSelectCard}
+          onEditCard={handleEditCard}
+        />
 
         {/* Figma-style floating toolbar — bottom center */}
         <NarrativeFloatingToolbar
@@ -273,41 +152,17 @@ export function NarrativeFlow() {
           onToolChange={setCanvasTool}
           onAddCatalyst={() => { setCatalystModalOpen(true); setEditingCard(null); }}
           onImport={() => setImportModalOpen(true)}
-          onToggleSanctum={() => setSanctumOpen(!auditoriumOpen)}
+          onToggleSanctum={() => {/* Aquarium is now a separate view */}}
           onToggleHeatmap={() => dispatch({ type: 'TOGGLE_HEATMAP' })}
           onToggleFilter={() => {
             const next = state.filterSentiment === 'all' ? 'bearish' : state.filterSentiment === 'bearish' ? 'bullish' : 'all';
             dispatch({ type: 'SET_FILTER', sentiment: next });
           }}
-          sanctumActive={auditoriumOpen}
+          sanctumActive={false}
           heatmapActive={state.heatmapEnabled}
           filterActive={state.filterSentiment !== 'all'}
           scale={canvasScale}
         />
-
-        {/* Sanctum overlay — slides in from right, 50% width */}
-        <div
-          className={`fixed top-0 right-0 h-full z-40 transition-transform duration-300 ease-out ${
-            auditoriumOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
-          style={{ width: '50vw' }}
-        >
-          <div className="h-full bg-[var(--fintheon-bg)] border-l border-[var(--fintheon-border)]/20 shadow-[-8px_0_32px_rgba(0,0,0,0.5)]">
-            <button
-              onClick={() => setSanctumOpen(false)}
-              className="absolute top-4 left-4 z-50 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--fintheon-surface)]/60 text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)] transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <Sanctum
-              data={mirofishData}
-              onRun={handleRunMiroFish}
-              catalysts={catalystsForKanban}
-              riskflowItems={riskflowItems}
-              macroContext={mirofishData?.contextSnapshot ?? null}
-            />
-          </div>
-        </div>
       </div>
 
       <TimelineScrubber
