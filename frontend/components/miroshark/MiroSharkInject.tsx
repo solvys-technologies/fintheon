@@ -1,15 +1,15 @@
-// [claude-code 2026-03-16] God's Eye View — variable injection modal for MiroFish
+// [claude-code 2026-03-16] God's Eye View — variable injection modal for MiroShark
 import { useState, useCallback } from 'react';
 import { X, Zap } from 'lucide-react';
 
-interface MiroFishInjectProps {
+interface MiroSharkInjectProps {
   open: boolean;
   onClose: () => void;
   simulationId: string | null;
   narratives: Array<{ id: string; title: string }>;
 }
 
-export function MiroFishInject({ open, onClose, simulationId, narratives }: MiroFishInjectProps) {
+export function MiroSharkInject({ open, onClose, simulationId, narratives }: MiroSharkInjectProps) {
   const [variable, setVariable] = useState('');
   const [selectedNarratives, setSelectedNarratives] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
@@ -29,7 +29,7 @@ export function MiroFishInject({ open, onClose, simulationId, narratives }: Miro
     setSubmitting(true);
     setResult(null);
     try {
-      const res = await fetch(`/api/mirofish/inject/${simulationId}`, {
+      const res = await fetch(`/api/miroshark/inject/${simulationId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

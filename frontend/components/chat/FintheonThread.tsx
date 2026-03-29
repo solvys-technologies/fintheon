@@ -1,3 +1,4 @@
+// [claude-code 2026-03-28] S8-T7: Kill kanban borders on assistant messages, add agent name header
 // [claude-code 2026-03-11] T2b: Image part in user bubbles, T2c: CoT auto-open/close via useEffect
 // [claude-code 2026-03-10] Enhanced FintheonThread — hover actions, scroll-to-bottom, CoT, fade-in
 import { type FC, type RefObject, Component, type ReactNode, useState, useRef, useEffect, useCallback } from 'react';
@@ -331,7 +332,7 @@ const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string
         </div>
       )}
 
-      <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border border-white/10 bg-[#0f0f0b]/92 shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition-colors">
+      <div className="max-w-[82%] px-1 transition-colors">
         <MessageErrorBoundary>
           {/* Render directly from extracted parts — bypass MessagePrimitive.Parts
               which crashes (#185) due to assistant-ui context/smooth-streaming internals */}
@@ -472,7 +473,7 @@ const DirectUserMessage: FC<{ msg: any }> = ({ msg }) => {
   );
 };
 
-const DirectAssistantMessage: FC<{ msg: any; onCheckpoint?: (id: string, content: string) => void }> = ({ msg, onCheckpoint }) => {
+const DirectAssistantMessage: FC<{ msg: any; agentName?: string; onCheckpoint?: (id: string, content: string) => void }> = ({ msg, agentName, onCheckpoint }) => {
   const textContent = extractText(msg);
   const reasoningContent = extractReasoning(msg);
 
@@ -480,12 +481,18 @@ const DirectAssistantMessage: FC<{ msg: any; onCheckpoint?: (id: string, content
 
   return (
     <div className="group/msg flex flex-col items-start animate-fade-slide-in">
+      {/* Agent name header — small, borderless */}
+      {agentName && (
+        <span className="text-[10px] font-medium text-[var(--fintheon-accent)]/60 uppercase tracking-wider ml-1 mb-1">
+          {agentName}
+        </span>
+      )}
       {reasoningContent && (
         <div className="max-w-[82%] mb-1">
           <ChainOfThoughtDisplay text={reasoningContent} />
         </div>
       )}
-      <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border border-white/10 bg-[#0f0f0b]/92 shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition-colors">
+      <div className="max-w-[82%] px-1 transition-colors">
         {textContent && <FintheonTextPart text={textContent} />}
       </div>
       <ActionBar
@@ -535,7 +542,7 @@ export function FintheonThread({ onSend, isLoading, agentName, onCheckpoint, las
               return <DirectUserMessage key={msg.id} msg={msg} />;
             }
             if (msg.role === 'assistant') {
-              return <DirectAssistantMessage key={msg.id} msg={msg} onCheckpoint={onCheckpoint} />;
+              return <DirectAssistantMessage key={msg.id} msg={msg} agentName={agentName ?? activeAgent?.name} onCheckpoint={onCheckpoint} />;
             }
             return null;
           })}

@@ -8,9 +8,10 @@
 // [claude-code 2026-03-16] T2: AlertRow bottom-hero redesign, toolbar consolidation, shared inferDirection
 // [claude-code 2026-03-20] S3:T4d: Swapped chevron directions — expanded=ChevronDown, collapsed=ChevronUp
 // [claude-code 2026-03-26] T3: Card expand/collapse with agent notes, risk type tags, smooth transitions
-import React, { useState, useCallback } from 'react';
+// [claude-code 2026-03-28] S8-T6: Infinite scroll + toggle, Loader2 for loading state
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
-import { Zap, ExternalLink, ChevronDown, ChevronUp, ChevronRight, Trash2, X, TrendingUp, TrendingDown, MessageSquare, Check, XCircle, RefreshCw, Sparkles } from 'lucide-react';
+import { Zap, ExternalLink, ChevronDown, ChevronUp, ChevronRight, Trash2, X, TrendingUp, TrendingDown, MessageSquare, Check, XCircle, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
 import { inferDirection } from '../lib/riskflow-feed';
 import TradeIdeaModal from './TradeIdeaModal';
@@ -512,7 +513,7 @@ export default function RiskFlowPanel({
   /** Called when user clicks "View in RiskFlow" in expanded card */
   onNavigateToFeed?: () => void;
 }) {
-  const { alerts, highCount, mediumCount, clearAll, removeAlert, markSeen, markAllSeen, isSeen, refresh, refreshing } = useRiskFlow();
+  const { alerts, highCount, mediumCount, clearAll, removeAlert, markSeen, markAllSeen, isSeen, refresh, refreshing, initialLoaded, loadMore, loadingMore, hasMore } = useRiskFlow();
   const backend = useBackend();
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
@@ -520,7 +521,33 @@ export default function RiskFlowPanel({
   const [expandedInternal, setExpandedInternal] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [infiniteScroll, setInfiniteScroll] = useState(() => {
+    try { return localStorage.getItem('fintheon:infinite-scroll') !== 'off'; } catch { return true; }
+  });
   const sourceStatus = useSourceStatus();
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const expanded = collapsed != null ? !collapsed : expandedInternal;
+
+  // Persist infinite scroll preference
+  useEffect(() => {
+    try { localStorage.setItem('fintheon:infinite-scroll', infiniteScroll ? 'on' : 'off'); } catch {}
+  }, [infiniteScroll]);
+
+  // Infinite scroll observer — only active when expanded
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !expanded || !infiniteScroll) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !loadingMore) {
+          void loadMore();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [expanded, hasMore, loadingMore, loadMore, infiniteScroll]);
 
   const handleGenerateNote = useCallback(async (alertId: string) => {
     const rawId = alertId.replace(/^backend-/, '');
@@ -545,7 +572,6 @@ export default function RiskFlowPanel({
     const ok = await backend.notion.updateTradeIdeaStatus(pageId, 'Denied');
     if (ok) removeAlert(alert.id);
   }, [backend, removeAlert]);
-  const expanded = collapsed != null ? !collapsed : expandedInternal;
 
   const ideaCount = alerts.filter((a) => a.source === 'notion-trade-idea').length;
 
@@ -642,6 +668,25 @@ export default function RiskFlowPanel({
               >
                 Proposals{ideaCount > 0 ? ` (${ideaCount})` : ''}
               </button>
+              <div className="ml-auto flex items-center gap-1">
+                <span className="text-[9px] text-zinc-600">Infinite Scroll</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={infiniteScroll}
+                  onClick={() => setInfiniteScroll(v => !v)}
+                  className={`relative inline-flex h-3 w-6 items-center rounded-full transition-colors shrink-0 ${
+                    infiniteScroll
+                      ? 'bg-[var(--fintheon-accent)]/30 border border-[var(--fintheon-accent)]/50'
+                      : 'bg-zinc-800 border border-zinc-700'
+                  }`}
+                  title={infiniteScroll ? 'Infinite scroll ON' : 'Infinite scroll OFF'}
+                >
+                  <span className={`inline-block w-2 h-2 rounded-full transition-transform ${
+                    infiniteScroll ? 'translate-x-3 bg-[var(--fintheon-accent)]' : 'translate-x-0.5 bg-zinc-500'
+                  }`} />
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -652,7 +697,9 @@ export default function RiskFlowPanel({
             <div className="flex-1 min-w-0 overflow-y-auto">
               {filtered.length === 0 ? (
                 <div className="flex items-center justify-center h-24 text-zinc-700 text-xs">
-                  {alerts.length === 0 ? 'Polling Sources...' : 'No matching alerts'}
+                  {alerts.length === 0
+                    ? (initialLoaded ? 'No alerts available — check backend connection' : 'Loading feed...')
+                    : 'No matching alerts'}
                 </div>
               ) : (
                 filtered.map((alert) =>
@@ -685,6 +732,37 @@ export default function RiskFlowPanel({
                     />
                   )
                 )
+              )}
+
+              {/* Infinite scroll sentinel + load more */}
+              {infiniteScroll ? (
+                <div ref={sentinelRef} className="h-1" />
+              ) : (
+                hasMore && filtered.length > 0 && (
+                  <div className="flex justify-center py-3">
+                    <button
+                      type="button"
+                      onClick={() => { void loadMore(); }}
+                      disabled={loadingMore}
+                      className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors px-3 py-1.5 border border-zinc-800 rounded hover:border-[var(--fintheon-accent)]/30 disabled:opacity-40"
+                    >
+                      {loadingMore ? 'Loading...' : 'Load More'}
+                    </button>
+                  </div>
+                )
+              )}
+
+              {loadingMore && (
+                <div className="flex items-center justify-center py-3 gap-2">
+                  <Loader2 className="w-3.5 h-3.5 text-[var(--fintheon-accent)] animate-spin" />
+                  <span className="text-[9px] text-[var(--fintheon-muted)]/40">Loading more...</span>
+                </div>
+              )}
+
+              {!hasMore && filtered.length > 0 && (
+                <div className="text-center py-2">
+                  <span className="text-[8px] text-[var(--fintheon-muted)]/25">All items loaded</span>
+                </div>
               )}
             </div>
         </div>

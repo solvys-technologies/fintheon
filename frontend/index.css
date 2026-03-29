@@ -436,6 +436,26 @@ html *::-webkit-scrollbar {
   animation: rope-swing 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* NarrativeFlow — rope breathing opacity pulse (S8-T3) */
+@keyframes rope-breathe {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.28; }
+}
+
+.react-flow__edge-path.rope-breathe,
+.react-flow__edge.rope-breathe path {
+  animation: rope-breathe 4s ease-in-out infinite;
+}
+
+/* Desynchronize breathing per-rope via delay classes */
+.rope-delay-0 path { animation-delay: 0s; }
+.rope-delay-1 path { animation-delay: 0.6s; }
+.rope-delay-2 path { animation-delay: 1.2s; }
+.rope-delay-3 path { animation-delay: 1.8s; }
+.rope-delay-4 path { animation-delay: 2.4s; }
+.rope-delay-5 path { animation-delay: 3.0s; }
+.rope-delay-6 path { animation-delay: 3.6s; }
+
 /* NarrativeFlow — impact ripple expanding rings */
 @keyframes ripple-expand {
   0% { transform: scale(0.3); opacity: 0.4; }
@@ -506,6 +526,20 @@ html *::-webkit-scrollbar {
 @keyframes decay-fade {
   from { opacity: 1; }
   to { opacity: 0.35; }
+}
+
+/* Timeline — shimmer number effect for event/narrative counts */
+@keyframes text-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.shimmer-number {
+  background: linear-gradient(90deg, var(--fintheon-accent) 0%, var(--fintheon-text) 50%, var(--fintheon-accent) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-shimmer 3s linear infinite;
 }
 
 /* Liquid glass + ambient motion */
@@ -656,4 +690,10 @@ html *::-webkit-scrollbar {
   -webkit-background-clip: text;
   background-clip: text;
   animation: agent-shimmer 1.5s ease-in-out;
+}
+
+/* TopStepX Castra mode — darken surfaces to blend with TopStepX charcoal UI */
+.topstepx-active {
+  --fintheon-bg: #08080a;
+  --fintheon-surface: #0e0e12;
 }

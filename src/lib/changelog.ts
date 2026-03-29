@@ -9,6 +9,52 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-28T20:00:00',
+    agent: 'claude-code',
+    summary: 'S8-T7: Wire Claude CLI (Harper-Opus) into Ask Harp, dual-pane main chat, 21st.dev components (animated-ai-input), pulsing icon, boardroom newspaper button, persona switching, artifact system, QuickScope skill',
+    files: [
+      'frontend/components/chat/FintheonThread.tsx',
+      'frontend/components/chat/AskHarpChatPanel.tsx',
+      'frontend/components/ui/chatgpt-prompt-input.tsx',
+      'frontend/components/ui/animated-ai-input.tsx',
+      'frontend/components/ChatInterface.tsx',
+      'frontend/components/consilium/AgentChattr.tsx',
+      'frontend/lib/artifact-parser.ts',
+      'frontend/styles/custom.css',
+      'backend-hono/src/services/harper-handler.ts',
+      'backend-hono/src/routes/harper/index.ts',
+      'backend-hono/src/routes/index.ts',
+      'backend-hono/src/skills/quickscope.md',
+    ],
+  },
+  {
+    date: '2026-03-28T18:00:00',
+    agent: 'claude-code',
+    summary: 'S8-T5: MiroFish→MiroShark full replacement, gov official agents (8 personas: Fed Chair, Trump, Bessent, Rubio, Lutnick, Witkoff, Greer, Navarro), 3-phase deliberation pipeline (MiroShark→Hermes→Harper-Opus), debate slide-out panel, scoring improvements (confidence-weighted consensus, divergence detection, actionability score)',
+    files: [
+      'backend-hono/src/services/miroshark/',
+      'backend-hono/src/services/miroshark/miroshark-deliberation.ts',
+      'backend-hono/src/routes/miroshark/',
+      'frontend/components/miroshark/MiroSharkDebatePanel.tsx',
+      'frontend/lib/services.ts',
+      'frontend/components/consilium/ConsiliumHub.tsx',
+    ],
+  },
+  {
+    date: '2026-03-28T14:00:00',
+    agent: 'claude-code',
+    summary: 'S8-T8: Unified agent context bank (Supabase, user-scoped partitions), agent memory CRUD + bulk CLI sync API, Claude CLI launchd auto-start plist, fintheon-update.sh launchd agent install step, Browser STT/TTS service stub (S9 prep)',
+    files: [
+      'supabase/migrations/20260328_agent_context_bank.sql',
+      'backend-hono/src/services/agent-context-bank-service.ts',
+      'backend-hono/src/routes/context-bank/memory-handlers.ts',
+      'backend-hono/src/routes/context-bank/index.ts',
+      'backend-hono/scripts/com.fintheon.claude-cli.plist',
+      'scripts/fintheon-update.sh',
+      'frontend/lib/speech-service.ts',
+    ],
+  },
+  {
     date: '2026-03-29T00:30:00',
     agent: 'claude-code',
     summary: 'Apparatus expanded cards: comedic agent bios, historical origin dossiers rooted in NarrativeFlow seed events (Jul 2024 — CPI rotation, Yen flash crash, BLS revision, rate cuts, election, Liberation Day), active narrative tracking per agent, Feucht combat record (47W/29L, 61.8% WR, +$14,280 P&L), notable intel bullets. New AgentNode type fields: bio, dossier, activeNarratives, record, notableInfo. Expanded cards now span full 3-col width.',

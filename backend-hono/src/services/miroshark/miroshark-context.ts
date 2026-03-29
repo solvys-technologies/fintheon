@@ -1,9 +1,9 @@
 // [claude-code 2026-03-28] S4-T2: Widened RiskFlow select to include full scored metadata
-// [claude-code 2026-03-27] S4: Added econPrintHistory to context for MiroFish aggregation
+// [claude-code 2026-03-27] S4: Added econPrintHistory to context for MiroShark aggregation
 // [claude-code 2026-03-27] S2-T4: Added addCalibrationContext for calibration upload pipeline
 // [claude-code 2026-03-24] Widened RiskFlow window to 72h/40 with configurable params
-// [claude-code 2026-03-23] MiroFish context assembly — fetches VIX, FRED, RiskFlow in parallel
-import type { SanctumPreset, SimulationContext, RiskFlowHeadline, EconPrintStat } from './mirofish-types.js';
+// [claude-code 2026-03-23] MiroShark context assembly — fetches VIX, FRED, RiskFlow in parallel
+import type { SanctumPreset, SimulationContext, RiskFlowHeadline, EconPrintStat } from './miroshark-types.js';
 import { fetchFredIndicators, getCachedFredIndicators, getFredFetchedAt } from '../systemic/fred-service.js';
 import { getVix } from '../market-data/yahoo-market.js';
 import { getSupabaseClient } from '../../config/supabase.js';
@@ -45,7 +45,7 @@ export async function assembleSimulationContext(
 }
 
 /**
- * Fetch recent econ print history (7 days) and transform for MiroFish consumption.
+ * Fetch recent econ print history (7 days) and transform for MiroShark consumption.
  * Aggregates beat/miss/inline patterns for simulation context.
  */
 async function fetchEconPrintHistory(): Promise<EconPrintStat[]> {
@@ -93,7 +93,7 @@ async function fetchRiskFlowHeadlines(sinceHours = 72, limit = 40): Promise<Risk
     .limit(limit);
 
   if (error) {
-    console.warn('[MiroFish Context] RiskFlow fetch failed:', error.message);
+    console.warn('[MiroShark Context] RiskFlow fetch failed:', error.message);
     return [];
   }
 
@@ -111,7 +111,7 @@ interface CalibrationContextEntry {
 let calibrationContext: CalibrationContextEntry | null = null;
 
 /**
- * Stores parsed calibration items in MiroFish's running context so they influence analysis.
+ * Stores parsed calibration items in MiroShark's running context so they influence analysis.
  * Called by the Upload Context pipeline after bulk-ingest.
  */
 export function addCalibrationContext(
@@ -122,7 +122,7 @@ export function addCalibrationContext(
     items,
     uploadedAt: new Date().toISOString(),
   };
-  console.log(`[MiroFish Context] Calibration context updated: ${items.length} items`);
+  console.log(`[MiroShark Context] Calibration context updated: ${items.length} items`);
 }
 
 /**

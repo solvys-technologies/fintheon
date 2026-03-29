@@ -4,7 +4,7 @@
 // [claude-code 2026-03-25] Theme-sensitive fonts — use var(--font-heading) and var(--font-body)
 import { useState, useCallback } from 'react';
 import { Zap, Loader2, Upload, X } from 'lucide-react';
-import type { SanctumPreset } from '../../types/mirofish';
+import type { SanctumPreset } from '../../types/miroshark';
 import { SanctumPresets } from './SanctumPresets';
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
@@ -141,7 +141,7 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
       });
       const ingestData = await ingestRes.json();
 
-      // Upload to MiroFish context
+      // Upload to MiroShark context
       if (ingestData.parsed > 0) {
         // Re-parse to get items for context upload
         const parseRes = await fetch(`${API_BASE}/api/calibration/bulk-parse`, {
@@ -236,7 +236,7 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
                 )}
               </p>
               <p className="text-[10px] text-[var(--fintheon-muted)]" style={{ fontFamily: 'var(--font-body)' }}>
-                Items will be stored in calibration_observations and fed to MiroFish context.
+                Items will be stored in calibration_observations and fed to MiroShark context.
               </p>
             </div>
           )}
@@ -245,7 +245,7 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
             <div className="flex flex-col items-center gap-2 py-8">
               <span className="text-2xl">&#10003;</span>
               <p className="text-xs text-[var(--fintheon-text)] font-bold" style={{ fontFamily: 'var(--font-body)' }}>
-                {result.stored} observations stored + MiroFish context updated
+                {result.stored} observations stored + MiroShark context updated
               </p>
             </div>
           )}

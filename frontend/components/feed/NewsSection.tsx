@@ -81,12 +81,14 @@ export function NewsSection() {
     <div className="h-full overflow-y-auto px-0 pt-0 pb-0">
       <div className="flex items-center justify-between mb-2 mt-1 px-3">
         <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em]">
+          <span className="text-[var(--fintheon-accent)] font-semibold tracking-[0.15em]">Risk Flow</span>
           <span className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.twitterCli ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
-            <span className={sourceStatus.twitterCli ? 'text-emerald-400/90' : 'text-zinc-500'}>X CLI</span>
+            <span className={sourceStatus.twitterCli ? 'text-emerald-400/90' : 'text-zinc-500'}>X</span>
           </span>
         </div>
         <div className="flex items-center gap-1">
+          <span className="text-[9px] text-zinc-500 mr-0.5">auto</span>
           <AutoRefreshToggle size="xs" />
           <button
             type="button"
@@ -109,6 +111,10 @@ export function NewsSection() {
             {notificationsEnabled ? 'Notifications On' : 'Notifications'}
           </button>
         </div>
+      </div>
+
+      <div className="px-3 mb-1.5">
+        <span className="text-[9px] text-zinc-600">Automatically refreshes the feed every 30 seconds</span>
       </div>
 
       {/* Filter row: Priority dropdown + Source dropdown + Proposals tab */}

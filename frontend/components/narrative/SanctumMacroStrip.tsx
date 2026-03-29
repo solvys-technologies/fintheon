@@ -1,5 +1,5 @@
 // [claude-code 2026-03-23] FRED macro indicator strip — VIX + 5 FRED indicators with stress colors
-import type { SimulationContext } from '../../types/mirofish';
+import type { SimulationContext } from '../../types/miroshark';
 
 interface SanctumMacroStripProps {
   context: SimulationContext | null;

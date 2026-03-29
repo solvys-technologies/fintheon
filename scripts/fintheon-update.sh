@@ -1,5 +1,5 @@
 #!/bin/bash
-# [claude-code 2026-03-28] S7: Fintheon update script — password-protected, auto-updates app
+# [claude-code 2026-03-28] S8-T8: Fintheon update script — password-protected, auto-updates app + Claude CLI launchd agent
 # Usage: fintheon update  (or source this and run fintheon_update)
 
 set -e
@@ -53,8 +53,8 @@ else
   echo "  · No migration runner found, skipping"
 fi
 
-# Step 5: Set up Claude CLI config if needed
-echo "  [5/6] Checking Claude CLI configuration..."
+# Step 5: Set up Claude CLI config + launchd agent
+echo "  [5/7] Checking Claude CLI configuration..."
 if command -v claude &> /dev/null; then
   echo "  ✓ Claude CLI available"
   # Ensure scorer and dispatch scripts are executable
@@ -64,8 +64,33 @@ else
   echo "  ⚠ Claude CLI not found — install with: npm i -g @anthropic-ai/claude-code"
 fi
 
-# Step 6: Build frontend
-echo "  [6/6] Building frontend..."
+# Step 6: Install Claude CLI launchd agent (auto-start at boot)
+echo "  [6/7] Checking Claude CLI launchd agent..."
+CLAUDE_PLIST="$HOME/Library/LaunchAgents/com.fintheon.claude-cli.plist"
+CLAUDE_PLIST_SRC="$FINTHEON_ROOT/backend-hono/scripts/com.fintheon.claude-cli.plist"
+
+if command -v claude &> /dev/null && [ -f "$CLAUDE_PLIST_SRC" ]; then
+  if [ ! -f "$CLAUDE_PLIST" ]; then
+    cp "$CLAUDE_PLIST_SRC" "$CLAUDE_PLIST"
+    launchctl load "$CLAUDE_PLIST"
+    echo "  ✓ Claude CLI launchd agent installed and loaded"
+  else
+    # Update if source is newer
+    if [ "$CLAUDE_PLIST_SRC" -nt "$CLAUDE_PLIST" ]; then
+      launchctl unload "$CLAUDE_PLIST" 2>/dev/null || true
+      cp "$CLAUDE_PLIST_SRC" "$CLAUDE_PLIST"
+      launchctl load "$CLAUDE_PLIST"
+      echo "  ✓ Claude CLI launchd agent updated"
+    else
+      echo "  · Claude CLI launchd agent already installed"
+    fi
+  fi
+else
+  echo "  · Skipping launchd agent (Claude CLI not found or plist missing)"
+fi
+
+# Step 7: Build frontend
+echo "  [7/7] Building frontend..."
 npx vite build
 echo "  ✓ Frontend built"
 

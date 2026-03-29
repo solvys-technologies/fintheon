@@ -1,9 +1,11 @@
+// [claude-code 2026-03-28] S8-T7: Single-pane sidebar with agent-plan inline
 import { useCallback, useState } from 'react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { useHermesRuntime } from './useHermesRuntime';
 import { FintheonThread } from './FintheonThread';
 import { FintheonComposer } from './FintheonComposer';
+import { CognitionPanel } from './CognitionPanel';
 
 function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }: { lastError: string | null; lastRequestId: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void }) {
   const { activeAgent } = useFintheonAgents();
@@ -25,7 +27,14 @@ function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }:
         agentName={activeAgent?.name}
         lastError={lastError}
         lastRequestId={lastRequestId}
+        compact
       />
+      {/* Agent plan / cognition inline in sidebar — shows task progress when streaming */}
+      {lastRequestId && isRunning && (
+        <div className="px-3 pb-2">
+          <CognitionPanel requestId={lastRequestId} isStreaming={isRunning} />
+        </div>
+      )}
       <FintheonComposer
         thinkHarder={thinkHarder}
         setThinkHarder={setThinkHarder}

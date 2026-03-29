@@ -1,6 +1,6 @@
 // [claude-code 2026-03-23] Sanctum preset selector toolbar
-import type { SanctumPreset } from '../../types/mirofish';
-import { AUDITORIUM_PRESETS } from '../../types/mirofish';
+import type { SanctumPreset } from '../../types/miroshark';
+import { AUDITORIUM_PRESETS } from '../../types/miroshark';
 
 interface SanctumPresetsProps {
   active: SanctumPreset;

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-23] Sanctum kanban — dashboard-grade timeline strips + live RiskFlow catalysts
-import type { MiroFishRiskCategory, MiroFishGeneratedEvent, RiskFlowCatalyst } from '../../types/mirofish';
-import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
+import type { MiroSharkRiskCategory, MiroSharkGeneratedEvent, RiskFlowCatalyst } from '../../types/miroshark';
+import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/miroshark';
 
 interface CatalystInput {
   id: string;
@@ -14,17 +14,17 @@ interface CatalystInput {
 
 interface SanctumKanbanProps {
   catalysts: CatalystInput[];
-  generatedEvents: MiroFishGeneratedEvent[];
+  generatedEvents: MiroSharkGeneratedEvent[];
   riskflowItems?: RiskFlowCatalyst[];
   expanded?: boolean;
 }
 
-const CATEGORIES: MiroFishRiskCategory[] = [
+const CATEGORIES: MiroSharkRiskCategory[] = [
   'geopolitical', 'political', 'monetary-policy',
   'earnings-corporate', 'market-structure', 'black-swan',
 ];
 
-const CATEGORY_MAP: Record<string, MiroFishRiskCategory> = {
+const CATEGORY_MAP: Record<string, MiroSharkRiskCategory> = {
   geopolitical: 'geopolitical',
   'supply-chain': 'geopolitical',
   political: 'political',
@@ -58,7 +58,7 @@ function severityToScore(sev: string): number {
   return 3;
 }
 
-function inferCategory(title: string, summary?: string): MiroFishRiskCategory {
+function inferCategory(title: string, summary?: string): MiroSharkRiskCategory {
   const text = `${title} ${summary ?? ''}`.toLowerCase();
   if (text.match(/tariff|sanction|war|nato|china|russia|israel/)) return 'geopolitical';
   if (text.match(/fed|rate|inflation|cpi|pce|fomc|treasury/)) return 'monetary-policy';
@@ -70,7 +70,7 @@ function inferCategory(title: string, summary?: string): MiroFishRiskCategory {
 }
 
 export function SanctumKanban({ catalysts, generatedEvents, riskflowItems, expanded }: SanctumKanbanProps) {
-  const lanes = new Map<MiroFishRiskCategory, KanbanCard[]>();
+  const lanes = new Map<MiroSharkRiskCategory, KanbanCard[]>();
   for (const cat of CATEGORIES) lanes.set(cat, []);
 
   for (const c of catalysts) {

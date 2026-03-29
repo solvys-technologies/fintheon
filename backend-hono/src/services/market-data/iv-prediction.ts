@@ -1,21 +1,21 @@
-// [claude-code 2026-03-16] IV prediction service — heuristic fallback + MiroFish integration
+// [claude-code 2026-03-16] IV prediction service — heuristic fallback + MiroShark integration
 // [claude-code 2026-03-16] Removed simulationId param — auto-checks latest cached prediction
 
 import type { IVPrediction, IVPredictionScenario } from './iv-prediction-types.js';
 import type { BlendedIVScore } from './iv-scorer.js';
 import { isSkillEnabled } from '../../config/feature-flags.js';
-import { getLatestCachedPrediction } from '../mirofish/mirofish-service.js';
+import { getLatestCachedPrediction } from '../miroshark/miroshark-service.js';
 
 /**
  * Generate an IV prediction for the next session.
- * Uses MiroFish if available and a simulation has completed,
+ * Uses MiroShark if available and a simulation has completed,
  * otherwise falls back to a simple heuristic based on current score + VIX dynamics.
  */
 export async function generateIVPrediction(
   currentScore: BlendedIVScore,
 ): Promise<IVPrediction> {
-  // Try MiroFish first — auto-fetch latest cached prediction
-  if (isSkillEnabled('mirofish')) {
+  // Try MiroShark first — auto-fetch latest cached prediction
+  if (isSkillEnabled('miroshark')) {
     const mfPrediction = getLatestCachedPrediction();
     if (mfPrediction) {
       return {
@@ -23,7 +23,7 @@ export async function generateIVPrediction(
         confidence: mfPrediction.confidence,
         regimeShiftProbability: mfPrediction.regimeShiftProbability,
         scenarios: mfPrediction.scenarios,
-        source: 'mirofish',
+        source: 'miroshark',
         generatedAt: mfPrediction.generatedAt,
       };
     }

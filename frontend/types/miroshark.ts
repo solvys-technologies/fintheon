@@ -1,6 +1,6 @@
-// [claude-code 2026-03-23] MiroFish Sanctum frontend types — expanded for snap-scroll dashboard + presets
+// [claude-code 2026-03-23] MiroShark Sanctum frontend types — expanded for snap-scroll dashboard + presets
 
-export type MiroFishRiskCategory =
+export type MiroSharkRiskCategory =
   | 'geopolitical'
   | 'political'
   | 'monetary-policy'
@@ -8,33 +8,33 @@ export type MiroFishRiskCategory =
   | 'market-structure'
   | 'black-swan';
 
-export interface MiroFishCategoryScore {
-  category: MiroFishRiskCategory;
+export interface MiroSharkCategoryScore {
+  category: MiroSharkRiskCategory;
   ivScore: number;
   confidence: number;
   delta: number;
 }
 
-export interface MiroFishTimePoint {
+export interface MiroSharkTimePoint {
   dayOffset: number;
   date: string;
   composite: number;
-  categories: Record<MiroFishRiskCategory, number>;
+  categories: Record<MiroSharkRiskCategory, number>;
   impliedPoints?: number;
 }
 
-export interface MiroFishGeneratedEvent {
+export interface MiroSharkGeneratedEvent {
   id: string;
   title: string;
   description: string;
   date: string;
-  category: MiroFishRiskCategory;
+  category: MiroSharkRiskCategory;
   impactScore: number;
   probability: number;
   isAiGenerated: true;
 }
 
-export interface MiroFishScenario {
+export interface MiroSharkScenario {
   label: string;
   probability: number;
   projectedScore: number;
@@ -49,15 +49,15 @@ export interface SanctumData {
   compositeIV: number;
   confidence: number;
   regimeShiftProbability: number;
-  categoryScores: MiroFishCategoryScore[];
-  timeSeries: MiroFishTimePoint[];
-  generatedEvents: MiroFishGeneratedEvent[];
-  scenarios: MiroFishScenario[];
-  briefing?: MiroFishBriefing;
+  categoryScores: MiroSharkCategoryScore[];
+  timeSeries: MiroSharkTimePoint[];
+  generatedEvents: MiroSharkGeneratedEvent[];
+  scenarios: MiroSharkScenario[];
+  briefing?: MiroSharkBriefing;
   contextSnapshot?: SimulationContext;
 }
 
-export const RISK_CATEGORY_LABELS: Record<MiroFishRiskCategory, string> = {
+export const RISK_CATEGORY_LABELS: Record<MiroSharkRiskCategory, string> = {
   'geopolitical': 'Geopolitical',
   'political': 'Political',
   'monetary-policy': 'Monetary Policy',
@@ -67,7 +67,7 @@ export const RISK_CATEGORY_LABELS: Record<MiroFishRiskCategory, string> = {
 };
 
 /** @deprecated Use ivHeatColor(score) instead — dynamic heat-map coloring based on IV value */
-export const RISK_CATEGORY_COLORS: Record<MiroFishRiskCategory, string> = {
+export const RISK_CATEGORY_COLORS: Record<MiroSharkRiskCategory, string> = {
   'geopolitical': '#EF4444',
   'political': '#8B5CF6',
   'monetary-policy': '#3B82F6',
@@ -253,7 +253,7 @@ export interface SimulationContext {
   fetchedAt: string;
 }
 
-export interface MiroFishBriefing {
+export interface MiroSharkBriefing {
   summary: string;
   keyFindings: string[];
   riskAlerts: string[];
@@ -280,7 +280,7 @@ export interface SanctumNarrative {
   dateRange: { start: string; end: string | null };
 }
 
-export interface MiroFishRunRecord {
+export interface MiroSharkRunRecord {
   id: string;
   simulation_id: string;
   preset: SanctumPreset;
@@ -295,7 +295,7 @@ export interface MiroFishRunRecord {
 
 export interface RunningAnalysisSnapshot {
   compositeIV: number;
-  categoryScores: MiroFishCategoryScore[];
+  categoryScores: MiroSharkCategoryScore[];
   confidence: number;
   adjustmentCount: number;
   lastUpdateAt: string;
@@ -304,7 +304,7 @@ export interface RunningAnalysisSnapshot {
 }
 
 export interface RollingWindowData {
-  runs: MiroFishRunSummary[];
+  runs: MiroSharkRunSummary[];
   avgCompositeIV: number;
   avgConfidence: number;
   avgRegimeShift: number;
@@ -313,14 +313,14 @@ export interface RollingWindowData {
   periodEnd: string;
 }
 
-export interface MiroFishRunSummary {
+export interface MiroSharkRunSummary {
   simulationId: string;
   preset: SanctumPreset;
   compositeIV: number;
   confidence: number;
   regimeShiftProbability: number;
   briefingText: string;
-  categoryScores: MiroFishCategoryScore[];
-  scenarios: MiroFishScenario[];
+  categoryScores: MiroSharkCategoryScore[];
+  scenarios: MiroSharkScenario[];
   createdAt: string;
 }

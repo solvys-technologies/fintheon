@@ -54,7 +54,7 @@ const AGENTS: AgentNode[] = [
     ],
     memories: [
       { id: 'o1', fact: 'Kalshi S&P prediction: 72% probability SPX closes above 5800 by Friday', source: 'trade', timestamp: '2026-03-20T08:45:00', confidence: 0.72, version: 4, history: [{ version: 3, fact: 'S&P prediction: 68% above 5800', timestamp: '2026-03-19T14:00:00' }] },
-      { id: 'o2', fact: 'BTC cycle analysis: accumulation phase — low volatility + high exchange outflows', source: 'mirofish', timestamp: '2026-03-20T07:30:00', confidence: 0.65, version: 2 },
+      { id: 'o2', fact: 'BTC cycle analysis: accumulation phase — low volatility + high exchange outflows', source: 'miroshark', timestamp: '2026-03-20T07:30:00', confidence: 0.65, version: 2 },
       { id: 'o3', fact: 'FOMC dot plot shift detected — 2 rate cuts now priced for 2026 vs 3 prior', source: 'twitter', timestamp: '2026-03-19T16:00:00', confidence: 0.82, version: 1 },
     ],
   },
@@ -90,7 +90,7 @@ const AGENTS: AgentNode[] = [
     ],
     memories: [
       { id: 'f1', fact: '/NQ morning flush model triggered — watching 20450 EVEN for stink bid entry', source: 'trade', timestamp: '2026-03-20T09:32:00', confidence: 0.78, version: 2 },
-      { id: 'f2', fact: 'VIX at 14.2 — low vol regime, reducing position sizes per Rule 5 (dial back in volatility)', source: 'mirofish', timestamp: '2026-03-20T09:00:00', confidence: 0.91, version: 1 },
+      { id: 'f2', fact: 'VIX at 14.2 — low vol regime, reducing position sizes per Rule 5 (dial back in volatility)', source: 'miroshark', timestamp: '2026-03-20T09:00:00', confidence: 0.91, version: 1 },
       { id: 'f3', fact: 'TopStepX account balance: $52,340 — drawdown limit at $47,500 (9.3% buffer)', source: 'trade', timestamp: '2026-03-20T08:00:00', confidence: 1.0, version: 1 },
     ],
   },
@@ -115,7 +115,7 @@ const AGENTS: AgentNode[] = [
     memories: [
       { id: 'c1', fact: 'NVDA earnings beat +12% — raised guidance on AI data center demand. Installed base thesis intact', source: 'data', timestamp: '2026-03-19T20:00:00', confidence: 0.92, version: 3 },
       { id: 'c2', fact: 'AAPL antitrust risk elevated — DOJ case timeline accelerated, potential App Store remedies by Q3', source: 'twitter', timestamp: '2026-03-20T07:15:00', confidence: 0.68, version: 1 },
-      { id: 'c3', fact: 'Mega-cap tech P/E compression: avg forward P/E dropped from 32x to 28x over 6 weeks', source: 'mirofish', timestamp: '2026-03-20T06:00:00', confidence: 0.85, version: 2 },
+      { id: 'c3', fact: 'Mega-cap tech P/E compression: avg forward P/E dropped from 32x to 28x over 6 weeks', source: 'miroshark', timestamp: '2026-03-20T06:00:00', confidence: 0.85, version: 2 },
     ],
   },
   {

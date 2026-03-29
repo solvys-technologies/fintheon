@@ -1,6 +1,7 @@
+// [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Ask Harp
 // [claude-code 2026-03-10] Simplified ChatInterface — removed unused state, added AiLoader
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { AlertTriangle, CalendarCheck, X, Bookmark, Trash2 } from 'lucide-react';
+import { AlertTriangle, CalendarCheck, X, Bookmark, Trash2, Layers, ChevronRight } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { useFintheonAgents } from '../contexts/FintheonAgentContext';
 import { useHermesRuntime } from './chat/useHermesRuntime';
@@ -48,7 +49,7 @@ function groupCheckpointsByDate(items: ChatCheckpoint[]): { label: string; items
   return order.map((label) => ({ label, items: groups[label] }));
 }
 
-function ChatInterfaceInner({ conversationId, clearConversationId, lastError, thinkHarder, setThinkHarder, lastRequestId }: { conversationId: string | undefined; clearConversationId: () => void; lastError: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void; lastRequestId: string | null }) {
+function ChatInterfaceInner({ conversationId, clearConversationId, lastError, thinkHarder, setThinkHarder, lastRequestId, dualPane = false }: { conversationId: string | undefined; clearConversationId: () => void; lastError: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void; lastRequestId: string | null; dualPane?: boolean }) {
   const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -59,6 +60,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
   const [showCheckpoints, setShowCheckpoints] = usePanelState('fintheon:panel:checkpoints', false);
   const [checkpointVersion, setCheckpointVersion] = useState(0);
   const [showQuickFintheonModal] = useState(false);
+  const [showArtifacts, setShowArtifacts] = usePanelState('fintheon:panel:artifacts', true);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const checkpointItems = useMemo<ChatCheckpoint[]>(
@@ -142,6 +144,44 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
           />
         </div>
 
+        {/* Artifacts pane — right side, only in dual-pane mode (Ask Harp main) */}
+        {dualPane && (
+          <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showArtifacts ? 'w-96' : 'w-0'} border-l border-[var(--fintheon-accent)]/15`}>
+            <div className="w-96 h-full flex flex-col bg-[var(--fintheon-surface)]">
+              <div className="h-14 border-b border-[var(--fintheon-accent)]/15 flex items-center justify-between px-4">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[var(--fintheon-accent)]" />
+                  <h2 className="text-sm font-semibold text-[var(--fintheon-accent)] tracking-wide">Artifacts</h2>
+                </div>
+                <button onClick={() => setShowArtifacts(false)} className="p-1.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors">
+                  <X className="w-4 h-4 text-[var(--fintheon-accent)]/70" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-4 py-4">
+                <div className="flex flex-col items-center text-center py-12 px-4 gap-3">
+                  <Layers className="w-8 h-8 text-zinc-700" />
+                  <p className="text-sm text-zinc-500">No artifacts yet</p>
+                  <p className="text-[11px] text-zinc-600 leading-relaxed">
+                    Catalyst cards, narrative items, and trade proposals created by Harper-Opus will appear here.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Artifacts toggle — when collapsed in dual-pane mode */}
+        {dualPane && !showArtifacts && (
+          <button
+            onClick={() => setShowArtifacts(true)}
+            className="flex-shrink-0 w-8 border-l border-[var(--fintheon-accent)]/10 flex flex-col items-center justify-center gap-1 hover:bg-[var(--fintheon-accent)]/5 transition-colors"
+            title="Show artifacts"
+          >
+            <Layers className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/50" />
+            <ChevronRight className="w-3 h-3 text-[var(--fintheon-accent)]/30 rotate-180" />
+          </button>
+        )}
+
         {/* Checkpoints sidebar */}
         <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showCheckpoints ? 'w-80' : 'w-0'} border-l border-[var(--fintheon-accent)]/20`}>
           <div className="w-80 h-full flex flex-col bg-[var(--fintheon-surface)]">
@@ -216,9 +256,12 @@ export default function ChatInterface({ surfaceId = 'analysis' }: { surfaceId?: 
   const [thinkHarderState, setThinkHarderState] = useState(false);
   const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, surfaceId);
 
+  // Ask Harp main surface gets dual-pane layout (conversation + artifacts)
+  const isDualPane = surfaceId === 'askharp';
+
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ChatInterfaceInner conversationId={conversationId} clearConversationId={clearConversationId} lastError={lastError} thinkHarder={thinkHarderState} setThinkHarder={setThinkHarderState} lastRequestId={lastRequestId} />
+      <ChatInterfaceInner conversationId={conversationId} clearConversationId={clearConversationId} lastError={lastError} thinkHarder={thinkHarderState} setThinkHarder={setThinkHarderState} lastRequestId={lastRequestId} dualPane={isDualPane} />
     </AssistantRuntimeProvider>
   );
 }

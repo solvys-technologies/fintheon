@@ -1,6 +1,6 @@
 // [claude-code 2026-03-24] Persistence refactor: added GET /latest endpoint
 // [claude-code 2026-03-24] Added rolling-window, auto-run-check, running-state endpoints
-// [claude-code 2026-03-23] MiroFish route handlers — preset-aware, context endpoint, history
+// [claude-code 2026-03-23] MiroShark route handlers — preset-aware, context endpoint, history
 // [claude-code 2026-03-16] Switched to feature flag, local debate engine
 
 import type { Context } from 'hono';
@@ -13,16 +13,19 @@ import {
   getLatestReport,
   getRollingWindowData,
   shouldAutoRun,
-} from '../../services/mirofish/mirofish-service.js';
-import { assembleSimulationContext } from '../../services/mirofish/mirofish-context.js';
+  getDeliberationState,
+  injectUserTake,
+} from '../../services/miroshark/miroshark-service.js';
+import { getGovOfficials } from '../../services/miroshark/miroshark-client.js';
+import { assembleSimulationContext } from '../../services/miroshark/miroshark-context.js';
 import { isSkillEnabled } from '../../config/feature-flags.js';
-import type { SanctumPreset } from '../../services/mirofish/mirofish-types.js';
+import type { SanctumPreset } from '../../services/miroshark/miroshark-types.js';
 // @ts-ignore — T1 creates this file
-import { getRunningState } from '../../services/mirofish/mirofish-reactive.js';
+import { getRunningState } from '../../services/miroshark/miroshark-reactive.js';
 
 function checkEnabled(c: Context): Response | null {
-  if (!isSkillEnabled('mirofish')) {
-    return c.json({ error: 'MiroFish is disabled', code: 'FEATURE_DISABLED' }, 403);
+  if (!isSkillEnabled('miroshark')) {
+    return c.json({ error: 'MiroShark is disabled', code: 'FEATURE_DISABLED' }, 403);
   }
   return null;
 }
@@ -134,7 +137,7 @@ export async function handleGetContext(c: Context) {
     const context = await assembleSimulationContext('full-brief');
     return c.json(context);
   } catch (err) {
-    console.error('[MiroFish] Context assembly failed:', err);
+    console.error('[MiroShark] Context assembly failed:', err);
     return c.json({ error: 'Failed to assemble context' }, 500);
   }
 }
@@ -190,4 +193,44 @@ export async function handleRunningState(c: Context) {
 
   const state = getRunningState();
   return c.json({ state: state ?? null });
+}
+
+/** GET /deliberation/:id — get deliberation pipeline state */
+export async function handleGetDeliberation(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  const simId = c.req.param('id');
+  const state = getDeliberationState(simId);
+  if (!state) {
+    return c.json({ error: 'Deliberation not found' }, 404);
+  }
+  return c.json(state);
+}
+
+/** POST /deliberation/:id/inject — inject user take into deliberation */
+export async function handleInjectTake(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  const simId = c.req.param('id');
+  const body = await c.req.json<{ take: string }>();
+
+  if (!body.take?.trim()) {
+    return c.json({ error: 'take is required' }, 400);
+  }
+
+  const success = injectUserTake(simId, body.take.trim());
+  if (!success) {
+    return c.json({ error: 'Cannot inject — deliberation not active or not found' }, 400);
+  }
+  return c.json({ success: true });
+}
+
+/** GET /officials — list of gov official agent metadata */
+export async function handleGetOfficials(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  return c.json({ officials: getGovOfficials() });
 }

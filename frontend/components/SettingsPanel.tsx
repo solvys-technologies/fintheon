@@ -1099,12 +1099,12 @@ export function SettingsPage() {
                           When off, empty briefs show "No brief available" instead of "Awaiting AI-generated brief..."
                         </p>
                         <Toggle
-                          label="MiroFish simulations"
-                          enabled={developerSettings.mirofishSimulations ?? false}
-                          onChange={(val) => setDeveloperSettings({ ...developerSettings, mirofishSimulations: val })}
+                          label="MiroShark simulations"
+                          enabled={developerSettings.mirosharkSimulations ?? false}
+                          onChange={(val) => setDeveloperSettings({ ...developerSettings, mirosharkSimulations: val })}
                         />
                         <p className="text-xs text-gray-500">
-                          Enable MiroFish simulation layer for narrative and IV prediction testing
+                          Enable MiroShark simulation layer for narrative and IV prediction testing
                         </p>
                         <Toggle
                           label="Agent auto-proposals"

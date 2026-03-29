@@ -1,9 +1,8 @@
-// [claude-code 2026-03-24] Added RunningAnalysisSnapshot, RollingWindowQuery, AggregatedRollingData, MiroFishRunSummary
-// [claude-code 2026-03-23] MiroFish simulation engine types
-// [claude-code 2026-03-16] Extended with risk categories, time series, generated events for Sanctum
-// [claude-code 2026-03-23] Added SimulationContext, Briefing, RunRecord, preset types
+// [claude-code 2026-03-28] S8-T5: MiroShark gov official agents, deliberation pipeline types
+// [claude-code 2026-03-24] Added RunningAnalysisSnapshot, RollingWindowQuery, AggregatedRollingData, MiroSharkRunSummary
+// [claude-code 2026-03-23] MiroShark simulation engine types
 
-export type MiroFishRiskCategory =
+export type MiroSharkRiskCategory =
   | 'geopolitical'
   | 'political'
   | 'monetary-policy'
@@ -11,36 +10,84 @@ export type MiroFishRiskCategory =
   | 'market-structure'
   | 'black-swan';
 
-export interface MiroFishAgent {
+export interface MiroSharkAgent {
   id: string;
   persona: string;
-  role: 'macro-strategist' | 'sentiment-analyst' | 'geopolitical-analyst' | 'earnings-analyst' | 'risk-manager' | 'contrarian' | 'fundamentals' | 'sentiment';
+  role: 'macro-strategist' | 'sentiment-analyst' | 'geopolitical-analyst' | 'earnings-analyst' | 'risk-manager' | 'contrarian' | 'fundamentals' | 'sentiment'
+    | 'central-banker' | 'executive' | 'treasury-secretary' | 'foreign-policy' | 'commerce-secretary' | 'middle-east-envoy' | 'trade-rep' | 'trade-advisor';
   narrativeCategories: string[];
 }
 
-export interface MiroFishEntity {
+// ── Deliberation Pipeline Types ─────────────────────────────────────────────
+
+export interface GovOfficialAssessment {
+  agentId: string;
+  name: string;
+  role: string;
+  assessment: string;
+  confidence: number;
+  keyConcern: string;
+  recommendedAction: string;
+  projectedIVScore: number;
+  regimeShiftProbability: number;
+  categoryScores: MiroSharkCategoryScore[];
+}
+
+export interface HermesDeliberation {
+  agentId: string;
+  name: string;
+  verdict: 'agree' | 'disagree' | 'nuance';
+  reasoning: string;
+  confidence: number;
+}
+
+export interface HarperOpusScoring {
+  compositeIV: number;
+  regimeShiftProbability: number;
+  categoryScores: MiroSharkCategoryScore[];
+  surfacedTheses: string[];
+  downgradedTheses: string[];
+  finalBriefing: string;
+  actionabilityScore: number;
+  contestedTheses: string[];
+}
+
+export type DeliberationPhase = 'idle' | 'miroshark-sim' | 'hermes-deliberation' | 'harper-scoring' | 'complete' | 'interrupted';
+
+export interface DeliberationState {
+  simulationId: string;
+  phase: DeliberationPhase;
+  phaseStartedAt: string;
+  mirosharkResults?: GovOfficialAssessment[];
+  hermesResults?: HermesDeliberation[];
+  harperScoring?: HarperOpusScoring;
+  userInjection?: string;
+  error?: string;
+}
+
+export interface MiroSharkEntity {
   id: string;
   type: 'narrative' | 'event' | 'indicator';
   label: string;
   properties: Record<string, unknown>;
 }
 
-export interface MiroFishRelationship {
+export interface MiroSharkRelationship {
   fromId: string;
   toId: string;
   type: 'reinforces' | 'contradicts' | 'causes' | 'correlates';
   weight: number;
 }
 
-export interface MiroFishSeed {
-  entities: MiroFishEntity[];
-  relationships: MiroFishRelationship[];
+export interface MiroSharkSeed {
+  entities: MiroSharkEntity[];
+  relationships: MiroSharkRelationship[];
   environmentalContext: Record<string, unknown>;
-  agents: MiroFishAgent[];
+  agents: MiroSharkAgent[];
   timestamp: string;
 }
 
-export interface MiroFishSimulation {
+export interface MiroSharkSimulation {
   id: string;
   status: 'queued' | 'running' | 'complete' | 'error';
   progress: number;
@@ -49,7 +96,7 @@ export interface MiroFishSimulation {
   error?: string;
 }
 
-export interface MiroFishScenario {
+export interface MiroSharkScenario {
   label: string;
   probability: number;
   projectedIVScore: number;
@@ -57,57 +104,57 @@ export interface MiroFishScenario {
   agentConsensus: number;
 }
 
-export interface MiroFishCategoryScore {
-  category: MiroFishRiskCategory;
+export interface MiroSharkCategoryScore {
+  category: MiroSharkRiskCategory;
   ivScore: number;
   confidence: number;
   delta: number;
 }
 
-export interface MiroFishTimePoint {
+export interface MiroSharkTimePoint {
   dayOffset: number;
   date: string;
   composite: number;
-  categories: Record<MiroFishRiskCategory, number>;
+  categories: Record<MiroSharkRiskCategory, number>;
 }
 
-export interface MiroFishGeneratedEvent {
+export interface MiroSharkGeneratedEvent {
   id: string;
   title: string;
   description: string;
   date: string;
-  category: MiroFishRiskCategory;
+  category: MiroSharkRiskCategory;
   impactScore: number;
   probability: number;
   isAiGenerated: true;
 }
 
-export interface MiroFishAgentResponse {
+export interface MiroSharkAgentResponse {
   agentId: string;
   projectedIVScore: number;
   regimeShiftProbability: number;
-  categoryScores: MiroFishCategoryScore[];
-  scenarios: MiroFishScenario[];
-  generatedEvents: MiroFishGeneratedEvent[];
+  categoryScores: MiroSharkCategoryScore[];
+  scenarios: MiroSharkScenario[];
+  generatedEvents: MiroSharkGeneratedEvent[];
   reasoning: string;
 }
 
-export interface MiroFishReport {
+export interface MiroSharkReport {
   simulationId: string;
-  scenarios: MiroFishScenario[];
+  scenarios: MiroSharkScenario[];
   regimeShiftProbability: number;
   nextSessionProjection: number;
   confidence: number;
   agentVotes: Array<{ agentId: string; position: string; confidence: number }>;
-  categoryScores: MiroFishCategoryScore[];
-  timeSeries: MiroFishTimePoint[];
-  generatedEvents: MiroFishGeneratedEvent[];
+  categoryScores: MiroSharkCategoryScore[];
+  timeSeries: MiroSharkTimePoint[];
+  generatedEvents: MiroSharkGeneratedEvent[];
   generatedAt: string;
-  briefing?: MiroFishBriefing;
+  briefing?: MiroSharkBriefing;
   contextSnapshot?: SimulationContext;
 }
 
-export interface MiroFishPrediction {
+export interface MiroSharkPrediction {
   simulationId: string;
   nextSessionScore: number;
   confidence: number;
@@ -117,16 +164,16 @@ export interface MiroFishPrediction {
     probability: number;
     projectedScore: number;
   }>;
-  categoryScores?: MiroFishCategoryScore[];
-  timeSeries?: MiroFishTimePoint[];
-  generatedEvents?: MiroFishGeneratedEvent[];
-  briefing?: MiroFishBriefing;
+  categoryScores?: MiroSharkCategoryScore[];
+  timeSeries?: MiroSharkTimePoint[];
+  generatedEvents?: MiroSharkGeneratedEvent[];
+  briefing?: MiroSharkBriefing;
   contextSnapshot?: SimulationContext;
-  source: 'mirofish';
+  source: 'miroshark';
   generatedAt: string;
 }
 
-export interface MiroFishInjection {
+export interface MiroSharkInjection {
   variable: string;
   targetNarrativeIds: string[];
   description: string;
@@ -194,7 +241,7 @@ export interface SimulationContext {
   fetchedAt: string;
 }
 
-export interface MiroFishBriefing {
+export interface MiroSharkBriefing {
   summary: string;
   keyFindings: string[];
   riskAlerts: string[];
@@ -202,7 +249,7 @@ export interface MiroFishBriefing {
   generatedAt: string;
 }
 
-export interface MiroFishRunRecord {
+export interface MiroSharkRunRecord {
   id: string;
   simulation_id: string;
   preset: SanctumPreset;
@@ -210,8 +257,8 @@ export interface MiroFishRunRecord {
   regime_shift_probability: number;
   confidence: number;
   briefing_text: string;
-  category_scores: MiroFishCategoryScore[];
-  scenarios: MiroFishScenario[];
+  category_scores: MiroSharkCategoryScore[];
+  scenarios: MiroSharkScenario[];
   context_snapshot: SimulationContext;
   created_at: string;
 }
@@ -220,7 +267,7 @@ export interface MiroFishRunRecord {
 
 export interface RunningAnalysisSnapshot {
   compositeIV: number;
-  categoryScores: MiroFishCategoryScore[];
+  categoryScores: MiroSharkCategoryScore[];
   confidence: number;
   adjustmentCount: number;
   lastUpdateAt: string;
@@ -235,7 +282,7 @@ export interface RollingWindowQuery {
 }
 
 export interface AggregatedRollingData {
-  runs: MiroFishRunSummary[];
+  runs: MiroSharkRunSummary[];
   avgCompositeIV: number;
   avgConfidence: number;
   avgRegimeShift: number;
@@ -244,14 +291,14 @@ export interface AggregatedRollingData {
   periodEnd: string;
 }
 
-export interface MiroFishRunSummary {
+export interface MiroSharkRunSummary {
   simulationId: string;
   preset: SanctumPreset;
   compositeIV: number;
   confidence: number;
   regimeShiftProbability: number;
   briefingText: string;
-  categoryScores: MiroFishCategoryScore[];
-  scenarios: MiroFishScenario[];
+  categoryScores: MiroSharkCategoryScore[];
+  scenarios: MiroSharkScenario[];
   createdAt: string;
 }

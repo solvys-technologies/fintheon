@@ -31,8 +31,8 @@ interface NarrativeToolbarProps {
   hasSnapshot: boolean;
   onImport: () => void;
   onManage: () => void;
-  onMiroFish: () => void;
-  mirofishActive: boolean;
+  onMiroShark: () => void;
+  mirosharkActive: boolean;
 }
 
 const ZOOM_LEVELS: { value: ZoomLevel; label: string; hint: string }[] = [
@@ -84,7 +84,7 @@ function ToolbarBtn({ onClick, active, disabled, tooltip, shortcut, children }: 
   );
 }
 
-export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport, onManage, onMiroFish, mirofishActive }: NarrativeToolbarProps) {
+export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport, onManage, onMiroShark, mirosharkActive }: NarrativeToolbarProps) {
   const { highlightMode, toggleHighlightMode } = useHighlight();
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -279,7 +279,7 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
         </ToolbarBtn>
 
         {/* Sanctum */}
-        <ToolbarBtn onClick={onMiroFish} active={mirofishActive} tooltip="Open Sanctum — market intelligence panel" shortcut="S">
+        <ToolbarBtn onClick={onMiroShark} active={mirosharkActive} tooltip="Open Sanctum — market intelligence panel" shortcut="S">
           <Zap className="w-3.5 h-3.5" />
         </ToolbarBtn>
 

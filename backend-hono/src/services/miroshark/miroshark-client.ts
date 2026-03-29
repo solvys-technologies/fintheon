@@ -1,61 +1,144 @@
-// [claude-code 2026-03-16] MiroFish local multi-agent debate engine
-// Replaces external HTTP client with local simulation via Hermes/OpenRouter
+// [claude-code 2026-03-28] S8-T5: MiroShark gov official debate engine — 8 personas replacing 5 debate agents
+// Hybrid worldview: baked-in base + 14-day RiskFlow headline augmentation per official
 
 import { generateText } from 'ai';
 import { selectModel, createModelClient, type AiModelKey } from '../ai/model-selector.js';
 import { isSkillEnabled } from '../../config/feature-flags.js';
+import { getSupabaseClient } from '../../config/supabase.js';
 import type {
-  MiroFishSeed,
-  MiroFishReport,
-  MiroFishScenario,
-  MiroFishRiskCategory,
-  MiroFishCategoryScore,
-  MiroFishTimePoint,
-  MiroFishGeneratedEvent,
-  MiroFishAgentResponse,
-} from './mirofish-types.js';
+  MiroSharkSeed,
+  MiroSharkReport,
+  MiroSharkScenario,
+  MiroSharkRiskCategory,
+  MiroSharkCategoryScore,
+  MiroSharkTimePoint,
+  MiroSharkGeneratedEvent,
+  MiroSharkAgentResponse,
+} from './miroshark-types.js';
 
-const RISK_CATEGORIES: MiroFishRiskCategory[] = [
+const RISK_CATEGORIES: MiroSharkRiskCategory[] = [
   'geopolitical', 'political', 'monetary-policy',
   'earnings-corporate', 'market-structure', 'black-swan',
 ];
 
-const DEBATE_AGENTS = [
+// ── Government Official Agents ──────────────────────────────────────────────
+
+interface GovOfficialAgent {
+  id: string;
+  name: string;
+  role: string;
+  weight: number;
+  searchTerms: string[];
+  persona: string;
+}
+
+const GOV_OFFICIALS: GovOfficialAgent[] = [
   {
-    id: 'oracle-sim',
-    role: 'macro-strategist' as const,
+    id: 'fed-chair',
+    name: 'Fed Chair',
+    role: 'central-banker',
     weight: 1.0,
-    persona: `You are Oracle, the All-Seer. You analyze macro trends — yield curves, central bank policy paths, cross-asset correlations, and prediction market signals. You specialize in identifying regime shifts before they become consensus. Focus on monetary policy risk, geopolitical risk from a macro lens, and structural market risks.`,
+    searchTerms: ['fed', 'powell', 'federal reserve', 'fomc', 'fed chair'],
+    persona: `You are the Federal Reserve Chair. You are data-dependent and speak in measured, forward-guidance language. Your dual mandate is maximum employment and price stability. You reference the dot plot, labor market data, PCE inflation, and financial conditions. You never commit to specific rate paths — you describe scenarios. You are hawkish when inflation is sticky, dovish when the labor market cracks. Think in terms of policy transmission lags, neutral rate estimates, and balance sheet runoff pace.`,
   },
   {
-    id: 'feucht-sim',
-    role: 'risk-manager' as const,
+    id: 'trump',
+    name: 'Trump',
+    role: 'executive',
     weight: 1.0,
-    persona: `You are Feucht, the risk manager. You assess tail risk, drawdown scenarios, volatility clustering, and position exposure. You are skeptical by nature and focus on what can go wrong. Evaluate black swan probability, market structure fragility, and correlation breakdowns.`,
+    searchTerms: ['trump', 'president', 'white house', 'executive order'],
+    persona: `You are President Trump. You are a dealmaker who uses tariffs as leverage and unpredictability as strategy. You believe in "the art of the deal" — escalate to negotiate. You are a tariff hawk who views trade deficits as losses. You may announce sweeping tariff actions with little warning, then walk them back partially in negotiations. Markets can't price your next move because you deliberately keep them guessing. You focus on stock market performance as a scorecard, manufacturing jobs, and bilateral trade deals.`,
   },
   {
-    id: 'consul-sim',
-    role: 'fundamentals' as const,
+    id: 'bessent',
+    name: 'Bessent',
+    role: 'treasury-secretary',
     weight: 1.0,
-    persona: `You are Consul, the fundamentals analyst. You evaluate corporate earnings trends, revenue guidance, mega-cap tech fundamentals, and sector rotation signals. Focus on earnings-corporate risk and how fundamental data creates or resolves political/monetary policy uncertainty.`,
+    searchTerms: ['bessent', 'treasury', 'treasury secretary'],
+    persona: `You are Treasury Secretary Scott Bessent. You are a macro hedge fund veteran turned fiscal steward. You prioritize bond market stability, deficit reduction through growth, and orderly Treasury auctions. You understand market plumbing — repo markets, term premium, duration supply. You worry about fiscal sustainability and the "bond vigilantes." You want to bring the deficit below 3% of GDP through deregulation and energy dominance, not austerity. You are the market's adult in the room.`,
   },
   {
-    id: 'herald-sim',
-    role: 'sentiment' as const,
-    weight: 1.0,
-    persona: `You are Herald, the sentiment analyst. You read news flow, social media signals, positioning data, and headline heat. Focus on political risk from a narrative lens, geopolitical escalation signals, and how sentiment drives short-term IV.`,
+    id: 'rubio',
+    name: 'Rubio',
+    role: 'foreign-policy',
+    weight: 0.8,
+    searchTerms: ['rubio', 'secretary of state', 'state department'],
+    persona: `You are Secretary of State Marco Rubio. You are a China hawk and human rights hardliner. You view the US-China competition through a civilizational lens. You push for tech decoupling, export controls on semiconductors, and defending Taiwan. You are skeptical of diplomatic engagement without preconditions. Your geopolitical framework puts ideological competition ahead of economic interdependence. Sanctions are your preferred tool.`,
   },
   {
-    id: 'contrarian',
-    role: 'contrarian' as const,
-    weight: 0.5,
-    persona: `You are the Contrarian. Your job is to challenge every thesis the other agents might hold. Find the holes in consensus thinking. Propose alternative scenarios that the market is underpricing. Be constructively skeptical — if everyone is bearish, find the bull case; if everyone is complacent, find the hidden risk.`,
+    id: 'lutnick',
+    name: 'Lutnick',
+    role: 'commerce-secretary',
+    weight: 0.8,
+    searchTerms: ['lutnick', 'commerce', 'commerce secretary'],
+    persona: `You are Commerce Secretary Howard Lutnick. You are focused on trade enforcement, domestic manufacturing, and tariff implementation. You come from Wall Street and understand how tariffs flow through supply chains. You are the operational arm of trade policy — you decide which products get tariffed, which get exemptions, and how enforcement works. You think in terms of Section 301, entity lists, and rules of origin.`,
+  },
+  {
+    id: 'witkoff',
+    name: 'Witkoff',
+    role: 'middle-east-envoy',
+    weight: 0.7,
+    searchTerms: ['witkoff', 'envoy', 'middle east', 'ceasefire'],
+    persona: `You are Middle East Envoy Steve Witkoff. You are a de-escalation specialist and ceasefire broker. You work diplomatic backchannels between Israel, Saudi Arabia, Iran, and Gulf states. You think about oil supply risk, Strait of Hormuz, and Abraham Accords expansion. When tensions rise in the Middle East, you assess whether it's posturing or genuine escalation. You are the market's read on geopolitical risk premium in energy.`,
+  },
+  {
+    id: 'greer',
+    name: 'Greer',
+    role: 'trade-rep',
+    weight: 0.8,
+    searchTerms: ['greer', 'ustr', 'trade representative', 'trade rep'],
+    persona: `You are US Trade Representative Jamieson Greer. You execute tariff implementation and negotiate trade deals. You are the technocrat who turns presidential trade announcements into legal reality. You work on reciprocal tariff schedules, trade deal enforcement, and WTO disputes. You think about effective tariff rates, trade diversion, and retaliatory escalation chains. When Trump announces tariffs, you determine the timeline, scope, and exemption process.`,
+  },
+  {
+    id: 'navarro',
+    name: 'Navarro',
+    role: 'trade-advisor',
+    weight: 0.7,
+    searchTerms: ['navarro', 'trade advisor', 'peter navarro'],
+    persona: `You are Senior Trade Advisor Peter Navarro. You are the most protectionist voice in the administration. You believe in manufacturing onshoring at any cost, view China as an existential economic threat, and see tariffs as a permanent tool, not a negotiating lever. You push for maximum tariff escalation, minimal exemptions, and reshoring incentives. When others counsel restraint, you counsel aggression. Markets fear your influence because you never blinks on trade war escalation.`,
   },
 ];
 
-const AGENT_SYSTEM_PROMPT = (persona: string) => `${persona}
+// ── Headline Augmentation (14-day decay) ────────────────────────────────────
 
-You are participating in a MiroFish debate simulation. Analyze the provided market context and narrative state, then produce your assessment.
+async function fetchRecentHeadlinesForOfficial(agent: GovOfficialAgent): Promise<string[]> {
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Search for headlines mentioning this official's search terms
+  const { data, error } = await sb
+    .from('scored_riskflow_items')
+    .select('title, summary, created_at')
+    .gte('created_at', cutoff)
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (error || !data?.length) return [];
+
+  // Filter headlines that mention any of the official's search terms
+  const lowerTerms = agent.searchTerms.map(t => t.toLowerCase());
+  const matching = data.filter(row => {
+    const text = `${row.title} ${row.summary ?? ''}`.toLowerCase();
+    return lowerTerms.some(term => text.includes(term));
+  });
+
+  return matching.slice(0, 10).map(row =>
+    `[${row.created_at.slice(0, 10)}] ${row.title}${row.summary ? ` — ${row.summary.slice(0, 120)}` : ''}`
+  );
+}
+
+function buildAgentSystemPrompt(persona: string, headlines: string[]): string {
+  let prompt = `${persona}
+
+You are a government official participating in a MiroShark policy simulation. Based on your role and worldview, analyze the provided market context and assess how your policy domain affects market volatility and risk.`;
+
+  if (headlines.length > 0) {
+    prompt += `\n\n--- RECENT HEADLINES RELEVANT TO YOUR PORTFOLIO ---\n${headlines.join('\n')}\n--- END HEADLINES ---\n\nIncorporate these recent developments into your assessment. They reflect the latest actions and statements from your domain.`;
+  }
+
+  prompt += `
 
 You MUST respond with valid JSON matching this exact schema:
 {
@@ -75,53 +158,73 @@ You MUST respond with valid JSON matching this exact schema:
 
 You MUST include ALL 6 categories in categoryScores. Provide 2-4 scenarios and 1-3 generated events. Return ONLY the JSON object, no markdown fences.`;
 
-export function isMiroFishEnabled(): boolean {
-  return isSkillEnabled('mirofish');
+  return prompt;
 }
 
-export async function runDebate(seed: MiroFishSeed): Promise<MiroFishReport> {
+/** Get the list of gov official agents (for frontend panel metadata) */
+export function getGovOfficials() {
+  return GOV_OFFICIALS.map(a => ({ id: a.id, name: a.name, role: a.role, weight: a.weight }));
+}
+
+export function isMiroSharkEnabled(): boolean {
+  return isSkillEnabled('miroshark');
+}
+
+export async function runDebate(seed: MiroSharkSeed): Promise<MiroSharkReport> {
   const context = formatSeedContext(seed);
   const startTime = Date.now();
 
-  const results = await Promise.allSettled(
-    DEBATE_AGENTS.map(agent => runSimAgent(agent, context)),
+  // Fetch 14-day headlines for each official in parallel
+  const headlineResults = await Promise.allSettled(
+    GOV_OFFICIALS.map(agent => fetchRecentHeadlinesForOfficial(agent)),
+  );
+  const headlinesByAgent = GOV_OFFICIALS.map((_, i) =>
+    headlineResults[i].status === 'fulfilled' ? headlineResults[i].value : [],
   );
 
-  const responses: MiroFishAgentResponse[] = [];
+  // Run all gov official agents in parallel
+  const results = await Promise.allSettled(
+    GOV_OFFICIALS.map((agent, i) => runGovAgent(agent, context, headlinesByAgent[i])),
+  );
+
+  const responses: MiroSharkAgentResponse[] = [];
   for (const result of results) {
     if (result.status === 'fulfilled') {
       responses.push(result.value);
     } else {
-      console.error('[MiroFish] Agent failed:', result.reason);
+      console.error('[MiroShark] Agent failed:', result.reason);
     }
   }
 
   if (responses.length === 0) {
-    throw new Error('All MiroFish debate agents failed');
+    throw new Error('All MiroShark gov official agents failed');
   }
 
-  console.log(`[MiroFish] Debate completed: ${responses.length}/${DEBATE_AGENTS.length} agents responded in ${Date.now() - startTime}ms`);
+  console.log(`[MiroShark] Debate completed: ${responses.length}/${GOV_OFFICIALS.length} officials responded in ${Date.now() - startTime}ms`);
   return aggregateResponses(responses);
 }
 
-async function runSimAgent(
-  agent: { id: string; role: string; weight: number; persona: string },
+async function runGovAgent(
+  agent: GovOfficialAgent,
   context: string,
-): Promise<MiroFishAgentResponse> {
+  headlines: string[],
+): Promise<MiroSharkAgentResponse> {
   const selection = selectModel({ taskType: 'reasoning' });
   const model = createModelClient(selection.model as AiModelKey);
+
+  const systemPrompt = buildAgentSystemPrompt(agent.persona, headlines);
 
   const { text } = await generateText({
     model,
     messages: [
-      { role: 'system', content: AGENT_SYSTEM_PROMPT(agent.persona) },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: context },
     ],
     temperature: 0.4,
     maxOutputTokens: 1024,
   });
 
-  const parsed = parseJsonSafe<Omit<MiroFishAgentResponse, 'agentId'>>(text);
+  const parsed = parseJsonSafe<Omit<MiroSharkAgentResponse, 'agentId'>>(text);
 
   if (!parsed) {
     return buildFallbackResponse(agent.id);
@@ -142,8 +245,8 @@ async function runSimAgent(
   };
 }
 
-function aggregateResponses(responses: MiroFishAgentResponse[]): MiroFishReport {
-  const agentWeights = new Map(DEBATE_AGENTS.map(a => [a.id, a.weight]));
+function aggregateResponses(responses: MiroSharkAgentResponse[]): MiroSharkReport {
+  const agentWeights = new Map(GOV_OFFICIALS.map(a => [a.id, a.weight]));
   let totalWeight = 0;
   let weightedIV = 0;
   let weightedRegime = 0;
@@ -192,9 +295,9 @@ function aggregateResponses(responses: MiroFishAgentResponse[]): MiroFishReport 
 }
 
 function aggregateCategoryScores(
-  responses: MiroFishAgentResponse[],
+  responses: MiroSharkAgentResponse[],
   weights: Map<string, number>,
-): MiroFishCategoryScore[] {
+): MiroSharkCategoryScore[] {
   return RISK_CATEGORIES.map(cat => {
     let totalW = 0;
     let wScore = 0;
@@ -225,8 +328,8 @@ function aggregateCategoryScores(
   });
 }
 
-function mergeScenarios(responses: MiroFishAgentResponse[]): MiroFishScenario[] {
-  const all: MiroFishScenario[] = [];
+function mergeScenarios(responses: MiroSharkAgentResponse[]): MiroSharkScenario[] {
+  const all: MiroSharkScenario[] = [];
   for (const r of responses) {
     for (const s of r.scenarios) {
       all.push({
@@ -239,7 +342,7 @@ function mergeScenarios(responses: MiroFishAgentResponse[]): MiroFishScenario[] 
   }
 
   // Group by label similarity and average
-  const grouped = new Map<string, MiroFishScenario[]>();
+  const grouped = new Map<string, MiroSharkScenario[]>();
   for (const s of all) {
     const key = s.label.toLowerCase().replace(/[^a-z]/g, '').slice(0, 12);
     const group = grouped.get(key) ?? [];
@@ -247,7 +350,7 @@ function mergeScenarios(responses: MiroFishAgentResponse[]): MiroFishScenario[] 
     grouped.set(key, group);
   }
 
-  const merged: MiroFishScenario[] = [];
+  const merged: MiroSharkScenario[] = [];
   for (const [, group] of grouped) {
     const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
     merged.push({
@@ -255,7 +358,7 @@ function mergeScenarios(responses: MiroFishAgentResponse[]): MiroFishScenario[] 
       probability: Number(avg(group.map(g => g.probability)).toFixed(2)),
       projectedIVScore: Number(avg(group.map(g => g.projectedIVScore)).toFixed(1)),
       description: group[0].description,
-      agentConsensus: Number((group.length / DEBATE_AGENTS.length).toFixed(2)),
+      agentConsensus: Number((group.length / GOV_OFFICIALS.length).toFixed(2)),
     });
   }
 
@@ -267,9 +370,9 @@ function mergeScenarios(responses: MiroFishAgentResponse[]): MiroFishScenario[] 
   return merged.slice(0, 6);
 }
 
-function deduplicateEvents(responses: MiroFishAgentResponse[]): MiroFishGeneratedEvent[] {
+function deduplicateEvents(responses: MiroSharkAgentResponse[]): MiroSharkGeneratedEvent[] {
   const seen = new Set<string>();
-  const events: MiroFishGeneratedEvent[] = [];
+  const events: MiroSharkGeneratedEvent[] = [];
 
   for (const r of responses) {
     for (const e of r.generatedEvents) {
@@ -285,11 +388,11 @@ function deduplicateEvents(responses: MiroFishAgentResponse[]): MiroFishGenerate
 }
 
 function generateTimeSeries(
-  categoryScores: MiroFishCategoryScore[],
+  categoryScores: MiroSharkCategoryScore[],
   compositeScore: number,
   days: number,
-): MiroFishTimePoint[] {
-  const points: MiroFishTimePoint[] = [];
+): MiroSharkTimePoint[] {
+  const points: MiroSharkTimePoint[] = [];
   const now = new Date();
   const meanTarget = 3.5;
 
@@ -298,7 +401,7 @@ function generateTimeSeries(
     date.setDate(date.getDate() + d);
     const decay = d / days;
 
-    const categories = {} as Record<MiroFishRiskCategory, number>;
+    const categories = {} as Record<MiroSharkRiskCategory, number>;
     let catSum = 0;
 
     for (const cs of categoryScores) {
@@ -325,8 +428,8 @@ function generateTimeSeries(
   return points;
 }
 
-function formatSeedContext(seed: MiroFishSeed): string {
-  const sections: string[] = ['=== MIROFISH SIMULATION CONTEXT ==='];
+function formatSeedContext(seed: MiroSharkSeed): string {
+  const sections: string[] = ['=== MIROSHARK SIMULATION CONTEXT ==='];
 
   if (seed.entities.length > 0) {
     sections.push('\n--- NARRATIVE ENTITIES ---');
@@ -370,7 +473,7 @@ function formatSeedContext(seed: MiroFishSeed): string {
   return sections.join('\n');
 }
 
-function buildFallbackResponse(agentId: string): MiroFishAgentResponse {
+function buildFallbackResponse(agentId: string): MiroSharkAgentResponse {
   return {
     agentId,
     projectedIVScore: 5,
@@ -388,7 +491,7 @@ function buildFallbackResponse(agentId: string): MiroFishAgentResponse {
   };
 }
 
-function normalizeCategories(scores: MiroFishCategoryScore[] | undefined): MiroFishCategoryScore[] {
+function normalizeCategories(scores: MiroSharkCategoryScore[] | undefined): MiroSharkCategoryScore[] {
   if (!scores || scores.length === 0) {
     return RISK_CATEGORIES.map(cat => ({ category: cat, ivScore: 5, confidence: 0.5, delta: 0 }));
   }

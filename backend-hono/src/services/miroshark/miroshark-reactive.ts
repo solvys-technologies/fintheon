@@ -1,7 +1,7 @@
 // [claude-code 2026-03-24] Deterministic reactive score adjustment engine — NO LLM calls, purely rule-based.
-// Maps RiskFlow items to MiroFish risk categories and adjusts running analysis scores in real-time.
+// Maps RiskFlow items to MiroShark risk categories and adjusts running analysis scores in real-time.
 
-export type MiroFishRiskCategory =
+export type MiroSharkRiskCategory =
   | 'geopolitical'
   | 'political'
   | 'monetary-policy'
@@ -11,7 +11,7 @@ export type MiroFishRiskCategory =
 
 export interface RunningAnalysisState {
   baselineRunId: string | null;
-  categoryScores: Record<MiroFishRiskCategory, number>;
+  categoryScores: Record<MiroSharkRiskCategory, number>;
   compositeIV: number;
   confidence: number;
   accumulatedItemIds: string[];
@@ -19,7 +19,7 @@ export interface RunningAnalysisState {
   adjustmentCount: number;
 }
 
-const ALL_CATEGORIES: MiroFishRiskCategory[] = [
+const ALL_CATEGORIES: MiroSharkRiskCategory[] = [
   'geopolitical',
   'political',
   'monetary-policy',
@@ -28,7 +28,7 @@ const ALL_CATEGORIES: MiroFishRiskCategory[] = [
   'black-swan',
 ];
 
-const CATEGORY_MAP: Record<string, MiroFishRiskCategory> = {
+const CATEGORY_MAP: Record<string, MiroSharkRiskCategory> = {
   fed: 'monetary-policy',
   fomc: 'monetary-policy',
   rate: 'monetary-policy',
@@ -58,13 +58,13 @@ function clamp(min: number, max: number, value: number): number {
 }
 
 /**
- * Map a RiskFlow item's tags + headline to one of the 6 MiroFish risk categories.
+ * Map a RiskFlow item's tags + headline to one of the 6 MiroShark risk categories.
  * Checks tags first, then headline keywords. Defaults to 'market-structure'.
  */
 export function mapRiskFlowToCategory(
   tags: string[],
   headline: string,
-): MiroFishRiskCategory {
+): MiroSharkRiskCategory {
   // Check tags first
   for (const tag of tags) {
     const lower = tag.toLowerCase();
@@ -130,10 +130,10 @@ export function getRunningState(): RunningAnalysisState | null { return _running
 
 export function setRunningState(state: RunningAnalysisState): void { _runningState = state; }
 
-/** Initialize fresh running state from a full MiroFish debate result. */
+/** Initialize fresh running state from a full MiroShark debate result. */
 export function resetRunningState(
   baselineRunId: string,
-  categoryScores: Record<MiroFishRiskCategory, number>,
+  categoryScores: Record<MiroSharkRiskCategory, number>,
   compositeIV: number,
 ): void {
   _runningState = {

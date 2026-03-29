@@ -29,6 +29,7 @@ interface RiskFlowContextValue {
   loadMore: () => Promise<void>;
   loadingMore: boolean;
   hasMore: boolean;
+  initialLoaded: boolean;
 }
 
 const RiskFlowContext = createContext<RiskFlowContextValue>({
@@ -47,6 +48,7 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   loadMore: async () => {},
   loadingMore: false,
   hasMore: false,
+  initialLoaded: false,
 });
 
 const NOTION_POLL_MS = 60_000;
@@ -104,6 +106,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [initialLoaded, setInitialLoaded] = useState(false);
   const notionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -199,9 +202,11 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       }));
       setBackendAlerts(alerts);
       setHasMore(response.hasMore ?? false);
+      setInitialLoaded(true);
       console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items, hasMore: ${response.hasMore} (instrument=${selectedSymbol.symbol})`);
     } catch (err) {
       console.warn('[RiskFlowContext] Backend feed poll error:', err);
+      setInitialLoaded(true);
     }
   }, [backend, selectedSymbol.symbol]);
 
@@ -380,6 +385,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         loadMore,
         loadingMore,
         hasMore,
+        initialLoaded,
       }}
     >
       {children}

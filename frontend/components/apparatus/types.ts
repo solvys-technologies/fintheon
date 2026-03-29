@@ -53,7 +53,7 @@ export interface MemoryVersion {
   timestamp: string;
 }
 
-export type MemorySource = 'twitter' | 'data' | 'mirofish' | 'trade' | 'boardroom' | 'manual';
+export type MemorySource = 'twitter' | 'data' | 'miroshark' | 'trade' | 'boardroom' | 'manual';
 
 export interface AgentConnection {
   from: string;
@@ -87,4 +87,5 @@ export interface Commandment {
   agentUsage: Record<string, string>;
   relatedCommandments: number[];
   mentorSource?: string;
+  backgroundStory?: string;
 }

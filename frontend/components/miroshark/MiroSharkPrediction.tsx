@@ -1,17 +1,17 @@
-// [claude-code 2026-03-16] Individual MiroFish prediction card with animated border
-interface MiroFishPredictionProps {
+// [claude-code 2026-03-16] Individual MiroShark prediction card with animated border
+interface MiroSharkPredictionProps {
   label: string;
   probability: number;
   projectedScore: number;
   isTop?: boolean;
 }
 
-export function MiroFishPrediction({
+export function MiroSharkPrediction({
   label,
   probability,
   projectedScore,
   isTop = false,
-}: MiroFishPredictionProps) {
+}: MiroSharkPredictionProps) {
   const scoreColor = projectedScore >= 7 ? '#EF4444'
     : projectedScore >= 5 ? '#F59E0B'
     : '#34D399';
@@ -22,7 +22,7 @@ export function MiroFishPrediction({
       style={{
         backgroundColor: 'rgba(10, 10, 0, 0.7)',
         borderColor: isTop ? 'rgba(212, 175, 55, 0.4)' : 'rgba(255, 255, 255, 0.06)',
-        animation: isTop ? 'mirofish-pulse 2s ease-in-out infinite' : undefined,
+        animation: isTop ? 'miroshark-pulse 2s ease-in-out infinite' : undefined,
       }}
     >
       {/* AI badge */}

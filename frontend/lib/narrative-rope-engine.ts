@@ -1,5 +1,7 @@
-// [claude-code 2026-03-28] S5-T5: Rope engine — auto-connects cards by shared tags
+// [claude-code 2026-03-28] S8-T3: Rope engine overhaul — hub-to-catalyst + cross-catalyst ropes, narrative thread colors
 import type { CatalystCard } from './narrative-types';
+
+export type RopeKind = 'hub-to-catalyst' | 'cross-catalyst';
 
 export interface RopeConnection {
   id: string;
@@ -7,20 +9,44 @@ export interface RopeConnection {
   toId: string;
   sharedTags: string[];
   strength: number; // 0-1 based on tag overlap ratio
+  kind: RopeKind;
+  fromNarrative?: string; // narrative thread slug of source card
+  toNarrative?: string;   // narrative thread slug of target card
+  crossNarrative: boolean; // true if the two cards belong to different narratives
 }
 
-const DEFAULT_MAX = 100;
-const MIN_STRENGTH = 0.2;
+const DEFAULT_MAX = 200;
+const MIN_STRENGTH = 0.15;
 
 /**
- * Compute rope connections between all cards based on shared tags.
+ * Compute hub-to-catalyst structural ropes.
+ * Every catalyst card links to its narrative hub node (group-{narrative}).
+ * These are always visible regardless of tag overlap.
+ */
+export function computeHubRopes(cards: CatalystCard[]): RopeConnection[] {
+  const ropes: RopeConnection[] = [];
+  for (const c of cards) {
+    const thread = c.narrative ?? c.narrativeThreads?.[0];
+    if (!thread) continue;
+    ropes.push({
+      id: `hub-rope-${c.id}`,
+      fromId: c.id,
+      toId: `group-${thread}`,
+      sharedTags: [],
+      strength: 0.3,
+      kind: 'hub-to-catalyst',
+      fromNarrative: thread,
+      toNarrative: thread,
+      crossNarrative: false,
+    });
+  }
+  return ropes;
+}
+
+/**
+ * Compute cross-catalyst rope connections based on shared tags.
  * Two cards are connected if they share >= 1 tag.
  * Strength = sharedTags.length / Math.min(card1.tags.length, card2.tags.length)
- *
- * Limits:
- * - Max connections total (default 100, prune weakest)
- * - Min strength threshold: 0.2
- * - Don't connect cards in the same category+time bucket (too close visually)
  */
 export function computeRopeConnections(
   cards: CatalystCard[],
@@ -41,7 +67,6 @@ export function computeRopeConnections(
 
       // Skip cards in the same category — too close visually
       if (a.category && b.category && a.category === b.category) {
-        // Also check date proximity (same week = same time bucket)
         const aWeek = a.date.slice(0, 10);
         const bWeek = b.date.slice(0, 10);
         const dayDiff = Math.abs(
@@ -57,12 +82,19 @@ export function computeRopeConnections(
       const strength = minLen > 0 ? shared.length / minLen : 0;
       if (strength < MIN_STRENGTH) continue;
 
+      const aNarr = a.narrative ?? a.narrativeThreads?.[0];
+      const bNarr = b.narrative ?? b.narrativeThreads?.[0];
+
       connections.push({
         id: `rope-${a.id}-${b.id}`,
         fromId: a.id,
         toId: b.id,
         sharedTags: shared,
         strength,
+        kind: 'cross-catalyst',
+        fromNarrative: aNarr,
+        toNarrative: bNarr,
+        crossNarrative: aNarr !== bNarr,
       });
     }
   }

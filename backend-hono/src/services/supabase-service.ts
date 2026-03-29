@@ -711,7 +711,7 @@ export async function readEconHistory(ticker: string, limit = 10): Promise<{
 }
 
 /**
- * Fetch aggregated econ print stats for MiroFish context enrichment.
+ * Fetch aggregated econ print stats for MiroShark context enrichment.
  * Returns recent prints with beat/miss patterns grouped by event type.
  */
 export async function readRecentEconPrintStats(sinceHours = 168): Promise<EconPrintRecord[]> {

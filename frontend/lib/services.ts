@@ -1277,8 +1277,8 @@ export class ContextBankService {
   }
 }
 
-// MiroFish Service
-export class MiroFishService {
+// MiroShark Service
+export class MiroSharkService {
   constructor(private client: ApiClient) {}
 
   async simulate(narrativeState: {
@@ -1290,19 +1290,19 @@ export class MiroFishService {
     gexNet?: number;
     macroIndicators?: Record<string, number>;
   }): Promise<{ simulationId: string }> {
-    return this.client.post('/api/mirofish/simulate', { narrativeState, contextBank });
+    return this.client.post('/api/miroshark/simulate', { narrativeState, contextBank });
   }
 
   async getReport(simId: string): Promise<any> {
-    return this.client.get(`/api/mirofish/report/${simId}`);
+    return this.client.get(`/api/miroshark/report/${simId}`);
   }
 
   async getStatus(simId: string): Promise<any> {
-    return this.client.get(`/api/mirofish/status/${simId}`);
+    return this.client.get(`/api/miroshark/status/${simId}`);
   }
 
   async inject(simId: string, variable: string, targetNarrativeIds: string[], description: string): Promise<any> {
-    return this.client.post(`/api/mirofish/inject/${simId}`, { variable, targetNarrativeIds, description });
+    return this.client.post(`/api/miroshark/inject/${simId}`, { variable, targetNarrativeIds, description });
   }
 }
 
@@ -1332,7 +1332,7 @@ export interface BackendClient {
   agentPerformance: AgentPerformanceService;
   contextBank: ContextBankService;
   autopilot: AutopilotService;
-  mirofish: MiroFishService;
+  miroshark: MiroSharkService;
 }
 
 // Create backend client from API client
@@ -1362,6 +1362,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     agentPerformance: new AgentPerformanceService(client),
     contextBank: new ContextBankService(client),
     autopilot: new AutopilotService(client),
-    mirofish: new MiroFishService(client),
+    miroshark: new MiroSharkService(client),
   };
 }

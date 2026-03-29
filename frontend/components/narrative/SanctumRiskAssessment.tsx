@@ -2,12 +2,12 @@
 // econ data, sub-score breakdowns, PriceBrain direction. Grouped by risk_type with section headers.
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import type { RiskFlowCatalyst, MiroFishCategoryScore } from '../../types/mirofish';
-import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
+import type { RiskFlowCatalyst, MiroSharkCategoryScore } from '../../types/miroshark';
+import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/miroshark';
 
 interface SanctumRiskAssessmentProps {
   riskflowItems: RiskFlowCatalyst[];
-  categoryScores?: MiroFishCategoryScore[];
+  categoryScores?: MiroSharkCategoryScore[];
 }
 
 const RISK_CATEGORIES = ['geopolitical', 'political'] as const;

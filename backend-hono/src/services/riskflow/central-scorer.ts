@@ -1,5 +1,5 @@
 // [claude-code 2026-03-26] Fix currentPrice: 0 → fetch real instrument price for autoresearch observations
-// [claude-code 2026-03-24] Added reactive MiroFish adjustment loop for high-impact items (macroLevel >= 3)
+// [claude-code 2026-03-24] Added reactive MiroShark adjustment loop for high-impact items (macroLevel >= 3)
 // [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
 // Gated by ENABLE_CENTRAL_SCORING=true (only TP's instance should set this)
 // Phase T4: wired recordObservation() to feed autoresearch scoring pipeline
@@ -18,7 +18,7 @@ import { recordObservation } from '../autoresearch/scoring-observer.js';
 import { resolvePriceAt } from '../autoresearch/price-resolver.js';
 import { getInstrumentConfig } from '../iv-scoring-v2.js';
 import { fetchVIX } from '../vix-service.js';
-import { shouldTriggerReactiveAdjustment, adjustScoresForRiskFlow, getRunningState, setRunningState } from '../mirofish/mirofish-reactive.js';
+import { shouldTriggerReactiveAdjustment, adjustScoresForRiskFlow, getRunningState, setRunningState } from '../miroshark/miroshark-reactive.js';
 import { generateNotesForCriticalItems } from './agent-notes.js';
 
 const log = createLogger('CentralScorer');
@@ -172,7 +172,7 @@ async function scoringCycle(): Promise<void> {
       log.info(` Recorded ${observationCount} autoresearch observations`);
     }
 
-    // Reactive MiroFish adjustment: high-impact items trigger running analysis update
+    // Reactive MiroShark adjustment: high-impact items trigger running analysis update
     for (const item of enrichedItems) {
       if (item.macroLevel && shouldTriggerReactiveAdjustment(item.macroLevel)) {
         const currentState = getRunningState();
@@ -186,7 +186,7 @@ async function scoringCycle(): Promise<void> {
             sentiment: item.sentiment || 'neutral',
           });
           setRunningState(updated);
-          log.info(` Reactive MiroFish adjustment: ${item.headline.slice(0, 60)}... → composite ${updated.compositeIV.toFixed(1)}`);
+          log.info(` Reactive MiroShark adjustment: ${item.headline.slice(0, 60)}... → composite ${updated.compositeIV.toFixed(1)}`);
         }
       }
     }

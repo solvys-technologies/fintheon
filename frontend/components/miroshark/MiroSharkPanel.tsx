@@ -1,7 +1,7 @@
-// [claude-code 2026-03-16] MiroFish simulation side panel — status, controls, prediction results
+// [claude-code 2026-03-16] MiroShark simulation side panel — status, controls, prediction results
 import { useState, useCallback } from 'react';
 import { Play, Loader2, CheckCircle, AlertCircle, Zap } from 'lucide-react';
-import { MiroFishPrediction } from './MiroFishPrediction';
+import { MiroSharkPrediction } from './MiroSharkPrediction';
 
 type SimStatus = 'idle' | 'running' | 'complete' | 'error';
 
@@ -11,16 +11,16 @@ interface Prediction {
   confidence: number;
   regimeShiftProbability: number;
   scenarios: Array<{ label: string; probability: number; projectedScore: number }>;
-  source: 'mirofish' | 'heuristic';
+  source: 'miroshark' | 'heuristic';
   generatedAt: string;
 }
 
-interface MiroFishPanelProps {
+interface MiroSharkPanelProps {
   onRunSimulation: () => Promise<string | null>;
   onOpenInject: () => void;
 }
 
-export function MiroFishPanel({ onRunSimulation, onOpenInject }: MiroFishPanelProps) {
+export function MiroSharkPanel({ onRunSimulation, onOpenInject }: MiroSharkPanelProps) {
   const [status, setStatus] = useState<SimStatus>('idle');
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [simId, setSimId] = useState<string | null>(null);
@@ -40,10 +40,10 @@ export function MiroFishPanel({ onRunSimulation, onOpenInject }: MiroFishPanelPr
       // Poll for completion
       const poll = async () => {
         try {
-          const res = await fetch(`/api/mirofish/status/${id}`);
+          const res = await fetch(`/api/miroshark/status/${id}`);
           const data = await res.json();
           if (data.status === 'complete') {
-            const reportRes = await fetch(`/api/mirofish/report/${id}`);
+            const reportRes = await fetch(`/api/miroshark/report/${id}`);
             const report = await reportRes.json();
             setPrediction(report);
             setStatus('complete');
@@ -55,7 +55,7 @@ export function MiroFishPanel({ onRunSimulation, onOpenInject }: MiroFishPanelPr
           }
         } catch {
           setStatus('error');
-          setError('Lost connection to MiroFish');
+          setError('Lost connection to MiroShark');
         }
       };
       setTimeout(poll, 1000);
@@ -88,7 +88,7 @@ export function MiroFishPanel({ onRunSimulation, onOpenInject }: MiroFishPanelPr
       >
         <div className="flex items-center gap-2">
           <Zap className="w-3.5 h-3.5" style={{ color: 'var(--fintheon-accent)' }} />
-          <span className="text-xs font-semibold text-[var(--fintheon-text)]">MiroFish</span>
+          <span className="text-xs font-semibold text-[var(--fintheon-text)]">MiroShark</span>
           {statusIcon}
         </div>
         <button
@@ -128,7 +128,7 @@ export function MiroFishPanel({ onRunSimulation, onOpenInject }: MiroFishPanelPr
         )}
 
         {prediction && prediction.scenarios.map((scenario, i) => (
-          <MiroFishPrediction
+          <MiroSharkPrediction
             key={i}
             label={scenario.label}
             probability={scenario.probability}

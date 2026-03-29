@@ -1,8 +1,8 @@
 // [claude-code 2026-03-24] Chart overhaul — TradingView iframe embed + compact heat-mapped IV bars
-// [claude-code 2026-03-25] Price projection canvas overlay — MiroFish expected move path + confidence band
+// [claude-code 2026-03-25] Price projection canvas overlay — MiroShark expected move path + confidence band
 import { useRef, useEffect, useLayoutEffect, useCallback, useState, useMemo } from 'react';
-import type { MiroFishTimePoint, MiroFishRiskCategory, MiroFishScenario } from '../../types/mirofish';
-import { RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/mirofish';
+import type { MiroSharkTimePoint, MiroSharkRiskCategory, MiroSharkScenario } from '../../types/miroshark';
+import { RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/miroshark';
 
 /** Map user-facing futures symbols to TradingView widget-compatible symbols. */
 const SYMBOL_MAP: Record<string, string> = {
@@ -30,16 +30,16 @@ function mapSymbol(sym: string): string {
 const COMPARE_SYMBOLS = ['COMEX:GC1!', 'SP:SPX', 'NASDAQ:QQQ'];
 
 interface SanctumChartProps {
-  timeSeries: MiroFishTimePoint[];
+  timeSeries: MiroSharkTimePoint[];
   rollingDays: 7 | 14 | 30;
   selectedSymbol?: string;
   compositeIV?: number;
   confidence?: number;
   regimeShiftProbability?: number;
-  scenarios?: MiroFishScenario[];
+  scenarios?: MiroSharkScenario[];
 }
 
-const CATS: MiroFishRiskCategory[] = [
+const CATS: MiroSharkRiskCategory[] = [
   'geopolitical', 'political', 'monetary-policy',
   'earnings-corporate', 'market-structure', 'black-swan',
 ];
@@ -68,7 +68,7 @@ function roundTopRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: nu
  *  Rich gradient fill: base color → brighter highlight at top → fade to transparent at peak.
  *  Bars fill edge-to-edge within the plot area. */
 function drawBars(
-  ctx: CanvasRenderingContext2D, data: MiroFishTimePoint[],
+  ctx: CanvasRenderingContext2D, data: MiroSharkTimePoint[],
   pL: number, pW: number, bTop: number, bH: number, _gold: boolean,
 ) {
   const n = data.length;
@@ -156,13 +156,13 @@ function lightenColor(hex: string, pct: number): string {
 
 /* ── Projection overlay: draws expected move path + confidence band on top of TradingView ── */
 
-/** Generate a smooth projected path using MiroFish data.
+/** Generate a smooth projected path using MiroShark data.
  *  Returns an array of {x, y} points normalized to 0-1 range. */
 function generateProjectionPath(
   compositeIV: number,
   confidence: number,
   regimeShift: number,
-  scenarios: MiroFishScenario[],
+  scenarios: MiroSharkScenario[],
 ): { points: { x: number; y: number }[]; bandWidth: number; direction: 'up' | 'down' | 'flat' } {
   // Direction: high IV + low confidence = bearish bias; low IV = bullish bias
   const avgScenarioScore = scenarios.length > 0
@@ -217,7 +217,7 @@ function drawProjectionOverlay(
   compositeIV: number,
   confidence: number,
   regimeShift: number,
-  scenarios: MiroFishScenario[],
+  scenarios: MiroSharkScenario[],
   accentColor: string,
   lowColor: string,
   severeColor: string,

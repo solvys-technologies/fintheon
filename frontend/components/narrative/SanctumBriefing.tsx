@@ -1,9 +1,9 @@
 // [claude-code 2026-03-28] S4-T3: Enhanced briefing display — structured sections, severity indicators, accent borders
-// [claude-code 2026-03-23] MiroFish briefing panel — agent reasoning synthesis
-import type { MiroFishBriefing } from '../../types/mirofish';
+// [claude-code 2026-03-23] MiroShark briefing panel — agent reasoning synthesis
+import type { MiroSharkBriefing } from '../../types/miroshark';
 
 interface SanctumBriefingProps {
-  briefing: MiroFishBriefing | null;
+  briefing: MiroSharkBriefing | null;
   isLoading?: boolean;
 }
 

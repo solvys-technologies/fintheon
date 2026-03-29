@@ -13,7 +13,7 @@ import {
 } from '../../services/calibration/calibration-service.js';
 import { parseBulkText, bulkItemsToObservations } from '../../services/calibration/bulk-parser.js';
 import type { ParsedBulkItem } from '../../services/calibration/bulk-parser.js';
-import { addCalibrationContext } from '../../services/mirofish/mirofish-context.js';
+import { addCalibrationContext } from '../../services/miroshark/miroshark-context.js';
 import type { MarketRegime } from '../../types/regime.js';
 
 // GET /api/calibration/weights

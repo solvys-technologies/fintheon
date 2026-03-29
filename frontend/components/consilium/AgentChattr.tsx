@@ -306,6 +306,10 @@ export function AgentChattr() {
           onSelectSkill={() => {}}
           showSkills={false}
           onToggleSkills={() => {}}
+          onRiskFlowPick={() => {
+            // TODO: Open RiskFlow item picker modal — same as NarrativeFlow "Import RiskFlow items"
+            console.log('[Boardroom] RiskFlow picker triggered');
+          }}
         />
       </div>
     </div>

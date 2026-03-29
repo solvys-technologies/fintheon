@@ -1,11 +1,11 @@
-// [claude-code 2026-03-16] Convert Fintheon narrative state → MiroFish seed format
+// [claude-code 2026-03-16] Convert Fintheon narrative state → MiroShark seed format
 
 import type {
-  MiroFishSeed,
-  MiroFishEntity,
-  MiroFishRelationship,
-  MiroFishAgent,
-} from './mirofish-types.js';
+  MiroSharkSeed,
+  MiroSharkEntity,
+  MiroSharkRelationship,
+  MiroSharkAgent,
+} from './miroshark-types.js';
 
 interface NarrativeLaneInput {
   id: string;
@@ -53,8 +53,8 @@ interface ContextSnapshot {
   econPrintHistory?: EconPrintSnapshot[];
 }
 
-/** Map narrative categories to MiroFish agent roles */
-const CATEGORY_TO_AGENT_ROLE: Record<string, MiroFishAgent['role']> = {
+/** Map narrative categories to MiroShark agent roles */
+const CATEGORY_TO_AGENT_ROLE: Record<string, MiroSharkAgent['role']> = {
   monetary: 'macro-strategist',
   macroeconomic: 'macro-strategist',
   'market-structure': 'sentiment-analyst',
@@ -64,7 +64,7 @@ const CATEGORY_TO_AGENT_ROLE: Record<string, MiroFishAgent['role']> = {
   'supply-chain': 'geopolitical-analyst',
 };
 
-const AGENT_PERSONAS: Record<MiroFishAgent['role'], { persona: string }> = {
+const AGENT_PERSONAS: Record<MiroSharkAgent['role'], { persona: string }> = {
   'macro-strategist': { persona: 'Senior macro strategist focused on monetary policy and economic cycles' },
   'sentiment-analyst': { persona: 'Market microstructure specialist tracking positioning and flow' },
   'geopolitical-analyst': { persona: 'Geopolitical risk analyst covering supply chains and trade policy' },
@@ -73,10 +73,19 @@ const AGENT_PERSONAS: Record<MiroFishAgent['role'], { persona: string }> = {
   'contrarian': { persona: 'Contrarian agent challenging consensus theses' },
   'fundamentals': { persona: 'Fundamental analyst evaluating corporate earnings and sector rotation' },
   'sentiment': { persona: 'Sentiment analyst reading news flow and social signals' },
+  // Gov official roles (used by MiroShark debate engine)
+  'central-banker': { persona: 'Federal Reserve Chair — data-dependent monetary policy' },
+  'executive': { persona: 'President — dealmaker, tariff leverage, market scorecard' },
+  'treasury-secretary': { persona: 'Treasury Secretary — fiscal discipline, bond market stability' },
+  'foreign-policy': { persona: 'Secretary of State — China hawk, human rights hardliner' },
+  'commerce-secretary': { persona: 'Commerce Secretary — trade enforcement, domestic manufacturing' },
+  'middle-east-envoy': { persona: 'Middle East Envoy — de-escalation, ceasefire broker' },
+  'trade-rep': { persona: 'US Trade Representative — tariff implementation, trade deals' },
+  'trade-advisor': { persona: 'Trade Advisor — protectionist, manufacturing onshoring' },
 };
 
-function buildEntities(lanes: NarrativeLaneInput[], catalysts: CatalystCardInput[]): MiroFishEntity[] {
-  const entities: MiroFishEntity[] = [];
+function buildEntities(lanes: NarrativeLaneInput[], catalysts: CatalystCardInput[]): MiroSharkEntity[] {
+  const entities: MiroSharkEntity[] = [];
 
   for (const lane of lanes) {
     entities.push({
@@ -112,7 +121,7 @@ function buildEntities(lanes: NarrativeLaneInput[], catalysts: CatalystCardInput
   return entities;
 }
 
-function buildRelationships(ropes: RopeInput[]): MiroFishRelationship[] {
+function buildRelationships(ropes: RopeInput[]): MiroSharkRelationship[] {
   return ropes.map(rope => ({
     fromId: rope.fromId,
     toId: rope.toId,
@@ -121,9 +130,9 @@ function buildRelationships(ropes: RopeInput[]): MiroFishRelationship[] {
   }));
 }
 
-function buildAgents(lanes: NarrativeLaneInput[]): MiroFishAgent[] {
-  const roleSet = new Set<MiroFishAgent['role']>();
-  const roleCats = new Map<MiroFishAgent['role'], string[]>();
+function buildAgents(lanes: NarrativeLaneInput[]): MiroSharkAgent[] {
+  const roleSet = new Set<MiroSharkAgent['role']>();
+  const roleCats = new Map<MiroSharkAgent['role'], string[]>();
 
   for (const lane of lanes) {
     const role = CATEGORY_TO_AGENT_ROLE[lane.category] ?? 'macro-strategist';
@@ -146,7 +155,7 @@ export function convertNarrativeToSeed(
   catalysts: CatalystCardInput[],
   ropes: RopeInput[],
   context?: ContextSnapshot,
-): MiroFishSeed {
+): MiroSharkSeed {
   const environmentalContext: Record<string, unknown> = {};
 
   if (context?.vixLevel != null) environmentalContext.vixLevel = context.vixLevel;

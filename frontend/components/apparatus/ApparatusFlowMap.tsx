@@ -25,11 +25,11 @@ const AGENTS: AgentNode[] = [
   ]},
   { id: 'feucht', label: 'Feucht', role: 'Risk Desk — Futures Execution', accentColor: '#d4af37', memories: [
     { id: 'f1', fact: '/NQ morning flush model triggered — watching 20450 for entry', source: 'trade', timestamp: '2026-03-20T09:32:00', confidence: 0.78, version: 2 },
-    { id: 'f2', fact: 'VIX at 14.2 — low vol regime, reducing position sizes', source: 'mirofish', timestamp: '2026-03-20T09:00:00', confidence: 0.91, version: 1 },
+    { id: 'f2', fact: 'VIX at 14.2 — low vol regime, reducing position sizes', source: 'miroshark', timestamp: '2026-03-20T09:00:00', confidence: 0.91, version: 1 },
   ]},
   { id: 'consul', label: 'Consul', role: 'Fundamentals — Earnings & Thesis', accentColor: '#8a7a50', memories: [
     { id: 'c1', fact: 'NVDA earnings beat +12% — raised guidance on AI data center demand', source: 'data', timestamp: '2026-03-19T20:00:00', confidence: 0.92, version: 3 },
-    { id: 'c2', fact: 'Mega-cap tech P/E compression: avg forward P/E dropped from 32x to 28x', source: 'mirofish', timestamp: '2026-03-20T06:00:00', confidence: 0.85, version: 2 },
+    { id: 'c2', fact: 'Mega-cap tech P/E compression: avg forward P/E dropped from 32x to 28x', source: 'miroshark', timestamp: '2026-03-20T06:00:00', confidence: 0.85, version: 2 },
   ]},
   { id: 'herald', label: 'Herald', role: 'Sentiment — Social & Mood', accentColor: '#b8963a', memories: [
     { id: 'he1', fact: 'NQ bearish skew 62% — put/call ratio elevated at 1.4', source: 'twitter', timestamp: '2026-03-20T10:00:00', confidence: 0.74, version: 2 },

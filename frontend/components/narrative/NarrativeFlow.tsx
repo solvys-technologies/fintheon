@@ -27,6 +27,7 @@ export function NarrativeFlow() {
   const [editingCard, setEditingCard] = useState<CatalystCard | null>(null);
   const [canvasTool, setCanvasTool] = useState<CanvasTool>('select');
   const [canvasScale, setCanvasScale] = useState(1.0);
+  const [zoomFns, setZoomFns] = useState<{ zoomTo: (level: number) => void; fitView: () => void } | null>(null);
   const { alerts } = useRiskFlow();
   const seedLoadedRef = useRef(false);
 
@@ -118,6 +119,7 @@ export function NarrativeFlow() {
           onScaleChange={setCanvasScale}
           onSelectCard={handleSelectCard}
           onEditCard={handleEditCard}
+          onZoomFnsReady={setZoomFns}
         />
 
         {/* Figma-style floating toolbar — bottom center */}
@@ -136,6 +138,8 @@ export function NarrativeFlow() {
           heatmapActive={state.heatmapEnabled}
           filterActive={state.filterSentiment !== 'all'}
           scale={canvasScale}
+          onZoomTo={zoomFns?.zoomTo}
+          onFitView={zoomFns?.fitView}
         />
       </div>
 

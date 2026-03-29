@@ -1,11 +1,12 @@
+// [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
 // [claude-code 2026-03-28] S4-T3: KPI labels rewritten to trading lingo with interpretive sub-text
 // [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state
 // [claude-code 2026-03-24] Thread selectedSymbol prop for TradingView chart, taller chart container (65vh)
 // [claude-code 2026-03-24] Sanctum — 3-page dashboard (merged Risk + Narratives), expandable econ cards
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { Zap, Loader2, Eye, EyeOff } from 'lucide-react';
-import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/mirofish';
-import { AUDITORIUM_PAGES, RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/mirofish';
+import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/miroshark';
+import { AUDITORIUM_PAGES } from '../../types/miroshark';
 import { SanctumChart } from './SanctumChart';
 import { SanctumTheses } from './SanctumTheses';
 import { SanctumEconIntel } from './SanctumEconIntel';
@@ -14,8 +15,6 @@ import { SanctumMacroStrip } from './SanctumMacroStrip';
 import { SanctumBriefing } from './SanctumBriefing';
 import { SanctumNarratives } from './SanctumNarratives';
 import { SanctumRiskAssessment } from './SanctumRiskAssessment';
-import { CategoryScoreCard } from './CategoryScoreCard';
-import { KanbanTitle } from '../ui/KanbanTitle';
 import { AgentScorecard } from '../consilium/AgentScorecard';
 import { AquariumPredictionCards } from './AquariumPredictionCards';
 
@@ -63,11 +62,6 @@ function confidenceInterpretation(confidence: number): string {
   return 'Low — consider sitting out';
 }
 
-type MiroFishRiskCategory = 'geopolitical' | 'political' | 'monetary-policy' | 'earnings-corporate' | 'market-structure' | 'black-swan';
-const CATEGORIES: MiroFishRiskCategory[] = [
-  'geopolitical', 'political', 'monetary-policy',
-  'earnings-corporate', 'market-structure', 'black-swan',
-];
 
 export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, narratives, selectedSymbol = '/MNQ' }: SanctumProps) {
   const [rollingDays, setRollingDays] = useState<7 | 14 | 30>(14);
@@ -90,16 +84,16 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
   useLayoutEffect(() => { onRunRef.current = onRun; }, [onRun]);
 
   // Background update check on mount — triggers update if report is stale (>30min)
-  // Latest report is pre-loaded by NarrativeFlow (seeds mirofishData on mount)
+  // Latest report is pre-loaded by NarrativeFlow (seeds mirosharkData on mount)
   useEffect(() => {
     if (running) return;
     if (status !== 'idle' && status !== 'complete') return;
     let cancelled = false;
     const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-    fetch(`${API_BASE}/api/mirofish/auto-run-check`)
+    fetch(`${API_BASE}/api/miroshark/auto-run-check`)
       .then(r => r.json())
       .then(({ shouldRun }) => { if (!cancelled && shouldRun) onRunRef.current(preset); })
-      .catch(() => { if (!cancelled && status === 'idle') onRunRef.current(preset); });
+      .catch(() => { /* auto-run check failed — stay idle, don't trigger simulation */ });
     return () => { cancelled = true; };
   }, []); // Run once on mount — intentional empty deps
 
@@ -210,28 +204,12 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                       scenarios={showProjection && data ? data.scenarios : undefined}
                     />
                   </div>
-                  {/* Category legend — show when data exists */}
-                  {data && data.categoryScores.length > 0 && (
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                      {CATEGORIES.map(cat => {
-                        const cs = data.categoryScores.find(s => s.category === cat);
-                        return (
-                          <div key={cat} className="flex items-center gap-1.5">
-                            <div className="w-3 h-[2px]" style={{ backgroundColor: ivHeatColor(cs?.ivScore ?? 5) }} />
-                            <span className="text-[9px] text-[var(--fintheon-muted)]/50">{RISK_CATEGORY_LABELS[cat]}</span>
-                          </div>
-                        );
-                      })}
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-[2px]" style={{ backgroundColor: COMPOSITE_COLOR }} />
-                        <span className="text-[9px] text-[var(--fintheon-accent)]/70 font-bold">Composite</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Prediction Cards — 5 instruments under the chart */}
-                <AquariumPredictionCards />
+                <div className="flex justify-center">
+                  <AquariumPredictionCards />
+                </div>
 
                 {/* KPI Row — only when data exists */}
                 {data && data.compositeIV > 0 && (
@@ -261,7 +239,7 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                   </div>
                 )}
 
-                {/* Briefing — only when MiroFish data exists */}
+                {/* Briefing — only when MiroShark data exists */}
                 {data && data.compositeIV > 0 && (
                   <SanctumBriefing briefing={data.briefing ?? null} isLoading={false} />
                 )}
@@ -278,17 +256,12 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
           {/* ── Page 1: Economic Intelligence ── */}
           {showPage(1) && (
             <div data-aud-page="1" className="min-h-full snap-start p-5 flex flex-col">
-              <div className="shrink-0 mb-4">
-                <KanbanTitle
-                  title="Economic Intelligence"
-                  tone="cyan"
-                  tag="Econ Watch"
-                  headerRight={
-                    <span className="text-[9px] text-[var(--fintheon-muted)]/40">
-                      Agent consensus on next prints
-                    </span>
-                  }
-                />
+              <div className="shrink-0 mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[11px] font-semibold text-[#67e8f9] tracking-[0.2em] uppercase">Economic Intelligence</h2>
+                  <span className="text-[9px] tracking-[0.22em] uppercase text-[#67e8f9]/60">Econ Watch</span>
+                </div>
+                <span className="text-[9px] text-[var(--fintheon-muted)]/40">Agent consensus on next prints</span>
               </div>
               <div className="flex-1">
                 <SanctumEconIntel expanded={preset === 'econ-watch'} context={displayContext} categoryScores={data?.categoryScores} />
@@ -299,8 +272,9 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
           {/* ── Page 2: Risk & Narratives (merged) ── */}
           {showPage(2) && (
             <div data-aud-page="2" className="min-h-full snap-start p-5 flex flex-col">
-              <div className="shrink-0 mb-4">
-                <KanbanTitle title="Risk & Narratives" tone="emerald" tag="Risk Scan" />
+              <div className="shrink-0 mb-4 flex items-center gap-2">
+                <h2 className="text-[11px] font-semibold text-emerald-300 tracking-[0.2em] uppercase">Risk & Narratives</h2>
+                <span className="text-[9px] tracking-[0.22em] uppercase text-emerald-300/60">Risk Scan</span>
               </div>
 
               {data && data.compositeIV > 0 ? (
@@ -313,42 +287,41 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                     <SanctumTheses scenarios={data.scenarios} categoryScores={data.categoryScores} expanded={preset === 'risk-scan'} />
                   </div>
 
-                  {/* Active Narratives */}
-                  <div className="flex items-center gap-3 py-2">
-                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
-                    <span className="text-[8px] text-[var(--fintheon-muted)]/30 uppercase tracking-widest">Narratives</span>
-                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
-                  </div>
-                  <SanctumNarratives narratives={narratives} expanded={preset === 'full-brief'} />
-
-                  {/* ── Scorecards + Simulation History (split) ── */}
-                  <div className="flex items-center gap-3 py-2">
-                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
-                    <span className="text-[8px] text-[var(--fintheon-muted)]/30 uppercase tracking-widest">Performance</span>
-                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
-                  </div>
+                  {/* ── Bottom 50/50: Active Narratives + Live Risk Signals ── */}
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 min-h-[300px]">
-                    {/* Agent Scorecards */}
+                    {/* Left: Active Narratives */}
                     <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
                       <div className="px-4 py-2 border-b border-[var(--fintheon-border)]/10">
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">Agent Scorecards</span>
+                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">Active Narratives</span>
                       </div>
-                      <div className="max-h-[350px] overflow-y-auto">
-                        <AgentScorecard />
+                      <div className="p-3 max-h-[400px] overflow-y-auto">
+                        <SanctumNarratives narratives={narratives} expanded={preset === 'full-brief'} />
                       </div>
                     </div>
-                    {/* Geopolitical & Fiscal Risk */}
+                    {/* Right: Live Risk Signals */}
                     <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
                       <div className="px-4 py-2 border-b border-[var(--fintheon-border)]/10">
                         <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">Live Risk Signals</span>
                       </div>
-                      <div className="p-3 max-h-[350px] overflow-y-auto">
+                      <div className="p-3 max-h-[400px] overflow-y-auto">
                         {(riskflowItems?.length ?? 0) > 0 ? (
                           <SanctumRiskAssessment riskflowItems={riskflowItems ?? []} categoryScores={data.categoryScores} />
                         ) : (
                           <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center py-4">No risk signals in current window</p>
                         )}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* ── Agent Scorecards ── */}
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
+                    <span className="text-[8px] text-[var(--fintheon-muted)]/30 uppercase tracking-widest">Agent Performance</span>
+                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
+                  </div>
+                  <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
+                    <div className="max-h-[350px] overflow-y-auto">
+                      <AgentScorecard />
                     </div>
                   </div>
                 </div>

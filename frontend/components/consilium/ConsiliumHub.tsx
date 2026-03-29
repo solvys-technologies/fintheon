@@ -2,17 +2,18 @@
 // [claude-code 2026-03-24] Persistence refactor: load latest report on mount, persist after simulation
 // [claude-code 2026-03-24] Thread selectedSymbol from settings into Sanctum for TradingView chart
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
-import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap } from 'lucide-react';
+import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
 import { Sanctum } from '../narrative/Sanctum';
 import { TimelinePanel } from '../narrative/TimelinePanel';
 import { ProposalWidget } from '../proposals/ProposalWidget';
+import { MiroSharkDebatePanel } from '../miroshark/MiroSharkDebatePanel';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { ApparatusFlowMap } from '../apparatus/ApparatusFlowMap';
 import { AiLoader } from '../chat/FintheonThread';
-import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst } from '../../types/mirofish';
+import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst } from '../../types/miroshark';
 
 const ChatInterface = lazy(() => import('../ChatInterface'));
 
@@ -62,10 +63,11 @@ export function ConsiliumHub() {
   const [displayedSubView, setDisplayedSubView] = useState<SanctumSubView>('narratives');
   const [sanctumDropdownOpen, setSanctumDropdownOpen] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
-  const [mirofishData, setMirofishData] = useState<SanctumData | null>(null);
+  const [mirosharkData, setMirosharkData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
   const [macroContext, setMacroContext] = useState<SimulationContext | null>(null);
   const [showProposals, toggleProposals] = usePanelState('fintheon:consilium:proposals-panel', false);
+  const [showDebate, toggleDebate] = usePanelState('fintheon:consilium:debate-panel', false);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close Sanctum dropdown on outside click
@@ -115,7 +117,7 @@ export function ConsiliumHub() {
   // Fetch market context on mount
   const fetchContext = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/mirofish/context`);
+      const res = await fetch(`${API_BASE}/api/miroshark/context`);
       if (res.ok) {
         const ctx = await res.json();
         setMacroContext(ctx);
@@ -128,16 +130,16 @@ export function ConsiliumHub() {
 
   useEffect(() => { fetchContext(); }, [fetchContext]);
 
-  // Load persisted MiroFish report on mount
+  // Load persisted MiroShark report on mount
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/mirofish/latest`);
+        const res = await fetch(`${API_BASE}/api/miroshark/latest`);
         if (!res.ok) return;
         const report = await res.json();
         if (cancelled || !report) return;
-        setMirofishData({
+        setMirosharkData({
           simulationId: report.simulationId ?? '',
           status: 'complete',
           compositeIV: report.compositeIV ?? 0,
@@ -151,20 +153,20 @@ export function ConsiliumHub() {
           contextSnapshot: report.contextSnapshot ?? null,
         });
       } catch (err) {
-        console.warn('[ConsiliumHub] Failed to load persisted MiroFish report:', err);
+        console.warn('[ConsiliumHub] Failed to load persisted MiroShark report:', err);
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  const handleRunMiroFish = useCallback(async (preset?: SanctumPreset) => {
-    setMirofishData(prev => prev
+  const handleRunMiroShark = useCallback(async (preset?: SanctumPreset) => {
+    setMirosharkData(prev => prev
       ? { ...prev, status: 'running' }
       : { simulationId: '', status: 'running', compositeIV: 0, confidence: 0, regimeShiftProbability: 0, categoryScores: [], timeSeries: [], generatedEvents: [], scenarios: [] }
     );
 
     try {
-      const simRes = await fetch(`${API_BASE}/api/mirofish/simulate`, {
+      const simRes = await fetch(`${API_BASE}/api/miroshark/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -176,11 +178,11 @@ export function ConsiliumHub() {
       if (!simRes.ok) throw new Error(`Simulation failed: ${simRes.status}`);
       const { simulationId } = await simRes.json();
 
-      const reportRes = await fetch(`${API_BASE}/api/mirofish/report/${simulationId}`);
+      const reportRes = await fetch(`${API_BASE}/api/miroshark/report/${simulationId}`);
       if (!reportRes.ok) throw new Error(`Report fetch failed: ${reportRes.status}`);
       const report = await reportRes.json();
 
-      setMirofishData({
+      setMirosharkData({
         simulationId,
         status: 'complete',
         compositeIV: report.nextSessionScore ?? 5,
@@ -197,8 +199,9 @@ export function ConsiliumHub() {
       // Refresh context after simulation
       fetchContext();
     } catch (err) {
-      console.error('[MiroFish] Run failed:', err);
-      setMirofishData(prev => prev
+      console.error('[MiroShark] Run failed:', err);
+      // Only set error status if user had existing data (preserves idle state on auto-run failure)
+      setMirosharkData(prev => prev
         ? { ...prev, status: 'error', error: err instanceof Error ? err.message : 'Unknown error' }
         : null
       );
@@ -273,6 +276,19 @@ export function ConsiliumHub() {
         <div className="flex-1" />
 
         <button
+          onClick={toggleDebate}
+          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+            showDebate
+              ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
+              : 'border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5'
+          }`}
+          title={showDebate ? 'Hide Debate' : 'Show Debate'}
+        >
+          <Shield size={14} />
+          Debate
+        </button>
+
+        <button
           onClick={toggleProposals}
           className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
             showProposals
@@ -292,25 +308,21 @@ export function ConsiliumHub() {
           className="flex-1 min-h-0 min-w-0 overflow-hidden"
           style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 200ms ease' }}
         >
-          {/* Sanctum sub-views */}
-          {displayedTab === 'sanctum' && displayedSubView === 'narratives' && (
+          {/* Sanctum sub-views — shared NarrativeProvider so seeds carry across views */}
+          {displayedTab === 'sanctum' && (
             <NarrativeProvider>
-              <NarrativeFlow />
-            </NarrativeProvider>
-          )}
-          {displayedTab === 'sanctum' && displayedSubView === 'aquarium' && (
-            <Sanctum
-              data={mirofishData}
-              onRun={handleRunMiroFish}
-              catalysts={[]}
-              riskflowItems={riskflowItems}
-              macroContext={macroContext}
-              selectedSymbol={selectedSymbol.symbol}
-            />
-          )}
-          {displayedTab === 'sanctum' && displayedSubView === 'timeline' && (
-            <NarrativeProvider>
-              <TimelinePanel />
+              {displayedSubView === 'narratives' && <NarrativeFlow />}
+              {displayedSubView === 'aquarium' && (
+                <Sanctum
+                  data={mirosharkData}
+                  onRun={handleRunMiroShark}
+                  catalysts={[]}
+                  riskflowItems={riskflowItems}
+                  macroContext={macroContext}
+                  selectedSymbol={selectedSymbol.symbol}
+                />
+              )}
+              {displayedSubView === 'timeline' && <TimelinePanel />}
             </NarrativeProvider>
           )}
 
@@ -322,6 +334,17 @@ export function ConsiliumHub() {
           )}
           {displayedTab === 'boardroom' && <AgentChattr />}
           {displayedTab === 'apparatus' && <ApparatusFlowMap />}
+        </div>
+
+        {/* Collapsible Debate panel */}
+        <div
+          className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out border-l border-[var(--fintheon-accent)]/10 ${
+            showDebate ? 'w-80' : 'w-0 border-l-0'
+          }`}
+        >
+          <div className="w-80 h-full overflow-hidden bg-[var(--fintheon-bg)]">
+            <MiroSharkDebatePanel simulationId={mirosharkData?.simulationId ?? null} />
+          </div>
         </div>
 
         {/* Collapsible Proposals + Scorecards right panel */}

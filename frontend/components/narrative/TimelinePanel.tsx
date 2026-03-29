@@ -121,12 +121,21 @@ export function TimelinePanel() {
       {/* Header with navigation */}
       <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-border)]/10">
         <div>
-          <h2 className="text-sm font-bold text-[var(--fintheon-accent)] uppercase tracking-widest"
-            style={{ fontFamily: 'var(--font-heading)' }}>
-            Timeline
-          </h2>
-          <p className="text-[8px] text-[var(--fintheon-muted)]/40 mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
-            Structured narrative view — {state.catalysts.length} events across {NARRATIVE_THREADS.length} narratives
+          <div className="flex items-baseline gap-3">
+            <h2 className="text-lg font-bold text-[var(--fintheon-accent)] uppercase tracking-widest"
+              style={{ fontFamily: 'var(--font-heading)' }}>
+              Timeline
+            </h2>
+            <div className="flex items-baseline gap-1.5 text-[13px]" style={{ fontFamily: 'var(--font-mono)' }}>
+              <span className="shimmer-number font-bold">{state.catalysts.length}</span>
+              <span className="text-[var(--fintheon-muted)]/50 text-[11px]">events</span>
+              <span className="text-[var(--fintheon-muted)]/20 mx-0.5">&middot;</span>
+              <span className="shimmer-number font-bold">{NARRATIVE_THREADS.length}</span>
+              <span className="text-[var(--fintheon-muted)]/50 text-[11px]">narratives</span>
+            </div>
+          </div>
+          <p className="text-[11px] text-[var(--fintheon-muted)]/40 mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
+            Structured Narrative View
           </p>
         </div>
 

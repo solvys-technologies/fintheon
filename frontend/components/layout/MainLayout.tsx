@@ -560,7 +560,7 @@ function MainLayoutInner() {
     if (layoutOption === 'combined') {
       // Combined panel: Mission Control + The Tape in one scroll (split, no overlap)
       rightPanels.push(
-        <div key="combined" className={`bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 transition-all duration-200 ${combinedPanelCollapsed ? 'w-16' : 'w-[380px]'}`}>
+        <div key="combined" className={`bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/10 transition-all duration-200 ${combinedPanelCollapsed ? 'w-16' : 'w-[380px]'}`}>
           <div className="h-full flex flex-col">
             {combinedPanelCollapsed && (
               <div className="h-12 flex-shrink-0 flex items-center justify-center border-b border-[var(--fintheon-accent)]/20">
@@ -616,7 +616,7 @@ function MainLayoutInner() {
       rightPanels.push(
         <div
           key="right-stack"
-          className={`flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15 transition-[width] duration-300 ease-in-out overflow-hidden ${
+          className={`flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/10 transition-[width] duration-300 ease-in-out overflow-hidden ${
             missionControlCollapsed ? 'w-12 bg-[var(--fintheon-bg)]' : 'w-[380px]'
           }`}
         >
@@ -657,7 +657,7 @@ function MainLayoutInner() {
 
   return (
     <ScheduleProvider>
-    <div className="h-screen flex flex-col bg-[var(--fintheon-bg)] text-white">
+    <div className={`h-screen flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? 'topstepx-active' : ''}`}>
       <TopHeader
         topStepXEnabled={topStepXEnabled}
         onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe

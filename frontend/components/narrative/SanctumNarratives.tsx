@@ -1,9 +1,7 @@
-// [claude-code 2026-03-23] Active Narratives & Large Moves — Page 3
-import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Minus, History, Zap } from 'lucide-react';
-import type { SanctumNarrative, MiroFishRunRecord } from '../../types/mirofish';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// [claude-code 2026-03-28] S8-T4: Removed Simulation History — replaced by Agent Scorecards in Page 2
+// [claude-code 2026-03-23] Active Narratives — Page 2
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import type { SanctumNarrative } from '../../types/miroshark';
 
 interface SanctumNarrativesProps {
   narratives?: SanctumNarrative[];
@@ -72,100 +70,25 @@ function NarrativeCard({ narrative }: { narrative: SanctumNarrative }) {
   );
 }
 
-function RunHistoryRow({ run }: { run: MiroFishRunRecord }) {
-  return (
-    <div className="flex items-center gap-3 rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/60 px-3 py-2">
-      <Zap className="w-3 h-3 text-[var(--fintheon-accent)]/40 shrink-0" />
-      <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/50 w-[60px] shrink-0">
-        {new Date(run.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-      </span>
-      <span className="text-[9px] font-mono text-[var(--fintheon-accent)]/60 w-[70px] shrink-0">
-        {run.preset}
-      </span>
-      <span className="text-xs font-mono font-bold text-[var(--fintheon-text)]">
-        IV {run.composite_iv?.toFixed(1) ?? '—'}
-      </span>
-      <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/40">
-        conf {((run.confidence ?? 0) * 100).toFixed(0)}%
-      </span>
-      {(run.regime_shift_probability ?? 0) >= 0.3 && (
-        <span className="text-[8px] font-mono font-bold px-1 py-0.5 rounded bg-[var(--fintheon-severe)]/10 text-[var(--fintheon-severe)]">
-          REGIME
-        </span>
-      )}
-    </div>
-  );
-}
-
 export function SanctumNarratives({ narratives, expanded }: SanctumNarrativesProps) {
-  const [history, setHistory] = useState<MiroFishRunRecord[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchHistory() {
-      try {
-        const res = await fetch(`${API_BASE}/api/mirofish/history?limit=15`);
-        if (!res.ok) throw new Error(`${res.status}`);
-        const data = await res.json();
-        if (!cancelled && Array.isArray(data.runs)) setHistory(data.runs);
-      } catch {
-        // silently fail
-      } finally {
-        if (!cancelled) setLoadingHistory(false);
-      }
-    }
-    fetchHistory();
-    return () => { cancelled = true; };
-  }, []);
-
   const hasNarratives = narratives && narratives.length > 0;
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Active Narratives */}
-      <div>
-        <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
-          Active Narratives
+    <div>
+      {hasNarratives ? (
+        <div className={`grid gap-3 ${expanded ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3'}`}>
+          {narratives!.map(n => <NarrativeCard key={n.id} narrative={n} />)}
         </div>
-        {hasNarratives ? (
-          <div className={`grid gap-3 ${expanded ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3'}`}>
-            {narratives!.map(n => <NarrativeCard key={n.id} narrative={n} />)}
-          </div>
-        ) : (
-          <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-surface)]/20 p-6 text-center">
-            <p className="text-[10px] text-[var(--fintheon-muted)]/30">
-              Connect Narrative Flow to track active market narratives
-            </p>
-            <p className="text-[9px] text-[var(--fintheon-muted)]/20 mt-1">
-              Create lanes in the Narratives tab to populate this view
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Run History */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <History className="w-3 h-3 text-[var(--fintheon-muted)]/30" />
-          <span className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono uppercase tracking-wider">
-            Simulation History
-          </span>
+      ) : (
+        <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-surface)]/20 p-6 text-center">
+          <p className="text-[10px] text-[var(--fintheon-muted)]/30">
+            Connect Narrative Flow to track active market narratives
+          </p>
+          <p className="text-[9px] text-[var(--fintheon-muted)]/20 mt-1">
+            Create lanes in the Narratives tab to populate this view
+          </p>
         </div>
-        {loadingHistory ? (
-          <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center py-4">
-            Loading history...
-          </p>
-        ) : history.length === 0 ? (
-          <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center py-4">
-            No simulation runs recorded yet
-          </p>
-        ) : (
-          <div className="flex flex-col gap-1.5">
-            {history.map(run => <RunHistoryRow key={run.id} run={run} />)}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -1,11 +1,12 @@
+// [claude-code 2026-03-28] S8-T4: Risk sector cards — whole border + fuse + percentage (matching CategoryScoreCard)
 // [claude-code 2026-03-28] S5-T2: Added Market Impact (NQ/ES/YM day close) display to expanded econ cards
 // [claude-code 2026-03-28] S4-T3: Category score interpretation with trading-specific context per risk sector
-// [claude-code 2026-03-27] Econ Intel — historical prints, scoring breakdown, MiroFish-ready aggregation
+// [claude-code 2026-03-27] Econ Intel — historical prints, scoring breakdown, MiroShark-ready aggregation
 // [claude-code 2026-03-24] Econ Intel — 2-col grid, expandable cards with countdown + history + risk category sub-cards
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { TrendingUp, TrendingDown, Minus, CalendarClock, ChevronDown, Activity, BarChart3 } from 'lucide-react';
-import type { EconCardData, EconHistoryPrint, EconScoredItem, SimulationContext, MiroFishCategoryScore } from '../../types/mirofish';
-import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/mirofish';
+import type { EconCardData, EconHistoryPrint, EconScoredItem, SimulationContext, MiroSharkCategoryScore } from '../../types/miroshark';
+import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/miroshark';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -472,7 +473,7 @@ function EconCard({
 interface SanctumEconIntelProps {
   expanded?: boolean;
   context?: SimulationContext | null;
-  categoryScores?: MiroFishCategoryScore[];
+  categoryScores?: MiroSharkCategoryScore[];
 }
 
 export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumEconIntelProps) {
@@ -562,15 +563,18 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
               return (
                 <div
                   key={cs.category}
-                  className={`flex flex-col rounded border bg-[var(--fintheon-surface)]/40 transition-all duration-300 cursor-pointer border-l-2 ${
+                  className={`flex flex-col rounded-lg bg-[var(--fintheon-surface)]/40 transition-all duration-300 cursor-pointer ${
                     isExpanded
-                      ? 'border-[var(--fintheon-accent)]/30 shadow-[0_0_12px_rgba(199,159,74,0.15)]'
-                      : 'border-[var(--fintheon-border)]/15 hover:border-[var(--fintheon-accent)]/20'
+                      ? 'shadow-[0_0_12px_rgba(199,159,74,0.15)]'
+                      : ''
                   }`}
-                  style={{ borderLeftColor: color }}
+                  style={{
+                    border: `1px solid ${color}30`,
+                    boxShadow: isExpanded ? undefined : `0 0 8px ${color}15`,
+                  }}
                   onClick={() => setExpandedTicker(prev => prev === `risk-${cs.category}` ? null : `risk-${cs.category}`)}
                 >
-                  <div className="p-4">
+                  <div className="px-5 py-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
@@ -586,17 +590,20 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
                       </div>
                     </div>
                     <div className="flex items-end justify-between">
-                      <span className="text-2xl font-mono font-bold" style={{ color, textShadow: `0 0 12px ${color}40` }}>
+                      <span className="text-3xl font-mono font-bold" style={{ color, textShadow: `0 0 12px ${color}40` }}>
                         {cs.ivScore.toFixed(1)}
                       </span>
-                      <div className="flex flex-col items-end gap-0.5">
-                        <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase">Conf</span>
-                        <div className="w-16 h-[3px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[11px] font-mono font-bold" style={{ color: confPct >= 70 ? '#34D399' : confPct >= 50 ? '#F59E0B' : '#EF4444' }}>
+                          {confPct}%
+                        </span>
+                        {/* Volatility fuse */}
+                        <div className="w-20 h-[3px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
                           <div
-                            className="h-full rounded-full"
+                            className="h-full rounded-full transition-all duration-500"
                             style={{
-                              width: `${confPct}%`,
-                              backgroundColor: confPct >= 70 ? '#34D399' : confPct >= 50 ? '#F59E0B' : '#EF4444',
+                              width: `${Math.min(cs.ivScore * 10, 100)}%`,
+                              backgroundColor: color,
                             }}
                           />
                         </div>

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-28] S4-T2: Rewrote briefing with trader-friendly language (Market Heat, Regime Risk, Signal Strength)
-// [claude-code 2026-03-23] MiroFish briefing generator — deterministic text from debate results
-import type { MiroFishReport, MiroFishBriefing, SimulationContext } from './mirofish-types.js';
+// [claude-code 2026-03-23] MiroShark briefing generator — deterministic text from debate results
+import type { MiroSharkReport, MiroSharkBriefing, SimulationContext } from './miroshark-types.js';
 
 const CATEGORY_LABELS: Record<string, string> = {
   'geopolitical': 'Geopolitical',
@@ -29,14 +29,14 @@ function heatInterpretation(score: number): string {
 }
 
 /**
- * Generate a structured text briefing from MiroFish debate results.
+ * Generate a structured text briefing from MiroShark debate results.
  * No AI call — purely deterministic from the numbers.
  * Uses trader-friendly language: Market Heat, Regime Risk, Signal Strength.
  */
 export function generateBriefing(
-  report: MiroFishReport,
+  report: MiroSharkReport,
   context: SimulationContext,
-): MiroFishBriefing {
+): MiroSharkBriefing {
   const composite = report.nextSessionProjection;
   const regime = report.regimeShiftProbability;
   const conf = report.confidence;
