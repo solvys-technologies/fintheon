@@ -32,10 +32,10 @@ export function ChatHeader({ onRunMDB, onNewChat, onToggleCheckpoints, isLoading
           <button
             onClick={onToggleCheckpoints}
             className="px-3 py-1.5 hover:bg-white/5 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors flex items-center gap-1.5"
-            title="Checkpoints (bookmarks) replace thread history"
+            title="Conversation history"
           >
             <CalendarCheck className="w-3.5 h-3.5" />
-            Checkpoints
+            History
           </button>
         </div>
       </div>

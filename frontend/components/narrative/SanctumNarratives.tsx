@@ -6,6 +6,7 @@ import type { SanctumNarrative } from '../../types/miroshark';
 interface SanctumNarrativesProps {
   narratives?: SanctumNarrative[];
   expanded?: boolean;
+  onNavigateToNarrative?: (narrativeId: string) => void;
 }
 
 function directionIcon(bias: string) {
@@ -20,9 +21,13 @@ function healthColor(score: number): string {
   return 'var(--fintheon-severe)';
 }
 
-function NarrativeCard({ narrative }: { narrative: SanctumNarrative }) {
+function NarrativeCard({ narrative, onNavigate }: { narrative: SanctumNarrative; onNavigate?: (id: string) => void }) {
   return (
-    <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 p-4">
+    <div
+      className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 p-4 cursor-pointer hover:border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/5 transition-colors"
+      onClick={() => onNavigate?.(narrative.id)}
+      title="View on Observatory map"
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
           {directionIcon(narrative.directionBias)}
@@ -70,14 +75,14 @@ function NarrativeCard({ narrative }: { narrative: SanctumNarrative }) {
   );
 }
 
-export function SanctumNarratives({ narratives, expanded }: SanctumNarrativesProps) {
+export function SanctumNarratives({ narratives, expanded, onNavigateToNarrative }: SanctumNarrativesProps) {
   const hasNarratives = narratives && narratives.length > 0;
 
   return (
     <div>
       {hasNarratives ? (
         <div className={`grid gap-3 ${expanded ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3'}`}>
-          {narratives!.map(n => <NarrativeCard key={n.id} narrative={n} />)}
+          {narratives!.map(n => <NarrativeCard key={n.id} narrative={n} onNavigate={onNavigateToNarrative} />)}
         </div>
       ) : (
         <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-surface)]/20 p-6 text-center">

@@ -284,7 +284,7 @@ export function ApparatusPage() {
                             <BookOpen size={9} className="text-[var(--fintheon-accent)]/60" />
                             <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">Personnel File</span>
                           </div>
-                          <p className="text-[9px] text-[var(--fintheon-text)]/60 leading-relaxed italic">{agent.bio}</p>
+                          <p className="text-[13px] text-[var(--fintheon-text)]/60 leading-relaxed italic">{agent.bio}</p>
                         </div>
                       )}
 
@@ -295,7 +295,7 @@ export function ApparatusPage() {
                             <Scroll size={9} className="text-[var(--fintheon-accent)]/60" />
                             <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono uppercase tracking-wider">Origin Dossier</span>
                           </div>
-                          <p className="text-[9px] text-[var(--fintheon-text)]/50 leading-[1.6]">{agent.dossier}</p>
+                          <p className="text-[13px] text-[var(--fintheon-text)]/50 leading-[1.6]">{agent.dossier}</p>
                         </div>
                       )}
 
@@ -368,7 +368,7 @@ export function ApparatusPage() {
                                 </div>
                                 <div className="min-w-0">
                                   <span className="text-[9px] font-mono" style={{ color: n.color }}>{n.thread}</span>
-                                  <span className="text-[8px] text-[var(--fintheon-text)]/40 ml-1.5">{n.note}</span>
+                                  <span className="text-[11px] text-[var(--fintheon-text)]/40 ml-1.5">{n.note}</span>
                                 </div>
                               </div>
                             ))}
@@ -396,7 +396,7 @@ export function ApparatusPage() {
                                 <div className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)]/30 mt-1.5 shrink-0" />
                                 <div>
                                   <span className="text-[9px] text-[var(--fintheon-accent)]/60 font-mono">{conn.label}</span>
-                                  <span className="text-[8px] text-[var(--fintheon-text)]/40 ml-1.5">{conn.detail}</span>
+                                  <span className="text-[11px] text-[var(--fintheon-text)]/40 ml-1.5">{conn.detail}</span>
                                 </div>
                               </div>
                             ))}
@@ -412,7 +412,7 @@ export function ApparatusPage() {
                             {agent.notableInfo.map((info, i) => (
                               <div key={i} className="flex items-start gap-2">
                                 <div className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)]/20 mt-1.5 shrink-0" />
-                                <span className="text-[8px] text-[var(--fintheon-text)]/40 leading-relaxed">{info}</span>
+                                <span className="text-[12px] text-[var(--fintheon-text)]/40 leading-relaxed">{info}</span>
                               </div>
                             ))}
                           </div>

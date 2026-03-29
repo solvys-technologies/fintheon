@@ -10,6 +10,7 @@ import { NarrativeTimelineModal } from './NarrativeManageModal';
 import { CatalystModal } from './CatalystModal';
 import { NarrativeHighlightProvider } from './NarrativeHighlightProvider';
 import { NarrativeFloatingToolbar, type CanvasTool } from './NarrativeFloatingToolbar';
+import { NarrativeCanvasChat } from './NarrativeCanvasChat';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { loadSeedEvents, importRiskFlowItems } from '../../lib/narrative-seed-loader';
 import type { CatalystCard } from '../../lib/narrative-types';
@@ -19,9 +20,8 @@ export function NarrativeFlow() {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [manageModalOpen, setManageModalOpen] = useState(false);
-  const [visibleLaneIds, setVisibleLaneIds] = useState<Set<string>>(() =>
-    new Set(state.lanes.map(l => l.id))
-  );
+  // Empty set = show all narratives (canvas checks size === 0 → show all)
+  const [visibleLaneIds, setVisibleLaneIds] = useState<Set<string>>(new Set());
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [catalystModalOpen, setCatalystModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CatalystCard | null>(null);
@@ -121,6 +121,9 @@ export function NarrativeFlow() {
           onEditCard={handleEditCard}
           onZoomFnsReady={setZoomFns}
         />
+
+        {/* Canvas command palette — ephemeral chat above toolbar */}
+        <NarrativeCanvasChat />
 
         {/* Figma-style floating toolbar — bottom center */}
         <NarrativeFloatingToolbar

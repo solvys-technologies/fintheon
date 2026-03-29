@@ -604,7 +604,7 @@ export default function RiskFlowPanel({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Zap className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
-              <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">RiskFlow</h3>
+              <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">Risk Flow</h3>
               {highCount > 0 && (
                 <span className="riskflow-pulse-badge inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500/30 text-red-400 text-[9px] font-bold">
                   {highCount}
@@ -616,6 +616,7 @@ export default function RiskFlowPanel({
             </div>
             <div className="flex items-center gap-1">
               <AutoRefreshToggle />
+              <span className="text-[8px] text-zinc-600 hidden xl:inline">Auto 30s</span>
               <button
                 type="button"
                 onClick={() => { void refresh(); }}

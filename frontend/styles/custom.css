@@ -56,3 +56,9 @@
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
 }
+
+/* [claude-code 2026-03-29] S8-UNIFY #11: TopStepX theme blending — darken Fintheon chrome ~10% */
+.topstepx-active {
+  --fintheon-bg: #030301;
+  --fintheon-surface: #060604;
+}

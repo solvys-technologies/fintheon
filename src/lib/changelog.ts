@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-29T12:00:00',
+    agent: 'claude-code',
+    summary: 'S8-UNIFY: Fix missing items — NarrativeFlow visibleLaneIds (show all), Risk Flow title, auto-refresh label, SanctumNarratives click-to-navigate, TopStepX theme blending, Apparatus expanded text size, Checkpoints→History label',
+    files: [
+      'frontend/components/narrative/NarrativeFlow.tsx',
+      'frontend/components/narrative/SanctumNarratives.tsx',
+      'frontend/components/RiskFlowPanel.tsx',
+      'frontend/components/apparatus/ApparatusPage.tsx',
+      'frontend/components/chat/ChatHeader.tsx',
+      'frontend/styles/custom.css',
+    ],
+  },
+  {
     date: '2026-03-28T20:00:00',
     agent: 'claude-code',
     summary: 'S8-T7: Wire Claude CLI (Harper-Opus) into Ask Harp, dual-pane main chat, 21st.dev components (animated-ai-input), pulsing icon, boardroom newspaper button, persona switching, artifact system, QuickScope skill',
