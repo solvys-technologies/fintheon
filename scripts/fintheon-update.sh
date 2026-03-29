@@ -1,11 +1,9 @@
 #!/bin/bash
-# [claude-code 2026-03-28] S8-T8: Fintheon update script — password-protected, auto-updates app + Claude CLI launchd agent
-# Usage: fintheon update  (or source this and run fintheon_update)
-
+# Fintheon Update — pulls latest, rebuilds everything, restarts backend, reinstalls app
+# Usage: fintheon update  OR  bash ~/Documents/Codebases/fintheon/scripts/fintheon-update.sh
 set -e
 
-FINTHEON_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-UPDATE_PASSWORD="qaz!@"
+FINTHEON_ROOT="${FINTHEON_ROOT:-$HOME/Documents/Codebases/fintheon}"
 
 echo ""
 echo "  ╔══════════════════════════════════════╗"
@@ -13,93 +11,106 @@ echo "  ║       FINTHEON UPDATE UTILITY        ║"
 echo "  ╚══════════════════════════════════════╝"
 echo ""
 
-# Password check
-read -s -p "  Enter update password: " input_password
-echo ""
-
-if [ "$input_password" != "$UPDATE_PASSWORD" ]; then
-  echo "  ✗ Invalid password. Update aborted."
+if [ ! -d "$FINTHEON_ROOT/.git" ]; then
+  echo "  ✗ Fintheon not found at $FINTHEON_ROOT"
+  echo "    Run the setup script first, or set FINTHEON_ROOT."
   exit 1
 fi
 
-echo "  ✓ Authenticated"
+cd "$FINTHEON_ROOT"
+CURRENT_BRANCH=$(git branch --show-current)
+echo "  Branch: $CURRENT_BRANCH"
 echo ""
 
-# Step 1: Close Fintheon if running
-echo "  [1/6] Closing Fintheon..."
+# ── Step 1: Close Fintheon + kill backend ────────────────────────────────
+
+echo "  [1/7] Stopping Fintheon..."
 pkill -f "Fintheon" 2>/dev/null || true
 pkill -f "electron.*fintheon" 2>/dev/null || true
+lsof -ti:8080 | xargs kill -9 2>/dev/null || true
 sleep 1
-echo "  ✓ Fintheon closed"
+echo "  ✓ Stopped"
 
-# Step 2: Pull latest from git
-echo "  [2/6] Pulling latest code..."
+# ── Step 2: Pull latest ─────────────────────────────────────────────────
+
+echo "  [2/7] Pulling latest code..."
+git stash --quiet 2>/dev/null || true
+git pull origin "$CURRENT_BRANCH" --rebase
+git stash pop --quiet 2>/dev/null || true
+echo "  ✓ Code updated ($(git log --oneline -1 | cut -c1-7))"
+
+# ── Step 3: Install dependencies ─────────────────────────────────────────
+
+echo "  [3/7] Installing dependencies..."
+bun install --silent 2>/dev/null || bun install
+cd backend-hono && bun install --silent 2>/dev/null || bun install
 cd "$FINTHEON_ROOT"
-git pull origin "$(git branch --show-current)" --rebase
-echo "  ✓ Code updated"
-
-# Step 3: Install dependencies
-echo "  [3/6] Installing dependencies..."
-bun install
-cd backend-hono && bun install && cd ..
 echo "  ✓ Dependencies installed"
 
-# Step 4: Apply database migrations
-echo "  [4/6] Checking database migrations..."
-if [ -f "backend-hono/scripts/apply-migrations.ts" ]; then
-  cd backend-hono && bun run scripts/apply-migrations.ts && cd ..
-  echo "  ✓ Migrations applied"
+# ── Step 4: Build backend ────────────────────────────────────────────────
+
+echo "  [4/7] Building backend..."
+cd backend-hono
+bun run build 2>&1 | tail -1
+cd "$FINTHEON_ROOT"
+echo "  ✓ Backend compiled"
+
+# ── Step 5: Build frontend + DMG ─────────────────────────────────────────
+
+echo "  [5/7] Building frontend + DMG..."
+npm run desktop:build 2>&1 | grep -E "✓|building.*DMG" | tail -2
+echo "  ✓ DMG built"
+
+# ── Step 6: Install app ──────────────────────────────────────────────────
+
+echo "  [6/7] Installing Fintheon.app..."
+DMG_PATH="$FINTHEON_ROOT/desktop-dist/Fintheon-1.0.0-arm64.dmg"
+
+if [ -f "$DMG_PATH" ]; then
+  rm -rf /Applications/Fintheon.app 2>/dev/null || true
+  hdiutil attach "$DMG_PATH" -nobrowse -quiet
+  cp -R "/Volumes/Fintheon/Fintheon.app" /Applications/
+  hdiutil detach "/Volumes/Fintheon" -quiet
+  xattr -cr /Applications/Fintheon.app
+  echo "  ✓ App installed to /Applications"
 else
-  echo "  · No migration runner found, skipping"
+  echo "  ✗ DMG not found at $DMG_PATH"
+  exit 1
 fi
 
-# Step 5: Set up Claude CLI config + launchd agent
-echo "  [5/7] Checking Claude CLI configuration..."
-if command -v claude &> /dev/null; then
-  echo "  ✓ Claude CLI available"
-  # Ensure scorer and dispatch scripts are executable
-  chmod +x backend-hono/scripts/claude-scorer.ts 2>/dev/null || true
-  chmod +x backend-hono/scripts/dispatch-brief.ts 2>/dev/null || true
-else
-  echo "  ⚠ Claude CLI not found — install with: npm i -g @anthropic-ai/claude-code"
-fi
+# ── Step 7: Start backend + launch ───────────────────────────────────────
 
-# Step 6: Install Claude CLI launchd agent (auto-start at boot)
-echo "  [6/7] Checking Claude CLI launchd agent..."
-CLAUDE_PLIST="$HOME/Library/LaunchAgents/com.fintheon.claude-cli.plist"
-CLAUDE_PLIST_SRC="$FINTHEON_ROOT/backend-hono/scripts/com.fintheon.claude-cli.plist"
+echo "  [7/7] Starting backend..."
+cd "$FINTHEON_ROOT/backend-hono"
+nohup node dist/index.js > /tmp/fintheon-backend.log 2>&1 &
+BACKEND_PID=$!
 
-if command -v claude &> /dev/null && [ -f "$CLAUDE_PLIST_SRC" ]; then
-  if [ ! -f "$CLAUDE_PLIST" ]; then
-    cp "$CLAUDE_PLIST_SRC" "$CLAUDE_PLIST"
-    launchctl load "$CLAUDE_PLIST"
-    echo "  ✓ Claude CLI launchd agent installed and loaded"
-  else
-    # Update if source is newer
-    if [ "$CLAUDE_PLIST_SRC" -nt "$CLAUDE_PLIST" ]; then
-      launchctl unload "$CLAUDE_PLIST" 2>/dev/null || true
-      cp "$CLAUDE_PLIST_SRC" "$CLAUDE_PLIST"
-      launchctl load "$CLAUDE_PLIST"
-      echo "  ✓ Claude CLI launchd agent updated"
-    else
-      echo "  · Claude CLI launchd agent already installed"
-    fi
+# Wait for ready
+for i in {1..10}; do
+  if curl -s localhost:8080/api/harper/status > /dev/null 2>&1; then
+    break
   fi
-else
-  echo "  · Skipping launchd agent (Claude CLI not found or plist missing)"
-fi
+  sleep 1
+done
 
-# Step 7: Build frontend
-echo "  [7/7] Building frontend..."
-npx vite build
-echo "  ✓ Frontend built"
+echo "  ✓ Backend live (PID: $BACKEND_PID)"
 
+# ── Done ─────────────────────────────────────────────────────────────────
+
+VERSION=$(git log --oneline -1)
 echo ""
 echo "  ══════════════════════════════════════"
 echo "  ✓ Update complete!"
-echo "  "
-echo "  Start backend:  cd backend-hono && bun run dev"
-echo "  Start frontend: bun run dev"
-echo "  Build DMG:      npm run desktop:build"
+echo "  $VERSION"
+echo ""
+echo "  Backend: http://localhost:8080"
+echo "  Logs:    tail -f /tmp/fintheon-backend.log"
 echo "  ══════════════════════════════════════"
 echo ""
+
+echo "  Opening Fintheon..."
+open /Applications/Fintheon.app 2>/dev/null || echo "  · Launch: open /Applications/Fintheon.app"
+
+echo ""
+echo "  Backend running. Press Ctrl+C to stop."
+wait $BACKEND_PID
