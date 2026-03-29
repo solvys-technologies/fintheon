@@ -151,14 +151,9 @@ async function* parseClaudeStream(
     return
   }
 
-  // Yield reasoning start (Claude SDK processes internally, we show a routing trace)
+  // Yield reasoning start — real Claude thinking will populate this
   yield { type: 'reasoning-start', id: reasoningId }
   hasStartedReasoning = true
-  yield {
-    type: 'reasoning-delta',
-    id: reasoningId,
-    delta: 'Processing via Claude Opus (Max subscription, $0 API cost).\n',
-  }
 
   try {
     for await (const chunk of stdout) {
@@ -242,8 +237,8 @@ function processStreamEvent(
 
   switch (event.type) {
     case 'system':
-      // System message from Claude CLI — add as reasoning
-      if (hasStartedReasoning) {
+      // System message from Claude CLI — add as reasoning (skip if no message)
+      if (hasStartedReasoning && event.message) {
         events.push({
           type: 'reasoning-delta',
           id: reasoningId,

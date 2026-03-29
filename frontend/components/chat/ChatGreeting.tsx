@@ -74,12 +74,9 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
 
         {/* Anthropic model badge */}
         <div className="flex items-center gap-1.5">
-          <div
-            className="w-[14px] h-[14px] rounded-full flex items-center justify-center"
-            style={{ backgroundColor: '#D97757' }}
-          >
-            <span style={{ fontSize: '7px', color: 'white', fontWeight: 800, lineHeight: 1 }}>A</span>
-          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16.98 3.404L14.592 9.62h-5.18L7.02 3.404C6.572 2.222 7.452 1 8.712 1h6.576c1.26 0 2.14 1.222 1.692 2.404zM9.412 9.62L4.56 22.098C4.088 23.334 2.452 23.54 1.7 22.462L0 20l9.412-10.38zm5.176 0L19.44 22.098c.472 1.236 2.108 1.442 2.86.364L24 20 14.588 9.62z" fill="#D97757"/>
+          </svg>
           <span className="text-[12px] font-medium" style={{ color: '#D97757' }}>
             Claude Opus 4.6
           </span>

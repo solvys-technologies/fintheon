@@ -163,7 +163,7 @@ export default function CatalystCard({
                   color: catalyst.directionBias === 'bullish' ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)',
                 }}
               >
-                {catalyst.directionBias === 'bullish' ? '▲' : '▼'}
+                {catalyst.directionBias === 'bullish' ? '+' : '-'}
                 {catalyst.marketImpact?.es?.points
                   ? ` +${Math.abs(catalyst.marketImpact.es.points).toFixed(0)} pts`
                   : ''}

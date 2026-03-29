@@ -38,6 +38,7 @@ export interface ScoredRiskFlowItem extends RawRiskFlowItem {
   agent_note_generated_at?: string;
   econ_data?: Record<string, unknown>;
   market_impact?: MarketImpactData | null;
+  instrument_scores?: Record<string, { sentiment: string; impliedPoints: number }>;
 }
 
 export interface ERScoreRecord {
@@ -220,6 +221,49 @@ export async function writeMarketImpact(
 
     if (error) {
       console.error('[Supabase] writeMarketImpact error:', error.message, { tweet_id });
+    } else {
+      written++;
+    }
+  }
+  return written;
+}
+
+/**
+ * S9-T2b: Batch-write per-instrument sentiment scores into the instrument_scores JSONB column.
+ * Merges new instrument data with existing JSONB using Postgres || operator.
+ * Called fire-and-forget from the feed handler — never blocks the response.
+ */
+export async function writeInstrumentScores(
+  updates: Array<{ tweet_id: string; instrument: string; sentiment: string; impliedPoints: number }>,
+): Promise<number> {
+  const sb = getSupabaseClient();
+  if (!sb || updates.length === 0) return 0;
+
+  let written = 0;
+  // Batch by tweet_id in case multiple instruments per item (future-proofing)
+  const grouped = new Map<string, Record<string, { sentiment: string; impliedPoints: number }>>();
+  for (const { tweet_id, instrument, sentiment, impliedPoints } of updates) {
+    if (!grouped.has(tweet_id)) grouped.set(tweet_id, {});
+    grouped.get(tweet_id)![instrument] = { sentiment, impliedPoints };
+  }
+
+  for (const [tweet_id, scores] of grouped) {
+    // Use RPC or raw update to merge JSONB — Supabase JS doesn't natively support || merge,
+    // so we read-merge-write. For fire-and-forget this is acceptable.
+    const { data: existing } = await sb
+      .from('scored_riskflow_items')
+      .select('instrument_scores')
+      .eq('tweet_id', tweet_id)
+      .single();
+
+    const merged = { ...(existing?.instrument_scores ?? {}), ...scores };
+    const { error } = await sb
+      .from('scored_riskflow_items')
+      .update({ instrument_scores: merged })
+      .eq('tweet_id', tweet_id);
+
+    if (error) {
+      console.error('[Supabase] writeInstrumentScores error:', error.message, { tweet_id });
     } else {
       written++;
     }

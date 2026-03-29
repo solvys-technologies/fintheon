@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-29T12:00:00',
+    agent: 'claude-code',
+    summary: 'S9-T2b: Instrument-aware sentiment (asset class flipper), per-instrument Supabase storage, ± symbol replaces ▲/▼ arrows',
+    files: [
+      'backend-hono/src/services/iv-scoring-v2.ts',
+      'backend-hono/src/routes/riskflow/handlers.ts',
+      'backend-hono/src/services/supabase-service.ts',
+      'supabase/migrations/20260329_instrument_scores.sql',
+      'frontend/components/feed/RiskFlowDetailCard.tsx',
+      'frontend/components/RiskFlowMini.tsx',
+      'frontend/components/narrative/CatalystCard.tsx',
+    ],
+  },
+  {
     date: '2026-03-29T00:00:00',
     agent: 'claude-code',
     summary: 'S9-T2: Kill 24h stalemate filter + dismissedIds, bump feed to 50/100, IV Martingale diminishing returns with escalation override, forced-bearish sentiment fix, deviation indicators in RiskFlowDetailCard/RiskFlowMini/CatalystCard, Persons of Interest defaults (Rubio/Greer/Navarro added), Firecrawl confirmed wired',

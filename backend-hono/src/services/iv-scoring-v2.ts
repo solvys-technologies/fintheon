@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] S9-T2b: Instrument-aware sentiment flipper — asset class map, 4-category reaction table, getInstrumentSentiment()
 // [claude-code 2026-03-24] Added continuousVIXMultiplier() piecewise curve, finer EVENT_WEIGHTS with half-point granularity
 // [claude-code 2026-03-12] Task 2B: Aligned leading indicator weights (ISM/PMI >= 7), VIX thresholds to playbook, multi-instrument support
 // [claude-code 2026-03-11] IV Scoring V3: Added volatility taxonomy, regime-aware decay, new event types
@@ -1248,6 +1249,142 @@ export function enforceSentiment(headline: string, currentSentiment: string): st
     }
   }
   return currentSentiment
+}
+
+// ============================================================================
+// S9-T2b: INSTRUMENT-AWARE SENTIMENT FLIPPER
+// The equity sentiment (from enforceSentiment) is /ES-centric. When a user
+// selects a different instrument (e.g. /GC gold), the sentiment must be
+// flipped based on event type × asset class relationship.
+// "drone strike on Iran" = bearish for /ES but bullish for /GC (safe-haven bid).
+// ============================================================================
+
+// ── Asset class groupings ────────────────────────────────────────────────────
+
+const ASSET_CLASS_MAP: Record<string, string> = {
+  // Equity Index Futures
+  '/ES': 'equities', '/MES': 'equities', '/NQ': 'equities', '/MNQ': 'equities',
+  '/YM': 'equities', '/MYM': 'equities', '/RTY': 'equities', '/M2K': 'equities',
+  // Safe-Haven
+  '/GC': 'safe-haven', '/MGC': 'safe-haven', '/SI': 'precious', '/SIL': 'precious',
+  // Energy
+  '/CL': 'energy', '/MCL': 'energy', '/NG': 'energy',
+  // Bonds
+  '/ZB': 'bonds', '/ZN': 'bonds',
+  // FX Majors
+  '/6E': 'fx-major', '/6J': 'fx-major', '/6B': 'fx-major',
+}
+
+// ── Map classifyEventType() output → flipper category ────────────────────────
+
+type FlipperCategory = 'geopolitical' | 'monetary' | 'economic' | 'default'
+
+const EVENT_TYPE_TO_FLIPPER: Record<string, FlipperCategory> = {
+  // Monetary policy
+  fedDecision: 'monetary', fomc: 'monetary', powellSpeak: 'monetary',
+  // Economic data
+  cpiPrint: 'economic', pcePrint: 'economic', nfpPrint: 'economic',
+  gdpPrint: 'economic', ismPrint: 'economic', jolts: 'economic',
+  retailSales: 'economic',
+  // Credit/liquidity stress → treated as economic conditions
+  creditSpreadWidening: 'economic', yieldCurveSignal: 'economic',
+  liquidityStress: 'economic', bankStress: 'economic', leverageWarning: 'economic',
+  // Geopolitical
+  geopolitical: 'geopolitical', conflict: 'geopolitical',
+  tariffs: 'geopolitical', chinaTrade: 'geopolitical',
+  governmentShutdown: 'geopolitical',
+  // Default — earnings, mergers, sector news, commentary, etc.
+  earningsHighImpact: 'default', earningsMidCap: 'default',
+  merger: 'default', sectorNews: 'default',
+  politicalCommentary: 'default', datacenterHalt: 'default',
+  majorCrisis: 'geopolitical', blackSwan: 'geopolitical',
+  other: 'default',
+}
+
+// ── Reaction table: how each asset class reacts relative to equity sentiment ─
+// 'same'    = same direction as equities
+// 'inverse' = opposite direction (bearish equities → bullish this asset)
+// null      = no override, pass through equity sentiment as-is
+
+type Reaction = 'same' | 'inverse' | null
+
+const EVENT_SENTIMENT_REACTIONS: Record<FlipperCategory, Record<string, Reaction>> = {
+  geopolitical: {
+    'equities': 'same', 'safe-haven': 'inverse', 'precious': 'inverse',
+    'bonds': 'inverse', 'energy': 'inverse', 'fx-major': null,
+  },
+  monetary: {
+    'equities': 'same', 'safe-haven': 'same', 'precious': 'same',
+    'bonds': 'same', 'energy': 'same', 'fx-major': 'inverse',
+  },
+  economic: {
+    'equities': 'same', 'safe-haven': 'inverse', 'precious': 'inverse',
+    'bonds': 'inverse', 'energy': 'same', 'fx-major': null,
+  },
+  default: {
+    'equities': 'same', 'safe-haven': null, 'precious': null,
+    'bonds': null, 'energy': null, 'fx-major': null,
+  },
+}
+
+// ── Fallback: map classifyRiskType() broad categories when eventType is 'other' ─
+
+const RISK_TYPE_TO_FLIPPER: Record<string, FlipperCategory> = {
+  Geopolitical: 'geopolitical',
+  Macro: 'economic',       // conservative default; monetary detected via eventType
+  Credit: 'economic',
+  Liquidity: 'economic',
+  Earnings: 'default',
+  Technical: 'default',
+  Commentary: 'default',
+}
+
+/**
+ * Determine the flipper category for a feed item.
+ * Uses classifyEventType() (precise, 25 categories) with fallback to risk_type (broad, 7 categories).
+ */
+export function getFlipperCategory(headline: string, riskType?: string | null): FlipperCategory {
+  // Build a minimal ParsedHeadline for classifyEventType
+  const parsed = { raw: headline, eventType: riskType ?? '' } as ParsedHeadline
+  const eventType = classifyEventType(parsed)
+
+  // Look up in precise map
+  const precise = EVENT_TYPE_TO_FLIPPER[eventType]
+  if (precise) return precise
+
+  // Fallback to broad risk_type
+  if (riskType) {
+    const broad = RISK_TYPE_TO_FLIPPER[riskType]
+    if (broad) return broad
+  }
+
+  return 'default'
+}
+
+/**
+ * Flip equity-centric sentiment for a target instrument based on event category.
+ * enforceSentiment() runs BEFORE this — it determines the /ES-centric direction.
+ * This function converts that direction for the user's selected instrument.
+ */
+export function getInstrumentSentiment(
+  equitySentiment: 'bullish' | 'bearish',
+  headline: string,
+  instrument: string,
+  riskType?: string | null,
+): 'bullish' | 'bearish' {
+  // Equities pass through unchanged
+  const assetClass = ASSET_CLASS_MAP[instrument]
+  if (!assetClass || assetClass === 'equities') return equitySentiment
+
+  const category = getFlipperCategory(headline, riskType)
+  const reactions = EVENT_SENTIMENT_REACTIONS[category]
+  const reaction = reactions[assetClass] ?? null
+
+  if (reaction === 'inverse') {
+    return equitySentiment === 'bullish' ? 'bearish' : 'bullish'
+  }
+  // 'same' or null → pass through
+  return equitySentiment
 }
 
 // ============================================================================

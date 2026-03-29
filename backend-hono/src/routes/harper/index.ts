@@ -6,10 +6,10 @@
  */
 
 import { Hono } from 'hono'
-import { createUIMessageStreamResponse } from 'ai'
 import { harperChat, isHarperAvailable, type HarperChatRequest } from '../../services/harper-handler.js'
 import { createRequestCognition } from '../../services/cognition-emitter.js'
 import * as conversationStore from '../../services/ai/conversation-store.js'
+import type { BridgeStreamEvent } from '../../services/claude-sdk/bridge.js'
 
 export function createHarperRoutes() {
   const app = new Hono()
@@ -87,22 +87,65 @@ export function createHarperRoutes() {
 
       cognition.step('gateway-call', 'Streaming from Claude Opus', 'Local CLI bridge, MCP tools available')
 
+      // Stream bridge events → AI SDK UIMessageStream wire protocol
+      // Protocol: 0:"text"\n = text-delta, h:{"id":"x"}\n = reasoning-start,
+      //           g:"text"\n = reasoning-delta, d:{...}\n = finish
+      const encoder = new TextEncoder()
       let cancelled = false
-      const stream = new ReadableStream({
+      const messageId = `harper-${Date.now()}`
+
+      const sseStream = new ReadableStream({
         start(controller) {
           ;(async () => {
             let fullText = ''
+            let reasoningStarted = false
+
             for await (const event of result.stream) {
               if (cancelled) break
-              if (event.type === 'text-delta' && event.delta) {
-                fullText += event.delta
+
+              switch (event.type) {
+                case 'reasoning-start':
+                  reasoningStarted = true
+                  controller.enqueue(encoder.encode(`h:${JSON.stringify({ reasoningId: event.id })}\n`))
+                  break
+                case 'reasoning-delta':
+                  if (event.delta) {
+                    controller.enqueue(encoder.encode(`g:${JSON.stringify(event.delta)}\n`))
+                  }
+                  break
+                case 'reasoning-end':
+                  // No explicit end event in wire protocol — reasoning stops when text starts
+                  break
+                case 'text-start':
+                  // Implicit in first text-delta
+                  break
+                case 'text-delta':
+                  if (event.delta) {
+                    fullText += event.delta
+                    controller.enqueue(encoder.encode(`0:${JSON.stringify(event.delta)}\n`))
+                  }
+                  break
+                case 'text-end':
+                  // Handled by finish event
+                  break
+                case 'tool-use':
+                  if (event.metadata) {
+                    controller.enqueue(encoder.encode(`9:${JSON.stringify({
+                      toolCallId: event.metadata.toolId ?? event.id,
+                      toolName: event.metadata.toolName ?? 'unknown',
+                      args: {},
+                    })}\n`))
+                  }
+                  break
+                case 'error':
+                  controller.enqueue(encoder.encode(`3:${JSON.stringify(event.delta ?? 'Unknown error')}\n`))
+                  cognition.step('error', 'Harper-Opus error', event.delta ?? 'Unknown error')
+                  break
               }
-              if (event.type === 'error') {
-                console.error(`[HarperOpus][${requestId}] Stream error: ${event.delta}`)
-                cognition.step('error', 'Harper-Opus error', event.delta ?? 'Unknown error')
-              }
-              controller.enqueue(event)
             }
+
+            // Finish event
+            controller.enqueue(encoder.encode(`d:${JSON.stringify({ finishReason: 'stop', usage: { promptTokens: 0, completionTokens: fullText.length } })}\n`))
 
             // Store assistant response
             if (fullText) {
@@ -132,12 +175,12 @@ export function createHarperRoutes() {
         },
       })
 
-      c.header('X-Conversation-Id', conversation.id)
-      c.header('X-Hermes-Agent', 'harper-opus')
-
-      return createUIMessageStreamResponse({
-        stream,
+      return new Response(sseStream, {
+        status: 200,
         headers: {
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
           'X-Conversation-Id': conversation.id,
           'X-Request-Id': requestId,
           'X-Hermes-Agent': 'harper-opus',

@@ -59,9 +59,11 @@ export function useHermesChat(
       }
     }
 
-    // [claude-code 2026-03-09] Added 65s frontend timeout + throw on error response
+    // [claude-code 2026-03-29] Extended timeout: Claude CLI deliberation can take 5+ minutes
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 65_000);
+    const isHarper = agentOverride === 'harper-cao';
+    const timeoutMs = isHarper ? 300_000 : 65_000; // 5min for Harper-Opus, 65s for Hermes
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const response = await fetch(fullUrl, { ...init, headers, body, signal: controller.signal });

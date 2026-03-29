@@ -94,7 +94,7 @@ function DirectionBadge({ alert }: { alert: RiskFlowAlert }) {
   const isBull = dir === 'Bullish';
   return (
     <span className="text-[9px] font-semibold" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
-      {isBull ? '▲' : '▼'}
+      {'±'}
     </span>
   );
 }
@@ -415,7 +415,7 @@ function AlertRow({
       <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40">
         <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
         <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
-          {isBull ? '▲ BULLISH' : '▼ BEARISH'}
+          {'±'} {isBull ? 'BULLISH' : 'BEARISH'}
         </span>
         <span className="text-[10px] text-zinc-500 tabular-nums" title={`Implied ${alert.instrument ?? ''} move`}>
           {alert.instrument ? `${alert.instrument} ` : ''}{alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)} pts` : '0-5 pts'}
@@ -451,7 +451,7 @@ function AlertRow({
                 <span className={`text-[9px] font-mono font-bold ${
                   isBull ? 'text-[var(--fintheon-bullish)]' : 'text-[var(--fintheon-bearish)]'
                 }`}>
-                  {isBull ? '▲' : '▼'} +{Math.abs(alert.pointRange).toFixed(0)} pts
+                  ±{Math.abs(alert.pointRange).toFixed(0)} pts
                 </span>
               )}
             </div>

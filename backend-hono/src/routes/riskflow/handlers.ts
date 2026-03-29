@@ -3,6 +3,7 @@
  * Request handlers for RiskFlow endpoints
  */
 
+// [claude-code 2026-03-29] S9-T2b: Wire instrument-aware sentiment flipper into feed handler, fix spread ordering, fire-and-forget instrument_scores writes
 // [claude-code 2026-03-10] Added handleGetSources for RiskFlow connection status indicators
 // [claude-code 2026-03-10] handlePreload: lowered minMacroLevel 3→2 (Medium+ threshold)
 import type { Context } from 'hono';
@@ -12,6 +13,7 @@ import { addClient, removeClient } from '../../services/riskflow/sse-broadcaster
 import { corsConfig } from '../../config/cors.js';
 import type { FeedFilters, WatchlistUpdateRequest, NewsSource, MacroLevel } from '../../types/riskflow.js';
 import { isSupabaseConfigured } from '../../config/supabase.js';
+import { writeInstrumentScores } from '../../services/supabase-service.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
 import { forcePoll } from '../../services/riskflow/feed-poller.js';
 import { fetchVIX, getVIXSpikeAdjustment, getVIXScoringMultiplier, getVIXBaseline } from '../../services/vix-service.js';
@@ -22,6 +24,7 @@ import {
   getCurrentSession,
   getInstrumentConfig,
   getSupportedInstruments,
+  getInstrumentSentiment,
   INSTRUMENT_BETAS,
   type StackedEvent
 } from '../../services/iv-scoring-v2.js';
@@ -126,25 +129,43 @@ export async function handleGetFeed(c: Context) {
       vixLevel = vixData.level;
     } catch { /* use fallback */ }
 
+    // S9-T2b: Flip sentiment per instrument at serve-time
+    const sentimentMap: Record<string, 'bullish' | 'bearish'> = { bullish: 'bullish', bearish: 'bearish' };
+    const capMap: Record<string, string> = { bullish: 'Bullish', bearish: 'Bearish' };
+
     const items = (feed.items || []).map((item: any) => {
+      // Resolve equity-centric sentiment (lowercase)
+      const equitySentiment: 'bullish' | 'bearish' =
+        sentimentMap[item.sentiment] ?? sentimentMap[item.priceBrainScore?.sentiment?.toLowerCase()] ?? 'bearish';
+
+      // Flip for target instrument
+      const flipped = getInstrumentSentiment(
+        equitySentiment, item.headline ?? '', instrument, item.riskType ?? null,
+      );
+
       if (item.ivScore != null && item.ivScore >= 2) {
         const pts = estimatePoints(item.ivScore, vixLevel, instrument);
-        // Derive sentiment from item.sentiment if priceBrainScore is missing (DB-cached items)
-        const sentimentMap: Record<string, string> = { bullish: 'Bullish', bearish: 'Bearish', neutral: 'Neutral' };
         return {
           ...item,
           priceBrainScore: {
-            sentiment: sentimentMap[item.sentiment] ?? 'Neutral',
-            classification: 'Neutral',
             ...item.priceBrainScore,
+            sentiment: capMap[flipped] ?? 'Bearish',
+            classification: item.priceBrainScore?.classification ?? 'Neutral',
             impliedPoints: pts.scaledPoints,
             instrument,
           },
         };
       }
-      // For items without ivScore, still set the instrument
+      // For items without ivScore, still flip sentiment and set instrument
       if (item.priceBrainScore) {
-        return { ...item, priceBrainScore: { ...item.priceBrainScore, instrument } };
+        return {
+          ...item,
+          priceBrainScore: {
+            ...item.priceBrainScore,
+            sentiment: capMap[flipped] ?? 'Bearish',
+            instrument,
+          },
+        };
       }
       return item;
     });
@@ -158,6 +179,24 @@ export async function handleGetFeed(c: Context) {
       ...(feed.nextCursor && { nextCursor: feed.nextCursor })
     };
     
+    // S9-T2b: Fire-and-forget — persist instrument scores to Supabase for historical analysis
+    // Does NOT block the response. Failures are logged but do not affect the user.
+    if (instrument !== '/ES') {
+      const scoresToWrite = items
+        .filter((it: any) => it.priceBrainScore?.sentiment && it.tweet_id)
+        .map((it: any) => ({
+          tweet_id: it.tweet_id as string,
+          instrument,
+          sentiment: it.priceBrainScore.sentiment as string,
+          impliedPoints: (it.priceBrainScore.impliedPoints as number) ?? 0,
+        }));
+      if (scoresToWrite.length > 0) {
+        writeInstrumentScores(scoresToWrite).catch(err =>
+          console.error('[RiskFlow] instrument_scores write failed (non-blocking):', err),
+        );
+      }
+    }
+
     console.log(`[RiskFlow] Returning response with ${response.items.length} items`);
     return c.json(response);
   } catch (error) {

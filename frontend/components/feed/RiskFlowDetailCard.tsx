@@ -124,7 +124,7 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
 
         {/* Direction */}
         <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
-          {isBull ? '▲ BULLISH' : '▼ BEARISH'}
+          {'±'} {isBull ? 'BULLISH' : 'BEARISH'}
         </span>
 
         <span className="flex-1" />
@@ -234,7 +234,7 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
                 <span className={`text-[9px] font-mono font-bold ${
                   isBull ? 'text-[var(--fintheon-bullish)]' : 'text-[var(--fintheon-bearish)]'
                 }`}>
-                  {isBull ? '▲' : '▼'} +{Math.abs(pts).toFixed(0)} pts
+                  ±{Math.abs(pts).toFixed(0)} pts
                 </span>
               )}
             </div>
