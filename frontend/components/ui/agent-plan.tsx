@@ -230,7 +230,7 @@ function getStatusIcon(status: string) {
     case "completed":
       return <CheckCircle2 className="w-4 h-4 text-[var(--fintheon-bullish)]" />;
     case "in-progress":
-      return <CircleDotDashed className="w-4 h-4 text-blue-400" />;
+      return <CircleDotDashed className="w-4 h-4 text-[var(--fintheon-accent)]" />;
     case "pending":
       return <Circle className="w-4 h-4 text-zinc-500" />;
     case "need-help":
@@ -255,7 +255,7 @@ function getStatusBadge(status: string) {
       );
     case "in-progress":
       return (
-        <span className={`${base} bg-blue-500/15 text-blue-400`}>
+        <span className={`${base} bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]`}>
           {status}
         </span>
       );

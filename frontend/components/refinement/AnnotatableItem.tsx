@@ -19,7 +19,7 @@ const FLAW_OPTIONS: { value: FlawTag; label: string }[] = [
   { value: 'wrong_type', label: 'Wrong Type' },
   { value: 'wrong_sentiment', label: 'Wrong Sentiment' },
   { value: 'missing_context', label: 'Missing Context' },
-  { value: 'commentator_misweight', label: 'Commentator Misweight' },
+  { value: 'commentator_misweight', label: 'Person of Interest Misweight' },
   { value: 'regime_mismatch', label: 'Regime Mismatch' },
 ];
 

@@ -11,7 +11,7 @@ import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
 import { useSettings } from '../../contexts/SettingsContext';
 import { FintheonChatInput } from '../chat/FintheonChatInput';
 
-export function ResearchDepartment() {
+export function Scriptorium() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [thinkHarder, setThinkHarder] = useState(false);
   const { iframeUrls } = useSettings();

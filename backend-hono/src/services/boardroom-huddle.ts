@@ -9,7 +9,7 @@ let lastHuddleTime = 0;
 const HUDDLE_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
 const AGENTS: Array<{ role: HermesAgentRole; name: string }> = [
-  { role: 'harper-cao', name: 'Harper-Hermes' },
+  { role: 'harper-cao', name: 'Harper-Opus' },
   { role: 'pma-merged', name: 'Oracle' },
   { role: 'futures-desk', name: 'Feucht' },
   { role: 'fundamentals-desk', name: 'Consul' },
@@ -45,7 +45,7 @@ export async function triggerHuddle(event: FeedItem): Promise<void> {
     '[HUDDLE] As CAO, consolidate the team assessments above into a 2-sentence action recommendation.';
   try {
     const harperResponse = await handleHermesChat({ message: consolidatePrompt, agentOverride: 'harper-cao' });
-    await appendToBoardroom(`**Harper-Hermes** (Huddle Summary):\n${harperResponse.content}`, 'assistant');
+    await appendToBoardroom(`**Harper-Opus** (Huddle Summary):\n${harperResponse.content}`, 'assistant');
   } catch (err) {
     console.error('[Huddle] Harper consolidation failed:', err);
   }

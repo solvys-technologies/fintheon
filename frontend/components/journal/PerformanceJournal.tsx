@@ -13,7 +13,7 @@ import type { JournalEntryItem, JournalSummaryResponse, NotionPerformanceRespons
 
 type JournalTab = 'human' | 'agent';
 
-export function TradingJournal() {
+export function PerformanceJournal() {
   const backend = useBackend();
   const er = useERSafe();
   const [activeTab, setActiveTab] = useState<JournalTab>('human');

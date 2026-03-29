@@ -72,7 +72,7 @@ function mapBackendSource(source: string): RiskFlowAlert['source'] {
   return 'backend';
 }
 
-const DISMISSED_STORAGE_KEY = 'fintheon:riskflow-dismissed:v1';
+// [claude-code 2026-03-28] S9-T2: Removed dismissedIds — items are never hidden
 const SEEN_STORAGE_KEY = 'fintheon:riskflow-seen:v1';
 
 function loadStoredIds(key: string): Set<string> {
@@ -101,7 +101,6 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => loadStoredIds(DISMISSED_STORAGE_KEY));
   const [seenIds, setSeenIds] = useState<Set<string>>(() => loadStoredIds(SEEN_STORAGE_KEY));
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -174,7 +173,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   // Backend feed polling (twitter-cli, Polymarket, Economic Calendar)
   const pollBackendFeed = useCallback(async () => {
     try {
-      const response = await backend.riskflow.list({ minMacroLevel: 0, limit: 30, instrument: selectedSymbol.symbol });
+      const response = await backend.riskflow.list({ minMacroLevel: 0, limit: 50, instrument: selectedSymbol.symbol });
       const alerts: RiskFlowAlert[] = response.items.map((item) => ({
         id: `backend-${item.id}`,
         headline: item.title,
@@ -217,7 +216,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await backend.riskflow.list({
         minMacroLevel: 0,
-        limit: 30,
+        limit: 50,
         offset: backendAlerts.length,
         instrument: selectedSymbol.symbol,
       });
@@ -268,22 +267,15 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   }, [pollBackendFeed, autoRefresh]);
 
   // Merge: Notion (pinned) → Backend feed
-  // [claude-code 2026-03-11] 24h stalemate rule: drop items older than 24h on init/render
-  const STALE_CUTOFF_MS = 24 * 60 * 60 * 1000;
-  const now = Date.now();
-  const isFresh = (a: RiskFlowAlert) => {
-    if (!a.publishedAt) return true;
-    return now - new Date(a.publishedAt).getTime() < STALE_CUTOFF_MS;
-  };
-
+  // [claude-code 2026-03-28] S9-T2: Removed 24h stalemate filter — items persist forever (backfill data)
   const seenBackendIds = new Set(notionAlerts.map((a) => a.id));
   const dedupedBackend = backendAlerts.filter((a) => !seenBackendIds.has(a.id));
-  const merged = [...notionAlerts, ...dedupedBackend].filter(isFresh);
+  const merged = [...notionAlerts, ...dedupedBackend];
   // FIX 1: Ensure every item has pointRange, direction, cyclical
   ensureScoring(merged, selectedSymbol.symbol);
   // FIX 4: Downgrade non-financial BREAKING headlines
   downgradeNonFinancialBreaking(merged);
-  const visibleAlerts = merged.filter((a) => !dismissedIds.has(a.id));
+  const visibleAlerts = merged;
   const highCount = visibleAlerts.filter((a) => a.severity === 'high' || a.severity === 'critical').length;
   const mediumCount = visibleAlerts.filter((a) => a.severity === 'medium').length;
   const lowCount = visibleAlerts.filter((a) => a.severity === 'low').length;
@@ -296,13 +288,9 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     mergedIdsRef.current = mergedIds;
   }
 
+  // [claude-code 2026-03-28] S9-T2: clearAll/removeAlert are no-ops — items persist forever
   const clearAll = useCallback(() => {
     const ids = mergedIdsRef.current;
-    setDismissedIds((prev) => {
-      const next = new Set(prev);
-      ids.forEach((id) => next.add(id));
-      return next;
-    });
     setSeenIds((prev) => {
       const next = new Set(prev);
       ids.forEach((id) => next.add(id));
@@ -311,7 +299,6 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   }, [mergedIdsKey]);
 
   const removeAlert = useCallback((id: string) => {
-    setDismissedIds((prev) => new Set(prev).add(id));
     setSeenIds((prev) => new Set(prev).add(id));
   }, []);
 
@@ -358,10 +345,6 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       setRefreshing(false);
     }
   }, [backend, pollNotion, pollBackendFeed]);
-
-  useEffect(() => {
-    persistIds(DISMISSED_STORAGE_KEY, dismissedIds);
-  }, [dismissedIds]);
 
   useEffect(() => {
     persistIds(SEEN_STORAGE_KEY, seenIds);

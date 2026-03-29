@@ -1,7 +1,7 @@
 // [claude-code 2026-03-29] Expanded agent cards: comedic bios, origin dossiers, active narratives, Feucht W/L record, notable intel
 // [claude-code 2026-03-22] Source of Truth fusion — full 14 commandments, extracted CommandmentsSidebar
 // [claude-code 2026-03-20] S3:T3 — Apparatus redesign: circle constellation replaced with intelligence briefing cards
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Clock, AlertTriangle, TrendingUp, TrendingDown, Eye, BookOpen, Scroll, Trophy, Minus } from 'lucide-react';
 import { MemoryCard } from './MemoryCard';
 import { CommandmentsSidebar } from './CommandmentsSidebar';
@@ -175,9 +175,59 @@ const MOCK_ACTIVITY: LiveActivity[] = [
 // ─── Conflict Detection ──────────────────────────────────────────────
 const conflicts = CONNECTIONS.filter(c => c.type === 'conflict');
 
-export function ApparatusPage() {
+export function ApparatusMap() {
   const [showSchedule, setShowSchedule] = useState(false);
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [lines, setLines] = useState<{ key: string; d: string; color: string }[]>([]);
+
+  // Compute SVG connection lines when an agent is expanded
+  const computeLines = useCallback(() => {
+    if (!expandedAgent || !gridRef.current) { setLines([]); return; }
+    const gridRect = gridRef.current.getBoundingClientRect();
+    const sourceEl = cardRefs.current[expandedAgent];
+    if (!sourceEl) { setLines([]); return; }
+    const sourceRect = sourceEl.getBoundingClientRect();
+    const sx = sourceRect.left + sourceRect.width / 2 - gridRect.left;
+    const sy = sourceRect.top + sourceRect.height / 2 - gridRect.top;
+
+    const agentConns = CONNECTIONS.filter(c => c.from === expandedAgent || c.to === expandedAgent);
+    const newLines = agentConns.map(conn => {
+      const targetId = conn.from === expandedAgent ? conn.to : conn.from;
+      const targetEl = cardRefs.current[targetId];
+      if (!targetEl) return null;
+      const targetRect = targetEl.getBoundingClientRect();
+      const tx = targetRect.left + targetRect.width / 2 - gridRect.left;
+      const ty = targetRect.top + targetRect.height / 2 - gridRect.top;
+      const cx1 = sx + (tx - sx) * 0.4;
+      const cy1 = sy;
+      const cx2 = tx - (tx - sx) * 0.4;
+      const cy2 = ty;
+      const agent = AGENTS.find(a => a.id === targetId);
+      return {
+        key: `${conn.from}-${conn.to}`,
+        d: `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`,
+        color: agent?.accentColor ?? 'var(--fintheon-accent)',
+      };
+    }).filter(Boolean) as { key: string; d: string; color: string }[];
+    setLines(newLines);
+  }, [expandedAgent]);
+
+  useEffect(() => {
+    computeLines();
+    // Recompute on resize
+    window.addEventListener('resize', computeLines);
+    return () => window.removeEventListener('resize', computeLines);
+  }, [computeLines]);
+
+  // Recompute after layout settles (expansion animation)
+  useEffect(() => {
+    if (expandedAgent) {
+      const timer = setTimeout(computeLines, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [expandedAgent, computeLines]);
 
   return (
     <div className="h-full w-full flex flex-col bg-[var(--fintheon-bg)] overflow-hidden">
@@ -217,7 +267,23 @@ export function ApparatusPage() {
 
         {/* Center: Agent briefing cards grid */}
         <div className="flex-1 min-w-0 min-h-0 overflow-y-auto p-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div ref={gridRef} className="relative grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            {/* SVG overlay for agent connection lines */}
+            {expandedAgent && lines.length > 0 && (
+              <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 1, width: '100%', height: '100%', overflow: 'visible' }}>
+                {lines.map(line => (
+                  <path
+                    key={line.key}
+                    d={line.d}
+                    stroke={line.color}
+                    strokeWidth={1.5}
+                    opacity={0.2}
+                    fill="none"
+                    className="rope-breathe"
+                  />
+                ))}
+              </svg>
+            )}
             {AGENTS.map(agent => {
               const isExpanded = expandedAgent === agent.id;
               const agentConflicts = conflicts.filter(
@@ -230,11 +296,13 @@ export function ApparatusPage() {
               return (
                 <div
                   key={agent.id}
+                  ref={(el) => { cardRefs.current[agent.id] = el; }}
                   className={`border rounded-lg transition-all cursor-pointer ${
                     isExpanded
                       ? 'bg-[var(--fintheon-surface)] border-[var(--fintheon-accent)]/40 col-span-1 lg:col-span-2 xl:col-span-3'
                       : 'bg-[var(--fintheon-bg)] border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/40 hover:bg-[var(--fintheon-accent)]/5'
                   }`}
+                  style={{ position: 'relative', zIndex: isExpanded ? 2 : 0 }}
                   onClick={() => setExpandedAgent(prev => prev === agent.id ? null : agent.id)}
                 >
                   {/* Card header */}
@@ -259,7 +327,7 @@ export function ApparatusPage() {
                   {!isExpanded && (
                     <div className="p-3 space-y-2">
                       {agent.bio && (
-                        <p className="text-[9px] text-[var(--fintheon-text)]/40 leading-relaxed italic line-clamp-2">
+                        <p className="text-[11px] text-[var(--fintheon-text)]/40 leading-relaxed italic line-clamp-2">
                           {agent.bio}
                         </p>
                       )}

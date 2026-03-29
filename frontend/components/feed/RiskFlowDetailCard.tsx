@@ -86,9 +86,9 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
     <div
       className={`group relative mb-[3px] overflow-hidden transition-all duration-300 ${
         expanded
-          ? 'border-l-4 border border-[var(--fintheon-accent)]/60 ring-1 riskflow-expand-pulse'
-          : 'border-l-2 border border-transparent'
-      } border-l-[var(--fintheon-accent)] ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
+          ? 'border border-[var(--fintheon-accent)]/20 rounded riskflow-expand-pulse'
+          : 'border border-[var(--fintheon-border)]/10 rounded'
+      } ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
       style={expanded ? { '--tw-ring-color': 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' } as React.CSSProperties : undefined}
     >
       {/* ── Collapsed: headline + source icon top-right ─────────────────────── */}
@@ -213,6 +213,31 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
                 </div>
               </div>
             )}
+
+            {/* S9-T2: Deviation indicators — IV score + implied points */}
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              {alert.econData?.beatMiss && !hasEconData && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                  alert.econData.beatMiss === 'beat' ? 'bg-emerald-500/15 text-emerald-400' :
+                  alert.econData.beatMiss === 'miss' ? 'bg-red-500/15 text-red-400' :
+                  'bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]'
+                }`}>
+                  {alert.econData.beatMiss.toUpperCase()}
+                </span>
+              )}
+              {(alert as any).ivScore != null && (
+                <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60">
+                  IV {Number((alert as any).ivScore).toFixed(1)}
+                </span>
+              )}
+              {pts !== 0 && (
+                <span className={`text-[9px] font-mono font-bold ${
+                  isBull ? 'text-[var(--fintheon-bullish)]' : 'text-[var(--fintheon-bearish)]'
+                }`}>
+                  {isBull ? '▲' : '▼'} +{Math.abs(pts).toFixed(0)} pts
+                </span>
+              )}
+            </div>
 
             {/* 3. Summary (if exists and differs from headline) */}
             {alert.summary && alert.summary !== alert.headline && (

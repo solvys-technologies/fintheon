@@ -55,7 +55,7 @@ export const MORNING_STANDUP_SCHEDULES: CronScheduleConfig[] = [
     metadata: {
       windowMinutes: 30,
       triggerType: 'scheduled',
-      targetAgents: ['Harper-Hermes', 'Feucht', 'Consul', 'Oracle'],
+      targetAgents: ['Harper-Opus', 'Feucht', 'Consul', 'Oracle'],
     },
   },
   {
@@ -67,7 +67,7 @@ export const MORNING_STANDUP_SCHEDULES: CronScheduleConfig[] = [
     metadata: {
       windowMinutes: 30,
       triggerType: 'scheduled',
-      targetAgents: ['Harper-Hermes', 'Feucht', 'Consul', 'Oracle'],
+      targetAgents: ['Harper-Opus', 'Feucht', 'Consul', 'Oracle'],
     },
   },
   {
@@ -79,7 +79,7 @@ export const MORNING_STANDUP_SCHEDULES: CronScheduleConfig[] = [
     metadata: {
       windowMinutes: 30,
       triggerType: 'scheduled',
-      targetAgents: ['Harper-Hermes', 'Feucht', 'Consul', 'Oracle'],
+      targetAgents: ['Harper-Opus', 'Feucht', 'Consul', 'Oracle'],
     },
   },
   {
@@ -91,7 +91,7 @@ export const MORNING_STANDUP_SCHEDULES: CronScheduleConfig[] = [
     metadata: {
       windowMinutes: 30,
       triggerType: 'scheduled',
-      targetAgents: ['Harper-Hermes', 'Feucht', 'Consul', 'Oracle'],
+      targetAgents: ['Harper-Opus', 'Feucht', 'Consul', 'Oracle'],
     },
   },
   {
@@ -103,7 +103,7 @@ export const MORNING_STANDUP_SCHEDULES: CronScheduleConfig[] = [
     metadata: {
       windowMinutes: 30,
       triggerType: 'scheduled',
-      targetAgents: ['Harper-Hermes', 'Feucht', 'Consul', 'Oracle'],
+      targetAgents: ['Harper-Opus', 'Feucht', 'Consul', 'Oracle'],
     },
   },
 ];
@@ -123,7 +123,7 @@ export const MORNING_STANDUP_COMPACT: CronScheduleConfig = {
   metadata: {
     windowMinutes: 120, // Full 2-hour window
     triggerType: 'scheduled',
-    targetAgents: ['Harper-Hermes', 'Feucht', 'Consul', 'Oracle'],
+    targetAgents: ['Harper-Opus', 'Feucht', 'Consul', 'Oracle'],
   },
 };
 

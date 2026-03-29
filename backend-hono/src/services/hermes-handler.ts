@@ -198,7 +198,7 @@ function generateMDBReport(): string {
 - **VIX**: Monitoring volatility levels
 
 ### Agent Check-In
-- **Harper-Hermes/CAO**: Operational
+- **Harper-Opus/CAO**: Operational
 - **Oracle (All-Seer)**: Standing by
 - **Feucht (Futures & Risk)**: Ready for setups
 - **Consul (Fundamentals)**: Tracking mega-caps
@@ -363,7 +363,7 @@ function generateMacroAnalysis(intent: string, _message: string): string {
 
 function generateGeneralResponse(agent: HermesAgentRole, _message: string): string {
   const agentName = {
-    'harper-cao': 'Harper-Hermes (CAO)',
+    'harper-cao': 'Harper-Opus (CAO)',
     'pma-merged': 'Oracle (All-Seer)',
     'futures-desk': 'Feucht (Futures & Risk)',
     'fundamentals-desk': 'Consul (Fundamentals)',
@@ -390,7 +390,7 @@ const OPENROUTER_OPUS_MODEL = 'anthropic/claude-sonnet-4-6'
 
 /** Map HermesAgentRole to display name for thought bank queries */
 const BOARDROOM_AGENT_NAMES: Record<string, string> = {
-  'harper-cao': 'Harper-Hermes',
+  'harper-cao': 'Harper-Opus',
   'futures-desk': 'Feucht',
   'fundamentals-desk': 'Consul',
   'pma-merged': 'Oracle',
@@ -410,7 +410,7 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
   // Inject live RiskFlow headlines so agents can reference real-time data
   const feedContext = await buildFeedContext()
   // Cross-agent thought bank awareness — what other agents are thinking
-  const agentDisplayName = BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? 'Harper-Hermes'
+  const agentDisplayName = BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? 'Harper-Opus'
   const thoughtBankBlock = await buildThoughtBankPromptBlock(agentDisplayName)
   const systemPrompt = basePrompt + feedContext + thoughtBankBlock
   const messages: { role: string; content: string | ContentPart[] }[] = [

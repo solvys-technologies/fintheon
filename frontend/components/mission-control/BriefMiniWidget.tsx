@@ -195,7 +195,7 @@ export function BriefMiniWidget() {
         {!loaded ? (
           <div className="text-[10px] text-zinc-600 py-2">Loading brief...</div>
         ) : briefText ? (
-          <div className="border-l-2 border-[var(--fintheon-accent)]/30 pl-2">
+          <div className="pl-2">
             <BriefContent text={briefText} />
           </div>
         ) : (

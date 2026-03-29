@@ -1,8 +1,8 @@
-// [claude-code 2026-03-24] Chart overhaul — TradingView iframe embed + compact heat-mapped IV bars
+// [claude-code 2026-03-28] S9-T3: Removed IV risk bars canvas — TradingView + projection overlay only
+// [claude-code 2026-03-24] Chart overhaul — TradingView iframe embed
 // [claude-code 2026-03-25] Price projection canvas overlay — MiroShark expected move path + confidence band
-import { useRef, useEffect, useLayoutEffect, useCallback, useState, useMemo } from 'react';
-import type { MiroSharkTimePoint, MiroSharkRiskCategory, MiroSharkScenario } from '../../types/miroshark';
-import { RISK_CATEGORY_LABELS, COMPOSITE_COLOR, ivHeatColor } from '../../types/miroshark';
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
+import type { MiroSharkTimePoint, MiroSharkScenario } from '../../types/miroshark';
 
 /** Map user-facing futures symbols to TradingView widget-compatible symbols. */
 const SYMBOL_MAP: Record<string, string> = {
@@ -39,119 +39,9 @@ interface SanctumChartProps {
   scenarios?: MiroSharkScenario[];
 }
 
-const CATS: MiroSharkRiskCategory[] = [
-  'geopolitical', 'political', 'monetary-policy',
-  'earnings-corporate', 'market-structure', 'black-swan',
-];
-const PAD = { top: 4, right: 36, bottom: 20, left: 4 };
-const AXIS_COLOR = 'rgba(240, 234, 214, 0.3)';
-const GOLD_ACCENTS = ['#d4af37', '#c79f4a'];
-
-function isGold(c: HTMLCanvasElement) {
-  return GOLD_ACCENTS.includes(getComputedStyle(c).getPropertyValue('--fintheon-accent').trim().toLowerCase());
-}
-
 function getThemeColor(c: HTMLCanvasElement, varName: string, fallback: string): string {
   const val = getComputedStyle(c).getPropertyValue(varName).trim();
   return val || fallback;
-}
-
-function roundTopRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x, y + h); ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y); ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h);
-  ctx.closePath();
-}
-
-/** Layered IV bars — highest IV drawn first (back, full opacity, widest) → lowest IV on top (narrow, translucent).
- *  Rich gradient fill: base color → brighter highlight at top → fade to transparent at peak.
- *  Bars fill edge-to-edge within the plot area. */
-function drawBars(
-  ctx: CanvasRenderingContext2D, data: MiroSharkTimePoint[],
-  pL: number, pW: number, bTop: number, bH: number, _gold: boolean,
-) {
-  const n = data.length;
-  // Bars fill the full slot width with only 1px gap between
-  const slotW = pW / Math.max(n, 1);
-  const gap = Math.min(1, slotW * 0.05);
-  const maxBarW = slotW - gap;
-
-  for (let i = 0; i < n; i++) {
-    const cx = pL + (i / Math.max(n - 1, 1)) * pW;
-
-    // Sort categories by IV score descending — highest (most dangerous) drawn first in back
-    const sorted = CATS
-      .map(cat => ({ cat, val: data[i].categories[cat] }))
-      .filter(c => c.val > 0.1)
-      .sort((a, b) => b.val - a.val);
-
-    for (let layer = 0; layer < sorted.length; layer++) {
-      const { val } = sorted[layer];
-      const color = ivHeatColor(val);
-
-      // Height: proportional to IV score (full pane height at 10)
-      const barH = (val / 10) * bH;
-      if (barH < 1) continue;
-
-      // Width: back layers fill full slot, front layers progressively narrower
-      const widthScale = 1 - (layer / sorted.length) * 0.45;
-      const bW = maxBarW * widthScale;
-
-      // Opacity: back layer (highest IV) = 100% solid, each subsequent layer fades
-      const alpha = layer === 0 ? 1.0 : Math.max(0.15, 0.7 / (layer + 0.5));
-
-      const sy = bTop + bH - barH;
-
-      ctx.save();
-      ctx.globalAlpha = alpha;
-
-      // Rich vertical gradient: solid base → bright highlight band → transparent fade at peak
-      const grad = ctx.createLinearGradient(0, sy + barH, 0, sy);
-      grad.addColorStop(0, color);                                          // solid base
-      grad.addColorStop(0.3, color);                                        // hold solid
-      grad.addColorStop(0.6, lightenColor(color, layer === 0 ? 25 : 15));   // highlight band
-      grad.addColorStop(0.85, color + (layer === 0 ? 'cc' : '80'));         // start fade
-      grad.addColorStop(1, color + (layer === 0 ? '60' : '20'));            // transparent peak
-      ctx.fillStyle = grad;
-
-      // Rounded top
-      roundTopRect(ctx, cx - bW / 2, sy, bW, barH, 3);
-      ctx.fill();
-
-      // Inner highlight shimmer — thin bright line at ~60% height for glass effect
-      if (barH > 8) {
-        const shimmerY = sy + barH * 0.35;
-        ctx.save();
-        ctx.globalAlpha = layer === 0 ? 0.25 : 0.12;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(cx - bW / 2 + 1, shimmerY, bW - 2, 1);
-        ctx.restore();
-      }
-
-      // Top-edge glow for high-IV bars
-      if (val >= 5) {
-        ctx.save();
-        ctx.shadowColor = color;
-        ctx.shadowBlur = val >= 7 ? 12 : 6;
-        ctx.globalAlpha = layer === 0 ? 0.6 : 0.2;
-        ctx.fillStyle = color;
-        ctx.fillRect(cx - bW / 2, sy, bW, Math.min(2, barH));
-        ctx.restore();
-      }
-
-      ctx.restore();
-    }
-  }
-}
-
-/** Lighten a hex color by a percentage (0-100). */
-function lightenColor(hex: string, pct: number): string {
-  const h = hex.replace('#', '');
-  const r = Math.min(255, parseInt(h.substring(0, 2), 16) + Math.round(255 * pct / 100));
-  const g = Math.min(255, parseInt(h.substring(2, 4), 16) + Math.round(255 * pct / 100));
-  const b = Math.min(255, parseInt(h.substring(4, 6), 16) + Math.round(255 * pct / 100));
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 /* ── Projection overlay: draws expected move path + confidence band on top of TradingView ── */
@@ -317,15 +207,12 @@ function drawProjectionOverlay(
 }
 
 export function SanctumChart({
-  timeSeries, rollingDays, selectedSymbol = 'QQQ',
+  selectedSymbol = 'QQQ',
   compositeIV, confidence, regimeShiftProbability, scenarios,
 }: SanctumChartProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const tvContainerRef = useRef<HTMLDivElement>(null);
   const [tvLoaded, setTvLoaded] = useState(false);
-  const data = timeSeries.filter(p => p.dayOffset <= rollingDays);
 
   const tvSymbol = mapSymbol(selectedSymbol);
 
@@ -404,54 +291,6 @@ export function SanctumChart({
     return () => obs.disconnect();
   }, [tvLoaded, drawOverlay]);
 
-  // ── IV bars canvas drawing ──
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current, container = containerRef.current;
-    if (!canvas || !container || data.length === 0) return;
-    const rect = container.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-    if (rect.width === 0 || rect.height === 0) return;
-    canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
-    canvas.style.width = `${rect.width}px`; canvas.style.height = `${rect.height}px`;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.scale(dpr, dpr);
-
-    const w = rect.width, h = rect.height;
-    const pW = w - PAD.left - PAD.right;
-    const bTop = PAD.top;
-    const bH = h - PAD.top - PAD.bottom;
-    const gold = isGold(canvas);
-    const grid = gold ? 'rgba(212,175,55,0.06)' : 'rgba(128,128,128,0.08)';
-    ctx.clearRect(0, 0, w, h);
-
-    ctx.strokeStyle = grid; ctx.lineWidth = 1; ctx.font = '10px monospace'; ctx.textAlign = 'left';
-    const ivStep = bH > 60 ? 5 : 10;
-    for (let iv = 0; iv <= 10; iv += ivStep) {
-      const y = bTop + bH - (iv / 10) * bH;
-      ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(w - PAD.right, y); ctx.stroke();
-      ctx.fillStyle = AXIS_COLOR; ctx.fillText(String(iv), w - PAD.right + 6, y + 4);
-    }
-
-    const lStep = Math.max(1, Math.floor(data.length / Math.max(4, Math.floor(w / 100))));
-    ctx.fillStyle = AXIS_COLOR; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-    for (let i = 0; i < data.length; i += lStep) {
-      const x = PAD.left + (i / Math.max(data.length - 1, 1)) * pW;
-      ctx.fillText(data[i].date.slice(5), x, h - 4);
-    }
-
-    drawBars(ctx, data, PAD.left, pW, bTop, bH, gold);
-  }, [data]);
-
-  const drawRef = useRef(draw);
-  useLayoutEffect(() => { drawRef.current = draw; }, [draw]);
-
-  useEffect(() => { draw(); }, [draw]);
-  useEffect(() => {
-    const c = containerRef.current; if (!c) return;
-    const obs = new ResizeObserver(() => drawRef.current());
-    obs.observe(c);
-    return () => obs.disconnect();
-  }, []);
 
   const hasProjection = compositeIV != null && confidence != null && tvLoaded;
 
@@ -460,7 +299,7 @@ export function SanctumChart({
       {/* TradingView pane with projection overlay */}
       <div
         ref={tvContainerRef}
-        className="flex-[3] min-h-0 rounded-t overflow-hidden border border-[var(--fintheon-accent)]/10 transition-opacity duration-700 relative"
+        className="flex-1 min-h-0 rounded overflow-hidden border border-[var(--fintheon-accent)]/10 transition-opacity duration-700 relative"
         style={{ opacity: tvLoaded ? 1 : 0 }}
       >
         <iframe
@@ -481,13 +320,6 @@ export function SanctumChart({
         )}
       </div>
 
-      {/* Separator */}
-      <div className="h-px bg-[var(--fintheon-accent)]/15 shrink-0" />
-
-      {/* Compact IV risk bars pane */}
-      <div ref={containerRef} className="flex-1 min-h-[80px] relative">
-        <canvas ref={canvasRef} className="w-full h-full" />
-      </div>
     </div>
   );
 }

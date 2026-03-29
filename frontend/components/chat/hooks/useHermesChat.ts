@@ -3,6 +3,7 @@
  * Simple chat hook for Hermes AI processing
  */
 
+// [claude-code 2026-03-28] S9-T4: Route harper-cao through /api/harper/chat for full Fintheon context injection
 // [claude-code 2026-03-09] Added conversation history hydration on remount
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
@@ -97,6 +98,12 @@ export function useHermesChat(
     }
   }, [conversationId, setConversationId]);
 
+  // Harper-Opus routes through dedicated /api/harper/chat for full Fintheon context injection
+  const isHarperRoute = agentOverride === 'harper-cao';
+  const chatEndpoint = isHarperRoute
+    ? `${API_BASE_URL}/api/harper/chat`
+    : `${API_BASE_URL}/api/ai/chat`;
+
   const {
     messages: useChatMessages,
     sendMessage,
@@ -110,38 +117,64 @@ export function useHermesChat(
     addToolApprovalResponse,
   } = useChat({
     transport: new DefaultChatTransport({
-      api: `${API_BASE_URL}/api/ai/chat`,
+      api: chatEndpoint,
       fetch: fetchFn,
-      prepareSendMessagesRequest: ({ messages }) => ({
-        body: {
-          messages: messages.map((msg) => {
-            const parts = msg.parts ?? [];
-            const hasImages = parts.some((p: any) => p.type === 'image');
-            if (hasImages) {
-              const contentParts = parts
-                .filter((p: any) => p.type === 'text' || p.type === 'image')
-                .map((p: any) =>
-                  p.type === 'text'
-                    ? { type: 'text' as const, text: p.text }
-                    : { type: 'image_url' as const, image_url: { url: p.image } }
-                );
-              return { role: msg.role, content: contentParts };
-            }
-            return {
-              role: msg.role,
-              content: parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('') || '',
-            };
-          }),
-          ...(conversationId && { conversationId }),
-          ...(agentOverride && { agentOverride }),
-          ...(thinkHarderRef.current && { thinkHarder: true }),
-          // Active MCP connector IDs — backend uses these to scope available tools
-          mcpServers: (() => {
-            try { return JSON.parse(localStorage.getItem('fintheon:mcp-active-connectors') ?? '[]'); }
-            catch { return []; }
-          })(),
-        },
-      }),
+      prepareSendMessagesRequest: ({ messages }) => {
+        // Harper-Opus: extract last message + history for harper-handler format
+        if (isHarperRoute) {
+          const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+          const msgText = lastUserMsg?.parts
+            ?.filter((p: any) => p.type === 'text')
+            .map((p: any) => p.text)
+            .join('') || '';
+          const history = messages.slice(0, -1).map(m => ({
+            role: m.role as 'user' | 'assistant',
+            content: (m.parts ?? [])
+              .filter((p: any) => p.type === 'text')
+              .map((p: any) => p.text)
+              .join('') || '',
+          }));
+          return {
+            body: {
+              message: msgText,
+              history,
+              ...(conversationId && { conversationId }),
+              ...(thinkHarderRef.current && { thinkHarder: true }),
+            },
+          };
+        }
+
+        // Standard Hermes/OpenRouter path
+        return {
+          body: {
+            messages: messages.map((msg) => {
+              const parts = msg.parts ?? [];
+              const hasImages = parts.some((p: any) => p.type === 'image');
+              if (hasImages) {
+                const contentParts = parts
+                  .filter((p: any) => p.type === 'text' || p.type === 'image')
+                  .map((p: any) =>
+                    p.type === 'text'
+                      ? { type: 'text' as const, text: p.text }
+                      : { type: 'image_url' as const, image_url: { url: p.image } }
+                  );
+                return { role: msg.role, content: contentParts };
+              }
+              return {
+                role: msg.role,
+                content: parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('') || '',
+              };
+            }),
+            ...(conversationId && { conversationId }),
+            ...(agentOverride && { agentOverride }),
+            ...(thinkHarderRef.current && { thinkHarder: true }),
+            mcpServers: (() => {
+              try { return JSON.parse(localStorage.getItem('fintheon:mcp-active-connectors') ?? '[]'); }
+              catch { return []; }
+            })(),
+          },
+        };
+      },
     }),
     onFinish: () => setIsStreaming(false),
     onError: (error) => {

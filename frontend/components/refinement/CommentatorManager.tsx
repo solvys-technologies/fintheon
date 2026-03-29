@@ -158,13 +158,13 @@ export function CommentatorManager({ registry, onRegistryChanged }: CommentatorM
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-[11px] font-semibold text-[var(--fintheon-text)]/70 uppercase tracking-wider">
           <Users className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
-          Commentator Ranking
+          Persons of Interest Ranking
         </div>
         <button
           onClick={handleSeed}
           disabled={seeding}
           className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] border border-zinc-700 text-zinc-500 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-colors disabled:opacity-50"
-          title="Seed default commentators (idempotent)"
+          title="Seed default persons of interest (idempotent)"
         >
           <Sprout className="w-2.5 h-2.5" />
           {seeding ? 'Seeding...' : 'Seed Defaults'}
@@ -264,7 +264,7 @@ export function CommentatorManager({ registry, onRegistryChanged }: CommentatorM
 
         {sorted.length === 0 && (
           <div className="text-[10px] text-zinc-600 text-center py-4">
-            No commentators. Click "Seed Defaults" to populate.
+            No persons of interest. Click "Seed Defaults" to populate.
           </div>
         )}
       </div>

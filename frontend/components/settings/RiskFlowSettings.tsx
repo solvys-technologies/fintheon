@@ -456,14 +456,14 @@ export function RiskFlowSettings() {
         )}
       </section>
 
-      {/* ===== Section C: Commentator Tiers ===== */}
+      {/* ===== Section C: Persons of Interest Tiers ===== */}
       <section>
         <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--fintheon-accent)' }}>
-          Commentator Tiers
+          Persons of Interest Tiers
         </h3>
 
         {commentatorsLoading ? (
-          <p className="text-xs text-gray-500">Loading commentators...</p>
+          <p className="text-xs text-gray-500">Loading persons of interest...</p>
         ) : (
           <div className="space-y-2">
             {([1, 2, 3] as const).map(tier => {
@@ -514,7 +514,7 @@ export function RiskFlowSettings() {
             <p className="text-[11px] text-gray-600 pt-1">
               {refinementEnabled
                 ? 'Manage Registry via the Refinement Engine tab in the sidebar.'
-                : 'Enable Refinement Engine below to manage the commentator registry.'}
+                : 'Enable Refinement Engine below to manage the persons of interest registry.'}
             </p>
           </div>
         )}

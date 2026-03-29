@@ -2,7 +2,7 @@
 
 export type VixRegime = 'low' | 'normal' | 'elevated' | 'crisis'
 export type DeskId = 'fundamentals' | 'futures' | 'pma-merged' | 'news-sentiment'
-export type AgentName = 'Harper-Hermes' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald'
+export type AgentName = 'Harper-Opus' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald'
 
 export interface ContextBankSnapshot {
   version: number

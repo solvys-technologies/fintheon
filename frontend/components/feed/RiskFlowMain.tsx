@@ -12,7 +12,7 @@ import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
 type PriorityFilter = 'all' | 'high' | 'medium';
 type SourceFilter = 'all' | 'notion' | 'twitter';
 
-export function NewsSection() {
+export function RiskFlowMain() {
   const { alerts, markAllSeen, isSeen, refresh, refreshing, loadMore, loadingMore, hasMore } = useRiskFlow();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const sourceStatus = useSourceStatus();
@@ -81,7 +81,7 @@ export function NewsSection() {
     <div className="h-full overflow-y-auto px-0 pt-0 pb-0">
       <div className="flex items-center justify-between mb-2 mt-1 px-3">
         <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em]">
-          <span className="text-[var(--fintheon-accent)] font-semibold tracking-[0.15em]">Risk Flow</span>
+          <span className="text-[var(--fintheon-accent)] font-semibold tracking-[0.15em]">RiskFlow</span>
           <span className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.twitterCli ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
             <span className={sourceStatus.twitterCli ? 'text-emerald-400/90' : 'text-zinc-500'}>X</span>

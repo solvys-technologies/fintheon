@@ -1,3 +1,4 @@
+// [claude-code 2026-03-28] S9-T3: Side-by-side Brief+Calendar with needle divider, kill padding
 // [claude-code 2026-03-11] T8: Tale of the Tape label for Sun+Mon<7AM, show only first brief item
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useBackend } from '../../lib/backend';
@@ -29,7 +30,7 @@ function briefTypeToLabel(bt: string): string {
   }
 }
 
-export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string) => void }) {
+export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string) => void }) {
   const backend = useBackend();
   const settings = useSettings();
   const { autoRefresh } = settings;
@@ -233,70 +234,83 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
         className="flex-1 overflow-y-auto scroll-smooth snap-y snap-mandatory"
       >
         {/* Page 1: Briefing (default) — NTK Brief + Session Calendar + Core KPIs + Action Tape */}
-        <div data-dash-page="0" className="min-h-full snap-start px-2.5 py-3 flex flex-col">
+        <div data-dash-page="0" className="min-h-full snap-start py-1 flex flex-col">
           {/* Setup Guide — first-time onboarding */}
           {showSetupGuide && (
             <div className="shrink-0 mb-5">
               <SetupGuideCard onDismiss={() => setShowSetupGuide(false)} onStartInterview={() => setShowInterview(true)} />
             </div>
           )}
-          {/* Row 1: Need-to-Know Brief (left) + Session Calendar (right) */}
-          <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5 xl:h-[clamp(448px,48vh,600px)]">
-            {/* Need-to-Know Brief */}
-            <div className="flex flex-col h-[clamp(320px,38vh,480px)] xl:h-full min-h-0">
-              <KanbanTitle
-                title={briefLabel}
-                tone="gold"
-                headerRight={
-                  <div className="flex items-center gap-1">
-                    <AutoRefreshToggle size="xs" />
-                    <button
-                      type="button"
-                      onClick={refreshBrief}
-                      disabled={ntnRefreshing}
-                      className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
-                      title="Refresh brief"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${ntnRefreshing ? 'animate-spin' : ''}`} />
-                    </button>
-                  </div>
-                }
-              />
-              <textarea
-                value={ntnText}
-                readOnly
-                className="mt-2 flex-1 min-h-0 w-full bg-[#0b0b08] px-4 py-3 text-sm text-gray-200 border-l-2 border-[var(--fintheon-accent)]/40 focus:outline-none focus:border-[var(--fintheon-accent)]"
-                style={{ resize: 'vertical', minHeight: '80px' }}
-                placeholder={ntnLoaded ? 'Awaiting AI-generated brief...' : 'Loading brief...'}
-              />
-              {ntnLoaded && !ntnText.trim() && (
-                <p className="mt-2 text-xs text-zinc-500">
-                  Awaiting AI-generated brief...
-                </p>
-              )}
-            </div>
-
-            {/* Session Calendar */}
-            <div className="flex flex-col h-[280px] xl:h-full min-h-0">
-              <KanbanTitle
-                title="Session Calendar"
-                tone="cyan"
-                headerRight={
-                  <span className="text-[9px] tracking-[0.22em] uppercase border rounded-full px-2 py-0.5 text-[#67e8f9] border-[#06b6d4]/30">
-                    Upcoming Events
-                  </span>
-                }
-              />
-              <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 relative">
-                {!scheduleLoaded ? (
-                  <div className="text-xs text-zinc-500 py-3 px-1">Loading session calendar...</div>
-                ) : scheduleItems.length === 0 ? (
-                  <div className="text-xs text-zinc-500 py-3 px-1">
-                    No economic events available. Start the backend or check Supabase connection.
-                  </div>
-                ) : (
-                  <SessionCalendarList items={scheduleItems} />
+          {/* Main content — Brief left, Calendar right */}
+          <div className="flex-1 min-h-0 flex">
+            <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
+              {/* Left: Morning Daily Brief (55%) */}
+              <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col">
+                <KanbanTitle
+                  title={briefLabel}
+                  tone="gold"
+                  headerRight={
+                    <div className="flex items-center gap-1">
+                      <AutoRefreshToggle size="xs" />
+                      <button
+                        type="button"
+                        onClick={refreshBrief}
+                        disabled={ntnRefreshing}
+                        className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
+                        title="Refresh brief"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${ntnRefreshing ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
+                  }
+                />
+                <textarea
+                  value={ntnText}
+                  readOnly
+                  className="mt-2 flex-1 min-h-0 w-full bg-[#0b0b08] px-4 py-3 text-sm text-gray-200 border border-[var(--fintheon-accent)]/10 rounded focus:outline-none focus:border-[var(--fintheon-accent)]"
+                  style={{ resize: 'vertical', minHeight: '80px' }}
+                  placeholder={ntnLoaded ? 'Awaiting AI-generated brief...' : 'Loading brief...'}
+                />
+                {ntnLoaded && !ntnText.trim() && (
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Awaiting AI-generated brief...
+                  </p>
                 )}
+              </div>
+
+              {/* Needle divider — fades at top/bottom 25% */}
+              <div className="w-px relative shrink-0">
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: 'linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 25%, var(--fintheon-accent) 75%, transparent 100%)',
+                    opacity: 0.15,
+                  }}
+                />
+              </div>
+
+              {/* Right: Econ Calendar (45%) */}
+              <div className="flex-[45] min-w-0 overflow-y-auto p-4 flex flex-col">
+                <KanbanTitle
+                  title="Session Calendar"
+                  tone="cyan"
+                  headerRight={
+                    <span className="text-[9px] tracking-[0.22em] uppercase border rounded-full px-2 py-0.5 text-[#67e8f9] border-[#06b6d4]/30">
+                      Upcoming Events
+                    </span>
+                  }
+                />
+                <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 relative">
+                  {!scheduleLoaded ? (
+                    <div className="text-xs text-zinc-500 py-3 px-1">Loading session calendar...</div>
+                  ) : scheduleItems.length === 0 ? (
+                    <div className="text-xs text-zinc-500 py-3 px-1">
+                      No economic events available. Start the backend or check Supabase connection.
+                    </div>
+                  ) : (
+                    <SessionCalendarList items={scheduleItems} />
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -315,7 +329,7 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
                 {kpis.map((kpi) => (
                   <div
                     key={kpi.label}
-                    className="bg-[#0b0b08] px-4 py-3 border-l-2 border-[var(--fintheon-accent)]/35"
+                    className="bg-[#0b0b08] px-4 py-3 border border-[var(--fintheon-accent)]/10 rounded"
                   >
                     <div className="text-[10px] tracking-[0.2em] uppercase text-gray-500">{kpi.label}</div>
                     <div className="mt-1.5 text-2xl font-semibold text-white">{kpi.value}</div>
@@ -371,7 +385,7 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
                       borderOpacity={borderOpacity}
                       seen={seen}
                       onOpenIdea={setSelectedIdea}
-                      onNavigateToFeed={onNavigateTab ? () => onNavigateTab('news') : undefined}
+                      onNavigateToFeed={onNavigateTab ? () => onNavigateTab('riskflow') : undefined}
                     />
                   );
                 })
@@ -381,7 +395,7 @@ export function ExecutiveDashboard({ onNavigateTab }: { onNavigateTab?: (tab: st
         </div>
 
         {/* Page 2: Full RiskFlow */}
-        <div data-dash-page="1" className="min-h-full snap-start px-2.5 py-3 flex flex-col">
+        <div data-dash-page="1" className="min-h-full snap-start py-1 px-1 flex flex-col">
           <KanbanTitle title="RiskFlow" tag="Full Feed" tone="emerald" headerRight={
               <div className="flex items-center gap-1">
                 <AutoRefreshToggle size="xs" />

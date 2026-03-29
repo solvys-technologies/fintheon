@@ -14,7 +14,7 @@ import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel, Sen
 import { getWatchlist, matchesWatchlist } from './watchlist-service.js';
 import { analyzeHeadline, type AnalyzedHeadline } from '../analysis/grok-analyzer.js';
 import { calculateIVScore } from '../analysis/iv-scorer.js';
-import { classifyEventType } from '../iv-scoring-v2.js';
+import { classifyEventType, getMartingaleMultiplier, enforceSentiment, addToSessionBaseline } from '../iv-scoring-v2.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 // [claude-code 2026-03-27] S3: Rewired data pipeline — raw → scored Supabase tables, deprecating news_feed_items
 import * as newsCache from './news-cache.js';
@@ -29,7 +29,7 @@ import { isSupabaseConfigured } from '../../config/supabase.js';
 import { scoredToFeedItem } from './central-scorer.js';
 
 const log = createLogger('RiskFlow');
-const MAX_FEED_ITEMS = 50;
+const MAX_FEED_ITEMS = 100;
 const isDev = process.env.NODE_ENV !== 'production';
 const ALLOW_MOCK_FALLBACK = process.env.RISKFLOW_ALLOW_MOCK_FALLBACK === 'true';
 
@@ -125,19 +125,26 @@ async function enrichWithAnalysis(item: FeedItem, prefetchedVIX?: Awaited<Return
       vixData: vixData ?? undefined,
     });
 
+    // [claude-code 2026-03-28] S9-T2: Force bearish on destruction/violence headlines
+    const correctedSentiment = enforceSentiment(item.headline, ivResult.sentiment);
+
     // Compute point estimation from IV score × live VIX
+    // S9-T2: Apply Martingale diminishing returns — repeated criticals get reduced points
     let priceBrainScore: FeedItem['priceBrainScore'] = undefined;
     if (ivResult.score >= 2 && vixData) {
       try {
         const feedInstrument = process.env.PRIMARY_INSTRUMENT || '/ES';
         const pts = estimatePoints(ivResult.score, vixData.level, feedInstrument);
+        const martingale = getMartingaleMultiplier(item.headline, ivResult.macroLevel);
+        const deltaPoints = Number((pts.scaledPoints * martingale).toFixed(1));
+        addToSessionBaseline(deltaPoints);
         const sentimentMap: Record<string, 'Bullish' | 'Bearish' | 'Neutral'> = {
           bullish: 'Bullish', bearish: 'Bearish', neutral: 'Neutral',
         };
         priceBrainScore = {
-          sentiment: sentimentMap[ivResult.sentiment] ?? 'Neutral',
+          sentiment: sentimentMap[correctedSentiment] ?? 'Neutral',
           classification: 'Neutral',
-          impliedPoints: pts.scaledPoints,
+          impliedPoints: deltaPoints,
           instrument: feedInstrument,
         };
       } catch {
@@ -153,7 +160,7 @@ async function enrichWithAnalysis(item: FeedItem, prefetchedVIX?: Awaited<Return
       tags: [...new Set([...item.tags, ...analyzed.parsed.tags])],
       isBreaking: item.isBreaking || analyzed.parsed.isBreaking,
       urgency: getHigherUrgency(item.urgency, analyzed.parsed.urgency),
-      sentiment: ivResult.sentiment as SentimentDirection,
+      sentiment: correctedSentiment as SentimentDirection,
       ivScore: ivResult.score,
       subScores: ivResult.subScores,
       // Preserve item's original macroLevel if it was explicitly set higher (e.g. from FJ keyword classifier)

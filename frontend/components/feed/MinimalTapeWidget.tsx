@@ -60,13 +60,11 @@ export function MinimalTapeWidget() {
   };
 
   const handleApproveProposal = (proposal: TradingProposal) => {
-    console.log('[Tape] Proposal approved:', proposal);
     setPendingProposals(prev => prev.filter(p => p.id !== proposal.id));
     // TODO: Execute trade via backend
   };
 
   const handleRejectProposal = (proposal: TradingProposal) => {
-    console.log('[Tape] Proposal rejected:', proposal);
     setPendingProposals(prev => prev.filter(p => p.id !== proposal.id));
   };
 

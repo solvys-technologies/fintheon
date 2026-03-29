@@ -4,16 +4,16 @@
  * Shared backend contracts for boardroom and intervention messages.
  *
  * Agent roster (v8.0):
- *   Harper-Hermes — CAO (Chief Agent Officer), coordination & boardroom moderation
+ *   Harper-Opus — CAO (Chief Agent Officer), coordination & boardroom moderation
  *   Feucht        — Futures Execution & 40/40 Club
  *   Consul        — PMA-1 Market Intelligence (Kalshi BTC bot)
  *   Oracle        — PMA-2 Quantitative Pattern Diviner
- *   (Herald removed in v8.0 — communications absorbed by Harper-Hermes)
+ *   (Herald removed in v8.0 — communications absorbed by Harper-Opus)
  *   (Sentinel removed in v7.9 — risk absorbed by Feucht)
  */
 
 export type BoardroomAgent =
-  | 'Harper-Hermes'
+  | 'Harper-Opus'
   | 'Feucht'
   | 'Consul'
   | 'Oracle'
@@ -32,7 +32,7 @@ export interface BoardroomMessage {
 
 export interface InterventionMessage {
   id: string;
-  sender: 'User' | 'Harper-Hermes' | 'Unknown';
+  sender: 'User' | 'Harper-Opus' | 'Unknown';
   content: string;
   timestamp: string;
 }

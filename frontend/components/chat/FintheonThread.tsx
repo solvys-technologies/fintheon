@@ -70,7 +70,7 @@ const MARKDOWN_COMPONENTS = {
     <pre className="my-2 overflow-x-auto">{children}</pre>
   ),
   blockquote: ({ children }: { children?: React.ReactNode }) => (
-    <blockquote className="border-l-2 border-[var(--fintheon-accent)]/40 pl-3 my-2 text-zinc-400 italic">{children}</blockquote>
+    <blockquote className="border-l border-[var(--fintheon-accent)]/20 pl-3 my-2 text-zinc-400 italic">{children}</blockquote>
   ),
   strong: ({ children }: { children?: React.ReactNode }) => (
     <strong className="font-semibold text-zinc-100">{children}</strong>
@@ -285,11 +285,7 @@ const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string
   const createdAt = (message as any).createdAt as Date | undefined;
   const id = (message as any).id as string | undefined;
 
-  // Debug: log the actual message shape to find the right property
   const msg = message as any;
-  if (msg.role === 'assistant') {
-    console.log('[AssistantMsg] keys:', Object.keys(msg), 'parts?', !!msg.parts, 'content?', !!msg.content, 'text?', typeof msg.text);
-  }
 
   // Try every known property: .parts (AI SDK v6), .content (assistant-ui), .text (plain string)
   const rawContent = msg.parts ?? msg.content;

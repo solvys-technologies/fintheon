@@ -15,7 +15,7 @@ import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { loadSeedEvents, importRiskFlowItems } from '../../lib/narrative-seed-loader';
 import type { CatalystCard } from '../../lib/narrative-types';
 
-export function NarrativeFlow() {
+export function NarrativeMap() {
   const { state, snapshot, dispatch } = useNarrative();
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -41,15 +41,13 @@ export function NarrativeFlow() {
     }
   }, [dispatch]);
 
-  // Auto-import top RiskFlow items as editable copies
+  // Auto-import ALL RiskFlow items as catalyst cards
   useEffect(() => {
     if (alerts.length === 0) return;
-    const highAlerts = alerts.filter(a => a.severity === 'high' || a.severity === 'critical');
-    if (highAlerts.length === 0) return;
     const existingRfIds = new Set(
       state.catalysts.filter(c => c.riskflowItemId).map(c => c.riskflowItemId!)
     );
-    const imported = importRiskFlowItems(highAlerts, existingRfIds);
+    const imported = importRiskFlowItems(alerts, existingRfIds);
     if (imported.length > 0) {
       dispatch({ type: 'BULK_ADD_CATALYSTS', catalysts: imported });
     }

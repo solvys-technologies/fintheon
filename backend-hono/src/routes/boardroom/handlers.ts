@@ -1,4 +1,4 @@
-// [claude-code 2026-03-16] Agent backend v7.9: updated agent names (Harper-Hermes, Consul, Herald)
+// [claude-code 2026-03-16] Agent backend v7.9: updated agent names (Harper-Opus, Consul, Herald)
 // [claude-code 2026-03-20] Added standup triggers, breaking news, herald alert, scheduler status routes
 // [claude-code 2026-03-20] T2: Consilium routes — filter params on /messages, developments, scorecards, predictions
 // [claude-code 2026-03-23] fix(boardroom): switch message fetching from JSONL to Supabase boardroom-store
@@ -235,7 +235,7 @@ export async function handlePostTradeIdea(c: Context) {
       keyLevels?: { label: string; price: number }[];
     }>().catch(() => null);
 
-    const agent = body?.agent || 'Harper-Hermes';
+    const agent = body?.agent || 'Harper-Opus';
     const instrument = body?.instrument;
     const direction = body?.direction || 'neutral';
     const conviction = body?.conviction || 'medium';

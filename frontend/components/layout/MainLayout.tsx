@@ -2,7 +2,7 @@
 // [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
 // [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
-// [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowPanel (same as non-iFrame Strategium)
+// [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowMini (same as non-iFrame Strategium)
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X } from 'lucide-react';
 import type { IVScoreResponse } from '../../types/market-data';
@@ -11,9 +11,9 @@ import { NavSidebar } from './NavSidebar';
 import { MinimalFeedSection } from '../feed/MinimalFeedSection';
 import { KanbanTitle } from '../ui/KanbanTitle';
 import { MinimalTapeWidget } from '../feed/MinimalTapeWidget';
-import { NewsSection } from '../feed/NewsSection';
+import { RiskFlowMain } from '../feed/RiskFlowMain';
 import { ConsiliumHub } from '../consilium/ConsiliumHub';
-import { TopStepXBrowser, type TradingPlatform } from '../TopStepXBrowser';
+import { TradingBrowser, type TradingPlatform } from '../TradingBrowser';
 import { FloatingWidget } from './FloatingWidget';
 import { PanelPosition } from './DraggablePanel';
 import { useBackend } from '../../lib/backend';
@@ -24,13 +24,13 @@ import { AccountTrackerWidget } from '../mission-control/AccountTrackerWidget';
 import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
-import { ExecutiveDashboard } from '../executive/ExecutiveDashboard';
-import { ResearchDepartment } from '../executive/ResearchDepartment';
+import { MainDashboard } from '../executive/MainDashboard';
+import { Scriptorium } from '../executive/Scriptorium';
 import { SectionBreadcrumb } from './SectionBreadcrumb';
-import RiskFlowPanel from '../RiskFlowPanel';
+import RiskFlowMini from '../RiskFlowMini';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { SearchModal } from '../search/SearchModal';
-import { AskHarpChatPanel } from '../chat/AskHarpChatPanel';
+import { AskHarpSidebar } from '../chat/AskHarpSidebar';
 import { SettingsPage } from '../SettingsPanel';
 import { useSettings } from '../../contexts/SettingsContext';
 import { PsychAssistDockable, type PsychAssistDockTarget } from './PsychAssistDockable';
@@ -40,10 +40,10 @@ import { ScheduleProvider } from '../../contexts/ScheduleContext';
 import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
-import { NarrativeFlow } from '../narrative/NarrativeFlow';
-import { TradingJournal } from '../journal/TradingJournal';
+import { NarrativeMap } from '../narrative/NarrativeMap';
+import { PerformanceJournal } from '../journal/PerformanceJournal';
 import { ProposalWidget } from '../proposals/ProposalWidget';
-import { ApparatusPage } from '../apparatus/ApparatusPage';
+import { ApparatusMap } from '../apparatus/ApparatusMap';
 import { RefinementEngine } from '../refinement/RefinementEngine';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 // [claude-code 2026-03-16] Hermes moved from standalone page into Settings tab
@@ -63,7 +63,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'apparatus' | 'earnings' | 'proposals' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -87,7 +87,7 @@ export function MainLayout() {
 function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform } = useSettings();
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
-  const [activeTab, setActiveTab] = useState<NavTab>('executive');
+  const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showRefinement, setShowRefinement] = useState(false);
@@ -154,7 +154,7 @@ function MainLayoutInner() {
   }, []);
 
   // Tab history for breadcrumb back/forward navigation
-  const [tabHistory, setTabHistory] = useState<NavTab[]>(['executive']);
+  const [tabHistory, setTabHistory] = useState<NavTab[]>(['dashboard']);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   const navigateTab = (tab: NavTab) => {
@@ -190,11 +190,11 @@ function MainLayoutInner() {
   /* ---- Keyboard shortcuts ---- */
   useEffect(() => {
     const TAB_MAP: Record<string, NavTab> = {
-      '1': 'executive',
+      '1': 'dashboard',
       '2': 'analysis',
-      '3': 'news',
+      '3': 'riskflow',
       '4': 'econ',
-      '6': 'notion',
+      '6': 'scriptorium',
       '7': 'narrative',
     };
 
@@ -582,10 +582,10 @@ function MainLayoutInner() {
                 </section>
                 {/* RiskFlow: 50% when expanded, 168px collapsed preview at bottom */}
                 <section className={`${combinedTapeCollapsed ? 'h-[168px] shrink-0' : 'h-1/2'} min-h-0 flex flex-col`}>
-                  <RiskFlowPanel
+                  <RiskFlowMini
                     collapsed={combinedTapeCollapsed}
                     onToggleCollapsed={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}
-                    onNavigateToFeed={() => navigateTab('news')}
+                    onNavigateToFeed={() => navigateTab('riskflow')}
                   />
                 </section>
               </div>
@@ -611,7 +611,7 @@ function MainLayoutInner() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = showRefinement || activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'earnings' || activeTab === 'proposals' || activeTab === 'settings';
+    const hideRightPanel = showRefinement || activeTab === 'scriptorium' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'performance' || activeTab === 'proposals' || activeTab === 'settings';
     if (!hideRightPanel) {
       rightPanels.push(
         <div
@@ -641,10 +641,10 @@ function MainLayoutInner() {
               </div>
               <div className={`${riskFlowCollapsed ? 'h-[168px] shrink-0' : 'h-1/2'} flex flex-col transition-all duration-300`}>
                 <div className="flex-1 min-h-0 overflow-y-auto">
-                  <RiskFlowPanel
+                  <RiskFlowMini
                     collapsed={riskFlowCollapsed}
                     onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
-                    onNavigateToFeed={() => navigateTab('news')}
+                    onNavigateToFeed={() => navigateTab('riskflow')}
                   />
                 </div>
               </div>
@@ -724,7 +724,7 @@ function MainLayoutInner() {
           {/* Browser layer */}
           {topStepXEnabled && (
             <div className={`absolute inset-0 z-10 ${browserVisible ? 'animate-browser-in' : 'animate-browser-out'}`}>
-              <TopStepXBrowser
+              <TradingBrowser
                 primaryPlatform={selectedPlatform}
                 onPrimaryPlatformChange={setSelectedPlatform}
                 secondaryPlatform={secondaryPlatform}
@@ -744,9 +744,9 @@ function MainLayoutInner() {
                   <RefinementEngine />
                 </div>
               )}
-              {!showRefinement && activeTab === 'executive' && (
-                <div key="executive" data-tour-target="executive" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ExecutiveDashboard onNavigateTab={(tab) => navigateTab(tab as NavTab)} />
+              {!showRefinement && activeTab === 'dashboard' && (
+                <div key="dashboard" data-tour-target="dashboard" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <MainDashboard onNavigateTab={(tab) => navigateTab(tab as NavTab)} />
                 </div>
               )}
               {!showRefinement && activeTab === 'analysis' && (
@@ -754,9 +754,9 @@ function MainLayoutInner() {
                   <ConsiliumHub />
                 </div>
               )}
-              {!showRefinement && activeTab === 'news' && (
-                <div key="news" data-tour-target="riskflow" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <NewsSection />
+              {!showRefinement && activeTab === 'riskflow' && (
+                <div key="riskflow" data-tour-target="riskflow" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <RiskFlowMain />
                 </div>
               )}
               {!showRefinement && activeTab === 'econ' && (
@@ -769,18 +769,18 @@ function MainLayoutInner() {
               {!showRefinement && activeTab === 'narrative' && (
                 <div key="narrative" data-tour-target="narrative" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <NarrativeProvider>
-                    <NarrativeFlow />
+                    <NarrativeMap />
                   </NarrativeProvider>
                 </div>
               )}
               {!showRefinement && activeTab === 'apparatus' && (
                 <div key="apparatus" data-tour-target="apparatus" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ApparatusPage />
+                  <ApparatusMap />
                 </div>
               )}
-              {!showRefinement && activeTab === 'notion' && (
-                <div key="notion" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ResearchDepartment />
+              {!showRefinement && activeTab === 'scriptorium' && (
+                <div key="scriptorium" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <Scriptorium />
                 </div>
               )}
               {!showRefinement && activeTab === 'proposals' && (
@@ -788,9 +788,9 @@ function MainLayoutInner() {
                   <ProposalWidget />
                 </div>
               )}
-              {!showRefinement && activeTab === 'earnings' && (
-                <div key="earnings" data-tour-target="performance" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <TradingJournal />
+              {!showRefinement && activeTab === 'performance' && (
+                <div key="performance" data-tour-target="performance" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <PerformanceJournal />
                 </div>
               )}
               {!showRefinement && activeTab === 'settings' && (
@@ -865,7 +865,7 @@ function MainLayoutInner() {
             </button>
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
-            <AskHarpChatPanel />
+            <AskHarpSidebar />
           </div>
         </div>
       </div>

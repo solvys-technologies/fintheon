@@ -50,7 +50,7 @@ const USE_LOCAL_HERMES = process.env.USE_LOCAL_HERMES !== 'false'
 function toAgentLabel(agent: HermesAgentRole | string): string {
   switch (agent) {
     case 'harper-cao':
-      return 'Harper-Hermes / CAO'
+      return 'Harper-Opus / CAO'
     case 'pma-merged':
       return 'Oracle (All-Seer)'
     case 'futures-desk':

@@ -44,12 +44,12 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
     // Provider not mounted yet — fallback
   }
 
-  const agent = activeAgent || { name: 'Harper-Hermes', icon: 'H', sector: 'CAO', description: 'Chief Analyst Officer — executive strategy and oversight' };
+  const agent = activeAgent || { name: 'Harper-Opus', icon: 'H', sector: 'CAO', description: 'Chief Analyst Officer — executive strategy and oversight' };
   const greeting = getGreeting();
 
   const getSubtitle = () => {
     switch (agent.name) {
-      case 'Harper-Hermes': return "What needs orchestrating today?";
+      case 'Harper-Opus': return "What needs orchestrating today?";
       case 'Oracle': return "What patterns shall we divine?";
       case 'Feucht': return "What exposure needs attention?";
       case 'Consul': return "What shall we analyze?";

@@ -24,7 +24,7 @@ export function SanctumBriefing({ briefing, isLoading }: SanctumBriefingProps) {
   return (
     <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/30 overflow-hidden">
       {/* Summary — lead paragraph */}
-      <div className="px-5 py-4 border-l-2 border-[var(--fintheon-accent)]/40">
+      <div className="px-5 py-4 border border-[var(--fintheon-accent)]/10 rounded">
         <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">Analysis</span>
         <p className="text-[11px] text-[var(--fintheon-text)]/80 leading-relaxed">
           {briefing.summary}
@@ -56,7 +56,7 @@ export function SanctumBriefing({ briefing, isLoading }: SanctumBriefingProps) {
               return (
                 <div
                   key={i}
-                  className="flex items-start gap-2 pl-2 border-l-2 rounded-r"
+                  className="flex items-start gap-2 pl-2 border border-red-500/15 rounded"
                   style={{ borderLeftColor: isSevere ? 'var(--fintheon-severe)' : 'var(--fintheon-neutral-severe)' }}
                 >
                   <span className="text-[10px] text-[var(--fintheon-text)]/70 leading-relaxed">{alert}</span>

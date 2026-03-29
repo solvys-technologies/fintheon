@@ -9,7 +9,7 @@ import { Sanctum } from '../narrative/Sanctum';
 import { TimelinePanel } from '../narrative/TimelinePanel';
 import { ProposalWidget } from '../proposals/ProposalWidget';
 import { MiroSharkDebatePanel } from '../miroshark/MiroSharkDebatePanel';
-import { NarrativeFlow } from '../narrative/NarrativeFlow';
+import { NarrativeMap } from '../narrative/NarrativeMap';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { ApparatusFlowMap } from '../apparatus/ApparatusFlowMap';
 import { AiLoader } from '../chat/FintheonThread';
@@ -31,7 +31,7 @@ const REGULAR_TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquar
 ];
 
 const SANCTUM_SUB_VIEWS: { id: SanctumSubView; label: string; subtitle?: string; icon: typeof GitBranch }[] = [
-  { id: 'narratives', label: 'NarrativeFlow', icon: GitBranch },
+  { id: 'narratives', label: 'NarrativeMap', icon: GitBranch },
   { id: 'aquarium', label: 'Aquarium', subtitle: 'shark tank', icon: Fish },
   { id: 'timeline', label: 'Timeline', icon: Clock },
 ];
@@ -66,8 +66,13 @@ export function ConsiliumHub() {
   const [mirosharkData, setMirosharkData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
   const [macroContext, setMacroContext] = useState<SimulationContext | null>(null);
-  const [showProposals, toggleProposals] = usePanelState('fintheon:consilium:proposals-panel', false);
-  const [showDebate, toggleDebate] = usePanelState('fintheon:consilium:debate-panel', false);
+  // Only one slide-out panel at a time (proposals or debate)
+  type ActivePanel = 'proposals' | 'debate' | null;
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  const showProposals = activePanel === 'proposals';
+  const showDebate = activePanel === 'debate';
+  const toggleProposals = useCallback(() => setActivePanel(prev => prev === 'proposals' ? null : 'proposals'), []);
+  const toggleDebate = useCallback(() => setActivePanel(prev => prev === 'debate' ? null : 'debate'), []);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close Sanctum dropdown on outside click
@@ -311,7 +316,7 @@ export function ConsiliumHub() {
           {/* Sanctum sub-views — shared NarrativeProvider so seeds carry across views */}
           {displayedTab === 'sanctum' && (
             <NarrativeProvider>
-              {displayedSubView === 'narratives' && <NarrativeFlow />}
+              {displayedSubView === 'narratives' && <NarrativeMap />}
               {displayedSubView === 'aquarium' && (
                 <Sanctum
                   data={mirosharkData}

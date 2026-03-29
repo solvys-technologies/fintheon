@@ -29,15 +29,15 @@ const now = () => new Date().toISOString();
 
 export const FINTHEON_AGENTS: FintheonAgent[] = [
   {
-    id: 'harper-hermes',
-    name: 'Harper-Hermes',
+    id: 'harper-opus',
+    name: 'Harper-Opus',
     nickname: null,
     sector: 'CAO',
     description: 'Chief Analyst Officer — executive strategy and oversight',
     status: 'working',
     model: 'anthropic/claude-opus-4-6',
     icon: 'H',
-    greeting: 'Harper-Hermes online. What needs my attention?',
+    greeting: 'Harper-Opus online. What needs my attention?',
     instructions_doc_id: null,
     created_at: now(),
     updated_at: now(),

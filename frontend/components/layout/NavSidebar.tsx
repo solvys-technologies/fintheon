@@ -3,7 +3,7 @@ import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, MessagesSquare,
 import { useDND } from '../../contexts/DNDContext';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'apparatus' | 'earnings' | 'proposals' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -19,12 +19,12 @@ interface NavSidebarProps {
 }
 
 const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom' | 'narrative' | 'apparatus' | 'proposals'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
-  executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
+  dashboard: { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
   analysis: { id: 'analysis', icon: Landmark, label: 'Consilium', description: 'Narrative analytics center' },
-  news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
+  riskflow: { id: 'riskflow', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
-  notion: { id: 'notion', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
-  earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
+  scriptorium: { id: 'scriptorium', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
+  performance: { id: 'performance', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
 };
 
 // Icon size: original was w-6 h-6 (24px). 35% smaller = ~15.6px → w-4 h-4 (16px)
@@ -114,7 +114,7 @@ export function NavSidebar({
   }, []);
 
   const orderedItems = order
-    .filter((id): id is keyof typeof NAV_ITEMS_MAP => id in NAV_ITEMS_MAP && id !== 'earnings')
+    .filter((id): id is keyof typeof NAV_ITEMS_MAP => id in NAV_ITEMS_MAP && id !== 'performance')
     .map((tabId) => ({
       tabId,
       icon: NAV_ITEMS_MAP[tabId].icon,
@@ -276,12 +276,12 @@ export function NavSidebar({
         </button>}
         {/* Performance */}
         <button
-          onClick={() => onTabChange('earnings')}
-          data-tour-target="earnings"
+          onClick={() => onTabChange('performance')}
+          data-tour-target="performance"
           className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
             expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
           } ${
-            activeTab === 'earnings'
+            activeTab === 'performance'
               ? 'fintheon-nav-active'
               : 'fintheon-nav-inactive'
           }`}
@@ -290,10 +290,10 @@ export function NavSidebar({
           <BookOpenCheck className="w-4 h-4 shrink-0" />
           {expanded && (
             <div className="min-w-0 text-left">
-              <div className={`text-[11px] font-semibold truncate ${activeTab === 'earnings' ? 'text-black' : ''}`}>
+              <div className={`text-[11px] font-semibold truncate ${activeTab === 'performance' ? 'text-black' : ''}`}>
                 Performance
               </div>
-              <div className={`text-[9px] truncate ${activeTab === 'earnings' ? 'text-black/60' : 'text-gray-500'}`}>
+              <div className={`text-[9px] truncate ${activeTab === 'performance' ? 'text-black/60' : 'text-gray-500'}`}>
                 ER history & KPIs
               </div>
             </div>

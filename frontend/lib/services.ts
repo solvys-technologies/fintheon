@@ -752,7 +752,7 @@ export class EventsService {
 
 // Boardroom types (mirrors backend boardroom.ts)
 export type BoardroomAgent =
-  | 'Harper-Hermes'
+  | 'Harper-Opus'
   | 'Oracle'
   | 'Feucht'
   | 'Consul'

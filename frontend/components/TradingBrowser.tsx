@@ -22,7 +22,7 @@ export const PLATFORM_URLS: Record<TradingPlatform, string> = {
   tradovate: 'https://trader.tradovate.com',
 };
 
-interface TopStepXBrowserProps {
+interface TradingBrowserProps {
   primaryPlatform: TradingPlatform;
   onPrimaryPlatformChange?: (platform: TradingPlatform) => void;
   secondaryPlatform: TradingPlatform;
@@ -32,12 +32,12 @@ interface TopStepXBrowserProps {
   allowSplitView: boolean;
 }
 
-export function TopStepXBrowser({
+export function TradingBrowser({
   primaryPlatform,
   secondaryPlatform,
   splitViewEnabled,
   allowSplitView,
-}: TopStepXBrowserProps) {
+}: TradingBrowserProps) {
   const { iframeUrls } = useSettings();
   const platformUrls = {
     ...PLATFORM_URLS,

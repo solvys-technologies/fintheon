@@ -1,7 +1,7 @@
 // [claude-code 2026-03-19] Agent identity badge for Consilium panel
 import { Crown, Eye, Zap, Scroll, Megaphone, MessageCircle } from 'lucide-react';
 
-export type BoardroomAgent = 'Harper-Hermes' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald' | 'Unknown';
+export type BoardroomAgent = 'Harper-Opus' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald' | 'Unknown';
 
 interface AgentConfig {
   label: string;
@@ -11,7 +11,7 @@ interface AgentConfig {
 }
 
 const AGENT_MAP: Record<BoardroomAgent, AgentConfig> = {
-  'Harper-Hermes': { label: 'Harper', role: 'CAO', icon: Crown, accentClass: 'text-[#c79f4a]' },
+  'Harper-Opus': { label: 'Harper', role: 'CAO', icon: Crown, accentClass: 'text-[#c79f4a]' },
   'Oracle':        { label: 'Oracle', role: 'All-Seer', icon: Eye, accentClass: 'text-[#a89060]' },
   'Feucht':        { label: 'Feucht', role: 'Risk Desk', icon: Zap, accentClass: 'text-[#d4af37]' },
   'Consul':        { label: 'Consul', role: 'Fundamentals', icon: Scroll, accentClass: 'text-[#8a7a50]' },
@@ -49,7 +49,7 @@ export function AgentBadge({ agent, size = 'md' }: AgentBadgeProps) {
 }
 
 export const AGENT_ACCENT_HEX: Record<BoardroomAgent, string> = {
-  'Harper-Hermes': '#c79f4a',
+  'Harper-Opus': '#c79f4a',
   'Oracle': '#a89060',
   'Feucht': '#d4af37',
   'Consul': '#8a7a50',

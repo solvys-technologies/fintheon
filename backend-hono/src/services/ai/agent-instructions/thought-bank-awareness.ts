@@ -50,7 +50,7 @@ export async function buildThoughtBankPromptBlock(
 
     const agentName: AgentName = VALID_AGENTS.includes(currentAgent as AgentName)
       ? (currentAgent as AgentName)
-      : 'Harper-Hermes'
+      : 'Harper-Opus'
 
     const thoughts = await buildThoughtBankContext(agentName, 3)
     return formatThoughtBankBlock(thoughts)

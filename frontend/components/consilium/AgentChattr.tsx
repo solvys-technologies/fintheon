@@ -11,11 +11,11 @@ import { useRiskFlow } from '../../contexts/RiskFlowContext';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const POLL_INTERVAL = 30_000;
 
-const MENTIONABLE_AGENTS: BoardroomAgent[] = ['Harper-Hermes', 'Oracle', 'Feucht', 'Consul', 'Herald'];
+const MENTIONABLE_AGENTS: BoardroomAgent[] = ['Harper-Opus', 'Oracle', 'Feucht', 'Consul', 'Herald'];
 
 // Map boardroom agent names to persona-style metadata
 const PERSONA_META: Record<BoardroomAgent, { label: string }> = {
-  'Harper-Hermes': { label: 'CAO' },
+  'Harper-Opus': { label: 'CAO' },
   Oracle: { label: 'All-Seer' },
   Feucht: { label: 'Futures & Risk' },
   Consul: { label: 'Fundamentals' },

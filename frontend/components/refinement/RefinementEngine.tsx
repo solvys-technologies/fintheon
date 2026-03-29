@@ -112,7 +112,7 @@ export function RefinementEngine() {
       ) : (
         /* Two-panel layout */
         <div className="flex-1 min-h-0 flex">
-          {/* Left panel — regime, weights, commentators */}
+          {/* Left panel — regime, weights, persons of interest */}
           <div className="w-[320px] shrink-0 border-r border-[var(--fintheon-accent)]/15 overflow-y-auto p-3 space-y-5">
             <RegimeControl
               regime={regime}

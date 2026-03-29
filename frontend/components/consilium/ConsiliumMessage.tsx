@@ -36,8 +36,8 @@ function formatTimestamp(iso: string): string {
 // ─── @Mention Parsing ──────────────────────────────────────────────
 
 const MENTION_TO_AGENT: Record<string, BoardroomAgent> = {
-  'harper-hermes': 'Harper-Hermes',
-  'harper': 'Harper-Hermes',
+  'harper-opus': 'Harper-Opus',
+  'harper': 'Harper-Opus',
   'oracle': 'Oracle',
   'feucht': 'Feucht',
   'consul': 'Consul',
@@ -47,7 +47,7 @@ const MENTION_TO_AGENT: Record<string, BoardroomAgent> = {
 function renderContentWithMentions(content: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
-  const regex = /@(Harper-Hermes|Harper|Oracle|Feucht|Consul|Herald|everyone)/gi;
+  const regex = /@(Harper-Opus|Harper|Oracle|Feucht|Consul|Herald|everyone)/gi;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(content)) !== null) {

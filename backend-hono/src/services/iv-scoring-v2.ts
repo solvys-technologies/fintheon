@@ -1049,3 +1049,230 @@ export function classifyEventType(parsed: ParsedHeadline): string {
 
   return 'other'
 }
+
+// ============================================================================
+// [claude-code 2026-03-28] S9-T2: MARTINGALE DIMINISHING RETURNS
+// Repeated high-severity headlines in a 4h window get diminishing implied points.
+// Escalation chains (military action, strikes, etc.) bypass the cap.
+// ============================================================================
+
+const SESSION_WINDOW_MS = 4 * 60 * 60 * 1000
+
+interface SessionHeadlineEntry {
+  timestamp: number
+  macroLevel: number
+  headline: string
+}
+
+const sessionHeadlines: SessionHeadlineEntry[] = []
+
+const ESCALATION_KEYWORDS = [
+  'military', 'strike', 'bomb', 'invasion', 'retaliate', 'mobilize',
+  'deploy', 'attack', 'offensive', 'missile', 'nuclear', 'blockade', 'drone',
+]
+
+export function isEscalation(headline: string): boolean {
+  const lower = headline.toLowerCase()
+  return ESCALATION_KEYWORDS.some(kw => lower.includes(kw))
+}
+
+/**
+ * Get Martingale multiplier for implied points.
+ * 1st critical headline of session: 100%
+ * 2nd: 60%
+ * 3rd+: 30%
+ * Escalation chains bypass diminishing returns entirely.
+ */
+export function getMartingaleMultiplier(headline: string, macroLevel: number): number {
+  const now = Date.now()
+
+  // Prune stale entries outside the 4h session window
+  while (sessionHeadlines.length > 0 && now - sessionHeadlines[0].timestamp > SESSION_WINDOW_MS) {
+    sessionHeadlines.shift()
+  }
+
+  // Escalation bypasses diminishing returns — full weight always
+  if (isEscalation(headline)) {
+    sessionHeadlines.push({ timestamp: now, macroLevel, headline })
+    return 1.0
+  }
+
+  // Count high-impact items already in session (macroLevel >= 3)
+  const criticalCount = sessionHeadlines.filter(e => e.macroLevel >= 3).length
+
+  // Record this entry
+  sessionHeadlines.push({ timestamp: now, macroLevel, headline })
+
+  // Diminishing returns
+  if (criticalCount <= 0) return 1.0
+  if (criticalCount === 1) return 0.6
+  return 0.3
+}
+
+// ============================================================================
+// S9-T2: CONTEXTUAL SENTIMENT ENFORCEMENT
+// Not a flat keyword list. Uses if-this-then-that rules:
+//   - destruction/violence/escalation → bearish
+//   - de-escalation/peace/resolution → bullish
+//   - context-dependent combos: "sanctions lifted" = bullish, "new sanctions" = bearish
+//   - monetary policy: "rate cut" = bullish, "rate hike" = bearish
+// ============================================================================
+
+// ── Unambiguous bearish (no context needed) ──
+const FORCED_BEARISH = [
+  'bomb', 'bombing', 'drone strike', 'drone attack', 'airstrike',
+  'missile', 'nuclear', 'invasion', 'invade',
+  'destroy', 'destruction', 'devastat',
+  'war crime', 'genocide', 'massacre',
+  'blockade', 'siege',
+  'crash', 'collapse', 'meltdown',
+  'default', 'insolvency', 'bankruptcy',
+  'government shutdown',
+  'contagion', 'bank run', 'liquidity crisis',
+  'panic sell', 'flash crash',
+]
+
+// ── Unambiguous bullish (no context needed) ──
+const FORCED_BULLISH = [
+  'ceasefire', 'cease fire', 'peace deal', 'peace agreement', 'peace treaty',
+  'de-escalat', 'deescalat', 'truce',
+  'hostage release', 'prisoner exchange',
+  'diplomatic breakthrough', 'diplomatic resolution',
+  'stimulus package', 'stimulus plan',
+  'record high', 'all-time high',
+  'recession averted',
+  'soft landing confirmed',
+]
+
+// ── Context-dependent: [trigger, modifier, direction] ──
+// If headline has trigger AND modifier → force that direction.
+// If headline has trigger WITHOUT modifier → fall through to next rule or keep original.
+interface ContextRule {
+  trigger: string
+  bullishModifiers: string[]
+  bearishModifiers: string[]
+}
+
+const CONTEXT_RULES: ContextRule[] = [
+  // Sanctions: "lifted/eased/removed" = bullish, "new/impose/expand" = bearish
+  {
+    trigger: 'sanction',
+    bullishModifiers: ['lift', 'ease', 'remov', 'suspend', 'waiv', 'relax', 'roll back'],
+    bearishModifiers: ['new', 'impose', 'expand', 'escalat', 'tighten', 'additional', 'sweeping'],
+  },
+  // Rate decisions: "cut" = bullish, "hike/raise" = bearish
+  {
+    trigger: 'rate',
+    bullishModifiers: ['cut', 'lower', 'reduc', 'ease', 'dovish', 'pause'],
+    bearishModifiers: ['hike', 'raise', 'increas', 'hawk', 'tighten', 'higher for longer'],
+  },
+  // Tariff: "remove/reduce/exempt" = bullish, "new/impose/increase" = bearish
+  {
+    trigger: 'tariff',
+    bullishModifiers: ['remov', 'reduc', 'exempt', 'rollback', 'repeal', 'suspen', 'delay', 'pause'],
+    bearishModifiers: ['new', 'impose', 'increas', 'escalat', 'retaliatory', 'additional', 'raise', 'hike'],
+  },
+  // Strike: military context = bearish, labor context = depends
+  {
+    trigger: 'strike',
+    bullishModifiers: ['end', 'settle', 'resolution', 'averted'],
+    bearishModifiers: ['military', 'air', 'drone', 'missile', 'target', 'retaliat', 'launch', 'bomb'],
+  },
+  // Conflict: resolution = bullish, escalation = bearish
+  {
+    trigger: 'conflict',
+    bullishModifiers: ['resolv', 'de-escalat', 'peace', 'end', 'wind down', 'ceasefire'],
+    bearishModifiers: ['escalat', 'intensif', 'spread', 'widen', 'new front', 'expand'],
+  },
+  // War: ending = bullish, starting/escalating = bearish
+  {
+    trigger: 'war',
+    bullishModifiers: ['end', 'ceasefire', 'peace', 'truce', 'withdraw', 'retreat'],
+    bearishModifiers: ['declar', 'escalat', 'expand', 'new', 'threaten', 'mobiliz'],
+  },
+  // Trade: deal/agreement = bullish, war/dispute = bearish
+  {
+    trigger: 'trade',
+    bullishModifiers: ['deal', 'agreement', 'pact', 'cooperat', 'open'],
+    bearishModifiers: ['war', 'disput', 'restrict', 'ban', 'block', 'retali'],
+  },
+  // Recession: fears/entering = bearish, avoiding/exiting = bullish
+  {
+    trigger: 'recession',
+    bullishModifiers: ['averted', 'avoid', 'exit', 'over', 'end', 'unlikely'],
+    bearishModifiers: ['enter', 'confirm', 'fear', 'risk', 'deepen', 'loom', 'imminent', 'warn'],
+  },
+  // Shutdown: averted = bullish, looming/starts = bearish
+  {
+    trigger: 'shutdown',
+    bullishModifiers: ['averted', 'avoid', 'deal', 'fund', 'reopen'],
+    bearishModifiers: ['loom', 'begin', 'start', 'partial', 'full', 'extend', 'no deal'],
+  },
+]
+
+/**
+ * Contextual sentiment enforcement.
+ * Checks unambiguous bearish/bullish lists first, then applies context-dependent rules.
+ * Falls back to the Grok analyzer's original sentiment if no rule matches.
+ */
+export function enforceSentiment(headline: string, currentSentiment: string): string {
+  const lower = headline.toLowerCase()
+
+  // 1. Unambiguous bearish — destruction, violence, systemic crisis
+  if (FORCED_BEARISH.some(kw => lower.includes(kw))) {
+    return 'bearish'
+  }
+
+  // 2. Unambiguous bullish — peace, de-escalation, resolution
+  if (FORCED_BULLISH.some(kw => lower.includes(kw))) {
+    return 'bullish'
+  }
+
+  // 3. Context-dependent rules — trigger + modifier
+  for (const rule of CONTEXT_RULES) {
+    if (!lower.includes(rule.trigger)) continue
+
+    const hasBullishMod = rule.bullishModifiers.some(m => lower.includes(m))
+    const hasBearishMod = rule.bearishModifiers.some(m => lower.includes(m))
+
+    // If both modifiers present, whichever has more matches wins
+    if (hasBullishMod && !hasBearishMod) return 'bullish'
+    if (hasBearishMod && !hasBullishMod) return 'bearish'
+    if (hasBullishMod && hasBearishMod) {
+      const bullCount = rule.bullishModifiers.filter(m => lower.includes(m)).length
+      const bearCount = rule.bearishModifiers.filter(m => lower.includes(m)).length
+      if (bullCount > bearCount) return 'bullish'
+      if (bearCount > bullCount) return 'bearish'
+      // Tie: keep bearish (conservative — protect capital)
+      return 'bearish'
+    }
+  }
+  return currentSentiment
+}
+
+// ============================================================================
+// S9-T2: SESSION BASELINE FOR DELTA DISPLAY
+// Tracks cumulative session implied points so each headline shows its
+// incremental contribution (+X pts) instead of absolute value.
+// ============================================================================
+
+let _sessionBaselinePoints = 0
+let _sessionBaselineTs = 0
+
+export function getSessionBaselinePoints(): number {
+  const now = Date.now()
+  if (now - _sessionBaselineTs > SESSION_WINDOW_MS) {
+    _sessionBaselinePoints = 0
+    _sessionBaselineTs = now
+  }
+  return _sessionBaselinePoints
+}
+
+export function addToSessionBaseline(deltaPoints: number): void {
+  const now = Date.now()
+  if (now - _sessionBaselineTs > SESSION_WINDOW_MS) {
+    _sessionBaselinePoints = 0
+    _sessionBaselineTs = now
+  }
+  _sessionBaselinePoints += deltaPoints
+}

@@ -79,7 +79,7 @@ export interface ThoughtBankContext {
 
 /** Coerce a raw string to AgentName */
 function toAgent(raw: string): AgentName {
-  return VALID_AGENTS.includes(raw as AgentName) ? (raw as AgentName) : 'Harper-Hermes'
+  return VALID_AGENTS.includes(raw as AgentName) ? (raw as AgentName) : 'Harper-Opus'
 }
 
 const VALID_CATEGORIES: ThoughtCategory[] = ['standup', 'news-response', 'broadcast', 'mention', 'scheduled', 'spontaneous']

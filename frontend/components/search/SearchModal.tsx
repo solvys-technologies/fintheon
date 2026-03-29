@@ -26,12 +26,12 @@ interface SearchModalProps {
 /* ------------------------------------------------------------------ */
 
 const SECTIONS = [
-  { id: 'executive', title: 'Executive Dashboard', tab: 'executive' },
-  { id: 'tape', title: 'RiskFlow Feed', tab: 'news' },
+  { id: 'dashboard', title: 'Dashboard', tab: 'dashboard' },
+  { id: 'tape', title: 'RiskFlow Feed', tab: 'riskflow' },
   { id: 'analysis', title: 'Analysis', tab: 'analysis' },
   { id: 'riskflow', title: 'RiskFlow', tab: 'riskflow' },
   { id: 'boardroom', title: 'Board Room', tab: 'boardroom' },
-  { id: 'research', title: 'Research Department', tab: 'research' },
+  { id: 'scriptorium', title: 'Scriptorium', tab: 'scriptorium' },
 ];
 
 /* ------------------------------------------------------------------ */

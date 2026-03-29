@@ -208,7 +208,7 @@ function TradeIdeaRow({
     <div
       draggable
       onDragStart={handleDragStart}
-      className={`group relative border-b border-zinc-800/50 border-l-2 border-l-[var(--fintheon-accent)]/50 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
+      className={`group relative border-b border-zinc-800/50 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
         seen ? 'opacity-70' : ''
       }`}
     >
@@ -431,6 +431,31 @@ function AlertRow({
           <div className="px-3 py-2.5 border-t border-zinc-800/40 bg-zinc-900/40">
             <AgentNoteSection alert={alert} onGenerate={onGenerateNote} />
 
+            {/* S9-T2: Deviation indicators — beat/miss, IV score, implied points */}
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {alert.econData?.beatMiss && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                  alert.econData.beatMiss === 'beat' ? 'bg-emerald-500/15 text-emerald-400' :
+                  alert.econData.beatMiss === 'miss' ? 'bg-red-500/15 text-red-400' :
+                  'bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]'
+                }`}>
+                  {alert.econData.beatMiss.toUpperCase()}
+                </span>
+              )}
+              {alert.subScores && (
+                <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60">
+                  IV {(alert.subScores as any).eventWeight?.toFixed?.(1) ?? '—'}
+                </span>
+              )}
+              {alert.pointRange != null && alert.pointRange !== 0 && (
+                <span className={`text-[9px] font-mono font-bold ${
+                  isBull ? 'text-[var(--fintheon-bullish)]' : 'text-[var(--fintheon-bearish)]'
+                }`}>
+                  {isBull ? '▲' : '▼'} +{Math.abs(alert.pointRange).toFixed(0)} pts
+                </span>
+              )}
+            </div>
+
             {/* Risk type + View in RiskFlow CTA */}
             <div className="flex items-center justify-between mt-2.5">
               <div className="flex items-center gap-1.5">
@@ -500,7 +525,7 @@ function FilterDropdown<T extends string>({
 type PriorityFilter = 'all' | 'high' | 'medium';
 type SourceFilter = 'all' | 'notion' | 'twitter';
 
-export default function RiskFlowPanel({
+export default function RiskFlowMini({
   collapsed,
   onToggleCollapsed,
   onChatAlert,
@@ -554,7 +579,7 @@ export default function RiskFlowPanel({
     try {
       await backend.riskflow.generateNote(rawId);
     } catch (err) {
-      console.warn('[RiskFlowPanel] Generate note failed:', err);
+      console.warn('[RiskFlowMini] Generate note failed:', err);
     }
   }, [backend]);
 
@@ -604,7 +629,7 @@ export default function RiskFlowPanel({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Zap className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
-              <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">Risk Flow</h3>
+              <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">RiskFlow</h3>
               {highCount > 0 && (
                 <span className="riskflow-pulse-badge inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500/30 text-red-400 text-[9px] font-bold">
                   {highCount}

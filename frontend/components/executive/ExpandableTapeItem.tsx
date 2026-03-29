@@ -91,11 +91,11 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
 
   return (
     <div
-      className={`transition-all duration-300 ${expanded ? 'border-l-4 ring-1' : 'border-l-2'} border-l-[var(--fintheon-accent)] ${
+      className={`transition-all duration-300 ${expanded ? 'border border-[var(--fintheon-accent)]/20 rounded' : 'border border-[var(--fintheon-border)]/10 rounded'} ${
         expanded
           ? 'bg-[#0b0b08]'
           : isTradeIdea
-            ? 'border-l-[var(--fintheon-accent)]/50 bg-[#0b0b08]'
+            ? 'bg-[#0b0b08]'
             : isVivid
               ? 'bg-[#0b0b08] border-l-[var(--fintheon-accent)]/40'
               : 'bg-[#080806]'

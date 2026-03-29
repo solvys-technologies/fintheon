@@ -18,7 +18,7 @@ interface RawSessionMessage {
 
 // [claude-code 2026-03-19] Agent backend v8.0: updated agent patterns for 5-agent roster (Herald restored)
 const AGENT_PATTERNS: Array<{ regex: RegExp; agent: Exclude<BoardroomAgent, 'Unknown'>; emoji: string }> = [
-  { regex: /harper[-\s]?hermes|harper/i, agent: 'Harper-Hermes', emoji: '🎩' },
+  { regex: /harper[-\s]?hermes|harper/i, agent: 'Harper-Opus', emoji: '🎩' },
   { regex: /feucht/i, agent: 'Feucht', emoji: '⚡' },
   { regex: /consul/i, agent: 'Consul', emoji: '📜' },
   { regex: /oracle/i, agent: 'Oracle', emoji: '📊' },
@@ -47,9 +47,9 @@ const inferAgent = (content: string): { agent: BoardroomAgent; emoji: string } =
 };
 
 const inferSender = (content: string, role: string): InterventionMessage['sender'] => {
-  if (/harper/i.test(content)) return 'Harper-Hermes';
+  if (/harper/i.test(content)) return 'Harper-Opus';
   if (role === 'user') return 'User';
-  if (role === 'assistant') return 'Harper-Hermes';
+  if (role === 'assistant') return 'Harper-Opus';
   return 'Unknown';
 };
 

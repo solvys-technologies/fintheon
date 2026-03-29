@@ -45,7 +45,7 @@ function CommandmentItem({ cmd }: { cmd: Commandment }) {
           </p>
 
           {cmd.backgroundStory && (
-            <p className="text-[11px] text-[var(--fintheon-text)]/35 leading-relaxed italic border-l-2 border-[var(--fintheon-accent)]/15 pl-2">
+            <p className="text-[11px] text-[var(--fintheon-text)]/35 leading-relaxed italic border-l border-[var(--fintheon-accent)]/15 pl-2">
               {cmd.backgroundStory}
             </p>
           )}

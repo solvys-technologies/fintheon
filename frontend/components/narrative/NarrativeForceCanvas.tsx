@@ -59,6 +59,16 @@ const NARRATIVE_THREADS = [
 ];
 
 const THREAD_COLOR_MAP = Object.fromEntries(NARRATIVE_THREADS.map(t => [t.slug, t.color]));
+const VALID_SLUGS = new Set(NARRATIVE_THREADS.map(t => t.slug));
+/** Ensure a card's narrative maps to a known thread slug; fall back to rate-cut-cycle */
+function safeSlug(raw: string | undefined): string {
+  if (!raw) return 'rate-cut-cycle';
+  if (VALID_SLUGS.has(raw)) return raw;
+  // Try slugifying: "Sector Rotation" → "sector-rotation"
+  const slugified = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (VALID_SLUGS.has(slugified)) return slugified;
+  return 'rate-cut-cycle';
+}
 
 // ─── Cluster proximity — initial hub positions ──────────────────
 // Trump Presidency central, monetary cluster right, geopolitical left
@@ -260,7 +270,7 @@ function buildSimData(catalysts: CatalystCard[]) {
 
   const cardsByThread = new Map<string, CatalystCard[]>();
   for (const c of catalysts) {
-    const thread = c.narrative ?? 'rate-cut-cycle';
+    const thread = safeSlug(c.narrative);
     const arr = cardsByThread.get(thread) ?? [];
     arr.push(c);
     cardsByThread.set(thread, arr);
@@ -274,7 +284,7 @@ function buildSimData(catalysts: CatalystCard[]) {
 
   // Card nodes — jittered near their hub
   for (const card of catalysts) {
-    const thread = card.narrative ?? 'rate-cut-cycle';
+    const thread = safeSlug(card.narrative);
     const hubPos = HUB_POSITIONS[thread] ?? { x: 0, y: 0 };
     simNodes.push({
       id: card.id,

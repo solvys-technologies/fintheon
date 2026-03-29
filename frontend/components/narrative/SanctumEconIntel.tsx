@@ -1,3 +1,4 @@
+// [claude-code 2026-03-28] S9-T3: 5s fetch timeout, error fallback with retry, history fetch timeout
 // [claude-code 2026-03-28] S8-T4: Risk sector cards — whole border + fuse + percentage (matching CategoryScoreCard)
 // [claude-code 2026-03-28] S5-T2: Added Market Impact (NQ/ES/YM day close) display to expanded econ cards
 // [claude-code 2026-03-28] S4-T3: Category score interpretation with trading-specific context per risk sector
@@ -479,6 +480,8 @@ interface SanctumEconIntelProps {
 export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumEconIntelProps) {
   const [cards, setCards] = useState<EconCardData[]>(ECON_TICKERS);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [historyCache, setHistoryCache] = useState<Record<string, { prints: EconHistoryPrint[]; scored: EconScoredItem[] }>>({});
 
@@ -486,12 +489,15 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
     let cancelled = false;
 
     async function fetchEconData() {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
       try {
-        const res = await fetch(`${API_BASE}/api/data/econ-calendar`);
+        const res = await fetch(`${API_BASE}/api/data/econ-calendar`, { signal: controller.signal });
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
 
         if (cancelled) return;
+        setFetchError(false);
 
         // Merge fetched data with our ticker cards
         if (Array.isArray(data.events)) {
@@ -514,21 +520,24 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
           );
         }
       } catch {
-        // Silently fail — cards show "Awaiting data..."
+        if (!cancelled) setFetchError(true);
       } finally {
+        clearTimeout(timeout);
         if (!cancelled) setLoading(false);
       }
     }
 
     fetchEconData();
     return () => { cancelled = true; };
-  }, []);
+  }, [retryKey]);
 
   /** Fetch historical prints + scoring for a ticker on-demand */
   const fetchHistory = useCallback(async (ticker: string) => {
     if (historyCache[ticker]) return;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     try {
-      const res = await fetch(`${API_BASE}/api/data/econ-history/${encodeURIComponent(ticker)}?limit=10`);
+      const res = await fetch(`${API_BASE}/api/data/econ-history/${encodeURIComponent(ticker)}?limit=10`, { signal: controller.signal });
       if (!res.ok) return;
       const data = await res.json();
       setHistoryCache(prev => ({
@@ -539,7 +548,9 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
         },
       }));
     } catch {
-      // Silent fail — expanded cards will show fallback
+      // Timeout or network failure — card shows fallback
+    } finally {
+      clearTimeout(timeout);
     }
   }, [historyCache]);
 
@@ -661,6 +672,20 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
         <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center mt-2">
           Fetching economic data...
         </p>
+      )}
+      {!loading && fetchError && (
+        <div className="text-center mt-2 flex flex-col items-center gap-1">
+          <p className="text-[10px] text-[var(--fintheon-muted)]/40">
+            No data available — backend may be offline
+          </p>
+          <button
+            type="button"
+            onClick={() => { setLoading(true); setFetchError(false); setRetryKey(k => k + 1); }}
+            className="text-[10px] font-mono text-[var(--fintheon-accent)] hover:text-[var(--fintheon-accent)]/80 underline underline-offset-2"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {/* FRED Macro Indicators */}
