@@ -20,7 +20,7 @@ export function NarrativeCanvasChat({ pendingChips = [], onClearChip }: Narrativ
   const [response, setResponse] = useState<string | null>(null);
   const [responseVisible, setResponseVisible] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Auto-expand when user starts typing
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

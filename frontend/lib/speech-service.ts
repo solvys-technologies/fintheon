@@ -5,10 +5,13 @@
 type SpeechCallback = (transcript: string) => void;
 type ErrorCallback = (error: string) => void;
 
+// Web Speech API types — not all browsers export these globally
+type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T } ? T : any;
+
 interface SpeechServiceState {
   isListening: boolean;
   isSpeaking: boolean;
-  recognition: SpeechRecognition | null;
+  recognition: any | null;
 }
 
 const state: SpeechServiceState = {
@@ -36,18 +39,22 @@ export function startListening(onResult: SpeechCallback, onError?: ErrorCallback
 
   if (state.isListening) return;
 
-  const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  if (!SpeechRecognitionClass) {
+    onError?.('SpeechRecognition constructor not available');
+    return;
+  }
   state.recognition = new SpeechRecognitionClass();
   state.recognition.continuous = false;
   state.recognition.interimResults = false;
   state.recognition.lang = 'en-US';
 
-  state.recognition.onresult = (event: SpeechRecognitionEvent) => {
-    const transcript = event.results[0]?.[0]?.transcript ?? '';
+  state.recognition.onresult = (event: any) => {
+    const transcript = event.results?.[0]?.[0]?.transcript ?? '';
     onResult(transcript);
   };
 
-  state.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+  state.recognition.onerror = (event: any) => {
     state.isListening = false;
     onError?.(event.error);
   };
