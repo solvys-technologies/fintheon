@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, PhoneOff, Users, GripVertical } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Users, GripVertical, Phone } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 import { useAuth } from '../../contexts/AuthContext';
 import type { VoiceParticipantRecord } from './types';
@@ -9,6 +9,31 @@ type Position = { x: number; y: number };
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
+
+/* ── Compact header-docked voice button ────────────────────────────── */
+
+export function VoiceRoomHeaderButton({ onClick, participantCount, joined }: { onClick: () => void; participantCount: number; joined: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative p-1.5 rounded-lg transition-colors ${
+        joined
+          ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
+          : 'text-gray-500 hover:text-gray-300 hover:bg-zinc-800/50'
+      }`}
+      title={joined ? `Voice Room (${participantCount} in call)` : 'Voice Room'}
+    >
+      <Phone className="w-3.5 h-3.5" />
+      {participantCount > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[8px] font-bold leading-none">
+          {participantCount}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/* ── Full floating voice widget ────────────────────────────────────── */
 
 export function VoiceWidget() {
   const backend = useBackend();

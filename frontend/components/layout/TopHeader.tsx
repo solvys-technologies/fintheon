@@ -58,6 +58,7 @@ interface TopHeaderProps {
   onForward?: () => void;
   hideBranding?: boolean;
   psychAssistHeadingWidget?: React.ReactNode;
+  voiceRoomWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
 }
 
@@ -78,6 +79,7 @@ export function TopHeader({
   onForward,
   hideBranding = false,
   psychAssistHeadingWidget,
+  voiceRoomWidget,
   toolbarEditMode = false,
 }: TopHeaderProps) {
   const { tier } = useAuth();
@@ -353,6 +355,7 @@ export function TopHeader({
               )}
             </button>
           )}
+          {voiceRoomWidget}
         </div>
       </div>
       

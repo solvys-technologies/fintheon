@@ -57,7 +57,7 @@ import { DNDProvider, useDND } from '../../contexts/DNDContext';
 import { NotificationCenter } from '../NotificationCenter';
 import { PeerCarousel } from '../peers/PeerCarousel';
 import { PeerOnboarding } from '../peers/PeerOnboarding';
-import { VoiceWidget } from '../peers/VoiceWidget';
+import { VoiceWidget, VoiceRoomHeaderButton } from '../peers/VoiceWidget';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -138,6 +138,7 @@ function MainLayoutInner() {
   const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [showAskHarp, setShowAskHarp] = useState(false);
   const [showSessionsPopup, setShowSessionsPopup] = useState(false);
+  const [showVoiceWidget, setShowVoiceWidget] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [sidebarOverlayVisible, setSidebarOverlayVisible] = useState(false);
   const [missionWidgetOrder, setMissionWidgetOrderState] = useState<MissionWidgetId[]>(() =>
@@ -694,6 +695,13 @@ function MainLayoutInner() {
         onForward={goForward}
         hideBranding={topStepXEnabled && sidebarOverlayVisible}
         toolbarEditMode={layoutEditMode}
+        voiceRoomWidget={voiceEnabled ? (
+          <VoiceRoomHeaderButton
+            onClick={() => setShowVoiceWidget((v) => !v)}
+            participantCount={0}
+            joined={showVoiceWidget}
+          />
+        ) : undefined}
         psychAssistHeadingWidget={
           topStepXEnabled && layoutOption === 'tickers-only' && psychAssistTarget === 'header' ? (
             <PsychAssistDockable
@@ -851,7 +859,7 @@ function MainLayoutInner() {
           />
         )}
 
-        {voiceEnabled && activeTab !== 'analysis' && (
+        {showVoiceWidget && (
           <VoiceWidget />
         )}
 
