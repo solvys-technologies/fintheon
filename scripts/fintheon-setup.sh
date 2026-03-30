@@ -371,6 +371,12 @@ for i in {1..15}; do
   sleep 1
 done
 
+# ── Install CLI command ──────────────────────────────────────────────────
+
+info "Installing 'fintheon' CLI command..."
+bash "$FINTHEON_DIR/scripts/install-cli.sh"
+export PATH="$HOME/.local/bin:$PATH"
+
 # ── Summary ──────────────────────────────────────────────────────────────
 
 echo ""
