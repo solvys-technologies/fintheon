@@ -47,7 +47,7 @@ let manualToggleEnabled = true;
  * Check if we're inside the daily polling window (8AM-11AM ET, weekdays only).
  * Outside this window, automatic polling is suppressed.
  */
-function isInsidePollingWindow(): boolean {
+export function isInsidePollingWindow(): boolean {
   const now = new Date();
   // Convert to ET (America/New_York)
   const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
