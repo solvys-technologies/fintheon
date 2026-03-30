@@ -27,11 +27,21 @@ const log = createLogger('CentralScorer');
 // S10-T1a: Normalize raw source labels to the 4 watchlist categories so items
 // pass the watchlist source filter. Without this, 99% of items are invisible.
 
-/** Twitter/RSS accounts that map to FinancialJuice (financial news) */
+/** Twitter/RSS accounts that map to FinancialJuice (financial news wires) */
 const FJ_ACCOUNTS = new Set([
-  'financialjuice', 'zerohedge', 'deltaone', 'deItaone', 'deitaone',
+  'financialjuice', 'zerohedge',
   'firstsquawk', 'wallstjesus', 'unusual_whales', 'newsfilterio',
   'marketcurrents', 'livesquawk', 'waboratory',
+]);
+
+/** Accounts that map to DeItaOne (Walter Bloomberg breaking wires) */
+const DEITAONE_ACCOUNTS = new Set([
+  'deltaone', 'deItaone', 'deitaone',
+]);
+
+/** OSINT / geopolitical intelligence accounts → InsiderWire */
+const OSINT_ACCOUNTS = new Set([
+  'osintdefender', 'intikinetik',
 ]);
 
 /** Keywords that indicate economic calendar / data releases */
@@ -67,11 +77,14 @@ export function normalizeSource(
   // Direct match: already a watchlist category
   if (rawSource === 'FinancialJuice') return 'FinancialJuice';
   if (rawSource === 'InsiderWire') return 'InsiderWire';
+  if (rawSource === 'DeItaOne') return 'FinancialJuice'; // Wire service → financial news
   if (rawSource === 'EconomicCalendar') return 'EconomicCalendar';
   if (rawSource === 'Polymarket' || rawSource === 'Kalshi') return 'Polymarket';
 
-  // Account-based mapping (twitter handles → FinancialJuice)
+  // Account-based mapping
   if (FJ_ACCOUNTS.has(src)) return 'FinancialJuice';
+  if (DEITAONE_ACCOUNTS.has(src)) return 'FinancialJuice'; // Walter Bloomberg → financial news
+  if (OSINT_ACCOUNTS.has(src)) return 'InsiderWire';       // OSINT → geopolitical wire
 
   // Content-based classification
   const text = (headline + ' ' + tags.join(' ')).toLowerCase();

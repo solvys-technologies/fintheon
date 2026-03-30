@@ -18,7 +18,9 @@ import { startCentralScorer } from '../services/riskflow/central-scorer.js';
 import { startIVScoreTicker } from '../services/market-data/iv-score-ticker.js';
 import { initVIXRescore } from '../services/riskflow/vix-rescore.js';
 import { startAgentNotesCron } from '../services/riskflow/agent-notes.js';
-import { startCommentaryScraper } from '../services/riskflow/commentary-scraper.js';
+// [2026-03-30] Commentary scraper DISABLED — all headline ingestion now via twitter-cli pipeline
+// The Firecrawl scraper was redundant (FJ requires auth, ForexLive 404'd, ZH only source working)
+// import { startCommentaryScraper } from '../services/riskflow/commentary-scraper.js';
 import { startMarketImpactEnricher } from '../services/cron/market-impact-enricher.js';
 import { startCatalystPromoter } from '../services/riskflow/catalyst-promoter.js';
 import * as projectxService from '../services/projectx-service.js';
@@ -95,9 +97,10 @@ export async function bootServices(): Promise<void> {
   startAgentNotesCron();
   log.info('AgentNotesCron started');
 
-  // Commentary scraper (30min — Firecrawl-powered FJ/ZeroHedge/DeItaOne web scrape)
-  startCommentaryScraper();
-  log.info('CommentaryScraper started');
+  // [2026-03-30] Commentary scraper DISABLED — replaced by continuous twitter-cli polling
+  // FJ behind auth wall, ForexLive rebranded (404), only ZH worked. All sources now polled via X.
+  // startCommentaryScraper();
+  log.info('CommentaryScraper DISABLED — headlines ingested via twitter-cli continuous polling');
 
   // Market impact enricher (24h — enriches HIGH/CRITICAL scored items with NQ/ES/YM daily close)
   startMarketImpactEnricher();
