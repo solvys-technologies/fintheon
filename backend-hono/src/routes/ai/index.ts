@@ -26,6 +26,7 @@ import {
   handleCognitionStream,
 } from './handlers/queue.js'
 import { handleGetSkills } from './handlers/skills.js'
+import { getSessionManager } from '../../services/claude-sdk/session-manager.js'
 
 export function createAiRoutes(): Hono {
   const router = new Hono()
@@ -36,6 +37,36 @@ export function createAiRoutes(): Hono {
   // Skills endpoint — dynamic skill list with enabled/disabled state
   // GET /api/ai/skills
   router.get('/skills', handleGetSkills)
+
+  // Usage endpoint — session stats for usage ring indicator
+  // GET /api/ai/usage
+  router.get('/usage', (c) => {
+    const session = getSessionManager()
+    const stats = session.getStats()
+    const dailyCap = Number(process.env.CLAUDE_SESSION_DAILY_CAP ?? '50')
+    const refreshHour = Number(process.env.CLAUDE_SESSION_REFRESH_HOUR_ET ?? '18')
+
+    // Calculate next reset time in ET
+    const now = new Date()
+    const etNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+    const etHour = etNow.getHours()
+    let hoursUntilReset: number
+    if (etHour < refreshHour) {
+      hoursUntilReset = refreshHour - etHour
+    } else {
+      hoursUntilReset = 24 - etHour + refreshHour
+    }
+    const msUntilReset = hoursUntilReset * 3600_000 - etNow.getMinutes() * 60_000 - etNow.getSeconds() * 1000
+
+    return c.json({
+      requestCount: stats.requestCount,
+      dailyCap,
+      pct: Math.min(100, Math.round((stats.requestCount / dailyCap) * 100)),
+      alive: stats.alive,
+      resetsInMs: msUntilReset,
+      refreshHourET: refreshHour,
+    })
+  })
 
   // QuickFintheon — multimodal chart analysis
   // POST /api/ai/quick-fintheon

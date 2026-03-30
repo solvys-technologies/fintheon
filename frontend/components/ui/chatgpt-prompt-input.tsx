@@ -27,6 +27,7 @@ import {
 import { FintheonSlashPicker } from '../chat/FintheonSlashPicker';
 import { FintheonAttachPopup } from '../chat/FintheonAttachPopup';
 import { SkillBadge } from '../chat/SkillBadge';
+import { UsageRing } from '../chat/UsageRing';
 
 /* ------------------------------------------------------------------ */
 /*  Think Harder SVG — Claude-style sparkle shape                     */
@@ -459,9 +460,10 @@ export function PromptBox({
               )}
             </div>
 
-            {/* Right: Persona + Send/Stop */}
+            {/* Right: Persona + Usage + Send/Stop */}
             <div className="flex items-center gap-2">
               {personaSlot}
+              <UsageRing />
               <button
               onClick={isProcessing && onStop ? onStop : handleSend}
               disabled={!text.trim() && images.length === 0 && !isProcessing}
