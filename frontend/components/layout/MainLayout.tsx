@@ -941,7 +941,7 @@ function MainLayoutInner() {
                 </button>
                 {showSessionsPopup && (
                   <div
-                    className="absolute top-full left-0 mt-1 z-50 w-[280px] h-[360px] rounded-lg border overflow-hidden backdrop-blur-xl"
+                    className="absolute top-full right-0 mt-1 z-50 w-[240px] max-h-[280px] rounded-lg border overflow-hidden backdrop-blur-xl"
                     style={{
                       borderColor: 'color-mix(in srgb, var(--fintheon-accent) 25%, transparent)',
                       backgroundColor: 'color-mix(in srgb, var(--fintheon-bg) 95%, var(--fintheon-accent) 5%)',

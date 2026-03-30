@@ -14,22 +14,25 @@ function clamp(value: number, min: number, max: number): number {
 
 export function VoiceRoomHeaderButton({ onClick, participantCount, joined }: { onClick: () => void; participantCount: number; joined: boolean }) {
   return (
-    <button
-      onClick={onClick}
-      className={`relative p-1.5 rounded-lg transition-colors ${
-        joined
-          ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
-          : 'text-gray-500 hover:text-gray-300 hover:bg-zinc-800/50'
-      }`}
-      title={joined ? `Voice Room (${participantCount} in call)` : 'Voice Room'}
-    >
-      <Phone className="w-3.5 h-3.5" />
-      {participantCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] text-[8px] font-bold leading-none">
+    <div className="flex items-center gap-1">
+      <button
+        onClick={onClick}
+        className={`relative p-1.5 rounded-lg transition-colors ${
+          joined
+            ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
+            : 'text-gray-500 hover:text-gray-300 hover:bg-zinc-800/50'
+        }`}
+        title={joined ? `Voice Room (${participantCount} in call)` : 'Voice Room'}
+      >
+        <Phone className="w-3.5 h-3.5" />
+      </button>
+      {joined && (
+        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide" style={{ color: 'var(--fintheon-accent)', backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 12%, transparent)' }}>
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
           {participantCount}
         </span>
       )}
-    </button>
+    </div>
   );
 }
 
