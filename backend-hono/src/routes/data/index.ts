@@ -157,7 +157,7 @@ export function createDataRoutes(): Hono {
   app.get('/brief', async (c) => {
     try {
       const typeParam = c.req.query('type')?.toUpperCase() as BriefType | undefined;
-      const validTypes = ['MDB', 'ADB', 'PMDB', 'TOTT'];
+      const validTypes = ['MDB', 'ADB', 'PMDB', 'WT'];
 
       if (typeParam && validTypes.includes(typeParam)) {
         // Explicit type requested — fetch that specific brief

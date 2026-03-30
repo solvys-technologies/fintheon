@@ -69,7 +69,7 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
       {active.map((r) => (
         <div
           key={r.id}
-          className="mb-1.5 px-2 py-1.5 border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/5"
+          className="mb-1.5 px-2 py-1.5"
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold text-[var(--fintheon-text)] truncate">{r.name}</span>

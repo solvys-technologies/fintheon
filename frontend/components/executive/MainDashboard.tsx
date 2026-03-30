@@ -25,7 +25,7 @@ function briefTypeToLabel(bt: string): string {
     case 'MDB': return 'Dawn Dispatch';
     case 'ADB': return 'Midday Dispatch';
     case 'PMDB': return 'Dusk Dispatch';
-    case 'TOTT': return 'The Weekly Tribune';
+    case 'WT': return 'The Weekly Tribune';
     default: return 'Latest Brief';
   }
 }

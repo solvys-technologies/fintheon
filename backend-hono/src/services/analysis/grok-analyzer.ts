@@ -6,6 +6,8 @@
 
 import { generateText } from 'ai'
 import { selectModel, createModelClient, markProviderUnhealthy, markProviderHealthy, type AiModelKey } from '../ai/model-selector.js'
+import { generateTextViaClaude } from '../claude-sdk/process-manager.js'
+import { isAvailable as isClaudeAvailable } from '../claude-sdk/process-manager.js'
 import { parseHeadline } from '../headline-parser.js'
 import { detectHotPrint } from '../hot-print-detector.js'
 import type { ParsedHeadline, HotPrint, RawArticle, NewsSource } from '../../types/news-analysis.js'
@@ -128,16 +130,31 @@ async function analyzeWithAi(
   headline: string,
   source: NewsSource
 ): Promise<Partial<ParsedHeadline>> {
+  const prompt = buildAnalysisPrompt(headline, source)
+  const systemPrompt = 'You are a financial news parser. Extract structured data from headlines. Respond only with valid JSON.'
+
+  // Primary: Claude CLI (free via Max subscription)
+  if (isClaudeAvailable()) {
+    try {
+      const text = await generateTextViaClaude(
+        `${systemPrompt}\n\n${prompt}`,
+        { timeoutMs: 15_000 }
+      )
+      return parseAiResponse(text)
+    } catch {
+      // Fall through to OpenRouter
+    }
+  }
+
+  // Fallback: OpenRouter
   const selection = selectModel({ taskType: 'news', requiresSpeed: true })
   const model = createModelClient(selection.model as AiModelKey)
-
-  const prompt = buildAnalysisPrompt(headline, source)
 
   try {
     const { text } = await generateText({
       model,
       messages: [
-        { role: 'system', content: 'You are a financial news parser. Extract structured data from headlines. Respond only with valid JSON.' },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt },
       ],
       temperature: 0.1,

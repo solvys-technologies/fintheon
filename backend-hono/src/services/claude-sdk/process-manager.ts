@@ -200,6 +200,71 @@ export function spawnClaudeProcess(prompt: string, options?: Partial<ClaudeSDKCo
   return { process: proc, abort }
 }
 
+// ── Simple Text Generation ────────────────────────────────────────────────
+
+/**
+ * Generate text via Claude CLI (non-streaming).
+ * Collects all text-delta events and returns the full response.
+ * Used by brief generator, agent notes, and any service that needs
+ * Claude inference without the AI SDK client pattern.
+ */
+export async function generateTextViaClaude(prompt: string, options?: Partial<ClaudeSDKConfig>): Promise<string> {
+  if (!isAvailable()) {
+    throw new Error('Claude CLI not available — bridge disabled')
+  }
+
+  return new Promise((resolve, reject) => {
+    const { process: proc, abort } = spawnClaudeProcess(prompt, options)
+    let fullText = ''
+    let buffer = ''
+
+    const timeout = setTimeout(() => {
+      abort()
+      reject(new Error('Claude CLI timed out'))
+    }, options?.timeoutMs ?? config.timeoutMs)
+
+    proc.stdout?.on('data', (chunk: Buffer) => {
+      buffer += chunk.toString()
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+        try {
+          const event = JSON.parse(trimmed)
+          if (event.type === 'assistant' && event.message?.content) {
+            for (const block of event.message.content) {
+              if (block.type === 'text') fullText += block.text
+            }
+          }
+          // stream-json text delta events
+          if (event.type === 'content_block_delta' && event.delta?.text) {
+            fullText += event.delta.text
+          }
+        } catch {
+          // Not JSON — might be raw text output
+          if (trimmed && !trimmed.startsWith('{')) fullText += trimmed
+        }
+      }
+    })
+
+    proc.on('close', (code) => {
+      clearTimeout(timeout)
+      if (code === 0 || fullText.length > 0) {
+        resolve(fullText.trim())
+      } else {
+        reject(new Error(`Claude CLI exited with code ${code}`))
+      }
+    })
+
+    proc.on('error', (err) => {
+      clearTimeout(timeout)
+      reject(err)
+    })
+  })
+}
+
 // ── Configuration ──────────────────────────────────────────────────────────
 
 export function configure(overrides: Partial<ClaudeSDKConfig>): void {

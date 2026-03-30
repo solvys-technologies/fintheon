@@ -77,7 +77,7 @@ function briefTypeToLabel(bt: string): string {
     case 'MDB': return 'Morning Brief';
     case 'ADB': return 'Afternoon Brief';
     case 'PMDB': return 'Post-Market Brief';
-    case 'TOTT': return 'Tale of the Tape';
+    case 'WT': return 'The Weekly Tribune';
     default: return 'Latest Brief';
   }
 }
@@ -147,11 +147,11 @@ export function BriefMiniWidget() {
       // Trigger AI generation of the current brief type
       window.dispatchEvent(new CustomEvent('fintheon:open-chat-skill', {
         detail: {
-          skillId: label.includes('Morning') ? 'mdb_report' : label.includes('Tale') ? 'tott' : 'brief',
+          skillId: label.includes('Morning') ? 'mdb_report' : label.includes('Tribune') ? 'wt' : 'brief',
           prompt: label.includes('Morning')
             ? "Run the MDB report for today's session"
-            : label.includes('Tale')
-              ? 'Give me the Tale of the Tape weekly summary'
+            : label.includes('Tribune')
+              ? 'Give me The Weekly Tribune summary'
               : `Generate the ${label} — only new market-moving headlines since the last brief`,
         },
       }));
