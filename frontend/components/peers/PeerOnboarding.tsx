@@ -82,7 +82,7 @@ export function PeerOnboarding({ open, onClose, onComplete }: PeerOnboardingProp
         hermesAvailable: capabilities.includes('hermes'),
       });
       setAssignedDesk(result.peer.deskName || 'Awaiting admin assignment');
-      setStep(5);
+      setStep(4);
       onComplete?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -97,7 +97,7 @@ export function PeerOnboarding({ open, onClose, onComplete }: PeerOnboardingProp
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h2 className="text-base font-semibold text-[var(--fintheon-text)]">Peer Onboarding</h2>
-            <p className="text-xs text-zinc-400">Step {step} of 5</p>
+            <p className="text-xs text-zinc-400">Step {step} of 4</p>
           </div>
           <button
             onClick={onClose}
@@ -180,30 +180,16 @@ export function PeerOnboarding({ open, onClose, onComplete }: PeerOnboardingProp
               ))}
             </div>
             <button
-              onClick={() => setStep(4)}
-              className="rounded border border-[var(--fintheon-accent)]/35 px-3 py-1.5 text-sm font-medium text-[var(--fintheon-accent)]"
+              onClick={() => void handleRegisterPeer()}
+              disabled={busy}
+              className="rounded border border-[var(--fintheon-accent)]/35 px-3 py-1.5 text-sm font-medium text-[var(--fintheon-accent)] disabled:opacity-50"
             >
-              Next
+              {busy ? 'Registering…' : 'Register Peer'}
             </button>
           </div>
         )}
 
         {step === 4 && (
-          <div className="space-y-3">
-            <p className="text-sm text-zinc-300">
-              Request admin approval to activate this peer. Current role: {roleLabel}
-            </p>
-            <button
-              onClick={() => void handleRegisterPeer()}
-              disabled={busy}
-              className="rounded border border-[var(--fintheon-accent)]/35 px-3 py-1.5 text-sm font-medium text-[var(--fintheon-accent)] disabled:opacity-50"
-            >
-              {busy ? 'Submitting…' : 'Request Approval'}
-            </button>
-          </div>
-        )}
-
-        {step === 5 && (
           <div className="space-y-3">
             <p className="text-sm text-zinc-300">Peer registration complete.</p>
             <p className="rounded border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] px-3 py-2 text-sm text-[var(--fintheon-text)]">

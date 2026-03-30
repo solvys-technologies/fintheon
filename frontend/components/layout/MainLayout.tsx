@@ -92,7 +92,7 @@ function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform, developerSettings, voiceEnabled } = useSettings();
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
-  const [peerStripCollapsed, setPeerStripCollapsed] = useState(false);
+  const [showPeersPanel, setShowPeersPanel] = useState(false);
   const [showPeerOnboarding, setShowPeerOnboarding] = useState(() => {
     try {
       return localStorage.getItem('fintheon:peer-onboarded:v1') !== 'true';
@@ -713,24 +713,31 @@ function MainLayoutInner() {
         }
       />
 
-      <section className="border-b border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/90 px-3 py-2">
-        <div className="mb-2 flex items-center justify-between">
-          <button
-            onClick={() => setPeerStripCollapsed((value) => !value)}
-            className="inline-flex items-center gap-2 rounded border border-[var(--fintheon-accent)]/30 px-2 py-1 text-xs text-[var(--fintheon-accent)]"
-          >
-            {peerStripCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-            Claude Peers
-          </button>
-          <button
-            onClick={() => setShowPeerOnboarding(true)}
-            className="rounded border border-[var(--fintheon-accent)]/30 px-2 py-1 text-xs text-[var(--fintheon-accent)]"
-          >
-            Onboard Peer
-          </button>
+      {/* Peers panel — slides down from top when toggled from footer */}
+      <div
+        className={`overflow-hidden border-b border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/95 transition-all duration-300 ease-in-out ${showPeersPanel ? 'max-h-[240px] py-2 px-3' : 'max-h-0'}`}
+      >
+        <div className="mb-2 flex items-center gap-3">
+          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--fintheon-accent)' }}>
+            Peers
+          </span>
+          {/* Capability health lights — footer StatusIndicator style */}
+          <div className="flex items-center gap-2">
+            {[
+              { label: 'Claude CLI', key: 'claude-cli' },
+              { label: 'Twitter', key: 'twitter-cli' },
+              { label: 'Hermes', key: 'hermes' },
+              { label: 'Voice', key: 'voice' },
+            ].map(({ label, key }) => (
+              <span key={key} className="flex items-center gap-1 text-[10px] text-zinc-500" title={label}>
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-zinc-600" />
+                {label}
+              </span>
+            ))}
+          </div>
         </div>
-        <PeerCarousel collapsed={peerStripCollapsed} />
-      </section>
+        <PeerCarousel collapsed={false} />
+      </div>
 
       <div className="flex-1 flex overflow-hidden relative">
         <div className="relative">
@@ -976,6 +983,8 @@ function MainLayoutInner() {
         onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
         allowSplitView={topStepXEnabled}
         onPowerOff={handleBrowserToggle}
+        peersOpen={showPeersPanel}
+        onTogglePeers={() => setShowPeersPanel((v) => !v)}
       />
 
       {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}

@@ -72,6 +72,8 @@ interface FooterToolbarProps {
   onSplitViewToggle?: () => void;
   allowSplitView?: boolean;
   onPowerOff?: () => void;
+  peersOpen?: boolean;
+  onTogglePeers?: () => void;
 }
 
 export function FooterToolbar({
@@ -84,6 +86,8 @@ export function FooterToolbar({
   onSplitViewToggle,
   allowSplitView = false,
   onPowerOff,
+  peersOpen = false,
+  onTogglePeers,
 }: FooterToolbarProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<PanelTab>('terminal');
@@ -632,6 +636,25 @@ export function FooterToolbar({
             >
               <Power className="w-3 h-3" />
             </button>
+          </>
+        )}
+
+        {/* Peers toggle — left of status indicators */}
+        {onTogglePeers && (
+          <>
+            <button
+              onClick={onTogglePeers}
+              className={`flex items-center gap-1.5 text-[10px] transition-colors ${
+                peersOpen
+                  ? 'text-[var(--fintheon-accent)]'
+                  : 'text-zinc-500 hover:text-[var(--fintheon-accent)]'
+              }`}
+              title={peersOpen ? 'Hide Peers' : 'Show Peers'}
+            >
+              <span className={`inline-block w-1.5 h-1.5 rounded-full ${peersOpen ? 'bg-[var(--fintheon-accent)]' : 'bg-zinc-600'}`} />
+              <span className="font-medium tracking-wider uppercase">Peers</span>
+            </button>
+            <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
           </>
         )}
 
