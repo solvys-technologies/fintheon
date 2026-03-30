@@ -67,6 +67,14 @@ echo "  [6/7] Installing Fintheon.app..."
 DMG_PATH="$FINTHEON_ROOT/desktop-dist/Fintheon-1.0.0-arm64.dmg"
 
 if [ -f "$DMG_PATH" ]; then
+  # Copy DMG to Downloads for easy access / redistribution
+  cp "$DMG_PATH" "$HOME/Downloads/Fintheon-1.0.0-arm64.dmg"
+  echo "  ✓ DMG copied to ~/Downloads"
+
+  # Eject any previously mounted Fintheon volume
+  hdiutil detach "/Volumes/Fintheon" -quiet 2>/dev/null || true
+
+  # Install to /Applications
   rm -rf /Applications/Fintheon.app 2>/dev/null || true
   hdiutil attach "$DMG_PATH" -nobrowse -quiet
   cp -R "/Volumes/Fintheon/Fintheon.app" /Applications/

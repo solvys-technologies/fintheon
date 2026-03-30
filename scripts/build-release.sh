@@ -21,6 +21,26 @@ bunx electron-builder --mac dmg
 # bunx electron-builder --win nsis
 
 echo ""
+echo "=== Deploy ==="
+DMG="desktop-dist/Fintheon-${VERSION}-arm64.dmg"
+if [ -f "$DMG" ]; then
+  # Copy DMG to Downloads
+  cp "$DMG" "$HOME/Downloads/Fintheon-${VERSION}-arm64.dmg"
+  echo "  ✓ DMG → ~/Downloads"
+
+  # Install to /Applications (assumes Fintheon lives there)
+  hdiutil detach "/Volumes/Fintheon" -quiet 2>/dev/null || true
+  rm -rf /Applications/Fintheon.app 2>/dev/null || true
+  hdiutil attach "$DMG" -nobrowse -quiet
+  cp -R "/Volumes/Fintheon/Fintheon.app" /Applications/
+  hdiutil detach "/Volumes/Fintheon" -quiet
+  xattr -cr /Applications/Fintheon.app
+  echo "  ✓ App → /Applications"
+else
+  echo "  ✗ DMG not found: $DMG"
+fi
+
+echo ""
 echo "=== Artifacts ==="
 ls -la desktop-dist/Fintheon-*.dmg 2>/dev/null || echo "  No DMG found"
 ls -la desktop-dist/Fintheon-*.exe 2>/dev/null || echo "  No EXE found"
