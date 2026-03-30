@@ -13,6 +13,7 @@
 
 import { spawn, type ChildProcess } from 'node:child_process'
 import { createLogger } from '../../lib/logger.js'
+import { getSessionManager } from './session-manager.js'
 
 const log = createLogger('ClaudeSDK')
 
@@ -219,7 +220,8 @@ export function spawnClaudeProcess(prompt: string, options?: Partial<ClaudeSDKCo
 
 /**
  * Generate text via Claude CLI (non-streaming).
- * Collects all text-delta events and returns the full response.
+ * Routes through the persistent session manager when available,
+ * falls back to per-request spawn if session is down.
  * Used by brief generator, agent notes, and any service that needs
  * Claude inference without the AI SDK client pattern.
  */
@@ -228,7 +230,20 @@ export async function generateTextViaClaude(prompt: string, options?: Partial<Cl
     throw new Error('Claude CLI not available — bridge disabled')
   }
 
-  // Wait for a concurrency slot before spawning
+  // Try persistent session first (serialized, no concurrency management needed)
+  const session = getSessionManager()
+  if (session.isSessionAlive()) {
+    try {
+      log.info('Routing sync request through persistent session')
+      return await session.sendPromptSync(prompt, options)
+    } catch (err) {
+      log.warn('Session failed, falling back to per-request spawn', {
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
+  // Fallback: per-request spawn with concurrency gate
   await acquireSlot()
 
   return new Promise((resolve, reject) => {
@@ -324,3 +339,6 @@ export function shutdownClaudeSDK(): void {
   // Active processes will be cleaned up by their individual abort() calls
   // or OS process group cleanup on parent exit
 }
+
+// Re-export session manager for consumers
+export { getSessionManager } from './session-manager.js'

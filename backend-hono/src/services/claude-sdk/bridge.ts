@@ -19,6 +19,7 @@ import {
   type ClaudeStreamEvent,
   type ClaudeSDKConfig,
 } from './process-manager.js'
+import { getSessionManager } from './session-manager.js'
 
 const LOG_PREFIX = '[ClaudeSDK:Bridge]'
 
@@ -66,6 +67,8 @@ export async function isBridgeAvailable(): Promise<boolean> {
 
 /**
  * Send a chat message through Claude Code CLI and get a streaming response.
+ * Routes through the persistent session manager when available,
+ * falls back to per-request spawnClaudeProcess if session is down.
  */
 export function bridgeChat(request: BridgeChatRequest, configOverrides?: Partial<ClaudeSDKConfig>): BridgeChatResult {
   const { message, history, researchContext, thinkHarder } = request
@@ -77,11 +80,31 @@ export function bridgeChat(request: BridgeChatRequest, configOverrides?: Partial
   const effort = thinkHarder ? 'high' : 'medium'
   const maxTurns = thinkHarder ? 5 : 3
 
-  const { process: proc, abort } = spawnClaudeProcess(prompt, {
-    effort,
-    maxTurns,
-    ...configOverrides,
-  })
+  const spawnOpts: Partial<ClaudeSDKConfig> = { effort, maxTurns, ...configOverrides }
+
+  // Try persistent session for streaming
+  const session = getSessionManager()
+  if (session.isSessionAlive()) {
+    console.log(`${LOG_PREFIX} Routing through persistent session`)
+    let fullText = ''
+    let aborted = false
+
+    const sessionStream = wrapSessionStream(
+      session.sendPrompt(prompt, spawnOpts),
+      (text) => { fullText += text },
+      () => aborted,
+    )
+
+    return {
+      stream: sessionStream,
+      abort: () => { aborted = true },
+      getFullText: () => fullText,
+    }
+  }
+
+  // Fallback: per-request spawn
+  console.log(`${LOG_PREFIX} Session unavailable, using per-request spawn`)
+  const { process: proc, abort } = spawnClaudeProcess(prompt, spawnOpts)
 
   let fullText = ''
   let aborted = false
@@ -93,6 +116,58 @@ export function bridgeChat(request: BridgeChatRequest, configOverrides?: Partial
     abort: () => { aborted = true; abort() },
     getFullText: () => fullText,
   }
+}
+
+// ── Session Stream Wrapper ────────────────────────────────────────────────
+
+/**
+ * Wraps the raw ClaudeStreamEvent generator from the session manager
+ * into BridgeStreamEvents that the chat handler expects.
+ */
+async function* wrapSessionStream(
+  rawStream: AsyncGenerator<ClaudeStreamEvent>,
+  onText: (text: string) => void,
+  isAborted: () => boolean,
+): AsyncGenerator<BridgeStreamEvent> {
+  const messageId = `claude-sdk-${Date.now()}`
+  const reasoningId = `claude-sdk-reasoning-${Date.now()}`
+  let hasStartedText = false
+  let hasStartedReasoning = false
+
+  yield { type: 'reasoning-start', id: reasoningId }
+  hasStartedReasoning = true
+
+  try {
+    for await (const event of rawStream) {
+      if (isAborted()) break
+
+      const result = processStreamEvent(event, messageId, reasoningId, hasStartedText, hasStartedReasoning, onText)
+      if (result) {
+        for (const evt of result.events) {
+          yield evt
+        }
+        hasStartedText = result.hasStartedText
+        hasStartedReasoning = result.hasStartedReasoning
+      }
+    }
+  } catch (err) {
+    if (!isAborted()) {
+      yield {
+        type: 'error',
+        id: messageId,
+        delta: err instanceof Error ? err.message : 'Session stream error',
+      }
+    }
+  }
+
+  if (hasStartedReasoning) {
+    yield { type: 'reasoning-end', id: reasoningId }
+  }
+  if (!hasStartedText) {
+    yield { type: 'text-start', id: messageId }
+    hasStartedText = true
+  }
+  yield { type: 'text-end', id: messageId }
 }
 
 // ── Prompt Building ────────────────────────────────────────────────────────

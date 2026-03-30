@@ -7,6 +7,7 @@ import { startFeedPoller } from '../services/riskflow/feed-poller.js';
 import { startEconEnricher } from '../services/cron/econ-enricher.js';
 import { startEconTwitterPoller } from '../services/twitter-cli/index.js';
 import { initClaudeSDK } from '../services/claude-sdk/process-manager.js';
+import { startPersistentSession } from '../services/claude-sdk/session-manager.js';
 import { initHermesAgent } from '../services/hermes-handler.js';
 import { startAutopilotScheduler } from '../services/autopilot/autopilot-scheduler.js';
 import { startContextBankTicker } from '../services/context-bank/context-bank-service.js';
@@ -87,9 +88,12 @@ export async function bootServices(): Promise<void> {
   );
 
   // Claude SDK bridge (non-blocking)
-  initClaudeSDK().catch((err) =>
-    log.warn('Claude SDK init failed (non-fatal)', { error: String(err) })
-  );
+  initClaudeSDK()
+    .then(() => startPersistentSession())
+    .then(() => log.info('Persistent Claude session started'))
+    .catch((err) =>
+      log.warn('Claude SDK init failed (non-fatal)', { error: String(err) })
+    );
 
   // Agent notes cron (3min — generates Oracle tactical notes for high/critical items)
   startAgentNotesCron();
