@@ -45,7 +45,7 @@ export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
           <Clock className="w-3 h-3 text-[var(--fintheon-accent)]" />
           <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--fintheon-accent)] font-semibold">Regime Tracker</span>
           {activeCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] text-[8px] font-bold">
+            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] text-[8px] font-bold regime-badge-shimmer">
               {activeCount}
             </span>
           )}

@@ -23,7 +23,7 @@ export function SanctumBriefing({ briefing, isLoading, noBorder }: SanctumBriefi
   if (!briefing) return null;
 
   return (
-    <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/30 overflow-hidden">
+    <div className="rounded bg-[var(--fintheon-surface)]/30 overflow-hidden">
       {/* Summary — lead paragraph */}
       <div className={`px-5 py-4 rounded ${noBorder ? '' : 'border border-[var(--fintheon-accent)]/10'}`}>
         <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">Analysis</span>

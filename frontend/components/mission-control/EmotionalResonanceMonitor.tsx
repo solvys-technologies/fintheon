@@ -224,7 +224,7 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
   }, [erScore]);
 
   return (
-    <div className={`bg-[var(--fintheon-bg)] p-2.5 border ${borderClass} rounded transition-colors duration-300`}>
+    <div className={`p-2.5 rounded transition-colors duration-300${interventionLevel !== 'none' ? ` border ${borderClass}` : ''}`}>
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           <h3 className="text-xs font-semibold text-[var(--fintheon-accent)]">PsychAssist</h3>

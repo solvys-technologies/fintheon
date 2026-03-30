@@ -46,7 +46,7 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
           <Clock className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
           <h3 className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-wide uppercase">Regimes</h3>
           {active.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] text-[9px] font-bold">
+            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] text-[9px] font-bold regime-badge-shimmer">
               {active.length}
             </span>
           )}

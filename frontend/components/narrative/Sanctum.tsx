@@ -215,15 +215,15 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                 {data && data.compositeIV > 0 && (
                   <div className="shrink-0 flex justify-center">
                     <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
-                      <div className="rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/40 px-5 py-3 flex items-center justify-between" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
+                      <div className="rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/40 px-4 py-2 flex items-center justify-between" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
                         <div>
-                          <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Market Heat</span>
-                          <span className="text-3xl font-bold" style={{ color: ivHeatColor(data.compositeIV) }}>{data.compositeIV.toFixed(1)}</span>
+                          <span className="text-[8px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Market Heat</span>
+                          <span className="text-xl font-bold" style={{ color: ivHeatColor(data.compositeIV) }}>{data.compositeIV.toFixed(1)}</span>
                           <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">{heatInterpretation(data.compositeIV)}</span>
                         </div>
                         {/* Vertical shimmer fuse */}
                         <div
-                          className="w-[3px] h-10 rounded-full overflow-hidden"
+                          className="w-[3px] h-7 rounded-full overflow-hidden"
                           style={{
                             background: `linear-gradient(to top, ${ivHeatColor(data.compositeIV)}20, ${ivHeatColor(data.compositeIV)}, ${ivHeatColor(data.compositeIV)}20)`,
                             backgroundSize: '100% 200%',
@@ -231,20 +231,20 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                           }}
                         />
                       </div>
-                      <div className="rounded-lg border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Regime Risk</span>
+                      <div className="rounded-lg border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-2" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
+                        <span className="text-[8px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Regime Risk</span>
                         <span
-                          className="text-2xl font-bold"
+                          className="text-lg font-bold"
                           style={{ color: data.regimeShiftProbability >= 0.6 ? 'var(--fintheon-severe)' : data.regimeShiftProbability >= 0.3 ? 'var(--fintheon-neutral-severe)' : 'var(--fintheon-low)' }}
                         >
                           {(data.regimeShiftProbability * 100).toFixed(0)}%
                         </span>
                         <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">{regimeInterpretation(data.regimeShiftProbability)}</span>
                       </div>
-                      <div className="rounded-lg border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Signal Strength</span>
+                      <div className="rounded-lg border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-2" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
+                        <span className="text-[8px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Signal Strength</span>
                         <span
-                          className="text-2xl font-bold"
+                          className="text-lg font-bold"
                           style={{ color: data.confidence >= 0.8 ? 'var(--fintheon-low)' : data.confidence >= 0.6 ? 'var(--fintheon-neutral-severe)' : 'var(--fintheon-severe)' }}
                         >
                           {(data.confidence * 100).toFixed(0)}%

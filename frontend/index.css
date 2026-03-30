@@ -717,6 +717,24 @@ html *::-webkit-scrollbar {
   animation: agent-shimmer 1.5s ease-in-out;
 }
 
+/* Regime badge shimmer — Dashboard + Strategium */
+@keyframes regime-badge-shimmer {
+  0%, 100% { box-shadow: 0 0 4px rgba(199, 159, 74, 0.15); }
+  50% { box-shadow: 0 0 10px rgba(199, 159, 74, 0.35); }
+}
+.regime-badge-shimmer {
+  animation: regime-badge-shimmer 2.5s ease-in-out infinite;
+}
+
+/* IV card shimmer — Aquarium CategoryScoreCards */
+@keyframes iv-card-shimmer {
+  0%, 100% { box-shadow: 0 0 6px rgba(212, 175, 55, 0.08); }
+  50% { box-shadow: 0 0 14px rgba(212, 175, 55, 0.22); }
+}
+.iv-card-shimmer {
+  animation: iv-card-shimmer 3s ease-in-out infinite;
+}
+
 /* TopStepX Castra mode — darken surfaces to blend with TopStepX charcoal UI */
 .topstepx-active {
   --fintheon-bg: #08080a;

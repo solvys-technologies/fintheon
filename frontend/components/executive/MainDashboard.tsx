@@ -242,7 +242,7 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
             </div>
           )}
           {/* Main content — Brief left, Calendar right */}
-          <div className="flex-1 min-h-0 flex">
+          <div className="flex-1 min-h-0 flex mt-2">
             <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
               {/* Left: Morning Daily Brief (55%) */}
               <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col">
@@ -271,11 +271,6 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
                   style={{ resize: 'vertical', minHeight: '80px' }}
                   placeholder={ntnLoaded ? 'Awaiting AI-generated brief...' : 'Loading brief...'}
                 />
-                {ntnLoaded && !ntnText.trim() && (
-                  <p className="mt-2 text-xs text-zinc-500">
-                    Awaiting AI-generated brief...
-                  </p>
-                )}
               </div>
 
               {/* Needle divider — fades at top/bottom 25% */}
