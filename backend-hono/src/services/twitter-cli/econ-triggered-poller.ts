@@ -7,11 +7,11 @@
 import { searchTweets, fetchUserTimeline, isTwitterCliInstalled } from './twitter-cli-service.js';
 import { createRateLimiter } from '../rate-limiter.js';
 
-// Rate limiter: prevent CLI subprocess spam (6 timelines/min, 4 searches/min)
+// Rate limiter: prevent CLI subprocess spam (10 timelines/min for 8 accounts + headroom, 4 searches/min)
 const twitterLimiter = createRateLimiter({
-  defaultRule: { limit: 10, windowMs: 60_000 },
+  defaultRule: { limit: 14, windowMs: 60_000 },
   buckets: {
-    'twitter-timeline': { limit: 6, windowMs: 60_000 },
+    'twitter-timeline': { limit: 10, windowMs: 60_000 },
     'twitter-search': { limit: 4, windowMs: 60_000 },
   },
   baseBackoffMs: 500,
@@ -65,8 +65,23 @@ const FJ_ACCOUNTS = ['financialjuice', 'InsiderWire'] as const;
 // Trusted macro/econ accounts — always polled alongside FJ
 const TRUSTED_ACCOUNTS = ['NickTimiraos'] as const;
 
+// Breaking news / market-moving wire accounts — continuous polling
+const WIRE_ACCOUNTS = ['DeItaone'] as const;
+
+// OSINT / geopolitical intelligence accounts — continuous polling
+const OSINT_ACCOUNTS = ['OSINTDefender'] as const;
+
 // Geopolitical + policy accounts — polled for real-time geopolitical + fiscal commentary
 const GEOPOLITICAL_ACCOUNTS = ['SecBessent25', 'realDonaldTrump', 'ABORNEOFFICIAL'] as const;
+
+// All accounts that should be polled continuously (not gated by econ events)
+const ALL_CONTINUOUS_ACCOUNTS = [
+  ...FJ_ACCOUNTS,
+  ...TRUSTED_ACCOUNTS,
+  ...WIRE_ACCOUNTS,
+  ...OSINT_ACCOUNTS,
+  ...GEOPOLITICAL_ACCOUNTS,
+] as const;
 
 // Geopolitical search terms — burst-polled when conflict escalation detected
 const GEOPOLITICAL_SEARCH_TERMS = [
@@ -348,6 +363,7 @@ function tweetToFeedItem(
   const source: NewsSource =
     authorLower === 'financialjuice' ? 'FinancialJuice' :
     authorLower === 'insiderwire' ? 'InsiderWire' :
+    authorLower === 'deitaone' ? 'DeItaOne' :
     'TwitterCli';
 
   return {
@@ -409,7 +425,8 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  // 1. Fetch today's econ events from Notion
+  // ── 1. Econ calendar: fetch events for burst scheduling + actual extraction ──
+  // This is ADDITIVE — we always poll accounts regardless of events.
   let activeEvents: EconEvent[] = [];
   let activeEventNames: string[] = [];
   try {
@@ -428,35 +445,23 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
         scheduleBurst(event);
       }
     }
-
-    // If no events in window, skip X CLI calls entirely
-    if (activeEvents.length === 0) {
-      console.debug('[EconTwitterPoller] No events in window (T-5min to T+15min), skipping X CLI calls');
-      return [];
-    }
   } catch (err) {
     console.warn('[EconTwitterPoller] Failed to fetch econ calendar:', err);
   }
 
-  // 2. Build search queries from active events
-  const searchQueries = buildEventQueries(activeEventNames);
-
-  // 3. Collect all tweets: FJ + InsiderWire + Trusted accounts + event-triggered searches
+  // ── 2. ALWAYS poll all accounts (continuous — never gated by events) ──
   const allTweetPromises: Promise<Array<{ id: string; text: string; author: string; publishedAt: string }>>[] = [];
 
-  // Always fetch FJ and InsiderWire timelines (rate-limited)
-  for (const account of FJ_ACCOUNTS) {
+  for (const account of ALL_CONTINUOUS_ACCOUNTS) {
     allTweetPromises.push(twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }));
   }
 
-  // Always fetch trusted accounts (NickTimiraos, etc.)
-  for (const account of TRUSTED_ACCOUNTS) {
-    allTweetPromises.push(twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }));
-  }
-
-  // Event-triggered searches (only when events are active)
-  for (const query of searchQueries) {
-    allTweetPromises.push(twitterLimiter.schedule(() => searchTweets(query, { limit: SEARCH_LIMIT, filter: 'latest' }), { bucket: 'twitter-search' }));
+  // ── 3. Event-triggered search queries (only when econ events are in window) ──
+  if (activeEvents.length > 0) {
+    const searchQueries = buildEventQueries(activeEventNames);
+    for (const query of searchQueries) {
+      allTweetPromises.push(twitterLimiter.schedule(() => searchTweets(query, { limit: SEARCH_LIMIT, filter: 'latest' }), { bucket: 'twitter-search' }));
+    }
   }
 
   const tweetBatches = await Promise.allSettled(allTweetPromises);
@@ -470,12 +475,14 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
     return true;
   });
 
-  // 5. Extract actuals from FJ tweets and write to Notion (fire-and-forget)
-  processActualsFromTweets(uniqueTweets, activeEvents).catch((err) =>
-    console.warn('[EconTwitterPoller] Actual extraction error:', err)
-  );
+  // 5. Extract actuals from FJ tweets when events are active (fire-and-forget)
+  if (activeEvents.length > 0) {
+    processActualsFromTweets(uniqueTweets, activeEvents).catch((err) =>
+      console.warn('[EconTwitterPoller] Actual extraction error:', err)
+    );
+  }
 
-  // 6. Apply FJ emoji tier filter (medium+)
+  // 6. Apply FJ emoji tier filter (medium+) — works for all accounts via keyword fallback
   const classified = filterByTier(uniqueTweets, 'medium');
 
   // 7. Convert to FeedItem[]
@@ -484,8 +491,10 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
   );
 
   if (feedItems.length > 0) {
-    console.log(`[EconTwitterPoller] ${feedItems.length} items passed FJ emoji filter (from ${uniqueTweets.length} raw tweets)`);
+    console.log(`[EconTwitterPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw across ${ALL_CONTINUOUS_ACCOUNTS.length} accounts)`);
     pushToSupabase(feedItems).catch(() => {});
+  } else if (uniqueTweets.length > 0) {
+    console.debug(`[EconTwitterPoller] ${uniqueTweets.length} raw tweets fetched, 0 passed medium+ filter`);
   }
 
   return feedItems;
@@ -579,9 +588,9 @@ async function initFetchHighPriorityPosts(): Promise<void> {
   if (!installed) return;
 
   try {
-    console.log('[EconTwitterPoller] Init fetch: pulling last 30 Medium+ posts from FJ + InsiderWire + Trusted...');
+    console.log('[EconTwitterPoller] Init fetch: pulling last 30 Medium+ posts from all continuous accounts...');
 
-    const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS, ...GEOPOLITICAL_ACCOUNTS];
+    const allAccounts = [...ALL_CONTINUOUS_ACCOUNTS];
     const batches = await Promise.allSettled(
       allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: 50 }), { bucket: 'twitter-timeline' }))
     );
@@ -639,9 +648,9 @@ export async function manualRefreshTweets(): Promise<FeedItem[]> {
     return [];
   }
 
-  console.log('[ManualRefresh] Fetching FJ/InsiderWire/Trusted timelines (rate-limited)...');
+  console.log('[ManualRefresh] Fetching all continuous account timelines (rate-limited)...');
 
-  const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS, ...GEOPOLITICAL_ACCOUNTS];
+  const allAccounts = [...ALL_CONTINUOUS_ACCOUNTS];
   const batches = await Promise.allSettled(
     allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
   );
@@ -720,7 +729,7 @@ async function nightPoll(): Promise<void> {
 
   console.log('[NightPoller] Hourly night poll running (7PM-7AM EST, rate-limited)');
 
-  const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS, ...GEOPOLITICAL_ACCOUNTS];
+  const allAccounts = [...ALL_CONTINUOUS_ACCOUNTS];
   const batches = await Promise.allSettled(
     allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
   );

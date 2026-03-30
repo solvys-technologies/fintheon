@@ -54,9 +54,10 @@ const CRITICAL_PATTERNS = [
 
 /**
  * High impact — major policy, geopolitical flash points, key speaker statements
+ * Covers: econ data, Fed speakers, geopolitical escalation, defense/OSINT intel
  */
 const HIGH_PATTERNS = [
-  /\b(Powell|Lagarde|Waller|Jefferson|Williams)\b/i,  // Fed speakers
+  /\b(Powell|Lagarde|Waller|Jefferson|Williams|Bessent|Yellen)\b/i,  // Fed speakers + Treasury
   /\b(ECB|BOE|BOJ|PBOC|RBA|Fed)\s+(says|warns|signals|confirms|cuts|raises)\b/i,
   /\bsanction(s)?\b/i, /\bwar\b.*\b(Iran|Russia|China|Ukraine)\b/i,
   /\b(Iran|Israel|China|Russia|North Korea)\b.*\b(attack|missile|nuclear|military)\b/i,
@@ -67,6 +68,13 @@ const HIGH_PATTERNS = [
   /\bOPEC\b/i, /\bsupply\s+cut\b/i,
   /\bCPI\b/i, /\bPPI\b/i,  // even without "Actual", CPI/PPI mentions are high
   /\bDebt\s+ceiling\b/i, /\bdefault\b.*\b(US|Treasury|sovereign)\b/i,
+  // OSINT / geopolitical escalation patterns (OSINTDefender, DeItaOne)
+  /\b(airstrike|bombing|drone\s+strike|ballistic|cruise\s+missile|ICBM)\b/i,
+  /\b(IRGC|Houthi|Hezbollah|IDF|Pentagon|CENTCOM|NATO)\b/i,
+  /\b(strait\s+of\s+hormuz|red\s+sea|taiwan\s+strait|south\s+china\s+sea)\b/i,
+  /\b(ceasefire|escalat|de-?escalat|retaliati|mobiliz)\b/i,
+  /\b(tariff|trade\s+war|import\s+dut|export\s+ban)\b/i,
+  /\bBREAKING\b/,  // DeItaOne "BREAKING:" prefix
 ];
 
 /**
@@ -84,6 +92,15 @@ const MEDIUM_PATTERNS = [
   /\bTrade\s+(war|tariff|deal|deficit|balance)\b/i,
   /\b(Maersk|shipping|supply chain)\b/i,
   /\b(fear|greed)\s+index\b/i,
+  // OSINT conflict theater / military movement (medium when not direct escalation)
+  /\b(deploy|convoy|troops|naval|carrier|submarine|warship|fighter\s+jet)\b/i,
+  /\b(explosion|casualt|evacuat|refugee|humanitarian)\b/i,
+  /\b(Ukraine|Syria|Yemen|Lebanon|Gaza|Taiwan)\b/i,
+  /\b(sanctions?\s+list|blacklist|embargo)\b/i,
+  // Wire service patterns (DeItaOne market-moving wires)
+  /\b(upgrades?|downgrades?|price\s+target|initiates?)\s+(coverage|at|to)\b/i,
+  /\b(halt|halted|resumed|circuit\s+breaker)\b/i,
+  /\b(buyback|dividend|split|merger|acquisition|takeover|IPO)\b/i,
 ];
 
 function keywordClassify(text: string): FJClassification {
