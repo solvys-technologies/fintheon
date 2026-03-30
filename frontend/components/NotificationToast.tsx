@@ -95,83 +95,66 @@ export function NotificationToast({ notification, onDismiss, onBlock }: Notifica
       style={{
         opacity: entered ? 1 : 0,
         transform: entered ? 'translateX(0)' : 'translateX(-16px)',
-        minWidth: '320px',
-        maxWidth: '420px',
+        minWidth: '280px',
+        maxWidth: '380px',
       }}
     >
-      {/* Frosted glass card body */}
       <div
-        className="backdrop-blur-xl border border-[var(--fintheon-accent)]/20"
+        className="backdrop-blur-xl overflow-hidden"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 80%, transparent)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          borderRadius: '8px',
+          border: '1px solid color-mix(in srgb, var(--fintheon-accent) 25%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--fintheon-bg) 88%, var(--fintheon-accent) 12%)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 color-mix(in srgb, var(--fintheon-accent) 8%, transparent)',
         }}
       >
-        {/* Main content */}
-        <div className="px-3 pt-2.5 pb-2">
-          <div className="flex items-start gap-2">
-            {/* Severity badge */}
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${severityConfig.bg} ${severityConfig.text} ${severityConfig.border} border flex-shrink-0 mt-0.5`}>
+        <div className="flex items-start justify-between" style={{ padding: '10px 12px' }}>
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            <span
+              className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest flex-shrink-0 mt-0.5"
+              style={{
+                color: 'var(--fintheon-accent)',
+                backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 12%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)',
+              }}
+            >
               {severityConfig.label}
             </span>
             <div className="flex-1 min-w-0">
-              {/* Headline */}
-              <p className="text-xs leading-snug font-medium text-[var(--fintheon-text)] line-clamp-2">
+              <p className="text-[12px] leading-snug font-medium text-[var(--fintheon-text)] line-clamp-2">
                 {notification.title}
               </p>
-              {/* Summary */}
               {notification.message && notification.message !== notification.title && (
                 <p className="text-[10px] text-zinc-600 line-clamp-1 mt-0.5">{notification.message}</p>
               )}
-              {/* Source badge + timestamp row */}
-              <div className="flex items-center gap-2 mt-1">
-                {notification.type === 'iv' ? (
-                  <TrendingUp className="w-2.5 h-2.5 text-zinc-500" />
-                ) : notification.type === 'tilt' ? (
-                  <AlertTriangle className="w-2.5 h-2.5 text-zinc-500" />
-                ) : notification.type === 'trade' ? (
-                  <Zap className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
-                ) : (
-                  <Newspaper className="w-2.5 h-2.5 text-zinc-500" />
-                )}
-                <span className="text-[10px] text-zinc-600">{notification.timestamp.toLocaleTimeString()}</span>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="text-[10px] text-zinc-600">
+                  {notification.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
                 <span className="text-[10px] text-zinc-700">&middot;</span>
-                <span className="text-[10px] text-[var(--fintheon-accent)]/60 uppercase tracking-wider">
-                  {notification.type === 'iv' ? 'IV Alert' : notification.type === 'tilt' ? 'PsychAssist' : notification.type === 'trade' ? 'Trade' : 'RiskFlow'}
+                <span className="text-[10px] tracking-wider uppercase" style={{ color: 'color-mix(in srgb, var(--fintheon-accent) 60%, transparent)' }}>
+                  {notification.type === 'iv' ? 'IV' : notification.type === 'tilt' ? 'Psych' : notification.type === 'trade' ? 'Trade' : 'RiskFlow'}
                 </span>
               </div>
             </div>
-            {/* Dismiss + block CTAs */}
-            <div className="flex-shrink-0 flex items-center gap-0.5">
-              <button
-                onClick={() => onBlock(dndType)}
-                title="Don't show again"
-                className="p-1 rounded text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors opacity-0 group-hover:opacity-100"
-              >
-                <BellOff size={12} />
-              </button>
-              <button
-                onClick={() => onDismiss(notification.id)}
-                className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              >
-                <X size={12} />
-              </button>
-            </div>
           </div>
-        </div>
-
-        {/* Bottom hero footer — matches AlertRow in RiskFlowPanel */}
-        <div className="flex items-center justify-between px-3 py-1.5 border-t" style={{ borderColor: 'color-mix(in srgb, var(--fintheon-accent) 10%, transparent)', backgroundColor: 'color-mix(in srgb, var(--fintheon-bg) 80%, transparent)' }}>
-          <span className="text-[10px] text-zinc-600">{notification.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          {(isBullish || isBearish) && (
-            <span className="text-[11px] font-bold tracking-wider uppercase flex items-center gap-1" style={{ color: dirColor }}>
-              {isBullish ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              {isBullish ? 'BULLISH' : 'BEARISH'}
-            </span>
-          )}
-          <span className="text-[9px] text-zinc-600 uppercase tracking-wider font-mono">
-            {notification.type}
-          </span>
+          <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" style={{ marginLeft: '8px' }}>
+            <button
+              onClick={() => onBlock(dndType)}
+              title="Don't show again"
+              className="p-1 rounded transition-colors hover:bg-[var(--fintheon-accent)]/10"
+              style={{ color: 'var(--fintheon-muted)' }}
+            >
+              <BellOff size={11} />
+            </button>
+            <button
+              onClick={() => onDismiss(notification.id)}
+              className="p-1 rounded transition-colors hover:bg-[var(--fintheon-accent)]/10"
+              style={{ color: 'var(--fintheon-muted)' }}
+            >
+              <X size={11} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
