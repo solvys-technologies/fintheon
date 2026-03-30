@@ -13,14 +13,14 @@ interface RegimeState {
 }
 
 const REGIME_COLORS: Record<MarketRegime, string> = {
-  BULL_TREND: 'text-emerald-400 border-emerald-400/30 bg-emerald-400/5',
-  BEAR_TREND: 'text-red-400 border-red-400/30 bg-red-400/5',
-  CONSOLIDATION: 'text-zinc-400 border-zinc-400/30 bg-zinc-400/5',
-  GEO_TENSIONS: 'text-orange-400 border-orange-400/30 bg-orange-400/5',
-  MACRO_ECON: 'text-cyan-400 border-cyan-400/30 bg-cyan-400/5',
-  RISK_OFF: 'text-rose-400 border-rose-400/30 bg-rose-400/5',
-  EARNINGS_SEASON: 'text-violet-400 border-violet-400/30 bg-violet-400/5',
-  ILLIQUID_STUPIDITY: 'text-amber-400 border-amber-400/30 bg-amber-400/5',
+  BULL_TREND: 'text-emerald-400',
+  BEAR_TREND: 'text-red-400',
+  CONSOLIDATION: 'text-zinc-400',
+  GEO_TENSIONS: 'text-orange-400',
+  MACRO_ECON: 'text-cyan-400',
+  RISK_OFF: 'text-rose-400',
+  EARNINGS_SEASON: 'text-violet-400',
+  ILLIQUID_STUPIDITY: 'text-amber-400',
 };
 
 interface RegimeControlProps {
@@ -76,7 +76,7 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
       </div>
 
       {/* Current regime badge */}
-      <div className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded border text-[11px] font-bold tracking-wide ${colorClass}`}>
+      <div className={`inline-flex items-center gap-2 px-2.5 py-1.5 text-[11px] font-bold tracking-wide ${colorClass}`}>
         {REGIME_LABELS[currentRegime]}
       </div>
 

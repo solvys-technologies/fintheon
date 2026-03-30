@@ -128,6 +128,8 @@ async function analyzeWithAi(
   headline: string,
   source: NewsSource
 ): Promise<Partial<ParsedHeadline>> {
+  // Headline scoring uses OpenRouter only — Claude CLI is too expensive per-headline
+  // (each spawn creates a full context window). Reserve Claude CLI for briefs + chat.
   const selection = selectModel({ taskType: 'news', requiresSpeed: true })
   const model = createModelClient(selection.model as AiModelKey)
 

@@ -15,7 +15,7 @@ import type { FeedFilters, WatchlistUpdateRequest, NewsSource, MacroLevel } from
 import { isSupabaseConfigured } from '../../config/supabase.js';
 import { writeInstrumentScores } from '../../services/supabase-service.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
-import { forcePoll } from '../../services/riskflow/feed-poller.js';
+import { forcePoll, setPollingToggle, getPollingToggle } from '../../services/riskflow/feed-poller.js';
 import { fetchVIX, getVIXSpikeAdjustment, getVIXScoringMultiplier, getVIXBaseline } from '../../services/vix-service.js';
 import {
   calculateIVScoreV2,
@@ -832,4 +832,24 @@ export async function handleGetSources(c: Context) {
     twitterCli,
     xApi: false, // Deprecated — replaced by twitter-cli
   });
+}
+
+/**
+ * POST /api/riskflow/polling-toggle
+ * S10-T1c: Enable/disable automatic polling.
+ * Body: { enabled: boolean }
+ * When disabled, ALL X API calls stop immediately.
+ */
+export async function handlePollingToggle(c: Context) {
+  try {
+    const body = await c.req.json<{ enabled?: boolean }>();
+    if (typeof body.enabled !== 'boolean') {
+      return c.json({ error: 'Missing "enabled" boolean field' }, 400);
+    }
+
+    setPollingToggle(body.enabled);
+    return c.json({ pollingEnabled: getPollingToggle() });
+  } catch (err) {
+    return c.json({ error: 'Invalid request body' }, 400);
+  }
 }

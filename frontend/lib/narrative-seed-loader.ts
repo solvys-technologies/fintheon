@@ -178,7 +178,7 @@ export function alertToCatalyst(a: RiskFlowAlert): CatalystCard {
     narrativeThreads: threads,
     directionBias: a.direction === 'Bullish' ? 'bullish' : a.direction === 'Bearish' ? 'bearish' : 'neutral',
     status: (a.status as 'active' | 'monitoring' | 'resolved') ?? 'active',
-    marketImpact: a.marketImpact ?? undefined,
+    marketImpact: a.marketImpact ? { nq: a.marketImpact.nq ?? null, es: a.marketImpact.es ?? null, ym: a.marketImpact.ym ?? null, asOf: a.marketImpact.asOf ?? '' } : undefined,
     dateRange: { start: a.publishedAt?.slice(0, 10) ?? '', end: null },
     drillDepth: 0,
     createdAt: a.promotedAt ?? now,

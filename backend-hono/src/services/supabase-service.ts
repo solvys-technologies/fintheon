@@ -509,7 +509,7 @@ export async function readDailyPnl(filter?: {
 
 // ─── Briefs ─────────────────────────────────────────────────────
 
-export type BriefType = 'MDB' | 'ADB' | 'PMDB' | 'TOTT';
+export type BriefType = 'MDB' | 'ADB' | 'PMDB' | 'WT';
 
 export interface BriefRecord {
   id?: string;

@@ -20,14 +20,14 @@ const CATEGORY_ORDER: TradingRegime['category'][] = ['institutional', 'session',
 
 function BiasBadge({ bias }: { bias: TradingRegime['bias'] }) {
   const config = {
-    long: { label: 'Long', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-    short: { label: 'Short', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
-    fade: { label: 'Fade', color: 'bg-orange-500/15 text-orange-400 border-orange-500/30' },
-    neutral: { label: 'Neutral', color: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30' },
+    long: { label: 'Long', color: 'text-emerald-400' },
+    short: { label: 'Short', color: 'text-red-400' },
+    fade: { label: 'Fade', color: 'text-orange-400' },
+    neutral: { label: 'Neutral', color: 'text-zinc-400' },
   }[bias];
 
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-semibold tracking-wider uppercase border ${config.color}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-semibold tracking-wider uppercase ${config.color}`}>
       {config.label}
     </span>
   );

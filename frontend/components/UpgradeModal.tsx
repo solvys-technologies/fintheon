@@ -43,7 +43,7 @@ const tierData: Record<Tier, TierInfo> = {
       'Read-only Consilium',
       'Executive dashboard',
       'P&L tracking',
-      'All daily briefs (MDB/ADB/PMDB/TOTT)',
+      'All daily briefs (MDB/ADB/PMDB/WT)',
     ],
     color: 'text-[var(--fintheon-accent)]',
     borderColor: 'border-[var(--fintheon-accent)]',

@@ -52,11 +52,11 @@ const DISPATCH_JOBS: DispatchJob[] = [
     description: 'Post-Market Daily Brief (5:15 PM ET, weekdays)',
   },
   {
-    id: 'dispatch-tott',
-    briefType: 'TOTT',
+    id: 'dispatch-wt',
+    briefType: 'WT',
     cronExpression: '30 16 * * 0',
     timezone: 'America/New_York',
-    description: 'Tale of the Tape (4:30 PM ET, Sunday)',
+    description: 'Weekly Tribune (4:30 PM ET, Sunday)',
   },
 ];
 

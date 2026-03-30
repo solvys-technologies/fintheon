@@ -8,7 +8,7 @@ import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 
 const SUGGESTION_CHIPS: { label: string; skillId: string; prompt: string; icon: typeof BarChart3 }[] = [
   { label: "Dawn Dispatch", skillId: 'mdb_report', prompt: "Run the MDB report for today's session", icon: BarChart3 },
-  { label: "The Weekly Tribune", skillId: 'tott', prompt: "Give me The Weekly Tribune summary", icon: CalendarCheck },
+  { label: "The Weekly Tribune", skillId: 'wt', prompt: "Give me The Weekly Tribune summary", icon: CalendarCheck },
   { label: "Psych Eval", skillId: 'psych_eval', prompt: "Run a full psych eval on my recent trading", icon: Brain },
   { label: "Update my Blindspots", skillId: 'blindspots', prompt: "Update and review my trading blindspots", icon: Eye },
 ];

@@ -12,6 +12,8 @@ import {
 } from './supabase-service.js';
 import { getFeed } from './riskflow/feed-service.js';
 import { selectModel, createModelClient, getFallbackModel, markProviderUnhealthy, type AiModelKey } from './ai/model-selector.js';
+import { generateTextViaClaude } from './claude-sdk/process-manager.js';
+import { isAvailable as isClaudeAvailable } from './claude-sdk/process-manager.js';
 import { createLogger } from '../lib/logger.js';
 import { MARKET_REGIMES, type MarketRegime } from '../types/regime.js';
 import { setRegime } from './regime/regime-service.js';
@@ -26,7 +28,7 @@ export const BRIEF_LABELS: Record<string, string> = {
   MDB: 'Morning Daily Brief (MDB)',
   ADB: 'Afternoon Daily Brief (ADB)',
   PMDB: 'Post-Market Daily Brief (PMDB)',
-  TOTT: 'Tale of the Tape — The Weekly Tribune',
+  WT: 'The Weekly Tribune',
 };
 
 export function getCurrentBriefType(): BriefType {
@@ -34,9 +36,9 @@ export function getCurrentBriefType(): BriefType {
   const day = now.getDay();
   const h = now.getHours();
   const timeVal = h * 60 + now.getMinutes();
-  // TOTT: Sunday >= 17:00 through Monday < 07:00
-  if (day === 0 && timeVal >= 17 * 60) return 'TOTT';
-  if (day === 1 && h < 7) return 'TOTT';
+  // WT: Sunday >= 17:00 through Monday < 07:00
+  if (day === 0 && timeVal >= 17 * 60) return 'WT';
+  if (day === 1 && h < 7) return 'WT';
   // PMDB stays active overnight until MDB fires at 6:30 AM
   if (timeVal < 6 * 60 + 30) return 'PMDB';
   if (timeVal >= 17 * 60 + 30) return 'PMDB';
@@ -98,7 +100,7 @@ export async function generateBrief(
           .join('\n')
       : 'No major economic events today.';
 
-  const isFull = briefType === 'MDB' || briefType === 'TOTT';
+  const isFull = briefType === 'MDB' || briefType === 'WT';
 
   const prompt = isFull
     ? `You are Fintheon, a macro trading assistant for Priced In Capital. Generate a comprehensive ${BRIEF_LABELS[briefType]}.
@@ -115,60 +117,47 @@ ${
     ? `Write a full Morning Daily Brief in this exact format:
 
 **Day Type:** [Macro/Catalyst/Drift/Compounding] — one-line reason
-**Key Prints & Speeches (ET):** List each with time, actual vs expected, directional read (bullish/bearish)
-**After-Hours Movers:** Top movers with % and implied NQ/ES point impact
-**Macro/Political Take:** 2-3 sentences on the macro picture — labor, inflation, geopolitical, Fed
-**Pressure Summary:** Current price action, key levels, consolidation vs breakout
-**Market Risks & VIX:** Event risk status, VIX level and direction, what it means
-**Overall Sentiment:** One punchy sentence
+**Scheduled Events (ET):** List today's econ events from the calendar above with times. Do NOT fabricate actual/expected numbers — only list what's in the data provided.
+**Macro/Political Take:** 2-3 sentences on the macro picture based on the RiskFlow headlines above — labor, inflation, geopolitical, Fed
+**Market Risks & VIX:** Event risk from headlines, VIX direction based on catalyst severity
+**Overall Sentiment:** One punchy sentence synthesizing the headlines
 **Market Regime:** [BULL_TREND | BEAR_TREND | CONSOLIDATION | GEO_TENSIONS | MACRO_ECON | RISK_OFF | EARNINGS_SEASON | ILLIQUID_STUPIDITY]
 One-line justification for regime classification.
 **Best Intraday Approach:** Specific strategy recommendation (Ripper, AWV, Snipe, etc.)
 
-Be direct, use financial shorthand. Anchor ONLY to key macro events. No scattergun anchoring. 400-600 words.`
-    : `Write the Tale of the Tape Report — the Weekly Tribune for Priced In Capital. This is a two-part report: Past Week Recap + What We Got Ahead.
+CRITICAL: Only reference data from the headlines and events provided above. Do NOT fabricate price levels, percentage moves, stock tickers, or actual/forecast numbers that aren't in the input. If you don't have specific data, say so — never hallucinate.
+
+Be direct, use financial shorthand. Anchor ONLY to key macro events. 300-500 words.`
+    : `Write the Weekly Tribune for Priced In Capital. This is a two-part report: Past Week Recap + What We Got Ahead.
 
 # PART 1: Past Week Recap
 
-**Market Overview:** Summarize the week's dominant themes (geopolitical tensions, macro shifts, sector rotation, risk-on/risk-off tone). Reference S&P 500, Nasdaq, and broader market direction. Be specific about what drove price action.
+**Market Overview:** Summarize the week's dominant themes based on the RiskFlow headlines above — geopolitical tensions, macro shifts, risk-on/risk-off tone. Be specific about what drove sentiment.
 
-**NQ Futures Daily % Change:** List each trading day with approximate % change and a one-line note on what drove it. Example format:
-• Monday: +1.27% (relief rally on de-escalation comments)
-• Tuesday: -0.80% (oil spike, consumer sentiment miss)
-...and so on for the full week.
+**Macro Data Highlights:** Summarize the key releases referenced in the headlines above. Only cite actual/forecast numbers if they appear in the provided data — never fabricate.
 
-**Macro Data Highlights:** Cover the key releases — CPI, PPI, FOMC projections, GDP, employment, housing, consumer sentiment. Include actual vs forecast where available. Note which data points moved markets vs which were overridden by headline risk.
+**Political Commentary (Focus: Persons of Interest):** Cover Trump, Lutnick (Commerce), Bessent (Treasury), and any other officials mentioned in the headlines. Specific policy actions, tensions, and market implications.
 
-**Top 3 & Bottom 3 S&P 500 Performers ($200B+ Market Cap):** Name specific companies with headlines explaining WHY they moved. Tie to sector themes (energy strength, tech weakness, rotation patterns).
+**VolScore for Past Events (1-10 Scale):** Rate the past week's major events from the headlines: 1=Low Impact, 10=Market-Moving Volatility Spike.
 
-**VIX Levels:** Weekly range (low to high), average, and what the level signals. Reference specific days where VIX spiked or compressed and why.
-
-**Political Commentary (Focus: Persons of Interest):** Cover Trump, Lutnick (Commerce), Bessent (Treasury), and any other officials who moved markets. Specific quotes, policy actions, tensions between officials, market reactions.
-
-**Sentiment:** Summarize the week's overall sentiment — cautious, bearish, bullish. Reference put/call ratios, AAII survey, social sentiment, and technical conditions (oversold/overbought). Note any contrarian signals.
-
-**VolScore for Past Events (1-10 Scale):** Rate the past week's major events: 1=Low Impact, 10=Market-Moving Volatility Spike. Cover geopolitical headlines, macro data, sector rotations, VIX spikes separately.
+**Sentiment:** Summarize the week's overall sentiment — cautious, bearish, bullish. Base this on headline tone and catalyst severity.
 
 # PART 2: What We Got Ahead (Upcoming Week)
 
-**Scheduled Events:** For each major event (ADP, ISM PMIs, NFP, earnings, Fed speeches, etc.), provide:
+**Scheduled Events:** List upcoming events from the economic calendar above with:
 - Day and time
 - Event name
 - VolScore (1-10)
-- Forecast / Prior values
-- Expected NQ Reaction (direction + magnitude)
-- Priced-In assessment (what X/FinTwit analysts are saying, what's consensus vs contrarian)
 
-Group events by early week (Mon-Tue), mid-week (Wed-Thu), late week (Fri).
-
-**Sentiment Outlook (Future Tense):** What will drive next week — data-dependent, headline-sensitive, technical. Reference specific NQ levels, sector flows, and what scenarios lead to risk-on vs risk-off.
+**Sentiment Outlook:** What will drive next week based on the catalysts and events in the data.
 
 ## Rules
+- CRITICAL: Only reference data from the headlines and events provided. Do NOT fabricate price levels, percentage moves, stock tickers, daily % changes, or actual/forecast numbers not in the input.
 - Be analytical, direct, use financial shorthand
-- Anchor to real data and real headlines — no generic filler
+- Anchor to real headlines — no generic filler
 - Use the VolScore framework consistently (1-10)
-- Political commentary should be specific (names, quotes, policy actions) not vague
-- 800-1200 words total
+- Political commentary should be specific (names, policy actions) not vague
+- 600-900 words total
 - Write in Priced In Capital's voice: sharp, convicted, data-driven`
 }`
     : `You are Fintheon, a macro trading assistant for Priced In Capital. Generate a brief ${BRIEF_LABELS[briefType]}.
@@ -186,39 +175,57 @@ ${
     : 'Write 3-5 bullet points covering ONLY new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 200 words.'
 }`;
 
-  const selection = selectModel({
-    taskType: 'analysis',
-    maxBudgetUsd: isFull ? 0.05 : 0.01,
-  });
-
   let text: string;
-  let usedProvider = selection.provider;
+  let usedProvider = 'claude-local';
 
-  try {
-    const model = createModelClient(selection.model as AiModelKey);
-    const result = await generateText({ model, prompt });
-    text = result.text;
-  } catch (err: any) {
-    const isNetworkError = ['EAI_AGAIN', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNREFUSED', 'ECONNRESET', 'fetch failed']
-      .some((code) => err?.message?.includes(code) || err?.cause?.code === code);
+  // Primary: Claude CLI (free via Max subscription)
+  if (isClaudeAvailable()) {
+    try {
+      log.info('Generating brief via Claude CLI...');
+      text = await generateTextViaClaude(prompt);
+      log.info(`Claude CLI generated ${text.length} chars`);
+    } catch (cliErr: any) {
+      log.warn('Claude CLI failed, falling back to OpenRouter', { error: cliErr?.message });
+      text = '';
+    }
+  } else {
+    log.warn('Claude CLI not available, using OpenRouter');
+    text = '';
+  }
 
-    if (!isNetworkError) throw err;
-
-    log.warn(`Primary provider network error, attempting Nous Direct fallback`, {
-      primaryModel: selection.model,
-      error: err?.message ?? String(err),
+  // Fallback: OpenRouter (if Claude CLI failed or unavailable)
+  if (!text) {
+    const selection = selectModel({
+      taskType: 'analysis',
+      maxBudgetUsd: isFull ? 0.05 : 0.01,
     });
-    markProviderUnhealthy(selection.provider);
+    usedProvider = selection.provider;
 
-    // Try fallback chain via model-selector
-    const fallback = getFallbackModel(selection.model as AiModelKey);
-    if (!fallback) throw err;
+    try {
+      const model = createModelClient(selection.model as AiModelKey);
+      const result = await generateText({ model, prompt });
+      text = result.text;
+    } catch (err: any) {
+      const isNetworkError = ['EAI_AGAIN', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNREFUSED', 'ECONNRESET', 'fetch failed', 'Insufficient credits']
+        .some((code) => err?.message?.includes(code) || err?.cause?.code === code);
 
-    const fallbackModel = createModelClient(fallback.model as AiModelKey);
-    const fallbackResult = await generateText({ model: fallbackModel, prompt });
-    text = fallbackResult.text;
-    usedProvider = fallback.provider;
-    log.info(`Fallback succeeded via ${fallback.model}`, { provider: fallback.provider });
+      if (!isNetworkError) throw err;
+
+      log.warn('OpenRouter failed too, attempting Nous Direct fallback', {
+        primaryModel: selection.model,
+        error: err?.message ?? String(err),
+      });
+      markProviderUnhealthy(selection.provider);
+
+      const fallback = getFallbackModel(selection.model as AiModelKey);
+      if (!fallback) throw err;
+
+      const fallbackModel = createModelClient(fallback.model as AiModelKey);
+      const fallbackResult = await generateText({ model: fallbackModel, prompt });
+      text = fallbackResult.text;
+      usedProvider = fallback.provider;
+      log.info(`Fallback succeeded via ${fallback.model}`, { provider: fallback.provider });
+    }
   }
 
   // Auto-detect regime from MDB output (MDB only — parse after generation)

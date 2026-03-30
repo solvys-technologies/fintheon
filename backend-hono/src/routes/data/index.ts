@@ -19,7 +19,7 @@ import {
 } from '../../services/supabase-service.js';
 import { getFeed } from '../../services/riskflow/feed-service.js';
 import { getUserSettings } from '../../services/settings-store.js';
-import { getCurrentBriefType, generateBrief } from '../../services/brief-generator.js';
+import { getCurrentBriefType, generateBrief, BRIEF_LABELS } from '../../services/brief-generator.js';
 
 // ── Helpers: transform DB records → frontend shapes ─────────────────────────
 
@@ -157,7 +157,7 @@ export function createDataRoutes(): Hono {
   app.get('/brief', async (c) => {
     try {
       const typeParam = c.req.query('type')?.toUpperCase() as BriefType | undefined;
-      const validTypes = ['MDB', 'ADB', 'PMDB', 'TOTT'];
+      const validTypes = ['MDB', 'ADB', 'PMDB', 'WT'];
 
       if (typeParam && validTypes.includes(typeParam)) {
         // Explicit type requested — fetch that specific brief
@@ -184,6 +184,29 @@ export function createDataRoutes(): Hono {
     } catch (err) {
       console.error('[Data] /brief error:', err);
       return c.json({ items: [] }, 500);
+    }
+  });
+
+  // GET /api/data/briefs/today — all briefs generated today (for dropdown selector)
+  app.get('/briefs/today', async (c) => {
+    try {
+      const all = await readBriefs(undefined, 20);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayBriefs = all.filter(b => new Date(b.created_at) >= today);
+      return c.json({
+        briefs: todayBriefs.map(b => ({
+          id: b.id,
+          type: b.brief_type,
+          label: BRIEF_LABELS[b.brief_type] ?? b.brief_type,
+          content: b.content,
+          createdAt: b.created_at,
+        })),
+        currentType: getCurrentBriefType(),
+      });
+    } catch (err) {
+      console.error('[Data] /briefs/today error:', err);
+      return c.json({ briefs: [], currentType: getCurrentBriefType() }, 500);
     }
   });
 

@@ -6,6 +6,7 @@
 // [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
 
 // [claude-code 2026-03-27] S3: Write raw items to raw_riskflow_items for central scorer pipeline
+// [claude-code 2026-03-30] S10-T1c: Added daily window gate (8-11AM ET weekdays) + autoRefresh toggle
 import * as newsCache from './news-cache.js';
 import { enrichFeedWithAnalysis } from './feed-service.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
@@ -13,6 +14,7 @@ import { fetchEconomicFeed } from './economic-feed.js';
 import { isTwitterCliInstalled, pollTwitterForEconNews, manualRefreshTweets } from '../twitter-cli/index.js';
 import { writeRawItems, type RawRiskFlowItem } from '../supabase-service.js';
 import { isSupabaseConfigured } from '../../config/supabase.js';
+import { getUserSettings } from '../settings-store.js';
 import type { FeedItem } from '../../types/riskflow.js';
 import { createLogger } from '../../lib/logger.js';
 
@@ -38,12 +40,73 @@ const POLL_INTERVAL_MS = 15_000; // Poll every 15 seconds for instant Level 4 de
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let isPolling = false;
 
+// S10-T1c: Manual toggle state — when false, ALL polling stops
+let manualToggleEnabled = true;
+
+/**
+ * Check if we're inside the daily polling window (8AM-11AM ET, weekdays only).
+ * Outside this window, automatic polling is suppressed.
+ */
+function isInsidePollingWindow(): boolean {
+  const now = new Date();
+  // Convert to ET (America/New_York)
+  const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const et = new Date(etStr);
+  const hour = et.getHours();
+  const day = et.getDay(); // 0=Sun, 6=Sat
+
+  // Weekdays only, 8AM-11AM ET
+  if (day === 0 || day === 6) return false;
+  return hour >= 8 && hour < 11;
+}
+
+/**
+ * Check if autoRefresh is enabled in user settings AND manual toggle is on.
+ * Returns false if polling should be suppressed.
+ */
+async function isPollingAllowed(): Promise<boolean> {
+  if (!manualToggleEnabled) {
+    return false;
+  }
+
+  try {
+    const settings = await getUserSettings('default');
+    if (settings.autoRefresh === false) {
+      return false;
+    }
+  } catch {
+    // Default: allow polling if settings unavailable
+  }
+
+  return true;
+}
+
+/** Set the manual polling toggle. When false, ALL X API calls stop. */
+export function setPollingToggle(enabled: boolean): void {
+  manualToggleEnabled = enabled;
+  log.info(` Polling toggle set to ${enabled ? 'ON' : 'OFF'}`);
+}
+
+/** Get current polling toggle state */
+export function getPollingToggle(): boolean {
+  return manualToggleEnabled;
+}
+
 /**
  * Poll for new feed items and process them
  */
 async function pollForNewItems(): Promise<void> {
   if (isPolling) {
     return; // Prevent concurrent polls
+  }
+
+  // S10-T1c: Check time window + toggle + autoRefresh before polling
+  if (!isInsidePollingWindow()) {
+    return; // Outside 8-11AM ET window
+  }
+
+  if (!(await isPollingAllowed())) {
+    return; // Toggle off or autoRefresh disabled
   }
 
   isPolling = true;
