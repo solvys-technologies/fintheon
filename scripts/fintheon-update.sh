@@ -71,14 +71,24 @@ if [ -f "$DMG_PATH" ]; then
   cp "$DMG_PATH" "$HOME/Downloads/Fintheon-1.0.0-arm64.dmg"
   echo "  ✓ DMG copied to ~/Downloads"
 
-  # Eject any previously mounted Fintheon volume
-  hdiutil detach "/Volumes/Fintheon" -quiet 2>/dev/null || true
+  # Eject any previously mounted Fintheon volumes (name includes version)
+  for vol in /Volumes/Fintheon*; do
+    hdiutil detach "$vol" -quiet 2>/dev/null || true
+  done
 
-  # Install to /Applications
-  rm -rf /Applications/Fintheon.app 2>/dev/null || true
+  # Install to /Applications (remove both casings)
+  rm -rf /Applications/Fintheon.app /Applications/fintheon.app 2>/dev/null || true
   hdiutil attach "$DMG_PATH" -nobrowse -quiet
-  cp -R "/Volumes/Fintheon/Fintheon.app" /Applications/
-  hdiutil detach "/Volumes/Fintheon" -quiet
+
+  # Find the actual volume name (includes version, e.g. "Fintheon 1.0.0-arm64")
+  VOLUME=$(ls -d /Volumes/Fintheon* 2>/dev/null | head -1)
+  if [ -z "$VOLUME" ]; then
+    echo "  ✗ DMG mounted but volume not found"
+    exit 1
+  fi
+
+  cp -R "$VOLUME/Fintheon.app" /Applications/
+  hdiutil detach "$VOLUME" -quiet
   xattr -cr /Applications/Fintheon.app
   echo "  ✓ App installed to /Applications"
 else
