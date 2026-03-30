@@ -263,11 +263,125 @@ export async function handleChat(c: Context) {
     const useGitHubModel = Boolean(githubToken) && model === 'github-deepseek'
 
     const bridgeAvailable = await isBridgeAvailable()
-    const preferClaudeSDK = thinkHarder && bridgeAvailable
     const openRouterKey = process.env.OPENROUTER_API_KEY
+
+    // ── PATH 0: Claude SDK Bridge (PRIMARY — free via Max subscription) ──────
+    // All normal chat goes through Claude CLI first. thinkHarder gets extended thinking.
+    // Falls through to OpenRouter only if bridge is unavailable.
+    if (bridgeAvailable && !useGitHubModel) {
+      console.log(`[ClaudeSDK][${requestId}] Routing through Claude SDK bridge (thinkHarder: ${thinkHarder})`)
+      cognition.step('agent-route', 'Claude SDK Bridge', thinkHarder ? 'Thinking Opus via Max sub' : 'Opus via Max sub ($0)')
+
+      const skillTag = extractSkillTag(message)
+      const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder })
+      const feedContext = await buildFeedContext()
+
+      const bridgeResult = bridgeChat({
+        message,
+        conversationId: conversation.id,
+        history: history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+        thinkHarder,
+        researchContext: basePrompt + feedContext,
+      })
+
+      cognition.step('gateway-call', thinkHarder ? 'Streaming from Thinking Opus' : 'Streaming from Claude Opus', 'Local CLI bridge')
+
+      let cancelled = false
+      const uiMessageId = `assistant-${Date.now()}`
+      const uiReasoningId = `reasoning-${Date.now()}`
+      const stream = new ReadableStream({
+        start(controller) {
+          ;(async () => {
+            let fullText = ''
+            let reasoningStarted = false
+            let reasoningEnded = false
+            let textStarted = false
+
+            for await (const event of bridgeResult.stream) {
+              if (cancelled) break
+
+              if (event.type === 'reasoning-start' || (event.type === 'reasoning-delta' && !reasoningStarted)) {
+                if (!reasoningStarted) {
+                  controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+                  reasoningStarted = true
+                }
+              }
+              if (event.type === 'reasoning-delta' && event.delta) {
+                if (!reasoningStarted) {
+                  controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+                  reasoningStarted = true
+                }
+                controller.enqueue({ type: 'reasoning-delta', id: uiReasoningId, delta: event.delta })
+              }
+              if (event.type === 'reasoning-end' && reasoningStarted && !reasoningEnded) {
+                controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                reasoningEnded = true
+              }
+              if (event.type === 'text-delta' && event.delta) {
+                if (reasoningStarted && !reasoningEnded) {
+                  controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                  reasoningEnded = true
+                }
+                if (!textStarted) {
+                  controller.enqueue({ type: 'text-start', id: uiMessageId })
+                  textStarted = true
+                }
+                fullText += event.delta
+                controller.enqueue({ type: 'text-delta', id: uiMessageId, delta: event.delta })
+              }
+              if (event.type === 'text-end') {
+                if (textStarted) controller.enqueue({ type: 'text-end', id: uiMessageId })
+              }
+              if (event.type === 'error') {
+                console.error(`[ClaudeSDK][${requestId}] Bridge stream error:`, event.metadata)
+              }
+            }
+
+            if (reasoningStarted && !reasoningEnded) controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+            if (textStarted) controller.enqueue({ type: 'text-end', id: uiMessageId })
+
+            if (fullText) {
+              await conversationStore.addMessage(conversation.id, {
+                conversationId: conversation.id,
+                role: 'assistant',
+                content: fullText,
+                model: thinkHarder ? 'claude-opus-thinking' : 'claude-opus-local',
+              })
+            }
+
+            cognition.step('response-ready', 'Claude SDK complete', `${fullText.length} chars`)
+            cognition.done()
+            controller.close()
+          })().catch((err) => {
+            console.error(`[ClaudeSDK][${requestId}] Bridge error:`, err)
+            cognition.step('error', 'Bridge error', err instanceof Error ? err.message : String(err))
+            cognition.done()
+            controller.error(err)
+          })
+        },
+        cancel() { cancelled = true },
+      })
+
+      c.header('X-Conversation-Id', conversation.id)
+      c.header('X-Request-Id', requestId)
+      c.header('X-Hermes-Agent', thinkHarder ? 'claude-opus-thinking' : 'claude-opus-local')
+      return createUIMessageStreamResponse({
+        stream,
+        headers: {
+          'X-Conversation-Id': conversation.id,
+          'X-Request-Id': requestId,
+          'X-Hermes-Agent': thinkHarder ? 'claude-opus-thinking' : 'claude-opus-local',
+          'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Request-Id, X-Hermes-Agent',
+        },
+      })
+    }
+
+    // ── FALLBACK: OpenRouter when Claude SDK bridge is unavailable ──────
     const useNousHermesReasoning = thinkHarder && Boolean(openRouterKey?.trim())
 
-    // PATH 1: OpenRouter Claude Opus deep thought (thinking toggle)
+    // PATH 1: OpenRouter Claude Opus deep thought (thinking toggle, bridge unavailable)
     if (useNousHermesReasoning && !useGitHubModel) {
       console.log(`[Hermes][${requestId}] Using OpenRouter Claude Opus 4.6 (deep thought)`)
       cognition.step('agent-route', 'Claude Opus Deep', 'Deep thought via OpenRouter')
@@ -412,9 +526,9 @@ export async function handleChat(c: Context) {
       }
     }
 
-    // PRIMARY PATH: Local Hermes processing via P.I.C. agent network
-    // Skip when thinkHarder is enabled AND Claude SDK bridge is available (prefer Opus)
-    if (USE_LOCAL_HERMES && !useGitHubModel && !preferClaudeSDK) {
+    // FALLBACK PATH: Local Hermes processing via P.I.C. agent network
+    // Only reached if Claude SDK bridge is unavailable
+    if (USE_LOCAL_HERMES && !useGitHubModel) {
       console.log(`[Hermes][${requestId}] Using LOCAL processing via P.I.C. agents`)
 
       const augmentedMessage = message

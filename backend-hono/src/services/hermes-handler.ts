@@ -427,11 +427,37 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
     messages.push({ role: 'user', content: request.message })
   }
 
+  // Primary: Claude CLI (free via Max subscription)
+  const claudePrompt = systemPrompt + '\n\n' + messages.filter(m => m.role === 'user').map(m => typeof m.content === 'string' ? m.content : '[multimodal]').join('\n')
+
+  try {
+    const { generateTextViaClaude } = await import('./claude-sdk/process-manager.js')
+    const { isAvailable } = await import('./claude-sdk/process-manager.js')
+
+    if (isAvailable()) {
+      log.info('Calling Claude CLI', { agent: agentInfo.agent })
+      const content = await generateTextViaClaude(claudePrompt, { timeoutMs: 60_000 })
+
+      if (content) {
+        log.info('Claude CLI response received', { preview: content.substring(0, 50) })
+        return {
+          content,
+          agent: agentInfo.agent,
+          confidence: agentInfo.confidence,
+          metadata: { intent: agentInfo.intent, symbols: extractSymbols(request.message) }
+        }
+      }
+    }
+  } catch (cliErr) {
+    log.warn('Claude CLI failed, falling back to OpenRouter', { error: String(cliErr) })
+  }
+
+  // Fallback: OpenRouter
   const apiKey = process.env.OPENROUTER_API_KEY ?? ''
   const baseUrl = 'https://openrouter.ai/api/v1'
 
   if (!apiKey) {
-    log.warn('OPENROUTER_API_KEY not set, using local fallback')
+    log.warn('OPENROUTER_API_KEY not set and Claude CLI failed, using local fallback')
     return generateLocalResponse(request, agentInfo)
   }
 
