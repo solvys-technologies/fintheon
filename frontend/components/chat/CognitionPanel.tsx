@@ -147,8 +147,7 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
 
   return (
     <div
-      className="rounded-xl border bg-[var(--fintheon-bg)]/90 overflow-hidden transition-all"
-      style={{ borderColor: hasError ? 'rgba(239,68,68,0.25)' : 'rgba(199,159,74,0.15)' }}
+      className="rounded-xl bg-[var(--fintheon-bg)]/90 overflow-hidden transition-all"
     >
       {/* Header */}
       <button

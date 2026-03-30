@@ -199,7 +199,7 @@ export class AccountService {
       tier = tierResponse.tier || 'free';
     } catch (error) {
       // If tier endpoint fails, default to free
-      console.warn('Failed to get tier, defaulting to free:', error);
+      // Tier fetch failed — default to free
     }
 
     return this.mapAccountResponse(response, tier);
@@ -214,7 +214,7 @@ export class AccountService {
       tier = tierResponse.tier || 'free';
     } catch (error) {
       // If tier endpoint fails, default to free
-      console.warn('Failed to get tier, defaulting to free:', error);
+      // Tier fetch failed — default to free
     }
 
     return this.mapAccountResponse(response, tier);
@@ -267,42 +267,14 @@ export class RiskFlowService {
 
     const queryString = query.toString();
     const endpoint = `/api/riskflow/feed${queryString ? `?${queryString}` : ''}`;
-    console.log(`[RiskFlowService] Calling endpoint: ${endpoint}`);
-    
     try {
       const response = await this.client.get<{ items?: any[]; total?: number; hasMore?: boolean; fetchedAt?: string; error?: string }>(endpoint);
-      
-      // Check if response is actually an object or if it's empty
+
       if (!response || typeof response !== 'object' || Object.keys(response).length === 0) {
-        console.error(`[RiskFlowService] Response is empty or invalid:`, response);
-        console.error(`[RiskFlowService] Response type:`, typeof response);
-        console.error(`[RiskFlowService] Response keys:`, response ? Object.keys(response) : 'null/undefined');
-        return {
-          items: [],
-          total: 0,
-        };
+        return { items: [], total: 0 };
       }
-      
-      console.log(`[RiskFlowService] Raw response:`, {
-        hasItems: !!response.items,
-        itemsLength: response.items?.length ?? 0,
-        total: response.total,
-        hasMore: response.hasMore,
-        hasError: !!response.error,
-        error: response.error,
-        responseKeys: Object.keys(response),
-        responseType: typeof response
-      });
-      
-      // Backend returns { items: FeedItem[], total: number, hasMore: boolean, fetchedAt: string }
+
       const items = Array.isArray(response.items) ? response.items : [];
-      
-      console.log(`[RiskFlowService] Received ${items.length} items from backend (total: ${response.total ?? 0})`);
-      if (items.length === 0) {
-        console.warn(`[RiskFlowService] Empty response from backend - check database cache and filters`);
-        console.warn(`[RiskFlowService] Full response object:`, JSON.stringify(response, null, 2));
-        console.warn(`[RiskFlowService] Response.items type:`, typeof response.items, Array.isArray(response.items));
-      }
 
       // Transform backend FeedItem to frontend RiskFlowItem format
       return {
@@ -340,7 +312,7 @@ export class RiskFlowService {
         hasMore: response.hasMore ?? false,
       };
     } catch (error: any) {
-      console.error('[RiskFlowService] Failed to fetch RiskFlow:', error);
+      // RiskFlow fetch failed — rethrow
       // Return empty response on error
       return {
         items: [],
@@ -354,7 +326,7 @@ export class RiskFlowService {
     try {
       await this.client.post('/api/riskflow/seed', {});
     } catch (error) {
-      console.error('Failed to seed RiskFlow:', error);
+      // Seed failed — swallow
       throw error;
     }
   }
@@ -387,7 +359,6 @@ export class AIService {
       const response = await this.client.post('/api/ai/chat', payload);
       return response;
     } catch (error: any) {
-      console.error('AI chat error:', error);
       throw error;
     }
   }
@@ -397,7 +368,6 @@ export class AIService {
       const response = await this.client.get<{ conversations: any[] }>('/api/ai/conversations');
       return response.conversations || [];
     } catch (error) {
-      console.warn('listConversations endpoint error:', error);
       return [];
     }
   }
@@ -424,8 +394,6 @@ export class AIService {
   }
 
   async generateMDBReport(): Promise<MDBReport> {
-    // Stub - backend doesn't have this endpoint yet
-    console.warn('MDB report endpoint not available in Hono backend');
     return {
       report: {
         content: 'MDB report generation is not yet implemented in the Hono backend.',
@@ -499,7 +467,6 @@ export class TradingService {
 
   async seedPositions(): Promise<void> {
     // Stub - backend doesn't have this endpoint
-    console.warn('Position seed endpoint not available in Hono backend');
   }
 
   async toggleAlgo(data: any): Promise<any> {
@@ -523,8 +490,6 @@ export class ProjectXService {
   }
 
   async uplinkProjectX(): Promise<UplinkResponse> {
-    // Stub - backend doesn't have this endpoint
-    console.warn('ProjectX uplink endpoint not available in Hono backend');
     return {
       success: false,
       message: 'Uplink endpoint not available',
@@ -642,7 +607,6 @@ export class NotificationsService {
 
   async markRead(notificationId: string): Promise<void> {
     // Stub - backend doesn't have this endpoint
-    console.warn('Notification mark read endpoint not available in Hono backend');
   }
 }
 
@@ -736,12 +700,10 @@ export class VoiceService {
 
 // Events Service
 export class EventsService {
-  private _warned = false;
   constructor(private client: ApiClient) { }
 
   async list(): Promise<any[]> {
     // Stub - backend doesn't have this endpoint
-    if (!this._warned) { console.warn('Events endpoint not available — returning empty list'); this._warned = true; }
     return [];
   }
 

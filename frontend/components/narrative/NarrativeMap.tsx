@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] Catalysts sourced from DB via RiskFlowContext — seed JSON and localStorage import removed
 // [claude-code 2026-03-28] S7: Force-directed canvas, removed Sanctum overlay (now separate view)
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -12,7 +13,7 @@ import { NarrativeHighlightProvider } from './NarrativeHighlightProvider';
 import { NarrativeFloatingToolbar, type CanvasTool } from './NarrativeFloatingToolbar';
 import { NarrativeCanvasChat } from './NarrativeCanvasChat';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
-import { loadSeedEvents, importRiskFlowItems } from '../../lib/narrative-seed-loader';
+import { alertToCatalyst } from '../../lib/narrative-seed-loader';
 import type { CatalystCard } from '../../lib/narrative-types';
 
 export function NarrativeMap() {
@@ -29,27 +30,19 @@ export function NarrativeMap() {
   const [canvasScale, setCanvasScale] = useState(1.0);
   const [zoomFns, setZoomFns] = useState<{ zoomTo: (level: number) => void; fitView: () => void } | null>(null);
   const { alerts } = useRiskFlow();
-  const seedLoadedRef = useRef(false);
 
-  // Auto-seed historical events on first boot
-  useEffect(() => {
-    if (seedLoadedRef.current) return;
-    seedLoadedRef.current = true;
-    const seeds = loadSeedEvents();
-    if (seeds.length > 0) {
-      dispatch({ type: 'BULK_ADD_CATALYSTS', catalysts: seeds });
-    }
-  }, [dispatch]);
-
-  // Auto-import ALL RiskFlow items as catalyst cards
+  // Sync promoted RiskFlow items as catalyst cards (DB-backed, not localStorage seeds)
   useEffect(() => {
     if (alerts.length === 0) return;
     const existingRfIds = new Set(
       state.catalysts.filter(c => c.riskflowItemId).map(c => c.riskflowItemId!)
     );
-    const imported = importRiskFlowItems(alerts, existingRfIds);
-    if (imported.length > 0) {
-      dispatch({ type: 'BULK_ADD_CATALYSTS', catalysts: imported });
+    const promoted = alerts
+      .filter(a => a.promotedAt || (a.narrativeThreads && a.narrativeThreads.length > 0))
+      .filter(a => !existingRfIds.has(a.id))
+      .map(alertToCatalyst);
+    if (promoted.length > 0) {
+      dispatch({ type: 'BULK_ADD_CATALYSTS', catalysts: promoted });
     }
   }, [alerts, state.catalysts, dispatch]);
 

@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] Add narrative lifecycle fields (promotedAt, narrativeThreads, category, status)
 // [claude-code 2026-03-24] VIX-weighted item scoring + SubScoreBreakdown
 /**
  * RiskFlow Types
@@ -63,6 +64,18 @@ export interface FeedItem {
     impliedPoints: number | null;
     instrument: string | null;
   };
+  /** Narrative lifecycle — populated after catalyst promotion */
+  promotedAt?: string | null;
+  narrativeThreads?: string[];
+  category?: string | null;
+  status?: 'active' | 'monitoring' | 'resolved' | null;
+  /** Daily close market impact (populated ~24h after event) */
+  marketImpact?: {
+    nq?: { points: number; percent: number } | null;
+    es?: { points: number; percent: number } | null;
+    ym?: { points: number; percent: number } | null;
+    asOf?: string;
+  } | null;
 }
 
 export interface FeedResponse {

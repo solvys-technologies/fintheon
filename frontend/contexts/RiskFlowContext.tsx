@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] Fix infinite scroll: poll uses loadedCountRef so auto-refresh doesn't reset scroll progress
 // [claude-code 2026-03-14] Removed MarketWatch RSS polling — feed now Notion + backend only.
 // [claude-code 2026-03-14] XCLI: minMacroLevel=0 so all items show regardless of macro level.
 // [claude-code 2026-03-12] Instrument persistence: passes selectedSymbol to backend feed poll
@@ -108,6 +109,8 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [initialLoaded, setInitialLoaded] = useState(false);
   const notionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Track how many items have been loaded (initial 50 + loadMore pages) so polls don't reset scroll progress
+  const loadedCountRef = useRef(50);
 
   // Notion trade idea polling
   const pollNotion = useCallback(async () => {
@@ -171,9 +174,10 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   }, [pollNotion, autoRefresh]);
 
   // Backend feed polling (twitter-cli, Polymarket, Economic Calendar)
+  // Uses loadedCountRef so polls fetch all items the user has scrolled through (not just first 50)
   const pollBackendFeed = useCallback(async () => {
     try {
-      const response = await backend.riskflow.list({ minMacroLevel: 0, limit: 50, instrument: selectedSymbol.symbol });
+      const response = await backend.riskflow.list({ minMacroLevel: 0, limit: loadedCountRef.current, instrument: selectedSymbol.symbol });
       const alerts: RiskFlowAlert[] = response.items.map((item) => ({
         id: `backend-${item.id}`,
         headline: item.title,
@@ -198,6 +202,11 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         agentNote: item.agentNote ?? null,
         agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
         econData: item.econData ?? null,
+        promotedAt: (item as any).promotedAt ?? null,
+        narrativeThreads: (item as any).narrativeThreads ?? [],
+        category: (item as any).category ?? null,
+        status: (item as any).status ?? null,
+        marketImpact: (item as any).marketImpact ?? null,
       }));
       setBackendAlerts(alerts);
       setHasMore(response.hasMore ?? false);
@@ -244,10 +253,17 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         agentNote: item.agentNote ?? null,
         agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
         econData: item.econData ?? null,
+        promotedAt: (item as any).promotedAt ?? null,
+        narrativeThreads: (item as any).narrativeThreads ?? [],
+        category: (item as any).category ?? null,
+        status: (item as any).status ?? null,
+        marketImpact: (item as any).marketImpact ?? null,
       }));
       setBackendAlerts(prev => [...prev, ...newAlerts]);
       setHasMore(response.hasMore ?? false);
-      console.debug(`[RiskFlowContext] Loaded ${newAlerts.length} more items (total: ${backendAlerts.length + newAlerts.length})`);
+      // Bump loaded count so subsequent polls fetch the full set
+      loadedCountRef.current = backendAlerts.length + newAlerts.length;
+      console.debug(`[RiskFlowContext] Loaded ${newAlerts.length} more items (total: ${loadedCountRef.current})`);
     } catch (err) {
       console.warn('[RiskFlowContext] loadMore error:', err);
     } finally {

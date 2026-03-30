@@ -38,6 +38,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
+const DEV = import.meta.env.DEV;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -96,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (event === 'TOKEN_REFRESHED') {
-        console.log('[Auth] Session token refreshed');
+        DEV && console.log('[Auth] Session token refreshed');
       }
       if (event === 'SIGNED_OUT') {
         setSession(null);
@@ -110,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Set session from tokens (implicit flow — access_token + refresh_token)
   const setSessionFromTokens = useCallback(async (accessToken: string, refreshToken: string) => {
     if (!supabase) return;
-    console.log('[Auth] Setting session from tokens...');
+    DEV && console.log('[Auth] Setting session from tokens...');
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.setSession({
@@ -118,14 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refresh_token: refreshToken,
       });
       if (error) {
-        console.error('[Auth] setSession failed:', error.message);
+        DEV && console.error('[Auth] setSession failed:', error.message);
       } else {
-        console.log('[Auth] Session established:', data.session?.user?.email);
+        DEV && console.log('[Auth] Session established:', data.session?.user?.email);
         setSession(data.session);
         setUser(data.session?.user ?? null);
       }
     } catch (err) {
-      console.error('[Auth] setSession error:', err);
+      DEV && console.error('[Auth] setSession error:', err);
     }
     setIsLoading(false);
   }, []);
@@ -133,19 +134,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Exchange a PKCE auth code for a Supabase session
   const exchangeCode = useCallback(async (code: string) => {
     if (!supabase || !code) return;
-    console.log('[Auth] Exchanging code:', code.slice(0, 8) + '...');
+    DEV && console.log('[Auth] Exchanging code:', code.slice(0, 8) + '...');
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
-        console.error('[Auth] Code exchange failed:', error.message);
+        DEV && console.error('[Auth] Code exchange failed:', error.message);
       } else {
-        console.log('[Auth] Session established:', data.session?.user?.email);
+        DEV && console.log('[Auth] Session established:', data.session?.user?.email);
         setSession(data.session);
         setUser(data.session?.user ?? null);
       }
     } catch (err) {
-      console.error('[Auth] Exchange error:', err);
+      DEV && console.error('[Auth] Exchange error:', err);
     }
     setIsLoading(false);
   }, []);
@@ -164,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase || BYPASS_AUTH) return;
 
     const handleDeepLink = async (url: string) => {
-      console.log('[Auth] Deep link received:', url);
+      DEV && console.log('[Auth] Deep link received:', url);
       try {
         const parsed = new URL(url);
         const params: Record<string, string> = {};
@@ -178,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         await handleAuthData(params);
       } catch (err) {
-        console.error('[Auth] Deep link parse error:', err);
+        DEV && console.error('[Auth] Deep link parse error:', err);
       }
     };
 
@@ -190,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startPolling = useCallback(() => {
     if (pollingRef.current) return;
-    console.log('[Auth] Starting auth poll...');
+    DEV && console.log('[Auth] Starting auth poll...');
     pollingRef.current = setInterval(async () => {
       try {
         const res = await fetch(`${API_BASE}/api/auth/supabase/pending`);
@@ -198,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await res.json() as Record<string, string | null>;
         // Check if we got tokens or a code
         if (data.access_token || (data.code && data.code !== null)) {
-          console.log('[Auth] Poll found auth data');
+          DEV && console.log('[Auth] Poll found auth data');
           if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
           await handleAuthData(data as Record<string, string>);
         }

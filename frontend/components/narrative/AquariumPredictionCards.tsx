@@ -85,7 +85,7 @@ export function AquariumPredictionCards() {
         return (
           <div
             key={inst.symbol}
-            className="flex-shrink-0 w-[180px] rounded-lg border p-3 flex flex-col gap-2"
+            className="flex-shrink-0 w-[220px] rounded-lg border p-3 flex flex-col gap-2"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 80%, transparent)',
               borderColor: 'color-mix(in srgb, var(--fintheon-border) 20%, transparent)',
@@ -140,7 +140,7 @@ export function AquariumPredictionCards() {
             {inst.drivers.length > 0 && (
               <div className="pt-1 border-t border-[var(--fintheon-border)]/10">
                 {inst.drivers.slice(0, 2).map((d, i) => (
-                  <p key={i} className="text-[7px] text-[var(--fintheon-muted)]/40 truncate">{d}</p>
+                  <p key={i} className="text-[9px] text-[var(--fintheon-muted)]/50 line-clamp-2">{d}</p>
                 ))}
               </div>
             )}

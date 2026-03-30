@@ -331,6 +331,11 @@ export function ApparatusMap() {
                           {agent.bio}
                         </p>
                       )}
+                      {agent.dossier && (
+                        <p className="text-[10px] leading-relaxed text-[var(--fintheon-text-muted)] mt-1.5 line-clamp-2 italic opacity-70">
+                          {agent.dossier.split('. ').slice(0, 2).join('. ')}.
+                        </p>
+                      )}
                       {agent.memories.slice(0, 2).map(mem => (
                         <MemoryCard key={mem.id} memory={mem} />
                       ))}

@@ -6,6 +6,7 @@
  */
 
 import { Hono } from 'hono'
+import { createUIMessageStreamResponse } from 'ai'
 import { harperChat, isHarperAvailable, type HarperChatRequest } from '../../services/harper-handler.js'
 import { createRequestCognition } from '../../services/cognition-emitter.js'
 import * as conversationStore from '../../services/ai/conversation-store.js'
@@ -87,65 +88,85 @@ export function createHarperRoutes() {
 
       cognition.step('gateway-call', 'Streaming from Claude Opus', 'Local CLI bridge, MCP tools available')
 
-      // Stream bridge events → AI SDK UIMessageStream wire protocol
-      // Protocol: 0:"text"\n = text-delta, h:{"id":"x"}\n = reasoning-start,
-      //           g:"text"\n = reasoning-delta, d:{...}\n = finish
-      const encoder = new TextEncoder()
+      // Stream bridge events → AI SDK UIMessageStream format (matches DefaultChatTransport)
+      const uiMessageId = `harper-${Date.now()}`
+      const uiReasoningId = `reasoning-${Date.now()}`
       let cancelled = false
-      const messageId = `harper-${Date.now()}`
 
-      const sseStream = new ReadableStream({
+      const stream = new ReadableStream({
         start(controller) {
           ;(async () => {
             let fullText = ''
             let reasoningStarted = false
+            let reasoningEnded = false
+            let textStarted = false
+            let textEnded = false
 
             for await (const event of result.stream) {
               if (cancelled) break
 
               switch (event.type) {
                 case 'reasoning-start':
-                  reasoningStarted = true
-                  controller.enqueue(encoder.encode(`h:${JSON.stringify({ reasoningId: event.id })}\n`))
+                  if (!reasoningStarted) {
+                    reasoningStarted = true
+                    controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+                  }
                   break
                 case 'reasoning-delta':
                   if (event.delta) {
-                    controller.enqueue(encoder.encode(`g:${JSON.stringify(event.delta)}\n`))
+                    if (!reasoningStarted) {
+                      reasoningStarted = true
+                      controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+                    }
+                    controller.enqueue({ type: 'reasoning-delta', id: uiReasoningId, delta: event.delta })
                   }
                   break
                 case 'reasoning-end':
-                  // No explicit end event in wire protocol — reasoning stops when text starts
+                  if (reasoningStarted && !reasoningEnded) {
+                    reasoningEnded = true
+                    controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                  }
                   break
                 case 'text-start':
-                  // Implicit in first text-delta
+                  // Handled by first text-delta
                   break
                 case 'text-delta':
                   if (event.delta) {
+                    // Close reasoning before first text
+                    if (reasoningStarted && !reasoningEnded) {
+                      reasoningEnded = true
+                      controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                    }
+                    if (!textStarted) {
+                      textStarted = true
+                      controller.enqueue({ type: 'text-start', id: uiMessageId })
+                    }
                     fullText += event.delta
-                    controller.enqueue(encoder.encode(`0:${JSON.stringify(event.delta)}\n`))
+                    controller.enqueue({ type: 'text-delta', id: uiMessageId, delta: event.delta })
                   }
                   break
                 case 'text-end':
-                  // Handled by finish event
-                  break
-                case 'tool-use':
-                  if (event.metadata) {
-                    controller.enqueue(encoder.encode(`9:${JSON.stringify({
-                      toolCallId: event.metadata.toolId ?? event.id,
-                      toolName: event.metadata.toolName ?? 'unknown',
-                      args: {},
-                    })}\n`))
+                  if (textStarted && !textEnded) {
+                    textEnded = true
+                    controller.enqueue({ type: 'text-end', id: uiMessageId })
                   }
                   break
+                case 'tool-use':
+                  // Pass through tool events for cognition visibility
+                  break
                 case 'error':
-                  controller.enqueue(encoder.encode(`3:${JSON.stringify(event.delta ?? 'Unknown error')}\n`))
                   cognition.step('error', 'Harper-Opus error', event.delta ?? 'Unknown error')
                   break
               }
             }
 
-            // Finish event
-            controller.enqueue(encoder.encode(`d:${JSON.stringify({ finishReason: 'stop', usage: { promptTokens: 0, completionTokens: fullText.length } })}\n`))
+            // Close any open streams
+            if (reasoningStarted && !reasoningEnded) {
+              controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+            }
+            if (textStarted && !textEnded) {
+              controller.enqueue({ type: 'text-end', id: uiMessageId })
+            }
 
             // Store assistant response
             if (fullText) {
@@ -175,12 +196,13 @@ export function createHarperRoutes() {
         },
       })
 
-      return new Response(sseStream, {
-        status: 200,
+      c.header('X-Conversation-Id', conversation.id)
+      c.header('X-Request-Id', requestId)
+      c.header('X-Hermes-Agent', 'harper-opus')
+
+      return createUIMessageStreamResponse({
+        stream,
         headers: {
-          'Content-Type': 'text/event-stream; charset=utf-8',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
           'X-Conversation-Id': conversation.id,
           'X-Request-Id': requestId,
           'X-Hermes-Agent': 'harper-opus',

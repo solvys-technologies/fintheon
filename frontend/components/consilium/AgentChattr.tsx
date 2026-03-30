@@ -160,10 +160,11 @@ export function AgentChattr() {
   const { alerts: rfAlerts } = useRiskFlow();
 
   // Filter state
-  const [filterAgents, setFilterAgents] = useState<BoardroomAgent[]>([]);
   const [filterSearch, setFilterSearch] = useState('');
   const [filterDateRange, setFilterDateRange] = useState<'today' | '7d' | '30d' | 'all'>('all');
   const [totalMessages, setTotalMessages] = useState(0);
+  const lastSeenCount = useRef(0);
+  const [newMessageCount, setNewMessageCount] = useState(0);
   const [isVisible, setIsVisible] = useState(!document.hidden);
 
   // Pause polling when tab not visible
@@ -185,7 +186,6 @@ export function AgentChattr() {
   const fetchMessages = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (filterAgents.length) params.set('agent', filterAgents.join(','));
       if (filterSearch) params.set('search', filterSearch);
       const since = getDateRangeSince(filterDateRange);
       if (since) params.set('since', since);
@@ -194,14 +194,21 @@ export function AgentChattr() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setMessages(data.messages || []);
-      setTotalMessages(data.total ?? data.messages?.length ?? 0);
+      const total = data.total ?? data.messages?.length ?? 0;
+      setTotalMessages(total);
+      // Track new messages since last seen
+      if (lastSeenCount.current > 0) {
+        setNewMessageCount(Math.max(0, total - lastSeenCount.current));
+      } else {
+        lastSeenCount.current = total;
+      }
       setIsOnline(true);
       setIsLoading(false);
     } catch {
       setIsOnline(false);
       setIsLoading(false);
     }
-  }, [filterAgents, filterSearch, filterDateRange]);
+  }, [filterSearch, filterDateRange]);
 
   // Initial fetch + polling (pauses when tab not visible)
   useEffect(() => {
@@ -250,8 +257,20 @@ export function AgentChattr() {
 
   return (
     <div className="relative flex h-full flex-col">
-      {/* Status bar — right-aligned: refresh + wifi + status */}
+      {/* Status bar — message count + refresh + wifi + status */}
       <div className="flex items-center justify-end gap-2 px-4 py-2">
+        {/* New message count — pulses when there are new messages */}
+        <span
+          className={`text-[10px] font-mono ${
+            newMessageCount > 0
+              ? 'text-[var(--fintheon-accent)]'
+              : 'text-[var(--fintheon-muted)]/40'
+          }`}
+          style={newMessageCount > 0 ? { animation: 'msg-pulse 2s ease-in-out infinite' } : undefined}
+          onClick={() => { lastSeenCount.current = totalMessages; setNewMessageCount(0); }}
+        >
+          {newMessageCount > 0 ? `${newMessageCount} new messages` : `${totalMessages} messages`}
+        </span>
         <button
           onClick={fetchMessages}
           className="rounded-full p-1.5 text-[var(--fintheon-accent)]/40 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
@@ -273,14 +292,10 @@ export function AgentChattr() {
 
       {/* Filter bar */}
       <ConsiliumFilterBar
-        agents={MENTIONABLE_AGENTS}
-        selectedAgents={filterAgents}
-        onAgentsChange={setFilterAgents}
         search={filterSearch}
         onSearchChange={setFilterSearch}
         dateRange={filterDateRange}
         onDateRangeChange={setFilterDateRange}
-        resultCount={totalMessages}
       />
 
       {/* Messages */}

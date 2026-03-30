@@ -85,6 +85,18 @@ export interface RiskFlowAlert {
     beatMiss?: 'beat' | 'miss' | 'inline' | null;
     surprisePercent?: number | null;
   } | null;
+  /** Narrative lifecycle — populated after catalyst promotion (30+ min old, macroLevel >= 2) */
+  promotedAt?: string | null;
+  narrativeThreads?: string[];
+  category?: string | null;
+  status?: 'active' | 'monitoring' | 'resolved' | null;
+  /** Daily close market impact (enriched ~24h after event) */
+  marketImpact?: {
+    nq?: { points: number; percent: number } | null;
+    es?: { points: number; percent: number } | null;
+    ym?: { points: number; percent: number } | null;
+    asOf?: string;
+  } | null;
 }
 
 // [claude-code 2026-03-11] Overhauled severity classification — strict contextual matching,

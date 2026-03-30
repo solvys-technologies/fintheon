@@ -74,21 +74,21 @@ export function SanctumHeader({
 
           <button
             onClick={() => setUploadOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] font-bold transition-colors border border-[var(--fintheon-border)]/20 text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/5"
+            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors border border-[var(--fintheon-border)]/20 text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/5"
             style={{ fontFamily: 'var(--font-body)' }}
           >
-            <Upload className="w-3.5 h-3.5" />
-            Upload Context
+            <Upload className="w-3 h-3" />
+            Upload
           </button>
 
           <button
             onClick={onRun}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] font-bold transition-colors border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-40"
+            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-40"
             style={{ fontFamily: 'var(--font-body)' }}
           >
-            {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-            {isLoading ? 'Updating...' : (hasData ? 'Update' : 'Run Analysis')}
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+            {isLoading ? 'Updating...' : (hasData ? 'Update' : 'Run')}
           </button>
         </div>
       </div>

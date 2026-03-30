@@ -219,6 +219,7 @@ async function scoringCycle(): Promise<void> {
  * Exported for reuse by getCachedFeed() when reading from the scored table.
  */
 export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
+  const pbs = scored.price_brain_score as Record<string, any> | undefined;
   return {
     id: scored.tweet_id,
     source: (scored.source as FeedItem['source']) || 'TwitterCli',
@@ -233,11 +234,15 @@ export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
     ivScore: scored.iv_score,
     macroLevel: scored.macro_level as FeedItem['macroLevel'],
     analyzedAt: scored.analyzed_at,
-    subScores: scored.sub_scores as unknown as FeedItem['subScores'],
-    riskType: (scored.risk_type as FeedItem['riskType']) ?? null,
-    agentNote: scored.agent_note ?? null,
-    agentNoteGeneratedAt: scored.agent_note_generated_at ?? null,
-    econData: scored.econ_data as FeedItem['econData'] ?? null,
+    subScores: (pbs?.subScores ?? scored.sub_scores) as unknown as FeedItem['subScores'],
+    riskType: (pbs?.riskType as FeedItem['riskType']) ?? null,
+    agentNote: pbs?.agentNote ?? null,
+    agentNoteGeneratedAt: pbs?.agentNoteGeneratedAt ?? null,
+    econData: pbs?.econData as FeedItem['econData'] ?? null,
+    promotedAt: (scored as any).promoted_at ?? null,
+    category: (scored as any).category ?? null,
+    status: (scored as any).status ?? null,
+    marketImpact: pbs?.marketImpact ?? null,
   };
 }
 

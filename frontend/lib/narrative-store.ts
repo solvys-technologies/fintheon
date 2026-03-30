@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] S9-T5-T1: Normalize catalyst tags/narrative fields on load for rope engine
 // [claude-code 2026-03-28] NarrativeFlow localStorage CRUD + useNarrativeStore hook
 // S5-T1: Added viewport + dateFilter state and SET_VIEWPORT / SET_DATE_FILTER actions
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -38,6 +39,8 @@ function defaultState(): NarrativeFlowState {
     selectedCatalystId: null,
     selectedLaneId: null,
     filterSentiment: 'all',
+    categoryFilter: new Set(),
+    severitySort: null,
     heatmapEnabled: false,
     replayMode: false,
     replayPosition: 0,
@@ -51,7 +54,15 @@ export function loadNarrativeState(): NarrativeFlowState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState();
-    return { ...defaultState(), ...JSON.parse(raw) };
+    const parsed = { ...defaultState(), ...JSON.parse(raw) };
+    // Normalize catalysts — ensure tags and narrative fields exist for rope engine
+    parsed.catalysts = parsed.catalysts.map((c: any) => ({
+      ...c,
+      tags: c.tags ?? [],
+      narrative: c.narrative ?? undefined,
+      narrativeThreads: c.narrativeThreads ?? [],
+    }));
+    return parsed;
   } catch {
     return defaultState();
   }

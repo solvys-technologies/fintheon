@@ -1,8 +1,11 @@
+// [claude-code 2026-03-29] S9-T5-T1: Fix rope visibility — remove inline opacity that overrode rope-breathe CSS animation
 // [claude-code 2026-03-28] S8-T2: Force-directed Observatory layout, hub nodes, zoom state machine, breathing motion
 import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
+  Handle,
+  Position,
   useNodesState,
   useEdgesState,
   type Node,
@@ -28,6 +31,9 @@ import type { CatalystCard, NarrativeCategory } from '../../lib/narrative-types'
 import type { CanvasTool } from './NarrativeFloatingToolbar';
 import { NarrativeHubNode } from './NarrativeHubNode';
 import { NarrativeSummaryCard } from './NarrativeSummaryCard';
+import { TemporalClusterNode } from './TemporalClusterNode';
+import { CategoryClusterNode } from './CategoryClusterNode';
+import { computeTemporalClusters, computeCategoryGroups } from '../../lib/narrative-hierarchy';
 import { Lock } from 'lucide-react';
 
 // ─── Breathing & entrance CSS (injected via <style>) ────────────
@@ -86,13 +92,14 @@ const HUB_POSITIONS: Record<string, { x: number; y: number }> = {
 };
 
 // ─── Zoom level helpers ─────────────────────────────────────────
-type CanvasZoomLevel = 'fullCard' | 'miniCard' | 'bubble' | 'dot';
+type CanvasZoomLevel = 'fullCard' | 'miniCard' | 'temporalCluster' | 'narrativeThread' | 'categoryOverview';
 
 function getCanvasZoomLevel(zoom: number): CanvasZoomLevel {
   if (zoom >= 0.7) return 'fullCard';
-  if (zoom >= 0.3) return 'miniCard';
-  if (zoom >= 0.15) return 'bubble';
-  return 'dot';
+  if (zoom >= 0.4) return 'miniCard';
+  if (zoom >= 0.2) return 'temporalCluster';
+  if (zoom >= 0.1) return 'narrativeThread';
+  return 'categoryOverview';
 }
 
 // ─── d3-force types ─────────────────────────────────────────────
@@ -124,8 +131,10 @@ function EventCardNode({ data }: { data: CatalystCard & { isLocked: boolean; sta
   return (
     <div
       className={data.settled ? '' : 'node-entering'}
-      style={{ animationDelay: `${data.staggerIndex * 50}ms` }}
+      style={{ animationDelay: `${data.staggerIndex * 50}ms`, position: 'relative' }}
     >
+      <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, width: 1, height: 1 }} />
       <div
         className="rounded-lg border overflow-hidden cursor-grab active:cursor-grabbing"
         style={{
@@ -218,11 +227,14 @@ function MiniEventCardNode({ data }: { data: CatalystCard & { isLocked: boolean 
       className="rounded-lg border px-2 py-1.5 cursor-grab active:cursor-grabbing"
       style={{
         width: 160,
+        position: 'relative',
         backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 95%, transparent)',
         borderColor: `${sevColor}30`,
         backdropFilter: 'blur(8px)',
       }}
     >
+      <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, width: 1, height: 1 }} />
       <div className="flex items-center gap-1.5">
         <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: sevColor }} />
         <p className="flex-1 text-[10px] font-semibold leading-tight truncate"
@@ -261,6 +273,8 @@ const nodeTypes: NodeTypes = {
   narrativeHub: NarrativeHubNode,
   narrativeSummary: NarrativeSummaryCard,
   narrativeDot: DotNode,
+  temporalCluster: TemporalClusterNode,
+  categoryCluster: CategoryClusterNode,
 };
 
 // ─── Force simulation: compute positions synchronously ──────────
@@ -349,21 +363,22 @@ function buildNodesForZoom(
     cardsByThread.set(thread, arr);
   }
 
-  if (zoomLevel === 'dot') {
-    for (const thread of NARRATIVE_THREADS) {
-      const pos = positions.get(`hub-${thread.slug}`) ?? HUB_POSITIONS[thread.slug] ?? { x: 0, y: 0 };
+  if (zoomLevel === 'categoryOverview') {
+    const clusters = computeTemporalClusters(catalysts, positions);
+    const groups = computeCategoryGroups(catalysts, clusters, positions);
+    for (const group of groups) {
       nodes.push({
-        id: `hub-${thread.slug}`,
-        type: 'narrativeDot',
-        position: pos,
-        data: { slug: thread.slug, title: thread.title, color: thread.color, count: cardsByThread.get(thread.slug)?.length ?? 0 },
+        id: group.id,
+        type: 'categoryCluster',
+        position: group.center,
+        data: { ...group, settled },
         draggable: true,
       });
     }
     return nodes;
   }
 
-  if (zoomLevel === 'bubble') {
+  if (zoomLevel === 'narrativeThread') {
     for (const thread of NARRATIVE_THREADS) {
       const pos = positions.get(`hub-${thread.slug}`) ?? HUB_POSITIONS[thread.slug] ?? { x: 0, y: 0 };
       const cards = cardsByThread.get(thread.slug) ?? [];
@@ -373,6 +388,30 @@ function buildNodesForZoom(
         type: 'narrativeSummary',
         position: pos,
         data: { slug: thread.slug, title: thread.title, color: thread.color, count: cards.length, topEvents: sorted.slice(0, 5).map(c => c.title) },
+        draggable: true,
+      });
+    }
+    return nodes;
+  }
+
+  if (zoomLevel === 'temporalCluster') {
+    for (const thread of NARRATIVE_THREADS) {
+      const pos = positions.get(`hub-${thread.slug}`) ?? HUB_POSITIONS[thread.slug] ?? { x: 0, y: 0 };
+      nodes.push({
+        id: `hub-${thread.slug}`,
+        type: 'narrativeHub',
+        position: pos,
+        data: { slug: thread.slug, title: thread.title, color: thread.color, count: cardsByThread.get(thread.slug)?.length ?? 0, settled },
+        draggable: true,
+      });
+    }
+    const clusters = computeTemporalClusters(catalysts, positions);
+    for (const cluster of clusters) {
+      nodes.push({
+        id: cluster.id,
+        type: 'temporalCluster',
+        position: cluster.center,
+        data: { ...cluster, settled },
         draggable: true,
       });
     }
@@ -411,12 +450,12 @@ function buildNodesForZoom(
 
 // ─── Build edges based on zoom level ────────────────────────────
 function buildEdges(catalysts: CatalystCard[], zoomLevel: CanvasZoomLevel, nodeIds: Set<string>): Edge[] {
-  if (zoomLevel === 'dot') return [];
+  if (zoomLevel === 'categoryOverview') return [];
 
   const CROSS_NARRATIVE_GOLD = '#c79f4a';
   const edges: Edge[] = [];
 
-  if (zoomLevel === 'bubble') {
+  if (zoomLevel === 'narrativeThread') {
     // Hub-to-hub edges based on shared narrative threads
     const threadPairs = new Map<string, number>();
     for (const c of catalysts) {
@@ -447,6 +486,45 @@ function buildEdges(catalysts: CatalystCard[], zoomLevel: CanvasZoomLevel, nodeI
     return edges;
   }
 
+  if (zoomLevel === 'temporalCluster') {
+    // Hub-to-cluster ropes
+    const clusters = computeTemporalClusters(catalysts, new Map());
+    for (const cluster of clusters) {
+      const hubId = `hub-${cluster.narrativeSlug}`;
+      if (nodeIds.has(cluster.id) && nodeIds.has(hubId)) {
+        edges.push({
+          id: `edge-${cluster.id}-${hubId}`,
+          source: cluster.id,
+          target: hubId,
+          type: 'smoothstep',
+          className: 'rope-breathe',
+          style: { stroke: THREAD_COLOR_MAP[cluster.narrativeSlug] ?? '#6B7280', strokeWidth: 1.5 },
+        });
+      }
+    }
+    // Also add cross-narrative ropes at cluster level for visibility
+    const crossRopesCluster = computeRopeConnections(catalysts, 100);
+    for (const rope of crossRopesCluster) {
+      if (!nodeIds.has(rope.fromId) && !nodeIds.has(rope.toId)) continue;
+      // Find the cluster or hub that contains each card
+      const fromCluster = clusters.find(cl => cl.cards.some(c => c.id === rope.fromId));
+      const toCluster = clusters.find(cl => cl.cards.some(c => c.id === rope.toId));
+      const fromNode = fromCluster?.id ?? `hub-${rope.fromNarrative}`;
+      const toNode = toCluster?.id ?? `hub-${rope.toNarrative}`;
+      if (fromNode === toNode) continue;
+      if (!nodeIds.has(fromNode) || !nodeIds.has(toNode)) continue;
+      edges.push({
+        id: `cluster-rope-${rope.id}`,
+        source: fromNode,
+        target: toNode,
+        type: 'smoothstep',
+        className: 'rope-breathe',
+        style: { stroke: CROSS_NARRATIVE_GOLD, strokeWidth: 0.8 + rope.strength },
+      });
+    }
+    return edges;
+  }
+
   // fullCard / miniCard — hub-to-card + cross-catalyst ropes
   const hubRopes = computeHubRopes(catalysts);
   for (const rope of hubRopes) {
@@ -459,7 +537,7 @@ function buildEdges(catalysts: CatalystCard[], zoomLevel: CanvasZoomLevel, nodeI
       type: 'smoothstep',
       animated: false,
       className: `rope-breathe rope-delay-${edges.length % 7}`,
-      style: { stroke: THREAD_COLOR_MAP[rope.fromNarrative ?? ''] ?? '#6B7280', strokeWidth: 1, opacity: 0.12 },
+      style: { stroke: THREAD_COLOR_MAP[rope.fromNarrative ?? ''] ?? '#6B7280', strokeWidth: 1.2 },
     });
   }
 
@@ -476,8 +554,7 @@ function buildEdges(catalysts: CatalystCard[], zoomLevel: CanvasZoomLevel, nodeI
       className: `rope-breathe rope-delay-${edges.length % 7}`,
       style: {
         stroke: ropeColor,
-        strokeWidth: 0.5 + rope.strength * 2,
-        opacity: rope.crossNarrative ? 0.12 + rope.strength * 0.18 : 0.15 + rope.strength * 0.25,
+        strokeWidth: 0.8 + rope.strength * 2,
       },
       data: { sharedTags: rope.sharedTags, strength: rope.strength, ropeColor },
     });
@@ -501,7 +578,7 @@ function NarrativeFlowCanvas({
   const [settled, setSettled] = useState(false);
   const [ropeTooltip, setRopeTooltip] = useState<{ x: number; y: number; tags: string[]; strength: number } | null>(null);
   const positionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const zoomLevelRef = useRef<CanvasZoomLevel>('fullCard');
+  const zoomLevelRef = useRef<CanvasZoomLevel>('miniCard');
   const simNodesRef = useRef<SimNode[]>([]);
   const simRef = useRef<Simulation<SimNode, SimLink> | null>(null);
   const dragRafRef = useRef<number>(0);
@@ -515,19 +592,25 @@ function NarrativeFlowCanvas({
     });
   }, [reactFlow, onZoomFnsReady]);
 
-  // Filter catalysts
+  // Filter catalysts (lane + category + tag filters)
   const filteredCatalysts = useMemo(() => {
     let cards = state.catalysts.filter(c => {
-      if (visibleLaneIds.size === 0) return true;
-      const thread = c.narrative ?? c.narrativeThreads?.[0];
-      if (!thread) return true;
-      return visibleLaneIds.has(thread);
+      // Lane / narrative thread filter
+      if (visibleLaneIds.size > 0) {
+        const thread = c.narrative ?? c.narrativeThreads?.[0];
+        if (thread && !visibleLaneIds.has(thread)) return false;
+      }
+      // Category filter (empty set = show all)
+      if (state.categoryFilter.size > 0 && c.category && !state.categoryFilter.has(c.category)) {
+        return false;
+      }
+      return true;
     });
     if (activeTags.size > 0) {
       cards = cards.filter(c => c.tags?.some(t => activeTags.has(t)) ?? false);
     }
     return cards;
-  }, [state.catalysts, visibleLaneIds, activeTags]);
+  }, [state.catalysts, state.categoryFilter, visibleLaneIds, activeTags]);
 
   // Compute initial layout
   const { initialNodes, initialEdges } = useMemo(() => {
@@ -728,8 +811,7 @@ function NarrativeFlowCanvas({
         onEdgeMouseEnter={onEdgeMouseEnter}
         onEdgeMouseLeave={onEdgeMouseLeave}
         nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.45 }}
         minZoom={0.05}
         maxZoom={2}
         panOnDrag={activeTool === 'hand' || activeTool === 'select'}

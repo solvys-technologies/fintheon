@@ -117,8 +117,8 @@ function stopBackend() {
 /* ------------------------------------------------------------------ */
 
 function setupAutoUpdater() {
-  // Don't auto-download — let the user decide via the modal
-  autoUpdater.autoDownload = false;
+  // Auto-download in background — toast appears when ready to install
+  autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on("update-available", (info) => {

@@ -4,9 +4,9 @@
 // [claude-code 2026-03-24] Thread selectedSymbol prop for TradingView chart, taller chart container (65vh)
 // [claude-code 2026-03-24] Sanctum — 3-page dashboard (merged Risk + Narratives), expandable econ cards
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
-import { Zap, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/miroshark';
-import { AUDITORIUM_PAGES } from '../../types/miroshark';
+import { AUDITORIUM_PAGES, ivHeatColor } from '../../types/miroshark';
 import { SanctumChart } from './SanctumChart';
 import { SanctumTheses } from './SanctumTheses';
 import { SanctumEconIntel } from './SanctumEconIntel';
@@ -164,7 +164,7 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
         >
           {/* ── Page 0: Command Center ── */}
           {showPage(0) && (
-            <div data-aud-page="0" className="min-h-full snap-start p-5 flex flex-col">
+            <div data-aud-page="0" className="min-h-full snap-start p-3 pt-2 flex flex-col">
               <div className="flex-1 flex flex-col gap-4">
                 {/* TradingView + Rolling IV bars — always visible */}
                 <div className="shrink-0">
@@ -193,7 +193,7 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                       </button>
                     )}
                   </div>
-                  <div className="h-[65vh]">
+                  <div className="h-[58vh]">
                     <SanctumChart
                       timeSeries={data?.timeSeries ?? []}
                       rollingDays={rollingDays}
@@ -206,43 +206,59 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                   </div>
                 </div>
 
-                {/* Prediction Cards — 5 instruments under the chart */}
-                <div className="flex justify-center">
-                  <AquariumPredictionCards />
-                </div>
+                {/* Briefing — above prediction cards, only when MiroShark data exists */}
+                {data && data.compositeIV > 0 && (
+                  <SanctumBriefing briefing={data.briefing ?? null} isLoading={false} noBorder />
+                )}
 
                 {/* KPI Row — only when data exists */}
                 {data && data.compositeIV > 0 && (
                   <div className="shrink-0 flex justify-center">
                     <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
-                      <div className="rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/40 px-5 py-3 flex items-center justify-between" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
+                      <div className="rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/40 px-5 py-3 flex items-center justify-between" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
                         <div>
                           <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Market Heat</span>
-                          <span className="text-3xl font-bold text-[var(--fintheon-accent)]">{data.compositeIV.toFixed(1)}</span>
+                          <span className="text-3xl font-bold" style={{ color: ivHeatColor(data.compositeIV) }}>{data.compositeIV.toFixed(1)}</span>
                           <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">{heatInterpretation(data.compositeIV)}</span>
                         </div>
-                        <div className="w-10 h-10 rounded-full border-2 border-[var(--fintheon-accent)]/30 flex items-center justify-center">
-                          <Zap className="w-5 h-5 text-[var(--fintheon-accent)]" />
-                        </div>
+                        {/* Vertical shimmer fuse */}
+                        <div
+                          className="w-[3px] h-10 rounded-full overflow-hidden"
+                          style={{
+                            background: `linear-gradient(to top, ${ivHeatColor(data.compositeIV)}20, ${ivHeatColor(data.compositeIV)}, ${ivHeatColor(data.compositeIV)}20)`,
+                            backgroundSize: '100% 200%',
+                            animation: 'fuse-shimmer 2s ease-in-out infinite',
+                          }}
+                        />
                       </div>
-                      <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
+                      <div className="rounded-lg border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
                         <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Regime Risk</span>
-                        <span className="text-2xl font-bold text-[var(--fintheon-text)]">{(data.regimeShiftProbability * 100).toFixed(0)}%</span>
+                        <span
+                          className="text-2xl font-bold"
+                          style={{ color: data.regimeShiftProbability >= 0.6 ? 'var(--fintheon-severe)' : data.regimeShiftProbability >= 0.3 ? 'var(--fintheon-neutral-severe)' : 'var(--fintheon-low)' }}
+                        >
+                          {(data.regimeShiftProbability * 100).toFixed(0)}%
+                        </span>
                         <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">{regimeInterpretation(data.regimeShiftProbability)}</span>
                       </div>
-                      <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
+                      <div className="rounded-lg border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-5 py-3" style={{ boxShadow: '0 0 12px rgba(212, 175, 55, 0.2)' }}>
                         <span className="text-[9px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">Signal Strength</span>
-                        <span className="text-2xl font-bold text-[var(--fintheon-text)]">{(data.confidence * 100).toFixed(0)}%</span>
+                        <span
+                          className="text-2xl font-bold"
+                          style={{ color: data.confidence >= 0.8 ? 'var(--fintheon-low)' : data.confidence >= 0.6 ? 'var(--fintheon-neutral-severe)' : 'var(--fintheon-severe)' }}
+                        >
+                          {(data.confidence * 100).toFixed(0)}%
+                        </span>
                         <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">{confidenceInterpretation(data.confidence)}</span>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Briefing — only when MiroShark data exists */}
-                {data && data.compositeIV > 0 && (
-                  <SanctumBriefing briefing={data.briefing ?? null} isLoading={false} />
-                )}
+                {/* Prediction Cards — 5 instruments */}
+                <div className="flex justify-center">
+                  <AquariumPredictionCards />
+                </div>
               </div>
 
               {status === 'error' && data?.error && (

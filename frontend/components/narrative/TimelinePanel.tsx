@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] Add severity filter (default: Critical & High) + fix empty timeline
 // [claude-code 2026-03-28] S7: Paginated 2-column narrative timeline — structured view of NarrativeFlow
 import { useState, useMemo, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, Filter } from 'lucide-react';
@@ -51,6 +52,8 @@ export function TimelinePanel() {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [tagFilterOpen, setTagFilterOpen] = useState(false);
+  // Default to Critical & High only
+  const [severityFilter, setSeverityFilter] = useState<Set<string>>(new Set(['high']));
 
   // Current 2 narratives to display
   const visibleThreads = useMemo(() => {
@@ -75,12 +78,14 @@ export function TimelinePanel() {
         const threads = c.narrativeThreads ?? (c.narrative ? [c.narrative] : []);
         if (!threads.includes(thread.slug)) return false;
         if (activeTagFilter && !(c.tags ?? []).includes(activeTagFilter)) return false;
+        // Severity filter (empty set = show all)
+        if (severityFilter.size > 0 && !severityFilter.has(c.severity)) return false;
         return true;
       });
       map.set(thread.slug, cards.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')));
     }
     return map;
-  }, [state.catalysts, activeTagFilter]);
+  }, [state.catalysts, activeTagFilter, severityFilter]);
 
   // Find cross-column connections (cards that appear in both visible threads)
   const crossConnections = useMemo(() => {
@@ -140,6 +145,38 @@ export function TimelinePanel() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Severity filter pills */}
+          <div className="flex items-center gap-1">
+            {(['high', 'medium', 'low'] as const).map(sev => {
+              const active = severityFilter.has(sev);
+              const label = sev === 'high' ? 'Critical & High' : sev === 'medium' ? 'Medium' : 'Low';
+              const dotColor = SEVERITY_DOT[sev];
+              return (
+                <button
+                  key={sev}
+                  onClick={() => setSeverityFilter(prev => {
+                    const next = new Set(prev);
+                    if (next.has(sev)) {
+                      next.delete(sev);
+                    } else {
+                      next.add(sev);
+                    }
+                    return next;
+                  })}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[8px] uppercase tracking-wider transition-colors ${
+                    active
+                      ? 'border-[var(--fintheon-accent)]/30 text-[var(--fintheon-text)]/80'
+                      : 'border-[var(--fintheon-accent)]/8 text-[var(--fintheon-muted)]/25 hover:text-[var(--fintheon-muted)]/50'
+                  }`}
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: active ? dotColor : `${dotColor}40` }} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Tag filter */}
           <div className="relative">
             <button

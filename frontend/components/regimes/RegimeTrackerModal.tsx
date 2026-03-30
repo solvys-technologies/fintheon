@@ -282,7 +282,7 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
       <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="pointer-events-auto w-full max-w-2xl bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/40 rounded-xl shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh] overflow-hidden"
+          className="pointer-events-auto w-full max-w-2xl bg-[var(--fintheon-bg)] rounded-xl shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

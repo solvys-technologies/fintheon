@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] Add Grok 4.20 via OpenRouter as scoring fallback (news, sentiment, econ, earnings)
 // [claude-code 2026-03-14] Default inference: OpenRouter (Nous subscription) + Claude Opus 4.6; Groq removed as primary
 import priceSystemPrompt from '../prompts/price-system-prompt.js'
 import type { AiProviderType, CrossProviderFallback } from '../types/ai-types.js'
@@ -17,6 +18,7 @@ export type AiModelKey =
   | 'openrouter-sonnet'  // Claude Sonnet 4.5 via OpenRouter
   | 'openrouter-opus'    // Claude Opus 4.5 via OpenRouter
   | 'openrouter-grok'    // Grok 4.1 via OpenRouter
+  | 'openrouter-grok-420' // Grok 4.20 via OpenRouter (scoring fallback)
   // Hermes P.I.C. agent keys (routed to OpenRouter Opus 4.6 via Nous subscription)
   | 'hermes-cao'         // CAO/Harper reasoning
   | 'hermes-research'    // Deep research
@@ -135,6 +137,9 @@ const modelAliases: Record<string, AiModelKey> = {
   'llama-70b': 'openrouter-sonnet',
   'openrouter-grok': 'openrouter-grok',
   'grok-openrouter': 'openrouter-grok',
+  'openrouter-grok-420': 'openrouter-grok-420',
+  'grok-4.20': 'openrouter-grok-420',
+  'grok-420': 'openrouter-grok-420',
   // Hermes P.I.C. agent routes
   'hermes-cao': 'openrouter-opus',
   'harper': 'openrouter-opus',
@@ -244,6 +249,22 @@ export const defaultAiConfig: AiConfig = {
       apiKeyEnv: 'OPENROUTER_API_KEY',
       baseUrl: openRouterBaseUrl,
       temperature: 0.3,
+      maxTokens: 4096,
+      timeoutMs: 45_000,
+      costPer1kInputUsd: 0.003,
+      costPer1kOutputUsd: 0.015,
+      contextWindow: 128_000,
+      supportsStreaming: true,
+      supportsVision: false
+    },
+    'openrouter-grok-420': {
+      id: 'x-ai/grok-4.20',
+      displayName: 'Grok 4.20 (OpenRouter / Scoring Fallback)',
+      provider: 'openai-compatible',
+      providerType: 'openrouter',
+      apiKeyEnv: 'OPENROUTER_API_KEY',
+      baseUrl: openRouterBaseUrl,
+      temperature: 0.25,
       maxTokens: 4096,
       timeoutMs: 45_000,
       costPer1kInputUsd: 0.003,
@@ -423,7 +444,8 @@ export const defaultAiConfig: AiConfig = {
       grok: 'openrouter-grok',
       'openrouter-sonnet': 'openrouter-opus',
       'openrouter-opus': 'nous-direct',
-      'openrouter-grok': 'openrouter-sonnet',
+      'openrouter-grok': 'openrouter-grok-420',
+      'openrouter-grok-420': 'openrouter-sonnet',
       // Hermes fallbacks (fall back to OpenRouter equivalents)
       'hermes-cao': 'openrouter-opus',
       'hermes-research': 'openrouter-sonnet',

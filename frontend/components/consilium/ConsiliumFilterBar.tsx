@@ -1,33 +1,24 @@
+// [claude-code 2026-03-29] Boardroom overhaul: removed agent filter, rectangular timeframe bar, message count moved to status bar
 // [claude-code 2026-03-22] Track 3: Filter bar with agent dropdown (replaces chips)
 import { Search } from 'lucide-react';
-import type { BoardroomAgent } from './AgentBadge';
-import { AgentFilterDropdown } from './AgentFilterDropdown';
 
 interface ConsiliumFilterBarProps {
-  agents: BoardroomAgent[];
-  selectedAgents: BoardroomAgent[];
-  onAgentsChange: (agents: BoardroomAgent[]) => void;
   search: string;
   onSearchChange: (search: string) => void;
   dateRange: 'today' | '7d' | '30d' | 'all';
   onDateRangeChange: (range: 'today' | '7d' | '30d' | 'all') => void;
-  resultCount: number;
 }
 
 const DATE_OPTIONS = ['today', '7d', '30d', 'all'] as const;
 
 export function ConsiliumFilterBar({
-  agents,
-  selectedAgents,
-  onAgentsChange,
   search,
   onSearchChange,
   dateRange,
   onDateRangeChange,
-  resultCount,
 }: ConsiliumFilterBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)] px-4 py-2">
+    <div className="flex items-center gap-3 border-b border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)] px-4 py-2">
       {/* Search input */}
       <div className="relative flex-shrink-0">
         <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--fintheon-text)]/30" />
@@ -40,28 +31,25 @@ export function ConsiliumFilterBar({
         />
       </div>
 
-      {/* Agent filter dropdown */}
-      <AgentFilterDropdown agents={agents} selected={selectedAgents} onChange={onAgentsChange} />
+      {/* Spacer — push timeframe to right */}
+      <div className="flex-1" />
 
-      {/* Date range pills */}
-      <div className="flex items-center gap-1">
+      {/* Date range — rectangular bar, right-justified */}
+      <div className="flex items-center rounded-lg border border-[var(--fintheon-border)]/15 overflow-hidden">
         {DATE_OPTIONS.map((range) => (
           <button
             key={range}
             onClick={() => onDateRangeChange(range)}
-            className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider transition-colors ${
+            className={`px-3 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
               dateRange === range
-                ? 'border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)]'
-                : 'border border-[var(--fintheon-accent)]/10 text-[var(--fintheon-text)]/30 hover:text-[var(--fintheon-text)]/60'
+                ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8'
+                : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]'
             }`}
           >
             {range === 'today' ? 'Today' : range === 'all' ? 'All' : range}
           </button>
         ))}
       </div>
-
-      {/* Result count */}
-      <span className="text-[10px] text-[var(--fintheon-text)]/30">{resultCount} messages</span>
     </div>
   );
 }

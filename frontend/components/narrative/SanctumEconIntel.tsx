@@ -147,7 +147,7 @@ function EconCard({
 
   return (
     <div
-      className={`flex flex-col rounded border bg-[var(--fintheon-surface)]/40 transition-all duration-300 cursor-pointer ${
+      className={`flex flex-col rounded-lg border bg-[var(--fintheon-surface)]/40 transition-all duration-300 cursor-pointer ${
         expanded
           ? 'border-[var(--fintheon-accent)]/30 shadow-[0_0_12px_rgba(199,159,74,0.15)]'
           : 'border-[var(--fintheon-border)]/15 hover:border-[var(--fintheon-accent)]/20'
@@ -286,7 +286,7 @@ function EconCard({
                   </span>
                 )}
               </div>
-              <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 overflow-hidden">
+              <div className="rounded-lg border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 overflow-hidden">
                 <div className="grid grid-cols-6 gap-0 text-[8px] font-mono text-[var(--fintheon-muted)]/40 uppercase tracking-wider px-3 py-1.5 border-b border-[var(--fintheon-border)]/5">
                   <span>Date</span><span>Actual</span><span>Forecast</span><span>Previous</span><span>Surprise</span><span>IV</span>
                 </div>
@@ -316,7 +316,7 @@ function EconCard({
               <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
                 Recent Print History
               </span>
-              <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 overflow-hidden">
+              <div className="rounded-lg border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 overflow-hidden">
                 <div className="grid grid-cols-5 gap-0 text-[8px] font-mono text-[var(--fintheon-muted)]/40 uppercase tracking-wider px-3 py-1.5 border-b border-[var(--fintheon-border)]/5">
                   <span>Date</span><span>Actual</span><span>Forecast</span><span>Previous</span><span>Result</span>
                 </div>
@@ -340,7 +340,7 @@ function EconCard({
                 <Activity className="w-3 h-3" />
                 Scoring Engine Breakdown
               </span>
-              <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 px-3 py-2.5 flex flex-col gap-1.5">
+              <div className="rounded-lg border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-bg)]/40 px-3 py-2.5 flex flex-col gap-1.5">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-mono text-[var(--fintheon-text)]/80">
                     IV: <span className="font-bold" style={{ color: ivHeatColor(latestScored.ivScore ?? 0) }}>
@@ -696,7 +696,7 @@ export function SanctumEconIntel({ expanded, context, categoryScores }: SanctumE
           </div>
           <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
             {context.vixLevel != null && (
-              <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-3">
+              <div className="rounded-lg border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-3">
                 <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">VIX</span>
                 <span className="text-lg font-mono font-bold text-[var(--fintheon-text)]">{context.vixLevel.toFixed(1)}</span>
               </div>

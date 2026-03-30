@@ -5,9 +5,10 @@ import type { MiroSharkBriefing } from '../../types/miroshark';
 interface SanctumBriefingProps {
   briefing: MiroSharkBriefing | null;
   isLoading?: boolean;
+  noBorder?: boolean;
 }
 
-export function SanctumBriefing({ briefing, isLoading }: SanctumBriefingProps) {
+export function SanctumBriefing({ briefing, isLoading, noBorder }: SanctumBriefingProps) {
   if (isLoading) {
     return (
       <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-surface)]/30 p-4">
@@ -24,7 +25,7 @@ export function SanctumBriefing({ briefing, isLoading }: SanctumBriefingProps) {
   return (
     <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/30 overflow-hidden">
       {/* Summary — lead paragraph */}
-      <div className="px-5 py-4 border border-[var(--fintheon-accent)]/10 rounded">
+      <div className={`px-5 py-4 rounded ${noBorder ? '' : 'border border-[var(--fintheon-accent)]/10'}`}>
         <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">Analysis</span>
         <p className="text-[11px] text-[var(--fintheon-text)]/80 leading-relaxed">
           {briefing.summary}

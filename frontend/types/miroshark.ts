@@ -13,6 +13,7 @@ export interface MiroSharkCategoryScore {
   ivScore: number;
   confidence: number;
   delta: number;
+  description?: string;
 }
 
 export interface MiroSharkTimePoint {

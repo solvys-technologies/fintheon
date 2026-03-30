@@ -30,6 +30,7 @@ import {
 } from '../../services/iv-scoring-v2.js';
 import { estimatePoints } from '../../services/market-data/point-estimator.js';
 import { generateNoteForItem } from '../../services/riskflow/agent-notes.js';
+import { getSupabaseClient } from '../../config/supabase.js';
 
 /**
  * Internal function to trigger feed pre-fetching
@@ -169,6 +170,32 @@ export async function handleGetFeed(c: Context) {
       }
       return item;
     });
+
+    // Enrich items with narrative thread assignments from narrative_card_links
+    const sb = getSupabaseClient();
+    if (sb && items.length > 0) {
+      try {
+        const itemIds = items.map((i: any) => i.id).filter(Boolean);
+        const { data: links } = await sb
+          .from('narrative_card_links')
+          .select('card_id, thread_slug')
+          .in('card_id', itemIds);
+
+        if (links && links.length > 0) {
+          const threadMap = new Map<string, string[]>();
+          for (const link of links) {
+            const arr = threadMap.get(link.card_id) ?? [];
+            arr.push(link.thread_slug);
+            threadMap.set(link.card_id, arr);
+          }
+          for (const item of items) {
+            (item as any).narrativeThreads = threadMap.get((item as any).id) ?? [];
+          }
+        }
+      } catch (err) {
+        console.warn('[RiskFlow] Failed to enrich narrative threads (non-blocking):', err);
+      }
+    }
 
     // Ensure we always return a valid FeedResponse structure
     const response = {

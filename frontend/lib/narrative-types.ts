@@ -129,6 +129,8 @@ export interface NarrativeFlowState {
   selectedCatalystId: string | null;
   selectedLaneId: string | null;
   filterSentiment: CatalystSentiment | 'all';
+  categoryFilter: Set<NarrativeCategory>; // empty set = show all
+  severitySort: 'severity' | 'date' | 'health' | null;
   heatmapEnabled: boolean;
   replayMode: boolean;
   replayPosition: number;
@@ -178,7 +180,10 @@ export type NarrativeAction =
   | { type: 'ADD_RESEARCH_BULLETS'; cardId: string; bullets: ResearchBullet[] }
   | { type: 'MOVE_CARD_TO_LANE'; cardId: string; targetLaneId: string }
   | { type: 'SET_VIEWPORT'; viewport: Partial<CanvasViewport> }
-  | { type: 'SET_DATE_FILTER'; filter: { start: string; end: string } | null };
+  | { type: 'SET_DATE_FILTER'; filter: { start: string; end: string } | null }
+  | { type: 'SET_CATEGORY_FILTER'; categories: Set<NarrativeCategory> }
+  | { type: 'SET_SEVERITY_SORT'; sort: 'severity' | 'date' | 'health' | null }
+  | { type: 'TOGGLE_CATEGORY'; category: NarrativeCategory };
 
 // ── Tree-map layout types (S5-T1) ──────────────────────────────
 

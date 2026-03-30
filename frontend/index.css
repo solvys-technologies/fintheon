@@ -117,6 +117,28 @@ html *::-webkit-scrollbar {
   --sidebar-ring: oklch(0.439 0 0);
 }
 
+/* ── Fintheon custom keyframes ── */
+
+/* Vertical shimmer for the Market Heat fuse bar — bottom-to-top glow */
+@keyframes fuse-shimmer {
+  0% {
+    background-position: 0 100%;
+  }
+  100% {
+    background-position: 0 -100%;
+  }
+}
+
+/* Subtle pulse glow for new-message indicator */
+@keyframes msg-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -372,7 +394,10 @@ html *::-webkit-scrollbar {
 }
 
 .fintheon-thinking-container {
-  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 25%, transparent);
+  background-color: var(--fintheon-surface);
+}
+
+.fintheon-thinking-container-borderless {
   background-color: var(--fintheon-surface);
 }
 
@@ -438,8 +463,8 @@ html *::-webkit-scrollbar {
 
 /* NarrativeFlow — rope breathing opacity pulse (S8-T3) */
 @keyframes rope-breathe {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.28; }
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.45; }
 }
 
 .react-flow__edge-path.rope-breathe,

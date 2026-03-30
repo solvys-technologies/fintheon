@@ -11,7 +11,7 @@
 // [claude-code 2026-03-28] S8-T6: Infinite scroll + toggle, Loader2 for loading state
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
-import { Zap, ExternalLink, ChevronDown, ChevronUp, ChevronRight, Trash2, X, TrendingUp, TrendingDown, MessageSquare, Check, XCircle, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
+import { Zap, ExternalLink, ChevronDown, ChevronUp, ChevronRight, Trash2, TrendingUp, TrendingDown, MessageSquare, Check, XCircle, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
 import { inferDirection } from '../lib/riskflow-feed';
 import TradeIdeaModal from './TradeIdeaModal';
@@ -319,7 +319,6 @@ function TradeIdeaRow({
 
 function AlertRow({
   alert,
-  onDelete,
   onMarkSeen,
   onChat,
   seen,
@@ -329,7 +328,6 @@ function AlertRow({
   onNavigateToFeed,
 }: {
   alert: RiskFlowAlert;
-  onDelete: (id: string) => void;
   onMarkSeen: (id: string) => void;
   onChat?: (alert: RiskFlowAlert) => void;
   seen: boolean;
@@ -399,14 +397,6 @@ function AlertRow({
                 <MessageSquare className="w-3.5 h-3.5" />
               </button>
             )}
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(alert.id); }}
-              className="flex-shrink-0 p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              title="Remove item"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       </div>
@@ -747,7 +737,6 @@ export default function RiskFlowMini({
                     <AlertRow
                       key={alert.id}
                       alert={alert}
-                      onDelete={removeAlert}
                       onMarkSeen={markSeen}
                       onChat={onChatAlert}
                       seen={isSeen(alert.id)}
@@ -801,7 +790,7 @@ export default function RiskFlowMini({
                 No recent items
               </div>
             ) : (
-              <div className="rounded border border-[var(--fintheon-accent)]/20 bg-[#080806] overflow-hidden">
+              <div className="bg-[#080806] overflow-hidden">
                 {collapsedPreviewItems.map((item, idx) => {
                   const sev = SEVERITY_CONFIG[item.severity];
                   const seen = isSeen(item.id);

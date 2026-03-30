@@ -1,5 +1,7 @@
+// [claude-code 2026-03-29] S9-T5-T1: Add React Flow handles so edges (ropes) can connect
 // [claude-code 2026-03-28] S8-T2: Large hub node for each of the 10 narrative threads
 import type { NodeProps } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 
 export interface HubNodeData {
   slug: string;
@@ -23,6 +25,8 @@ export function NarrativeHubNode({ data }: NodeProps & { data: HubNodeData }) {
         boxShadow: `0 0 24px ${color}15, 0 4px 16px rgba(0,0,0,0.3)`,
       }}
     >
+      <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, width: 1, height: 1 }} />
       <div
         className="w-3 h-3 rounded-full mb-2"
         style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}60` }}

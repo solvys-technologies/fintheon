@@ -1,7 +1,9 @@
+// [claude-code 2026-03-29] S9-T5-T1: Add React Flow handles so edges (ropes) can connect
 // [claude-code 2026-03-28] S8-T2: Collapsed summary card at bubble zoom level
 // Single click → expand/collapse inline preview. Double-click → handled by React Flow (auto-zoom).
 import { useState } from 'react';
 import type { NodeProps } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 
 export interface SummaryCardData {
   slug: string;
@@ -31,6 +33,8 @@ export function NarrativeSummaryCard({ data }: NodeProps & { data: SummaryCardDa
         setExpanded(prev => !prev);
       }}
     >
+      <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, width: 1, height: 1 }} />
       <div className="px-3 py-2.5">
         <div className="flex items-center gap-2">
           <div

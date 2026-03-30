@@ -61,7 +61,7 @@ export function SanctumTheses({ scenarios, categoryScores, expanded }: SanctumTh
         return (
           <div
             key={thesis.label + idx}
-            className={`rounded border p-4 transition-colors ${
+            className={`rounded-lg border p-4 transition-colors ${
               isTop
                 ? 'border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/5'
                 : 'border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40'
@@ -80,8 +80,8 @@ export function SanctumTheses({ scenarios, categoryScores, expanded }: SanctumTh
                     {thesis.label}
                   </span>
                 </div>
-                {thesis.description && expanded && (
-                  <p className="text-[10px] text-[var(--fintheon-muted)]/50 mt-1 line-clamp-2">
+                {thesis.description && (
+                  <p className="text-[9px] italic text-[var(--fintheon-muted)]/50 mt-1 line-clamp-2">
                     {thesis.description}
                   </p>
                 )}
@@ -89,7 +89,7 @@ export function SanctumTheses({ scenarios, categoryScores, expanded }: SanctumTh
               <div className="flex items-center gap-3">
                 {/* Volatility amplifier multiplier */}
                 <span
-                  className="text-sm font-mono font-bold text-[var(--fintheon-accent)]"
+                  className="text-[10px] font-mono italic text-[var(--fintheon-accent)]/70"
                   title="Volatility amplifier — how much more volatile vs baseline"
                 >
                   x{amplifier.toFixed(2)}

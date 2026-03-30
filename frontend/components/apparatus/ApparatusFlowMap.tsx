@@ -1,8 +1,9 @@
+// [claude-code 2026-03-29] S9-T4: Removed MiniMap from constellation view
 // [claude-code 2026-03-28] S7: React Flow agent constellation — Rules of Engagement nucleus,
 // orbiting agents with expandable cards, shimmer data-flow edges, active glow borders
 import { useState, useMemo, useCallback } from 'react';
 import {
-  ReactFlow, Background, MiniMap, Panel,
+  ReactFlow, Background, Panel,
   useNodesState, useEdgesState,
   type Node, type Edge, type NodeTypes,
   ReactFlowProvider, MarkerType,
@@ -283,16 +284,6 @@ function ApparatusFlowInner() {
         style={{ backgroundColor: 'var(--fintheon-bg)' }}
       >
         <Background color="#c79f4a08" gap={50} size={1} />
-        <MiniMap
-          position="bottom-right"
-          nodeColor={(node) => {
-            if (node.id === 'nucleus') return '#c79f4a';
-            const agent = AGENTS.find(a => a.id === node.id);
-            return agent?.accentColor ?? '#6B7280';
-          }}
-          style={{ backgroundColor: '#050402', borderColor: '#c79f4a20', borderRadius: 8 }}
-          maskColor="#05040280"
-        />
 
         {/* Legend */}
         <Panel position="top-left">

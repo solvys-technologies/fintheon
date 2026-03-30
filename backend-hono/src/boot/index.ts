@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] Added catalyst promoter to boot sequence (graduates scored items → narrative catalysts)
 // [claude-code 2026-03-24] Added VIX polling, central scorer, IV ticker, VIX rescore to boot sequence
 // [claude-code 2026-03-20] Service boot consolidation — single entry point for all background services
 
@@ -19,6 +20,7 @@ import { initVIXRescore } from '../services/riskflow/vix-rescore.js';
 import { startAgentNotesCron } from '../services/riskflow/agent-notes.js';
 import { startCommentaryScraper } from '../services/riskflow/commentary-scraper.js';
 import { startMarketImpactEnricher } from '../services/cron/market-impact-enricher.js';
+import { startCatalystPromoter } from '../services/riskflow/catalyst-promoter.js';
 import * as projectxService from '../services/projectx-service.js';
 
 const log = createLogger('Boot');
@@ -36,6 +38,10 @@ export async function bootServices(): Promise<void> {
 
   // Central scorer (30s — scores unscored items, gated by ENABLE_CENTRAL_SCORING env)
   startCentralScorer();
+
+  // Catalyst promoter (60s — graduates scored items into narrative catalysts with thread links)
+  startCatalystPromoter();
+  log.info('CatalystPromoter started');
 
   // IV score ticker (60s — computes blended IV score, persists to DB)
   const instrument = process.env.PRIMARY_INSTRUMENT || '/ES';

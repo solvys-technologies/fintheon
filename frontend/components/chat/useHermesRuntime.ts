@@ -20,5 +20,5 @@ export function useHermesRuntime(agentId: string, thinkHarder?: boolean, surface
   };
   const runtime = useAISDKRuntime(chatHelpers);
 
-  return { runtime, conversationId, clearConversationId, lastError: chat.lastError, clearError: chat.clearError, lastRequestId: chat.lastRequestId ?? null };
+  return { runtime, conversationId, setConversationId, clearConversationId, lastError: chat.lastError, clearError: chat.clearError, lastRequestId: chat.lastRequestId ?? null };
 }

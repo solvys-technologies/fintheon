@@ -1,5 +1,6 @@
 // [claude-code 2026-03-27] S3: Plain text DetailFooter replaces SubScoreBar, expanded border-l-4 + ring
 // [claude-code 2026-03-26] T4v2: Collapsible RiskFlow detail card matching Strategium AlertRow layout
+// [claude-code 2026-03-29] Match RiskFlowMini: tight padding, square badges, edge-to-edge cards
 import { useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp, ExternalLink, Sparkles } from 'lucide-react';
 import type { RiskFlowAlert } from '../../lib/riskflow-feed';
@@ -50,18 +51,6 @@ function SourceIcon({ source, className }: { source: string; className?: string 
   return <XLogo className={className} />;
 }
 
-// ── Risk type styles ─────────────────────────────────────────────────────────
-
-const RISK_TYPE_STYLE: Record<string, string> = {
-  Macro:        'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
-  Geopolitical: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
-  Earnings:     'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  Technical:    'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  Credit:       'bg-red-500/15 text-red-400 border-red-500/30',
-  Liquidity:    'bg-violet-500/15 text-violet-400 border-violet-500/30',
-  Commentary:   'bg-zinc-700/50 text-zinc-400 border-zinc-700/40',
-};
-
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDetailCardProps) {
@@ -84,16 +73,16 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
 
   return (
     <div
-      className={`group relative mb-[3px] overflow-hidden transition-all duration-300 ${
+      className={`group relative overflow-hidden transition-colors ${
         expanded
-          ? 'border border-[var(--fintheon-accent)]/20 rounded riskflow-expand-pulse'
-          : 'border border-[var(--fintheon-border)]/10 rounded'
+          ? 'border-b border-[var(--fintheon-accent)]/30 riskflow-expand-pulse'
+          : 'border-b border-zinc-800/60 hover:border-[var(--fintheon-accent)]/30'
       } ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
       style={expanded ? { '--tw-ring-color': 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' } as React.CSSProperties : undefined}
     >
       {/* ── Collapsed: headline + source icon top-right ─────────────────────── */}
       <div
-        className="block px-3 pt-3.5 pb-3 cursor-pointer"
+        className="block px-3 pt-2.5 pb-2 cursor-pointer"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-start gap-2">
@@ -135,15 +124,13 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
         </span>
 
         {/* Priority badge — rounded */}
-        <span className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border`}>
+        <span className={`ml-2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border`}>
           {sev.label}
         </span>
 
         {/* Risk type tag */}
         {alert.riskType && (
-          <span className={`ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-medium tracking-wide border ${
-            RISK_TYPE_STYLE[alert.riskType] ?? RISK_TYPE_STYLE.Commentary
-          }`}>
+          <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium tracking-wider uppercase border border-zinc-700 text-zinc-400">
             {alert.riskType}
           </span>
         )}
@@ -249,7 +236,7 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
               {alert.tags.length > 0 && (
                 <div className="flex gap-1">
                   {alert.tags.slice(0, 4).map((tag) => (
-                    <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20">
+                    <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20">
                       {tag}
                     </span>
                   ))}
