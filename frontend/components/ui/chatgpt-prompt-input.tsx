@@ -422,22 +422,6 @@ export function PromptBox({
               {/* Tools (combined Skills + Connectors) */}
               {toolsSlot}
 
-              {/* Mic button */}
-              {onToggleVoice && !compact && (
-                <button
-                  onClick={onToggleVoice}
-                  title={voiceEnabled ? 'Disable voice' : 'Enable voice'}
-                  className={`flex items-center justify-center rounded-lg transition-all ${
-                    micListening
-                      ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15'
-                      : 'text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10'
-                  }`}
-                  style={{ width: '32px', height: '32px' }}
-                >
-                  {voiceEnabled ? <Mic size={14} /> : <MicOff size={14} />}
-                </button>
-              )}
-
               {/* Boardroom: newspaper RiskFlow picker | Others: pulsing icon toggle */}
               {onRiskFlowPick ? (
                 <button
