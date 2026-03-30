@@ -1,3 +1,4 @@
+// [claude-code 2026-03-30] Wire DB narrative_threads as lane source of truth, enrich catalysts with card-links
 // [claude-code 2026-03-29] S9-T5-T1: Normalize catalyst tags/narrative fields on load for rope engine
 // [claude-code 2026-03-28] NarrativeFlow localStorage CRUD + useNarrativeStore hook
 // S5-T1: Added viewport + dateFilter state and SET_VIEWPORT / SET_DATE_FILTER actions
@@ -14,6 +15,7 @@ import type {
   Rope,
 } from './narrative-types';
 import { DEFAULT_VIEWPORT } from './narrative-types';
+import type { NarrativeThreadRow, NarrativeCardLink } from './services';
 
 const STORAGE_KEY = 'fintheon:narrative:v1';
 const SNAPSHOT_KEY = 'fintheon:narrative-snapshot:v1';
@@ -110,6 +112,81 @@ export function saveAgentConfig(config: AgentProviderConfig): void {
   } catch {
     // silent
   }
+}
+
+// ── DB-backed lane + card-link sync ──────────────────────────────
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+function threadToLane(t: NarrativeThreadRow, idx: number): NarrativeLane {
+  return {
+    id: t.slug,
+    title: t.title,
+    instruments: [],
+    directionBias: 'neutral',
+    category: 'macroeconomic',
+    status: (t.status as NarrativeLane['status']) ?? 'active',
+    dateRange: { start: new Date().toISOString().slice(0, 10), end: null },
+    healthScore: 50,
+    color: t.color ?? '#c79f4a',
+    order: t.sort_order ?? idx,
+    parentId: null,
+    forkDate: null,
+    decayWeeks: 4,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function fetchDbThreads(): Promise<NarrativeLane[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/narrative/threads`);
+    if (!res.ok) return [];
+    const { threads } = await res.json() as { threads: NarrativeThreadRow[] };
+    return threads.map(threadToLane);
+  } catch {
+    return [];
+  }
+}
+
+async function fetchDbCardLinks(): Promise<NarrativeCardLink[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/narrative/card-links`);
+    if (!res.ok) return [];
+    const { links } = await res.json() as { links: NarrativeCardLink[] };
+    return links;
+  } catch {
+    return [];
+  }
+}
+
+/** Strip `backend-` or `rf-backend-` prefix to get raw tweet_id for DB matching */
+function stripIdPrefix(id: string): string {
+  return id.replace(/^(rf-)?backend-/, '');
+}
+
+/** Apply DB card-links to catalysts — sets narrativeThreads + narrative fields */
+function enrichCatalystsWithLinks(catalysts: CatalystCard[], links: NarrativeCardLink[]): CatalystCard[] {
+  if (links.length === 0) return catalysts;
+  const linkMap = new Map<string, string[]>();
+  for (const link of links) {
+    const arr = linkMap.get(link.card_id) ?? [];
+    arr.push(link.thread_slug);
+    linkMap.set(link.card_id, arr);
+  }
+  return catalysts.map(c => {
+    // DB stores raw tweet_id; catalysts may have backend- or rf-backend- prefix
+    const rawId = stripIdPrefix(c.id);
+    const rawRfId = c.riskflowItemId ? stripIdPrefix(c.riskflowItemId) : '';
+    const threads = linkMap.get(c.id) ?? linkMap.get(rawId) ?? linkMap.get(rawRfId) ?? [];
+    if (threads.length === 0) return c;
+    return {
+      ...c,
+      narrativeThreads: threads,
+      narrative: threads[0],
+      narrativeIds: threads,
+    };
+  });
 }
 
 function takeSnapshotFromState(state: NarrativeFlowState): NarrativeSnapshot {
@@ -317,6 +394,7 @@ export function useNarrativeStore() {
   const [state, setState] = useState<NarrativeFlowState>(loadNarrativeState);
   const [snapshot, setSnapshot] = useState<NarrativeSnapshot | null>(loadSnapshot);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dbLoadedRef = useRef(false);
 
   // Debounced persist
   const scheduleSave = useCallback((s: NarrativeFlowState) => {
@@ -329,6 +407,30 @@ export function useNarrativeStore() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, []);
+
+  // Fetch lanes + card-links from DB on mount (source of truth)
+  useEffect(() => {
+    if (dbLoadedRef.current) return;
+    dbLoadedRef.current = true;
+
+    (async () => {
+      const [dbLanes, dbLinks] = await Promise.all([
+        fetchDbThreads(),
+        fetchDbCardLinks(),
+      ]);
+
+      setState(prev => {
+        // DB threads are the canonical lanes — replace any localStorage lanes
+        const lanes = dbLanes.length > 0 ? dbLanes : prev.lanes;
+        // Enrich catalysts with DB card-links
+        const catalysts = enrichCatalystsWithLinks(prev.catalysts, dbLinks);
+
+        const next = { ...prev, lanes, catalysts };
+        scheduleSave(next);
+        return next;
+      });
+    })();
+  }, [scheduleSave]);
 
   const dispatch = useCallback(
     (action: NarrativeAction) => {

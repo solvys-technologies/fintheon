@@ -1082,8 +1082,33 @@ export interface ScoredCandidate {
   originalHeadline?: string;
 }
 
+export interface NarrativeThreadRow {
+  slug: string;
+  title: string;
+  description: string | null;
+  color: string;
+  status: string;
+  sort_order: number;
+  keywords: string[] | null;
+}
+
+export interface NarrativeCardLink {
+  card_id: string;
+  thread_slug: string;
+  confidence: number;
+}
+
 export class NarrativeService {
   constructor(private client: ApiClient) {}
+
+  async getThreads(): Promise<{ threads: NarrativeThreadRow[] }> {
+    return this.client.get('/api/narrative/threads');
+  }
+
+  async getCardLinks(cardIds?: string[]): Promise<{ links: NarrativeCardLink[] }> {
+    const params = cardIds?.length ? `?card_ids=${cardIds.join(',')}` : '';
+    return this.client.get(`/api/narrative/card-links${params}`);
+  }
 
   async scoreRiskflow(items: Array<{ id: string; headline: string; summary: string; source: string; severity: string; tags: string[]; publishedAt: string }>): Promise<{ scored: ScoredCandidate[]; provider: string }> {
     return this.client.post('/api/narrative/score-riskflow', { items });

@@ -1,7 +1,8 @@
+// [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (Aquarium)
 // [claude-code 2026-03-28] S7: Sanctum dropdown (NarrativeFlow/Aquarium/Timeline) inside Consilium tab bar
 // [claude-code 2026-03-24] Persistence refactor: load latest report on mount, persist after simulation
 // [claude-code 2026-03-24] Thread selectedSymbol from settings into Sanctum for TradingView chart
-import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
 import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield, SlidersHorizontal } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
@@ -10,11 +11,11 @@ import { TimelinePanel } from '../narrative/TimelinePanel';
 import { ProposalWidget } from '../proposals/ProposalWidget';
 import { MiroSharkDebatePanel } from '../miroshark/MiroSharkDebatePanel';
 import { NarrativeMap } from '../narrative/NarrativeMap';
-import { NarrativeProvider } from '../../contexts/NarrativeContext';
+import { NarrativeProvider, useNarrative } from '../../contexts/NarrativeContext';
 import { ApparatusFlowMap } from '../apparatus/ApparatusFlowMap';
 import { AiLoader } from '../chat/FintheonThread';
 import { SanctumFilterPanel } from '../narrative/SanctumFilterPanel';
-import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst } from '../../types/miroshark';
+import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/miroshark';
 
 const ChatInterface = lazy(() => import('../ChatInterface'));
 
@@ -36,6 +37,37 @@ const SANCTUM_SUB_VIEWS: { id: SanctumSubView; label: string; subtitle?: string;
   { id: 'aquarium', label: 'Aquarium', subtitle: 'shark tank', icon: Fish },
   { id: 'timeline', label: 'Timeline', icon: Clock },
 ];
+
+/** Bridge: reads NarrativeContext lanes → SanctumNarrative[] for Sanctum (Aquarium) */
+function SanctumWithNarratives(props: Omit<React.ComponentProps<typeof Sanctum>, 'narratives' | 'catalysts'>) {
+  const { state, healthScores } = useNarrative();
+  const narratives = useMemo<SanctumNarrative[]>(() =>
+    state.lanes.map(lane => ({
+      id: lane.id,
+      title: lane.title,
+      category: lane.category,
+      directionBias: lane.directionBias,
+      healthScore: healthScores[lane.id] ?? lane.healthScore,
+      instruments: lane.instruments,
+      status: lane.status,
+      dateRange: lane.dateRange,
+    })),
+    [state.lanes, healthScores]
+  );
+  const catalysts = useMemo(() =>
+    state.catalysts.map(c => ({
+      id: c.id,
+      title: c.title,
+      date: c.date,
+      sentiment: c.sentiment,
+      severity: c.severity,
+      category: c.category,
+      narrativeIds: c.narrativeIds,
+    })),
+    [state.catalysts]
+  );
+  return <Sanctum {...props} narratives={narratives} catalysts={catalysts} />;
+}
 
 function usePanelState(key: string, defaultValue: boolean): [boolean, () => void] {
   const [state, setState] = useState<boolean>(() => {
@@ -345,10 +377,9 @@ export function ConsiliumHub() {
             <NarrativeProvider>
               {displayedSubView === 'narratives' && <NarrativeMap />}
               {displayedSubView === 'aquarium' && (
-                <Sanctum
+                <SanctumWithNarratives
                   data={mirosharkData}
                   onRun={handleRunMiroShark}
-                  catalysts={[]}
                   riskflowItems={riskflowItems}
                   macroContext={macroContext}
                   selectedSymbol={selectedSymbol.symbol}

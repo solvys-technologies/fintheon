@@ -1,7 +1,8 @@
-// [claude-code 2026-03-06] Narrative catalyst scoring endpoints — LLM-scored candidates from RiskFlow/briefs
+// [claude-code 2026-03-30] Narrative endpoints — threads, card-links, LLM scoring
 import type { Context } from 'hono'
 import { generateText } from 'ai'
 import { selectModel, createModelClient, markProviderUnhealthy, type AiModelKey } from '../../services/ai/model-selector.js'
+import { getSupabaseClient } from '../../config/supabase.js'
 
 export interface ScoredCandidate {
   sourceId: string
@@ -250,5 +251,56 @@ export async function researchDrill(c: Context) {
   } catch (err) {
     console.error('[Narrative] researchDrill error:', err)
     return c.json({ error: 'Failed to generate research' }, 500)
+  }
+}
+
+/**
+ * GET /api/narrative/threads
+ * Return all narrative threads from DB (the 10 core narratives)
+ */
+export async function getThreads(c: Context) {
+  const sb = getSupabaseClient()
+  if (!sb) return c.json({ threads: [] })
+
+  try {
+    const { data, error } = await sb
+      .from('narrative_threads')
+      .select('slug, title, description, color, status, sort_order, keywords')
+      .order('sort_order', { ascending: true })
+
+    if (error) throw error
+    return c.json({ threads: data ?? [] })
+  } catch (err) {
+    console.error('[Narrative] getThreads error:', err)
+    return c.json({ threads: [] })
+  }
+}
+
+/**
+ * GET /api/narrative/card-links
+ * Return all narrative_card_links (card_id → thread_slug mappings)
+ * Optional ?card_ids=id1,id2 to filter
+ */
+export async function getCardLinks(c: Context) {
+  const sb = getSupabaseClient()
+  if (!sb) return c.json({ links: [] })
+
+  try {
+    const cardIdsParam = c.req.query('card_ids')
+    let query = sb
+      .from('narrative_card_links')
+      .select('card_id, thread_slug, confidence')
+
+    if (cardIdsParam) {
+      const ids = cardIdsParam.split(',').filter(Boolean)
+      if (ids.length > 0) query = query.in('card_id', ids)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return c.json({ links: data ?? [] })
+  } catch (err) {
+    console.error('[Narrative] getCardLinks error:', err)
+    return c.json({ links: [] })
   }
 }
