@@ -20,6 +20,23 @@ export type BoardroomAgent =
   | 'Herald'
   | 'Unknown';
 
+export type BoardroomContentPartType =
+  | 'text'
+  | 'analysis'
+  | 'trade-idea'
+  | 'chart-ref'
+  | 'reaction';
+
+export interface BoardroomContentPart {
+  type: BoardroomContentPartType;
+  data: unknown;
+}
+
+export interface PeerAttribution {
+  peerId?: string | null;
+  peerDeviceName?: string | null;
+}
+
 export interface BoardroomMessage {
   id: string;
   agent: BoardroomAgent;
@@ -28,6 +45,10 @@ export interface BoardroomMessage {
   timestamp: string;
   role: 'user' | 'assistant' | 'system';
   metadata?: Record<string, unknown>;
+  threadId?: string | null;
+  peerId?: string | null;
+  contentParts?: BoardroomContentPart[] | null;
+  peer?: PeerAttribution;
 }
 
 export interface InterventionMessage {

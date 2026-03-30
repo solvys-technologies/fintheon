@@ -3,6 +3,18 @@
 
 import type { BoardroomAgent, BoardroomMessage } from './boardroom.js'
 
+export type ContentPartType =
+  | 'text'
+  | 'analysis'
+  | 'trade-idea'
+  | 'chart-ref'
+  | 'reaction'
+
+export interface ContentPart {
+  type: ContentPartType
+  data: unknown
+}
+
 /** DB row shape (snake_case) for boardroom_sessions */
 export interface BoardroomSessionRow {
   id: string
@@ -22,6 +34,9 @@ export interface BoardroomMessageRow {
   content: string
   message_type: string
   metadata: Record<string, unknown>
+  thread_id?: string | null
+  peer_id?: string | null
+  content_parts?: ContentPart[] | null
   created_at: string
 }
 
@@ -44,6 +59,9 @@ export interface BoardroomDBMessage {
   content: string
   messageType: string
   metadata: Record<string, unknown>
+  threadId?: string | null
+  peerId?: string | null
+  contentParts?: ContentPart[] | null
   createdAt: string
 }
 
@@ -75,6 +93,9 @@ export interface BoardroomMessageInput {
   content: string
   messageType?: string
   metadata?: Record<string, unknown>
+  threadId?: string | null
+  peerId?: string | null
+  contentParts?: ContentPart[] | null
 }
 
 /** Coerce a raw string to BoardroomAgent (DB stores as VARCHAR) */
@@ -105,6 +126,9 @@ export function mapRowToMessage(row: BoardroomMessageRow): BoardroomDBMessage {
     content: row.content,
     messageType: row.message_type ?? 'chat',
     metadata: row.metadata ?? {},
+    threadId: row.thread_id ?? null,
+    peerId: row.peer_id ?? null,
+    contentParts: row.content_parts ?? null,
     createdAt: String(row.created_at),
   }
 }
@@ -121,5 +145,4 @@ export function toLegacyMessage(msg: BoardroomDBMessage): BoardroomMessage {
     metadata: msg.metadata,
   }
 }
-
 

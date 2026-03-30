@@ -109,6 +109,10 @@ interface SettingsContextType {
   /** 8g: Auto-start all PsychAssist features EXCEPT mic-based ER monitoring */
   psychAssistAutoStart: boolean;
   setPsychAssistAutoStart: (enabled: boolean) => void;
+  hermesEnabled: boolean;
+  setHermesEnabled: (enabled: boolean) => void;
+  voiceEnabled: boolean;
+  setVoiceEnabled: (enabled: boolean) => void;
   defaultLayout: DefaultLayout;
   setDefaultLayout: (layout: DefaultLayout) => void;
   defaultPlatform: DefaultPlatform;
@@ -251,6 +255,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [psychAssistAutoStart, setPsychAssistAutoStart] = useState<boolean>(() =>
     loadFromStorage('psychAssistAutoStart', true)
   );
+  const [hermesEnabled, setHermesEnabled] = useState<boolean>(() =>
+    loadFromStorage('hermesEnabled', true)
+  );
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() =>
+    loadFromStorage('voiceEnabled', true)
+  );
   const [defaultLayout, setDefaultLayout] = useState<DefaultLayout>(() =>
     loadFromStorage('defaultLayout', 'combined' as DefaultLayout)
   );
@@ -283,6 +293,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.instrumentsTraded) setInstrumentsTraded(remote.instrumentsTraded as string[]);
         if (remote.discordUsername) setDiscordUsername(remote.discordUsername as string);
         if (remote.tradingRoadblocks) setTradingRoadblocks(remote.tradingRoadblocks as string[]);
+        if (remote.hermesEnabled !== undefined) setHermesEnabled(remote.hermesEnabled as boolean);
+        if (remote.voiceEnabled !== undefined) setVoiceEnabled(remote.voiceEnabled as boolean);
         if (remote.defaultLayout) setDefaultLayout(remote.defaultLayout as DefaultLayout);
         if (remote.defaultPlatform) setDefaultPlatform(remote.defaultPlatform as DefaultPlatform);
       }
@@ -312,6 +324,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       discordUsername,
       tradingRoadblocks,
       psychAssistAutoStart,
+      hermesEnabled,
+      voiceEnabled,
       defaultLayout,
       defaultPlatform,
     };
@@ -324,7 +338,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (backendSynced.current) {
       saveBackendSettings(settings);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName, autoRefresh, interviewCompleted, tradingGoals, instrumentsTraded, discordUsername, tradingRoadblocks, defaultLayout, defaultPlatform]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName, autoRefresh, interviewCompleted, tradingGoals, instrumentsTraded, discordUsername, tradingRoadblocks, psychAssistAutoStart, hermesEnabled, voiceEnabled, defaultLayout, defaultPlatform]);
 
   return (
     <SettingsContext.Provider
@@ -367,6 +381,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setTradingRoadblocks,
         psychAssistAutoStart,
         setPsychAssistAutoStart,
+        hermesEnabled,
+        setHermesEnabled,
+        voiceEnabled,
+        setVoiceEnabled,
         defaultLayout,
         setDefaultLayout,
         defaultPlatform,

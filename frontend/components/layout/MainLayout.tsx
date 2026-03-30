@@ -54,6 +54,9 @@ import { SessionCalendarMini } from '../mission-control/SessionCalendarMini';
 import { WidgetArrangeMenu } from '../mission-control/WidgetArrangeMenu';
 import { DNDProvider, useDND } from '../../contexts/DNDContext';
 import { NotificationCenter } from '../NotificationCenter';
+import { PeerCarousel } from '../peers/PeerCarousel';
+import { PeerOnboarding } from '../peers/PeerOnboarding';
+import { VoiceWidget } from '../peers/VoiceWidget';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -85,9 +88,17 @@ export function MainLayout() {
 
 // Main layout component - no authentication needed
 function MainLayoutInner() {
-  const { iframeUrls, defaultLayout, defaultPlatform, developerSettings } = useSettings();
+  const { iframeUrls, defaultLayout, defaultPlatform, developerSettings, voiceEnabled } = useSettings();
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const [peerStripCollapsed, setPeerStripCollapsed] = useState(false);
+  const [showPeerOnboarding, setShowPeerOnboarding] = useState(() => {
+    try {
+      return localStorage.getItem('fintheon:peer-onboarded:v1') !== 'true';
+    } catch {
+      return true;
+    }
+  });
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showRefinement, setShowRefinement] = useState(false);
@@ -692,6 +703,25 @@ function MainLayoutInner() {
         }
       />
 
+      <section className="border-b border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/90 px-3 py-2">
+        <div className="mb-2 flex items-center justify-between">
+          <button
+            onClick={() => setPeerStripCollapsed((value) => !value)}
+            className="inline-flex items-center gap-2 rounded border border-[var(--fintheon-accent)]/30 px-2 py-1 text-xs text-[var(--fintheon-accent)]"
+          >
+            {peerStripCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+            Claude Peers
+          </button>
+          <button
+            onClick={() => setShowPeerOnboarding(true)}
+            className="rounded border border-[var(--fintheon-accent)]/30 px-2 py-1 text-xs text-[var(--fintheon-accent)]"
+          >
+            Onboard Peer
+          </button>
+        </div>
+        <PeerCarousel collapsed={peerStripCollapsed} />
+      </section>
+
       <div className="flex-1 flex overflow-hidden relative">
         <div className="relative">
           <NavSidebar
@@ -819,6 +849,10 @@ function MainLayoutInner() {
           />
         )}
 
+        {voiceEnabled && activeTab !== 'analysis' && (
+          <VoiceWidget />
+        )}
+
         {/* Zen Layout: dockable PsychAssist widget (float ↔ header) */}
         {topStepXEnabled && layoutOption === 'tickers-only' && psychAssistTarget === 'floating' && (
           <PsychAssistDockable
@@ -901,6 +935,25 @@ function MainLayoutInner() {
 
       {/* First-time user tour + interview + setup wizard */}
       <FirstTimeTour onNavigate={(tab) => navigateTab(tab as NavTab)} />
+
+      <PeerOnboarding
+        open={showPeerOnboarding}
+        onClose={() => {
+          setShowPeerOnboarding(false);
+          try {
+            localStorage.setItem('fintheon:peer-onboarded:v1', 'true');
+          } catch {
+            // ignore localStorage write errors
+          }
+        }}
+        onComplete={() => {
+          try {
+            localStorage.setItem('fintheon:peer-onboarded:v1', 'true');
+          } catch {
+            // ignore localStorage write errors
+          }
+        }}
+      />
     </div>
     </ScheduleProvider>
   );

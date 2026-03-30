@@ -50,6 +50,10 @@ export function SettingsPage() {
     setIframeUrls,
     traderName,
     setTraderName,
+    hermesEnabled,
+    setHermesEnabled,
+    voiceEnabled,
+    setVoiceEnabled,
     defaultLayout,
     setDefaultLayout,
     defaultPlatform,
@@ -703,6 +707,29 @@ export function SettingsPage() {
                     <p className="text-[10px] text-gray-500 mt-1.5">Displayed in the toolbar next to your tier badge</p>
                   </div>
                 </section>
+
+                <section className="mb-6">
+                  <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Peer Runtime</h3>
+                  <div className="space-y-3">
+                    <Toggle
+                      label="Hermes Plugin"
+                      enabled={hermesEnabled}
+                      onChange={setHermesEnabled}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Enables Hermes plugin mode when Hermes is detected on this machine.
+                    </p>
+                    <Toggle
+                      label="Voice Widget"
+                      enabled={voiceEnabled}
+                      onChange={setVoiceEnabled}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Shows the floating peer group-call widget outside the Boardroom tab.
+                    </p>
+                  </div>
+                </section>
+
                 <section>
                   <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Trading Symbol</h3>
                   <div className="relative">
@@ -1496,4 +1523,3 @@ function DndResetSection() {
     </section>
   );
 }
-

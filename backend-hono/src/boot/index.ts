@@ -2,13 +2,19 @@
 // [claude-code 2026-03-24] Added VIX polling, central scorer, IV ticker, VIX rescore to boot sequence
 // [claude-code 2026-03-20] Service boot consolidation — single entry point for all background services
 
+import { hostname } from 'node:os';
 import { createLogger } from '../lib/logger.js';
 import { startFeedPoller } from '../services/riskflow/feed-poller.js';
 import { startEconEnricher } from '../services/cron/econ-enricher.js';
 import { startEconTwitterPoller } from '../services/twitter-cli/index.js';
 import { initClaudeSDK } from '../services/claude-sdk/process-manager.js';
 import { startPersistentSession } from '../services/claude-sdk/session-manager.js';
-import { initHermesAgent } from '../services/hermes-handler.js';
+import { initHermesAgent, isHermesAvailable } from '../services/hermes-handler.js';
+import {
+  registerPeer,
+  sendHeartbeat,
+  startHeartbeatMonitor,
+} from '../services/peers/peer-registry.js';
 import { startAutopilotScheduler } from '../services/autopilot/autopilot-scheduler.js';
 import { startContextBankTicker } from '../services/context-bank/context-bank-service.js';
 import { startBoardroomScheduler } from '../services/cron/boardroom-scheduler.js';
@@ -25,6 +31,54 @@ import { startCatalystPromoter } from '../services/riskflow/catalyst-promoter.js
 import * as projectxService from '../services/projectx-service.js';
 
 const log = createLogger('Boot');
+let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+async function registerLocalPeerOnBoot(): Promise<void> {
+  if (process.env.PEER_AUTO_REGISTER === 'false') {
+    log.info('Peer auto-register disabled (PEER_AUTO_REGISTER=false)');
+    return;
+  }
+
+  const userId =
+    process.env.PEER_BOOT_USER_ID ||
+    process.env.SUPABASE_BOOT_USER_ID ||
+    (process.env.BYPASS_AUTH === 'true' ? 'local-user' : '');
+
+  if (!userId) {
+    log.info('Peer auto-register skipped (set PEER_BOOT_USER_ID to enable)');
+    return;
+  }
+
+  const hermesAvailable = isHermesAvailable();
+  const capabilities = ['claude-cli'];
+  if (process.env.PEER_ENABLE_TWITTER !== 'false') capabilities.push('twitter-cli');
+  if (hermesAvailable) capabilities.push('hermes');
+
+  const peer = await registerPeer(userId, {
+    deviceName: process.env.PEER_DEVICE_NAME || hostname(),
+    platform: process.platform,
+    capabilities,
+    status: 'online',
+    hermesAvailable,
+  });
+
+  log.info('Local peer registered on boot', {
+    peerId: peer.id,
+    userId: peer.userId,
+    deviceName: peer.deviceName,
+    status: peer.status,
+    hermesAvailable: peer.hermesAvailable,
+  });
+
+  if (!localPeerHeartbeatTimer) {
+    localPeerHeartbeatTimer = setInterval(() => {
+      sendHeartbeat(peer.id, { status: 'online' }).catch((err) =>
+        log.warn('Local peer heartbeat failed (non-fatal)', { error: String(err) }),
+      );
+    }, 60_000);
+    localPeerHeartbeatTimer.unref?.();
+  }
+}
 
 export async function bootServices(): Promise<void> {
   log.info('Starting background services');
@@ -90,7 +144,12 @@ export async function bootServices(): Promise<void> {
   // Claude SDK bridge (non-blocking)
   initClaudeSDK()
     .then(() => startPersistentSession())
-    .then(() => log.info('Persistent Claude session started'))
+    .then(async () => {
+      log.info('Persistent Claude session started');
+      startHeartbeatMonitor();
+      log.info('Peer heartbeat monitor started');
+      await registerLocalPeerOnBoot();
+    })
     .catch((err) =>
       log.warn('Claude SDK init failed (non-fatal)', { error: String(err) })
     );

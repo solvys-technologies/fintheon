@@ -40,9 +40,11 @@ import { createSetupRoutes } from './setup/index.js';
 import { createTradeIdeasRoutes } from './trade-ideas/index.js';
 import { createProfileRoutes } from './profile/index.js';
 import { createAuthCallbackRoute } from './auth-callback.js';
+import { createAuthRoutes } from './auth/index.js';
 import { createCommentatorRoutes } from './commentator/index.js';
 import { createCalibrationRoutes } from './calibration/index.js';
 import { createHarperRoutes } from './harper/index.js';
+import { createPeersRoutes } from './peers/index.js';
 import predictionsRoutes from './predictions.js';
 
 export function registerRoutes(app: Hono): void {
@@ -97,6 +99,8 @@ export function registerRoutes(app: Hono): void {
 
   // Supabase OAuth callback relay — serves HTML that deep-links back to Electron
   app.route('/api/auth/supabase', createAuthCallbackRoute());
+  // Claude peers auth utility routes (login/me/admin role)
+  app.route('/api/auth', createAuthRoutes());
 
   // Cloud API — Supabase-backed scored items, ER sessions, settings, consilium
   app.route('/api/cloud', cloudRoutes);
@@ -139,6 +143,8 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/settings/*', authMiddleware, requireAuth);
   app.use('/api/profile', authMiddleware, requireAuth);
   app.use('/api/profile/*', authMiddleware, requireAuth);
+  app.use('/api/peers', authMiddleware, requireAuth);
+  app.use('/api/peers/*', authMiddleware, requireAuth);
   // Journal — public (local Electron app, no user auth needed)
 
   // Phase 1: Account routes
@@ -180,6 +186,9 @@ export function registerRoutes(app: Hono): void {
 
   // User profiles + app state (localStorage migration target)
   app.route('/api/profile', createProfileRoutes());
+
+  // Claude peers: registry, desks, heartbeat, group voice room
+  app.route('/api/peers', createPeersRoutes());
 
   // Trading journal (human psych + agent performance)
   app.route('/api/journal', createJournalRoutes());

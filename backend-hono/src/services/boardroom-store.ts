@@ -23,6 +23,16 @@ const memoryStore = {
   messages: new Map<string, BoardroomDBMessage[]>(),
 }
 
+function isLegacyBoardroomSchema(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error)
+  return (
+    msg.includes('thread_id') ||
+    msg.includes('peer_id') ||
+    msg.includes('content_parts') ||
+    msg.includes('column')
+  )
+}
+
 /** Get today's date in EST as YYYY-MM-DD */
 function todayEST(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
@@ -118,6 +128,9 @@ export async function addBoardroomMessage(
       content: msg.content,
       messageType: msg.messageType ?? 'chat',
       metadata: msg.metadata ?? {},
+      threadId: msg.threadId ?? null,
+      peerId: msg.peerId ?? null,
+      contentParts: msg.contentParts ?? null,
       createdAt: now,
     }
     const list = memoryStore.messages.get(sessionId) ?? []
@@ -128,18 +141,50 @@ export async function addBoardroomMessage(
     return message
   }
 
-  const result = await sql`
-    INSERT INTO boardroom_messages (session_id, agent, role, content, message_type, metadata)
-    VALUES (
-      ${sessionId},
-      ${msg.agent},
-      ${msg.role},
-      ${msg.content},
-      ${msg.messageType ?? 'chat'},
-      ${JSON.stringify(msg.metadata ?? {})}::jsonb
-    )
-    RETURNING *
-  `
+  let result: any[] = []
+  try {
+    result = await sql`
+      INSERT INTO boardroom_messages (
+        session_id,
+        agent,
+        role,
+        content,
+        message_type,
+        metadata,
+        thread_id,
+        peer_id,
+        content_parts
+      )
+      VALUES (
+        ${sessionId},
+        ${msg.agent},
+        ${msg.role},
+        ${msg.content},
+        ${msg.messageType ?? 'chat'},
+        ${JSON.stringify(msg.metadata ?? {})}::jsonb,
+        ${msg.threadId ?? null},
+        ${msg.peerId ?? null},
+        ${msg.contentParts ? JSON.stringify(msg.contentParts) : null}::jsonb
+      )
+      RETURNING *
+    `
+  } catch (error) {
+    if (!isLegacyBoardroomSchema(error)) throw error
+
+    // Backward compatibility: old deployments before nullable thread/peer/content_parts columns.
+    result = await sql`
+      INSERT INTO boardroom_messages (session_id, agent, role, content, message_type, metadata)
+      VALUES (
+        ${sessionId},
+        ${msg.agent},
+        ${msg.role},
+        ${msg.content},
+        ${msg.messageType ?? 'chat'},
+        ${JSON.stringify(msg.metadata ?? {})}::jsonb
+      )
+      RETURNING *
+    `
+  }
 
   // Bump session updated_at
   await sql`UPDATE boardroom_sessions SET updated_at = NOW() WHERE id = ${sessionId}`
@@ -201,4 +246,27 @@ export async function getSessionMessages(
     LIMIT ${limit} OFFSET ${offset}
   `
   return result.map((r) => mapRowToMessage(r as BoardroomMessageRow))
+}
+
+/** Get replies for a specific parent message thread. */
+export async function getThreadReplies(parentId: string): Promise<BoardroomDBMessage[]> {
+  if (!isDatabaseAvailable() || !sql) {
+    const replies: BoardroomDBMessage[] = []
+    for (const list of memoryStore.messages.values()) {
+      replies.push(...list.filter((message) => message.threadId === parentId))
+    }
+    return replies.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  }
+
+  try {
+    const result = await sql`
+      SELECT * FROM boardroom_messages
+      WHERE thread_id = ${parentId}
+      ORDER BY created_at ASC
+    `
+    return result.map((row) => mapRowToMessage(row as BoardroomMessageRow))
+  } catch (error) {
+    if (isLegacyBoardroomSchema(error)) return []
+    throw error
+  }
 }
