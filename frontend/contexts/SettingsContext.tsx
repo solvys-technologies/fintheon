@@ -49,6 +49,7 @@ interface DeveloperSettings {
   showPlaceholderBriefings: boolean;
   mirosharkSimulations: boolean;
   agentAutoProposals: boolean;
+  accountTrackerEnabled: boolean;
 }
 
 type AutoPilotMode = 'off' | 'semi' | 'autonomous';
@@ -204,6 +205,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       showPlaceholderBriefings: false,
       mirosharkSimulations: false,
       agentAutoProposals: false,
+      accountTrackerEnabled: false,
     })
   );
   const [autoPilotSettings, setAutoPilotSettings] = useState<AutoPilotSettings>(() =>

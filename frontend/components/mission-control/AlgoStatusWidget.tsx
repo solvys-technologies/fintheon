@@ -8,12 +8,13 @@ import { IS_INTERNAL_BUILD } from '../../lib/internal-build';
 
 export function AlgoStatusWidget() {
   const { tier } = useAuth();
-  const { tradingModels } = useSettings();
+  const { tradingModels, developerSettings } = useSettings();
   const backend = useBackend();
   const [algoEnabled, setAlgoEnabled] = useState<boolean>(false);
   const isLocked = !IS_INTERNAL_BUILD && tier === 'free';
 
   useEffect(() => {
+    if (!developerSettings.accountTrackerEnabled) return;
     const fetchAccount = async () => {
       try {
         const account = await backend.account.get();
@@ -25,7 +26,7 @@ export function AlgoStatusWidget() {
     fetchAccount();
     const interval = setInterval(fetchAccount, 5000);
     return () => clearInterval(interval);
-  }, [backend]);
+  }, [backend, developerSettings.accountTrackerEnabled]);
 
   const handleToggleAlgo = async () => {
     try {
