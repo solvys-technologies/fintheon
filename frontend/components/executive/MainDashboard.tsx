@@ -234,7 +234,7 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
         className="flex-1 overflow-y-auto scroll-smooth snap-y snap-mandatory"
       >
         {/* Page 1: Briefing (default) — NTK Brief + Session Calendar + Core KPIs + Action Tape */}
-        <div data-dash-page="0" className="min-h-full snap-start py-1 px-3 flex flex-col">
+        <div data-dash-page="0" className="min-h-full snap-start pt-0.5 pb-1 px-2 flex flex-col">
           {/* Setup Guide — first-time onboarding */}
           {showSetupGuide && (
             <div className="shrink-0 mb-5">
@@ -390,7 +390,7 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
         </div>
 
         {/* Page 2: Full RiskFlow */}
-        <div data-dash-page="1" className="min-h-full snap-start py-1 px-3 flex flex-col">
+        <div data-dash-page="1" className="min-h-full snap-start pt-0.5 pb-1 px-2 flex flex-col">
           <KanbanTitle title="RiskFlow" tag="Full Feed" tone="emerald" headerRight={
               <div className="flex items-center gap-1">
                 <AutoRefreshToggle size="xs" />
