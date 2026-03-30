@@ -4,7 +4,7 @@
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
 // [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowMini (same as non-iFrame Strategium)
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X, MessageSquare, Users, Cpu, Clock } from 'lucide-react';
 import type { IVScoreResponse } from '../../types/market-data';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
@@ -31,6 +31,7 @@ import RiskFlowMini from '../RiskFlowMini';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { SearchModal } from '../search/SearchModal';
 import { AskHarpSidebar } from '../chat/AskHarpSidebar';
+import { SessionsPanel } from '../chat/SessionsPanel';
 import { SettingsPage } from '../SettingsPanel';
 import { useSettings } from '../../contexts/SettingsContext';
 import { PsychAssistDockable, type PsychAssistDockTarget } from './PsychAssistDockable';
@@ -136,6 +137,7 @@ function MainLayoutInner() {
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] = useState(false);
   const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [showAskHarp, setShowAskHarp] = useState(false);
+  const [showSessionsPopup, setShowSessionsPopup] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [sidebarOverlayVisible, setSidebarOverlayVisible] = useState(false);
   const [missionWidgetOrder, setMissionWidgetOrderState] = useState<MissionWidgetId[]>(() =>
@@ -889,13 +891,63 @@ function MainLayoutInner() {
           className={`absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl transition-transform duration-300 ease-in-out ${showAskHarp ? 'translate-x-0' : 'translate-x-full'}`}
           style={{ pointerEvents: showAskHarp ? 'auto' : 'none' }}
         >
-          <div className="flex items-center justify-end px-4 py-2 flex-shrink-0">
+          <div className="flex items-center justify-between px-3 py-2 flex-shrink-0">
+            {/* Left icons — match main Consilium functions + session history */}
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => { setShowAskHarp(false); navigateTab('analysis'); }}
+                className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
+                title="Ask Harp (full)"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => { setShowAskHarp(false); navigateTab('analysis'); }}
+                className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
+                title="Boardroom"
+              >
+                <Users className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => { setShowAskHarp(false); navigateTab('analysis'); }}
+                className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
+                title="Apparatus"
+              >
+                <Cpu className="w-3.5 h-3.5" />
+              </button>
+              {/* Session history popup */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowSessionsPopup((v: boolean) => !v)}
+                  className={`p-1.5 rounded-md transition-colors ${showSessionsPopup ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10' : 'text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8'}`}
+                  title="Sessions"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                </button>
+                {showSessionsPopup && (
+                  <div
+                    className="absolute top-full left-0 mt-1 z-50 w-[280px] h-[360px] rounded-lg border overflow-hidden backdrop-blur-xl"
+                    style={{
+                      borderColor: 'color-mix(in srgb, var(--fintheon-accent) 25%, transparent)',
+                      backgroundColor: 'color-mix(in srgb, var(--fintheon-bg) 95%, var(--fintheon-accent) 5%)',
+                      boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+                    }}
+                  >
+                    <SessionsPanel
+                      onSelectSession={(id) => { setShowSessionsPopup(false); }}
+                      onNewSession={() => { setShowSessionsPopup(false); }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Close */}
             <button
               onClick={() => setShowAskHarp(false)}
-              className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors"
+              className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
               title="Close"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
