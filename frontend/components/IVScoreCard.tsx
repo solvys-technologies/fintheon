@@ -272,7 +272,7 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                 <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
                 <h5 className="text-xs font-semibold text-[var(--fintheon-accent)]">Next Session Forecast</h5>
                 <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-gray-500 ml-auto">
-                  {data.prediction.source === 'mirofish' ? 'MiroFish' : 'Heuristic'}
+                  {data.prediction.source === 'miroshark' ? 'MiroShark' : 'Heuristic'}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-[10px]">

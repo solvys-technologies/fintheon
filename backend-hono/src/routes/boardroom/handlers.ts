@@ -1,7 +1,8 @@
-// [claude-code 2026-03-16] Agent backend v7.9: updated agent names (Harper-Hermes, Consul, Herald)
+// [claude-code 2026-03-16] Agent backend v7.9: updated agent names (Harper-Opus, Consul, Herald)
 // [claude-code 2026-03-20] Added standup triggers, breaking news, herald alert, scheduler status routes
 // [claude-code 2026-03-20] T2: Consilium routes — filter params on /messages, developments, scorecards, predictions
 // [claude-code 2026-03-23] fix(boardroom): switch message fetching from JSONL to Supabase boardroom-store
+// [claude-code 2026-03-26] Thought bank handlers + "show full analysis" command detection
 import type { Context } from 'hono';
 import {
   getInterventionMessages,
@@ -17,6 +18,14 @@ import type { InterventionType, InterventionSeverity, BoardroomAgent } from '../
 import { spawnBoardroomStandup, spawnBoardroomNewsResponse, spawnBoardroomBroadcast, type StandupTask } from '../../services/boardroom-spawner.js';
 import { triggerBoardroomForNews, createHeraldAlert } from '../../services/boardroom-news-trigger.js';
 import { getBoardroomSchedulerStatus } from '../../services/cron/boardroom-scheduler.js';
+import {
+  getRecentThoughts,
+  getThoughtById,
+  getAgentThoughts as getAgentThoughtsFromStore,
+  getThoughtByMessageId,
+} from '../../services/thought-bank-store.js';
+import type { AgentName } from '../../types/context-bank.js';
+import { VALID_AGENTS } from '../../types/context-bank.js';
 
 interface SendInterventionBody {
   message?: string;
@@ -116,6 +125,23 @@ export async function handleSendMentionMessage(c: Context) {
       return c.json({ error: 'agent is required' }, 400);
     }
 
+    // Detect "show full analysis" command
+    const showFullPattern = /show\s+full\s+analysis/i;
+    if (showFullPattern.test(message)) {
+      const agentName = agent as AgentName;
+      if (VALID_AGENTS.includes(agentName)) {
+        const thoughts = await getAgentThoughtsFromStore(agentName, { limit: 1 });
+        if (thoughts.length > 0) {
+          const thought = thoughts[0];
+          const header = `📄 **Full Analysis** — ${agent} (${thought.title || 'Recent'})\n\n`;
+          await appendToBoardroom(header + thought.fullAnalysis, 'assistant');
+          return c.json({ success: true, expanded: true, thoughtId: thought.id });
+        }
+      }
+      await appendToBoardroom(`_No recent analysis found for ${agent}._`, 'system');
+      return c.json({ success: true, expanded: false });
+    }
+
     // @everyone broadcast: all agents respond hierarchically
     if (agent === '@everyone') {
       // Fire-and-forget — responses stream into boardroom as each agent finishes
@@ -209,7 +235,7 @@ export async function handlePostTradeIdea(c: Context) {
       keyLevels?: { label: string; price: number }[];
     }>().catch(() => null);
 
-    const agent = body?.agent || 'Harper-Hermes';
+    const agent = body?.agent || 'Harper-Opus';
     const instrument = body?.instrument;
     const direction = body?.direction || 'neutral';
     const conviction = body?.conviction || 'medium';
@@ -523,5 +549,82 @@ export async function handleResolvePrediction(c: Context) {
   } catch (error) {
     console.error('[Boardroom] Failed to resolve prediction:', error);
     return c.json({ error: 'Failed to resolve prediction' }, 500);
+  }
+}
+
+// ─── Thought Bank Handlers ──────────────────────────────────────────
+
+/**
+ * GET /api/boardroom/thoughts
+ * Fetch recent thoughts with optional ?agent= and ?category= filters.
+ */
+export async function handleGetThoughts(c: Context) {
+  try {
+    const agent = c.req.query('agent') as AgentName | undefined;
+    const category = c.req.query('category') as any;
+    const limitParam = c.req.query('limit');
+    const limit = limitParam ? parseInt(limitParam, 10) : 20;
+
+    const thoughts = await getRecentThoughts({ agent, category, limit });
+    return c.json({ thoughts });
+  } catch (error) {
+    console.error('[Boardroom] Failed to fetch thoughts:', error);
+    return c.json({ error: 'Failed to fetch thoughts' }, 500);
+  }
+}
+
+/**
+ * GET /api/boardroom/thoughts/:id
+ * Fetch a single thought by UUID.
+ */
+export async function handleGetThoughtById(c: Context) {
+  try {
+    const id = c.req.param('id');
+    const thought = await getThoughtById(id);
+    if (!thought) return c.json({ error: 'Thought not found' }, 404);
+    return c.json({ thought });
+  } catch (error) {
+    console.error('[Boardroom] Failed to fetch thought:', error);
+    return c.json({ error: 'Failed to fetch thought' }, 500);
+  }
+}
+
+/**
+ * GET /api/boardroom/thoughts/agent/:agent
+ * Fetch thoughts for a specific agent.
+ */
+export async function handleGetAgentThoughts(c: Context) {
+  try {
+    const agent = c.req.param('agent') as AgentName;
+    const limitParam = c.req.query('limit');
+    const limit = limitParam ? parseInt(limitParam, 10) : 20;
+
+    const thoughts = await getAgentThoughtsFromStore(agent, { limit });
+    return c.json({ thoughts });
+  } catch (error) {
+    console.error('[Boardroom] Failed to fetch agent thoughts:', error);
+    return c.json({ error: 'Failed to fetch agent thoughts' }, 500);
+  }
+}
+
+/**
+ * POST /api/boardroom/thoughts/:messageId/full
+ * Retrieve the full analysis linked to a boardroom message and post it to chat.
+ */
+export async function handleShowFullAnalysis(c: Context) {
+  try {
+    const messageId = c.req.param('messageId');
+    const thought = await getThoughtByMessageId(messageId);
+
+    if (!thought) {
+      return c.json({ error: 'No analysis found for this message' }, 404);
+    }
+
+    const header = `📄 **Full Analysis** — ${thought.agent} (${thought.title || 'Recent'})\n\n`;
+    await appendToBoardroom(header + thought.fullAnalysis, 'assistant');
+    return c.json({ success: true, thoughtId: thought.id });
+  } catch (error) {
+    console.error('[Boardroom] Failed to show full analysis:', error);
+    return c.json({ error: 'Failed to show full analysis' }, 500);
   }
 }

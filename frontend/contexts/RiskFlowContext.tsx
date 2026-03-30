@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] Fix infinite scroll: poll uses loadedCountRef so auto-refresh doesn't reset scroll progress
 // [claude-code 2026-03-14] Removed MarketWatch RSS polling — feed now Notion + backend only.
 // [claude-code 2026-03-14] XCLI: minMacroLevel=0 so all items show regardless of macro level.
 // [claude-code 2026-03-12] Instrument persistence: passes selectedSymbol to backend feed poll
@@ -26,6 +27,10 @@ interface RiskFlowContextValue {
   isSeen: (id: string) => boolean;
   refresh: () => Promise<void>;
   refreshing: boolean;
+  loadMore: () => Promise<void>;
+  loadingMore: boolean;
+  hasMore: boolean;
+  initialLoaded: boolean;
 }
 
 const RiskFlowContext = createContext<RiskFlowContextValue>({
@@ -41,6 +46,10 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   isSeen: () => false,
   refresh: async () => {},
   refreshing: false,
+  loadMore: async () => {},
+  loadingMore: false,
+  hasMore: false,
+  initialLoaded: false,
 });
 
 const NOTION_POLL_MS = 60_000;
@@ -64,7 +73,7 @@ function mapBackendSource(source: string): RiskFlowAlert['source'] {
   return 'backend';
 }
 
-const DISMISSED_STORAGE_KEY = 'fintheon:riskflow-dismissed:v1';
+// [claude-code 2026-03-28] S9-T2: Removed dismissedIds — items are never hidden
 const SEEN_STORAGE_KEY = 'fintheon:riskflow-seen:v1';
 
 function loadStoredIds(key: string): Set<string> {
@@ -93,11 +102,15 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => loadStoredIds(DISMISSED_STORAGE_KEY));
   const [seenIds, setSeenIds] = useState<Set<string>>(() => loadStoredIds(SEEN_STORAGE_KEY));
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [initialLoaded, setInitialLoaded] = useState(false);
   const notionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Track how many items have been loaded (initial 50 + loadMore pages) so polls don't reset scroll progress
+  const loadedCountRef = useRef(50);
 
   // Notion trade idea polling
   const pollNotion = useCallback(async () => {
@@ -161,9 +174,10 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   }, [pollNotion, autoRefresh]);
 
   // Backend feed polling (twitter-cli, Polymarket, Economic Calendar)
+  // Uses loadedCountRef so polls fetch all items the user has scrolled through (not just first 50)
   const pollBackendFeed = useCallback(async () => {
     try {
-      const response = await backend.riskflow.list({ minMacroLevel: 0, limit: 30, instrument: selectedSymbol.symbol });
+      const response = await backend.riskflow.list({ minMacroLevel: 0, limit: loadedCountRef.current, instrument: selectedSymbol.symbol });
       const alerts: RiskFlowAlert[] = response.items.map((item) => ({
         id: `backend-${item.id}`,
         headline: item.title,
@@ -181,15 +195,81 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         pointRange: item.priceBrainScore?.impliedPoints ?? null,
         direction: item.priceBrainScore?.sentiment ?? null,
         cyclical: item.priceBrainScore?.classification ?? null,
-        instrument: item.priceBrainScore?.instrument ?? null,
+        instrument: selectedSymbol.symbol,
         authorHandle: item.authorHandle ?? null,
+        subScores: item.subScores ?? null,
+        riskType: (item.riskType as RiskFlowAlert['riskType']) ?? null,
+        agentNote: item.agentNote ?? null,
+        agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
+        econData: item.econData ?? null,
+        promotedAt: (item as any).promotedAt ?? null,
+        narrativeThreads: (item as any).narrativeThreads ?? [],
+        category: (item as any).category ?? null,
+        status: (item as any).status ?? null,
+        marketImpact: (item as any).marketImpact ?? null,
       }));
       setBackendAlerts(alerts);
-      console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items (instrument=${selectedSymbol.symbol})`);
+      setHasMore(response.hasMore ?? false);
+      setInitialLoaded(true);
+      console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items, hasMore: ${response.hasMore} (instrument=${selectedSymbol.symbol})`);
     } catch (err) {
       console.warn('[RiskFlowContext] Backend feed poll error:', err);
+      setInitialLoaded(true);
     }
   }, [backend, selectedSymbol.symbol]);
+
+  // Load more items (append to existing)
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const response = await backend.riskflow.list({
+        minMacroLevel: 0,
+        limit: 50,
+        offset: backendAlerts.length,
+        instrument: selectedSymbol.symbol,
+      });
+      const newAlerts: RiskFlowAlert[] = response.items.map((item) => ({
+        id: `backend-${item.id}`,
+        headline: item.title,
+        summary: item.summary || item.content || '',
+        url: item.url,
+        publishedAt:
+          typeof item.publishedAt === 'string'
+            ? item.publishedAt
+            : (item.publishedAt instanceof Date ? item.publishedAt : new Date(item.publishedAt)).toISOString(),
+        source: mapBackendSource(item.source),
+        severity: macroLevelToSeverity(item.macroLevel ?? 0),
+        symbols: item.symbols ?? [],
+        tags: (item as RiskFlowItem & { tags?: string[] }).tags ?? [],
+        isBreaking: item.isBreaking ?? false,
+        pointRange: item.priceBrainScore?.impliedPoints ?? null,
+        direction: item.priceBrainScore?.sentiment ?? null,
+        cyclical: item.priceBrainScore?.classification ?? null,
+        instrument: selectedSymbol.symbol,
+        authorHandle: item.authorHandle ?? null,
+        subScores: item.subScores ?? null,
+        riskType: (item.riskType as RiskFlowAlert['riskType']) ?? null,
+        agentNote: item.agentNote ?? null,
+        agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
+        econData: item.econData ?? null,
+        promotedAt: (item as any).promotedAt ?? null,
+        narrativeThreads: (item as any).narrativeThreads ?? [],
+        category: (item as any).category ?? null,
+        status: (item as any).status ?? null,
+        marketImpact: (item as any).marketImpact ?? null,
+      }));
+      setBackendAlerts(prev => [...prev, ...newAlerts]);
+      setHasMore(response.hasMore ?? false);
+      // Bump loaded count so subsequent polls fetch the full set
+      loadedCountRef.current = backendAlerts.length + newAlerts.length;
+      console.debug(`[RiskFlowContext] Loaded ${newAlerts.length} more items (total: ${loadedCountRef.current})`);
+    } catch (err) {
+      console.warn('[RiskFlowContext] loadMore error:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [backend, selectedSymbol.symbol, backendAlerts.length, loadingMore, hasMore]);
 
   useEffect(() => {
     void pollBackendFeed();
@@ -203,41 +283,38 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   }, [pollBackendFeed, autoRefresh]);
 
   // Merge: Notion (pinned) → Backend feed
-  // [claude-code 2026-03-11] 24h stalemate rule: drop items older than 24h on init/render
-  const STALE_CUTOFF_MS = 24 * 60 * 60 * 1000;
-  const now = Date.now();
-  const isFresh = (a: RiskFlowAlert) => {
-    if (!a.publishedAt) return true;
-    return now - new Date(a.publishedAt).getTime() < STALE_CUTOFF_MS;
-  };
-
+  // [claude-code 2026-03-28] S9-T2: Removed 24h stalemate filter — items persist forever (backfill data)
   const seenBackendIds = new Set(notionAlerts.map((a) => a.id));
   const dedupedBackend = backendAlerts.filter((a) => !seenBackendIds.has(a.id));
-  const merged = [...notionAlerts, ...dedupedBackend].filter(isFresh);
+  const merged = [...notionAlerts, ...dedupedBackend];
   // FIX 1: Ensure every item has pointRange, direction, cyclical
   ensureScoring(merged, selectedSymbol.symbol);
   // FIX 4: Downgrade non-financial BREAKING headlines
   downgradeNonFinancialBreaking(merged);
-  const visibleAlerts = merged.filter((a) => !dismissedIds.has(a.id));
+  const visibleAlerts = merged;
   const highCount = visibleAlerts.filter((a) => a.severity === 'high' || a.severity === 'critical').length;
   const mediumCount = visibleAlerts.filter((a) => a.severity === 'medium').length;
   const lowCount = visibleAlerts.filter((a) => a.severity === 'low').length;
 
+  // Stabilize merged ids so clearAll doesn't change every render
+  const mergedIdsRef = useRef<string[]>([]);
+  const mergedIds = merged.map((a) => a.id);
+  const mergedIdsKey = mergedIds.join(',');
+  if (mergedIdsRef.current.join(',') !== mergedIdsKey) {
+    mergedIdsRef.current = mergedIds;
+  }
+
+  // [claude-code 2026-03-28] S9-T2: clearAll/removeAlert are no-ops — items persist forever
   const clearAll = useCallback(() => {
-    setDismissedIds((prev) => {
-      const next = new Set(prev);
-      merged.forEach((a) => next.add(a.id));
-      return next;
-    });
+    const ids = mergedIdsRef.current;
     setSeenIds((prev) => {
       const next = new Set(prev);
-      merged.forEach((a) => next.add(a.id));
+      ids.forEach((id) => next.add(id));
       return next;
     });
-  }, [merged]);
+  }, [mergedIdsKey]);
 
   const removeAlert = useCallback((id: string) => {
-    setDismissedIds((prev) => new Set(prev).add(id));
     setSeenIds((prev) => new Set(prev).add(id));
   }, []);
 
@@ -286,10 +363,6 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   }, [backend, pollNotion, pollBackendFeed]);
 
   useEffect(() => {
-    persistIds(DISMISSED_STORAGE_KEY, dismissedIds);
-  }, [dismissedIds]);
-
-  useEffect(() => {
     persistIds(SEEN_STORAGE_KEY, seenIds);
   }, [seenIds]);
 
@@ -308,6 +381,10 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         isSeen,
         refresh,
         refreshing,
+        loadMore,
+        loadingMore,
+        hasMore,
+        initialLoaded,
       }}
     >
       {children}

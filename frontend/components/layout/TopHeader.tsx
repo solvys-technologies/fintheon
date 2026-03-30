@@ -20,22 +20,22 @@ import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, 
 import { WhatsNewButton } from '../onboarding/FirstTimeTour';
 import { TraderNametag } from '../TraderNametag';
 import type { IVScoreResponse } from '../../types/market-data';
-import type { TradingPlatform } from '../TopStepXBrowser';
+import type { TradingPlatform } from '../TradingBrowser';
 import { useDND } from '../../contexts/DNDContext';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'proposals' | 'apparatus' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'performance' | 'proposals' | 'apparatus' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
-  executive: 'Dashboard',
+  dashboard: 'Dashboard',
   feed: 'Dashboard', // feed section removed; fallback for history
   analysis: 'Consilium',
   proposals: 'Proposals',
   apparatus: 'Apparatus',
-  news: 'RiskFlow',
-  notion: 'Scriptorium',
+  riskflow: 'RiskFlow',
+  scriptorium: 'Scriptorium',
   econ: 'Economic Calendar',
-  narrative: 'NarrativeFlow',
-  earnings: 'Performance',
+  narrative: 'NarrativeMap',
+  performance: 'Performance',
   settings: 'Settings',
 };
 
@@ -71,7 +71,7 @@ export function TopHeader({
   onLayoutOptionChange,
   askHarpOpen = false,
   onAskHarpToggle,
-  activeTab = 'executive',
+  activeTab = 'dashboard',
   tabHistory = [],
   historyIndex = 0,
   onBack,

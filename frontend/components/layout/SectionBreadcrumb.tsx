@@ -3,15 +3,15 @@ import { ChevronLeft, ChevronRight, ChevronRight as Separator } from 'lucide-rea
 type NavTab = string;
 
 const TAB_META: Record<string, { label: string; parent?: string }> = {
-  executive: { label: 'Dashboard' },
+  dashboard: { label: 'Dashboard' },
   feed: { label: 'Dashboard' }, // feed removed from sidebar; fallback for history
   analysis: { label: 'Chat' },
-  news: { label: 'RiskFlow' },
+  riskflow: { label: 'RiskFlow' },
   chatroom: { label: 'Board Room' },
-  notion: { label: 'Research Department' },
+  scriptorium: { label: 'Scriptorium' },
   econ: { label: 'Economic Calendar' },
-  narrative: { label: 'NarrativeFlow' },
-  earnings: { label: 'Performance' },
+  narrative: { label: 'NarrativeMap' },
+  performance: { label: 'Performance' },
   team: { label: 'Team' },
   settings: { label: 'Settings' },
 };

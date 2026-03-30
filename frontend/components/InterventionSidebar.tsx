@@ -65,10 +65,9 @@ export function InterventionSidebar({ messages, sending, onSend, onMention, acti
             <p className="text-sm font-semibold text-white">{activeAgent?.name || 'Harper'}</p>
             <div className="flex items-center gap-1.5">
               <div
-                className="w-[13px] h-[13px] rounded-full flex items-center justify-center"
-                style={{ backgroundColor: '#D97757' }}
+                className="flex items-center justify-center"
               >
-                <span style={{ fontSize: '6px', color: 'white', fontWeight: 800, lineHeight: 1 }}>A</span>
+                <svg width="13" height="13" viewBox="0 0 60 60" fill="none"><path d="M37.4 10.2L32.2 24.5H21.8L16.6 10.2C15.5 7.2 17.6 4 20.7 4h18.6c3.1 0 5.2 3.2 4.1 6.2zM21.8 24.5L9.2 56.5c-1 2.6-4.4 3-5.8.8L0 52l21.8-27.5zm16.4 0L50.8 56.5c1 2.6 4.4 3 5.8.8L60 52 38.2 24.5z" fill="#D97757"/></svg>
               </div>
               <span className="text-[11px] font-medium" style={{ color: '#D97757' }}>Claude Opus 4.6</span>
             </div>

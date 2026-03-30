@@ -190,10 +190,10 @@ export interface WhaleAlertSummary {
 
 // [claude-code 2026-03-16] Agent backend v7.9: updated desk IDs and agent names
 export type DeskId = 'fundamentals' | 'futures' | 'pma-merged' | 'news-sentiment'
-export type AgentName = 'Harper-Hermes' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald'
+export type AgentName = 'Harper-Opus' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald'
 
 export const VALID_DESKS: DeskId[] = ['fundamentals', 'futures', 'pma-merged', 'news-sentiment']
-export const VALID_AGENTS: AgentName[] = ['Harper-Hermes', 'Oracle', 'Feucht', 'Consul', 'Herald']
+export const VALID_AGENTS: AgentName[] = ['Harper-Opus', 'Oracle', 'Feucht', 'Consul', 'Herald']
 
 export interface DeskAlert {
   severity: 'info' | 'warning' | 'critical'

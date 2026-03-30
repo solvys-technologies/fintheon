@@ -25,7 +25,7 @@ const KEY_MAP: Record<string, string> = {
   'pulse_mcp_active_connectors': 'fintheon:mcp-active-connectors',
   'pulse_regime_tracker_v2': 'fintheon:regime-tracker:v2',
   'pulse_regime_tracker_v1': 'fintheon:regime-tracker:v1',
-  'pulse_chat_checkpoints:v1': 'fintheon:chat-checkpoints:v1',
+  // 'pulse_chat_checkpoints:v1' removed — checkpoint system replaced by conversation history (S9-T5)
   'pulse_setup_dismissed': 'fintheon:setup-dismissed',
   'pulse_premarket_reminder_last:v1': 'fintheon:premarket-reminder-last:v1',
   'pulse_gateway_persistent_thread_enabled': 'fintheon:gateway-persistent-thread-enabled',

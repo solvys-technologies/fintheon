@@ -11,7 +11,25 @@
       "WebFetch(*)",
       "mcp__claude_ai_Supabase__list_projects",
       "mcp__claude_ai_Supabase__execute_sql",
-      "mcp__claude_ai_Supabase__get_publishable_keys"
+      "mcp__claude_ai_Supabase__get_publishable_keys",
+      "Skill(firecrawl-scrape)",
+      "Skill(firecrawl-scrape:*)",
+      "mcp__framer__getProjectXml",
+      "mcp__framer__getProjectWebsiteUrl",
+      "mcp__paper__get_basic_info",
+      "mcp__framer__searchFonts",
+      "mcp__framer__manageTextStyle",
+      "mcp__framer__manageColorStyle",
+      "mcp__paper__create_artboard",
+      "mcp__paper__write_html",
+      "mcp__framer__updateXmlForNode",
+      "mcp__framer__getNodeXml",
+      "mcp__browser__open",
+      "mcp__browser__screenshot",
+      "mcp__browser__console_logs",
+      "mcp__browser__playwright",
+      "mcp__browser__network_requests",
+      "mcp__browser__close"
     ]
   }
 }

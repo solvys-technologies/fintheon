@@ -242,7 +242,7 @@ export function formatAlertForBoardroom(alert: HeraldSentinelAlert): string {
     message += `*Magnitude:* ${alert.impactMagnitude}/100\n`;
   }
 
-  message += `\n_@Harper-Hermes convening boardroom for rapid assessment_`;
+  message += `\n_@Harper-Opus convening boardroom for rapid assessment_`;
 
   return message;
 }
@@ -273,7 +273,7 @@ export async function triggerBoardroomForNews(
   // Post to boardroom
   await appendToBoardroom(message, 'assistant');
 
-  // Also send to intervention channel to ensure Harper-Hermes sees it immediately
+  // Also send to intervention channel to ensure Harper-Opus sees it immediately
   const interventionMessage = `🚨 BREAKING: ${alert.headline} (Macro Level ${alert.macroLevel})`;
   await sendToIntervention(interventionMessage, 'pic-intervention');
 

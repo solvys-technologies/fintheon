@@ -13,6 +13,7 @@ export const COMMANDMENTS: Commandment[] = [
       Feucht: 'References when rejecting low-conviction setups',
     },
     relatedCommandments: [13],
+    backgroundStory: 'Born from a string of revenge trades in September 2024 when a missed /NQ entry at the 50-fib led to three consecutive forced re-entries, each worse than the last. The $2,100 drawdown that followed taught the desk that chasing is more expensive than missing.',
   },
   {
     number: 2,
@@ -25,6 +26,7 @@ export const COMMANDMENTS: Commandment[] = [
       All: 'Reinforces during dead calendar days',
     },
     relatedCommandments: [],
+    backgroundStory: 'Written during a two-week cold streak in October 2024 when zero setups triggered and the urge to force a trade peaked daily. The realization that sitting out IS the position kept the account intact through a choppy tape.',
   },
   {
     number: 3,
@@ -37,6 +39,7 @@ export const COMMANDMENTS: Commandment[] = [
       Harper: 'Validates conviction level before approval',
     },
     relatedCommandments: [8, 10],
+    backgroundStory: 'Codified after the BLS revision of August 21st, 2024, when 818,000 jobs vanished from the record. A "gut feel" NQ long placed without checking the economic calendar got stopped out in minutes. Hard-block rule was born that night.',
   },
   {
     number: 4,
@@ -49,6 +52,7 @@ export const COMMANDMENTS: Commandment[] = [
       Harper: 'Profit management reminder',
     },
     relatedCommandments: [9],
+    backgroundStory: 'A +$2,400 NQ short that turned into a -$300 loss because the exit was moved three times "for more." The PDPT target ($1,550/day) was established that week as a non-negotiable profit ceiling to combat greed.',
   },
   {
     number: 5,
@@ -61,6 +65,7 @@ export const COMMANDMENTS: Commandment[] = [
       Oracle: 'Identifies regime (trending/choppy, efficient/inefficient)',
     },
     relatedCommandments: [3],
+    backgroundStory: 'Three consecutive losing sessions in November 2024 traced to applying a trending model during a choppy, mean-reverting tape. Oracle built the regime detection system that same weekend.',
   },
   {
     number: 6,
@@ -73,6 +78,7 @@ export const COMMANDMENTS: Commandment[] = [
       PsychAssist: 'Primary tilt detection vector',
     },
     relatedCommandments: [1, 7, 13],
+    backgroundStory: 'The single most expensive behavioral pattern in the fund\'s history. A -$800 NQ long loss was immediately followed by another NQ long "to get it back," then another. Total damage: -$3,200 in 40 minutes. PsychAssist\'s tilt detection system was built specifically to prevent this.',
   },
   {
     number: 7,
@@ -85,6 +91,7 @@ export const COMMANDMENTS: Commandment[] = [
       'Risk Manager': 'Rejects proposals that increase exposure on losers',
     },
     relatedCommandments: [6, 12],
+    backgroundStory: 'Feucht added to a losing /NQ long twice during the Yen Flash Crash of August 5th, 2024, convinced the thesis was right. By the time the third add was blocked manually, the position was -$2,800. Hard-block rule was immediate.',
   },
   {
     number: 8,
@@ -98,6 +105,7 @@ export const COMMANDMENTS: Commandment[] = [
     },
     relatedCommandments: [3, 12],
     mentorSource: 'Dr. David Paul',
+    backgroundStory: 'Derived from Dr. David Paul\'s mentorship framework. The phrase "a good trade is a hard trade" was first tested when a textbook 61.8% fib entry on /NQ felt terrifying to take — and it ran 180 points. The best entries always feel uncomfortable.',
   },
   {
     number: 9,
@@ -110,6 +118,7 @@ export const COMMANDMENTS: Commandment[] = [
       Harper: 'Session discipline reminder',
     },
     relatedCommandments: [2, 11],
+    backgroundStory: 'On November 7th, 2024, the Fed pivot day, patience paid off spectacularly. Instead of chasing the initial spike, the desk waited 45 minutes for a pullback to the 38.2% fib. The entry ran 240 points by close.',
   },
   {
     number: 10,
@@ -122,6 +131,7 @@ export const COMMANDMENTS: Commandment[] = [
       Feucht: 'Thesis re-validation before execution',
     },
     relatedCommandments: [3, 11],
+    backgroundStory: 'A degraded setup on /ES during the Liberation Day tariff shock was still taken because "the original thesis was good." It wasn\'t anymore — context had changed entirely. Capital preservation over ego preservation.',
   },
   {
     number: 11,
@@ -134,6 +144,7 @@ export const COMMANDMENTS: Commandment[] = [
       All: 'Daily no-trade recommendation when no catalyst present',
     },
     relatedCommandments: [2, 9],
+    backgroundStory: 'A dead Friday between Christmas and New Year\'s 2024 — zero economic data, thin volume, no catalyst. A boredom trade was placed "just to have skin in the game." It chopped around for two hours and stopped out. The lesson cost $400 and a Friday afternoon.',
   },
   {
     number: 12,
@@ -146,6 +157,7 @@ export const COMMANDMENTS: Commandment[] = [
       'Risk Manager': 'Rejects proposals without a defined stop-loss level',
     },
     relatedCommandments: [7, 8],
+    backgroundStory: 'August 5th, 2024, Yen Flash Crash. A position without a pre-defined stop rode all the way down. Manual exit at the worst possible moment cost the desk more than the original thesis would have lost at the planned invalidation level.',
   },
   {
     number: 13,
@@ -158,6 +170,7 @@ export const COMMANDMENTS: Commandment[] = [
       All: 'Final check before any forced or marginal trade',
     },
     relatedCommandments: [1],
+    backgroundStory: 'The deliberate bookend. After every session that ended badly, this was the phrase that prevented the walk to the desk the next morning from feeling like dread. The market will be there tomorrow. Step away clean.',
   },
   {
     number: 14,
@@ -170,5 +183,6 @@ export const COMMANDMENTS: Commandment[] = [
       PsychAssist: 'Gates trading until routine is verified complete',
     },
     relatedCommandments: [3],
+    backgroundStory: 'Two of the worst trading days in fund history — both started with a skipped morning routine. No levels drawn, no overnight move reviewed, no economic calendar checked. The correlation was undeniable. Hard-block rule enforced by PsychAssist.',
   },
 ];

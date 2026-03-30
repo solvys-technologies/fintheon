@@ -153,6 +153,22 @@ export default function CatalystCard({
             >
               {SOURCE_LABELS[catalyst.source] || catalyst.source}
             </span>
+
+            {/* S9-T2: Direction bias + market impact indicators */}
+            {catalyst.directionBias && catalyst.directionBias !== 'neutral' && (
+              <span
+                className="rounded-full px-1.5 py-0.5 font-mono font-bold"
+                style={{
+                  fontSize: '8px',
+                  color: catalyst.directionBias === 'bullish' ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)',
+                }}
+              >
+                {catalyst.directionBias === 'bullish' ? '+' : '-'}
+                {catalyst.marketImpact?.es?.points
+                  ? ` +${Math.abs(catalyst.marketImpact.es.points).toFixed(0)} pts`
+                  : ''}
+              </span>
+            )}
           </div>
 
           {/* Tag pills */}

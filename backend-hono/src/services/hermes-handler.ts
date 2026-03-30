@@ -12,6 +12,7 @@
 import { execFile, spawn as spawnProcess } from 'node:child_process'
 import type { HermesAgentRole } from './hermes-service.js'
 import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from './ai/agent-instructions/index.js'
+import { buildThoughtBankPromptBlock } from './ai/agent-instructions/thought-bank-awareness.js'
 import { createLogger } from '../lib/logger.js'
 
 const log = createLogger('Hermes')
@@ -197,7 +198,7 @@ function generateMDBReport(): string {
 - **VIX**: Monitoring volatility levels
 
 ### Agent Check-In
-- **Harper-Hermes/CAO**: Operational
+- **Harper-Opus/CAO**: Operational
 - **Oracle (All-Seer)**: Standing by
 - **Feucht (Futures & Risk)**: Ready for setups
 - **Consul (Fundamentals)**: Tracking mega-caps
@@ -362,7 +363,7 @@ function generateMacroAnalysis(intent: string, _message: string): string {
 
 function generateGeneralResponse(agent: HermesAgentRole, _message: string): string {
   const agentName = {
-    'harper-cao': 'Harper-Hermes (CAO)',
+    'harper-cao': 'Harper-Opus (CAO)',
     'pma-merged': 'Oracle (All-Seer)',
     'futures-desk': 'Feucht (Futures & Risk)',
     'fundamentals-desk': 'Consul (Fundamentals)',
@@ -387,6 +388,15 @@ ${agent === 'herald' ? '- News sentiment analysis\n- Social signal detection\n- 
 
 const OPENROUTER_OPUS_MODEL = 'anthropic/claude-sonnet-4-6'
 
+/** Map HermesAgentRole to display name for thought bank queries */
+const BOARDROOM_AGENT_NAMES: Record<string, string> = {
+  'harper-cao': 'Harper-Opus',
+  'futures-desk': 'Feucht',
+  'fundamentals-desk': 'Consul',
+  'pma-merged': 'Oracle',
+  'herald': 'Herald',
+}
+
 /**
  * Main handler — routes through OpenRouter (Nous subscription) + Claude Sonnet 4.6
  */
@@ -399,7 +409,10 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
   const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
   // Inject live RiskFlow headlines so agents can reference real-time data
   const feedContext = await buildFeedContext()
-  const systemPrompt = basePrompt + feedContext
+  // Cross-agent thought bank awareness — what other agents are thinking
+  const agentDisplayName = BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? 'Harper-Opus'
+  const thoughtBankBlock = await buildThoughtBankPromptBlock(agentDisplayName)
+  const systemPrompt = basePrompt + feedContext + thoughtBankBlock
   const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: 'system', content: systemPrompt }
   ]

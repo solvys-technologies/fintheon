@@ -147,7 +147,7 @@ const AGENT_TOPICS: Record<string, { keywords: RegExp; description: string }> = 
     keywords: /fundamental|valuation|earnings|revenue|pe|eps|mega.?cap|large.?cap|balance.?sheet|cashflow|dividend|guidance|margin/i,
     description: 'Fundamentals and mega-caps desk',
   },
-  'Harper-Hermes': {
+  'Harper-Opus': {
     keywords: /strategy|plan|review|summary|overview|coordination|meeting|agenda/i,
     description: 'CAO — executive strategy and oversight',
   },

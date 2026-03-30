@@ -35,10 +35,14 @@ When live data appears below (e.g., RiskFlow headlines), weave it into your anal
  * Composition order:
  *   1. Base role description
  *   2. Shared beliefs (neural web — all agents)
- *   3. Agent-specific philosophy block
- *   4. Commandment gates (contextual, if trading state provided)
- *   5. Skill instructions (if [SKILL:*] tag detected)
- *   6. Deep analysis block (if thinkHarder)
+ *   3. Capabilities block (tools and data)
+ *   4. Agent-specific philosophy block
+ *   5. Commandment gates (contextual, if trading state provided)
+ *   6. Skill instructions (if [SKILL:*] tag detected)
+ *   7. Deep analysis block (if thinkHarder)
+ *   --- appended by caller (hermes-handler.ts) ---
+ *   8. Live RiskFlow feed context
+ *   9. Cross-agent thought bank context (collective thought plane)
  */
 export function getAgentSystemPrompt(
   role: HermesAgentRole,

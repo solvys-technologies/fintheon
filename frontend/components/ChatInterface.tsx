@@ -1,6 +1,7 @@
-// [claude-code 2026-03-10] Simplified ChatInterface — removed unused state, added AiLoader
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { AlertTriangle, CalendarCheck, X, Bookmark, Trash2 } from 'lucide-react';
+// [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
+// [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Ask Harp
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { X, Layers, Clock, Loader2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { useFintheonAgents } from '../contexts/FintheonAgentContext';
 import { useHermesRuntime } from './chat/useHermesRuntime';
@@ -9,46 +10,20 @@ import { FintheonThread, AiLoader } from './chat/FintheonThread';
 import { FintheonComposer } from './chat/FintheonComposer';
 import { SKILL_PREFIXES } from '../lib/skillPrefixes';
 import QuickFintheonModal from './analysis/QuickFintheonModal';
-import { addCheckpoint, deleteCheckpoint, listCheckpoints, type ChatCheckpoint } from '../lib/chatCheckpoints';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
 
-function usePanelState(key: string, defaultValue: boolean): [boolean, (v: boolean | ((p: boolean) => boolean)) => void] {
-  const [state, setState] = useState<boolean>(() => {
-    try {
-      const stored = localStorage.getItem(key);
-      return stored !== null ? JSON.parse(stored) : defaultValue;
-    } catch { return defaultValue; }
-  });
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-  const setAndPersist = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    setState((prev) => {
-      const next = typeof value === 'function' ? value(prev) : value;
-      try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* noop */ }
-      return next;
-    });
-  }, [key]);
-
-  return [state, setAndPersist];
+interface ConversationSummary {
+  id: string;
+  title: string;
+  messageCount: number;
+  lastMessageAt: string;
+  model?: string;
+  isArchived: boolean;
 }
 
-function groupCheckpointsByDate(items: ChatCheckpoint[]): { label: string; items: ChatCheckpoint[] }[] {
-  const now = new Date();
-  const todayStr = now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toDateString();
-  const groups: Record<string, ChatCheckpoint[]> = {};
-  const order: string[] = [];
-  for (const cp of items) {
-    const d = new Date(cp.createdAt).toDateString();
-    const label = d === todayStr ? 'Today' : d === yesterdayStr ? 'Yesterday' : d;
-    if (!groups[label]) { groups[label] = []; order.push(label); }
-    groups[label].push(cp);
-  }
-  return order.map((label) => ({ label, items: groups[label] }));
-}
-
-function ChatInterfaceInner({ conversationId, clearConversationId, lastError, thinkHarder, setThinkHarder, lastRequestId }: { conversationId: string | undefined; clearConversationId: () => void; lastError: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void; lastRequestId: string | null }) {
+function ChatInterfaceInner({ conversationId, setConversationId, clearConversationId, lastError, thinkHarder, setThinkHarder, lastRequestId, dualPane = false }: { conversationId: string | undefined; setConversationId: (id: string) => void; clearConversationId: () => void; lastError: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void; lastRequestId: string | null; dualPane?: boolean }) {
   const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -56,15 +31,23 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
   const { disabledSkills } = useFeatureFlags();
-  const [showCheckpoints, setShowCheckpoints] = usePanelState('fintheon:panel:checkpoints', false);
-  const [checkpointVersion, setCheckpointVersion] = useState(0);
+  const [showSessions, setShowSessions] = useState(false);
+  const [sessions, setSessions] = useState<ConversationSummary[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [showQuickFintheonModal] = useState(false);
+  const [showArtifacts, setShowArtifacts] = useState(false);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const checkpointItems = useMemo<ChatCheckpoint[]>(
-    () => listCheckpoints(conversationId),
-    [conversationId, showCheckpoints, checkpointVersion]
-  );
+  // Fetch conversations when sessions panel opens
+  useEffect(() => {
+    if (!showSessions) return;
+    setSessionsLoading(true);
+    fetch(`${API_BASE}/api/ai/conversations`)
+      .then(r => r.json())
+      .then(data => setSessions(data.conversations ?? []))
+      .catch(() => setSessions([]))
+      .finally(() => setSessionsLoading(false));
+  }, [showSessions]);
 
   const handleSend = useCallback((msg: string) => {
     runtime.append({ role: 'user', content: [{ type: 'text', text: msg }] });
@@ -94,28 +77,35 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
     clearConversationId();
   }, [clearConversationId]);
 
-  const createCheckpointFromMessage = useCallback((messageId: string, content: string) => {
-    if (!conversationId) return;
-    const trimmed = (content || '').trim();
-    const excerpt = trimmed.length > 220 ? `${trimmed.slice(0, 220)}...` : trimmed;
-    const title = (excerpt.split('\n')[0] || 'Checkpoint').slice(0, 64);
-    addCheckpoint({ conversationId, messageId, title, excerpt });
-    setCheckpointVersion((v) => v + 1);
-    setShowCheckpoints(true);
-  }, [conversationId, setShowCheckpoints]);
-
-  const jumpToMessage = useCallback((messageId: string) => {
-    const el = messageRefs.current[messageId];
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, []);
+  const handleTakeNote = useCallback(async (messageId: string, content: string) => {
+    try {
+      await fetch(`${API_BASE}/api/context-bank/memories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId: 'harper-opus',
+          memoryType: 'observation',
+          content: content.slice(0, 500),
+          metadata: {
+            source: 'take-note',
+            messageId,
+            conversationId,
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      });
+    } catch (err) {
+      console.error('[TakeNote] Failed to save:', err);
+    }
+  }, [conversationId]);
 
   return (
     <div className="h-full flex flex-col">
       <ChatHeader
         onRunMDB={() => handleSend('Run the MDB report')}
         onNewChat={handleNewChat}
-        onToggleCheckpoints={() => setShowCheckpoints((v) => !v)}
-        showCheckpoints={showCheckpoints}
+        onToggleSessions={() => setShowSessions((v) => !v)}
+        showSessions={showSessions}
         isLoading={isRunning}
       />
 
@@ -125,7 +115,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
             onSend={handleSend}
             isLoading={isRunning}
             agentName={activeAgent?.name}
-            onCheckpoint={createCheckpointFromMessage}
+            onTakeNote={handleTakeNote}
             messageRefs={messageRefs}
             lastError={lastError}
             lastRequestId={lastRequestId}
@@ -142,66 +132,82 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
           />
         </div>
 
-        {/* Checkpoints sidebar */}
-        <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showCheckpoints ? 'w-80' : 'w-0'} border-l border-[var(--fintheon-accent)]/20`}>
-          <div className="w-80 h-full flex flex-col bg-[var(--fintheon-surface)]">
-            <div className="h-14 border-b border-[var(--fintheon-accent)]/20 flex items-center justify-between px-4">
-              <div className="flex items-center gap-2">
-                <Bookmark className="w-4 h-4 text-[var(--fintheon-accent)]" />
-                <h2 className="text-base font-semibold text-[var(--fintheon-accent)] tracking-wide">Checkpoints</h2>
+        {/* Preview pane — right side, only in dual-pane mode (Ask Harp main) */}
+        {dualPane && showArtifacts && (
+          <div className="flex-shrink-0 w-96 border-l border-[var(--fintheon-accent)]/15 transition-[width] duration-[240ms] ease-in-out overflow-hidden">
+            <div className="w-96 h-full flex flex-col bg-[var(--fintheon-surface)]">
+              <div className="h-14 border-b border-[var(--fintheon-accent)]/15 flex items-center justify-between px-4">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[var(--fintheon-accent)]" />
+                  <h2 className="text-sm font-semibold text-[var(--fintheon-accent)] tracking-wide">Preview</h2>
+                </div>
+                <button onClick={() => setShowArtifacts(false)} className="p-1.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors">
+                  <X className="w-4 h-4 text-[var(--fintheon-accent)]/70" />
+                </button>
               </div>
-              <button onClick={() => setShowCheckpoints(false)} className="p-1.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors">
+              <div className="flex-1 overflow-y-auto px-4 py-4">
+                {/* Preview content renders here when Harper-Opus creates artifacts */}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sessions sidebar */}
+        <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showSessions ? 'w-80' : 'w-0'} border-l border-[var(--fintheon-accent)]/20`}>
+          <div className="w-80 h-full flex flex-col bg-[var(--fintheon-surface)]">
+            <div className="h-12 border-b border-[var(--fintheon-accent)]/15 flex items-center justify-between px-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[var(--fintheon-accent)]" />
+                <h2 className="text-sm font-semibold text-[var(--fintheon-accent)] tracking-wide">Sessions</h2>
+              </div>
+              <button onClick={() => setShowSessions(false)} className="p-1.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors">
                 <X className="w-4 h-4 text-[var(--fintheon-accent)]/70" />
               </button>
             </div>
-            <div className="px-4 py-2.5 border-b border-white/5">
-              <p className="text-[11px] text-zinc-500 leading-snug">Bookmark key moments — hover any assistant reply and tap the checkpoint icon.</p>
-            </div>
-            <div className="flex-1 overflow-y-auto px-3 py-3">
-              {!conversationId ? (
-                <div className="text-center text-zinc-500 text-sm py-8">Start a chat to create checkpoints.</div>
-              ) : checkpointItems.length === 0 ? (
-                <div className="flex flex-col items-center text-center py-10 px-4 gap-3">
-                  <CalendarCheck className="w-8 h-8 text-zinc-700" />
-                  <p className="text-sm text-zinc-500">No checkpoints yet.</p>
-                  <p className="text-[11px] text-zinc-600 leading-relaxed">Hover an assistant message and click the <span className="text-[var(--fintheon-accent)]/80">checkpoint</span> icon to save it here.</p>
+
+            <div className="flex-1 overflow-y-auto">
+              {sessionsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--fintheon-accent)]/40" />
+                </div>
+              ) : sessions.length === 0 ? (
+                <div className="text-center text-zinc-600 text-[11px] py-8 px-4">
+                  No sessions yet. Start a conversation.
                 </div>
               ) : (
-                groupCheckpointsByDate(checkpointItems).map((group) => (
-                  <div key={group.label} className="mb-4 last:mb-0">
-                    <div className="flex items-center gap-2 mb-2 px-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--fintheon-accent)]/50">{group.label}</span>
-                      <div className="flex-1 h-px bg-[var(--fintheon-accent)]/10" />
-                      <span className="text-[10px] text-zinc-600">{group.items.length}</span>
+                sessions.map(session => (
+                  <button
+                    key={session.id}
+                    onClick={() => {
+                      setConversationId(session.id);
+                      setShowSessions(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 border-b border-white/5 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
+                      conversationId === session.id ? 'bg-[var(--fintheon-accent)]/10' : ''
+                    }`}
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[12px] text-[var(--fintheon-text)] font-medium truncate">
+                        {session.title}
+                      </span>
+                      <span className="text-[9px] text-zinc-600 shrink-0 tabular-nums">
+                        {new Date(session.lastMessageAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                      </span>
                     </div>
-                    <div className="space-y-1.5">
-                      {group.items.map((cp) => (
-                        <div
-                          key={cp.id}
-                          className="group relative w-full p-2.5 bg-zinc-900/40 border border-zinc-800/80 hover:border-[var(--fintheon-accent)]/30 hover:bg-zinc-900/70 rounded-lg transition-all cursor-pointer"
-                          onClick={() => jumpToMessage(cp.messageId)}
-                        >
-                          <div className="flex items-baseline gap-2 mb-0.5">
-                            <span className="text-[10px] text-zinc-500 tabular-nums shrink-0">{new Date(cp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            <span className="text-sm text-zinc-200 font-medium truncate">{cp.title}</span>
-                          </div>
-                          <p className="text-[11px] text-zinc-500 line-clamp-2 leading-relaxed pl-[calc(10px+0.5rem)]">{cp.excerpt}</p>
-                          <div className="mt-1.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity pl-[calc(10px+0.5rem)]">
-                            <button onClick={(e) => { e.stopPropagation(); jumpToMessage(cp.messageId); }} className="px-2 py-0.5 bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] rounded text-[11px] font-medium hover:bg-[var(--fintheon-accent)]/25 transition-colors">Jump</button>
-                            <button onClick={(e) => { e.stopPropagation(); deleteCheckpoint(cp.id); setCheckpointVersion((v) => v + 1); }} className="ml-auto p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"><Trash2 className="w-3 h-3 text-zinc-600 hover:text-[var(--fintheon-accent)]" /></button>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[9px] text-zinc-600">{session.messageCount} messages</span>
+                      {session.model && (
+                        <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono">{session.model}</span>
+                      )}
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>
-            {checkpointItems.length > 0 && (
-              <div className="px-4 py-2 border-t border-white/5 text-[10px] text-zinc-600 text-center">
-                {checkpointItems.length} checkpoint{checkpointItems.length !== 1 ? 's' : ''} saved
-              </div>
-            )}
+
+            <div className="px-4 py-2 border-t border-white/5 text-[9px] text-zinc-600 text-center">
+              {sessions.length} session{sessions.length !== 1 ? 's' : ''}
+            </div>
           </div>
         </div>
       </div>
@@ -214,11 +220,14 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
 export default function ChatInterface({ surfaceId = 'analysis' }: { surfaceId?: string }) {
   const { activeAgent } = useFintheonAgents();
   const [thinkHarderState, setThinkHarderState] = useState(false);
-  const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, surfaceId);
+  const { runtime, conversationId, setConversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, surfaceId);
+
+  // Ask Harp main surface gets dual-pane layout (conversation + artifacts)
+  const isDualPane = surfaceId === 'askharp';
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ChatInterfaceInner conversationId={conversationId} clearConversationId={clearConversationId} lastError={lastError} thinkHarder={thinkHarderState} setThinkHarder={setThinkHarderState} lastRequestId={lastRequestId} />
+      <ChatInterfaceInner conversationId={conversationId} setConversationId={setConversationId} clearConversationId={clearConversationId} lastError={lastError} thinkHarder={thinkHarderState} setThinkHarder={setThinkHarderState} lastRequestId={lastRequestId} dualPane={isDualPane} />
     </AssistantRuntimeProvider>
   );
 }

@@ -16,6 +16,10 @@ import {
   handleGetScorecards,
   handleGetPredictions,
   handleResolvePrediction,
+  handleGetThoughts,
+  handleGetThoughtById,
+  handleGetAgentThoughts,
+  handleShowFullAnalysis,
 } from './handlers.js';
 
 export function createBoardroomRoutes(): Hono {
@@ -40,6 +44,12 @@ export function createBoardroomRoutes(): Hono {
 
   // Scheduler status
   router.get('/scheduler/status', handleGetSchedulerStatus);
+
+  // Thought Bank (agent deep analysis storage)
+  router.get('/thoughts', handleGetThoughts);
+  router.get('/thoughts/agent/:agent', handleGetAgentThoughts);
+  router.get('/thoughts/:id', handleGetThoughtById);
+  router.post('/thoughts/:messageId/full', handleShowFullAnalysis);
 
   // Consilium Intelligence Layer
   router.get('/developments', handleGetDevelopments);

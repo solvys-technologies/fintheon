@@ -3,6 +3,7 @@
  * Request handlers for RiskFlow endpoints
  */
 
+// [claude-code 2026-03-29] S9-T2b: Wire instrument-aware sentiment flipper into feed handler, fix spread ordering, fire-and-forget instrument_scores writes
 // [claude-code 2026-03-10] Added handleGetSources for RiskFlow connection status indicators
 // [claude-code 2026-03-10] handlePreload: lowered minMacroLevel 3→2 (Medium+ threshold)
 import type { Context } from 'hono';
@@ -12,6 +13,7 @@ import { addClient, removeClient } from '../../services/riskflow/sse-broadcaster
 import { corsConfig } from '../../config/cors.js';
 import type { FeedFilters, WatchlistUpdateRequest, NewsSource, MacroLevel } from '../../types/riskflow.js';
 import { isSupabaseConfigured } from '../../config/supabase.js';
+import { writeInstrumentScores } from '../../services/supabase-service.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
 import { forcePoll } from '../../services/riskflow/feed-poller.js';
 import { fetchVIX, getVIXSpikeAdjustment, getVIXScoringMultiplier, getVIXBaseline } from '../../services/vix-service.js';
@@ -22,10 +24,13 @@ import {
   getCurrentSession,
   getInstrumentConfig,
   getSupportedInstruments,
+  getInstrumentSentiment,
   INSTRUMENT_BETAS,
   type StackedEvent
 } from '../../services/iv-scoring-v2.js';
 import { estimatePoints } from '../../services/market-data/point-estimator.js';
+import { generateNoteForItem } from '../../services/riskflow/agent-notes.js';
+import { getSupabaseClient } from '../../config/supabase.js';
 
 /**
  * Internal function to trigger feed pre-fetching
@@ -90,6 +95,11 @@ export async function handleGetFeed(c: Context) {
       filters.limit = parseInt(limit, 10);
     }
 
+    const offset = c.req.query('offset');
+    if (offset) {
+      filters.offset = parseInt(offset, 10);
+    }
+
     // Allow override of minMacroLevel via query param (for debugging/fallback)
     const minMacroLevel = c.req.query('minMacroLevel');
     if (minMacroLevel) {
@@ -120,28 +130,72 @@ export async function handleGetFeed(c: Context) {
       vixLevel = vixData.level;
     } catch { /* use fallback */ }
 
+    // S9-T2b: Flip sentiment per instrument at serve-time
+    const sentimentMap: Record<string, 'bullish' | 'bearish'> = { bullish: 'bullish', bearish: 'bearish' };
+    const capMap: Record<string, string> = { bullish: 'Bullish', bearish: 'Bearish' };
+
     const items = (feed.items || []).map((item: any) => {
+      // Resolve equity-centric sentiment (lowercase)
+      const equitySentiment: 'bullish' | 'bearish' =
+        sentimentMap[item.sentiment] ?? sentimentMap[item.priceBrainScore?.sentiment?.toLowerCase()] ?? 'bearish';
+
+      // Flip for target instrument
+      const flipped = getInstrumentSentiment(
+        equitySentiment, item.headline ?? '', instrument, item.riskType ?? null,
+      );
+
       if (item.ivScore != null && item.ivScore >= 2) {
         const pts = estimatePoints(item.ivScore, vixLevel, instrument);
-        // Derive sentiment from item.sentiment if priceBrainScore is missing (DB-cached items)
-        const sentimentMap: Record<string, string> = { bullish: 'Bullish', bearish: 'Bearish', neutral: 'Neutral' };
         return {
           ...item,
           priceBrainScore: {
-            sentiment: sentimentMap[item.sentiment] ?? 'Neutral',
-            classification: 'Neutral',
             ...item.priceBrainScore,
+            sentiment: capMap[flipped] ?? 'Bearish',
+            classification: item.priceBrainScore?.classification ?? 'Neutral',
             impliedPoints: pts.scaledPoints,
             instrument,
           },
         };
       }
-      // For items without ivScore, still set the instrument
+      // For items without ivScore, still flip sentiment and set instrument
       if (item.priceBrainScore) {
-        return { ...item, priceBrainScore: { ...item.priceBrainScore, instrument } };
+        return {
+          ...item,
+          priceBrainScore: {
+            ...item.priceBrainScore,
+            sentiment: capMap[flipped] ?? 'Bearish',
+            instrument,
+          },
+        };
       }
       return item;
     });
+
+    // Enrich items with narrative thread assignments from narrative_card_links
+    const sb = getSupabaseClient();
+    if (sb && items.length > 0) {
+      try {
+        const itemIds = items.map((i: any) => i.id).filter(Boolean);
+        const { data: links } = await sb
+          .from('narrative_card_links')
+          .select('card_id, thread_slug')
+          .in('card_id', itemIds);
+
+        if (links && links.length > 0) {
+          const threadMap = new Map<string, string[]>();
+          for (const link of links) {
+            const arr = threadMap.get(link.card_id) ?? [];
+            arr.push(link.thread_slug);
+            threadMap.set(link.card_id, arr);
+          }
+          for (const item of items) {
+            (item as any).narrativeThreads = threadMap.get((item as any).id) ?? [];
+          }
+        }
+      } catch (err) {
+        console.warn('[RiskFlow] Failed to enrich narrative threads (non-blocking):', err);
+      }
+    }
 
     // Ensure we always return a valid FeedResponse structure
     const response = {
@@ -152,6 +206,24 @@ export async function handleGetFeed(c: Context) {
       ...(feed.nextCursor && { nextCursor: feed.nextCursor })
     };
     
+    // S9-T2b: Fire-and-forget — persist instrument scores to Supabase for historical analysis
+    // Does NOT block the response. Failures are logged but do not affect the user.
+    if (instrument !== '/ES') {
+      const scoresToWrite = items
+        .filter((it: any) => it.priceBrainScore?.sentiment && it.tweet_id)
+        .map((it: any) => ({
+          tweet_id: it.tweet_id as string,
+          instrument,
+          sentiment: it.priceBrainScore.sentiment as string,
+          impliedPoints: (it.priceBrainScore.impliedPoints as number) ?? 0,
+        }));
+      if (scoresToWrite.length > 0) {
+        writeInstrumentScores(scoresToWrite).catch(err =>
+          console.error('[RiskFlow] instrument_scores write failed (non-blocking):', err),
+        );
+      }
+    }
+
     console.log(`[RiskFlow] Returning response with ${response.items.length} items`);
     return c.json(response);
   } catch (error) {
@@ -536,9 +608,7 @@ export async function handleCronPrefetch(c: Context) {
 
   const result = await preFetchFeed();
 
-  // Piggyback 30-day cleanup on cron cycle
-  const { cleanupOldItems } = await import('../../services/riskflow/news-cache.js');
-  await cleanupOldItems().catch(() => {});
+  // [claude-code 2026-03-27] Cleanup disabled — items retained for calibration DB
 
   const statusCode = result.success ? 200 : 500;
   return c.json(result, statusCode);
@@ -678,7 +748,9 @@ export async function handleGetIVAggregate(c: Context) {
 
 /**
  * POST /api/riskflow/refresh
- * Manually trigger a feed poll cycle and return fresh items
+ * Manually trigger a feed poll cycle, rescore with current weights,
+ * and auto-generate agent notes for critical items.
+ * [claude-code 2026-03-27] S3: Full refresh = poll + score + auto-notes
  */
 export async function handleRefresh(c: Context) {
   const userId = c.get('userId') as string | undefined;
@@ -687,11 +759,65 @@ export async function handleRefresh(c: Context) {
   }
 
   try {
+    // 1. Poll for fresh items (writes raw → raw_riskflow_items)
     await forcePoll();
-    return c.json({ success: true, refreshedAt: new Date().toISOString() });
+
+    // 2. Re-score in-memory feed with current regime/calibration weights
+    const { rescoreInMemoryFeed } = await import('../../services/riskflow/feed-service.js');
+    const rescored = await rescoreInMemoryFeed().catch((err: unknown) => {
+      console.warn('[RiskFlow] Rescore during refresh failed:', err);
+      return 0;
+    });
+
+    // 3. Auto-generate agent notes for critical items (fire-and-forget)
+    import('../../services/riskflow/agent-notes.js').then(({ generateNotesForCriticalItems }) => {
+      generateNotesForCriticalItems().catch((err: unknown) => {
+        console.warn('[RiskFlow] Auto-notes during refresh failed:', err);
+      });
+    });
+
+    return c.json({ success: true, rescored, refreshedAt: new Date().toISOString() });
   } catch (error) {
     console.error('[RiskFlow] Refresh error:', error);
     return c.json({ error: 'Refresh failed' }, 500);
+  }
+}
+
+/** POST /api/riskflow/:id/generate-note — manual agent note generation trigger */
+export async function handleGenerateNote(c: Context) {
+  try {
+    const itemId = c.req.param('id');
+    if (!itemId) return c.json({ error: 'Missing item ID' }, 400);
+
+    const note = await generateNoteForItem(itemId);
+    if (!note) return c.json({ error: 'Item not found or generation failed' }, 404);
+
+    return c.json({ note });
+  } catch (err) {
+    console.error('[RiskFlow] Generate note error:', err);
+    return c.json({ error: 'Failed to generate note' }, 500);
+  }
+}
+
+/**
+ * POST /api/riskflow/rescore
+ * Re-processes current cached feed items with current regime/calibration weights.
+ * Returns the number of items rescored and the updated items.
+ */
+export async function handleRescore(c: Context) {
+  const userId = c.get('userId') as string | undefined;
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    // Re-enrich in-memory feed cache with current regime/calibration/commentator weights
+    const { rescoreInMemoryFeed } = await import('../../services/riskflow/feed-service.js');
+    const rescored = await rescoreInMemoryFeed();
+    return c.json({ success: true, rescored, rescoredAt: new Date().toISOString() });
+  } catch (error) {
+    console.error('[RiskFlow] Rescore error:', error);
+    return c.json({ error: error instanceof Error ? error.message : 'Rescore failed' }, 500);
   }
 }
 

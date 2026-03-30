@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] Added catalyst promoter to boot sequence (graduates scored items → narrative catalysts)
 // [claude-code 2026-03-24] Added VIX polling, central scorer, IV ticker, VIX rescore to boot sequence
 // [claude-code 2026-03-20] Service boot consolidation — single entry point for all background services
 
@@ -11,11 +12,16 @@ import { startAutopilotScheduler } from '../services/autopilot/autopilot-schedul
 import { startContextBankTicker } from '../services/context-bank/context-bank-service.js';
 import { startBoardroomScheduler } from '../services/cron/boardroom-scheduler.js';
 import { startDispatchScheduler, catchUpMissedBriefs } from '../services/cron/dispatch-scheduler.js';
-import { cleanupOldItems } from '../services/riskflow/news-cache.js';
+// [claude-code 2026-03-27] cleanupOldItems import removed — feed items retained for calibration
 import { startVIXPolling } from '../services/vix-service.js';
 import { startCentralScorer } from '../services/riskflow/central-scorer.js';
 import { startIVScoreTicker } from '../services/market-data/iv-score-ticker.js';
 import { initVIXRescore } from '../services/riskflow/vix-rescore.js';
+import { startAgentNotesCron } from '../services/riskflow/agent-notes.js';
+import { startCommentaryScraper } from '../services/riskflow/commentary-scraper.js';
+import { startMarketImpactEnricher } from '../services/cron/market-impact-enricher.js';
+import { startCatalystPromoter } from '../services/riskflow/catalyst-promoter.js';
+import * as projectxService from '../services/projectx-service.js';
 
 const log = createLogger('Boot');
 
@@ -32,6 +38,10 @@ export async function bootServices(): Promise<void> {
 
   // Central scorer (30s — scores unscored items, gated by ENABLE_CENTRAL_SCORING env)
   startCentralScorer();
+
+  // Catalyst promoter (60s — graduates scored items into narrative catalysts with thread links)
+  startCatalystPromoter();
+  log.info('CatalystPromoter started');
 
   // IV score ticker (60s — computes blended IV score, persists to DB)
   const instrument = process.env.PRIMARY_INSTRUMENT || '/ES';
@@ -81,16 +91,32 @@ export async function bootServices(): Promise<void> {
     log.warn('Claude SDK init failed (non-fatal)', { error: String(err) })
   );
 
-  // News feed cleanup — purge items older than 30 days on startup, then daily
-  cleanupOldItems().catch((err) =>
-    log.warn('Initial feed cleanup failed (non-fatal)', { error: String(err) })
-  );
-  setInterval(() => {
-    cleanupOldItems().catch((err) =>
-      log.warn('Scheduled feed cleanup failed', { error: String(err) })
-    );
-  }, 24 * 60 * 60 * 1000);
-  log.info('FeedCleanup scheduled (30-day TTL, daily cycle)');
+  // Agent notes cron (3min — generates Oracle tactical notes for high/critical items)
+  startAgentNotesCron();
+  log.info('AgentNotesCron started');
+
+  // Commentary scraper (30min — Firecrawl-powered FJ/ZeroHedge/DeItaOne web scrape)
+  startCommentaryScraper();
+  log.info('CommentaryScraper started');
+
+  // Market impact enricher (24h — enriches HIGH/CRITICAL scored items with NQ/ES/YM daily close)
+  startMarketImpactEnricher();
+  log.info('MarketImpactEnricher started');
+
+  // [claude-code 2026-03-27] Feed cleanup DISABLED — items accumulate for calibration DB
+  // cleanupOldItems() was purging items older than 30 days. Now we keep everything.
+  log.info('FeedCleanup DISABLED — items retained for historical calibration');
+
+  // Execution bridge health check (non-blocking)
+  projectxService.getConnectionStatus('system').then((status) => {
+    if (status.connected) {
+      log.info('Execution bridge connected');
+    } else {
+      log.info(`Execution bridge not available: ${status.message}`);
+    }
+  }).catch(() => {
+    log.info('Execution bridge not available (will retry on first use)');
+  });
 
   log.info('All services initialized');
 }

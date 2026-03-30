@@ -1,10 +1,10 @@
-// [claude-code 2026-03-16] Stone theme + narrative theme integration
-// [claude-code 2026-03-16] Added Manage button for NarrativeManageModal
-// [claude-code 2026-03-20] S3:T4e: Made toolbar flex-1 for full width
+// [claude-code 2026-03-28] Refactored toolbar with hover descriptions, canvas interaction hints
+// [claude-code 2026-03-27] S4-T2: Updated zoom controls with read-only indicators for quarter/year
 import { useState, useRef } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  Lock,
   Map,
   Plus,
   RotateCcw,
@@ -14,11 +14,14 @@ import {
   Download,
   Settings2,
   Zap,
+  Highlighter,
+  Move,
 } from 'lucide-react';
 import type { NarrativeFlowState, ZoomLevel, CatalystSentiment, CatalystTemplateType } from '../../lib/narrative-types';
 import { formatWeekLabel, shiftWeek } from '../../lib/narrative-time';
 import { CATALYST_TEMPLATES } from '../../lib/narrative-templates';
 import { CatalystTemplateMenu } from './CatalystTemplateMenu';
+import { useHighlight } from './NarrativeHighlightProvider';
 
 interface NarrativeToolbarProps {
   state: NarrativeFlowState;
@@ -28,15 +31,15 @@ interface NarrativeToolbarProps {
   hasSnapshot: boolean;
   onImport: () => void;
   onManage: () => void;
-  onMiroFish: () => void;
-  mirofishActive: boolean;
+  onMiroShark: () => void;
+  mirosharkActive: boolean;
 }
 
-const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
-  { value: 'quarter', label: 'Quarter' },
-  { value: 'year', label: 'Year' },
+const ZOOM_LEVELS: { value: ZoomLevel; label: string; hint: string }[] = [
+  { value: 'week', label: 'W', hint: 'Week view — individual cards' },
+  { value: 'month', label: 'M', hint: 'Month view — weekly aggregates' },
+  { value: 'quarter', label: 'Q', hint: 'Quarter view — monthly aggregates (read-only)' },
+  { value: 'year', label: 'Y', hint: 'Year view — quarterly aggregates (read-only)' },
 ];
 
 const SENTIMENT_OPTIONS: { value: CatalystSentiment | 'all'; label: string }[] = [
@@ -45,11 +48,47 @@ const SENTIMENT_OPTIONS: { value: CatalystSentiment | 'all'; label: string }[] =
   { value: 'bearish', label: 'Bearish' },
 ];
 
-export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport, onManage, onMiroFish, mirofishActive }: NarrativeToolbarProps) {
+/** Toolbar icon button with hover tooltip */
+function ToolbarBtn({ onClick, active, disabled, tooltip, shortcut, children }: {
+  onClick: () => void;
+  active?: boolean;
+  disabled?: boolean;
+  tooltip: string;
+  shortcut?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative group">
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className={`p-1.5 rounded transition-colors ${
+          disabled ? 'opacity-30 cursor-not-allowed' :
+          active
+            ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+            : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10'
+        }`}
+      >
+        {children}
+      </button>
+      {/* Hover tooltip */}
+      <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+        <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-border)]/30 rounded px-2.5 py-1.5 shadow-lg whitespace-nowrap">
+          <span className="text-[10px] text-[var(--fintheon-text)]/80">{tooltip}</span>
+          {shortcut && (
+            <span className="text-[9px] text-[var(--fintheon-muted)]/40 ml-2 font-mono">{shortcut}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport, onManage, onMiroShark, mirosharkActive }: NarrativeToolbarProps) {
+  const { highlightMode, toggleHighlightMode } = useHighlight();
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
-  const filterBtnRef = useRef<HTMLButtonElement>(null);
 
   const getAnchorPos = (ref: React.RefObject<HTMLButtonElement | null>) => {
     if (!ref.current) return { x: 0, y: 0 };
@@ -58,83 +97,104 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
   };
 
   return (
-    <div className="h-12 flex-1 flex items-center justify-between px-3 border-b border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)]">
-      {/* Left group: Zoom + Navigation */}
-      <div className="flex items-center gap-3">
-        {/* Zoom level toggle */}
-        <div className="flex items-center rounded-md border border-[var(--fintheon-border)]/20 overflow-hidden">
-          {ZOOM_LEVELS.map((z) => {
+    <div className="h-10 flex-1 flex items-center justify-between px-3 border-b border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)]">
+      {/* Left: Zoom + Navigation */}
+      <div className="flex items-center gap-2">
+        {/* Zoom level pills */}
+        <div className="flex items-center rounded border border-[var(--fintheon-border)]/20 overflow-hidden">
+          {ZOOM_LEVELS.map((z, i) => {
             const active = state.zoomLevel === z.value;
+            const isReadOnly = z.value === 'quarter' || z.value === 'year';
+            const showSep = i === 2;
             return (
-              <button
-                key={z.value}
-                onClick={() => dispatch({ type: 'SET_ZOOM', level: z.value })}
-                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                  active
-                    ? 'text-[var(--fintheon-accent)] border-r border-[var(--fintheon-accent)]/30'
-                    : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] border-r border-[var(--fintheon-border)]/20'
-                } last:border-r-0`}
-              >
-                {z.label}
-              </button>
+              <div key={z.value} className="relative group flex items-center">
+                {showSep && <div className="w-px h-3 bg-[var(--fintheon-border)]/30" />}
+                <button
+                  onClick={() => dispatch({ type: 'SET_ZOOM', level: z.value })}
+                  className={`flex items-center gap-0.5 px-2 py-1 text-[10px] font-mono font-medium transition-colors ${
+                    active
+                      ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8'
+                      : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]'
+                  }`}
+                >
+                  {z.label}
+                  {isReadOnly && <Lock className="w-2 h-2 opacity-40" />}
+                </button>
+                {/* Zoom tooltip */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-border)]/30 rounded px-2 py-1 shadow-lg whitespace-nowrap">
+                    <span className="text-[9px] text-[var(--fintheon-text)]/70">{z.hint}</span>
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
 
-        {/* Current range label */}
-        <span className="text-xs text-[var(--fintheon-muted)] font-mono min-w-[140px]">
-          {formatWeekLabel(new Date(state.currentWeekStart))}
-        </span>
-
-        {/* Navigation arrows */}
+        {/* Nav arrows + week label */}
         <div className="flex items-center gap-0.5">
           <button
             onClick={() => {
               const prev = shiftWeek(new Date(state.currentWeekStart), -1);
               dispatch({ type: 'SET_WEEK', weekStart: prev.toISOString().slice(0, 10) });
             }}
-            className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
+            className="p-0.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
+            title="Previous week"
           >
-            <ChevronLeft className="w-4 h-4 text-[var(--fintheon-muted)]" />
+            <ChevronLeft className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/50" />
           </button>
+          <span className="text-[10px] text-[var(--fintheon-muted)]/60 font-mono min-w-[110px] text-center">
+            {formatWeekLabel(new Date(state.currentWeekStart))}
+          </span>
           <button
             onClick={() => {
               const next = shiftWeek(new Date(state.currentWeekStart), 1);
               dispatch({ type: 'SET_WEEK', weekStart: next.toISOString().slice(0, 10) });
             }}
-            className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
+            className="p-0.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
+            title="Next week"
           >
-            <ChevronRight className="w-4 h-4 text-[var(--fintheon-muted)]" />
+            <ChevronRight className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/50" />
           </button>
+        </div>
+
+        {/* Canvas hint */}
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--fintheon-surface)]/30">
+          <Move className="w-3 h-3 text-[var(--fintheon-muted)]/30" />
+          <span className="text-[8px] text-[var(--fintheon-muted)]/30 font-mono">
+            Hold Space to pan
+          </span>
         </div>
       </div>
 
-      {/* Right group: Filter, Heatmap, Template, Undo, Save, Replay */}
-      <div className="flex items-center gap-1">
-        {/* Filter dropdown */}
+      {/* Right: Actions */}
+      <div className="flex items-center gap-0.5">
+        {/* Highlight mode */}
+        <ToolbarBtn
+          onClick={toggleHighlightMode}
+          active={highlightMode}
+          tooltip={highlightMode ? 'Exit highlight mode' : 'Select text on cards to branch into sub-topics'}
+          shortcut="H"
+        >
+          <Highlighter className="w-3.5 h-3.5" />
+        </ToolbarBtn>
+
+        {/* Filter */}
         <div className="relative">
-          <button
-            ref={filterBtnRef}
+          <ToolbarBtn
             onClick={() => setFilterOpen(!filterOpen)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
-              state.filterSentiment !== 'all'
-                ? 'text-[var(--fintheon-accent)]'
-                : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]'
-            }`}
+            active={state.filterSentiment !== 'all'}
+            tooltip="Filter cards by sentiment (Bullish / Bearish)"
           >
             <Filter className="w-3.5 h-3.5" />
-            <span>{SENTIMENT_OPTIONS.find((s) => s.value === state.filterSentiment)?.label ?? 'All'}</span>
-          </button>
+          </ToolbarBtn>
           {filterOpen && (
-            <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--fintheon-surface)]/95 backdrop-blur-lg border border-[var(--fintheon-border)]/30 rounded-lg shadow-xl py-1 min-w-[100px] animate-fade-in">
+            <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--fintheon-surface)]/95 backdrop-blur-lg border border-[var(--fintheon-border)]/30 rounded-lg shadow-xl py-1 min-w-[100px]">
               {SENTIMENT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => {
-                    dispatch({
-                      type: 'SET_FILTER',
-                      sentiment: opt.value,
-                    });
+                    dispatch({ type: 'SET_FILTER', sentiment: opt.value });
                     setFilterOpen(false);
                   }}
                   className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
@@ -150,121 +210,99 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot,
           )}
         </div>
 
-        {/* Heatmap toggle */}
-        <button
+        {/* Heatmap */}
+        <ToolbarBtn
           onClick={() => dispatch({ type: 'TOGGLE_HEATMAP' })}
-          className={`p-1.5 rounded transition-colors ${
-            state.heatmapEnabled
-              ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-              : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]'
-          }`}
-          title="Toggle heatmap"
+          active={state.heatmapEnabled}
+          tooltip="Toggle severity heatmap overlay on the grid"
         >
           <Map className="w-3.5 h-3.5" />
-        </button>
+        </ToolbarBtn>
 
-        {/* Divider */}
-        <div className="w-px h-5 bg-[var(--fintheon-border)]/20 mx-1" />
+        <div className="w-px h-4 bg-[var(--fintheon-border)]/15 mx-0.5" />
 
-        {/* Add template */}
-        <button
-          ref={addBtnRef}
-          onClick={() => setTemplateMenuOpen(!templateMenuOpen)}
-          className="p-1.5 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-          title="Add catalyst"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-
-        <CatalystTemplateMenu
-          open={templateMenuOpen}
-          onClose={() => setTemplateMenuOpen(false)}
-          onSelect={(templateType: CatalystTemplateType) => {
-            const tpl = CATALYST_TEMPLATES.find((t) => t.type === templateType);
-            if (!tpl) return;
-            dispatch({
-              type: 'ADD_CATALYST',
-              catalyst: {
-                title: tpl.defaultTitle,
-                description: tpl.description,
-                date: state.currentWeekStart,
-                sentiment: 'bullish' as const,
-                severity: tpl.defaultSeverity,
-                source: 'user' as const,
-                narrativeIds: [],
-                isGhost: false,
-                templateType,
-                position: null,
-              },
-            });
-          }}
-          anchorPosition={getAnchorPos(addBtnRef)}
-        />
+        {/* Add catalyst */}
+        <div className="relative">
+          <div className="group relative">
+            <button
+              ref={addBtnRef}
+              onClick={() => setTemplateMenuOpen(!templateMenuOpen)}
+              className="p-1.5 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+              <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-border)]/30 rounded px-2.5 py-1.5 shadow-lg whitespace-nowrap">
+                <span className="text-[10px] text-[var(--fintheon-text)]/80">Add catalyst from template (FOMC, CPI, Earnings...)</span>
+              </div>
+            </div>
+          </div>
+          <CatalystTemplateMenu
+            open={templateMenuOpen}
+            onClose={() => setTemplateMenuOpen(false)}
+            onSelect={(templateType: CatalystTemplateType) => {
+              const tpl = CATALYST_TEMPLATES.find((t) => t.type === templateType);
+              if (!tpl) return;
+              const templateCategoryMap: Record<string, string> = {
+                fomc: 'monetary', cpi: 'macroeconomic', earnings: 'earnings',
+                geopolitical: 'geopolitical', custom: 'macroeconomic',
+              };
+              dispatch({
+                type: 'ADD_CATALYST',
+                catalyst: {
+                  title: tpl.defaultTitle,
+                  description: tpl.description,
+                  date: state.currentWeekStart,
+                  sentiment: 'bullish' as const,
+                  severity: tpl.defaultSeverity,
+                  source: 'user' as const,
+                  narrativeIds: [],
+                  isGhost: false,
+                  templateType,
+                  position: null,
+                  category: (templateCategoryMap[templateType] ?? 'macroeconomic') as any,
+                },
+              });
+            }}
+            anchorPosition={getAnchorPos(addBtnRef)}
+          />
+        </div>
 
         {/* Import from RiskFlow */}
-        <button
-          onClick={onImport}
-          className="p-1.5 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-          title="Import catalysts from RiskFlow"
-        >
+        <ToolbarBtn onClick={onImport} tooltip="Import scored headlines from RiskFlow feed">
           <Download className="w-3.5 h-3.5" />
-        </button>
+        </ToolbarBtn>
 
         {/* Manage */}
-        <button
-          onClick={onManage}
-          className="p-1.5 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-          title="Manage narratives"
-        >
+        <ToolbarBtn onClick={onManage} tooltip="Edit narrative lanes, catalysts, and timeline">
           <Settings2 className="w-3.5 h-3.5" />
-        </button>
+        </ToolbarBtn>
 
-        {/* MiroFish Auditorium */}
-        <button
-          onClick={onMiroFish}
-          className={`p-1.5 rounded transition-colors ${
-            mirofishActive
-              ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-              : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10'
-          }`}
-          title="MiroFish Auditorium"
-        >
+        {/* Sanctum */}
+        <ToolbarBtn onClick={onMiroShark} active={mirosharkActive} tooltip="Open Sanctum — market intelligence panel" shortcut="S">
           <Zap className="w-3.5 h-3.5" />
-        </button>
+        </ToolbarBtn>
+
+        <div className="w-px h-4 bg-[var(--fintheon-border)]/15 mx-0.5" />
 
         {/* Undo */}
-        <button
-          onClick={onUndo}
-          disabled={!hasSnapshot}
-          className="p-1.5 rounded transition-colors disabled:opacity-30 text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-accent)]/10"
-          title="Undo"
-        >
+        <ToolbarBtn onClick={onUndo} disabled={!hasSnapshot} tooltip="Undo last change" shortcut="Cmd+Z">
           <RotateCcw className="w-3.5 h-3.5" />
-        </button>
+        </ToolbarBtn>
 
         {/* Save */}
-        <button
-          onClick={onSave}
-          className="p-1.5 rounded text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-          title="Save"
-        >
+        <ToolbarBtn onClick={onSave} tooltip="Save current state as snapshot" shortcut="Cmd+S">
           <Save className="w-3.5 h-3.5" />
-        </button>
+        </ToolbarBtn>
 
         {/* Replay */}
-        <button
-          onClick={() =>
-            dispatch({ type: 'SET_REPLAY_MODE', enabled: !state.replayMode })
-          }
-          className={`p-1.5 rounded transition-colors ${
-            state.replayMode
-              ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-              : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]'
-          }`}
-          title={state.replayMode ? 'Stop replay' : 'Start replay'}
+        <ToolbarBtn
+          onClick={() => dispatch({ type: 'SET_REPLAY_MODE', enabled: !state.replayMode })}
+          active={state.replayMode}
+          tooltip={state.replayMode ? 'Stop timeline replay' : 'Replay the narrative timeline'}
         >
           <Play className="w-3.5 h-3.5" />
-        </button>
+        </ToolbarBtn>
       </div>
     </div>
   );

@@ -1,10 +1,13 @@
+// [claude-code 2026-03-28] S7: Added Scorecards toggle view inside Proposals panel
 // [claude-code 2026-03-20] 8b: Proposals tab — Human/Agentic toggle + Kalshi tracking
 // [claude-code 2026-03-20] Theme fix: zinc → fintheon gold/cream palette
 import { useState, useEffect, useCallback } from 'react';
-import { Target, TrendingUp, TrendingDown, Loader2, AlertTriangle, Crosshair, User, Bot, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Target, TrendingUp, TrendingDown, Loader2, AlertTriangle, Crosshair, User, Bot, ToggleLeft, ToggleRight, Trophy } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 import { ModelGlossary } from './ModelGlossary';
+import { AgentScorecard } from '../consilium/AgentScorecard';
 
+type PanelView = 'proposals' | 'scorecards';
 type ExecutionMode = 'human' | 'agentic';
 
 interface ActiveProposal {
@@ -35,6 +38,7 @@ const STRATEGY_LABELS: Record<string, string> = {
 
 export function ProposalWidget() {
   const backend = useBackend();
+  const [panelView, setPanelView] = useState<PanelView>('proposals');
   const [proposal, setProposal] = useState<ActiveProposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [charting, setCharting] = useState(false);
@@ -122,40 +126,69 @@ export function ProposalWidget() {
 
   return (
     <div className="h-full flex flex-col overflow-y-auto">
-      {/* Header with Human/Agentic toggle */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#c79f4a]/10">
-        <div className="flex items-center gap-2">
-          <Target className="w-4 h-4 text-[var(--fintheon-accent)]" />
-          <h2 className="text-[13px] font-bold text-[var(--fintheon-accent)] tracking-[0.15em] uppercase">
+      {/* Header with view toggle + execution mode */}
+      <div className="flex flex-col border-b border-[#c79f4a]/10">
+        {/* View toggle: Proposals / Scorecards */}
+        <div className="flex items-center px-4 pt-3 pb-2 gap-1">
+          <button
+            onClick={() => setPanelView('proposals')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+              panelView === 'proposals'
+                ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/30'
+                : 'text-[var(--fintheon-text)]/30 border border-transparent hover:text-[var(--fintheon-text)]/50 hover:bg-[var(--fintheon-accent)]/5'
+            }`}
+          >
+            <Target className="w-3 h-3" />
             Proposals
-          </h2>
-        </div>
-
-        {/* Human/Agentic toggle */}
-        <button
-          onClick={toggleMode}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all text-[10px] font-semibold"
-          style={{
-            borderColor: executionMode === 'agentic' ? 'rgba(52, 211, 153, 0.4)' : 'rgba(199, 159, 74, 0.3)',
-            backgroundColor: executionMode === 'agentic' ? 'rgba(52, 211, 153, 0.08)' : 'rgba(199, 159, 74, 0.05)',
-          }}
-          title={executionMode === 'human' ? 'Display only — you execute manually' : 'Auto-execute via API (with confirmation)'}
-        >
-          {executionMode === 'human' ? (
-            <>
-              <User className="w-3 h-3 text-[var(--fintheon-accent)]" />
-              <span className="text-[var(--fintheon-accent)]">Human</span>
-              <ToggleLeft className="w-4 h-4 text-[var(--fintheon-accent)]" />
-            </>
-          ) : (
-            <>
-              <Bot className="w-3 h-3 text-emerald-400" />
-              <span className="text-emerald-400">Agentic</span>
-              <ToggleRight className="w-4 h-4 text-emerald-400" />
-            </>
+          </button>
+          <button
+            onClick={() => setPanelView('scorecards')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+              panelView === 'scorecards'
+                ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/30'
+                : 'text-[var(--fintheon-text)]/30 border border-transparent hover:text-[var(--fintheon-text)]/50 hover:bg-[var(--fintheon-accent)]/5'
+            }`}
+          >
+            <Trophy className="w-3 h-3" />
+            Scorecards
+          </button>
+          <div className="flex-1" />
+          {panelView === 'proposals' && (
+            <button
+              onClick={toggleMode}
+              className="flex items-center gap-1 px-2 py-1 rounded-full border transition-all text-[9px] font-semibold"
+              style={{
+                borderColor: executionMode === 'agentic' ? 'rgba(52, 211, 153, 0.4)' : 'rgba(199, 159, 74, 0.3)',
+                backgroundColor: executionMode === 'agentic' ? 'rgba(52, 211, 153, 0.08)' : 'rgba(199, 159, 74, 0.05)',
+              }}
+              title={executionMode === 'human' ? 'Display only — you execute manually' : 'Auto-execute via API (with confirmation)'}
+            >
+              {executionMode === 'human' ? (
+                <>
+                  <User className="w-3 h-3 text-[var(--fintheon-accent)]" />
+                  <span className="text-[var(--fintheon-accent)]">Human</span>
+                </>
+              ) : (
+                <>
+                  <Bot className="w-3 h-3 text-emerald-400" />
+                  <span className="text-emerald-400">Agentic</span>
+                </>
+              )}
+            </button>
           )}
-        </button>
+        </div>
       </div>
+
+      {/* Scorecards view */}
+      {panelView === 'scorecards' && (
+        <div className="flex-1 overflow-y-auto">
+          <AgentScorecard />
+        </div>
+      )}
+
+      {/* Proposals view */}
+      {panelView === 'proposals' && (<>
+
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
         {/* Execution mode banner */}
@@ -299,6 +332,7 @@ export function ProposalWidget() {
         {/* Model Glossary */}
         <ModelGlossary />
       </div>
+      </>)}
     </div>
   );
 }

@@ -1,6 +1,6 @@
-// [claude-code 2026-03-06] Single message bubble — extracted from ChatInterface
+// [claude-code 2026-03-29] S9-T5: Checkpoint → Take Note (saves to Harper memory via Context Bank)
 import { forwardRef } from 'react';
-import { CalendarCheck } from 'lucide-react';
+import { Bookmark } from 'lucide-react';
 import type { ChatMessage } from './types';
 import { MessagePartRenderer } from './parts/MessagePartRenderer';
 import { isReportHtml, ReportViewer } from './ReportViewer';
@@ -8,11 +8,11 @@ import { isReportHtml, ReportViewer } from './ReportViewer';
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   isStreaming?: boolean;
-  onCheckpoint?: (messageId: string, content: string) => void;
+  onTakeNote?: (messageId: string, content: string) => void;
 }
 
 export const ChatMessageBubble = forwardRef<HTMLDivElement, ChatMessageBubbleProps>(
-  function ChatMessageBubble({ message, isStreaming, onCheckpoint }, ref) {
+  function ChatMessageBubble({ message, isStreaming, onTakeNote }, ref) {
     const formatTimestamp = (date: Date) => {
       const mm = String(date.getMonth() + 1).padStart(2, '0');
       const dd = String(date.getDate()).padStart(2, '0');
@@ -62,18 +62,19 @@ export const ChatMessageBubble = forwardRef<HTMLDivElement, ChatMessageBubblePro
             <p className="text-sm text-zinc-300 whitespace-pre-wrap">{textContent}</p>
           )}
         </div>
-        {/* Timestamp + checkpoint — visible on hover beneath bubble */}
+        {/* Timestamp + Take Note — visible on hover beneath bubble */}
         <div className="flex items-center gap-2 mt-1 px-2 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200">
           <span className={`text-[9px] font-mono ${message.cancelled ? 'text-zinc-700' : 'text-zinc-600'}`}>
             {formatTimestamp(message.createdAt)}
           </span>
-          {message.role === 'assistant' && !message.cancelled && onCheckpoint && (
+          {message.role === 'assistant' && !message.cancelled && onTakeNote && (
             <button
-              onClick={() => onCheckpoint(message.id, textContent)}
-              className="text-zinc-600 hover:text-[color:var(--fintheon-accent)] transition-colors"
-              title="Create checkpoint"
+              onClick={() => onTakeNote(message.id, textContent)}
+              className="flex items-center gap-1 text-zinc-600 hover:text-[color:var(--fintheon-accent)] transition-colors"
+              title="Take Note — save to Harper memory"
             >
-              <CalendarCheck className="w-3 h-3" />
+              <Bookmark className="w-3 h-3" />
+              <span className="text-[9px]">Note</span>
             </button>
           )}
         </div>

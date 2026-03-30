@@ -1,10 +1,11 @@
+// [claude-code 2026-03-28] S8-T7: Kill kanban borders on assistant messages, add agent name header
 // [claude-code 2026-03-11] T2b: Image part in user bubbles, T2c: CoT auto-open/close via useEffect
 // [claude-code 2026-03-10] Enhanced FintheonThread — hover actions, scroll-to-bottom, CoT, fade-in
 import { type FC, type RefObject, Component, type ReactNode, useState, useRef, useEffect, useCallback } from 'react';
 import { ThreadPrimitive, useMessage, useThread } from '@assistant-ui/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { CalendarCheck, AlertCircle, Copy, RotateCcw, Bookmark, ArrowDown, Check } from 'lucide-react';
+import { AlertCircle, Copy, Bookmark, ArrowDown, Check } from 'lucide-react';
 import { ChatGreeting } from './ChatGreeting';
 import { FintheonThinkingIndicator } from './FintheonThinkingIndicator';
 import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
@@ -69,7 +70,7 @@ const MARKDOWN_COMPONENTS = {
     <pre className="my-2 overflow-x-auto">{children}</pre>
   ),
   blockquote: ({ children }: { children?: React.ReactNode }) => (
-    <blockquote className="border-l-2 border-[var(--fintheon-accent)]/40 pl-3 my-2 text-zinc-400 italic">{children}</blockquote>
+    <blockquote className="border-l border-[var(--fintheon-accent)]/20 pl-3 my-2 text-zinc-400 italic">{children}</blockquote>
   ),
   strong: ({ children }: { children?: React.ReactNode }) => (
     <strong className="font-semibold text-zinc-100">{children}</strong>
@@ -127,7 +128,7 @@ const FintheonReasoningPart: FC<{ text: string }> = ({ text }) => {
         </svg>
         Thinking
       </summary>
-      <div className="mt-1.5 pl-3 border-l border-zinc-700/50 text-[11px] text-zinc-500 leading-relaxed whitespace-pre-wrap">
+      <div className="mt-1.5 pl-3 text-[11px] text-zinc-500 leading-relaxed whitespace-pre-wrap">
         {text}
       </div>
     </details>
@@ -153,7 +154,7 @@ const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ te
   if (!text) return null;
 
   return (
-    <div className="mb-3 rounded-lg border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/5 overflow-hidden">
+    <div className="mb-3 rounded-lg bg-[var(--fintheon-accent)]/5 overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium text-[var(--fintheon-accent)]/80 hover:text-[var(--fintheon-accent)] transition-colors"
@@ -176,7 +177,7 @@ const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ te
         </svg>
       </button>
       {isOpen && (
-        <div className="px-3 pb-3 text-[11px] text-zinc-400 leading-relaxed whitespace-pre-wrap border-t border-[var(--fintheon-accent)]/10">
+        <div className="px-3 pb-3 text-[11px] text-zinc-400 leading-relaxed whitespace-pre-wrap">
           {text}
         </div>
       )}
@@ -188,12 +189,13 @@ const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ te
 /*  Hover action bar — Copy, Retry, Checkpoint                         */
 /* ------------------------------------------------------------------ */
 
-const ActionBar: FC<{ textContent: string; messageId?: string; onCheckpoint?: (id: string, content: string) => void }> = ({
+const ActionBar: FC<{ textContent: string; messageId?: string; onTakeNote?: (id: string, content: string) => void }> = ({
   textContent,
   messageId,
-  onCheckpoint,
+  onTakeNote,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [noted, setNoted] = useState(false);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -205,6 +207,13 @@ const ActionBar: FC<{ textContent: string; messageId?: string; onCheckpoint?: (i
     }
   }, [textContent]);
 
+  const handleNote = useCallback(() => {
+    if (!onTakeNote || !messageId || !textContent) return;
+    onTakeNote(messageId, textContent);
+    setNoted(true);
+    setTimeout(() => setNoted(false), 2000);
+  }, [onTakeNote, messageId, textContent]);
+
   return (
     <div className="flex items-center gap-1 mt-1 ml-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
       <button
@@ -215,14 +224,14 @@ const ActionBar: FC<{ textContent: string; messageId?: string; onCheckpoint?: (i
         {copied ? <Check size={10} /> : <Copy size={10} />}
         {copied ? 'Copied' : 'Copy'}
       </button>
-      {onCheckpoint && messageId && textContent && (
+      {onTakeNote && messageId && textContent && (
         <button
-          onClick={() => onCheckpoint(messageId, textContent)}
+          onClick={handleNote}
           className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-          title="Save checkpoint"
+          title="Take Note — save to Harper memory"
         >
           <Bookmark size={10} />
-          Checkpoint
+          <span className="text-[9px]">{noted ? 'Noted' : 'Note'}</span>
         </button>
       )}
     </div>
@@ -279,16 +288,12 @@ const FintheonUserMessage: FC = () => {
 /*  Assistant message                                                   */
 /* ------------------------------------------------------------------ */
 
-const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string) => void }> = ({ onCheckpoint }) => {
+const FintheonAssistantMessage: FC<{ onTakeNote?: (id: string, content: string) => void }> = ({ onTakeNote }) => {
   const message = useMessage();
   const createdAt = (message as any).createdAt as Date | undefined;
   const id = (message as any).id as string | undefined;
 
-  // Debug: log the actual message shape to find the right property
   const msg = message as any;
-  if (msg.role === 'assistant') {
-    console.log('[AssistantMsg] keys:', Object.keys(msg), 'parts?', !!msg.parts, 'content?', !!msg.content, 'text?', typeof msg.text);
-  }
 
   // Try every known property: .parts (AI SDK v6), .content (assistant-ui), .text (plain string)
   const rawContent = msg.parts ?? msg.content;
@@ -331,7 +336,7 @@ const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string
         </div>
       )}
 
-      <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border border-white/10 bg-[#0f0f0b]/92 shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition-colors">
+      <div className="max-w-[82%] px-1 transition-colors">
         <MessageErrorBoundary>
           {/* Render directly from extracted parts — bypass MessagePrimitive.Parts
               which crashes (#185) due to assistant-ui context/smooth-streaming internals */}
@@ -350,7 +355,7 @@ const FintheonAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string
       <ActionBar
         textContent={textContent}
         messageId={id}
-        onCheckpoint={onCheckpoint}
+        onTakeNote={onTakeNote}
       />
     </div>
   );
@@ -472,7 +477,7 @@ const DirectUserMessage: FC<{ msg: any }> = ({ msg }) => {
   );
 };
 
-const DirectAssistantMessage: FC<{ msg: any; onCheckpoint?: (id: string, content: string) => void }> = ({ msg, onCheckpoint }) => {
+const DirectAssistantMessage: FC<{ msg: any; agentName?: string; onTakeNote?: (id: string, content: string) => void }> = ({ msg, agentName, onTakeNote }) => {
   const textContent = extractText(msg);
   const reasoningContent = extractReasoning(msg);
 
@@ -480,18 +485,24 @@ const DirectAssistantMessage: FC<{ msg: any; onCheckpoint?: (id: string, content
 
   return (
     <div className="group/msg flex flex-col items-start animate-fade-slide-in">
+      {/* Agent name header — small, borderless */}
+      {agentName && (
+        <span className="text-[10px] font-medium text-[var(--fintheon-accent)]/60 uppercase tracking-wider ml-1 mb-1">
+          {agentName}
+        </span>
+      )}
       {reasoningContent && (
         <div className="max-w-[82%] mb-1">
           <ChainOfThoughtDisplay text={reasoningContent} />
         </div>
       )}
-      <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border border-white/10 bg-[#0f0f0b]/92 shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition-colors">
+      <div className="max-w-[82%] px-1 transition-colors">
         {textContent && <FintheonTextPart text={textContent} />}
       </div>
       <ActionBar
         textContent={textContent}
         messageId={msg.id}
-        onCheckpoint={onCheckpoint}
+        onTakeNote={onTakeNote}
       />
     </div>
   );
@@ -505,14 +516,14 @@ interface FintheonThreadProps {
   onSend: (msg: string) => void;
   isLoading: boolean;
   agentName?: string;
-  onCheckpoint?: (messageId: string, content: string) => void;
+  onTakeNote?: (messageId: string, content: string) => void;
   messageRefs?: RefObject<Record<string, HTMLDivElement | null>>;
   lastError?: string | null;
   lastRequestId?: string | null;
   compact?: boolean;
 }
 
-export function FintheonThread({ onSend, isLoading, agentName, onCheckpoint, lastError, lastRequestId, compact }: FintheonThreadProps) {
+export function FintheonThread({ onSend, isLoading, agentName, onTakeNote, lastError, lastRequestId, compact }: FintheonThreadProps) {
   const { activeAgent } = useFintheonAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -528,6 +539,13 @@ export function FintheonThread({ onSend, isLoading, agentName, onCheckpoint, las
           {!compact && messages.length === 0 && (
             <ChatGreeting onSend={onSend} isLoading={isLoading} />
           )}
+          {/* Sidebar compact greeting */}
+          {compact && messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+              <p className="text-sm text-[var(--fintheon-accent)]/60 font-medium">Ave, Trader.</p>
+              <p className="text-[11px] text-zinc-600 mt-1">Quick dispatch from the Forum.</p>
+            </div>
+          )}
 
           {/* Message list — rendered directly from thread store */}
           {messages.map((msg: any) => {
@@ -535,7 +553,7 @@ export function FintheonThread({ onSend, isLoading, agentName, onCheckpoint, las
               return <DirectUserMessage key={msg.id} msg={msg} />;
             }
             if (msg.role === 'assistant') {
-              return <DirectAssistantMessage key={msg.id} msg={msg} onCheckpoint={onCheckpoint} />;
+              return <DirectAssistantMessage key={msg.id} msg={msg} agentName={agentName ?? activeAgent?.name} onTakeNote={onTakeNote} />;
             }
             return null;
           })}

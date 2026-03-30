@@ -6,7 +6,7 @@
 // [claude-code 2026-03-22] Add errors tab to slide-up panel for persistent error log with expandable details
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText, AlertTriangle } from 'lucide-react';
-import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TopStepXBrowser';
+import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TradingBrowser';
 import { changelog } from '../../../src/lib/changelog';
 import { useSourceStatus } from '../../hooks/useSourceStatus';
 import { useErrorLog } from '../../hooks/useErrorLog';

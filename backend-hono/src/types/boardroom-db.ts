@@ -49,7 +49,7 @@ export interface BoardroomDBMessage {
 
 /** Agent emoji lookup — matches hermes-sessions.ts AGENT_PATTERNS */
 const AGENT_EMOJIS: Record<BoardroomAgent, string> = {
-  'Harper-Hermes': '🎩',
+  'Harper-Opus': '🎩',
   'Feucht': '⚡',
   'Consul': '📜',
   'Oracle': '📊',
@@ -79,7 +79,7 @@ export interface BoardroomMessageInput {
 
 /** Coerce a raw string to BoardroomAgent (DB stores as VARCHAR) */
 function toAgent(raw: string): BoardroomAgent {
-  const valid: BoardroomAgent[] = ['Harper-Hermes', 'Feucht', 'Consul', 'Oracle', 'Herald']
+  const valid: BoardroomAgent[] = ['Harper-Opus', 'Feucht', 'Consul', 'Oracle', 'Herald']
   return valid.includes(raw as BoardroomAgent) ? (raw as BoardroomAgent) : 'Unknown'
 }
 
@@ -118,6 +118,7 @@ export function toLegacyMessage(msg: BoardroomDBMessage): BoardroomMessage {
     content: msg.content,
     timestamp: msg.createdAt,
     role: msg.role as 'user' | 'assistant' | 'system',
+    metadata: msg.metadata,
   }
 }
 

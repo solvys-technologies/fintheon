@@ -90,7 +90,7 @@ export function ClawnalystDesk() {
   };
 
   const isDefaultAgent = (id: string) =>
-    ['harper-hermes', 'oracle', 'feucht', 'consul', 'herald'].includes(id);
+    ['harper-opus', 'oracle', 'feucht', 'consul', 'herald'].includes(id);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -114,8 +114,8 @@ export function ClawnalystDesk() {
         </button>
       </div>
 
-      {/* Harper-Hermes — elevated lead card, centered */}
-      {agents.filter((a) => a.id === 'harper-hermes').map((agent) => {
+      {/* Harper-Opus — elevated lead card, centered */}
+      {agents.filter((a) => a.id === 'harper-opus').map((agent) => {
         const draft = getDraft(agent.id);
         const isSaved = savedIds.has(agent.id);
         return (
@@ -127,7 +127,7 @@ export function ClawnalystDesk() {
 
       {/* Remaining agents — 2x2 grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {agents.filter((a) => a.id !== 'harper-hermes').map((agent) => {
+        {agents.filter((a) => a.id !== 'harper-opus').map((agent) => {
           const draft = getDraft(agent.id);
           const isSaved = savedIds.has(agent.id);
           return (

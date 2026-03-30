@@ -132,6 +132,7 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
         isGhost: false,
         templateType: null as any,
         position: null,
+        drillDepth: 0,
       }));
     onImport(catalysts);
     onClose();

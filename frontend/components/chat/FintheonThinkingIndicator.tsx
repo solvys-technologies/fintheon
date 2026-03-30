@@ -43,7 +43,7 @@ export function FintheonThinkingIndicator({ isThinking, thinkingContent, agentNa
   if (!isThinking) return null;
 
   return (
-    <div className="w-full rounded-xl px-3 py-2.5 fintheon-accent-border fintheon-thinking-container">
+    <div className="w-full rounded-xl px-3 py-2.5 fintheon-thinking-container-borderless">
       <div className="flex items-start gap-3">
         {/* Radar pulse */}
         <div className="relative mt-0.5 h-6 w-6 flex-shrink-0">
@@ -68,7 +68,7 @@ export function FintheonThinkingIndicator({ isThinking, thinkingContent, agentNa
                 {expanded ? 'Hide thinking pane' : 'Show thinking pane'}
               </button>
               {expanded && (
-                <div className="mt-1.5 max-h-[180px] overflow-y-auto border-l pl-2 text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap fintheon-accent-border">
+                <div className="mt-1.5 max-h-[180px] overflow-y-auto pl-2 text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap">
                   {thinkingContent}
                 </div>
               )}

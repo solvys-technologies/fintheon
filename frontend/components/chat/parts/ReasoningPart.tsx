@@ -20,7 +20,7 @@ export function ReasoningPartRenderer({ text, defaultOpen = false }: ReasoningPa
         <span>Thinking...</span>
       </button>
       {isOpen && (
-        <div className="border-l-2 border-[var(--fintheon-accent)]/20 pl-3 mt-2 text-xs text-zinc-500 font-mono whitespace-pre-wrap">
+        <div className="border border-[var(--fintheon-accent)]/10 rounded pl-3 mt-2 text-xs text-zinc-500 font-mono whitespace-pre-wrap">
           {text}
         </div>
       )}

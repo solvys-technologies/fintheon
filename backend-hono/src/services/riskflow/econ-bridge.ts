@@ -39,7 +39,7 @@ export async function injectEconPrintToFeed(print: EconPrintEvent): Promise<void
     let macroLevel = 2;
     try {
       const parsed = { raw: headline, eventType: null, isBreaking: true };
-      const ivResult = calculateIVScore({ parsed: parsed as any, timestamp: new Date() });
+      const ivResult = await calculateIVScore({ parsed: parsed as any, timestamp: new Date() });
       macroLevel = ivResult.macroLevel;
     } catch {
       // Fallback: econ prints are at least level 2
@@ -54,10 +54,19 @@ export async function injectEconPrintToFeed(print: EconPrintEvent): Promise<void
     `;
     if (existing.length > 0) return;
 
+    const econData = {
+      actual: print.actual,
+      forecast: print.forecast ?? null,
+      previous: print.previous ?? null,
+      beatMiss: direction as 'beat' | 'miss' | 'inline',
+      surprisePercent: Math.abs(surprise) > 0.01 ? Math.round(surprise * 100) / 100 : null,
+    };
+
     await sql`
       INSERT INTO news_feed_items (
         headline, body, source, url, published_at, is_breaking,
-        urgency, sentiment, iv_score, macro_level, symbols, tags
+        urgency, sentiment, iv_score, macro_level, symbols, tags,
+        econ_data, risk_type
       ) VALUES (
         ${headline},
         ${headline},
@@ -70,7 +79,9 @@ export async function injectEconPrintToFeed(print: EconPrintEvent): Promise<void
         ${macroLevel >= 3 ? 7 : 5},
         ${macroLevel},
         ${JSON.stringify([])},
-        ${JSON.stringify(['econ', 'print', print.eventName.toLowerCase().replace(/\s+/g, '-')])}
+        ${JSON.stringify(['econ', 'print', print.eventName.toLowerCase().replace(/\s+/g, '-')])},
+        ${JSON.stringify(econData)},
+        'Macro'
       )
     `;
 

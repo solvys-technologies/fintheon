@@ -28,6 +28,11 @@ export interface NewsFeedRow {
   analyzed_at: string | null;
   raw_data: Record<string, unknown> | null;
   created_at: string;
+  sub_scores?: Record<string, unknown> | null;
+  risk_type?: string | null;
+  agent_note?: string | null;
+  agent_note_generated_at?: string | null;
+  econ_data?: Record<string, unknown> | null;
 }
 
 /**
@@ -51,7 +56,8 @@ export async function storeFeedItem(item: FeedItem): Promise<void> {
       INSERT INTO news_feed_items (
         tweet_id, source, headline, body, symbols, tags,
         is_breaking, urgency, sentiment, iv_score, macro_level,
-        published_at, analyzed_at
+        published_at, analyzed_at,
+        sub_scores, risk_type, agent_note, agent_note_generated_at, econ_data
       )
       VALUES (
         ${item.id},
@@ -66,13 +72,23 @@ export async function storeFeedItem(item: FeedItem): Promise<void> {
         ${item.ivScore ?? null},
         ${item.macroLevel ?? null},
         ${item.publishedAt},
-        ${item.analyzedAt ?? null}
+        ${item.analyzedAt ?? null},
+        ${item.subScores ? JSON.stringify(item.subScores) : null},
+        ${item.riskType ?? null},
+        ${item.agentNote ?? null},
+        ${item.agentNoteGeneratedAt ?? null},
+        ${item.econData ? JSON.stringify(item.econData) : null}
       )
       ON CONFLICT (tweet_id) DO UPDATE SET
         sentiment = EXCLUDED.sentiment,
         iv_score = EXCLUDED.iv_score,
         macro_level = EXCLUDED.macro_level,
-        analyzed_at = EXCLUDED.analyzed_at
+        analyzed_at = EXCLUDED.analyzed_at,
+        sub_scores = EXCLUDED.sub_scores,
+        risk_type = EXCLUDED.risk_type,
+        agent_note = EXCLUDED.agent_note,
+        agent_note_generated_at = EXCLUDED.agent_note_generated_at,
+        econ_data = EXCLUDED.econ_data
     `;
   } catch (error) {
     console.error('[NewsCache] Failed to store item:', item.id, error);
@@ -193,28 +209,12 @@ export async function getLastFetchTime(): Promise<Date | null> {
 }
 
 /**
- * Cleanup old items (run periodically).
- * Default: 30 days (720 hours). Called on boot + daily interval.
+ * DISABLED — RiskFlow items are NEVER deleted. Retained permanently for calibration + narrative tracking.
+ * @deprecated Do not call. Items are sacred. — TP directive 2026-03-28
  */
-export async function cleanupOldItems(hoursOld: number = 720): Promise<number> {
-  if (!isDatabaseAvailable() || !sql) {
-    const cutoff = new Date(Date.now() - hoursOld * 60 * 60 * 1000);
-    const before = memoryCache.length;
-    memoryCache = memoryCache.filter(i => new Date(i.publishedAt) >= cutoff);
-    return before - memoryCache.length;
-  }
-
-  try {
-    const cutoffDate = new Date(Date.now() - hoursOld * 60 * 60 * 1000).toISOString();
-    await sql`
-      DELETE FROM news_feed_items WHERE published_at < ${cutoffDate}
-    `;
-    // Neon doesn't return count on DELETE, just return 0
-    return 0;
-  } catch (error) {
-    console.error('[NewsCache] Cleanup failed:', error);
-    return 0;
-  }
+export async function cleanupOldItems(_hoursOld: number = 720): Promise<number> {
+  console.warn('[NewsCache] cleanupOldItems called but DISABLED — items are never deleted');
+  return 0;
 }
 
 /**
@@ -235,5 +235,10 @@ function mapRowToFeedItem(row: NewsFeedRow): FeedItem {
     macroLevel: row.macro_level as MacroLevel | undefined,
     publishedAt: row.published_at,
     analyzedAt: row.analyzed_at ?? undefined,
+    subScores: row.sub_scores as unknown as FeedItem['subScores'] ?? undefined,
+    riskType: (row.risk_type as FeedItem['riskType']) ?? null,
+    agentNote: row.agent_note ?? null,
+    agentNoteGeneratedAt: row.agent_note_generated_at ?? null,
+    econData: row.econ_data as FeedItem['econData'] ?? null,
   };
 }

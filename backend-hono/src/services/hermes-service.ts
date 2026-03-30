@@ -1,8 +1,9 @@
+// [claude-code 2026-03-28] S9-T4: Switch boardroom agents to Grok 4.20 Fast, Harper stays Claude Opus
 // [claude-code 2026-03-14] Hermes inference via OpenRouter (Nous) + Claude Opus 4.6
 /**
  * Hermes Service
  * Agentic backend layer for Priced In Capital (P.I.C.)
- * Orchestrates AI agents: Harper-Hermes (CAO), Oracle (All-Seer), Feucht (Futures & Risk), Consul (Fundamentals), Herald (News)
+ * Orchestrates AI agents: Harper-Opus (CAO), Oracle (All-Seer), Feucht (Futures & Risk), Consul (Fundamentals), Herald (News)
  *
  * Architecture: HERMES AGENT → FINTHEON UI → H.E's (Human Executives)
  * Inference: OpenRouter (Nous subscription) + Claude Opus 4.6
@@ -90,7 +91,7 @@ export interface HermesClientConfig {
 const HERMES_AGENTS: Record<HermesAgentRole, Omit<HermesAgent, 'id' | 'lastCheckin' | 'status'>> = {
   'harper-cao': {
     role: 'harper-cao',
-    displayName: 'Harper-Hermes / CAO',
+    displayName: 'Harper-Opus / CAO',
     scope: 'Macro oversight, approvals, trade consolidation',
     reportsTo: 'human-executives'
   },
@@ -120,20 +121,21 @@ const HERMES_AGENTS: Record<HermesAgentRole, Omit<HermesAgent, 'id' | 'lastCheck
   }
 }
 
-// All P.I.C. agents use OpenRouter Claude Opus 4.6 (Nous subscription)
+// Harper-Opus stays on Claude Opus 4.6 (CLI bridge, $0 cost)
+// Oracle, Feucht, Consul, Herald use Grok 4.20 Fast via OpenRouter
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   'harper-cao': 'anthropic/claude-opus-4.6',
   'cao-approval': 'anthropic/claude-opus-4.6',
   'cao-consolidation': 'anthropic/claude-opus-4.6',
-  'pma-merged': 'anthropic/claude-opus-4.6',
-  'prediction-market': 'anthropic/claude-opus-4.6',
-  'futures-desk': 'anthropic/claude-opus-4.6',
-  'fa-rippers': 'anthropic/claude-opus-4.6',
-  'economic-analysis': 'anthropic/claude-opus-4.6',
-  'fundamentals-desk': 'anthropic/claude-opus-4.6',
-  'earnings-analysis': 'anthropic/claude-opus-4.6',
-  'tech-mega-cap': 'anthropic/claude-opus-4.6',
-  'herald': 'anthropic/claude-opus-4.6',
+  'pma-merged': 'xai/grok-4-fast',
+  'prediction-market': 'xai/grok-4-fast',
+  'futures-desk': 'xai/grok-4-fast',
+  'fa-rippers': 'xai/grok-4-fast',
+  'economic-analysis': 'xai/grok-4-fast',
+  'fundamentals-desk': 'xai/grok-4-fast',
+  'earnings-analysis': 'xai/grok-4-fast',
+  'tech-mega-cap': 'xai/grok-4-fast',
+  'herald': 'xai/grok-4-fast',
 }
 
 /**
@@ -178,7 +180,7 @@ export const createHermesClient = (modelId?: string) => {
     },
   })
 
-  return hermes(modelId ?? 'anthropic/claude-opus-4.6')
+  return hermes(modelId ?? 'xai/grok-4-fast')
 }
 
 
@@ -237,9 +239,10 @@ export const calculateHermesCost = (
 
   const pricing: Record<string, { input: number; output: number }> = {
     'anthropic/claude-opus-4.6': { input: 0.005, output: 0.025 },
+    'xai/grok-4-fast': { input: 0.002, output: 0.010 },
   }
 
-  const modelPricing = pricing[model] ?? { input: 0.005, output: 0.025 }
+  const modelPricing = pricing[model] ?? { input: 0.002, output: 0.010 }
 
   const inputCostUsd = (inputTokens / 1000) * modelPricing.input
   const outputCostUsd = (outputTokens / 1000) * modelPricing.output
@@ -330,13 +333,14 @@ export const validateTradeProposal = (proposal: Partial<HermesTradeProposal>): {
 }
 
 /**
- * Hermes model IDs used by P.I.C. (OpenRouter Opus 4.6)
+ * Hermes model IDs used by P.I.C.
+ * CAO uses Claude Opus 4.6 (CLI bridge), sub-agents use Grok 4.20 Fast
  */
 export const HERMES_MODELS = {
   CAO_REASONING: 'anthropic/claude-opus-4.6',
-  FAST_ANALYSIS: 'anthropic/claude-opus-4.6',
-  NEWS_REALTIME: 'anthropic/claude-opus-4.6',
-  RESEARCH: 'anthropic/claude-opus-4.6',
+  FAST_ANALYSIS: 'xai/grok-4-fast',
+  NEWS_REALTIME: 'xai/grok-4-fast',
+  RESEARCH: 'xai/grok-4-fast',
 } as const
 
 export type HermesModelId = (typeof HERMES_MODELS)[keyof typeof HERMES_MODELS]

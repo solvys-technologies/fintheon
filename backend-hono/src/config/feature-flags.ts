@@ -16,7 +16,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   psych_assist: { enabled: true },
   maintenance: { enabled: true },
   quick_fintheon: { enabled: true },
-  mirofish: { enabled: true },
+  miroshark: { enabled: true },
   chart_levels: { enabled: true },
 }
 
@@ -70,7 +70,7 @@ export function extractSkillFromMessage(message: string): string | null {
     maintenance: 'maintenance',
     quickfintheon: 'quick_fintheon',
     narrative: 'narrative',
-    mirofish: 'mirofish',
+    miroshark: 'miroshark',
     chartlevels: 'chart_levels',
   }
   return map[raw] ?? null

@@ -33,6 +33,20 @@ export interface TradeIdeaDetail {
   notionUrl: string;
 }
 
+/** Per-item scoring breakdown showing how each factor contributed */
+export interface SubScoreBreakdown {
+  eventWeight: number;
+  timing: number;
+  deviation: number;
+  momentum: number;
+  vixContext: number;
+  vixMultiplier: number;
+  regimeMultiplier?: number;
+  regimeName?: string;
+  commentatorMultiplier?: number;
+  speaker?: string | null;
+}
+
 export interface RiskFlowAlert {
   id: string;
   headline: string;
@@ -55,6 +69,34 @@ export interface RiskFlowAlert {
   instrument?: string | null;
   /** X/Twitter author handle for attribution */
   authorHandle?: string | null;
+  /** Per-item sub-score breakdown (VIX-weighted) */
+  subScores?: SubScoreBreakdown | null;
+  /** Risk classification category */
+  riskType?: 'Macro' | 'Geopolitical' | 'Earnings' | 'Technical' | 'Credit' | 'Liquidity' | 'Commentary' | null;
+  /** Agent-generated analytical note */
+  agentNote?: string | null;
+  /** Timestamp when agentNote was generated */
+  agentNoteGeneratedAt?: string | null;
+  /** Structured economic data for econ prints */
+  econData?: {
+    actual?: number | null;
+    forecast?: number | null;
+    previous?: number | null;
+    beatMiss?: 'beat' | 'miss' | 'inline' | null;
+    surprisePercent?: number | null;
+  } | null;
+  /** Narrative lifecycle — populated after catalyst promotion (30+ min old, macroLevel >= 2) */
+  promotedAt?: string | null;
+  narrativeThreads?: string[];
+  category?: string | null;
+  status?: 'active' | 'monitoring' | 'resolved' | null;
+  /** Daily close market impact (enriched ~24h after event) */
+  marketImpact?: {
+    nq?: { points: number; percent: number } | null;
+    es?: { points: number; percent: number } | null;
+    ym?: { points: number; percent: number } | null;
+    asOf?: string;
+  } | null;
 }
 
 // [claude-code 2026-03-11] Overhauled severity classification — strict contextual matching,
@@ -204,8 +246,8 @@ export function ensureScoring(alerts: RiskFlowAlert[], selectedInstrument?: stri
     if (!alert.cyclical || alert.cyclical === 'Neutral') {
       alert.cyclical = inferCyclical(alert);
     }
-    // Instrument — default to user's selected
-    if (!alert.instrument && selectedInstrument) {
+    // Instrument — always use user's selected instrument
+    if (selectedInstrument) {
       alert.instrument = selectedInstrument;
     }
     // Point range — estimate from severity if missing
@@ -234,6 +276,14 @@ const FINANCIAL_TERMS = [
   'bank', 'banking', 'credit', 'liquidity', 'default',
 ];
 
+const GEOPOLITICAL_TERMS = [
+  'iran', 'israel', 'russia', 'ukraine', 'china', 'taiwan',
+  'war', 'ceasefire', 'sanctions', 'strike', 'missile', 'nato',
+  'military', 'troops', 'invasion', 'nuclear', 'embargo', 'blockade',
+  'strait', 'hormuz', 'conflict', 'escalation', 'peace', 'treaty',
+  'north korea', 'houthi', 'hezbollah', 'hamas', 'attack', 'drone',
+];
+
 /**
  * Downgrade severity of items with BREAKING/emoji prefixes that aren't about
  * financial topics. Prevents celebrity news, sports, etc. from being 'critical'.
@@ -246,7 +296,8 @@ export function downgradeNonFinancialBreaking(alerts: RiskFlowAlert[]): RiskFlow
     if (alert.severity === 'low') continue;
     const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
     const hasFinancialTerm = FINANCIAL_TERMS.some((term) => wordMatch(lower, term) || lower.includes(term));
-    if (!hasFinancialTerm) {
+    const hasGeopoliticalTerm = GEOPOLITICAL_TERMS.some((term) => lower.includes(term));
+    if (!hasFinancialTerm && !hasGeopoliticalTerm) {
       alert.severity = 'low';
     }
   }

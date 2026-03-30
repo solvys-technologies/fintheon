@@ -34,6 +34,7 @@ import type { RiskFlowItem } from '../types/api';
 export interface RiskFlowListResponse {
   items: RiskFlowItem[];
   total?: number;
+  hasMore?: boolean;
 }
 
 export interface ChatResponse {
@@ -198,7 +199,7 @@ export class AccountService {
       tier = tierResponse.tier || 'free';
     } catch (error) {
       // If tier endpoint fails, default to free
-      console.warn('Failed to get tier, defaulting to free:', error);
+      // Tier fetch failed — default to free
     }
 
     return this.mapAccountResponse(response, tier);
@@ -213,7 +214,7 @@ export class AccountService {
       tier = tierResponse.tier || 'free';
     } catch (error) {
       // If tier endpoint fails, default to free
-      console.warn('Failed to get tier, defaulting to free:', error);
+      // Tier fetch failed — default to free
     }
 
     return this.mapAccountResponse(response, tier);
@@ -266,42 +267,14 @@ export class RiskFlowService {
 
     const queryString = query.toString();
     const endpoint = `/api/riskflow/feed${queryString ? `?${queryString}` : ''}`;
-    console.log(`[RiskFlowService] Calling endpoint: ${endpoint}`);
-    
     try {
       const response = await this.client.get<{ items?: any[]; total?: number; hasMore?: boolean; fetchedAt?: string; error?: string }>(endpoint);
-      
-      // Check if response is actually an object or if it's empty
+
       if (!response || typeof response !== 'object' || Object.keys(response).length === 0) {
-        console.error(`[RiskFlowService] Response is empty or invalid:`, response);
-        console.error(`[RiskFlowService] Response type:`, typeof response);
-        console.error(`[RiskFlowService] Response keys:`, response ? Object.keys(response) : 'null/undefined');
-        return {
-          items: [],
-          total: 0,
-        };
+        return { items: [], total: 0 };
       }
-      
-      console.log(`[RiskFlowService] Raw response:`, {
-        hasItems: !!response.items,
-        itemsLength: response.items?.length ?? 0,
-        total: response.total,
-        hasMore: response.hasMore,
-        hasError: !!response.error,
-        error: response.error,
-        responseKeys: Object.keys(response),
-        responseType: typeof response
-      });
-      
-      // Backend returns { items: FeedItem[], total: number, hasMore: boolean, fetchedAt: string }
+
       const items = Array.isArray(response.items) ? response.items : [];
-      
-      console.log(`[RiskFlowService] Received ${items.length} items from backend (total: ${response.total ?? 0})`);
-      if (items.length === 0) {
-        console.warn(`[RiskFlowService] Empty response from backend - check database cache and filters`);
-        console.warn(`[RiskFlowService] Full response object:`, JSON.stringify(response, null, 2));
-        console.warn(`[RiskFlowService] Response.items type:`, typeof response.items, Array.isArray(response.items));
-      }
 
       // Transform backend FeedItem to frontend RiskFlowItem format
       return {
@@ -336,13 +309,15 @@ export class RiskFlowService {
           };
         }),
         total: response.total ?? items.length,
+        hasMore: response.hasMore ?? false,
       };
     } catch (error: any) {
-      console.error('[RiskFlowService] Failed to fetch RiskFlow:', error);
+      // RiskFlow fetch failed — rethrow
       // Return empty response on error
       return {
         items: [],
         total: 0,
+        hasMore: false,
       };
     }
   }
@@ -351,7 +326,7 @@ export class RiskFlowService {
     try {
       await this.client.post('/api/riskflow/seed', {});
     } catch (error) {
-      console.error('Failed to seed RiskFlow:', error);
+      // Seed failed — swallow
       throw error;
     }
   }
@@ -362,6 +337,10 @@ export class RiskFlowService {
 
   async fetchVIX(): Promise<{ value: number }> {
     return this.client.get<{ value: number }>('/api/market/vix');
+  }
+
+  async generateNote(itemId: string): Promise<{ note: string }> {
+    return this.client.post<{ note: string }>(`/api/riskflow/${itemId}/generate-note`, {});
   }
 }
 
@@ -380,7 +359,6 @@ export class AIService {
       const response = await this.client.post('/api/ai/chat', payload);
       return response;
     } catch (error: any) {
-      console.error('AI chat error:', error);
       throw error;
     }
   }
@@ -390,7 +368,6 @@ export class AIService {
       const response = await this.client.get<{ conversations: any[] }>('/api/ai/conversations');
       return response.conversations || [];
     } catch (error) {
-      console.warn('listConversations endpoint error:', error);
       return [];
     }
   }
@@ -417,8 +394,6 @@ export class AIService {
   }
 
   async generateMDBReport(): Promise<MDBReport> {
-    // Stub - backend doesn't have this endpoint yet
-    console.warn('MDB report endpoint not available in Hono backend');
     return {
       report: {
         content: 'MDB report generation is not yet implemented in the Hono backend.',
@@ -492,7 +467,6 @@ export class TradingService {
 
   async seedPositions(): Promise<void> {
     // Stub - backend doesn't have this endpoint
-    console.warn('Position seed endpoint not available in Hono backend');
   }
 
   async toggleAlgo(data: any): Promise<any> {
@@ -516,8 +490,6 @@ export class ProjectXService {
   }
 
   async uplinkProjectX(): Promise<UplinkResponse> {
-    // Stub - backend doesn't have this endpoint
-    console.warn('ProjectX uplink endpoint not available in Hono backend');
     return {
       success: false,
       message: 'Uplink endpoint not available',
@@ -635,7 +607,6 @@ export class NotificationsService {
 
   async markRead(notificationId: string): Promise<void> {
     // Stub - backend doesn't have this endpoint
-    console.warn('Notification mark read endpoint not available in Hono backend');
   }
 }
 
@@ -729,12 +700,10 @@ export class VoiceService {
 
 // Events Service
 export class EventsService {
-  private _warned = false;
   constructor(private client: ApiClient) { }
 
   async list(): Promise<any[]> {
     // Stub - backend doesn't have this endpoint
-    if (!this._warned) { console.warn('Events endpoint not available — returning empty list'); this._warned = true; }
     return [];
   }
 
@@ -745,7 +714,7 @@ export class EventsService {
 
 // Boardroom types (mirrors backend boardroom.ts)
 export type BoardroomAgent =
-  | 'Harper-Hermes'
+  | 'Harper-Opus'
   | 'Oracle'
   | 'Feucht'
   | 'Consul'
@@ -759,6 +728,7 @@ export interface BoardroomMessage {
   content: string;
   timestamp: string;
   role: 'user' | 'assistant' | 'system';
+  metadata?: Record<string, unknown>;
 }
 
 export interface InterventionMessage {
@@ -1073,6 +1043,14 @@ export class BoardroomService {
       live: res.live ?? false,
     };
   }
+
+  async getThought(thoughtId: string): Promise<any> {
+    return this.client.get(`/api/boardroom/thoughts/${thoughtId}`);
+  }
+
+  async showFullAnalysis(messageId: string): Promise<any> {
+    return this.client.post(`/api/boardroom/thoughts/${messageId}/full`, {});
+  }
 }
 
 // Journal Service (Track 7A)
@@ -1261,8 +1239,8 @@ export class ContextBankService {
   }
 }
 
-// MiroFish Service
-export class MiroFishService {
+// MiroShark Service
+export class MiroSharkService {
   constructor(private client: ApiClient) {}
 
   async simulate(narrativeState: {
@@ -1274,19 +1252,19 @@ export class MiroFishService {
     gexNet?: number;
     macroIndicators?: Record<string, number>;
   }): Promise<{ simulationId: string }> {
-    return this.client.post('/api/mirofish/simulate', { narrativeState, contextBank });
+    return this.client.post('/api/miroshark/simulate', { narrativeState, contextBank });
   }
 
   async getReport(simId: string): Promise<any> {
-    return this.client.get(`/api/mirofish/report/${simId}`);
+    return this.client.get(`/api/miroshark/report/${simId}`);
   }
 
   async getStatus(simId: string): Promise<any> {
-    return this.client.get(`/api/mirofish/status/${simId}`);
+    return this.client.get(`/api/miroshark/status/${simId}`);
   }
 
   async inject(simId: string, variable: string, targetNarrativeIds: string[], description: string): Promise<any> {
-    return this.client.post(`/api/mirofish/inject/${simId}`, { variable, targetNarrativeIds, description });
+    return this.client.post(`/api/miroshark/inject/${simId}`, { variable, targetNarrativeIds, description });
   }
 }
 
@@ -1316,7 +1294,7 @@ export interface BackendClient {
   agentPerformance: AgentPerformanceService;
   contextBank: ContextBankService;
   autopilot: AutopilotService;
-  mirofish: MiroFishService;
+  miroshark: MiroSharkService;
 }
 
 // Create backend client from API client
@@ -1346,6 +1324,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     agentPerformance: new AgentPerformanceService(client),
     contextBank: new ContextBankService(client),
     autopilot: new AutopilotService(client),
-    mirofish: new MiroFishService(client),
+    miroshark: new MiroSharkService(client),
   };
 }

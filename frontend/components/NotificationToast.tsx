@@ -1,5 +1,6 @@
 // [claude-code 2026-03-20] S3:T5 — NotificationToast: bottom-left, theme colors, Don't Show Again
-import { X, TrendingUp, Newspaper, AlertTriangle, BellOff } from 'lucide-react';
+// [claude-code 2026-03-28] S8-T6: Refactored to RiskFlow card style — frosted glass, severity badges, bullish/bearish footer
+import { X, TrendingUp, TrendingDown, Newspaper, AlertTriangle, BellOff, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { playAlertSound, playIOSPing, AlertType } from '../utils/soundAlerts';
 import { useSettings } from '../contexts/SettingsContext';
@@ -72,61 +73,104 @@ export function NotificationToast({ notification, onDismiss, onBlock }: Notifica
 
   const dndType = toDndType(notification.type);
 
+  // Severity badge styling — matches RiskFlowPanel SEVERITY_CONFIG pattern
+  const severityConfig = (() => {
+    if (notification.severity === 'error' || notification.type === 'tilt')
+      return { label: 'HIGH', bg: 'bg-red-500/15', text: 'text-red-400', border: 'border-red-500/30' };
+    if (notification.severity === 'warning')
+      return { label: 'MED', bg: 'bg-[var(--fintheon-accent)]/10', text: 'text-[var(--fintheon-accent)]', border: 'border-[var(--fintheon-accent)]/30' };
+    if (notification.type === 'trade')
+      return { label: 'TRADE', bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' };
+    return { label: 'INFO', bg: 'bg-zinc-700/30', text: 'text-zinc-400', border: 'border-zinc-600/30' };
+  })();
+
+  // Determine bullish/bearish from content heuristics
+  const isBullish = /bull|long|buy|up|rally|bid/i.test(notification.title + notification.message);
+  const isBearish = /bear|short|sell|down|drop|crash|risk|tilt/i.test(notification.title + notification.message);
+  const dirColor = isBullish ? 'var(--fintheon-bullish)' : isBearish ? 'var(--fintheon-bearish)' : 'var(--fintheon-muted)';
+
   return (
     <div
-      className="transition-all duration-300 ease-out"
+      className="transition-all duration-300 ease-out overflow-hidden group"
       style={{
         opacity: entered ? 1 : 0,
         transform: entered ? 'translateX(0)' : 'translateX(-16px)',
-        backgroundColor: 'var(--fintheon-surface)',
-        border: '1px solid var(--fintheon-accent)',
-        borderRadius: '10px',
-        padding: '12px 14px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-        minWidth: '300px',
-        maxWidth: '400px',
+        minWidth: '320px',
+        maxWidth: '420px',
       }}
     >
-      <div className="flex items-start gap-3">
-        {notification.type === 'iv' ? (
-          <TrendingUp className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--fintheon-accent)' }} />
-        ) : notification.type === 'tilt' || notification.severity === 'warning' ? (
-          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#f97316' }} />
-        ) : (
-          <Newspaper className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--fintheon-accent)' }} />
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <h4 className="text-[13px] font-semibold" style={{ color: 'var(--fintheon-text)' }}>
-              {notification.title}
-            </h4>
-            <div className="flex items-center flex-shrink-0" style={{ gap: '2px' }}>
+      {/* Frosted glass card body */}
+      <div
+        className="backdrop-blur-xl border border-[var(--fintheon-accent)]/20"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 80%, transparent)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        }}
+      >
+        {/* Main content */}
+        <div className="px-3 pt-2.5 pb-2">
+          <div className="flex items-start gap-2">
+            {/* Severity badge */}
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${severityConfig.bg} ${severityConfig.text} ${severityConfig.border} border flex-shrink-0 mt-0.5`}>
+              {severityConfig.label}
+            </span>
+            <div className="flex-1 min-w-0">
+              {/* Headline */}
+              <p className="text-xs leading-snug font-medium text-[var(--fintheon-text)] line-clamp-2">
+                {notification.title}
+              </p>
+              {/* Summary */}
+              {notification.message && notification.message !== notification.title && (
+                <p className="text-[10px] text-zinc-600 line-clamp-1 mt-0.5">{notification.message}</p>
+              )}
+              {/* Source badge + timestamp row */}
+              <div className="flex items-center gap-2 mt-1">
+                {notification.type === 'iv' ? (
+                  <TrendingUp className="w-2.5 h-2.5 text-zinc-500" />
+                ) : notification.type === 'tilt' ? (
+                  <AlertTriangle className="w-2.5 h-2.5 text-zinc-500" />
+                ) : notification.type === 'trade' ? (
+                  <Zap className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
+                ) : (
+                  <Newspaper className="w-2.5 h-2.5 text-zinc-500" />
+                )}
+                <span className="text-[10px] text-zinc-600">{notification.timestamp.toLocaleTimeString()}</span>
+                <span className="text-[10px] text-zinc-700">&middot;</span>
+                <span className="text-[10px] text-[var(--fintheon-accent)]/60 uppercase tracking-wider">
+                  {notification.type === 'iv' ? 'IV Alert' : notification.type === 'tilt' ? 'PsychAssist' : notification.type === 'trade' ? 'Trade' : 'RiskFlow'}
+                </span>
+              </div>
+            </div>
+            {/* Dismiss + block CTAs */}
+            <div className="flex-shrink-0 flex items-center gap-0.5">
               <button
                 onClick={() => onBlock(dndType)}
                 title="Don't show again"
-                className="flex items-center justify-center rounded transition-colors"
-                style={{ width: '20px', height: '20px', color: 'var(--fintheon-muted)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--fintheon-accent)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--fintheon-muted)'; }}
+                className="p-1 rounded text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors opacity-0 group-hover:opacity-100"
               >
-                <BellOff size={11} />
+                <BellOff size={12} />
               </button>
               <button
                 onClick={() => onDismiss(notification.id)}
-                className="flex items-center justify-center rounded transition-colors"
-                style={{ width: '20px', height: '20px', color: 'var(--fintheon-muted)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--fintheon-text)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--fintheon-muted)'; }}
+                className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
               >
                 <X size={12} />
               </button>
             </div>
           </div>
-          <p className="text-[11px] mt-1" style={{ color: 'var(--fintheon-muted)' }}>
-            {notification.message}
-          </p>
-          <span className="text-[9px] mt-1.5 block" style={{ color: 'rgba(107,114,128,0.5)' }}>
-            {notification.timestamp.toLocaleTimeString()}
+        </div>
+
+        {/* Bottom hero footer — matches AlertRow in RiskFlowPanel */}
+        <div className="flex items-center justify-between px-3 py-1.5 border-t" style={{ borderColor: 'color-mix(in srgb, var(--fintheon-accent) 10%, transparent)', backgroundColor: 'color-mix(in srgb, var(--fintheon-bg) 80%, transparent)' }}>
+          <span className="text-[10px] text-zinc-600">{notification.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          {(isBullish || isBearish) && (
+            <span className="text-[11px] font-bold tracking-wider uppercase flex items-center gap-1" style={{ color: dirColor }}>
+              {isBullish ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {isBullish ? 'BULLISH' : 'BEARISH'}
+            </span>
+          )}
+          <span className="text-[9px] text-zinc-600 uppercase tracking-wider font-mono">
+            {notification.type}
           </span>
         </div>
       </div>

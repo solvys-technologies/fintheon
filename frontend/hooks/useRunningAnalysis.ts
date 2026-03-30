@@ -1,8 +1,8 @@
-// [claude-code 2026-03-24] useRunningAnalysis — polls backend for reactive MiroFish state + rolling window
+// [claude-code 2026-03-24] useRunningAnalysis — polls backend for reactive MiroShark state + rolling window
 // [claude-code 2026-03-24] Fix: AbortController cancels in-flight fetches on rollingDays change
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { RunningAnalysisSnapshot, RollingWindowData } from '../types/mirofish';
+import type { RunningAnalysisSnapshot, RollingWindowData } from '../types/miroshark';
 
 const POLL_INTERVAL = 30_000;
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -32,8 +32,8 @@ export function useRunningAnalysis(options: UseRunningAnalysisOptions = {}): Use
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     try {
       const [stateRes, rollingRes] = await Promise.allSettled([
-        fetch(`${API_BASE}/api/mirofish/running-state`, { signal }).then(r => r.ok ? r.json() : null),
-        fetch(`${API_BASE}/api/mirofish/rolling-window?days=${rollingDays}`, { signal }).then(r => r.ok ? r.json() : null),
+        fetch(`${API_BASE}/api/miroshark/running-state`, { signal }).then(r => r.ok ? r.json() : null),
+        fetch(`${API_BASE}/api/miroshark/rolling-window?days=${rollingDays}`, { signal }).then(r => r.ok ? r.json() : null),
       ]);
 
       if (stateRes.status === 'fulfilled' && stateRes.value) {

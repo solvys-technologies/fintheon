@@ -32,22 +32,30 @@ function scoreToUrgency(score: number): PointEstimate['urgency'] {
 /**
  * Estimate implied point move for a given IV score and VIX level.
  * The score scales the daily implied move: score/10 * implied daily move.
+ * narrativePressure (0-3) caps how much of the daily range a single event can claim.
  */
 export function estimatePoints(
   ivScore: number,
   vixLevel: number,
   instrument: string = '/ES',
   currentPrice?: number,
+  narrativePressure: number = 0,
 ): PointEstimate {
   const config = getInstrumentConfig(instrument);
   const price = currentPrice ?? config?.currentPrice ?? 6000;
 
   const implied = calculateImpliedPoints(vixLevel, price, instrument);
 
+  // Cap based on narrative pressure (% of daily range a single event can claim)
+  const CAP_BY_NARRATIVE: Record<number, number> = { 0: 0.25, 1: 0.30, 2: 0.35, 3: 0.45 };
+  const cap = CAP_BY_NARRATIVE[Math.min(3, Math.max(0, narrativePressure))] ?? 0.25;
+  const maxPoints = implied.adjustedPoints * cap;
+
   // Scale: the IV score represents what fraction of daily implied move is "active"
   const scaleFactor = Math.min(1, ivScore / 10);
-  const scaledPoints = Number((implied.adjustedPoints * scaleFactor).toFixed(1));
-  const scaledTicks = Math.round(implied.adjustedTicks * scaleFactor);
+  const rawScaled = implied.adjustedPoints * scaleFactor;
+  const scaledPoints = Number(Math.min(maxPoints, rawScaled).toFixed(1));
+  const scaledTicks = Math.round((scaledPoints / (implied.adjustedPoints || 1)) * implied.adjustedTicks);
   const tickValue = config?.tickValue ?? 1;
   const scaledDollarRisk = Number((scaledTicks * tickValue).toFixed(2));
 

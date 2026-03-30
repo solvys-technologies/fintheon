@@ -1,3 +1,5 @@
+// [claude-code 2026-03-26] S2-T5: Regime-aware V3 rewire — async, dynamic calibration weights, regime+commentator multipliers, scheduled-data breaking block
+// [claude-code 2026-03-26] Tier-based score ceiling + recalibrated scoreToPoints curve (was producing 200+ pts for jobless claims)
 // [claude-code 2026-03-24] VIX-weighted scoring: continuousVIXMultiplier, SubScoreBreakdown, finer EVENT_WEIGHTS, macro threshold adjustment
 /**
  * IV Scorer Service
@@ -10,6 +12,9 @@ import type { SubScoreBreakdown } from '../../types/riskflow.js'
 import type { VIXData } from '../vix-service.js'
 import { hasLevel4Emoji, MAJOR_MACRO_PRINTS } from '../headline-parser.js'
 import { INSTRUMENT_BETAS, continuousVIXMultiplier } from '../iv-scoring-v2.js'
+import { getCurrentRegime, getRegimeMultipliers } from '../regime/regime-service.js'
+import { getMultiplierForSpeaker } from '../commentator/commentator-service.js'
+import { getWeightForEvent } from '../calibration/calibration-service.js'
 
 // [claude-code 2026-03-24] Synced with iv-scoring-v2 finer granularity (half-point steps, 2.0-10.0 range)
 // Base impact weights by event type — must stay in sync with iv-scoring-v2.ts EVENT_WEIGHTS
@@ -40,8 +45,8 @@ const EVENT_WEIGHTS: Record<string, number> = {
   pcePrint: 7,
   jolts: 7,
   earningsHighImpact: 7,
-  ismPrint: 7,
-  ism: 7,
+  ismPrint: 5,
+  ism: 5,
   // Yield/GDP/Political (5.5-6.5)
   yieldCurveSignal: 6.5,
   gdpPrint: 6,
@@ -50,7 +55,7 @@ const EVENT_WEIGHTS: Record<string, number> = {
   // Mid-tier (5)
   earningsMidCap: 5,
   earnings: 5,
-  economicData: 5,
+  economicData: 4,
   retailSales: 5,
   trade: 5,
   // Lower-tier (3-4)
@@ -104,10 +109,13 @@ export interface ExtendedIVScore extends IVScoreResult {
   subScores?: SubScoreBreakdown
 }
 
+// Scheduled data releases should never get a breaking boost — they're expected, not breaking
+const SCHEDULED_DATA_EVENTS = ['cpiPrint', 'ppiPrint', 'nfpPrint', 'gdpPrint', 'pcePrint', 'ismPrint', 'ism', 'jolts', 'retailSales', 'housing', 'jobless', 'economicData']
+
 /**
- * Calculate IV impact score for a parsed headline
+ * Calculate IV impact score for a parsed headline (V3: regime-aware, async)
  */
-export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
+export async function calculateIVScore(input: IVScoreInput): Promise<ExtendedIVScore> {
   const { parsed, hotPrint, timestamp = new Date(), vixData } = input
   const rationale: string[] = []
 
@@ -116,14 +124,19 @@ export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
   let subDeviation = 0
   let subMomentum = 0
 
-  // Get base weight from event type
+  // Get base weight from calibration table (falls back to EVENT_WEIGHTS)
   const eventType = parsed.eventType ?? 'default'
-  const baseEventWeight = EVENT_WEIGHTS[eventType] ?? EVENT_WEIGHTS.default
+  let baseEventWeight: number
+  try {
+    baseEventWeight = await getWeightForEvent(eventType)
+  } catch {
+    baseEventWeight = EVENT_WEIGHTS[eventType] ?? EVENT_WEIGHTS.default
+  }
   let score = baseEventWeight
   rationale.push(`Base weight for ${eventType}: ${score}`)
 
-  // Breaking news boost (momentum)
-  if (parsed.isBreaking) {
+  // Breaking news boost (momentum) — blocked on scheduled data releases
+  if (parsed.isBreaking && !SCHEDULED_DATA_EVENTS.includes(eventType)) {
     score += 1.5
     subMomentum += 0.75
     rationale.push('Breaking headline: +1.5')
@@ -222,6 +235,51 @@ export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
     }
   }
 
+  // --- Regime multiplier (after VIX, before tier ceiling) ---
+  let regimeMultiplier = 1.0
+  let regimeName = 'CONSOLIDATION'
+  try {
+    const regimeState = await getCurrentRegime()
+    regimeName = regimeState.regime
+    const regimeProfile = getRegimeMultipliers(regimeState.regime)
+
+    // Event-type-specific override first
+    if (regimeProfile.eventTypeOverrides[eventType]) {
+      regimeMultiplier = regimeProfile.eventTypeOverrides[eventType]
+    }
+    // Then apply sentiment-based scaling
+    const sentiment = determineSentiment(parsed, hotPrint)
+    if (sentiment === 'bullish') {
+      regimeMultiplier *= regimeProfile.sentimentMultipliers.bullish
+    } else if (sentiment === 'bearish') {
+      regimeMultiplier *= regimeProfile.sentimentMultipliers.bearish
+    } else {
+      regimeMultiplier *= regimeProfile.sentimentMultipliers.neutral
+    }
+    score *= regimeMultiplier
+    rationale.push(`Regime: ${regimeName} (${regimeMultiplier.toFixed(2)}x)`)
+  } catch {
+    // Fallback: CONSOLIDATION ≈ 1.0 multipliers — no regime adjustment
+  }
+
+  // --- Commentator multiplier (after regime, before tier ceiling) ---
+  let commentatorMultiplier = 1.0
+  if (parsed.speaker) {
+    try {
+      commentatorMultiplier = await getMultiplierForSpeaker(parsed.speaker)
+      score *= commentatorMultiplier
+      rationale.push(`Speaker: ${parsed.speaker} (${commentatorMultiplier.toFixed(2)}x tier)`)
+    } catch {
+      // Fallback: no speaker adjustment
+    }
+  }
+
+  // Tier-based score ceiling: prevents low-tier events from reaching crisis scores via boost stacking
+  // e.g. jobless (base 4) caps at 8, cpiPrint (base 7.5) caps at 10
+  const maxBoostedScore = Math.min(10, baseEventWeight + 4)
+  score = Math.min(maxBoostedScore, score)
+  rationale.push(`Tier ceiling (base ${baseEventWeight} + 4 = ${maxBoostedScore}): capped at ${maxBoostedScore}`)
+
   // Clamp final score
   score = Math.min(10, Math.max(0, score))
 
@@ -233,6 +291,10 @@ export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
     momentum: Math.min(2, subMomentum),
     vixContext: Number(vixContextScore.toFixed(1)),
     vixMultiplier: Number(vixMult.toFixed(2)),
+    regimeMultiplier: Number(regimeMultiplier.toFixed(2)),
+    regimeName,
+    commentatorMultiplier: Number(commentatorMultiplier.toFixed(2)),
+    speaker: parsed.speaker || null,
   }
 
   // Calculate implied points (uses PRIMARY_INSTRUMENT env var or defaults to /ES)
@@ -284,17 +346,17 @@ function getEasternHour(date: Date): number {
 function scoreToPoints(score: number, instrument: string = '/ES'): { points: number; instrument: string } {
   if (score <= 0) return { points: 0, instrument }
 
-  // Non-linear scaling — steeper for high-impact events (geopolitical, crisis)
-  // Base curve calibrated for /ES (beta 1.0)
+  // Non-linear scaling calibrated for /ES (beta 1.0)
+  // Curve: 0-15-45-69-99 pts across score 0-3-6-8-10
   let basePoints: number
   if (score <= 3) {
-    basePoints = score * 8
+    basePoints = score * 5
   } else if (score <= 6) {
-    basePoints = 24 + (score - 3) * 15
+    basePoints = 15 + (score - 3) * 10
   } else if (score <= 8) {
-    basePoints = 69 + (score - 6) * 30
+    basePoints = 45 + (score - 6) * 12
   } else {
-    basePoints = 129 + (score - 8) * 50
+    basePoints = 69 + (score - 8) * 15
   }
 
   // Apply instrument beta from INSTRUMENT_BETAS (defaults to 1.0 for unknown instruments)
@@ -402,10 +464,10 @@ function generateTradingImplication(
 /**
  * Batch score multiple headlines
  */
-export function batchCalculateIVScores(
+export async function batchCalculateIVScores(
   inputs: IVScoreInput[]
-): ExtendedIVScore[] {
-  return inputs.map(calculateIVScore)
+): Promise<ExtendedIVScore[]> {
+  return Promise.all(inputs.map(calculateIVScore))
 }
 
 /**

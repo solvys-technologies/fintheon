@@ -117,6 +117,28 @@ html *::-webkit-scrollbar {
   --sidebar-ring: oklch(0.439 0 0);
 }
 
+/* ── Fintheon custom keyframes ── */
+
+/* Vertical shimmer for the Market Heat fuse bar — bottom-to-top glow */
+@keyframes fuse-shimmer {
+  0% {
+    background-position: 0 100%;
+  }
+  100% {
+    background-position: 0 -100%;
+  }
+}
+
+/* Subtle pulse glow for new-message indicator */
+@keyframes msg-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -372,7 +394,10 @@ html *::-webkit-scrollbar {
 }
 
 .fintheon-thinking-container {
-  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 25%, transparent);
+  background-color: var(--fintheon-surface);
+}
+
+.fintheon-thinking-container-borderless {
   background-color: var(--fintheon-surface);
 }
 
@@ -436,6 +461,26 @@ html *::-webkit-scrollbar {
   animation: rope-swing 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* NarrativeFlow — rope breathing opacity pulse (S8-T3) */
+@keyframes rope-breathe {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.45; }
+}
+
+.react-flow__edge-path.rope-breathe,
+.react-flow__edge.rope-breathe path {
+  animation: rope-breathe 4s ease-in-out infinite;
+}
+
+/* Desynchronize breathing per-rope via delay classes */
+.rope-delay-0 path { animation-delay: 0s; }
+.rope-delay-1 path { animation-delay: 0.6s; }
+.rope-delay-2 path { animation-delay: 1.2s; }
+.rope-delay-3 path { animation-delay: 1.8s; }
+.rope-delay-4 path { animation-delay: 2.4s; }
+.rope-delay-5 path { animation-delay: 3.0s; }
+.rope-delay-6 path { animation-delay: 3.6s; }
+
 /* NarrativeFlow — impact ripple expanding rings */
 @keyframes ripple-expand {
   0% { transform: scale(0.3); opacity: 0.4; }
@@ -471,6 +516,25 @@ html *::-webkit-scrollbar {
   animation: ghost-solidify 800ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* [claude-code 2026-03-27] NarrativeResearchCard — highlight selection + agent border pulse */
+.research-bullet::selection {
+  background: color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
+}
+
+@keyframes agent-border-pulse {
+  0%, 100% { border-color: color-mix(in srgb, var(--fintheon-accent) 30%, transparent); }
+  50% { border-color: var(--fintheon-accent); }
+}
+
+.research-card-agent {
+  animation: agent-border-pulse 2s ease-in-out infinite;
+}
+
+.research-card-selected {
+  --fintheon-glow-color: var(--fintheon-accent);
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
 /* NarrativeFlow — pulsing border glow for selected items */
 @keyframes pulse-border {
   0%, 100% { box-shadow: 0 0 0 0 var(--fintheon-glow-color); }
@@ -487,6 +551,20 @@ html *::-webkit-scrollbar {
 @keyframes decay-fade {
   from { opacity: 1; }
   to { opacity: 0.35; }
+}
+
+/* Timeline — shimmer number effect for event/narrative counts */
+@keyframes text-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.shimmer-number {
+  background: linear-gradient(90deg, var(--fintheon-accent) 0%, var(--fintheon-text) 50%, var(--fintheon-accent) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-shimmer 3s linear infinite;
 }
 
 /* Liquid glass + ambient motion */
@@ -595,4 +673,52 @@ html *::-webkit-scrollbar {
   border-radius: 2px;
   box-shadow: 0 0 8px var(--fintheon-accent), 0 0 16px var(--fintheon-accent);
   animation: timeline-pulse 3s ease-in-out infinite;
+}
+
+/* ─── Agent Mention Effects ─────────────────────────────────────── */
+
+@keyframes agent-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ─── NarrativeFlow T5: Living Motion Keyframes ──────────────── */
+
+@keyframes card-enter {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-card-enter {
+  animation: card-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes severity-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  50% { box-shadow: 0 0 12px 2px rgba(239, 68, 68, 0.3); }
+}
+.animate-severity-pulse {
+  animation: severity-pulse 3s ease-in-out infinite;
+}
+
+/* ─── Agent Mention Effects ─────────────────────────────────────── */
+
+.agent-mention-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #D4AF37 25%,
+    #c79f4a 50%,
+    #D4AF37 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: agent-shimmer 1.5s ease-in-out;
+}
+
+/* TopStepX Castra mode — darken surfaces to blend with TopStepX charcoal UI */
+.topstepx-active {
+  --fintheon-bg: #08080a;
+  --fintheon-surface: #0e0e12;
 }

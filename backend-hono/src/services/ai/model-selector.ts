@@ -1,3 +1,4 @@
+// [claude-code 2026-03-29] Add Grok 4.20 to scoring fallback chains (news, sentiment, econ, earnings)
 // [claude-code 2026-03-14] Default: OpenRouter (Nous) + Claude Sonnet 4.6; Groq removed
 // [claude-code 2026-03-14] Model routing fix: default chat→Sonnet 4.6, thinkHarder→Opus (in chat.ts)
 /**
@@ -17,6 +18,7 @@ import {
   isOpenRouterModel,
   isHermesModel,
   isGitHubModelsModel,
+  isNousDirectModel,
   getHermesModelId,
 } from '../../config/ai-config.js'
 
@@ -35,8 +37,8 @@ const HEALTH_CHECK_TTL_MS = 60_000
  * All tasks through OpenRouter (Nous subscription) — Claude Sonnet 4.6 default
  */
 const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
-  news: ['openrouter-sonnet', 'openrouter-opus'],
-  sentiment: ['openrouter-sonnet', 'openrouter-opus'],
+  news: ['openrouter-sonnet', 'openrouter-grok-420', 'openrouter-opus'],
+  sentiment: ['openrouter-sonnet', 'openrouter-grok-420', 'openrouter-opus'],
   chat: ['openrouter-sonnet', 'openrouter-opus'],
   general: ['openrouter-sonnet', 'openrouter-opus'],
   technical: ['openrouter-sonnet', 'openrouter-opus'],
@@ -51,9 +53,9 @@ const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
   'prediction-market': ['openrouter-sonnet', 'openrouter-opus'],
   'futures-desk': ['openrouter-sonnet', 'openrouter-opus'],
   'fa-rippers': ['openrouter-sonnet', 'openrouter-opus'],
-  'economic-analysis': ['openrouter-sonnet', 'openrouter-opus'],
-  'fundamentals-desk': ['openrouter-sonnet', 'openrouter-opus'],
-  'earnings-analysis': ['openrouter-sonnet', 'openrouter-opus'],
+  'economic-analysis': ['openrouter-sonnet', 'openrouter-grok-420', 'openrouter-opus'],
+  'fundamentals-desk': ['openrouter-sonnet', 'openrouter-grok-420', 'openrouter-opus'],
+  'earnings-analysis': ['openrouter-sonnet', 'openrouter-grok-420', 'openrouter-opus'],
   'tech-mega-cap': ['openrouter-sonnet', 'openrouter-opus'],
   default: ['openrouter-sonnet', 'openrouter-opus'],
 }
@@ -272,6 +274,15 @@ export function createModelClient(modelKey: AiModelKey) {
         'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
         'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
       },
+    })
+    return client(config.id)
+  }
+
+  // Nous Research direct inference (fallback when OpenRouter DNS fails)
+  if (isNousDirectModel(modelKey)) {
+    const client = createOpenAI({
+      apiKey,
+      baseURL: config.baseUrl,
     })
     return client(config.id)
   }

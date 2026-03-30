@@ -23,8 +23,8 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: 'Dashboard',
     description: 'Your command center. KPIs, calendar, and RiskFlow at a glance.',
-    nav: 'executive',
-    selector: 'button[data-tour-target="executive"]',
+    nav: 'dashboard',
+    selector: 'button[data-tour-target="dashboard"]',
     position: 'right',
   },
   {
@@ -50,7 +50,7 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'Predictions',
-    description: 'MiroFish prediction engine. IV forecasts and risk visualization.',
+    description: 'MiroShark prediction engine. IV forecasts and risk visualization.',
     nav: 'proposals',
     selector: 'button[data-tour-target="proposals"]',
     position: 'right',
@@ -79,15 +79,15 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: 'Strategium',
     description: 'Mission Control: ER, account tracking, regime detection.',
-    nav: 'executive',
+    nav: 'dashboard',
     selector: '[data-tour-target="strategium"]',
     position: 'left',
   },
   {
     title: 'RiskFlow',
     description: 'Real-time market feed. News, prints, and trade ideas.',
-    nav: 'news',
-    selector: 'button[data-tour-target="news"]',
+    nav: 'riskflow',
+    selector: 'button[data-tour-target="riskflow"]',
     position: 'right',
   },
   {
@@ -103,7 +103,7 @@ const WHATS_NEW_ITEMS = [
   'Contextual walkthrough tour with 11-step guided overview',
   'Consilium — AI agents debate trades and surface proposals',
   'Apparatus — agent memory, reasoning, and schedule visibility',
-  'Narrative Map canvas with MiroFish integration',
+  'Narrative Map canvas with MiroShark integration',
   'Blindspots interview — personalized trader profile setup',
   'Setup wizard for backend dependency checks',
 ];
@@ -315,7 +315,7 @@ export function FirstTimeTour({ onNavigate }: { onNavigate?: (tab: string) => vo
       localStorage.setItem(TOUR_STORAGE_KEY, 'true');
       localStorage.setItem(LAST_VERSION_KEY, CURRENT_VERSION);
       setActive(false);
-      onNavigate?.('executive');
+      onNavigate?.('dashboard');
       addToast('Welcome to Fintheon', 'success', 'Your tour is complete. Explore at your own pace.');
     }, 300);
   }, [addToast, onNavigate]);

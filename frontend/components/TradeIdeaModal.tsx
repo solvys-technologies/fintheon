@@ -106,7 +106,7 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
           <div className="flex-1 overflow-y-auto px-4 py-3.5 space-y-4">
             {/* Trade Brief */}
             {idea.hermesDescription && (
-              <div className="border-l-2 border-[var(--fintheon-accent)]/50 pl-3">
+              <div className="border border-[var(--fintheon-accent)]/10 rounded pl-3">
                 <div className="text-[9px] tracking-[0.2em] uppercase text-[var(--fintheon-accent)]/60 mb-1.5">
                   Trade Brief
                 </div>

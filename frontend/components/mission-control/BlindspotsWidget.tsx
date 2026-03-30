@@ -101,7 +101,7 @@ export function BlindspotsWidget() {
       ) : (
         <div className="space-y-2">
           {blindspots.map(spot => (
-            <div key={spot.id} className="text-xs p-2 rounded border-l-2 border-l-[var(--fintheon-accent)]/40">
+            <div key={spot.id} className="text-xs p-2 rounded border border-[var(--fintheon-accent)]/10">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-gray-300 flex-1 text-[10px] leading-tight">{spot.text}</span>
               </div>

@@ -1,5 +1,7 @@
 // [claude-code 2026-03-22] Extracted brief generation logic — shared by data routes + dispatch scheduler
 // [claude-code 2026-03-23] Fix: use createModelClient() instead of passing raw model key to generateText
+// [claude-code 2026-03-25] Add Nous Direct fallback when OpenRouter DNS fails (EAI_AGAIN)
+// [claude-code 2026-03-26] S2-T2: Add regime classification to MDB prompt + auto-parse after generation
 import { generateText } from 'ai';
 import {
   writeBrief,
@@ -9,8 +11,10 @@ import {
   type BriefRecord,
 } from './supabase-service.js';
 import { getFeed } from './riskflow/feed-service.js';
-import { selectModel, createModelClient, type AiModelKey } from './ai/model-selector.js';
+import { selectModel, createModelClient, getFallbackModel, markProviderUnhealthy, type AiModelKey } from './ai/model-selector.js';
 import { createLogger } from '../lib/logger.js';
+import { MARKET_REGIMES, type MarketRegime } from '../types/regime.js';
+import { setRegime } from './regime/regime-service.js';
 
 const log = createLogger('BriefGenerator');
 
@@ -22,7 +26,7 @@ export const BRIEF_LABELS: Record<string, string> = {
   MDB: 'Morning Daily Brief (MDB)',
   ADB: 'Afternoon Daily Brief (ADB)',
   PMDB: 'Post-Market Daily Brief (PMDB)',
-  TOTT: 'Tip of the Tape (TOTT)',
+  TOTT: 'Tale of the Tape — The Weekly Tribune',
 };
 
 export function getCurrentBriefType(): BriefType {
@@ -30,8 +34,11 @@ export function getCurrentBriefType(): BriefType {
   const day = now.getDay();
   const h = now.getHours();
   const timeVal = h * 60 + now.getMinutes();
+  // TOTT: Sunday >= 17:00 through Monday < 07:00
   if (day === 0 && timeVal >= 17 * 60) return 'TOTT';
   if (day === 1 && h < 7) return 'TOTT';
+  // PMDB stays active overnight until MDB fires at 6:30 AM
+  if (timeVal < 6 * 60 + 30) return 'PMDB';
   if (timeVal >= 17 * 60 + 30) return 'PMDB';
   if (timeVal >= 11 * 60) return 'ADB';
   return 'MDB';
@@ -114,27 +121,55 @@ ${
 **Pressure Summary:** Current price action, key levels, consolidation vs breakout
 **Market Risks & VIX:** Event risk status, VIX level and direction, what it means
 **Overall Sentiment:** One punchy sentence
+**Market Regime:** [BULL_TREND | BEAR_TREND | CONSOLIDATION | GEO_TENSIONS | MACRO_ECON | RISK_OFF | EARNINGS_SEASON | ILLIQUID_STUPIDITY]
+One-line justification for regime classification.
 **Best Intraday Approach:** Specific strategy recommendation (Ripper, AWV, Snipe, etc.)
 
 Be direct, use financial shorthand. Anchor ONLY to key macro events. No scattergun anchoring. 400-600 words.`
-    : `Write a comprehensive Weekly Tribune covering:
+    : `Write the Tale of the Tape Report — the Weekly Tribune for Priced In Capital. This is a two-part report: Past Week Recap + What We Got Ahead.
 
-**Past Week Recap:**
-- Market Overview (S&P, Nasdaq, equal-weight, sector rotation)
-- Top 3 S&P 500 Performers ($200B+) with headlines
-- Bottom 3 S&P 500 Performers ($200B+) with headlines
-- NQ Futures Daily % Change (each day)
-- Key Macro Data released
-- Political Commentary (administration figures, policy impact)
-- VIX Levels (range for the week)
-- Sentiment summary
+# PART 1: Past Week Recap
 
-**Upcoming Week Preview:**
-- Scheduled Events with VolScore (1-10), Forecast, Prior, NQ Reaction expectation, Priced In assessment
-- Key earnings to watch
-- Sentiment outlook
+**Market Overview:** Summarize the week's dominant themes (geopolitical tensions, macro shifts, sector rotation, risk-on/risk-off tone). Reference S&P 500, Nasdaq, and broader market direction. Be specific about what drove price action.
 
-Be analytical, direct, use financial shorthand. 600-1000 words.`
+**NQ Futures Daily % Change:** List each trading day with approximate % change and a one-line note on what drove it. Example format:
+• Monday: +1.27% (relief rally on de-escalation comments)
+• Tuesday: -0.80% (oil spike, consumer sentiment miss)
+...and so on for the full week.
+
+**Macro Data Highlights:** Cover the key releases — CPI, PPI, FOMC projections, GDP, employment, housing, consumer sentiment. Include actual vs forecast where available. Note which data points moved markets vs which were overridden by headline risk.
+
+**Top 3 & Bottom 3 S&P 500 Performers ($200B+ Market Cap):** Name specific companies with headlines explaining WHY they moved. Tie to sector themes (energy strength, tech weakness, rotation patterns).
+
+**VIX Levels:** Weekly range (low to high), average, and what the level signals. Reference specific days where VIX spiked or compressed and why.
+
+**Political Commentary (Focus: Persons of Interest):** Cover Trump, Lutnick (Commerce), Bessent (Treasury), and any other officials who moved markets. Specific quotes, policy actions, tensions between officials, market reactions.
+
+**Sentiment:** Summarize the week's overall sentiment — cautious, bearish, bullish. Reference put/call ratios, AAII survey, social sentiment, and technical conditions (oversold/overbought). Note any contrarian signals.
+
+**VolScore for Past Events (1-10 Scale):** Rate the past week's major events: 1=Low Impact, 10=Market-Moving Volatility Spike. Cover geopolitical headlines, macro data, sector rotations, VIX spikes separately.
+
+# PART 2: What We Got Ahead (Upcoming Week)
+
+**Scheduled Events:** For each major event (ADP, ISM PMIs, NFP, earnings, Fed speeches, etc.), provide:
+- Day and time
+- Event name
+- VolScore (1-10)
+- Forecast / Prior values
+- Expected NQ Reaction (direction + magnitude)
+- Priced-In assessment (what X/FinTwit analysts are saying, what's consensus vs contrarian)
+
+Group events by early week (Mon-Tue), mid-week (Wed-Thu), late week (Fri).
+
+**Sentiment Outlook (Future Tense):** What will drive next week — data-dependent, headline-sensitive, technical. Reference specific NQ levels, sector flows, and what scenarios lead to risk-on vs risk-off.
+
+## Rules
+- Be analytical, direct, use financial shorthand
+- Anchor to real data and real headlines — no generic filler
+- Use the VolScore framework consistently (1-10)
+- Political commentary should be specific (names, quotes, policy actions) not vague
+- 800-1200 words total
+- Write in Priced In Capital's voice: sharp, convicted, data-driven`
 }`
     : `You are Fintheon, a macro trading assistant for Priced In Capital. Generate a brief ${BRIEF_LABELS[briefType]}.
 
@@ -155,8 +190,52 @@ ${
     taskType: 'analysis',
     maxBudgetUsd: isFull ? 0.05 : 0.01,
   });
-  const model = createModelClient(selection.model as AiModelKey);
-  const { text } = await generateText({ model, prompt });
+
+  let text: string;
+  let usedProvider = selection.provider;
+
+  try {
+    const model = createModelClient(selection.model as AiModelKey);
+    const result = await generateText({ model, prompt });
+    text = result.text;
+  } catch (err: any) {
+    const isNetworkError = ['EAI_AGAIN', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNREFUSED', 'ECONNRESET', 'fetch failed']
+      .some((code) => err?.message?.includes(code) || err?.cause?.code === code);
+
+    if (!isNetworkError) throw err;
+
+    log.warn(`Primary provider network error, attempting Nous Direct fallback`, {
+      primaryModel: selection.model,
+      error: err?.message ?? String(err),
+    });
+    markProviderUnhealthy(selection.provider);
+
+    // Try fallback chain via model-selector
+    const fallback = getFallbackModel(selection.model as AiModelKey);
+    if (!fallback) throw err;
+
+    const fallbackModel = createModelClient(fallback.model as AiModelKey);
+    const fallbackResult = await generateText({ model: fallbackModel, prompt });
+    text = fallbackResult.text;
+    usedProvider = fallback.provider;
+    log.info(`Fallback succeeded via ${fallback.model}`, { provider: fallback.provider });
+  }
+
+  // Auto-detect regime from MDB output (MDB only — parse after generation)
+  if (briefType === 'MDB') {
+    try {
+      const regimeMatch = text.match(/\*\*Market Regime:\*\*\s*(\w+)/);
+      if (regimeMatch) {
+        const detected = regimeMatch[1] as MarketRegime;
+        if (MARKET_REGIMES.includes(detected)) {
+          await setRegime(detected, 'mdb_agent', 0.8, 'Auto-detected from MDB');
+          log.info(`Regime auto-set from MDB: ${detected}`);
+        }
+      }
+    } catch (err) {
+      log.warn('Regime auto-detection from MDB failed (non-fatal)', { error: String(err) });
+    }
+  }
 
   // Store in Supabase
   const stored = await writeBrief({
@@ -168,7 +247,7 @@ ${
 
   log.info(`Brief generated: ${briefType}`, {
     supabaseId: stored?.id,
-    provider: selection.provider,
+    provider: usedProvider,
     length: text.length,
   });
 
@@ -177,7 +256,7 @@ ${
     briefType,
     generatedAt: new Date().toISOString(),
     supabaseId: stored?.id ?? null,
-    provider: selection.provider,
+    provider: usedProvider,
   };
 }
 

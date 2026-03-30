@@ -9,16 +9,16 @@ const MISSION_WIDGET_ORDER_KEY = 'fintheon:mission-widget-order:v4'; // v4: acco
 const MISSION_WIDGET_VISIBILITY_KEY = 'fintheon:mission-widget-visibility';
 const RIGHT_PANEL_ORDER_KEY = 'fintheon:right-panel-order';
 
-export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'apparatus' | 'earnings' | 'proposals';
+export type NavTabId = 'dashboard' | 'analysis' | 'riskflow' | 'chatroom' | 'scriptorium' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals';
 
 export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
-  'executive',
+  'dashboard',
   'analysis',
-  'news',
+  'riskflow',
   'econ',
   'chatroom',
-  'notion',
-  'earnings',
+  'scriptorium',
+  'performance',
 ];
 
 export type ToolbarItemId = 'platform' | 'power' | 'layout' | 'chat' | 'voice' | 'heartbeat' | 'ivScore';

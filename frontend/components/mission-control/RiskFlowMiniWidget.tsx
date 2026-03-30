@@ -60,7 +60,7 @@ export function RiskFlowMiniWidget() {
               return (
                 <div
                   key={alert.id}
-                  className={`rounded ${isTradeIdea ? 'border-l-2 border-l-[var(--fintheon-accent)]/40' : ''} ${seen ? 'opacity-60' : ''}`}
+                  className={`rounded ${seen ? 'opacity-60' : ''}`}
                 >
                   <button
                     type="button"

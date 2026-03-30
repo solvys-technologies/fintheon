@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { useFintheonAgents, type FintheonAgent } from '../../contexts/FintheonAgentContext';
 
 const PERSONA_META: Record<string, string> = {
-  'harper-hermes': 'CAO',
+  'harper-opus': 'CAO',
   oracle: 'All-Seer',
   feucht: 'Futures & Risk',
   consul: 'Fundamentals',
@@ -76,8 +76,8 @@ export function PersonaDropdown() {
                 className={[
                   'w-full flex items-center gap-2 px-3 py-2 transition-colors text-left',
                   isActive
-                    ? 'bg-[var(--fintheon-accent)]/10 border-l-2 border-l-[var(--fintheon-accent)]'
-                    : 'hover:bg-white/[0.03] border-l-2 border-l-transparent',
+                    ? 'bg-[var(--fintheon-accent)]/10'
+                    : 'hover:bg-[var(--fintheon-accent)]/5',
                 ].join(' ')}
               >
                 <span

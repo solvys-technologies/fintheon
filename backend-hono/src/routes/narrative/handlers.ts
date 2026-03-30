@@ -60,6 +60,17 @@ Return ONLY a JSON array, no markdown, no explanation.
 Brief:
 `
 
+const RESEARCH_DRILL_PROMPT = `You are a market research analyst for Priced In Capital. Given a highlighted phrase from a market narrative card, generate exactly 5 deeper research bullets.
+
+Each bullet should reveal a specific, data-driven insight about the highlighted topic. Include numbers, percentages, dates, or specific entities where possible.
+
+Return a JSON array of 5 objects, each with:
+- boldPhrase: A bold key insight (max 80 chars, e.g. "Supply chain repricing underway")
+- explanation: Detailed explanation with specific facts (max 300 chars)
+
+Return ONLY a JSON array, no markdown, no explanation.
+`
+
 const BULLISH_KEYWORDS = ['cut', 'rally', 'surge', 'soar', 'jump', 'gain', 'rise', 'boost']
 
 function fallbackScore(item: RiskFlowItem): ScoredCandidate {
@@ -188,5 +199,56 @@ export async function scoreBrief(c: Context) {
   } catch (err) {
     console.error('[Narrative] scoreBrief error:', err)
     return c.json({ error: 'Failed to score brief' }, 500)
+  }
+}
+
+/**
+ * POST /api/narrative/research-drill
+ * Generate 5 deeper research bullets for a highlighted phrase
+ */
+export async function researchDrill(c: Context) {
+  try {
+    const { highlightedText, parentTitle, parentDescription, riskCategory, sentiment } =
+      await c.req.json<{
+        highlightedText: string
+        parentTitle: string
+        parentDescription: string
+        riskCategory: string
+        sentiment: string
+      }>()
+
+    if (!highlightedText) return c.json({ error: 'highlightedText required' }, 400)
+
+    const prompt = RESEARCH_DRILL_PROMPT
+      + `\nHighlighted phrase: "${highlightedText}"`
+      + `\nParent card: ${parentTitle}`
+      + `\nContext: ${parentDescription}`
+      + `\nRisk category: ${riskCategory}`
+      + `\nMarket sentiment: ${sentiment}`
+
+    const { parsed, provider } = await callLlm(prompt)
+
+    let bullets: Array<{ boldPhrase: string; explanation: string }>
+    if (parsed) {
+      bullets = parsed.map((raw: any) => ({
+        boldPhrase: String(raw.boldPhrase ?? raw.key ?? '').slice(0, 80),
+        explanation: String(raw.explanation ?? raw.detail ?? '').slice(0, 300),
+      }))
+    } else {
+      bullets = [{ boldPhrase: highlightedText, explanation: 'AI analysis unavailable — try again.' }]
+    }
+
+    const formatted = bullets.map((b, i) => ({
+      id: `drill-${Date.now()}-${i}`,
+      boldPhrase: b.boldPhrase,
+      explanation: b.explanation,
+      source: 'ai' as const,
+      highlightable: true,
+    }))
+
+    return c.json({ bullets: formatted, provider })
+  } catch (err) {
+    console.error('[Narrative] researchDrill error:', err)
+    return c.json({ error: 'Failed to generate research' }, 500)
   }
 }

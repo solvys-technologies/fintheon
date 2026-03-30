@@ -47,7 +47,7 @@ interface DeveloperSettings {
   showTestTradeButton: boolean;
   showMockProposal: boolean;
   showPlaceholderBriefings: boolean;
-  mirofishSimulations: boolean;
+  mirosharkSimulations: boolean;
   agentAutoProposals: boolean;
   accountTrackerEnabled: boolean;
 }
@@ -203,7 +203,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       showTestTradeButton: false,
       showMockProposal: false,
       showPlaceholderBriefings: false,
-      mirofishSimulations: false,
+      mirosharkSimulations: false,
       agentAutoProposals: false,
       accountTrackerEnabled: false,
     })

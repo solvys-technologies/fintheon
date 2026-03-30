@@ -65,6 +65,19 @@ const FJ_ACCOUNTS = ['financialjuice', 'InsiderWire'] as const;
 // Trusted macro/econ accounts — always polled alongside FJ
 const TRUSTED_ACCOUNTS = ['NickTimiraos'] as const;
 
+// Geopolitical + policy accounts — polled for real-time geopolitical + fiscal commentary
+const GEOPOLITICAL_ACCOUNTS = ['SecBessent25', 'realDonaldTrump', 'ABORNEOFFICIAL'] as const;
+
+// Geopolitical search terms — burst-polled when conflict escalation detected
+const GEOPOLITICAL_SEARCH_TERMS = [
+  'Iran IRGC strike',
+  'Israel Iran missile',
+  'Houthi Red Sea attack',
+  'Hezbollah escalation',
+  'Trump tariff announce',
+  'Bessent treasury',
+] as const;
+
 // Max tweets per search / timeline call
 const SEARCH_LIMIT = 20;
 const TIMELINE_LIMIT = 30;
@@ -568,7 +581,7 @@ async function initFetchHighPriorityPosts(): Promise<void> {
   try {
     console.log('[EconTwitterPoller] Init fetch: pulling last 30 Medium+ posts from FJ + InsiderWire + Trusted...');
 
-    const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
+    const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS, ...GEOPOLITICAL_ACCOUNTS];
     const batches = await Promise.allSettled(
       allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: 50 }), { bucket: 'twitter-timeline' }))
     );
@@ -628,7 +641,7 @@ export async function manualRefreshTweets(): Promise<FeedItem[]> {
 
   console.log('[ManualRefresh] Fetching FJ/InsiderWire/Trusted timelines (rate-limited)...');
 
-  const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
+  const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS, ...GEOPOLITICAL_ACCOUNTS];
   const batches = await Promise.allSettled(
     allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
   );
@@ -707,7 +720,7 @@ async function nightPoll(): Promise<void> {
 
   console.log('[NightPoller] Hourly night poll running (7PM-7AM EST, rate-limited)');
 
-  const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS];
+  const allAccounts = [...FJ_ACCOUNTS, ...TRUSTED_ACCOUNTS, ...GEOPOLITICAL_ACCOUNTS];
   const batches = await Promise.allSettled(
     allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
   );

@@ -18,7 +18,7 @@ interface RawSessionMessage {
 
 // [claude-code 2026-03-19] Agent backend v8.0: updated agent patterns for 5-agent roster (Herald restored)
 const AGENT_PATTERNS: Array<{ regex: RegExp; agent: Exclude<BoardroomAgent, 'Unknown'>; emoji: string }> = [
-  { regex: /harper[-\s]?hermes|harper/i, agent: 'Harper-Hermes', emoji: '🎩' },
+  { regex: /harper[-\s]?hermes|harper/i, agent: 'Harper-Opus', emoji: '🎩' },
   { regex: /feucht/i, agent: 'Feucht', emoji: '⚡' },
   { regex: /consul/i, agent: 'Consul', emoji: '📜' },
   { regex: /oracle/i, agent: 'Oracle', emoji: '📊' },
@@ -47,9 +47,9 @@ const inferAgent = (content: string): { agent: BoardroomAgent; emoji: string } =
 };
 
 const inferSender = (content: string, role: string): InterventionMessage['sender'] => {
-  if (/harper/i.test(content)) return 'Harper-Hermes';
+  if (/harper/i.test(content)) return 'Harper-Opus';
   if (role === 'user') return 'User';
-  if (role === 'assistant') return 'Harper-Hermes';
+  if (role === 'assistant') return 'Harper-Opus';
   return 'Unknown';
 };
 
@@ -159,15 +159,20 @@ export async function getInterventionMessages(sessionLabel = 'pic-intervention')
   return messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 }
 
+// [claude-code 2026-03-26] T2: appendToBoardroom now accepts optional metadata and returns message ID
 export async function appendToBoardroom(
   content: string,
-  role: 'user' | 'assistant' = 'assistant'
-): Promise<void> {
+  role: 'user' | 'assistant' | 'system' = 'assistant',
+  metadata?: Record<string, unknown>
+): Promise<string | undefined> {
+  let messageId: string | undefined;
+
   // Primary: write to Supabase via boardroom-store
   try {
     const session = await getOrCreateTodaySession();
     const { agent } = inferAgent(content);
-    await addBoardroomMessage(session.id, { agent, role, content });
+    const msg = await addBoardroomMessage(session.id, { agent, role, content, metadata });
+    messageId = msg.id;
   } catch (err) {
     console.error('[Boardroom] Supabase write failed, falling back to JSONL:', err);
   }
@@ -176,12 +181,14 @@ export async function appendToBoardroom(
   appendToSession('pic-boardroom', content, role).catch((err) => {
     console.error('[Boardroom] JSONL fallback write failed:', err);
   });
+
+  return messageId;
 }
 
 async function appendToSession(
   sessionLabel: string,
   content: string,
-  role: 'user' | 'assistant' = 'assistant'
+  role: 'user' | 'assistant' | 'system' = 'assistant'
 ): Promise<void> {
   const files = await findSessionFilesByLabel(sessionLabel);
   const targetFile = files[0] ?? join(HERMES_SESSIONS_DIR, `${sessionLabel}.jsonl`);

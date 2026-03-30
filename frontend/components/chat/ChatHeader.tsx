@@ -1,41 +1,40 @@
-// [claude-code 2026-03-07] Removed GitHub connect button (→ Settings TODO) + persona selector
-import { CalendarCheck } from 'lucide-react';
+// [claude-code 2026-03-29] S9-T5: Renamed checkpoint props to sessions
+import { Scroll, Plus, Clock } from 'lucide-react';
 
 interface ChatHeaderProps {
   onRunMDB: () => void;
   onNewChat: () => void;
-  onToggleCheckpoints: () => void;
-  showCheckpoints: boolean;
+  onToggleSessions: () => void;
+  showSessions: boolean;
   isLoading: boolean;
 }
 
-export function ChatHeader({ onRunMDB, onNewChat, onToggleCheckpoints, isLoading }: ChatHeaderProps) {
-  // TODO: GitHub Models connect/disconnect → Settings panel
-
+export function ChatHeader({ onRunMDB, onNewChat, onToggleSessions, isLoading }: ChatHeaderProps) {
   return (
     <div className="bg-transparent">
-      <div className="h-14 flex items-center justify-end px-6 mt-1">
-        <div className="flex items-center gap-3">
+      <div className="h-12 flex items-center justify-end px-4 mt-0.5">
+        <div className="flex items-center gap-1">
           <button
             onClick={onRunMDB}
             disabled={isLoading}
-            className="px-3 py-1.5 disabled:opacity-50 rounded text-[13px] text-zinc-400 transition-all whitespace-nowrap fintheon-accent-hover"
+            className="p-2 disabled:opacity-40 rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+            title="Dawn Dispatch"
           >
-            Dawn Dispatch
+            <Scroll className="w-4 h-4" />
           </button>
           <button
             onClick={onNewChat}
-            className="px-3 py-1.5 hover:bg-white/5 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors"
+            className="p-2 rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+            title="New Chat"
           >
-            New Chat
+            <Plus className="w-4 h-4" />
           </button>
           <button
-            onClick={onToggleCheckpoints}
-            className="px-3 py-1.5 hover:bg-white/5 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors flex items-center gap-1.5"
-            title="Checkpoints (bookmarks) replace thread history"
+            onClick={onToggleSessions}
+            className="p-2 rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+            title="Sessions"
           >
-            <CalendarCheck className="w-3.5 h-3.5" />
-            Checkpoints
+            <Clock className="w-4 h-4" />
           </button>
         </div>
       </div>

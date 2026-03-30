@@ -1,7 +1,9 @@
 // [claude-code 2026-03-24] Boardroom UX overhaul — removed hover discoloration, added inline copy, date+time timestamps
+// [claude-code 2026-03-26] T3: Rich @mention parsing + "show full analysis" button
 import { useState, useCallback } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { AgentBadge, type BoardroomAgent } from './AgentBadge';
+import { AgentMention, EveryoneMention } from './AgentMention';
 
 export interface BoardroomMessage {
   id: string;
@@ -10,10 +12,12 @@ export interface BoardroomMessage {
   content: string;
   timestamp: string;
   role: 'user' | 'assistant' | 'system';
+  metadata?: Record<string, unknown>;
 }
 
 interface ConsiliumMessageProps {
   message: BoardroomMessage;
+  onShowFullAnalysis?: (messageId: string) => void;
 }
 
 function formatTimestamp(iso: string): string {
@@ -29,7 +33,49 @@ function formatTimestamp(iso: string): string {
   }
 }
 
-export function ConsiliumMessage({ message }: ConsiliumMessageProps) {
+// ─── @Mention Parsing ──────────────────────────────────────────────
+
+const MENTION_TO_AGENT: Record<string, BoardroomAgent> = {
+  'harper-opus': 'Harper-Opus',
+  'harper': 'Harper-Opus',
+  'oracle': 'Oracle',
+  'feucht': 'Feucht',
+  'consul': 'Consul',
+  'herald': 'Herald',
+};
+
+function renderContentWithMentions(content: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  const regex = /@(Harper-Opus|Harper|Oracle|Feucht|Consul|Herald|everyone)/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+
+    const mentionName = match[1].toLowerCase();
+    if (mentionName === 'everyone') {
+      parts.push(<EveryoneMention key={`m-${match.index}`} />);
+    } else {
+      const agent = MENTION_TO_AGENT[mentionName] || 'Unknown';
+      parts.push(<AgentMention key={`m-${match.index}`} agent={agent} />);
+    }
+
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts;
+}
+
+// ─── Component ─────────────────────────────────────────────────────
+
+export function ConsiliumMessage({ message, onShowFullAnalysis }: ConsiliumMessageProps) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
@@ -37,6 +83,7 @@ export function ConsiliumMessage({ message }: ConsiliumMessageProps) {
   const isHuddle = message.content.startsWith('[HUDDLE TRIGGERED]');
   const isBriefing = message.content.startsWith('[PRE-MARKET BRIEF]') || message.content.startsWith('[POST-MARKET BRIEF]');
   const isStandup = message.content.startsWith('[STANDUP]');
+  const hasThought = !!message.metadata?.thoughtId;
 
   const handleCopy = useCallback(async () => {
     try {
@@ -87,8 +134,19 @@ export function ConsiliumMessage({ message }: ConsiliumMessageProps) {
               : 'bg-[#050402] text-[#f0ead6]/90'
           }`}
         >
-          <p className={`whitespace-pre-wrap break-words ${isStandup ? 'italic' : ''}`}>{message.content}</p>
+          <p className={`whitespace-pre-wrap break-words ${isStandup ? 'italic' : ''}`}>
+            {renderContentWithMentions(message.content)}
+          </p>
         </div>
+        {/* Show full analysis button for messages with thought bank entries */}
+        {hasThought && onShowFullAnalysis && (
+          <button
+            onClick={() => onShowFullAnalysis(message.id)}
+            className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] text-[#c79f4a]/50 transition-colors hover:bg-[#c79f4a]/10 hover:text-[#c79f4a]"
+          >
+            Show full analysis
+          </button>
+        )}
         {/* Timestamp + copy — visible on hover */}
         <div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover/msg:opacity-100">
           <span className="px-1 text-[10px] tabular-nums text-[#f0ead6]/25">

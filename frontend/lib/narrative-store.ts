@@ -1,4 +1,6 @@
-// [claude-code 2026-03-06] NarrativeFlow localStorage CRUD + useNarrativeStore hook
+// [claude-code 2026-03-29] S9-T5-T1: Normalize catalyst tags/narrative fields on load for rope engine
+// [claude-code 2026-03-28] NarrativeFlow localStorage CRUD + useNarrativeStore hook
+// S5-T1: Added viewport + dateFilter state and SET_VIEWPORT / SET_DATE_FILTER actions
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getMonday } from './narrative-time';
 import type {
@@ -8,7 +10,10 @@ import type {
   NarrativeAction,
   NarrativeLane,
   CatalystCard,
+  CanvasViewport,
+  Rope,
 } from './narrative-types';
+import { DEFAULT_VIEWPORT } from './narrative-types';
 
 const STORAGE_KEY = 'fintheon:narrative:v1';
 const SNAPSHOT_KEY = 'fintheon:narrative-snapshot:v1';
@@ -34,10 +39,14 @@ function defaultState(): NarrativeFlowState {
     selectedCatalystId: null,
     selectedLaneId: null,
     filterSentiment: 'all',
+    categoryFilter: new Set(),
+    severitySort: null,
     heatmapEnabled: false,
     replayMode: false,
     replayPosition: 0,
     agentProvider: { provider: 'manual', autoApprove: false },
+    viewport: { ...DEFAULT_VIEWPORT },
+    dateFilter: null,
   };
 }
 
@@ -45,7 +54,15 @@ export function loadNarrativeState(): NarrativeFlowState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState();
-    return { ...defaultState(), ...JSON.parse(raw) };
+    const parsed = { ...defaultState(), ...JSON.parse(raw) };
+    // Normalize catalysts — ensure tags and narrative fields exist for rope engine
+    parsed.catalysts = parsed.catalysts.map((c: any) => ({
+      ...c,
+      tags: c.tags ?? [],
+      narrative: c.narrative ?? undefined,
+      narrativeThreads: c.narrativeThreads ?? [],
+    }));
+    return parsed;
   } catch {
     return defaultState();
   }
@@ -146,8 +163,13 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
       return { ...state, lanes: [...state.lanes, fork] };
     }
     case 'ADD_CATALYST': {
-      const catalyst: CatalystCard = { ...action.catalyst, id: generateId(), createdAt: now, updatedAt: now };
+      const catalyst: CatalystCard = { ...action.catalyst, drillDepth: action.catalyst.drillDepth ?? 0, id: generateId(), createdAt: now, updatedAt: now };
       return { ...state, catalysts: [...state.catalysts, catalyst] };
+    }
+    case 'BULK_ADD_CATALYSTS': {
+      const existingIds = new Set(state.catalysts.map(c => c.id));
+      const newOnes = action.catalysts.filter(c => !existingIds.has(c.id));
+      return { ...state, catalysts: [...state.catalysts, ...newOnes] };
     }
     case 'IMPORT_CATALYSTS': {
       const now2 = new Date().toISOString();
@@ -212,6 +234,58 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
         ...state,
         conflicts: state.conflicts.map((c) => (c.id === action.id ? { ...c, resolved: true } : c)),
       };
+    case 'HIGHLIGHT_BRANCH': {
+      const parent = state.catalysts.find(c => c.id === action.parentId);
+      if (!parent) return state;
+      const childId = generateId();
+      const child: CatalystCard = {
+        ...action.childCard,
+        id: childId,
+        parentCardId: action.parentId,
+        parentHighlight: action.highlightText,
+        drillDepth: parent.drillDepth + 1,
+        source: 'research',
+        createdAt: now,
+        updatedAt: now,
+      };
+      const updatedParent: CatalystCard = {
+        ...parent,
+        childCardIds: [...(parent.childCardIds ?? []), childId],
+        updatedAt: now,
+      };
+      const rope: Rope = {
+        id: generateId(),
+        fromId: action.parentId,
+        fromType: 'catalyst',
+        toId: childId,
+        toType: 'catalyst',
+        polarity: 'reinforcing',
+        weight: 1,
+        approved: true,
+        createdAt: now,
+      };
+      return {
+        ...state,
+        catalysts: [...state.catalysts.map(c => c.id === action.parentId ? updatedParent : c), child],
+        ropes: [...state.ropes, rope],
+      };
+    }
+    case 'ADD_RESEARCH_BULLETS': {
+      return {
+        ...state,
+        catalysts: state.catalysts.map(c =>
+          c.id === action.cardId ? { ...c, researchBullets: action.bullets, updatedAt: now } : c
+        ),
+      };
+    }
+    case 'MOVE_CARD_TO_LANE': {
+      return {
+        ...state,
+        catalysts: state.catalysts.map(c =>
+          c.id === action.cardId ? { ...c, narrativeIds: [action.targetLaneId], updatedAt: now } : c
+        ),
+      };
+    }
     case 'SET_ZOOM':
       return { ...state, zoomLevel: action.level };
     case 'SET_WEEK':
@@ -224,6 +298,10 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
       return { ...state, replayMode: action.enabled };
     case 'SET_REPLAY_POSITION':
       return { ...state, replayPosition: action.position };
+    case 'SET_VIEWPORT':
+      return { ...state, viewport: { ...state.viewport, ...action.viewport } };
+    case 'SET_DATE_FILTER':
+      return { ...state, dateFilter: action.filter };
     case 'TAKE_SNAPSHOT':
       return state; // handled outside reducer
     case 'RESTORE_SNAPSHOT':

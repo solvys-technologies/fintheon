@@ -15,7 +15,7 @@ const KEY_MAP: Record<string, string> = {
   'fintheon:narrative:v1': 'narrative',
   'fintheon:narrative-snapshot:v1': 'narrativeSnapshot',
   'fintheon:regime-tracker:v2': 'regime',
-  'fintheon:chat-checkpoints:v1': 'chatCheckpoints',
+  // 'fintheon:chat-checkpoints:v1' removed — checkpoint system replaced by conversation history (S9-T5)
   'fintheon:voice-transcripts:v1': 'voiceTranscripts',
   'fintheon:gateway-persistent-thread-id': 'gateway.threadId',
   'fintheon:gateway-persistent-thread-enabled': 'gateway.threadEnabled',

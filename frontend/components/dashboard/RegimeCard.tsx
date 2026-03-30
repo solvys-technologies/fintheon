@@ -39,7 +39,7 @@ export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
   const activeCount = regimes.filter((r) => isRegimeActive(r, now)).length;
 
   return (
-    <div className="bg-[#0b0b08] border-l-2 border-[var(--fintheon-accent)]/35 px-4 py-3">
+    <div className="bg-[#0b0b08] border border-[var(--fintheon-accent)]/15 rounded px-4 py-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Clock className="w-3 h-3 text-[var(--fintheon-accent)]" />

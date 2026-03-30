@@ -68,7 +68,7 @@ const DEFAULT_CONFIG: ClaudeSDKConfig = {
   model: process.env.CLAUDE_SDK_MODEL ?? 'opus',
   effort: (process.env.CLAUDE_SDK_EFFORT as ClaudeSDKConfig['effort']) ?? 'high',
   maxTurns: Number(process.env.CLAUDE_SDK_MAX_TURNS ?? '3'),
-  timeoutMs: Number(process.env.CLAUDE_SDK_TIMEOUT_MS ?? '120000'),
+  timeoutMs: Number(process.env.CLAUDE_SDK_TIMEOUT_MS ?? '300000'),
   cwd: process.env.CLAUDE_SDK_CWD ?? process.cwd(),
   systemPrompt: process.env.CLAUDE_SDK_SYSTEM_PROMPT,
   allowedTools: [],
@@ -141,8 +141,8 @@ export function spawnClaudeProcess(prompt: string, options?: Partial<ClaudeSDKCo
   const args: string[] = [
     '--print',
     '--output-format', 'stream-json',
+    '--verbose',
     '--model', opts.model,
-    '--effort', opts.effort,
     '--max-turns', String(opts.maxTurns),
   ]
 

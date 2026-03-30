@@ -1,5 +1,6 @@
 // [claude-code 2026-03-20] Data routes — Supabase-backed, replaces /api/notion/* endpoints
 // [claude-code 2026-03-22] Refactored brief generation to use shared brief-generator service
+// [claude-code 2026-03-27] Added /econ-history/:ticker for Sanctum expanded cards with prints + scoring
 import { Hono } from 'hono';
 import {
   readTradeIdeas,
@@ -11,6 +12,7 @@ import {
   readEconPrints,
   writeEconPrint,
   updateEconEventActual,
+  readEconHistory,
   type BriefType,
   type TradeIdeaRecord,
   type DailyPnlRecord,
@@ -151,30 +153,34 @@ export function createDataRoutes(): Hono {
   // ── Briefs ──────────────────────────────────────────────────────
 
   // GET /api/data/brief?type=MDB|ADB|PMDB|TOTT
+  // No type param → returns most recent brief of any type (so overnight shows PMDB, not stale MDB)
   app.get('/brief', async (c) => {
     try {
       const typeParam = c.req.query('type')?.toUpperCase() as BriefType | undefined;
       const validTypes = ['MDB', 'ADB', 'PMDB', 'TOTT'];
-      const briefType = typeParam && validTypes.includes(typeParam) ? typeParam : getCurrentBriefType();
 
-      const brief = await readLatestBrief(briefType);
-      if (brief) {
-        return c.json({
-          items: [{ title: `${briefType} — Brief`, detail: brief.content }],
-          briefType,
-        });
+      if (typeParam && validTypes.includes(typeParam)) {
+        // Explicit type requested — fetch that specific brief
+        const brief = await readLatestBrief(typeParam);
+        if (brief) {
+          return c.json({
+            items: [{ title: `${typeParam} — Brief`, detail: brief.content }],
+            briefType: typeParam,
+          });
+        }
+      } else {
+        // No type specified — return the most recent brief regardless of type
+        const latest = await readBriefs(undefined, 1);
+        if (latest.length > 0) {
+          const bt = latest[0].brief_type;
+          return c.json({
+            items: [{ title: `${bt} — Brief`, detail: latest[0].content }],
+            briefType: bt,
+          });
+        }
       }
 
-      // Fallback: any active brief
-      const fallback = await readBriefs(undefined, 1);
-      if (fallback.length > 0) {
-        return c.json({
-          items: [{ title: `Latest — ${fallback[0].brief_type}`, detail: fallback[0].content }],
-          briefType,
-        });
-      }
-
-      return c.json({ items: [], briefType });
+      return c.json({ items: [], briefType: typeParam ?? getCurrentBriefType() });
     } catch (err) {
       console.error('[Data] /brief error:', err);
       return c.json({ items: [] }, 500);
@@ -248,15 +254,33 @@ export function createDataRoutes(): Hono {
   // ── Econ Calendar Sub-routes ────────────────────────────────────
 
   // GET /api/data/econ-calendar?from=YYYY-MM-DD&to=YYYY-MM-DD
+  // [claude-code 2026-03-28] S7: Enriched with latest scored FJ item per ticker for card display
   app.get('/econ-calendar', async (c) => {
     try {
       const from = c.req.query('from');
       const to = c.req.query('to');
       const events = await readEconEvents({ from: from ?? undefined, to: to ?? undefined });
-      return c.json({ events, count: events.length });
+
+      // Enrich each ECON_TICKER with latest scored item data
+      const tickerEnrichments: Record<string, { lastHeadline?: string; sentiment?: string; ivScore?: number; publishedAt?: string }> = {};
+      const ECON_TICKERS = ['CPI', 'PPI', 'PI', 'GDP', 'PMI', 'PCE', 'FOMC', 'CUTS'];
+      for (const ticker of ECON_TICKERS) {
+        const { scoredItems } = await readEconHistory(ticker, 1);
+        if (scoredItems.length > 0) {
+          const item = scoredItems[0];
+          tickerEnrichments[ticker] = {
+            lastHeadline: item.headline,
+            sentiment: item.sentiment ?? undefined,
+            ivScore: item.iv_score ?? undefined,
+            publishedAt: item.published_at ?? item.analyzed_at ?? undefined,
+          };
+        }
+      }
+
+      return c.json({ events, count: events.length, tickerEnrichments });
     } catch (err) {
       console.error('[Data] /econ-calendar error:', err);
-      return c.json({ events: [], count: 0 }, 500);
+      return c.json({ events: [], count: 0, tickerEnrichments: {} }, 500);
     }
   });
 
@@ -352,6 +376,61 @@ export function createDataRoutes(): Hono {
       });
     } catch (err) {
       return c.json({ active: false, autoRefresh: true, nextEvent: null, todayEventCount: 0, eventsInWindow: 0 }, 500);
+    }
+  });
+
+  // ── Econ History (for Sanctum expanded cards) ─────────────────
+
+  // GET /api/data/econ-history/:ticker — historical prints + scored items for a ticker
+  app.get('/econ-history/:ticker', async (c) => {
+    try {
+      const ticker = c.req.param('ticker');
+      const limit = parseInt(c.req.query('limit') ?? '10', 10);
+      const { prints, scoredItems } = await readEconHistory(ticker, limit);
+
+      // Transform prints into frontend-friendly shape
+      const history = prints.map((p) => {
+        const actual = p.actual_value != null ? parseFloat(p.actual_value) : null;
+        const forecast = p.forecast_value != null ? parseFloat(p.forecast_value) : null;
+        const previous = p.previous_value != null ? parseFloat(p.previous_value) : null;
+        let surprise: number | null = null;
+        let direction: 'beat' | 'miss' | 'inline' | null = null;
+
+        if (actual != null && forecast != null && forecast !== 0) {
+          surprise = ((actual - forecast) / Math.abs(forecast)) * 100;
+          direction = Math.abs(surprise) < 2 ? 'inline' : surprise > 0 ? 'beat' : 'miss';
+        }
+
+        return {
+          id: p.id,
+          date: p.printed_at ? new Date(p.printed_at).toISOString().slice(0, 10) : null,
+          actual,
+          forecast,
+          previous,
+          surprise: surprise != null ? Math.round(surprise * 100) / 100 : null,
+          direction,
+          ivScore: p.iv_score ?? null,
+        };
+      });
+
+      // Transform scored items — extract sub-score breakdowns
+      const scoring = scoredItems.map((s) => ({
+        id: s.tweet_id,
+        headline: s.headline,
+        ivScore: s.iv_score ?? null,
+        macroLevel: s.macro_level ?? null,
+        sentiment: s.sentiment ?? null,
+        riskType: s.risk_type ?? null,
+        subScores: s.sub_scores ?? null,
+        econData: s.econ_data ?? null,
+        publishedAt: s.published_at ?? null,
+        marketImpact: s.market_impact ?? null,
+      }));
+
+      return c.json({ ticker, history, scoring, fetchedAt: new Date().toISOString() });
+    } catch (err) {
+      console.error('[Data] /econ-history error:', err);
+      return c.json({ ticker: c.req.param('ticker'), history: [], scoring: [], fetchedAt: new Date().toISOString() }, 500);
     }
   });
 

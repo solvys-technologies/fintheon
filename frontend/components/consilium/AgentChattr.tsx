@@ -1,20 +1,21 @@
 // [claude-code 2026-03-24] Boardroom UX overhaul — removed sidebar, inline copy, green WiFi pulse, status bar right-aligned
 // [claude-code 2026-03-22] Track 3: Boardroom with PromptBox replacing built-in textarea
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { RefreshCw, WifiOff, ChevronDown } from 'lucide-react';
+import { RefreshCw, WifiOff, ChevronDown, X } from 'lucide-react';
 import { ConsiliumMessage, type BoardroomMessage } from './ConsiliumMessage';
 import { AGENT_MAP, type BoardroomAgent } from './AgentBadge';
 import { ConsiliumFilterBar } from './ConsiliumFilterBar';
 import { PromptBox } from '../ui/chatgpt-prompt-input';
+import { useRiskFlow } from '../../contexts/RiskFlowContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const POLL_INTERVAL = 30_000;
 
-const MENTIONABLE_AGENTS: BoardroomAgent[] = ['Harper-Hermes', 'Oracle', 'Feucht', 'Consul', 'Herald'];
+const MENTIONABLE_AGENTS: BoardroomAgent[] = ['Harper-Opus', 'Oracle', 'Feucht', 'Consul', 'Herald'];
 
 // Map boardroom agent names to persona-style metadata
 const PERSONA_META: Record<BoardroomAgent, { label: string }> = {
-  'Harper-Hermes': { label: 'CAO' },
+  'Harper-Opus': { label: 'CAO' },
   Oracle: { label: 'All-Seer' },
   Feucht: { label: 'Futures & Risk' },
   Consul: { label: 'Fundamentals' },
@@ -154,12 +155,16 @@ export function AgentChattr() {
   const [selectedAgent, setSelectedAgent] = useState<BoardroomAgent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [thinkHarder, setThinkHarder] = useState(false);
+  const [rfPickerOpen, setRfPickerOpen] = useState(false);
+  const [rfChips, setRfChips] = useState<{ id: string; headline: string }[]>([]);
+  const { alerts: rfAlerts } = useRiskFlow();
 
   // Filter state
-  const [filterAgents, setFilterAgents] = useState<BoardroomAgent[]>([]);
   const [filterSearch, setFilterSearch] = useState('');
   const [filterDateRange, setFilterDateRange] = useState<'today' | '7d' | '30d' | 'all'>('all');
   const [totalMessages, setTotalMessages] = useState(0);
+  const lastSeenCount = useRef(0);
+  const [newMessageCount, setNewMessageCount] = useState(0);
   const [isVisible, setIsVisible] = useState(!document.hidden);
 
   // Pause polling when tab not visible
@@ -181,7 +186,6 @@ export function AgentChattr() {
   const fetchMessages = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (filterAgents.length) params.set('agent', filterAgents.join(','));
       if (filterSearch) params.set('search', filterSearch);
       const since = getDateRangeSince(filterDateRange);
       if (since) params.set('since', since);
@@ -190,14 +194,21 @@ export function AgentChattr() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setMessages(data.messages || []);
-      setTotalMessages(data.total ?? data.messages?.length ?? 0);
+      const total = data.total ?? data.messages?.length ?? 0;
+      setTotalMessages(total);
+      // Track new messages since last seen
+      if (lastSeenCount.current > 0) {
+        setNewMessageCount(Math.max(0, total - lastSeenCount.current));
+      } else {
+        lastSeenCount.current = total;
+      }
       setIsOnline(true);
       setIsLoading(false);
     } catch {
       setIsOnline(false);
       setIsLoading(false);
     }
-  }, [filterAgents, filterSearch, filterDateRange]);
+  }, [filterSearch, filterDateRange]);
 
   // Initial fetch + polling (pauses when tab not visible)
   useEffect(() => {
@@ -215,12 +226,18 @@ export function AgentChattr() {
   }, [messages.length, scrollToBottom]);
 
   const sendMessage = async (msgText?: string) => {
-    const text = (msgText ?? input).trim();
-    if (!text || isSending) return;
+    let text = (msgText ?? input).trim();
+    if (!text && rfChips.length === 0) return;
+    if (isSending) return;
+
+    // Append RiskFlow context chips to message
+    if (rfChips.length > 0) {
+      const context = rfChips.map(c => `[RiskFlow: ${c.headline}]`).join('\n');
+      text = text ? `${text}\n\n${context}` : context;
+    }
 
     setIsSending(true);
     try {
-      // @everyone broadcast (All selected) or single agent mention
       await fetch(`${API_BASE}/api/boardroom/mention/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,6 +245,7 @@ export function AgentChattr() {
       });
       setInput('');
       setSelectedAgent(null);
+      setRfChips([]);
       await fetchMessages();
     } catch (err) {
       console.error('[Consilium] Failed to send:', err);
@@ -239,8 +257,20 @@ export function AgentChattr() {
 
   return (
     <div className="relative flex h-full flex-col">
-      {/* Status bar — right-aligned: refresh + wifi + status */}
+      {/* Status bar — message count + refresh + wifi + status */}
       <div className="flex items-center justify-end gap-2 px-4 py-2">
+        {/* New message count — pulses when there are new messages */}
+        <span
+          className={`text-[10px] font-mono ${
+            newMessageCount > 0
+              ? 'text-[var(--fintheon-accent)]'
+              : 'text-[var(--fintheon-muted)]/40'
+          }`}
+          style={newMessageCount > 0 ? { animation: 'msg-pulse 2s ease-in-out infinite' } : undefined}
+          onClick={() => { lastSeenCount.current = totalMessages; setNewMessageCount(0); }}
+        >
+          {newMessageCount > 0 ? `${newMessageCount} new messages` : `${totalMessages} messages`}
+        </span>
         <button
           onClick={fetchMessages}
           className="rounded-full p-1.5 text-[var(--fintheon-accent)]/40 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
@@ -262,14 +292,10 @@ export function AgentChattr() {
 
       {/* Filter bar */}
       <ConsiliumFilterBar
-        agents={MENTIONABLE_AGENTS}
-        selectedAgents={filterAgents}
-        onAgentsChange={setFilterAgents}
         search={filterSearch}
         onSearchChange={setFilterSearch}
         dateRange={filterDateRange}
         onDateRangeChange={setFilterDateRange}
-        resultCount={totalMessages}
       />
 
       {/* Messages */}
@@ -293,6 +319,46 @@ export function AgentChattr() {
       </div>
 
 
+      {/* RiskFlow context chips */}
+      {rfChips.length > 0 && (
+        <div className="flex flex-wrap gap-1 px-3 pb-1">
+          {rfChips.map(c => (
+            <span key={c.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]">
+              {c.headline.slice(0, 40)}{c.headline.length > 40 ? '...' : ''}
+              <button onClick={() => setRfChips(prev => prev.filter(p => p.id !== c.id))} className="hover:text-red-400 transition-colors"><X size={10} /></button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* RiskFlow item picker dropdown */}
+      {rfPickerOpen && (
+        <div className="mx-2 mb-1 max-h-48 overflow-y-auto rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-xl">
+          <div className="px-3 py-1.5 border-b border-[var(--fintheon-accent)]/10 flex items-center justify-between">
+            <span className="text-[9px] text-[var(--fintheon-accent)]/50 uppercase tracking-wider">Attach RiskFlow Items</span>
+            <button onClick={() => setRfPickerOpen(false)} className="text-zinc-500 hover:text-[var(--fintheon-accent)]"><X size={12} /></button>
+          </div>
+          {rfAlerts.slice(0, 10).map(a => (
+            <button
+              key={a.id}
+              onClick={() => {
+                if (!rfChips.find(c => c.id === a.id)) {
+                  setRfChips(prev => [...prev, { id: a.id, headline: a.headline }]);
+                }
+                setRfPickerOpen(false);
+              }}
+              className="w-full text-left px-3 py-1.5 text-[10px] text-[var(--fintheon-text)]/60 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)] transition-colors flex items-center gap-2"
+            >
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${a.severity === 'high' || a.severity === 'critical' ? 'bg-red-400' : a.severity === 'medium' ? 'bg-[var(--fintheon-accent)]' : 'bg-zinc-500'}`} />
+              <span className="truncate">{a.headline}</span>
+            </button>
+          ))}
+          {rfAlerts.length === 0 && (
+            <div className="px-3 py-4 text-center text-[10px] text-zinc-600">No RiskFlow items available</div>
+          )}
+        </div>
+      )}
+
       {/* Input area — universal PromptBox */}
       <div className="px-2">
         <PromptBox
@@ -306,6 +372,7 @@ export function AgentChattr() {
           onSelectSkill={() => {}}
           showSkills={false}
           onToggleSkills={() => {}}
+          onRiskFlowPick={() => setRfPickerOpen(v => !v)}
         />
       </div>
     </div>

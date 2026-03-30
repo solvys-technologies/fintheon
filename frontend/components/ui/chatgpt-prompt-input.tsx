@@ -1,3 +1,4 @@
+// [claude-code 2026-03-28] S8-T7: Pulsing icon (replaces Think Harder), no bg/border when active
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, RiskFlow drag-drop
 // [claude-code 2026-03-22] Track 4: persona/tools slots, icon-only Think, removed Plug2+Wrench
 // Based on 21st.dev ChatGPT prompt input, rewritten without Radix
@@ -21,6 +22,7 @@ import {
   Maximize2,
   Loader2,
   Clock,
+  Newspaper,
 } from 'lucide-react';
 import { FintheonSlashPicker } from '../chat/FintheonSlashPicker';
 import { FintheonAttachPopup } from '../chat/FintheonAttachPopup';
@@ -40,6 +42,7 @@ const ThinkHarderIcon: FC<{ active: boolean }> = ({ active }) => (
     strokeWidth="1.4"
     strokeLinecap="round"
     strokeLinejoin="round"
+    className={active ? 'animate-[pulse-icon_1.5s_ease-in-out_infinite]' : 'opacity-50'}
   >
     {/* Sparkle / thinking shape */}
     <path d="M8 1v3M8 12v3M1 8h3M12 8h3" />
@@ -79,6 +82,8 @@ export interface PromptBoxProps {
   // Slots for persona + tools dropdowns
   personaSlot?: React.ReactNode;
   toolsSlot?: React.ReactNode;
+  // Boardroom: swap pulsing icon for newspaper RiskFlow picker
+  onRiskFlowPick?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -108,6 +113,7 @@ export function PromptBox({
   onCancelJob,
   personaSlot,
   toolsSlot,
+  onRiskFlowPick,
 }: PromptBoxProps) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
@@ -431,20 +437,26 @@ export function PromptBox({
                 </button>
               )}
 
-              {/* Think Harder toggle (icon only) */}
-              <button
-                onClick={() => setThinkHarder(!thinkHarder)}
-                title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
-                className={[
-                  'flex items-center justify-center rounded-lg transition-all',
-                  thinkHarder
-                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15 think-harder-active'
-                    : 'text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10',
-                ].join(' ')}
-                style={{ width: '32px', height: '32px' }}
-              >
-                <ThinkHarderIcon active={thinkHarder} />
-              </button>
+              {/* Boardroom: newspaper RiskFlow picker | Others: pulsing icon toggle */}
+              {onRiskFlowPick ? (
+                <button
+                  onClick={onRiskFlowPick}
+                  title="Import RiskFlow items"
+                  className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+                  style={{ width: '32px', height: '32px' }}
+                >
+                  <Newspaper size={14} />
+                </button>
+              ) : (
+                <button
+                  onClick={() => setThinkHarder(!thinkHarder)}
+                  title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
+                  className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
+                  style={{ width: '32px', height: '32px' }}
+                >
+                  <ThinkHarderIcon active={thinkHarder} />
+                </button>
+              )}
             </div>
 
             {/* Right: Persona + Send/Stop */}

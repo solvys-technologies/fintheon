@@ -29,3 +29,4 @@ secrets.env
 .env.production
 .env.development
 .env.local.db
+.firecrawl/

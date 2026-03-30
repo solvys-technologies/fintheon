@@ -388,7 +388,7 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
 
       // Skip very short recordings (< 0.5s of audio ≈ < 8KB)
       if (blob.size < 8000) {
-        console.log('[VoiceAssistant] Recording too short, skipping');
+        console.debug('[VoiceAssistant] Recording too short, skipping');
         if (enabledRef.current && !busyRef.current) {
           startListeningRef.current();
         }
@@ -411,7 +411,7 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
 
         const transcript = result?.text?.trim();
         if (!transcript) {
-          console.log('[VoiceAssistant] Whisper returned empty transcript');
+          console.debug('[VoiceAssistant] Whisper returned empty transcript');
           busyRef.current = false;
           if (enabledRef.current) {
             setRuntimeState('listening');
@@ -524,7 +524,7 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
         // Max recording safety valve
         const maxTimer = setTimeout(() => {
           if (recordingRef.current) {
-            console.log('[VoiceAssistant] Max recording duration reached');
+            console.debug('[VoiceAssistant] Max recording duration reached');
             stopRecording();
           }
         }, VAD_MAX_RECORDING_MS);

@@ -1,4 +1,5 @@
-// [claude-code 2026-03-24] Added reactive MiroFish adjustment loop for high-impact items (macroLevel >= 3)
+// [claude-code 2026-03-26] Fix currentPrice: 0 → fetch real instrument price for autoresearch observations
+// [claude-code 2026-03-24] Added reactive MiroShark adjustment loop for high-impact items (macroLevel >= 3)
 // [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
 // Gated by ENABLE_CENTRAL_SCORING=true (only TP's instance should set this)
 // Phase T4: wired recordObservation() to feed autoresearch scoring pipeline
@@ -14,10 +15,44 @@ import { isSupabaseConfigured } from '../../config/supabase.js';
 import type { FeedItem } from '../../types/riskflow.js';
 import { createLogger } from '../../lib/logger.js';
 import { recordObservation } from '../autoresearch/scoring-observer.js';
+import { resolvePriceAt } from '../autoresearch/price-resolver.js';
+import { getInstrumentConfig } from '../iv-scoring-v2.js';
 import { fetchVIX } from '../vix-service.js';
-import { shouldTriggerReactiveAdjustment, adjustScoresForRiskFlow, getRunningState, setRunningState } from '../mirofish/mirofish-reactive.js';
+import { shouldTriggerReactiveAdjustment, adjustScoresForRiskFlow, getRunningState, setRunningState } from '../miroshark/miroshark-reactive.js';
+import { generateNotesForCriticalItems } from './agent-notes.js';
 
 const log = createLogger('CentralScorer');
+
+// ── Risk Type Classification ─────────────────────────────────────────────────
+
+const RISK_TYPE_KEYWORDS: Record<string, string[]> = {
+  Macro: ['fed', 'fomc', 'cpi', 'ppi', 'gdp', 'nfp', 'pce', 'rate', 'inflation', 'unemployment', 'jobless', 'retail sales', 'housing starts', 'consumer confidence'],
+  Geopolitical: ['war', 'tariff', 'sanction', 'military', 'conflict', 'opec', 'nato', 'invasion', 'missile', 'nuclear'],
+  Earnings: ['earnings', 'eps', 'revenue', 'guidance', 'beat', 'miss', 'quarterly', 'fiscal'],
+  Technical: ['resistance', 'support', 'breakout', 'volume', 'rsi', 'macd', 'moving average', 'fibonacci', 'trend'],
+  Credit: ['credit spread', 'high yield', 'leverage', 'margin', 'default', 'downgrade', 'junk bond'],
+  Liquidity: ['repo', 'funding', 'liquidity', 'bank run', 'cash crunch', 'reserve'],
+};
+
+/** Classify a headline + tags into a risk category using keyword matching */
+export function classifyRiskType(headline: string, tags: string[]): FeedItem['riskType'] {
+  const text = (headline + ' ' + tags.join(' ')).toLowerCase();
+  let bestType: FeedItem['riskType'] = 'Commentary';
+  let bestCount = 0;
+
+  for (const [riskType, keywords] of Object.entries(RISK_TYPE_KEYWORDS)) {
+    let count = 0;
+    for (const kw of keywords) {
+      if (text.includes(kw)) count++;
+    }
+    if (count > bestCount) {
+      bestCount = count;
+      bestType = riskType as FeedItem['riskType'];
+    }
+  }
+
+  return bestType;
+}
 
 const SCORING_INTERVAL = 30_000; // 30 seconds
 const BATCH_SIZE = 20;
@@ -64,6 +99,11 @@ function feedItemToScored(item: FeedItem, rawId: string): ScoredRiskFlowItem {
     analyzed_at: item.analyzedAt || new Date().toISOString(),
     scored_by: 'central-agent',
     price_brain_score: item.priceBrainScore as Record<string, unknown> | undefined,
+    sub_scores: item.subScores as unknown as Record<string, unknown> | undefined,
+    risk_type: item.riskType ?? undefined,
+    agent_note: item.agentNote ?? undefined,
+    agent_note_generated_at: item.agentNoteGeneratedAt ?? undefined,
+    econ_data: item.econData as Record<string, unknown> | undefined,
   };
 }
 
@@ -92,11 +132,22 @@ async function scoringCycle(): Promise<void> {
     // Run through the existing AI enrichment pipeline (Grok analyzer)
     const enrichedItems = await enrichFeedWithAnalysis(feedItems);
 
+    // Classify risk type for enriched items
+    for (const item of enrichedItems) {
+      if (!item.riskType) {
+        item.riskType = classifyRiskType(item.headline, item.tags || []);
+      }
+    }
+
     // Phase T4: Record autoresearch observations for items with IV scores
     const instrument = process.env.PRIMARY_INSTRUMENT || '/ES';
     let observationCount = 0;
     const vixData = await fetchVIX().catch(() => null);
     const vixLevel = vixData?.level ?? 0;
+
+    // Fetch real instrument price for observation accuracy tracking
+    const livePrice = await resolvePriceAt(instrument, new Date()).catch(() => null);
+    const currentPrice = livePrice ?? getInstrumentConfig(instrument)?.currentPrice ?? 0;
 
     for (const item of enrichedItems) {
       if (!item.ivScore || item.ivScore <= 0) continue;
@@ -108,7 +159,7 @@ async function scoringCycle(): Promise<void> {
         ivScore: item.ivScore,
         vixLevel,
         instrument,
-        currentPrice: 0,
+        currentPrice,
         publishedAt: item.publishedAt,
         source: item.source,
         tags: item.tags,
@@ -121,7 +172,7 @@ async function scoringCycle(): Promise<void> {
       log.info(` Recorded ${observationCount} autoresearch observations`);
     }
 
-    // Reactive MiroFish adjustment: high-impact items trigger running analysis update
+    // Reactive MiroShark adjustment: high-impact items trigger running analysis update
     for (const item of enrichedItems) {
       if (item.macroLevel && shouldTriggerReactiveAdjustment(item.macroLevel)) {
         const currentState = getRunningState();
@@ -135,7 +186,7 @@ async function scoringCycle(): Promise<void> {
             sentiment: item.sentiment || 'neutral',
           });
           setRunningState(updated);
-          log.info(` Reactive MiroFish adjustment: ${item.headline.slice(0, 60)}... → composite ${updated.compositeIV.toFixed(1)}`);
+          log.info(` Reactive MiroShark adjustment: ${item.headline.slice(0, 60)}... → composite ${updated.compositeIV.toFixed(1)}`);
         }
       }
     }
@@ -148,6 +199,14 @@ async function scoringCycle(): Promise<void> {
 
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
+
+    // S3: Auto-generate agent notes for any critical items that were just scored
+    const hasCritical = enrichedItems.some(i => i.macroLevel === 4);
+    if (hasCritical) {
+      generateNotesForCriticalItems().catch(err =>
+        log.warn('Auto-notes after scoring failed', { error: String(err) })
+      );
+    }
   } catch (err) {
     log.error(' Scoring cycle error:', { error: err instanceof Error ? err.message : String(err) });
   } finally {
@@ -156,9 +215,11 @@ async function scoringCycle(): Promise<void> {
 }
 
 /**
- * Convert a ScoredRiskFlowItem back into a FeedItem for re-enrichment
+ * Convert a ScoredRiskFlowItem back into a FeedItem for re-enrichment.
+ * Exported for reuse by getCachedFeed() when reading from the scored table.
  */
-function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
+export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
+  const pbs = scored.price_brain_score as Record<string, any> | undefined;
   return {
     id: scored.tweet_id,
     source: (scored.source as FeedItem['source']) || 'TwitterCli',
@@ -173,6 +234,15 @@ function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
     ivScore: scored.iv_score,
     macroLevel: scored.macro_level as FeedItem['macroLevel'],
     analyzedAt: scored.analyzed_at,
+    subScores: (pbs?.subScores ?? scored.sub_scores) as unknown as FeedItem['subScores'],
+    riskType: (pbs?.riskType as FeedItem['riskType']) ?? null,
+    agentNote: pbs?.agentNote ?? null,
+    agentNoteGeneratedAt: pbs?.agentNoteGeneratedAt ?? null,
+    econData: pbs?.econData as FeedItem['econData'] ?? null,
+    promotedAt: (scored as any).promoted_at ?? null,
+    category: (scored as any).category ?? null,
+    status: (scored as any).status ?? null,
+    marketImpact: pbs?.marketImpact ?? null,
   };
 }
 

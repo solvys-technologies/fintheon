@@ -2,7 +2,7 @@
 // [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
 // [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
-// [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowPanel (same as non-iFrame Strategium)
+// [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowMini (same as non-iFrame Strategium)
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X } from 'lucide-react';
 import type { IVScoreResponse } from '../../types/market-data';
@@ -11,9 +11,9 @@ import { NavSidebar } from './NavSidebar';
 import { MinimalFeedSection } from '../feed/MinimalFeedSection';
 import { KanbanTitle } from '../ui/KanbanTitle';
 import { MinimalTapeWidget } from '../feed/MinimalTapeWidget';
-import { NewsSection } from '../feed/NewsSection';
+import { RiskFlowMain } from '../feed/RiskFlowMain';
 import { ConsiliumHub } from '../consilium/ConsiliumHub';
-import { TopStepXBrowser, type TradingPlatform } from '../TopStepXBrowser';
+import { TradingBrowser, type TradingPlatform } from '../TradingBrowser';
 import { FloatingWidget } from './FloatingWidget';
 import { PanelPosition } from './DraggablePanel';
 import { useBackend } from '../../lib/backend';
@@ -24,13 +24,13 @@ import { AccountTrackerWidget } from '../mission-control/AccountTrackerWidget';
 import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
-import { ExecutiveDashboard } from '../executive/ExecutiveDashboard';
-import { ResearchDepartment } from '../executive/ResearchDepartment';
+import { MainDashboard } from '../executive/MainDashboard';
+import { Scriptorium } from '../executive/Scriptorium';
 import { SectionBreadcrumb } from './SectionBreadcrumb';
-import RiskFlowPanel from '../RiskFlowPanel';
+import RiskFlowMini from '../RiskFlowMini';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { SearchModal } from '../search/SearchModal';
-import { AskHarpChatPanel } from '../chat/AskHarpChatPanel';
+import { AskHarpSidebar } from '../chat/AskHarpSidebar';
 import { SettingsPage } from '../SettingsPanel';
 import { useSettings } from '../../contexts/SettingsContext';
 import { PsychAssistDockable, type PsychAssistDockTarget } from './PsychAssistDockable';
@@ -40,10 +40,11 @@ import { ScheduleProvider } from '../../contexts/ScheduleContext';
 import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
-import { NarrativeFlow } from '../narrative/NarrativeFlow';
-import { TradingJournal } from '../journal/TradingJournal';
+import { NarrativeMap } from '../narrative/NarrativeMap';
+import { PerformanceJournal } from '../journal/PerformanceJournal';
 import { ProposalWidget } from '../proposals/ProposalWidget';
-import { ApparatusPage } from '../apparatus/ApparatusPage';
+import { ApparatusMap } from '../apparatus/ApparatusMap';
+import { RefinementEngine } from '../refinement/RefinementEngine';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 // [claude-code 2026-03-16] Hermes moved from standalone page into Settings tab
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
@@ -62,7 +63,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'apparatus' | 'earnings' | 'proposals' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -86,9 +87,12 @@ export function MainLayout() {
 function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform, developerSettings } = useSettings();
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
-  const [activeTab, setActiveTab] = useState<NavTab>('executive');
+  const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
+  const [showRefinement, setShowRefinement] = useState(false);
+  const refinementEnabled = typeof window !== 'undefined' &&
+    localStorage.getItem('fintheon-refinement-enabled') === 'true';
   const [missionControlCollapsed, setMissionControlCollapsedRaw] = useState(false);
   // 4c: Link Strategium ↔ RiskFlow collapse — always in sync
   const setMissionControlCollapsed = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
@@ -103,6 +107,8 @@ function MainLayoutInner() {
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [prevTab, setPrevTab] = useState<NavTab | null>(null);
   const [topStepXEnabled, setTopStepXEnabled] = useState(false);
+  const [browserTransitioning, setBrowserTransitioning] = useState(false);
+  const [browserVisible, setBrowserVisible] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<TradingPlatform>(defaultPlatform);
   const [secondaryPlatform, setSecondaryPlatform] = useState<TradingPlatform>('research');
   const [splitBrowserView, setSplitBrowserView] = useState(false);
@@ -148,7 +154,7 @@ function MainLayoutInner() {
   }, []);
 
   // Tab history for breadcrumb back/forward navigation
-  const [tabHistory, setTabHistory] = useState<NavTab[]>(['executive']);
+  const [tabHistory, setTabHistory] = useState<NavTab[]>(['dashboard']);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   const navigateTab = (tab: NavTab) => {
@@ -184,11 +190,11 @@ function MainLayoutInner() {
   /* ---- Keyboard shortcuts ---- */
   useEffect(() => {
     const TAB_MAP: Record<string, NavTab> = {
-      '1': 'executive',
+      '1': 'dashboard',
       '2': 'analysis',
-      '3': 'news',
+      '3': 'riskflow',
       '4': 'econ',
-      '6': 'notion',
+      '6': 'scriptorium',
       '7': 'narrative',
     };
 
@@ -300,6 +306,37 @@ function MainLayoutInner() {
 
   // Normalize ER score from -10 to 10 range to 0-1 range for display
   const normalizedCombinedPanelResonance = Math.max(0, Math.min(1, (combinedPanelErScore + 10) / 20));
+
+  // Smooth browser open/close transition
+  const handleBrowserToggle = useCallback(() => {
+    if (browserTransitioning) return;
+    setBrowserTransitioning(true);
+    if (topStepXEnabled) {
+      // Closing: fade out browser, then swap
+      setBrowserVisible(false);
+      setTimeout(() => {
+        setTopStepXEnabled(false);
+        setBrowserTransitioning(false);
+      }, 300);
+    } else {
+      // Opening: swap immediately, then fade in
+      setTopStepXEnabled(true);
+      setBrowserVisible(true);
+      setTimeout(() => {
+        setBrowserTransitioning(false);
+      }, 400);
+    }
+  }, [topStepXEnabled, browserTransitioning]);
+
+  const handleBrowserEnable = useCallback(() => {
+    if (topStepXEnabled || browserTransitioning) return;
+    setBrowserTransitioning(true);
+    setTopStepXEnabled(true);
+    setBrowserVisible(true);
+    setTimeout(() => {
+      setBrowserTransitioning(false);
+    }, 400);
+  }, [topStepXEnabled, browserTransitioning]);
 
   const handleTabChange = (tab: NavTab) => {
     if (tab === activeTab || tabTransitioning) return;
@@ -523,7 +560,7 @@ function MainLayoutInner() {
     if (layoutOption === 'combined') {
       // Combined panel: Mission Control + The Tape in one scroll (split, no overlap)
       rightPanels.push(
-        <div key="combined" className={`bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 transition-all duration-200 ${combinedPanelCollapsed ? 'w-16' : 'w-[380px]'}`}>
+        <div key="combined" className={`bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/10 transition-all duration-200 ${combinedPanelCollapsed ? 'w-16' : 'w-[380px]'}`}>
           <div className="h-full flex flex-col">
             {combinedPanelCollapsed && (
               <div className="h-12 flex-shrink-0 flex items-center justify-center border-b border-[var(--fintheon-accent)]/20">
@@ -545,9 +582,10 @@ function MainLayoutInner() {
                 </section>
                 {/* RiskFlow: 50% when expanded, 168px collapsed preview at bottom */}
                 <section className={`${combinedTapeCollapsed ? 'h-[168px] shrink-0' : 'h-1/2'} min-h-0 flex flex-col`}>
-                  <RiskFlowPanel
+                  <RiskFlowMini
                     collapsed={combinedTapeCollapsed}
                     onToggleCollapsed={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}
+                    onNavigateToFeed={() => navigateTab('riskflow')}
                   />
                 </section>
               </div>
@@ -573,12 +611,12 @@ function MainLayoutInner() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'earnings' || activeTab === 'proposals' || activeTab === 'settings';
+    const hideRightPanel = showRefinement || activeTab === 'scriptorium' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'performance' || activeTab === 'proposals' || activeTab === 'settings';
     if (!hideRightPanel) {
       rightPanels.push(
         <div
           key="right-stack"
-          className={`flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15 transition-[width] duration-300 ease-in-out overflow-hidden ${
+          className={`flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/10 transition-[width] duration-300 ease-in-out overflow-hidden ${
             missionControlCollapsed ? 'w-12 bg-[var(--fintheon-bg)]' : 'w-[380px]'
           }`}
         >
@@ -603,9 +641,10 @@ function MainLayoutInner() {
               </div>
               <div className={`${riskFlowCollapsed ? 'h-[168px] shrink-0' : 'h-1/2'} flex flex-col transition-all duration-300`}>
                 <div className="flex-1 min-h-0 overflow-y-auto">
-                  <RiskFlowPanel
+                  <RiskFlowMini
                     collapsed={riskFlowCollapsed}
                     onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
+                    onNavigateToFeed={() => navigateTab('riskflow')}
                   />
                 </div>
               </div>
@@ -618,11 +657,11 @@ function MainLayoutInner() {
 
   return (
     <ScheduleProvider>
-    <div className="h-screen flex flex-col bg-[var(--fintheon-bg)] text-white">
+    <div className={`h-screen flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? 'topstepx-active' : ''}`}>
       <TopHeader
         topStepXEnabled={topStepXEnabled}
-        onTopStepXToggle={() => setTopStepXEnabled(true)} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
-        onTopStepXDisable={() => setTopStepXEnabled(prev => !prev)}
+        onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
+        onTopStepXDisable={handleBrowserToggle}
         selectedPlatform={selectedPlatform}
         onPlatformSelect={setSelectedPlatform}
         layoutOption={layoutOption}
@@ -657,12 +696,15 @@ function MainLayoutInner() {
         <div className="relative">
           <NavSidebar
             activeTab={activeTab}
-            onTabChange={handleTabChange}
+            onTabChange={(tab) => { setShowRefinement(false); handleTabChange(tab); }}
             onLogout={handleLogout}
             topStepXEnabled={topStepXEnabled}
             onOverlayVisibilityChange={setSidebarOverlayVisible}
             onEditModeChange={setLayoutEditMode}
             onNotificationCenterToggle={() => setNotificationCenterOpen((v) => !v)}
+            onRefinementClick={() => setShowRefinement((v) => !v)}
+            refinementEnabled={refinementEnabled}
+            refinementActive={showRefinement}
           />
           <NotificationCenter
             open={notificationCenterOpen}
@@ -677,11 +719,12 @@ function MainLayoutInner() {
           </div>
         )}
 
-        {/* Center Content - TopStepX or Main Content */}
+        {/* Center Content - TopStepX or Main Content with crossfade */}
         <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
-          {topStepXEnabled ? (
-            <div className="h-full w-full flex-1 p-0 min-h-0">
-              <TopStepXBrowser
+          {/* Browser layer */}
+          {topStepXEnabled && (
+            <div className={`absolute inset-0 z-10 ${browserVisible ? 'animate-browser-in' : 'animate-browser-out'}`}>
+              <TradingBrowser
                 primaryPlatform={selectedPlatform}
                 onPrimaryPlatformChange={setSelectedPlatform}
                 secondaryPlatform={secondaryPlatform}
@@ -691,66 +734,72 @@ function MainLayoutInner() {
                 allowSplitView={topStepXEnabled}
               />
             </div>
-          ) : (
-            <div className="h-full relative flex-1 flex flex-col">
+          )}
+
+          {/* Main content layer */}
+          <div className={`h-full relative flex-1 flex flex-col ${topStepXEnabled ? 'pointer-events-none' : ''}`} style={{ opacity: topStepXEnabled ? 0 : 1, transition: 'opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)' }}>
               <div className="flex-1 min-h-0 overflow-hidden">
-              {activeTab === 'executive' && (
-                <div key="executive" data-tour-target="executive" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ExecutiveDashboard />
+              {showRefinement && (
+                <div key="refinement" className="h-full w-full animate-fade-in-tab">
+                  <RefinementEngine />
                 </div>
               )}
-              {activeTab === 'analysis' && (
+              {!showRefinement && activeTab === 'dashboard' && (
+                <div key="dashboard" data-tour-target="dashboard" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <MainDashboard onNavigateTab={(tab) => navigateTab(tab as NavTab)} />
+                </div>
+              )}
+              {!showRefinement && activeTab === 'analysis' && (
                 <div key="analysis" data-tour-target="chat" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ConsiliumHub />
                 </div>
               )}
-              {activeTab === 'news' && (
-                <div key="news" data-tour-target="riskflow" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <NewsSection />
+              {!showRefinement && activeTab === 'riskflow' && (
+                <div key="riskflow" data-tour-target="riskflow" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <RiskFlowMain />
                 </div>
               )}
-              {activeTab === 'econ' && (
+              {!showRefinement && activeTab === 'econ' && (
                 <div key="econ" data-tour-target="econ" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <EconCalendarProvider>
                     <EconCalendar />
                   </EconCalendarProvider>
                 </div>
               )}
-              {activeTab === 'narrative' && (
+              {!showRefinement && activeTab === 'narrative' && (
                 <div key="narrative" data-tour-target="narrative" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <NarrativeProvider>
-                    <NarrativeFlow />
+                    <NarrativeMap />
                   </NarrativeProvider>
                 </div>
               )}
-              {activeTab === 'apparatus' && (
+              {!showRefinement && activeTab === 'apparatus' && (
                 <div key="apparatus" data-tour-target="apparatus" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ApparatusPage />
+                  <ApparatusMap />
                 </div>
               )}
-              {activeTab === 'notion' && (
-                <div key="notion" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ResearchDepartment />
+              {!showRefinement && activeTab === 'scriptorium' && (
+                <div key="scriptorium" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <Scriptorium />
                 </div>
               )}
-              {activeTab === 'proposals' && (
+              {!showRefinement && activeTab === 'proposals' && (
                 <div key="proposals" data-tour-target="proposals" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ProposalWidget />
                 </div>
               )}
-              {activeTab === 'earnings' && (
-                <div key="earnings" data-tour-target="performance" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <TradingJournal />
+              {!showRefinement && activeTab === 'performance' && (
+                <div key="performance" data-tour-target="performance" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <PerformanceJournal />
                 </div>
               )}
-              {activeTab === 'settings' && (
+              {!showRefinement && activeTab === 'settings' && (
                 <div key="settings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <SettingsPage />
                 </div>
               )}
               </div>
             </div>
-          )}
         </div>
 
         {/* Right Panels */}
@@ -816,7 +865,7 @@ function MainLayoutInner() {
             </button>
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
-            <AskHarpChatPanel />
+            <AskHarpSidebar />
           </div>
         </div>
       </div>
@@ -832,7 +881,7 @@ function MainLayoutInner() {
         splitViewEnabled={splitBrowserView}
         onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
         allowSplitView={topStepXEnabled}
-        onPowerOff={() => setTopStepXEnabled(false)}
+        onPowerOff={handleBrowserToggle}
       />
 
       {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}
