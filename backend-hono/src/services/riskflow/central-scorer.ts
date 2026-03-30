@@ -23,6 +23,67 @@ import { generateNotesForCriticalItems } from './agent-notes.js';
 
 const log = createLogger('CentralScorer');
 
+// ── Source Normalization ─────────────────────────────────────────────────────
+// S10-T1a: Normalize raw source labels to the 4 watchlist categories so items
+// pass the watchlist source filter. Without this, 99% of items are invisible.
+
+/** Twitter/RSS accounts that map to FinancialJuice (financial news) */
+const FJ_ACCOUNTS = new Set([
+  'financialjuice', 'zerohedge', 'deltaone', 'deItaone', 'deitaone',
+  'firstsquawk', 'wallstjesus', 'unusual_whales', 'newsfilterio',
+  'marketcurrents', 'livesquawk', 'waboratory',
+]);
+
+/** Keywords that indicate economic calendar / data releases */
+const ECON_KEYWORDS = [
+  'cpi', 'ppi', 'nfp', 'gdp', 'pce', 'fomc', 'fed rate', 'jobless claims',
+  'retail sales', 'housing starts', 'consumer confidence', 'ism ', 'adp ',
+  'unemployment', 'inflation', 'payrolls', 'economic calendar', 'data release',
+];
+
+/** Keywords that indicate geopolitical / insider wire content */
+const GEO_KEYWORDS = [
+  'tariff', 'sanction', 'military', 'invasion', 'war ', 'conflict',
+  'nato', 'opec', 'missile', 'nuclear', 'geopolitical', 'executive order',
+  'white house', 'congress', 'legislation', 'treasury secretary',
+];
+
+/** Keywords that indicate prediction market content */
+const PREDICTION_KEYWORDS = [
+  'polymarket', 'kalshi', 'prediction market', 'betting odds', 'probability',
+];
+
+/**
+ * Normalize a raw source label + content into one of the 4 watchlist categories.
+ * Priority: account-based → content-based → fallback to FinancialJuice.
+ */
+export function normalizeSource(
+  rawSource: string | undefined,
+  headline: string,
+  tags: string[] = [],
+): 'FinancialJuice' | 'InsiderWire' | 'EconomicCalendar' | 'Polymarket' {
+  const src = (rawSource || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+  // Direct match: already a watchlist category
+  if (rawSource === 'FinancialJuice') return 'FinancialJuice';
+  if (rawSource === 'InsiderWire') return 'InsiderWire';
+  if (rawSource === 'EconomicCalendar') return 'EconomicCalendar';
+  if (rawSource === 'Polymarket' || rawSource === 'Kalshi') return 'Polymarket';
+
+  // Account-based mapping (twitter handles → FinancialJuice)
+  if (FJ_ACCOUNTS.has(src)) return 'FinancialJuice';
+
+  // Content-based classification
+  const text = (headline + ' ' + tags.join(' ')).toLowerCase();
+
+  if (PREDICTION_KEYWORDS.some(kw => text.includes(kw))) return 'Polymarket';
+  if (ECON_KEYWORDS.some(kw => text.includes(kw))) return 'EconomicCalendar';
+  if (GEO_KEYWORDS.some(kw => text.includes(kw))) return 'InsiderWire';
+
+  // Default: financial news
+  return 'FinancialJuice';
+}
+
 // ── Risk Type Classification ─────────────────────────────────────────────────
 
 const RISK_TYPE_KEYWORDS: Record<string, string[]> = {
@@ -67,7 +128,7 @@ let isScoring = false;
 function rawToFeedItem(raw: RawRiskFlowItem & { id: string }): FeedItem {
   return {
     id: raw.tweet_id,
-    source: (raw.source as FeedItem['source']) || 'TwitterCli',
+    source: normalizeSource(raw.source, raw.headline || '', raw.tags || []),
     headline: raw.headline || '',
     body: raw.body,
     symbols: raw.symbols || [],
@@ -222,7 +283,7 @@ export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
   const pbs = scored.price_brain_score as Record<string, any> | undefined;
   return {
     id: scored.tweet_id,
-    source: (scored.source as FeedItem['source']) || 'TwitterCli',
+    source: normalizeSource(scored.source, scored.headline || '', scored.tags || []),
     headline: scored.headline || '',
     body: scored.body,
     symbols: scored.symbols || [],

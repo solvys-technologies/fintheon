@@ -20,6 +20,7 @@ import {
   handleRefresh,
   handleGenerateNote,
   handleRescore,
+  handlePollingToggle,
 } from './handlers.js';
 
 export function createRiskFlowRoutes(): Hono {
@@ -69,6 +70,9 @@ export function createRiskFlowRoutes(): Hono {
 
   // GET /api/riskflow/sources - Connection status for data source indicators (public)
   router.get('/sources', handleGetSources);
+
+  // POST /api/riskflow/polling-toggle - Enable/disable automatic polling (S10-T1c)
+  router.post('/polling-toggle', handlePollingToggle);
 
   return router;
 }

@@ -389,7 +389,7 @@ async function getCachedFeed(): Promise<FeedItem[]> {
   // ── Primary read: scored_riskflow_items (Supabase) ──────────────────────
   let scoredDbItems: FeedItem[] = [];
   if (isSupabaseConfigured()) {
-    const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const scored = await readScoredItems({ since, limit: MAX_FEED_ITEMS });
     scoredDbItems = scored.map(scoredToFeedItem);
     log.info(` getCachedFeed: Found ${scoredDbItems.length} items in scored_riskflow_items`);
