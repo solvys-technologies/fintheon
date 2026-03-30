@@ -1,6 +1,6 @@
 #!/bin/bash
 # Installs the 'fintheon' CLI command
-# After this, users can run: fintheon update, fintheon start, fintheon setup
+# After this, users can run: fintheon setup, update, start, stop, status, logs, peers
 set -e
 
 FINTHEON_ROOT="${FINTHEON_ROOT:-$HOME/Documents/Codebases/fintheon}"
@@ -42,6 +42,9 @@ case "\$1" in
   logs)
     tail -f /tmp/fintheon-backend.log
     ;;
+  peers)
+    bash "\$FINTHEON_ROOT/scripts/peer-bootstrap.sh"
+    ;;
   status)
     echo "Fintheon Status"
     echo ""
@@ -59,6 +62,7 @@ case "\$1" in
     echo "  fintheon stop     Stop everything"
     echo "  fintheon status   Check service health"
     echo "  fintheon logs     Tail backend logs"
+    echo "  fintheon peers    Register this device as a Claude Peer"
     ;;
 esac
 SCRIPT
@@ -87,4 +91,4 @@ export PATH="$HOME/.local/bin:$PATH"
 echo "✓ 'fintheon' command installed to $BIN_PATH"
 echo "  Restart your terminal or run: export PATH=\"\$HOME/.local/bin:\$PATH\""
 echo ""
-echo "  Commands: fintheon setup | update | start | stop | status | logs"
+echo "  Commands: fintheon setup | update | start | stop | status | logs | peers"

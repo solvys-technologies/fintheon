@@ -5,6 +5,10 @@
 
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 import pg from 'pg';
+import dns from 'node:dns';
+
+// Supabase direct connections only have IPv6 (AAAA) records — force Node to try IPv6 first
+dns.setDefaultResultOrder('verbatim');
 
 // Check NEON_DATABASE_URL first (preferred), then fallback to DATABASE_URL
 const DATABASE_URL = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;

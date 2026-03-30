@@ -377,6 +377,18 @@ info "Installing 'fintheon' CLI command..."
 bash "$FINTHEON_DIR/scripts/install-cli.sh"
 export PATH="$HOME/.local/bin:$PATH"
 
+# ── Phase 10: Claude Peer Registration ───────────────────────────────────
+
+ask "Phase 10: Claude Peer Registration"
+echo -e "  ${DIM}Register this machine into Claude Peers now (recommended).${RESET}"
+echo ""
+read -p "  Run peer bootstrap now? [Y/n] " PEER_BOOT
+if [ "$PEER_BOOT" != "n" ]; then
+  bash "$FINTHEON_DIR/scripts/peer-bootstrap.sh" || warn "Peer bootstrap failed — run later: fintheon peers"
+else
+  info "Skipped — run later: fintheon peers"
+fi
+
 # ── Summary ──────────────────────────────────────────────────────────────
 
 echo ""

@@ -101,6 +101,13 @@ export interface CameraState {
   scale: number;
 }
 
+export type NarrativeSemanticView = 'narratives' | 'themes';
+
+/** NarrativeForceCanvas semantic zoom: territory view when zoomed out, theme view when zoomed in */
+export function getSemanticZoom(zoom: number): NarrativeSemanticView {
+  return zoom >= 0.35 ? 'themes' : 'narratives';
+}
+
 /** Interpolate between two camera states with easeInOutCubic */
 export function interpolateCamera(from: CameraState, to: CameraState, t: number): CameraState {
   const e = easeInOutCubic(Math.max(0, Math.min(1, t)));

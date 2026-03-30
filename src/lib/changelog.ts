@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-30T19:00:00',
+    agent: 'claude-code',
+    summary: 'Sprint 1: Claude Peers — peer registry, auth, boardroom evolution (Content Parts + threading + peer attribution), voice widget, PeerCarousel, Hermes plugin mode',
+    files: [
+      'backend-hono/src/services/peers/',
+      'backend-hono/src/routes/peers/',
+      'backend-hono/src/routes/auth/',
+      'frontend/components/peers/',
+      'supabase/migrations/20260330_claude_peers.sql',
+    ],
+  },
+  {
     date: '2026-03-30T04:00:00',
     agent: 'claude-code',
     summary: 'chore(audit): Solvys audit — deleted 12 orphan files (FeatureLockScreen, LockoutModal, DevelopmentsTimeline, 5 abandoned narrative experiments, ChatInputArea, ChatMessageList, TradingViewCalendar, VanishInput). Stripped 20 console statements from services.ts (dead Hono stubs). Gated 13 AuthContext logs behind DEV flag. Downgraded VoiceAssistant console.log to console.debug. Eradicated Clerk phantom packages from lock file via bun remove.',
@@ -3329,4 +3341,3 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
 ];
-

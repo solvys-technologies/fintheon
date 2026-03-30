@@ -1,5 +1,19 @@
 // [claude-code 2026-03-28] S7: Force-directed layout config for NarrativeFlow mind map
 import type { NarrativeCategory } from './narrative-types';
+export {
+  NARRATIVE_THREADS,
+  THREAD_MAP,
+  TERRITORY_LAYOUT,
+  HUB_POSITIONS,
+  CROSS_NARRATIVE_GOLD,
+  SEVERITY_COLORS,
+  safeSlug,
+  getSemanticZoom,
+  getMonthKey,
+  formatDateShort,
+  deriveIvScore,
+  deriveCyclicality,
+} from './narrative-territory-layout';
 
 // Category cluster positions — arranged in a circle for visual balance
 export const CATEGORY_CENTERS: Record<NarrativeCategory, { x: number; y: number }> = {
