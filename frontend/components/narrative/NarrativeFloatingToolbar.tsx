@@ -20,7 +20,7 @@ interface NarrativeFloatingToolbarProps {
   onToolChange: (tool: CanvasTool) => void;
   onAddCatalyst: () => void;
   onImport: () => void;
-  onToggleSanctum: () => void;
+  onToggleSanctum: (page?: number) => void;
   onToggleHeatmap: () => void;
   onToggleFilter: () => void;
   sanctumActive: boolean;
@@ -84,12 +84,13 @@ export function NarrativeFloatingToolbar({
 }: NarrativeFloatingToolbarProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [sanctumOpen, setSanctumOpen] = useState(false);
 
   const handleAction = (id: string) => {
     switch (id) {
       case 'add': onAddCatalyst(); break;
       case 'import': onImport(); break;
-      case 'sanctum': onToggleSanctum(); break;
+      case 'sanctum': setSanctumOpen(v => !v); break;
       case 'heatmap': onToggleHeatmap(); break;
       case 'filter': onToggleFilter(); break;
     }
@@ -151,14 +152,33 @@ export function NarrativeFloatingToolbar({
             <button
               onClick={() => handleAction(a.onClick)}
               className={`p-2 rounded-lg transition-all duration-150 ${
-                active
+                active || (a.id === 'sanctum' && sanctumOpen)
                   ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
                   : 'text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-surface)]/60'
               }`}
             >
               <Icon className="w-4 h-4" strokeWidth={active ? 2.5 : 1.5} />
             </button>
-            {hoveredId === a.id && (
+            {/* Sanctum dropdown */}
+            {a.id === 'sanctum' && sanctumOpen && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 min-w-[170px] rounded-lg border border-[var(--fintheon-border)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
+                {[
+                  { label: 'Command Center', page: 0 },
+                  { label: 'Economic Intelligence', page: 1 },
+                  { label: 'Risk & Narratives', page: 2 },
+                ].map(item => (
+                  <button
+                    key={item.page}
+                    onClick={() => { onToggleSanctum(item.page); setSanctumOpen(false); }}
+                    className="w-full text-left px-3 py-1.5 text-[10px] text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-accent)]/5 transition-colors"
+                    style={{ fontFamily: 'var(--font-body)' }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {hoveredId === a.id && !sanctumOpen && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
                 <div className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-border)]/30 rounded px-2 py-1 shadow-lg whitespace-nowrap flex items-center gap-2">
                   <span className="text-[10px] text-[var(--fintheon-text)]/80">{a.tooltip}</span>
