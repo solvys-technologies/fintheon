@@ -27,6 +27,7 @@ interface RiskFlowContextValue {
   isSeen: (id: string) => boolean;
   refresh: () => Promise<void>;
   refreshing: boolean;
+  fetchStatus: string;
   loadMore: () => Promise<void>;
   loadingMore: boolean;
   hasMore: boolean;
@@ -46,6 +47,7 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   isSeen: () => false,
   refresh: async () => {},
   refreshing: false,
+  fetchStatus: '',
   loadMore: async () => {},
   loadingMore: false,
   hasMore: false,
@@ -104,6 +106,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
   const [seenIds, setSeenIds] = useState<Set<string>>(() => loadStoredIds(SEEN_STORAGE_KEY));
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchStatus, setFetchStatus] = useState('');
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -173,10 +176,11 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     };
   }, [pollNotion, autoRefresh]);
 
-  // Backend feed polling (twitter-cli, Polymarket, Economic Calendar)
+  // Backend feed polling (twitter-cli, Kalshi, Economic Calendar)
   // Uses loadedCountRef so polls fetch all items the user has scrolled through (not just first 50)
   const pollBackendFeed = useCallback(async () => {
     try {
+      setFetchStatus('Fetching scored items...');
       const response = await backend.riskflow.list({ minMacroLevel: 0, limit: loadedCountRef.current, instrument: selectedSymbol.symbol });
       const alerts: RiskFlowAlert[] = response.items.map((item) => ({
         id: `backend-${item.id}`,
@@ -211,8 +215,12 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       setBackendAlerts(alerts);
       setHasMore(response.hasMore ?? false);
       setInitialLoaded(true);
+      setFetchStatus(`${alerts.length} items loaded`);
+      setTimeout(() => setFetchStatus(''), 2000);
       console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items, hasMore: ${response.hasMore} (instrument=${selectedSymbol.symbol})`);
     } catch (err) {
+      setFetchStatus('Feed fetch failed');
+      setTimeout(() => setFetchStatus(''), 3000);
       console.warn('[RiskFlowContext] Backend feed poll error:', err);
       setInitialLoaded(true);
     }
@@ -348,19 +356,22 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Trigger backend to poll sources for fresh items
+      setFetchStatus('Polling Twitter feeds...');
       await backend.riskflow.refresh().catch((err: unknown) => {
         console.warn('[RiskFlow] Manual refresh failed:', err);
+        setFetchStatus('Backend refresh failed — fetching cached data');
       });
-      // Re-fetch both sources in parallel
+      setFetchStatus('Scoring & classifying items...');
       await Promise.all([
         pollNotion(),
         pollBackendFeed(),
       ]);
+      setFetchStatus(`Feed updated — ${alerts.length} items`);
+      setTimeout(() => setFetchStatus(''), 3000);
     } finally {
       setRefreshing(false);
     }
-  }, [backend, pollNotion, pollBackendFeed]);
+  }, [backend, pollNotion, pollBackendFeed, alerts.length]);
 
   useEffect(() => {
     persistIds(SEEN_STORAGE_KEY, seenIds);
@@ -381,6 +392,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         isSeen,
         refresh,
         refreshing,
+        fetchStatus,
         loadMore,
         loadingMore,
         hasMore,

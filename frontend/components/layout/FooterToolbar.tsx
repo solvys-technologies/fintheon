@@ -12,6 +12,7 @@ import { useSourceStatus } from '../../hooks/useSourceStatus';
 import { useErrorLog } from '../../hooks/useErrorLog';
 import { useSystemStatus } from '../../hooks/useSystemStatus';
 import { useGateway } from '../../contexts/GatewayContext';
+import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { EPOCH_VERSION } from '../../lib/epoch-version';
 import { ErrorLogPanel } from '../ui/ErrorLogPanel';
 import { StatusIndicator } from '../ui/StatusIndicator';
@@ -104,6 +105,7 @@ export function FooterToolbar({
   const prevPanelOpenRef = useRef(false);
   const activeProcessRef = useRef<{ processId: string; es: EventSource } | null>(null);
 
+  const { fetchStatus, refreshing } = useRiskFlow();
   const isElectron = typeof window !== 'undefined' && window.electron?.runShellCommand != null;
   const slashFilter = cliInput.startsWith('/') ? cliInput.slice(1).toLowerCase().trim() : '';
   const slashSuggestions = slashFilter
@@ -657,6 +659,19 @@ export function FooterToolbar({
             <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
           </>
         )}
+
+        {/* Fetch status — shows during refresh or polling */}
+        {fetchStatus && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            {refreshing && (
+              <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
+            )}
+            <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
+              {fetchStatus}
+            </span>
+          </div>
+        )}
+        {fetchStatus && <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />}
 
         {/* System status indicators — real-time from /api/diagnostics */}
         <div className="flex items-center gap-2.5 shrink-0">
