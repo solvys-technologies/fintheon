@@ -52,8 +52,8 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   initialLoaded: false,
 });
 
-const NOTION_POLL_MS = 60_000;
-const BACKEND_FEED_POLL_MS = 30_000;
+const NOTION_POLL_MS = 30_000;
+const BACKEND_FEED_POLL_MS = 15_000;
 
 function macroLevelToSeverity(level: number): RiskFlowAlert['severity'] {
   if (level >= 4) return 'critical';

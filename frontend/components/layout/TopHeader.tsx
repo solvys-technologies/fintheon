@@ -199,7 +199,7 @@ export function TopHeader({
     }
   ];
 
-  // Fetch blended IV score from backend — updates every 60 seconds
+  // Fetch blended IV score from backend — updates every 15 seconds for real-time feel
   useEffect(() => {
     const fetchIVScore = async () => {
       try {
@@ -213,7 +213,7 @@ export function TopHeader({
     };
 
     fetchIVScore();
-    const interval = setInterval(fetchIVScore, 60_000);
+    const interval = setInterval(fetchIVScore, 15_000);
     return () => clearInterval(interval);
   }, [backend, selectedSymbol.symbol]);
 

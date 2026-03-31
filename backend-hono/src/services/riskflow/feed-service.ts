@@ -72,7 +72,7 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
 // In-memory cache (short-term) - DB cache is primary
 let feedCache: { items: FeedItem[]; fetchedAt: number } | null = null;
 const CACHE_TTL_MS = 15_000; // 15 seconds (in-memory cache)
-const FETCH_INTERVAL_MS = 5 * 60_000; // 5 minutes between fresh fetches
+const FETCH_INTERVAL_MS = 30_000; // 30 seconds between fresh DB reads
 let lastFreshFetch: number = 0;
 
 
