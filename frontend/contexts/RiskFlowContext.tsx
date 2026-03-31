@@ -366,12 +366,12 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         pollNotion(),
         pollBackendFeed(),
       ]);
-      setFetchStatus(`Feed updated — ${alerts.length} items`);
+      setFetchStatus('Feed updated');
       setTimeout(() => setFetchStatus(''), 3000);
     } finally {
       setRefreshing(false);
     }
-  }, [backend, pollNotion, pollBackendFeed, alerts.length]);
+  }, [backend, pollNotion, pollBackendFeed]);
 
   useEffect(() => {
     persistIds(SEEN_STORAGE_KEY, seenIds);
