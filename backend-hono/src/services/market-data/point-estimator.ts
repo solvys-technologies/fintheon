@@ -54,7 +54,16 @@ export function estimatePoints(
   // Scale: the IV score represents what fraction of daily implied move is "active"
   const scaleFactor = Math.min(1, ivScore / 10);
   const rawScaled = implied.adjustedPoints * scaleFactor;
-  const scaledPoints = Number(Math.min(maxPoints, rawScaled).toFixed(1));
+  let scaledPoints = Number(Math.min(maxPoints, rawScaled).toFixed(1));
+
+  // VIX floor: when VIX > 16, implied points must be at least 1% of instrument price.
+  // Markets are moving — sub-1% estimates understate real volatility.
+  if (vixLevel > 16) {
+    const onePercentFloor = Number((price * 0.01).toFixed(1));
+    if (scaledPoints < onePercentFloor) {
+      scaledPoints = onePercentFloor;
+    }
+  }
   const scaledTicks = Math.round((scaledPoints / (implied.adjustedPoints || 1)) * implied.adjustedTicks);
   const tickValue = config?.tickValue ?? 1;
   const scaledDollarRisk = Number((scaledTicks * tickValue).toFixed(2));
