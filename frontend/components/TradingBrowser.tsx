@@ -2,7 +2,7 @@
 import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
 import { useSettings } from '../contexts/SettingsContext';
 
-export type TradingPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate';
+export type TradingPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradelocker';
 
 export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
   topstepx: 'TopStepX',
@@ -11,15 +11,17 @@ export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
   research: 'Research',
   tradesea: 'TradeSea',
   tradovate: 'Tradovate',
+  tradelocker: 'TradeLocker',
 };
 
 export const PLATFORM_URLS: Record<TradingPlatform, string> = {
   topstepx: 'https://www.topstepx.com',
   mmt: 'https://app.mmt.gg',
-  kalshi: 'https://kalshi.com/markets',
+  kalshi: 'https://kalshi.com/markets/economics',
   research: import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so',
   tradesea: 'https://app.tradesea.ai/trade',
   tradovate: 'https://trader.tradovate.com',
+  tradelocker: 'https://app.tradelocker.com',
 };
 
 interface TradingBrowserProps {
