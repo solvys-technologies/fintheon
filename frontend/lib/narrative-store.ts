@@ -65,6 +65,9 @@ const THREAD_KEYWORDS: Record<string, string[]> = {
   'maximum-employment': ['nfp', 'payroll', 'unemployment', 'jobs', 'labor market', 'jobless claims', 'employment', 'hiring', 'layoff', 'jolts', 'wage growth', 'workforce'],
 };
 
+// Tags indicating non-market noise — catalysts with ONLY banned tags get auto-purged on load
+const BANNED_TAGS = new Set(['social', 'media', 'browser', 'platform', 'spam', 'bot', 'advertisement', 'ad', 'promo', 'clickbait']);
+
 function classifyByKeywords(text: string): string[] {
   const matched: string[] = [];
   for (const [thread, keywords] of Object.entries(THREAD_KEYWORDS)) {
@@ -73,6 +76,12 @@ function classifyByKeywords(text: string): string[] {
     }
   }
   return matched;
+}
+
+function isBannedCatalyst(c: any): boolean {
+  const tags: string[] = c.tags ?? [];
+  if (tags.length === 0) return false;
+  return tags.every((t: string) => BANNED_TAGS.has(t.toLowerCase()));
 }
 
 export function loadNarrativeState(): NarrativeFlowState {
@@ -96,6 +105,8 @@ export function loadNarrativeState(): NarrativeFlowState {
       }
       return { ...c, tags, narrative, narrativeThreads };
     });
+    // Auto-purge catalysts with only banned tags (spam/noise)
+    parsed.catalysts = parsed.catalysts.filter((c: any) => !isBannedCatalyst(c));
     return parsed;
   } catch {
     return defaultState();

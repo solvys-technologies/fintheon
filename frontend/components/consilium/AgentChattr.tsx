@@ -1,7 +1,7 @@
 // [claude-code 2026-03-24] Boardroom UX overhaul — removed sidebar, inline copy, green WiFi pulse, status bar right-aligned
 // [claude-code 2026-03-22] Track 3: Boardroom with PromptBox replacing built-in textarea
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { RefreshCw, WifiOff, ChevronDown, X } from 'lucide-react';
+import { RefreshCw, WifiOff, ChevronDown, X, Search } from 'lucide-react';
 import { ConsiliumMessage, type BoardroomMessage } from './ConsiliumMessage';
 import { AGENT_MAP, type BoardroomAgent } from './AgentBadge';
 import { ConsiliumFilterBar } from './ConsiliumFilterBar';
@@ -257,9 +257,24 @@ export function AgentChattr() {
 
   return (
     <div className="relative flex h-full flex-col">
-      {/* Status bar — message count + refresh + wifi + status */}
-      <div className="flex items-center justify-end gap-2 px-4 py-2">
-        {/* New message count — pulses when there are new messages */}
+      {/* Unified status + filter bar — single row, no bottom border */}
+      <div className="flex items-center gap-3 px-4 py-2">
+        {/* Search input */}
+        <div className="relative flex-shrink-0">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--fintheon-text)]/30" />
+          <input
+            type="text"
+            value={filterSearch}
+            onChange={(e) => setFilterSearch(e.target.value)}
+            placeholder="Search messages..."
+            className="w-[180px] rounded-full border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] py-1.5 pl-8 pr-3 text-xs text-[var(--fintheon-text)] placeholder-[var(--fintheon-text)]/20 outline-none transition-colors focus:border-[var(--fintheon-accent)]/40"
+          />
+        </div>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Message count */}
         <span
           className={`text-[10px] font-mono ${
             newMessageCount > 0
@@ -288,15 +303,24 @@ export function AgentChattr() {
             {isOnline ? 'Connected' : 'Offline'}
           </span>
         </div>
-      </div>
 
-      {/* Filter bar */}
-      <ConsiliumFilterBar
-        search={filterSearch}
-        onSearchChange={setFilterSearch}
-        dateRange={filterDateRange}
-        onDateRangeChange={setFilterDateRange}
-      />
+        {/* Date range — right side */}
+        <div className="flex items-center rounded-lg border border-[var(--fintheon-border)]/15 overflow-hidden">
+          {(['today', '7d', '30d', 'all'] as const).map((range) => (
+            <button
+              key={range}
+              onClick={() => setFilterDateRange(range)}
+              className={`px-3 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
+                filterDateRange === range
+                  ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8'
+                  : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]'
+              }`}
+            >
+              {range === 'today' ? 'Today' : range === 'all' ? 'All' : range}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto py-2">

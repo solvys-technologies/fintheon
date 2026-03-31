@@ -1,8 +1,10 @@
+// [claude-code 2026-03-30] Added narrative visibility filter dropdown in top-right of canvas
 // [claude-code 2026-03-30] Unified data: seed events + RiskFlow alerts both load into NarrativeContext
 // [claude-code 2026-03-29] Catalysts sourced from DB via RiskFlowContext — seed JSON and localStorage import removed
 // [claude-code 2026-03-28] S7: Force-directed canvas, removed Sanctum overlay (now separate view)
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import NarrativeForceCanvas from './NarrativeForceCanvas';
 import { TimelineScrubber } from './TimelineScrubber';
@@ -124,6 +126,15 @@ export function NarrativeMap() {
           onZoomFnsReady={setZoomFns}
         />
 
+        {/* Narrative visibility filter — top right */}
+        <NarrativeFilterDropdown
+          visibleLaneIds={visibleLaneIds}
+          onToggleLane={handleToggleLane}
+          onSelectAll={handleSelectAll}
+          onClearAll={handleClearAll}
+          catalysts={state.catalysts}
+        />
+
         {/* Canvas command palette — ephemeral chat above toolbar */}
         <NarrativeCanvasChat />
 
@@ -179,5 +190,155 @@ export function NarrativeMap() {
       />
     </div>
     </NarrativeHighlightProvider>
+  );
+}
+
+// ── Narrative Visibility Filter Dropdown ──────────────────────────
+const NARRATIVE_THREADS = [
+  { slug: 'middle-east-conflict', title: 'Middle Eastern Conflict', color: '#F59E0B', shortTitle: 'Middle East' },
+  { slug: 'liquidity-credit-contraction', title: 'Liquidity & Credit', color: '#8B5CF6', shortTitle: 'Liquidity' },
+  { slug: 'ai-singularity', title: 'The Singularity', color: '#3B82F6', shortTitle: 'AI' },
+  { slug: 'usd-jpy-carry-trade', title: 'USD-JPY Carry Trade', color: '#EC4899', shortTitle: 'Carry Trade' },
+  { slug: 'trade-war', title: 'Trade War', color: '#EF4444', shortTitle: 'Trade War' },
+  { slug: 'us-china-relations', title: 'US-China Relations', color: '#14B8A6', shortTitle: 'US-China' },
+  { slug: 'rate-cut-cycle', title: 'Rate Cut Cycle', color: '#34D399', shortTitle: 'Rate Cuts' },
+  { slug: 'trump-presidency', title: 'Trump Presidency', color: '#F97316', shortTitle: 'Trump' },
+  { slug: 'price-stability', title: 'Price Stability', color: '#FBBF24', shortTitle: 'Inflation' },
+  { slug: 'maximum-employment', title: 'Max Employment', color: '#A78BFA', shortTitle: 'Employment' },
+] as const;
+
+function NarrativeFilterDropdown({
+  visibleLaneIds,
+  onToggleLane,
+  onSelectAll,
+  onClearAll,
+  catalysts,
+}: {
+  visibleLaneIds: Set<string>;
+  onToggleLane: (id: string) => void;
+  onSelectAll: () => void;
+  onClearAll: () => void;
+  catalysts: CatalystCard[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  // Count catalysts per thread
+  const countByThread = new Map<string, number>();
+  for (const c of catalysts) {
+    const slug = c.narrative ?? c.narrativeThreads?.[0];
+    if (slug) countByThread.set(slug, (countByThread.get(slug) ?? 0) + 1);
+  }
+
+  const showAll = visibleLaneIds.size === 0;
+  const hiddenCount = showAll ? 0 : NARRATIVE_THREADS.length - visibleLaneIds.size;
+
+  return (
+    <div ref={ref} className="absolute top-3 right-3 z-40">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg border backdrop-blur-xl transition-all text-[11px] uppercase tracking-wider ${
+          hiddenCount > 0
+            ? 'border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]'
+            : 'border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/80 text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80'
+        }`}
+        style={{ fontFamily: 'var(--font-heading)' }}
+      >
+        {hiddenCount > 0 ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+        {hiddenCount > 0 ? `${hiddenCount} hidden` : 'Narratives'}
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-1.5 w-72 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
+          style={{ borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' }}>
+          {/* Header with Select All / Clear All */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--fintheon-accent)]/10">
+            <span className="text-[10px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider" style={{ fontFamily: 'var(--font-heading)' }}>
+              Show / Hide Narratives
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { onClearAll(); }}
+                className="text-[9px] text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] transition-colors"
+                style={{ fontFamily: 'var(--font-mono)' }}
+              >
+                All
+              </button>
+              <span className="text-[var(--fintheon-muted)]/20">|</span>
+              <button
+                onClick={onSelectAll}
+                className="text-[9px] text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] transition-colors"
+                style={{ fontFamily: 'var(--font-mono)' }}
+              >
+                None
+              </button>
+            </div>
+          </div>
+
+          {/* Narrative toggles */}
+          <div className="py-1.5 max-h-80 overflow-y-auto">
+            {NARRATIVE_THREADS.map(thread => {
+              const isVisible = showAll || visibleLaneIds.has(thread.slug);
+              const count = countByThread.get(thread.slug) ?? 0;
+              return (
+                <button
+                  key={thread.slug}
+                  onClick={() => onToggleLane(thread.slug)}
+                  className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-all duration-150 ${
+                    isVisible
+                      ? 'hover:bg-[var(--fintheon-accent)]/3'
+                      : 'opacity-35 hover:opacity-60'
+                  }`}
+                >
+                  {/* Color dot + visibility indicator */}
+                  <div className="relative">
+                    <div
+                      className="w-3 h-3 rounded-sm transition-opacity"
+                      style={{ backgroundColor: thread.color, opacity: isVisible ? 1 : 0.3 }}
+                    />
+                    {!isVisible && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-full h-px bg-[var(--fintheon-text)]/40 rotate-45" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Thread name */}
+                  <span
+                    className={`flex-1 text-[12px] font-medium transition-colors ${
+                      isVisible ? 'text-[var(--fintheon-text)]/80' : 'text-[var(--fintheon-muted)]/40'
+                    }`}
+                    style={{ fontFamily: 'var(--font-body)', color: isVisible ? thread.color : undefined }}
+                  >
+                    {thread.title}
+                  </span>
+
+                  {/* Count */}
+                  <span className="text-[10px] text-[var(--fintheon-muted)]/40" style={{ fontFamily: 'var(--font-mono)' }}>
+                    {count}
+                  </span>
+
+                  {/* Eye icon */}
+                  {isVisible
+                    ? <Eye className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/30" />
+                    : <EyeOff className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/20" />
+                  }
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
