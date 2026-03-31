@@ -292,8 +292,8 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   }, [pollBackendFeed, autoRefresh]);
 
   // Device-gated on-open fetch: when the app becomes visible (tab focus, Electron foreground),
-  // trigger a full refresh so catalysts are always fresh when TP opens Fintheon.
-  // Throttled to at most once per 5 minutes to avoid hammering the backend.
+  // trigger a refresh (backend gates X polling to owner only) then re-fetch the feed.
+  // Throttled to once per 5 minutes. Non-blocking: feed poll fires immediately, refresh is fire-and-forget.
   const lastOnOpenRefresh = useRef(0);
   useEffect(() => {
     const handleVisibility = () => {
@@ -302,7 +302,10 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       if (now - lastOnOpenRefresh.current < 5 * 60 * 1000) return;
       lastOnOpenRefresh.current = now;
       console.debug('[RiskFlowContext] App became visible — triggering on-open refresh');
-      backend.riskflow.refresh().then(() => pollBackendFeed()).catch(() => {});
+      // Fire refresh (may take 30s+ for owner's X poll) but don't block feed display
+      backend.riskflow.refresh().catch(() => {});
+      // Immediately fetch cached scored items so feed displays fast
+      pollBackendFeed();
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);

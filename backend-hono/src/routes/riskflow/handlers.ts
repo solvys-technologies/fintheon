@@ -3,6 +3,7 @@
  * Request handlers for RiskFlow endpoints
  */
 
+// [claude-code 2026-03-31] Owner-gated X polling: only POLL_OWNER_ID can trigger twitter-cli fetch; all users get DB reads + rescore
 // [claude-code 2026-03-31] Refresh now triggers Central Scorer immediately (fetch→score→deliver in one call)
 // [claude-code 2026-03-29] S9-T2b: Wire instrument-aware sentiment flipper into feed handler, fix spread ordering, fire-and-forget instrument_scores writes
 // [claude-code 2026-03-10] Added handleGetSources for RiskFlow connection status indicators
@@ -759,9 +760,19 @@ export async function handleRefresh(c: Context) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
+  // Only the owner (POLL_OWNER_ID or local-user in bypass mode) can trigger X polling.
+  // All other users still get rescore + agent notes, just no fresh twitter-cli fetch.
+  const pollOwnerId = process.env.POLL_OWNER_ID || 'local-user';
+  const isOwner = userId === pollOwnerId || userId === 'local-user';
+
   try {
-    // 1. Poll for fresh items (writes raw → raw_riskflow_items)
-    await forcePoll();
+    let polled = false;
+
+    // 1. Poll for fresh items — OWNER ONLY (prevents rate-limit blocking for other users)
+    if (isOwner) {
+      await forcePoll();
+      polled = true;
+    }
 
     // 2. Run Central Scorer immediately so raw items get scored NOW, not in 30s
     const { scoringCycle } = await import('../../services/riskflow/central-scorer.js');
@@ -783,7 +794,7 @@ export async function handleRefresh(c: Context) {
       });
     });
 
-    return c.json({ success: true, rescored, refreshedAt: new Date().toISOString() });
+    return c.json({ success: true, polled, rescored, refreshedAt: new Date().toISOString() });
   } catch (error) {
     console.error('[RiskFlow] Refresh error:', error);
     return c.json({ error: 'Refresh failed' }, 500);
