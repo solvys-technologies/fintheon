@@ -37,10 +37,12 @@ async function main() {
     stash.stop('Changes stashed');
   }
 
-  // Step 3: Fetch + pull
+  // Step 3: Fetch + pull (prune stale tags + branches)
   const pullSpinner = p.spinner();
   pullSpinner.start('Pulling latest changes');
-  const fetch = await runCommand('git', ['fetch', '--all', '--prune'], { cwd: ROOT });
+  await runCommand('git', ['fetch', '--all', '--prune', '--prune-tags'], { cwd: ROOT });
+  // Also force-sync tags so deleted remote tags are removed locally
+  await runCommand('git', ['fetch', '--tags', '--force'], { cwd: ROOT });
   const pull = await runCommand('git', ['pull', '--rebase'], { cwd: ROOT });
 
   if (!pull.ok) {
