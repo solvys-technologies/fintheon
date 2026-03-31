@@ -3,7 +3,7 @@
 // [claude-code 2026-03-24] Persistence refactor: load latest report on mount, persist after simulation
 // [claude-code 2026-03-24] Thread selectedSymbol from settings into Sanctum for TradingView chart
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
-import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield, SlidersHorizontal } from 'lucide-react';
+import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
 import { Sanctum } from '../narrative/Sanctum';
@@ -14,7 +14,6 @@ import { NarrativeMap } from '../narrative/NarrativeMap';
 import { NarrativeProvider, useNarrative } from '../../contexts/NarrativeContext';
 import { ApparatusFlowMap } from '../apparatus/ApparatusFlowMap';
 import { AiLoader } from '../chat/FintheonThread';
-import { SanctumFilterPanel } from '../narrative/SanctumFilterPanel';
 import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/miroshark';
 
 const ChatInterface = lazy(() => import('../ChatInterface'));
@@ -106,8 +105,6 @@ export function ConsiliumHub() {
   const showDebate = activePanel === 'debate';
   const toggleProposals = useCallback(() => setActivePanel(prev => prev === 'proposals' ? null : 'proposals'), []);
   const toggleDebate = useCallback(() => setActivePanel(prev => prev === 'debate' ? null : 'debate'), []);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const filtersRef = useRef<HTMLButtonElement>(null);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close Sanctum dropdown on outside click
@@ -262,7 +259,7 @@ export function ConsiliumHub() {
         {/* Sanctum tab with dropdown */}
         <div ref={sanctumDropdownRef} className="relative">
           <button
-            onClick={() => { handleTabChange('sanctum'); setSanctumDropdownOpen(v => !v); }}
+            onClick={() => setSanctumDropdownOpen(v => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === 'sanctum'
                 ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
@@ -315,42 +312,21 @@ export function ConsiliumHub() {
 
         <div className="flex-1" />
 
-        <button
-          onClick={toggleDebate}
-          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-            showDebate
-              ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
-              : 'border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5'
-          }`}
-          title={showDebate ? 'Hide Debate' : 'Show Debate'}
-        >
-          <Shield size={14} />
-          Debate
-        </button>
-
-        {/* FILTERS dropdown — only functional when Sanctum is active */}
-        <div className="relative">
+        {activeTab === 'sanctum' && (
           <button
-            ref={filtersRef}
-            onClick={() => setFiltersOpen(prev => !prev)}
+            onClick={toggleDebate}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-              filtersOpen
+              showDebate
                 ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
                 : 'border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5'
             }`}
-            title="Map Filters"
+            title={showDebate ? 'Hide Debate' : 'Show Debate'}
           >
-            <SlidersHorizontal size={14} />
-            Filters
+            <Shield size={14} />
+            Debate
           </button>
-          {filtersOpen && activeTab === 'sanctum' && (
-            <SanctumFilterPanel
-              open={filtersOpen}
-              onClose={() => setFiltersOpen(false)}
-              anchorRef={filtersRef}
-            />
-          )}
-        </div>
+        )}
+
 
         <button
           onClick={toggleProposals}

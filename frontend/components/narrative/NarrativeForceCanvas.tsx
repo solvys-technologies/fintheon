@@ -557,61 +557,7 @@ function NarrativeFlowCanvas({
       >
         <Background color="#c79f4a06" gap={50} size={1} />
 
-        <Panel position="top-center">
-          <div
-            style={{
-              display: 'flex',
-              gap: 2,
-              background: 'color-mix(in srgb, #0a0a00 90%, transparent)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid #D4AF3720',
-              borderRadius: 10,
-              padding: 4,
-            }}
-          >
-            {(['narratives', 'themes'] as const).map((view) => (
-              <button
-                key={view}
-                onClick={() => handleForceView(view)}
-                style={{
-                  fontSize: 11,
-                  fontWeight: activeView === view ? 700 : 500,
-                  fontFamily: 'var(--font-heading)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  padding: '7px 18px',
-                  borderRadius: 7,
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  color: activeView === view ? '#050402' : 'var(--fintheon-muted)',
-                  background: activeView === view ? 'var(--fintheon-accent)' : 'transparent',
-                }}
-              >
-                {view}
-              </button>
-            ))}
-
-            <div style={{ width: 1, background: '#D4AF3720', margin: 4 }} />
-
-            <button
-              onClick={handleResetLayout}
-              style={{
-                fontSize: 11,
-                fontWeight: 500,
-                fontFamily: 'var(--font-heading)',
-                padding: '7px 14px',
-                borderRadius: 7,
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--fintheon-muted)',
-                background: 'transparent',
-              }}
-            >
-              Reset
-            </button>
-          </div>
-        </Panel>
+        {/* Narrative/Theme toggle moved to NarrativeFilterDropdown */}
 
         <Panel position="bottom-left">
           <div

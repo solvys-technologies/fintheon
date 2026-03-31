@@ -72,15 +72,10 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
       <div className="flex flex-col items-center gap-2.5">
         <h2 className="text-[22px] font-semibold text-white tracking-tight">{agent.name}</h2>
 
-        {/* Anthropic model badge */}
-        <div className="flex items-center gap-1.5">
-          <svg width="14" height="14" viewBox="0 0 60 60" fill="none">
-            <path d="M37.4 10.2L32.2 24.5H21.8L16.6 10.2C15.5 7.2 17.6 4 20.7 4h18.6c3.1 0 5.2 3.2 4.1 6.2zM21.8 24.5L9.2 56.5c-1 2.6-4.4 3-5.8.8L0 52l21.8-27.5zm16.4 0L50.8 56.5c1 2.6 4.4 3 5.8.8L60 52 38.2 24.5z" fill="#D97757"/>
-          </svg>
-          <span className="text-[12px] font-medium" style={{ color: '#D97757' }}>
-            Claude Opus 4.6
-          </span>
-        </div>
+        {/* Model badge */}
+        <span className="text-[12px] font-medium text-[var(--fintheon-muted)]/50">
+          Claude Opus 4.6
+        </span>
 
         {/* Subtitle */}
         <p className="text-[13px] text-gray-500 mt-0.5">{getSubtitle()}</p>

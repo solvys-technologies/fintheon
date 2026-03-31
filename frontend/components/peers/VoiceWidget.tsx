@@ -1,8 +1,11 @@
+// [claude-code 2026-03-30] Converted floating VoiceWidget to dockable toolbar (float ↔ header) like PsychAssist
 import { useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, PhoneOff, Users, GripVertical, Phone } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Users, GripVertical, Phone, PictureInPicture2, X } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 import { useAuth } from '../../contexts/AuthContext';
 import type { VoiceParticipantRecord } from './types';
+
+export type VoiceWidgetDockTarget = 'floating' | 'header';
 
 type Position = { x: number; y: number };
 
@@ -10,7 +13,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-/* ── Compact header-docked voice button ────────────────────────────── */
+/* ── Compact header-docked voice button (legacy — kept for minimal header icon) ── */
 
 export function VoiceRoomHeaderButton({ onClick, participantCount, joined }: { onClick: () => void; participantCount: number; joined: boolean }) {
   return (
@@ -36,12 +39,28 @@ export function VoiceRoomHeaderButton({ onClick, participantCount, joined }: { o
   );
 }
 
-/* ── Full floating voice widget ────────────────────────────────────── */
+/* ── Dockable voice widget (float ↔ header) ────────────────────────── */
 
-export function VoiceWidget() {
+interface VoiceWidgetProps {
+  target: VoiceWidgetDockTarget;
+  onDockToHeader: () => void;
+  onUndockToFloating: () => void;
+  onClose?: () => void;
+  storageKey?: string;
+  headerDockZoneId?: string;
+}
+
+export function VoiceWidget({
+  target,
+  onDockToHeader,
+  onUndockToFloating,
+  onClose,
+  storageKey = 'fintheon:voice-widget-floating-pos:v1',
+  headerDockZoneId = 'fintheon-heading-toolbar',
+}: VoiceWidgetProps) {
   const backend = useBackend();
   const { userId } = useAuth();
-  const [position, setPosition] = useState<Position>({ x: 24, y: 180 });
+  const [pos, setPos] = useState<Position>({ x: 24, y: 180 });
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef<Position>({ x: 0, y: 0 });
   const [muted, setMuted] = useState(false);
@@ -51,16 +70,44 @@ export function VoiceWidget() {
   const [participants, setParticipants] = useState<VoiceParticipantRecord[]>([]);
   const [configured, setConfigured] = useState(false);
 
+  // Persist floating position
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<Position>;
+        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          setPos({ x: parsed.x, y: parsed.y });
+          return;
+        }
+      }
+    } catch { /* ignore */ }
+    const x = typeof window !== 'undefined' ? Math.max(24, window.innerWidth - 300) : 24;
+    setPos({ x, y: 180 });
+  }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem(storageKey, JSON.stringify(pos)); } catch { /* ignore */ }
+  }, [pos, storageKey]);
+
+  // Drag logic with drop-zone detection
   useEffect(() => {
     if (!dragging) return;
 
-    const onMove = (event: MouseEvent) => {
-      const nextX = clamp(event.clientX - dragOffset.current.x, 8, window.innerWidth - 280);
-      const nextY = clamp(event.clientY - dragOffset.current.y, 74, window.innerHeight - 220);
-      setPosition({ x: nextX, y: nextY });
+    const onMove = (e: MouseEvent) => {
+      const nextX = clamp(e.clientX - dragOffset.current.x, 8, window.innerWidth - 280);
+      const nextY = clamp(e.clientY - dragOffset.current.y, 74, window.innerHeight - 220);
+      setPos({ x: nextX, y: nextY });
     };
 
-    const onUp = () => setDragging(false);
+    const onUp = (e: MouseEvent) => {
+      setDragging(false);
+      const dockZone = document.getElementById(headerDockZoneId);
+      if (!dockZone) return;
+      const rect = dockZone.getBoundingClientRect();
+      const inside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+      if (inside) onDockToHeader();
+    };
 
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -68,17 +115,16 @@ export function VoiceWidget() {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, [dragging]);
+  }, [dragging, headerDockZoneId, onDockToHeader]);
 
+  // Poll participants when joined
   useEffect(() => {
     if (!joined || !roomId) return;
-
     const poll = async () => {
       const res = await backend.peers.listVoiceParticipants(roomId);
       setParticipants(res.participants);
       setConfigured(res.configured);
     };
-
     void poll();
     const interval = setInterval(() => void poll(), 5000);
     return () => clearInterval(interval);
@@ -107,27 +153,142 @@ export function VoiceWidget() {
     setMuted(false);
   }
 
-  return (
-    <aside
-      className="fixed z-50 w-[260px] rounded-xl border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] p-2.5 shadow-2xl"
-      style={{ left: `${position.x}px`, top: `${position.y}px` }}
-    >
-      <header className="mb-2 flex items-center justify-between">
+  const callControls = (
+    <div className="flex items-center gap-2">
+      {!joined ? (
         <button
-          onMouseDown={(event) => {
-            setDragging(true);
-            dragOffset.current = { x: event.nativeEvent.offsetX, y: event.nativeEvent.offsetY };
-          }}
-          className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs text-zinc-400 hover:bg-[var(--fintheon-accent)]/10"
-          title="Drag voice widget"
+          onClick={() => void handleJoin()}
+          disabled={joining}
+          className="flex-1 rounded border border-[var(--fintheon-accent)]/30 px-2 py-1.5 text-xs font-medium text-[var(--fintheon-accent)] disabled:opacity-50"
         >
-          <GripVertical className="h-3.5 w-3.5" />
-          Voice Room
+          {joining ? 'Joining...' : 'Join Call'}
         </button>
-        <span className="inline-flex items-center gap-1 text-[11px] text-zinc-400">
-          <Users className="h-3.5 w-3.5" />
+      ) : (
+        <>
+          <button
+            onClick={() => setMuted((v) => !v)}
+            className="inline-flex flex-1 items-center justify-center gap-1 rounded border border-[var(--fintheon-accent)]/25 px-2 py-1.5 text-xs text-[var(--fintheon-text)]"
+          >
+            {muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+            {muted ? 'Unmute' : 'Mute'}
+          </button>
+          <button
+            onClick={() => void handleLeave()}
+            className="inline-flex items-center justify-center rounded border border-red-400/30 px-2 py-1.5 text-xs text-red-300"
+            title={`Leave room as ${userId}`}
+          >
+            <PhoneOff className="h-3.5 w-3.5" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+
+  const floating = target === 'floating';
+
+  /* ── Header-docked mode (static toolbar) ── */
+  if (!floating) {
+    return (
+      <div className="flex items-center gap-2 bg-[var(--fintheon-bg)] rounded-lg px-3.5 h-8 min-w-[240px]">
+        <button
+          onClick={onUndockToFloating}
+          className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+          title="Detach to floating"
+        >
+          <PictureInPicture2 className="w-3.5 h-3.5" />
+        </button>
+        <Phone className="w-3 h-3 text-[var(--fintheon-accent)]" />
+        <span className="text-[10px] text-[var(--fintheon-accent)] font-semibold tracking-[0.14em] uppercase">Voice</span>
+        <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+          <Users className="w-3 h-3" />
           {participants.length}
         </span>
+        {joined && (
+          <>
+            <button
+              onClick={() => setMuted((v) => !v)}
+              className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-400 hover:text-[var(--fintheon-accent)] transition-colors"
+              title={muted ? 'Unmute' : 'Mute'}
+            >
+              {muted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              onClick={() => void handleLeave()}
+              className="p-1 rounded hover:bg-red-500/10 text-red-400 transition-colors"
+              title="Leave call"
+            >
+              <PhoneOff className="w-3.5 h-3.5" />
+            </button>
+          </>
+        )}
+        {!joined && (
+          <button
+            onClick={() => void handleJoin()}
+            disabled={joining}
+            className="text-[10px] text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-50"
+          >
+            {joining ? 'Joining...' : 'Join'}
+          </button>
+        )}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+            title="Hide"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  /* ── Floating mode ── */
+  return (
+    <aside
+      className="fixed z-50 w-[260px] rounded-2xl border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] p-2.5 shadow-2xl"
+      style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
+    >
+      <header className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <button
+            onMouseDown={(e) => {
+              setDragging(true);
+              dragOffset.current = { x: 14, y: 14 };
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors cursor-grab active:cursor-grabbing"
+            title="Drag"
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onDockToHeader}
+            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+            title="Dock to header"
+          >
+            <PictureInPicture2 className="w-4 h-4" />
+          </button>
+          <span className="text-[10px] text-[var(--fintheon-accent)]/70 tracking-[0.18em] uppercase">
+            Voice Room
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 text-[11px] text-zinc-400">
+            <Users className="h-3.5 w-3.5" />
+            {participants.length}
+          </span>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+              title="Hide"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </header>
 
       {!configured && (
@@ -151,35 +312,11 @@ export function VoiceWidget() {
         )}
       </div>
 
-      <div className="flex items-center gap-2">
-        {!joined ? (
-          <button
-            onClick={() => void handleJoin()}
-            disabled={joining}
-            className="flex-1 rounded border border-[var(--fintheon-accent)]/30 px-2 py-1.5 text-xs font-medium text-[var(--fintheon-accent)] disabled:opacity-50"
-          >
-            {joining ? 'Joining…' : 'Join Call'}
-          </button>
-        ) : (
-          <>
-            <button
-              onClick={() => setMuted((value) => !value)}
-              className="inline-flex flex-1 items-center justify-center gap-1 rounded border border-[var(--fintheon-accent)]/25 px-2 py-1.5 text-xs text-[var(--fintheon-text)]"
-            >
-              {muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-              {muted ? 'Unmute' : 'Mute'}
-            </button>
-            <button
-              onClick={() => void handleLeave()}
-              className="inline-flex items-center justify-center rounded border border-red-400/30 px-2 py-1.5 text-xs text-red-300"
-              title={`Leave room as ${userId}`}
-            >
-              <PhoneOff className="h-3.5 w-3.5" />
-            </button>
-          </>
-        )}
+      {callControls}
+
+      <div className="mt-2 text-[10px] text-zinc-600">
+        Drag into the header to fuse, or click the PiP icon.
       </div>
     </aside>
   );
 }
-

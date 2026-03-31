@@ -163,14 +163,14 @@ export function NarrativeMap() {
           <button
             onClick={handleSaveLayout}
             title="Save layout"
-            className="flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/80 backdrop-blur-xl text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80 transition-all"
+            className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--fintheon-bg)]/80 backdrop-blur-xl text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80 transition-all"
           >
             <Save className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleResetLayout}
             title="Restore saved layout"
-            className="flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/80 backdrop-blur-xl text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80 transition-all"
+            className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--fintheon-bg)]/80 backdrop-blur-xl text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80 transition-all"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -283,10 +283,10 @@ function TimeframeFilterDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg border backdrop-blur-xl transition-all text-[11px] uppercase tracking-wider ${
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-xl transition-all text-[11px] uppercase tracking-wider ${
           isFiltered
-            ? 'border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]'
-            : 'border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/80 text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80'
+            ? 'bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]'
+            : 'bg-[var(--fintheon-bg)]/80 text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80'
         }`}
         style={{ fontFamily: 'var(--font-heading)' }}
       >
@@ -414,10 +414,10 @@ function NarrativeFilterDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg border backdrop-blur-xl transition-all text-[11px] uppercase tracking-wider ${
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-xl transition-all text-[11px] uppercase tracking-wider ${
           hiddenCount > 0
-            ? 'border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]'
-            : 'border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/80 text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80'
+            ? 'bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]'
+            : 'bg-[var(--fintheon-bg)]/80 text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80'
         }`}
         style={{ fontFamily: 'var(--font-heading)' }}
       >

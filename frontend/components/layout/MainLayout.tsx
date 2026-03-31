@@ -57,7 +57,7 @@ import { DNDProvider, useDND } from '../../contexts/DNDContext';
 import { NotificationCenter } from '../NotificationCenter';
 import { PeerCarousel } from '../peers/PeerCarousel';
 import { PeerOnboarding } from '../peers/PeerOnboarding';
-import { VoiceWidget, VoiceRoomHeaderButton } from '../peers/VoiceWidget';
+import { VoiceWidget, VoiceRoomHeaderButton, type VoiceWidgetDockTarget } from '../peers/VoiceWidget';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -154,6 +154,13 @@ function MainLayoutInner() {
       return 'floating';
     }
   });
+  const [voiceWidgetTarget, setVoiceWidgetTarget] = useState<VoiceWidgetDockTarget>(() => {
+    try {
+      return (localStorage.getItem('fintheon:voice-widget-target:v1') as VoiceWidgetDockTarget) || 'floating';
+    } catch {
+      return 'floating';
+    }
+  });
 
   useEffect(() => {
     try {
@@ -162,6 +169,14 @@ function MainLayoutInner() {
       // ignore
     }
   }, [psychAssistTarget]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('fintheon:voice-widget-target:v1', voiceWidgetTarget);
+    } catch {
+      // ignore
+    }
+  }, [voiceWidgetTarget]);
 
   useEffect(() => {
     setMissionWidgetOrderState((prev) => normalizeOrder(prev, DEFAULT_MISSION_WIDGET_ORDER));
@@ -696,11 +711,20 @@ function MainLayoutInner() {
         hideBranding={topStepXEnabled && sidebarOverlayVisible}
         toolbarEditMode={layoutEditMode}
         voiceRoomWidget={voiceEnabled ? (
-          <VoiceRoomHeaderButton
-            onClick={() => setShowVoiceWidget((v) => !v)}
-            participantCount={0}
-            joined={showVoiceWidget}
-          />
+          showVoiceWidget && voiceWidgetTarget === 'header' ? (
+            <VoiceWidget
+              target="header"
+              onDockToHeader={() => setVoiceWidgetTarget('header')}
+              onUndockToFloating={() => setVoiceWidgetTarget('floating')}
+              onClose={() => setShowVoiceWidget(false)}
+            />
+          ) : (
+            <VoiceRoomHeaderButton
+              onClick={() => setShowVoiceWidget((v) => !v)}
+              participantCount={0}
+              joined={showVoiceWidget}
+            />
+          )
         ) : undefined}
         psychAssistHeadingWidget={
           topStepXEnabled && layoutOption === 'tickers-only' && psychAssistTarget === 'header' ? (
@@ -866,8 +890,13 @@ function MainLayoutInner() {
           />
         )}
 
-        {showVoiceWidget && (
-          <VoiceWidget />
+        {showVoiceWidget && voiceWidgetTarget === 'floating' && (
+          <VoiceWidget
+            target="floating"
+            onDockToHeader={() => setVoiceWidgetTarget('header')}
+            onUndockToFloating={() => setVoiceWidgetTarget('floating')}
+            onClose={() => setShowVoiceWidget(false)}
+          />
         )}
 
         {/* Zen Layout: dockable PsychAssist widget (float ↔ header) */}
