@@ -128,11 +128,19 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
     return () => { cancelled = true; };
   }, [getAccessToken, onReady]);
 
+  const fuseProgress = (stepIdx + 1) / INIT_STEPS.length;
+
   return (
     <div
       className="flex min-h-screen items-center justify-center bg-[#050402] transition-opacity duration-500"
       style={{ opacity: fadeOut ? 0 : 1 }}
     >
+      <style>{`
+        @keyframes fuse-glow {
+          0%, 100% { box-shadow: 0 0 4px rgba(199, 159, 74, 0.3); }
+          50% { box-shadow: 0 0 10px rgba(199, 159, 74, 0.6); }
+        }
+      `}</style>
       <div className="flex flex-col items-center gap-6">
         <img
           src="./logo.png"
@@ -147,27 +155,28 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
         </h1>
 
         {/* Status line */}
-        <div className="flex items-center gap-3">
-          <div className="h-1.5 w-1.5 rounded-full bg-[#c79f4a] animate-pulse" />
-          <p className="text-xs tracking-[0.3em] text-[#f0ead6]/50 transition-all duration-300">
-            {INIT_STEPS[stepIdx]}
-          </p>
-        </div>
+        <p className="text-xs tracking-[0.3em] text-[#f0ead6]/50 transition-all duration-300">
+          {INIT_STEPS[stepIdx]}
+        </p>
 
-        {/* Progress dots */}
-        <div className="flex gap-2">
-          {INIT_STEPS.map((_, i) => (
-            <div
-              key={i}
-              className="h-1 rounded-full transition-all duration-500"
-              style={{
-                width: i <= stepIdx ? 16 : 6,
-                backgroundColor: i <= stepIdx
-                  ? 'rgba(199,159,74,0.6)'
-                  : 'rgba(199,159,74,0.15)',
-              }}
-            />
-          ))}
+        {/* Fuse bar — fills left to right as steps complete */}
+        <div className="relative w-48 h-1 rounded-full bg-[#c79f4a]/10 overflow-hidden">
+          <div
+            className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+            style={{
+              width: `${fuseProgress * 100}%`,
+              backgroundColor: 'rgba(199, 159, 74, 0.5)',
+              animation: 'fuse-glow 1.5s ease-in-out infinite',
+            }}
+          />
+          {/* Bright tip of the fuse */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-[#c79f4a] transition-all duration-700 ease-out"
+            style={{
+              left: `calc(${fuseProgress * 100}% - 4px)`,
+              boxShadow: '0 0 8px rgba(199, 159, 74, 0.8), 0 0 16px rgba(199, 159, 74, 0.4)',
+            }}
+          />
         </div>
 
         {/* Skip link — quiet, no popup */}
