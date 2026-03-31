@@ -760,10 +760,12 @@ export async function handleRefresh(c: Context) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
-  // Only the owner (POLL_OWNER_ID or local-user in bypass mode) can trigger X polling.
+  // Only the owner can trigger X polling. Match by email (Google sign-in) or userId.
   // All other users still get rescore + agent notes, just no fresh twitter-cli fetch.
-  const pollOwnerId = process.env.POLL_OWNER_ID || 'local-user';
-  const isOwner = userId === pollOwnerId || userId === 'local-user';
+  const ownerEmail = process.env.POLL_OWNER_EMAIL || 'pricedinresearch@gmail.com';
+  const ownerId = process.env.POLL_OWNER_ID || 'local-user';
+  const email = c.get('email') as string | undefined;
+  const isOwner = email === ownerEmail || userId === ownerId || userId === 'local-user';
 
   try {
     let polled = false;
