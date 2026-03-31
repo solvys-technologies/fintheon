@@ -6,7 +6,7 @@ import type { RiskFlowItem } from '../types/api'
  * Connects to RiskFlow SSE stream for real-time Level 4 news alerts
  * Simplified for local single-user mode - no authentication
  */
-export function useRiskFlow(onItem: (item: RiskFlowItem) => void) {
+export function useRiskFlowSSE(onItem: (item: RiskFlowItem) => void) {
   const sourceRef = useRef<EventSource | null>(null)
 
   useEffect(() => {
@@ -62,5 +62,6 @@ export function useRiskFlow(onItem: (item: RiskFlowItem) => void) {
   }, [onItem])
 }
 
-// Backward compatibility alias
-export const useBreakingNews = useRiskFlow
+// Aliases
+export const useRiskFlow = useRiskFlowSSE;
+export const useBreakingNews = useRiskFlowSSE;

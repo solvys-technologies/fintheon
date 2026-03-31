@@ -7,7 +7,7 @@ import { FeedItem } from './FeedItem';
 import { MDBReportModal } from '../MDBReportModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { generateInitialFeed, generateMockFeedItem } from '../../utils/mockDataGenerator';
-import { useRiskFlow } from '../../hooks/useRiskFlow';
+import { useRiskFlowSSE } from '../../hooks/useRiskFlow';
 
 // Convert RiskFlowItem to FeedItem format
 // Filters out raw/unprocessed data and ensures only interpreted messages are shown
@@ -183,7 +183,7 @@ export function FeedSection() {
     setFeedItems((prev) => [converted, ...prev].slice(0, 50));
   }, []);
 
-  useRiskFlow(handleBreakingNews);
+  useRiskFlowSSE(handleBreakingNews);
 
   const handleClear = () => {
     if (confirm("Clear all tape items?")) {

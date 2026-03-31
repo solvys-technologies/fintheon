@@ -11,6 +11,14 @@ type AuthShellProps = {
 export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = false }) => (
   <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-white selection:bg-yellow-500/30">
 
+    {/* Hero background — halftone illustration */}
+    <div
+      className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-[0.07]"
+      style={{ backgroundImage: "url('/halftone-heroes/hero-bg-3.png')" }}
+    />
+    {/* Gradient overlay to ensure text readability */}
+    <div className="absolute inset-0 z-[1] bg-gradient-to-r from-[#050402] via-[#050402]/80 to-[#050402]/60" />
+
     <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 md:flex-row md:items-start md:px-0">
       {/* Left — Branding column (60%), top-aligned with login card */}
       <div className="flex w-full flex-col items-center justify-center gap-6 py-16 md:mt-[calc(50vh-80px)] md:w-[60%] md:items-start md:justify-start md:py-0 md:pl-[10%]">

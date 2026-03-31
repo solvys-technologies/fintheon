@@ -1,4 +1,4 @@
-// [claude-code 2026-03-24] T2 — Styled Google sign-in button (Solvys Gold theme)
+// [claude-code 2026-03-31] Heat Regime shimmer on Google sign-in button
 import React from 'react';
 
 type GoogleSignInButtonProps = {
@@ -7,11 +7,30 @@ type GoogleSignInButtonProps = {
 };
 
 export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({ onClick, isLoading }) => (
-  <button
-    onClick={onClick}
-    disabled={isLoading}
-    className="group flex w-full items-center justify-center gap-3 rounded-lg border border-[#c79f4a]/20 bg-[#0a0906] px-6 py-3.5 text-sm font-medium tracking-wide text-[#f0ead6] transition-all duration-300 hover:border-[#c79f4a]/50 hover:bg-[#0a0906]/80 focus:outline-none focus:ring-2 focus:ring-[#c79f4a]/40 focus:ring-offset-2 focus:ring-offset-[#050402] disabled:opacity-50 disabled:cursor-not-allowed"
-  >
+  <>
+    <style>{`
+      @keyframes heat-regime-shimmer {
+        0%, 100% {
+          box-shadow:
+            0 0 6px rgba(199, 159, 74, 0.15),
+            inset 0 0 8px rgba(199, 159, 74, 0.05);
+          border-color: rgba(199, 159, 74, 0.2);
+        }
+        50% {
+          box-shadow:
+            0 0 18px rgba(199, 159, 74, 0.35),
+            0 0 40px rgba(199, 159, 74, 0.1),
+            inset 0 0 12px rgba(199, 159, 74, 0.08);
+          border-color: rgba(199, 159, 74, 0.5);
+        }
+      }
+    `}</style>
+    <button
+      onClick={onClick}
+      disabled={isLoading}
+      className="group flex w-full items-center justify-center gap-3 rounded-lg border border-[#c79f4a]/20 bg-[#0a0906] px-6 py-3.5 text-sm font-medium tracking-wide text-[#f0ead6] transition-all duration-300 hover:border-[#c79f4a]/50 hover:bg-[#0a0906]/80 focus:outline-none focus:ring-2 focus:ring-[#c79f4a]/40 focus:ring-offset-2 focus:ring-offset-[#050402] disabled:opacity-50 disabled:cursor-not-allowed"
+      style={{ animation: isLoading ? 'none' : 'heat-regime-shimmer 2.5s ease-in-out infinite' }}
+    >
     {isLoading ? (
       <svg className="h-5 w-5 animate-spin text-[#c79f4a]" viewBox="0 0 24 24" fill="none">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
@@ -41,5 +60,6 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({ onClick,
         <span>Sign in with Google</span>
       </>
     )}
-  </button>
+    </button>
+  </>
 );

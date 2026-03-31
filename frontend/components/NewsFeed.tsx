@@ -4,7 +4,7 @@ import { useSettings } from "../contexts/SettingsContext";
 import type { RiskFlowItem } from "../types/api";
 import { Diff, AlertTriangle, Info } from "lucide-react";
 import { Button } from "./ui/Button";
-import { useRiskFlow } from "../hooks/useRiskFlow";
+import { useRiskFlowSSE } from "../hooks/useRiskFlow";
 
 export default function NewsFeed() {
   const backend = useBackend();
@@ -46,7 +46,7 @@ export default function NewsFeed() {
     setRiskflow((prev) => [item, ...prev].slice(0, 15));
   }, []);
 
-  useRiskFlow(handleBreakingNews);
+  useRiskFlowSSE(handleBreakingNews);
 
   const loadRiskFlow = async (symbol?: string) => {
     if (isLoading) return;
@@ -56,7 +56,7 @@ export default function NewsFeed() {
       // Fetch 15 items relevant to the user's selected instrument
       const data = await backend.riskflow.list({
         limit: 15,
-        symbol: symbol // Pass the instrument symbol for filtering
+        instrument: symbol ? `/${symbol}` : undefined, // Match RiskFlowContext format
       });
       setRiskflow(data.items);
     } catch (error: any) {

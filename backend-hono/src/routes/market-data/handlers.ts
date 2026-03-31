@@ -101,12 +101,26 @@ export async function handleIVScore(c: Context) {
     const currentPrice = priceParam ? parseFloat(priceParam) : undefined;
 
     // Serve from persistent ticker cache (preferred — decay is continuous)
+    // IV score is market-wide (VIX + headline blend) — serve cached regardless of
+    // which instrument the frontend requests. Point estimates are re-scaled below if needed.
     const cached = getCachedIVScore();
-    if (cached && cached.instrument === instrument) {
+    if (cached) {
+      // Re-estimate points for the requested instrument if different from ticker's primary
+      let points = cached.points;
+      if (cached.instrument !== instrument) {
+        const reEstimated = estimatePoints(cached.score.score, cached.score.vix?.level ?? 20, instrument, currentPrice);
+        points = {
+          scaledPoints: reEstimated.scaledPoints,
+          scaledTicks: reEstimated.scaledTicks,
+          scaledDollarRisk: reEstimated.scaledDollarRisk,
+          urgency: reEstimated.urgency,
+          implied: reEstimated.implied,
+        };
+      }
       return c.json({
         ...cached.score,
-        points: cached.points,
-        instrument: cached.instrument,
+        points,
+        instrument,
       });
     }
 
