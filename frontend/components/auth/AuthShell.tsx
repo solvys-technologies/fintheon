@@ -13,14 +13,14 @@ export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = fals
 
     {/* Hero background — bull vs bear halftone (relative path for Electron) */}
     <div
-      className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-[0.12]"
+      className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-[0.18]"
       style={{ backgroundImage: "url('./halftone-heroes/hero-bg-2.png')" }}
     />
     {/* Gradient overlay — darkens left for text readability */}
     <div className="absolute inset-0 z-[1] bg-gradient-to-r from-[#050402]/95 via-[#050402]/70 to-[#050402]/40" />
 
     {/* Both columns use items-start with same top padding so boxes are horizontally aligned */}
-    <main className="relative z-10 flex min-h-screen flex-col items-center px-6 pt-[30vh] md:flex-row md:items-start md:px-0">
+    <main className="relative z-10 flex min-h-screen flex-col items-center px-6 pt-[38vh] md:flex-row md:items-start md:px-0">
       {/* Left — Branding (55%) */}
       <div className="flex w-full flex-col items-center md:w-[55%] md:items-start md:pl-[10%]">
         {/* Frosted glass window */}

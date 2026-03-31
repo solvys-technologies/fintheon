@@ -141,16 +141,12 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
           alt="Fintheon"
           className="h-20 w-20 object-contain opacity-80 drop-shadow-[0_0_18px_rgba(199,159,74,0.4)]"
         />
-        <h1
-          className="text-xl font-light tracking-[0.5em] text-[#c79f4a]/80"
+        {/* Status line */}
+        <p
+          className="text-sm tracking-[0.3em] text-[#f0ead6]/40 italic transition-all duration-300"
           style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
         >
-          FINTHEON
-        </h1>
-
-        {/* Status line */}
-        <p className="text-xs tracking-[0.3em] text-[#f0ead6]/50 transition-all duration-300">
-          {INIT_STEPS[stepIdx]}
+          Assembling the Kingdom....
         </p>
 
         {/* Fuse bar — fills left to right as steps complete */}
