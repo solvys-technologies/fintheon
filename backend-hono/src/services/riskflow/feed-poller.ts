@@ -6,7 +6,8 @@
 // [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
 
 // [claude-code 2026-03-27] S3: Write raw items to raw_riskflow_items for central scorer pipeline
-// [claude-code 2026-03-30] S10-T1c: Added daily window gate (8-11AM ET weekdays) + autoRefresh toggle
+// [claude-code 2026-03-30] S10-T1c: Added daily window gate + autoRefresh toggle
+// [claude-code 2026-03-31] Widened polling window 6AM-8PM ET weekdays (was 8-11AM — starved pipeline for 3 days)
 import * as newsCache from './news-cache.js';
 import { enrichFeedWithAnalysis } from './feed-service.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
@@ -39,25 +40,26 @@ const log = createLogger('FeedPoller');
 const POLL_INTERVAL_MS = 15_000; // Poll every 15 seconds for instant Level 4 detection
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let isPolling = false;
+let _lastGateLog = 0; // Throttle gate-blocked log messages
 
 // S10-T1c: Manual toggle state — when false, ALL polling stops
 let manualToggleEnabled = true;
 
 /**
- * Check if we're inside the daily polling window (8AM-11AM ET, weekdays only).
- * Outside this window, automatic polling is suppressed.
+ * Check if we're inside the daily polling window.
+ * Extended market hours: 6AM-8PM ET on weekdays.
+ * Weekends: suppressed (no meaningful flow).
  */
 export function isInsidePollingWindow(): boolean {
   const now = new Date();
-  // Convert to ET (America/New_York)
   const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
   const et = new Date(etStr);
   const hour = et.getHours();
   const day = et.getDay(); // 0=Sun, 6=Sat
 
-  // Weekdays only, 8AM-11AM ET
+  // Weekdays only, 6AM-8PM ET (covers pre-market through post-market)
   if (day === 0 || day === 6) return false;
-  return hour >= 8 && hour < 11;
+  return hour >= 6 && hour < 20;
 }
 
 /**
@@ -102,7 +104,13 @@ async function pollForNewItems(): Promise<void> {
 
   // S10-T1c: Check time window + toggle + autoRefresh before polling
   if (!isInsidePollingWindow()) {
-    return; // Outside 8-11AM ET window
+    // Log once per hour so stale feeds are never a mystery
+    const now = Date.now();
+    if (now - _lastGateLog > 3_600_000) {
+      log.info('Outside polling window (6AM-8PM ET weekdays) — automatic polling paused');
+      _lastGateLog = now;
+    }
+    return;
   }
 
   if (!(await isPollingAllowed())) {

@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-31T01:00:00',
+    agent: 'claude-code',
+    summary: 'fix(riskflow): Widen polling window 6AM-8PM ET (was 8-11AM — starved pipeline 3 days). Refresh now triggers Central Scorer immediately (fetch+score+deliver in one click). Added device-gated on-open fetch (visibility change triggers full refresh, throttled 5min). Consilium/Sanctum now receives narrative_threads via narrative_card_links join. Added hourly gate-blocked logging so stale feeds are never silent.',
+    files: [
+      'backend-hono/src/services/riskflow/feed-poller.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+      'backend-hono/src/routes/riskflow/handlers.ts',
+      'backend-hono/src/services/miroshark/miroshark-context.ts',
+      'backend-hono/src/services/miroshark/miroshark-types.ts',
+      'frontend/contexts/RiskFlowContext.tsx',
+      'frontend/types/miroshark.ts',
+    ],
+  },
+  {
     date: '2026-03-30T19:00:00',
     agent: 'claude-code',
     summary: 'Sprint 1: Claude Peers — peer registry, auth, boardroom evolution (Content Parts + threading + peer attribution), voice widget, PeerCarousel, Hermes plugin mode',

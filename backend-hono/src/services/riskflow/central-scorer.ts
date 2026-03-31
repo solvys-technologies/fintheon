@@ -182,9 +182,11 @@ function feedItemToScored(item: FeedItem, rawId: string): ScoredRiskFlowItem {
 }
 
 /**
- * Run one scoring cycle: fetch unscored → enrich → write scored
+ * Run one scoring cycle: fetch unscored → enrich → write scored.
+ * Exported so the refresh handler can trigger immediate scoring
+ * without waiting for the 30s interval.
  */
-async function scoringCycle(): Promise<void> {
+export async function scoringCycle(): Promise<void> {
   if (isScoring) return;
   isScoring = true;
 

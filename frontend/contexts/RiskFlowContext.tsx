@@ -1,3 +1,4 @@
+// [claude-code 2026-03-31] Device-gated on-open fetch — visibility change triggers full refresh (throttled 5min)
 // [claude-code 2026-03-29] Fix infinite scroll: poll uses loadedCountRef so auto-refresh doesn't reset scroll progress
 // [claude-code 2026-03-14] Removed MarketWatch RSS polling — feed now Notion + backend only.
 // [claude-code 2026-03-14] XCLI: minMacroLevel=0 so all items show regardless of macro level.
@@ -289,6 +290,23 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       if (backendIntervalRef.current) clearInterval(backendIntervalRef.current);
     };
   }, [pollBackendFeed, autoRefresh]);
+
+  // Device-gated on-open fetch: when the app becomes visible (tab focus, Electron foreground),
+  // trigger a full refresh so catalysts are always fresh when TP opens Fintheon.
+  // Throttled to at most once per 5 minutes to avoid hammering the backend.
+  const lastOnOpenRefresh = useRef(0);
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastOnOpenRefresh.current < 5 * 60 * 1000) return;
+      lastOnOpenRefresh.current = now;
+      console.debug('[RiskFlowContext] App became visible — triggering on-open refresh');
+      backend.riskflow.refresh().then(() => pollBackendFeed()).catch(() => {});
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [backend, pollBackendFeed]);
 
   // Merge: Notion (pinned) → Backend feed
   // [claude-code 2026-03-28] S9-T2: Removed 24h stalemate filter — items persist forever (backfill data)

@@ -3,6 +3,7 @@
  * Request handlers for RiskFlow endpoints
  */
 
+// [claude-code 2026-03-31] Refresh now triggers Central Scorer immediately (fetch→score→deliver in one call)
 // [claude-code 2026-03-29] S9-T2b: Wire instrument-aware sentiment flipper into feed handler, fix spread ordering, fire-and-forget instrument_scores writes
 // [claude-code 2026-03-10] Added handleGetSources for RiskFlow connection status indicators
 // [claude-code 2026-03-10] handlePreload: lowered minMacroLevel 3→2 (Medium+ threshold)
@@ -762,14 +763,20 @@ export async function handleRefresh(c: Context) {
     // 1. Poll for fresh items (writes raw → raw_riskflow_items)
     await forcePoll();
 
-    // 2. Re-score in-memory feed with current regime/calibration weights
+    // 2. Run Central Scorer immediately so raw items get scored NOW, not in 30s
+    const { scoringCycle } = await import('../../services/riskflow/central-scorer.js');
+    await scoringCycle().catch((err: unknown) => {
+      console.warn('[RiskFlow] Immediate scoring during refresh failed:', err);
+    });
+
+    // 3. Re-score in-memory feed with current regime/calibration weights
     const { rescoreInMemoryFeed } = await import('../../services/riskflow/feed-service.js');
     const rescored = await rescoreInMemoryFeed().catch((err: unknown) => {
       console.warn('[RiskFlow] Rescore during refresh failed:', err);
       return 0;
     });
 
-    // 3. Auto-generate agent notes for critical items (fire-and-forget)
+    // 4. Auto-generate agent notes for critical items (fire-and-forget)
     import('../../services/riskflow/agent-notes.js').then(({ generateNotesForCriticalItems }) => {
       generateNotesForCriticalItems().catch((err: unknown) => {
         console.warn('[RiskFlow] Auto-notes during refresh failed:', err);
