@@ -4,7 +4,7 @@
 // [claude-code 2026-03-28] S7: Force-directed canvas, removed Sanctum overlay (now separate view)
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Eye, EyeOff, ChevronDown, Save, RotateCcw } from 'lucide-react';
+import { Eye, EyeOff, ChevronDown, Save, RotateCcw, Calendar } from 'lucide-react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import NarrativeForceCanvas from './NarrativeForceCanvas';
 import { TimelineScrubber } from './TimelineScrubber';
@@ -31,6 +31,7 @@ export function NarrativeMap() {
   const [editingCard, setEditingCard] = useState<CatalystCard | null>(null);
   const [canvasTool, setCanvasTool] = useState<CanvasTool>('select');
   const [canvasScale, setCanvasScale] = useState(1.0);
+  const [timeframeFilter, setTimeframeFilter] = useState<string>('all');
   const [zoomFns, setZoomFns] = useState<{ zoomTo: (level: number) => void; fitView: () => void } | null>(null);
   const { alerts } = useRiskFlow();
   const seedLoadedRef = useRef(false);
@@ -150,6 +151,7 @@ export function NarrativeMap() {
           visibleLaneIds={visibleLaneIds}
           activeTags={activeTags}
           activeTool={canvasTool}
+          timeframeFilter={timeframeFilter}
           onScaleChange={setCanvasScale}
           onSelectCard={handleSelectCard}
           onEditCard={handleEditCard}
@@ -172,6 +174,10 @@ export function NarrativeMap() {
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
+          <TimeframeFilterDropdown
+            selected={timeframeFilter}
+            onSelect={setTimeframeFilter}
+          />
           <NarrativeFilterDropdown
             visibleLaneIds={visibleLaneIds}
             onToggleLane={handleToggleLane}
@@ -190,7 +196,7 @@ export function NarrativeMap() {
           onToolChange={setCanvasTool}
           onAddCatalyst={() => { setCatalystModalOpen(true); setEditingCard(null); }}
           onImport={() => setImportModalOpen(true)}
-          onToggleSanctum={() => {/* Aquarium is now a separate view */}}
+          onToggleSanctum={(_page?: number) => {/* TODO: wire to Sanctum sub-view navigation — requires props from MainLayout */}}
           onToggleHeatmap={() => dispatch({ type: 'TOGGLE_HEATMAP' })}
           onToggleFilter={() => {
             const next = state.filterSentiment === 'all' ? 'bearish' : state.filterSentiment === 'bearish' ? 'bullish' : 'all';
@@ -236,6 +242,87 @@ export function NarrativeMap() {
       />
     </div>
     </NarrativeHighlightProvider>
+  );
+}
+
+// ── Timeframe Filter Dropdown ────────────────────────────────────
+const TIMEFRAME_OPTIONS = [
+  { value: '1d', label: '1D' },
+  { value: '1w', label: '1W' },
+  { value: '2w', label: '2W' },
+  { value: '1m', label: '1M' },
+  { value: '3m', label: '3M' },
+  { value: '6m', label: '6M' },
+  { value: '1y', label: '1Y' },
+  { value: 'all', label: 'All' },
+] as const;
+
+function TimeframeFilterDropdown({
+  selected,
+  onSelect,
+}: {
+  selected: string;
+  onSelect: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const isFiltered = selected !== 'all';
+  const label = TIMEFRAME_OPTIONS.find(o => o.value === selected)?.label ?? 'All';
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg border backdrop-blur-xl transition-all text-[11px] uppercase tracking-wider ${
+          isFiltered
+            ? 'border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]'
+            : 'border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/80 text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80'
+        }`}
+        style={{ fontFamily: 'var(--font-heading)' }}
+      >
+        <Calendar className="w-3.5 h-3.5" />
+        {label}
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute top-full right-0 mt-1.5 w-36 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
+          style={{ borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' }}
+        >
+          <div className="py-1">
+            {TIMEFRAME_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => { onSelect(opt.value); setOpen(false); }}
+                className={`w-full flex items-center justify-between px-4 py-2 text-left transition-all duration-150 ${
+                  selected === opt.value
+                    ? 'bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]'
+                    : 'text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/3'
+                }`}
+              >
+                <span
+                  className="text-[12px] font-medium"
+                  style={{ fontFamily: 'var(--font-heading)' }}
+                >
+                  {opt.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

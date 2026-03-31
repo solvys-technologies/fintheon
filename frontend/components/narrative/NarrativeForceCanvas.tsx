@@ -568,6 +568,7 @@ function NarrativeFlowCanvas({
   visibleLaneIds,
   activeTags,
   activeTool,
+  timeframeFilter,
   onScaleChange,
   onSelectCard,
   onEditCard,
@@ -592,9 +593,20 @@ function NarrativeFlowCanvas({
     });
   }, [reactFlow, onZoomFnsReady]);
 
-  // Filter catalysts (lane + category + tag filters)
+  // Filter catalysts (lane + category + tag + timeframe filters)
   const filteredCatalysts = useMemo(() => {
+    const TIMEFRAME_DAYS: Record<string, number> = {
+      '1d': 1, '1w': 7, '2w': 14, '1m': 30, '3m': 90, '6m': 180, '1y': 365,
+    };
+    const tfDays = timeframeFilter ? TIMEFRAME_DAYS[timeframeFilter] : undefined;
+    const tfCutoff = tfDays ? Date.now() - tfDays * 86400000 : undefined;
+
     let cards = state.catalysts.filter(c => {
+      // Timeframe filter
+      if (tfCutoff && c.date) {
+        const cardTime = new Date(c.date).getTime();
+        if (cardTime < tfCutoff) return false;
+      }
       // Lane / narrative thread filter
       if (visibleLaneIds.size > 0) {
         const thread = c.narrative ?? c.narrativeThreads?.[0];
@@ -610,7 +622,7 @@ function NarrativeFlowCanvas({
       cards = cards.filter(c => c.tags?.some(t => activeTags.has(t)) ?? false);
     }
     return cards;
-  }, [state.catalysts, state.categoryFilter, visibleLaneIds, activeTags]);
+  }, [state.catalysts, state.categoryFilter, visibleLaneIds, activeTags, timeframeFilter]);
 
   // Compute initial layout
   const { initialNodes, initialEdges } = useMemo(() => {
@@ -845,6 +857,7 @@ interface NarrativeForceCanvasProps {
   visibleLaneIds: Set<string>;
   activeTags: Set<string>;
   activeTool: CanvasTool;
+  timeframeFilter?: string;
   onScaleChange?: (scale: number) => void;
   onSelectCard?: (id: string) => void;
   onEditCard?: (card: CatalystCard) => void;
