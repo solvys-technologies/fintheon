@@ -7,6 +7,7 @@
 import { sql, isDatabaseAvailable } from '../../config/database.js'
 import { runAgentPipeline } from '../agents/pipeline.js'
 import type { AgentPipelineResult, TradingProposal, RiskAssessment } from '../../types/agents.js'
+import type { BulletinPost } from '../../types/bulletin.js'
 import * as rithmicService from '../rithmic-service.js'
 import * as hyperliquidService from '../hyperliquid-service.js'
 
@@ -169,6 +170,81 @@ export async function createProposal(
     }).catch(err => console.error('[Proposal] Auto-chart failed:', (err as Error).message))
   }
 
+  return storedProposal
+}
+
+/**
+ * Create a proposal from a bulletin post that reached the vote threshold.
+ * Called by vote-counter.ts when voteCheck >= BULLETIN_VOTE_THRESHOLD.
+ */
+export async function createProposalFromBulletin(
+  bulletin: BulletinPost,
+  promotedBy: string,
+): Promise<StoredProposal> {
+  // Extract instrument from content
+  const stockMatch = bulletin.content.match(/\$([A-Z]{1,5})/)
+  const futuresMatch = bulletin.content.match(/(?:^|\s)\/([A-Z]{2,4})(?:\s|$)/)
+  const instrument = stockMatch?.[1] ?? futuresMatch?.[1] ?? 'UNKNOWN'
+
+  // Direction: more up votes = long, more down = short, else neutral mapped to flat
+  const direction: 'long' | 'short' | 'flat' =
+    bulletin.voteUp > bulletin.voteDown ? 'long' : bulletin.voteDown > bulletin.voteUp ? 'short' : 'flat'
+
+  // Confidence from check vs x votes
+  const totalCheckX = bulletin.voteCheck + bulletin.voteX
+  const confidenceScore = totalCheckX > 0 ? bulletin.voteCheck / totalCheckX : 0.5
+
+  const now = new Date()
+  const expiresAt = new Date(now.getTime() + PROPOSAL_TTL_MS)
+
+  const storedProposal: StoredProposal = {
+    id: crypto.randomUUID(),
+    userId: promotedBy,
+    strategyName: 'BULLETIN_VOTE',
+    instrument,
+    direction,
+    positionSize: 1,
+    riskRewardRatio: 1, // placeholder — enriched by trade plan generation if Computer Use available
+    confidenceScore,
+    rationale: bulletin.content,
+    analystInputs: { source: 'bulletin', bulletinId: bulletin.id, authorId: bulletin.authorId },
+    timeframe: 'intraday',
+    setupType: 'bulletin_promotion',
+    status: 'pending',
+    expiresAt: expiresAt.toISOString(),
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+  }
+
+  if (isDatabaseAvailable() && sql) {
+    await sql`
+      INSERT INTO trading_proposals (
+        id, user_id, strategy_name, instrument, direction,
+        position_size, risk_reward_ratio,
+        confidence_score, rationale, analyst_inputs, timeframe, setup_type,
+        status, expires_at
+      ) VALUES (
+        ${storedProposal.id},
+        ${promotedBy},
+        ${storedProposal.strategyName},
+        ${storedProposal.instrument},
+        ${storedProposal.direction},
+        ${storedProposal.positionSize},
+        ${storedProposal.riskRewardRatio},
+        ${storedProposal.confidenceScore},
+        ${storedProposal.rationale},
+        ${JSON.stringify(storedProposal.analystInputs)}::jsonb,
+        ${storedProposal.timeframe},
+        ${storedProposal.setupType},
+        ${storedProposal.status},
+        ${storedProposal.expiresAt}
+      )
+    `
+  } else {
+    proposalCache.set(storedProposal.id, storedProposal)
+  }
+
+  console.log(`[Proposal] Created from bulletin ${bulletin.id} → ${instrument} ${direction}`)
   return storedProposal
 }
 

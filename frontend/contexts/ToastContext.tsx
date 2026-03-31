@@ -7,6 +7,9 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 
 export type ToastVariant = 'success' | 'error' | 'updating' | 'info' | 'reminder' | 'vix';
 
+/** Toast placement: trading/market alerts → top-right, system → bottom-left */
+export type ToastPosition = 'top-right' | 'bottom-left';
+
 /** Unique notification type ID used for "Don't Show Again" blocklist */
 export type NotificationType =
   | 'vix-spike'
@@ -28,11 +31,15 @@ export interface Toast {
   exiting?: boolean;
   /** If set, enables "Don't Show Again" button for this notification type */
   notificationType?: NotificationType;
+  /** Placement: trading/market = top-right, system = bottom-left (default) */
+  position?: ToastPosition;
+  /** Optional CTA button */
+  cta?: { label: string; onClick: () => void };
 }
 
 interface ToastContextValue {
   toasts: Toast[];
-  addToast: (message: string, variant?: ToastVariant, description?: string, notificationType?: NotificationType) => string;
+  addToast: (message: string, variant?: ToastVariant, description?: string, notificationType?: NotificationType, position?: ToastPosition) => string;
   dismissToast: (id: string) => void;
   /** Permanently block a notification type (Don't Show Again) */
   blockNotificationType: (type: NotificationType) => void;
@@ -42,6 +49,8 @@ interface ToastContextValue {
   resetBlockedNotifications: () => void;
   /** Get list of all blocked notification types */
   blockedTypes: NotificationType[];
+  /** Show maintenance toast with "Update App" CTA (bottom-left, system) */
+  showMaintenanceToast: (onUpdate: () => void) => string;
 }
 
 const DND_STORAGE_KEY = 'fintheon:notification-blocklist';
@@ -67,6 +76,7 @@ const ToastContext = createContext<ToastContextValue>({
   isNotificationBlocked: () => false,
   resetBlockedNotifications: () => {},
   blockedTypes: [],
+  showMaintenanceToast: () => '',
 });
 
 /* ------------------------------------------------------------------ */
@@ -104,14 +114,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToast = useCallback(
-    (message: string, variant: ToastVariant = 'info', description?: string, notificationType?: NotificationType): string => {
+    (message: string, variant: ToastVariant = 'info', description?: string, notificationType?: NotificationType, position?: ToastPosition): string => {
       // Skip if this notification type is blocked
       if (notificationType && blockedTypes.includes(notificationType)) {
         return '';
       }
 
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      const toast: Toast = { id, message, variant, description, notificationType };
+      const toast: Toast = { id, message, variant, description, notificationType, position: position ?? 'bottom-left' };
       setToasts((prev) => [...prev, toast]);
 
       // Auto-dismiss (except 'updating' which stays until manually dismissed)
@@ -125,8 +135,25 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [dismissToast, blockedTypes],
   );
 
+  const showMaintenanceToast = useCallback(
+    (onUpdate: () => void): string => {
+      const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const toast: Toast = {
+        id,
+        message: 'Fintheon is updating...',
+        variant: 'updating',
+        notificationType: 'system-update',
+        position: 'bottom-left',
+        cta: { label: 'Update App', onClick: onUpdate },
+      };
+      setToasts((prev) => [...prev, toast]);
+      return id;
+    },
+    [],
+  );
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, dismissToast, blockNotificationType, isNotificationBlocked, resetBlockedNotifications, blockedTypes }}>
+    <ToastContext.Provider value={{ toasts, addToast, dismissToast, blockNotificationType, isNotificationBlocked, resetBlockedNotifications, blockedTypes, showMaintenanceToast }}>
       {children}
     </ToastContext.Provider>
   );

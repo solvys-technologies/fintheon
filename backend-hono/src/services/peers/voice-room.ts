@@ -46,13 +46,11 @@ function buildParticipantToken(peerId: string, roomId: string): string {
     return `voice_stub_${roomId}_${peerId}_${Date.now()}`
   }
 
-  const payload = {
-    peerId,
-    roomId,
-    iat: Math.floor(Date.now() / 1000),
-    iss: process.env.LIVEKIT_API_KEY,
-  }
-  return Buffer.from(JSON.stringify(payload)).toString('base64url')
+  // WARNING: LiveKit credentials are set but we don't have livekit-server-sdk installed.
+  // This stub token is NOT signed and should NOT be used with a real LiveKit server.
+  // Install livekit-server-sdk and use AccessToken for production.
+  console.warn('[VoiceRoom] LiveKit configured but using unsigned stub token — install livekit-server-sdk for production')
+  return `voice_stub_${roomId}_${peerId}_${Date.now()}`
 }
 
 export async function createRoom(name: string): Promise<VoiceRoom> {

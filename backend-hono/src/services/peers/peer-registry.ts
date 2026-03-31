@@ -33,6 +33,11 @@ function canUseDb(): boolean {
   return !forceMemoryFallback && isDatabaseAvailable() && !!sql
 }
 
+/** Check if peer registry is running in memory-only mode (exported for desk-manager sync) */
+export function isMemoryMode(): boolean {
+  return forceMemoryFallback
+}
+
 function shouldFallbackToMemory(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error)
   return (
@@ -289,7 +294,23 @@ export async function registerPeer(
     if (shouldFallbackToMemory(error)) {
       forceMemoryFallback = true
       log.warn('claude_peers insert failed, using memory fallback', { error: String(error) })
-      return registerPeer(userId, registration)
+      // Re-run with memory path now that forceMemoryFallback is true
+      const peer: ClaudePeer = {
+        id: crypto.randomUUID(),
+        userId,
+        deviceName: registration.deviceName,
+        platform: registration.platform ?? process.platform,
+        capabilities: registration.capabilities ?? [],
+        deskId: registration.deskId ?? null,
+        assignedAgents: registration.assignedAgents ?? [],
+        status: registration.status ?? 'online',
+        heartbeatAt: nowIso(),
+        hermesAvailable: Boolean(registration.hermesAvailable),
+        createdAt: nowIso(),
+        user,
+      }
+      memoryPeers.set(peer.id, peer)
+      return peer
     }
     throw error
   }
@@ -324,7 +345,11 @@ export async function sendHeartbeat(
   } catch (error) {
     if (shouldFallbackToMemory(error)) {
       forceMemoryFallback = true
-      return sendHeartbeat(peerId, payload)
+      const peer = memoryPeers.get(peerId)
+      if (!peer) return null
+      const updated: ClaudePeer = { ...peer, status: payload.status ?? 'online', heartbeatAt: nowIso() }
+      memoryPeers.set(peerId, updated)
+      return updated
     }
     throw error
   }
@@ -357,7 +382,7 @@ export async function listPeers(): Promise<ClaudePeer[]> {
   } catch (error) {
     if (shouldFallbackToMemory(error)) {
       forceMemoryFallback = true
-      return listPeers()
+      return Array.from(memoryPeers.values()).sort((a, b) => b.heartbeatAt.localeCompare(a.heartbeatAt))
     }
     throw error
   }
@@ -415,7 +440,10 @@ export async function deregisterPeer(peerId: string): Promise<boolean> {
   } catch (error) {
     if (shouldFallbackToMemory(error)) {
       forceMemoryFallback = true
-      return deregisterPeer(peerId)
+      const peer = memoryPeers.get(peerId)
+      if (!peer) return false
+      memoryPeers.set(peerId, { ...peer, status: 'offline', heartbeatAt: nowIso() })
+      return true
     }
     throw error
   }

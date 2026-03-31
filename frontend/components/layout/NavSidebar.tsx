@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Bell, BellOff, Wrench } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Bell, BellOff, Wrench, ClipboardList, FileText, Brain } from 'lucide-react';
 import { useDND } from '../../contexts/DNDContext';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'documents' | 'research' | 'memory' | 'settings';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -25,6 +25,9 @@ const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom' | 'narrative' | 'appara
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
   scriptorium: { id: 'scriptorium', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
   performance: { id: 'performance', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
+  documents: { id: 'documents', icon: FileText, label: 'Docs', description: 'TipTap document editor' },
+  research: { id: 'research', icon: ClipboardList, label: 'Research', description: 'Research task board — deep-dive kanban' },
+  memory: { id: 'memory', icon: Brain, label: 'Memory', description: 'Shared team memory — cross-agent KV store' },
 };
 
 // Icon size: original was w-6 h-6 (24px). 35% smaller = ~15.6px → w-4 h-4 (16px)

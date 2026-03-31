@@ -3,6 +3,7 @@
  * Continuously polls for new news items and broadcasts Level 4 events instantly
  * Runs independently of HTTP requests for real-time updates
  */
+// [claude-code 2026-03-31] Dynamic polling intervals: 5min market hours, 30min off-hours. Observable pipeline.
 // [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
 
 // [claude-code 2026-03-27] S3: Write raw items to raw_riskflow_items for central scorer pipeline
@@ -37,10 +38,23 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
 
 const log = createLogger('FeedPoller');
 
-const POLL_INTERVAL_MS = 15_000; // Poll every 15 seconds for instant Level 4 detection
-let pollInterval: ReturnType<typeof setInterval> | null = null;
+// ── Polling Intervals ─────────────────────────────────────────────────────────
+// Market hours (6AM-2PM ET weekdays): 5 minutes — active trading, commentary flowing
+// Off-hours (2PM-8PM ET weekdays): 30 minutes — still monitor but less aggressively
+// Outside window (nights/weekends): no automatic polling (manual refresh only)
+const MARKET_HOURS_INTERVAL_MS = 5 * 60_000;   // 5 minutes
+const OFF_HOURS_INTERVAL_MS = 30 * 60_000;      // 30 minutes
+const SCHEDULE_CHECK_MS = 60_000;                // Check schedule every 60s
+
+let pollTimeout: ReturnType<typeof setTimeout> | null = null;
 let isPolling = false;
 let _lastGateLog = 0; // Throttle gate-blocked log messages
+
+// Health tracking for observability
+let _pollsSinceLastLog = 0;
+let _itemsSinceLastLog = 0;
+let _lastHealthLog = 0;
+const HEALTH_LOG_INTERVAL = 10 * 60_000; // Log health every 10 minutes
 
 // S10-T1c: Manual toggle state — when false, ALL polling stops
 let manualToggleEnabled = true;
@@ -63,17 +77,43 @@ export function isInsidePollingWindow(): boolean {
 }
 
 /**
+ * Get the appropriate polling interval based on time of day.
+ * Returns null if outside the polling window entirely.
+ */
+function getPollingInterval(): number | null {
+  const now = new Date();
+  const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const et = new Date(etStr);
+  const hour = et.getHours();
+  const day = et.getDay();
+
+  // Weekends: no polling
+  if (day === 0 || day === 6) return null;
+
+  // Active market hours: 6AM-2PM ET → 5 min
+  if (hour >= 6 && hour < 14) return MARKET_HOURS_INTERVAL_MS;
+
+  // Off-hours: 2PM-8PM ET → 30 min
+  if (hour >= 14 && hour < 20) return OFF_HOURS_INTERVAL_MS;
+
+  // Outside window
+  return null;
+}
+
+/**
  * Check if autoRefresh is enabled in user settings AND manual toggle is on.
  * Returns false if polling should be suppressed.
  */
 async function isPollingAllowed(): Promise<boolean> {
   if (!manualToggleEnabled) {
+    log.info('Polling blocked: manual toggle is OFF');
     return false;
   }
 
   try {
     const settings = await getUserSettings('default');
     if (settings.autoRefresh === false) {
+      log.info('Polling blocked: autoRefresh setting is OFF in user settings');
       return false;
     }
   } catch {
@@ -92,6 +132,24 @@ export function setPollingToggle(enabled: boolean): void {
 /** Get current polling toggle state */
 export function getPollingToggle(): boolean {
   return manualToggleEnabled;
+}
+
+/**
+ * Log pipeline health periodically so operators can verify the feed is alive.
+ */
+function maybeLogHealth(): void {
+  const now = Date.now();
+  if (now - _lastHealthLog < HEALTH_LOG_INTERVAL) return;
+  _lastHealthLog = now;
+
+  const interval = getPollingInterval();
+  const intervalDesc = interval === MARKET_HOURS_INTERVAL_MS ? '5min (market hours)'
+    : interval === OFF_HOURS_INTERVAL_MS ? '30min (off-hours)' : 'inactive';
+
+  log.info(`Pipeline health: ${_pollsSinceLastLog} polls, ${_itemsSinceLastLog} new items in last 10min | interval: ${intervalDesc} | toggle: ${manualToggleEnabled ? 'ON' : 'OFF'}`);
+
+  _pollsSinceLastLog = 0;
+  _itemsSinceLastLog = 0;
 }
 
 /**
@@ -114,21 +172,36 @@ async function pollForNewItems(): Promise<void> {
   }
 
   if (!(await isPollingAllowed())) {
-    return; // Toggle off or autoRefresh disabled
+    return; // Toggle off or autoRefresh disabled — reason already logged
   }
 
   isPolling = true;
+  _pollsSinceLastLog++;
 
   try {
+    // Check twitter-cli availability with explicit logging
+    const twitterAvailable = await isTwitterCliInstalled();
+    if (!twitterAvailable) {
+      log.warn('twitter-cli NOT available — feed will only contain economic calendar items. Check ~/.local/bin/twitter');
+    }
+
     // Gather items from twitter-cli + economic feed
     const [twitterCliItems, econItems] = await Promise.all([
-      isTwitterCliInstalled().then(ok => ok ? pollTwitterForEconNews() : []).catch(() => []),
-      fetchEconomicFeed().catch(() => []),
+      twitterAvailable ? pollTwitterForEconNews().catch((err) => {
+        log.error('twitter-cli poll failed:', { error: String(err) });
+        return [] as FeedItem[];
+      }) : Promise.resolve([] as FeedItem[]),
+      fetchEconomicFeed().catch((err) => {
+        log.warn('Economic feed fetch failed:', { error: String(err) });
+        return [] as FeedItem[];
+      }),
     ]);
 
     const rawItems: FeedItem[] = [...econItems, ...twitterCliItems];
 
     if (rawItems.length === 0) {
+      // Log when both sources return empty so operators know the pipeline is idle
+      log.info(`Poll cycle: 0 items from all sources (twitter-cli: ${twitterAvailable ? 'available' : 'unavailable'}, econ: checked)`);
       return;
     }
 
@@ -141,6 +214,7 @@ async function pollForNewItems(): Promise<void> {
       return; // No new items
     }
 
+    _itemsSinceLastLog += newItems.length;
     log.info(` Found ${newItems.length} new items (${cachedIds.size} already cached)`);
 
     // S3: Write raw (unenriched) items to raw_riskflow_items for central scorer
@@ -170,36 +244,59 @@ async function pollForNewItems(): Promise<void> {
     log.error(' Poll error:', error);
   } finally {
     isPolling = false;
+    maybeLogHealth();
   }
+}
+
+/**
+ * Schedule the next poll using dynamic intervals.
+ * Self-scheduling pattern: after each poll, schedule the next one based on time of day.
+ */
+function scheduleNextPoll(): void {
+  const interval = getPollingInterval();
+
+  if (interval === null) {
+    // Outside polling window — check again in 60s to see if we've entered the window
+    pollTimeout = setTimeout(scheduleNextPoll, SCHEDULE_CHECK_MS);
+    return;
+  }
+
+  pollForNewItems().finally(() => {
+    pollTimeout = setTimeout(scheduleNextPoll, interval);
+  });
 }
 
 /**
  * Start the continuous polling service
  */
 export function startFeedPoller(): void {
-  if (pollInterval) {
+  if (pollTimeout) {
     console.log('[FeedPoller] Already running');
     return;
   }
 
-  log.info(` Starting continuous polling (every ${POLL_INTERVAL_MS / 1000}s)`);
+  const interval = getPollingInterval();
+  const intervalDesc = interval === MARKET_HOURS_INTERVAL_MS ? '5min'
+    : interval === OFF_HOURS_INTERVAL_MS ? '30min' : 'waiting for window';
+
+  log.info(` Starting dynamic polling (current: ${intervalDesc})`);
+  _pollerStarted = true;
 
   // Poll immediately on startup
-  pollForNewItems();
-
-  // Then poll at regular intervals
-  pollInterval = setInterval(() => {
-    pollForNewItems();
-  }, POLL_INTERVAL_MS);
+  pollForNewItems().then(() => {
+    // Then schedule based on time of day
+    pollTimeout = setTimeout(scheduleNextPoll, interval ?? SCHEDULE_CHECK_MS);
+  });
 }
 
 /**
  * Stop the polling service
  */
 export function stopFeedPoller(): void {
-  if (pollInterval) {
-    clearInterval(pollInterval);
-    pollInterval = null;
+  if (pollTimeout) {
+    clearTimeout(pollTimeout);
+    pollTimeout = null;
+    _pollerStarted = false;
     console.log('[FeedPoller] Stopped');
   }
 }
@@ -260,8 +357,9 @@ export async function forcePoll(): Promise<void> {
 }
 
 /**
- * Get polling status
+ * Get polling status — true if poller has been started (even if currently in a poll cycle)
  */
+let _pollerStarted = false;
 export function isPollingActive(): boolean {
-  return pollInterval !== null;
+  return _pollerStarted;
 }

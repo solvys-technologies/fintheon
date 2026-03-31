@@ -87,6 +87,18 @@ function ToastItem({ toast, onDismiss, onBlock }: {
                   {toast.description}
                 </span>
               )}
+              {toast.cta && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); toast.cta!.onClick(); }}
+                  className="mt-1 rounded px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors"
+                  style={{
+                    color: 'var(--fintheon-bg)',
+                    backgroundColor: 'var(--fintheon-accent)',
+                  }}
+                >
+                  {toast.cta.label}
+                </button>
+              )}
             </div>
           </div>
           <div className="flex items-center flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ gap: '2px', marginLeft: '8px' }}>
@@ -115,7 +127,7 @@ function ToastItem({ toast, onDismiss, onBlock }: {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Container — all toasts bottom-left                                 */
+/*  Container — split by position: bottom-left (system) + top-right   */
 /* ------------------------------------------------------------------ */
 
 export function ToastContainer() {
@@ -130,19 +142,43 @@ export function ToastContainer() {
     dismissToast(toast.id);
   };
 
+  const bottomLeft = toasts.filter((t) => t.position !== 'top-right');
+  const topRight = toasts.filter((t) => t.position === 'top-right');
+
   return (
-    <div
-      className="fixed z-[100] flex flex-col items-start"
-      style={{ bottom: '24px', left: '24px', gap: '10px', pointerEvents: 'none' }}
-    >
-      {toasts.map((toast) => (
-        <ToastItem
-          key={toast.id}
-          toast={toast}
-          onDismiss={dismissToast}
-          onBlock={handleBlock}
-        />
-      ))}
-    </div>
+    <>
+      {/* System toasts — bottom-left */}
+      {bottomLeft.length > 0 && (
+        <div
+          className="fixed z-[100] flex flex-col items-start"
+          style={{ bottom: '24px', left: '24px', gap: '10px', pointerEvents: 'none' }}
+        >
+          {bottomLeft.map((toast) => (
+            <ToastItem
+              key={toast.id}
+              toast={toast}
+              onDismiss={dismissToast}
+              onBlock={handleBlock}
+            />
+          ))}
+        </div>
+      )}
+      {/* Trading/market toasts — top-right */}
+      {topRight.length > 0 && (
+        <div
+          className="fixed z-[100] flex flex-col items-end"
+          style={{ top: '70px', right: '24px', gap: '10px', pointerEvents: 'none' }}
+        >
+          {topRight.map((toast) => (
+            <ToastItem
+              key={toast.id}
+              toast={toast}
+              onDismiss={dismissToast}
+              onBlock={handleBlock}
+            />
+          ))}
+        </div>
+      )}
+    </>
   );
 }

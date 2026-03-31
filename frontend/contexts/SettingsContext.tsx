@@ -117,6 +117,9 @@ interface SettingsContextType {
   setDefaultLayout: (layout: DefaultLayout) => void;
   defaultPlatform: DefaultPlatform;
   setDefaultPlatform: (platform: DefaultPlatform) => void;
+  /** Minimum votes for a bulletin idea to surface (default: 3) */
+  bulletinVoteThreshold: number;
+  setBulletinVoteThreshold: (threshold: number) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -267,6 +270,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [defaultPlatform, setDefaultPlatform] = useState<DefaultPlatform>(() =>
     loadFromStorage('defaultPlatform', 'topstepx' as DefaultPlatform)
   );
+  const [bulletinVoteThreshold, setBulletinVoteThreshold] = useState<number>(() =>
+    loadFromStorage('bulletinVoteThreshold', 3)
+  );
 
   // Track whether initial backend fetch has completed to avoid saving back stale data
   const backendSynced = useRef(false);
@@ -297,6 +303,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.voiceEnabled !== undefined) setVoiceEnabled(remote.voiceEnabled as boolean);
         if (remote.defaultLayout) setDefaultLayout(remote.defaultLayout as DefaultLayout);
         if (remote.defaultPlatform) setDefaultPlatform(remote.defaultPlatform as DefaultPlatform);
+        if (remote.bulletinVoteThreshold !== undefined) setBulletinVoteThreshold(remote.bulletinVoteThreshold as number);
       }
       backendSynced.current = true;
     });
@@ -328,6 +335,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       voiceEnabled,
       defaultLayout,
       defaultPlatform,
+      bulletinVoteThreshold,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -338,7 +346,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (backendSynced.current) {
       saveBackendSettings(settings);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName, autoRefresh, interviewCompleted, tradingGoals, instrumentsTraded, discordUsername, tradingRoadblocks, psychAssistAutoStart, hermesEnabled, voiceEnabled, defaultLayout, defaultPlatform]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName, autoRefresh, interviewCompleted, tradingGoals, instrumentsTraded, discordUsername, tradingRoadblocks, psychAssistAutoStart, hermesEnabled, voiceEnabled, defaultLayout, defaultPlatform, bulletinVoteThreshold]);
 
   return (
     <SettingsContext.Provider
@@ -389,6 +397,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setDefaultLayout,
         defaultPlatform,
         setDefaultPlatform,
+        bulletinVoteThreshold,
+        setBulletinVoteThreshold,
       }}
     >
       {children}

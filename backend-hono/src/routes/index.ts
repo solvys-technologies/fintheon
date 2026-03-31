@@ -46,6 +46,12 @@ import { createCalibrationRoutes } from './calibration/index.js';
 import { createHarperRoutes } from './harper/index.js';
 import { createPeersRoutes } from './peers/index.js';
 import predictionsRoutes from './predictions.js';
+import { createDocumentRoutes } from './documents/index.js'
+import { createResearchRoutes } from './research/index.js';
+import { createBulletinRoutes } from './bulletin/index.js';
+import { createSkillsRoutes } from './skills/index.js';
+import { createMemoryRoutes } from './memory/index.js';
+import { createEditorRoutes } from './editor/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -145,6 +151,10 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/profile/*', authMiddleware, requireAuth);
   app.use('/api/peers', authMiddleware, requireAuth);
   app.use('/api/peers/*', authMiddleware, requireAuth);
+  app.use('/api/documents', authMiddleware, requireAuth);
+  app.use('/api/documents/*', authMiddleware, requireAuth);
+  app.use('/api/bulletin', authMiddleware, requireAuth);
+  app.use('/api/bulletin/*', authMiddleware, requireAuth);
   // Journal — public (local Electron app, no user auth needed)
 
   // Phase 1: Account routes
@@ -192,4 +202,30 @@ export function registerRoutes(app: Hono): void {
 
   // Trading journal (human psych + agent performance)
   app.route('/api/journal', createJournalRoutes());
+
+  // Documents — TipTap editor CRUD (S12-T2)
+  app.route('/api/documents', createDocumentRoutes());
+
+  // Bulletin board — peer trade ideas + voting (S12-T1)
+  app.route('/api/bulletin', createBulletinRoutes());
+
+  // Skills — Claude Computer Use trade plan generation (S13-T2)
+  app.use('/api/skills', authMiddleware, requireAuth);
+  app.use('/api/skills/*', authMiddleware, requireAuth);
+  app.route('/api/skills', createSkillsRoutes());
+
+  // Research task board — kanban-style deep-dive tracker (S12-T3)
+  app.use('/api/research', authMiddleware, requireAuth);
+  app.use('/api/research/*', authMiddleware, requireAuth);
+  app.route('/api/research', createResearchRoutes());
+
+  // Shared memory — team-level KV store + analysis history FTS (S13-T3)
+  app.use('/api/memory', authMiddleware, requireAuth);
+  app.use('/api/memory/*', authMiddleware, requireAuth);
+  app.route('/api/memory', createMemoryRoutes());
+
+  // Editor sidebar — agentic actions for document enrichment (S13-T3)
+  app.use('/api/editor', authMiddleware, requireAuth);
+  app.use('/api/editor/*', authMiddleware, requireAuth);
+  app.route('/api/editor', createEditorRoutes());
 }

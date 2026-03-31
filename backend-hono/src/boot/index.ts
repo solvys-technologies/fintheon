@@ -30,7 +30,9 @@ import { startAgentNotesCron } from '../services/riskflow/agent-notes.js';
 // import { startCommentaryScraper } from '../services/riskflow/commentary-scraper.js';
 import { startMarketImpactEnricher } from '../services/cron/market-impact-enricher.js';
 import { startCatalystPromoter } from '../services/riskflow/catalyst-promoter.js';
+import { isComputerUseAvailable } from '../services/skills/tradingview-trade-plan.js';
 import * as projectxService from '../services/projectx-service.js';
+import { startSharedMemoryCleanup } from '../services/peers/shared-memory.js';
 
 const log = createLogger('Boot');
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -183,6 +185,12 @@ export async function bootServices(): Promise<void> {
   }).catch(() => {
     log.info('Execution bridge not available (will retry on first use)');
   });
+
+  // Computer Use availability (S13-T2: TradingView trade plan skill)
+  log.info(`Computer Use: ${isComputerUseAvailable() ? 'available' : 'not configured (set ENABLE_COMPUTER_USE=true)'}`);
+
+  // Shared memory cleanup cron (30min — expires entries past TTL)
+  startSharedMemoryCleanup();
 
   log.info('All services initialized');
 }

@@ -4,6 +4,7 @@ import type { Context } from 'hono'
 import {
   deregisterPeer,
   getPeer,
+  getUserById,
   listPeers,
   registerPeer,
   sendHeartbeat,
@@ -62,6 +63,8 @@ export function createPeersRoutes(): Hono {
   })
 
   router.get('/list', async (c) => {
+    const userId = getUserId(c)
+    if (!userId) return c.json({ error: 'Authentication required' }, 401)
     const peers = await listPeers()
     return c.json({ peers, total: peers.length })
   })
@@ -174,6 +177,8 @@ export function createPeersRoutes(): Hono {
   })
 
   router.get('/:id', async (c) => {
+    const userId = getUserId(c)
+    if (!userId) return c.json({ error: 'Authentication required' }, 401)
     const id = c.req.param('id')
     const peer = await getPeer(id)
     if (!peer) return c.json({ error: 'Peer not found' }, 404)
@@ -181,10 +186,20 @@ export function createPeersRoutes(): Hono {
   })
 
   router.delete('/:id', async (c) => {
+    const userId = getUserId(c)
+    if (!userId) return c.json({ error: 'Authentication required' }, 401)
     const id = c.req.param('id')
+    const peer = await getPeer(id)
+    if (!peer) return c.json({ error: 'Peer not found' }, 404)
+    // Only the peer's owner or an admin can deregister
+    if (peer.userId !== userId) {
+      const user = await getUserById(userId)
+      if (!user || user.role !== 'admin') {
+        return c.json({ error: 'Not authorized to deregister this peer' }, 403)
+      }
+    }
     const ok = await deregisterPeer(id)
-    if (!ok) return c.json({ error: 'Peer not found' }, 404)
-    return c.json({ ok: true })
+    return c.json({ ok })
   })
 
   return router

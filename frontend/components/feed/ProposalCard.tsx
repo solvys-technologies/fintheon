@@ -1,7 +1,10 @@
+// [claude-code 2026-03-31] S13-T2: Added TradePlanCard + TradePlanStatus integration
 // [claude-code 2026-03-23] Browser Use Phase 2 — ProposalCard feed component
 import { useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, Check, X } from 'lucide-react';
 import type { ProposalData } from '../../types/feed';
+import { TradePlanCard } from '../proposals/TradePlanCard';
+import { TradePlanStatus } from '../proposals/TradePlanStatus';
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8080').replace(/\/$/, '');
 
@@ -71,6 +74,18 @@ export function ProposalCard({ proposal, timestamp }: ProposalCardProps) {
             className={`rounded border border-zinc-800 w-full ${expanded ? 'max-h-96' : 'max-h-20'} object-cover transition-all`}
           />
         </button>
+      )}
+
+      {/* Trade Plan */}
+      {proposal.tradePlan ? (
+        <TradePlanCard
+          proposalId={proposal.id}
+          instrument={proposal.ticker}
+          direction={proposal.direction}
+          tradePlan={proposal.tradePlan}
+        />
+      ) : (
+        <TradePlanStatus state="unavailable" />
       )}
 
       {/* Actions */}

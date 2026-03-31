@@ -1,7 +1,7 @@
 // [claude-code 2026-03-30] Claude Peers Sprint 1 — desk management + admin guard
 import { isDatabaseAvailable, sql } from '../../config/database.js'
 import type { ClaudePeer, Desk } from '../../types/peers.js'
-import { assignPeerDeskMemory, getUserById, listPeers } from './peer-registry.js'
+import { assignPeerDeskMemory, getUserById, listPeers, isMemoryMode } from './peer-registry.js'
 
 const memoryDesks = new Map<string, Desk>()
 
@@ -10,12 +10,12 @@ function nowIso(): string {
 }
 
 function canUseDb(): boolean {
-  return isDatabaseAvailable() && !!sql
+  return !isMemoryMode() && isDatabaseAvailable() && !!sql
 }
 
 function shouldFallback(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error)
-  return msg.includes('does not exist') || msg.includes('relation')
+  return msg.includes('does not exist') || msg.includes('relation') || msg.includes('column') || msg.includes('invalid input syntax for type uuid')
 }
 
 async function assertAdmin(userId: string): Promise<void> {

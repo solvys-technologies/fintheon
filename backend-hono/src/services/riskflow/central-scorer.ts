@@ -1,9 +1,11 @@
+// [claude-code 2026-03-31] POI priority boost — Top 3 POI = Critical (macroLevel 4), Top 8 = High (macroLevel 3)
 // [claude-code 2026-03-26] Fix currentPrice: 0 → fetch real instrument price for autoresearch observations
 // [claude-code 2026-03-24] Added reactive MiroShark adjustment loop for high-impact items (macroLevel >= 3)
 // [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
 // Gated by ENABLE_CENTRAL_SCORING=true (only TP's instance should set this)
 // Phase T4: wired recordObservation() to feed autoresearch scoring pipeline
 import { enrichFeedWithAnalysis } from './feed-service.js';
+import { DEFAULT_COMMENTATORS, type CommentatorEntry } from '../../types/commentator.js';
 import {
   readUnscoredItems,
   readScoredItems,
@@ -128,6 +130,71 @@ export function classifyRiskType(headline: string, tags: string[]): FeedItem['ri
   return bestType;
 }
 
+// ── Person of Interest Priority Boost ────────────────────────────────────────
+// Commentary is a PRIMARY market driver. Any headline mentioning a POI gets
+// boosted: Top 3 (rank 1-3) → Critical (macroLevel 4), Top 8 (rank 4-8) → High (macroLevel 3).
+// All remaining POI mentions → at least Medium (macroLevel 2).
+
+/** Pre-built alias lookup: lowercase alias → commentator entry */
+const POI_ALIAS_MAP = new Map<string, Omit<CommentatorEntry, 'id' | 'createdAt'>>();
+for (const c of DEFAULT_COMMENTATORS) {
+  if (!c.active) continue;
+  for (const alias of c.aliases) {
+    POI_ALIAS_MAP.set(alias.toLowerCase(), c);
+  }
+  POI_ALIAS_MAP.set(c.name.toLowerCase(), c);
+}
+
+/**
+ * Check if a headline mentions any Person of Interest.
+ * Returns the highest-ranked (lowest rank number) POI found, or null.
+ */
+export function matchPersonOfInterest(headline: string): Omit<CommentatorEntry, 'id' | 'createdAt'> | null {
+  const text = headline.toLowerCase();
+  let bestMatch: Omit<CommentatorEntry, 'id' | 'createdAt'> | null = null;
+
+  for (const [alias, entry] of POI_ALIAS_MAP) {
+    if (text.includes(alias)) {
+      if (!bestMatch || entry.rank < bestMatch.rank) {
+        bestMatch = entry;
+      }
+    }
+  }
+
+  return bestMatch;
+}
+
+/**
+ * Apply POI priority boost to a FeedItem's macroLevel.
+ * Top 3 (rank 1-3) → macroLevel 4 (Critical)
+ * Top 8 (rank 4-8) → macroLevel 3 (High)
+ * Any other POI    → macroLevel 2 (Medium) minimum floor
+ * Returns the matched POI name or null.
+ */
+export function applyPOIBoost(item: FeedItem): string | null {
+  const poi = matchPersonOfInterest(item.headline);
+  if (!poi) return null;
+
+  const currentLevel = item.macroLevel ?? 1;
+
+  if (poi.rank <= 3) {
+    // Top 3: Powell, Trump, Bessent → always Critical
+    item.macroLevel = 4;
+  } else if (poi.rank <= 8) {
+    // Top 8: Rubio, Lutnick, Witkoff, Greer, Navarro → at least High
+    item.macroLevel = Math.max(currentLevel, 3) as FeedItem['macroLevel'];
+  } else {
+    // Any other POI → at least Medium
+    item.macroLevel = Math.max(currentLevel, 2) as FeedItem['macroLevel'];
+  }
+
+  // Tag the item for traceability
+  if (!item.tags) item.tags = [];
+  if (!item.tags.includes('POI')) item.tags.push('POI');
+
+  return poi.name;
+}
+
 const SCORING_INTERVAL = 30_000; // 30 seconds
 const BATCH_SIZE = 20;
 const ENABLE_CENTRAL_SCORING = process.env.ENABLE_CENTRAL_SCORING === 'true';
@@ -213,6 +280,24 @@ export async function scoringCycle(): Promise<void> {
       if (!item.riskType) {
         item.riskType = classifyRiskType(item.headline, item.tags || []);
       }
+    }
+
+    // POI Priority Boost: Commentary is a primary market driver.
+    // Any headline mentioning a Person of Interest gets boosted.
+    let poiBoostedCount = 0;
+    for (const item of enrichedItems) {
+      const poiName = applyPOIBoost(item);
+      if (poiName) {
+        poiBoostedCount++;
+        log.info(` POI boost: "${item.headline.slice(0, 60)}..." → macroLevel ${item.macroLevel} (${poiName})`);
+        // Override risk type to Commentary if currently unclassified
+        if (item.riskType === 'Commentary' || !item.riskType) {
+          item.riskType = 'Commentary';
+        }
+      }
+    }
+    if (poiBoostedCount > 0) {
+      log.info(` POI-boosted ${poiBoostedCount} items`);
     }
 
     // Phase T4: Record autoresearch observations for items with IV scores

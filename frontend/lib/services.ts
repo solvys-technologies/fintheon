@@ -1117,6 +1117,36 @@ export class NarrativeService {
   async scoreBrief(briefText: string): Promise<{ scored: ScoredCandidate[]; provider: string }> {
     return this.client.post('/api/narrative/score-brief', { briefText });
   }
+
+  async getCatalysts(since?: string): Promise<{ catalysts: DbCatalyst[] }> {
+    const params = since ? `?since=${encodeURIComponent(since)}` : '';
+    return this.client.get(`/api/narrative/catalysts${params}`);
+  }
+}
+
+/** Shape returned by GET /api/narrative/catalysts — maps to CatalystCard */
+export interface DbCatalyst {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  sentiment: 'bullish' | 'bearish';
+  severity: 'high' | 'medium' | 'low';
+  source: 'riskflow';
+  narrativeIds: string[];
+  narrativeThreads: string[];
+  isGhost: boolean;
+  templateType: null;
+  position: null;
+  tags: string[];
+  category: string;
+  riskflowItemId: string;
+  marketImpact: Record<string, unknown> | null;
+  narrative: string | null;
+  status: string;
+  drillDepth: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Trade Idea types
@@ -1404,6 +1434,246 @@ export class MiroSharkService {
   }
 }
 
+// Document types (S12-T2: TipTap editor)
+export interface DocumentRecord {
+  id: string
+  title: string
+  content: Record<string, unknown>
+  authorId: string
+  deskId: string | null
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export class DocumentService {
+  constructor(private client: ApiClient) {}
+
+  async createDocument(data: { title: string; deskId?: string; tags?: string[] }): Promise<{ document: DocumentRecord }> {
+    return this.client.post('/api/documents', data);
+  }
+
+  async listDocuments(params?: { search?: string; tags?: string[]; deskId?: string; limit?: number; offset?: number }): Promise<{ documents: DocumentRecord[] }> {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.tags?.length) query.set('tags', params.tags.join(','));
+    if (params?.deskId) query.set('deskId', params.deskId);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.offset) query.set('offset', String(params.offset));
+    const qs = query.toString();
+    return this.client.get(`/api/documents${qs ? '?' + qs : ''}`);
+  }
+
+  async getDocument(id: string): Promise<{ document: DocumentRecord }> {
+    return this.client.get(`/api/documents/${id}`);
+  }
+
+  async updateDocument(id: string, data: { title?: string; content?: Record<string, unknown>; tags?: string[] }): Promise<{ document: DocumentRecord }> {
+    return this.client.put(`/api/documents/${id}`, data);
+  }
+
+  async deleteDocument(id: string): Promise<{ ok: boolean }> {
+    return this.client.delete(`/api/documents/${id}`);
+  }
+}
+
+// Research task types
+export interface ResearchTask {
+  id: string
+  title: string
+  narrative: string | null
+  assignedTo: string | null
+  assignedAgent: string | null
+  deskId: string | null
+  status: 'pending' | 'active' | 'deep-dive' | 'complete'
+  findings: Record<string, unknown> | null
+  dueDate: string | null
+  createdBy: string
+  createdAt: string
+}
+
+export interface ResearchTaskInput {
+  title: string
+  narrative?: string | null
+  assignedTo?: string | null
+  assignedAgent?: string | null
+  deskId?: string | null
+  dueDate?: string | null
+  createdBy: string
+}
+
+export class ResearchService {
+  constructor(private client: ApiClient) {}
+
+  async createTask(data: ResearchTaskInput): Promise<{ task: ResearchTask }> {
+    return this.client.post('/api/research/tasks', data);
+  }
+
+  async listTasks(params?: { deskId?: string; status?: string; assignedTo?: string }): Promise<{ tasks: ResearchTask[] }> {
+    const query = new URLSearchParams();
+    if (params?.deskId) query.set('deskId', params.deskId);
+    if (params?.status) query.set('status', params.status);
+    if (params?.assignedTo) query.set('assignedTo', params.assignedTo);
+    const qs = query.toString();
+    return this.client.get(`/api/research/tasks${qs ? '?' + qs : ''}`);
+  }
+
+  async getTask(id: string): Promise<{ task: ResearchTask }> {
+    return this.client.get(`/api/research/tasks/${id}`);
+  }
+
+  async updateTask(id: string, data: { status?: string; findings?: Record<string, unknown> }): Promise<{ task: ResearchTask }> {
+    return this.client.put(`/api/research/tasks/${id}`, data);
+  }
+
+  async assignTask(id: string, userId: string, agentName?: string): Promise<{ task: ResearchTask }> {
+    return this.client.post(`/api/research/tasks/${id}/assign`, { userId, agentName });
+  }
+
+  async deleteTask(id: string): Promise<{ ok: boolean }> {
+    return this.client.delete(`/api/research/tasks/${id}`);
+  }
+}
+
+// Bulletin Service (S12-T1)
+export class BulletinService {
+  constructor(private client: ApiClient) {}
+
+  async createPost(data: { content: string; authorAgent?: string; deskId?: string; contentParts?: unknown[]; parentId?: string }): Promise<{ post: any }> {
+    return this.client.post('/api/bulletin', data);
+  }
+
+  async listPosts(params?: { deskId?: string; limit?: number; offset?: number }): Promise<{ posts: any[] }> {
+    const query = new URLSearchParams();
+    if (params?.deskId) query.set('deskId', params.deskId);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.offset) query.set('offset', String(params.offset));
+    const qs = query.toString();
+    return this.client.get(`/api/bulletin${qs ? '?' + qs : ''}`);
+  }
+
+  async getPost(id: string): Promise<{ post: any }> {
+    return this.client.get(`/api/bulletin/${id}`);
+  }
+
+  async getPostReplies(id: string): Promise<{ replies: any[] }> {
+    return this.client.get(`/api/bulletin/${id}/replies`);
+  }
+
+  async deletePost(id: string): Promise<{ ok: boolean }> {
+    return this.client.delete(`/api/bulletin/${id}`);
+  }
+
+  async castVote(bulletinId: string, voteType: string): Promise<{ vote: any }> {
+    return this.client.post(`/api/bulletin/${bulletinId}/vote`, { voteType });
+  }
+
+  async getVotes(bulletinId: string): Promise<{ votes: any[] }> {
+    return this.client.get(`/api/bulletin/${bulletinId}/votes`);
+  }
+}
+
+// [claude-code 2026-03-31] S13-T2: Skills service — trade plan generation
+export class SkillsService {
+  constructor(private client: ApiClient) {}
+
+  async generateTradePlan(data: { instrument: string; direction: string; context?: string }): Promise<{ plan: any | null; reason?: string }> {
+    return this.client.post('/api/skills/trade-plan', data);
+  }
+
+  async enrichProposal(proposalId: string): Promise<{ proposal: any | null; reason?: string }> {
+    return this.client.post('/api/skills/trade-plan/enrich', { proposalId });
+  }
+
+  async getTradePlanStatus(): Promise<{ available: boolean; ready: boolean }> {
+    return this.client.get('/api/skills/trade-plan/status');
+  }
+}
+
+// [claude-code 2026-04-01] S13-T3: Shared memory types + service
+export interface SharedMemoryEntry {
+  id: string;
+  key: string;
+  value: Record<string, unknown>;
+  peerId: string | null;
+  agentName: string | null;
+  category: string;
+  ttlHours: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AnalysisThought {
+  id: string;
+  agent: string;
+  category: string;
+  title: string | null;
+  fullAnalysis: string;
+  briefSummary: string;
+  instruments: string[];
+  confidence: number;
+  createdAt: string;
+}
+
+export interface SidebarAction {
+  type: 'fetch-chart' | 'fetch-data' | 'summarize' | 'analyze' | 'insert-image';
+  prompt: string;
+  documentId: string;
+  result?: {
+    content?: string;
+    imageBase64?: string;
+    data?: Record<string, unknown>;
+  };
+}
+
+export class MemoryService {
+  constructor(private client: ApiClient) {}
+
+  async listShared(params?: { category?: string; search?: string }): Promise<{ entries: SharedMemoryEntry[] }> {
+    const query = new URLSearchParams();
+    if (params?.category) query.append('category', params.category);
+    if (params?.search) query.append('search', params.search);
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return this.client.get(`/api/memory/shared${suffix}`);
+  }
+
+  async getShared(key: string): Promise<{ entry: SharedMemoryEntry | null }> {
+    return this.client.get(`/api/memory/shared/${encodeURIComponent(key)}`);
+  }
+
+  async setShared(key: string, data: { value: Record<string, unknown>; category?: string; ttlHours?: number; agentName?: string }): Promise<{ entry: SharedMemoryEntry }> {
+    return this.client.put(`/api/memory/shared/${encodeURIComponent(key)}`, data);
+  }
+
+  async deleteShared(key: string): Promise<{ ok: boolean }> {
+    return this.client.delete(`/api/memory/shared/${encodeURIComponent(key)}`);
+  }
+
+  async searchAnalysis(query: string, opts?: { agent?: string; limit?: number }): Promise<{ results: AnalysisThought[] }> {
+    const params = new URLSearchParams({ q: query });
+    if (opts?.agent) params.append('agent', opts.agent);
+    if (opts?.limit) params.append('limit', String(opts.limit));
+    return this.client.get(`/api/memory/analysis/search?${params.toString()}`);
+  }
+
+  async getAgentHistory(agent: string, limit?: number): Promise<{ thoughts: AnalysisThought[] }> {
+    const suffix = limit ? `?limit=${limit}` : '';
+    return this.client.get(`/api/memory/analysis/agent/${encodeURIComponent(agent)}${suffix}`);
+  }
+}
+
+export class EditorSidebarService {
+  constructor(private client: ApiClient) {}
+
+  async executeSidebarAction(action: SidebarAction): Promise<{ action: SidebarAction }> {
+    return this.client.post('/api/editor/sidebar/action', action);
+  }
+
+  async listAvailableActions(): Promise<{ actions: string[] }> {
+    return this.client.get('/api/editor/sidebar/actions');
+  }
+}
+
 // Main Backend Client Interface
 export interface BackendClient {
   account: AccountService;
@@ -1432,6 +1702,12 @@ export interface BackendClient {
   autopilot: AutopilotService;
   miroshark: MiroSharkService;
   peers: PeersService;
+  documents: DocumentService;
+  research: ResearchService;
+  bulletin: BulletinService;
+  skills: SkillsService;
+  memory: MemoryService;
+  editorSidebar: EditorSidebarService;
 }
 
 // Create backend client from API client
@@ -1463,5 +1739,11 @@ export function createBackendClient(client: ApiClient): BackendClient {
     autopilot: new AutopilotService(client),
     miroshark: new MiroSharkService(client),
     peers: new PeersService(client),
+    documents: new DocumentService(client),
+    research: new ResearchService(client),
+    bulletin: new BulletinService(client),
+    skills: new SkillsService(client),
+    memory: new MemoryService(client),
+    editorSidebar: new EditorSidebarService(client),
   };
 }

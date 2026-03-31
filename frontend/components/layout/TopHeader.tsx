@@ -23,7 +23,7 @@ import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TradingBrowser';
 import { useDND } from '../../contexts/DNDContext';
 
-type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'performance' | 'proposals' | 'apparatus' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'performance' | 'proposals' | 'apparatus' | 'documents' | 'research' | 'memory' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   dashboard: 'Dashboard',
@@ -36,6 +36,9 @@ const TAB_LABELS: Record<NavTab, string> = {
   econ: 'Economic Calendar',
   narrative: 'NarrativeMap',
   performance: 'Performance',
+  documents: 'Documents',
+  research: 'Research',
+  memory: 'Shared Memory',
   settings: 'Settings',
 };
 
@@ -259,6 +262,7 @@ export function TopHeader({
               'vix',
               `Elevated ahead of ${w.label}`,
               'vix-spike',
+              'top-right',
             );
             break; // one toast per check
           }

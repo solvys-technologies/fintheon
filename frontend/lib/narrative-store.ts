@@ -161,6 +161,44 @@ async function fetchDbCardLinks(): Promise<NarrativeCardLink[]> {
   }
 }
 
+/**
+ * Fetch promoted catalysts from the unified scored_riskflow_items DB.
+ * Returns CatalystCard-shaped objects ready for BULK_ADD_CATALYSTS.
+ */
+async function fetchDbCatalysts(since?: string): Promise<CatalystCard[]> {
+  try {
+    const params = since ? `?since=${encodeURIComponent(since)}` : '';
+    const res = await fetch(`${API_BASE}/api/narrative/catalysts${params}`);
+    if (!res.ok) return [];
+    const { catalysts } = await res.json() as { catalysts: Array<Record<string, unknown>> };
+    return catalysts.map((c: Record<string, unknown>) => ({
+      id: String(c.id ?? ''),
+      title: String(c.title ?? ''),
+      description: String(c.description ?? ''),
+      date: String(c.date ?? new Date().toISOString()),
+      sentiment: (c.sentiment === 'bullish' ? 'bullish' : 'bearish') as CatalystCard['sentiment'],
+      severity: (['high', 'medium', 'low'].includes(c.severity as string) ? c.severity : 'medium') as CatalystCard['severity'],
+      source: 'riskflow' as const,
+      narrativeIds: Array.isArray(c.narrativeIds) ? c.narrativeIds as string[] : [],
+      narrativeThreads: Array.isArray(c.narrativeThreads) ? c.narrativeThreads as string[] : [],
+      isGhost: false,
+      templateType: null,
+      position: null,
+      tags: Array.isArray(c.tags) ? c.tags as string[] : [],
+      category: (c.category ?? 'macroeconomic') as CatalystCard['category'],
+      riskflowItemId: String(c.riskflowItemId ?? c.id ?? ''),
+      marketImpact: c.marketImpact as CatalystCard['marketImpact'],
+      narrative: (c.narrative as string) ?? null,
+      status: (c.status ?? 'active') as CatalystCard['status'],
+      drillDepth: 0,
+      createdAt: String(c.createdAt ?? new Date().toISOString()),
+      updatedAt: String(c.updatedAt ?? new Date().toISOString()),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 /** Strip `backend-` or `rf-backend-` prefix to get raw tweet_id for DB matching */
 function stripIdPrefix(id: string): string {
   return id.replace(/^(rf-)?backend-/, '');
@@ -409,28 +447,67 @@ export function useNarrativeStore() {
     };
   }, []);
 
-  // Fetch lanes + card-links from DB on mount (source of truth)
+  // Track last fetch timestamp for incremental polling
+  const lastCatalystFetchRef = useRef<string | undefined>(undefined);
+
+  // Fetch lanes + card-links + catalysts from DB on mount (source of truth)
   useEffect(() => {
     if (dbLoadedRef.current) return;
     dbLoadedRef.current = true;
 
     (async () => {
-      const [dbLanes, dbLinks] = await Promise.all([
+      const [dbLanes, dbLinks, dbCatalysts] = await Promise.all([
         fetchDbThreads(),
         fetchDbCardLinks(),
+        fetchDbCatalysts(),
       ]);
+
+      // Track latest promotedAt for incremental fetches
+      if (dbCatalysts.length > 0) {
+        lastCatalystFetchRef.current = new Date().toISOString();
+      }
 
       setState(prev => {
         // DB threads are the canonical lanes — replace any localStorage lanes
         const lanes = dbLanes.length > 0 ? dbLanes : prev.lanes;
-        // Enrich catalysts with DB card-links
-        const catalysts = enrichCatalystsWithLinks(prev.catalysts, dbLinks);
+        // Merge DB catalysts into local state (dedup by ID)
+        const existingIds = new Set(prev.catalysts.map(c => c.id));
+        const newDbCatalysts = dbCatalysts.filter(c => !existingIds.has(c.id));
+        const mergedCatalysts = [...prev.catalysts, ...newDbCatalysts];
+        // Enrich all catalysts with DB card-links
+        const catalysts = enrichCatalystsWithLinks(mergedCatalysts, dbLinks);
 
         const next = { ...prev, lanes, catalysts };
         scheduleSave(next);
         return next;
       });
     })();
+  }, [scheduleSave]);
+
+  // Auto-populate: poll for new catalysts every 60s (incremental)
+  useEffect(() => {
+    const CATALYST_POLL_MS = 60_000;
+    const interval = setInterval(async () => {
+      // Only poll when tab is visible
+      if (document.visibilityState !== 'visible') return;
+
+      const newCatalysts = await fetchDbCatalysts(lastCatalystFetchRef.current);
+      if (newCatalysts.length === 0) return;
+
+      lastCatalystFetchRef.current = new Date().toISOString();
+      console.debug(`[NarrativeStore] Auto-populated ${newCatalysts.length} new catalysts from DB`);
+
+      setState(prev => {
+        const existingIds = new Set(prev.catalysts.map(c => c.id));
+        const fresh = newCatalysts.filter(c => !existingIds.has(c.id));
+        if (fresh.length === 0) return prev;
+        const next = { ...prev, catalysts: [...prev.catalysts, ...fresh] };
+        scheduleSave(next);
+        return next;
+      });
+    }, CATALYST_POLL_MS);
+
+    return () => clearInterval(interval);
   }, [scheduleSave]);
 
   const dispatch = useCallback(

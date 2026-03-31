@@ -3,6 +3,7 @@
 // [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
 // [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowMini (same as non-iFrame Strategium)
+// [claude-code 2026-03-31] S12-T2: Added Documents tab (TipTap editor)
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X, MessageSquare, Users, Cpu, Clock } from 'lucide-react';
 import type { IVScoreResponse } from '../../types/market-data';
@@ -45,6 +46,8 @@ import { NarrativeMap } from '../narrative/NarrativeMap';
 import { PerformanceJournal } from '../journal/PerformanceJournal';
 import { ProposalWidget } from '../proposals/ProposalWidget';
 import { ApparatusMap } from '../apparatus/ApparatusMap';
+import { DocumentsView } from '../editor/DocumentsView';
+import { SharedMemoryPanel } from '../memory/SharedMemoryPanel';
 import { RefinementEngine } from '../refinement/RefinementEngine';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 // [claude-code 2026-03-16] Hermes moved from standalone page into Settings tab
@@ -58,6 +61,7 @@ import { NotificationCenter } from '../NotificationCenter';
 import { PeerCarousel } from '../peers/PeerCarousel';
 import { PeerOnboarding } from '../peers/PeerOnboarding';
 import { VoiceWidget, VoiceRoomHeaderButton, type VoiceWidgetDockTarget } from '../peers/VoiceWidget';
+import ResearchBoard from '../research/ResearchBoard';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -67,7 +71,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'documents' | 'research' | 'memory' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -225,6 +229,7 @@ function MainLayoutInner() {
       '4': 'econ',
       '6': 'scriptorium',
       '7': 'narrative',
+      '8': 'research',
     };
 
     const handler = (e: KeyboardEvent) => {
@@ -640,7 +645,7 @@ function MainLayoutInner() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = showRefinement || activeTab === 'scriptorium' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'performance' || activeTab === 'proposals' || activeTab === 'settings';
+    const hideRightPanel = showRefinement || activeTab === 'scriptorium' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'performance' || activeTab === 'proposals' || activeTab === 'documents' || activeTab === 'research' || activeTab === 'memory' || activeTab === 'settings';
     if (!hideRightPanel) {
       rightPanels.push(
         <div
@@ -854,6 +859,16 @@ function MainLayoutInner() {
                   <Scriptorium />
                 </div>
               )}
+              {!showRefinement && activeTab === 'documents' && (
+                <div key="documents" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <DocumentsView />
+                </div>
+              )}
+              {!showRefinement && activeTab === 'memory' && (
+                <div key="memory" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <SharedMemoryPanel />
+                </div>
+              )}
               {!showRefinement && activeTab === 'proposals' && (
                 <div key="proposals" data-tour-target="proposals" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ProposalWidget />
@@ -862,6 +877,11 @@ function MainLayoutInner() {
               {!showRefinement && activeTab === 'performance' && (
                 <div key="performance" data-tour-target="performance" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <PerformanceJournal />
+                </div>
+              )}
+              {!showRefinement && activeTab === 'research' && (
+                <div key="research" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <ResearchBoard />
                 </div>
               )}
               {!showRefinement && activeTab === 'settings' && (
