@@ -1,3 +1,4 @@
+// [claude-code 2026-03-30] Auto-classify unlinked catalysts via keyword matching on load
 // [claude-code 2026-03-29] S9-T5-T1: Normalize catalyst tags/narrative fields on load for rope engine
 // [claude-code 2026-03-28] NarrativeFlow localStorage CRUD + useNarrativeStore hook
 // S5-T1: Added viewport + dateFilter state and SET_VIEWPORT / SET_DATE_FILTER actions
@@ -50,18 +51,62 @@ function defaultState(): NarrativeFlowState {
   };
 }
 
+// Keyword → narrative thread mapping (mirrors narrative-seed-loader.ts THREAD_KEYWORDS)
+const THREAD_KEYWORDS: Record<string, string[]> = {
+  'middle-east-conflict': ['iran', 'israel', 'hamas', 'hezbollah', 'gaza', 'middle east', 'yemen', 'houthi', 'syria', 'lebanon', 'red sea', 'strait of hormuz'],
+  'liquidity-credit-contraction': ['credit', 'liquidity', 'spreads', 'high yield', 'default', 'leverage', 'margin', 'repo', 'funding', 'tightening', 'financial conditions', 'credit spread', 'junk bond', 'distressed'],
+  'ai-singularity': ['ai ', ' ai', 'artificial intelligence', 'nvidia', 'nvda', 'openai', 'gpu', 'semiconductor', 'chip', 'datacenter', 'data center', 'machine learning', 'llm', 'anthropic', 'deepseek'],
+  'usd-jpy-carry-trade': ['yen', 'jpy', 'boj', 'bank of japan', 'carry trade', 'usd/jpy', 'usdjpy', 'japanese', 'japan rate'],
+  'trade-war': ['tariff', 'trade war', 'import duty', 'trade deficit', 'retaliatory', 'trade barrier', 'customs duty', 'reciprocal tariff', 'trade deal', 'trade tension'],
+  'us-china-relations': ['china', 'beijing', 'chinese', 'xi jinping', 'taiwan', 'south china sea', 'us-china', 'decoupling', 'chips act'],
+  'rate-cut-cycle': ['rate cut', 'rate hike', 'fed funds', 'fomc', 'powell', 'dovish', 'hawkish', 'monetary policy', 'federal reserve', 'interest rate', 'dot plot', 'fed pivot', 'rate decision', 'basis points'],
+  'trump-presidency': ['trump', 'maga', 'executive order', 'white house', 'doge', 'elon musk', 'vivek', 'truth social', 'mar-a-lago'],
+  'price-stability': ['cpi', 'pce', 'inflation', 'deflation', 'disinflation', 'core inflation', 'ppi', 'consumer price', 'price index', 'stagflation'],
+  'maximum-employment': ['nfp', 'payroll', 'unemployment', 'jobs', 'labor market', 'jobless claims', 'employment', 'hiring', 'layoff', 'jolts', 'wage growth', 'workforce'],
+};
+
+// Tags indicating non-market noise — catalysts with ONLY banned tags get auto-purged on load
+const BANNED_TAGS = new Set(['social', 'media', 'browser', 'platform', 'spam', 'bot', 'advertisement', 'ad', 'promo', 'clickbait']);
+
+function classifyByKeywords(text: string): string[] {
+  const matched: string[] = [];
+  for (const [thread, keywords] of Object.entries(THREAD_KEYWORDS)) {
+    if (keywords.some(kw => text.includes(kw))) {
+      matched.push(thread);
+    }
+  }
+  return matched;
+}
+
+function isBannedCatalyst(c: any): boolean {
+  const tags: string[] = c.tags ?? [];
+  if (tags.length === 0) return false;
+  return tags.every((t: string) => BANNED_TAGS.has(t.toLowerCase()));
+}
+
 export function loadNarrativeState(): NarrativeFlowState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState();
     const parsed = { ...defaultState(), ...JSON.parse(raw) };
-    // Normalize catalysts — ensure tags and narrative fields exist for rope engine
-    parsed.catalysts = parsed.catalysts.map((c: any) => ({
-      ...c,
-      tags: c.tags ?? [],
-      narrative: c.narrative ?? undefined,
-      narrativeThreads: c.narrativeThreads ?? [],
-    }));
+    // Normalize catalysts — classify unlinked cards via keyword matching
+    parsed.catalysts = parsed.catalysts.map((c: any) => {
+      const tags = c.tags ?? [];
+      let narrative = c.narrative;
+      let narrativeThreads = c.narrativeThreads ?? [];
+      // Auto-classify cards that have no narrative thread assignment
+      if (!narrative && narrativeThreads.length === 0) {
+        const text = [c.title ?? '', c.description ?? '', ...tags].join(' ').toLowerCase();
+        const matched = classifyByKeywords(text);
+        if (matched.length > 0) {
+          narrative = matched[0];
+          narrativeThreads = matched;
+        }
+      }
+      return { ...c, tags, narrative, narrativeThreads };
+    });
+    // Auto-purge catalysts with only banned tags (spam/noise)
+    parsed.catalysts = parsed.catalysts.filter((c: any) => !isBannedCatalyst(c));
     return parsed;
   } catch {
     return defaultState();
