@@ -14,12 +14,14 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const ECON_TICKERS: EconCardData[] = [
   { name: 'Consumer Price Index', ticker: 'CPI' },
   { name: 'Producer Price Index', ticker: 'PPI' },
-  { name: 'Personal Income', ticker: 'PI' },
   { name: 'Gross Domestic Product', ticker: 'GDP' },
   { name: 'Purchasing Mgrs Index', ticker: 'PMI' },
   { name: 'Personal Consumption', ticker: 'PCE' },
   { name: 'Fed Rate Decision', ticker: 'FOMC' },
   { name: 'Rate Cut Expectations', ticker: 'CUTS' },
+  { name: 'New Home Sales', ticker: 'NHS' },
+  { name: 'Existing Home Sales', ticker: 'EHS' },
+  { name: 'Retail Sales', ticker: 'RETA' },
 ];
 
 function categoryInterpretation(category: string, label: string, delta: number, ivScore: number): string {

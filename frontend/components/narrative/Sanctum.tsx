@@ -206,11 +206,6 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                   </div>
                 </div>
 
-                {/* Briefing — above prediction cards, only when MiroShark data exists */}
-                {data && data.compositeIV > 0 && (
-                  <SanctumBriefing briefing={data.briefing ?? null} isLoading={false} noBorder />
-                )}
-
                 {/* KPI Row — only when data exists */}
                 {data && data.compositeIV > 0 && (
                   <div className="shrink-0 flex justify-center">
@@ -253,6 +248,11 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
                       </div>
                     </div>
                   </div>
+                )}
+
+                {/* AI Analysis Briefing — below KPIs */}
+                {data && data.compositeIV > 0 && (
+                  <SanctumBriefing briefing={data.briefing ?? null} isLoading={false} noBorder />
                 )}
 
                 {/* Prediction Cards — 5 instruments */}
