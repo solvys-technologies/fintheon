@@ -83,19 +83,9 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
   const onRunRef = useRef(onRun);
   useLayoutEffect(() => { onRunRef.current = onRun; }, [onRun]);
 
-  // Background update check on mount — triggers update if report is stale (>30min)
-  // Latest report is pre-loaded by NarrativeFlow (seeds mirosharkData on mount)
-  useEffect(() => {
-    if (running) return;
-    if (status !== 'idle' && status !== 'complete') return;
-    let cancelled = false;
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-    fetch(`${API_BASE}/api/miroshark/auto-run-check`)
-      .then(r => r.json())
-      .then(({ shouldRun }) => { if (!cancelled && shouldRun) onRunRef.current(preset); })
-      .catch(() => { /* auto-run check failed — stay idle, don't trigger simulation */ });
-    return () => { cancelled = true; };
-  }, []); // Run once on mount — intentional empty deps
+  // Auto-run check removed from mount — MiroShark is scheduled twice daily
+  // (before MDB and ADB) via backend staleness threshold (6h).
+  // Manual runs still available via the Simulate button in SanctumHeader.
 
   const handleRun = useCallback(async (p?: SanctumPreset) => {
     if (running) return;

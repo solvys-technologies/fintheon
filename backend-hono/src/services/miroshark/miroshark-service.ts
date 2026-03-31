@@ -436,7 +436,9 @@ export async function shouldAutoRun(): Promise<{ shouldRun: boolean; lastRunAt: 
 
   const lastRunAt = data[0].created_at;
   const staleness = (Date.now() - new Date(lastRunAt).getTime()) / (60 * 60 * 1000); // hours
-  return { shouldRun: staleness > 0.5, lastRunAt, staleness };
+  // Only auto-run twice daily (before MDB ~6:30AM and ADB ~10:45AM)
+  // 6-hour threshold prevents re-triggers from Aquarium tab opens
+  return { shouldRun: staleness > 6, lastRunAt, staleness };
 }
 
 function emptyAggregation(days: number): AggregatedRollingData {
