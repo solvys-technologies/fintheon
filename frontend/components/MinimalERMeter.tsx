@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { Diff, TrendingDown } from 'lucide-react';
 
 interface MinimalERMeterProps {
   resonance: number;
@@ -42,7 +42,7 @@ export function MinimalERMeter({ resonance, pnl, algoEnabled }: MinimalERMeterPr
         
         <div className="flex flex-col items-center gap-0.5">
           {pnl >= 0 ? (
-            <TrendingUp className="w-3 h-3 text-emerald-400" />
+            <Diff className="w-3 h-3 text-emerald-400" />
           ) : (
             <TrendingDown className="w-3 h-3 text-red-500" />
           )}

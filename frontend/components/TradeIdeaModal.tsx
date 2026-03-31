@@ -2,7 +2,7 @@
 // [claude-code 2026-03-24] Enhanced with expected print analysis, consensus/contrarian trade views, act/pass recommendation
 
 import React from 'react';
-import { X, TrendingUp, TrendingDown, ArrowRightLeft, Target, Shield, AlertTriangle } from 'lucide-react';
+import { X, Diff, TrendingDown, ArrowRightLeft, Target, Shield, AlertTriangle } from 'lucide-react';
 import type { TradeIdeaDetail } from '../lib/riskflow-feed';
 
 function formatPrice(n: number): string {
@@ -62,7 +62,7 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
                 isShort ? 'border-zinc-600/40 text-zinc-400' :
                 'border-zinc-700/40 text-zinc-600'
               }`}>
-                {isShort ? <TrendingDown className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
+                {isShort ? <TrendingDown className="w-4 h-4" /> : <Diff className="w-4 h-4" />}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">

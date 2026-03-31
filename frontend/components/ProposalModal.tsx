@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, TrendingUp, TrendingDown, AlertTriangle, Shield, Zap } from "lucide-react";
+import { X, Diff, TrendingDown, AlertTriangle, Shield, Zap } from "lucide-react";
 
 export interface TradingProposal {
   id: string;
@@ -121,7 +121,7 @@ export function ProposalModal({ proposal, onClose, onApprove, onReject }: Propos
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {isLong ? (
-                  <TrendingUp className="w-8 h-8" style={{ color: 'var(--fintheon-bullish)' }} />
+                  <Diff className="w-8 h-8" style={{ color: 'var(--fintheon-bullish)' }} />
                 ) : isShort ? (
                   <TrendingDown className="w-8 h-8" style={{ color: 'var(--fintheon-bearish)' }} />
                 ) : (

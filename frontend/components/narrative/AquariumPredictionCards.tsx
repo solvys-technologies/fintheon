@@ -1,6 +1,6 @@
 // [claude-code 2026-03-28] S7: 5 forward-looking prediction cards under TradingView in Aquarium
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
+import { Diff, TrendingDown, Minus, Loader2 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -16,7 +16,7 @@ interface InstrumentOutlook {
 }
 
 const LEAN_CONFIG = {
-  bullish: { icon: TrendingUp, color: 'var(--fintheon-bullish)', label: 'Bullish' },
+  bullish: { icon: Diff, color: 'var(--fintheon-bullish)', label: 'Bullish' },
   bearish: { icon: TrendingDown, color: 'var(--fintheon-bearish)', label: 'Bearish' },
   neutral: { icon: Minus, color: 'var(--fintheon-muted)', label: 'Neutral' },
 };

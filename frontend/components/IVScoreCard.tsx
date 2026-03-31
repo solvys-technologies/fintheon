@@ -2,7 +2,7 @@
 // [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
 // [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
 // [claude-code 2026-03-20] S3:T4a: createPortal to document.body for popup — escapes parent stacking context, position:fixed with viewport clamping
-import { Info, TrendingUp } from 'lucide-react';
+import { Info, Diff } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { IVScoreResponse } from '../types/market-data';
@@ -143,7 +143,7 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
         {pts && (
           <>
             <span className="text-gray-600 text-[10px]">|</span>
-            <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
+            <Diff className="w-3 h-3 text-[var(--fintheon-accent)]" />
             <span className="text-[10px] text-[var(--fintheon-accent)] font-medium">
               ±{pts.scaledPoints} pts
             </span>
@@ -269,7 +269,7 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
           {data.prediction && (
             <div className="mb-3 space-y-1.5">
               <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
+                <Diff className="w-3 h-3 text-[var(--fintheon-accent)]" />
                 <h5 className="text-xs font-semibold text-[var(--fintheon-accent)]">Next Session Forecast</h5>
                 <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-gray-500 ml-auto">
                   {data.prediction.source === 'miroshark' ? 'MiroShark' : 'Heuristic'}

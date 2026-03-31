@@ -1,11 +1,11 @@
 // [claude-code 2026-03-20] S3:T10d — Notification Center dropdown: queued notifications, timestamps, clear all
 import { useEffect, useRef } from 'react';
-import { X, Bell, BellOff, Trash2, TrendingUp, Newspaper, AlertTriangle, Server, ShieldAlert } from 'lucide-react';
+import { X, Bell, BellOff, Trash2, Diff, Newspaper, AlertTriangle, Server, ShieldAlert } from 'lucide-react';
 import { useDND, type QueuedNotification } from '../contexts/DNDContext';
 
 function notificationIcon(type: QueuedNotification['type']) {
   switch (type) {
-    case 'iv': return <TrendingUp className="w-3.5 h-3.5" style={{ color: 'var(--fintheon-accent)' }} />;
+    case 'iv': return <Diff className="w-3.5 h-3.5" style={{ color: 'var(--fintheon-accent)' }} />;
     case 'news': return <Newspaper className="w-3.5 h-3.5" style={{ color: 'var(--fintheon-accent)' }} />;
     case 'tilt': return <AlertTriangle className="w-3.5 h-3.5" style={{ color: '#f97316' }} />;
     case 'trade': return <ShieldAlert className="w-3.5 h-3.5" style={{ color: '#3b82f6' }} />;

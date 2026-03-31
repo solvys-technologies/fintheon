@@ -1,14 +1,14 @@
 // [claude-code 2026-03-06] Mission Control mini-screener for active/upcoming trading regimes
 // [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish, 12H NY time
 import { useState, useEffect } from 'react';
-import { Clock, TrendingUp, TrendingDown, RotateCcw, Activity } from 'lucide-react';
+import { Clock, Diff, TrendingDown, RotateCcw, Activity } from 'lucide-react';
 import { useRegimes } from '../../lib/regime-store';
 import { isRegimeActive, getTimeRemaining, getCurrentETTime, getUpcomingRegimes } from '../../lib/regime-time';
 import type { TradingRegime } from '../../lib/regimes';
 
 function BiasBadge({ bias }: { bias: TradingRegime['bias'] }) {
   const config = {
-    long: { label: 'LONG', color: 'text-emerald-400', icon: TrendingUp },
+    long: { label: 'LONG', color: 'text-emerald-400', icon: Diff },
     short: { label: 'SHORT', color: 'text-red-400', icon: TrendingDown },
     fade: { label: 'FADE', color: 'text-orange-400', icon: RotateCcw },
     neutral: { label: 'NTRL', color: 'text-gray-400', icon: Activity },
@@ -80,7 +80,7 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1 text-[9px]">
                 <span className="text-[7px] text-zinc-600 uppercase">ORB</span>
-                <TrendingUp className="w-2 h-2 text-emerald-400" />
+                <Diff className="w-2 h-2 text-emerald-400" />
                 <span className="text-emerald-400">{r.record.bullishDays}</span>
                 <span className="text-zinc-700">/</span>
                 <span className="text-red-400">{r.record.bearishDays}</span>

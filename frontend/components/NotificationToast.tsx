@@ -1,6 +1,6 @@
 // [claude-code 2026-03-20] S3:T5 — NotificationToast: bottom-left, theme colors, Don't Show Again
 // [claude-code 2026-03-28] S8-T6: Refactored to RiskFlow card style — frosted glass, severity badges, bullish/bearish footer
-import { X, TrendingUp, TrendingDown, Newspaper, AlertTriangle, BellOff, Zap } from 'lucide-react';
+import { X, Diff, TrendingDown, Newspaper, AlertTriangle, BellOff, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { playAlertSound, playIOSPing, AlertType } from '../utils/soundAlerts';
 import { useSettings } from '../contexts/SettingsContext';

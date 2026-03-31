@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { Diff, TrendingDown } from 'lucide-react';
 
 interface SessionCardProps {
   date: string;
@@ -33,7 +33,7 @@ export function SessionCard({ date, pnl, resonanceState, onClick, isActive }: Se
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
           {pnl >= 0 ? (
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <Diff className="w-4 h-4 text-emerald-400" />
           ) : (
             <TrendingDown className="w-4 h-4 text-red-500" />
           )}

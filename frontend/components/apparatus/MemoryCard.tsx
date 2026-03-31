@@ -1,14 +1,14 @@
 // [claude-code 2026-03-22] Theme-consistent styling — CSS vars, no hardcoded hex
 // [claude-code 2026-03-20] Memory card — intelligence fact card for agent briefing grid
 import { useState } from 'react';
-import { Twitter, Database, BarChart3, TrendingUp, MessageSquare, Pencil, History } from 'lucide-react';
+import { Twitter, Database, BarChart3, Diff, MessageSquare, Pencil, History } from 'lucide-react';
 import type { AgentMemory, MemorySource } from './types';
 
 const SOURCE_ICONS: Record<MemorySource, typeof Twitter> = {
   twitter: Twitter,
   data: Database,
   miroshark: BarChart3,
-  trade: TrendingUp,
+  trade: Diff,
   boardroom: MessageSquare,
   manual: Pencil,
 };

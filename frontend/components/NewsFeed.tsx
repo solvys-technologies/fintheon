@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useBackend } from "../lib/backend";
 import { useSettings } from "../contexts/SettingsContext";
 import type { RiskFlowItem } from "../types/api";
-import { TrendingUp, AlertTriangle, Info } from "lucide-react";
+import { Diff, AlertTriangle, Info } from "lucide-react";
 import { Button } from "./ui/Button";
 import { useRiskFlow } from "../hooks/useRiskFlow";
 
@@ -80,7 +80,7 @@ export default function NewsFeed() {
       case "high":
         return <AlertTriangle className="w-4 h-4 text-[#FF4040]" />;
       case "medium":
-        return <TrendingUp className="w-4 h-4 text-[var(--fintheon-accent)]" />;
+        return <Diff className="w-4 h-4 text-[var(--fintheon-accent)]" />;
       default:
         return <Info className="w-4 h-4 text-zinc-500" />;
     }

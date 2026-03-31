@@ -1,6 +1,6 @@
 // [claude-code 2026-03-11] Track 7B: Upgraded ER Monitor — escalating interventions (visual ER<-1, voice ER<-3, lockout ER<-5), VAD indicator
 import { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, AlertTriangle, TrendingUp, ShieldAlert, Lock, Volume2 } from 'lucide-react';
+import { Mic, MicOff, AlertTriangle, Diff, ShieldAlert, Lock, Volume2 } from 'lucide-react';
 import { WaveformCanvas } from './WaveformCanvas';
 import { Button } from '../ui/Button';
 import { StopMonitoringModal } from './StopMonitoringModal';
@@ -302,7 +302,7 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
 
         {overtradingStatus?.isOvertrading && (
           <div className="flex items-center gap-1.5 text-[10px] text-orange-500 bg-orange-500/10 border border-orange-500/20 rounded p-1.5">
-            <TrendingUp className="w-3 h-3" />
+            <Diff className="w-3 h-3" />
             <span>Overtrading: {overtradingStatus.tradesInWindow} trades in 15min</span>
           </div>
         )}

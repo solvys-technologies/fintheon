@@ -1,7 +1,7 @@
 // [claude-code 2026-03-05] Phase 3B: RiskFlow mini widget for Mission Control deck
 // [claude-code 2026-03-10] T3: critical severity dot (orange)
 import { useState } from 'react';
-import { Zap, ChevronDown, ChevronUp, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+import { Zap, ChevronDown, ChevronUp, ExternalLink, Diff, TrendingDown } from 'lucide-react';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
 import type { TradeIdeaDetail } from '../../lib/riskflow-feed';
@@ -73,7 +73,7 @@ export function RiskFlowMiniWidget() {
                     {/* Severity dot or direction icon */}
                     {isTradeIdea ? (
                       alert.tradeIdea!.direction === 'long'
-                        ? <TrendingUp className="w-2.5 h-2.5 text-[var(--fintheon-accent)] shrink-0" />
+                        ? <Diff className="w-2.5 h-2.5 text-[var(--fintheon-accent)] shrink-0" />
                         : <TrendingDown className="w-2.5 h-2.5 text-zinc-400 shrink-0" />
                     ) : (
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-13] T2: Past proposals with WIN/LOSS/PENDING pills, real KPI data
 import { useState, useEffect, useMemo } from 'react';
-import { Bot, Target, TrendingUp, BarChart3, ChevronDown, ChevronUp, History } from 'lucide-react';
+import { Bot, Target, Diff, BarChart3, ChevronDown, ChevronUp, History } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 import type { JournalEntryItem, JournalSummaryResponse, AgentPerformanceResponse } from '../../lib/services';
 
@@ -156,7 +156,7 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
       {predictions && predictions.total > 0 && (
         <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/10 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+            <Diff className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
             <span className="text-xs font-semibold text-[var(--fintheon-text)]">Prediction Markets</span>
           </div>
           <div className="grid grid-cols-4 gap-2 text-[10px]">

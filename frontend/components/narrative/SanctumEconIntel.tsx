@@ -5,7 +5,7 @@
 // [claude-code 2026-03-27] Econ Intel — historical prints, scoring breakdown, MiroShark-ready aggregation
 // [claude-code 2026-03-24] Econ Intel — 2-col grid, expandable cards with countdown + history + risk category sub-cards
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { TrendingUp, TrendingDown, Minus, CalendarClock, ChevronDown, Activity, BarChart3 } from 'lucide-react';
+import { Diff, TrendingDown, Minus, CalendarClock, ChevronDown, Activity, BarChart3 } from 'lucide-react';
 import type { EconCardData, EconHistoryPrint, EconScoredItem, SimulationContext, MiroSharkCategoryScore } from '../../types/miroshark';
 import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/miroshark';
 
@@ -46,7 +46,7 @@ function categoryInterpretation(category: string, label: string, delta: number, 
 }
 
 const DIRECTION_CONFIG = {
-  beat: { icon: TrendingUp, color: 'var(--fintheon-low)', label: 'BEAT' },
+  beat: { icon: Diff, color: 'var(--fintheon-low)', label: 'BEAT' },
   miss: { icon: TrendingDown, color: 'var(--fintheon-severe)', label: 'MISS' },
   inline: { icon: Minus, color: 'var(--fintheon-neutral-severe)', label: 'INLINE' },
 } as const;

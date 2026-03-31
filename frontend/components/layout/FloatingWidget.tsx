@@ -7,7 +7,7 @@ import { EmotionalResonanceMonitor } from '../mission-control/EmotionalResonance
 import { useBackend } from '../../lib/backend';
 import type { RiskFlowItem } from '../../types/api';
 import type { IVScoreResponse } from '../../types/market-data';
-import { X, Trash2, TrendingUp } from 'lucide-react';
+import { X, Trash2, Diff } from 'lucide-react';
 
 function XLogo({ className }: { className?: string }) {
   return (
@@ -274,7 +274,7 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
                   <div className="flex items-center gap-2 mt-1">
                     {newsItem.ivScore != null && typeof newsItem.ivScore === 'number' && newsItem.ivScore > 0 && (
                       <div className="flex items-center gap-1 text-[10px]">
-                        <TrendingUp className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
+                        <Diff className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
                         <span className="text-[var(--fintheon-accent)] font-medium drop-shadow-sm">
                           ±{newsItem.ivScore.toFixed(0)} pts
                         </span>
