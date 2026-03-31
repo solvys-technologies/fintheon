@@ -29,7 +29,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({ onClick,
           transparent 100%
         );
         background-size: 200% 100%;
-        animation: heat-shimmer-sweep 3s ease-in-out infinite;
+        animation: heat-shimmer-sweep 4.8s ease-in-out infinite;
       }
     `}</style>
     <button

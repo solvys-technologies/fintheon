@@ -1,4 +1,4 @@
-// [claude-code 2026-03-31] Login screen — hero-bg-3 background, logo+title inline, aligned modal, frosted text window
+// [claude-code 2026-03-31] Login screen — hero-bg-2, top-aligned layout, frosted branding window
 import React from 'react';
 import { TimeQuote } from './TimeQuote';
 import { GoogleSignInButton } from './GoogleSignInButton';
@@ -11,18 +11,19 @@ type AuthShellProps = {
 export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = false }) => (
   <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-white selection:bg-yellow-500/30">
 
-    {/* Hero background — halftone illustration, full bleed */}
+    {/* Hero background — bull vs bear halftone (relative path for Electron) */}
     <div
       className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-[0.12]"
-      style={{ backgroundImage: "url('/halftone-heroes/hero-bg-2.png')" }}
+      style={{ backgroundImage: "url('./halftone-heroes/hero-bg-2.png')" }}
     />
     {/* Gradient overlay — darkens left for text readability */}
     <div className="absolute inset-0 z-[1] bg-gradient-to-r from-[#050402]/95 via-[#050402]/70 to-[#050402]/40" />
 
-    <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 md:flex-row md:items-center md:px-0">
-      {/* Left — Branding column (60%), vertically centered, horizontally aligned with login card */}
-      <div className="flex w-full flex-col items-center justify-center gap-6 py-16 md:w-[55%] md:items-start md:py-0 md:pl-[10%]">
-        {/* Frosted glass window around branding text */}
+    {/* Both columns use items-start with same top padding so boxes are horizontally aligned */}
+    <main className="relative z-10 flex min-h-screen flex-col items-center px-6 pt-[30vh] md:flex-row md:items-start md:px-0">
+      {/* Left — Branding (55%) */}
+      <div className="flex w-full flex-col items-center md:w-[55%] md:items-start md:pl-[10%]">
+        {/* Frosted glass window */}
         <div className="rounded-xl border border-[#c79f4a]/10 bg-[#050402]/60 px-8 py-8 backdrop-blur-sm">
           {/* Logo + Title inline */}
           <div className="flex items-center gap-4">
@@ -38,7 +39,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = fals
               FINTHEON
             </h1>
           </div>
-          {/* Subtitle — left-aligned with title text (offset by logo width + gap) */}
+          {/* Subtitle — aligned with title (offset by logo + gap = 56px ≈ pl-14) */}
           <p
             className="mt-3 pl-14 text-xs tracking-[0.3em] text-[#f0ead6]/60"
             style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
@@ -52,8 +53,8 @@ export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = fals
         </div>
       </div>
 
-      {/* Right — Login card (45%), vertically centered to align with branding */}
-      <div className="flex w-full flex-col items-center justify-center py-12 md:w-[45%] md:py-0 md:pr-[8%]">
+      {/* Right — Login card (45%), top-aligned with branding box */}
+      <div className="flex w-full flex-col items-center py-12 md:w-[45%] md:py-0 md:pr-[8%]">
         <div className="w-full max-w-sm rounded-2xl border border-[#c79f4a]/15 bg-[#0a0906]/90 px-8 py-10 shadow-[0_25px_55px_rgba(0,0,0,0.65)] backdrop-blur-lg">
           <p
             className="mb-8 text-center text-xs font-semibold uppercase tracking-[0.4em] text-[#c79f4a]/70"

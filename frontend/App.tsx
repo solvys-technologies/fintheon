@@ -135,12 +135,6 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
       className="flex min-h-screen items-center justify-center bg-[#050402] transition-opacity duration-500"
       style={{ opacity: fadeOut ? 0 : 1 }}
     >
-      <style>{`
-        @keyframes fuse-glow {
-          0%, 100% { box-shadow: 0 0 4px rgba(199, 159, 74, 0.3); }
-          50% { box-shadow: 0 0 10px rgba(199, 159, 74, 0.6); }
-        }
-      `}</style>
       <div className="flex flex-col items-center gap-6">
         <img
           src="./logo.png"
@@ -160,21 +154,17 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
         </p>
 
         {/* Fuse bar — fills left to right as steps complete */}
-        <div className="relative w-48 h-1 rounded-full bg-[#c79f4a]/10 overflow-hidden">
+        <div className="relative w-48 h-[2px] rounded-full bg-[#c79f4a]/10">
           <div
-            className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
-            style={{
-              width: `${fuseProgress * 100}%`,
-              backgroundColor: 'rgba(199, 159, 74, 0.5)',
-              animation: 'fuse-glow 1.5s ease-in-out infinite',
-            }}
+            className="absolute inset-y-0 left-0 rounded-full bg-[#c79f4a]/50 transition-all duration-700 ease-out"
+            style={{ width: `${fuseProgress * 100}%` }}
           />
-          {/* Bright tip of the fuse */}
+          {/* Bright tip */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-[#c79f4a] transition-all duration-700 ease-out"
+            className="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-[#c79f4a] transition-all duration-700 ease-out"
             style={{
-              left: `calc(${fuseProgress * 100}% - 4px)`,
-              boxShadow: '0 0 8px rgba(199, 159, 74, 0.8), 0 0 16px rgba(199, 159, 74, 0.4)',
+              left: `calc(${fuseProgress * 100}% - 3px)`,
+              boxShadow: '0 0 6px rgba(199, 159, 74, 0.7)',
             }}
           />
         </div>
