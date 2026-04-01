@@ -1,5 +1,6 @@
 // [claude-code 2026-04-01] Renders <AudioTrack> for each remote mic — no visible UI
-import { useTracks, AudioTrack } from '@livekit/components-react';
+import { useTracks, AudioTrack, isTrackReference } from '@livekit/components-react';
+import type { TrackReference } from '@livekit/components-core';
 import { Track } from 'livekit-client';
 
 export function VoiceAudioRenderer() {
@@ -8,16 +9,18 @@ export function VoiceAudioRenderer() {
     { onlySubscribed: true },
   );
 
+  const remoteTracks: TrackReference[] = tracks.filter(
+    (ref): ref is TrackReference => isTrackReference(ref) && !ref.participant.isLocal,
+  );
+
   return (
     <>
-      {tracks
-        .filter((ref) => ref.publication && !ref.participant.isLocal)
-        .map((ref) => (
-          <AudioTrack
-            key={`${ref.participant.identity}-mic`}
-            trackRef={ref}
-          />
-        ))}
+      {remoteTracks.map((ref) => (
+        <AudioTrack
+          key={`${ref.participant.identity}-mic`}
+          trackRef={ref}
+        />
+      ))}
     </>
   );
 }
