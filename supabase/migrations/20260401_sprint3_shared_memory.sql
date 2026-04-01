@@ -18,4 +18,4 @@ CREATE INDEX IF NOT EXISTS idx_shared_memory_category ON peer_shared_memory(cate
 
 -- FTS index on thought bank for cross-agent analysis search
 CREATE INDEX IF NOT EXISTS idx_thought_bank_fts ON agent_thought_bank
-  USING gin(to_tsvector('english', COALESCE(full_analysis, '') || ' ' || COALESCE(brief_summary, '')));
+  USING gin(to_tsvector('english', COALESCE(content, '')));

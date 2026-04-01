@@ -29,7 +29,8 @@ import { isSupabaseConfigured } from '../../config/supabase.js';
 import { scoredToFeedItem } from './central-scorer.js';
 
 const log = createLogger('RiskFlow');
-const MAX_FEED_ITEMS = 100;
+// [claude-code 2026-04-01] Bumped from 100 → 500. All scored items should be accessible.
+const MAX_FEED_ITEMS = 500;
 const isDev = process.env.NODE_ENV !== 'production';
 const ALLOW_MOCK_FALLBACK = process.env.RISKFLOW_ALLOW_MOCK_FALLBACK === 'true';
 
@@ -255,12 +256,47 @@ function applyFilters(items: FeedItem[], filters: FeedFilters): FeedItem[] {
     filtered = filtered.filter(item => (item.ivScore ?? 0) >= filters.minIvScore!);
   }
 
-  // Filter by macro level (1-4 scale) - default to 3+ for high importance
+  // Filter by macro level (1-4 scale)
   if (filters.minMacroLevel !== undefined) {
     filtered = filtered.filter(item => (item.macroLevel ?? 1) >= filters.minMacroLevel!);
   }
 
+  // [claude-code 2026-04-01] Strip foreign economic DATA prints (CPI, PPI, GDP, PMI, etc.)
+  // Keep foreign commentary, geopolitical, rate decisions, and persons of interest.
+  filtered = filtered.filter(item => !isForeignEconPrint(item.headline));
+
   return filtered;
+}
+
+// Foreign country prefixes that appear before econ data keywords
+const FOREIGN_PREFIXES = [
+  'french', 'france', 'german', 'euro area', 'eurozone', 'japanese',
+  'japan', 'chinese', 'china', 'british', 'uk ', 'canadian', 'canada',
+  'swiss', 'australian', 'australia', 'brazilian', 'brazil', 'indian',
+  'india', 'mexican', 'mexico', 'spanish', 'spain', 'italian', 'italy',
+  'swedish', 'sweden', 'norwegian', 'norway', 'korean', 'korea',
+  'turkish', 'new zealand', 'south african',
+];
+
+// Econ data keywords — if headline has FOREIGN_PREFIX + one of these, it's foreign econ data
+const ECON_DATA_KEYWORDS = [
+  'cpi', 'ppi', 'gdp', 'pmi', 'hicp', 'employment', 'unemployment',
+  'retail sales', 'trade balance', 'current account', 'industrial production',
+  'consumer confidence', 'business confidence', 'housing', 'home sales',
+  'inflation', 'deflation', 'wage', 'payroll', 'manufacturing',
+  'services pmi', 'composite pmi', 'factory orders', 'construction',
+  'actual', 'forecast', 'previous', 'revised',
+  'foreign bond investment', 'foreign investment',
+  'service ppi', 'public deficit',
+];
+
+function isForeignEconPrint(headline: string): boolean {
+  const lower = headline.toLowerCase();
+  // Must match a foreign prefix AND an econ data keyword
+  const hasForeignPrefix = FOREIGN_PREFIXES.some(p => lower.includes(p));
+  if (!hasForeignPrefix) return false;
+  const hasEconKeyword = ECON_DATA_KEYWORDS.some(k => lower.includes(k));
+  return hasEconKeyword;
 }
 
 /**
@@ -527,75 +563,31 @@ export async function rescoreInMemoryFeed(): Promise<number> {
 }
 
 /**
- * Get feed with user watchlist applied
- * Default: Only returns macroLevel 3+ (high importance headlines)
- * If no items found with minMacroLevel 3+, falls back to all items (for initial load)
+ * Get feed with user watchlist applied.
+ * [claude-code 2026-04-01] UNIFIED FEED: No macroLevel filtering by default.
+ * ALL scored items show in RiskFlow. Frontend controls display priority via severity badges.
+ * macroLevel filter only applies if explicitly requested by the caller.
  */
 export async function getFeed(userId: string, filters?: FeedFilters): Promise<FeedResponse> {
   try {
-    log.info('getFeed called', { userId, filters });
-    
     const allItems = await getCachedFeed();
-    log.info(` getFeed: ${allItems.length} total items from cache`);
-    
+
     if (allItems.length === 0) {
-      log.error(` getCachedFeed returned 0 items - this is the root cause!`);
-      log.error(` Check: database connection, fetchFreshFeed function`);
+      log.warn('getCachedFeed returned 0 items — check DB connection');
     }
-    
+
     const watchlist = getWatchlist(userId);
-    log.info('Watchlist loaded', { userId, watchlist: JSON.stringify(watchlist) });
 
     // Apply watchlist filtering
     let items = allItems.filter(item => matchesWatchlist(watchlist, item));
-    log.info(` After watchlist filter: ${items.length} items`);
-    
-    if (items.length === 0 && allItems.length > 0) {
-      log.warn(` Watchlist filtered out all ${allItems.length} items!`);
-      log.warn('Watchlist config', { watchlist: JSON.stringify(watchlist) });
-      log.warn('Sample item', { item: JSON.stringify(allItems[0]) });
-    }
 
-  // Default to macroLevel 2+ (medium importance and above)
-  const effectiveFilters: FeedFilters = {
-    minMacroLevel: 2 as MacroLevel,
-    ...filters,
-  };
+  // No default macroLevel gate — show everything unless caller explicitly filters
+  const effectiveFilters: FeedFilters = { ...filters };
 
-  // Apply filters (including macroLevel)
+  // Apply filters (macroLevel only if caller set it)
   items = applyFilters(items, effectiveFilters);
-  log.info(` After filters (minMacroLevel: ${effectiveFilters.minMacroLevel}): ${items.length} items`);
 
-  // If no items with minMacroLevel 2+, fall back to all items (for initial load)
-  // This ensures users see something even if database only has low-level items
-  if (items.length === 0 && effectiveFilters.minMacroLevel === 2 && !filters?.minMacroLevel) {
-    log.info(` No level 3+ items found, falling back to all items (level 1+)`);
-    const fallbackItems = allItems.filter(item => matchesWatchlist(watchlist, item));
-    const fallbackFilters = { ...effectiveFilters, minMacroLevel: 1 as MacroLevel };
-    items = applyFilters(fallbackItems, fallbackFilters);
-    log.info(` Fallback items after level 1+ filter: ${items.length}`);
-    
-    // If still no items, try without any macro level filter at all
-    if (items.length === 0) {
-      log.info(` Still no items, trying without macro level filter`);
-      items = fallbackItems.filter(item => {
-        // Only apply non-macro filters
-        if (effectiveFilters.sources?.length && !effectiveFilters.sources.includes(item.source)) return false;
-        if (effectiveFilters.symbols?.length) {
-          const symbolSet = new Set(effectiveFilters.symbols.map(s => s.toUpperCase()));
-          if (!item.symbols.some(s => symbolSet.has(s.toUpperCase()))) return false;
-        }
-        if (effectiveFilters.tags?.length) {
-          const tagSet = new Set(effectiveFilters.tags.map(t => t.toUpperCase()));
-          if (!item.tags.some(t => tagSet.has(t.toUpperCase()))) return false;
-        }
-        if (effectiveFilters.breakingOnly && !item.isBreaking) return false;
-        if (effectiveFilters.minIvScore !== undefined && (item.ivScore ?? 0) < effectiveFilters.minIvScore) return false;
-        return true;
-      });
-      log.info(` Items without macro level filter: ${items.length}`);
-    }
-  }
+  // No fallback needed — unified feed shows everything
 
   // Sort by macro level (highest first), then by published date
   items.sort((a, b) => {

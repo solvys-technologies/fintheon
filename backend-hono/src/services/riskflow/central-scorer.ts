@@ -260,10 +260,14 @@ export async function scoringCycle(): Promise<void> {
   try {
     const unscoredItems = await readUnscoredItems(BATCH_SIZE);
     if (unscoredItems.length === 0) {
+      // Log periodically so stalled scoring is never invisible
+      if (Date.now() % 300_000 < SCORING_INTERVAL) {
+        log.info('Scoring cycle: 0 unscored items (pipeline healthy)');
+      }
       return;
     }
 
-    log.info(` Processing ${unscoredItems.length} unscored items`);
+    log.info(`Processing ${unscoredItems.length} unscored items`);
 
     // Build a map of tweet_id → raw Supabase id for linking
     const rawIdMap = new Map<string, string>();

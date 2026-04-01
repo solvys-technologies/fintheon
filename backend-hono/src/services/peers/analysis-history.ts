@@ -37,11 +37,11 @@ export async function searchAnalysisHistory(
   const result = await sql`
     SELECT *,
       ts_rank(
-        to_tsvector('english', COALESCE(full_analysis, '') || ' ' || COALESCE(brief_summary, '')),
+        to_tsvector('english', COALESCE(content, '')),
         to_tsquery('english', ${tsQuery})
       ) AS rank
     FROM agent_thought_bank
-    WHERE to_tsvector('english', COALESCE(full_analysis, '') || ' ' || COALESCE(brief_summary, ''))
+    WHERE to_tsvector('english', COALESCE(content, ''))
       @@ to_tsquery('english', ${tsQuery})
       AND (${opts?.agent ?? null}::text IS NULL OR agent = ${opts?.agent ?? ''})
       AND (${opts?.since ?? null}::timestamptz IS NULL OR created_at >= ${opts?.since ?? '1970-01-01'}::timestamptz)

@@ -15,6 +15,7 @@ import { MinimalTapeWidget } from '../feed/MinimalTapeWidget';
 import { RiskFlowMain } from '../feed/RiskFlowMain';
 import { ConsiliumHub } from '../consilium/ConsiliumHub';
 import { TradingBrowser, type TradingPlatform } from '../TradingBrowser';
+import { TimelineOverlay, TimelineToggleButton } from './TimelineOverlay';
 import { FloatingWidget } from './FloatingWidget';
 import { PanelPosition } from './DraggablePanel';
 import { useBackend } from '../../lib/backend';
@@ -107,6 +108,7 @@ function MainLayoutInner() {
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showRefinement, setShowRefinement] = useState(false);
+  const [timelineOverlayOpen, setTimelineOverlayOpen] = useState(false);
   const refinementEnabled = typeof window !== 'undefined' &&
     localStorage.getItem('fintheon-refinement-enabled') === 'true';
   const [missionControlCollapsed, setMissionControlCollapsedRaw] = useState(false);
@@ -797,6 +799,12 @@ function MainLayoutInner() {
 
         {/* Center Content - TopStepX or Main Content with crossfade */}
         <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
+          {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
+          <TimelineOverlay open={timelineOverlayOpen} onClose={() => setTimelineOverlayOpen(false)} />
+          {topStepXEnabled && !timelineOverlayOpen && (
+            <TimelineToggleButton onClick={() => setTimelineOverlayOpen(true)} />
+          )}
+
           {/* Browser layer */}
           {topStepXEnabled && (
             <div className={`absolute inset-0 z-10 ${browserVisible ? 'animate-browser-in' : 'animate-browser-out'}`}>
