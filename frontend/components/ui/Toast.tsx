@@ -1,5 +1,4 @@
-// [claude-code 2026-03-20] S3:T5 — Toast: bottom-left, theme colors, Don't Show Again on all types
-// [claude-code 2026-03-30] Zen mode — gold-tinted, minimal, unified accent
+// [claude-code 2026-04-01] iOS26 Liquid Glass restyle + position-aware animation direction
 import { useEffect, useState } from 'react';
 import { X, Check, AlertTriangle, Loader2, Info, BellOff, Activity } from 'lucide-react';
 import { useToast, type Toast, type ToastVariant } from '../../contexts/ToastContext';
@@ -28,6 +27,7 @@ function ToastItem({ toast, onDismiss, onBlock }: {
 }) {
   const [entered, setEntered] = useState(false);
   const cfg = VARIANT_CONFIG[toast.variant];
+  const isTopRight = toast.position === 'top-right';
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true));
@@ -36,25 +36,26 @@ function ToastItem({ toast, onDismiss, onBlock }: {
 
   const isVisible = entered && !toast.exiting;
   const hasDND = !!toast.notificationType;
+  const slideX = isTopRight ? '16px' : '-16px';
 
   return (
     <div
       className="transition-all duration-300 ease-out group"
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateX(0)' : 'translateX(-16px)',
+        transform: isVisible ? 'translateX(0)' : `translateX(${slideX})`,
         pointerEvents: 'auto',
         minWidth: '280px',
         maxWidth: '380px',
       }}
     >
       <div
-        className="backdrop-blur-xl overflow-hidden"
+        className="backdrop-blur-2xl overflow-hidden"
         style={{
           borderRadius: '8px',
-          border: '1px solid color-mix(in srgb, var(--fintheon-accent) 25%, transparent)',
-          backgroundColor: 'color-mix(in srgb, var(--fintheon-bg) 88%, var(--fintheon-accent) 12%)',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 color-mix(in srgb, var(--fintheon-accent) 8%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--fintheon-accent) 12%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--fintheon-bg) 45%, color-mix(in srgb, var(--fintheon-accent) 8%, transparent))',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
         }}
       >
         <div className="flex items-start justify-between" style={{ padding: '10px 12px' }}>

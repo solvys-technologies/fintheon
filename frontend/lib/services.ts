@@ -793,7 +793,7 @@ export class PeersService {
     peerId?: string;
     roomId?: string;
     roomName?: string;
-  }): Promise<{ room: { id: string; name: string; createdAt: string; configured: boolean }; token: string; configured: boolean }> {
+  }): Promise<{ room: { id: string; name: string; createdAt: string; configured: boolean }; token: string; configured: boolean; url: string | null }> {
     return this.client.post('/api/peers/voice/join', data);
   }
 

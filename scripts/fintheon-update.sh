@@ -24,7 +24,7 @@ echo ""
 
 # ── Step 1: Close Fintheon + kill backend ────────────────────────────────
 
-echo "  [1/7] Stopping Fintheon..."
+echo "  [1/8] Stopping Fintheon..."
 pkill -f "Fintheon" 2>/dev/null || true
 pkill -f "electron.*fintheon" 2>/dev/null || true
 lsof -ti:8080 | xargs kill -9 2>/dev/null || true
@@ -33,7 +33,7 @@ echo "  ✓ Stopped"
 
 # ── Step 2: Pull latest ─────────────────────────────────────────────────
 
-echo "  [2/7] Pulling latest code..."
+echo "  [2/8] Pulling latest code..."
 git stash --quiet 2>/dev/null || true
 git pull origin "$CURRENT_BRANCH" --rebase
 git stash pop --quiet 2>/dev/null || true
@@ -41,7 +41,7 @@ echo "  ✓ Code updated ($(git log --oneline -1 | cut -c1-7))"
 
 # ── Step 3: Install dependencies ─────────────────────────────────────────
 
-echo "  [3/7] Installing dependencies..."
+echo "  [3/8] Installing dependencies..."
 bun install --silent 2>/dev/null || bun install
 cd backend-hono && bun install --silent 2>/dev/null || bun install
 cd "$FINTHEON_ROOT"
@@ -49,7 +49,7 @@ echo "  ✓ Dependencies installed"
 
 # ── Step 4: Build backend ────────────────────────────────────────────────
 
-echo "  [4/7] Building backend..."
+echo "  [4/8] Building backend..."
 cd backend-hono
 bun run build 2>&1 | tail -1
 cd "$FINTHEON_ROOT"
@@ -57,13 +57,62 @@ echo "  ✓ Backend compiled"
 
 # ── Step 5: Build frontend + DMG ─────────────────────────────────────────
 
-echo "  [5/7] Building frontend + DMG..."
+echo "  [5/8] Building frontend + DMG..."
 npm run desktop:build 2>&1 | grep -E "✓|building.*DMG" | tail -2
 echo "  ✓ DMG built"
 
-# ── Step 6: Install app ──────────────────────────────────────────────────
+# ── Step 6: Check for new onboarding phases ──────────────────────────────
 
-echo "  [6/7] Installing Fintheon.app..."
+echo "  [6/8] Checking for new setup phases..."
+PHASES_FILE="$HOME/.fintheon/setup-phases-done.json"
+if [ -f "$PHASES_FILE" ]; then
+  EXISTING_PHASES=$(python3 -c "import json; print(max(json.load(open('$PHASES_FILE')).get('phases',[0])))" 2>/dev/null || echo "0")
+else
+  EXISTING_PHASES=0
+fi
+
+LATEST_PHASE=11
+
+if [ "$EXISTING_PHASES" -lt "$LATEST_PHASE" ]; then
+  echo "  New phases detected ($((EXISTING_PHASES + 1))-$LATEST_PHASE). Running setup for new phases..."
+  # Phase 11: LiveKit
+  if [ "$EXISTING_PHASES" -lt 11 ]; then
+    ENV_FILE="$FINTHEON_ROOT/backend-hono/.env"
+    if ! grep -q "^LIVEKIT_API_KEY=.\+" "$ENV_FILE" 2>/dev/null; then
+      echo ""
+      echo "  New: LiveKit Cloud voice calls (optional)"
+      echo "  Free tier: https://cloud.livekit.io"
+      read -p "  Configure LiveKit now? [Y/n/skip] " LK_CHOICE
+      if [ "$LK_CHOICE" != "n" ] && [ "$LK_CHOICE" != "skip" ] && [ "$LK_CHOICE" != "s" ]; then
+        read -p "  LIVEKIT_API_KEY: " LK_KEY
+        read -p "  LIVEKIT_API_SECRET: " LK_SECRET
+        read -p "  LIVEKIT_URL (wss://...): " LK_URL
+        [ -n "$LK_KEY" ] && echo "LIVEKIT_API_KEY=$LK_KEY" >> "$ENV_FILE"
+        [ -n "$LK_SECRET" ] && echo "LIVEKIT_API_SECRET=$LK_SECRET" >> "$ENV_FILE"
+        [ -n "$LK_URL" ] && echo "LIVEKIT_URL=$LK_URL" >> "$ENV_FILE"
+        echo "  ✓ LiveKit configured"
+      else
+        echo "  · Skipped — voice stays in mock mode"
+      fi
+    else
+      echo "  ✓ LiveKit already configured"
+    fi
+  fi
+  mkdir -p "$HOME/.fintheon"
+  python3 -c "
+import json
+phases = list(range(1, $LATEST_PHASE + 1))
+with open('$PHASES_FILE', 'w') as f:
+    json.dump({'completed_at': '$(date -u +"%Y-%m-%dT%H:%M:%SZ")', 'phases': phases, 'version': '2.1.0'}, f, indent=2)
+" 2>/dev/null || echo "  · Could not update phase markers"
+  echo "  ✓ Phase markers updated"
+else
+  echo "  ✓ All phases up to date"
+fi
+
+# ── Step 7: Install app ──────────────────────────────────────────────────
+
+echo "  [7/8] Installing Fintheon.app..."
 DMG_PATH="$FINTHEON_ROOT/desktop-dist/Fintheon-1.0.0-arm64.dmg"
 
 if [ -f "$DMG_PATH" ]; then
@@ -102,9 +151,9 @@ else
   exit 1
 fi
 
-# ── Step 7: Start backend + launch ───────────────────────────────────────
+# ── Step 8: Start backend + launch ───────────────────────────────────────
 
-echo "  [7/7] Starting backend..."
+echo "  [8/8] Starting backend..."
 cd "$FINTHEON_ROOT/backend-hono"
 nohup node dist/index.js > /tmp/fintheon-backend.log 2>&1 &
 BACKEND_PID=$!

@@ -1,4 +1,5 @@
-// [claude-code 2026-03-30] Claude Peers Sprint 1 — optional group voice room service
+// [claude-code 2026-04-01] LiveKit Cloud voice — real JWT tokens via livekit-server-sdk
+import { AccessToken } from 'livekit-server-sdk'
 
 interface VoiceRoomRecord {
   id: string
@@ -40,17 +41,18 @@ function toVoiceRoom(room: VoiceRoomRecord): VoiceRoom {
   }
 }
 
-function buildParticipantToken(peerId: string, roomId: string): string {
-  // Graceful stub token when LiveKit is not configured.
+async function buildParticipantToken(peerId: string, roomId: string): Promise<string> {
   if (!hasLiveKitConfig()) {
     return `voice_stub_${roomId}_${peerId}_${Date.now()}`
   }
 
-  // WARNING: LiveKit credentials are set but we don't have livekit-server-sdk installed.
-  // This stub token is NOT signed and should NOT be used with a real LiveKit server.
-  // Install livekit-server-sdk and use AccessToken for production.
-  console.warn('[VoiceRoom] LiveKit configured but using unsigned stub token — install livekit-server-sdk for production')
-  return `voice_stub_${roomId}_${peerId}_${Date.now()}`
+  const at = new AccessToken(
+    process.env.LIVEKIT_API_KEY!,
+    process.env.LIVEKIT_API_SECRET!,
+    { identity: peerId, name: peerId },
+  )
+  at.addGrant({ roomJoin: true, room: roomId, canPublish: true, canSubscribe: true })
+  return await at.toJwt()
 }
 
 export async function createRoom(name: string): Promise<VoiceRoom> {
@@ -75,6 +77,7 @@ export async function joinRoom(
   room: VoiceRoom
   token: string
   configured: boolean
+  url: string | null
 }> {
   let room = rooms.get(roomId)
   if (!room) {
@@ -100,8 +103,9 @@ export async function joinRoom(
   const configured = hasLiveKitConfig()
   return {
     room: toVoiceRoom(room),
-    token: buildParticipantToken(peerId, roomId),
+    token: await buildParticipantToken(peerId, roomId),
     configured,
+    url: configured ? process.env.LIVEKIT_URL! : null,
   }
 }
 

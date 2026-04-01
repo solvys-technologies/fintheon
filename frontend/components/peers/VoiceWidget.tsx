@@ -1,8 +1,10 @@
-// [claude-code 2026-03-30] Converted floating VoiceWidget to dockable toolbar (float ↔ header) like PsychAssist
-import { useEffect, useRef, useState } from 'react';
+// [claude-code 2026-04-01] LiveKit Cloud voice — real WebRTC audio via @livekit/components-react
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Mic, MicOff, PhoneOff, Users, GripVertical, Phone, PictureInPicture2, X } from 'lucide-react';
+import { LiveKitRoom, useLocalParticipant, useParticipants } from '@livekit/components-react';
 import { useBackend } from '../../lib/backend';
 import { useAuth } from '../../contexts/AuthContext';
+import { VoiceAudioRenderer } from './VoiceAudioRenderer';
 import type { VoiceParticipantRecord } from './types';
 
 export type VoiceWidgetDockTarget = 'floating' | 'header';
@@ -69,6 +71,9 @@ export function VoiceWidget({
   const [roomId, setRoomId] = useState<string | null>(null);
   const [participants, setParticipants] = useState<VoiceParticipantRecord[]>([]);
   const [configured, setConfigured] = useState(false);
+  // LiveKit state
+  const [lkToken, setLkToken] = useState<string | null>(null);
+  const [lkUrl, setLkUrl] = useState<string | null>(null);
 
   // Persist floating position
   useEffect(() => {
@@ -117,18 +122,18 @@ export function VoiceWidget({
     };
   }, [dragging, headerDockZoneId, onDockToHeader]);
 
-  // Poll participants when joined
+  // Poll participants when joined (fallback for stub mode, and keep backend in sync)
   useEffect(() => {
     if (!joined || !roomId) return;
     const poll = async () => {
       const res = await backend.peers.listVoiceParticipants(roomId);
-      setParticipants(res.participants);
+      if (!configured) setParticipants(res.participants);
       setConfigured(res.configured);
     };
     void poll();
     const interval = setInterval(() => void poll(), 5000);
     return () => clearInterval(interval);
-  }, [backend, joined, roomId]);
+  }, [backend, joined, roomId, configured]);
 
   async function handleJoin() {
     setJoining(true);
@@ -137,8 +142,14 @@ export function VoiceWidget({
       setRoomId(res.room.id);
       setConfigured(res.configured);
       setJoined(true);
-      const participantsRes = await backend.peers.listVoiceParticipants(res.room.id);
-      setParticipants(participantsRes.participants);
+
+      if (res.configured && res.url) {
+        setLkToken(res.token);
+        setLkUrl(res.url);
+      } else {
+        const participantsRes = await backend.peers.listVoiceParticipants(res.room.id);
+        setParticipants(participantsRes.participants);
+      }
     } finally {
       setJoining(false);
     }
@@ -151,7 +162,13 @@ export function VoiceWidget({
     setParticipants([]);
     setRoomId(null);
     setMuted(false);
+    setLkToken(null);
+    setLkUrl(null);
   }
+
+  const handleMuteToggle = useCallback(() => {
+    setMuted((v) => !v);
+  }, []);
 
   const callControls = (
     <div className="flex items-center gap-2">
@@ -166,7 +183,7 @@ export function VoiceWidget({
       ) : (
         <>
           <button
-            onClick={() => setMuted((v) => !v)}
+            onClick={handleMuteToggle}
             className="inline-flex flex-1 items-center justify-center gap-1 rounded border border-[var(--fintheon-accent)]/25 px-2 py-1.5 text-xs text-[var(--fintheon-text)]"
           >
             {muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
@@ -187,64 +204,76 @@ export function VoiceWidget({
   const floating = target === 'floating';
 
   /* ── Header-docked mode (static toolbar) ── */
-  if (!floating) {
-    return (
-      <div className="flex items-center gap-2 bg-[var(--fintheon-bg)] rounded-lg px-3.5 h-8 min-w-[240px]">
+  const headerContent = !floating ? (
+    <div className="flex items-center gap-2 bg-[var(--fintheon-bg)] rounded-lg px-3.5 h-8 min-w-[240px]">
+      <button
+        onClick={onUndockToFloating}
+        className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+        title="Detach to floating"
+      >
+        <PictureInPicture2 className="w-3.5 h-3.5" />
+      </button>
+      <Phone className="w-3 h-3 text-[var(--fintheon-accent)]" />
+      <span className="text-[10px] text-[var(--fintheon-accent)] font-semibold tracking-[0.14em] uppercase">Voice</span>
+      <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+        <Users className="w-3 h-3" />
+        {participants.length}
+      </span>
+      {joined && (
+        <>
+          <button
+            onClick={handleMuteToggle}
+            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-400 hover:text-[var(--fintheon-accent)] transition-colors"
+            title={muted ? 'Unmute' : 'Mute'}
+          >
+            {muted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+          </button>
+          <button
+            onClick={() => void handleLeave()}
+            className="p-1 rounded hover:bg-red-500/10 text-red-400 transition-colors"
+            title="Leave call"
+          >
+            <PhoneOff className="w-3.5 h-3.5" />
+          </button>
+        </>
+      )}
+      {!joined && (
         <button
-          onClick={onUndockToFloating}
-          className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
-          title="Detach to floating"
+          onClick={() => void handleJoin()}
+          disabled={joining}
+          className="text-[10px] text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-50"
         >
-          <PictureInPicture2 className="w-3.5 h-3.5" />
+          {joining ? 'Joining...' : 'Join'}
         </button>
-        <Phone className="w-3 h-3 text-[var(--fintheon-accent)]" />
-        <span className="text-[10px] text-[var(--fintheon-accent)] font-semibold tracking-[0.14em] uppercase">Voice</span>
-        <span className="text-[10px] text-zinc-500 flex items-center gap-1">
-          <Users className="w-3 h-3" />
-          {participants.length}
-        </span>
-        {joined && (
-          <>
-            <button
-              onClick={() => setMuted((v) => !v)}
-              className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-400 hover:text-[var(--fintheon-accent)] transition-colors"
-              title={muted ? 'Unmute' : 'Mute'}
-            >
-              {muted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-            </button>
-            <button
-              onClick={() => void handleLeave()}
-              className="p-1 rounded hover:bg-red-500/10 text-red-400 transition-colors"
-              title="Leave call"
-            >
-              <PhoneOff className="w-3.5 h-3.5" />
-            </button>
-          </>
-        )}
-        {!joined && (
-          <button
-            onClick={() => void handleJoin()}
-            disabled={joining}
-            className="text-[10px] text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-50"
-          >
-            {joining ? 'Joining...' : 'Join'}
-          </button>
-        )}
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
-            title="Hide"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </div>
-    );
+      )}
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
+          title="Hide"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  ) : null;
+
+  if (!floating) {
+    const content = headerContent!;
+    if (lkToken && lkUrl) {
+      return (
+        <LiveKitRoom serverUrl={lkUrl} token={lkToken} audio video={false} connect>
+          <LiveKitVoiceSync muted={muted} onParticipantsChange={setParticipants} />
+          <VoiceAudioRenderer />
+          {content}
+        </LiveKitRoom>
+      );
+    }
+    return content;
   }
 
   /* ── Floating mode ── */
-  return (
+  const floatingContent = (
     <aside
       className="fixed z-50 w-[260px] rounded-2xl border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] p-2.5 shadow-2xl"
       style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
@@ -319,4 +348,44 @@ export function VoiceWidget({
       </div>
     </aside>
   );
+
+  if (lkToken && lkUrl) {
+    return (
+      <LiveKitRoom serverUrl={lkUrl} token={lkToken} audio video={false} connect>
+        <LiveKitVoiceSync muted={muted} onParticipantsChange={setParticipants} />
+        <VoiceAudioRenderer />
+        {floatingContent}
+      </LiveKitRoom>
+    );
+  }
+
+  return floatingContent;
+}
+
+/* ── LiveKit sync: mute state + participant list ── */
+
+function LiveKitVoiceSync({ muted, onParticipantsChange }: {
+  muted: boolean;
+  onParticipantsChange: (p: VoiceParticipantRecord[]) => void;
+}) {
+  const { localParticipant } = useLocalParticipant();
+  const lkParticipants = useParticipants();
+
+  // Sync mute state to local microphone track
+  useEffect(() => {
+    if (localParticipant) {
+      void localParticipant.setMicrophoneEnabled(!muted);
+    }
+  }, [muted, localParticipant]);
+
+  // Map LiveKit participants to VoiceParticipantRecord for UI
+  useEffect(() => {
+    const mapped: VoiceParticipantRecord[] = lkParticipants.map((p) => ({
+      peerId: p.identity,
+      joinedAt: new Date(Number(p.joinedAt) * 1000 || Date.now()).toISOString(),
+    }));
+    onParticipantsChange(mapped);
+  }, [lkParticipants, onParticipantsChange]);
+
+  return null;
 }

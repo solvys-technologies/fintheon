@@ -19,6 +19,7 @@ import { PreMarketReminder } from './components/PreMarketReminder';
 import { GitHubOAuthCallback } from './components/GitHubOAuthCallback';
 import { UpdateBanner } from './components/UpdateBanner';
 import { ApiErrorToastBridge } from './components/ApiErrorToastBridge';
+import { VersionChecker } from './components/VersionChecker';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SystemStatusProvider } from './contexts/SystemStatusContext';
 import { migrateStorageKeys } from './lib/storage-migration';
@@ -270,6 +271,7 @@ function AuthGate() {
                   }
                 `}</style>
                 <ApiErrorToastBridge />
+                <VersionChecker />
                 <UpdateBanner />
                 <GitHubOAuthCallback />
                 <MainLayout />

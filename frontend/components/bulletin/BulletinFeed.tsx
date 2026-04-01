@@ -83,7 +83,7 @@ export function BulletinFeed() {
             const content = (payload.new as any).content ?? '';
             const stockMatch = content.match(/\$([A-Z]{1,5})/);
             const instrument = stockMatch?.[1] ?? 'Trade';
-            addToast(`New Proposal Available — ${instrument}`, 'success', 'View in Strategium');
+            addToast(`New Proposal Available — ${instrument}`, 'success', 'View in Strategium', 'trade-alert', 'top-right');
           }
           void fetchPosts();
         },

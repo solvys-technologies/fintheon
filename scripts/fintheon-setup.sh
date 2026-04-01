@@ -389,6 +389,40 @@ else
   info "Skipped — run later: fintheon peers"
 fi
 
+# ── Phase 11: LiveKit Voice (optional) ──────────────────────────────────
+
+ask "Phase 11: LiveKit Cloud — Voice Calls (optional)"
+echo -e "  ${DIM}Enables real group voice calls between peers.${RESET}"
+echo -e "  ${DIM}Free tier at https://cloud.livekit.io${RESET}"
+
+ask_key "LiveKit API Key" \
+  "LIVEKIT_API_KEY" \
+  "https://cloud.livekit.io" \
+  "$ENV_FILE"
+
+ask_key "LiveKit API Secret" \
+  "LIVEKIT_API_SECRET" \
+  "" \
+  "$ENV_FILE"
+
+ask_key "LiveKit URL (wss://...)" \
+  "LIVEKIT_URL" \
+  "" \
+  "$ENV_FILE"
+
+# ── Write phase markers ─────────────────────────────────────────────────
+
+PHASES_FILE="$HOME/.fintheon/setup-phases-done.json"
+mkdir -p "$HOME/.fintheon"
+cat > "$PHASES_FILE" <<PEOF
+{
+  "completed_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "phases": [1,2,3,4,5,6,7,8,9,10,11],
+  "version": "2.1.0"
+}
+PEOF
+ok "Phase markers saved to $PHASES_FILE"
+
 # ── Summary ──────────────────────────────────────────────────────────────
 
 echo ""

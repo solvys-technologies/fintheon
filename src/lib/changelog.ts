@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-01T14:00:00',
+    agent: 'claude-code',
+    summary: 'LiveKit Cloud voice (real WebRTC audio via livekit-server-sdk), iOS26 Liquid Glass toast restyle, toast placement audit (trading=top-right, system=bottom-left), version-check with update-available toast, enhanced install/update scripts with phase tracking and LiveKit onboarding',
+    files: [
+      'backend-hono/src/services/peers/voice-room.ts',
+      'frontend/components/peers/VoiceWidget.tsx',
+      'frontend/components/peers/VoiceAudioRenderer.tsx',
+      'frontend/components/ui/Toast.tsx',
+      'frontend/contexts/ToastContext.tsx',
+      'frontend/lib/version-check.ts',
+      'frontend/components/VersionChecker.tsx',
+      'frontend/lib/services.ts',
+      'frontend/App.tsx',
+      'scripts/fintheon-setup.sh',
+      'scripts/fintheon-update.sh',
+      'backend-hono/.env.example',
+      'vite.config.ts',
+    ],
+  },
+  {
     date: '2026-04-01T01:00:00',
     agent: 'claude-code',
     summary: 'S13-T3: Team shared memory with FTS + agentic editor sidebar (charts, analysis, web data via Computer Use) + cross-agent analysis history. SharedMemoryPanel as new nav tab. AgenticSidebar wired into DocumentEditor with toggle.',
