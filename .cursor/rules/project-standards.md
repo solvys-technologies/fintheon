@@ -29,3 +29,10 @@ Example: `v.5.28.1` (5th month, 28th day, 1st patch)
 - No build failures.
 - No duplicate imports.
 - Run `npx vite build` before merge.
+
+## Post-Ship Hook: Install Maintenance
+
+**After every `/solvys-ship` or deploy**, run the install maintenance audit:
+→ Load `.cursor/skills/install-maintenance/SKILL.md` and execute the checklist.
+
+This ensures `fintheon update` never breaks for users after new code ships. The audit checks for undocumented env vars, missing dependency backfills, and script drift. If any install files need updating, include `INSTALL-UPDATE:` in the commit message.
