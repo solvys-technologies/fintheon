@@ -15,6 +15,7 @@ const { autoUpdater } = require("electron-updater");
 let mainWindow = null;
 let backendProcess = null;
 let pendingAuthUrl = null;
+let backendStopInFlight = null;
 
 /* ------------------------------------------------------------------ */
 /*  Startup config — persisted to userData/fintheon-startup.json       */
@@ -56,12 +57,25 @@ async function isBackendAlive() {
   }
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForBackendHealthy(timeoutMs = 15000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    if (await isBackendAlive()) return true;
+    await wait(350);
+  }
+  return false;
+}
+
 async function startBackend() {
   // If backend is already running (via LaunchAgent or manually), skip spawn
   const alive = await isBackendAlive();
   if (alive) {
     console.log("[Electron] Backend already running on :8080 — skipping spawn");
-    return;
+    return { ok: true, detail: "already running" };
   }
 
   const backendDir = path.join(__dirname, "..", "backend-hono");
@@ -78,7 +92,7 @@ async function startBackend() {
         "Backend Not Built",
         "The backend could not be compiled.\n\nRun manually:\n  cd backend-hono && bun run build\n\nThen relaunch the app."
       );
-      return;
+      return { ok: false, detail: "build failed" };
     }
   }
 
@@ -101,15 +115,54 @@ async function startBackend() {
   backendProcess.on("exit", (code) => {
     console.log("[Electron] Backend exited with code", code);
     backendProcess = null;
+    backendStopInFlight = null;
   });
+
+  return { ok: true, detail: "spawned" };
 }
 
-function stopBackend() {
-  if (backendProcess) {
-    console.log("[Electron] Stopping backend...");
-    backendProcess.kill("SIGTERM");
-    backendProcess = null;
-  }
+async function stopBackend() {
+  if (!backendProcess) return { ok: true, detail: "not running" };
+  if (backendStopInFlight) return backendStopInFlight;
+
+  const proc = backendProcess;
+  console.log("[Electron] Stopping backend...");
+
+  backendStopInFlight = new Promise((resolve) => {
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      if (backendProcess === proc) backendProcess = null;
+      backendStopInFlight = null;
+      resolve(result);
+    };
+
+    const hardKillTimer = setTimeout(() => {
+      if (!proc.killed) {
+        console.warn("[Electron] Backend did not exit after SIGTERM; sending SIGKILL");
+        try {
+          proc.kill("SIGKILL");
+        } catch (error) {
+          finish({ ok: false, detail: `sigkill failed: ${error?.message ?? "unknown error"}` });
+        }
+      }
+    }, 6000);
+
+    proc.once("exit", (code, signal) => {
+      clearTimeout(hardKillTimer);
+      finish({ ok: true, detail: `exited (${code ?? "null"}${signal ? `, ${signal}` : ""})` });
+    });
+
+    try {
+      proc.kill("SIGTERM");
+    } catch (error) {
+      clearTimeout(hardKillTimer);
+      finish({ ok: false, detail: `sigterm failed: ${error?.message ?? "unknown error"}` });
+    }
+  });
+
+  return backendStopInFlight;
 }
 
 /* ------------------------------------------------------------------ */
@@ -256,13 +309,21 @@ if (!gotTheLock) {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Register fintheon:// as a custom protocol for OAuth callbacks
   app.setAsDefaultProtocolClient("fintheon");
 
   const cfg = readStartupConfig();
   if (cfg.backendAutostart) {
-    startBackend();
+    const startResult = await startBackend();
+    if (!startResult.ok) {
+      console.error("[Electron] Backend failed to start:", startResult.detail);
+    } else {
+      const healthy = await waitForBackendHealthy(15000);
+      if (!healthy) {
+        console.warn("[Electron] Backend did not become healthy within 15s");
+      }
+    }
   } else {
     console.log("[Electron] Backend autostart disabled — skipping");
   }
@@ -358,7 +419,10 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) {
       const cfg = readStartupConfig();
       if (cfg.backendAutostart) {
-        await startBackend();
+        const startResult = await startBackend();
+        if (startResult.ok) {
+          await waitForBackendHealthy(15000);
+        }
       }
       createWindow();
     }
@@ -366,12 +430,12 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
-  stopBackend();
+  void stopBackend();
   if (process.platform !== "darwin") app.quit();
 });
 
 app.on("before-quit", () => {
-  stopBackend();
+  void stopBackend();
 });
 
 ipcMain.handle("toggle-mini-widget", () => {
@@ -396,7 +460,7 @@ ipcMain.handle("update-download", () => {
 });
 
 ipcMain.handle("update-install", () => {
-  stopBackend();
+  void stopBackend();
   autoUpdater.quitAndInstall(false, true);
   return { ok: true };
 });
@@ -433,13 +497,14 @@ ipcMain.handle("set-startup-config", (_event, patch) => {
 // Manual backend start/stop from renderer
 ipcMain.handle("start-backend", async () => {
   if (backendProcess) return { ok: true, detail: "already running" };
-  await startBackend();
-  return { ok: true };
+  const startResult = await startBackend();
+  if (!startResult.ok) return startResult;
+  const healthy = await waitForBackendHealthy(15000);
+  return { ok: healthy, detail: healthy ? "healthy" : "started but not healthy yet" };
 });
 
-ipcMain.handle("stop-backend", () => {
-  stopBackend();
-  return { ok: true };
+ipcMain.handle("stop-backend", async () => {
+  return await stopBackend();
 });
 
 ipcMain.handle("is-backend-alive", async () => {
