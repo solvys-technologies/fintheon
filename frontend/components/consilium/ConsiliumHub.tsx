@@ -26,7 +26,7 @@ type ConsiliumTab = 'sanctum' | 'chat' | 'boardroom' | 'apparatus';
 type SanctumSubView = 'narratives' | 'aquarium' | 'timeline';
 
 const REGULAR_TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquare }[] = [
-  { id: 'chat', label: 'Ask Harp', icon: MessageSquare },
+  { id: 'chat', label: 'Chat', icon: MessageSquare },
   { id: 'boardroom', label: 'Boardroom', icon: Users },
   { id: 'apparatus', label: 'Apparatus', icon: Cpu },
 ];
@@ -361,7 +361,7 @@ export function ConsiliumHub() {
           {/* Regular tabs */}
           {displayedTab === 'chat' && (
             <Suspense fallback={<AiLoader />}>
-              <ChatInterface surfaceId="askharp" />
+              <ChatInterface surfaceId="chat" />
             </Suspense>
           )}
           {displayedTab === 'boardroom' && <AgentChattr />}

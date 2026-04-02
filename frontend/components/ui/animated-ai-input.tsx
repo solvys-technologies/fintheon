@@ -1,5 +1,5 @@
 // [claude-code 2026-03-28] S8-T7: Animated AI input adapted from 21st.dev/kokonutd
-// Used across Ask Harp interfaces — lightweight, animated persona/model switcher input
+// Used across Chat interfaces — lightweight, animated persona/model switcher input
 import { useState, useRef, useCallback, useEffect, type FC, type KeyboardEvent } from 'react';
 import { ArrowUp, ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';

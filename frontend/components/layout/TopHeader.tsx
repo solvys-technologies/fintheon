@@ -49,8 +49,8 @@ interface TopHeaderProps {
   onPlatformSelect?: (platform: TradingPlatform) => void;
   layoutOption?: LayoutOption;
   onLayoutOptionChange?: (option: LayoutOption) => void;
-  askHarpOpen?: boolean;
-  onAskHarpToggle?: () => void;
+  chatOpen?: boolean;
+  onChatToggle?: () => void;
   activeTab?: NavTab;
   tabHistory?: NavTab[];
   historyIndex?: number;
@@ -69,8 +69,8 @@ export function TopHeader({
   onPlatformSelect,
   layoutOption = 'combined',
   onLayoutOptionChange,
-  askHarpOpen = false,
-  onAskHarpToggle,
+  chatOpen = false,
+  onChatToggle,
   activeTab = 'dashboard',
   tabHistory = [],
   historyIndex = 0,
@@ -507,12 +507,12 @@ export function TopHeader({
             if (id === 'layout') {
               return null; // Layout dropdown is rendered in the 'platform' slot
             }
-            if (id === 'chat' && onAskHarpToggle) {
+            if (id === 'chat' && onChatToggle) {
               return wrapper(
                 <button
-                  onClick={onAskHarpToggle}
+                  onClick={onChatToggle}
                   className={`p-2 rounded-lg text-xs font-medium transition-colors ${
-                    askHarpOpen
+                    chatOpen
                       ? 'bg-[#6366f1] text-white hover:bg-[#6366f1]/90'
                       : 'bg-[var(--fintheon-bg)] border border-[#6366f1]/30 text-[#6366f1] hover:bg-[#6366f1]/10 hover:border-[#6366f1]/50'
                   }`}

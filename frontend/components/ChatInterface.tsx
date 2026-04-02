@@ -1,5 +1,5 @@
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
-// [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Ask Harp
+// [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Layers, Clock, Loader2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
@@ -132,7 +132,7 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
           />
         </div>
 
-        {/* Preview pane — right side, only in dual-pane mode (Ask Harp main) */}
+        {/* Preview pane — right side, only in dual-pane mode (Chat main) */}
         {dualPane && showArtifacts && (
           <div className="flex-shrink-0 w-96 border-l border-[var(--fintheon-accent)]/15 transition-[width] duration-[240ms] ease-in-out overflow-hidden">
             <div className="w-96 h-full flex flex-col bg-[var(--fintheon-surface)]">
@@ -222,8 +222,8 @@ export default function ChatInterface({ surfaceId = 'analysis' }: { surfaceId?: 
   const [thinkHarderState, setThinkHarderState] = useState(false);
   const { runtime, conversationId, setConversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, surfaceId);
 
-  // Ask Harp main surface gets dual-pane layout (conversation + artifacts)
-  const isDualPane = surfaceId === 'askharp';
+  // Chat main surface gets dual-pane layout (conversation + artifacts)
+  const isDualPane = surfaceId === 'chat';
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
