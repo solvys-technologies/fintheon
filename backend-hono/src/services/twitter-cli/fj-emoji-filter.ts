@@ -10,6 +10,8 @@ export interface FJClassification {
   shouldInclude: boolean;
 }
 
+const CANONICAL_FJ_EMOJIS = ['🚨', '⚠️', '🔴', '🟠', '🟡', '🔵'] as const
+
 /**
  * FJ emoji tiers (Discord/Telegram format):
  *   🔴 Critical — FOMC, NFP, CPI actuals, major geopolitical
@@ -145,6 +147,27 @@ export const TIER_ORDER: Record<FJTier, number> = {
   medium: 2,
   low: 1,
 };
+
+/**
+ * Return the first FinancialJuice-style severity emoji present in text.
+ */
+export function extractFJEmojiFromText(text: string): string | null {
+  for (const emoji of CANONICAL_FJ_EMOJIS) {
+    if (text.includes(emoji)) return emoji
+  }
+  return null
+}
+
+/**
+ * Map a single emoji marker to the catalyst macro tier notation.
+ */
+export function fjTierFromEmoji(emoji: string | null): 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'none' {
+  if (!emoji) return 'none'
+  if (emoji === '🚨' || emoji === '🔴') return 'tier1'
+  if (emoji === '⚠️') return 'tier2'
+  if (emoji === '🟠' || emoji === '🟡') return 'tier3'
+  return 'tier4'
+}
 
 /**
  * Classify a tweet by emoji tier first; fall back to keyword scoring.

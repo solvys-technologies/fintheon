@@ -354,8 +354,14 @@ app.whenReady().then(() => {
     }
   });
 
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  app.on("activate", async () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      const cfg = readStartupConfig();
+      if (cfg.backendAutostart) {
+        await startBackend();
+      }
+      createWindow();
+    }
   });
 });
 

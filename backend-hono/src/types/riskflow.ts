@@ -8,6 +8,7 @@
 export type NewsSource = 'FinancialJuice' | 'OSINTSources' | 'EconomicCalendar' | 'TrendSpider' | 'Barchart' | 'Polymarket' | 'Kalshi' | 'TwitterCli' | 'DeItaOne' | 'Custom' | 'Hermes';
 export type UrgencyLevel = 'immediate' | 'high' | 'normal';
 export type SentimentDirection = 'bullish' | 'bearish' | 'neutral';
+export type RiskType = 'Macro' | 'Geopolitical' | 'Earnings' | 'Technical' | 'Credit' | 'Liquidity' | 'Commentary';
 
 export type MacroLevel = 1 | 2 | 3 | 4;
 export type RiskType = 'Macro' | 'Geopolitical' | 'Earnings' | 'Technical' | 'Credit' | 'Liquidity' | 'Commentary';
@@ -45,7 +46,7 @@ export interface FeedItem {
   /** Per-item sub-score breakdown (VIX-weighted) */
   subScores?: SubScoreBreakdown;
   /** Risk classification category */
-  riskType?: 'Macro' | 'Geopolitical' | 'Earnings' | 'Technical' | 'Credit' | 'Liquidity' | 'Commentary' | null;
+  riskType?: RiskType | null;
   /** Agent-generated analytical note */
   agentNote?: string | null;
   /** Timestamp when agentNote was generated */
