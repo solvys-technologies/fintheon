@@ -1,487 +1,539 @@
 #!/bin/bash
-# Fintheon First-Time Setup — interactive terminal installer
-# Usage: curl -sL https://raw.githubusercontent.com/solvys-technologies/fintheon/main/scripts/fintheon-setup.sh | bash
-# Or:    bash ~/Documents/Codebases/fintheon/scripts/fintheon-setup.sh
-set -e
+# ============================================================================
+# Fintheon First-Time Setup — Zero-to-Running on a Brand-New MacBook
+# ============================================================================
+# Usage (one-liner from a fresh Terminal):
+#   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/main/scripts/fintheon-setup.sh)"
+#
+# What this does:
+#   1. Installs Xcode Command Line Tools (gives you git)
+#   2. Installs Homebrew (macOS package manager)
+#   3. Installs Node.js 22 LTS + Bun (runtime + package manager)
+#   4. Clones the Fintheon repository
+#   5. Installs all dependencies
+#   6. Writes a production-ready .env with embedded defaults
+#   7. Installs Hermes agent (local AI backend)
+#   8. Builds the backend + frontend + DMG
+#   9. Installs the `fintheon` CLI command globally
+#  10. Starts the backend and launches Fintheon
+#
+# Requirements: macOS (Apple Silicon or Intel), internet connection.
+# No prior coding experience needed.
+# ============================================================================
+set -euo pipefail
 
-# ── Helpers ──────────────────────────────────────────────────────────────
-
-GOLD='\033[38;2;199;159;74m'
-DIM='\033[2m'
-BOLD='\033[1m'
-RESET='\033[0m'
-
-banner() { echo -e "${GOLD}$1${RESET}"; }
-info()   { echo -e "  ${DIM}·${RESET} $1"; }
-ok()     { echo -e "  ${GOLD}✓${RESET} $1"; }
-warn()   { echo -e "  ${GOLD}⚠${RESET} $1"; }
-fail()   { echo -e "  ✗ $1"; }
-ask()    { echo -e ""; echo -e "  ${BOLD}$1${RESET}"; }
-
-# Prompt for a value, write to .env if provided
-ask_key() {
-  local LABEL="$1" ENV_KEY="$2" SIGNUP_URL="$3" ENV_FILE="$4" REQUIRED="$5"
-
-  echo ""
-  if [ -n "$SIGNUP_URL" ]; then
-    echo -e "  ${BOLD}${LABEL}${RESET}"
-    echo -e "  ${DIM}Sign up / get key: ${SIGNUP_URL}${RESET}"
-  else
-    echo -e "  ${BOLD}${LABEL}${RESET}"
-  fi
-
-  # Check if already set
-  if grep -q "^${ENV_KEY}=.\+" "$ENV_FILE" 2>/dev/null; then
-    ok "Already configured"
-    return 0
-  fi
-
-  if [ -n "$SIGNUP_URL" ]; then
-    read -p "  Open signup page in browser? [Y/n/skip] " OPEN_CHOICE
-    if [ "$OPEN_CHOICE" != "n" ] && [ "$OPEN_CHOICE" != "skip" ] && [ "$OPEN_CHOICE" != "s" ]; then
-      open "$SIGNUP_URL" 2>/dev/null || xdg-open "$SIGNUP_URL" 2>/dev/null || true
-      echo "  ${DIM}Browser opened. Copy your API key and paste below.${RESET}"
-    fi
-    if [ "$OPEN_CHOICE" = "skip" ] || [ "$OPEN_CHOICE" = "s" ]; then
-      if [ "$REQUIRED" = "required" ]; then
-        warn "Skipped — this is required for core features"
-      else
-        info "Skipped"
-      fi
-      return 0
-    fi
-  fi
-
-  read -p "  Paste ${ENV_KEY}: " KEY_VALUE
-  if [ -n "$KEY_VALUE" ]; then
-    # Update or append to .env
-    if grep -q "^${ENV_KEY}=" "$ENV_FILE" 2>/dev/null; then
-      sed -i '' "s|^${ENV_KEY}=.*|${ENV_KEY}=${KEY_VALUE}|" "$ENV_FILE"
-    else
-      echo "${ENV_KEY}=${KEY_VALUE}" >> "$ENV_FILE"
-    fi
-    ok "Saved to .env"
-  else
-    if [ "$REQUIRED" = "required" ]; then
-      warn "Empty — core features may not work"
-    else
-      info "Skipped"
-    fi
-  fi
-}
-
-# ── Start ────────────────────────────────────────────────────────────────
-
-echo ""
-banner "  ╔══════════════════════════════════════╗"
-banner "  ║        FINTHEON SETUP v2.0.0         ║"
-banner "  ║     Priced In Capital — Ave Trader   ║"
-banner "  ╚══════════════════════════════════════╝"
-echo ""
+# ── Constants ────────────────────────────────────────────────────────────────
 
 FINTHEON_DIR="$HOME/Documents/Codebases/fintheon"
 REPO_URL="https://github.com/solvys-technologies/fintheon.git"
-BRANCH="v.8.28.1"
+BRANCH="main"
+SETUP_VERSION="2.0.0"
 
-# ── Phase 1: System Prerequisites ────────────────────────────────────────
+# Production-safe publishable keys (NOT secrets — safe to embed)
+SUPABASE_URL="https://nrcfnzclbjboctptxaxx.supabase.co"
+SUPABASE_PUBLISHABLE_KEY="sb_publishable_rNxiWGth_yubKdGDhYuv3Q_k1-Pvx1R"
+SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yY2ZuemNsYmpib2N0cHR4YXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDgxODksImV4cCI6MjA4OTUyNDE4OX0.JXzVk5CDL6rxU5t_rl-Ku2YnPi0PeBF-VOpcSEZTbIM"
+API_URL="https://fintheon.fly.dev"
 
-ask "Phase 1: System Prerequisites"
+# ── Banner ───────────────────────────────────────────────────────────────────
 
-# Xcode Command Line Tools (macOS) — required for git and build tooling
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  if ! xcode-select -p >/dev/null 2>&1; then
-    info "Installing Xcode Command Line Tools (required for Git)..."
-    xcode-select --install >/dev/null 2>&1 || true
-    warn "Complete the Xcode Command Line Tools installer, then return here."
+echo ""
+echo "  ╔══════════════════════════════════════════════════════╗"
+echo "  ║          FINTHEON SETUP v${SETUP_VERSION}                      ║"
+echo "  ║      Priced In Capital — Ave Trader                  ║"
+echo "  ║                                                      ║"
+echo "  ║  Fresh MacBook → Running Trading Platform            ║"
+echo "  ╚══════════════════════════════════════════════════════╝"
+echo ""
 
-    until xcode-select -p >/dev/null 2>&1; do
-      read -p "  Press Enter once installation finishes... " _
-    done
-  fi
-  ok "xcode-select $(xcode-select -p)"
+# ── Helper functions ─────────────────────────────────────────────────────────
+
+step_count=0
+total_steps=10
+
+step() {
+  step_count=$((step_count + 1))
+  echo ""
+  echo "  [$step_count/$total_steps] $1"
+  echo "  $(printf '─%.0s' $(seq 1 50))"
+}
+
+ok()   { echo "  ✓ $1"; }
+warn() { echo "  ⚠ $1"; }
+fail() { echo "  ✗ $1"; exit 1; }
+info() { echo "  · $1"; }
+
+# ── Step 1: Xcode Command Line Tools (provides git, clang, make) ────────────
+
+step "Installing Xcode Command Line Tools (includes git)..."
+
+if xcode-select -p &>/dev/null; then
+  ok "Xcode CLI Tools already installed"
+else
+  info "This installs git and other developer tools Apple requires."
+  info "A system dialog will appear — click 'Install' and wait."
+  echo ""
+  xcode-select --install 2>/dev/null || true
+
+  # Wait for the installation to complete
+  info "Waiting for Xcode CLI Tools installation to finish..."
+  until xcode-select -p &>/dev/null; do
+    sleep 5
+  done
+  ok "Xcode CLI Tools installed"
 fi
 
-# Git
-if ! command -v git &> /dev/null; then
-  fail "git not found after Xcode tools check"
-  echo "    Run: xcode-select --install"
-  exit 1
+# Verify git is now available
+if command -v git &>/dev/null; then
+  ok "git $(git --version | cut -d' ' -f3)"
+else
+  fail "git not found after Xcode install. Restart Terminal and try again."
 fi
-ok "git $(git --version | cut -d' ' -f3)"
 
-# Homebrew
-if ! command -v brew &> /dev/null; then
-  info "Installing Homebrew..."
+# ── Step 2: Homebrew ─────────────────────────────────────────────────────────
+
+step "Installing Homebrew (macOS package manager)..."
+
+if command -v brew &>/dev/null; then
+  ok "Homebrew already installed ($(brew --version | head -1))"
+else
+  info "Homebrew is the standard macOS package manager."
+  info "It may ask for your Mac password — that's normal."
+  echo ""
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-fi
-if [ -x /opt/homebrew/bin/brew ]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
-elif [ -x /usr/local/bin/brew ]; then
-  eval "$(/usr/local/bin/brew shellenv)" 2>/dev/null || true
-fi
-if ! command -v brew &> /dev/null; then
-  fail "Homebrew installation failed"
-  echo '    Re-run manually: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
-  exit 1
-fi
-ok "brew $(brew --version | head -n 1 | awk '{print $2}')"
 
-# Node
-if ! command -v node &> /dev/null; then
-  info "Installing Node.js..."
-  brew install node
+  # Add Homebrew to PATH for Apple Silicon Macs
+  if [[ -f /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+    # Persist to shell profile
+    SHELL_PROFILE="$HOME/.zprofile"
+    if ! grep -q 'brew shellenv' "$SHELL_PROFILE" 2>/dev/null; then
+      echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$SHELL_PROFILE"
+      info "Added Homebrew to $SHELL_PROFILE"
+    fi
+  fi
+
+  if command -v brew &>/dev/null; then
+    ok "Homebrew installed"
+  else
+    fail "Homebrew installation failed. Visit https://brew.sh for manual install."
+  fi
 fi
-ok "node $(node --version)"
+
+# ── Step 3: Node.js + Bun ───────────────────────────────────────────────────
+
+step "Installing Node.js and Bun..."
+
+# Node.js
+if command -v node &>/dev/null; then
+  NODE_VER=$(node --version)
+  NODE_MAJOR=$(echo "$NODE_VER" | sed 's/v//' | cut -d. -f1)
+  if [[ "$NODE_MAJOR" -ge 20 ]]; then
+    ok "Node.js $NODE_VER"
+  else
+    warn "Node.js $NODE_VER is old — upgrading to 22 LTS..."
+    brew install node@22
+    brew link --overwrite node@22 2>/dev/null || true
+    ok "Node.js $(node --version)"
+  fi
+else
+  info "Installing Node.js 22 LTS via Homebrew..."
+  brew install node@22
+  brew link --overwrite node@22 2>/dev/null || true
+  ok "Node.js $(node --version)"
+fi
 
 # Bun
-if ! command -v bun &> /dev/null; then
-  info "Installing bun..."
+if command -v bun &>/dev/null; then
+  ok "Bun $(bun --version)"
+else
+  info "Installing Bun (fast JavaScript runtime)..."
   curl -fsSL https://bun.sh/install | bash
   export BUN_INSTALL="$HOME/.bun"
   export PATH="$BUN_INSTALL/bin:$PATH"
+
+  # Persist to shell profile
+  SHELL_PROFILE="$HOME/.zprofile"
+  if ! grep -q '.bun/bin' "$SHELL_PROFILE" 2>/dev/null; then
+    echo 'export BUN_INSTALL="$HOME/.bun"' >> "$SHELL_PROFILE"
+    echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> "$SHELL_PROFILE"
+    info "Added Bun to $SHELL_PROFILE"
+  fi
+
+  ok "Bun $(bun --version)"
 fi
-ok "bun $(bun --version)"
 
-# Python
-if ! command -v python3 &> /dev/null; then
-  info "Installing Python..."
-  brew install python
-fi
-ok "python $(python3 --version | cut -d' ' -f2)"
+# ── Step 4: Clone repository ────────────────────────────────────────────────
 
-# uv (Python package manager)
-if ! command -v uv &> /dev/null; then
-  info "Installing uv..."
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  export PATH="$HOME/.local/bin:$PATH"
-fi
-ok "uv"
+step "Cloning Fintheon repository..."
 
-# ── Phase 2: Clone Repository ────────────────────────────────────────────
-
-ask "Phase 2: Repository"
-
-if [ -d "$FINTHEON_DIR/.git" ]; then
+if [[ -d "$FINTHEON_DIR/.git" ]]; then
+  info "Repository exists at $FINTHEON_DIR — pulling latest..."
   cd "$FINTHEON_DIR"
-  git fetch origin --quiet
-  git checkout "$BRANCH" 2>/dev/null || git checkout -b "$BRANCH" "origin/$BRANCH"
-  git pull origin "$BRANCH" --rebase --quiet
+  git fetch origin --prune --prune-tags 2>/dev/null || true
+  git checkout "$BRANCH" 2>/dev/null || true
+  git pull origin "$BRANCH" --rebase 2>/dev/null || true
   ok "Updated to latest ($(git log --oneline -1 | cut -c1-7))"
 else
-  info "Cloning..."
+  info "Cloning into $FINTHEON_DIR..."
   mkdir -p "$(dirname "$FINTHEON_DIR")"
-  git clone --quiet "$REPO_URL" "$FINTHEON_DIR"
+  git clone "$REPO_URL" "$FINTHEON_DIR"
   cd "$FINTHEON_DIR"
-  git checkout "$BRANCH" 2>/dev/null || git checkout -b "$BRANCH" "origin/$BRANCH"
-  ok "Cloned"
+  git checkout "$BRANCH" 2>/dev/null || true
+  ok "Cloned ($(git log --oneline -1 | cut -c1-7))"
 fi
-
-# ── Phase 3: Dependencies ────────────────────────────────────────────────
-
-ask "Phase 3: Dependencies"
 
 cd "$FINTHEON_DIR"
-bun install --silent 2>/dev/null || bun install
-cd backend-hono && bun install --silent 2>/dev/null || bun install
+
+# ── Step 5: Install dependencies ────────────────────────────────────────────
+
+step "Installing dependencies..."
+
+bun install 2>/dev/null || bun install
+ok "Root dependencies installed"
+
+cd backend-hono && bun install 2>/dev/null || bun install
 cd "$FINTHEON_DIR"
-ok "All packages installed"
+ok "Backend dependencies installed"
 
-# ── Phase 4: Claude CLI ─────────────────────────────────────────────────
+if [[ -d frontend && -f frontend/package.json ]]; then
+  cd frontend && bun install 2>/dev/null || bun install
+  cd "$FINTHEON_DIR"
+  ok "Frontend dependencies installed"
+fi
 
-ask "Phase 4: Claude CLI (AI Chat + Briefs)"
-echo -e "  ${DIM}Claude CLI powers all AI chat and daily briefing generation.${RESET}"
-echo -e "  ${DIM}Free with Anthropic Max subscription ($20/mo).${RESET}"
+# ── Step 6: Environment configuration ───────────────────────────────────────
 
-if command -v claude &> /dev/null; then
-  ok "Claude CLI installed: $(claude --version 2>/dev/null || echo 'installed')"
+step "Configuring environment (production defaults)..."
+
+# Backend .env — write production-safe defaults
+# Users only need to add OPENROUTER_API_KEY for AI features
+BACKEND_ENV="$FINTHEON_DIR/backend-hono/.env"
+
+if [[ -f "$BACKEND_ENV" ]]; then
+  info "Existing .env found — preserving your settings"
+  # Ensure critical defaults are present
+  grep -q "^BYPASS_AUTH=" "$BACKEND_ENV" || echo "BYPASS_AUTH=true" >> "$BACKEND_ENV"
+  grep -q "^PORT=" "$BACKEND_ENV" || echo "PORT=8080" >> "$BACKEND_ENV"
+  grep -q "^SUPABASE_URL=" "$BACKEND_ENV" || echo "SUPABASE_URL=$SUPABASE_URL" >> "$BACKEND_ENV"
+  grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" || echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> "$BACKEND_ENV"
+  ok "Existing .env updated with missing defaults"
 else
-  echo ""
-  read -p "  Install Claude CLI now? [Y/n] " INSTALL_CLAUDE
-  if [ "$INSTALL_CLAUDE" != "n" ]; then
-    info "Installing @anthropic-ai/claude-code..."
-    npm install -g @anthropic-ai/claude-code 2>/dev/null && ok "Installed" || {
-      warn "npm install failed — try manually: npm install -g @anthropic-ai/claude-code"
-    }
-  else
-    warn "Skipped — AI chat will fall back to OpenRouter (paid)"
-  fi
+  cat > "$BACKEND_ENV" << ENVEOF
+# ============================================================================
+# Fintheon Backend — Auto-generated by setup v${SETUP_VERSION}
+# ============================================================================
+# The app runs out of the box with these defaults.
+# Add your OPENROUTER_API_KEY below for AI features.
+# ============================================================================
+
+# --- Core ---
+PORT=8080
+NODE_ENV=development
+BYPASS_AUTH=true
+
+# --- Supabase (production — publishable keys, safe for local use) ---
+SUPABASE_URL=$SUPABASE_URL
+SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+
+# --- AI / Inference ---
+# Get your key at: https://openrouter.ai/settings/keys
+# This is the ONLY key you need for AI features.
+OPENROUTER_API_KEY=
+OPENROUTER_APP_URL=https://fintheon.vercel.app
+OPENROUTER_APP_NAME=Fintheon-AI-Gateway
+AI_PRIMARY_PROVIDER=openrouter
+
+# --- Optional: Voice (Whisper + TTS) ---
+# OPENAI_API_KEY=
+
+# --- Optional: Research APIs ---
+# EXA_API_KEY=
+# FRED_API_KEY=
+# FIRECRAWL_API_KEY=
+
+# --- Scheduling ---
+HERMES_BOARDROOM_CRON=0,30 7-9 * * 1-5
+HERMES_BOARDROOM_TZ=America/New_York
+BOARDROOM_MEETING_WINDOW_MINUTES=90
+BOARDROOM_MEETING_HOUR_LOCAL=10
+HERMES_PREMARKET_CRON=0 8 * * 1-5
+HERMES_POSTMARKET_CRON=30 16 * * 1-5
+DISPATCH_SCHEDULER_ENABLED=true
+
+# --- Execution Bridge ---
+BRIDGE_URL=http://localhost:8001
+ENVEOF
+  ok "backend-hono/.env created with production defaults"
 fi
 
-# Authenticate Claude CLI
-if command -v claude &> /dev/null; then
-  if claude --print "ping" --output-format text > /dev/null 2>&1; then
-    ok "Claude CLI authenticated"
-  else
-    echo ""
-    echo -e "  ${BOLD}Claude CLI needs authentication${RESET}"
-    echo -e "  ${DIM}This opens claude.ai — sign in with your Anthropic account.${RESET}"
-    echo ""
-    read -p "  Authenticate now? [Y/n] " AUTH_CLAUDE
-    if [ "$AUTH_CLAUDE" != "n" ]; then
-      claude auth login 2>&1 || warn "Auth failed — retry later: claude auth login"
-    fi
-  fi
-fi
-
-# ── Phase 5: Twitter CLI ────────────────────────────────────────────────
-
-ask "Phase 5: Twitter CLI (Live News Feed)"
-echo -e "  ${DIM}Scrapes financial news from X/Twitter for the RiskFlow feed.${RESET}"
-echo -e "  ${DIM}No API key needed — uses browser cookie auth.${RESET}"
-
-TWITTER_BIN="$HOME/.local/bin/twitter"
-
-if [ -x "$TWITTER_BIN" ] || command -v twitter &> /dev/null; then
-  ok "Twitter CLI installed"
+# Frontend env — write production defaults
+FRONTEND_ENV="$FINTHEON_DIR/frontend/.env.local"
+if [[ ! -f "$FRONTEND_ENV" ]]; then
+  mkdir -p "$FINTHEON_DIR/frontend"
+  cat > "$FRONTEND_ENV" << FENVEOF
+VITE_API_URL=http://localhost:8080
+VITE_SUPABASE_URL=$SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY
+VITE_BYPASS_AUTH=false
+FENVEOF
+  ok "frontend/.env.local created"
 else
-  echo ""
-  read -p "  Install Twitter CLI now? [Y/n] " INSTALL_TWITTER
-  if [ "$INSTALL_TWITTER" != "n" ]; then
-    info "Installing via uv..."
-    uv tool install twitter-cli 2>/dev/null && ok "Installed" || {
-      warn "Install failed — try: uv tool install twitter-cli"
-    }
-  else
-    info "Skipped — RiskFlow will use economic calendar data only"
-  fi
+  ok "frontend/.env.local already exists"
 fi
 
-# Twitter auth
-TWITTER_CMD=""
-[ -x "$TWITTER_BIN" ] && TWITTER_CMD="$TWITTER_BIN"
-command -v twitter &> /dev/null && TWITTER_CMD="twitter"
+# .env.production (root level — used by Vite production builds)
+ROOT_ENV_PROD="$FINTHEON_DIR/.env.production"
+cat > "$ROOT_ENV_PROD" << RPEOF
+# Fintheon Production Environment
+VITE_SUPABASE_URL=$SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY
+VITE_BYPASS_AUTH=false
+VITE_API_URL=$API_URL
+RPEOF
+ok "Root .env.production updated"
 
-if [ -n "$TWITTER_CMD" ]; then
-  if $TWITTER_CMD user get --username elonmusk --limit 1 > /dev/null 2>&1; then
-    ok "Twitter CLI authenticated"
-  else
-    echo ""
-    echo -e "  ┌──────────────────────────────────────────────────────┐"
-    echo -e "  │  ${BOLD}Twitter/X Browser Login${RESET}                              │"
-    echo -e "  │                                                      │"
-    echo -e "  │  Opens X.com in your browser. Log in normally.       │"
-    echo -e "  │  The CLI stores your session cookie for scraping.    │"
-    echo -e "  │  No API keys or developer account needed.            │"
-    echo -e "  └──────────────────────────────────────────────────────┘"
-    echo ""
-    read -p "  Open browser login now? [Y/n/skip] " TW_AUTH
-    if [ "$TW_AUTH" != "n" ] && [ "$TW_AUTH" != "skip" ] && [ "$TW_AUTH" != "s" ]; then
-      $TWITTER_CMD auth login 2>&1 || warn "Auth failed — retry: $TWITTER_CMD auth login"
+# ── Step 7: Install Hermes agent ─────────────────────────────────────────────
+
+step "Installing Hermes agent (local AI backend)..."
+
+if command -v hermes &>/dev/null; then
+  ok "Hermes already installed ($(hermes --version 2>/dev/null || echo 'installed'))"
+else
+  info "Hermes is the AI agent layer that powers Fintheon's analysts."
+
+  # Try Homebrew tap first
+  if command -v brew &>/dev/null; then
+    info "Installing Hermes via Homebrew..."
+    brew tap solvys-technologies/hermes 2>/dev/null || true
+    if brew install hermes 2>/dev/null; then
+      ok "Hermes installed via Homebrew"
     else
-      info "Skipped — run later: $TWITTER_CMD auth login"
+      warn "Homebrew install failed — trying npm..."
+      npm install -g @solvys/hermes 2>/dev/null || true
+      if command -v hermes &>/dev/null; then
+        ok "Hermes installed via npm"
+      else
+        warn "Hermes not available yet — AI features will use cloud fallback"
+        info "Install later with: brew tap solvys-technologies/hermes && brew install hermes"
+      fi
+    fi
+  else
+    npm install -g @solvys/hermes 2>/dev/null || true
+    if command -v hermes &>/dev/null; then
+      ok "Hermes installed via npm"
+    else
+      warn "Hermes not available — AI features will use cloud fallback"
     fi
   fi
 fi
 
-# ── Phase 6: API Keys ───────────────────────────────────────────────────
+# Initialize Hermes config directory
+HERMES_DIR="$HOME/.hermes"
+if [[ ! -d "$HERMES_DIR" ]]; then
+  mkdir -p "$HERMES_DIR/agents/main/sessions"
+  mkdir -p "$HERMES_DIR/config"
 
-ask "Phase 6: API Keys"
-echo -e "  ${DIM}Configure services that power Fintheon's features.${RESET}"
-echo -e "  ${DIM}Press Enter to skip any key — you can add them later in backend-hono/.env${RESET}"
-
-ENV_FILE="$FINTHEON_DIR/backend-hono/.env"
-
-# Create .env from example if missing
-if [ ! -f "$ENV_FILE" ]; then
-  if [ -f "$FINTHEON_DIR/backend-hono/.env.example" ]; then
-    cp "$FINTHEON_DIR/backend-hono/.env.example" "$ENV_FILE"
-    info "Created .env from template"
-  fi
+  # Write default Hermes config
+  cat > "$HERMES_DIR/config/default.json" << HERMESEOF
+{
+  "provider": "openrouter",
+  "base_url": "https://openrouter.ai/api/v1",
+  "model": "anthropic/claude-sonnet-4-20250514",
+  "app_name": "Fintheon-PIC-Hermes",
+  "fintheon_root": "$FINTHEON_DIR",
+  "backend_url": "http://localhost:8080",
+  "agents": {
+    "harper": { "role": "CAO", "model": "anthropic/claude-opus-4-20250514" },
+    "oracle": { "role": "All-Seer", "model": "anthropic/claude-opus-4-20250514" },
+    "feucht": { "role": "Futures & Risk", "model": "anthropic/claude-sonnet-4-20250514" },
+    "consul": { "role": "Fundamentals", "model": "anthropic/claude-sonnet-4-20250514" },
+    "herald": { "role": "News", "model": "anthropic/claude-sonnet-4-20250514" }
+  }
+}
+HERMESEOF
+  ok "Hermes config initialized at ~/.hermes"
+else
+  ok "Hermes config already exists at ~/.hermes"
 fi
 
-# Required
-ask_key "OpenRouter — AI inference for headline scoring" \
-  "OPENROUTER_API_KEY" \
-  "https://openrouter.ai/settings/keys" \
-  "$ENV_FILE" \
-  "required"
+# ── Step 8: Build everything ────────────────────────────────────────────────
 
-# Recommended
-ask_key "Supabase URL — cloud data persistence" \
-  "SUPABASE_URL" \
-  "https://supabase.com/dashboard/projects" \
-  "$ENV_FILE" \
-  "required"
-
-ask_key "Supabase Service Role Key" \
-  "SUPABASE_SERVICE_ROLE_KEY" \
-  "" \
-  "$ENV_FILE" \
-  "required"
-
-# Optional — open browser for each
-ask_key "Exa — deep research + web search" \
-  "EXA_API_KEY" \
-  "https://dashboard.exa.ai/api-keys" \
-  "$ENV_FILE"
-
-ask_key "FRED — macro economic indicators (free)" \
-  "FRED_API_KEY" \
-  "https://fred.stlouisfed.org/docs/api/api_key.html" \
-  "$ENV_FILE"
-
-ask_key "OpenAI — voice transcription (Whisper)" \
-  "OPENAI_API_KEY" \
-  "https://platform.openai.com/api-keys" \
-  "$ENV_FILE"
-
-ask_key "Firecrawl — web scraping for research" \
-  "FIRECRAWL_API_KEY" \
-  "https://firecrawl.dev/app/api-keys" \
-  "$ENV_FILE"
-
-# ── Phase 7: Build ──────────────────────────────────────────────────────
-
-ask "Phase 7: Building Fintheon"
-
-cd "$FINTHEON_DIR/backend-hono"
-info "Compiling backend..."
-bun run build 2>&1 | tail -1
-ok "Backend compiled"
+step "Building backend + frontend..."
 
 cd "$FINTHEON_DIR"
-info "Building frontend + DMG..."
-npm run desktop:build 2>&1 | grep -E "✓|building.*DMG" | tail -2
-ok "DMG built"
 
-# ── Phase 8: Install App ────────────────────────────────────────────────
-
-ask "Phase 8: Installing"
-
-DMG_PATH="$FINTHEON_DIR/desktop-dist/Fintheon-1.0.0-arm64.dmg"
-
-if [ -f "$DMG_PATH" ]; then
-  cp "$DMG_PATH" "$HOME/Downloads/Fintheon-1.0.0-arm64.dmg"
-  ok "DMG → ~/Downloads"
-
-  # Eject stale volumes
-  for vol in /Volumes/Fintheon*; do
-    [ -d "$vol" ] && hdiutil detach "$vol" -quiet 2>/dev/null || true
-  done
-
-  rm -rf /Applications/Fintheon.app /Applications/fintheon.app 2>/dev/null || true
-  hdiutil attach "$DMG_PATH" -nobrowse -quiet
-  VOLUME=$(ls -d "/Volumes/Fintheon"* 2>/dev/null | head -1)
-  if [ -n "$VOLUME" ]; then
-    cp -R "$VOLUME/Fintheon.app" /Applications/
-    hdiutil detach "$VOLUME" -quiet
-    xattr -cr /Applications/Fintheon.app
-    ok "Fintheon.app → /Applications"
-  else
-    warn "DMG mounted but volume not found"
-  fi
+# Build backend
+info "Compiling backend (TypeScript → JavaScript)..."
+cd backend-hono
+if bun run build 2>&1 | tail -3; then
+  ok "Backend compiled"
 else
-  fail "DMG not found at $DMG_PATH"
+  warn "Backend build had issues — the app may still work"
+fi
+cd "$FINTHEON_DIR"
+
+# Build frontend
+info "Building frontend..."
+if npx vite build 2>&1 | tail -3; then
+  ok "Frontend built"
+else
+  warn "Frontend build had issues"
 fi
 
-# ── Phase 9: Start Backend ──────────────────────────────────────────────
+# ── Step 9: Install Fintheon CLI + DMG ──────────────────────────────────────
 
-ask "Phase 9: Starting Backend"
+step "Installing Fintheon CLI and desktop app..."
+
+# Install the `fintheon` CLI command globally
+INSTALL_SCRIPT="$FINTHEON_DIR/scripts/install-cli.sh"
+if [[ -f "$INSTALL_SCRIPT" ]]; then
+  bash "$INSTALL_SCRIPT"
+  ok "'fintheon' command installed — type 'fintheon update' anytime"
+else
+  warn "CLI install script not found — installing manually..."
+  # Inline CLI installation
+  sudo mkdir -p /usr/local/bin 2>/dev/null || true
+  cat > /tmp/fintheon-cli << CLIPEOF
+#!/bin/bash
+# Fintheon CLI — installed by setup v${SETUP_VERSION}
+FINTHEON_ROOT="$FINTHEON_DIR"
+
+case "\$1" in
+  update)
+    bash "\$FINTHEON_ROOT/scripts/fintheon-update.sh"
+    ;;
+  setup)
+    bash "\$FINTHEON_ROOT/scripts/fintheon-setup.sh"
+    ;;
+  start)
+    echo "Starting Fintheon..."
+    cd "\$FINTHEON_ROOT/backend-hono"
+    lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+    sleep 1
+    nohup node dist/index.js > /tmp/fintheon-backend.log 2>&1 &
+    echo "Backend PID: \$!"
+    sleep 3
+    open /Applications/Fintheon.app 2>/dev/null || echo "Launch: open /Applications/Fintheon.app"
+    echo "Logs: tail -f /tmp/fintheon-backend.log"
+    ;;
+  stop)
+    echo "Stopping Fintheon..."
+    pkill -f "Fintheon" 2>/dev/null || true
+    pkill -f "electron.*fintheon" 2>/dev/null || true
+    lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+    echo "Stopped."
+    ;;
+  logs)
+    tail -f /tmp/fintheon-backend.log
+    ;;
+  version)
+    cd "\$FINTHEON_ROOT" && git describe --tags --always 2>/dev/null || echo "unknown"
+    ;;
+  *)
+    echo ""
+    echo "  Fintheon CLI"
+    echo "  ────────────────────────────────"
+    echo "  fintheon update    Pull latest, rebuild, restart"
+    echo "  fintheon start     Start backend + launch app"
+    echo "  fintheon stop      Stop everything"
+    echo "  fintheon logs      Tail backend logs"
+    echo "  fintheon setup     Re-run first-time setup"
+    echo "  fintheon version   Show current version"
+    echo ""
+    ;;
+esac
+CLIPEOF
+  sudo cp /tmp/fintheon-cli /usr/local/bin/fintheon
+  sudo chmod +x /usr/local/bin/fintheon
+  rm /tmp/fintheon-cli
+  ok "'fintheon' command installed"
+fi
+
+# Build and install DMG
+info "Building desktop app (DMG)..."
+cd "$FINTHEON_DIR"
+if npm run desktop:build 2>&1 | tail -5; then
+  DMG_PATH="$FINTHEON_DIR/desktop-dist/Fintheon-1.0.0-arm64.dmg"
+  if [[ -f "$DMG_PATH" ]]; then
+    # Copy to Downloads
+    cp "$DMG_PATH" "$HOME/Downloads/Fintheon-1.0.0-arm64.dmg" 2>/dev/null || true
+
+    # Install to /Applications
+    rm -rf /Applications/Fintheon.app /Applications/fintheon.app 2>/dev/null || true
+
+    for vol in /Volumes/Fintheon*; do
+      hdiutil detach "$vol" -quiet 2>/dev/null || true
+    done
+
+    hdiutil attach "$DMG_PATH" -nobrowse -quiet 2>/dev/null || true
+    VOLUME=$(ls -d /Volumes/Fintheon* 2>/dev/null | head -1)
+    if [[ -n "$VOLUME" ]]; then
+      cp -R "$VOLUME/Fintheon.app" /Applications/
+      hdiutil detach "$VOLUME" -quiet 2>/dev/null || true
+      xattr -cr /Applications/Fintheon.app 2>/dev/null || true
+      ok "Fintheon.app installed to /Applications"
+    fi
+  else
+    warn "DMG not found after build — run 'fintheon start' to use dev mode"
+  fi
+else
+  warn "DMG build skipped — run 'npm run desktop:build' manually later"
+fi
+
+# ── Step 10: Start backend and launch ────────────────────────────────────────
+
+step "Starting Fintheon..."
 
 cd "$FINTHEON_DIR/backend-hono"
+
+# Kill any existing backend on port 8080
 lsof -ti:8080 | xargs kill -9 2>/dev/null || true
 sleep 1
 
+# Start backend in background
 nohup node dist/index.js > /tmp/fintheon-backend.log 2>&1 &
 BACKEND_PID=$!
 
+# Wait for it to be ready
 info "Waiting for backend..."
 for i in {1..15}; do
-  if curl -s localhost:8080/api/harper/status > /dev/null 2>&1; then
-    ok "Backend live (PID: $BACKEND_PID)"
+  if curl -s localhost:8080/health > /dev/null 2>&1; then
+    ok "Backend is live (PID: $BACKEND_PID)"
     break
   fi
-  sleep 1
+  sleep 2
+  if [[ $i -eq 15 ]]; then
+    warn "Backend didn't respond yet — check: tail -f /tmp/fintheon-backend.log"
+  fi
 done
 
-# ── Install CLI command ──────────────────────────────────────────────────
+# ── Done ─────────────────────────────────────────────────────────────────────
 
-info "Installing 'fintheon' CLI command..."
-bash "$FINTHEON_DIR/scripts/install-cli.sh"
-export PATH="$HOME/.local/bin:$PATH"
-
-# ── Phase 10: Claude Peer Registration ───────────────────────────────────
-
-ask "Phase 10: Claude Peer Registration"
-echo -e "  ${DIM}Register this machine into Claude Peers now (recommended).${RESET}"
 echo ""
-read -p "  Run peer bootstrap now? [Y/n] " PEER_BOOT
-if [ "$PEER_BOOT" != "n" ]; then
-  bash "$FINTHEON_DIR/scripts/peer-bootstrap.sh" || warn "Peer bootstrap failed — run later: fintheon peers"
-else
-  info "Skipped — run later: fintheon peers"
+echo "  ╔══════════════════════════════════════════════════════╗"
+echo "  ║  ✓ FINTHEON IS READY                                ║"
+echo "  ╠══════════════════════════════════════════════════════╣"
+echo "  ║                                                      ║"
+echo "  ║  Backend:  http://localhost:8080                     ║"
+echo "  ║  Logs:     tail -f /tmp/fintheon-backend.log         ║"
+echo "  ║  CLI:      fintheon update | start | stop | logs     ║"
+echo "  ║                                                      ║"
+echo "  ║  Next step: Add your OpenRouter API key for AI:      ║"
+echo "  ║    1. Get key at https://openrouter.ai/settings/keys ║"
+echo "  ║    2. Edit: $FINTHEON_DIR/backend-hono/.env"
+echo "  ║    3. Set OPENROUTER_API_KEY=sk-or-...               ║"
+echo "  ║    4. Restart: fintheon stop && fintheon start        ║"
+echo "  ║                                                      ║"
+echo "  ╚══════════════════════════════════════════════════════╝"
+echo ""
+
+# Launch the app
+if [[ -d /Applications/Fintheon.app ]]; then
+  info "Opening Fintheon..."
+  open /Applications/Fintheon.app 2>/dev/null || true
 fi
 
-# ── Phase 11: LiveKit Voice (optional) ──────────────────────────────────
-
-ask "Phase 11: LiveKit Cloud — Voice Calls (optional)"
-echo -e "  ${DIM}Enables real group voice calls between peers.${RESET}"
-echo -e "  ${DIM}Free tier at https://cloud.livekit.io${RESET}"
-
-ask_key "LiveKit API Key" \
-  "LIVEKIT_API_KEY" \
-  "https://cloud.livekit.io" \
-  "$ENV_FILE"
-
-ask_key "LiveKit API Secret" \
-  "LIVEKIT_API_SECRET" \
-  "" \
-  "$ENV_FILE"
-
-ask_key "LiveKit URL (wss://...)" \
-  "LIVEKIT_URL" \
-  "" \
-  "$ENV_FILE"
-
-# ── Write phase markers ─────────────────────────────────────────────────
-
-PHASES_FILE="$HOME/.fintheon/setup-phases-done.json"
-mkdir -p "$HOME/.fintheon"
-cat > "$PHASES_FILE" <<PEOF
-{
-  "completed_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-  "phases": [1,2,3,4,5,6,7,8,9,10,11],
-  "version": "2.1.0"
-}
-PEOF
-ok "Phase markers saved to $PHASES_FILE"
-
-# ── Summary ──────────────────────────────────────────────────────────────
-
-echo ""
-banner "  ══════════════════════════════════════"
-banner "  ✓ Fintheon is ready."
-echo ""
-echo "  Backend:  http://localhost:8080"
-echo "  Logs:     tail -f /tmp/fintheon-backend.log"
-echo ""
-
-# Service status
-echo "  Services:"
-command -v claude &> /dev/null \
-  && ok "Claude CLI  — AI chat + daily briefs" \
-  || warn "Claude CLI  — npm i -g @anthropic-ai/claude-code && claude auth login"
-
-[ -x "$HOME/.local/bin/twitter" ] || command -v twitter &> /dev/null \
-  && ok "Twitter CLI — live news feed" \
-  || warn "Twitter CLI — uv tool install twitter-cli && twitter auth login"
-
-grep -q "^OPENROUTER_API_KEY=.\+" "$ENV_FILE" 2>/dev/null \
-  && ok "OpenRouter  — headline scoring" \
-  || warn "OpenRouter  — add key to backend-hono/.env"
-
-grep -q "^SUPABASE_URL=.\+" "$ENV_FILE" 2>/dev/null \
-  && ok "Supabase    — cloud persistence" \
-  || warn "Supabase    — add URL+key to backend-hono/.env"
-
-echo ""
-banner "  ══════════════════════════════════════"
-echo ""
-
-ok "Opening Fintheon..."
-open /Applications/Fintheon.app 2>/dev/null || info "Launch: open /Applications/Fintheon.app"
-
-echo ""
 echo "  Backend running. Press Ctrl+C to stop."
 echo ""
-wait $BACKEND_PID
+wait $BACKEND_PID 2>/dev/null || true

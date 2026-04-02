@@ -544,6 +544,17 @@ export function FooterToolbar({
             </span>
           )}
         </button>
+        <button
+          onClick={() => openTab('team')}
+          className={`flex items-center text-[10px] transition-colors ${
+            panelOpen && activeTab === 'team'
+              ? 'text-[var(--fintheon-accent)]'
+              : 'text-zinc-600 hover:text-zinc-400'
+          }`}
+          title="Team"
+        >
+          <Users className="w-3 h-3" />
+        </button>
 
         <button
           onClick={() => openTab('team')}

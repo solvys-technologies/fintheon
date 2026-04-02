@@ -26,7 +26,6 @@ package-lock.json
 secrets.env
 **/.env.local
 **/.env*.local
-.env.production
 .env.development
 .env.local.db
 .firecrawl/

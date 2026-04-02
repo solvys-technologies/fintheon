@@ -50,10 +50,6 @@ export function SettingsPage() {
     setIframeUrls,
     traderName,
     setTraderName,
-    hermesEnabled,
-    setHermesEnabled,
-    voiceEnabled,
-    setVoiceEnabled,
     defaultLayout,
     setDefaultLayout,
     defaultPlatform,
@@ -229,7 +225,7 @@ export function SettingsPage() {
     { id: 'general' as const, label: 'Profile', icon: Settings, description: 'Trading symbol, billing, and account preferences' },
     { id: 'hermes-admin' as const, label: 'Hermes:Admin', icon: Cpu, description: 'Gateway, agent status, backend dependencies, and diagnostics' },
     { id: 'appearance' as const, label: 'Appearance', icon: Palette, description: 'Theme and visual customization options' },
-    { id: 'desk' as const, label: 'Agentic Desk', icon: Users, description: 'Configure analyst personas and agent settings' },
+    { id: 'desk' as const, label: 'Agentic Desk', icon: Users, description: 'Agent persona configuration and CAO naming' },
     { id: 'trading' as const, label: 'Trading', icon: CreditCard, description: 'Risk management, autopilot, and strategy toggles' },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
     { id: 'api' as const, label: 'API', icon: Code, description: 'API keys and external service credentials' },
@@ -707,29 +703,6 @@ export function SettingsPage() {
                     <p className="text-[10px] text-gray-500 mt-1.5">Displayed in the toolbar next to your tier badge</p>
                   </div>
                 </section>
-
-                <section className="mb-6">
-                  <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Peer Runtime</h3>
-                  <div className="space-y-3">
-                    <Toggle
-                      label="Hermes Plugin"
-                      enabled={hermesEnabled}
-                      onChange={setHermesEnabled}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Enables Hermes plugin mode when Hermes is detected on this machine.
-                    </p>
-                    <Toggle
-                      label="Voice Widget"
-                      enabled={voiceEnabled}
-                      onChange={setVoiceEnabled}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Shows the floating peer group-call widget outside the Boardroom tab.
-                    </p>
-                  </div>
-                </section>
-
                 <section>
                   <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Trading Symbol</h3>
                   <div className="relative">
@@ -943,7 +916,6 @@ export function SettingsPage() {
                         <option value="mmt">MMT</option>
                         <option value="kalshi">Kalshi</option>
                         <option value="tradovate">Tradovate</option>
-                        <option value="tradingview">TradingView</option>
                         <option value="research">Research</option>
                       </select>
                       <p className="text-[10px] text-gray-600 mt-1">Which platform loads when you open the Browser.</p>
@@ -1524,3 +1496,4 @@ function DndResetSection() {
     </section>
   );
 }
+

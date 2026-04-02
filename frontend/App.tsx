@@ -7,6 +7,7 @@ import { ThreadProvider } from './contexts/ThreadContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { GatewayProvider } from './contexts/GatewayContext';
 import { FintheonAgentProvider } from './contexts/FintheonAgentContext';
+import { TeamPresenceProvider } from './contexts/TeamPresenceContext';
 import { RiskFlowProvider } from './contexts/RiskFlowContext';
 import { ContextBankProvider } from './contexts/ContextBankContext';
 import { ThemeProvider } from './contexts/ThemeContext';
