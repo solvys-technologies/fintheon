@@ -21,6 +21,7 @@ import { createNarrativeRoutes } from './narrative/index.js';
 import { createMirosharkRoutes } from './miroshark/index.js';
 import { createERRoutes } from './er/index.js';
 import { createVoiceRoutes } from './voice/index.js';
+import { livekit } from './livekit/index.js';
 import { createRegimeRoutes } from './regimes/index.js';
 import { createMarketRegimeRoutes } from './regime/index.js';
 
@@ -40,11 +41,18 @@ import { createSetupRoutes } from './setup/index.js';
 import { createTradeIdeasRoutes } from './trade-ideas/index.js';
 import { createProfileRoutes } from './profile/index.js';
 import { createAuthCallbackRoute } from './auth-callback.js';
+import { createAuthRoutes } from './auth/index.js';
 import { createCommentatorRoutes } from './commentator/index.js';
 import { createCalibrationRoutes } from './calibration/index.js';
 import { createHarperRoutes } from './harper/index.js';
+import { createPeersRoutes } from './peers/index.js';
 import predictionsRoutes from './predictions.js';
-import { createLiveKitRoutes } from './livekit/index.js';
+import { createDocumentRoutes } from './documents/index.js'
+import { createResearchRoutes } from './research/index.js';
+import { createBulletinRoutes } from './bulletin/index.js';
+import { createSkillsRoutes } from './skills/index.js';
+import { createMemoryRoutes } from './memory/index.js';
+import { createEditorRoutes } from './editor/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -95,11 +103,11 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/predictions', predictionsRoutes);
   // Harper-Opus — Claude CLI chat via SDK bridge (public, local-only)
   app.route('/api/harper', createHarperRoutes());
-  // LiveKit — group voice call token generation (public, graceful degradation if keys missing)
-  app.route('/api/livekit', createLiveKitRoutes());
 
   // Supabase OAuth callback relay — serves HTML that deep-links back to Electron
   app.route('/api/auth/supabase', createAuthCallbackRoute());
+  // Claude peers auth utility routes (login/me/admin role)
+  app.route('/api/auth', createAuthRoutes());
 
   // Cloud API — Supabase-backed scored items, ER sessions, settings, consilium
   app.route('/api/cloud', cloudRoutes);
@@ -142,6 +150,12 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/settings/*', authMiddleware, requireAuth);
   app.use('/api/profile', authMiddleware, requireAuth);
   app.use('/api/profile/*', authMiddleware, requireAuth);
+  app.use('/api/peers', authMiddleware, requireAuth);
+  app.use('/api/peers/*', authMiddleware, requireAuth);
+  app.use('/api/documents', authMiddleware, requireAuth);
+  app.use('/api/documents/*', authMiddleware, requireAuth);
+  app.use('/api/bulletin', authMiddleware, requireAuth);
+  app.use('/api/bulletin/*', authMiddleware, requireAuth);
   // Journal — public (local Electron app, no user auth needed)
 
   // Phase 1: Account routes
@@ -177,6 +191,9 @@ export function registerRoutes(app: Hono): void {
   // Voice assistant routes
   app.route('/api/voice', createVoiceRoutes());
 
+  // LiveKit group voice call token generation
+  app.route('/api/livekit', livekit);
+
 
   // User settings persistence
   app.route('/api/settings', createSettingsRoutes());
@@ -184,6 +201,35 @@ export function registerRoutes(app: Hono): void {
   // User profiles + app state (localStorage migration target)
   app.route('/api/profile', createProfileRoutes());
 
+  // Claude peers: registry, desks, heartbeat, group voice room
+  app.route('/api/peers', createPeersRoutes());
+
   // Trading journal (human psych + agent performance)
   app.route('/api/journal', createJournalRoutes());
+
+  // Documents — TipTap editor CRUD (S12-T2)
+  app.route('/api/documents', createDocumentRoutes());
+
+  // Bulletin board — peer trade ideas + voting (S12-T1)
+  app.route('/api/bulletin', createBulletinRoutes());
+
+  // Skills — Claude Computer Use trade plan generation (S13-T2)
+  app.use('/api/skills', authMiddleware, requireAuth);
+  app.use('/api/skills/*', authMiddleware, requireAuth);
+  app.route('/api/skills', createSkillsRoutes());
+
+  // Research task board — kanban-style deep-dive tracker (S12-T3)
+  app.use('/api/research', authMiddleware, requireAuth);
+  app.use('/api/research/*', authMiddleware, requireAuth);
+  app.route('/api/research', createResearchRoutes());
+
+  // Shared memory — team-level KV store + analysis history FTS (S13-T3)
+  app.use('/api/memory', authMiddleware, requireAuth);
+  app.use('/api/memory/*', authMiddleware, requireAuth);
+  app.route('/api/memory', createMemoryRoutes());
+
+  // Editor sidebar — agentic actions for document enrichment (S13-T3)
+  app.use('/api/editor', authMiddleware, requireAuth);
+  app.use('/api/editor/*', authMiddleware, requireAuth);
+  app.route('/api/editor', createEditorRoutes());
 }

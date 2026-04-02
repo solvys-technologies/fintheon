@@ -29,28 +29,26 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const channelRef = useRef<ReturnType<NonNullable<typeof supabase>['channel']> | null>(null);
 
-  const caoName = agents.find(a => a.id === 'harper-opus')?.name || 'Harper-Opus';
+  const caoName = agents.find((a) => a.id === 'harper-opus')?.name || 'Harper-Opus';
   const caoOnline = hermesStatus === 'ok' || gatewayStatus === 'connected';
-  const twitterCliPolling = sourceStatus.twitterCli;
+  const displayName = traderName || 'Anonymous';
 
-  // Build the presence payload
   const buildPayload = useCallback((): PresencePayload => ({
     userId,
-    displayName: traderName || 'Anonymous',
+    displayName,
     caoName,
     caoOnline,
-    twitterCliPolling,
+    twitterCliPolling: sourceStatus.twitterCli,
     inCall: false, // T3/T4 will wire this
-  }), [userId, traderName, caoName, caoOnline, twitterCliPolling]);
+  }), [userId, displayName, caoName, caoOnline, sourceStatus.twitterCli]);
 
+  // Connect to Supabase Realtime Presence channel
   useEffect(() => {
-    if (!supabase || !userId) return;
+    if (!supabase) return;
 
     const channel = supabase.channel('team-presence', {
       config: { presence: { key: userId } },
     });
-
-    channelRef.current = channel;
 
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -58,25 +56,24 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
         const members: TeamMember[] = [];
 
         for (const [key, presences] of Object.entries(state)) {
-          const latest = (presences as unknown as PresencePayload[])[0];
+          // Take the latest presence entry for each user
+          const latest = (presences as PresencePayload[])[0];
           if (!latest) continue;
 
-          const presence: DeviceStatus = {
-            userId: latest.userId ?? key,
-            displayName: latest.displayName || 'Anonymous',
-            caoName: latest.caoName || 'Harper-Opus',
-            caoOnline: latest.caoOnline ?? false,
-            twitterCliPolling: latest.twitterCliPolling ?? false,
-            online: true,
-            lastSeen: new Date().toISOString(),
-            inCall: latest.inCall ?? false,
-          };
-
           members.push({
-            userId: presence.userId,
-            displayName: presence.displayName,
-            caoName: presence.caoName,
-            presence,
+            userId: key,
+            displayName: latest.displayName,
+            caoName: latest.caoName,
+            presence: {
+              userId: key,
+              displayName: latest.displayName,
+              caoName: latest.caoName,
+              caoOnline: latest.caoOnline,
+              twitterCliPolling: latest.twitterCliPolling,
+              online: true,
+              lastSeen: new Date().toISOString(),
+              inCall: latest.inCall,
+            },
           });
         }
 
@@ -89,9 +86,11 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
         }
       });
 
+    channelRef.current = channel;
+
     return () => {
       channel.untrack();
-      supabase!.removeChannel(channel);
+      supabase.removeChannel(channel);
       channelRef.current = null;
       setIsConnected(false);
     };
@@ -99,7 +98,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // Re-track whenever payload values change
+  // Update tracked presence when local state changes
   useEffect(() => {
     if (!channelRef.current || !isConnected) return;
     channelRef.current.track(buildPayload());

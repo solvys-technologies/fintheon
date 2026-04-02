@@ -7,6 +7,7 @@ import { ThreadProvider } from './contexts/ThreadContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { GatewayProvider } from './contexts/GatewayContext';
 import { FintheonAgentProvider } from './contexts/FintheonAgentContext';
+import { TeamPresenceProvider } from './contexts/TeamPresenceContext';
 import { RiskFlowProvider } from './contexts/RiskFlowContext';
 import { ContextBankProvider } from './contexts/ContextBankContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -19,9 +20,9 @@ import { PreMarketReminder } from './components/PreMarketReminder';
 import { GitHubOAuthCallback } from './components/GitHubOAuthCallback';
 import { UpdateBanner } from './components/UpdateBanner';
 import { ApiErrorToastBridge } from './components/ApiErrorToastBridge';
+import { VersionChecker } from './components/VersionChecker';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SystemStatusProvider } from './contexts/SystemStatusContext';
-import { TeamPresenceProvider } from './contexts/TeamPresenceContext';
 import { migrateStorageKeys } from './lib/storage-migration';
 import { AuthShell } from './components/auth/AuthShell';
 
@@ -129,6 +130,8 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
     return () => { cancelled = true; };
   }, [getAccessToken, onReady]);
 
+  const fuseProgress = (stepIdx + 1) / INIT_STEPS.length;
+
   return (
     <div
       className="flex min-h-screen items-center justify-center bg-[#050402] transition-opacity duration-500"
@@ -140,35 +143,28 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
           alt="Fintheon"
           className="h-20 w-20 object-contain opacity-80 drop-shadow-[0_0_18px_rgba(199,159,74,0.4)]"
         />
-        <h1
-          className="text-xl font-light tracking-[0.5em] text-[#c79f4a]/80"
+        {/* Status line */}
+        <p
+          className="text-sm tracking-[0.3em] text-[#f0ead6]/40 italic transition-all duration-300"
           style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
         >
-          FINTHEON
-        </h1>
+          Assembling the Kingdom....
+        </p>
 
-        {/* Status line */}
-        <div className="flex items-center gap-3">
-          <div className="h-1.5 w-1.5 rounded-full bg-[#c79f4a] animate-pulse" />
-          <p className="text-xs tracking-[0.3em] text-[#f0ead6]/50 transition-all duration-300">
-            {INIT_STEPS[stepIdx]}
-          </p>
-        </div>
-
-        {/* Progress dots */}
-        <div className="flex gap-2">
-          {INIT_STEPS.map((_, i) => (
-            <div
-              key={i}
-              className="h-1 rounded-full transition-all duration-500"
-              style={{
-                width: i <= stepIdx ? 16 : 6,
-                backgroundColor: i <= stepIdx
-                  ? 'rgba(199,159,74,0.6)'
-                  : 'rgba(199,159,74,0.15)',
-              }}
-            />
-          ))}
+        {/* Fuse bar — fills left to right as steps complete */}
+        <div className="relative w-48 h-[2px] rounded-full bg-[#c79f4a]/10">
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-[#c79f4a]/50 transition-all duration-700 ease-out"
+            style={{ width: `${fuseProgress * 100}%` }}
+          />
+          {/* Bright tip */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-[#c79f4a] transition-all duration-700 ease-out"
+            style={{
+              left: `calc(${fuseProgress * 100}% - 3px)`,
+              boxShadow: '0 0 6px rgba(199, 159, 74, 0.7)',
+            }}
+          />
         </div>
 
         {/* Skip link — quiet, no popup */}
@@ -277,6 +273,7 @@ function AuthGate() {
                   }
                 `}</style>
                 <ApiErrorToastBridge />
+                <VersionChecker />
                 <UpdateBanner />
                 <GitHubOAuthCallback />
                 <MainLayout />

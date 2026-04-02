@@ -24,7 +24,7 @@ import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TradingBrowser';
 import { useDND } from '../../contexts/DNDContext';
 
-type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'performance' | 'proposals' | 'apparatus' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'performance' | 'proposals' | 'apparatus' | 'documents' | 'research' | 'memory' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   dashboard: 'Dashboard',
@@ -37,6 +37,9 @@ const TAB_LABELS: Record<NavTab, string> = {
   econ: 'Economic Calendar',
   narrative: 'NarrativeMap',
   performance: 'Performance',
+  documents: 'Documents',
+  research: 'Research',
+  memory: 'Shared Memory',
   settings: 'Settings',
 };
 
@@ -59,6 +62,7 @@ interface TopHeaderProps {
   onForward?: () => void;
   hideBranding?: boolean;
   psychAssistHeadingWidget?: React.ReactNode;
+  voiceRoomWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
 }
 
@@ -79,6 +83,7 @@ export function TopHeader({
   onForward,
   hideBranding = false,
   psychAssistHeadingWidget,
+  voiceRoomWidget,
   toolbarEditMode = false,
 }: TopHeaderProps) {
   const { tier } = useAuth();
@@ -177,6 +182,7 @@ export function TopHeader({
     { value: 'kalshi', label: 'Kalshi', description: 'Prediction Market' },
     { value: 'tradovate', label: 'Tradovate', description: 'Futures Trading Platform' },
     { value: 'tradelocker', label: 'TradeLocker', description: 'Multi-Asset Trading Platform' },
+    { value: 'tradingview', label: 'TradingView', description: 'TradingView Chart' },
     { value: 'research', label: 'Research', description: 'Notion Research iFrame' },
   ];
 
@@ -198,7 +204,7 @@ export function TopHeader({
     }
   ];
 
-  // Fetch blended IV score from backend — updates every 60 seconds
+  // Fetch blended IV score from backend — updates every 15 seconds for real-time feel
   useEffect(() => {
     const fetchIVScore = async () => {
       try {
@@ -212,7 +218,7 @@ export function TopHeader({
     };
 
     fetchIVScore();
-    const interval = setInterval(fetchIVScore, 60_000);
+    const interval = setInterval(fetchIVScore, 15_000);
     return () => clearInterval(interval);
   }, [backend, selectedSymbol.symbol]);
 
@@ -258,6 +264,7 @@ export function TopHeader({
               'vix',
               `Elevated ahead of ${w.label}`,
               'vix-spike',
+              'top-right',
             );
             break; // one toast per check
           }
@@ -355,6 +362,7 @@ export function TopHeader({
               )}
             </button>
           )}
+          {voiceRoomWidget}
         </div>
       </div>
       
@@ -525,10 +533,10 @@ export function TopHeader({
             }
             if (id === 'voice') {
               return wrapper(
-                <div className="flex items-center gap-1.5">
-                  <HeaderVoiceControl compact={topStepXEnabled && layoutOption === 'tickers-only'} />
-                  <CallButton compact={topStepXEnabled && layoutOption === 'tickers-only'} />
-                </div>
+                <>
+                <CallButton compact={topStepXEnabled && layoutOption === 'tickers-only'} />
+                <HeaderVoiceControl compact={topStepXEnabled && layoutOption === 'tickers-only'} />
+                </>
               );
             }
             if (id === 'ivScore') {

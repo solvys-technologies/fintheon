@@ -2,56 +2,48 @@
 import { Phone, PhoneOff, Loader2 } from 'lucide-react';
 import { useLiveKitRoom } from '../../hooks/useLiveKitRoom';
 
-const DEFAULT_ROOM = 'trading-floor';
-
-export function CallButton({ compact = false }: { compact?: boolean }) {
-  const { connect, disconnect, callState, participants, error } = useLiveKitRoom();
+export function CallButton() {
+  const { callState, participants, connect, disconnect, error } = useLiveKitRoom();
 
   const isConnected = callState === 'connected';
   const isConnecting = callState === 'connecting';
   const isError = callState === 'error';
   const isDisabled = isError && error?.includes('not configured');
 
-  const size = compact ? '24px' : '28px';
-  const iconSize = compact ? 11 : 13;
-
   const handleClick = () => {
-    if (isDisabled) return;
     if (isConnected) disconnect();
-    else if (callState === 'idle' || isError) connect(DEFAULT_ROOM);
+    else if (callState === 'idle' || isError) connect();
+  };
+
+  const getTitle = () => {
+    if (isDisabled) return 'Voice calls not configured — add LiveKit keys in .env';
+    if (isConnecting) return 'Connecting...';
+    if (isConnected) return `Leave Call (${participants.length} in room)`;
+    if (isError) return `Error: ${error}`;
+    return 'Join Call';
   };
 
   return (
     <button
       onClick={handleClick}
       disabled={isConnecting || isDisabled}
-      className="relative rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-40"
-      style={{
-        width: size,
-        height: size,
-        border: isConnected
-          ? '1.5px solid rgba(34,197,94,0.6)'
-          : '1.5px solid var(--fintheon-accent)',
-        background: isConnected ? 'rgba(34,197,94,0.1)' : '#070704',
-        boxShadow: isConnected ? '0 0 8px rgba(34,197,94,0.3)' : 'none',
-      }}
-      title={
-        isDisabled ? 'Voice calls not configured — add LiveKit keys in .env'
-          : isConnected ? 'Leave Call'
-          : isConnecting ? 'Connecting...'
-          : 'Join Call'
-      }
+      className={`relative p-2 rounded-lg text-xs font-medium transition-colors ${
+        isConnected
+          ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25'
+          : isDisabled
+            ? 'bg-[var(--fintheon-bg)] border border-zinc-700/30 text-zinc-600 cursor-not-allowed'
+            : 'bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/50'
+      } disabled:opacity-50`}
+      title={getTitle()}
     >
       {isConnecting ? (
-        <Loader2 size={iconSize} className="animate-spin text-[var(--fintheon-accent)]" />
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
       ) : isConnected ? (
-        <PhoneOff size={iconSize} className="text-emerald-400" />
+        <PhoneOff className="w-3.5 h-3.5" />
       ) : (
-        <Phone size={iconSize} className={isDisabled ? 'text-zinc-600' : 'text-[var(--fintheon-accent)]'} />
+        <Phone className="w-3.5 h-3.5" />
       )}
-
-      {/* Participant count badge */}
-      {isConnected && participants.length > 1 && (
+      {isConnected && participants.length > 0 && (
         <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-emerald-500/80 text-white text-[8px] font-bold flex items-center justify-center leading-none">
           {participants.length}
         </span>

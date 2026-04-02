@@ -5,17 +5,19 @@
 // [claude-code 2026-03-20] Terminal now works in browser via backend SSE (not just Electron)
 // [claude-code 2026-03-22] Add errors tab to slide-up panel for persistent error log with expandable details
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText, AlertTriangle, Users } from 'lucide-react';
+import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText, AlertTriangle } from 'lucide-react';
 import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TradingBrowser';
 import { changelog } from '../../../src/lib/changelog';
 import { useSourceStatus } from '../../hooks/useSourceStatus';
 import { useErrorLog } from '../../hooks/useErrorLog';
 import { useSystemStatus } from '../../hooks/useSystemStatus';
 import { useGateway } from '../../contexts/GatewayContext';
+import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { EPOCH_VERSION } from '../../lib/epoch-version';
 import { ErrorLogPanel } from '../ui/ErrorLogPanel';
 import { StatusIndicator } from '../ui/StatusIndicator';
 import { TeamPanel } from '../team/TeamPanel';
+import { Users } from 'lucide-react';
 
 type PanelTab = 'terminal' | 'changelog' | 'errors' | 'team';
 
@@ -73,6 +75,8 @@ interface FooterToolbarProps {
   onSplitViewToggle?: () => void;
   allowSplitView?: boolean;
   onPowerOff?: () => void;
+  peersOpen?: boolean;
+  onTogglePeers?: () => void;
 }
 
 export function FooterToolbar({
@@ -85,6 +89,8 @@ export function FooterToolbar({
   onSplitViewToggle,
   allowSplitView = false,
   onPowerOff,
+  peersOpen = false,
+  onTogglePeers,
 }: FooterToolbarProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<PanelTab>('terminal');
@@ -101,6 +107,7 @@ export function FooterToolbar({
   const prevPanelOpenRef = useRef(false);
   const activeProcessRef = useRef<{ processId: string; es: EventSource } | null>(null);
 
+  const { fetchStatus, refreshing } = useRiskFlow();
   const isElectron = typeof window !== 'undefined' && window.electron?.runShellCommand != null;
   const slashFilter = cliInput.startsWith('/') ? cliInput.slice(1).toLowerCase().trim() : '';
   const slashSuggestions = slashFilter
@@ -477,7 +484,6 @@ export function FooterToolbar({
             )}
 
             {activeTab === 'errors' && <ErrorLogPanel />}
-
             {activeTab === 'team' && <TeamPanel />}
           </div>
         </div>
@@ -540,10 +546,10 @@ export function FooterToolbar({
         </button>
         <button
           onClick={() => openTab('team')}
-          className={`flex items-center gap-1 text-[10px] transition-colors ${
+          className={`flex items-center text-[10px] transition-colors ${
             panelOpen && activeTab === 'team'
               ? 'text-[var(--fintheon-accent)]'
-              : 'text-zinc-600 hover:text-[var(--fintheon-accent)]'
+              : 'text-zinc-600 hover:text-zinc-400'
           }`}
           title="Team"
         >
@@ -659,6 +665,38 @@ export function FooterToolbar({
             </button>
           </>
         )}
+
+        {/* Peers toggle — left of status indicators */}
+        {onTogglePeers && (
+          <>
+            <button
+              onClick={onTogglePeers}
+              className={`flex items-center gap-1.5 text-[10px] transition-colors ${
+                peersOpen
+                  ? 'text-[var(--fintheon-accent)]'
+                  : 'text-zinc-500 hover:text-[var(--fintheon-accent)]'
+              }`}
+              title={peersOpen ? 'Hide Peers' : 'Show Peers'}
+            >
+              <span className={`inline-block w-1.5 h-1.5 rounded-full ${peersOpen ? 'bg-[var(--fintheon-accent)]' : 'bg-zinc-600'}`} />
+              <span className="font-medium tracking-wider uppercase">Peers</span>
+            </button>
+            <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+          </>
+        )}
+
+        {/* Fetch status — shows during refresh or polling */}
+        {fetchStatus && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            {refreshing && (
+              <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
+            )}
+            <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
+              {fetchStatus}
+            </span>
+          </div>
+        )}
+        {fetchStatus && <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />}
 
         {/* System status indicators — real-time from /api/diagnostics */}
         <div className="flex items-center gap-2.5 shrink-0">
