@@ -12,7 +12,6 @@ import { useSettings } from './SettingsContext';
 import type { NotionPollStatus } from '../lib/services';
 import type { RiskFlowItem } from '../types/api';
 
-// [claude-code 2026-03-16] Auto-refresh gating: polls skip when autoRefresh is OFF
 // [claude-code 2026-03-16] T2: ensureScoring + downgradeNonFinancialBreaking on merged feed
 
 interface RiskFlowContextValue {
@@ -101,7 +100,7 @@ function persistIds(key: string, ids: Set<string>): void {
 
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const backend = useBackend();
-  const { selectedSymbol, autoRefresh } = useSettings();
+  const { selectedSymbol } = useSettings();
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
@@ -169,13 +168,12 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void pollNotion();
     notionIntervalRef.current = setInterval(() => {
-      if (!autoRefresh) return;
       void pollNotion();
     }, NOTION_POLL_MS);
     return () => {
       if (notionIntervalRef.current) clearInterval(notionIntervalRef.current);
     };
-  }, [pollNotion, autoRefresh]);
+  }, [pollNotion]);
 
   // Backend feed polling (twitter-cli, Kalshi, Economic Calendar)
   // Uses loadedCountRef so polls fetch all items the user has scrolled through (not just first 50)
@@ -283,13 +281,12 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void pollBackendFeed();
     backendIntervalRef.current = setInterval(() => {
-      if (!autoRefresh) return;
       void pollBackendFeed();
     }, BACKEND_FEED_POLL_MS);
     return () => {
       if (backendIntervalRef.current) clearInterval(backendIntervalRef.current);
     };
-  }, [pollBackendFeed, autoRefresh]);
+  }, [pollBackendFeed]);
 
   // Device-gated on-open fetch: when the app becomes visible (tab focus, Electron foreground),
   // trigger a refresh (backend gates X polling to owner only) then re-fetch the feed.

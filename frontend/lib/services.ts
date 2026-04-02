@@ -285,6 +285,19 @@ export class RiskFlowService {
           // Backend uses 'macroLevel', frontend expects 'macroLevel' (same)
           const ivScore = item.ivScore ?? 0;
           const macroLevel = item.macroLevel ?? 1;
+          const priceBrainScore = item.priceBrainScore ?? undefined;
+          const pointRange =
+            typeof item.pointRange === 'number'
+              ? item.pointRange
+              : typeof priceBrainScore?.impliedPoints === 'number'
+              ? priceBrainScore.impliedPoints
+              : null;
+          const direction =
+            item.direction === 'Bullish' || item.direction === 'Bearish' || item.direction === 'Neutral'
+              ? item.direction
+              : priceBrainScore?.sentiment === 'Bullish' || priceBrainScore?.sentiment === 'Bearish' || priceBrainScore?.sentiment === 'Neutral'
+              ? priceBrainScore.sentiment
+              : null;
           
           return {
             id: item.id?.toString() || '',
@@ -299,12 +312,14 @@ export class RiskFlowService {
             sentiment: item.sentiment || 'neutral',
             ivScore: ivScore,
             ivImpact: ivScore, // Also set ivImpact for backward compatibility
+            pointRange,
+            direction,
             macroLevel: macroLevel,
             isBreaking: item.isBreaking || false,
             category: item.source || '',
             tags: item.tags || [],
             urgency: item.urgency || 'normal',
-            priceBrainScore: item.priceBrainScore ?? undefined,
+            priceBrainScore,
             authorHandle: item.authorHandle ?? undefined,
           };
         }),

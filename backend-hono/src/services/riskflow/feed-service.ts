@@ -16,17 +16,20 @@ import { analyzeHeadline, type AnalyzedHeadline } from '../analysis/grok-analyze
 import { calculateIVScore } from '../analysis/iv-scorer.js';
 import { classifyEventType, getMartingaleMultiplier, enforceSentiment, addToSessionBaseline } from '../iv-scoring-v2.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
+import { getMatchedKeywords } from '../headline-parser.js';
 // [claude-code 2026-03-27] S3: Rewired data pipeline — raw → scored Supabase tables, deprecating news_feed_items
 import * as newsCache from './news-cache.js';
 import { fetchEconomicFeed } from './economic-feed.js';
 import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
 import { isTwitterCliInstalled, pollTwitterForEconNews, getWarmCacheItems } from '../twitter-cli/index.js';
-import { estimatePoints } from '../market-data/point-estimator.js';
+import { estimatePoints, shouldUncapNarrativePressure } from '../market-data/point-estimator.js';
 import { fetchVIX } from '../vix-service.js';
 import { createLogger } from '../../lib/logger.js';
 import { writeRawItems, readScoredItems, type RawRiskFlowItem, type ScoredRiskFlowItem } from '../supabase-service.js';
 import { isSupabaseConfigured } from '../../config/supabase.js';
 import { scoredToFeedItem } from './central-scorer.js';
+import { assignMacroLevel } from '../../utils/assign-macro-level.js';
+import { extractFJEmojiFromText, fjTierFromEmoji } from '../twitter-cli/fj-emoji-filter.js';
 
 const log = createLogger('RiskFlow');
 // [claude-code 2026-04-01] Bumped from 100 → 500. All scored items should be accessible.
@@ -70,11 +73,97 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
   };
 }
 
-// In-memory cache (short-term) - DB cache is primary
-let feedCache: { items: FeedItem[]; fetchedAt: number } | null = null;
-const CACHE_TTL_MS = 15_000; // 15 seconds (in-memory cache)
-const FETCH_INTERVAL_MS = 30_000; // 30 seconds between fresh DB reads
-let lastFreshFetch: number = 0;
+// In-memory cache — seeded from scored DB on boot, then updated by feed poller cycles.
+let feedCache: FeedItem[] | null = null;
+
+function sortFeedItems(items: FeedItem[]): FeedItem[] {
+  return [...items].sort((a, b) => {
+    const macroA = a.macroLevel ?? 1;
+    const macroB = b.macroLevel ?? 1;
+    if (macroB !== macroA) return macroB - macroA;
+    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+  });
+}
+
+function normalizeIvScore(score: number): number {
+  return Math.max(0, Math.min(100, Math.round(score * 10)));
+}
+
+function inferRiskTypeFromText(text: string): NonNullable<FeedItem['riskType']> {
+  const lower = text.toLowerCase();
+  if (/(fed|fomc|cpi|ppi|gdp|nfp|pce|inflation|jobless|retail sales|housing starts|consumer confidence|treasury)/.test(lower)) {
+    return 'Macro';
+  }
+  if (/(war|tariff|sanction|military|conflict|opec|nato|invasion|missile|nuclear|strait of hormuz|proxy attack)/.test(lower)) {
+    return 'Geopolitical';
+  }
+  if (/(earnings|eps|revenue|guidance|beat|miss|quarterly|aapl|nvda|msft|amzn|goog|meta|tsla)/.test(lower)) {
+    return 'Earnings';
+  }
+  if (/(resistance|support|breakout|volume|rsi|macd|moving average|trend)/.test(lower)) {
+    return 'Technical';
+  }
+  if (/(credit spread|high yield|leverage|default|downgrade|junk bond)/.test(lower)) {
+    return 'Credit';
+  }
+  if (/(repo|funding|liquidity|bank run|cash crunch|reserve|circuit breaker|flash crash)/.test(lower)) {
+    return 'Liquidity';
+  }
+  return 'Commentary';
+}
+
+function resolveRiskTypeForAssignment(item: FeedItem, parsedTags: string[]): NonNullable<FeedItem['riskType']> {
+  if (item.riskType) return item.riskType;
+  const text = `${item.headline} ${parsedTags.join(' ')}`;
+  return inferRiskTypeFromText(text);
+}
+
+function countUrgencySignals(item: FeedItem, analyzed: AnalyzedHeadline): number {
+  let signals = 0;
+  if (item.isBreaking || analyzed.parsed.isBreaking) signals += 1;
+  if (item.urgency === 'immediate' || item.urgency === 'high') signals += 1;
+  if (analyzed.parsed.urgency === 'immediate' || analyzed.parsed.urgency === 'high') signals += 1;
+  if (analyzed.hotPrint && analyzed.hotPrint.impact !== 'low') signals += 1;
+  if (analyzed.parsed.marketReaction?.intensity === 'severe' || analyzed.parsed.marketReaction?.intensity === 'moderate') {
+    signals += 1;
+  }
+  if ((item.macroLevel ?? 1) >= 3) signals += 1;
+  return signals;
+}
+
+/**
+ * Cold-start cache warm from scored_riskflow_items.
+ * Called during boot so first feed request is never empty if DB already has data.
+ */
+async function warmCacheFromDB(): Promise<void> {
+  try {
+    const scored = await readScoredItems({ limit: 50 });
+    if (scored.length === 0) return;
+
+    const items = sortFeedItems(scored.map(scoredToFeedItem)).slice(0, MAX_FEED_ITEMS);
+    feedCache = items;
+    log.info(`[FeedService] Cold-start cache seeded with ${items.length} items from DB`);
+  } catch (err) {
+    log.warn('[FeedService] Cold-start seed failed (non-fatal)', { error: String(err) });
+  }
+}
+
+// Backward-compatible export used by existing boot initialization.
+export async function seedCacheFromDb(): Promise<void> {
+  await warmCacheFromDB();
+}
+
+/**
+ * Write-through cache update used by pollers after successful enrichment cycles.
+ * Empty updates are ignored so warm cache is never replaced with [].
+ */
+export function updateFeedCache(items: FeedItem[]): void {
+  if (items.length === 0) return;
+
+  const nextItems = sortFeedItems(items).slice(0, MAX_FEED_ITEMS);
+  feedCache = nextItems;
+  log.info(`[FeedService] Cache updated with ${nextItems.length} items`);
+}
 
 
 /**
@@ -129,14 +218,42 @@ async function enrichWithAnalysis(item: FeedItem, prefetchedVIX?: Awaited<Return
     // [claude-code 2026-03-28] S9-T2: Force bearish on destruction/violence headlines
     const correctedSentiment = enforceSentiment(item.headline, ivResult.sentiment);
 
+    const riskType = resolveRiskTypeForAssignment(item, analyzed.parsed.tags);
+    const normalizedIvScore = normalizeIvScore(ivResult.score);
+    const fjEmojiTier = fjTierFromEmoji(extractFJEmojiFromText(item.headline));
+    const keywordMatches = getMatchedKeywords(item.headline);
+    const urgencySignalCount = countUrgencySignals(item, analyzed);
+    const sdSurprise = undefined;
+    const macroLevel = assignMacroLevel({
+      ivScore: normalizedIvScore,
+      fjEmojiTier,
+      riskType,
+      keywordMatches,
+      urgencySignals: urgencySignalCount,
+      sdSurprise,
+    });
+    if (macroLevel === undefined) {
+      log.warn('MacroLevel unassigned after assignMacroLevel()', { itemId: item.id, headline: item.headline });
+    }
+
+    // narrativePressureCap uncap: Level 4 Macro or Geopolitical events
+    const uncapNarrativePressure = shouldUncapNarrativePressure({ macroLevel, riskType });
+
     // Compute point estimation from IV score × live VIX
     // S9-T2: Apply Martingale diminishing returns — repeated criticals get reduced points
     let priceBrainScore: FeedItem['priceBrainScore'] = undefined;
     if (ivResult.score >= 2 && vixData) {
       try {
         const feedInstrument = process.env.PRIMARY_INSTRUMENT || '/ES';
-        const pts = estimatePoints(ivResult.score, vixData.level, feedInstrument);
-        const martingale = getMartingaleMultiplier(item.headline, ivResult.macroLevel);
+        const pts = estimatePoints(
+          ivResult.score,
+          vixData.level,
+          feedInstrument,
+          undefined,
+          analyzed.parsed.narrativePressure ?? 0,
+          { uncapNarrativePressure }
+        );
+        const martingale = getMartingaleMultiplier(item.headline, macroLevel);
         const deltaPoints = Number((pts.scaledPoints * martingale).toFixed(1));
         addToSessionBaseline(deltaPoints);
         const sentimentMap: Record<string, 'Bullish' | 'Bearish' | 'Neutral'> = {
@@ -164,8 +281,8 @@ async function enrichWithAnalysis(item: FeedItem, prefetchedVIX?: Awaited<Return
       sentiment: correctedSentiment as SentimentDirection,
       ivScore: ivResult.score,
       subScores: ivResult.subScores,
-      // Preserve item's original macroLevel if it was explicitly set higher (e.g. from FJ keyword classifier)
-      macroLevel: Math.max(ivResult.macroLevel, item.macroLevel ?? 1) as MacroLevel,
+      macroLevel: macroLevel as MacroLevel,
+      riskType,
       analyzedAt: new Date().toISOString(),
       priceBrainScore,
     };
@@ -402,138 +519,51 @@ function generateMockFeed(): FeedItem[] {
 
 /**
  * Get feed items — reads from scored_riskflow_items (Supabase) as source of truth.
- * In-memory feedCache is a read-through cache on top of the scored table.
+ * In-memory feedCache is seeded from scored DB and then updated write-through by pollers.
  * Falls back to legacy news_feed_items if Supabase is unavailable.
  *
  * [claude-code 2026-03-27] S3: Rewired to read from scored table instead of news_feed_items.
  * Scores now persist across restarts because they live in Supabase.
  */
 async function getCachedFeed(): Promise<FeedItem[]> {
-  // Check in-memory cache first (fast path)
-  if (feedCache && Date.now() - feedCache.fetchedAt < CACHE_TTL_MS) {
-    return feedCache.items;
+  // Always return warm cache if present.
+  if (feedCache) {
+    return feedCache;
   }
 
-  // Optional mock fallback (disabled by default)
-  if (ALLOW_MOCK_FALLBACK && isDev) {
-    const mockItems = generateMockFeed();
-    const enrichedItems = await enrichFeedWithAnalysis(mockItems);
-    feedCache = { items: enrichedItems, fetchedAt: Date.now() };
-    return enrichedItems;
-  }
+  try {
+    if (isSupabaseConfigured()) {
+      await warmCacheFromDB();
+      if (feedCache) return feedCache;
+    }
 
-  // ── Primary read: scored_riskflow_items (Supabase) ──────────────────────
-  let scoredDbItems: FeedItem[] = [];
-  if (isSupabaseConfigured()) {
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const scored = await readScoredItems({ since, limit: MAX_FEED_ITEMS });
-    scoredDbItems = scored.map(scoredToFeedItem);
-    log.info(` getCachedFeed: Found ${scoredDbItems.length} items in scored_riskflow_items`);
-  }
+    // Fallback: legacy news_feed_items (migration compatibility)
+    const legacyItems = await newsCache.getCachedFeed({ limit: MAX_FEED_ITEMS, hoursBack: 48 });
+    if (legacyItems.length > 0) {
+      updateFeedCache(legacyItems);
+      return feedCache ?? legacyItems;
+    }
 
-  // ── Fallback: legacy news_feed_items (for migration period) ─────────────
-  let legacyItems: FeedItem[] = [];
-  if (scoredDbItems.length === 0) {
-    legacyItems = await newsCache.getCachedFeed({ limit: MAX_FEED_ITEMS, hoursBack: 48 });
-    log.info(` getCachedFeed: Fallback — ${legacyItems.length} items from legacy news_feed_items`);
-  }
+    // Optional mock fallback (disabled by default)
+    if (ALLOW_MOCK_FALLBACK && isDev) {
+      const mockItems = generateMockFeed();
+      const enrichedItems = await enrichFeedWithAnalysis(mockItems);
+      updateFeedCache(enrichedItems);
+      return feedCache ?? enrichedItems;
+    }
 
-  const dbItems = scoredDbItems.length > 0 ? scoredDbItems : legacyItems;
-
-  // Check if we need to fetch fresh data
-  const shouldFetchFresh = Date.now() - lastFreshFetch >= FETCH_INTERVAL_MS;
-  const isDatabaseEmpty = dbItems.length === 0;
-
-  // If database is empty or we have < 15 items, always fetch fresh
-  if (isDatabaseEmpty || dbItems.length < 15 || shouldFetchFresh) {
-    log.info(` Fetching fresh data (empty: ${isDatabaseEmpty}, count: ${dbItems.length}, shouldFetch: ${shouldFetchFresh})...`);
-    lastFreshFetch = Date.now();
-
+    // Last resort: fetch directly from sources if all caches are empty
     const rawItems = await fetchFreshFeed();
-    log.info(` Fetched ${rawItems.length} raw items`);
+    if (rawItems.length === 0) return feedCache ?? [];
 
-    // If fetch failed and we have database items, use them
-    if (rawItems.length === 0 && dbItems.length > 0) {
-      log.info(` Fresh fetch returned 0 items, using ${dbItems.length} items from database`);
-      feedCache = { items: dbItems, fetchedAt: Date.now() };
-      return dbItems;
-    }
-
-    // If fetch failed and database is empty, return empty unless mock fallback
-    if (rawItems.length === 0 && dbItems.length === 0) {
-      log.warn(` No items from fresh fetch and database is empty`);
-
-      if (ALLOW_MOCK_FALLBACK) {
-        log.warn(` RISKFLOW_ALLOW_MOCK_FALLBACK=true — generating fallback mock data`);
-        const mockItems = generateMockFeed();
-        const enrichedItems = await enrichFeedWithAnalysis(mockItems);
-        await newsCache.storeFeedItems(enrichedItems);
-        feedCache = { items: enrichedItems, fetchedAt: Date.now() };
-        return enrichedItems;
-      }
-
-      feedCache = { items: [], fetchedAt: Date.now() };
-      return [];
-    }
-
-    // Dedupe against what we already have in the scored table
-    const dbIdSet = new Set(dbItems.map(i => i.id));
-    const newItems = rawItems.filter(item => !dbIdSet.has(item.id));
-
-    log.info(` ${newItems.length} new items to analyze (${dbIdSet.size} already in scored DB)`);
-
-    // Only analyze new items (for immediate in-memory display while central scorer catches up)
-    let enrichedNewItems: FeedItem[] = [];
-    if (newItems.length > 0) {
-      enrichedNewItems = await enrichFeedWithAnalysis(newItems);
-      // Also store in legacy cache for backward compat
-      await newsCache.storeFeedItems(enrichedNewItems).catch(() => {});
-      log.info(` Enriched ${enrichedNewItems.length} new items (in-memory fast path)`);
-    }
-
-    // Merge: scored DB items (source of truth) + newly enriched in-memory items
-    const scoredMap = new Map<string, FeedItem>();
-    // 1. Scored DB items are canonical
-    for (const item of dbItems) {
-      scoredMap.set(item.id, item);
-    }
-    // 2. Newly enriched items fill gaps (not yet in scored table)
-    for (const item of enrichedNewItems) {
-      if (!scoredMap.has(item.id)) scoredMap.set(item.id, item);
-    }
-    // 3. Preserve any in-memory scored items not yet written to DB
-    for (const item of feedCache?.items ?? []) {
-      if (item.ivScore != null && !scoredMap.has(item.id)) {
-        scoredMap.set(item.id, item);
-      }
-    }
-    const allItems = Array.from(scoredMap.values()).slice(0, MAX_FEED_ITEMS);
-
-    feedCache = { items: allItems, fetchedAt: Date.now() };
-    log.info(` Returning ${allItems.length} total items (${scoredDbItems.length} scored DB, ${enrichedNewItems.length} new)`);
-    return allItems;
+    const enrichedItems = await enrichFeedWithAnalysis(rawItems);
+    await newsCache.storeFeedItems(enrichedItems).catch(() => {});
+    updateFeedCache(enrichedItems);
+    return feedCache ?? enrichedItems;
+  } catch (error) {
+    log.error('[FeedService] Fetch failed, serving stale cache', { error: String(error) });
+    return feedCache ?? [];
   }
-
-  // Use database items — merge with any in-memory scored items not yet persisted
-  if (feedCache && feedCache.items.some(i => i.ivScore != null)) {
-    const scoredMap = new Map<string, FeedItem>();
-    for (const item of dbItems) {
-      scoredMap.set(item.id, item);
-    }
-    for (const item of feedCache.items) {
-      if (item.ivScore != null && !scoredMap.has(item.id)) {
-        scoredMap.set(item.id, item);
-      }
-    }
-    const merged = Array.from(scoredMap.values()).slice(0, MAX_FEED_ITEMS);
-    feedCache = { items: merged, fetchedAt: Date.now() };
-    log.info(` Merged ${merged.length} items (scored DB primary, in-memory supplements)`);
-    return merged;
-  }
-
-  log.info(` Using ${dbItems.length} items from scored database`);
-  feedCache = { items: dbItems, fetchedAt: Date.now() };
-  return dbItems;
 }
 
 /**
@@ -543,7 +573,7 @@ async function getCachedFeed(): Promise<FeedItem[]> {
  */
 // [claude-code 2026-03-27] Rescore in-memory feed for regime-aware V3 scoring
 export async function rescoreInMemoryFeed(): Promise<number> {
-  const items = feedCache?.items ?? [];
+  const items = feedCache ?? [];
   if (items.length === 0) {
     log.info('rescoreInMemoryFeed: no cached items to rescore');
     return 0;
@@ -551,7 +581,7 @@ export async function rescoreInMemoryFeed(): Promise<number> {
 
   log.info(`rescoreInMemoryFeed: re-enriching ${items.length} cached items`);
   const reEnriched = await enrichFeedWithAnalysis(items);
-  feedCache = { items: reEnriched, fetchedAt: Date.now() };
+  updateFeedCache(reEnriched);
 
   // Also update the database cache
   await newsCache.storeFeedItems(reEnriched).catch((err: unknown) =>
@@ -632,3 +662,6 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
 export async function getBreakingNews(userId: string): Promise<FeedResponse> {
   return getFeed(userId, { breakingOnly: true, limit: 10 });
 }
+
+// Non-blocking module warm-up so cache can populate ahead of first poll cycle.
+void warmCacheFromDB();

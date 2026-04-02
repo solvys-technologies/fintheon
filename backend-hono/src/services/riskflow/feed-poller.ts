@@ -3,20 +3,19 @@
  * Continuously polls for new news items and broadcasts Level 4 events instantly
  * Runs independently of HTTP requests for real-time updates
  */
-// [claude-code 2026-03-31] Dynamic polling intervals: 5min market hours, 30min off-hours. Observable pipeline.
+// [claude-code 2026-04-02] Dynamic polling: hot hours 60s (8-11AM ET), rotation 180s (all other times, 24/7).
 // [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
 
 // [claude-code 2026-03-27] S3: Write raw items to raw_riskflow_items for central scorer pipeline
-// [claude-code 2026-03-30] S10-T1c: Added daily window gate + autoRefresh toggle
-// [claude-code 2026-03-31] Widened polling window 6AM-8PM ET weekdays (was 8-11AM — starved pipeline for 3 days)
+// [claude-code 2026-04-02] Removed user autoRefresh gating — backend polling is autonomous.
 import * as newsCache from './news-cache.js';
-import { enrichFeedWithAnalysis } from './feed-service.js';
+import { enrichFeedWithAnalysis, updateFeedCache } from './feed-service.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import { fetchEconomicFeed } from './economic-feed.js';
 import { isTwitterCliInstalled, pollTwitterForEconNews, manualRefreshTweets } from '../twitter-cli/index.js';
 import { writeRawItems, type RawRiskFlowItem } from '../supabase-service.js';
 import { isSupabaseConfigured } from '../../config/supabase.js';
-import { getUserSettings } from '../settings-store.js';
+import { getPollingConfig } from './polling-config.js';
 import type { FeedItem } from '../../types/riskflow.js';
 import { createLogger } from '../../lib/logger.js';
 
@@ -38,17 +37,22 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
 
 const log = createLogger('FeedPoller');
 
-// ── Polling Intervals ─────────────────────────────────────────────────────────
-// Market hours (6AM-2PM ET weekdays): 5 minutes — active trading, commentary flowing
-// Off-hours (2PM-8PM ET weekdays): 30 minutes — still monitor but less aggressively
-// Outside window (nights/weekends): no automatic polling (manual refresh only)
-const MARKET_HOURS_INTERVAL_MS = 5 * 60_000;   // 5 minutes
-const OFF_HOURS_INTERVAL_MS = 30 * 60_000;      // 30 minutes
-const SCHEDULE_CHECK_MS = 60_000;                // Check schedule every 60s
-
 let pollTimeout: ReturnType<typeof setTimeout> | null = null;
 let isPolling = false;
-let _lastGateLog = 0; // Throttle gate-blocked log messages
+let consecutivePollingFailures = 0;
+let lastPollingAttemptMs = 0;
+const POLLING_WARN_THRESHOLD = 5;
+const POLLING_CRITICAL_THRESHOLD = 10;
+const POLLING_BACKOFF_INTERVAL_MS = 60_000; // extended retry after WARN_THRESHOLD
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`[FeedPoller] ${label} timed out after ${ms}ms`)), ms),
+    ),
+  ]);
+}
 
 // Health tracking for observability
 let _pollsSinceLastLog = 0;
@@ -60,66 +64,13 @@ const HEALTH_LOG_INTERVAL = 10 * 60_000; // Log health every 10 minutes
 let manualToggleEnabled = true;
 
 /**
- * Check if we're inside the daily polling window.
- * Extended market hours: 6AM-8PM ET on weekdays.
- * Weekends: suppressed (no meaningful flow).
+ * Backend polling is autonomous. Only the manual admin toggle can disable it.
  */
-export function isInsidePollingWindow(): boolean {
-  const now = new Date();
-  const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
-  const et = new Date(etStr);
-  const hour = et.getHours();
-  const day = et.getDay(); // 0=Sun, 6=Sat
-
-  // Weekdays only, 6AM-8PM ET (covers pre-market through post-market)
-  if (day === 0 || day === 6) return false;
-  return hour >= 6 && hour < 20;
-}
-
-/**
- * Get the appropriate polling interval based on time of day.
- * Returns null if outside the polling window entirely.
- */
-function getPollingInterval(): number | null {
-  const now = new Date();
-  const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
-  const et = new Date(etStr);
-  const hour = et.getHours();
-  const day = et.getDay();
-
-  // Weekends: no polling
-  if (day === 0 || day === 6) return null;
-
-  // Active market hours: 6AM-2PM ET → 5 min
-  if (hour >= 6 && hour < 14) return MARKET_HOURS_INTERVAL_MS;
-
-  // Off-hours: 2PM-8PM ET → 30 min
-  if (hour >= 14 && hour < 20) return OFF_HOURS_INTERVAL_MS;
-
-  // Outside window
-  return null;
-}
-
-/**
- * Check if autoRefresh is enabled in user settings AND manual toggle is on.
- * Returns false if polling should be suppressed.
- */
-async function isPollingAllowed(): Promise<boolean> {
+function isPollingAllowed(): boolean {
   if (!manualToggleEnabled) {
     log.info('Polling blocked: manual toggle is OFF');
     return false;
   }
-
-  try {
-    const settings = await getUserSettings('default');
-    if (settings.autoRefresh === false) {
-      log.info('Polling blocked: autoRefresh setting is OFF in user settings');
-      return false;
-    }
-  } catch {
-    // Default: allow polling if settings unavailable
-  }
-
   return true;
 }
 
@@ -142,9 +93,8 @@ function maybeLogHealth(): void {
   if (now - _lastHealthLog < HEALTH_LOG_INTERVAL) return;
   _lastHealthLog = now;
 
-  const interval = getPollingInterval();
-  const intervalDesc = interval === MARKET_HOURS_INTERVAL_MS ? '5min (market hours)'
-    : interval === OFF_HOURS_INTERVAL_MS ? '30min (off-hours)' : 'inactive';
+  const { interval, isHotHours } = getPollingConfig();
+  const intervalDesc = `${interval / 1000}s (${isHotHours ? 'hot' : 'rotation'})`;
 
   log.info(`Pipeline health: ${_pollsSinceLastLog} polls, ${_itemsSinceLastLog} new items in last 10min | interval: ${intervalDesc} | toggle: ${manualToggleEnabled ? 'ON' : 'OFF'}`);
 
@@ -160,19 +110,17 @@ async function pollForNewItems(): Promise<void> {
     return; // Prevent concurrent polls
   }
 
-  // S10-T1c: Check time window + toggle + autoRefresh before polling
-  if (!isInsidePollingWindow()) {
-    // Log once per hour so stale feeds are never a mystery
-    const now = Date.now();
-    if (now - _lastGateLog > 3_600_000) {
-      log.info('Outside polling window (6AM-8PM ET weekdays) — automatic polling paused');
-      _lastGateLog = now;
-    }
+  if (
+    consecutivePollingFailures >= POLLING_WARN_THRESHOLD &&
+    consecutivePollingFailures < POLLING_CRITICAL_THRESHOLD &&
+    Date.now() - lastPollingAttemptMs < POLLING_BACKOFF_INTERVAL_MS
+  ) {
     return;
   }
+  lastPollingAttemptMs = Date.now();
 
-  if (!(await isPollingAllowed())) {
-    return; // Toggle off or autoRefresh disabled — reason already logged
+  if (!isPollingAllowed()) {
+    return;
   }
 
   isPolling = true;
@@ -202,6 +150,7 @@ async function pollForNewItems(): Promise<void> {
     if (rawItems.length === 0) {
       // Log when both sources return empty so operators know the pipeline is idle
       log.info(`Poll cycle: 0 items from all sources (twitter-cli: ${twitterAvailable ? 'available' : 'unavailable'}, econ: checked)`);
+      consecutivePollingFailures = 0;
       return;
     }
 
@@ -211,6 +160,7 @@ async function pollForNewItems(): Promise<void> {
     const newItems = rawItems.filter(i => !cachedIds.has(i.id));
 
     if (newItems.length === 0) {
+      consecutivePollingFailures = 0;
       return; // No new items
     }
 
@@ -225,10 +175,15 @@ async function pollForNewItems(): Promise<void> {
     }
 
     // Enrich with AI analysis (this calculates IV scores and macro levels)
-    const enrichedItems = await enrichFeedWithAnalysis(newItems);
+    const enrichedItems = await withTimeout(
+      enrichFeedWithAnalysis(newItems),
+      30_000,
+      'enrichFeedWithAnalysis',
+    );
 
     // Store all items in legacy news_feed_items (kept for backward compat during migration)
     await newsCache.storeFeedItems(enrichedItems);
+    updateFeedCache(enrichedItems);
 
     // Broadcast Level 4 items immediately via SSE
     const level4Items = enrichedItems.filter(item => item.macroLevel === 4);
@@ -240,8 +195,27 @@ async function pollForNewItems(): Promise<void> {
     if (level4Items.length > 0) {
       log.info(` Broadcast ${level4Items.length} Level 4 items via SSE`);
     }
+    consecutivePollingFailures = 0;
   } catch (error) {
-    log.error(' Poll error:', error);
+    consecutivePollingFailures += 1;
+    const msg = error instanceof Error ? error.message : String(error);
+    const timedOut = msg.includes('timed out');
+
+    if (consecutivePollingFailures >= POLLING_CRITICAL_THRESHOLD) {
+      log.error(
+        '[FeedPoller] CRITICAL: 10+ consecutive failures. Likely env/auth issue. Check SUPABASE_URL, SUPABASE_ANON_KEY, and JWT expiry.',
+        { error: msg, consecutivePollingFailures, timedOut },
+      );
+    } else if (consecutivePollingFailures >= POLLING_WARN_THRESHOLD) {
+      log.warn(
+        '[FeedPoller] WARNING: 5+ consecutive failures. Backing off to 60s interval.',
+        { error: msg, consecutivePollingFailures, timedOut },
+      );
+    } else if (timedOut) {
+      log.warn('[FeedPoller] Enrichment timed out — resetting isPolling guard', { msg, consecutivePollingFailures });
+    } else {
+      log.error('[FeedPoller] Poll error:', { error: msg });
+    }
   } finally {
     isPolling = false;
     maybeLogHealth();
@@ -249,44 +223,26 @@ async function pollForNewItems(): Promise<void> {
 }
 
 /**
- * Schedule the next poll using dynamic intervals.
- * Self-scheduling pattern: after each poll, schedule the next one based on time of day.
- */
-function scheduleNextPoll(): void {
-  const interval = getPollingInterval();
-
-  if (interval === null) {
-    // Outside polling window — check again in 60s to see if we've entered the window
-    pollTimeout = setTimeout(scheduleNextPoll, SCHEDULE_CHECK_MS);
-    return;
-  }
-
-  pollForNewItems().finally(() => {
-    pollTimeout = setTimeout(scheduleNextPoll, interval);
-  });
-}
-
-/**
  * Start the continuous polling service
  */
 export function startFeedPoller(): void {
   if (pollTimeout) {
-    console.log('[FeedPoller] Already running');
+    log.info('FeedPoller already running');
     return;
   }
 
-  const interval = getPollingInterval();
-  const intervalDesc = interval === MARKET_HOURS_INTERVAL_MS ? '5min'
-    : interval === OFF_HOURS_INTERVAL_MS ? '30min' : 'waiting for window';
-
-  log.info(` Starting dynamic polling (current: ${intervalDesc})`);
+  log.info('FeedPoller starting (dynamic interval, 24/7)');
   _pollerStarted = true;
 
-  // Poll immediately on startup
-  pollForNewItems().then(() => {
-    // Then schedule based on time of day
-    pollTimeout = setTimeout(scheduleNextPoll, interval ?? SCHEDULE_CHECK_MS);
-  });
+  const scheduledPoll = async (): Promise<void> => {
+    await pollForNewItems();
+
+    const { interval, isHotHours } = getPollingConfig();
+    log.info(`[FeedPoller] Next poll in ${interval / 1000}s (hotHours=${isHotHours})`);
+    pollTimeout = setTimeout(scheduledPoll, interval);
+  };
+
+  void scheduledPoll();
 }
 
 /**
@@ -303,7 +259,7 @@ export function stopFeedPoller(): void {
 
 /**
  * Force an immediate poll cycle (used by manual refresh endpoint).
- * Uses manualRefreshTweets which bypasses autoRefresh + event window gates.
+ * Uses manualRefreshTweets to force timeline fetch regardless of schedule cadence.
  * Waits for any active poll to finish before running, so the refresh
  * is never silently dropped.
  */
@@ -317,7 +273,7 @@ export async function forcePoll(): Promise<void> {
 
   isPolling = true;
   try {
-    // Manual refresh: bypass autoRefresh + event window via manualRefreshTweets
+    // Manual refresh path (outside normal scheduled cadence)
     const [twitterCliItems, econItems] = await Promise.all([
       manualRefreshTweets().catch(() => []),
       fetchEconomicFeed().catch(() => []),
@@ -343,6 +299,7 @@ export async function forcePoll(): Promise<void> {
 
     const enrichedItems = await enrichFeedWithAnalysis(newItems);
     await newsCache.storeFeedItems(enrichedItems);
+    updateFeedCache(enrichedItems);
 
     const level4Items = enrichedItems.filter(item => item.macroLevel === 4);
     for (const item of level4Items) {

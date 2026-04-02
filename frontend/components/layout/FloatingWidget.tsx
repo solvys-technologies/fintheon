@@ -7,7 +7,7 @@ import { EmotionalResonanceMonitor } from '../mission-control/EmotionalResonance
 import { useBackend } from '../../lib/backend';
 import type { RiskFlowItem } from '../../types/api';
 import type { IVScoreResponse } from '../../types/market-data';
-import { X, Trash2, Diff } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 
 function XLogo({ className }: { className?: string }) {
   return (
@@ -272,11 +272,21 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
                     <p className="text-[10px] text-gray-300/80 line-clamp-1 drop-shadow-sm mt-0.5">{newsItem.content}</p>
                   )}
                   <div className="flex items-center gap-2 mt-1">
-                    {newsItem.ivScore != null && typeof newsItem.ivScore === 'number' && newsItem.ivScore > 0 && (
+                    {(newsItem.pointRange != null || newsItem.ivScore != null) && (
                       <div className="flex items-center gap-1 text-[10px]">
-                        <Diff className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
+                        {newsItem.direction && (
+                          <span className={
+                            newsItem.direction === 'Bullish'
+                              ? 'text-emerald-400'
+                              : newsItem.direction === 'Bearish'
+                              ? 'text-red-400'
+                              : 'text-gray-400'
+                          }>
+                            {newsItem.direction === 'Bullish' ? '▲' : newsItem.direction === 'Bearish' ? '▼' : '◆'}
+                          </span>
+                        )}
                         <span className="text-[var(--fintheon-accent)] font-medium drop-shadow-sm">
-                          ±{newsItem.ivScore.toFixed(0)} pts
+                          ±{(newsItem.pointRange ?? newsItem.ivScore!).toFixed(0)} pts
                         </span>
                       </div>
                     )}

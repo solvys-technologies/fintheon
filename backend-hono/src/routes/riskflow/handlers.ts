@@ -17,7 +17,8 @@ import type { FeedFilters, WatchlistUpdateRequest, NewsSource, MacroLevel } from
 import { isSupabaseConfigured } from '../../config/supabase.js';
 import { writeInstrumentScores } from '../../services/supabase-service.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
-import { forcePoll, setPollingToggle, getPollingToggle, isPollingActive, isInsidePollingWindow } from '../../services/riskflow/feed-poller.js';
+import { forcePoll, setPollingToggle, getPollingToggle, isPollingActive } from '../../services/riskflow/feed-poller.js';
+import { getPollingConfig } from '../../services/riskflow/polling-config.js';
 import { fetchVIX, getVIXSpikeAdjustment, getVIXScoringMultiplier, getVIXBaseline } from '../../services/vix-service.js';
 import {
   calculateIVScoreV2,
@@ -877,17 +878,18 @@ export async function handlePollingToggle(c: Context) {
 /**
  * GET /api/riskflow/polling-status
  * Returns current polling state for frontend toggle sync.
- * The frontend should auto-flip the toggle based on windowActive.
  */
 export async function handlePollingStatus(c: Context) {
-  const windowActive = isInsidePollingWindow();
+  const { interval, isHotHours } = getPollingConfig();
   const toggleEnabled = getPollingToggle();
   const pollerRunning = isPollingActive();
 
   return c.json({
-    windowActive,
+    windowActive: true, // polling is 24/7 with dynamic cadence
+    isHotHours,
+    intervalMs: interval,
     toggleEnabled,
     pollerRunning,
-    effectivelyPolling: windowActive && toggleEnabled && pollerRunning,
+    effectivelyPolling: toggleEnabled && pollerRunning,
   });
 }

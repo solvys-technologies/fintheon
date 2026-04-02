@@ -1,39 +1,46 @@
 // [claude-code 2026-03-10] Econ-triggered twitter poller — links Notion Econ Calendar to twitter-cli searches
 // [claude-code 2026-03-10] Warm cache: filter 'high'→'medium', slice(10)→slice(30) for broader seed
 // [claude-code 2026-03-10] Burst polling: 5s interval for 30s after econ release, actual extraction from FJ tweets
-// [claude-code 2026-03-16] Smart polling: event-window-only (T-5min to T+15min), autoRefresh gate
+// [claude-code 2026-03-16] Smart polling: event-window-only (T-5min to T+15min)
 // [claude-code 2026-03-23] Wired rate limiter for Twitter CLI calls
 
 import { searchTweets, fetchUserTimeline, isTwitterCliInstalled } from './twitter-cli-service.js';
 import { createRateLimiter } from '../rate-limiter.js';
+import { getPollingConfig } from '../riskflow/polling-config.js';
 
-// Rate limiter: prevent CLI subprocess spam (10 timelines/min for 8 accounts + headroom, 4 searches/min)
+// Rate limiter: prevent CLI subprocess spam (12 timelines/min for 11 accounts + headroom, 4 searches/min)
 const twitterLimiter = createRateLimiter({
-  defaultRule: { limit: 14, windowMs: 60_000 },
+  defaultRule: { limit: 16, windowMs: 60_000 },
   buckets: {
-    'twitter-timeline': { limit: 10, windowMs: 60_000 },
+    'twitter-timeline': { limit: 12, windowMs: 60_000 },
     'twitter-search': { limit: 4, windowMs: 60_000 },
   },
   baseBackoffMs: 500,
   maxBackoffMs: 20_000,
   logger: (msg, data) => console.log(`[TwitterRateLimiter] ${msg}`, JSON.stringify(data ?? {})),
 });
-import { filterByTier } from './fj-emoji-filter.js';
+import { filterByTier, extractFJEmojiFromText, fjTierFromEmoji, type FJClassification } from './fj-emoji-filter.js';
 import { fetchEconCalendar, updateEventActual, writeEconPrint } from '../econ-calendar-service.js';
 import { writeConsiliumMessage } from '../supabase-service.js';
 import { injectEconPrintToFeed } from '../riskflow/econ-bridge.js';
 import { storeFeedItems } from '../riskflow/news-cache.js';
+import { getMatchedKeywords } from '../headline-parser.js';
+import { assignMacroLevel } from '../../utils/assign-macro-level.js';
 import type { EconEvent } from '../econ-calendar-service.js';
-import type { FeedItem, NewsSource } from '../../types/riskflow.js';
-import { getUserSettings } from '../settings-store.js';
+import type { FeedItem, NewsSource, RiskType } from '../../types/riskflow.js';
 
 // In-memory dedup — don't re-post same item to Supabase across polls
 const postedIds = new Set<string>();
 
+export function shouldPushToConsilium(macroLevel: number | undefined): boolean {
+  // MacroLevel gate — criteria: config/catalyst-levels.ts
+  return (macroLevel ?? 1) >= 3;
+}
+
 /** Push Critical/High FeedItems to Supabase consilium_messages (fire-and-forget, deduplicated) */
 async function pushToSupabase(items: FeedItem[]): Promise<void> {
   const newItems = items.filter(
-    (item) => (item.macroLevel ?? 1) >= 3 && !postedIds.has(item.id)
+    (item) => shouldPushToConsilium(item.macroLevel) && !postedIds.has(item.id)
   );
   if (newItems.length === 0) return;
 
@@ -55,12 +62,11 @@ async function pushToSupabase(items: FeedItem[]): Promise<void> {
 
 const PRE_EVENT_MINUTES = 5;      // Start polling 5 min before print
 const POST_EVENT_MINUTES = 15;    // Stop 15 min after print
-const POLL_INTERVAL_MS = 60_000;  // 60s standard polling
 const BURST_INTERVAL_MS = 5_000; // 5s burst polling during releases
 const BURST_DURATION_MS = 30_000; // 30s burst window after release time
 
-// Financial Juice and InsiderWire screen names to always fetch
-const FJ_ACCOUNTS = ['financialjuice', 'InsiderWire'] as const;
+// FinancialJuice is the primary source of truth for econ print actuals.
+const FJ_ACCOUNTS = ['financialjuice'] as const;
 
 // Trusted macro/econ accounts — always polled alongside FJ
 const TRUSTED_ACCOUNTS = ['NickTimiraos'] as const;
@@ -69,10 +75,19 @@ const TRUSTED_ACCOUNTS = ['NickTimiraos'] as const;
 const WIRE_ACCOUNTS = ['DeItaone'] as const;
 
 // OSINT / geopolitical intelligence accounts — continuous polling
+// OSINTDefender = @sentdefender (switch handle if CLI resolution fails in production env).
 const OSINT_ACCOUNTS = ['OSINTDefender'] as const;
 
 // Geopolitical + policy accounts — polled for real-time geopolitical + fiscal commentary
-const GEOPOLITICAL_ACCOUNTS = ['SecBessent25', 'realDonaldTrump', 'ABORNEOFFICIAL'] as const;
+const GEOPOLITICAL_ACCOUNTS = [
+  'SecBessent25',
+  'realDonaldTrump',
+  'ABORNEOFFICIAL',
+  'TheSpectatorIndex',
+  'SchizoIntel',
+  'MenchOSINT',
+  'ClashReport',
+] as const;
 
 // All accounts that should be polled continuously (not gated by econ events)
 const ALL_CONTINUOUS_ACCOUNTS = [
@@ -356,8 +371,7 @@ function msUntilRelease(eventDate?: string, eventTime?: string): number | null {
 
 function tweetToFeedItem(
   tweet: { id: string; text: string; author: string; publishedAt: string },
-  macroLevel: 1 | 2 | 3 | 4,
-  urgency: 'immediate' | 'high' | 'normal'
+  fjClassification: FJClassification,
 ): FeedItem {
   const authorLower = tweet.author.toLowerCase();
   const source: NewsSource =
@@ -366,17 +380,56 @@ function tweetToFeedItem(
     authorLower === 'deitaone' ? 'DeItaOne' :
     'TwitterCli';
 
+  const keywordMatches = getMatchedKeywords(tweet.text);
+  const riskType = inferRiskTypeFromTweet(tweet.text);
+  const fjEmojiTier = fjTierFromEmoji(extractFJEmojiFromText(tweet.text));
+  const normalizedIvFromTier: Record<1 | 2 | 3 | 4, number> = { 1: 0, 2: 40, 3: 70, 4: 90 };
+  const urgencySignals =
+    (fjClassification.urgency !== 'normal' ? 1 : 0) +
+    (fjClassification.macroLevel >= 3 ? 1 : 0) +
+    (keywordMatches.length > 0 ? 1 : 0);
+  const macroLevel = assignMacroLevel({
+    ivScore: normalizedIvFromTier[fjClassification.macroLevel],
+    fjEmojiTier,
+    riskType,
+    keywordMatches,
+    urgencySignals,
+  });
+
   return {
     id: `twcli-${tweet.id}`,
     source,
     headline: tweet.text,
     symbols: extractSymbolsFromText(tweet.text),
     tags: extractTagsFromText(tweet.text),
-    isBreaking: urgency === 'immediate',
-    urgency,
+    isBreaking: fjClassification.urgency === 'immediate',
+    urgency: fjClassification.urgency,
     macroLevel,
     publishedAt: tweet.publishedAt,
   };
+}
+
+function inferRiskTypeFromTweet(text: string): RiskType {
+  const lower = text.toLowerCase();
+  if (/(fed|fomc|cpi|ppi|gdp|nfp|pce|inflation|jobless|retail sales|housing starts|consumer confidence|treasury)/.test(lower)) {
+    return 'Macro';
+  }
+  if (/(war|tariff|sanction|military|conflict|opec|nato|invasion|missile|nuclear|strait of hormuz|proxy attack)/.test(lower)) {
+    return 'Geopolitical';
+  }
+  if (/(earnings|eps|revenue|guidance|beat|miss|quarterly|aapl|nvda|msft|amzn|goog|meta|tsla)/.test(lower)) {
+    return 'Earnings';
+  }
+  if (/(resistance|support|breakout|volume|rsi|macd|moving average|trend)/.test(lower)) {
+    return 'Technical';
+  }
+  if (/(credit spread|high yield|leverage|default|downgrade|junk bond)/.test(lower)) {
+    return 'Credit';
+  }
+  if (/(repo|funding|liquidity|bank run|cash crunch|reserve|circuit breaker|flash crash)/.test(lower)) {
+    return 'Liquidity';
+  }
+  return 'Commentary';
 }
 
 function extractSymbolsFromText(text: string): string[] {
@@ -403,20 +456,11 @@ function extractTagsFromText(text: string): string[] {
 // ── Main Poll Function ───────────────────────────────────────────────────────
 
 /**
- * Main poll function: fetches FJ/InsiderWire/Trusted timelines + event-triggered search results.
+ * Main poll function: fetches continuous account timelines + event-triggered search results.
  * Only returns items that pass the FJ emoji filter (medium+).
  * Also extracts "Actual" values from FJ tweets and writes them to Notion.
  */
 export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
-  // Respect autoRefresh setting
-  try {
-    const settings = await getUserSettings('default');
-    if (settings.autoRefresh === false) {
-      console.debug('[EconTwitterPoller] autoRefresh disabled, skipping');
-      return [];
-    }
-  } catch { /* proceed if settings unavailable */ }
-
   const installed = await isTwitterCliInstalled();
   if (!installed) {
     console.debug('[EconTwitterPoller] twitter-cli not installed, skipping');
@@ -487,7 +531,7 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
 
   // 7. Convert to FeedItem[]
   const feedItems: FeedItem[] = classified.map((t) =>
-    tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
+    tweetToFeedItem(t, t.fjClassification)
   );
 
   if (feedItems.length > 0) {
@@ -523,12 +567,12 @@ function scheduleBurst(event: EconEvent): void {
       if (elapsed > BURST_DURATION_MS) {
         clearInterval(burstInterval);
         activeBursts.delete(burstKey);
-        console.log(`[EconTwitterPoller] BURST END: "${event.name}" — returning to 60s polling`);
+        console.log(`[EconTwitterPoller] BURST END: "${event.name}" — returning to scheduled polling`);
         return;
       }
 
       try {
-        // Rapid-fire: only fetch FJ + InsiderWire (fastest actual sources, rate-limited)
+        // Rapid-fire: fetch only FinancialJuice (fastest source for actual values)
         const batches = await Promise.allSettled(
           FJ_ACCOUNTS.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: 10 }), { bucket: 'twitter-timeline' }))
         );
@@ -548,7 +592,7 @@ function scheduleBurst(event: EconEvent): void {
         // Also convert to feed items for the UI
         const classified = filterByTier(unique, 'medium');
         const feedItems = classified.map((t) =>
-          tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
+          tweetToFeedItem(t, t.fjClassification)
         );
 
         if (feedItems.length > 0) {
@@ -609,7 +653,7 @@ async function initFetchHighPriorityPosts(): Promise<void> {
       .slice(0, 30);
 
     warmCache = top30.map((t) =>
-      tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
+      tweetToFeedItem(t, t.fjClassification)
     );
 
     console.log(`[EconTwitterPoller] Init warm cache: ${warmCache.length} Medium+ posts seeded`);
@@ -633,11 +677,11 @@ export function getTwitterRateLimiterStatus() {
   return { pending: twitterLimiter.pending() };
 }
 
-// ── Manual Refresh (bypasses autoRefresh + event window) ─────────────────────
+// ── Manual Refresh (bypasses scheduled cadence) ──────────────────────────────
 
 /**
- * Manual refresh: fetches FJ/InsiderWire/Trusted timelines on demand.
- * Bypasses autoRefresh setting AND econ event window — always runs.
+ * Manual refresh: fetches all continuous accounts on demand.
+ * Runs independently of scheduled cadence.
  * Stores to DB with dedup so all users see the data.
  * Called by the manual refresh button endpoint.
  */
@@ -672,7 +716,7 @@ export async function manualRefreshTweets(): Promise<FeedItem[]> {
   // Apply FJ emoji tier filter (medium+)
   const classified = filterByTier(uniqueTweets, 'medium');
   const feedItems: FeedItem[] = classified.map((t) =>
-    tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
+    tweetToFeedItem(t, t.fjClassification)
   );
 
   if (feedItems.length > 0) {
@@ -693,7 +737,7 @@ export async function manualRefreshTweets(): Promise<FeedItem[]> {
   return feedItems;
 }
 
-// ── Night Poller (7PM–7AM EST, hourly, ignores autoRefresh) ─────────────────
+// ── Night Poller (7PM–7AM EST, hourly) ───────────────────────────────────────
 
 const NIGHT_POLL_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 let nightPollerInterval: ReturnType<typeof setInterval> | null = null;
@@ -712,7 +756,7 @@ function isNightWindowEST(): boolean {
 }
 
 /**
- * Night poll: fetches FJ/InsiderWire/Trusted timelines regardless of autoRefresh.
+ * Night poll: fetches all continuous account timelines.
  * Stores to DB so all users get fresh data when they open the app.
  */
 async function nightPoll(): Promise<void> {
@@ -751,7 +795,7 @@ async function nightPoll(): Promise<void> {
   // Apply FJ emoji tier filter (medium+)
   const classified = filterByTier(uniqueTweets, 'medium');
   const feedItems: FeedItem[] = classified.map((t) =>
-    tweetToFeedItem(t, t.fjClassification.macroLevel, t.fjClassification.urgency)
+    tweetToFeedItem(t, t.fjClassification)
   );
 
   if (feedItems.length > 0) {
@@ -772,7 +816,7 @@ async function nightPoll(): Promise<void> {
 
 function startNightPoller(): void {
   if (nightPollerInterval) return;
-  console.log('[NightPoller] Starting (hourly, 7PM-7AM EST, ignores autoRefresh)');
+  console.log('[NightPoller] Starting (hourly, 7PM-7AM EST)');
   // Run immediately on boot if in window
   nightPoll().catch((err) => console.warn('[NightPoller] Initial poll error:', err));
   nightPollerInterval = setInterval(() => {
@@ -790,32 +834,41 @@ function stopNightPoller(): void {
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
-let pollerInterval: ReturnType<typeof setInterval> | null = null;
+let pollerTimeout: ReturnType<typeof setTimeout> | null = null;
+let pollerRunning = false;
 
 export function startEconTwitterPoller(): void {
-  if (pollerInterval) return;
-  console.log('[EconTwitterPoller] Starting (60s interval, 5s burst on releases)');
+  if (pollerRunning) return;
+  pollerRunning = true;
+  console.log('[EconTwitterPoller] Starting with dynamic interval (hot=60s, rotation=180s)');
 
-  initFetchHighPriorityPosts().then(() => {
-    pollTwitterForEconNews().catch((err) =>
-      console.warn('[EconTwitterPoller] Initial poll error:', err)
-    );
-  }).catch((err) => console.warn('[EconTwitterPoller] Init fetch error:', err));
+  initFetchHighPriorityPosts().catch((err) => console.warn('[EconTwitterPoller] Init fetch error:', err));
 
-  pollerInterval = setInterval(() => {
-    pollTwitterForEconNews().catch((err) =>
-      console.warn('[EconTwitterPoller] Poll error:', err)
-    );
-  }, POLL_INTERVAL_MS);
+  const scheduledPoll = async (): Promise<void> => {
+    if (!pollerRunning) return;
 
-  // Start the night poller alongside — independent of autoRefresh
+    try {
+      await pollTwitterForEconNews();
+    } catch (err) {
+      console.warn('[EconTwitterPoller] Poll error:', err);
+    }
+
+    const { interval, isHotHours } = getPollingConfig();
+    console.debug(`[EconTwitterPoller] Next poll in ${interval / 1000}s (hotHours=${isHotHours})`);
+    pollerTimeout = setTimeout(scheduledPoll, interval);
+  };
+
+  void scheduledPoll();
+
+  // Start the night poller alongside main scheduler
   startNightPoller();
 }
 
 export function stopEconTwitterPoller(): void {
-  if (pollerInterval) {
-    clearInterval(pollerInterval);
-    pollerInterval = null;
+  pollerRunning = false;
+  if (pollerTimeout) {
+    clearTimeout(pollerTimeout);
+    pollerTimeout = null;
   }
   // Clear all active burst intervals
   for (const [key, interval] of activeBursts) {

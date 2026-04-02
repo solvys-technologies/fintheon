@@ -175,7 +175,9 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             Blended IV Score
           </h4>
           <p className="text-xs text-gray-400 mb-3">
-            60% VIX ({data.vix.level.toFixed(1)}) + 40% headline heat ({data.eventCount} events).
+            {Math.round((data.weights.vix ?? 0) * 100)}% VIX ({data.vix.level.toFixed(1)}) +{' '}
+            {Math.round((data.weights.headlines ?? 0) * 100)}% catalyst heat ({data.eventCount} events) +{' '}
+            {Math.round((data.weights.miroshark ?? 0) * 100)}% MiroShark flow.
           </p>
 
           {/* Component breakdown */}
@@ -184,6 +186,7 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             {[
               { label: 'VIX Component', value: data.vixComponent, max: 10 },
               { label: 'Headline Component', value: data.headlineComponent, max: 10 },
+              { label: 'MiroShark Component', value: data.mirosharkComponent, max: 10 },
             ].map(c => (
               <div key={c.label} className="flex items-center justify-between">
                 <span className="text-[10px] text-gray-400">{c.label}</span>

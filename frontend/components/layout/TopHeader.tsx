@@ -203,8 +203,12 @@ export function TopHeader({
     }
   ];
 
-  // Fetch blended IV score from backend — updates every 15 seconds for real-time feel
+  // Fetch blended IV score from backend — SSE first, 60s polling fallback
   useEffect(() => {
+    let es: EventSource | null = null;
+    let fallbackInterval: ReturnType<typeof setInterval> | null = null;
+    const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
+
     const fetchIVScore = async () => {
       try {
         const data = await backend.marketData.getIVScore(selectedSymbol.symbol);
@@ -216,9 +220,41 @@ export function TopHeader({
       }
     };
 
+    const startFallbackPolling = () => {
+      if (fallbackInterval) return;
+      fallbackInterval = setInterval(fetchIVScore, 60_000);
+    };
+
     fetchIVScore();
-    const interval = setInterval(fetchIVScore, 15_000);
-    return () => clearInterval(interval);
+
+    try {
+      es = new EventSource(
+        `${apiBase}/api/market-data/iv-score/stream?symbol=${encodeURIComponent(selectedSymbol.symbol)}`
+      );
+
+      es.addEventListener('iv-score', (event) => {
+        try {
+          const data = JSON.parse((event as MessageEvent).data) as IVScoreResponse;
+          setIvData(data);
+          setIvLoading(false);
+        } catch {
+          // Ignore malformed stream payloads
+        }
+      });
+
+      es.onerror = () => {
+        es?.close();
+        es = null;
+        startFallbackPolling();
+      };
+    } catch {
+      startFallbackPolling();
+    }
+
+    return () => {
+      es?.close();
+      if (fallbackInterval) clearInterval(fallbackInterval);
+    };
   }, [backend, selectedSymbol.symbol]);
 
   // VIX risk toast — fires ~5-10 min before each market session open (EST), only when VIX is elevated

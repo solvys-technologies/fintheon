@@ -1,4 +1,5 @@
-// [claude-code 2026-03-24] Updated weights to 50% VIX + 30% headline + 20% MiroShark
+// [claude-code 2026-04-02] VIX-triggered retick + SSE listeners + aggregate point estimator wiring
+// [claude-code 2026-03-24] Updated weights to VIX/catalyst/MiroShark blend
 // [claude-code 2026-03-12] Task 2C: startIVScoreTicker reads PRIMARY_INSTRUMENT env var
 // [claude-code 2026-03-11] IV Score Ticker — persistent background scorer
 // Runs every 60s, computes blended IV score, caches to DB.
@@ -6,20 +7,30 @@
 // Score survives backend restarts via DB persistence.
 
 import { calculateBlendedIVScore, classifyEventType } from './iv-scorer.js'
-import { estimatePoints } from './point-estimator.js'
+import { estimateAggregatePoints, estimatePoints } from './point-estimator.js'
 import type { StackedEvent } from '../iv-scoring-v2.js'
 import type { BlendedIVScore } from './iv-scorer.js'
+import { onVIXTrigger } from '../vix-service.js'
 
 const TICK_INTERVAL_MS = 60_000 // 60s
+const VIX_TRIGGER_COOLDOWN_MS = 10_000 // 10s
 // Fetch events from last 7 days — let the decay math handle relevance.
 // V3 credit events have 4320-min base half-life (3 days), crisis regime 4x = 12 days.
 // 7-day window ensures no premature cutoff.
 const EVENT_WINDOW_HOURS = 168 // 7 days
 
 let _intervalId: ReturnType<typeof setInterval> | null = null
+let _vixUnsubscribe: (() => void) | null = null
+let _lastVIXTick = 0
 
 // In-memory cache — always the most recent score
 let _cachedScore: IVScoreSnapshot | null = null
+const _listeners = new Map<string, Set<(snapshot: IVScoreSnapshot) => void>>()
+
+interface ActiveEventSignal {
+  macroLevel?: number
+  riskType?: string | null
+}
 
 export interface IVScoreSnapshot {
   score: BlendedIVScore
@@ -38,48 +49,103 @@ export interface IVScoreSnapshot {
   eventCount: number
   /** How many events are still contributing (decayed score > 0.1) */
   activeEvents: number
+  /** True when critical events (macroLevel 4 or geopolitical riskType) are active */
+  hasCriticalEvent: boolean
+}
+
+function normalizeSymbol(symbol: string): string {
+  return symbol.replace('/', '').trim().toUpperCase()
+}
+
+function notifyListeners(symbol: string, snapshot: IVScoreSnapshot): void {
+  const key = normalizeSymbol(symbol)
+
+  const direct = _listeners.get(key)
+  if (direct?.size) {
+    for (const cb of direct) {
+      try {
+        cb(snapshot)
+      } catch {
+        // Listener errors are isolated
+      }
+    }
+  }
+
+  for (const [listenerKey, listeners] of _listeners.entries()) {
+    if (listenerKey === key) continue
+    for (const cb of listeners) {
+      try {
+        cb(snapshot)
+      } catch {
+        // Listener errors are isolated
+      }
+    }
+  }
+}
+
+function toPointSnapshot(
+  score: number,
+  vixLevel: number,
+  instrument: string,
+  activeEvents: ActiveEventSignal[],
+): IVScoreSnapshot['points'] {
+  const baseline = estimatePoints(score, vixLevel, instrument)
+  const scaledPoints = estimateAggregatePoints(score, vixLevel, instrument, activeEvents)
+  const scaledTicks = Math.round(
+    (scaledPoints / (baseline.implied.adjustedPoints || 1)) * baseline.implied.adjustedTicks,
+  )
+  const scaledDollarRisk = Number((scaledTicks * baseline.implied.tickValue).toFixed(2))
+
+  return {
+    scaledPoints,
+    scaledTicks,
+    scaledDollarRisk,
+    urgency: baseline.urgency,
+    implied: {
+      adjustedPoints: baseline.implied.adjustedPoints,
+      beta: baseline.implied.beta,
+    },
+  }
 }
 
 /**
  * Run a single IV score tick.
  * Fetches all events within the decay window, computes score, caches to memory + DB.
  */
-async function tick(instrument: string = '/ES'): Promise<void> {
+export async function runScoringTick(instrument: string = '/ES'): Promise<void> {
   try {
     // Fetch events from DB with extended window
-    const events = await fetchEventsFromDB()
+    const { events, activeEvents } = await fetchEventsFromDB()
 
     // Compute blended score
     const result = await calculateBlendedIVScore(events, instrument)
-    const pointEst = estimatePoints(result.score, result.vix.level, instrument)
+    const points = toPointSnapshot(result.score, result.vix.level, instrument, activeEvents)
 
     // Count events still actively contributing (decayed > 0.1)
     const now = Date.now()
-    const activeEvents = events.filter(e => {
+    const activeEventCount = events.filter(e => {
       const minutesSince = (now - e.timestamp.getTime()) / 60000
       // Rough check: if less than 10 half-lives old, still active
       return minutesSince < 43200 // 30 days max
     }).length
+    const hasCriticalEvent = activeEvents.some(
+      (event) =>
+        event.macroLevel === 4 ||
+        event.riskType?.toLowerCase() === 'geopolitical',
+    )
 
     const snapshot: IVScoreSnapshot = {
       score: result,
-      points: {
-        scaledPoints: pointEst.scaledPoints,
-        scaledTicks: pointEst.scaledTicks,
-        scaledDollarRisk: pointEst.scaledDollarRisk,
-        urgency: pointEst.urgency,
-        implied: {
-          adjustedPoints: pointEst.implied.adjustedPoints,
-          beta: pointEst.implied.beta,
-        },
-      },
+      points,
       instrument,
       computedAt: new Date().toISOString(),
       eventCount: events.length,
-      activeEvents,
+      activeEvents: activeEventCount,
+      hasCriticalEvent,
     }
 
     _cachedScore = snapshot
+    notifyListeners(instrument, snapshot)
 
     // Persist to DB
     await persistScoreToDB(snapshot)
@@ -87,9 +153,9 @@ async function tick(instrument: string = '/ES'): Promise<void> {
     if (result.score > 3) {
       console.log(
         `[IVTicker] Score: ${result.score}/10, ` +
-        `events: ${events.length} (${activeEvents} active), ` +
+        `events: ${events.length} (${activeEventCount} active), ` +
         `VIX: ${result.vix.level.toFixed(1)}, ` +
-        `points: ±${pointEst.scaledPoints}`
+        `points: ±${points.scaledPoints}`
       )
     }
   } catch (err) {
@@ -101,14 +167,16 @@ async function tick(instrument: string = '/ES'): Promise<void> {
  * Fetch scored events from DB with the extended decay window.
  * Uses original published_at timestamps — decay is continuous from event creation.
  */
-async function fetchEventsFromDB(): Promise<StackedEvent[]> {
+async function fetchEventsFromDB(): Promise<{ events: StackedEvent[]; activeEvents: ActiveEventSignal[] }> {
   try {
     const { sql, isDatabaseAvailable } = await import('../../config/database.js')
-    if (!isDatabaseAvailable() || !sql) return []
+    if (!isDatabaseAvailable() || !sql) {
+      return { events: [], activeEvents: [] }
+    }
 
     const cutoff = new Date(Date.now() - EVENT_WINDOW_HOURS * 60 * 60 * 1000).toISOString()
     const recentItems = await sql`
-      SELECT headline, source, macro_level, iv_score, published_at, is_breaking
+      SELECT headline, source, macro_level, risk_type, iv_score, published_at, is_breaking
       FROM news_feed_items
       WHERE published_at >= ${cutoff}
         AND macro_level >= 2
@@ -116,7 +184,7 @@ async function fetchEventsFromDB(): Promise<StackedEvent[]> {
       LIMIT 200
     `
 
-    return recentItems.map((item: any) => {
+    const events = recentItems.map((item: any) => {
       const parsed = { raw: item.headline, eventType: null, isBreaking: item.is_breaking }
       return {
         eventType: classifyEventType(parsed as any),
@@ -124,8 +192,13 @@ async function fetchEventsFromDB(): Promise<StackedEvent[]> {
         timestamp: new Date(item.published_at),
       }
     })
+    const activeEvents = recentItems.map((item: any) => ({
+      macroLevel: typeof item.macro_level === 'number' ? item.macro_level : undefined,
+      riskType: typeof item.risk_type === 'string' ? item.risk_type : undefined,
+    }))
+    return { events, activeEvents }
   } catch {
-    return []
+    return { events: [], activeEvents: [] }
   }
 }
 
@@ -144,6 +217,7 @@ async function persistScoreToDB(snapshot: IVScoreSnapshot): Promise<void> {
       vixLevel: snapshot.score.vix.level,
       eventCount: snapshot.eventCount,
       activeEvents: snapshot.activeEvents,
+      hasCriticalEvent: snapshot.hasCriticalEvent,
       points: snapshot.points,
       instrument: snapshot.instrument,
       systemic: snapshot.score.systemic,
@@ -193,7 +267,7 @@ async function restoreFromDB(): Promise<void> {
             vixComponent: data.vixComponent,
             headlineComponent: data.headlineComponent,
             mirosharkComponent: data.mirosharkComponent ?? 0,
-            weights: { vix: 0.5, headlines: 0.3, miroshark: 0.2 },
+            weights: { vix: 0.7, headlines: 0.2, miroshark: 0.1 },
             vix: {
               level: data.vixLevel,
               percentChange: 0,
@@ -211,6 +285,7 @@ async function restoreFromDB(): Promise<void> {
           computedAt: updatedAt,
           eventCount: data.eventCount ?? 0,
           activeEvents: data.activeEvents ?? 0,
+          hasCriticalEvent: Boolean(data.hasCriticalEvent),
         }
       } else {
         console.log(`[IVTicker] Cached score too old (${Math.round(ageMs / 60000)}m), computing fresh`)
@@ -227,8 +302,29 @@ async function restoreFromDB(): Promise<void> {
  * Get the latest cached IV score snapshot.
  * Returns null if no score has been computed yet.
  */
-export function getCachedIVScore(): IVScoreSnapshot | null {
+export function getCachedIVScore(symbol?: string): IVScoreSnapshot | null {
+  if (!_cachedScore) return null
+  if (!symbol) return _cachedScore
+
+  const requested = normalizeSymbol(symbol)
+  const cachedInstrument = normalizeSymbol(_cachedScore.instrument)
+  if (requested === cachedInstrument) return _cachedScore
+
   return _cachedScore
+}
+
+export function subscribeToIVScoreUpdates(
+  symbol: string,
+  cb: (snapshot: IVScoreSnapshot) => void,
+): () => void {
+  const key = normalizeSymbol(symbol)
+  if (!_listeners.has(key)) {
+    _listeners.set(key, new Set())
+  }
+  _listeners.get(key)!.add(cb)
+  return () => {
+    _listeners.get(key)?.delete(cb)
+  }
 }
 
 /**
@@ -243,11 +339,22 @@ export function startIVScoreTicker(instrument: string = '/ES'): void {
   // Restore from DB first (instant availability)
   restoreFromDB().then(() => {
     // Immediate first tick
-    tick(instrument)
+    runScoringTick(instrument)
   })
 
   // Schedule recurring ticks
-  _intervalId = setInterval(() => tick(instrument), TICK_INTERVAL_MS)
+  _intervalId = setInterval(() => runScoringTick(instrument), TICK_INTERVAL_MS)
+
+  if (!_vixUnsubscribe) {
+    _vixUnsubscribe = onVIXTrigger(async () => {
+      const now = Date.now()
+      if (now - _lastVIXTick < VIX_TRIGGER_COOLDOWN_MS) {
+        return
+      }
+      _lastVIXTick = now
+      await runScoringTick(instrument)
+    })
+  }
 
   console.log(`[IVTicker] Ticking every ${TICK_INTERVAL_MS / 1000}s`)
 }
@@ -259,6 +366,10 @@ export function stopIVScoreTicker(): void {
   if (_intervalId) {
     clearInterval(_intervalId)
     _intervalId = null
+  }
+  if (_vixUnsubscribe) {
+    _vixUnsubscribe()
+    _vixUnsubscribe = null
   }
   console.log('[IVTicker] Stopped')
 }

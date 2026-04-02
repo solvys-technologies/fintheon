@@ -18,6 +18,22 @@ export interface PointEstimate {
   urgency: 'low' | 'moderate' | 'elevated' | 'high' | 'extreme';
 }
 
+export interface AggregateEventSignal {
+  macroLevel?: number;
+  riskType?: string | null;
+}
+
+export interface EstimatePointsOptions {
+  uncapNarrativePressure?: boolean;
+}
+
+export function shouldUncapNarrativePressure(event: AggregateEventSignal): boolean {
+  return (
+    event.macroLevel === 4 &&
+    (event.riskType === 'Macro' || event.riskType === 'Geopolitical')
+  );
+}
+
 /**
  * Map IV score (0-10) to urgency label
  */
@@ -40,6 +56,7 @@ export function estimatePoints(
   instrument: string = '/ES',
   currentPrice?: number,
   narrativePressure: number = 0,
+  options?: EstimatePointsOptions,
 ): PointEstimate {
   const config = getInstrumentConfig(instrument);
   const price = currentPrice ?? config?.currentPrice ?? 6000;
@@ -48,8 +65,9 @@ export function estimatePoints(
 
   // Cap based on narrative pressure (% of daily range a single event can claim)
   const CAP_BY_NARRATIVE: Record<number, number> = { 0: 0.25, 1: 0.30, 2: 0.35, 3: 0.45 };
-  const cap = CAP_BY_NARRATIVE[Math.min(3, Math.max(0, narrativePressure))] ?? 0.25;
-  const maxPoints = implied.adjustedPoints * cap;
+  const NARRATIVE_PRESSURE_CAP = CAP_BY_NARRATIVE[Math.min(3, Math.max(0, narrativePressure))] ?? 0.25;
+  const effectiveCap = options?.uncapNarrativePressure ? Infinity : NARRATIVE_PRESSURE_CAP;
+  const maxPoints = implied.adjustedPoints * effectiveCap;
 
   // Scale: the IV score represents what fraction of daily implied move is "active"
   const scaleFactor = Math.min(1, ivScore / 10);
@@ -76,4 +94,39 @@ export function estimatePoints(
     scaledDollarRisk,
     urgency: scoreToUrgency(ivScore),
   };
+}
+
+/**
+ * Aggregate point estimator for the session-level IV score display.
+ * Unlike estimatePoints(), this does NOT apply a static narrative cap.
+ *
+ * Cap behavior:
+ *  - Default (no critical events): cap at 50% of daily implied move
+ *  - Critical Econ Data (macroLevel 4) or Geopolitical active event: NO CAP
+ */
+export function estimateAggregatePoints(
+  ivScore: number,
+  vixLevel: number,
+  instrument: string = '/ES',
+  activeEvents: AggregateEventSignal[] = [],
+  currentPrice?: number,
+): number {
+  const config = getInstrumentConfig(instrument);
+  const price = currentPrice ?? config?.currentPrice ?? 6000;
+  const implied = calculateImpliedPoints(vixLevel, price, instrument);
+  const scaleFactor = Math.min(1, ivScore / 10);
+  const rawScaled = implied.adjustedPoints * scaleFactor;
+
+  const hasCriticalEvent = activeEvents.some(
+    (event) =>
+      event.macroLevel === 4 ||
+      event.riskType?.toLowerCase() === 'geopolitical',
+  );
+
+  if (hasCriticalEvent) {
+    return Number(rawScaled.toFixed(1));
+  }
+
+  const cap = implied.adjustedPoints * 0.5;
+  return Number(Math.min(cap, rawScaled).toFixed(1));
 }
