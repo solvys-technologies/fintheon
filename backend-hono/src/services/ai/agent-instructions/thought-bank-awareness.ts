@@ -53,7 +53,21 @@ export async function buildThoughtBankPromptBlock(
       : 'Harper-Opus'
 
     const thoughts = await buildThoughtBankContext(agentName, 3)
-    return formatThoughtBankBlock(thoughts)
+    let block = formatThoughtBankBlock(thoughts)
+
+    // S13-T3: Append relevant shared memory entries (regime context)
+    try {
+      const { listSharedMemory } = await import('../../peers/shared-memory.js')
+      const regimeEntries = await listSharedMemory({ category: 'regime' })
+      if (regimeEntries.length > 0) {
+        const lines = regimeEntries.slice(0, 5).map((e) =>
+          `- **${e.key}** (${e.agentName ?? 'system'}): ${JSON.stringify(e.value).slice(0, 300)}`
+        )
+        block += `\n\n## Shared Team Memory — Regime Context\n\n${lines.join('\n')}\n`
+      }
+    } catch { /* shared memory not available — non-fatal */ }
+
+    return block
   } catch (error) {
     console.error('[ThoughtBankAwareness] Failed to build context:', error)
     return ''

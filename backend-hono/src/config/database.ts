@@ -5,6 +5,10 @@
 
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 import pg from 'pg';
+import dns from 'node:dns';
+
+// Supabase direct connections only have IPv6 (AAAA) records — force Node to try IPv6 first
+dns.setDefaultResultOrder('verbatim');
 
 // Check NEON_DATABASE_URL first (preferred), then fallback to DATABASE_URL
 const DATABASE_URL = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
@@ -13,14 +17,15 @@ if (!DATABASE_URL) {
   console.warn('[DB] No database URL set - database features will be unavailable');
 }
 
-// Detect if this is a Neon URL (contains .neon.tech) or local
+// Detect Neon vs Supabase vs local PostgreSQL
 const isNeonUrl = DATABASE_URL?.includes('.neon.tech') || DATABASE_URL?.includes('neon.tech');
+const isSupabaseUrl = DATABASE_URL?.includes('.supabase.co');
 
-// For Neon, use the serverless driver. For local, use pg Pool.
+// Neon uses its own serverless driver. Supabase and local use pg Pool.
 let neonSql: NeonQueryFunction<false, false> | null = null;
 let pgPool: pg.Pool | null = null;
 // pgAvailable: only set to true after a successful ping — prevents treating a non-running
-// local PostgreSQL as "available" and causing 500s instead of graceful in-memory fallback.
+// PostgreSQL as "available" and causing 500s instead of graceful in-memory fallback.
 let pgAvailable = false;
 
 if (DATABASE_URL) {
@@ -28,15 +33,21 @@ if (DATABASE_URL) {
     neonSql = neon(DATABASE_URL);
     console.log('[DB] Using Neon serverless driver');
   } else {
-    pgPool = new pg.Pool({ connectionString: DATABASE_URL });
-    console.log('[DB] Using pg Pool for local PostgreSQL — pinging...');
+    // Supabase and local both use pg Pool. Supabase requires SSL.
+    const poolConfig: pg.PoolConfig = { connectionString: DATABASE_URL };
+    if (isSupabaseUrl) {
+      poolConfig.ssl = { rejectUnauthorized: false };
+    }
+    pgPool = new pg.Pool(poolConfig);
+    const label = isSupabaseUrl ? 'Supabase' : 'local PostgreSQL';
+    console.log(`[DB] Using pg Pool for ${label} — pinging...`);
     pgPool.query('SELECT 1')
       .then(() => {
         pgAvailable = true;
-        console.log('[DB] Local PostgreSQL connected');
+        console.log(`[DB] ${label} connected`);
       })
-      .catch(() => {
-        console.warn('[DB] Local PostgreSQL not reachable — falling back to in-memory store');
+      .catch((err) => {
+        console.warn(`[DB] ${label} not reachable — falling back to in-memory store`, err?.message);
       });
   }
 }

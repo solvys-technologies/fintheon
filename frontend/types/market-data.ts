@@ -73,7 +73,8 @@ export interface IVScoreResponse {
   score: number;
   vixComponent: number;
   headlineComponent: number;
-  weights: { vix: number; headlines: number };
+  mirosharkComponent: number;
+  weights: { vix: number; headlines: number; miroshark: number };
   vix: {
     level: number;
     percentChange: number;

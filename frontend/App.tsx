@@ -13,6 +13,7 @@ import { ContextBankProvider } from './contexts/ContextBankContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { VoiceProvider, useVoice } from './contexts/VoiceContext';
 import { ERProvider } from './contexts/ERContext';
+import { TeamPresenceProvider } from './contexts/TeamPresenceContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { NotificationContainer } from './components/NotificationToast';
 import { ToastContainer } from './components/ui/Toast';

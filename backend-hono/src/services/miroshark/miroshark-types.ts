@@ -219,6 +219,7 @@ export interface RiskFlowHeadline {
     impliedPoints?: number | null;
     instrument?: string | null;
   } | null;
+  narrative_threads?: string[];
 }
 
 export interface EconPrintStat {

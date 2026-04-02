@@ -5,6 +5,9 @@
  */
 
 import 'dotenv/config';
+import { validateEnv } from './boot/index.js';
+validateEnv();
+
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
@@ -16,7 +19,7 @@ import { registerRoutes } from './routes/index.js';
 import { createHealthService } from './services/health-service.js';
 import { AppError } from './errors/index.js';
 import { createLogger } from './lib/logger.js';
-import { bootServices } from './boot/index.js';
+import { bootServices } from './boot/services.js';
 
 const log = createLogger('API');
 const app = new Hono();

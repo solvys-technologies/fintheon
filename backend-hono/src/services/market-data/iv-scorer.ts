@@ -1,4 +1,4 @@
-// [claude-code 2026-03-24] Blended IV score service — 50% VIX + 30% headline heat + 20% MiroShark running analysis + systemic overlay
+// [claude-code 2026-04-02] Blended IV score service — 70% VIX + 20% catalyst heat + 10% MiroShark running analysis + systemic overlay
 // Provides a single 0-10 composite score for the /api/market-data/iv-score endpoint.
 // V3: adds systemic risk overlay (causal chains, historical rhyming, credit signals)
 
@@ -10,7 +10,7 @@ import type { IVPrediction } from './iv-prediction-types.js';
 import { getRunningAnalysisScore } from '../miroshark/miroshark-reactive.js';
 
 export interface BlendedIVScore {
-  /** Composite 0-10 score (50% VIX + 30% headline + 20% MiroShark + systemic overlay) */
+  /** Composite 0-10 score (70% VIX + 20% catalyst heat + 10% MiroShark + systemic overlay) */
   score: number;
   /** VIX-only component score (0-10) */
   vixComponent: number;
@@ -53,9 +53,9 @@ export interface BlendedIVScore {
   prediction?: IVPrediction;
 }
 
-const VIX_WEIGHT = 0.5;
-const HEADLINE_WEIGHT = 0.3;
-const MIROSHARK_WEIGHT = 0.2;
+const VIX_WEIGHT = 0.7;
+const HEADLINE_WEIGHT = 0.2;
+const MIROSHARK_WEIGHT = 0.1;
 
 /**
  * Map VIX level to a 0-10 score.
@@ -91,7 +91,7 @@ function vixToScore(vix: number): number {
 }
 
 /**
- * Calculate a blended IV score: 50% VIX + 30% headline heat + 20% MiroShark running analysis.
+ * Calculate a blended IV score: 70% VIX + 20% catalyst heat + 10% MiroShark running analysis.
  * Headline heat comes from the V2 scoring engine applied to recent DB events.
  * MiroShark component comes from the deterministic reactive scoring engine.
  */
@@ -133,14 +133,14 @@ export async function calculateBlendedIVScore(
     rationale.push('No MiroShark running analysis → component 0');
   }
 
-  // Dynamic weights: below VIX 16, headlines + miroshark have less impact (market is "stubborn")
+  // Dynamic weights: below VIX 16, keep VIX dominant ("stubborn" regime)
   let effectiveVixWeight = VIX_WEIGHT;
   let effectiveHeadlineWeight = HEADLINE_WEIGHT;
   let effectiveMfWeight = MIROSHARK_WEIGHT;
   if (vixData.level < 16) {
-    effectiveVixWeight = 0.65;
-    effectiveHeadlineWeight = 0.20;
-    effectiveMfWeight = 0.15;
+    effectiveVixWeight = 0.75;
+    effectiveHeadlineWeight = 0.15;
+    effectiveMfWeight = 0.10;
   }
 
   // Blend

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-20] 8c: Compact proposal card for Strategium — one-liner under Regime Tracker
 import { useState, useEffect, useCallback } from 'react';
-import { Target, TrendingUp, TrendingDown } from 'lucide-react';
+import { Target, Diff, TrendingDown } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 
 interface MiniProposal {
@@ -48,7 +48,7 @@ export function MiniProposalCard({ onExpand }: MiniProposalCardProps) {
 
   const isLong = proposal.direction === 'long';
   const isShort = proposal.direction === 'short';
-  const DirectionIcon = isLong ? TrendingUp : isShort ? TrendingDown : Target;
+  const DirectionIcon = isLong ? Diff : isShort ? TrendingDown : Target;
   const dirColor = isLong ? 'text-emerald-400' : isShort ? 'text-red-400' : 'text-zinc-400';
 
   return (

@@ -1,6 +1,7 @@
 // [claude-code 2026-03-20] Supabase cloud service — full data layer replacing Notion + scoring, ER, settings, consilium
 // [claude-code 2026-03-19] Supabase cloud service — centralized scoring, ER persistence, user settings, consilium
 import { getSupabaseClient, isSupabaseConfigured } from '../config/supabase.js';
+import { sql as dbSql, isDatabaseAvailable } from '../config/database.js';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -83,40 +84,41 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
   return data?.length ?? 0;
 }
 
+// [claude-code 2026-04-01] Permanent fix: use raw SQL (pg Pool) for unscored item detection.
+// Supabase JS client .not('in', subquery) silently returns empty — never use it.
+// The two-query JS fallback also fails when unscored items are scattered across thousands of rows.
+// Raw SQL NOT EXISTS is the only reliable approach.
 export async function readUnscoredItems(limit = 50): Promise<(RawRiskFlowItem & { id: string })[]> {
-  const sb = getSupabaseClient();
-  if (!sb) return [];
-
-  // Items in raw_riskflow_items that have no matching scored entry
-  const { data, error } = await sb
-    .from('raw_riskflow_items')
-    .select('*')
-    .not('tweet_id', 'in', sb.from('scored_riskflow_items').select('tweet_id'))
-    .order('created_at', { ascending: true })
-    .limit(limit);
-
-  if (error) {
-    // Fallback: just get recent raw items and filter client-side
-    console.warn('[Supabase] readUnscoredItems subquery failed, using fallback:', error.message);
-    return await readUnscoredItemsFallback(limit);
+  // Primary: use the pg Pool SQL driver (same one boardroom-store uses)
+  if (isDatabaseAvailable() && dbSql) {
+    try {
+      const rows = await dbSql`
+        SELECT r.*
+        FROM raw_riskflow_items r
+        WHERE NOT EXISTS (
+          SELECT 1 FROM scored_riskflow_items s WHERE s.tweet_id = r.tweet_id
+        )
+        ORDER BY r.created_at ASC
+        LIMIT ${limit}
+      `;
+      return rows as (RawRiskFlowItem & { id: string })[];
+    } catch (err) {
+      console.error('[Supabase] readUnscoredItems SQL failed, trying Supabase client fallback:', (err as Error).message);
+    }
   }
-  return data ?? [];
-}
 
-async function readUnscoredItemsFallback(limit: number): Promise<(RawRiskFlowItem & { id: string })[]> {
+  // Fallback: two-query approach via Supabase JS client
   const sb = getSupabaseClient();
   if (!sb) return [];
 
-  // Get recent raw items
   const { data: rawItems } = await sb
     .from('raw_riskflow_items')
     .select('*')
-    .order('created_at', { ascending: true })
-    .limit(limit * 2);
+    .order('created_at', { ascending: false })
+    .limit(limit * 5);
 
   if (!rawItems?.length) return [];
 
-  // Get scored tweet_ids
   const tweetIds = rawItems.map((r) => r.tweet_id);
   const { data: scoredItems } = await sb
     .from('scored_riskflow_items')

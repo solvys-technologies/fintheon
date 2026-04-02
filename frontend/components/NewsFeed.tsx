@@ -2,9 +2,9 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useBackend } from "../lib/backend";
 import { useSettings } from "../contexts/SettingsContext";
 import type { RiskFlowItem } from "../types/api";
-import { TrendingUp, AlertTriangle, Info } from "lucide-react";
+import { Diff, AlertTriangle, Info } from "lucide-react";
 import { Button } from "./ui/Button";
-import { useRiskFlow } from "../hooks/useRiskFlow";
+import { useRiskFlowSSE } from "../hooks/useRiskFlow";
 
 export default function NewsFeed() {
   const backend = useBackend();
@@ -46,7 +46,7 @@ export default function NewsFeed() {
     setRiskflow((prev) => [item, ...prev].slice(0, 15));
   }, []);
 
-  useRiskFlow(handleBreakingNews);
+  useRiskFlowSSE(handleBreakingNews);
 
   const loadRiskFlow = async (symbol?: string) => {
     if (isLoading) return;
@@ -56,7 +56,7 @@ export default function NewsFeed() {
       // Fetch 15 items relevant to the user's selected instrument
       const data = await backend.riskflow.list({
         limit: 15,
-        symbol: symbol // Pass the instrument symbol for filtering
+        instrument: symbol ? `/${symbol}` : undefined, // Match RiskFlowContext format
       });
       setRiskflow(data.items);
     } catch (error: any) {
@@ -80,7 +80,7 @@ export default function NewsFeed() {
       case "high":
         return <AlertTriangle className="w-4 h-4 text-[#FF4040]" />;
       case "medium":
-        return <TrendingUp className="w-4 h-4 text-[var(--fintheon-accent)]" />;
+        return <Diff className="w-4 h-4 text-[var(--fintheon-accent)]" />;
       default:
         return <Info className="w-4 h-4 text-zinc-500" />;
     }

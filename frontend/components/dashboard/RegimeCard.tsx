@@ -1,14 +1,14 @@
 // [claude-code 2026-03-06] Dashboard regime preview card — shows top 3 active/upcoming regimes
 // [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish on bottom right, 12H NY time
 import { useState, useEffect, useMemo } from 'react';
-import { Clock, TrendingUp, TrendingDown, RotateCcw, Activity } from 'lucide-react';
+import { Clock, Diff, TrendingDown, RotateCcw, Activity } from 'lucide-react';
 import { useRegimes } from '../../lib/regime-store';
 import { isRegimeActive, getTimeRemaining, getCurrentETTime, getUpcomingRegimes } from '../../lib/regime-time';
 import type { TradingRegime } from '../../lib/regimes';
 
 function BiasIcon({ bias }: { bias: TradingRegime['bias'] }) {
   const config = {
-    long: { color: 'text-emerald-400', Icon: TrendingUp },
+    long: { color: 'text-emerald-400', Icon: Diff },
     short: { color: 'text-red-400', Icon: TrendingDown },
     fade: { color: 'text-orange-400', Icon: RotateCcw },
     neutral: { color: 'text-zinc-400', Icon: Activity },
@@ -45,7 +45,7 @@ export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
           <Clock className="w-3 h-3 text-[var(--fintheon-accent)]" />
           <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--fintheon-accent)] font-semibold">Regime Tracker</span>
           {activeCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] text-[8px] font-bold">
+            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] text-[8px] font-bold regime-badge-shimmer">
               {activeCount}
             </span>
           )}
@@ -73,7 +73,7 @@ export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
                 <div className="flex items-center gap-1.5 shrink-0">
                   {/* ORB bullish/bearish on bottom right */}
                   <span className="flex items-center gap-0.5 text-[8px]">
-                    <TrendingUp className="w-2 h-2 text-emerald-400" />
+                    <Diff className="w-2 h-2 text-emerald-400" />
                     <span className="text-emerald-400">{r.record.bullishDays}</span>
                     <span className="text-zinc-700">/</span>
                     <span className="text-red-400">{r.record.bearishDays}</span>

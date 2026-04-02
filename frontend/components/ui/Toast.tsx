@@ -1,19 +1,19 @@
-// [claude-code 2026-03-20] S3:T5 — Toast: bottom-left, theme colors, Don't Show Again on all types
+// [claude-code 2026-04-01] iOS26 Liquid Glass restyle + position-aware animation direction
 import { useEffect, useState } from 'react';
 import { X, Check, AlertTriangle, Loader2, Info, BellOff, Activity } from 'lucide-react';
 import { useToast, type Toast, type ToastVariant } from '../../contexts/ToastContext';
 
 /* ------------------------------------------------------------------ */
-/*  Variant config                                                     */
+/*  Variant config — Zen: all gold-tinted, subtle icon differentiation */
 /* ------------------------------------------------------------------ */
 
-const VARIANT_CONFIG: Record<ToastVariant, { border: string; color: string; Icon: typeof Check }> = {
-  success: { border: '#34D399', color: '#34D399', Icon: Check },
-  error: { border: '#EF4444', color: '#EF4444', Icon: AlertTriangle },
-  updating: { border: 'var(--fintheon-accent)', color: 'var(--fintheon-accent)', Icon: Loader2 },
-  info: { border: 'var(--fintheon-accent)', color: 'var(--fintheon-text)', Icon: Info },
-  reminder: { border: 'var(--fintheon-accent)', color: 'var(--fintheon-accent)', Icon: AlertTriangle },
-  vix: { border: '#EF4444', color: '#EF4444', Icon: Activity },
+const VARIANT_CONFIG: Record<ToastVariant, { Icon: typeof Check; label?: string }> = {
+  success: { Icon: Check, label: 'OK' },
+  error: { Icon: AlertTriangle, label: 'ALERT' },
+  updating: { Icon: Loader2 },
+  info: { Icon: Info },
+  reminder: { Icon: AlertTriangle, label: 'REMINDER' },
+  vix: { Icon: Activity, label: 'VIX' },
 };
 
 /* ------------------------------------------------------------------ */
@@ -27,6 +27,7 @@ function ToastItem({ toast, onDismiss, onBlock }: {
 }) {
   const [entered, setEntered] = useState(false);
   const cfg = VARIANT_CONFIG[toast.variant];
+  const isTopRight = toast.position === 'top-right';
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true));
@@ -35,69 +36,91 @@ function ToastItem({ toast, onDismiss, onBlock }: {
 
   const isVisible = entered && !toast.exiting;
   const hasDND = !!toast.notificationType;
+  const slideX = isTopRight ? '16px' : '-16px';
 
   return (
     <div
-      className="transition-all duration-300 ease-out"
+      className="transition-all duration-300 ease-out group"
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateX(0)' : 'translateX(-16px)',
+        transform: isVisible ? 'translateX(0)' : `translateX(${slideX})`,
         pointerEvents: 'auto',
         minWidth: '280px',
-        maxWidth: '400px',
-        borderRadius: '10px',
-        border: `1px solid ${cfg.border}`,
-        backgroundColor: 'var(--fintheon-surface)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-        overflow: 'hidden',
+        maxWidth: '380px',
       }}
     >
-      <div className="flex items-start justify-between" style={{ padding: '10px 12px' }}>
-        <div className="flex items-start" style={{ gap: '8px' }}>
-          <cfg.Icon
-            size={14}
-            className={`flex-shrink-0 mt-0.5 ${toast.variant === 'updating' ? 'animate-spin' : ''}`}
-            style={{ color: cfg.color }}
-          />
-          <div className="flex flex-col" style={{ gap: '2px' }}>
-            <span
-              className="text-[13px] font-medium leading-tight"
-              style={{ color: cfg.color }}
-            >
-              {toast.message}
-            </span>
-            {toast.description && (
+      <div
+        className="backdrop-blur-2xl overflow-hidden"
+        style={{
+          borderRadius: '8px',
+          border: '1px solid color-mix(in srgb, var(--fintheon-accent) 12%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--fintheon-bg) 45%, color-mix(in srgb, var(--fintheon-accent) 8%, transparent))',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
+        }}
+      >
+        <div className="flex items-start justify-between" style={{ padding: '10px 12px' }}>
+          <div className="flex items-start" style={{ gap: '8px' }}>
+            {cfg.label && (
               <span
-                className="text-[11px] leading-tight"
-                style={{ color: 'var(--fintheon-muted)' }}
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest flex-shrink-0 mt-0.5"
+                style={{
+                  color: 'var(--fintheon-accent)',
+                  backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--fintheon-accent) 20%, transparent)',
+                }}
               >
-                {toast.description}
+                {cfg.label}
               </span>
             )}
+            {!cfg.label && (
+              <cfg.Icon
+                size={13}
+                className={`flex-shrink-0 mt-0.5 ${toast.variant === 'updating' ? 'animate-spin' : ''}`}
+                style={{ color: 'var(--fintheon-accent)', opacity: 0.7 }}
+              />
+            )}
+            <div className="flex flex-col" style={{ gap: '2px' }}>
+              <span className="text-[12px] font-medium leading-tight" style={{ color: 'var(--fintheon-text)' }}>
+                {toast.message}
+              </span>
+              {toast.description && (
+                <span className="text-[10px] leading-tight" style={{ color: 'var(--fintheon-muted)' }}>
+                  {toast.description}
+                </span>
+              )}
+              {toast.cta && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); toast.cta!.onClick(); }}
+                  className="mt-1 rounded px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors"
+                  style={{
+                    color: 'var(--fintheon-bg)',
+                    backgroundColor: 'var(--fintheon-accent)',
+                  }}
+                >
+                  {toast.cta.label}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center flex-shrink-0" style={{ gap: '2px', marginLeft: '8px' }}>
-          {hasDND && (
+          <div className="flex items-center flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ gap: '2px', marginLeft: '8px' }}>
+            {hasDND && (
+              <button
+                onClick={() => onBlock(toast)}
+                title="Don't show again"
+                className="flex items-center justify-center rounded transition-colors hover:bg-[var(--fintheon-accent)]/10"
+                style={{ width: '20px', height: '20px', color: 'var(--fintheon-muted)' }}
+              >
+                <BellOff size={11} />
+              </button>
+            )}
             <button
-              onClick={() => onBlock(toast)}
-              title="Don't show again"
-              className="flex items-center justify-center rounded transition-colors"
+              onClick={() => onDismiss(toast.id)}
+              className="flex items-center justify-center rounded transition-colors hover:bg-[var(--fintheon-accent)]/10"
               style={{ width: '20px', height: '20px', color: 'var(--fintheon-muted)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--fintheon-accent)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--fintheon-muted)'; }}
             >
-              <BellOff size={11} />
+              <X size={11} />
             </button>
-          )}
-          <button
-            onClick={() => onDismiss(toast.id)}
-            className="flex items-center justify-center rounded transition-colors"
-            style={{ width: '20px', height: '20px', color: 'var(--fintheon-muted)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--fintheon-text)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--fintheon-muted)'; }}
-          >
-            <X size={12} />
-          </button>
+          </div>
         </div>
       </div>
     </div>
@@ -105,7 +128,7 @@ function ToastItem({ toast, onDismiss, onBlock }: {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Container — all toasts bottom-left                                 */
+/*  Container — split by position: bottom-left (system) + top-right   */
 /* ------------------------------------------------------------------ */
 
 export function ToastContainer() {
@@ -120,19 +143,43 @@ export function ToastContainer() {
     dismissToast(toast.id);
   };
 
+  const bottomLeft = toasts.filter((t) => t.position !== 'top-right');
+  const topRight = toasts.filter((t) => t.position === 'top-right');
+
   return (
-    <div
-      className="fixed z-[100] flex flex-col items-start"
-      style={{ bottom: '24px', left: '24px', gap: '10px', pointerEvents: 'none' }}
-    >
-      {toasts.map((toast) => (
-        <ToastItem
-          key={toast.id}
-          toast={toast}
-          onDismiss={dismissToast}
-          onBlock={handleBlock}
-        />
-      ))}
-    </div>
+    <>
+      {/* System toasts — bottom-left */}
+      {bottomLeft.length > 0 && (
+        <div
+          className="fixed z-[100] flex flex-col items-start"
+          style={{ bottom: '24px', left: '24px', gap: '10px', pointerEvents: 'none' }}
+        >
+          {bottomLeft.map((toast) => (
+            <ToastItem
+              key={toast.id}
+              toast={toast}
+              onDismiss={dismissToast}
+              onBlock={handleBlock}
+            />
+          ))}
+        </div>
+      )}
+      {/* Trading/market toasts — top-right */}
+      {topRight.length > 0 && (
+        <div
+          className="fixed z-[100] flex flex-col items-end"
+          style={{ top: '70px', right: '24px', gap: '10px', pointerEvents: 'none' }}
+        >
+          {topRight.map((toast) => (
+            <ToastItem
+              key={toast.id}
+              toast={toast}
+              onDismiss={dismissToast}
+              onBlock={handleBlock}
+            />
+          ))}
+        </div>
+      )}
+    </>
   );
 }

@@ -194,7 +194,6 @@ export function registerRoutes(app: Hono): void {
   // LiveKit group voice call token generation
   app.route('/api/livekit', livekit);
 
-
   // User settings persistence
   app.route('/api/settings', createSettingsRoutes());
 

@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Diff, TrendingDown, Minus } from 'lucide-react';
 import { FeedItem as FeedItemType } from '../../types/feed';
 import { decodeHtmlEntities } from '../../lib/html-entities';
 import { ProposalCard } from './ProposalCard';
@@ -27,7 +27,7 @@ export function FeedItem({ item }: FeedItemProps) {
   };
 
   const IVIcon = {
-    Bullish: TrendingUp,
+    Bullish: Diff,
     Bearish: TrendingDown,
     Neutral: Minus,
   };

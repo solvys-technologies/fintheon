@@ -1,7 +1,9 @@
-// [claude-code 2026-03-06] Narrative catalyst scoring endpoints — LLM-scored candidates from RiskFlow/briefs
+// [claude-code 2026-03-31] Added GET /api/narrative/catalysts — auto-population endpoint for NarrativeFlow
+// [claude-code 2026-03-30] Narrative endpoints — threads, card-links, LLM scoring
 import type { Context } from 'hono'
 import { generateText } from 'ai'
 import { selectModel, createModelClient, markProviderUnhealthy, type AiModelKey } from '../../services/ai/model-selector.js'
+import { getSupabaseClient } from '../../config/supabase.js'
 
 export interface ScoredCandidate {
   sourceId: string
@@ -250,5 +252,145 @@ export async function researchDrill(c: Context) {
   } catch (err) {
     console.error('[Narrative] researchDrill error:', err)
     return c.json({ error: 'Failed to generate research' }, 500)
+  }
+}
+
+/**
+ * GET /api/narrative/threads
+ * Return all narrative threads from DB (the 10 core narratives)
+ */
+export async function getThreads(c: Context) {
+  const sb = getSupabaseClient()
+  if (!sb) return c.json({ threads: [] })
+
+  try {
+    const { data, error } = await sb
+      .from('narrative_threads')
+      .select('slug, title, description, color, status, sort_order, keywords')
+      .order('sort_order', { ascending: true })
+
+    if (error) throw error
+    return c.json({ threads: data ?? [] })
+  } catch (err) {
+    console.error('[Narrative] getThreads error:', err)
+    return c.json({ threads: [] })
+  }
+}
+
+/**
+ * GET /api/narrative/card-links
+ * Return all narrative_card_links (card_id → thread_slug mappings)
+ * Optional ?card_ids=id1,id2 to filter
+ */
+export async function getCardLinks(c: Context) {
+  const sb = getSupabaseClient()
+  if (!sb) return c.json({ links: [] })
+
+  try {
+    const cardIdsParam = c.req.query('card_ids')
+    let query = sb
+      .from('narrative_card_links')
+      .select('card_id, thread_slug, confidence')
+
+    if (cardIdsParam) {
+      const ids = cardIdsParam.split(',').filter(Boolean)
+      if (ids.length > 0) query = query.in('card_id', ids)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return c.json({ links: data ?? [] })
+  } catch (err) {
+    console.error('[Narrative] getCardLinks error:', err)
+    return c.json({ links: [] })
+  }
+}
+
+/**
+ * GET /api/narrative/catalysts
+ * Auto-population endpoint for NarrativeFlow — returns promoted scored items
+ * with narrative thread assignments, ready to render as CatalystCards.
+ * Query params:
+ *   ?since=ISO  — only items promoted after this timestamp (incremental fetch)
+ *   ?days=7     — look back N days (default 7)
+ */
+export async function getCatalysts(c: Context) {
+  const sb = getSupabaseClient()
+  if (!sb) return c.json({ catalysts: [] })
+
+  try {
+    const sinceParam = c.req.query('since')
+    const daysParam = parseInt(c.req.query('days') ?? '7', 10)
+    const lookback = new Date(Date.now() - daysParam * 24 * 60 * 60 * 1000).toISOString()
+
+    // Fetch promoted scored items with their narrative thread links
+    let query = sb
+      .from('scored_riskflow_items')
+      .select('tweet_id, headline, body, symbols, tags, sentiment, macro_level, published_at, promoted_at, category, status, price_brain_score, risk_type, market_impact, agent_note')
+      .not('promoted_at', 'is', null)
+      .gte('published_at', lookback)
+      .order('published_at', { ascending: false })
+      .limit(200)
+
+    if (sinceParam) {
+      query = query.gt('promoted_at', sinceParam)
+    }
+
+    const { data: items, error } = await query
+    if (error) throw error
+    if (!items || items.length === 0) return c.json({ catalysts: [] })
+
+    // Fetch narrative_card_links for these items
+    const tweetIds = items.map(i => i.tweet_id)
+    const { data: links } = await sb
+      .from('narrative_card_links')
+      .select('card_id, thread_slug, confidence')
+      .in('card_id', tweetIds)
+
+    // Build card_id → thread_slugs map
+    const threadMap = new Map<string, string[]>()
+    for (const link of (links ?? [])) {
+      const existing = threadMap.get(link.card_id) ?? []
+      existing.push(link.thread_slug)
+      threadMap.set(link.card_id, existing)
+    }
+
+    // Map to CatalystCard-compatible shape
+    const catalysts = items.map(item => {
+      const pbs = item.price_brain_score as Record<string, any> | null
+      const threads = threadMap.get(item.tweet_id) ?? []
+      const macroLevel = item.macro_level ?? 1
+      const severity = macroLevel >= 4 ? 'high' : macroLevel >= 3 ? 'high' : macroLevel >= 2 ? 'medium' : 'low'
+      const sentimentVal = (item.sentiment ?? pbs?.sentiment ?? 'bearish').toLowerCase()
+
+      return {
+        id: item.tweet_id,
+        title: (item.headline ?? '').slice(0, 120),
+        description: item.body ?? item.headline ?? '',
+        date: item.published_at,
+        sentiment: sentimentVal.includes('bull') ? 'bullish' : 'bearish',
+        severity,
+        source: 'riskflow' as const,
+        narrativeIds: threads,
+        narrativeThreads: threads,
+        isGhost: false,
+        templateType: null,
+        position: null,
+        tags: item.tags ?? [],
+        category: item.category ?? 'macroeconomic',
+        riskflowItemId: item.tweet_id,
+        marketImpact: item.market_impact ?? null,
+        narrative: threads[0] ?? null,
+        status: item.status ?? 'active',
+        drillDepth: 0,
+        createdAt: item.promoted_at,
+        updatedAt: item.promoted_at,
+      }
+    })
+
+    return c.json({ catalysts })
+  } catch (err) {
+    console.error('[Narrative] getCatalysts error:', err)
+    return c.json({ catalysts: [] })
   }
 }

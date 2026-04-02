@@ -53,6 +53,8 @@ export interface RiskFlowItem {
   sentiment?: 'positive' | 'negative' | 'neutral' | 'bullish' | 'bearish';
   ivImpact?: number;
   ivScore?: number;
+  pointRange?: number | null;
+  direction?: 'Bullish' | 'Bearish' | 'Neutral' | null;
   impact?: 'high' | 'medium' | 'low';
   symbols?: string[];
   isBreaking?: boolean;

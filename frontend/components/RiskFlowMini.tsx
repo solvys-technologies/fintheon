@@ -11,7 +11,7 @@
 // [claude-code 2026-03-28] S8-T6: Infinite scroll + toggle, Loader2 for loading state
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
-import { Zap, ExternalLink, ChevronDown, ChevronUp, ChevronRight, Trash2, TrendingUp, TrendingDown, MessageSquare, Check, XCircle, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
+import { Zap, ExternalLink, ChevronDown, ChevronUp, ChevronRight, Trash2, Diff, TrendingDown, MessageSquare, Check, XCircle, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
 import { inferDirection } from '../lib/riskflow-feed';
 import TradeIdeaModal from './TradeIdeaModal';
@@ -230,7 +230,7 @@ function TradeIdeaRow({
           {/* Source logo */}
           <span className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10">
             {isLong
-              ? <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
+              ? <Diff className="w-3 h-3 text-[var(--fintheon-accent)]" />
               : isShort
                 ? <TrendingDown className="w-3 h-3 text-zinc-400" />
                 : <NotionLogo className="w-3 h-3 text-[var(--fintheon-accent)]" />

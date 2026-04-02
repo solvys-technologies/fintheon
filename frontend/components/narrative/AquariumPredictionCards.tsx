@@ -1,6 +1,7 @@
+// [claude-code 2026-03-31] Added 120s polling interval (was static one-time fetch)
 // [claude-code 2026-03-28] S7: 5 forward-looking prediction cards under TradingView in Aquarium
-import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Diff, TrendingDown, Minus, Loader2 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -16,7 +17,7 @@ interface InstrumentOutlook {
 }
 
 const LEAN_CONFIG = {
-  bullish: { icon: TrendingUp, color: 'var(--fintheon-bullish)', label: 'Bullish' },
+  bullish: { icon: Diff, color: 'var(--fintheon-bullish)', label: 'Bullish' },
   bearish: { icon: TrendingDown, color: 'var(--fintheon-bearish)', label: 'Bearish' },
   neutral: { icon: Minus, color: 'var(--fintheon-muted)', label: 'Neutral' },
 };
@@ -44,9 +45,12 @@ export function AquariumPredictionCards() {
   const [outlook, setOutlook] = useState<InstrumentOutlook[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    const fetchOutlook = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/predictions/outlook`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -57,8 +61,20 @@ export function AquariumPredictionCards() {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
-    return () => { cancelled = true; };
+    };
+
+    // Initial fetch
+    fetchOutlook();
+
+    // Poll every 120s when tab is visible
+    pollRef.current = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchOutlook();
+    }, 120_000);
+
+    return () => {
+      cancelled = true;
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, []);
 
   if (loading) {

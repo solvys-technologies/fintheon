@@ -268,7 +268,7 @@ export function FintheonChatInput({
             </button>
           </div>
 
-          {/* Right: Think + Mic + Send — justified right */}
+          {/* Right: Think + Send — justified right */}
           <div className="flex items-center gap-1">
             <button
               onClick={() => setThinkHarder(!thinkHarder)}
@@ -281,18 +281,6 @@ export function FintheonChatInput({
               style={{ width: '32px', height: '32px' }}
             >
               <Brain size={14} />
-            </button>
-            <button
-              type="button"
-              className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-              style={{ width: '32px', height: '32px' }}
-              title="Voice input"
-              onClick={() => {
-                // Dispatch a click on the header voice orb to toggle voice
-                window.dispatchEvent(new CustomEvent('fintheon:voice-toggle'));
-              }}
-            >
-              <Mic size={14} />
             </button>
             <button
               onClick={isProcessing && onStop ? onStop : handleSend}

@@ -10,6 +10,9 @@
  */
 
 import { execFile, spawn as spawnProcess } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import type { HermesAgentRole } from './hermes-service.js'
 import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from './ai/agent-instructions/index.js'
 import { buildThoughtBankPromptBlock } from './ai/agent-instructions/thought-bank-awareness.js'
@@ -387,6 +390,11 @@ ${agent === 'herald' ? '- News sentiment analysis\n- Social signal detection\n- 
 }
 
 const OPENROUTER_OPUS_MODEL = 'anthropic/claude-sonnet-4-6'
+let hermesAvailable = false
+
+export function isHermesAvailable(): boolean {
+  return hermesAvailable
+}
 
 /** Map HermesAgentRole to display name for thought bank queries */
 const BOARDROOM_AGENT_NAMES: Record<string, string> = {
@@ -518,6 +526,20 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
  * 2. Warm up OpenRouter (Sonnet 4.6) connection with a Harper (CAO) ping
  */
 export async function initHermesAgent(): Promise<void> {
+  const hermesEnabled = process.env.HERMES_ENABLED !== 'false'
+  const hermesConfigPath = join(homedir(), '.hermes', 'config.yaml')
+  const hermesConfigExists = existsSync(hermesConfigPath)
+  hermesAvailable = hermesEnabled && hermesConfigExists
+
+  if (!hermesAvailable) {
+    log.info('Hermes plugin not available', {
+      hermesEnabled,
+      hermesConfigPath,
+      hermesConfigExists,
+    })
+    return
+  }
+
   const hermesBin = process.env.HERMES_BINARY_PATH ?? 'hermes'
 
   try {
@@ -596,5 +618,4 @@ export async function* streamHermesChat(request: HermesChatRequest): AsyncGenera
     await new Promise(resolve => setTimeout(resolve, 10))
   }
 }
-
 

@@ -19,9 +19,27 @@ export async function handleGetAccount(c: Context) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
-  // Auto-create account on first access (prevents 404 spew from polling)
-  const account = await accountService.getOrCreateAccount(userId, email);
-  return c.json(account);
+  try {
+    // Auto-create account on first access (prevents 404 spew from polling)
+    const account = await accountService.getOrCreateAccount(userId, email);
+    return c.json(account);
+  } catch (error) {
+    // Graceful fallback for local/bypass mode or missing accounts table
+    console.warn('[Account] getOrCreateAccount failed:', (error as Error)?.message);
+    return c.json({
+      id: userId,
+      userId,
+      email,
+      tier: 'fintheon_pro',
+      balance: 0,
+      dailyPnl: 0,
+      tradingEnabled: true,
+      algoEnabled: false,
+      riskManagement: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
 }
 
 /**

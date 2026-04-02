@@ -9,7 +9,7 @@ export type AlertSeverity = 'low' | 'medium' | 'high' | 'critical';
 export type AlertSource =
   | 'notion-trade-idea'
   | 'financial-juice'
-  | 'insider-wire'
+  | 'osint-sources'
   | 'economic-calendar'
   | 'polymarket'
   | 'kalshi-whale'

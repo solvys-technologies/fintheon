@@ -234,7 +234,7 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
         className="flex-1 overflow-y-auto scroll-smooth snap-y snap-mandatory"
       >
         {/* Page 1: Briefing (default) — NTK Brief + Session Calendar + Core KPIs + Action Tape */}
-        <div data-dash-page="0" className="min-h-full snap-start py-1 px-3 flex flex-col">
+        <div data-dash-page="0" className="min-h-full snap-start pt-0.5 pb-1 px-2 flex flex-col">
           {/* Setup Guide — first-time onboarding */}
           {showSetupGuide && (
             <div className="shrink-0 mb-5">
@@ -242,7 +242,7 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
             </div>
           )}
           {/* Main content — Brief left, Calendar right */}
-          <div className="flex-1 min-h-0 flex">
+          <div className="flex-1 min-h-[420px] flex mt-2">
             <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
               {/* Left: Morning Daily Brief (55%) */}
               <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col">
@@ -271,11 +271,6 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
                   style={{ resize: 'vertical', minHeight: '80px' }}
                   placeholder={ntnLoaded ? 'Awaiting AI-generated brief...' : 'Loading brief...'}
                 />
-                {ntnLoaded && !ntnText.trim() && (
-                  <p className="mt-2 text-xs text-zinc-500">
-                    Awaiting AI-generated brief...
-                  </p>
-                )}
               </div>
 
               {/* Needle divider — fades at top/bottom 25% */}
@@ -395,7 +390,7 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
         </div>
 
         {/* Page 2: Full RiskFlow */}
-        <div data-dash-page="1" className="min-h-full snap-start py-1 px-3 flex flex-col">
+        <div data-dash-page="1" className="min-h-full snap-start pt-0.5 pb-1 px-2 flex flex-col">
           <KanbanTitle title="RiskFlow" tag="Full Feed" tone="emerald" headerRight={
               <div className="flex items-center gap-1">
                 <AutoRefreshToggle size="xs" />

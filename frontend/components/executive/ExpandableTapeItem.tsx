@@ -3,7 +3,7 @@
 // [claude-code 2026-03-27] S3: Plain text DetailFooter, expanded border-l-4 + ring highlight
 // [claude-code 2026-03-26] T3: Smooth expand transitions, agent notes, risk type, sub-scores, beat/miss
 import { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp, ChevronRight, ExternalLink, TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronRight, ExternalLink, Diff, TrendingDown, Sparkles } from 'lucide-react';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../../lib/riskflow-feed';
 import { useBackend } from '../../lib/backend';
@@ -119,7 +119,7 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
             {isTradeIdea ? (
               <span className="inline-flex items-center justify-center w-4 h-4 border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10 flex-shrink-0">
                 {alert.tradeIdea!.direction === 'long'
-                  ? <TrendingUp className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
+                  ? <Diff className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
                   : <TrendingDown className="w-2.5 h-2.5 text-zinc-400" />}
               </span>
             ) : (

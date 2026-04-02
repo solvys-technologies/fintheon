@@ -2,7 +2,7 @@
 // [claude-code 2026-03-20] 8b: Proposals tab — Human/Agentic toggle + Kalshi tracking
 // [claude-code 2026-03-20] Theme fix: zinc → fintheon gold/cream palette
 import { useState, useEffect, useCallback } from 'react';
-import { Target, TrendingUp, TrendingDown, Loader2, AlertTriangle, Crosshair, User, Bot, ToggleLeft, ToggleRight, Trophy } from 'lucide-react';
+import { Target, Diff, TrendingDown, Loader2, AlertTriangle, Crosshair, User, Bot, ToggleLeft, ToggleRight, Trophy } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 import { ModelGlossary } from './ModelGlossary';
 import { AgentScorecard } from '../consilium/AgentScorecard';
@@ -239,7 +239,7 @@ export function ProposalWidget() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   {isLong ? (
-                    <TrendingUp className="w-3.5 h-3.5 text-green-400" />
+                    <Diff className="w-3.5 h-3.5 text-green-400" />
                   ) : isShort ? (
                     <TrendingDown className="w-3.5 h-3.5 text-red-400" />
                   ) : null}

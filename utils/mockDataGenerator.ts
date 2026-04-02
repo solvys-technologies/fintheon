@@ -18,7 +18,7 @@ const headlines = [
   'Short interest building in small caps',
 ];
 
-const sources = ['ZeroHedge', 'Bloomberg', 'Reuters', 'WSJ', 'CNBC', 'FT'];
+const sources = ['FinancialJuice', 'OSINTSources', 'DeItaOne', 'Bloomberg', 'Reuters', 'WSJ', 'CNBC', 'FT'];
 
 function hashString(str: string): number {
   let hash = 0;

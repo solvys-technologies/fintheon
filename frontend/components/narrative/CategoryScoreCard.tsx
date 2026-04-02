@@ -16,7 +16,7 @@ export function CategoryScoreCard({ category, score, delta, confidence, descript
 
   return (
     <div
-      className="rounded-lg bg-[var(--fintheon-surface)]/40 px-5 py-4 min-h-[88px]"
+      className="rounded-lg bg-[var(--fintheon-surface)]/40 px-5 py-4 min-h-[88px] iv-card-shimmer"
       style={{
         border: `1px solid ${color}30`,
         boxShadow: `0 0 8px ${color}15`,

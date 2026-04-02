@@ -26,6 +26,21 @@ export function hasLevel4Emoji(text: string): boolean {
   return LEVEL4_EMOJIS.some((emoji) => text.includes(emoji))
 }
 
+// Keyword match list for macro-level assignment. Returns matched keyword strings.
+const MACRO_KEYWORDS = [
+  'fed', 'fomc', 'cpi', 'ppi', 'gdp', 'nfp', 'pce', 'inflation', 'jobless', 'retail sales',
+  'housing starts', 'consumer confidence', 'treasury', 'tariff', 'sanction', 'military',
+  'war', 'conflict', 'opec', 'nato', 'invasion', 'missile', 'nuclear', 'strait of hormuz',
+  'circuit breaker', 'flash crash', 'earnings', 'revenue', 'eps', 'guidance',
+  'resistance', 'support', 'breakout', 'credit spread', 'default', 'downgrade',
+  'repo', 'liquidity', 'bank run', 'reserve',
+] as const
+
+export function getMatchedKeywords(text: string): string[] {
+  const lower = text.toLowerCase()
+  return MACRO_KEYWORDS.filter((kw) => lower.includes(kw))
+}
+
 const knownTickers = ['SPY', 'QQQ', 'ES', 'NQ', 'IWM', 'TLT', 'ZN', 'ZB', 'DXY', 'VIX', 'CL', 'GC', 'BTC', 'ETH']
 
 const defaultParsedHeadline = (text: string, source: NewsSource): ParsedHeadline => ({

@@ -1,11 +1,67 @@
 // [claude-code 2026-03-14] Market-data route handlers — Yahoo Finance + Unusual Whales + blended IV score
 // [claude-code 2026-03-11] IV score now served from persistent ticker cache (decay never restarts)
 import type { Context } from 'hono';
+import { streamSSE } from 'hono/streaming';
 import { getMarketContext, yahooMarket, unusualWhales } from '../../services/market-data/index.js';
 import { calculateBlendedIVScore, classifyEventType } from '../../services/market-data/iv-scorer.js';
-import { estimatePoints } from '../../services/market-data/point-estimator.js';
-import { getCachedIVScore } from '../../services/market-data/iv-score-ticker.js';
+import { estimateAggregatePoints, estimatePoints } from '../../services/market-data/point-estimator.js';
+import {
+  getCachedIVScore,
+  subscribeToIVScoreUpdates,
+  type IVScoreSnapshot,
+} from '../../services/market-data/iv-score-ticker.js';
 import type { StackedEvent } from '../../services/iv-scoring-v2.js';
+
+interface AggregateEventSignal {
+  macroLevel?: number;
+  riskType?: string | null;
+}
+
+function buildAggregatePoints(
+  score: number,
+  vixLevel: number,
+  instrument: string,
+  currentPrice?: number,
+  activeEvents: AggregateEventSignal[] = [],
+) {
+  const baseline = estimatePoints(score, vixLevel, instrument, currentPrice);
+  const scaledPoints = estimateAggregatePoints(score, vixLevel, instrument, activeEvents, currentPrice);
+  const scaledTicks = Math.round(
+    (scaledPoints / (baseline.implied.adjustedPoints || 1)) * baseline.implied.adjustedTicks,
+  );
+  const scaledDollarRisk = Number((scaledTicks * baseline.implied.tickValue).toFixed(2));
+
+  return {
+    scaledPoints,
+    scaledTicks,
+    scaledDollarRisk,
+    urgency: baseline.urgency,
+    implied: baseline.implied,
+  };
+}
+
+function toIVScoreResponse(
+  snapshot: IVScoreSnapshot,
+  instrument: string,
+  currentPrice?: number,
+) {
+  let points = snapshot.points;
+  if (snapshot.instrument !== instrument) {
+    points = buildAggregatePoints(
+      snapshot.score.score,
+      snapshot.score.vix?.level ?? 20,
+      instrument,
+      currentPrice,
+      snapshot.hasCriticalEvent ? [{ macroLevel: 4 }] : [],
+    );
+  }
+
+  return {
+    ...snapshot.score,
+    points,
+    instrument,
+  };
+}
 
 export async function handleQuote(c: Context) {
   const symbol = c.req.param('symbol');
@@ -88,7 +144,7 @@ export async function handleContext(c: Context) {
 }
 
 /**
- * GET /api/market-data/iv-score — blended 60/40 VIX+headline IV score
+ * GET /api/market-data/iv-score — blended VIX/catalyst/MiroShark IV score
  *
  * Serves the cached ticker score (computed every 60s in background).
  * Decay is continuous from event published_at — never restarts on backend restart.
@@ -101,13 +157,11 @@ export async function handleIVScore(c: Context) {
     const currentPrice = priceParam ? parseFloat(priceParam) : undefined;
 
     // Serve from persistent ticker cache (preferred — decay is continuous)
-    const cached = getCachedIVScore();
-    if (cached && cached.instrument === instrument) {
-      return c.json({
-        ...cached.score,
-        points: cached.points,
-        instrument: cached.instrument,
-      });
+    // IV score is market-wide (VIX + headline blend) — serve cached regardless of
+    // which instrument the frontend requests. Point estimates are re-scaled below if needed.
+    const cached = getCachedIVScore(instrument);
+    if (cached) {
+      return c.json(toIVScoreResponse(cached, instrument, currentPrice));
     }
 
     // Fallback: live computation with extended event window (7 days for V3 decay)
@@ -116,7 +170,7 @@ export async function handleIVScore(c: Context) {
       const { sql, isDatabaseAvailable } = await import('../../config/database.js');
       if (isDatabaseAvailable() && sql) {
         const recentItems = await sql`
-          SELECT headline, source, macro_level, iv_score, published_at, is_breaking
+          SELECT headline, source, macro_level, risk_type, iv_score, published_at, is_breaking
           FROM news_feed_items
           WHERE published_at >= NOW() - INTERVAL '7 days'
             AND macro_level >= 2
@@ -129,6 +183,8 @@ export async function handleIVScore(c: Context) {
             eventType: classifyEventType(parsed as any),
             baseScore: item.iv_score || 3,
             timestamp: new Date(item.published_at),
+            macroLevel: item.macro_level ?? undefined,
+            riskType: item.risk_type ?? undefined,
           };
         });
       }
@@ -137,21 +193,63 @@ export async function handleIVScore(c: Context) {
     }
 
     const result = await calculateBlendedIVScore(events, instrument, currentPrice);
-    const pointEst = estimatePoints(result.score, result.vix.level, instrument, currentPrice);
+    const activeEvents: AggregateEventSignal[] = events.map((event: any) => ({
+      macroLevel: event.macroLevel,
+      riskType: event.riskType,
+    }));
+    const points = buildAggregatePoints(
+      result.score,
+      result.vix.level,
+      instrument,
+      currentPrice,
+      activeEvents,
+    );
 
     return c.json({
       ...result,
-      points: {
-        scaledPoints: pointEst.scaledPoints,
-        scaledTicks: pointEst.scaledTicks,
-        scaledDollarRisk: pointEst.scaledDollarRisk,
-        urgency: pointEst.urgency,
-        implied: pointEst.implied,
-      },
+      points,
       instrument,
     });
   } catch (err) {
     console.error('[market-data] iv-score error:', err);
     return c.json({ error: err instanceof Error ? err.message : 'Failed to calculate IV score' }, 500);
   }
+}
+
+export async function handleIVScoreStream(c: Context) {
+  const symbol = c.req.query('symbol') ?? c.req.query('instrument') ?? '/ES';
+  const instrument = symbol.startsWith('/') ? symbol : `/${symbol}`;
+
+  return streamSSE(c, async (stream) => {
+    const cached = getCachedIVScore(instrument);
+    if (cached) {
+      await stream.writeSSE({
+        event: 'iv-score',
+        data: JSON.stringify(toIVScoreResponse(cached, instrument)),
+      });
+    }
+
+    const unsubscribe = subscribeToIVScoreUpdates(instrument, (snapshot) => {
+      stream.writeSSE({
+        event: 'iv-score',
+        data: JSON.stringify(toIVScoreResponse(snapshot, instrument)),
+      }).catch(() => {});
+    });
+
+    const ping = setInterval(() => {
+      stream.writeSSE({ event: 'ping', data: '' }).catch(() => {});
+    }, 30_000);
+
+    await new Promise<void>((resolve) => {
+      const onAbort = () => resolve();
+      if (c.req.raw.signal.aborted) {
+        resolve();
+        return;
+      }
+      c.req.raw.signal.addEventListener('abort', onAbort, { once: true });
+    });
+
+    clearInterval(ping);
+    unsubscribe();
+  });
 }

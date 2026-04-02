@@ -202,7 +202,7 @@ export function BriefMiniWidget() {
   };
 
   return (
-    <div className="flex flex-col" style={{ minHeight: '120px', resize: 'vertical', overflow: 'auto' }}>
+    <div className="flex flex-col" style={{ minHeight: '320px', resize: 'vertical', overflow: 'auto' }}>
       {/* Header with dropdown */}
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 relative">

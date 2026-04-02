@@ -2,7 +2,7 @@
 // [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish, AI generate CTA, delete all regimes, 12H NY time, collapsed active regimes, labeled ORB record
 import { useState, useMemo } from 'react';
 import {
-  X, Plus, Clock, TrendingUp, TrendingDown,
+  X, Plus, Clock, Diff, TrendingDown,
   ChevronDown, ChevronRight, Sparkles, Trash2,
 } from 'lucide-react';
 import { useRegimes } from '../../lib/regime-store';
@@ -54,7 +54,7 @@ function OrbRecord({ record }: { record: TradingRegime['record'] }) {
     <div className="flex items-center gap-1.5">
       <span className="text-[8px] text-zinc-600 uppercase tracking-wider">ORB</span>
       <span className="flex items-center gap-0.5 text-[10px]">
-        <TrendingUp className="w-2.5 h-2.5 text-emerald-400" />
+        <Diff className="w-2.5 h-2.5 text-emerald-400" />
         <span className="text-emerald-400 font-semibold">{record.bullishDays}</span>
       </span>
       <span className="text-zinc-700">/</span>
@@ -145,7 +145,7 @@ function RegimeCard({
             className="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
             title="Record Bullish ORB Day"
           >
-            <TrendingUp className="w-2.5 h-2.5" />
+            <Diff className="w-2.5 h-2.5" />
           </button>
           <button
             onClick={onRecordBearish}

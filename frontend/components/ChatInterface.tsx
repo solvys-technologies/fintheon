@@ -153,7 +153,7 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
         )}
 
         {/* Sessions sidebar */}
-        <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showSessions ? 'w-80' : 'w-0'} border-l border-[var(--fintheon-accent)]/20`}>
+        <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showSessions ? 'w-80 border-l border-[var(--fintheon-accent)]/20' : 'w-0'}`}>
           <div className="w-80 h-full flex flex-col bg-[var(--fintheon-surface)]">
             <div className="h-12 border-b border-[var(--fintheon-accent)]/15 flex items-center justify-between px-4">
               <div className="flex items-center gap-2">

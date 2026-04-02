@@ -3,6 +3,8 @@
  * Request handlers for RiskFlow endpoints
  */
 
+// [claude-code 2026-03-31] Owner-gated X polling: only POLL_OWNER_ID can trigger twitter-cli fetch; all users get DB reads + rescore
+// [claude-code 2026-03-31] Refresh now triggers Central Scorer immediately (fetch→score→deliver in one call)
 // [claude-code 2026-03-29] S9-T2b: Wire instrument-aware sentiment flipper into feed handler, fix spread ordering, fire-and-forget instrument_scores writes
 // [claude-code 2026-03-10] Added handleGetSources for RiskFlow connection status indicators
 // [claude-code 2026-03-10] handlePreload: lowered minMacroLevel 3→2 (Medium+ threshold)
@@ -15,7 +17,8 @@ import type { FeedFilters, WatchlistUpdateRequest, NewsSource, MacroLevel } from
 import { isSupabaseConfigured } from '../../config/supabase.js';
 import { writeInstrumentScores } from '../../services/supabase-service.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
-import { forcePoll, setPollingToggle, getPollingToggle } from '../../services/riskflow/feed-poller.js';
+import { forcePoll, setPollingToggle, getPollingToggle, isPollingActive } from '../../services/riskflow/feed-poller.js';
+import { getPollingConfig } from '../../services/riskflow/polling-config.js';
 import { fetchVIX, getVIXSpikeAdjustment, getVIXScoringMultiplier, getVIXBaseline } from '../../services/vix-service.js';
 import {
   calculateIVScoreV2,
@@ -758,25 +761,43 @@ export async function handleRefresh(c: Context) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
-  try {
-    // 1. Poll for fresh items (writes raw → raw_riskflow_items)
-    await forcePoll();
+  // Only the owner can trigger X polling. Match by email (Google sign-in) or userId.
+  // All other users still get rescore + agent notes, just no fresh twitter-cli fetch.
+  const ownerEmail = process.env.POLL_OWNER_EMAIL || 'pricedinresearch@gmail.com';
+  const ownerId = process.env.POLL_OWNER_ID || 'local-user';
+  const email = c.get('email') as string | undefined;
+  const isOwner = email === ownerEmail || userId === ownerId || userId === 'local-user';
 
-    // 2. Re-score in-memory feed with current regime/calibration weights
+  try {
+    let polled = false;
+
+    // 1. Poll for fresh items — OWNER ONLY (prevents rate-limit blocking for other users)
+    if (isOwner) {
+      await forcePoll();
+      polled = true;
+    }
+
+    // 2. Run Central Scorer immediately so raw items get scored NOW, not in 30s
+    const { scoringCycle } = await import('../../services/riskflow/central-scorer.js');
+    await scoringCycle().catch((err: unknown) => {
+      console.warn('[RiskFlow] Immediate scoring during refresh failed:', err);
+    });
+
+    // 3. Re-score in-memory feed with current regime/calibration weights
     const { rescoreInMemoryFeed } = await import('../../services/riskflow/feed-service.js');
     const rescored = await rescoreInMemoryFeed().catch((err: unknown) => {
       console.warn('[RiskFlow] Rescore during refresh failed:', err);
       return 0;
     });
 
-    // 3. Auto-generate agent notes for critical items (fire-and-forget)
+    // 4. Auto-generate agent notes for critical items (fire-and-forget)
     import('../../services/riskflow/agent-notes.js').then(({ generateNotesForCriticalItems }) => {
       generateNotesForCriticalItems().catch((err: unknown) => {
         console.warn('[RiskFlow] Auto-notes during refresh failed:', err);
       });
     });
 
-    return c.json({ success: true, rescored, refreshedAt: new Date().toISOString() });
+    return c.json({ success: true, polled, rescored, refreshedAt: new Date().toISOString() });
   } catch (error) {
     console.error('[RiskFlow] Refresh error:', error);
     return c.json({ error: 'Refresh failed' }, 500);
@@ -852,4 +873,23 @@ export async function handlePollingToggle(c: Context) {
   } catch (err) {
     return c.json({ error: 'Invalid request body' }, 400);
   }
+}
+
+/**
+ * GET /api/riskflow/polling-status
+ * Returns current polling state for frontend toggle sync.
+ */
+export async function handlePollingStatus(c: Context) {
+  const { interval, isHotHours } = getPollingConfig();
+  const toggleEnabled = getPollingToggle();
+  const pollerRunning = isPollingActive();
+
+  return c.json({
+    windowActive: true, // polling is 24/7 with dynamic cadence
+    isHotHours,
+    intervalMs: interval,
+    toggleEnabled,
+    pollerRunning,
+    effectivelyPolling: toggleEnabled && pollerRunning,
+  });
 }

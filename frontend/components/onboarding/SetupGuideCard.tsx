@@ -1,6 +1,6 @@
 // [claude-code 2026-03-11] First-time setup guide card with status indicators
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle2, AlertCircle, Loader2, RefreshCw, X, Server, Globe, FileText, TrendingUp } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, RefreshCw, X, Server, Globe, FileText, Diff } from 'lucide-react';
 import { useGateway } from '../../contexts/GatewayContext';
 import { useBackend } from '../../lib/backend';
 
@@ -72,7 +72,7 @@ export function SetupGuideCard({ onDismiss, onStartInterview }: { onDismiss?: ()
     { id: 'backend', label: 'Backend API', description: 'Hono server on port 8080', icon: Server, status: backendStatus },
     { id: 'gateway', label: 'Hermes Agent', description: 'AI agent router', icon: Globe, status: gwStatus },
     { id: 'data-layer', label: 'Data Layer', description: 'Trade ideas & briefs', icon: FileText, status: dataLayerStatus },
-    { id: 'market', label: 'Market Data (VIX)', description: 'Yahoo Finance for IV scoring', icon: TrendingUp, status: marketDataStatus },
+    { id: 'market', label: 'Market Data (VIX)', description: 'Yahoo Finance for IV scoring', icon: Diff, status: marketDataStatus },
   ];
 
   const allConnected = services.every(s => s.status === 'connected');

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useBackend } from '../../lib/backend';
 import { useSettings } from '../../contexts/SettingsContext';
 import { ProposalModal, MOCK_PROPOSAL, type TradingProposal } from '../ProposalModal';
-import { Zap, TrendingUp, TrendingDown } from 'lucide-react';
+import { Zap, Diff, TrendingDown } from 'lucide-react';
 import type { RiskFlowItem } from '../../types/api';
 
 // Track last seen news item ID to count unread items (per session)
@@ -112,7 +112,7 @@ export function MinimalTapeWidget() {
               </div>
               <div className="flex items-center justify-center gap-1 mt-1">
                 {latestProposal.direction === 'long' ? (
-                  <TrendingUp className="w-3 h-3 text-green-400" />
+                  <Diff className="w-3 h-3 text-green-400" />
                 ) : latestProposal.direction === 'short' ? (
                   <TrendingDown className="w-3 h-3 text-red-400" />
                 ) : null}

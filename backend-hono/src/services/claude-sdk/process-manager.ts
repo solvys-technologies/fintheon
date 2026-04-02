@@ -13,6 +13,7 @@
 
 import { spawn, type ChildProcess } from 'node:child_process'
 import { createLogger } from '../../lib/logger.js'
+import { getSessionManager } from './session-manager.js'
 
 const log = createLogger('ClaudeSDK')
 
@@ -81,6 +82,20 @@ let config: ClaudeSDKConfig = { ...DEFAULT_CONFIG }
 let health: ProcessHealth = { available: false, version: null, lastCheckAt: 0, error: null }
 let activeProcesses = 0
 const MAX_CONCURRENT = Number(process.env.CLAUDE_SDK_MAX_CONCURRENT ?? '2')
+
+// Concurrency queue — prevents spawning more than MAX_CONCURRENT Claude processes
+const waitQueue: Array<() => void> = []
+
+async function acquireSlot(): Promise<void> {
+  if (activeProcesses < MAX_CONCURRENT) return
+  log.info(` Queued (${activeProcesses}/${MAX_CONCURRENT} active, ${waitQueue.length} waiting)`)
+  await new Promise<void>(resolve => waitQueue.push(resolve))
+}
+
+function releaseSlot(): void {
+  const next = waitQueue.shift()
+  if (next) next()
+}
 
 // ── Health ─────────────────────────────────────────────────────────────────
 
@@ -174,6 +189,7 @@ export function spawnClaudeProcess(prompt: string, options?: Partial<ClaudeSDKCo
 
   const cleanup = () => {
     activeProcesses = Math.max(0, activeProcesses - 1)
+    releaseSlot()
   }
 
   proc.on('close', cleanup)
@@ -204,7 +220,8 @@ export function spawnClaudeProcess(prompt: string, options?: Partial<ClaudeSDKCo
 
 /**
  * Generate text via Claude CLI (non-streaming).
- * Collects all text-delta events and returns the full response.
+ * Routes through the persistent session manager when available,
+ * falls back to per-request spawn if session is down.
  * Used by brief generator, agent notes, and any service that needs
  * Claude inference without the AI SDK client pattern.
  */
@@ -212,6 +229,22 @@ export async function generateTextViaClaude(prompt: string, options?: Partial<Cl
   if (!isAvailable()) {
     throw new Error('Claude CLI not available — bridge disabled')
   }
+
+  // Try persistent session first (serialized, no concurrency management needed)
+  const session = getSessionManager()
+  if (session.isSessionAlive()) {
+    try {
+      log.info('Routing sync request through persistent session')
+      return await session.sendPromptSync(prompt, options)
+    } catch (err) {
+      log.warn('Session failed, falling back to per-request spawn', {
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
+  // Fallback: per-request spawn with concurrency gate
+  await acquireSlot()
 
   return new Promise((resolve, reject) => {
     const { process: proc, abort } = spawnClaudeProcess(prompt, options)
@@ -251,6 +284,7 @@ export async function generateTextViaClaude(prompt: string, options?: Partial<Cl
 
     proc.on('close', (code) => {
       clearTimeout(timeout)
+      releaseSlot()
       if (code === 0 || fullText.length > 0) {
         resolve(fullText.trim())
       } else {
@@ -260,6 +294,7 @@ export async function generateTextViaClaude(prompt: string, options?: Partial<Cl
 
     proc.on('error', (err) => {
       clearTimeout(timeout)
+      releaseSlot()
       reject(err)
     })
   })
@@ -304,3 +339,6 @@ export function shutdownClaudeSDK(): void {
   // Active processes will be cleaned up by their individual abort() calls
   // or OS process group cleanup on parent exit
 }
+
+// Re-export session manager for consumers
+export { getSessionManager } from './session-manager.js'

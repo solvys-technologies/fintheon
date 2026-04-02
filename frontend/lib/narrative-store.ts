@@ -1,4 +1,5 @@
 // [claude-code 2026-03-31] Restored simple catalyst normalization (removed auto-classify/auto-purge)
+// [claude-code 2026-03-30] Wire DB narrative_threads as lane source of truth, enrich catalysts with card-links
 // [claude-code 2026-03-29] S9-T5-T1: Normalize catalyst tags/narrative fields on load for rope engine
 // [claude-code 2026-03-28] NarrativeFlow localStorage CRUD + useNarrativeStore hook
 // S5-T1: Added viewport + dateFilter state and SET_VIEWPORT / SET_DATE_FILTER actions
@@ -15,6 +16,7 @@ import type {
   Rope,
 } from './narrative-types';
 import { DEFAULT_VIEWPORT } from './narrative-types';
+import type { NarrativeThreadRow, NarrativeCardLink } from './services';
 
 const STORAGE_KEY = 'fintheon:narrative:v1';
 const SNAPSHOT_KEY = 'fintheon:narrative-snapshot:v1';
@@ -111,6 +113,119 @@ export function saveAgentConfig(config: AgentProviderConfig): void {
   } catch {
     // silent
   }
+}
+
+// ── DB-backed lane + card-link sync ──────────────────────────────
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+function threadToLane(t: NarrativeThreadRow, idx: number): NarrativeLane {
+  return {
+    id: t.slug,
+    title: t.title,
+    instruments: [],
+    directionBias: 'neutral',
+    category: 'macroeconomic',
+    status: (t.status as NarrativeLane['status']) ?? 'active',
+    dateRange: { start: new Date().toISOString().slice(0, 10), end: null },
+    healthScore: 50,
+    color: t.color ?? '#c79f4a',
+    order: t.sort_order ?? idx,
+    parentId: null,
+    forkDate: null,
+    decayWeeks: 4,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function fetchDbThreads(): Promise<NarrativeLane[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/narrative/threads`);
+    if (!res.ok) return [];
+    const { threads } = await res.json() as { threads: NarrativeThreadRow[] };
+    return threads.map(threadToLane);
+  } catch {
+    return [];
+  }
+}
+
+async function fetchDbCardLinks(): Promise<NarrativeCardLink[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/narrative/card-links`);
+    if (!res.ok) return [];
+    const { links } = await res.json() as { links: NarrativeCardLink[] };
+    return links;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Fetch promoted catalysts from the unified scored_riskflow_items DB.
+ * Returns CatalystCard-shaped objects ready for BULK_ADD_CATALYSTS.
+ */
+async function fetchDbCatalysts(since?: string): Promise<CatalystCard[]> {
+  try {
+    const params = since ? `?since=${encodeURIComponent(since)}` : '';
+    const res = await fetch(`${API_BASE}/api/narrative/catalysts${params}`);
+    if (!res.ok) return [];
+    const { catalysts } = await res.json() as { catalysts: Array<Record<string, unknown>> };
+    return catalysts.map((c: Record<string, unknown>) => ({
+      id: String(c.id ?? ''),
+      title: String(c.title ?? ''),
+      description: String(c.description ?? ''),
+      date: String(c.date ?? new Date().toISOString()),
+      sentiment: (c.sentiment === 'bullish' ? 'bullish' : 'bearish') as CatalystCard['sentiment'],
+      severity: (['high', 'medium', 'low'].includes(c.severity as string) ? c.severity : 'medium') as CatalystCard['severity'],
+      source: 'riskflow' as const,
+      narrativeIds: Array.isArray(c.narrativeIds) ? c.narrativeIds as string[] : [],
+      narrativeThreads: Array.isArray(c.narrativeThreads) ? c.narrativeThreads as string[] : [],
+      isGhost: false,
+      templateType: null,
+      position: null,
+      tags: Array.isArray(c.tags) ? c.tags as string[] : [],
+      category: (c.category ?? 'macroeconomic') as CatalystCard['category'],
+      riskflowItemId: String(c.riskflowItemId ?? c.id ?? ''),
+      marketImpact: c.marketImpact as CatalystCard['marketImpact'],
+      narrative: (c.narrative as string) ?? null,
+      status: (c.status ?? 'active') as CatalystCard['status'],
+      drillDepth: 0,
+      createdAt: String(c.createdAt ?? new Date().toISOString()),
+      updatedAt: String(c.updatedAt ?? new Date().toISOString()),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Strip `backend-` or `rf-backend-` prefix to get raw tweet_id for DB matching */
+function stripIdPrefix(id: string): string {
+  return id.replace(/^(rf-)?backend-/, '');
+}
+
+/** Apply DB card-links to catalysts — sets narrativeThreads + narrative fields */
+function enrichCatalystsWithLinks(catalysts: CatalystCard[], links: NarrativeCardLink[]): CatalystCard[] {
+  if (links.length === 0) return catalysts;
+  const linkMap = new Map<string, string[]>();
+  for (const link of links) {
+    const arr = linkMap.get(link.card_id) ?? [];
+    arr.push(link.thread_slug);
+    linkMap.set(link.card_id, arr);
+  }
+  return catalysts.map(c => {
+    // DB stores raw tweet_id; catalysts may have backend- or rf-backend- prefix
+    const rawId = stripIdPrefix(c.id);
+    const rawRfId = c.riskflowItemId ? stripIdPrefix(c.riskflowItemId) : '';
+    const threads = linkMap.get(c.id) ?? linkMap.get(rawId) ?? linkMap.get(rawRfId) ?? [];
+    if (threads.length === 0) return c;
+    return {
+      ...c,
+      narrativeThreads: threads,
+      narrative: threads[0],
+      narrativeIds: threads,
+    };
+  });
 }
 
 function takeSnapshotFromState(state: NarrativeFlowState): NarrativeSnapshot {
@@ -318,6 +433,7 @@ export function useNarrativeStore() {
   const [state, setState] = useState<NarrativeFlowState>(loadNarrativeState);
   const [snapshot, setSnapshot] = useState<NarrativeSnapshot | null>(loadSnapshot);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dbLoadedRef = useRef(false);
 
   // Debounced persist
   const scheduleSave = useCallback((s: NarrativeFlowState) => {
@@ -330,6 +446,69 @@ export function useNarrativeStore() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, []);
+
+  // Track last fetch timestamp for incremental polling
+  const lastCatalystFetchRef = useRef<string | undefined>(undefined);
+
+  // Fetch lanes + card-links + catalysts from DB on mount (source of truth)
+  useEffect(() => {
+    if (dbLoadedRef.current) return;
+    dbLoadedRef.current = true;
+
+    (async () => {
+      const [dbLanes, dbLinks, dbCatalysts] = await Promise.all([
+        fetchDbThreads(),
+        fetchDbCardLinks(),
+        fetchDbCatalysts(),
+      ]);
+
+      // Track latest promotedAt for incremental fetches
+      if (dbCatalysts.length > 0) {
+        lastCatalystFetchRef.current = new Date().toISOString();
+      }
+
+      setState(prev => {
+        // DB threads are the canonical lanes — replace any localStorage lanes
+        const lanes = dbLanes.length > 0 ? dbLanes : prev.lanes;
+        // Merge DB catalysts into local state (dedup by ID)
+        const existingIds = new Set(prev.catalysts.map(c => c.id));
+        const newDbCatalysts = dbCatalysts.filter(c => !existingIds.has(c.id));
+        const mergedCatalysts = [...prev.catalysts, ...newDbCatalysts];
+        // Enrich all catalysts with DB card-links
+        const catalysts = enrichCatalystsWithLinks(mergedCatalysts, dbLinks);
+
+        const next = { ...prev, lanes, catalysts };
+        scheduleSave(next);
+        return next;
+      });
+    })();
+  }, [scheduleSave]);
+
+  // Auto-populate: poll for new catalysts every 60s (incremental)
+  useEffect(() => {
+    const CATALYST_POLL_MS = 60_000;
+    const interval = setInterval(async () => {
+      // Only poll when tab is visible
+      if (document.visibilityState !== 'visible') return;
+
+      const newCatalysts = await fetchDbCatalysts(lastCatalystFetchRef.current);
+      if (newCatalysts.length === 0) return;
+
+      lastCatalystFetchRef.current = new Date().toISOString();
+      console.debug(`[NarrativeStore] Auto-populated ${newCatalysts.length} new catalysts from DB`);
+
+      setState(prev => {
+        const existingIds = new Set(prev.catalysts.map(c => c.id));
+        const fresh = newCatalysts.filter(c => !existingIds.has(c.id));
+        if (fresh.length === 0) return prev;
+        const next = { ...prev, catalysts: [...prev.catalysts, ...fresh] };
+        scheduleSave(next);
+        return next;
+      });
+    }, CATALYST_POLL_MS);
+
+    return () => clearInterval(interval);
+  }, [scheduleSave]);
 
   const dispatch = useCallback(
     (action: NarrativeAction) => {

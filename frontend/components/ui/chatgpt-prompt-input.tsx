@@ -27,6 +27,7 @@ import {
 import { FintheonSlashPicker } from '../chat/FintheonSlashPicker';
 import { FintheonAttachPopup } from '../chat/FintheonAttachPopup';
 import { SkillBadge } from '../chat/SkillBadge';
+import { UsageRing } from '../chat/UsageRing';
 
 /* ------------------------------------------------------------------ */
 /*  Think Harder SVG — Claude-style sparkle shape                     */
@@ -421,22 +422,6 @@ export function PromptBox({
               {/* Tools (combined Skills + Connectors) */}
               {toolsSlot}
 
-              {/* Mic button */}
-              {onToggleVoice && !compact && (
-                <button
-                  onClick={onToggleVoice}
-                  title={voiceEnabled ? 'Disable voice' : 'Enable voice'}
-                  className={`flex items-center justify-center rounded-lg transition-all ${
-                    micListening
-                      ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15'
-                      : 'text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10'
-                  }`}
-                  style={{ width: '32px', height: '32px' }}
-                >
-                  {voiceEnabled ? <Mic size={14} /> : <MicOff size={14} />}
-                </button>
-              )}
-
               {/* Boardroom: newspaper RiskFlow picker | Others: pulsing icon toggle */}
               {onRiskFlowPick ? (
                 <button
@@ -459,9 +444,10 @@ export function PromptBox({
               )}
             </div>
 
-            {/* Right: Persona + Send/Stop */}
+            {/* Right: Persona + Usage + Send/Stop */}
             <div className="flex items-center gap-2">
               {personaSlot}
+              <UsageRing />
               <button
               onClick={isProcessing && onStop ? onStop : handleSend}
               disabled={!text.trim() && images.length === 0 && !isProcessing}

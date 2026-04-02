@@ -2,7 +2,7 @@
 import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
 import { useSettings } from '../contexts/SettingsContext';
 
-export type TradingPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradelocker';
+export type TradingPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradelocker' | 'tradingview';
 
 export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
   topstepx: 'TopStepX',
@@ -12,6 +12,7 @@ export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
   tradesea: 'TradeSea',
   tradovate: 'Tradovate',
   tradelocker: 'TradeLocker',
+  tradingview: 'TradingView',
 };
 
 export const PLATFORM_URLS: Record<TradingPlatform, string> = {
@@ -22,6 +23,7 @@ export const PLATFORM_URLS: Record<TradingPlatform, string> = {
   tradesea: 'https://app.tradesea.ai/trade',
   tradovate: 'https://trader.tradovate.com',
   tradelocker: 'https://app.tradelocker.com',
+  tradingview: 'https://www.tradingview.com/chart',
 };
 
 interface TradingBrowserProps {

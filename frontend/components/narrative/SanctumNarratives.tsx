@@ -1,6 +1,6 @@
 // [claude-code 2026-03-28] S8-T4: Removed Simulation History — replaced by Agent Scorecards in Page 2
 // [claude-code 2026-03-23] Active Narratives — Page 2
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Diff, TrendingDown, Minus } from 'lucide-react';
 import type { SanctumNarrative } from '../../types/miroshark';
 
 interface SanctumNarrativesProps {
@@ -10,7 +10,7 @@ interface SanctumNarrativesProps {
 }
 
 function directionIcon(bias: string) {
-  if (bias === 'bullish') return <TrendingUp className="w-3.5 h-3.5 text-[var(--fintheon-low)]" />;
+  if (bias === 'bullish') return <Diff className="w-3.5 h-3.5 text-[var(--fintheon-low)]" />;
   if (bias === 'bearish') return <TrendingDown className="w-3.5 h-3.5 text-[var(--fintheon-severe)]" />;
   return <Minus className="w-3.5 h-3.5 text-[var(--fintheon-neutral-severe)]" />;
 }

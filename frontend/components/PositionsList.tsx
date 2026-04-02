@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useBackend } from "../lib/backend";
 import type { Position } from "../types/api";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { Diff, TrendingDown } from "lucide-react";
 
 export default function PositionsList() {
   const backend = useBackend();
@@ -47,7 +47,7 @@ export default function PositionsList() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   {position.side === "long" ? (
-                    <TrendingUp className="w-3 h-3" style={{ color: 'var(--fintheon-bullish)' }} />
+                    <Diff className="w-3 h-3" style={{ color: 'var(--fintheon-bullish)' }} />
                   ) : (
                     <TrendingDown className="w-3 h-3" style={{ color: 'var(--fintheon-bearish)' }} />
                   )}

@@ -1,3 +1,4 @@
+// [claude-code 2026-03-31] Device-gated on-open fetch — visibility change triggers full refresh (throttled 5min)
 // [claude-code 2026-03-29] Fix infinite scroll: poll uses loadedCountRef so auto-refresh doesn't reset scroll progress
 // [claude-code 2026-03-14] Removed MarketWatch RSS polling — feed now Notion + backend only.
 // [claude-code 2026-03-14] XCLI: minMacroLevel=0 so all items show regardless of macro level.
@@ -11,7 +12,6 @@ import { useSettings } from './SettingsContext';
 import type { NotionPollStatus } from '../lib/services';
 import type { RiskFlowItem } from '../types/api';
 
-// [claude-code 2026-03-16] Auto-refresh gating: polls skip when autoRefresh is OFF
 // [claude-code 2026-03-16] T2: ensureScoring + downgradeNonFinancialBreaking on merged feed
 
 interface RiskFlowContextValue {
@@ -27,6 +27,7 @@ interface RiskFlowContextValue {
   isSeen: (id: string) => boolean;
   refresh: () => Promise<void>;
   refreshing: boolean;
+  fetchStatus: string;
   loadMore: () => Promise<void>;
   loadingMore: boolean;
   hasMore: boolean;
@@ -46,14 +47,15 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   isSeen: () => false,
   refresh: async () => {},
   refreshing: false,
+  fetchStatus: '',
   loadMore: async () => {},
   loadingMore: false,
   hasMore: false,
   initialLoaded: false,
 });
 
-const NOTION_POLL_MS = 60_000;
-const BACKEND_FEED_POLL_MS = 30_000;
+const NOTION_POLL_MS = 30_000;
+const BACKEND_FEED_POLL_MS = 15_000;
 
 function macroLevelToSeverity(level: number): RiskFlowAlert['severity'] {
   if (level >= 4) return 'critical';
@@ -65,7 +67,7 @@ function macroLevelToSeverity(level: number): RiskFlowAlert['severity'] {
 function mapBackendSource(source: string): RiskFlowAlert['source'] {
   const s = source.toLowerCase();
   if (s === 'financialjuice') return 'financial-juice';
-  if (s === 'insiderwire') return 'insider-wire';
+  if (s === 'osintsources') return 'osint-sources';
   if (s === 'economiccalendar') return 'economic-calendar';
   if (s === 'polymarket') return 'polymarket';
   if (s === 'kalshi') return 'kalshi-whale';
@@ -98,12 +100,13 @@ function persistIds(key: string, ids: Set<string>): void {
 
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const backend = useBackend();
-  const { selectedSymbol, autoRefresh } = useSettings();
+  const { selectedSymbol } = useSettings();
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
   const [seenIds, setSeenIds] = useState<Set<string>>(() => loadStoredIds(SEEN_STORAGE_KEY));
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchStatus, setFetchStatus] = useState('');
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -165,18 +168,18 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void pollNotion();
     notionIntervalRef.current = setInterval(() => {
-      if (!autoRefresh) return;
       void pollNotion();
     }, NOTION_POLL_MS);
     return () => {
       if (notionIntervalRef.current) clearInterval(notionIntervalRef.current);
     };
-  }, [pollNotion, autoRefresh]);
+  }, [pollNotion]);
 
-  // Backend feed polling (twitter-cli, Polymarket, Economic Calendar)
+  // Backend feed polling (twitter-cli, Kalshi, Economic Calendar)
   // Uses loadedCountRef so polls fetch all items the user has scrolled through (not just first 50)
   const pollBackendFeed = useCallback(async () => {
     try {
+      setFetchStatus('Fetching scored items...');
       const response = await backend.riskflow.list({ minMacroLevel: 0, limit: loadedCountRef.current, instrument: selectedSymbol.symbol });
       const alerts: RiskFlowAlert[] = response.items.map((item) => ({
         id: `backend-${item.id}`,
@@ -211,8 +214,12 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       setBackendAlerts(alerts);
       setHasMore(response.hasMore ?? false);
       setInitialLoaded(true);
+      setFetchStatus(`${alerts.length} items loaded`);
+      setTimeout(() => setFetchStatus(''), 2000);
       console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items, hasMore: ${response.hasMore} (instrument=${selectedSymbol.symbol})`);
     } catch (err) {
+      setFetchStatus('Feed fetch failed');
+      setTimeout(() => setFetchStatus(''), 3000);
       console.warn('[RiskFlowContext] Backend feed poll error:', err);
       setInitialLoaded(true);
     }
@@ -274,13 +281,32 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void pollBackendFeed();
     backendIntervalRef.current = setInterval(() => {
-      if (!autoRefresh) return;
       void pollBackendFeed();
     }, BACKEND_FEED_POLL_MS);
     return () => {
       if (backendIntervalRef.current) clearInterval(backendIntervalRef.current);
     };
-  }, [pollBackendFeed, autoRefresh]);
+  }, [pollBackendFeed]);
+
+  // Device-gated on-open fetch: when the app becomes visible (tab focus, Electron foreground),
+  // trigger a refresh (backend gates X polling to owner only) then re-fetch the feed.
+  // Throttled to once per 5 minutes. Non-blocking: feed poll fires immediately, refresh is fire-and-forget.
+  const lastOnOpenRefresh = useRef(0);
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastOnOpenRefresh.current < 5 * 60 * 1000) return;
+      lastOnOpenRefresh.current = now;
+      console.debug('[RiskFlowContext] App became visible — triggering on-open refresh');
+      // Fire refresh (may take 30s+ for owner's X poll) but don't block feed display
+      backend.riskflow.refresh().catch(() => {});
+      // Immediately fetch cached scored items so feed displays fast
+      pollBackendFeed();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [backend, pollBackendFeed]);
 
   // Merge: Notion (pinned) → Backend feed
   // [claude-code 2026-03-28] S9-T2: Removed 24h stalemate filter — items persist forever (backfill data)
@@ -348,15 +374,18 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Trigger backend to poll sources for fresh items
+      setFetchStatus('Polling Twitter feeds...');
       await backend.riskflow.refresh().catch((err: unknown) => {
         console.warn('[RiskFlow] Manual refresh failed:', err);
+        setFetchStatus('Backend refresh failed — fetching cached data');
       });
-      // Re-fetch both sources in parallel
+      setFetchStatus('Scoring & classifying items...');
       await Promise.all([
         pollNotion(),
         pollBackendFeed(),
       ]);
+      setFetchStatus('Feed updated');
+      setTimeout(() => setFetchStatus(''), 3000);
     } finally {
       setRefreshing(false);
     }
@@ -381,6 +410,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         isSeen,
         refresh,
         refreshing,
+        fetchStatus,
         loadMore,
         loadingMore,
         hasMore,

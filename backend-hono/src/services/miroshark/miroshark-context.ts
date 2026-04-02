@@ -75,8 +75,10 @@ async function fetchEconPrintHistory(): Promise<EconPrintStat[]> {
   });
 }
 
+// [claude-code 2026-03-31] Added narrative_card_links join so Consilium/Sanctum receives thread assignments
 /**
  * Fetch scored RiskFlow headlines from Supabase — configurable window (default 72h, limit 40).
+ * Enriches items with narrative thread assignments from narrative_card_links.
  */
 async function fetchRiskFlowHeadlines(sinceHours = 72, limit = 40): Promise<RiskFlowHeadline[]> {
   const sb = getSupabaseClient();
@@ -86,7 +88,7 @@ async function fetchRiskFlowHeadlines(sinceHours = 72, limit = 40): Promise<Risk
 
   const { data, error } = await sb
     .from('scored_riskflow_items')
-    .select('id, title, summary, macro_level, sentiment, iv_score, category, created_at, sub_scores, econ_data, risk_type, agent_note, price_brain_score')
+    .select('id, tweet_id, title, summary, macro_level, sentiment, iv_score, category, created_at, sub_scores, econ_data, risk_type, agent_note, price_brain_score')
     .gte('created_at', cutoff)
     .gte('macro_level', 2)
     .order('created_at', { ascending: false })
@@ -97,7 +99,30 @@ async function fetchRiskFlowHeadlines(sinceHours = 72, limit = 40): Promise<Risk
     return [];
   }
 
-  return (data ?? []) as RiskFlowHeadline[];
+  const items = (data ?? []) as (RiskFlowHeadline & { tweet_id?: string })[];
+
+  // Enrich with narrative thread assignments so Consilium/Sanctum can group by thread
+  if (items.length > 0) {
+    const itemIds = items.map(i => i.tweet_id || i.id).filter(Boolean);
+    const { data: links } = await sb
+      .from('narrative_card_links')
+      .select('card_id, thread_slug')
+      .in('card_id', itemIds);
+
+    if (links && links.length > 0) {
+      const threadMap = new Map<string, string[]>();
+      for (const link of links) {
+        const arr = threadMap.get(link.card_id) ?? [];
+        arr.push(link.thread_slug);
+        threadMap.set(link.card_id, arr);
+      }
+      for (const item of items) {
+        item.narrative_threads = threadMap.get(item.tweet_id || item.id) ?? [];
+      }
+    }
+  }
+
+  return items;
 }
 
 // ─── Calibration Upload Context ─────────────────────────────────

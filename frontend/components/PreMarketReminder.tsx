@@ -38,7 +38,7 @@ export function PreMarketReminder() {
 
     const timer = setTimeout(() => {
       const dayIndex = new Date().getDay();
-      addToast(MESSAGES[dayIndex % MESSAGES.length], 'reminder', undefined, 'pre-market-reminder');
+      addToast(MESSAGES[dayIndex % MESSAGES.length], 'reminder', undefined, 'pre-market-reminder', 'top-right');
       localStorage.setItem(STORAGE_KEY, today);
     }, 3000);
 

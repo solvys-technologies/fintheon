@@ -2,7 +2,7 @@
 // [claude-code 2026-03-22] Source of Truth fusion — full 14 commandments, extracted CommandmentsSidebar
 // [claude-code 2026-03-20] S3:T3 — Apparatus redesign: circle constellation replaced with intelligence briefing cards
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Clock, AlertTriangle, TrendingUp, TrendingDown, Eye, BookOpen, Scroll, Trophy, Minus } from 'lucide-react';
+import { Clock, AlertTriangle, Diff, TrendingDown, Eye, BookOpen, Scroll, Trophy, Minus } from 'lucide-react';
 import { MemoryCard } from './MemoryCard';
 import { CommandmentsSidebar } from './CommandmentsSidebar';
 import type { AgentNode, AgentConnection, CronEntry, LiveActivity } from './types';
@@ -434,7 +434,7 @@ export function ApparatusMap() {
                               <div key={n.thread} className="flex items-start gap-2">
                                 <div className="flex items-center gap-1 shrink-0 mt-0.5">
                                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: n.color }} />
-                                  {n.stance === 'bullish' && <TrendingUp size={8} className="text-emerald-400" />}
+                                  {n.stance === 'bullish' && <Diff size={8} className="text-emerald-400" />}
                                   {n.stance === 'bearish' && <TrendingDown size={8} className="text-red-400" />}
                                   {n.stance === 'neutral' && <Minus size={8} className="text-[var(--fintheon-text)]/30" />}
                                   {n.stance === 'watching' && <Eye size={8} className="text-[var(--fintheon-accent)]/40" />}
