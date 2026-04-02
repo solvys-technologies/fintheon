@@ -21,6 +21,7 @@ import { UpdateBanner } from './components/UpdateBanner';
 import { ApiErrorToastBridge } from './components/ApiErrorToastBridge';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SystemStatusProvider } from './contexts/SystemStatusContext';
+import { TeamPresenceProvider } from './contexts/TeamPresenceContext';
 import { migrateStorageKeys } from './lib/storage-migration';
 import { AuthShell } from './components/auth/AuthShell';
 
@@ -232,6 +233,7 @@ function AuthGate() {
         <GatewayProvider>
         <SystemStatusProvider>
           <FintheonAgentProvider>
+            <TeamPresenceProvider>
             <RiskFlowProvider>
             <ContextBankProvider>
             <ThreadProvider>
@@ -287,6 +289,7 @@ function AuthGate() {
             </ThreadProvider>
             </ContextBankProvider>
             </RiskFlowProvider>
+            </TeamPresenceProvider>
           </FintheonAgentProvider>
         </SystemStatusProvider>
         </GatewayProvider>
