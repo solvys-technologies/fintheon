@@ -3,13 +3,16 @@
 // Source of truth for catalyst severity classification across the feed pipeline.
 
 import type { MacroLevel, RiskType } from '../types/riskflow.js'
-import type { FJTier } from '../services/twitter-cli/fj-emoji-filter.js'
+
+type FJMacroTier = 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'none'
+type LegacyFJTier = 'critical' | 'high' | 'medium' | 'low'
+type AcceptableFJTier = FJMacroTier | LegacyFJTier
 
 export interface MacroLevelInput {
   /** IV score 0-100 (normalized from 0-10 scale × 10) */
   ivScore?: number
   /** FJ emoji tier classification */
-  fjEmojiTier?: FJTier
+  fjEmojiTier?: AcceptableFJTier
   /** Risk type inferred from headline content */
   riskType?: RiskType | string | null
   /** Matched keyword strings from headline parser */
@@ -30,7 +33,7 @@ export interface MacroLevelInput {
 // Level 4 — Critical (instant SSE broadcast, consilium push, Oracle notes)
 // Fed rate decisions, major econ misses, military escalation, flash crashes
 const LEVEL4_KEYWORDS = new Set([
-  'fed', 'fomc', 'rate decision', 'rate cut', 'rate hike',
+  'fed', 'fomc', 'fed rate decision', 'fomc decision', 'rate decision', 'rate cut', 'rate hike',
   'cpi', 'ppi', 'nfp', 'gdp', 'pce',
   'circuit breaker', 'flash crash', 'halt',
   'invasion', 'missile', 'nuclear', 'strait of hormuz', 'ceasefire',
@@ -64,9 +67,9 @@ export function assignMacroLevel(input: MacroLevelInput): MacroLevel {
     sdSurprise,
   } = input
 
-  // 1. FJ emoji tier is the strongest signal (FinancialJuice classifies on their end)
-  if (fjEmojiTier === 'critical') return 4
-  if (fjEmojiTier === 'high') return 3
+  // 1. FJ emoji tier is the strongest signal (supports both legacy and macro-tier naming)
+  if (fjEmojiTier === 'critical' || fjEmojiTier === 'tier1') return 4
+  if (fjEmojiTier === 'high' || fjEmojiTier === 'tier2') return 3
 
   // 2. Standard deviation surprise — econ data prints with >2 SD surprise are Critical
   if (sdSurprise !== undefined) {
@@ -79,12 +82,13 @@ export function assignMacroLevel(input: MacroLevelInput): MacroLevel {
   const lowerKeywords = keywordMatches.map((k) => k.toLowerCase())
   const hasLevel4Keyword = lowerKeywords.some((kw) => LEVEL4_KEYWORDS.has(kw))
 
-  if (hasLevel4Keyword && ivScore >= 60) return 4
+  if (hasLevel4Keyword && ivScore >= 50) return 4
   if (hasLevel4Keyword) return 3 // keyword match alone gets at least High
 
   // 3. Risk type boost — geopolitical and macro get elevated
   const isGeoOrMacro = riskType === 'Macro' || riskType === 'Geopolitical'
 
+  if (ivScore >= 90) return 4
   if (ivScore >= 80) return isGeoOrMacro ? 4 : 3
   if (ivScore >= 60) return isGeoOrMacro ? 3 : 2
 
@@ -98,8 +102,8 @@ export function assignMacroLevel(input: MacroLevelInput): MacroLevel {
   if (urgencySignals >= 2 && ivScore >= 30) return 2
 
   // 7. FJ medium tier
-  if (fjEmojiTier === 'medium') return 2
+  if (fjEmojiTier === 'medium' || fjEmojiTier === 'tier3') return 2
 
   // 8. Fallback — anything with some IV score is at least Low
-  return ivScore >= 20 ? 2 : 1
+  return ivScore >= 30 ? 2 : 1
 }

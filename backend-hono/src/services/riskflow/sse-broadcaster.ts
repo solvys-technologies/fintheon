@@ -29,6 +29,9 @@ export function removeClient(controller: ReadableStreamDefaultController) {
  * Broadcast a Level 4 feed item to all connected clients
  */
 export function broadcastLevel4(item: FeedItem) {
+  // Hard gate: this channel is reserved for Level 4 catalysts only.
+  if (item.macroLevel !== 4) return
+
   const payload = `data: ${JSON.stringify(item)}\n\n`
   const encoder = new TextEncoder()
 

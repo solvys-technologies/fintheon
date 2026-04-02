@@ -31,19 +31,35 @@ export function hasLevel4Emoji(text: string): boolean {
   return LEVEL4_EMOJIS.some((emoji) => text.includes(emoji))
 }
 
-// Keyword match list for macro-level assignment. Returns matched keyword strings.
-const MACRO_KEYWORDS = [
-  'fed', 'fomc', 'cpi', 'ppi', 'gdp', 'nfp', 'pce', 'inflation', 'jobless', 'retail sales',
-  'housing starts', 'consumer confidence', 'treasury', 'tariff', 'sanction', 'military',
-  'war', 'conflict', 'opec', 'nato', 'invasion', 'missile', 'nuclear', 'strait of hormuz',
-  'circuit breaker', 'flash crash', 'earnings', 'revenue', 'eps', 'guidance',
-  'resistance', 'support', 'breakout', 'credit spread', 'default', 'downgrade',
-  'repo', 'liquidity', 'bank run', 'reserve',
-] as const
+// Canonical keyword emitters for macro-level assignment.
+// Each matcher emits a normalized keyword string used by assignMacroLevel.
+const MACRO_KEYWORD_PATTERNS: Array<{ pattern: RegExp; keyword: string }> = [
+  { pattern: /\bfed\s+rate\s+decision\b/i, keyword: 'fed rate decision' },
+  { pattern: /\bfomc\s+decision\b/i, keyword: 'fomc decision' },
+  { pattern: /\brate(?:s)?\s+cut(?:s)?\b/i, keyword: 'rate cut' },
+  { pattern: /\brate(?:s)?\s+hike(?:s|d)?\b/i, keyword: 'rate hike' },
+  { pattern: /\bfomc\s+minutes\b/i, keyword: 'fomc minutes' },
+  { pattern: /\bhousing\s+starts?\b/i, keyword: 'housing starts' },
+  { pattern: /\bconsumer\s+confidence\b/i, keyword: 'consumer confidence' },
+  { pattern: /\bretail\s+sales\b/i, keyword: 'retail sales' },
+  { pattern: /\bjobless\b/i, keyword: 'jobless' },
+  { pattern: /\btariff\b/i, keyword: 'tariff' },
+  { pattern: /\bsanction\b/i, keyword: 'sanction' },
+  { pattern: /\btreasury\b/i, keyword: 'treasury' },
+  { pattern: /\bopec\b/i, keyword: 'opec' },
+  { pattern: /\bnato\b/i, keyword: 'nato' },
+  { pattern: /\b(invasion|missile|nuclear|strait of hormuz|ceasefire)\b/i, keyword: 'geopolitical escalation' },
+  { pattern: /\b(circuit\s+breaker|flash\s+crash|halt)\b/i, keyword: 'market structure shock' },
+  { pattern: /\b(cpi|ppi|gdp|nfp|pce|inflation)\b/i, keyword: 'macro print' },
+  { pattern: /\b(earnings|revenue|eps|guidance)\b/i, keyword: 'earnings' },
+]
 
 export function getMatchedKeywords(text: string): string[] {
-  const lower = text.toLowerCase()
-  return MACRO_KEYWORDS.filter((kw) => lower.includes(kw))
+  const matches = new Set<string>()
+  for (const { pattern, keyword } of MACRO_KEYWORD_PATTERNS) {
+    if (pattern.test(text)) matches.add(keyword)
+  }
+  return [...matches]
 }
 
 const knownTickers = ['SPY', 'QQQ', 'ES', 'NQ', 'IWM', 'TLT', 'ZN', 'ZB', 'DXY', 'VIX', 'CL', 'GC', 'BTC', 'ETH']

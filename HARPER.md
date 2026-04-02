@@ -79,3 +79,37 @@ Create one integration branch, stage only approved track files, run lightweight 
 - Branch pushed.
 - Only scoped files (plus this `HARPER.md` handoff file) included.
 - No bugfix refactors added.
+
+---
+
+## Follow-up Update (2026-04-02, after unification)
+
+This follow-up pass **did apply targeted bug fixes** to resolve hard TypeScript/test breakage introduced by track overlap.
+
+### Fixed in this pass
+- Removed duplicate exports in:
+  - `backend-hono/src/services/twitter-cli/fj-emoji-filter.ts`
+- Removed duplicate `RiskType` declaration:
+  - `backend-hono/src/types/riskflow.ts`
+- Unified macro tier typing and mapping in:
+  - `backend-hono/src/utils/assign-macro-level.ts`
+  - accepts both legacy (`critical/high/medium/low`) and macro (`tier1/tier2/tier3/tier4/none`) tier labels
+- Restored expected canonical keyword extraction in:
+  - `backend-hono/src/services/headline-parser.ts`
+  - includes canonical matches such as `fed rate decision`, `rate cut`, `housing starts`
+- Reinstated hard Level-4 SSE gate:
+  - `backend-hono/src/services/riskflow/sse-broadcaster.ts`
+  - `broadcastLevel4` now no-ops unless `item.macroLevel === 4`
+
+### Validation status from this pass
+- `cd backend-hono && npm run -s typecheck` ✅
+- `cd backend-hono && npm run -s build` ✅
+- `cd backend-hono && node --test dist/tests/*.test.js` ✅ (7/7 pass)
+- `cd frontend && npm run -s typecheck` ❌ (pre-existing unrelated errors in `App.tsx` and `contexts/TeamPresenceContext.tsx`)
+
+### Remaining known issues (not fixed in this pass)
+- Backend lifecycle expectation still pending confirmation/implementation:
+  - “backend cuts on and off when the app is opened and closed”
+- Frontend local typecheck currently failing due unrelated Team Presence issues:
+  - duplicate `TeamPresenceProvider` identifier in `frontend/App.tsx`
+  - nullability/cast issues in `frontend/contexts/TeamPresenceContext.tsx`
