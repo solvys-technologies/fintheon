@@ -181,6 +181,7 @@ export function TopHeader({
     { value: 'kalshi', label: 'Kalshi', description: 'Prediction Market' },
     { value: 'tradovate', label: 'Tradovate', description: 'Futures Trading Platform' },
     { value: 'tradelocker', label: 'TradeLocker', description: 'Multi-Asset Trading Platform' },
+    { value: 'tradingview', label: 'TradingView', description: 'TradingView Chart' },
     { value: 'research', label: 'Research', description: 'Notion Research iFrame' },
   ];
 

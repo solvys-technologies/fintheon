@@ -943,6 +943,7 @@ export function SettingsPage() {
                         <option value="mmt">MMT</option>
                         <option value="kalshi">Kalshi</option>
                         <option value="tradovate">Tradovate</option>
+                        <option value="tradingview">TradingView</option>
                         <option value="research">Research</option>
                       </select>
                       <p className="text-[10px] text-gray-600 mt-1">Which platform loads when you open the Browser.</p>

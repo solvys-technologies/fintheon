@@ -87,10 +87,24 @@ BRANCH="v.8.28.1"
 
 ask "Phase 1: System Prerequisites"
 
+# Xcode Command Line Tools (macOS) — required for git and build tooling
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  if ! xcode-select -p >/dev/null 2>&1; then
+    info "Installing Xcode Command Line Tools (required for Git)..."
+    xcode-select --install >/dev/null 2>&1 || true
+    warn "Complete the Xcode Command Line Tools installer, then return here."
+
+    until xcode-select -p >/dev/null 2>&1; do
+      read -p "  Press Enter once installation finishes... " _
+    done
+  fi
+  ok "xcode-select $(xcode-select -p)"
+fi
+
 # Git
 if ! command -v git &> /dev/null; then
-  fail "git not found"
-  echo "    xcode-select --install"
+  fail "git not found after Xcode tools check"
+  echo "    Run: xcode-select --install"
   exit 1
 fi
 ok "git $(git --version | cut -d' ' -f3)"
@@ -99,9 +113,18 @@ ok "git $(git --version | cut -d' ' -f3)"
 if ! command -v brew &> /dev/null; then
   info "Installing Homebrew..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
 fi
-ok "brew"
+if [ -x /opt/homebrew/bin/brew ]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
+elif [ -x /usr/local/bin/brew ]; then
+  eval "$(/usr/local/bin/brew shellenv)" 2>/dev/null || true
+fi
+if ! command -v brew &> /dev/null; then
+  fail "Homebrew installation failed"
+  echo '    Re-run manually: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+  exit 1
+fi
+ok "brew $(brew --version | head -n 1 | awk '{print $2}')"
 
 # Node
 if ! command -v node &> /dev/null; then

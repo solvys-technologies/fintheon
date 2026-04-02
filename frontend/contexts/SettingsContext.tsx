@@ -67,7 +67,7 @@ export interface IframeUrls {
 
 export type PrimaryBroker = 'rithmic' | 'projectx' | 'mmt';
 export type DefaultLayout = 'combined' | 'tickers-only';
-export type DefaultPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate';
+export type DefaultPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradingview';
 
 interface SettingsContextType {
   apiKeys: APIKeys;
