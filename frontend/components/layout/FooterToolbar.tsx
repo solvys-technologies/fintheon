@@ -16,8 +16,10 @@ import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { EPOCH_VERSION } from '../../lib/epoch-version';
 import { ErrorLogPanel } from '../ui/ErrorLogPanel';
 import { StatusIndicator } from '../ui/StatusIndicator';
+import { TeamPanel } from '../team/TeamPanel';
+import { Users } from 'lucide-react';
 
-type PanelTab = 'terminal' | 'changelog' | 'errors';
+type PanelTab = 'terminal' | 'changelog' | 'errors' | 'team';
 
 /** Slash-command suggestions (like Claude Code skills) for the Fintheon CLI */
 const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
@@ -397,6 +399,17 @@ export function FooterToolbar({
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('team')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
+                activeTab === 'team'
+                  ? 'border-[var(--fintheon-accent)] text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/5'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Users className="w-3 h-3" />
+              Team
+            </button>
           </div>
 
           {/* Panel content */}
@@ -471,6 +484,7 @@ export function FooterToolbar({
             )}
 
             {activeTab === 'errors' && <ErrorLogPanel />}
+            {activeTab === 'team' && <TeamPanel />}
           </div>
         </div>
       </div>
@@ -529,6 +543,18 @@ export function FooterToolbar({
               {errorCount > 9 ? '!' : errorCount}
             </span>
           )}
+        </button>
+
+        <button
+          onClick={() => openTab('team')}
+          className={`flex items-center gap-1 text-[10px] transition-colors ${
+            panelOpen && activeTab === 'team'
+              ? 'text-[var(--fintheon-accent)]'
+              : 'text-zinc-600 hover:text-zinc-400'
+          }`}
+          title="Team"
+        >
+          <Users className="w-3 h-3" />
         </button>
 
         <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />

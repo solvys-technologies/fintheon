@@ -32,7 +32,7 @@ import { SectionBreadcrumb } from './SectionBreadcrumb';
 import RiskFlowMini from '../RiskFlowMini';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { SearchModal } from '../search/SearchModal';
-import { AskHarpSidebar } from '../chat/AskHarpSidebar';
+import { ChatSidebar } from '../chat/ChatSidebar';
 import { SessionsPanel } from '../chat/SessionsPanel';
 import { SettingsPage } from '../SettingsPanel';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -142,7 +142,7 @@ function MainLayoutInner() {
   const [combinedPanelPnl, setCombinedPanelPnl] = useState(0);
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] = useState(false);
   const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
-  const [showAskHarp, setShowAskHarp] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [showSessionsPopup, setShowSessionsPopup] = useState(false);
   const [showVoiceWidget, setShowVoiceWidget] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -702,8 +702,8 @@ function MainLayoutInner() {
         onPlatformSelect={setSelectedPlatform}
         layoutOption={layoutOption}
         onLayoutOptionChange={setLayoutOption}
-        askHarpOpen={showAskHarp}
-        onAskHarpToggle={() => setShowAskHarp(prev => {
+        chatOpen={showChat}
+        onChatToggle={() => setShowChat(prev => {
           // Opening chat in Castra → auto-switch to Zen so panels don't fight for space
           if (!prev && topStepXEnabled && layoutOption === 'combined') {
             setLayoutOption('tickers-only');
@@ -960,28 +960,28 @@ function MainLayoutInner() {
 
         {/* Global chat panel — slide in/out from right */}
         <div
-          className={`absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl transition-transform duration-300 ease-in-out ${showAskHarp ? 'translate-x-0' : 'translate-x-full'}`}
-          style={{ pointerEvents: showAskHarp ? 'auto' : 'none' }}
+          className={`absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl transition-transform duration-300 ease-in-out ${showChat ? 'translate-x-0' : 'translate-x-full'}`}
+          style={{ pointerEvents: showChat ? 'auto' : 'none' }}
         >
           <div className="flex items-center justify-between px-3 py-2 flex-shrink-0">
             {/* Left icons — match main Consilium functions + session history */}
             <div className="flex items-center gap-0.5">
               <button
-                onClick={() => { setShowAskHarp(false); navigateTab('analysis'); }}
+                onClick={() => { setShowChat(false); navigateTab('analysis'); }}
                 className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
                 title="Ask Harp (full)"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => { setShowAskHarp(false); navigateTab('analysis'); }}
+                onClick={() => { setShowChat(false); navigateTab('analysis'); }}
                 className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
                 title="Boardroom"
               >
                 <Users className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => { setShowAskHarp(false); navigateTab('analysis'); }}
+                onClick={() => { setShowChat(false); navigateTab('analysis'); }}
                 className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
                 title="Apparatus"
               >
@@ -1015,7 +1015,7 @@ function MainLayoutInner() {
             </div>
             {/* Close */}
             <button
-              onClick={() => setShowAskHarp(false)}
+              onClick={() => setShowChat(false)}
               className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
               title="Close"
             >
@@ -1023,7 +1023,7 @@ function MainLayoutInner() {
             </button>
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
-            <AskHarpSidebar />
+            <ChatSidebar />
           </div>
         </div>
       </div>

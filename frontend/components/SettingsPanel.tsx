@@ -15,7 +15,7 @@ import { useBackend } from '../lib/backend';
 import { HEALING_BOWL_SOUNDS, healingBowlPlayer } from '../utils/healingBowlSounds';
 import { useVoiceMemory } from '../hooks/useVoiceMemory';
 
-import { ClawnalystDesk } from './settings/ClawnalystDesk';
+import { AgenticDesk } from './settings/AgenticDesk';
 import { ThemeSettings } from './settings/ThemeSettings';
 import { HermesSettings } from './settings/HermesSettings';
 import { UpgradeModal } from './UpgradeModal';
@@ -229,7 +229,7 @@ export function SettingsPage() {
     { id: 'general' as const, label: 'Profile', icon: Settings, description: 'Trading symbol, billing, and account preferences' },
     { id: 'hermes-admin' as const, label: 'Hermes:Admin', icon: Cpu, description: 'Gateway, agent status, backend dependencies, and diagnostics' },
     { id: 'appearance' as const, label: 'Appearance', icon: Palette, description: 'Theme and visual customization options' },
-    { id: 'desk' as const, label: 'Analyst Desk', icon: Users, description: 'Configure analyst personas and agent settings' },
+    { id: 'desk' as const, label: 'Agentic Desk', icon: Users, description: 'Configure analyst personas and agent settings' },
     { id: 'trading' as const, label: 'Trading', icon: CreditCard, description: 'Risk management, autopilot, and strategy toggles' },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
     { id: 'api' as const, label: 'API', icon: Code, description: 'API keys and external service credentials' },
@@ -1013,7 +1013,7 @@ export function SettingsPage() {
 
             {activeTab === 'desk' && (
               <div key="desk" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
-                <ClawnalystDesk />
+                <AgenticDesk />
               </div>
             )}
 

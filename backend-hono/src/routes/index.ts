@@ -21,6 +21,7 @@ import { createNarrativeRoutes } from './narrative/index.js';
 import { createMirosharkRoutes } from './miroshark/index.js';
 import { createERRoutes } from './er/index.js';
 import { createVoiceRoutes } from './voice/index.js';
+import { livekit } from './livekit/index.js';
 import { createRegimeRoutes } from './regimes/index.js';
 import { createMarketRegimeRoutes } from './regime/index.js';
 
@@ -190,6 +191,8 @@ export function registerRoutes(app: Hono): void {
   // Voice assistant routes
   app.route('/api/voice', createVoiceRoutes());
 
+  // LiveKit group voice call token generation
+  app.route('/api/livekit', livekit);
 
   // User settings persistence
   app.route('/api/settings', createSettingsRoutes());

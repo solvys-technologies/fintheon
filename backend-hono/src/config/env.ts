@@ -15,6 +15,9 @@ export interface EnvConfig {
   FRED_API_KEY: string | undefined;
   EXA_API_KEY: string | undefined;
   OPENAI_API_KEY: string | undefined;
+  LIVEKIT_API_KEY: string | undefined;
+  LIVEKIT_API_SECRET: string | undefined;
+  LIVEKIT_URL: string | undefined;
 }
 
 export function getEnvConfig(): EnvConfig {
@@ -29,6 +32,9 @@ export function getEnvConfig(): EnvConfig {
     FRED_API_KEY: process.env.FRED_API_KEY,
     EXA_API_KEY: process.env.EXA_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    LIVEKIT_API_KEY: process.env.LIVEKIT_API_KEY,
+    LIVEKIT_API_SECRET: process.env.LIVEKIT_API_SECRET,
+    LIVEKIT_URL: process.env.LIVEKIT_URL,
   };
 }
 

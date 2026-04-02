@@ -1,5 +1,5 @@
 // [claude-code 2026-03-28] S8-T2: Ephemeral command palette chat — expandable above toolbar
-// Same Claude CLI session as sidebar Ask Harp. Responses auto-hide after 8s.
+// Same Claude CLI session as sidebar Chat. Responses auto-hide after 8s.
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Loader2, Send, X, Sparkles } from 'lucide-react';
 import { useNarrative } from '../../contexts/NarrativeContext';
@@ -207,7 +207,7 @@ export function NarrativeCanvasChat({ pendingChips = [], onClearChip }: Narrativ
           onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); if (e.key === 'Escape') { setExpanded(false); setInput(''); } }}
           onFocus={() => setExpanded(true)}
           onBlur={() => { if (!input.trim()) setExpanded(false); }}
-          placeholder="Ask Harper-Opus..."
+          placeholder="Message Harper-Opus..."
           className="flex-1 text-[11px] bg-transparent outline-none min-w-0"
           style={{ color: 'var(--fintheon-text)', fontFamily: 'var(--font-body)' }}
           disabled={loading}

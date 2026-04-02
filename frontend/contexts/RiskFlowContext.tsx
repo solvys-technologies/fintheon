@@ -67,7 +67,7 @@ function macroLevelToSeverity(level: number): RiskFlowAlert['severity'] {
 function mapBackendSource(source: string): RiskFlowAlert['source'] {
   const s = source.toLowerCase();
   if (s === 'financialjuice') return 'financial-juice';
-  if (s === 'insiderwire') return 'insider-wire';
+  if (s === 'osintsources') return 'osint-sources';
   if (s === 'economiccalendar') return 'economic-calendar';
   if (s === 'polymarket') return 'polymarket';
   if (s === 'kalshi') return 'kalshi-whale';

@@ -1,5 +1,5 @@
 // [claude-code 2026-03-28] S8-T7: Single-pane sidebar with agent-plan inline
-// [claude-code 2026-03-30] Sessions managed from MainLayout popup, not inline
+// S13-T1: Renamed to ChatSidebar, surfaceId=chat
 import { useCallback, useState } from 'react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
@@ -8,7 +8,7 @@ import { FintheonThread } from './FintheonThread';
 import { FintheonComposer } from './FintheonComposer';
 import { CognitionPanel } from './CognitionPanel';
 
-function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }: { lastError: string | null; lastRequestId: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void }) {
+function ChatSidebarInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }: { lastError: string | null; lastRequestId: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void }) {
   const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -30,6 +30,7 @@ function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }:
         lastRequestId={lastRequestId}
         compact
       />
+      {/* Agent plan / cognition inline in sidebar — shows task progress when streaming */}
       {lastRequestId && isRunning && (
         <div className="px-3 pb-2">
           <CognitionPanel requestId={lastRequestId} isStreaming={isRunning} />
@@ -48,19 +49,14 @@ function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }:
   );
 }
 
-export function AskHarpSidebar() {
+export function ChatSidebar() {
   const { activeAgent } = useFintheonAgents();
   const [thinkHarder, setThinkHarder] = useState(false);
-  const { runtime, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarder, 'askharp');
+  const { runtime, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarder, 'chat');
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <AskHarpInner
-        lastError={lastError}
-        lastRequestId={lastRequestId ?? null}
-        thinkHarder={thinkHarder}
-        setThinkHarder={setThinkHarder}
-      />
+      <ChatSidebarInner lastError={lastError} lastRequestId={lastRequestId ?? null} thinkHarder={thinkHarder} setThinkHarder={setThinkHarder} />
     </AssistantRuntimeProvider>
   );
 }
