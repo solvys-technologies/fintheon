@@ -16,6 +16,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
+import { CallButton } from '../voice/CallButton';
 import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power, Bell, BellOff } from 'lucide-react';
 import { WhatsNewButton } from '../onboarding/FirstTimeTour';
 import { TraderNametag } from '../TraderNametag';
@@ -524,7 +525,10 @@ export function TopHeader({
             }
             if (id === 'voice') {
               return wrapper(
-                <HeaderVoiceControl compact={topStepXEnabled && layoutOption === 'tickers-only'} />
+                <div className="flex items-center gap-1.5">
+                  <HeaderVoiceControl compact={topStepXEnabled && layoutOption === 'tickers-only'} />
+                  <CallButton compact={topStepXEnabled && layoutOption === 'tickers-only'} />
+                </div>
               );
             }
             if (id === 'ivScore') {
