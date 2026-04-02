@@ -38,26 +38,6 @@ const EMOJI_TIERS: Array<{
   { emoji: '🟠', tier: 'medium',   macroLevel: 2, urgency: 'normal'    },
 ];
 
-/**
- * Extract the first FJ emoji from tweet text (if any).
- * Returns the emoji string or null if none found.
- */
-export function extractFJEmojiFromText(text: string): string | null {
-  for (const entry of EMOJI_TIERS) {
-    if (text.includes(entry.emoji)) return entry.emoji;
-  }
-  return null;
-}
-
-/**
- * Map a raw emoji string to its FJTier. Returns 'low' if emoji is unknown or null.
- */
-export function fjTierFromEmoji(emoji: string | null): FJTier {
-  if (!emoji) return 'low';
-  const found = EMOJI_TIERS.find((e) => e.emoji === emoji);
-  return found?.tier ?? 'low';
-}
-
 // ── Keyword fallback (X/Twitter feed — no emojis) ─────────────────────────────
 
 /**

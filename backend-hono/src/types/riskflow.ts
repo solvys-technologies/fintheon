@@ -11,7 +11,6 @@ export type SentimentDirection = 'bullish' | 'bearish' | 'neutral';
 export type RiskType = 'Macro' | 'Geopolitical' | 'Earnings' | 'Technical' | 'Credit' | 'Liquidity' | 'Commentary';
 
 export type MacroLevel = 1 | 2 | 3 | 4;
-export type RiskType = 'Macro' | 'Geopolitical' | 'Earnings' | 'Technical' | 'Credit' | 'Liquidity' | 'Commentary';
 
 /** Per-item scoring breakdown showing how each factor contributed */
 export interface SubScoreBreakdown {
