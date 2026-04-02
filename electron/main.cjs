@@ -97,10 +97,11 @@ async function startBackend() {
   }
 
   const envPath = path.join(backendDir, ".env");
+  const runtimeNodeEnv = app.isPackaged ? "production" : "development";
   console.log(`[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`);
   backendProcess = spawn("node", [distEntry], {
     cwd: backendDir,
-    env: { ...process.env, NODE_ENV: "production", DOTENV_CONFIG_PATH: envPath },
+    env: { ...process.env, NODE_ENV: runtimeNodeEnv, DOTENV_CONFIG_PATH: envPath },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
