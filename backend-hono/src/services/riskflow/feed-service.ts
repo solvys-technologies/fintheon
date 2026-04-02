@@ -172,14 +172,13 @@ export function updateFeedCache(items: FeedItem[]): void {
 function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
   const sourceMap: Record<NewsSource, AnalysisNewsSource> = {
     FinancialJuice: 'FinancialJuice',
-    InsiderWire: 'InsiderWire',
+    OSINTSources: 'OSINTSources',
     EconomicCalendar: 'Custom',
     TrendSpider: 'Custom',
     Barchart: 'Custom',
     Polymarket: 'Custom',
     Kalshi: 'Custom',
     TwitterCli: 'FinancialJuice', // FJ emoji-filtered tweets treated as FJ quality
-    ZeroHedge: 'Custom',
     DeItaOne: 'Custom',
     Custom: 'Custom',
     Hermes: 'Custom',
@@ -223,7 +222,22 @@ async function enrichWithAnalysis(item: FeedItem, prefetchedVIX?: Awaited<Return
     const fjEmojiTier = fjTierFromEmoji(extractFJEmojiFromText(item.headline));
     const keywordMatches = getMatchedKeywords(item.headline);
     const urgencySignalCount = countUrgencySignals(item, analyzed);
-    const sdSurprise = undefined;
+
+    // SD surprise: use HotPrint deviation as a proxy for standard deviation surprise.
+    // HotPrint.deviation is abs(actual - forecast). HotPrint.impact maps:
+    //   'high' → >2 SD territory, 'medium' → ~1-2 SD, 'low' → <1 SD
+    // When no hotPrint exists, sdSurprise stays undefined (non-econ catalyst).
+    let sdSurprise: number | undefined;
+    if (analyzed.hotPrint && analyzed.hotPrint.deviation !== undefined) {
+      if (analyzed.hotPrint.impact === 'high') {
+        sdSurprise = Math.max(2, analyzed.hotPrint.deviation);
+      } else if (analyzed.hotPrint.impact === 'medium') {
+        sdSurprise = Math.max(1, Math.min(2, analyzed.hotPrint.deviation));
+      } else {
+        sdSurprise = Math.min(1, analyzed.hotPrint.deviation);
+      }
+    }
+
     const macroLevel = assignMacroLevel({
       ivScore: normalizedIvScore,
       fjEmojiTier,
@@ -470,7 +484,7 @@ function generateMockFeed(): FeedItem[] {
     },
     {
       id: 'mock-2',
-      source: 'InsiderWire',
+      source: 'OSINTSources',
       headline: 'CPI comes in at 2.9% YoY, below expectations of 3.1%',
       body: 'Consumer Price Index shows continued disinflation trend.',
       symbols: ['ES', 'NQ', 'TLT'],
@@ -492,7 +506,7 @@ function generateMockFeed(): FeedItem[] {
     },
     {
       id: 'mock-4',
-      source: 'InsiderWire',
+      source: 'OSINTSources',
       headline: 'Oil prices surge on Middle East tensions',
       body: 'Crude oil jumps 3% as geopolitical risks escalate.',
       symbols: ['CL', 'USO', 'XLE'],

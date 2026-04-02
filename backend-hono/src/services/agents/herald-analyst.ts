@@ -234,7 +234,7 @@ function getMockHeraldData(): HeraldInput {
       },
       {
         headline: 'Tech earnings season kicks off with mixed guidance',
-        source: 'InsiderWire',
+        source: 'OSINTSources',
         isBreaking: false,
         publishedAt: new Date(now.getTime() - 60 * 60_000).toISOString(),
       },

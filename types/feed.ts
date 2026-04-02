@@ -13,4 +13,4 @@ export interface FeedItem {
   iv: IVIndicator;
 }
 
-export type NewsSource = 'ZeroHedge' | 'Bloomberg' | 'Reuters' | 'WSJ' | 'CNBC' | 'FT';
+export type NewsSource = 'FinancialJuice' | 'OSINTSources' | 'DeItaOne' | 'EconomicCalendar' | 'TwitterCli' | 'Bloomberg' | 'Reuters' | 'WSJ' | 'CNBC' | 'FT';

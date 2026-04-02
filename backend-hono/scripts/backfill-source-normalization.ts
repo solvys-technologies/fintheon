@@ -4,7 +4,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const FJ_ACCOUNTS = new Set([
-  'financialjuice', 'zerohedge', 'deltaone', 'deItaone', 'deitaone',
+  'financialjuice', 'deltaone', 'deItaone', 'deitaone',
   'firstsquawk', 'wallstjesus', 'unusual_whales', 'newsfilterio',
   'marketcurrents', 'livesquawk', 'waboratory',
 ]);
@@ -28,14 +28,14 @@ const PREDICTION_KEYWORDS = [
 function normalizeSource(rawSource: string | undefined, headline: string, tags: string[] = []) {
   const src = (rawSource || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
   if (rawSource === 'FinancialJuice') return 'FinancialJuice';
-  if (rawSource === 'InsiderWire') return 'InsiderWire';
+  if (rawSource === 'OSINTSources') return 'OSINTSources';
   if (rawSource === 'EconomicCalendar') return 'EconomicCalendar';
   if (rawSource === 'Polymarket' || rawSource === 'Kalshi') return 'Polymarket';
   if (FJ_ACCOUNTS.has(src)) return 'FinancialJuice';
   const text = (headline + ' ' + tags.join(' ')).toLowerCase();
   if (PREDICTION_KEYWORDS.some(kw => text.includes(kw))) return 'Polymarket';
   if (ECON_KEYWORDS.some(kw => text.includes(kw))) return 'EconomicCalendar';
-  if (GEO_KEYWORDS.some(kw => text.includes(kw))) return 'InsiderWire';
+  if (GEO_KEYWORDS.some(kw => text.includes(kw))) return 'OSINTSources';
   return 'FinancialJuice';
 }
 

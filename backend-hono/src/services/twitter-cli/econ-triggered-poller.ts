@@ -75,7 +75,6 @@ const TRUSTED_ACCOUNTS = ['NickTimiraos'] as const;
 const WIRE_ACCOUNTS = ['DeItaone'] as const;
 
 // OSINT / geopolitical intelligence accounts — continuous polling
-// OSINTDefender = @sentdefender (switch handle if CLI resolution fails in production env).
 const OSINT_ACCOUNTS = ['OSINTDefender'] as const;
 
 // Geopolitical + policy accounts — polled for real-time geopolitical + fiscal commentary
@@ -234,10 +233,10 @@ async function processActualsFromTweets(
 ): Promise<void> {
   if (activeEvents.length === 0) return;
 
-  // Only process FJ / InsiderWire tweets (they're the source of truth for actuals)
+  // Only process FJ tweets (they're the source of truth for actuals)
   const fjTweets = tweets.filter((t) => {
     const lower = t.author.toLowerCase();
-    return lower === 'financialjuice' || lower === 'insiderwire';
+    return lower === 'financialjuice';
   });
 
   for (const tweet of fjTweets) {
@@ -376,7 +375,7 @@ function tweetToFeedItem(
   const authorLower = tweet.author.toLowerCase();
   const source: NewsSource =
     authorLower === 'financialjuice' ? 'FinancialJuice' :
-    authorLower === 'insiderwire' ? 'InsiderWire' :
+    authorLower === 'osintdefender' ? 'OSINTSources' :
     authorLower === 'deitaone' ? 'DeItaOne' :
     'TwitterCli';
 

@@ -1,4 +1,4 @@
-// [claude-code 2026-03-28] Firecrawl-powered commentary scraper for FJ, ZeroHedge, DeItaOne
+// [claude-code 2026-03-28] Firecrawl-powered commentary scraper for FJ, DeItaOne
 // Feeds raw items into raw_riskflow_items on a 30-min interval.
 // Twitter CLI handles real-time econ prints + geopolitical; this handles web commentary.
 
@@ -34,13 +34,6 @@ const SOURCES: CommentarySource[] = [
     extractPattern: /^.{15,300}$/,  // Headlines between 15-300 chars
     idPrefix: 'fj-web',
     source: 'FinancialJuice',
-  },
-  {
-    name: 'ZeroHedge',
-    url: 'https://www.zerohedge.com',
-    extractPattern: /^.{20,300}$/,
-    idPrefix: 'zh',
-    source: 'ZeroHedge',
   },
   {
     name: 'DeItaOne',

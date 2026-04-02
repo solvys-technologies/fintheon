@@ -31,7 +31,7 @@ const log = createLogger('CentralScorer');
 
 /** Twitter/RSS accounts that map to FinancialJuice (financial news wires) */
 const FJ_ACCOUNTS = new Set([
-  'financialjuice', 'zerohedge',
+  'financialjuice',
   'firstsquawk', 'wallstjesus', 'unusual_whales', 'newsfilterio',
   'marketcurrents', 'livesquawk', 'waboratory',
 ]);
@@ -41,9 +41,10 @@ const DEITAONE_ACCOUNTS = new Set([
   'deltaone', 'deItaone', 'deitaone',
 ]);
 
-/** OSINT / geopolitical intelligence accounts → InsiderWire */
+/** OSINT / geopolitical intelligence accounts → OSINTSources */
 const OSINT_ACCOUNTS = new Set([
   'osintdefender', 'intikinetik',
+  'thespectatorindex', 'schizointel', 'menchosint', 'clashreport',
 ]);
 
 /** Keywords that indicate economic calendar / data releases */
@@ -73,12 +74,12 @@ export function normalizeSource(
   rawSource: string | undefined,
   headline: string,
   tags: string[] = [],
-): 'FinancialJuice' | 'InsiderWire' | 'EconomicCalendar' | 'Polymarket' {
+): 'FinancialJuice' | 'OSINTSources' | 'EconomicCalendar' | 'Polymarket' {
   const src = (rawSource || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
 
   // Direct match: already a watchlist category
   if (rawSource === 'FinancialJuice') return 'FinancialJuice';
-  if (rawSource === 'InsiderWire') return 'InsiderWire';
+  if (rawSource === 'OSINTSources') return 'OSINTSources';
   if (rawSource === 'DeItaOne') return 'FinancialJuice'; // Wire service → financial news
   if (rawSource === 'EconomicCalendar') return 'EconomicCalendar';
   if (rawSource === 'Polymarket' || rawSource === 'Kalshi') return 'Polymarket';
@@ -86,14 +87,14 @@ export function normalizeSource(
   // Account-based mapping
   if (FJ_ACCOUNTS.has(src)) return 'FinancialJuice';
   if (DEITAONE_ACCOUNTS.has(src)) return 'FinancialJuice'; // Walter Bloomberg → financial news
-  if (OSINT_ACCOUNTS.has(src)) return 'InsiderWire';       // OSINT → geopolitical wire
+  if (OSINT_ACCOUNTS.has(src)) return 'OSINTSources';
 
   // Content-based classification
   const text = (headline + ' ' + tags.join(' ')).toLowerCase();
 
   if (PREDICTION_KEYWORDS.some(kw => text.includes(kw))) return 'Polymarket';
   if (ECON_KEYWORDS.some(kw => text.includes(kw))) return 'EconomicCalendar';
-  if (GEO_KEYWORDS.some(kw => text.includes(kw))) return 'InsiderWire';
+  if (GEO_KEYWORDS.some(kw => text.includes(kw))) return 'OSINTSources';
 
   // Default: financial news
   return 'FinancialJuice';
