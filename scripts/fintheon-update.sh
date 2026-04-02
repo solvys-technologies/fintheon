@@ -44,7 +44,7 @@ info() { echo "  · $1"; }
 
 # ── Step 1: Stop Fintheon + kill backend ─────────────────────────────────────
 
-echo "  [1/8] Stopping Fintheon..."
+echo "  [1/9] Stopping Fintheon..."
 pkill -f "Fintheon" 2>/dev/null || true
 pkill -f "electron.*fintheon" 2>/dev/null || true
 lsof -ti:8080 | xargs kill -9 2>/dev/null || true
@@ -53,7 +53,7 @@ ok "Stopped"
 
 # ── Step 2: Stash local changes ─────────────────────────────────────────────
 
-echo "  [2/8] Checking for local changes..."
+echo "  [2/9] Checking for local changes..."
 HAS_CHANGES=false
 if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
   HAS_CHANGES=true
@@ -65,7 +65,7 @@ fi
 
 # ── Step 3: Pull latest code ────────────────────────────────────────────────
 
-echo "  [3/8] Pulling latest code..."
+echo "  [3/9] Pulling latest code..."
 git fetch --all --prune --prune-tags 2>/dev/null || true
 git fetch --tags --force 2>/dev/null || true
 
@@ -83,7 +83,7 @@ fi
 
 # ── Step 4: Install / update dependencies ────────────────────────────────────
 
-echo "  [4/8] Installing dependencies..."
+echo "  [4/9] Installing dependencies..."
 
 cd "$FINTHEON_ROOT"
 bun install --silent 2>/dev/null || bun install 2>/dev/null || warn "Root deps install had issues"
@@ -103,7 +103,7 @@ cd "$FINTHEON_ROOT"
 
 # ── Step 5: Ensure environment is complete ───────────────────────────────────
 
-echo "  [5/8] Checking environment..."
+echo "  [5/9] Checking environment..."
 
 BACKEND_ENV="$FINTHEON_ROOT/backend-hono/.env"
 if [[ -f "$BACKEND_ENV" ]]; then
@@ -120,7 +120,7 @@ fi
 
 # ── Step 6: Rebuild backend ─────────────────────────────────────────────────
 
-echo "  [6/8] Building backend..."
+echo "  [6/9] Building backend..."
 cd "$FINTHEON_ROOT/backend-hono"
 if bun run build 2>&1 | tail -1; then
   ok "Backend compiled"
@@ -131,7 +131,7 @@ cd "$FINTHEON_ROOT"
 
 # ── Step 7: Rebuild frontend + DMG ──────────────────────────────────────────
 
-echo "  [7/8] Building frontend + DMG..."
+echo "  [7/9] Building frontend + DMG..."
 
 # Build frontend
 if npx vite build 2>&1 | tail -1; then
@@ -177,7 +177,7 @@ fi
 
 # ── Step 8: Restart backend + launch ─────────────────────────────────────────
 
-echo "  [8/8] Starting backend..."
+echo "  [8/9] Starting backend..."
 cd "$FINTHEON_ROOT/backend-hono"
 
 lsof -ti:8080 | xargs kill -9 2>/dev/null || true
@@ -197,6 +197,19 @@ for i in {1..15}; do
     warn "Backend slow to start — check: tail -f /tmp/fintheon-backend.log"
   fi
 done
+
+# ── Step 9: Device Twitter check + round-robin onboarding ───────────────────
+
+echo "  [9/9] Verifying per-device Twitter CLI + round-robin onboarding..."
+if [[ -f "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" ]]; then
+  if bash "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" --from-update; then
+    ok "Peer onboarding sync complete"
+  else
+    warn "Peer onboarding check failed (non-fatal) — run: fintheon peers"
+  fi
+else
+  warn "peer-bootstrap.sh not found — skipping peer onboarding sync"
+fi
 
 # ── Restore stashed changes ─────────────────────────────────────────────────
 

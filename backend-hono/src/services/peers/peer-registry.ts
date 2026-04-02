@@ -245,6 +245,26 @@ export async function registerPeer(
   })
 
   if (!canUseDb() || !isUuid(userId)) {
+    const existing = Array.from(memoryPeers.values()).find(
+      (peer) => peer.userId === userId && peer.deviceName === registration.deviceName,
+    )
+
+    if (existing) {
+      const updated: ClaudePeer = {
+        ...existing,
+        platform: registration.platform ?? existing.platform ?? process.platform,
+        capabilities: registration.capabilities ?? existing.capabilities ?? [],
+        deskId: registration.deskId ?? existing.deskId ?? null,
+        assignedAgents: registration.assignedAgents ?? existing.assignedAgents ?? [],
+        status: registration.status ?? 'online',
+        heartbeatAt: nowIso(),
+        hermesAvailable: Boolean(registration.hermesAvailable),
+        user,
+      }
+      memoryPeers.set(existing.id, updated)
+      return updated
+    }
+
     const peer: ClaudePeer = {
       id: crypto.randomUUID(),
       userId,
@@ -264,6 +284,33 @@ export async function registerPeer(
   }
 
   try {
+    // Device-level idempotency: update existing registration for this user/device
+    // so repeated setup/update runs do not create duplicate peer rows.
+    const existing = await sql`
+      SELECT id FROM claude_peers
+      WHERE user_id = ${userId}
+        AND device_name = ${registration.deviceName}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `
+
+    if (existing.length > 0) {
+      const rows = await sql`
+        UPDATE claude_peers
+        SET
+          platform = ${registration.platform ?? process.platform},
+          capabilities = ${registration.capabilities ?? []}::text[],
+          desk_id = COALESCE(${registration.deskId ?? null}, desk_id),
+          assigned_agents = ${registration.assignedAgents ?? []}::text[],
+          status = ${registration.status ?? 'online'},
+          heartbeat_at = NOW(),
+          hermes_available = ${Boolean(registration.hermesAvailable)}
+        WHERE id = ${existing[0].id}
+        RETURNING *
+      `
+      return { ...mapPeerRow(rows[0]), user }
+    }
+
     const rows = await sql`
       INSERT INTO claude_peers (
         user_id,
@@ -294,7 +341,25 @@ export async function registerPeer(
     if (shouldFallbackToMemory(error)) {
       forceMemoryFallback = true
       log.warn('claude_peers insert failed, using memory fallback', { error: String(error) })
-      // Re-run with memory path now that forceMemoryFallback is true
+      const existing = Array.from(memoryPeers.values()).find(
+        (peer) => peer.userId === userId && peer.deviceName === registration.deviceName,
+      )
+      if (existing) {
+        const updated: ClaudePeer = {
+          ...existing,
+          platform: registration.platform ?? existing.platform ?? process.platform,
+          capabilities: registration.capabilities ?? existing.capabilities ?? [],
+          deskId: registration.deskId ?? existing.deskId ?? null,
+          assignedAgents: registration.assignedAgents ?? existing.assignedAgents ?? [],
+          status: registration.status ?? 'online',
+          heartbeatAt: nowIso(),
+          hermesAvailable: Boolean(registration.hermesAvailable),
+          user,
+        }
+        memoryPeers.set(existing.id, updated)
+        return updated
+      }
+
       const peer: ClaudePeer = {
         id: crypto.randomUUID(),
         userId,

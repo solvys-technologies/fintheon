@@ -710,6 +710,37 @@ export function FooterToolbar({
         )}
         {fetchStatus && <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />}
 
+        {/* Restored source status indicators (legacy footer lights) */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className="flex items-center gap-1 text-[10px]"
+            title={`Notion: ${sourceStatus.notion ? 'connected' : 'disconnected'}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.notion ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
+            <span className={sourceStatus.notion ? 'text-emerald-400/60' : 'text-zinc-700'}>NTN</span>
+          </span>
+          <span
+            className="flex items-center gap-1 text-[10px]"
+            title={`X CLI: ${sourceStatus.twitterCli ? 'connected' : 'disconnected'}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.twitterCli ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
+            <span className={sourceStatus.twitterCli ? 'text-emerald-400/60' : 'text-zinc-700'}>X</span>
+          </span>
+        </div>
+        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+
+        {/* Restored footer heartbeat/pulse */}
+        <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+          <span>heartbeat</span>
+        </div>
+        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+        <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+          <span>pulse</span>
+        </div>
+        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+
         {/* System status indicators — real-time from /api/diagnostics */}
         <div className="flex items-center gap-2.5 shrink-0">
           <StatusIndicator

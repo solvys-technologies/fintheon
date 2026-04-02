@@ -7,6 +7,7 @@
 #   fintheon start     — Start backend + launch app
 #   fintheon stop      — Stop everything
 #   fintheon logs      — Tail backend logs
+#   fintheon peers     — Run per-device peer/Twitter onboarding
 #   fintheon setup     — Re-run first-time setup
 #   fintheon version   — Show current version
 # ============================================================================
@@ -112,6 +113,14 @@ case "$1" in
       echo "  Start with: fintheon start"
     fi
     ;;
+  peers)
+    if [[ -f "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" ]]; then
+      bash "$FINTHEON_ROOT/scripts/peer-bootstrap.sh"
+    else
+      echo "  peer-bootstrap.sh not found in $FINTHEON_ROOT/scripts"
+      exit 1
+    fi
+    ;;
   version)
     cd "$FINTHEON_ROOT" 2>/dev/null || exit 1
     VERSION=$(git describe --tags --always 2>/dev/null || echo "unknown")
@@ -155,6 +164,7 @@ case "$1" in
     echo "  fintheon stop      Stop everything"
     echo "  fintheon status    Check if services are running"
     echo "  fintheon logs      Tail backend logs"
+    echo "  fintheon peers     Run peer + Twitter round-robin onboarding"
     echo "  fintheon setup     Re-run first-time setup"
     echo "  fintheon version   Show current version"
     echo ""

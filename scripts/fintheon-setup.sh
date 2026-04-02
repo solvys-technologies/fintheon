@@ -427,6 +427,9 @@ case "\$1" in
   logs)
     tail -f /tmp/fintheon-backend.log
     ;;
+  peers)
+    bash "\$FINTHEON_ROOT/scripts/peer-bootstrap.sh"
+    ;;
   version)
     cd "\$FINTHEON_ROOT" && git describe --tags --always 2>/dev/null || echo "unknown"
     ;;
@@ -438,6 +441,7 @@ case "\$1" in
     echo "  fintheon start     Start backend + launch app"
     echo "  fintheon stop      Stop everything"
     echo "  fintheon logs      Tail backend logs"
+    echo "  fintheon peers     Run peer + Twitter round-robin onboarding"
     echo "  fintheon setup     Re-run first-time setup"
     echo "  fintheon version   Show current version"
     echo ""
