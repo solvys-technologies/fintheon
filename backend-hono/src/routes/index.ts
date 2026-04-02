@@ -44,6 +44,7 @@ import { createCommentatorRoutes } from './commentator/index.js';
 import { createCalibrationRoutes } from './calibration/index.js';
 import { createHarperRoutes } from './harper/index.js';
 import predictionsRoutes from './predictions.js';
+import { createLiveKitRoutes } from './livekit/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -94,6 +95,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/predictions', predictionsRoutes);
   // Harper-Opus — Claude CLI chat via SDK bridge (public, local-only)
   app.route('/api/harper', createHarperRoutes());
+  // LiveKit — group voice call token generation (public, graceful degradation if keys missing)
+  app.route('/api/livekit', createLiveKitRoutes());
 
   // Supabase OAuth callback relay — serves HTML that deep-links back to Electron
   app.route('/api/auth/supabase', createAuthCallbackRoute());

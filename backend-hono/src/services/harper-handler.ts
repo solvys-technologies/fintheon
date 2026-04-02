@@ -1,4 +1,4 @@
-// [claude-code 2026-03-28] S8-T7: Harper-Opus handler — Claude CLI session handler for Ask Harp
+// [claude-code 2026-03-28] S8-T7: Harper-Opus handler — Claude CLI session handler for Chat
 /**
  * Harper-Opus Handler
  * Thin wrapper around Claude SDK Bridge for the "Harper-Opus" CAO persona.

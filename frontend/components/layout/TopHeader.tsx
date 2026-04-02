@@ -16,6 +16,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
+import { CallButton } from '../voice/CallButton';
 import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power, Bell, BellOff } from 'lucide-react';
 import { WhatsNewButton } from '../onboarding/FirstTimeTour';
 import { TraderNametag } from '../TraderNametag';
@@ -49,8 +50,8 @@ interface TopHeaderProps {
   onPlatformSelect?: (platform: TradingPlatform) => void;
   layoutOption?: LayoutOption;
   onLayoutOptionChange?: (option: LayoutOption) => void;
-  askHarpOpen?: boolean;
-  onAskHarpToggle?: () => void;
+  chatOpen?: boolean;
+  onChatToggle?: () => void;
   activeTab?: NavTab;
   tabHistory?: NavTab[];
   historyIndex?: number;
@@ -69,8 +70,8 @@ export function TopHeader({
   onPlatformSelect,
   layoutOption = 'combined',
   onLayoutOptionChange,
-  askHarpOpen = false,
-  onAskHarpToggle,
+  chatOpen = false,
+  onChatToggle,
   activeTab = 'dashboard',
   tabHistory = [],
   historyIndex = 0,
@@ -507,12 +508,12 @@ export function TopHeader({
             if (id === 'layout') {
               return null; // Layout dropdown is rendered in the 'platform' slot
             }
-            if (id === 'chat' && onAskHarpToggle) {
+            if (id === 'chat' && onChatToggle) {
               return wrapper(
                 <button
-                  onClick={onAskHarpToggle}
+                  onClick={onChatToggle}
                   className={`p-2 rounded-lg text-xs font-medium transition-colors ${
-                    askHarpOpen
+                    chatOpen
                       ? 'bg-[#6366f1] text-white hover:bg-[#6366f1]/90'
                       : 'bg-[var(--fintheon-bg)] border border-[#6366f1]/30 text-[#6366f1] hover:bg-[#6366f1]/10 hover:border-[#6366f1]/50'
                   }`}
@@ -524,7 +525,10 @@ export function TopHeader({
             }
             if (id === 'voice') {
               return wrapper(
-                <HeaderVoiceControl compact={topStepXEnabled && layoutOption === 'tickers-only'} />
+                <div className="flex items-center gap-1.5">
+                  <HeaderVoiceControl compact={topStepXEnabled && layoutOption === 'tickers-only'} />
+                  <CallButton compact={topStepXEnabled && layoutOption === 'tickers-only'} />
+                </div>
               );
             }
             if (id === 'ivScore') {
