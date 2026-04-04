@@ -1,0 +1,75 @@
+#!/bin/bash
+# ============================================================================
+# Fintheon CLI — repo-level entry point
+# ============================================================================
+# After cloning, run:  ./fintheon install
+# After install:       fintheon start | stop | update | logs
+# ============================================================================
+
+FINTHEON_ROOT="$(cd "$(dirname "$0")" && pwd)"
+
+case "${1:-help}" in
+  install|setup)
+    bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh"
+    ;;
+  update)
+    bash "$FINTHEON_ROOT/scripts/fintheon-update.sh"
+    ;;
+  start)
+    echo "  Starting Fintheon..."
+    cd "$FINTHEON_ROOT/backend-hono"
+    lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+    sleep 1
+    nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
+    echo "  Backend PID: $!"
+    sleep 3
+    if curl -s localhost:8080/health > /dev/null 2>&1; then
+      echo "  ✓ Backend live"
+    else
+      echo "  · Waiting... check: tail -f /tmp/fintheon-backend.log"
+    fi
+    if [[ -d /Applications/Fintheon.app ]]; then
+      open /Applications/Fintheon.app 2>/dev/null || true
+    fi
+    ;;
+  stop)
+    echo "  Stopping Fintheon..."
+    pkill -f "Fintheon" 2>/dev/null || true
+    pkill -f "electron.*fintheon" 2>/dev/null || true
+    lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+    echo "  ✓ Stopped"
+    ;;
+  restart)
+    "$0" stop
+    sleep 1
+    "$0" start
+    ;;
+  logs)
+    tail -f /tmp/fintheon-backend.log
+    ;;
+  status)
+    if lsof -i:8080 > /dev/null 2>&1; then
+      echo "  ✓ Backend running on :8080"
+      curl -s localhost:8080/health | python3 -m json.tool 2>/dev/null || true
+    else
+      echo "  ✗ Backend not running"
+    fi
+    ;;
+  version)
+    cd "$FINTHEON_ROOT" && git describe --tags --always 2>/dev/null || echo "unknown"
+    ;;
+  *)
+    echo ""
+    echo "  Fintheon CLI"
+    echo "  ─────────────────────────────────"
+    echo "  fintheon install    First-time setup"
+    echo "  fintheon update     Pull latest + rebuild"
+    echo "  fintheon start      Start backend + launch app"
+    echo "  fintheon stop       Stop everything"
+    echo "  fintheon restart    Stop + start"
+    echo "  fintheon logs       Tail backend logs"
+    echo "  fintheon status     Check if running"
+    echo "  fintheon version    Show current version"
+    echo ""
+    ;;
+esac

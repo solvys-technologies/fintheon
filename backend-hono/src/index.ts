@@ -1,3 +1,4 @@
+// [claude-code 2026-04-04] Secrets vault: loads env from Supabase before validateEnv so fresh devices work without .env
 // [claude-code 2026-03-20] Overhauled: structured errors, JSON logging, boot consolidation
 /**
  * Fintheon API - Main Entry Point
@@ -5,7 +6,14 @@
  */
 
 import 'dotenv/config';
+import { loadSecretsFromVault } from './config/secrets-vault.js';
 import { validateEnv } from './boot/index.js';
+
+// Vault loads async (reads Supabase), then validateEnv checks the merged result.
+// Local .env values take precedence — vault only fills gaps.
+await loadSecretsFromVault().catch((err) => {
+  console.warn('[boot] Secrets vault unavailable, using local .env only:', err.message ?? err);
+});
 validateEnv();
 
 import { Hono } from 'hono';

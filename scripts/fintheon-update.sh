@@ -108,18 +108,13 @@ echo "  [5/10] Checking environment..."
 
 BACKEND_ENV="$FINTHEON_ROOT/backend-hono/.env"
 if [[ -f "$BACKEND_ENV" ]]; then
-  # Ensure critical defaults exist (don't overwrite existing values)
-  grep -q "^BYPASS_AUTH=" "$BACKEND_ENV" 2>/dev/null || echo "BYPASS_AUTH=true" >> "$BACKEND_ENV"
-  grep -q "^PORT=" "$BACKEND_ENV" 2>/dev/null || echo "PORT=8080" >> "$BACKEND_ENV"
+  # Ensure bootstrap vars exist — secrets vault fills the rest from Supabase on boot
+  grep -q "^DATABASE_URL=" "$BACKEND_ENV" 2>/dev/null || echo "DATABASE_URL=$SUPABASE_DATABASE_URL" >> "$BACKEND_ENV"
   grep -q "^SUPABASE_URL=" "$BACKEND_ENV" 2>/dev/null || echo "SUPABASE_URL=https://nrcfnzclbjboctptxaxx.supabase.co" >> "$BACKEND_ENV"
   grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" 2>/dev/null || echo "SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yY2ZuemNsYmpib2N0cHR4YXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDgxODksImV4cCI6MjA4OTUyNDE4OX0.JXzVk5CDL6rxU5t_rl-Ku2YnPi0PeBF-VOpcSEZTbIM" >> "$BACKEND_ENV"
-  grep -q "^DATABASE_URL=" "$BACKEND_ENV" 2>/dev/null || echo "DATABASE_URL=$SUPABASE_DATABASE_URL" >> "$BACKEND_ENV"
-  grep -q "^USE_VPROXY_ANTHROPIC=" "$BACKEND_ENV" 2>/dev/null || echo "USE_VPROXY_ANTHROPIC=true" >> "$BACKEND_ENV"
-  grep -q "^VPROXY_BASE_URL=" "$BACKEND_ENV" 2>/dev/null || echo "VPROXY_BASE_URL=http://localhost:8317" >> "$BACKEND_ENV"
-  grep -q "^VPROXY_API_KEY=" "$BACKEND_ENV" 2>/dev/null || echo "VPROXY_API_KEY=CLI_PROXY_API_KEY" >> "$BACKEND_ENV"
-  grep -q "^VPROXY_ANTHROPIC_MODEL=" "$BACKEND_ENV" 2>/dev/null || echo "VPROXY_ANTHROPIC_MODEL=claude-opus-4.6" >> "$BACKEND_ENV"
-  grep -q "^AI_PRIMARY_PROVIDER=" "$BACKEND_ENV" 2>/dev/null || echo "AI_PRIMARY_PROVIDER=anthropic-vproxy" >> "$BACKEND_ENV"
-  ok "Environment verified"
+  grep -q "^PORT=" "$BACKEND_ENV" 2>/dev/null || echo "PORT=8080" >> "$BACKEND_ENV"
+  grep -q "^ENABLE_CENTRAL_SCORING=" "$BACKEND_ENV" 2>/dev/null || echo "ENABLE_CENTRAL_SCORING=true" >> "$BACKEND_ENV"
+  ok "Environment verified (vault fills secrets on boot)"
 else
   warn "No .env found — running setup to create one"
   bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh" 2>/dev/null || true
