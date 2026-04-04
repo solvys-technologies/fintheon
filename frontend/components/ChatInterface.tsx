@@ -13,6 +13,8 @@ import { SKILL_PREFIXES } from '../lib/skillPrefixes';
 import QuickFintheonModal from './analysis/QuickFintheonModal';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
 function ChatInterfaceInner({ conversationId, setConversationId, clearConversationId, lastError, thinkHarder, setThinkHarder, lastRequestId, dualPane = false }: { conversationId: string | undefined; setConversationId: (id: string) => void; clearConversationId: () => void; lastError: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void; lastRequestId: string | null; dualPane?: boolean }) {
   const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
