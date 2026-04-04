@@ -132,6 +132,24 @@ html *::-webkit-scrollbar {
   }
 }
 
+/* Horizontal fuse shimmer for RiskFlow expanded card footer */
+@keyframes riskflow-fuse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.riskflow-fuse-shimmer {
+  animation: riskflow-fuse 3s ease-in-out infinite;
+}
+
+/* Severe item shimmer — subtle glow pulse on CRIT cards */
+@keyframes severe-shimmer {
+  0%, 100% { box-shadow: inset 0 0 0 0 transparent; }
+  50% { box-shadow: inset 0 0 20px -8px var(--fintheon-bearish); }
+}
+.riskflow-severe-shimmer {
+  animation: severe-shimmer 3s ease-in-out infinite;
+}
+
 /* Subtle pulse glow for new-message indicator */
 @keyframes msg-pulse {
   0%, 100% {

@@ -7,6 +7,7 @@ import type { RiskFlowAlert } from '../../lib/riskflow-feed';
 import { inferDirection } from '../../lib/riskflow-feed';
 import { useToast } from '../../contexts/ToastContext';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
+import { ivHeatColor } from '../../types/miroshark';
 import { BeatMissBadge } from './BeatMissBadge';
 import { DetailFooter } from './DetailFooter';
 
@@ -79,7 +80,7 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
         expanded
           ? 'border-b border-[var(--fintheon-accent)]/30 riskflow-expand-pulse'
           : 'border-b border-zinc-800/60 hover:border-[var(--fintheon-accent)]/30'
-      } ${isHigh ? 'riskflow-fintheon-row' : ''} ${seen ? 'opacity-70' : ''}`}
+      } ${isHigh ? 'riskflow-fintheon-row' : ''} ${sev.label === 'CRIT' ? 'riskflow-severe-shimmer' : ''} ${seen ? 'opacity-70' : ''}`}
       style={expanded ? { '--tw-ring-color': 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' } as React.CSSProperties : undefined}
     >
       {/* ── Collapsed: headline + source icon top-right ─────────────────────── */}
@@ -115,14 +116,17 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
 
         {/* Direction */}
         <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
-          {'±'} {isBull ? 'BULLISH' : 'BEARISH'}
+          {isBull ? 'BULLISH' : 'BEARISH'}
         </span>
 
         <span className="flex-1" />
 
-        {/* IV Score */}
+        {/* IV Score — severity colored */}
         {(alert as any).ivScore != null && (
-          <span className="text-[10px] font-mono tabular-nums text-[var(--fintheon-accent)]/70">
+          <span
+            className="text-[11px] font-mono font-bold tabular-nums"
+            style={{ color: ivHeatColor(Number((alert as any).ivScore)) }}
+          >
             IV {Number((alert as any).ivScore).toFixed(1)}
           </span>
         )}
@@ -259,6 +263,17 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
 
           {/* S3: Plain text detail footer — IV, deviation, beat/miss, sub-scores, speaker, regime */}
           <DetailFooter alert={alert} />
+
+          {/* Fuse shimmer bar — severity-colored along expanded card footer */}
+          {(alert as any).ivScore != null && (
+            <div
+              className="h-[2px] w-full riskflow-fuse-shimmer"
+              style={{
+                background: `linear-gradient(90deg, transparent, ${ivHeatColor(Number((alert as any).ivScore))}60, transparent)`,
+                backgroundSize: '200% 100%',
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

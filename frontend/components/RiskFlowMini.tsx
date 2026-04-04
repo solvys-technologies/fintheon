@@ -18,6 +18,7 @@ import { useSourceStatus } from '../hooks/useSourceStatus';
 import { useBackend } from '../lib/backend';
 
 import { SEVERITY_CONFIG } from '../lib/severity-config';
+import { ivHeatColor } from '../types/miroshark';
 import { AutoRefreshToggle } from './ui/AutoRefreshToggle';
 
 // ── SVG Source Logos ──────────────────────────────────────────────────────────
@@ -258,7 +259,11 @@ function TradeIdeaRow({
               <span className="text-[10px] text-zinc-700">&middot;</span>
               <DirectionBadge alert={alert} />
               <span className="text-[10px] text-zinc-700">&middot;</span>
-              <PointRangeBadge points={alert.pointRange} instrument={alert.instrument} />
+              {(alert as any).ivScore != null && (
+                <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number((alert as any).ivScore)) }}>
+                  IV {Number((alert as any).ivScore).toFixed(1)}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -404,11 +409,13 @@ function AlertRow({
       <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40">
         <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
         <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
-          {'±'} {isBull ? 'BULLISH' : 'BEARISH'}
+          {isBull ? 'BULLISH' : 'BEARISH'}
         </span>
-        <span className="text-[10px] text-zinc-500 tabular-nums" title={`Implied ${alert.instrument ?? ''} move`}>
-          {alert.instrument ? `${alert.instrument} ` : ''}{alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)} pts` : '0-5 pts'}
-        </span>
+        {(alert as any).ivScore != null && (
+          <span className="text-[10px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number((alert as any).ivScore)) }}>
+            IV {Number((alert as any).ivScore).toFixed(1)}
+          </span>
+        )}
       </div>
 
       {/* Expanded content — smooth CSS grid transition */}
@@ -431,16 +438,9 @@ function AlertRow({
                   {alert.econData.beatMiss.toUpperCase()}
                 </span>
               )}
-              {alert.subScores && (
-                <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60">
-                  IV {(alert.subScores as any).eventWeight?.toFixed?.(1) ?? '—'}
-                </span>
-              )}
-              {alert.pointRange != null && alert.pointRange !== 0 && (
-                <span className={`text-[9px] font-mono font-bold ${
-                  isBull ? 'text-[var(--fintheon-bullish)]' : 'text-[var(--fintheon-bearish)]'
-                }`}>
-                  ±{Math.abs(alert.pointRange).toFixed(0)} pts
+              {(alert as any).ivScore != null && (
+                <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number((alert as any).ivScore)) }}>
+                  IV {Number((alert as any).ivScore).toFixed(1)}
                 </span>
               )}
             </div>
