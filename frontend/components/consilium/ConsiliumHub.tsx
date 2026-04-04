@@ -3,7 +3,7 @@
 // [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (Aquarium)
 // [claude-code 2026-03-28] S7: Sanctum dropdown (NarrativeFlow/Aquarium/Timeline) inside Consilium tab bar
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
-import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield, Brain, BookOpen } from 'lucide-react';
+import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield, Brain, BookOpen, Scroll, Plus } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
 import { Sanctum } from '../narrative/Sanctum';
@@ -516,6 +516,33 @@ export function ConsiliumHub() {
         </div>
 
         <div className="flex-1" />
+
+        {/* Right-justified chat tools — only when chat is active */}
+        {activeTab === 'chat' && (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => window.dispatchEvent(new Event('fintheon:chat-run-report'))}
+              className="p-1.5 text-zinc-500 hover:text-[#c79f4a] transition-colors"
+              title="Run Report"
+            >
+              <Scroll className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new Event('fintheon:chat-new'))}
+              className="p-1.5 text-zinc-500 hover:text-[#c79f4a] transition-colors"
+              title="New Chat"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new Event('fintheon:chat-toggle-history'))}
+              className="p-1.5 text-zinc-500 hover:text-[#c79f4a] transition-colors"
+              title="History"
+            >
+              <Clock className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {activeTab === 'sanctum' && (
           <button

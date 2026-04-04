@@ -9,6 +9,15 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-04T06:00:00',
+    agent: 'claude-code',
+    summary: 'T2: Chat icons (Run Report, New Chat, History) restored to Consilium toolbar row. Icons appear right-justified when Chat tab is active. Uses DOM events to bridge ConsiliumHub toolbar to ChatSidebar actions. Added SessionsModal to ChatSidebar for history access.',
+    files: [
+      'frontend/components/consilium/ConsiliumHub.tsx',
+      'frontend/components/chat/ChatSidebar.tsx',
+    ],
+  },
+  {
     date: '2026-04-04T04:30:00',
     agent: 'claude-code',
     summary: 'Fix Harper-Opus streaming: (1) Added UIMessageStream framing events (start/start-step/finish-step/finish) required by DefaultChatTransport, (2) Fixed model ID mismatch — env had claude-opus-4.6 (dots) but VProxy expects claude-opus-4-6 (hyphens), (3) Removed BYPASS_AUTH from .env (was causing crash loop with production NODE_ENV), (4) Pre-approved all Harper tools in ~/.fintheon/tool-permissions.json, (5) Updated .mcp.json with proper Notion auth and Close CRM server. Error path now sends proper UIMessageChunk error events instead of raw controller.error().',
