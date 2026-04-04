@@ -252,7 +252,7 @@ async function pollBookmarks(): Promise<number> {
 
 // ─── Main Poll Cycle ────────────────────────────────────────────
 
-async function pollCommentary(): Promise<void> {
+export async function pollCommentary(): Promise<void> {
   log.info('Starting Exa + Bookmark catalyst scrape cycle');
   let totalNew = 0;
 

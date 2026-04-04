@@ -8,7 +8,6 @@ import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { useSourceStatus } from '../../hooks/useSourceStatus';
 import { useBackend } from '../../lib/backend';
 import { RiskFlowDetailCard } from './RiskFlowDetailCard';
-import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
 
 type PriorityFilter = 'all' | 'critical' | 'high' | 'medium' | 'low';
 type SourceFilter = 'all' | 'notion' | 'twitter';
@@ -94,8 +93,6 @@ export function RiskFlowMain() {
           </span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-[9px] text-zinc-500 mr-0.5">auto</span>
-          <AutoRefreshToggle size="xs" />
           <button
             type="button"
             onClick={() => { void refresh(); }}
@@ -117,10 +114,6 @@ export function RiskFlowMain() {
             {notificationsEnabled ? 'Notifications On' : 'Notifications'}
           </button>
         </div>
-      </div>
-
-      <div className="px-3 mb-1.5">
-        <span className="text-[9px] text-zinc-600">Automatically refreshes the feed every 30 seconds</span>
       </div>
 
       {/* Filter row: Priority dropdown + Source dropdown + Proposals tab */}

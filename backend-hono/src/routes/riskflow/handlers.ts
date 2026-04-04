@@ -777,6 +777,18 @@ export async function handleRefresh(c: Context) {
       polled = true;
     }
 
+    // 1b. Exa scrapes — run regardless of polling window (manual refresh = full refresh)
+    const { checkForScheduledEvents } = await import('../../services/riskflow/exa-scheduled-monitor.js');
+    const { pollCommentary } = await import('../../services/riskflow/commentary-scraper.js');
+    await Promise.all([
+      checkForScheduledEvents().catch((err: unknown) => {
+        console.warn('[RiskFlow] Exa scheduled-event scrape failed during refresh:', err);
+      }),
+      pollCommentary().catch((err: unknown) => {
+        console.warn('[RiskFlow] Exa commentary scrape failed during refresh:', err);
+      }),
+    ]);
+
     // 2. Run Central Scorer immediately so raw items get scored NOW, not in 30s
     const { scoringCycle } = await import('../../services/riskflow/central-scorer.js');
     await scoringCycle().catch((err: unknown) => {

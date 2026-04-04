@@ -1,3 +1,4 @@
+// [claude-code 2026-04-03] Daily auto-run: 12h staleness threshold, cross-user dedup
 // [claude-code 2026-03-28] S8-T5: 3-phase deliberation pipeline integration
 // [claude-code 2026-03-24] Persistence refactor: getLatestReport(), full report JSONB in persistRun(), 30min staleness
 // [claude-code 2026-03-24] Added getRollingWindowData, shouldAutoRun, running state init hook
@@ -434,10 +435,13 @@ export async function getRollingWindowData(query: RollingWindowQuery): Promise<A
 
 // ── Auto-run Detection ──
 
+const STALENESS_THRESHOLD_HOURS = 12;
+
 export async function shouldAutoRun(): Promise<{ shouldRun: boolean; lastRunAt: string | null; staleness: number }> {
   const sb = getSupabaseClient();
   if (!sb) return { shouldRun: true, lastRunAt: null, staleness: Infinity };
 
+  // Check runs by ANY user — prevents duplicate runs across devices
   const { data } = await sb
     .from('mirofish_runs')
     .select('created_at')
@@ -448,9 +452,8 @@ export async function shouldAutoRun(): Promise<{ shouldRun: boolean; lastRunAt: 
 
   const lastRunAt = data[0].created_at;
   const staleness = (Date.now() - new Date(lastRunAt).getTime()) / (60 * 60 * 1000); // hours
-  // Only auto-run twice daily (before MDB ~6:30AM and ADB ~10:45AM)
-  // 6-hour threshold prevents re-triggers from Aquarium tab opens
-  return { shouldRun: staleness > 6, lastRunAt, staleness };
+  // 12-hour threshold: once-daily auto-run, prevents duplicate runs across users/devices
+  return { shouldRun: staleness > STALENESS_THRESHOLD_HOURS, lastRunAt, staleness };
 }
 
 function emptyAggregation(days: number): AggregatedRollingData {

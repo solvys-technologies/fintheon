@@ -1,3 +1,4 @@
+// [claude-code 2026-04-03] Added MiroShark daily cron (6:00 AM ET weekdays) to boot sequence
 // [claude-code 2026-03-29] Added catalyst promoter to boot sequence (graduates scored items → narrative catalysts)
 // [claude-code 2026-03-24] Added VIX polling, central scorer, IV ticker, VIX rescore to boot sequence
 // [claude-code 2026-03-20] Service boot consolidation — single entry point for all background services
@@ -36,6 +37,7 @@ import { isComputerUseAvailable } from '../services/skills/tradingview-trade-pla
 import * as projectxService from '../services/projectx-service.js';
 import { startSharedMemoryCleanup } from '../services/peers/shared-memory.js';
 import { startReflectScheduler } from '../services/autoresearch/reflect-scheduler.js';
+import { startMiroSharkDaily } from '../services/cron/miroshark-daily.js';
 
 const log = createLogger('Boot');
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -215,6 +217,10 @@ export async function bootServices(): Promise<void> {
 
   // Shared memory cleanup cron (30min — expires entries past TTL)
   startSharedMemoryCleanup();
+
+  // MiroShark daily auto-run (6:00 AM ET weekdays — once per day before MDB)
+  startMiroSharkDaily();
+  log.info('MiroSharkDaily cron scheduled');
 
   // REFLECT scheduler (04:00 UTC daily — news analysis quality self-improvement)
   startReflectScheduler();

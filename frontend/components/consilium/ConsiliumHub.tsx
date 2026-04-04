@@ -265,6 +265,36 @@ export function ConsiliumHub() {
     );
 
     try {
+      // Check for a recent run (<12h) by ANY user before triggering a new simulation
+      const staleRes = await fetch(`${API_BASE}/api/miroshark/auto-run-check`);
+      if (staleRes.ok) {
+        const { shouldRun, staleness } = await staleRes.json();
+        if (!shouldRun) {
+          console.log(`[MiroShark] Recent run exists (${staleness.toFixed(1)}h ago) — loading latest`);
+          const latestRes = await fetch(`${API_BASE}/api/miroshark/latest`);
+          if (latestRes.ok) {
+            const report = await latestRes.json();
+            if (report) {
+              setMirosharkData({
+                simulationId: report.simulationId ?? '',
+                status: 'complete',
+                compositeIV: report.compositeIV ?? 0,
+                confidence: report.confidence ?? 0,
+                regimeShiftProbability: report.regimeShiftProbability ?? 0,
+                categoryScores: report.categoryScores ?? [],
+                timeSeries: report.timeSeries ?? [],
+                generatedEvents: report.generatedEvents ?? [],
+                scenarios: report.scenarios ?? [],
+                briefing: report.briefing ?? null,
+                contextSnapshot: report.contextSnapshot ?? null,
+              });
+              fetchContext();
+              return;
+            }
+          }
+        }
+      }
+
       const simRes = await fetch(`${API_BASE}/api/miroshark/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

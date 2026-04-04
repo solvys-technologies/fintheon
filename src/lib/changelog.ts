@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-04T00:30:00',
+    agent: 'claude-code',
+    summary: 'MiroShark daily auto-run + dedup. Added daily cron at 6:00 AM ET (weekdays) for automatic MiroShark runs. Updated staleness threshold from 6h to 12h. Frontend Update button now checks for a recent run (<12h by ANY user) before triggering a new simulation — loads cached result if fresh, preventing duplicate runs and improving speed.',
+    files: [
+      'backend-hono/src/services/cron/miroshark-daily.ts',
+      'backend-hono/src/services/miroshark/miroshark-service.ts',
+      'backend-hono/src/boot/services.ts',
+      'frontend/components/consilium/ConsiliumHub.tsx',
+    ],
+  },
+  {
     date: '2026-04-03T23:30:00',
     agent: 'claude-code',
     summary: 'REFLECT engine — nightly news analysis quality self-improvement loop. 5 metrics (direction accuracy, score calibration, scoring bias, macro level accuracy, tag coverage), auto-adjustment recommendations, Harper standup integration. Endpoints: GET /diagnostics/reflect/latest, POST /diagnostics/reflect/run. Scheduler runs at 04:00 UTC when ENABLE_REFLECT=true.',
