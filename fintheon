@@ -25,9 +25,11 @@ do_install() {
   echo "  No API keys needed. Sign in with Google."
   echo ""
 
-  # ── Dev tools ──────────────────────────────────────────────────────
+  local SHELL_PROFILE="$HOME/.zprofile"
 
-  info "Checking dev tools..."
+  # ── 1. Core runtimes (Homebrew, Node, Bun, Python, uv) ────────────
+
+  info "Installing core runtimes..."
 
   # Homebrew
   if ! command -v brew &>/dev/null; then
@@ -35,7 +37,6 @@ do_install() {
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     if [[ -f /opt/homebrew/bin/brew ]]; then
       eval "$(/opt/homebrew/bin/brew shellenv)"
-      SHELL_PROFILE="$HOME/.zprofile"
       grep -q 'brew shellenv' "$SHELL_PROFILE" 2>/dev/null || \
         echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$SHELL_PROFILE"
     fi
@@ -45,9 +46,7 @@ do_install() {
   # Node.js
   if command -v node &>/dev/null; then
     NODE_MAJOR=$(node --version | sed 's/v//' | cut -d. -f1)
-    if [[ "$NODE_MAJOR" -lt 20 ]]; then
-      brew install node@22 && brew link --overwrite node@22 2>/dev/null || true
-    fi
+    [[ "$NODE_MAJOR" -lt 20 ]] && { brew install node@22 && brew link --overwrite node@22 2>/dev/null || true; }
   else
     brew install node@22 && brew link --overwrite node@22 2>/dev/null || true
   fi
@@ -58,7 +57,6 @@ do_install() {
     curl -fsSL https://bun.sh/install | bash
     export BUN_INSTALL="$HOME/.bun"
     export PATH="$BUN_INSTALL/bin:$PATH"
-    SHELL_PROFILE="$HOME/.zprofile"
     grep -q '.bun/bin' "$SHELL_PROFILE" 2>/dev/null || {
       echo 'export BUN_INSTALL="$HOME/.bun"' >> "$SHELL_PROFILE"
       echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> "$SHELL_PROFILE"
@@ -66,9 +64,95 @@ do_install() {
   fi
   ok "Bun $(bun --version)"
 
-  # ── Dependencies ───────────────────────────────────────────────────
+  # Python 3 (for Hermes agent + Twitter CLI)
+  if ! command -v python3 &>/dev/null; then
+    brew install python@3.11 2>/dev/null || true
+  fi
+  ok "Python $(python3 --version 2>/dev/null | cut -d' ' -f2 || echo 'via Xcode')"
 
-  info "Installing dependencies..."
+  # uv (fast Python package manager — installs Twitter CLI)
+  if ! command -v uv &>/dev/null; then
+    info "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
+    grep -q '.local/bin' "$SHELL_PROFILE" 2>/dev/null || \
+      echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_PROFILE"
+  fi
+  ok "uv $(uv --version 2>/dev/null | head -1)"
+
+  # ── 2. Platform tools (Claude CLI, Hermes, Twitter CLI, VProxy) ───
+
+  info "Installing platform tools..."
+
+  # Claude CLI — AI agent backbone
+  if ! command -v claude &>/dev/null; then
+    info "Installing Claude CLI..."
+    bun add -g @anthropic-ai/claude-code 2>/dev/null || npm install -g @anthropic-ai/claude-code 2>/dev/null || true
+  fi
+  if command -v claude &>/dev/null; then
+    ok "Claude CLI $(claude --version 2>/dev/null | head -1)"
+  else
+    warn "Claude CLI install failed — install manually: bun add -g @anthropic-ai/claude-code"
+  fi
+
+  # Hermes Agent — multi-agent orchestration (Nous Research)
+  if ! command -v hermes &>/dev/null; then
+    info "Installing Hermes agent..."
+    pip3 install hermes-agent 2>/dev/null || python3 -m pip install hermes-agent 2>/dev/null || true
+  fi
+  if command -v hermes &>/dev/null; then
+    ok "Hermes $(hermes --version 2>/dev/null | head -1)"
+  else
+    warn "Hermes install failed — install manually: pip3 install hermes-agent"
+  fi
+
+  # Initialize Hermes config if missing
+  if [[ ! -d "$HOME/.hermes" ]]; then
+    mkdir -p "$HOME/.hermes/agents/main/sessions" "$HOME/.hermes/config"
+    cat > "$HOME/.hermes/config/default.json" << HERMESEOF
+{
+  "provider": "openrouter",
+  "base_url": "https://openrouter.ai/api/v1",
+  "model": "anthropic/claude-sonnet-4-20250514",
+  "app_name": "Fintheon-PIC-Hermes",
+  "fintheon_root": "$FINTHEON_ROOT",
+  "backend_url": "http://localhost:8080",
+  "agents": {
+    "harper": { "role": "CAO", "model": "anthropic/claude-opus-4-20250514" },
+    "oracle": { "role": "All-Seer", "model": "anthropic/claude-opus-4-20250514" },
+    "feucht": { "role": "Futures & Risk", "model": "anthropic/claude-sonnet-4-20250514" },
+    "consul": { "role": "Fundamentals", "model": "anthropic/claude-sonnet-4-20250514" },
+    "herald": { "role": "News", "model": "anthropic/claude-sonnet-4-20250514" }
+  }
+}
+HERMESEOF
+    ok "Hermes config initialized at ~/.hermes"
+  fi
+
+  # Twitter CLI — X feed polling for RiskFlow
+  if ! command -v twitter &>/dev/null && [[ ! -x "$HOME/.local/bin/twitter" ]]; then
+    info "Installing Twitter CLI..."
+    uv tool install twitter-cli 2>/dev/null || true
+    export PATH="$HOME/.local/bin:$PATH"
+  fi
+  TWITTER_BIN="$(command -v twitter 2>/dev/null || echo "$HOME/.local/bin/twitter")"
+  if [[ -x "$TWITTER_BIN" ]]; then
+    ok "Twitter CLI ($TWITTER_BIN)"
+  else
+    warn "Twitter CLI install failed — install manually: uv tool install twitter-cli"
+  fi
+
+  # VProxy (Anthropic OAuth gateway)
+  if [[ -f "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" ]]; then
+    info "Setting up VProxy Anthropic OAuth..."
+    bash "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" --yes 2>/dev/null && \
+      ok "VProxy Anthropic OAuth configured" || \
+      warn "VProxy setup skipped — run later: fintheon oauth"
+  fi
+
+  # ── 3. JS dependencies ────────────────────────────────────────────
+
+  info "Installing JS dependencies..."
   cd "$FINTHEON_ROOT"
   bun install 2>/dev/null || bun install
   ok "Root deps"
@@ -204,6 +288,20 @@ case "${1:-help}" in
       echo "  ✗ Backend not running"
     fi
     ;;
+  oauth)
+    if [[ -f "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" ]]; then
+      bash "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"
+    else
+      echo "  vproxy-anthropic-oauth.sh not found"
+    fi
+    ;;
+  peers)
+    if [[ -f "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" ]]; then
+      bash "$FINTHEON_ROOT/scripts/peer-bootstrap.sh"
+    else
+      echo "  peer-bootstrap.sh not found"
+    fi
+    ;;
   version)
     cd "$FINTHEON_ROOT" && git describe --tags --always 2>/dev/null || echo "unknown"
     ;;
@@ -211,13 +309,15 @@ case "${1:-help}" in
     echo ""
     echo "  Fintheon CLI"
     echo "  ─────────────────────────────────"
-    echo "  fintheon install    First-time setup"
+    echo "  fintheon install    First-time setup (all tools)"
     echo "  fintheon update     Pull latest + rebuild"
     echo "  fintheon start      Start backend + launch app"
     echo "  fintheon stop       Stop everything"
     echo "  fintheon restart    Stop + start"
     echo "  fintheon logs       Tail backend logs"
     echo "  fintheon status     Check if running"
+    echo "  fintheon oauth      Connect Anthropic subscription"
+    echo "  fintheon peers      Twitter round-robin onboarding"
     echo "  fintheon version    Show current version"
     echo ""
     ;;
