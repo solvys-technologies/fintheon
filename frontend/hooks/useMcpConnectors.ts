@@ -1,9 +1,20 @@
-// [claude-code 2026-04-03] Rewritten: fetch live MCP config from backend (reads ~/.claude/mcp.json)
+// [claude-code 2026-04-04] Rewritten: fetch live MCP config from backend + merge internal connectors
 import { useState, useEffect, useCallback } from 'react';
 import type { McpServerConfig, McpServerId } from '../types/mcp';
 import { API_BASE_URL } from '../components/chat/constants';
+import { INTERNAL_CONNECTORS } from '../lib/internalConnectors';
 
 const STORAGE_KEY = 'fintheon:mcp-active-connectors';
+const INTERNAL_DISABLED_KEY = 'fintheon:internal-connectors-disabled';
+
+function getInternalDisabled(): Set<string> {
+  try {
+    const raw = localStorage.getItem(INTERNAL_DISABLED_KEY);
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+  } catch {
+    return new Set();
+  }
+}
 
 export function useMcpConnectors() {
   const [servers, setServers] = useState<McpServerConfig[]>([]);
@@ -13,25 +24,40 @@ export function useMcpConnectors() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Fetch live config from backend
+  // Fetch live config from backend + merge internal connectors
   const fetchServers = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/mcp`);
       if (!res.ok) throw new Error(`${res.status}`);
       const data = await res.json() as { servers: McpServerConfig[] };
-      const fetched = data.servers ?? [];
-      setServers(fetched);
+      const mcpServers = data.servers ?? [];
 
-      // Sync activeIds with server enabled state (backend is source of truth)
-      const enabledIds = fetched.filter(s => s.enabled).map(s => s.id);
-      // Ensure locked servers are always active
-      const lockedIds = fetched.filter(s => s.locked && s.enabled).map(s => s.id);
+      // Merge internal connectors (prepend so they appear first)
+      const internalDisabled = getInternalDisabled();
+      const internals = INTERNAL_CONNECTORS.map(c => ({
+        ...c,
+        enabled: c.locked ? true : !internalDisabled.has(c.id),
+      }));
+      const allServers = [...internals, ...mcpServers];
+      setServers(allServers);
+
+      // Sync activeIds with server enabled state (backend is source of truth for MCP)
+      const enabledIds = allServers.filter(s => s.enabled).map(s => s.id);
+      const lockedIds = allServers.filter(s => s.locked && s.enabled).map(s => s.id);
       const merged = new Set([...enabledIds, ...lockedIds]);
       const next = Array.from(merged) as McpServerId[];
       setActiveIds(next);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
-      // Backend unavailable — keep whatever we have
+      // Backend unavailable — show internal connectors at minimum
+      const internalDisabled = getInternalDisabled();
+      const internals = INTERNAL_CONNECTORS.map(c => ({
+        ...c,
+        enabled: c.locked ? true : !internalDisabled.has(c.id),
+      }));
+      setServers(internals);
+      const enabledIds = internals.filter(s => s.enabled).map(s => s.id);
+      setActiveIds(enabledIds as McpServerId[]);
     } finally {
       setLoading(false);
     }
@@ -57,7 +83,15 @@ export function useMcpConnectors() {
       prev.map((s) => (s.id === id ? { ...s, enabled } : s))
     );
 
-    // Persist to backend
+    // Internal connectors: persist toggle to localStorage only
+    if (server?.source === 'internal') {
+      const disabled = getInternalDisabled();
+      if (enabled) disabled.delete(id); else disabled.add(id);
+      localStorage.setItem(INTERNAL_DISABLED_KEY, JSON.stringify(Array.from(disabled)));
+      return;
+    }
+
+    // MCP connectors: persist to backend
     try {
       await fetch(`${API_BASE_URL}/api/mcp/${id}/toggle`, {
         method: 'PATCH',

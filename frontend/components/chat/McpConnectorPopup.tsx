@@ -11,6 +11,7 @@ export interface McpConnectorPopupProps {
 }
 
 const CATEGORY_LABELS: Record<McpServerConfig['category'], string> = {
+  internal: 'Internal',
   trading: 'Trading',
   data: 'Data',
   search: 'Search',
@@ -19,7 +20,7 @@ const CATEGORY_LABELS: Record<McpServerConfig['category'], string> = {
   social: 'Social',
 };
 
-const CATEGORY_ORDER: McpServerConfig['category'][] = ['trading', 'data', 'search', 'social', 'browser', 'productivity'];
+const CATEGORY_ORDER: McpServerConfig['category'][] = ['internal', 'trading', 'data', 'search', 'social', 'browser', 'productivity'];
 
 function StatusDot({ server }: { server: McpServerConfig }) {
   if (!server.installed) {

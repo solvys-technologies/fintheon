@@ -46,9 +46,9 @@ interface McpServerEntry {
   apiKeyEnvVar?: string
   hasApiKey: boolean
   toolCount?: number
-  category: 'data' | 'search' | 'browser' | 'productivity' | 'social' | 'trading'
+  category: 'data' | 'search' | 'browser' | 'productivity' | 'social' | 'trading' | 'internal'
   locked?: boolean
-  source: 'claude' | 'project'  // which config file it came from
+  source: 'claude' | 'project' | 'internal'  // which config file it came from
 }
 
 // ── Disabled list (persisted alongside the config) ────────────────────────
@@ -94,6 +94,50 @@ const KNOWN_SERVERS: Record<string, Partial<McpServerEntry>> = {
   'playwright':       { name: 'Playwright Browser', description: 'Headless browser for scraping and screenshots', category: 'browser', toolCount: 20, locked: true },
   'figma':            { name: 'Figma', description: 'Design system, components, and mockups', category: 'productivity', toolCount: 18 },
 }
+
+// ── Internal Connectors (not MCP — in-app features) ──────────────────────
+
+const INTERNAL_CONNECTORS: McpServerEntry[] = [
+  {
+    id: 'riskflow',
+    name: 'RiskFlow',
+    description: 'Cite a catalyst by searching the RiskFlow DB',
+    transport: 'stdio',
+    enabled: true,
+    installed: true,
+    requiresApiKey: false,
+    hasApiKey: true,
+    category: 'internal',
+    locked: true,
+    source: 'internal',
+  },
+  {
+    id: 'aquarium',
+    name: 'Aquarium',
+    description: 'Discuss the most recent MiroShark simulation run',
+    transport: 'stdio',
+    enabled: true,
+    installed: true,
+    requiresApiKey: false,
+    hasApiKey: true,
+    category: 'internal',
+    locked: false,
+    source: 'internal',
+  },
+  {
+    id: 'boardroom',
+    name: 'Boardroom',
+    description: 'Desk-wide narrative investigation across all agents',
+    transport: 'stdio',
+    enabled: true,
+    installed: true,
+    requiresApiKey: false,
+    hasApiKey: true,
+    category: 'internal',
+    locked: false,
+    source: 'internal',
+  },
+]
 
 // ── Config Parsing ────────────────────────────────────────────────────────
 
@@ -156,14 +200,15 @@ function claudeServerToEntry(id: string, server: ClaudeMcpServer, source: 'claud
 export function createMcpRoutes() {
   const app = new Hono()
 
-  // List all MCP servers from Claude config + project config
+  // List all MCP servers from Claude config + project config + internal connectors
   app.get('/', async (c) => {
     const [claudeConfig, projectConfig] = await Promise.all([
       readClaudeMcpConfig(),
       readProjectMcpConfig(),
     ])
 
-    const servers: McpServerEntry[] = []
+    // Start with internal connectors (shown first)
+    const servers: McpServerEntry[] = [...INTERNAL_CONNECTORS]
 
     for (const [id, server] of Object.entries(claudeConfig.mcpServers)) {
       servers.push(claudeServerToEntry(id, server, 'claude'))
@@ -182,6 +227,11 @@ export function createMcpRoutes() {
   app.patch('/:id/toggle', async (c) => {
     const id = c.req.param('id')
     const body = await c.req.json<{ enabled: boolean }>()
+
+    // Internal connectors are toggled client-side only
+    if (INTERNAL_CONNECTORS.some(ic => ic.id === id)) {
+      return c.json({ ok: true, id, enabled: body.enabled })
+    }
 
     // Check if server exists
     const [claudeConfig, projectConfig] = await Promise.all([

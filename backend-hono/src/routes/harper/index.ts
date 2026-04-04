@@ -60,6 +60,7 @@ export function createHarperRoutes() {
         thinkHarder?: boolean
         persona?: string
         riskFlowContext?: string
+        activeConnectors?: string[]
       }>()
 
       const message = body.message?.trim()
@@ -97,6 +98,7 @@ export function createHarperRoutes() {
         thinkHarder: body.thinkHarder,
         persona: body.persona,
         riskFlowContext: body.riskFlowContext,
+        activeConnectors: body.activeConnectors,
         requestId,
       }
 

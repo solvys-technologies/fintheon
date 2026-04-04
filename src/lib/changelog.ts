@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-04T06:00:00',
+    agent: 'claude-code',
+    summary: 'T1 Default Connectors: Added 3 internal connectors (RiskFlow always-on, Aquarium, Boardroom) + Unusual Whales MCP server. Internal connectors appear in ToolsDropdown under new "Internal" category, inject context into Harper system prompt when active. Aquarium pulls latest MiroShark simulation; Boardroom activates structured Desk-wide investigation mode. Removed Close CRM from project .mcp.json. Frontend types extended with ConnectorSource and internal category.',
+    files: [
+      'frontend/types/mcp.ts',
+      'frontend/lib/internalConnectors.ts',
+      'frontend/hooks/useMcpConnectors.ts',
+      'frontend/components/chat/McpConnectorPopup.tsx',
+      'frontend/components/chat/hooks/useHermesChat.ts',
+      'backend-hono/src/routes/mcp/index.ts',
+      'backend-hono/src/routes/harper/index.ts',
+      'backend-hono/src/services/harper-handler.ts',
+      '.mcp.json',
+    ],
+  },
+  {
     date: '2026-04-04T04:30:00',
     agent: 'claude-code',
     summary: 'Fix Harper-Opus streaming: (1) Added UIMessageStream framing events (start/start-step/finish-step/finish) required by DefaultChatTransport, (2) Fixed model ID mismatch — env had claude-opus-4.6 (dots) but VProxy expects claude-opus-4-6 (hyphens), (3) Removed BYPASS_AUTH from .env (was causing crash loop with production NODE_ENV), (4) Pre-approved all Harper tools in ~/.fintheon/tool-permissions.json, (5) Updated .mcp.json with proper Notion auth and Close CRM server. Error path now sends proper UIMessageChunk error events instead of raw controller.error().',

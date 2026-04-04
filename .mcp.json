@@ -22,11 +22,11 @@
         "OPENAPI_MCP_HEADERS": "{\"Authorization\":\"Bearer ${NOTION_API_KEY}\",\"Notion-Version\":\"2022-06-28\"}"
       }
     },
-    "close_crm": {
+    "unusual-whales": {
       "command": "npx",
-      "args": ["-y", "close-mcp-server"],
+      "args": ["-y", "unusual-whales-mcp"],
       "env": {
-        "CLOSE_API_KEY": "${CLOSE_API_KEY}"
+        "UNUSUAL_WHALES_API_KEY": "${UW_API_KEY}"
       }
     }
   }

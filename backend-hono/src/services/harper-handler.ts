@@ -33,6 +33,8 @@ export interface HarperChatRequest {
   persona?: string
   /** Additional context from RiskFlow items attached to message */
   riskFlowContext?: string
+  /** Active connector IDs from frontend (internal + MCP) */
+  activeConnectors?: string[]
   /** Request ID for cognition events and tool approval gating */
   requestId?: string
 }
@@ -141,6 +143,45 @@ Respond as Herald would: breaking news impact, social sentiment, headline risk,
 information asymmetry detection. Fast, alert-oriented.`,
 }
 
+// ── Internal Connector Context Builders ───────────────────────────────────
+
+/**
+ * Build Aquarium context: injects latest MiroShark simulation summary.
+ */
+async function buildAquariumContext(): Promise<string> {
+  try {
+    const { getLatestReport } = await import('./miroshark/miroshark-service.js')
+    const report = await getLatestReport() as Record<string, any> | null
+    if (!report) return ''
+
+    const findings = Array.isArray(report.findings) ? report.findings : []
+
+    return `\n\n--- AQUARIUM (MiroShark) — Latest Simulation ---
+Run: ${report.id ?? 'unknown'} | ${report.completedAt ?? report.createdAt ?? 'time unknown'}
+Preset: ${report.preset ?? 'default'}
+${report.summary ?? 'No summary available.'}
+${findings.length ? '\nKey findings:\n' + findings.map((f: any, i: number) => `${i + 1}. ${f}`).join('\n') : ''}
+
+You can discuss this simulation run, critique its conclusions, or suggest follow-up analysis.`
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Build Boardroom context: activates structured investigation mode.
+ */
+function buildBoardroomContext(): string {
+  return `\n\n--- BOARDROOM MODE ACTIVE ---
+You are in Boardroom investigation mode. When the user describes a narrative or market thesis:
+1. Gather detailed non-technical information about the narrative from the user
+2. Propose a Desk-wide investigation plan across agents (Oracle for probabilities, Feucht for risk/levels, Consul for fundamentals, Herald for news/sentiment)
+3. Review catalysts discovered during research
+4. Suggest new catalysts to insert into RiskFlow DB via run_command tool
+
+Conduct this like a structured analyst research session. Ask clarifying questions, propose investigation angles, and coordinate cross-agent analysis.`
+}
+
 // ── Handler ─────────────────────────────────────────────────────────────────
 
 /**
@@ -154,7 +195,7 @@ export async function isHarperAvailable(): Promise<boolean> {
  * Send a chat message through Harper-Opus and get a streaming response.
  */
 export async function harperChat(request: HarperChatRequest): Promise<HarperChatResult> {
-  const { message, conversationId, history, thinkHarder, persona, riskFlowContext, requestId } = request
+  const { message, conversationId, history, thinkHarder, persona, riskFlowContext, activeConnectors, requestId } = request
 
   // Build system prompt with persona modifier
   let systemPrompt = HARPER_BASE_SYSTEM_PROMPT
@@ -176,6 +217,22 @@ export async function harperChat(request: HarperChatRequest): Promise<HarperChat
   // Add RiskFlow items if attached
   if (riskFlowContext) {
     systemPrompt += `\n\n--- ATTACHED RISKFLOW ITEMS ---\n${riskFlowContext}`
+  }
+
+  // Inject internal connector context based on active connectors
+  if (activeConnectors?.includes('aquarium')) {
+    try {
+      const aquariumContext = await buildAquariumContext()
+      if (aquariumContext) {
+        systemPrompt += aquariumContext
+      }
+    } catch (err) {
+      log.warn('Failed to build Aquarium context (non-fatal)', { error: String(err) })
+    }
+  }
+
+  if (activeConnectors?.includes('boardroom')) {
+    systemPrompt += buildBoardroomContext()
   }
 
   log.info('Harper-Opus chat request', {

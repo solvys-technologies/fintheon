@@ -1,4 +1,4 @@
-// [claude-code 2026-03-23] MCP registry frontend types — mirror of backend types/mcp.ts (removed alpha-vantage, twitter-cli→riskflow)
+// [claude-code 2026-04-04] MCP registry frontend types — mirror of backend types/mcp.ts + internal connectors
 
 export type McpServerId =
   | 'playwright'
@@ -13,9 +13,13 @@ export type McpServerId =
   | 'qc-mcp'
   | 'tradingview'
   | 'figma'
+  | 'aquarium'
+  | 'boardroom'
   | (string & {});
 
 export type McpTransport = 'stdio' | 'sse' | 'http';
+
+export type ConnectorSource = 'claude' | 'project' | 'internal';
 
 export interface McpServerConfig {
   id: McpServerId;
@@ -31,9 +35,9 @@ export interface McpServerConfig {
   apiKeyEnvVar?: string;
   hasApiKey: boolean;
   toolCount?: number;
-  category: 'data' | 'search' | 'browser' | 'productivity' | 'social' | 'trading';
+  category: 'data' | 'search' | 'browser' | 'productivity' | 'social' | 'trading' | 'internal';
   locked?: boolean;
-  source?: 'claude' | 'project';
+  source?: ConnectorSource;
   url?: string;
 }
 

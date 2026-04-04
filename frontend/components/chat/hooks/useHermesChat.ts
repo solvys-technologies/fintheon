@@ -147,6 +147,10 @@ export function useHermesChat(
               history,
               ...(conversationId && { conversationId }),
               ...(thinkHarderRef.current && { thinkHarder: true }),
+              activeConnectors: (() => {
+                try { return JSON.parse(localStorage.getItem('fintheon:mcp-active-connectors') ?? '[]'); }
+                catch { return []; }
+              })(),
             },
           };
         }
