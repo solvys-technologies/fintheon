@@ -95,7 +95,41 @@ export function aggregateCards(
     }
   }
 
-  return aggregates;
+  return splitOversizedAggregates(aggregates);
+}
+
+const MAX_ITEMS_PER_CARD = 25;
+
+function splitOversizedAggregates(
+  aggregates: NarrativeAggregateCard[],
+): NarrativeAggregateCard[] {
+  const result: NarrativeAggregateCard[] = [];
+
+  for (const agg of aggregates) {
+    if (agg.constituentCardIds.length <= MAX_ITEMS_PER_CARD) {
+      result.push(agg);
+      continue;
+    }
+
+    const ids = agg.constituentCardIds;
+    const pageCount = Math.ceil(ids.length / MAX_ITEMS_PER_CARD);
+
+    for (let i = 0; i < pageCount; i++) {
+      const chunk = ids.slice(i * MAX_ITEMS_PER_CARD, (i + 1) * MAX_ITEMS_PER_CARD);
+      result.push({
+        ...agg,
+        id: `${agg.id}-p${i}`,
+        title: `${agg.title} ${i + 1}/${pageCount}`,
+        constituentCardIds: chunk,
+        cardCount: chunk.length,
+        siblingIndex: i,
+        siblingCount: pageCount,
+        siblingGroupId: agg.id,
+      });
+    }
+  }
+
+  return result;
 }
 
 function dominantSentiment(cards: CatalystCard[]): CatalystSentiment {

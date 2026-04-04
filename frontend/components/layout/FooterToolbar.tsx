@@ -11,9 +11,11 @@ import { EPOCH_VERSION } from '../../lib/epoch-version';
 import { ErrorLogPanel } from '../ui/ErrorLogPanel';
 import { StatusIndicator } from '../ui/StatusIndicator';
 import { TeamPanel } from '../team/TeamPanel';
-import { Users } from 'lucide-react';
+import { HarperOpsPanel } from '../harper-ops/HarperOpsPanel';
+import { useHarperOps } from '../../hooks/useHarperOps';
+import { Users, Bot } from 'lucide-react';
 
-type PanelTab = 'terminal' | 'changelog' | 'errors' | 'team';
+type PanelTab = 'terminal' | 'changelog' | 'errors' | 'team' | 'harper-ops';
 
 /** Slash-command suggestions (like Claude Code skills) for the Fintheon CLI */
 const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
@@ -391,6 +393,17 @@ export function FooterToolbar({
               <Users className="w-3 h-3" />
               Team
             </button>
+            <button
+              onClick={() => setActiveTab('harper-ops')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
+                activeTab === 'harper-ops'
+                  ? 'border-[var(--fintheon-accent)] text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/5'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Bot className="w-3 h-3" />
+              Harper Ops
+            </button>
           </div>
 
           {/* Panel content */}
@@ -466,6 +479,7 @@ export function FooterToolbar({
 
             {activeTab === 'errors' && <ErrorLogPanel />}
             {activeTab === 'team' && <TeamPanel />}
+            {activeTab === 'harper-ops' && <HarperOpsPanel />}
           </div>
         </div>
       </div>
@@ -535,6 +549,17 @@ export function FooterToolbar({
           title="Team"
         >
           <Users className="w-3 h-3" />
+        </button>
+        <button
+          onClick={() => openTab('harper-ops')}
+          className={`relative flex items-center text-[10px] transition-colors ${
+            panelOpen && activeTab === 'harper-ops'
+              ? 'text-[var(--fintheon-accent)]'
+              : 'text-zinc-600 hover:text-zinc-400'
+          }`}
+          title="Harper Ops"
+        >
+          <Bot className="w-3 h-3" />
         </button>
 
         <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />

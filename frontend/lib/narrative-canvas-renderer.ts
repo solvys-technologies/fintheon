@@ -142,24 +142,18 @@ export function drawNarrativeCard(
 
   ctx.save();
 
-  // Drop shadow
-  ctx.shadowColor = isHovered ? color : hexToRgba(color, 0.3);
-  ctx.shadowBlur = isHovered ? 20 : 12;
-  ctx.shadowOffsetY = 4;
-
-  // Card background with glassmorphism-like gradient
-  const gradient = ctx.createRadialGradient(
-    x + width / 2, y + height / 2, 0,
-    x + width / 2, y + height / 2, Math.max(width, height),
-  );
-  gradient.addColorStop(0, hexToRgba(colors.surface, 0.95));
-  gradient.addColorStop(1, hexToRgba(colors.bg, 0.85));
+  // Frosted glass: flat fill, glow only on hover
+  if (isHovered) {
+    ctx.shadowColor = hexToRgba(color, 0.25);
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 0;
+  }
 
   drawRoundedRect(ctx, x, y, width, height, radius);
-  ctx.fillStyle = gradient;
+  ctx.fillStyle = hexToRgba(colors.surface, 0.75);
   ctx.fill();
 
-  // Health ring border
+  // Reset shadow for border
   ctx.shadowColor = 'transparent';
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
@@ -224,6 +218,9 @@ export function drawRope(
   polarity: 'reinforcing' | 'contradicting',
   ropeId: string,
   now: number,
+  weight = 0.5,
+  fromColor?: string,
+  toColor?: string,
 ): void {
   const colors = getThemeColors();
   const swingOffset = getRopeSwingOffset(ropeId, now);
@@ -233,7 +230,6 @@ export function drawRope(
     0.3,
   );
 
-  // Apply swing offset to control points
   const cp1x = catenary.controlPoints[0].x + swingOffset;
   const cp2x = catenary.controlPoints[1].x + swingOffset;
 
@@ -245,10 +241,20 @@ export function drawRope(
     toX, toY,
   );
 
-  const ropeColor = polarity === 'reinforcing' ? colors.bullish : colors.bearish;
-  ctx.strokeStyle = hexToRgba(ropeColor, 0.4);
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash(polarity === 'contradicting' ? [6, 4] : []);
+  // Gradient energy line: source color -> target color
+  const srcColor = fromColor ?? (polarity === 'reinforcing' ? colors.bullish : colors.bearish);
+  const dstColor = toColor ?? srcColor;
+  const gradient = ctx.createLinearGradient(fromX, fromY, toX, toY);
+  gradient.addColorStop(0, hexToRgba(srcColor, 0.5));
+  gradient.addColorStop(1, hexToRgba(dstColor, 0.5));
+  ctx.strokeStyle = gradient;
+
+  // Width varies by weight (1-4px range)
+  ctx.lineWidth = 1 + weight * 3;
+
+  // Animated electricity dash
+  ctx.setLineDash([8, 16]);
+  ctx.lineDashOffset = -(now * 0.024) % 48;
   ctx.stroke();
   ctx.setLineDash([]);
 
@@ -257,10 +263,10 @@ export function drawRope(
   ctx.arc(
     catenary.midpoint.x + swingOffset * 0.5,
     catenary.midpoint.y,
-    3,
+    2,
     0, Math.PI * 2,
   );
-  ctx.fillStyle = hexToRgba(ropeColor, 0.6);
+  ctx.fillStyle = hexToRgba(srcColor, 0.4);
   ctx.fill();
 }
 

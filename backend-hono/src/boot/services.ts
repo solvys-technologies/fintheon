@@ -38,6 +38,7 @@ import * as projectxService from '../services/projectx-service.js';
 import { startSharedMemoryCleanup } from '../services/peers/shared-memory.js';
 import { startReflectScheduler } from '../services/autoresearch/reflect-scheduler.js';
 import { startMiroSharkDaily } from '../services/cron/miroshark-daily.js';
+import { bootHarperAutonomous } from '../services/harper-autonomous/index.js';
 
 const log = createLogger('Boot');
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -224,6 +225,11 @@ export async function bootServices(): Promise<void> {
 
   // REFLECT scheduler (04:00 UTC daily — news analysis quality self-improvement)
   startReflectScheduler();
+
+  // Harper Autonomous Loop — CAO autonomous agent (gated by HARPER_AUTONOMOUS_ENABLED=true)
+  bootHarperAutonomous().catch((err) =>
+    log.warn('Harper autonomous boot failed (non-fatal)', { error: String(err) })
+  );
 
   log.info('All services initialized');
 }

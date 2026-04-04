@@ -36,6 +36,7 @@ import {
   safeSlug,
   type SemanticNarrativeView,
 } from '../../lib/narrative-territory-layout';
+import { computeConcentricPositions, type RingCard } from '../../lib/narrative-force-layout';
 import type { CanvasTool } from './NarrativeFloatingToolbar';
 import { AggregateCardNode } from './AggregateCardNode';
 import { NarrativeHubNode } from './NarrativeHubNode';
@@ -310,6 +311,8 @@ function buildThemeView(
     groups.set(groupKey, list);
   }
 
+  const MAX_PER_CARD = 25;
+
   for (const [groupKey, groupCards] of groups) {
     const [threadSlug, month] = groupKey.split('::');
     const thread = THREAD_MAP[threadSlug];
@@ -336,30 +339,53 @@ function buildThemeView(
       cy = hub.y;
     }
 
-    const groupId = `agg-${groupKey}`;
+    // Split oversized groups into sibling cards of max 25
+    const pageCount = Math.ceil(groupCards.length / MAX_PER_CARD);
+    const baseGroupId = `agg-${groupKey}`;
+    const baseLabel = `${thread.shortTitle} — ${month}`;
 
-    nodes.push({
-      id: groupId,
-      type: 'aggregate',
-      position: { x: cx, y: cy },
-      data: {
-        label: `${thread.shortTitle} — ${month}`,
-        cards: groupCards,
-        narrativeColor: thread.color,
-        expanded: expandedGroups.has(groupId),
-        onToggle: onToggleGroup,
-        groupId,
-      },
-      draggable: true,
-    });
+    for (let page = 0; page < pageCount; page++) {
+      const chunk = groupCards.slice(page * MAX_PER_CARD, (page + 1) * MAX_PER_CARD);
+      const isSplit = pageCount > 1;
+      const groupId = isSplit ? `${baseGroupId}-p${page}` : baseGroupId;
+      const label = isSplit ? `${baseLabel} ${page + 1}/${pageCount}` : baseLabel;
 
-    edges.push({
-      id: `theme-edge-${groupId}`,
-      source: groupId,
-      target: `hub-${threadSlug}`,
-      type: 'default',
-      style: { stroke: thread.color, strokeWidth: 1, opacity: 0.15 },
-    });
+      nodes.push({
+        id: groupId,
+        type: 'aggregate',
+        position: { x: cx, y: cy + page * 80 },
+        data: {
+          label,
+          cards: chunk,
+          narrativeColor: thread.color,
+          expanded: expandedGroups.has(groupId),
+          onToggle: onToggleGroup,
+          groupId,
+          ...(isSplit ? { siblingIndex: page, siblingCount: pageCount } : {}),
+        },
+        draggable: true,
+      });
+
+      edges.push({
+        id: `theme-edge-${groupId}`,
+        source: groupId,
+        target: `hub-${threadSlug}`,
+        type: 'default',
+        style: { stroke: thread.color, strokeWidth: 1, opacity: 0.15 },
+      });
+
+      // Inter-sibling edges to keep siblings clustered
+      if (isSplit && page > 0) {
+        const prevId = `${baseGroupId}-p${page - 1}`;
+        edges.push({
+          id: `sibling-edge-${groupId}`,
+          source: prevId,
+          target: groupId,
+          type: 'default',
+          style: { stroke: thread.color, strokeWidth: 0.5, opacity: 0.08 },
+        });
+      }
+    }
   }
 
   for (const [key, count] of crossNarrativeEdges(catalysts)) {
@@ -661,17 +687,44 @@ function NarrativeFlowCanvas({
     setExpandedGroups(new Set());
     persistedPositionsRef.current.clear();
     clearSavedPositions();
-    setLoadingPhase('loading');
+
+    // Compute concentric ring positions per narrative hub
+    const newPositions = new Map<string, { x: number; y: number }>();
+
+    for (const thread of NARRATIVE_THREADS) {
+      const hub = HUB_POSITIONS[thread.slug];
+      if (!hub) continue;
+
+      const threadCards = cardsByThread.get(thread.slug) ?? [];
+      if (threadCards.length === 0) continue;
+
+      // Set hub position
+      newPositions.set(`hub-${thread.slug}`, hub);
+
+      // Build ring cards from thread catalysts
+      const ringCards: RingCard[] = threadCards.map((c) => ({
+        id: c.id,
+        severity: c.severity,
+      }));
+
+      const ring = computeConcentricPositions(hub, ringCards);
+      for (const [id, pos] of ring) {
+        newPositions.set(id, pos);
+      }
+    }
+
+    // Persist concentric positions
+    const obj: Record<string, { x: number; y: number }> = {};
+    for (const [id, pos] of newPositions) {
+      obj[id] = pos;
+    }
+    localStorage.setItem(POSITIONS_KEY, JSON.stringify(obj));
+    persistedPositionsRef.current = newPositions;
+
     const activeView = forcedView ?? currentView;
-    setTimeout(() => {
-      rebuildView(activeView);
-      setLoadingPhase('settling');
-      setTimeout(() => {
-        setLoadingPhase('ready');
-        reactFlow.fitView({ padding: 0.1, duration: 400 });
-      }, 400);
-    }, 50);
-  }, [forcedView, currentView, rebuildView, reactFlow]);
+    rebuildView(activeView);
+    setTimeout(() => reactFlow.fitView({ padding: 0.1, duration: 400 }), 100);
+  }, [forcedView, currentView, rebuildView, reactFlow, cardsByThread]);
 
   const handleNodeDragStop = useCallback((_event: React.MouseEvent, node: Node) => {
     persistedPositionsRef.current.set(node.id, node.position);

@@ -57,42 +57,36 @@
   50% { transform: scale(1.15); }
 }
 
-/* [claude-code 2026-04-04] Narrative rope shimmer — teal electricity pulse through green ropes */
-@keyframes rope-shimmer {
+/* [claude-code 2026-04-04] Gradient energy flow — electricity animation along rope paths */
+@keyframes rope-energy-flow {
   0%   { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -60; }
+  100% { stroke-dashoffset: -48; }
 }
 
-/* ReactFlow animated edges get this class — override the default animation */
+.rope-energy-line {
+  stroke-dasharray: 8 16;
+  animation: rope-energy-flow 2s linear infinite;
+}
+
+/* Stagger energy flow across ropes for organic feel */
+.rope-energy-line:nth-child(3n)   { animation-duration: 2.2s; }
+.rope-energy-line:nth-child(3n+1) { animation-duration: 1.8s; }
+.rope-energy-line:nth-child(3n+2) { animation-duration: 2.5s; }
+
+/* ReactFlow edge overrides for narrative view */
 .narrative-rope-shimmer .react-flow__edge-path {
-  stroke-dasharray: 12 48 !important;
-  animation: rope-shimmer 4s linear infinite !important;
-  filter: drop-shadow(0 0 2px rgba(20, 184, 166, 0.4));
+  stroke-dasharray: 8 16 !important;
+  animation: rope-energy-flow 3s linear infinite !important;
 }
 
-/* Brief teal flash that runs through occasionally */
-@keyframes rope-pulse {
-  0%, 85%  { filter: drop-shadow(0 0 1px rgba(20, 184, 166, 0.1)); }
-  90%      { filter: drop-shadow(0 0 6px rgba(20, 184, 166, 0.6)); }
-  95%      { filter: drop-shadow(0 0 3px rgba(20, 184, 166, 0.3)); }
-  100%     { filter: drop-shadow(0 0 1px rgba(20, 184, 166, 0.1)); }
-}
-
-.narrative-rope-shimmer .react-flow__edge-path {
-  animation:
-    rope-shimmer 4s linear infinite,
-    rope-pulse 8s ease-in-out infinite !important;
-}
-
-/* Stagger the pulse across different edges so they don't all flash at once */
 .narrative-rope-shimmer:nth-child(3n) .react-flow__edge-path {
-  animation-delay: 0s, 2.5s !important;
+  animation-duration: 3.3s !important;
 }
 .narrative-rope-shimmer:nth-child(3n+1) .react-flow__edge-path {
-  animation-delay: 0s, 5s !important;
+  animation-duration: 2.7s !important;
 }
 .narrative-rope-shimmer:nth-child(3n+2) .react-flow__edge-path {
-  animation-delay: 0s, 7.5s !important;
+  animation-duration: 3.6s !important;
 }
 
 /* [claude-code 2026-03-29] S8-UNIFY #11: TopStepX theme blending — darken Fintheon chrome ~10% */

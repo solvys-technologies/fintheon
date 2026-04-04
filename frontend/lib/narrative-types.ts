@@ -45,6 +45,9 @@ export interface NarrativeAggregateCard {
   severity: CatalystSeverity;
   sentiment: CatalystSentiment;
   cardCount: number;
+  siblingIndex?: number;
+  siblingCount?: number;
+  siblingGroupId?: string;
 }
 
 export interface CatalystCard {

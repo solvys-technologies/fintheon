@@ -18,9 +18,11 @@ import { BulletinFeed } from '../bulletin/BulletinFeed';
 import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
 import { SharedMemoryPanel } from '../memory/SharedMemoryPanel';
 import { AiLoader } from '../chat/FintheonThread';
+import { useHarperOps } from '../../hooks/useHarperOps';
 import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/miroshark';
 
 import { ChatSidebar } from '../chat/ChatSidebar';
+import { HarperActivityFeed } from './HarperActivityFeed';
 const ResearchBoard = lazy(() => import('../research/ResearchBoard'));
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -106,6 +108,7 @@ function usePanelState(key: string, defaultValue: boolean): [boolean, () => void
 
 export function ConsiliumHub() {
   const { selectedSymbol, iframeUrls, proposerIframeSources, proposerDefaultIframe } = useSettings();
+  const { status: harperStatus } = useHarperOps();
   const [proposalsView, setProposalsView] = useState<'proposals' | 'iframe'>('proposals');
   const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
   const [sanctumSubView, setSanctumSubView] = useState<SanctumSubView>('narratives');
@@ -128,6 +131,7 @@ export function ConsiliumHub() {
   const showDebate = activePanel === 'debate';
   const toggleProposals = useCallback(() => setActivePanel(prev => prev === 'proposals' ? null : 'proposals'), []);
   const toggleDebate = useCallback(() => setActivePanel(prev => prev === 'debate' ? null : 'debate'), []);
+  const [showHarperFeed, setShowHarperFeed] = useState(true);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close dropdowns on outside click
@@ -243,7 +247,7 @@ export function ConsiliumHub() {
         if (ctx.riskflowHeadlines) setRiskflowItems(ctx.riskflowHeadlines);
       }
     } catch (err) {
-      console.warn('[ConsiliumHub] Context fetch failed:', err);
+      console.error('[ConsiliumHub] Context fetch failed:', err);
     }
   }, []);
 
@@ -272,7 +276,7 @@ export function ConsiliumHub() {
           contextSnapshot: report.contextSnapshot ?? null,
         });
       } catch (err) {
-        console.warn('[ConsiliumHub] Failed to load persisted MiroShark report:', err);
+        console.error('[ConsiliumHub] Failed to load persisted MiroShark report:', err);
       }
     })();
     return () => { cancelled = true; };
@@ -290,7 +294,7 @@ export function ConsiliumHub() {
       if (staleRes.ok) {
         const { shouldRun, staleness } = await staleRes.json();
         if (!shouldRun) {
-          console.log(`[MiroShark] Recent run exists (${staleness.toFixed(1)}h ago) — loading latest`);
+          // Recent run exists — load latest instead of re-running
           const latestRes = await fetch(`${API_BASE}/api/miroshark/latest`);
           if (latestRes.ok) {
             const report = await latestRes.json();
@@ -448,6 +452,9 @@ export function ConsiliumHub() {
           >
             <Users size={13} />
             Boardroom
+            {harperStatus?.loop?.alive && (
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            )}
             <ChevronDown size={10} className={`opacity-50 transition-transform ${boardroomDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
@@ -637,7 +644,27 @@ export function ConsiliumHub() {
                   <ResearchBoard />
                 </Suspense>
               )}
-              {displayedBoardroomSub === 'agentic-chat' && <AgentChattr />}
+              {displayedBoardroomSub === 'agentic-chat' && (
+                <div className="flex h-full">
+                  <div className="flex-1 min-w-0">
+                    <AgentChattr />
+                  </div>
+                  {/* Harper Activity sidebar — matches Debate/Proposals collapsible pattern */}
+                  <div
+                    className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
+                      showHarperFeed ? 'w-80' : 'w-0 border-l-0'
+                    }`}
+                    style={{ transition: 'width 280ms var(--ease-spring), border-width 280ms' }}
+                  >
+                    <div
+                      className="w-80 h-full overflow-hidden bg-[var(--fintheon-bg)]"
+                      style={{ opacity: showHarperFeed ? 1 : 0, transition: 'opacity 200ms ease 80ms' }}
+                    >
+                      <HarperActivityFeed onCollapse={() => setShowHarperFeed(false)} />
+                    </div>
+                  </div>
+                </div>
+              )}
               {displayedBoardroomSub === 'research' && (
                 <EmbeddedBrowserFrame
                   title="Research"

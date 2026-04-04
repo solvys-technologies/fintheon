@@ -189,7 +189,32 @@ export async function addBoardroomMessage(
   // Bump session updated_at
   await sql`UPDATE boardroom_sessions SET updated_at = NOW() WHERE id = ${sessionId}`
 
-  return mapRowToMessage(result[0] as BoardroomMessageRow)
+  const dbMessage = mapRowToMessage(result[0] as BoardroomMessageRow)
+
+  // Harper autonomous observer — notify on @Harper mentions or agent disagreements
+  notifyHarperObserver(dbMessage).catch(() => {})
+
+  return dbMessage
+}
+
+/** Notify Harper's autonomous loop about boardroom messages that need attention. */
+async function notifyHarperObserver(msg: BoardroomDBMessage): Promise<void> {
+  // Only trigger on assistant messages (agent responses) or explicit @Harper mentions
+  const mentionsHarper = msg.content.toLowerCase().includes('@harper')
+  if (!mentionsHarper && msg.role !== 'assistant') return
+
+  try {
+    const { enqueueTask, isAlive } = await import('./harper-autonomous/index.js')
+    if (!isAlive()) return
+
+    if (mentionsHarper) {
+      enqueueTask({
+        type: 'consilium-intervention',
+        payload: { messageId: msg.id, agent: msg.agent, content: msg.content.slice(0, 500), reason: 'mention' },
+        priority: 'normal',
+      })
+    }
+  } catch { /* Harper autonomous not loaded */ }
 }
 
 /** Get messages for a session with optional filtering. */

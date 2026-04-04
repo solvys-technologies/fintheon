@@ -6,7 +6,7 @@ import { SignalFeed } from './SignalFeed'
 import { SessionStatusBar } from './SessionStatusBar'
 import { ProposalModal, type TradingProposal } from './ProposalModal'
 
-const API_BASE = 'http://localhost:8080'
+const API_BASE = (window as any).__FINTHEON_API_BASE__ || 'http://localhost:8080'
 
 // Types matching backend response shapes
 export interface AutopilotStatus {

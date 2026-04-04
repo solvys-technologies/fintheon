@@ -1,7 +1,7 @@
 // [claude-code 2026-03-24] Boardroom UX overhaul — removed hover discoloration, added inline copy, date+time timestamps
 // [claude-code 2026-03-26] T3: Rich @mention parsing + "show full analysis" button
 import { useState, useCallback } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Bot } from 'lucide-react';
 import { AgentBadge, type BoardroomAgent } from './AgentBadge';
 import { AgentMention, EveryoneMention } from './AgentMention';
 
@@ -84,6 +84,9 @@ export function ConsiliumMessage({ message, onShowFullAnalysis }: ConsiliumMessa
   const isBriefing = message.content.startsWith('[PRE-MARKET BRIEF]') || message.content.startsWith('[POST-MARKET BRIEF]');
   const isStandup = message.content.startsWith('[STANDUP]');
   const hasThought = !!message.metadata?.thoughtId;
+  // [claude-code 2026-04-05] Detect autonomous Harper messages
+  const isAutonomous = !!message.metadata?.autonomous;
+  const taskType = isAutonomous ? (message.metadata?.taskType as string)?.replace(/-/g, ' ').toUpperCase() : null;
 
   const handleCopy = useCallback(async () => {
     try {
@@ -115,8 +118,16 @@ export function ConsiliumMessage({ message, onShowFullAnalysis }: ConsiliumMessa
     <div
       className={`group/msg flex gap-3 px-4 py-3 ${isUser ? 'flex-row-reverse' : ''}`}
     >
-      {!isUser && <AgentBadge agent={message.agent} size="sm" />}
+      {!isUser && (
+        <div className="flex items-center gap-1">
+          <AgentBadge agent={message.agent} size="sm" autonomous={isAutonomous} />
+          {isAutonomous && <Bot size={10} className="text-emerald-400/60" />}
+        </div>
+      )}
       <div className={`flex ${maxWidth} flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}>
+        {isAutonomous && taskType && (
+          <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/70">{taskType}</span>
+        )}
         {isHuddle && (
           <span className="rounded-full border border-[#c79f4a]/30 bg-[#c79f4a]/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-[#c79f4a]">
             Huddle
@@ -132,7 +143,7 @@ export function ConsiliumMessage({ message, onShowFullAnalysis }: ConsiliumMessa
             isUser
               ? 'bg-[#c79f4a]/10 text-[#f0ead6]'
               : 'bg-[#050402] text-[#f0ead6]/90'
-          }`}
+          } ${isAutonomous && !isUser ? 'border-l-2 border-l-[var(--fintheon-accent)]/30' : ''}`}
         >
           <p className={`whitespace-pre-wrap break-words ${isStandup ? 'italic' : ''}`}>
             {renderContentWithMentions(message.content)}

@@ -75,3 +75,75 @@ export function dateToX(date: string, anchorDate: Date): number {
   const diffDays = (d.getTime() - anchorDate.getTime()) / (1000 * 60 * 60 * 24);
   return diffDays * 8; // 8px per day
 }
+
+// ── Concentric ring layout for reset/snap ────────────────────
+const RING_RADII: Record<string, number> = { high: 120, medium: 220, low: 320 };
+const GOLDEN_ANGLE = 0.618 * Math.PI;
+const SIBLING_STACK_OFFSET = 60;
+
+export interface RingCard {
+  id: string;
+  severity: 'high' | 'medium' | 'low';
+  siblingIndex?: number;
+  siblingCount?: number;
+  siblingGroupId?: string;
+}
+
+export function computeConcentricPositions(
+  hubCenter: { x: number; y: number },
+  cards: RingCard[],
+): Map<string, { x: number; y: number }> {
+  const result = new Map<string, { x: number; y: number }>();
+
+  // Partition by severity
+  const buckets: Record<string, RingCard[]> = { high: [], medium: [], low: [] };
+  for (const card of cards) {
+    buckets[card.severity].push(card);
+  }
+
+  // Deduplicate sibling groups — treat each group as one slot
+  const ringEntries: [string, RingCard[]][] = Object.entries(buckets);
+
+  for (let ringIdx = 0; ringIdx < ringEntries.length; ringIdx++) {
+    const [severity, ringCards] = ringEntries[ringIdx];
+    const radius = RING_RADII[severity];
+
+    // Group siblings together
+    const slots: RingCard[][] = [];
+    const siblingGroups = new Map<string, RingCard[]>();
+
+    for (const card of ringCards) {
+      if (card.siblingGroupId) {
+        const group = siblingGroups.get(card.siblingGroupId) ?? [];
+        group.push(card);
+        siblingGroups.set(card.siblingGroupId, group);
+      } else {
+        slots.push([card]);
+      }
+    }
+    for (const group of siblingGroups.values()) {
+      slots.push(group.sort((a, b) => (a.siblingIndex ?? 0) - (b.siblingIndex ?? 0)));
+    }
+
+    const n = slots.length;
+    if (n === 0) continue;
+
+    const angleStep = (2 * Math.PI) / n;
+    const baseAngle = ringIdx * GOLDEN_ANGLE;
+
+    for (let i = 0; i < n; i++) {
+      const angle = baseAngle + i * angleStep;
+      const slotX = hubCenter.x + radius * Math.cos(angle);
+      const slotY = hubCenter.y + radius * Math.sin(angle);
+
+      for (let s = 0; s < slots[i].length; s++) {
+        result.set(slots[i][s].id, {
+          x: slotX,
+          y: slotY + s * SIBLING_STACK_OFFSET,
+        });
+      }
+    }
+  }
+
+  return result;
+}

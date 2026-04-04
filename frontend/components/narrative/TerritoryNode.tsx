@@ -17,8 +17,10 @@ export function TerritoryNode({ data }: NodeProps & { data: TerritoryNodeData })
       style={{
         width: size,
         height: size,
-        background: `radial-gradient(circle at 50% 50%, ${color}0a 0%, ${color}04 60%, transparent 100%)`,
-        border: `1.5px solid ${color}22`,
+        background: 'rgba(10, 10, 0, 0.45)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: `1px solid ${color}15`,
         borderRadius: '50%',
         display: 'flex',
         flexDirection: 'column',
@@ -26,7 +28,6 @@ export function TerritoryNode({ data }: NodeProps & { data: TerritoryNodeData })
         justifyContent: 'center',
         position: 'relative',
         pointerEvents: 'none',
-        /* no glow animation */
       }}
     >
       <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1 }} />
@@ -38,7 +39,6 @@ export function TerritoryNode({ data }: NodeProps & { data: TerritoryNodeData })
         style={{
           textAlign: 'center',
           pointerEvents: 'none',
-          background: `radial-gradient(circle, ${color}18 0%, transparent 70%)`,
           padding: '24px 18px',
           borderRadius: '50%',
         }}

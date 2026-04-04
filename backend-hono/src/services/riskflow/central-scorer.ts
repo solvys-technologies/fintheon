@@ -415,6 +415,22 @@ export async function scoringCycle(): Promise<void> {
       }
     }
 
+    // Notify Harper autonomous loop about Level 4 items
+    for (const item of enrichedItems) {
+      if (item.macroLevel === 4) {
+        try {
+          const { enqueueTask, isAlive } = await import('../harper-autonomous/index.js');
+          if (isAlive()) {
+            enqueueTask({
+              type: 'level4-item',
+              payload: { itemId: item.id, headline: item.headline, macroLevel: item.macroLevel, source: item.source },
+              priority: 'high',
+            });
+          }
+        } catch { /* Harper autonomous not loaded */ }
+      }
+    }
+
     // S3: Auto-generate agent notes for critical items + econ data items
     const hasCritical = enrichedItems.some(i => i.macroLevel === 4);
     const hasEcon = enrichedItems.some(i => i.econData?.beatMiss);

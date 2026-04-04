@@ -1,7 +1,8 @@
-// [claude-code 2026-03-28] S5-T5: SVG rope renderer — curved bezier paths between connected cards
+// [claude-code 2026-04-04] S5-T5: SVG rope renderer — gradient energy lines between connected cards
 import { useMemo, useState } from 'react';
 import type { RopeConnection } from '../../lib/narrative-rope-engine';
 import type { CanvasViewport } from '../../lib/narrative-types';
+import { THREAD_MAP } from '../../lib/narrative-territory-layout';
 
 interface CardRect {
   x: number;
@@ -45,7 +46,12 @@ function buildPath(from: CardRect, to: CardRect): string {
   return `M ${x1} ${y1} C ${x1 + cpOffset} ${y1}, ${x2 - cpOffset} ${y2}, ${x2} ${y2}`;
 }
 
-const ROPE_GREEN = '#22C55E';
+const ACCENT_GOLD = '#D4AF37';
+
+function resolveThreadColor(narrative: string | undefined): string {
+  if (!narrative) return ACCENT_GOLD;
+  return THREAD_MAP[narrative]?.color ?? ACCENT_GOLD;
+}
 
 export default function NarrativeRopes({
   connections,
@@ -55,9 +61,7 @@ export default function NarrativeRopes({
 }: NarrativeRopesProps) {
   const [hoveredRopeId, setHoveredRopeId] = useState<string | null>(null);
 
-  // Filter to only connections where both cards have known positions and are visible
   const visibleRopes = useMemo(() => {
-    // Approximate container size (full viewport)
     const cw = typeof window !== 'undefined' ? window.innerWidth : 1920;
     const ch = typeof window !== 'undefined' ? window.innerHeight : 1080;
 
@@ -76,6 +80,28 @@ export default function NarrativeRopes({
       className="absolute inset-0 w-full h-full"
       style={{ pointerEvents: 'none', overflow: 'visible', zIndex: 1 }}
     >
+      <defs>
+        {visibleRopes.map(conn => {
+          const from = cardPositions.get(conn.fromId)!;
+          const to = cardPositions.get(conn.toId)!;
+          const fromColor = resolveThreadColor(conn.fromNarrative);
+          const toColor = resolveThreadColor(conn.toNarrative);
+          return (
+            <linearGradient
+              key={`grad-${conn.id}`}
+              id={`rope-grad-${conn.id}`}
+              x1={from.x + from.width}
+              y1={from.y + from.height / 2}
+              x2={to.x}
+              y2={to.y + to.height / 2}
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop offset="0%" stopColor={fromColor} />
+              <stop offset="100%" stopColor={toColor} />
+            </linearGradient>
+          );
+        })}
+      </defs>
       <g
         style={{
           transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`,
@@ -91,30 +117,27 @@ export default function NarrativeRopes({
             hoveredCardId === conn.fromId || hoveredCardId === conn.toId;
           const isRopeHovered = hoveredRopeId === conn.id;
 
-          // Strength maps to opacity: 0.2 = 10%, 1.0 = 40% default
           const baseOpacity = 0.1 + conn.strength * 0.3;
           const opacity = isCardHovered || isRopeHovered ? 0.8 : baseOpacity;
-          const strokeWidth = isCardHovered || isRopeHovered ? 3 : 2;
+          const baseWidth = 1 + conn.strength * 3;
+          const strokeWidth = isCardHovered || isRopeHovered ? baseWidth + 1.5 : baseWidth;
 
           return (
             <g key={conn.id}>
-              {/* Visible rope */}
               <path
                 d={path}
                 fill="none"
-                stroke={ROPE_GREEN}
+                stroke={`url(#rope-grad-${conn.id})`}
                 strokeWidth={strokeWidth}
                 opacity={opacity}
                 strokeLinecap="round"
-                className="animate-rope-draw"
+                strokeDasharray="8 16"
+                className="rope-energy-line"
                 style={{
                   willChange: 'opacity',
                   transition: 'opacity 0.2s ease, stroke-width 0.2s ease',
-                  strokeDasharray: 1000,
-                  '--rope-length': '1000',
-                } as React.CSSProperties}
+                }}
               />
-              {/* Invisible fat hit area for hover */}
               <path
                 d={path}
                 fill="none"
@@ -124,7 +147,6 @@ export default function NarrativeRopes({
                 onMouseEnter={() => setHoveredRopeId(conn.id)}
                 onMouseLeave={() => setHoveredRopeId(null)}
               />
-              {/* Tag tooltip on rope hover */}
               {isRopeHovered && (() => {
                 const mx = (from.x + from.width + to.x) / 2;
                 const my = (from.y + from.height / 2 + to.y + to.height / 2) / 2 - 16;
@@ -134,9 +156,9 @@ export default function NarrativeRopes({
                       style={{
                         fontSize: '8px',
                         fontFamily: 'monospace',
-                        color: ROPE_GREEN,
+                        color: 'var(--fintheon-accent)',
                         backgroundColor: 'rgba(5,4,2,0.9)',
-                        border: `1px solid ${ROPE_GREEN}33`,
+                        border: '1px solid #D4AF3733',
                         borderRadius: '3px',
                         padding: '2px 6px',
                         textAlign: 'center',
@@ -145,7 +167,7 @@ export default function NarrativeRopes({
                         textOverflow: 'ellipsis',
                       }}
                     >
-                      {conn.sharedTags.join(' · ')}
+                      {conn.sharedTags.join(' \u00b7 ')}
                     </div>
                   </foreignObject>
                 );

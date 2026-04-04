@@ -4,6 +4,7 @@
 // [claude-code 2026-03-28] S7: Force-directed canvas, removed Sanctum overlay (now separate view)
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useHarperOps } from '../../hooks/useHarperOps';
 import { Eye, EyeOff, ChevronDown, Calendar } from 'lucide-react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import NarrativeForceCanvas from './NarrativeForceCanvas';
@@ -21,6 +22,20 @@ import type { CatalystCard } from '../../lib/narrative-types';
 
 export function NarrativeMap() {
   const { state, snapshot, dispatch } = useNarrative();
+  // [claude-code 2026-04-05] Harper presence overlay
+  const { status: harperStatus, feed: harperFeed } = useHarperOps();
+  const [goldFlash, setGoldFlash] = useState(false);
+  const lastSynthesisRef = useRef<string | null>(null);
+  useEffect(() => {
+    const latest = harperFeed[0];
+    if (!latest || latest.id === lastSynthesisRef.current) return;
+    if ((latest.metadata as Record<string, unknown>)?.taskType === 'narrative-synthesis') {
+      lastSynthesisRef.current = latest.id;
+      setGoldFlash(true);
+      const t = setTimeout(() => setGoldFlash(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [harperFeed]);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [manageModalOpen, setManageModalOpen] = useState(false);
@@ -157,6 +172,16 @@ export function NarrativeMap() {
           onEditCard={handleEditCard}
           onZoomFnsReady={setZoomFns}
         />
+
+        {/* Harper watching overlay — bottom-left */}
+        {harperStatus?.loop?.alive && (
+          <div className="absolute bottom-3 left-3 z-40 pointer-events-none flex items-center gap-1.5 rounded-full border border-[var(--fintheon-accent)]/20 bg-[#050402]/80 backdrop-blur-sm px-2.5 py-1">
+            <span className={`h-1.5 w-1.5 rounded-full ${goldFlash ? 'bg-[#D4AF37]' : 'bg-emerald-400'} animate-pulse`} />
+            <span className="text-[10px] tracking-wider text-[#f0ead6]/40 font-mono">
+              {goldFlash ? 'FRESH SYNTHESIS' : 'HARPER WATCHING'}
+            </span>
+          </div>
+        )}
 
         {/* Narrative filters — right-justified */}
         <div className="absolute top-3 right-3 z-40 flex items-center gap-1.5">

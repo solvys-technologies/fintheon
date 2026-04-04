@@ -1,5 +1,5 @@
 // [claude-code 2026-03-19] Agent identity badge for Consilium panel
-import { Crown, Eye, Zap, Scroll, Megaphone, MessageCircle } from 'lucide-react';
+import { Crown, Eye, Zap, Scroll, Megaphone, MessageCircle, Bot } from 'lucide-react';
 
 export type BoardroomAgent = 'Harper-Opus' | 'Oracle' | 'Feucht' | 'Consul' | 'Herald' | 'Unknown';
 
@@ -22,16 +22,20 @@ const AGENT_MAP: Record<BoardroomAgent, AgentConfig> = {
 interface AgentBadgeProps {
   agent: BoardroomAgent;
   size?: 'sm' | 'md';
+  autonomous?: boolean;
 }
 
-export function AgentBadge({ agent, size = 'md' }: AgentBadgeProps) {
+export function AgentBadge({ agent, size = 'md', autonomous }: AgentBadgeProps) {
   const config = AGENT_MAP[agent] || AGENT_MAP['Unknown'];
   const Icon = config.icon;
   const iconSize = size === 'sm' ? 12 : 16;
 
   return (
     <div className="flex items-center gap-2">
-      <div className={`flex items-center justify-center rounded-full border border-[#c79f4a]/30 bg-[#0a0a00] ${size === 'sm' ? 'h-6 w-6' : 'h-8 w-8'}`}>
+      <div className={`relative flex items-center justify-center rounded-full border border-[#c79f4a]/30 bg-[#0a0a00] ${size === 'sm' ? 'h-6 w-6' : 'h-8 w-8'}`}>
+        {autonomous && agent === 'Harper-Opus' && (
+          <Bot size={8} className="absolute -top-0.5 -right-0.5 text-emerald-400" />
+        )}
         <Icon size={iconSize} className={config.accentClass} />
       </div>
       <div className="flex flex-col">

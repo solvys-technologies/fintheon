@@ -117,7 +117,7 @@ export function RiskFlowSettings() {
       setOriginalWeights(orig);
       setWeightsDirty({});
     } catch (err) {
-      console.warn('[RiskFlowSettings] Failed to fetch weights:', err);
+      console.error('[RiskFlowSettings] Failed to fetch weights:', err);
     } finally {
       setWeightsLoading(false);
     }
@@ -129,7 +129,7 @@ export function RiskFlowSettings() {
       const data = await res.json();
       setRegime(data);
     } catch (err) {
-      console.warn('[RiskFlowSettings] Failed to fetch regime:', err);
+      console.error('[RiskFlowSettings] Failed to fetch regime:', err);
     } finally {
       setRegimeLoading(false);
     }
@@ -141,7 +141,7 @@ export function RiskFlowSettings() {
       const data = await res.json();
       setRegistry(data.registry ?? []);
     } catch (err) {
-      console.warn('[RiskFlowSettings] Failed to fetch commentators:', err);
+      console.error('[RiskFlowSettings] Failed to fetch commentators:', err);
     } finally {
       setCommentatorsLoading(false);
     }

@@ -29,3 +29,13 @@ secrets.env
 .env.development
 .env.local.db
 .firecrawl/
+
+# Media / runtime artifacts
+Video Footage/
+video/
+backend-hono/logs/
+execution-bridge/.venv/
+supabase/.temp/
+fintheon-debug-sprint/
+agentic-refactor-plan-v2/
+frontend/public/halftone-heroes/

@@ -17,6 +17,8 @@ export interface AggregateCardNodeData {
   expanded: boolean;
   groupId: string;
   onToggle?: (id: string) => void;
+  siblingIndex?: number;
+  siblingCount?: number;
 }
 
 function sentimentDisplay(card: CatalystCard): 'bullish' | 'bearish' | 'neutral' {
@@ -29,7 +31,7 @@ function sentimentDisplay(card: CatalystCard): 'bullish' | 'bearish' | 'neutral'
 export const AggregateCardNode = memo(function AggregateCardNode({
   data,
 }: NodeProps & { data: AggregateCardNodeData }) {
-  const { label, cards, narrativeColor, expanded, onToggle, groupId } = data;
+  const { label, cards, narrativeColor, expanded, onToggle, groupId, siblingIndex, siblingCount } = data;
 
   const sortedCards = useMemo(
     () => [...cards].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')),
@@ -128,6 +130,22 @@ export const AggregateCardNode = memo(function AggregateCardNode({
             >
               {dateRange}
             </span>
+            {siblingCount != null && siblingCount > 1 && (
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  color: narrativeColor,
+                  fontFamily: 'var(--font-mono)',
+                  background: `${narrativeColor}12`,
+                  padding: '1px 5px',
+                  borderRadius: 3,
+                  opacity: 0.8,
+                }}
+              >
+                {(siblingIndex ?? 0) + 1}/{siblingCount}
+              </span>
+            )}
           </div>
         </div>
 
