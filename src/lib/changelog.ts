@@ -11,7 +11,7 @@ export const changelog: ChangelogEntry[] = [
   {
     date: '2026-04-04T06:00:00',
     agent: 'claude-code',
-    summary: 'T1 Default Connectors: Added 3 internal connectors (RiskFlow always-on, Aquarium, Boardroom) + Unusual Whales MCP server. Internal connectors appear in ToolsDropdown under new "Internal" category, inject context into Harper system prompt when active. Aquarium pulls latest MiroShark simulation; Boardroom activates structured Desk-wide investigation mode. Removed Close CRM from project .mcp.json. Frontend types extended with ConnectorSource and internal category.',
+    summary: 'T1 Default Connectors + T2 Chat Icons: Internal connectors (RiskFlow, Aquarium, Boardroom) + Unusual Whales MCP. Chat icons restored to Consilium toolbar row, right-justified when Chat active.',
     files: [
       'frontend/types/mcp.ts',
       'frontend/lib/internalConnectors.ts',
@@ -21,6 +21,8 @@ export const changelog: ChangelogEntry[] = [
       'backend-hono/src/routes/mcp/index.ts',
       'backend-hono/src/routes/harper/index.ts',
       'backend-hono/src/services/harper-handler.ts',
+      'frontend/components/consilium/ConsiliumHub.tsx',
+      'frontend/components/chat/ChatSidebar.tsx',
       '.mcp.json',
     ],
   },
