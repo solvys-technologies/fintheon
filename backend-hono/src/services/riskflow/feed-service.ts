@@ -591,17 +591,37 @@ export async function rescoreInMemoryFeed(): Promise<number> {
     return 0;
   }
 
-  log.info(`rescoreInMemoryFeed: re-enriching ${items.length} cached items`);
-  const reEnriched = await enrichFeedWithAnalysis(items);
-  updateFeedCache(reEnriched);
+  log.info(`rescoreInMemoryFeed: recalculating macro levels for ${items.length} cached items (no AI re-analysis)`);
 
-  // Also update the database cache
-  await newsCache.storeFeedItems(reEnriched).catch((err: unknown) =>
-    log.warn('rescoreInMemoryFeed: failed to persist to DB cache', { error: String(err) })
-  );
+  // Recalculate macro levels using current calibration weights + existing ivScore
+  // This is fast — no AI calls, no VIX fetch, just weight math
+  const rescored = items.map((item) => {
+    try {
+      const ivScore = item.ivScore ?? 0;
+      const fjEmojiTier = fjTierFromEmoji(extractFJEmojiFromText(item.headline));
+      const riskType = item.riskType ?? 'default';
+      const keywordMatches = getMatchedKeywords(item.headline);
 
-  log.info(`rescoreInMemoryFeed: done — ${reEnriched.length} items updated`);
-  return reEnriched.length;
+      const macroLevel = assignMacroLevel({
+        ivScore,
+        fjEmojiTier,
+        riskType,
+        keywordMatches,
+        urgencySignals: item.isBreaking ? 2 : 0,
+      });
+
+      return {
+        ...item,
+        macroLevel: macroLevel ?? item.macroLevel,
+      };
+    } catch {
+      return item;
+    }
+  });
+
+  updateFeedCache(rescored);
+  log.info(`rescoreInMemoryFeed: done — ${rescored.length} items rescored`);
+  return rescored.length;
 }
 
 /**
