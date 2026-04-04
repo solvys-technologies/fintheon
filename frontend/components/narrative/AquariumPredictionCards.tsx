@@ -1,3 +1,4 @@
+// [claude-code 2026-04-04] Persist last prediction to localStorage — shows instantly on startup, refreshes in background
 // [claude-code 2026-03-31] Added 120s polling interval (was static one-time fetch)
 // [claude-code 2026-03-28] S7: 5 forward-looking prediction cards under TradingView in Aquarium
 import { useState, useEffect, useRef } from 'react';
@@ -41,9 +42,23 @@ function IVHeatBar({ score }: { score: number }) {
   );
 }
 
+const CACHE_KEY = 'fintheon:aquarium-predictions';
+
+function loadCachedOutlook(): InstrumentOutlook[] {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function cacheOutlook(data: InstrumentOutlook[]): void {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* silent */ }
+}
+
 export function AquariumPredictionCards() {
-  const [outlook, setOutlook] = useState<InstrumentOutlook[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = loadCachedOutlook();
+  const [outlook, setOutlook] = useState<InstrumentOutlook[]>(cached);
+  const [loading, setLoading] = useState(cached.length === 0);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -55,7 +70,11 @@ export function AquariumPredictionCards() {
         const res = await fetch(`${API_BASE}/api/predictions/outlook`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        if (!cancelled) setOutlook(data.instruments ?? []);
+        const instruments = data.instruments ?? [];
+        if (!cancelled && instruments.length > 0) {
+          setOutlook(instruments);
+          cacheOutlook(instruments);
+        }
       } catch (err) {
         console.warn('[Predictions] fetch failed:', err);
       } finally {
@@ -63,7 +82,7 @@ export function AquariumPredictionCards() {
       }
     };
 
-    // Initial fetch
+    // Background fetch (cached data already showing if available)
     fetchOutlook();
 
     // Poll every 120s when tab is visible

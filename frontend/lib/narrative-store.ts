@@ -1,3 +1,4 @@
+// [claude-code 2026-04-04] Cloud persistence: NarrativeFlow state syncs to Supabase app_state (survives refresh/reboot)
 // [claude-code 2026-03-31] Restored simple catalyst normalization (removed auto-classify/auto-purge)
 // [claude-code 2026-03-30] Wire DB narrative_threads as lane source of truth, enrich catalysts with card-links
 // [claude-code 2026-03-29] S9-T5-T1: Normalize catalyst tags/narrative fields on load for rope engine
@@ -76,6 +77,73 @@ export function saveNarrativeState(state: NarrativeFlowState): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
     // silent
+  }
+}
+
+// ── Cloud persistence (Supabase app_state) ────────────────────────
+
+const CLOUD_KEY = 'narrative_layout';
+const CLOUD_DEBOUNCE_MS = 2000;
+
+/** Persist layout-relevant state to Supabase via /api/profile/app-state. */
+async function saveNarrativeToCloud(
+  state: NarrativeFlowState,
+  getAccessToken: () => Promise<string | null>,
+): Promise<void> {
+  try {
+    const token = await getAccessToken();
+    if (!token) return;
+
+    // Only persist layout-meaningful fields (not transient UI state)
+    const payload = {
+      ropes: state.ropes,
+      viewport: state.viewport,
+      zoomLevel: state.zoomLevel,
+      currentWeekStart: state.currentWeekStart,
+      filterSentiment: state.filterSentiment,
+      heatmapEnabled: state.heatmapEnabled,
+      dateFilter: state.dateFilter,
+      agentProvider: state.agentProvider,
+    };
+
+    await fetch(`${API_BASE}/api/profile/app-state`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ state: { [CLOUD_KEY]: payload } }),
+    });
+  } catch {
+    // Silent — localStorage is fallback
+  }
+}
+
+/** Load layout state from Supabase cloud. Returns null if unavailable. */
+async function loadNarrativeFromCloud(
+  getAccessToken: () => Promise<string | null>,
+): Promise<Partial<NarrativeFlowState> | null> {
+  try {
+    const token = await getAccessToken();
+    if (!token) return null;
+
+    const res = await fetch(`${API_BASE}/api/profile/app-state`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json() as Record<string, unknown>;
+    const cloud = data?.[CLOUD_KEY] as Record<string, unknown> | undefined;
+    if (!cloud) return null;
+
+    return {
+      ropes: (cloud.ropes as Rope[]) ?? [],
+      viewport: (cloud.viewport as CanvasViewport) ?? DEFAULT_VIEWPORT,
+      zoomLevel: (cloud.zoomLevel as NarrativeFlowState['zoomLevel']) ?? 'week',
+      currentWeekStart: (cloud.currentWeekStart as string) ?? undefined,
+      filterSentiment: (cloud.filterSentiment as NarrativeFlowState['filterSentiment']) ?? 'all',
+      heatmapEnabled: (cloud.heatmapEnabled as boolean) ?? false,
+      dateFilter: (cloud.dateFilter as NarrativeFlowState['dateFilter']) ?? null,
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -429,22 +497,51 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
 
 const DESTRUCTIVE_ACTIONS = new Set(['REMOVE_LANE', 'REMOVE_CATALYST', 'REMOVE_ROPE', 'RESTORE_SNAPSHOT']);
 
-export function useNarrativeStore() {
+export function useNarrativeStore(getAccessToken?: () => Promise<string | null>) {
   const [state, setState] = useState<NarrativeFlowState>(loadNarrativeState);
   const [snapshot, setSnapshot] = useState<NarrativeSnapshot | null>(loadSnapshot);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cloudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dbLoadedRef = useRef(false);
+  const cloudLoadedRef = useRef(false);
+  const getTokenRef = useRef(getAccessToken);
+  getTokenRef.current = getAccessToken;
 
-  // Debounced persist
+  // Debounced persist — localStorage (fast) + cloud (debounced)
   const scheduleSave = useCallback((s: NarrativeFlowState) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => saveNarrativeState(s), 500);
+
+    // Cloud persist with longer debounce
+    if (cloudTimerRef.current) clearTimeout(cloudTimerRef.current);
+    cloudTimerRef.current = setTimeout(() => {
+      if (getTokenRef.current) saveNarrativeToCloud(s, getTokenRef.current);
+    }, CLOUD_DEBOUNCE_MS);
   }, []);
 
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (cloudTimerRef.current) clearTimeout(cloudTimerRef.current);
     };
+  }, []);
+
+  // Load layout from cloud on mount (cloud overrides localStorage for ropes/viewport/filters)
+  useEffect(() => {
+    if (cloudLoadedRef.current || !getTokenRef.current) return;
+    cloudLoadedRef.current = true;
+
+    (async () => {
+      const cloud = await loadNarrativeFromCloud(getTokenRef.current!);
+      if (!cloud) return;
+
+      setState(prev => {
+        const next = { ...prev, ...cloud };
+        // Write back to localStorage so offline has latest cloud state
+        saveNarrativeState(next);
+        return next;
+      });
+    })();
   }, []);
 
   // Track last fetch timestamp for incremental polling

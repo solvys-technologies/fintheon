@@ -2,35 +2,184 @@
 # ============================================================================
 # Fintheon CLI — repo-level entry point
 # ============================================================================
-# After cloning, run:  ./fintheon install
-# After install:       fintheon start | stop | update | logs
+# First time:   ./fintheon install
+# After that:   fintheon start | stop | update | logs
 # ============================================================================
 
 FINTHEON_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
+ok()   { echo "  ✓ $1"; }
+warn() { echo "  ⚠ $1"; }
+fail() { echo "  ✗ $1"; exit 1; }
+info() { echo "  · $1"; }
+
+# Public bootstrap constants (NOT secrets — vault handles the rest)
+_SUPABASE_URL="https://nrcfnzclbjboctptxaxx.supabase.co"
+_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yY2ZuemNsYmpib2N0cHR4YXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDgxODksImV4cCI6MjA4OTUyNDE4OX0.JXzVk5CDL6rxU5t_rl-Ku2YnPi0PeBF-VOpcSEZTbIM"
+_DATABASE_URL="postgresql://postgres.nrcfnzclbjboctptxaxx:Pricedinresearch0670963957%24@aws-0-us-west-2.pooler.supabase.com:5432/postgres"
+
+do_install() {
+  echo ""
+  echo "  FINTHEON INSTALL"
+  echo "  ─────────────────────────────────"
+  echo "  No API keys needed. Sign in with Google."
+  echo ""
+
+  # ── Dev tools ──────────────────────────────────────────────────────
+
+  info "Checking dev tools..."
+
+  # Homebrew
+  if ! command -v brew &>/dev/null; then
+    info "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if [[ -f /opt/homebrew/bin/brew ]]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+      SHELL_PROFILE="$HOME/.zprofile"
+      grep -q 'brew shellenv' "$SHELL_PROFILE" 2>/dev/null || \
+        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$SHELL_PROFILE"
+    fi
+  fi
+  ok "Homebrew"
+
+  # Node.js
+  if command -v node &>/dev/null; then
+    NODE_MAJOR=$(node --version | sed 's/v//' | cut -d. -f1)
+    if [[ "$NODE_MAJOR" -lt 20 ]]; then
+      brew install node@22 && brew link --overwrite node@22 2>/dev/null || true
+    fi
+  else
+    brew install node@22 && brew link --overwrite node@22 2>/dev/null || true
+  fi
+  ok "Node.js $(node --version)"
+
+  # Bun
+  if ! command -v bun &>/dev/null; then
+    curl -fsSL https://bun.sh/install | bash
+    export BUN_INSTALL="$HOME/.bun"
+    export PATH="$BUN_INSTALL/bin:$PATH"
+    SHELL_PROFILE="$HOME/.zprofile"
+    grep -q '.bun/bin' "$SHELL_PROFILE" 2>/dev/null || {
+      echo 'export BUN_INSTALL="$HOME/.bun"' >> "$SHELL_PROFILE"
+      echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> "$SHELL_PROFILE"
+    }
+  fi
+  ok "Bun $(bun --version)"
+
+  # ── Dependencies ───────────────────────────────────────────────────
+
+  info "Installing dependencies..."
+  cd "$FINTHEON_ROOT"
+  bun install 2>/dev/null || bun install
+  ok "Root deps"
+
+  cd "$FINTHEON_ROOT/backend-hono" && (bun install 2>/dev/null || bun install)
+  cd "$FINTHEON_ROOT"
+  ok "Backend deps"
+
+  if [[ -d frontend && -f frontend/package.json ]]; then
+    cd "$FINTHEON_ROOT/frontend" && (bun install 2>/dev/null || bun install)
+    cd "$FINTHEON_ROOT"
+    ok "Frontend deps"
+  fi
+
+  # ── Bootstrap .env ─────────────────────────────────────────────────
+
+  BACKEND_ENV="$FINTHEON_ROOT/backend-hono/.env"
+  if [[ -f "$BACKEND_ENV" ]]; then
+    grep -q "^DATABASE_URL=" "$BACKEND_ENV" || echo "DATABASE_URL=$_DATABASE_URL" >> "$BACKEND_ENV"
+    grep -q "^SUPABASE_URL=" "$BACKEND_ENV" || echo "SUPABASE_URL=$_SUPABASE_URL" >> "$BACKEND_ENV"
+    grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" || echo "SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY" >> "$BACKEND_ENV"
+    grep -q "^PORT=" "$BACKEND_ENV" || echo "PORT=8080" >> "$BACKEND_ENV"
+    grep -q "^ENABLE_CENTRAL_SCORING=" "$BACKEND_ENV" || echo "ENABLE_CENTRAL_SCORING=true" >> "$BACKEND_ENV"
+    ok "Existing .env updated"
+  else
+    cat > "$BACKEND_ENV" << ENVEOF
+# Fintheon Backend — Bootstrap Environment
+# Secrets are loaded from the cloud vault on boot. No API keys needed here.
+PORT=8080
+DATABASE_URL=$_DATABASE_URL
+SUPABASE_URL=$_SUPABASE_URL
+SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY
+ENABLE_CENTRAL_SCORING=true
+DISPATCH_SCHEDULER_ENABLED=true
+ENVEOF
+    ok "Bootstrap .env created"
+  fi
+
+  FRONTEND_ENV="$FINTHEON_ROOT/frontend/.env.local"
+  if [[ ! -f "$FRONTEND_ENV" ]]; then
+    cat > "$FRONTEND_ENV" << FENVEOF
+VITE_API_URL=http://localhost:8080
+VITE_SUPABASE_URL=$_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY
+VITE_BYPASS_AUTH=false
+FENVEOF
+    ok "Frontend .env.local created"
+  fi
+
+  # ── Build ──────────────────────────────────────────────────────────
+
+  info "Building..."
+  cd "$FINTHEON_ROOT/backend-hono"
+  bun run build 2>&1 | tail -1 && ok "Backend compiled" || warn "Backend build had issues"
+  cd "$FINTHEON_ROOT"
+  npx vite build 2>&1 | tail -1 && ok "Frontend built" || warn "Frontend build had issues"
+
+  # ── Install CLI globally ───────────────────────────────────────────
+
+  sudo mkdir -p /usr/local/bin 2>/dev/null || true
+  sudo ln -sf "$FINTHEON_ROOT/fintheon" /usr/local/bin/fintheon
+  sudo chmod +x /usr/local/bin/fintheon
+  ok "'fintheon' command available globally"
+
+  # ── Start ──────────────────────────────────────────────────────────
+
+  do_start
+
+  echo ""
+  echo "  ╔══════════════════════════════════════════════════════╗"
+  echo "  ║  FINTHEON IS READY                                   ║"
+  echo "  ║                                                      ║"
+  echo "  ║  Backend:  http://localhost:8080                     ║"
+  echo "  ║  CLI:      fintheon start | stop | update | logs     ║"
+  echo "  ║                                                      ║"
+  echo "  ║  Open the app and sign in with Google.               ║"
+  echo "  ╚══════════════════════════════════════════════════════╝"
+  echo ""
+}
+
+do_start() {
+  echo "  Starting Fintheon..."
+  cd "$FINTHEON_ROOT/backend-hono"
+  lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+  sleep 1
+  nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
+  local pid=$!
+  for i in {1..10}; do
+    if curl -s localhost:8080/health > /dev/null 2>&1; then
+      ok "Backend live (PID: $pid)"
+      break
+    fi
+    sleep 2
+    if [[ $i -eq 10 ]]; then
+      warn "Backend slow — check: tail -f /tmp/fintheon-backend.log"
+    fi
+  done
+  if [[ -d /Applications/Fintheon.app ]]; then
+    open /Applications/Fintheon.app 2>/dev/null || true
+  fi
+}
+
 case "${1:-help}" in
   install|setup)
-    bash "$FINTHEON_ROOT/scripts/fintheon-setup.sh"
+    do_install
     ;;
   update)
     bash "$FINTHEON_ROOT/scripts/fintheon-update.sh"
     ;;
   start)
-    echo "  Starting Fintheon..."
-    cd "$FINTHEON_ROOT/backend-hono"
-    lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-    sleep 1
-    nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
-    echo "  Backend PID: $!"
-    sleep 3
-    if curl -s localhost:8080/health > /dev/null 2>&1; then
-      echo "  ✓ Backend live"
-    else
-      echo "  · Waiting... check: tail -f /tmp/fintheon-backend.log"
-    fi
-    if [[ -d /Applications/Fintheon.app ]]; then
-      open /Applications/Fintheon.app 2>/dev/null || true
-    fi
+    do_start
     ;;
   stop)
     echo "  Stopping Fintheon..."
@@ -42,7 +191,7 @@ case "${1:-help}" in
   restart)
     "$0" stop
     sleep 1
-    "$0" start
+    do_start
     ;;
   logs)
     tail -f /tmp/fintheon-backend.log

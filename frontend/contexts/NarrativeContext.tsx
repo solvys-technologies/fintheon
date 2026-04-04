@@ -1,6 +1,8 @@
+// [claude-code 2026-04-04] Cloud sync: pass getAccessToken to store for Supabase persistence
 // [claude-code 2026-03-06] NarrativeFlow React context — wraps store, exposes derived state
 import React, { createContext, useContext, useMemo } from 'react';
 import { useNarrativeStore } from '../lib/narrative-store';
+import { useAuth } from './AuthContext';
 import { calculateHealthScore } from '../lib/narrative-health';
 import { isSameDay } from '../lib/narrative-time';
 import type {
@@ -29,7 +31,8 @@ interface NarrativeContextValue {
 const NarrativeCtx = createContext<NarrativeContextValue | null>(null);
 
 export function NarrativeProvider({ children }: { children: React.ReactNode }) {
-  const { state, snapshot, dispatch } = useNarrativeStore();
+  const { getAccessToken } = useAuth();
+  const { state, snapshot, dispatch } = useNarrativeStore(getAccessToken);
 
   const catalystsForDay = useMemo(
     () => (date: Date) => state.catalysts.filter((c) => isSameDay(new Date(c.date), date)),
