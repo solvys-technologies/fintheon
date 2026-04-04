@@ -142,12 +142,15 @@ HERMESEOF
     warn "Twitter CLI install failed — install manually: uv tool install twitter-cli"
   fi
 
-  # VProxy (Anthropic OAuth gateway)
+  # VProxy (Anthropic OAuth gateway — downloads app, opens browser for one-click Anthropic login)
   if [[ -f "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" ]]; then
     info "Setting up VProxy Anthropic OAuth..."
-    bash "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" --yes 2>/dev/null && \
-      ok "VProxy Anthropic OAuth configured" || \
-      warn "VProxy setup skipped — run later: fintheon oauth"
+    info "This will open your browser for Anthropic login — click Allow when prompted."
+    if bash "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" --yes; then
+      ok "VProxy Anthropic OAuth configured"
+    else
+      warn "VProxy setup needs attention — run: fintheon oauth"
+    fi
   fi
 
   # ── 3. JS dependencies ────────────────────────────────────────────
@@ -176,6 +179,14 @@ HERMESEOF
     grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" || echo "SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY" >> "$BACKEND_ENV"
     grep -q "^PORT=" "$BACKEND_ENV" || echo "PORT=8080" >> "$BACKEND_ENV"
     grep -q "^ENABLE_CENTRAL_SCORING=" "$BACKEND_ENV" || echo "ENABLE_CENTRAL_SCORING=true" >> "$BACKEND_ENV"
+    grep -q "^USE_VPROXY_ANTHROPIC=" "$BACKEND_ENV" || echo "USE_VPROXY_ANTHROPIC=true" >> "$BACKEND_ENV"
+    grep -q "^VPROXY_BASE_URL=" "$BACKEND_ENV" || echo "VPROXY_BASE_URL=http://localhost:8317" >> "$BACKEND_ENV"
+    grep -q "^VPROXY_API_KEY=" "$BACKEND_ENV" || echo "VPROXY_API_KEY=CLI_PROXY_API_KEY" >> "$BACKEND_ENV"
+    grep -q "^VPROXY_ANTHROPIC_MODEL=" "$BACKEND_ENV" || echo "VPROXY_ANTHROPIC_MODEL=claude-opus-4.6" >> "$BACKEND_ENV"
+    grep -q "^AI_PRIMARY_PROVIDER=" "$BACKEND_ENV" || echo "AI_PRIMARY_PROVIDER=hermes" >> "$BACKEND_ENV"
+    grep -q "^DISPATCH_SCHEDULER_ENABLED=" "$BACKEND_ENV" || echo "DISPATCH_SCHEDULER_ENABLED=true" >> "$BACKEND_ENV"
+    grep -q "^HERMES_BOARDROOM_CRON=" "$BACKEND_ENV" || echo "HERMES_BOARDROOM_CRON=0,30 7-9 * * 1-5" >> "$BACKEND_ENV"
+    grep -q "^HERMES_BOARDROOM_TZ=" "$BACKEND_ENV" || echo "HERMES_BOARDROOM_TZ=America/New_York" >> "$BACKEND_ENV"
     ok "Existing .env updated"
   else
     cat > "$BACKEND_ENV" << ENVEOF
@@ -187,6 +198,21 @@ SUPABASE_URL=$_SUPABASE_URL
 SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY
 ENABLE_CENTRAL_SCORING=true
 DISPATCH_SCHEDULER_ENABLED=true
+
+# Harper Anthropic via VProxy (local OAuth gateway)
+USE_VPROXY_ANTHROPIC=true
+VPROXY_BASE_URL=http://localhost:8317
+VPROXY_API_KEY=CLI_PROXY_API_KEY
+VPROXY_ANTHROPIC_MODEL=claude-opus-4.6
+AI_PRIMARY_PROVIDER=hermes
+
+# Scheduling (ET)
+HERMES_BOARDROOM_CRON=0,30 7-9 * * 1-5
+HERMES_BOARDROOM_TZ=America/New_York
+BOARDROOM_MEETING_WINDOW_MINUTES=90
+BOARDROOM_MEETING_HOUR_LOCAL=10
+HERMES_PREMARKET_CRON=0 8 * * 1-5
+HERMES_POSTMARKET_CRON=30 16 * * 1-5
 ENVEOF
     ok "Bootstrap .env created"
   fi
