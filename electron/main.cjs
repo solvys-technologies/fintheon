@@ -379,40 +379,52 @@ app.whenReady().then(async () => {
           return { action: "deny" };
         });
 
-        // Intercept in-page navigations to Google OAuth inside webviews —
+        // Intercept navigations to Google OAuth inside webviews —
         // Google blocks sign-in in embedded frames. Open in a popup instead.
-        contents.on("will-navigate", (navEvent, navUrl) => {
+        // Use both will-navigate and did-start-navigation for full coverage:
+        // will-navigate catches same-frame navigations, did-start-navigation
+        // catches cross-origin form POSTs and redirects that will-navigate misses.
+        const openGooglePopup = (navUrl) => {
           try {
             const parsed = new URL(navUrl);
-            if (parsed.hostname === "accounts.google.com") {
-              navEvent.preventDefault();
-              const popup = new BrowserWindow({
-                width: 520,
-                height: 760,
-                parent: mainWindow ?? undefined,
-                modal: false,
-                title: "Sign in with Google",
-                webPreferences: {
-                  contextIsolation: true,
-                  nodeIntegration: false,
-                  nativeWindowOpen: true,
-                  partition: "persist:fintheon",
-                },
-              });
-              popup.loadURL(navUrl);
-              // When Google redirects back to the service, close the popup
-              popup.webContents.on("will-redirect", (_rEvent, redirectUrl) => {
-                try {
-                  const rParsed = new URL(redirectUrl);
-                  if (rParsed.hostname !== "accounts.google.com" &&
-                      !rParsed.hostname.endsWith(".google.com")) {
-                    // Auth complete — redirect happened back to the service
-                    setTimeout(() => popup.close(), 1500);
-                  }
-                } catch {}
-              });
-            }
-          } catch {}
+            if (parsed.hostname !== "accounts.google.com") return false;
+            const popup = new BrowserWindow({
+              width: 520,
+              height: 760,
+              parent: mainWindow ?? undefined,
+              modal: false,
+              title: "Sign in with Google",
+              webPreferences: {
+                contextIsolation: true,
+                nodeIntegration: false,
+                nativeWindowOpen: true,
+                partition: "persist:fintheon",
+              },
+            });
+            popup.loadURL(navUrl);
+            // When Google redirects back to the service, close the popup
+            popup.webContents.on("will-redirect", (_rEvent, redirectUrl) => {
+              try {
+                const rParsed = new URL(redirectUrl);
+                if (rParsed.hostname !== "accounts.google.com" &&
+                    !rParsed.hostname.endsWith(".google.com")) {
+                  setTimeout(() => popup.close(), 1500);
+                }
+              } catch {}
+            });
+            return true;
+          } catch { return false; }
+        };
+
+        contents.on("will-navigate", (navEvent, navUrl) => {
+          if (openGooglePopup(navUrl)) navEvent.preventDefault();
+        });
+
+        contents.on("did-start-navigation", (_navEvent, navUrl, isInPlace, isMainFrame) => {
+          if (isMainFrame && openGooglePopup(navUrl)) {
+            // Navigate back to the original page to undo the in-frame redirect
+            try { contents.goBack(); } catch {}
+          }
         });
       }
     } catch {
