@@ -1,27 +1,17 @@
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
 // [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Layers, Clock, Loader2 } from 'lucide-react';
+import { X, Layers } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { useFintheonAgents } from '../contexts/FintheonAgentContext';
 import { useHermesRuntime } from './chat/useHermesRuntime';
 import { ChatHeader } from './chat/ChatHeader';
 import { FintheonThread, AiLoader } from './chat/FintheonThread';
 import { FintheonComposer } from './chat/FintheonComposer';
+import { SessionsModal } from './chat/SessionsModal';
 import { SKILL_PREFIXES } from '../lib/skillPrefixes';
 import QuickFintheonModal from './analysis/QuickFintheonModal';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-
-interface ConversationSummary {
-  id: string;
-  title: string;
-  messageCount: number;
-  lastMessageAt: string;
-  model?: string;
-  isArchived: boolean;
-}
 
 function ChatInterfaceInner({ conversationId, setConversationId, clearConversationId, lastError, thinkHarder, setThinkHarder, lastRequestId, dualPane = false }: { conversationId: string | undefined; setConversationId: (id: string) => void; clearConversationId: () => void; lastError: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void; lastRequestId: string | null; dualPane?: boolean }) {
   const { activeAgent } = useFintheonAgents();
@@ -32,22 +22,9 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
   const [showSkills, setShowSkills] = useState(false);
   const { disabledSkills } = useFeatureFlags();
   const [showSessions, setShowSessions] = useState(false);
-  const [sessions, setSessions] = useState<ConversationSummary[]>([]);
-  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [showQuickFintheonModal] = useState(false);
   const [showArtifacts, setShowArtifacts] = useState(false);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  // Fetch conversations when sessions panel opens
-  useEffect(() => {
-    if (!showSessions) return;
-    setSessionsLoading(true);
-    fetch(`${API_BASE}/api/ai/conversations`)
-      .then(r => r.json())
-      .then(data => setSessions(data.conversations ?? []))
-      .catch(() => setSessions([]))
-      .finally(() => setSessionsLoading(false));
-  }, [showSessions]);
 
   const handleSend = useCallback((msg: string) => {
     runtime.append({ role: 'user', content: [{ type: 'text', text: msg }] });
@@ -152,65 +129,16 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
           </div>
         )}
 
-        {/* Sessions sidebar */}
-        <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showSessions ? 'w-80 border-l border-[var(--fintheon-accent)]/20' : 'w-0'}`}>
-          <div className="w-80 h-full flex flex-col bg-[var(--fintheon-surface)]">
-            <div className="h-12 border-b border-[var(--fintheon-accent)]/15 flex items-center justify-between px-4">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[var(--fintheon-accent)]" />
-                <h2 className="text-sm font-semibold text-[var(--fintheon-accent)] tracking-wide">Sessions</h2>
-              </div>
-              <button onClick={() => setShowSessions(false)} className="p-1.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors">
-                <X className="w-4 h-4 text-[var(--fintheon-accent)]/70" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              {sessionsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-4 h-4 animate-spin text-[var(--fintheon-accent)]/40" />
-                </div>
-              ) : sessions.length === 0 ? (
-                <div className="text-center text-zinc-600 text-[11px] py-8 px-4">
-                  No sessions yet. Start a conversation.
-                </div>
-              ) : (
-                sessions.map(session => (
-                  <button
-                    key={session.id}
-                    onClick={() => {
-                      setConversationId(session.id);
-                      setShowSessions(false);
-                    }}
-                    className={`w-full text-left px-4 py-3 border-b border-white/5 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
-                      conversationId === session.id ? 'bg-[var(--fintheon-accent)]/10' : ''
-                    }`}
-                  >
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-[12px] text-[var(--fintheon-text)] font-medium truncate">
-                        {session.title}
-                      </span>
-                      <span className="text-[9px] text-zinc-600 shrink-0 tabular-nums">
-                        {new Date(session.lastMessageAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[9px] text-zinc-600">{session.messageCount} messages</span>
-                      {session.model && (
-                        <span className="text-[8px] text-[var(--fintheon-accent)]/40 font-mono">{session.model}</span>
-                      )}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-
-            <div className="px-4 py-2 border-t border-white/5 text-[9px] text-zinc-600 text-center">
-              {sessions.length} session{sessions.length !== 1 ? 's' : ''}
-            </div>
-          </div>
-        </div>
       </div>
+
+      {/* Sessions modal — centered overlay */}
+      <SessionsModal
+        isOpen={showSessions}
+        onClose={() => setShowSessions(false)}
+        onSelectSession={(id) => { setConversationId(id); setShowSessions(false); }}
+        onNewSession={() => { clearConversationId(); setShowSessions(false); }}
+        currentConversationId={conversationId}
+      />
 
       <QuickFintheonModal isOpen={showQuickFintheonModal} onClose={() => {}} onAnalysisComplete={() => {}} />
     </div>
