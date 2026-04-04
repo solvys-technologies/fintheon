@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-04T06:00:00',
+    agent: 'claude-code',
+    summary: 'T5: Settings iFrame list with persistent proposer default. Added ProposerIframeSource type and state to SettingsContext with 5 built-in sources (TradingView, Unusual Whales, Kalshi, TradeSea, Tradovate). IframesTab now has a Proposer Default section with radio selection, custom source add/delete, and external link buttons. ConsiliumHub Proposals panel includes a toggle to switch between ProposalWidget and the user-selected default iFrame. All settings persist via localStorage + backend sync.',
+    files: [
+      'frontend/contexts/SettingsContext.tsx',
+      'frontend/components/settings/IframesTab.tsx',
+      'frontend/components/SettingsPanel.tsx',
+      'frontend/components/consilium/ConsiliumHub.tsx',
+      'src/lib/changelog.ts',
+    ],
+  },
+  {
     date: '2026-04-04T04:30:00',
     agent: 'claude-code',
     summary: 'Fix Harper-Opus streaming: (1) Added UIMessageStream framing events (start/start-step/finish-step/finish) required by DefaultChatTransport, (2) Fixed model ID mismatch — env had claude-opus-4.6 (dots) but VProxy expects claude-opus-4-6 (hyphens), (3) Removed BYPASS_AUTH from .env (was causing crash loop with production NODE_ENV), (4) Pre-approved all Harper tools in ~/.fintheon/tool-permissions.json, (5) Updated .mcp.json with proper Notion auth and Close CRM server. Error path now sends proper UIMessageChunk error events instead of raw controller.error().',

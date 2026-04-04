@@ -55,6 +55,8 @@ export function SettingsPage() {
     autoPilotSettings, setAutoPilotSettings, primaryBroker, setPrimaryBroker,
     iframeUrls, setIframeUrls, traderName, setTraderName,
     defaultLayout, setDefaultLayout, defaultPlatform, setDefaultPlatform,
+    proposerIframeSources, setProposerIframeSources,
+    proposerDefaultIframe, setProposerDefaultIframe,
   } = useSettings();
   const backend = useBackend();
   const voiceMemory = useVoiceMemory();
@@ -158,7 +160,7 @@ export function SettingsPage() {
       case 'trading': return <div key="trading" className={animClass}><TradingTab riskSettings={riskSettings} setRiskSettings={setRiskSettings} contractsPerTrade={contractsPerTrade} setContractsPerTrade={setContractsPerTrade} primaryBroker={primaryBroker} setPrimaryBroker={setPrimaryBroker} autoPilotSettings={autoPilotSettings} setAutoPilotSettings={setAutoPilotSettings} tradingModels={tradingModels} setTradingModels={setTradingModels} /></div>;
       case 'general': return <div key="general" className={animClass}><GeneralTab traderName={traderName} setTraderName={setTraderName} selectedSymbol={selectedSymbol} setSelectedSymbol={setSelectedSymbol} availableSymbols={AVAILABLE_SYMBOLS} tier={tier} onShowUpgradeModal={() => setShowUpgradeModal(true)} /></div>;
       case 'api': return <div key="api" className={animClass}><ApiTab apiKeys={apiKeys} setAPIKeys={setAPIKeys} /></div>;
-      case 'iframes': return <div key="iframes" className={animClass}><IframesTab iframeUrls={iframeUrls} setIframeUrls={setIframeUrls} defaultLayout={defaultLayout} setDefaultLayout={setDefaultLayout} defaultPlatform={defaultPlatform} setDefaultPlatform={setDefaultPlatform} /></div>;
+      case 'iframes': return <div key="iframes" className={animClass}><IframesTab iframeUrls={iframeUrls} setIframeUrls={setIframeUrls} defaultLayout={defaultLayout} setDefaultLayout={setDefaultLayout} defaultPlatform={defaultPlatform} setDefaultPlatform={setDefaultPlatform} proposerIframeSources={proposerIframeSources} setProposerIframeSources={setProposerIframeSources} proposerDefaultIframe={proposerDefaultIframe} setProposerDefaultIframe={setProposerDefaultIframe} /></div>;
       case 'hermes-admin': return <div key="hermes-admin" className={animClass}><HermesAdminTab /></div>;
       case 'appearance': return <div key="appearance" className={animClass}><ThemeSettings /></div>;
       case 'desk': return <div key="desk" className={animClass}><AgenticDesk /></div>;
