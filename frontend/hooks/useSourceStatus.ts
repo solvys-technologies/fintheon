@@ -5,9 +5,13 @@ export interface SourceStatus {
   notion: boolean;
   twitterCli: boolean;
   xApi: boolean;
+  /** Whether the last poll to the backend succeeded */
+  backendReachable: boolean;
+  /** ISO timestamp of the last successful poll */
+  lastPollSuccess: string;
 }
 
-const DEFAULT_STATUS: SourceStatus = { notion: false, twitterCli: false, xApi: false };
+const DEFAULT_STATUS: SourceStatus = { notion: false, twitterCli: false, xApi: false, backendReachable: false, lastPollSuccess: new Date(0).toISOString() };
 const POLL_INTERVAL_MS = 30_000;
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -18,8 +22,10 @@ export function useSourceStatus(): SourceStatus {
   const poll = useCallback(() => {
     fetch(`${API_BASE}/api/riskflow/sources`)
       .then((r) => r.json())
-      .then((data: SourceStatus) => setStatus(data))
-      .catch(() => {});
+      .then((data: { notion: boolean; twitterCli: boolean; xApi: boolean }) =>
+        setStatus({ ...data, backendReachable: true, lastPollSuccess: new Date().toISOString() }),
+      )
+      .catch(() => setStatus((prev) => ({ ...prev, backendReachable: false })));
   }, []);
 
   useEffect(() => {

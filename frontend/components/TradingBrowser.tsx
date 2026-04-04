@@ -1,6 +1,8 @@
 // [claude-code 2026-03-06] Phase 2A: Removed header — controls moved to FooterToolbar
+// [claude-code 2026-04-03] Solvys Stone: fade iframe surroundings to black for seamless blend
 import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
 import { useSettings } from '../contexts/SettingsContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export type TradingPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradelocker' | 'tradingview';
 
@@ -18,7 +20,7 @@ export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
 export const PLATFORM_URLS: Record<TradingPlatform, string> = {
   topstepx: 'https://www.topstepx.com',
   mmt: 'https://app.mmt.gg',
-  kalshi: 'https://kalshi.com/markets/economics',
+  kalshi: 'https://kalshi.com/browse/economics',
   research: import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so',
   tradesea: 'https://app.tradesea.ai/trade',
   tradovate: 'https://trader.tradovate.com',
@@ -43,6 +45,9 @@ export function TradingBrowser({
   allowSplitView,
 }: TradingBrowserProps) {
   const { iframeUrls } = useSettings();
+  const { theme } = useTheme();
+  const isStone = theme.name === 'solvys-stone';
+  const frameBg = isStone ? 'bg-black' : 'bg-white';
   const platformUrls = {
     ...PLATFORM_URLS,
     research: iframeUrls.research || PLATFORM_URLS.research,
@@ -51,18 +56,18 @@ export function TradingBrowser({
   const secondaryUrl = platformUrls[secondaryPlatform];
 
   return (
-    <div className="h-full w-full bg-[var(--fintheon-surface)] overflow-hidden">
+    <div className={`h-full w-full overflow-hidden ${isStone ? 'bg-black' : 'bg-[var(--fintheon-surface)]'}`}>
       <div className={`h-full ${splitViewEnabled && allowSplitView ? 'grid grid-cols-2 gap-0' : ''}`}>
         <EmbeddedBrowserFrame
           title={PLATFORM_LABELS[primaryPlatform]}
           src={primaryUrl}
-          className="w-full h-full bg-white"
+          className={`w-full h-full ${frameBg}`}
         />
         {splitViewEnabled && allowSplitView && (
           <EmbeddedBrowserFrame
             title={PLATFORM_LABELS[secondaryPlatform]}
             src={secondaryUrl}
-            className="w-full h-full bg-white"
+            className={`w-full h-full ${frameBg}`}
           />
         )}
       </div>

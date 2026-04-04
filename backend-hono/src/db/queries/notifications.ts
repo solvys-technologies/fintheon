@@ -26,8 +26,8 @@ export async function getUnreadCount(userId: string): Promise<number> {
   if (!isDatabaseAvailable() || !sql) return 0;
 
   const result = await sql`
-    SELECT COUNT(*) as count FROM notifications 
-    WHERE user_id = ${userId} AND is_read = false
+    SELECT COUNT(*) as count FROM notifications
+    WHERE user_id = ${userId} AND read = false
   `;
 
   return Number(result[0]?.count) || 0;
@@ -40,8 +40,8 @@ export async function markAsRead(
   if (!isDatabaseAvailable() || !sql) return null;
 
   const result = await sql`
-    UPDATE notifications 
-    SET is_read = true, read_at = NOW()
+    UPDATE notifications
+    SET read = true, read_at = NOW()
     WHERE id = ${notificationId} AND user_id = ${userId}
     RETURNING *
   `;
@@ -54,9 +54,9 @@ export async function markAllAsRead(userId: string): Promise<number> {
   if (!isDatabaseAvailable() || !sql) return 0;
 
   const result = await sql`
-    UPDATE notifications 
-    SET is_read = true, read_at = NOW()
-    WHERE user_id = ${userId} AND is_read = false
+    UPDATE notifications
+    SET read = true, read_at = NOW()
+    WHERE user_id = ${userId} AND read = false
     RETURNING id
   `;
 
@@ -71,7 +71,7 @@ function mapRowToNotification(row: Record<string, unknown>): Notification {
     title: String(row.title || ''),
     message: String(row.message || ''),
     priority: (row.priority as NotificationPriority) || 'medium',
-    isRead: Boolean(row.is_read),
+    isRead: Boolean(row.read),
     metadata: row.metadata as Record<string, unknown> | undefined,
     createdAt: new Date(row.created_at as string),
     readAt: row.read_at ? new Date(row.read_at as string) : undefined,

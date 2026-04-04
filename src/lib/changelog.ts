@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-03T18:00:00',
+    agent: 'claude-code',
+    summary: 'IV score display consistency: ivScore was dropped during RiskFlowItem->RiskFlowAlert mapping in RiskFlowContext (root cause). Added ivScore to RiskFlowAlert type, wired it in both pollBackendFeed and loadMore mappers. Fixed duplicate IV in Strategium, reordered IV left of direction in dashboard feed, added fuse shimmer KPI bar in expanded AlertRow cards.',
+    files: [
+      'frontend/lib/riskflow-feed.ts',
+      'frontend/contexts/RiskFlowContext.tsx',
+      'frontend/components/narrative/SanctumRiskAssessment.tsx',
+      'frontend/components/RiskFlowMini.tsx',
+      'frontend/components/feed/RiskFlowDetailCard.tsx',
+    ],
+  },
+  {
     date: '2026-04-04T00:30:00',
     agent: 'claude-code',
     summary: 'MiroShark daily auto-run + dedup. Added daily cron at 6:00 AM ET (weekdays) for automatic MiroShark runs. Updated staleness threshold from 6h to 12h. Frontend Update button now checks for a recent run (<12h by ANY user) before triggering a new simulation — loads cached result if fresh, preventing duplicate runs and improving speed.',

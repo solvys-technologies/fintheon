@@ -122,12 +122,12 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
         <span className="flex-1" />
 
         {/* IV Score — severity colored */}
-        {(alert as any).ivScore != null && (
+        {alert.ivScore != null && (
           <span
             className="text-[11px] font-mono font-bold tabular-nums"
-            style={{ color: ivHeatColor(Number((alert as any).ivScore)) }}
+            style={{ color: ivHeatColor(Number(alert.ivScore)) }}
           >
-            IV {Number((alert as any).ivScore).toFixed(1)}
+            IV {Number(alert.ivScore).toFixed(1)}
           </span>
         )}
 
@@ -219,9 +219,9 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
                   {alert.econData.beatMiss.toUpperCase()}
                 </span>
               )}
-              {(alert as any).ivScore != null && (
+              {alert.ivScore != null && (
                 <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60">
-                  IV {Number((alert as any).ivScore).toFixed(1)}
+                  IV {Number(alert.ivScore).toFixed(1)}
                 </span>
               )}
             </div>
@@ -265,11 +265,11 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
           <DetailFooter alert={alert} />
 
           {/* Fuse shimmer bar — severity-colored along expanded card footer */}
-          {(alert as any).ivScore != null && (
+          {alert.ivScore != null && (
             <div
               className="h-[2px] w-full riskflow-fuse-shimmer"
               style={{
-                background: `linear-gradient(90deg, transparent, ${ivHeatColor(Number((alert as any).ivScore))}60, transparent)`,
+                background: `linear-gradient(90deg, transparent, ${ivHeatColor(Number(alert.ivScore))}60, transparent)`,
                 backgroundSize: '200% 100%',
               }}
             />

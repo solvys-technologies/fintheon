@@ -54,17 +54,14 @@ function RiskItem({ item, isExpanded, onToggle }: { item: RiskFlowCatalyst; isEx
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[8px] font-mono font-bold" style={{ color: dirColor }}>
+            {item.sentiment.toUpperCase()}
+          </span>
           {item.iv_score != null && (
             <span className="text-[8px] font-mono font-bold" style={{ color: ivHeatColor(Number(item.iv_score)) }}>
               IV {Number(item.iv_score).toFixed(1)}
             </span>
           )}
-          <span className="text-[8px] font-mono font-bold" style={{ color: dirColor }}>
-            {item.sentiment.toUpperCase()}
-          </span>
-          <span className="text-[8px] font-mono" style={{ color: ivHeatColor(item.iv_score) }}>
-            {item.iv_score.toFixed(1)}
-          </span>
           <ChevronDown className={`w-3 h-3 text-[var(--fintheon-muted)]/30 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
         </div>
       </div>

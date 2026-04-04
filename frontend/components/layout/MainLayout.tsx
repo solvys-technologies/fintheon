@@ -44,6 +44,8 @@ import { TabRenderer } from './TabRenderer';
 import { MissionControlContent } from './MissionControlContent';
 import { ChatPanel } from './ChatPanel';
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
+import { TeamOnboarding } from '../team/TeamOnboarding';
+import { EPOCH_VERSION } from '../../lib/epoch-version';
 import { VoiceWidget, VoiceRoomHeaderButton, type VoiceWidgetDockTarget } from '../peers/VoiceWidget';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
@@ -56,6 +58,8 @@ import {
 
 type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
+
+const TEAM_ONBOARDED_KEY = 'fintheon-team-onboarded-version';
 
 function normalizeOrder<T extends string>(order: T[], defaults: readonly T[]): T[] {
   const deduped = order.filter((id, idx) => defaults.includes(id) && order.indexOf(id) === idx);
@@ -77,7 +81,15 @@ function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform, developerSettings, voiceEnabled } = useSettings();
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
-  // S14-T6: Peers panel + onboarding removed — team status lives in footer panel only
+  // Team onboarding — auto-show on first run or after version update
+  const [showTeamOnboarding, setShowTeamOnboarding] = useState(() => {
+    const onboardedVersion = localStorage.getItem(TEAM_ONBOARDED_KEY);
+    return onboardedVersion !== EPOCH_VERSION;
+  });
+  const handleTeamOnboardingComplete = useCallback(() => {
+    localStorage.setItem(TEAM_ONBOARDED_KEY, EPOCH_VERSION);
+    setShowTeamOnboarding(false);
+  }, []);
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showRefinement, setShowRefinement] = useState(false);
@@ -764,7 +776,12 @@ function MainLayoutInner() {
       {/* First-time user tour + interview + setup wizard */}
       <FirstTimeTour onNavigate={(tab) => navigateTab(tab as NavTab)} />
 
-      {/* S14-T6: PeerOnboarding removed — team onboarding will be rebuilt separately if needed */}
+      {/* Team onboarding — auto-shows on first run or version update */}
+      <TeamOnboarding
+        open={showTeamOnboarding}
+        onClose={handleTeamOnboardingComplete}
+        onComplete={handleTeamOnboardingComplete}
+      />
     </div>
     </ScheduleProvider>
   );

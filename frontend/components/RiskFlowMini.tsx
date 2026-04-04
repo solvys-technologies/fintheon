@@ -100,7 +100,7 @@ function DirectionBadge({ alert }: { alert: RiskFlowAlert }) {
 }
 
 function IVScoreBadge({ alert }: { alert: RiskFlowAlert }) {
-  const score = (alert as any).ivScore;
+  const score = alert.ivScore;
   if (score == null) return null;
   return (
     <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number(score)) }}>
@@ -260,9 +260,9 @@ function TradeIdeaRow({
               <span className="text-[10px] text-zinc-700">&middot;</span>
               <DirectionBadge alert={alert} />
               <span className="text-[10px] text-zinc-700">&middot;</span>
-              {(alert as any).ivScore != null && (
-                <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number((alert as any).ivScore)) }}>
-                  IV {Number((alert as any).ivScore).toFixed(1)}
+              {alert.ivScore != null && (
+                <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number(alert.ivScore)) }}>
+                  IV {Number(alert.ivScore).toFixed(1)}
                 </span>
               )}
             </div>
@@ -406,17 +406,17 @@ function AlertRow({
         </div>
       </div>
 
-      {/* Bottom hero footer — time (left), direction (center), points (right) */}
+      {/* Bottom hero footer — time (left), IV (center), direction (right) */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40">
         <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
+        {alert.ivScore != null && (
+          <span className="text-[10px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number(alert.ivScore)) }}>
+            IV {Number(alert.ivScore).toFixed(1)}
+          </span>
+        )}
         <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
           {isBull ? 'BULLISH' : 'BEARISH'}
         </span>
-        {(alert as any).ivScore != null && (
-          <span className="text-[10px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number((alert as any).ivScore)) }}>
-            IV {Number((alert as any).ivScore).toFixed(1)}
-          </span>
-        )}
       </div>
 
       {/* Expanded content — smooth CSS grid transition */}
@@ -439,26 +439,46 @@ function AlertRow({
                   {alert.econData.beatMiss.toUpperCase()}
                 </span>
               )}
-              {(alert as any).ivScore != null && (
-                <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number((alert as any).ivScore)) }}>
-                  IV {Number((alert as any).ivScore).toFixed(1)}
+              {alert.ivScore != null && (
+                <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number(alert.ivScore)) }}>
+                  IV {Number(alert.ivScore).toFixed(1)}
                 </span>
               )}
             </div>
 
-            {/* Risk type + View in RiskFlow CTA */}
-            <div className="flex items-center justify-between mt-2.5">
-              <div className="flex items-center gap-1.5">
-                {riskType && <RiskTypeBadge riskType={riskType} />}
-                {alert.cyclical && alert.cyclical !== 'Neutral' && (
-                  <CyclicalBadge classification={alert.cyclical} />
-                )}
-              </div>
+            {/* Footer — fuse shimmer with IV KPI + View in RiskFlow */}
+            <div className="flex items-center mt-2.5">
+              {alert.ivScore != null ? (
+                <div className="relative flex-1 flex items-center h-[18px]">
+                  {/* Fuse wire — 2px shimmer, edge to edge */}
+                  <div
+                    className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] riskflow-fuse-shimmer"
+                    style={{
+                      background: `linear-gradient(90deg, transparent, ${ivHeatColor(Number(alert.ivScore))}60, transparent)`,
+                      backgroundSize: '200% 100%',
+                    }}
+                  />
+                  {/* IV score KPI — sits on the fuse wire */}
+                  <span
+                    className="relative z-10 text-[9px] font-mono font-bold tabular-nums px-1 bg-zinc-900/90"
+                    style={{ color: ivHeatColor(Number(alert.ivScore)) }}
+                  >
+                    IV {Number(alert.ivScore).toFixed(1)}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 flex-1">
+                  {riskType && <RiskTypeBadge riskType={riskType} />}
+                  {alert.cyclical && alert.cyclical !== 'Neutral' && (
+                    <CyclicalBadge classification={alert.cyclical} />
+                  )}
+                </div>
+              )}
               {onNavigateToFeed && (
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onNavigateToFeed(); }}
-                  className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
+                  className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1 ml-2 shrink-0"
                 >
                   View in RiskFlow
                   <ChevronRight className="w-3 h-3" />
@@ -714,7 +734,7 @@ export default function RiskFlowMini({
               {filtered.length === 0 ? (
                 <div className="flex items-center justify-center h-24 text-zinc-700 text-xs">
                   {alerts.length === 0
-                    ? (initialLoaded ? 'No alerts available — check backend connection' : 'Loading feed...')
+                    ? (initialLoaded ? 'No alerts — run: launchctl load ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist' : 'Loading feed...')
                     : 'No matching alerts'}
                 </div>
               ) : (

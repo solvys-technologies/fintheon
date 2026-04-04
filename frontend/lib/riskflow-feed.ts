@@ -77,6 +77,8 @@ export interface RiskFlowAlert {
   agentNote?: string | null;
   /** Timestamp when agentNote was generated */
   agentNoteGeneratedAt?: string | null;
+  /** Headline IV score (0-10 scale) */
+  ivScore?: number | null;
   /** Structured economic data for econ prints */
   econData?: {
     actual?: number | null;
