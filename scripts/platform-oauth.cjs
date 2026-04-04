@@ -5,6 +5,12 @@
 //   e.g. npx electron scripts/platform-oauth.cjs tradingview
 
 const { app, BrowserWindow } = require("electron");
+const path = require("path");
+const os = require("os");
+
+// Share the same userData directory as the main Fintheon app so the
+// persist:fintheon partition writes cookies to the same store.
+app.setPath("userData", path.join(os.homedir(), "Library", "Application Support", "Fintheon"));
 
 const PLATFORMS = {
   tradingview: { url: "https://www.tradingview.com/accounts/signin/", title: "TradingView" },
