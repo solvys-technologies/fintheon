@@ -249,6 +249,10 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "topstepx.com") return true;
     if (host.endsWith(".topstepx.com")) return true;
 
+    // TradingView (charting)
+    if (host === "tradingview.com") return true;
+    if (host.endsWith(".tradingview.com")) return true;
+
     // Google auth relay domains
     if (host.endsWith(".google.com")) return true;
     if (host.endsWith(".gstatic.com")) return true;

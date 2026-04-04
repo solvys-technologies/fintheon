@@ -3,10 +3,12 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { ChevronRight, Clock, ChevronDown, Loader2 } from 'lucide-react'
 import { useBackend } from '../../lib/backend'
+import { ivHeatColor } from '../../types/miroshark'
 
 interface FeedItem {
   id: string
-  headline: string
+  title: string
+  headline?: string
   source: string
   publishedAt: string
   sentiment?: string
@@ -14,6 +16,7 @@ interface FeedItem {
   riskType?: string
   tags?: string[]
   narrativeThreads?: string[]
+  ivScore?: number
   priceBrainScore?: { sentiment?: string; impliedPoints?: number; instrument?: string }
 }
 
@@ -229,12 +232,19 @@ export function TimelineOverlay({ open, onClose }: TimelineOverlayProps) {
                       <div className="flex items-start gap-2">
                         <p className="flex-1 text-[12px] font-medium leading-snug text-[var(--fintheon-text)]"
                           style={{ fontFamily: 'var(--font-body)' }}>
-                          {item.headline}
+                          {item.title || item.headline}
                         </p>
-                        <span className="text-[11px] font-bold shrink-0"
-                          style={{ color: isBullish ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
-                          {isBullish ? '+' : '-'}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {item.ivScore != null && (
+                            <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number(item.ivScore)) }}>
+                              IV {Number(item.ivScore).toFixed(1)}
+                            </span>
+                          )}
+                          <span className="text-[11px] font-bold"
+                            style={{ color: isBullish ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
+                            {isBullish ? '▲' : '▼'}
+                          </span>
+                        </div>
                       </div>
                       {item.tags && item.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1.5">
