@@ -114,25 +114,21 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
 
         <span className="flex-1" />
 
-        {/* Direction */}
-        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
-          {isBull ? 'BULLISH' : 'BEARISH'}
+        {/* Direction chevron + IV Score — right-aligned */}
+        <span className="text-[11px] font-bold" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
+          {isBull ? '▲' : '▼'}
         </span>
-
-        <span className="flex-1" />
-
-        {/* IV Score — severity colored */}
         {alert.ivScore != null && (
           <span
-            className="text-[11px] font-mono font-bold tabular-nums"
+            className="ml-1.5 text-[11px] font-mono font-bold tabular-nums"
             style={{ color: ivHeatColor(Number(alert.ivScore)) }}
           >
             IV {Number(alert.ivScore).toFixed(1)}
           </span>
         )}
 
-        {/* Priority badge — rounded */}
-        <span className={`ml-2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border`}>
+        {/* Priority badge */}
+        <span className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border`}>
           {sev.label}
         </span>
 

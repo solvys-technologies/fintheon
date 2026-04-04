@@ -406,17 +406,19 @@ function AlertRow({
         </div>
       </div>
 
-      {/* Bottom hero footer — time (left), IV (center), direction (right) */}
+      {/* Bottom hero footer — time (left), direction chevron + IV (right) */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40">
         <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
-        {alert.ivScore != null && (
-          <span className="text-[10px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number(alert.ivScore)) }}>
-            IV {Number(alert.ivScore).toFixed(1)}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-bold" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
+            {isBull ? '▲' : '▼'}
           </span>
-        )}
-        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: isBull ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
-          {isBull ? 'BULLISH' : 'BEARISH'}
-        </span>
+          {alert.ivScore != null && (
+            <span className="text-[10px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number(alert.ivScore)) }}>
+              IV {Number(alert.ivScore).toFixed(1)}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Expanded content — smooth CSS grid transition */}
@@ -428,9 +430,9 @@ function AlertRow({
           <div className="px-3 py-2.5 border-t border-zinc-800/40 bg-zinc-900/40">
             <AgentNoteSection alert={alert} onGenerate={onGenerateNote} />
 
-            {/* S9-T2: Deviation indicators — beat/miss, IV score, implied points */}
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              {alert.econData?.beatMiss && (
+            {/* S9-T2: Deviation indicators — beat/miss, implied points */}
+            {alert.econData?.beatMiss && (
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                   alert.econData.beatMiss === 'beat' ? 'bg-emerald-500/15 text-emerald-400' :
                   alert.econData.beatMiss === 'miss' ? 'bg-red-500/15 text-red-400' :
@@ -438,13 +440,8 @@ function AlertRow({
                 }`}>
                   {alert.econData.beatMiss.toUpperCase()}
                 </span>
-              )}
-              {alert.ivScore != null && (
-                <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number(alert.ivScore)) }}>
-                  IV {Number(alert.ivScore).toFixed(1)}
-                </span>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Footer — fuse shimmer with IV KPI + View in RiskFlow */}
             <div className="flex items-center mt-2.5">

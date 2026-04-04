@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-04T22:30:00',
+    agent: 'claude-code',
+    summary: 'Fix RiskFlow feed staleness: cache now re-syncs from Supabase every 2min so items from Central Scorer and manual ingestion appear without waiting for poller. Also replaced BULLISH/BEARISH text with chevron arrows and right-aligned IV scores in card footers.',
+    files: [
+      'backend-hono/src/services/riskflow/feed-service.ts',
+      'frontend/components/RiskFlowMini.tsx',
+      'frontend/components/feed/RiskFlowDetailCard.tsx',
+    ],
+  },
+  {
     date: '2026-04-04T18:00:00',
     agent: 'claude-code',
     summary: 'NarrativeFlow visual redesign: 25-item card splitting with sibling pages and clustering, concentric ring reset layout (severity-sorted rings around hubs), frosted glass bubble styling with hover glow (replaced radial gradient halos), gradient energy rope connections with source-to-target color gradients and electricity flow animation',

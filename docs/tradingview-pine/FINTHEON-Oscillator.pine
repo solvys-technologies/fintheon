@@ -1,0 +1,430 @@
+// [claude-code 2026-04-04] V4: LuxAlgo Oscillator Matrix rebuild + ANTILAG [PIR]
+// Components: Money Flow, Thresholds, Overflow, Hyper Wave (QQE), Divergences,
+//             Reversal Signals, Confluence Bar, ANTILAG — Pine v6, no imports
+
+//@version=6
+indicator("Fintheon Oscillator [Priced In Research]"
+  , shorttitle = "FO [PIR]"
+  , overlay    = false
+  , max_lines_count  = 500
+  , max_labels_count = 500
+  , max_boxes_count  = 500
+  , format    = format.price
+  , precision = 2)
+
+EPSILON = 1e-10
+
+// ═════════════════════════════════════════════════════════════════════════════
+// INPUTS
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── 1. Smart Money Flow ─────────────────────────────────────────────────────
+string G1       = "1. Smart Money Flow"
+mf_len          = input.int(14, "Length", minval = 1, group = G1)
+mf_src          = input.source(close, "Source", group = G1)
+show_mf         = input.bool(true, "Show Money Flow", group = G1)
+
+// ── 2. Thresholds ───────────────────────────────────────────────────────────
+string G2       = "2. Thresholds"
+th_len          = input.int(50, "Lookback", minval = 10, group = G2)
+th_pct          = input.float(80, "Percentile", minval = 50, maxval = 99, group = G2)
+show_th         = input.bool(true, "Show Thresholds", group = G2)
+
+// ── 3. Overflow ─────────────────────────────────────────────────────────────
+string G3       = "3. Overflow"
+of_fast         = input.int(3, "Fast Length", minval = 1, group = G3)
+of_slow         = input.int(10, "Slow Length", minval = 2, group = G3)
+show_of         = input.bool(true, "Show Overflow", group = G3)
+
+// ── 4. Hyper Wave ───────────────────────────────────────────────────────────
+string G4       = "4. Hyper Wave"
+hw_len          = input.int(14, "Length", minval = 1, group = G4)
+hw_fac          = input.float(4.236, "QQE Factor", minval = 0.1, step = 0.1, group = G4)
+hw_smo          = input.int(5, "Smoothing", minval = 1, group = G4)
+hw_wgt          = input.float(2.0, "Weight", minval = 0.1, step = 0.1, group = G4)
+show_hw         = input.bool(true, "Show Hyper Wave", group = G4)
+
+// ── 5. Divergences ──────────────────────────────────────────────────────────
+string G5       = "5. Divergences"
+dv_lb           = input.int(5, "Pivot Lookback", minval = 2, maxval = 30, group = G5)
+show_dv         = input.bool(false, "Show Divergences", group = G5)
+show_dv_price   = input.bool(false, "Show on Price Chart", group = G5)
+
+// ── 6. Reversal Signals ─────────────────────────────────────────────────────
+string G6       = "6. Reversal Signals"
+show_dots       = input.bool(true, "Show Reversal Dots", group = G6)
+
+// ── 7. Confluence ───────────────────────────────────────────────────────────
+string G7       = "7. Confluence"
+show_cbar       = input.bool(true, "Show Confluence Bar", group = G7)
+show_cmeter     = input.bool(false, "Show Confluence Meter", group = G7)
+
+// ── 8. ANTILAG [PIR] ────────────────────────────────────────────────────────
+string G8       = "8. ANTILAG [PIR]"
+al_sym          = input.string("ES1!", "Secondary Instrument", group = G8)
+al_dual         = input.bool(true, "Enable Dual-Instrument", group = G8)
+al_vsurge       = input.float(1.5, "Volume Surge", minval = 1.0, step = 0.1, group = G8)
+al_vel          = input.float(0.3, "Price Velocity %", minval = 0.01, step = 0.05, group = G8)
+al_ema_f        = input.int(20, "Fast EMA", minval = 1, group = G8)
+al_ema_s        = input.int(100, "Slow EMA", minval = 1, group = G8)
+al_atr_p        = input.float(0.3, "ATR Proximity", minval = 0.01, step = 0.05, group = G8)
+show_al         = input.bool(true, "Show ANTILAG", group = G8)
+
+// ── 9. Style ────────────────────────────────────────────────────────────────
+string G9       = "9. Style"
+c_bull          = input.color(#c79f4a, "Bullish", group = G9, inline = "c1")
+c_bear          = input.color(#6b6b6b, "Bearish", group = G9, inline = "c1")
+c_hw_b          = input.color(#c79f4a, "HW Bull", group = G9, inline = "c2")
+c_hw_n          = input.color(#4a4a4a, "HW Neutral", group = G9, inline = "c2")
+c_gold          = input.color(#c79f4a, "ANTILAG", group = G9)
+mf_lw           = input.int(1, "MF Line Width", minval = 1, maxval = 5, group = G9)
+hw_lw           = input.int(1, "HW Line Width", minval = 1, maxval = 5, group = G9)
+hts_lw          = input.int(1, "HW Trail Width", minval = 1, maxval = 5, group = G9)
+
+// ── 10. Dashboard ───────────────────────────────────────────────────────────
+string G10      = "10. Dashboard"
+show_dash       = input.bool(false, "Show Dashboard", group = G10)
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MONEY FLOW — volume-weighted momentum, smoothed, scaled to 35-65
+// ═════════════════════════════════════════════════════════════════════════════
+
+float v         = nz(volume, 1)
+float md        = mf_src - mf_src[1]
+float mv        = md * v
+float mp        = ta.rma(math.max(mv, 0), mf_len)
+float mn        = ta.rma(math.max(-mv, 0), mf_len)
+float mf_raw    = mn < EPSILON ? 100.0 : mp < EPSILON ? 0.0 : 100.0 - 100.0 / (1.0 + mp / mn)
+
+// Smooth for clean display
+float mf        = ta.ema(mf_raw, 3)
+
+// Display version: rescaled to 35-65 (centered at 50)
+float mf_d      = 35.0 + (mf / 100.0) * 30.0
+
+// ═════════════════════════════════════════════════════════════════════════════
+// THRESHOLDS — internal only (used by reversal logic, not plotted)
+// ═════════════════════════════════════════════════════════════════════════════
+
+float th_up     = ta.percentile_nearest_rank(mf_raw, th_len, th_pct)
+float th_dn     = ta.percentile_nearest_rank(mf_raw, th_len, 100 - th_pct)
+bool  mf_hot    = mf_raw >= th_up
+bool  mf_cold   = mf_raw <= th_dn
+
+// ═════════════════════════════════════════════════════════════════════════════
+// OVERFLOW — sits inside MF fills, scaled to 40-60
+// ═════════════════════════════════════════════════════════════════════════════
+
+float of_f      = ta.ema(mf_raw, of_fast)
+float of_s      = ta.ema(mf_raw, of_slow)
+float oflow     = of_f - of_s
+bool  of_xbull  = oflow > 0 and mf_hot
+bool  of_xbear  = oflow < 0 and mf_cold
+
+// Display version: clamped to 40-60
+float of_d      = math.max(40.0, math.min(60.0, 50.0 + oflow * 0.5))
+
+// ═════════════════════════════════════════════════════════════════════════════
+// HYPER WAVE — QQE weighted oscillator with adaptive trailing stop
+// ═════════════════════════════════════════════════════════════════════════════
+
+var float hw    = 50.0
+var float hts   = 50.0
+
+float hd        = mf_src - mf_src[1]
+float hw_w      = nz(hd * (hw - hts) > 0 ? hw_wgt : 1.0, 1.0)
+float h_num     = ta.rma(hd * hw_w, hw_len)
+float h_den     = ta.rma(math.abs(hd * hw_w), hw_len)
+hw             := 50 * ta.ema(h_num / math.max(h_den, EPSILON), hw_smo) + 50
+
+float h_diff    = ta.rma(math.abs(hw - hw[1]), hw_len)
+bool  hw_xup    = ta.crossover(hw, hts)
+bool  hw_xdn    = ta.crossunder(hw, hts)
+
+hts := nz(
+     hw_xup ? hw - h_diff * hw_fac
+   : hw_xdn ? hw + h_diff * hw_fac
+   : hw > hts ? math.max(hw - h_diff * hw_fac, hts)
+   : math.min(hw + h_diff * hw_fac, hts)
+   , hw)
+
+bool  hw_bull   = hw > hts
+
+// ═════════════════════════════════════════════════════════════════════════════
+// DIVERGENCES — pivot-based on Hyper Wave (default OFF)
+// ═════════════════════════════════════════════════════════════════════════════
+
+float dv_ph     = ta.pivothigh(hw, dv_lb, dv_lb)
+float dv_pl     = ta.pivotlow(hw, dv_lb, dv_lb)
+
+var float pp_h  = na
+var float pp_hw = na
+var int   pp_hi = na
+var float pp_l  = na
+var float pp_lw = na
+var int   pp_li = na
+
+var bool d_bear = false
+var bool d_bull = false
+d_bear := false
+d_bull := false
+
+if not na(dv_ph)
+    int   ci = bar_index - dv_lb
+    float cp = high[dv_lb]
+    float ch = dv_ph
+    if not na(pp_h)
+        if cp > pp_h and ch < pp_hw
+            d_bear := true
+            if show_dv
+                line.new(pp_hi, pp_hw, ci, ch, color = c_bear, width = 2)
+                label.new(ci, ch + 2, "▼", style = label.style_none, textcolor = c_bear, size = size.small)
+            if show_dv_price
+                line.new(pp_hi, high[bar_index - pp_hi], ci, cp, color = c_bear, width = 2, style = line.style_dashed, force_overlay = true)
+    pp_h := cp
+    pp_hw := ch
+    pp_hi := ci
+
+if not na(dv_pl)
+    int   ci = bar_index - dv_lb
+    float cp = low[dv_lb]
+    float ch = dv_pl
+    if not na(pp_l)
+        if cp < pp_l and ch > pp_lw
+            d_bull := true
+            if show_dv
+                line.new(pp_li, pp_lw, ci, ch, color = c_bull, width = 2)
+                label.new(ci, ch - 2, "▲", style = label.style_none, textcolor = c_bull, size = size.small)
+            if show_dv_price
+                line.new(pp_li, low[bar_index - pp_li], ci, cp, color = c_bull, width = 2, style = line.style_dashed, force_overlay = true)
+    pp_l := cp
+    pp_lw := ch
+    pp_li := ci
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ANTILAG — dual-instrument momentum exhaustion (1000T)
+// From ANTILAG-SPEC.md: velocity INTO EMA = contrarian exhaustion
+// ═════════════════════════════════════════════════════════════════════════════
+
+float p_vel     = math.abs(close - close[1]) / math.max(close[1], EPSILON) * 100
+float p_va      = ta.sma(v, 20)
+float p_vr      = v / math.max(p_va, EPSILON)
+bool  p_bull    = close > open
+
+float ef        = ta.ema(close, al_ema_f)
+float es        = ta.ema(close, al_ema_s)
+float atr       = ta.atr(14)
+bool  at_ema    = math.abs(close - ef) <= atr * al_atr_p
+               or math.abs(close - es) <= atr * al_atr_p
+
+f_sec() => [close, open, volume, ta.sma(volume, 20)]
+[sc, so, sv, sva] = request.security(al_sym, timeframe.period, f_sec())
+
+float s_vel     = math.abs(nz(sc) - nz(sc[1])) / math.max(nz(sc[1]), EPSILON) * 100
+float s_vr      = nz(sv) / math.max(nz(sva), EPSILON)
+bool  s_bull    = nz(sc) > nz(so)
+bool  aligned   = p_bull == s_bull
+
+bool  al_fire   = al_dual ?
+     (p_vr > al_vsurge and s_vr > al_vsurge and p_vel > al_vel and s_vel > al_vel and aligned and at_ema) :
+     (p_vr > al_vsurge and p_vel > al_vel and at_ema)
+
+// ═════════════════════════════════════════════════════════════════════════════
+// REVERSAL SIGNALS
+// RSI divergence + HW sentiment flip + price pullback = reversal point
+// Small dots = non-ANTILAG, medium dots = ANTILAG-driven
+// ═════════════════════════════════════════════════════════════════════════════
+
+// RSI for divergence detection
+float rsi_val   = ta.rsi(close, 14)
+float rsi_ph    = ta.pivothigh(rsi_val, dv_lb, dv_lb)
+float rsi_pl    = ta.pivotlow(rsi_val, dv_lb, dv_lb)
+float pr_ph     = ta.pivothigh(high, dv_lb, dv_lb)
+float pr_pl     = ta.pivotlow(low, dv_lb, dv_lb)
+
+var float rp_h  = na
+var float rr_h  = na
+var float rp_l  = na
+var float rr_l  = na
+
+var bool rsi_div_bear = false
+var bool rsi_div_bull = false
+rsi_div_bear := false
+rsi_div_bull := false
+
+// Bearish RSI divergence: price HH + RSI LH
+if not na(rsi_ph) and not na(pr_ph)
+    if not na(rp_h) and high[dv_lb] > rp_h and rsi_ph < rr_h
+        rsi_div_bear := true
+    rp_h := high[dv_lb]
+    rr_h := rsi_ph
+
+// Bullish RSI divergence: price LL + RSI HL
+if not na(rsi_pl) and not na(pr_pl)
+    if not na(rp_l) and low[dv_lb] < rp_l and rsi_pl > rr_l
+        rsi_div_bull := true
+    rp_l := low[dv_lb]
+    rr_l := rsi_pl
+
+// HW sentiment flip + pullback
+bool hw_flip_bull = hw_xup and mf < 50
+bool hw_flip_bear = hw_xdn and mf > 50
+
+// Standard reversal (RSI div OR HW flip)
+bool rev_up     = rsi_div_bull or hw_flip_bull
+bool rev_dn     = rsi_div_bear or hw_flip_bear
+
+// ANTILAG-driven reversal (stronger)
+bool rev_al_up  = al_fire and p_bull and (rsi_div_bull or hw_flip_bull or mf_cold)
+bool rev_al_dn  = al_fire and not p_bull and (rsi_div_bear or hw_flip_bear or mf_hot)
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CONFLUENCE — Money Flow + Hyper Wave combined reading
+// ═════════════════════════════════════════════════════════════════════════════
+
+float cb_s = (mf > 50 ? 1.0 : 0.0) + (hw_bull ? 1.0 : 0.0) + (mf_hot ? 1.0 : 0.0)
+float cb_r = (mf < 50 ? 1.0 : 0.0) + (not hw_bull ? 1.0 : 0.0) + (mf_cold ? 1.0 : 0.0)
+float cnet = (cb_s - cb_r) / 3.0   // -1.0 to +1.0
+
+// ═════════════════════════════════════════════════════════════════════════════
+// VISUALIZATION
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── Money Flow fill + edge line (centered at 50, scaled 35-65) ──────────────
+color mf_edge = mf_d >= 50 ? c_bull : c_bear
+color mf_fill = mf_d >= 50 ? color.new(c_bull, 75) : color.new(c_bear, 75)
+
+p_mf   = plot(show_mf ? mf_d : na, "Money Flow", color = mf_edge, linewidth = mf_lw)
+p_mid  = plot(50.0, "MF Center", color = na,
+         display = display.none, editable = false)
+
+fill(p_mf, p_mid, color = mf_fill, title = "Money Flow")
+
+// ── Overflow (inside MF fills, scaled 40-60) ────────────────────────────────
+color of_fill = of_d >= 50 ? color.new(c_bull, 40) : color.new(c_bear, 40)
+
+p_of   = plot(show_of ? of_d : na, "Overflow", color = na,
+         display = display.none, editable = false)
+p_c2   = plot(50.0, "OF Center", color = na,
+         display = display.none, editable = false)
+
+fill(p_of, p_c2, color = of_fill, title = "Overflow")
+
+// ── Hyper Wave lines + ribbon ───────────────────────────────────────────────
+color hc  = hw_bull ? c_hw_b : c_hw_n
+color hrf = color.new(hc, 85)
+
+p_hw     = plot(show_hw ? hw : na, "Hyper Wave", color = hc, linewidth = hw_lw)
+p_hts    = plot(show_hw ? hts : na, "HW Trail", color = na, display = display.none, editable = false)
+fill(p_hw, p_hts, color = hrf, title = "HW Ribbon")
+
+// ── Reference lines (barely visible — guide without competing) ──────────────
+hline(65, "65", color = color.new(#4a4a4a, 88), linestyle = hline.style_dotted)
+hline(50, "50", color = color.new(#4a4a4a, 80), linestyle = hline.style_dotted)
+hline(35, "35", color = color.new(#4a4a4a, 88), linestyle = hline.style_dotted)
+
+// ── Confluence Bar (gradient strip at BOTTOM of panel) ──────────────────────
+color cc_top = cnet > 0.15 ? color.new(c_bull, math.round(15 - math.abs(cnet) * 12)) : cnet < -0.15 ? color.new(c_bear, math.round(25 - math.abs(cnet) * 10)) : color.new(#3a3a3a, 50)
+color cc_btm = cnet > 0.15 ? color.new(c_bull, 85) : cnet < -0.15 ? color.new(c_bear, 85) : color.new(#3a3a3a, 90)
+p_cb_top = plot(show_cbar ? 0.0 : na, "CB Top", color = na, display = display.none, editable = false)
+p_cb_btm = plot(show_cbar ? -4.0 : na, "CB Bottom", color = na, display = display.none, editable = false)
+fill(p_cb_top, p_cb_btm, 0, -4, cc_top, cc_btm, title = "Confluence Bar")
+
+// ── Reversal dots: small = standard, medium = ANTILAG-driven ────────────────
+plotshape(show_dots and rev_up and not rev_al_up ? hw : na, "Rev Dot Bull",
+     shape.circle, location.absolute, c_bull, size = size.auto)
+plotshape(show_dots and rev_dn and not rev_al_dn ? hw : na, "Rev Dot Bear",
+     shape.circle, location.absolute, c_bear, size = size.auto)
+
+plotshape(show_dots and rev_al_up ? hw : na, "Rev AL Bull",
+     shape.circle, location.absolute, c_gold, size = size.small)
+plotshape(show_dots and rev_al_dn ? hw : na, "Rev AL Bear",
+     shape.circle, location.absolute, c_gold, size = size.small)
+
+// ── ANTILAG labels (above/below confluence bar at bottom) ───────────────────
+plotshape(show_al and al_fire and p_bull ? 2.0 : na, "AL Bull",
+     shape.triangleup, location.absolute, c_gold, size = size.tiny)
+plotshape(show_al and al_fire and not p_bull ? -7.0 : na, "AL Bear",
+     shape.triangledown, location.absolute, c_gold, size = size.tiny)
+
+// ── Confluence Meter (default OFF) ──────────────────────────────────────────
+if show_cmeter and barstate.islast
+    var table cm = table.new(position.middle_right, 1, 3,
+         bgcolor = color.new(#000000, 50), border_width = 0)
+    string ar = cnet > 0.15 ? "▲" : cnet < -0.15 ? "▼" : "◆"
+    color  mc = cnet > 0.15 ? c_bull : cnet < -0.15 ? c_bear : color.gray
+    table.cell(cm, 0, 0, "CONF", text_color = color.gray, text_size = size.tiny)
+    table.cell(cm, 0, 1, ar, text_color = mc, text_size = size.large)
+    table.cell(cm, 0, 2, str.tostring(math.round(cnet * 100)) + "%",
+         text_color = mc, text_size = size.tiny)
+
+// ── Dashboard (default OFF) ─────────────────────────────────────────────────
+if show_dash and barstate.islast
+    var table tb = table.new(position.top_right, 2, 6,
+         bgcolor = color.new(#000000, 40), border_width = 1,
+         border_color = color.new(color.gray, 60))
+    table.cell(tb, 0, 0, "FO [PIR]", text_color = c_gold, text_size = size.tiny)
+    table.cell(tb, 1, 0, syminfo.ticker, text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 0, 1, "Money Flow", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 1, str.tostring(math.round(mf, 1)),
+         text_color = mf > 50 ? c_bull : c_bear, text_size = size.tiny)
+    table.cell(tb, 0, 2, "Hyper Wave", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 2, str.tostring(math.round(hw, 1)),
+         text_color = hw_bull ? c_hw_b : c_hw_n, text_size = size.tiny)
+    table.cell(tb, 0, 3, "Overflow", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 3, of_xbull ? "EXCESS BUY" : of_xbear ? "EXCESS SELL" : "—",
+         text_color = of_xbull ? c_bull : of_xbear ? c_bear : color.gray, text_size = size.tiny)
+    table.cell(tb, 0, 4, "Confluence", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 4, str.tostring(math.round(cnet * 100)) + "%",
+         text_color = cnet > 0 ? c_bull : cnet < 0 ? c_bear : color.gray, text_size = size.tiny)
+    table.cell(tb, 0, 5, "ANTILAG", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 5, al_fire ? "ACTIVE" : "—",
+         text_color = al_fire ? c_gold : color.gray, text_size = size.tiny)
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ALERTS
+// ═════════════════════════════════════════════════════════════════════════════
+
+alertcondition(ta.crossover(mf, th_up), "MF Above Threshold",
+     "Money Flow crossed above upper threshold")
+alertcondition(ta.crossunder(mf, th_dn), "MF Below Threshold",
+     "Money Flow crossed below lower threshold")
+alertcondition(ta.crossover(mf, 50), "MF Starts Increasing",
+     "Money Flow crossed above 50")
+alertcondition(ta.crossunder(mf, 50), "MF Starts Decreasing",
+     "Money Flow crossed below 50")
+alertcondition(of_xbull, "Overflow Bull", "Excess buying detected")
+alertcondition(of_xbear, "Overflow Bear", "Excess selling detected")
+alertcondition(hw_xup, "HWO Up", "Hyper Wave crossed above trailing stop")
+alertcondition(hw_xdn, "HWO Down", "Hyper Wave crossed below trailing stop")
+alertcondition(rev_up, "Reversal Up", "Bullish reversal — RSI divergence or HW flip")
+alertcondition(rev_dn, "Reversal Down", "Bearish reversal — RSI divergence or HW flip")
+alertcondition(rev_al_up, "ANTILAG Reversal Up", "ANTILAG-driven bullish reversal")
+alertcondition(rev_al_dn, "ANTILAG Reversal Down", "ANTILAG-driven bearish reversal")
+alertcondition(d_bull, "Bullish Divergence", "Regular bullish divergence on HW")
+alertcondition(d_bear, "Bearish Divergence", "Regular bearish divergence on HW")
+alertcondition(al_fire and p_bull, "ANTILAG Bull",
+     "Dual-instrument bullish momentum exhaustion")
+alertcondition(al_fire and not p_bull, "ANTILAG Bear",
+     "Dual-instrument bearish momentum exhaustion")
+
+// Webhook JSON
+if rev_up or rev_al_up or (al_fire and p_bull)
+    alert('{"source":"tradingview","strategy":"fintheon_oscillator","direction":"long"'
+     + ',"ticker":"' + syminfo.ticker
+     + '","mf":' + str.tostring(math.round(mf, 1))
+     + ',"hw":' + str.tostring(math.round(hw, 1))
+     + ',"antilag":' + str.tostring(al_fire)
+     + ',"confluence":' + str.tostring(math.round(cnet * 100))
+     + '}', alert.freq_once_per_bar_close)
+
+if rev_dn or rev_al_dn or (al_fire and not p_bull)
+    alert('{"source":"tradingview","strategy":"fintheon_oscillator","direction":"short"'
+     + ',"ticker":"' + syminfo.ticker
+     + '","mf":' + str.tostring(math.round(mf, 1))
+     + ',"hw":' + str.tostring(math.round(hw, 1))
+     + ',"antilag":' + str.tostring(al_fire)
+     + ',"confluence":' + str.tostring(math.round(cnet * 100))
+     + '}', alert.freq_once_per_bar_close)
+
+// ═════════════════════════════════════════════════════════════════════════════

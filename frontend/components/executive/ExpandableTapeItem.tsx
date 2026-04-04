@@ -129,7 +129,7 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
                   <span className="text-[9px] tracking-[0.18em] uppercase text-red-400 font-semibold">Breaking</span>
                 )}
                 {alert.severity === 'medium' && (
-                  <span className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text}`}>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text}`}>
                     {sev.label}
                   </span>
                 )}

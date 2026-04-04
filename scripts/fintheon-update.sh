@@ -15,37 +15,57 @@ FINTHEON_ROOT="${FINTHEON_ROOT:-$HOME/Documents/Codebases/fintheon}"
 UPDATE_VERSION="2.0.0"
 SUPABASE_DATABASE_URL="postgresql://postgres.nrcfnzclbjboctptxaxx:Pricedinresearch0670963957%24@aws-0-us-west-2.pooler.supabase.com:5432/postgres"
 
+# ── Solvys Gold ANSI palette ──────────────────────────────────────────────────
+_R='\033[0m'
+_GOLD='\033[38;2;199;159;74m'
+_CREAM='\033[38;2;240;234;214m'
+_DIM='\033[38;2;100;85;50m'
+_FIRE1='\033[38;2;255;100;20m'
+_FIRE2='\033[38;2;255;160;40m'
+_FIRE3='\033[38;2;255;210;80m'
+_EMBER='\033[38;2;180;60;20m'
+_GREEN='\033[38;2;120;200;120m'
+_RED='\033[38;2;220;60;60m'
+_YELLOW='\033[38;2;220;190;80m'
+_BOLD='\033[1m'
+
+ok()   { echo -e "  ${_GREEN}✓${_R} ${_CREAM}$1${_R}"; }
+warn() { echo -e "  ${_YELLOW}⚠${_R} ${_CREAM}$1${_R}"; }
+info() { echo -e "  ${_DIM}·${_R} ${_CREAM}$1${_R}"; }
+step() { echo -e "  ${_GOLD}[$1]${_R} ${_CREAM}$2${_R}"; }
+
 echo ""
-echo "  ╔══════════════════════════════════════════════════════╗"
-echo "  ║          FINTHEON UPDATE v${UPDATE_VERSION}                      ║"
-echo "  ║      Priced In Capital — Ave Trader                  ║"
-echo "  ╚══════════════════════════════════════════════════════╝"
+echo -e "      ${_FIRE3}  )  ${_R}                                    ${_FIRE3}  (  ${_R}"
+echo -e "      ${_FIRE2} ( \\ ${_R}                                    ${_FIRE2} / ) ${_R}"
+echo -e "      ${_FIRE1}  )( ${_R}                                    ${_FIRE1}  )( ${_R}"
+echo -e "      ${_EMBER} /|\\${_R}                                     ${_EMBER} /|\\${_R}"
+echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╔══════════════════════════════╗${_R}  ${_GOLD}]|||[${_R}"
+printf -v _ut "%-30s" "FINTHEON UPDATE v${UPDATE_VERSION}"
+echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_BOLD}${_GOLD}${_ut}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+printf -v _us "%-30s" "Priced In Capital"
+echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_DIM}${_us}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╚══════════════════════════════╝${_R}  ${_GOLD}]|||[${_R}"
+echo -e "      ${_DIM} ╨╨╨ ${_R}                                    ${_DIM} ╨╨╨ ${_R}"
 echo ""
 
 # ── Validate repo exists ─────────────────────────────────────────────────────
 
 if [[ ! -d "$FINTHEON_ROOT/.git" ]]; then
-  echo "  ✗ Fintheon not found at $FINTHEON_ROOT"
-  echo "    Run the setup script first:"
+  echo -e "  ${_RED}✗${_R} ${_CREAM}Fintheon not found at $FINTHEON_ROOT${_R}"
+  echo '    Run the setup script first:'
   echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/main/scripts/fintheon-setup.sh)"'
   exit 1
 fi
 
 cd "$FINTHEON_ROOT"
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
-echo "  Branch: $CURRENT_BRANCH"
-echo "  Current: $(git describe --tags --always 2>/dev/null || git log --oneline -1 | cut -c1-7)"
+info "Branch: $CURRENT_BRANCH"
+info "Current: $(git describe --tags --always 2>/dev/null || git log --oneline -1 | cut -c1-7)"
 echo ""
-
-# ── Helper functions ─────────────────────────────────────────────────────────
-
-ok()   { echo "  ✓ $1"; }
-warn() { echo "  ⚠ $1"; }
-info() { echo "  · $1"; }
 
 # ── Step 1: Stop Fintheon + kill backend ─────────────────────────────────────
 
-echo "  [1/10] Stopping Fintheon..."
+step "1/11" "Stopping Fintheon..."
 pkill -f "Fintheon" 2>/dev/null || true
 pkill -f "electron.*fintheon" 2>/dev/null || true
 lsof -ti:8080 | xargs kill -9 2>/dev/null || true
@@ -54,7 +74,7 @@ ok "Stopped"
 
 # ── Step 2: Stash local changes ─────────────────────────────────────────────
 
-echo "  [2/10] Checking for local changes..."
+step "2/11" "Checking for local changes..."
 HAS_CHANGES=false
 if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
   HAS_CHANGES=true
@@ -66,7 +86,7 @@ fi
 
 # ── Step 3: Pull latest code ────────────────────────────────────────────────
 
-echo "  [3/10] Pulling latest code..."
+step "3/11" "Pulling latest code..."
 git fetch --all --prune --prune-tags 2>/dev/null || true
 git fetch --tags --force 2>/dev/null || true
 
@@ -84,7 +104,7 @@ fi
 
 # ── Step 4: Install / update dependencies ────────────────────────────────────
 
-echo "  [4/10] Installing dependencies..."
+step "4/11" "Installing dependencies..."
 
 cd "$FINTHEON_ROOT"
 bun install --silent 2>/dev/null || bun install 2>/dev/null || warn "Root deps install had issues"
@@ -104,7 +124,7 @@ cd "$FINTHEON_ROOT"
 
 # ── Step 5: Ensure environment is complete ───────────────────────────────────
 
-echo "  [5/10] Checking environment..."
+step "5/11" "Checking environment..."
 
 BACKEND_ENV="$FINTHEON_ROOT/backend-hono/.env"
 if [[ -f "$BACKEND_ENV" ]]; then
@@ -122,7 +142,7 @@ fi
 
 # ── Step 6: Verify VProxy Anthropic OAuth ──────────────────────────────────
 
-echo "  [6/10] Verifying Anthropic OAuth via VProxy..."
+step "6/11" "Verifying Anthropic OAuth via VProxy..."
 if [[ -f "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" ]]; then
   if bash "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"; then
     ok "VProxy Anthropic OAuth ready"
@@ -135,7 +155,7 @@ fi
 
 # ── Step 7: Rebuild backend ─────────────────────────────────────────────────
 
-echo "  [7/10] Building backend..."
+step "7/11" "Building backend..."
 cd "$FINTHEON_ROOT/backend-hono"
 if bun run build 2>&1 | tail -1; then
   ok "Backend compiled"
@@ -146,7 +166,7 @@ cd "$FINTHEON_ROOT"
 
 # ── Step 8: Rebuild frontend + DMG ──────────────────────────────────────────
 
-echo "  [8/10] Building frontend + DMG..."
+step "8/11" "Building frontend + DMG..."
 
 # Build frontend
 if npx vite build 2>&1 | tail -1; then
@@ -193,13 +213,13 @@ fi
 
 # ── Step 9: Restart backend + launch ────────────────────────────────────────
 
-echo "  [9/10] Starting backend..."
+step "9/11" "Starting backend..."
 cd "$FINTHEON_ROOT/backend-hono"
 
 lsof -ti:8080 | xargs kill -9 2>/dev/null || true
 sleep 1
 
-nohup node dist/index.js > /tmp/fintheon-backend.log 2>&1 &
+nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Wait for ready
@@ -216,7 +236,7 @@ done
 
 # ── Step 10: Device Twitter check + round-robin onboarding ──────────────────
 
-echo "  [10/10] Verifying per-device Twitter CLI + round-robin onboarding..."
+step "10/11" "Verifying per-device Twitter CLI + round-robin onboarding..."
 if [[ -f "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" ]]; then
   if bash "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" --from-update; then
     ok "Peer onboarding sync complete"
@@ -237,20 +257,26 @@ fi
 
 VERSION=$(git describe --tags --always 2>/dev/null || git log --oneline -1 | cut -c1-7)
 echo ""
-echo "  ══════════════════════════════════════════════════════"
-echo "  ✓ Update complete"
-echo "  Version: $VERSION"
-echo ""
-echo "  Backend:  http://localhost:8080"
-echo "  Logs:     tail -f /tmp/fintheon-backend.log"
-echo "  ══════════════════════════════════════════════════════"
+echo -e "      ${_FIRE3}  )  ${_R}                                    ${_FIRE3}  (  ${_R}"
+echo -e "      ${_FIRE2} ( \\ ${_R}                                    ${_FIRE2} / ) ${_R}"
+echo -e "      ${_FIRE1}  )( ${_R}                                    ${_FIRE1}  )( ${_R}"
+echo -e "      ${_EMBER} /|\\${_R}                                     ${_EMBER} /|\\${_R}"
+echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╔══════════════════════════════╗${_R}  ${_GOLD}]|||[${_R}"
+printf -v _vl "%-30s" "UPDATE COMPLETE  $VERSION"
+echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_BOLD}${_GREEN}${_vl}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R}                                ${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+printf -v _bl "%-30s" "Backend: http://localhost:8080"
+echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_CREAM}${_bl}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+printf -v _ll "%-30s" "Logs: tail -f /tmp/fintheon.."
+echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_DIM}${_ll}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╚══════════════════════════════╝${_R}  ${_GOLD}]|||[${_R}"
+echo -e "      ${_DIM} ╨╨╨ ${_R}                                    ${_DIM} ╨╨╨ ${_R}"
 echo ""
 
-# Launch app
+# Launch app + close terminal
 if [[ -d /Applications/Fintheon.app ]]; then
   info "Opening Fintheon..."
   open /Applications/Fintheon.app 2>/dev/null || true
+  sleep 2
+  osascript -e 'tell application "Terminal" to close (every window whose name contains "fintheon")' 2>/dev/null || true
 fi
-
-echo "  Backend running. Press Ctrl+C to stop."
-wait $BACKEND_PID 2>/dev/null || true

@@ -1,0 +1,503 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Priced In Research — Suite 1: Liquidity Swings + Volume Delta Candles + EMA Cross
+// [claude-code 2026-04-04] V3: Sweep wick glow (3-bar box + thick center line), Solvys palette
+// [claude-code 2026-04-04] S7-T2: Upgraded — tick chart support, dual-TF liquidity, staleness, sweep labels, HTF EMA cross alerts, full alert system
+
+//@version=6
+indicator("Liquidity + Delta Overlay (Priced In Research)"
+  , shorttitle = "LQDelta Overlay (Priced In)"
+  , overlay = true
+  , max_lines_count = 500
+  , max_labels_count = 500
+  , max_boxes_count = 500)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1. Liquidity Swings Settings
+// ═══════════════════════════════════════════════════════════════════════════════
+grp1           = '1. Liquidity Swings'
+lengthLS       = input.int(14, 'Pivot Lookback', group = grp1)
+areaLS         = input.string('Wick Extremity', 'Swing Area', options = ['Wick Extremity', 'Full Range'], group = grp1)
+intraPrecision = input.bool(false, 'Intrabar Precision', inline = 'ls1', group = grp1)
+lsRes          = input.string("Auto", "LQ Intrabar Resolution", options = ["Auto", "1T", "100T", "500T", "1000T", "1", "5", "15", "30", "60", "240", "1D"], group = grp1, tooltip = "Resolution for liquidity swing intrabar precision. 'Auto' uses chart timeframe on tick charts, 1m on time-based charts.")
+filterOptions  = input.string('Count', 'Filter Areas By', options = ['Count', 'Volume'], inline = 'ls2', group = grp1)
+filterValueLS  = input.float(0, '', inline = 'ls2', group = grp1)
+showTop        = input.bool(true, 'Swing High', inline = 'top', group = grp1)
+topCss         = input.color(#f23645, '', inline = 'top', group = grp1)
+topAreaCss     = input.color(#f2364540, 'Area', inline = 'top', group = grp1)
+showBtm        = input.bool(true, 'Swing Low', inline = 'btm', group = grp1)
+btmCss         = input.color(#089981, '', inline = 'btm', group = grp1)
+btmAreaCss     = input.color(#08998140, 'Area', inline = 'btm', group = grp1)
+labelSizeLS    = input.string('Tiny', 'Labels Size', options = ['Tiny', 'Small', 'Normal'], group = grp1)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1b. Liquidity Advanced
+// ═══════════════════════════════════════════════════════════════════════════════
+grp_lq_adv       = "1b. Liquidity Advanced"
+staleness_bars   = input.int(200, "Zone Staleness (bars)", group = grp_lq_adv, tooltip = "Zones older than this many bars are removed. Swept zones are removed immediately.")
+use_htf_lq       = input.bool(true, "Show HTF Liquidity", group = grp_lq_adv)
+htf_lq_tf        = input.timeframe("60", "HTF Liquidity Timeframe", group = grp_lq_adv)
+htf_lq_color     = input.color(color.new(#f23645, 70), "HTF Zone Color (dimmer)", group = grp_lq_adv)
+confluence_color  = input.color(#c79f4a, "Confluence Color", group = grp_lq_adv)
+confluence_tol    = input.float(0.5, "Confluence ATR Tolerance", group = grp_lq_adv, tooltip = "How close (in ATR) chart-TF and HTF zones must be to highlight as confluence")
+show_sweep_labels = input.bool(true, "Show Sweep Labels", group = grp_lq_adv)
+sweep_label_color = input.color(#c79f4a, "Sweep Label Color", group = grp_lq_adv)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2. Volume Delta Candles Settings
+// ═══════════════════════════════════════════════════════════════════════════════
+grp2       = '2. Volume Delta Candles'
+showVD     = input.bool(true, 'Show Delta Candles', group = grp2)
+deltaRes   = input.string("Auto", "Delta Resolution", options = ["Auto", "1T", "100T", "500T", "1000T", "1", "5", "15", "30", "60", "240", "1D"], group = grp2, tooltip = "Resolution for volume delta calculation. 'Auto' uses chart timeframe on tick charts, 1m on time-based charts.")
+colUpVD    = input.color(#089981, 'Up ', inline = 'vdu', group = grp2)
+colUp_VD   = input.color(#f23645, 'Up - ', inline = 'vdu', group = grp2, tooltip = "Bullish Candle + Negative Delta")
+colDnVD    = input.color(#f23645, 'Down', inline = 'vdd', group = grp2)
+colDn_VD   = input.color(#089981, 'Down +', inline = 'vdd', group = grp2, tooltip = "Bearish Candle + Positive Delta")
+optionVD   = input.string('full bar', 'Display', options = ['half bar', 'full bar'], group = grp2)
+showDotVD  = input.bool(false, 'Show Max Volume Price Point', group = grp2)
+showTabVD  = input.bool(true, 'Show TF Table', group = grp2)
+tabColVD   = input.color(#b2b5beaa, 'Table Text Color', group = grp2)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3. EMA Cross Settings
+// ═══════════════════════════════════════════════════════════════════════════════
+grp3           = '3. EMA Cross'
+useMTF         = input.bool(false, 'Use Custom Timeframe', group = grp3)
+tfEMA          = input.timeframe('60', 'EMA Timeframe', group = grp3, tooltip = "Only used if 'Use Custom Timeframe' is checked.")
+lenFast        = input.int(20, 'Fast EMA Length', minval = 1, group = grp3)
+lenSlow        = input.int(100, 'Slow EMA Length', minval = 1, group = grp3)
+showEMA        = input.bool(true, 'Show EMA Lines', group = grp3)
+colFast        = input.color(#f0ead6, 'Fast EMA', inline = 'ema_c', group = grp3)
+colSlow        = input.color(#c79f4a, 'Slow EMA', inline = 'ema_c', group = grp3)
+widthFast      = input.int(1, 'Fast EMA Width', minval = 1, maxval = 5, group = grp3)
+widthSlow      = input.int(2, 'Slow EMA Width', minval = 1, maxval = 5, group = grp3)
+showSignals    = input.bool(true, 'Show Cross + Retest Signals', group = grp3)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3b. HTF EMA Cross Alert
+// ═══════════════════════════════════════════════════════════════════════════════
+grp_htf_ema      = "3b. HTF EMA Cross Alert"
+htf_ema_tf       = input.timeframe("15", "HTF EMA Monitor TF", group = grp_htf_ema, tooltip = "Always monitors this TF for 20/100 EMA crosses, independent of chart settings")
+htf_cross_color  = input.color(#c79f4a, "HTF Cross Label Color", group = grp_htf_ema)
+show_htf_cross   = input.bool(true, "Show HTF EMA Cross Labels", group = grp_htf_ema)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Logic Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+n = bar_index
+
+// Detect tick/range/renko charts
+is_tick_chart = str.contains(timeframe.period, "T") or str.contains(timeframe.period, "S")
+
+// Resolve user-selected TF, defaulting to "1" on time charts or chart's own TF on tick charts
+get_resolved_tf(string user_tf) =>
+    if user_tf == "Auto"
+        timeframe.isseconds or timeframe.isminutes or timeframe.isdaily ? "1" : timeframe.period
+    else
+        user_tf
+
+resolved_ls_tf = get_resolved_tf(lsRes)
+resolved_vd_tf = get_resolved_tf(deltaRes)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIQUIDITY SWINGS — Logic
+// ─────────────────────────────────────────────────────────────────────────────
+get_data_ls() => [high, low, volume]
+
+// Only fetch LTF data if NOT on a tick chart (or if user explicitly chose a time-based resolution)
+bool use_ltf_ls = not (is_tick_chart and (lsRes == "Auto" or str.endswith(lsRes, "T")))
+[h_ltf, l_ltf, v_ltf] = request.security_lower_tf(syminfo.tickerid, resolved_ls_tf, get_data_ls())
+
+get_counts(condition, top, btm) =>
+    var float count = 0.0
+    var float vol = 0.0
+    if not na(condition)
+        // Reset AND seed with the pivot bar's own volume
+        count := 0.0
+        vol := 0.0
+        // The pivot bar at [lengthLS] created this zone — count it
+        if low[lengthLS] < top and high[lengthLS] > btm
+            count := 1.0
+            vol := volume[lengthLS]
+    else
+        if intraPrecision and use_ltf_ls
+            if n > lengthLS and v_ltf.size() > 0
+                for [idx, el] in v_ltf
+                    vol += l_ltf.get(idx) < top and h_ltf.get(idx) > btm ? el : 0.0
+        else
+            vol += low[lengthLS] < top and high[lengthLS] > btm ? volume[lengthLS] : 0.0
+        count += low[lengthLS] < top and high[lengthLS] > btm ? 1.0 : 0.0
+    [count, vol]
+
+set_label_ls(count, vol, x, y, css, lbl_style) =>
+    var label lbl = na
+    label_size = switch labelSizeLS
+        'Tiny' => size.tiny
+        'Small' => size.small
+        'Normal' => size.normal
+    target = filterOptions == 'Count' ? count : vol
+    if ta.crossover(target, filterValueLS)
+        lbl := label.new(x, y, str.tostring(vol, format.volume), style = lbl_style, size = label_size, color = #00000000, textcolor = css)
+    if target > filterValueLS
+        label.set_text(lbl, str.tostring(vol, format.volume))
+
+set_level_ls(condition, crossed, value, count, vol, css) =>
+    var line lvl = na
+    target = filterOptions == 'Count' ? count : vol
+    if not na(condition)
+        if target[1] < filterValueLS[1]
+            line.delete(lvl[1])
+        else if not crossed[1]
+            line.set_x2(lvl, n - lengthLS)
+        lvl := line.new(n - lengthLS, value, n, value, color = na)
+    if not crossed[1]
+        line.set_x2(lvl, n + 3)
+    if crossed and not crossed[1]
+        line.set_x2(lvl, n), line.set_style(lvl, line.style_dashed)
+    if target > filterValueLS
+        line.set_color(lvl, css)
+
+set_zone_ls(condition, x, top, btm, count, vol, css) =>
+    var box bx = na
+    target = filterOptions == 'Count' ? count : vol
+    if ta.crossover(target, filterValueLS)
+        bx := box.new(x, top, x + int(count), btm, border_color = na, bgcolor = css)
+    if target > filterValueLS
+        box.set_right(bx, x + int(count))
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chart-TF Liquidity Zones — with staleness + sweep deletion
+// ─────────────────────────────────────────────────────────────────────────────
+var float ph_top = na, var float ph_btm = na, var bool ph_crossed = false, var int ph_x1 = 0
+var box ph_bx = box.new(na, na, na, na, bgcolor = topAreaCss, border_color = na)
+var line ph_lvl = line.new(na, na, na, na, color = na)
+var int ph_birth = 0
+
+var float pl_top = na, var float pl_btm = na, var bool pl_crossed = false, var int pl_x1 = 0
+var box pl_bx = box.new(na, na, na, na, bgcolor = btmAreaCss, border_color = na)
+var line pl_lvl = line.new(na, na, na, na, color = na)
+var int pl_birth = 0
+
+ph = ta.pivothigh(lengthLS, lengthLS)
+[ph_count, ph_vol] = get_counts(ph, ph_top, ph_btm)
+
+// Track sweep events (for alerts)
+var bool prev_ph_crossed = false
+bool swept_high_event = false
+
+if not na(ph) and showTop
+    ph_top := high[lengthLS], ph_btm := areaLS == 'Wick Extremity' ? math.max(close[lengthLS], open[lengthLS]) : low[lengthLS]
+    ph_x1 := n - lengthLS, ph_crossed := false
+    ph_birth := n
+    box.set_lefttop(ph_bx, ph_x1, ph_top), box.set_rightbottom(ph_bx, ph_x1, ph_btm)
+else
+    ph_crossed := close > ph_top ? true : ph_crossed
+    box.set_right(ph_bx, ph_crossed ? ph_x1 : n + 3)
+
+// Sweep detection — high zone
+if ph_crossed and not prev_ph_crossed
+    swept_high_event := true
+    // Delete zone immediately on sweep
+    line.delete(ph_lvl)
+    box.delete(ph_bx)
+    // Place sweep label
+    if show_sweep_labels
+        label.new(n, high, "", style = label.style_label_down, color = sweep_label_color, size = size.tiny)
+prev_ph_crossed := ph_crossed
+
+// Staleness — delete stale high zone
+bool ph_stale = not ph_crossed and (n - ph_birth > staleness_bars) and ph_birth > 0
+if ph_stale
+    line.delete(ph_lvl)
+    box.delete(ph_bx)
+
+if showTop and not ph_stale and not ph_crossed
+    set_zone_ls(ph, ph_x1, ph_top, ph_btm, ph_count, ph_vol, topAreaCss)
+    set_level_ls(ph, ph_crossed, ph_top, ph_count, ph_vol, topCss)
+    set_label_ls(ph_count, ph_vol, ph_x1, ph_top, topCss, label.style_label_down)
+
+pl = ta.pivotlow(lengthLS, lengthLS)
+[pl_count, pl_vol] = get_counts(pl, pl_top, pl_btm)
+
+// Track sweep events (for alerts)
+var bool prev_pl_crossed = false
+bool swept_low_event = false
+
+if not na(pl) and showBtm
+    pl_top := areaLS == 'Wick Extremity' ? math.min(close[lengthLS], open[lengthLS]) : high[lengthLS], pl_btm := low[lengthLS]
+    pl_x1 := n - lengthLS, pl_crossed := false
+    pl_birth := n
+    box.set_lefttop(pl_bx, pl_x1, pl_top), box.set_rightbottom(pl_bx, pl_x1, pl_btm)
+else
+    pl_crossed := close < pl_btm ? true : pl_crossed
+    box.set_right(pl_bx, pl_crossed ? pl_x1 : n + 3)
+
+// Sweep detection — low zone
+if pl_crossed and not prev_pl_crossed
+    swept_low_event := true
+    // Delete zone immediately on sweep
+    line.delete(pl_lvl)
+    box.delete(pl_bx)
+    // Place sweep label
+    if show_sweep_labels
+        label.new(n, low, "", style = label.style_label_up, color = sweep_label_color, size = size.tiny)
+prev_pl_crossed := pl_crossed
+
+// Staleness — delete stale low zone
+bool pl_stale = not pl_crossed and (n - pl_birth > staleness_bars) and pl_birth > 0
+if pl_stale
+    line.delete(pl_lvl)
+    box.delete(pl_bx)
+
+if showBtm and not pl_stale and not pl_crossed
+    set_zone_ls(pl, pl_x1, pl_top, pl_btm, pl_count, pl_vol, btmAreaCss)
+    set_level_ls(pl, pl_crossed, pl_btm, pl_count, pl_vol, btmCss)
+    set_label_ls(pl_count, pl_vol, pl_x1, pl_btm, btmCss, label.style_label_up)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HTF Liquidity Layer (Feature 1)
+// ─────────────────────────────────────────────────────────────────────────────
+htf_lq_func() => [ta.pivothigh(lengthLS, lengthLS), ta.pivotlow(lengthLS, lengthLS), high, low, close, open]
+[htf_ph, htf_pl, htf_high, htf_low, htf_close, htf_open] = request.security(syminfo.tickerid, htf_lq_tf, htf_lq_func())
+
+var float htf_ph_top = na, var float htf_ph_btm = na, var bool htf_ph_crossed = false, var int htf_ph_x1 = 0, var int htf_ph_birth = 0
+var box htf_ph_bx = box.new(na, na, na, na, bgcolor = htf_lq_color, border_color = na)
+var line htf_ph_lvl = line.new(na, na, na, na, color = na)
+
+var float htf_pl_top = na, var float htf_pl_btm = na, var bool htf_pl_crossed = false, var int htf_pl_x1 = 0, var int htf_pl_birth = 0
+var box htf_pl_bx = box.new(na, na, na, na, bgcolor = htf_lq_color, border_color = na)
+var line htf_pl_lvl = line.new(na, na, na, na, color = na)
+
+if use_htf_lq
+    if not na(htf_ph)
+        htf_ph_top := htf_high
+        htf_ph_btm := math.max(htf_close, htf_open)
+        htf_ph_x1 := n
+        htf_ph_crossed := false
+        htf_ph_birth := n
+        box.set_lefttop(htf_ph_bx, htf_ph_x1, htf_ph_top)
+        box.set_rightbottom(htf_ph_bx, htf_ph_x1, htf_ph_btm)
+        box.set_bgcolor(htf_ph_bx, htf_lq_color)
+        htf_ph_lvl := line.new(htf_ph_x1, htf_ph_top, n, htf_ph_top, color = color.new(color.red, 60), style = line.style_dotted)
+    else
+        htf_ph_crossed := close > htf_ph_top ? true : htf_ph_crossed
+        if not htf_ph_crossed
+            box.set_right(htf_ph_bx, n + 3)
+            line.set_x2(htf_ph_lvl, n + 3)
+
+    // Sweep + staleness for HTF high
+    if htf_ph_crossed and not htf_ph_crossed[1]
+        line.delete(htf_ph_lvl)
+        box.delete(htf_ph_bx)
+    if not htf_ph_crossed and (n - htf_ph_birth > staleness_bars) and htf_ph_birth > 0
+        line.delete(htf_ph_lvl)
+        box.delete(htf_ph_bx)
+
+    if not na(htf_pl)
+        htf_pl_top := math.min(htf_close, htf_open)
+        htf_pl_btm := htf_low
+        htf_pl_x1 := n
+        htf_pl_crossed := false
+        htf_pl_birth := n
+        box.set_lefttop(htf_pl_bx, htf_pl_x1, htf_pl_top)
+        box.set_rightbottom(htf_pl_bx, htf_pl_x1, htf_pl_btm)
+        box.set_bgcolor(htf_pl_bx, htf_lq_color)
+        htf_pl_lvl := line.new(htf_pl_x1, htf_pl_btm, n, htf_pl_btm, color = color.new(color.teal, 60), style = line.style_dotted)
+    else
+        htf_pl_crossed := close < htf_pl_btm ? true : htf_pl_crossed
+        if not htf_pl_crossed
+            box.set_right(htf_pl_bx, n + 3)
+            line.set_x2(htf_pl_lvl, n + 3)
+
+    // Sweep + staleness for HTF low
+    if htf_pl_crossed and not htf_pl_crossed[1]
+        line.delete(htf_pl_lvl)
+        box.delete(htf_pl_bx)
+    if not htf_pl_crossed and (n - htf_pl_birth > staleness_bars) and htf_pl_birth > 0
+        line.delete(htf_pl_lvl)
+        box.delete(htf_pl_bx)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Confluence Detection (Feature 1 — chart-TF ↔ HTF overlap)
+// ─────────────────────────────────────────────────────────────────────────────
+float atr_val = ta.atr(14)
+bool confluence_detected = false
+
+if use_htf_lq and not na(atr_val)
+    // Check chart-TF high vs HTF high
+    bool hi_hi_conf = not ph_crossed and not htf_ph_crossed and not na(ph_top) and not na(htf_ph_top) and math.abs(ph_top - htf_ph_top) <= atr_val * confluence_tol
+    // Check chart-TF low vs HTF low
+    bool lo_lo_conf = not pl_crossed and not htf_pl_crossed and not na(pl_btm) and not na(htf_pl_btm) and math.abs(pl_btm - htf_pl_btm) <= atr_val * confluence_tol
+    // Check chart-TF high vs HTF low (cross-polarity)
+    bool hi_lo_conf = not ph_crossed and not htf_pl_crossed and not na(ph_top) and not na(htf_pl_btm) and math.abs(ph_top - htf_pl_btm) <= atr_val * confluence_tol
+    // Check chart-TF low vs HTF high (cross-polarity)
+    bool lo_hi_conf = not pl_crossed and not htf_ph_crossed and not na(pl_btm) and not na(htf_ph_top) and math.abs(pl_btm - htf_ph_top) <= atr_val * confluence_tol
+
+    confluence_detected := hi_hi_conf or lo_lo_conf or hi_lo_conf or lo_hi_conf
+
+    // Recolor zones to bright orange on confluence
+    if hi_hi_conf
+        box.set_bgcolor(ph_bx, color.new(confluence_color, 20))
+        box.set_bgcolor(htf_ph_bx, color.new(confluence_color, 20))
+    if lo_lo_conf
+        box.set_bgcolor(pl_bx, color.new(confluence_color, 20))
+        box.set_bgcolor(htf_pl_bx, color.new(confluence_color, 20))
+    if hi_lo_conf
+        box.set_bgcolor(ph_bx, color.new(confluence_color, 20))
+        box.set_bgcolor(htf_pl_bx, color.new(confluence_color, 20))
+    if lo_hi_conf
+        box.set_bgcolor(pl_bx, color.new(confluence_color, 20))
+        box.set_bgcolor(htf_ph_bx, color.new(confluence_color, 20))
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VOLUME DELTA — Logic (Fix 2: tick chart support)
+// ─────────────────────────────────────────────────────────────────────────────
+var float bullV = 0.0
+var float bearV = 0.0
+var float maxV_vd = na
+
+if is_tick_chart and (deltaRes == "Auto" or str.endswith(deltaRes, "T"))
+    // Compute delta from bar data directly — each bar already represents aggregated ticks
+    bullV := close > open ? volume : 0.0
+    bearV := close < open ? volume : 0.0
+    maxV_vd := na
+else
+    [bV, sV, tV, aCl_vd] = request.security_lower_tf(syminfo.tickerid, resolved_vd_tf, [close > open ? volume : 0.0, close < open ? volume : 0.0, volume, close])
+    if tV.size() > 0
+        indices = (bV.max() > sV.max() ? bV : sV).sort_indices(order.descending)
+        maxV_vd := indices.size() > 0 ? aCl_vd.get(indices.first()) : na
+    bullV := bV.sum()
+    bearV := sV.sum()
+
+abs_vd = math.abs(open - close), min_vd = math.min(open, close), max_vd = math.max(open, close), avg_vd = math.avg(open, close)
+delta_vd = bullV - bearV
+norm_vd = volume != 0 ? delta_vd / volume : 0.0
+pos_vd = norm_vd >= 0
+value_vd = optionVD == 'half bar' ? avg_vd + norm_vd * abs_vd / 2 : pos_vd ? min_vd + math.abs(norm_vd) * abs_vd : max_vd - math.abs(norm_vd) * abs_vd
+base_vd = optionVD == 'half bar' ? avg_vd : pos_vd ? min_vd : max_vd
+css_vd = close > open ? colUpVD : close < open ? colDnVD : chart.fg_color
+cssD_vd = color.new(norm_vd > 0 ? (close > open ? colUpVD : colDn_VD) : (close < open ? colDnVD : colUp_VD), 50)
+
+barcolor(color.new(na, 100))
+plotcandle(showVD ? base_vd : na, showVD ? base_vd : na, showVD ? value_vd : na, showVD ? value_vd : na, color = cssD_vd, wickcolor = na, bordercolor = na)
+plotcandle(showVD ? open : na, showVD ? high : na, showVD ? low : na, showVD ? close : na, color = na, wickcolor = css_vd, bordercolor = css_vd)
+plot(showVD and showDotVD ? maxV_vd : na, color = chart.fg_color, style = plot.style_circles, offset = 1)
+
+if showTabVD and barstate.islast
+    var table tab_vd = table.new(position.top_right, 1, 1, bgcolor = color.new(na, 100))
+    table.cell(tab_vd, 0, 0, "TF: " + resolved_vd_tf, text_color = tabColVD)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SWEEP AREAS — glow on sweep + extending zone that disappears when triggered
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Sweep area tracking (LuxAlgo Liquidity Sweeps pattern)
+var box[]  sweep_bx  = array.new_box()
+var line[] sweep_ln  = array.new_line()
+var int[]  sweep_dir = array.new_int()    // 1 = bearish sweep area, -1 = bullish sweep area
+
+// High sweep — glow + create extending sweep area
+if swept_high_event and showTop
+    float wick_top  = high
+    float wick_body = math.max(open, close)
+    if wick_top > wick_body
+        // Glow: faint halo box + bright thick center line
+        box.new(n, wick_top, n, wick_body, border_color = color.new(na, 100), bgcolor = color.new(topCss, 88))
+        line.new(n, wick_top, n, wick_body, color = topCss, width = 3)
+        // Extending sweep area: wick extreme to pivot level
+        array.push(sweep_bx, box.new(n, wick_top, n + 1, ph_top, border_color = color.new(na, 100), bgcolor = color.new(topCss, 85)))
+        array.push(sweep_ln, line.new(n, ph_top, n + 1, ph_top, color = color.new(topCss, 40), style = line.style_dotted))
+        array.push(sweep_dir, 1)
+
+// Low sweep — glow + create extending sweep area
+if swept_low_event and showBtm
+    float wick_btm     = low
+    float wick_body_lo = math.min(open, close)
+    if wick_btm < wick_body_lo
+        // Glow: faint halo box + bright thick center line
+        box.new(n, wick_body_lo, n, wick_btm, border_color = color.new(na, 100), bgcolor = color.new(btmCss, 88))
+        line.new(n, wick_body_lo, n, wick_btm, color = btmCss, width = 3)
+        // Extending sweep area: pivot level to wick extreme
+        array.push(sweep_bx, box.new(n, pl_btm, n + 1, wick_btm, border_color = color.new(na, 100), bgcolor = color.new(btmCss, 85)))
+        array.push(sweep_ln, line.new(n, pl_btm, n + 1, pl_btm, color = color.new(btmCss, 40), style = line.style_dotted))
+        array.push(sweep_dir, -1)
+
+// Extend sweep areas forward + delete when triggered
+if array.size(sweep_bx) > 0
+    for i = array.size(sweep_bx) - 1 to 0
+        bx  = array.get(sweep_bx, i)
+        ln  = array.get(sweep_ln, i)
+        dir = array.get(sweep_dir, i)
+        int age = n - box.get_left(bx)
+        // Extend right edge
+        box.set_right(bx, n + 3)
+        line.set_x2(ln, n + 3)
+        // Break condition: price closes through the area
+        bool broken = (dir == 1 and close > box.get_top(bx)) or (dir == -1 and close < box.get_bottom(bx))
+        // Staleness: remove after staleness_bars
+        if broken or age > staleness_bars
+            box.delete(array.remove(sweep_bx, i))
+            line.delete(array.remove(sweep_ln, i))
+            array.remove(sweep_dir, i)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMA CROSS + RETEST — Logic (Fix 1: label shapes, Fix 3: adjustable width)
+// ─────────────────────────────────────────────────────────────────────────────
+ema_func() => [ta.ema(close, lenFast), ta.ema(close, lenSlow)]
+[fEMA, sEMA] = request.security(syminfo.tickerid, useMTF ? tfEMA : timeframe.period, ema_func(), gaps = barmerge.gaps_off)
+
+var bool pendingBull = false
+var bool pendingBear = false
+
+if ta.crossover(fEMA, sEMA)
+    pendingBull := true
+    pendingBear := false
+if ta.crossunder(fEMA, sEMA)
+    pendingBear := true
+    pendingBull := false
+
+bullRetest = pendingBull and low <= fEMA and close > sEMA
+bearRetest = pendingBear and high >= fEMA and close < sEMA
+
+if bullRetest
+    pendingBull := false
+if bearRetest
+    pendingBear := false
+
+// Fix 3: Adjustable EMA thickness
+plot(showEMA ? fEMA : na, "Fast EMA", color = colFast, linewidth = widthFast)
+plot(showEMA ? sEMA : na, "Slow EMA", color = colSlow, linewidth = widthSlow)
+
+// Retest signals — label_up/down, no text, tiny
+plotshape(showSignals and bullRetest ? low : na, "Bull Retest", shape.labelup, location.belowbar, colUpVD, size = size.tiny)
+plotshape(showSignals and bearRetest ? high : na, "Bear Retest", shape.labeldown, location.abovebar, colDnVD, size = size.tiny)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HTF EMA Cross Alerts — Always-On (Feature 3)
+// ─────────────────────────────────────────────────────────────────────────────
+htf_ema_func() => [ta.ema(close, 20), ta.ema(close, 100)]
+[htf_fast, htf_slow] = request.security(syminfo.tickerid, htf_ema_tf, htf_ema_func())
+
+bool htf_bull_cross = ta.crossover(htf_fast, htf_slow)
+bool htf_bear_cross = ta.crossunder(htf_fast, htf_slow)
+
+plotshape(show_htf_cross and htf_bull_cross, "HTF Bull Cross", shape.labelup, location.bottom, htf_cross_color, size = size.small)
+plotshape(show_htf_cross and htf_bear_cross, "HTF Bear Cross", shape.labeldown, location.top, htf_cross_color, size = size.small)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 4. Alerts (Feature 4)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Standard alertcondition calls
+alertcondition(bullRetest, "LQ: Bull Retest", "Bullish EMA retest confirmed")
+alertcondition(bearRetest, "LQ: Bear Retest", "Bearish EMA retest confirmed")
+alertcondition(htf_bull_cross, "LQ: HTF Bull EMA Cross", "HTF bullish EMA cross detected")
+alertcondition(htf_bear_cross, "LQ: HTF Bear EMA Cross", "HTF bearish EMA cross detected")
+alertcondition(swept_high_event, "LQ: Zone Swept High", "Swing high liquidity zone swept")
+alertcondition(swept_low_event, "LQ: Zone Swept Low", "Swing low liquidity zone swept")
+alertcondition(confluence_detected, "LQ: Confluence", "Chart-TF and HTF liquidity zones overlapping")
+
+// JSON webhook alerts for signal-ingest
+if bullRetest
+    alert('{"source":"tradingview","strategy":"lqdelta_overlay","direction":"long","instrument":"' + syminfo.ticker + '","confidence":70,"signals":["ema_retest"],"sessionWindow":"' + (session.ismarket ? "rth" : "eth") + '"}', alert.freq_once_per_bar_close)
+if bearRetest
+    alert('{"source":"tradingview","strategy":"lqdelta_overlay","direction":"short","instrument":"' + syminfo.ticker + '","confidence":70,"signals":["ema_retest"],"sessionWindow":"' + (session.ismarket ? "rth" : "eth") + '"}', alert.freq_once_per_bar_close)

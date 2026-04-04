@@ -4,6 +4,7 @@
  * Day 17 - Phase 5 Integration
  */
 
+// [claude-code 2026-04-04] Periodic DB re-sync (every 2min) so cache stays fresh when poller idles
 // [claude-code 2026-04-03] Chronological sort (publishedAt DESC), cold start bumped to 200 items
 // [claude-code 2026-03-24] Pass VIX data into calculateIVScore for continuous curve multiplier + sub-scores
 // [claude-code 2026-03-11] Integrated point estimator for commentary point ranges + VIX feed
@@ -74,8 +75,10 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
   };
 }
 
-// In-memory cache — seeded from scored DB on boot, then updated by feed poller cycles.
+// In-memory cache — seeded from scored DB on boot, then re-synced periodically from DB.
 let feedCache: FeedItem[] | null = null;
+let lastCacheRefreshMs = 0;
+const CACHE_REFRESH_INTERVAL_MS = 120_000; // Re-sync from DB every 2 minutes
 
 function sortFeedItems(items: FeedItem[]): FeedItem[] {
   return [...items].sort((a, b) =>
@@ -140,7 +143,8 @@ async function warmCacheFromDB(): Promise<void> {
 
     const items = sortFeedItems(scored.map(scoredToFeedItem)).slice(0, MAX_FEED_ITEMS);
     feedCache = items;
-    log.info(`[FeedService] Cold-start cache seeded with ${items.length} items from DB`);
+    lastCacheRefreshMs = Date.now();
+    log.info(`[FeedService] Cache synced with ${items.length} items from DB`);
   } catch (err) {
     log.warn('[FeedService] Cold-start seed failed (non-fatal)', { error: String(err) });
   }
@@ -160,6 +164,7 @@ export function updateFeedCache(items: FeedItem[]): void {
 
   const nextItems = sortFeedItems(items).slice(0, MAX_FEED_ITEMS);
   feedCache = nextItems;
+  lastCacheRefreshMs = Date.now();
   log.info(`[FeedService] Cache updated with ${nextItems.length} items`);
 }
 
@@ -538,9 +543,24 @@ function generateMockFeed(): FeedItem[] {
  * Scores now persist across restarts because they live in Supabase.
  */
 async function getCachedFeed(): Promise<FeedItem[]> {
-  // Always return warm cache if present.
-  if (feedCache) {
+  // Return warm cache if present AND recently refreshed from DB.
+  // Periodic re-sync ensures items added via Central Scorer or manual ingestion
+  // appear in RiskFlow even when the poller returns 0 new items.
+  const cacheAge = Date.now() - lastCacheRefreshMs;
+  if (feedCache && cacheAge < CACHE_REFRESH_INTERVAL_MS) {
     return feedCache;
+  }
+
+  // Cache is stale or missing — re-read from DB
+  if (feedCache && isSupabaseConfigured()) {
+    try {
+      await warmCacheFromDB();
+      lastCacheRefreshMs = Date.now();
+      if (feedCache) return feedCache;
+    } catch {
+      // DB re-sync failed — serve stale cache rather than empty
+      return feedCache;
+    }
   }
 
   try {
