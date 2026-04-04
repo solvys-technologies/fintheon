@@ -348,14 +348,68 @@ app.whenReady().then(async () => {
   }
   // Browser Use Phase 2 — CDP enabled via commandLine switch, no in-process handlers needed
 
-  // Handle window.open from embedded <webview> tags.
+  // Chrome-like user-agent so Google doesn't block sign-in in Electron popups
+  const CHROME_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
+  // Open Google OAuth in a standalone popup with Chrome UA so Google allows it.
+  // Shares the persist:fintheon partition so session cookies carry back to the webview.
+  const openGooglePopup = (navUrl) => {
+    try {
+      const parsed = new URL(navUrl);
+      if (parsed.hostname !== "accounts.google.com" &&
+          !parsed.hostname.endsWith(".accounts.google.com")) return false;
+      const popup = new BrowserWindow({
+        width: 520,
+        height: 760,
+        parent: mainWindow ?? undefined,
+        modal: false,
+        alwaysOnTop: true,
+        title: "Sign in with Google",
+        webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false,
+          nativeWindowOpen: true,
+          partition: "persist:fintheon",
+        },
+      });
+      popup.webContents.setUserAgent(CHROME_UA);
+      popup.loadURL(navUrl);
+      popup.focus();
+      // When Google redirects back to the service, close the popup
+      popup.webContents.on("will-redirect", (_rEvent, redirectUrl) => {
+        try {
+          const rParsed = new URL(redirectUrl);
+          if (rParsed.hostname !== "accounts.google.com" &&
+              !rParsed.hostname.endsWith(".google.com")) {
+            setTimeout(() => popup.close(), 1500);
+          }
+        } catch {}
+      });
+      // Also close on did-navigate to non-Google domains (catches JS redirects)
+      popup.webContents.on("did-navigate", (_navEvent, doneUrl) => {
+        try {
+          const doneParsed = new URL(doneUrl);
+          if (doneParsed.hostname !== "accounts.google.com" &&
+              !doneParsed.hostname.endsWith(".google.com") &&
+              !doneParsed.hostname.endsWith(".gstatic.com")) {
+            setTimeout(() => popup.close(), 1500);
+          }
+        } catch {}
+      });
+      return true;
+    } catch { return false; }
+  };
+
+  // Handle window.open and Google OAuth across ALL web contents (webviews + popups).
   app.on("web-contents-created", (_event, contents) => {
     try {
+      // setWindowOpenHandler — only for webview tags (handles window.open calls)
       if (contents.getType && contents.getType() === "webview") {
         contents.setWindowOpenHandler(({ url }) => {
+          // Google OAuth — always intercept and open our custom popup
+          if (openGooglePopup(url)) return { action: "deny" };
+
           if (shouldAllowInAppPopup(url)) {
-            // Allow an in-app popup — share the webview's partition so the
-            // auth session cookies carry over (fixes Google OAuth in iframes).
             return {
               action: "allow",
               overrideBrowserWindowOptions: {
@@ -374,59 +428,22 @@ app.whenReady().then(async () => {
             };
           }
 
-          // For non-auth links, open externally to avoid popup spam.
           shell.openExternal(url).catch(() => {});
           return { action: "deny" };
         });
-
-        // Intercept navigations to Google OAuth inside webviews —
-        // Google blocks sign-in in embedded frames. Open in a popup instead.
-        // Use both will-navigate and did-start-navigation for full coverage:
-        // will-navigate catches same-frame navigations, did-start-navigation
-        // catches cross-origin form POSTs and redirects that will-navigate misses.
-        const openGooglePopup = (navUrl) => {
-          try {
-            const parsed = new URL(navUrl);
-            if (parsed.hostname !== "accounts.google.com") return false;
-            const popup = new BrowserWindow({
-              width: 520,
-              height: 760,
-              parent: mainWindow ?? undefined,
-              modal: false,
-              title: "Sign in with Google",
-              webPreferences: {
-                contextIsolation: true,
-                nodeIntegration: false,
-                nativeWindowOpen: true,
-                partition: "persist:fintheon",
-              },
-            });
-            popup.loadURL(navUrl);
-            // When Google redirects back to the service, close the popup
-            popup.webContents.on("will-redirect", (_rEvent, redirectUrl) => {
-              try {
-                const rParsed = new URL(redirectUrl);
-                if (rParsed.hostname !== "accounts.google.com" &&
-                    !rParsed.hostname.endsWith(".google.com")) {
-                  setTimeout(() => popup.close(), 1500);
-                }
-              } catch {}
-            });
-            return true;
-          } catch { return false; }
-        };
-
-        contents.on("will-navigate", (navEvent, navUrl) => {
-          if (openGooglePopup(navUrl)) navEvent.preventDefault();
-        });
-
-        contents.on("did-start-navigation", (_navEvent, navUrl, isInPlace, isMainFrame) => {
-          if (isMainFrame && openGooglePopup(navUrl)) {
-            // Navigate back to the original page to undo the in-frame redirect
-            try { contents.goBack(); } catch {}
-          }
-        });
       }
+
+      // Google OAuth navigation intercept — applies to ALL contents (webviews,
+      // popup windows, child frames) so OAuth works from any iframe or popup.
+      contents.on("will-navigate", (navEvent, navUrl) => {
+        if (openGooglePopup(navUrl)) navEvent.preventDefault();
+      });
+
+      contents.on("did-start-navigation", (_navEvent, navUrl, isInPlace, isMainFrame) => {
+        if (isMainFrame && openGooglePopup(navUrl)) {
+          try { contents.goBack(); } catch {}
+        }
+      });
     } catch {
       // Best-effort only.
     }
