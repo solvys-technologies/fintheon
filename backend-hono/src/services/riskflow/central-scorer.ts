@@ -22,7 +22,7 @@ import { resolvePriceAt } from '../autoresearch/price-resolver.js';
 import { getInstrumentConfig } from '../iv-scoring-v2.js';
 import { fetchVIX } from '../vix-service.js';
 import { shouldTriggerReactiveAdjustment, adjustScoresForRiskFlow, getRunningState, setRunningState } from '../miroshark/miroshark-reactive.js';
-import { generateNotesForCriticalItems } from './agent-notes.js';
+import { generateNotesForCriticalItems, generateNotesForEconItems } from './agent-notes.js';
 import { tagHeadlineSubjects } from './headline-tagger.js';
 
 const log = createLogger('CentralScorer');
@@ -415,11 +415,17 @@ export async function scoringCycle(): Promise<void> {
       }
     }
 
-    // S3: Auto-generate agent notes for any critical items that were just scored
+    // S3: Auto-generate agent notes for critical items + econ data items
     const hasCritical = enrichedItems.some(i => i.macroLevel === 4);
+    const hasEcon = enrichedItems.some(i => i.econData?.beatMiss);
     if (hasCritical) {
       generateNotesForCriticalItems().catch(err =>
-        log.warn('Auto-notes after scoring failed', { error: String(err) })
+        log.warn('Auto-notes for critical items failed', { error: String(err) })
+      );
+    }
+    if (hasEcon) {
+      generateNotesForEconItems().catch(err =>
+        log.warn('Auto-notes for econ items failed', { error: String(err) })
       );
     }
   } catch (err) {

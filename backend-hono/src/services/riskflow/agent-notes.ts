@@ -281,6 +281,58 @@ export async function generateNotesForCriticalItems(): Promise<number> {
 }
 
 /**
+ * Auto-generate notes for items with econ data (beat/miss/inline).
+ * Called immediately after scoring — econ catalysts should always have a note.
+ */
+export async function generateNotesForEconItems(): Promise<number> {
+  const sb = getSupabaseClient();
+  if (!sb) return 0;
+
+  const cutoff = new Date(Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await sb
+    .from('scored_riskflow_items')
+    .select('id, headline, body, macro_level, tags, econ_data, sub_scores')
+    .not('econ_data', 'is', null)
+    .is('agent_note', null)
+    .gte('published_at', cutoff)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error || !data?.length) return 0;
+
+  let generated = 0;
+  for (const item of data as ScoredRow[]) {
+    // Only generate for items that actually have econ print data
+    const econ = item.econ_data as Record<string, unknown> | null;
+    if (!econ || !econ.beatMiss) continue;
+
+    try {
+      const note = await generateAgentNote({
+        headline: item.headline,
+        summary: item.body ?? undefined,
+        severity: macroLevelToSeverity(item.macro_level),
+        tags: item.tags ?? [],
+        econData: item.econ_data,
+        subScores: item.sub_scores,
+      });
+      const ok = await writeNoteToItem(item.id, note);
+      if (ok) generated++;
+    } catch (err) {
+      log.warn('Auto-note for econ item failed', {
+        itemId: item.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  if (generated > 0) {
+    log.info(`Auto-generated ${generated} notes for econ data items`);
+  }
+  return generated;
+}
+
+/**
  * Manual trigger: generate a note for a specific item by ID
  * Returns the generated note or null if the item doesn't exist / generation fails
  */
