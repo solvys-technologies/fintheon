@@ -26,7 +26,7 @@ export function TerritoryNode({ data }: NodeProps & { data: TerritoryNodeData })
         justifyContent: 'center',
         position: 'relative',
         pointerEvents: 'none',
-        animation: 'territory-ring-pulse 4s ease-in-out infinite',
+        /* no glow animation */
       }}
     >
       <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1 }} />
@@ -52,7 +52,7 @@ export function TerritoryNode({ data }: NodeProps & { data: TerritoryNodeData })
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
             opacity: 0.85,
-            textShadow: `0 0 80px ${color}40, 0 0 40px ${color}25, 0 2px 20px ${color}15`,
+            textShadow: 'none',
             lineHeight: '1.15',
             padding: '0 18px',
           }}
