@@ -10,6 +10,8 @@ import { ChatGreeting } from './ChatGreeting';
 import { FintheonThinkingIndicator } from './FintheonThinkingIndicator';
 import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { CognitionPanel } from './CognitionPanel';
+import { ToolApprovalCard } from './ToolApprovalCard';
+import { useToolApprovals } from './hooks/useToolApprovals';
 
 /* ------------------------------------------------------------------ */
 /*  Message-level error boundary                                        */
@@ -526,6 +528,7 @@ interface FintheonThreadProps {
 export function FintheonThread({ onSend, isLoading, agentName, onTakeNote, lastError, lastRequestId, compact }: FintheonThreadProps) {
   const { activeAgent } = useFintheonAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
+  const { approvals, sendDecision } = useToolApprovals(lastRequestId ?? null);
 
   // Read messages directly from the thread store — bypasses ThreadPrimitive.Messages
   // which caused flicker/disappearance due to assistant-ui reconciliation issues
@@ -572,6 +575,16 @@ export function FintheonThread({ onSend, isLoading, agentName, onTakeNote, lastE
           {lastRequestId && !compact && (
             <CognitionPanel requestId={lastRequestId} isStreaming={isLoading} />
           )}
+
+          {/* Tool approval cards — inline approve/deny for Harper tool calls */}
+          {approvals.map((a) => (
+            <ToolApprovalCard
+              key={a.approvalId}
+              approval={a}
+              onApprove={(id) => sendDecision(id, 'approved')}
+              onDeny={(id) => sendDecision(id, 'denied')}
+            />
+          ))}
 
           {/* Error banner — visible in thread, not just input area */}
           {lastError && !isLoading && (
