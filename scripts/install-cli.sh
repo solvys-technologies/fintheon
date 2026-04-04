@@ -8,6 +8,7 @@
 #   fintheon stop      — Stop everything
 #   fintheon logs      — Tail backend logs
 #   fintheon oauth     — Connect Anthropic subscription via VProxy
+#   fintheon login     — Sign in to TradingView/TopStepX/etc. via Google OAuth
 #   fintheon peers     — Run per-device peer/Twitter onboarding
 #   fintheon setup     — Re-run first-time setup
 #   fintheon version   — Show current version
@@ -122,6 +123,14 @@ case "$1" in
       exit 1
     fi
     ;;
+  login)
+    PLATFORM="${2:-tradingview}"
+    echo ""
+    echo "  Opening $PLATFORM sign-in window..."
+    echo "  Sign in with Google, then close the window."
+    echo ""
+    cd "$FINTHEON_ROOT" && npx electron scripts/platform-oauth.cjs "$PLATFORM"
+    ;;
   peers)
     if [[ -f "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" ]]; then
       bash "$FINTHEON_ROOT/scripts/peer-bootstrap.sh"
@@ -174,6 +183,8 @@ case "$1" in
     echo "  fintheon status    Check if services are running"
     echo "  fintheon logs      Tail backend logs"
     echo "  fintheon oauth     Connect Anthropic subscription via VProxy"
+    echo "  fintheon login     Sign in to trading platforms (Google OAuth)"
+    echo "                     Platforms: tradingview, topstepx, kalshi, tradesea, tradovate, tradelocker"
     echo "  fintheon peers     Run peer + Twitter round-robin onboarding"
     echo "  fintheon setup     Re-run first-time setup"
     echo "  fintheon version   Show current version"
