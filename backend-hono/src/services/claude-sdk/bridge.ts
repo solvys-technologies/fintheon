@@ -243,9 +243,7 @@ async function* wrapVProxyStream(
       yield { type: 'text-delta', id: messageId, delta }
     }
   } catch (err) {
-    if (isAborted()) {
-      return
-    }
+    if (isAborted()) return
     console.warn(`${LOG_PREFIX} VProxy stream failed, falling back to Claude CLI`, err)
     const { process: proc, abort } = spawnClaudeProcess(prompt, options)
     yield* parseClaudeStream(proc, onText, isAborted, abort)

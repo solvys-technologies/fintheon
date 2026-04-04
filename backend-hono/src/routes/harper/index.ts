@@ -118,6 +118,10 @@ export function createHarperRoutes() {
             let textStarted = false
             let textEnded = false
 
+            // UIMessageStream protocol framing — DefaultChatTransport requires these
+            controller.enqueue({ type: 'start', messageId: uiMessageId })
+            controller.enqueue({ type: 'start-step' })
+
             for await (const event of result.stream) {
               if (cancelled) break
 
@@ -194,6 +198,10 @@ export function createHarperRoutes() {
               })
             }
 
+            // UIMessageStream protocol framing — close step and message
+            controller.enqueue({ type: 'finish-step' })
+            controller.enqueue({ type: 'finish', finishReason: 'stop' })
+
             const duration = Date.now() - startTime
             console.log(`[HarperOpus][${requestId}] Complete (${duration}ms, ${fullText.length} chars)`)
             cognition.step('response-ready', 'Response complete', `${fullText.length} chars in ${duration}ms`)
@@ -203,7 +211,16 @@ export function createHarperRoutes() {
             console.error(`[HarperOpus][${requestId}] Fatal stream error:`, error)
             cognition.step('error', 'Stream error', error instanceof Error ? error.message : String(error))
             cognition.done()
-            if (!cancelled) controller.error(error)
+            if (!cancelled) {
+              try {
+                controller.enqueue({ type: 'error', errorText: error instanceof Error ? error.message : String(error) })
+                controller.enqueue({ type: 'finish-step' })
+                controller.enqueue({ type: 'finish', finishReason: 'error' })
+                controller.close()
+              } catch {
+                controller.error(error)
+              }
+            }
           })
         },
         cancel() {

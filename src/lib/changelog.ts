@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-04T04:30:00',
+    agent: 'claude-code',
+    summary: 'Fix Harper-Opus streaming: (1) Added UIMessageStream framing events (start/start-step/finish-step/finish) required by DefaultChatTransport, (2) Fixed model ID mismatch — env had claude-opus-4.6 (dots) but VProxy expects claude-opus-4-6 (hyphens), (3) Removed BYPASS_AUTH from .env (was causing crash loop with production NODE_ENV), (4) Pre-approved all Harper tools in ~/.fintheon/tool-permissions.json, (5) Updated .mcp.json with proper Notion auth and Close CRM server. Error path now sends proper UIMessageChunk error events instead of raw controller.error().',
+    files: [
+      'backend-hono/src/routes/harper/index.ts',
+      'backend-hono/src/services/claude-sdk/bridge.ts',
+      'backend-hono/.env',
+      '.mcp.json',
+    ],
+  },
+  {
     date: '2026-04-03T18:00:00',
     agent: 'claude-code',
     summary: 'IV score display consistency: ivScore was dropped during RiskFlowItem->RiskFlowAlert mapping in RiskFlowContext (root cause). Added ivScore to RiskFlowAlert type, wired it in both pollBackendFeed and loadMore mappers. Fixed duplicate IV in Strategium, reordered IV left of direction in dashboard feed, added fuse shimmer KPI bar in expanded AlertRow cards.',
