@@ -91,12 +91,18 @@ app.notFound((c) => {
   return c.json({ error: 'Not found', code: 'NOT_FOUND', requestId }, 404);
 });
 
-// Bun auto-serves the default export — no explicit serve() needed.
-// The explicit call caused EADDRINUSE in production mode.
 log.info('Server starting', { port: config.PORT, env: config.NODE_ENV });
 
 // Boot background services
 bootServices();
+
+// Bun auto-serves via default export. Node needs @hono/node-server.
+if (typeof globalThis.Bun === 'undefined') {
+  import('@hono/node-server').then(({ serve }) => {
+    serve({ fetch: app.fetch, port: config.PORT });
+    log.info('Server listening (Node)', { port: config.PORT });
+  });
+}
 
 export default {
   fetch: app.fetch,
