@@ -26,7 +26,7 @@ import {
 import { useNarrative } from '../../contexts/NarrativeContext';
 import type { CatalystCard } from '../../lib/narrative-types';
 import {
-  CROSS_NARRATIVE_GOLD,
+  CROSS_NARRATIVE_ROPE,
   HUB_POSITIONS,
   NARRATIVE_THREADS,
   TERRITORY_LAYOUT,
@@ -251,15 +251,15 @@ function buildNarrativeView(
       target: `territory-${threadB}`,
       type: 'default',
       style: {
-        stroke: CROSS_NARRATIVE_GOLD,
+        stroke: CROSS_NARRATIVE_ROPE,
         strokeWidth: Math.min(2.5 + count * 0.3, 6),
-        opacity: 0.25 + Math.min(count * 0.04, 0.45),
-        strokeDasharray: '8 5',
+        opacity: 0.08 + Math.min(count * 0.02, 0.12),
       },
-      animated: false,
+      animated: true,
+      className: 'narrative-rope-shimmer',
       label: count > 2 ? `${count}` : undefined,
       labelStyle: {
-        fill: CROSS_NARRATIVE_GOLD,
+        fill: '#14B8A6',
         fontSize: 9,
         fontFamily: 'var(--font-mono)',
         opacity: 0.4,
@@ -370,11 +370,12 @@ function buildThemeView(
       target: `hub-${threadB}`,
       type: 'default',
       style: {
-        stroke: CROSS_NARRATIVE_GOLD,
+        stroke: CROSS_NARRATIVE_ROPE,
         strokeWidth: Math.min(1 + count * 0.12, 2.5),
-        opacity: 0.08 + Math.min(count * 0.015, 0.15),
-        strokeDasharray: '4 3',
+        opacity: 0.06 + Math.min(count * 0.01, 0.1),
       },
+      animated: true,
+      className: 'narrative-rope-shimmer',
     });
   }
 

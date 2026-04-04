@@ -8,17 +8,18 @@ export interface NarrativeThread {
   color: string;
 }
 
+// [claude-code 2026-04-04] Color scheme: Yellow=monetary, Purple=structural, Teal=market/secular, Red=geopolitical
 export const NARRATIVE_THREADS: NarrativeThread[] = [
-  { slug: 'middle-east-conflict', title: 'Middle Eastern Conflict', color: '#EF4444', shortTitle: 'Middle East' },
-  { slug: 'liquidity-credit-contraction', title: 'Liquidity & Credit', color: '#14B8A6', shortTitle: 'Liquidity' },
-  { slug: 'ai-singularity', title: 'The Singularity', color: '#3B82F6', shortTitle: 'AI' },
-  { slug: 'usd-jpy-carry-trade', title: 'USD-JPY Carry Trade', color: '#14B8A6', shortTitle: 'Carry Trade' },
-  { slug: 'trade-war', title: 'Trade War', color: '#EF4444', shortTitle: 'Trade War' },
-  { slug: 'us-china-relations', title: 'US-China Relations', color: '#EF4444', shortTitle: 'US-China' },
-  { slug: 'rate-cut-cycle', title: 'Rate Cut Cycle', color: '#14B8A6', shortTitle: 'Rate Cuts' },
-  { slug: 'trump-presidency', title: 'Trump Presidency', color: '#EF4444', shortTitle: 'Trump' },
-  { slug: 'price-stability', title: 'Price Stability', color: '#14B8A6', shortTitle: 'Inflation' },
-  { slug: 'maximum-employment', title: 'Max Employment', color: '#14B8A6', shortTitle: 'Employment' },
+  { slug: 'middle-east-conflict', title: 'Middle Eastern Conflict', color: '#EF4444', shortTitle: 'Middle East' },       // Red — geopolitical conflict
+  { slug: 'liquidity-credit-contraction', title: 'Liquidity & Credit', color: '#A855F7', shortTitle: 'Liquidity' },      // Purple — structural
+  { slug: 'ai-singularity', title: 'The Singularity', color: '#14B8A6', shortTitle: 'AI' },                              // Teal — market/secular
+  { slug: 'usd-jpy-carry-trade', title: 'USD-JPY Carry Trade', color: '#A855F7', shortTitle: 'Carry Trade' },            // Purple — structural
+  { slug: 'trade-war', title: 'Trade War', color: '#EF4444', shortTitle: 'Trade War' },                                  // Red — geopolitical
+  { slug: 'us-china-relations', title: 'US-China Relations', color: '#A855F7', shortTitle: 'US-China' },                 // Purple — structural
+  { slug: 'rate-cut-cycle', title: 'Rate Cut Cycle', color: '#EAB308', shortTitle: 'Rate Cuts' },                        // Yellow — monetary policy
+  { slug: 'trump-presidency', title: 'Trump Presidency', color: '#EF4444', shortTitle: 'Trump' },                        // Red — geopolitical
+  { slug: 'price-stability', title: 'Price Stability', color: '#EAB308', shortTitle: 'Inflation' },                      // Yellow — monetary policy
+  { slug: 'maximum-employment', title: 'Max Employment', color: '#EAB308', shortTitle: 'Employment' },                   // Yellow — monetary policy
 ];
 
 export const THREAD_MAP = Object.fromEntries(
@@ -60,7 +61,8 @@ export const SEVERITY_COLORS: Record<'high' | 'medium' | 'low', string> = {
   low: '#6B7280',
 };
 
-export const CROSS_NARRATIVE_GOLD = '#CC5500';
+// [claude-code 2026-04-04] Green ropes, 90% transparent, with teal shimmer
+export const CROSS_NARRATIVE_ROPE = '#22C55E';
 
 export type SemanticNarrativeView = 'macro' | 'narratives' | 'themes';
 

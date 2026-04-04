@@ -45,7 +45,7 @@ function buildPath(from: CardRect, to: CardRect): string {
   return `M ${x1} ${y1} C ${x1 + cpOffset} ${y1}, ${x2 - cpOffset} ${y2}, ${x2} ${y2}`;
 }
 
-const GOLD = '#c79f4a';
+const ROPE_GREEN = '#22C55E';
 
 export default function NarrativeRopes({
   connections,
@@ -102,7 +102,7 @@ export default function NarrativeRopes({
               <path
                 d={path}
                 fill="none"
-                stroke={GOLD}
+                stroke={ROPE_GREEN}
                 strokeWidth={strokeWidth}
                 opacity={opacity}
                 strokeLinecap="round"
@@ -134,9 +134,9 @@ export default function NarrativeRopes({
                       style={{
                         fontSize: '8px',
                         fontFamily: 'monospace',
-                        color: GOLD,
+                        color: ROPE_GREEN,
                         backgroundColor: 'rgba(5,4,2,0.9)',
-                        border: `1px solid ${GOLD}33`,
+                        border: `1px solid ${ROPE_GREEN}33`,
                         borderRadius: '3px',
                         padding: '2px 6px',
                         textAlign: 'center',

@@ -4,7 +4,7 @@
 // [claude-code 2026-03-28] S7: Force-directed canvas, removed Sanctum overlay (now separate view)
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Eye, EyeOff, ChevronDown, Save, RotateCcw, Calendar } from 'lucide-react';
+import { Eye, EyeOff, ChevronDown, Calendar } from 'lucide-react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import NarrativeForceCanvas from './NarrativeForceCanvas';
 import { TimelineScrubber } from './TimelineScrubber';
@@ -158,22 +158,8 @@ export function NarrativeMap() {
           onZoomFnsReady={setZoomFns}
         />
 
-        {/* Narrative visibility filter + layout controls — top right */}
+        {/* Narrative filters — right-justified */}
         <div className="absolute top-3 right-3 z-40 flex items-center gap-1.5">
-          <button
-            onClick={handleSaveLayout}
-            title="Save layout"
-            className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--fintheon-bg)]/80 backdrop-blur-xl text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80 transition-all"
-          >
-            <Save className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={handleResetLayout}
-            title="Restore saved layout"
-            className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--fintheon-bg)]/80 backdrop-blur-xl text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80 transition-all"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
           <TimeframeFilterDropdown
             selected={timeframeFilter}
             onSelect={setTimeframeFilter}
@@ -327,23 +313,25 @@ function TimeframeFilterDropdown({
 }
 
 // ── Narrative Visibility Filter Dropdown ──────────────────────────
+// [claude-code 2026-04-04] Unified color scheme: Yellow=monetary, Purple=structural, Teal=market/secular, Red=geopolitical
 const NARRATIVE_THREADS = [
-  { slug: 'middle-east-conflict', title: 'Middle Eastern Conflict', color: '#F59E0B', shortTitle: 'Middle East' },
-  { slug: 'liquidity-credit-contraction', title: 'Liquidity & Credit', color: '#8B5CF6', shortTitle: 'Liquidity' },
-  { slug: 'ai-singularity', title: 'The Singularity', color: '#3B82F6', shortTitle: 'AI' },
-  { slug: 'usd-jpy-carry-trade', title: 'USD-JPY Carry Trade', color: '#EC4899', shortTitle: 'Carry Trade' },
+  { slug: 'middle-east-conflict', title: 'Middle Eastern Conflict', color: '#EF4444', shortTitle: 'Middle East' },
+  { slug: 'liquidity-credit-contraction', title: 'Liquidity & Credit', color: '#A855F7', shortTitle: 'Liquidity' },
+  { slug: 'ai-singularity', title: 'The Singularity', color: '#14B8A6', shortTitle: 'AI' },
+  { slug: 'usd-jpy-carry-trade', title: 'USD-JPY Carry Trade', color: '#A855F7', shortTitle: 'Carry Trade' },
   { slug: 'trade-war', title: 'Trade War', color: '#EF4444', shortTitle: 'Trade War' },
-  { slug: 'us-china-relations', title: 'US-China Relations', color: '#14B8A6', shortTitle: 'US-China' },
-  { slug: 'rate-cut-cycle', title: 'Rate Cut Cycle', color: '#34D399', shortTitle: 'Rate Cuts' },
-  { slug: 'trump-presidency', title: 'Trump Presidency', color: '#F97316', shortTitle: 'Trump' },
-  { slug: 'price-stability', title: 'Price Stability', color: '#FBBF24', shortTitle: 'Inflation' },
-  { slug: 'maximum-employment', title: 'Max Employment', color: '#A78BFA', shortTitle: 'Employment' },
+  { slug: 'us-china-relations', title: 'US-China Relations', color: '#A855F7', shortTitle: 'US-China' },
+  { slug: 'rate-cut-cycle', title: 'Rate Cut Cycle', color: '#EAB308', shortTitle: 'Rate Cuts' },
+  { slug: 'trump-presidency', title: 'Trump Presidency', color: '#EF4444', shortTitle: 'Trump' },
+  { slug: 'price-stability', title: 'Price Stability', color: '#EAB308', shortTitle: 'Inflation' },
+  { slug: 'maximum-employment', title: 'Max Employment', color: '#EAB308', shortTitle: 'Employment' },
 ] as const;
 
 const THEME_GROUPS: { name: string; color: string; slugs: string[] }[] = [
-  { name: 'Geopolitical', color: '#F59E0B', slugs: ['middle-east-conflict', 'us-china-relations', 'trade-war', 'trump-presidency'] },
-  { name: 'Macro/Monetary', color: '#34D399', slugs: ['rate-cut-cycle', 'liquidity-credit-contraction', 'price-stability', 'maximum-employment'] },
-  { name: 'Secular', color: '#3B82F6', slugs: ['ai-singularity', 'usd-jpy-carry-trade'] },
+  { name: 'Geopolitical', color: '#EF4444', slugs: ['middle-east-conflict', 'trade-war', 'trump-presidency'] },
+  { name: 'Structural', color: '#A855F7', slugs: ['liquidity-credit-contraction', 'usd-jpy-carry-trade', 'us-china-relations'] },
+  { name: 'Monetary Policy', color: '#EAB308', slugs: ['rate-cut-cycle', 'price-stability', 'maximum-employment'] },
+  { name: 'Market / Secular', color: '#14B8A6', slugs: ['ai-singularity'] },
 ];
 
 type ViewMode = 'narratives' | 'themes';
