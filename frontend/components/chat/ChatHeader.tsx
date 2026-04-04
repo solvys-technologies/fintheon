@@ -1,15 +1,20 @@
-// [claude-code 2026-03-29] S9-T5: Renamed checkpoint props to sessions
+// [claude-code 2026-04-04] T4: History dropdown — Clock button toggles dropdown instead of modal
+import { useState } from 'react';
 import { Scroll, Plus, Clock } from 'lucide-react';
+import { SessionsDropdown } from './SessionsDropdown';
 
 interface ChatHeaderProps {
   onRunMDB: () => void;
   onNewChat: () => void;
-  onToggleSessions: () => void;
-  showSessions: boolean;
+  onSelectSession: (conversationId: string) => void;
+  onNewSession: () => void;
+  currentConversationId?: string;
   isLoading: boolean;
 }
 
-export function ChatHeader({ onRunMDB, onNewChat, onToggleSessions, isLoading }: ChatHeaderProps) {
+export function ChatHeader({ onRunMDB, onNewChat, onSelectSession, onNewSession, currentConversationId, isLoading }: ChatHeaderProps) {
+  const [showHistory, setShowHistory] = useState(false);
+
   return (
     <div className="bg-transparent">
       <div className="h-12 flex items-center justify-end px-4 mt-0.5">
@@ -29,13 +34,23 @@ export function ChatHeader({ onRunMDB, onNewChat, onToggleSessions, isLoading }:
           >
             <Plus className="w-4 h-4" />
           </button>
-          <button
-            onClick={onToggleSessions}
-            className="p-2 rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-            title="Sessions"
-          >
-            <Clock className="w-4 h-4" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowHistory(v => !v)}
+              className="p-2 rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+              title="Sessions"
+            >
+              <Clock className="w-4 h-4" />
+            </button>
+            {showHistory && (
+              <SessionsDropdown
+                onClose={() => setShowHistory(false)}
+                onSelectSession={(id) => { onSelectSession(id); setShowHistory(false); }}
+                onNewSession={() => { onNewSession(); setShowHistory(false); }}
+                currentConversationId={currentConversationId}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

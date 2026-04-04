@@ -8,7 +8,6 @@ import { useHermesRuntime } from './chat/useHermesRuntime';
 import { ChatHeader } from './chat/ChatHeader';
 import { FintheonThread, AiLoader } from './chat/FintheonThread';
 import { FintheonComposer } from './chat/FintheonComposer';
-import { SessionsModal } from './chat/SessionsModal';
 import { SKILL_PREFIXES } from '../lib/skillPrefixes';
 import QuickFintheonModal from './analysis/QuickFintheonModal';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
@@ -23,7 +22,6 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
   const { disabledSkills } = useFeatureFlags();
-  const [showSessions, setShowSessions] = useState(false);
   const [showQuickFintheonModal] = useState(false);
   const [showArtifacts, setShowArtifacts] = useState(false);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -83,8 +81,9 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
       <ChatHeader
         onRunMDB={() => handleSend('Run the MDB report')}
         onNewChat={handleNewChat}
-        onToggleSessions={() => setShowSessions((v) => !v)}
-        showSessions={showSessions}
+        onSelectSession={(id) => setConversationId(id)}
+        onNewSession={handleNewChat}
+        currentConversationId={conversationId}
         isLoading={isRunning}
       />
 
@@ -132,15 +131,6 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
         )}
 
       </div>
-
-      {/* Sessions modal — centered overlay */}
-      <SessionsModal
-        isOpen={showSessions}
-        onClose={() => setShowSessions(false)}
-        onSelectSession={(id) => { setConversationId(id); setShowSessions(false); }}
-        onNewSession={() => { clearConversationId(); setShowSessions(false); }}
-        currentConversationId={conversationId}
-      />
 
       <QuickFintheonModal isOpen={showQuickFintheonModal} onClose={() => {}} onAnalysisComplete={() => {}} />
     </div>

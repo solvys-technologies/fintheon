@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-04T12:00:00',
+    agent: 'claude-code',
+    summary: 'T4: Replace full-screen SessionsModal with compact SessionsDropdown anchored under the history (Clock) icon. Dropdown is 280px wide, max 350px tall, closes on click-outside/Escape, has search, date-grouped sessions, hover-delete, and keyboard navigation. Updated ChatHeader, ChatInterface, and ChatPanel to use the new dropdown.',
+    files: [
+      'frontend/components/chat/SessionsDropdown.tsx',
+      'frontend/components/chat/ChatHeader.tsx',
+      'frontend/components/ChatInterface.tsx',
+      'frontend/components/layout/ChatPanel.tsx',
+    ],
+  },
+  {
     date: '2026-04-04T04:30:00',
     agent: 'claude-code',
     summary: 'Fix Harper-Opus streaming: (1) Added UIMessageStream framing events (start/start-step/finish-step/finish) required by DefaultChatTransport, (2) Fixed model ID mismatch — env had claude-opus-4.6 (dots) but VProxy expects claude-opus-4-6 (hyphens), (3) Removed BYPASS_AUTH from .env (was causing crash loop with production NODE_ENV), (4) Pre-approved all Harper tools in ~/.fintheon/tool-permissions.json, (5) Updated .mcp.json with proper Notion auth and Close CRM server. Error path now sends proper UIMessageChunk error events instead of raw controller.error().',
