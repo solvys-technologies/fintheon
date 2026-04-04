@@ -34,19 +34,24 @@ warn() { echo -e "  ${_YELLOW}⚠${_R} ${_CREAM}$1${_R}"; }
 info() { echo -e "  ${_DIM}·${_R} ${_CREAM}$1${_R}"; }
 step() { echo -e "  ${_GOLD}[$1]${_R} ${_CREAM}$2${_R}"; }
 
-echo ""
-echo -e "      ${_FIRE3}  )  ${_R}                                    ${_FIRE3}  (  ${_R}"
-echo -e "      ${_FIRE2} ( \\ ${_R}                                    ${_FIRE2} / ) ${_R}"
-echo -e "      ${_FIRE1}  )( ${_R}                                    ${_FIRE1}  )( ${_R}"
-echo -e "      ${_EMBER} /|\\${_R}                                     ${_EMBER} /|\\${_R}"
-echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╔══════════════════════════════╗${_R}  ${_GOLD}]|||[${_R}"
-printf -v _ut "%-30s" "FINTHEON UPDATE v${UPDATE_VERSION}"
-echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_BOLD}${_GOLD}${_ut}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
-printf -v _us "%-30s" "Priced In Capital"
-echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_DIM}${_us}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
-echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╚══════════════════════════════╝${_R}  ${_GOLD}]|||[${_R}"
-echo -e "      ${_DIM} ╨╨╨ ${_R}                                    ${_DIM} ╨╨╨ ${_R}"
-echo ""
+torch_banner() {
+  local title="$1" subtitle="$2"
+  printf -v _t "%-30s" "$title"
+  printf -v _s "%-30s" "$subtitle"
+  echo ""
+  printf "      ${_FIRE3}  )  ${_R}                                    ${_FIRE3}  )  ${_R}\n"
+  printf "      ${_FIRE2} ( ) ${_R}                                    ${_FIRE2} ( ) ${_R}\n"
+  printf "      ${_FIRE1}  )(  ${_R}                                   ${_FIRE1}  )(  ${_R}\n"
+  printf "      ${_EMBER} /||\ ${_R}                                   ${_EMBER} /||\ ${_R}\n"
+  printf "      ${_GOLD}]||||[${_R}  ${_GOLD}╔══════════════════════════════╗${_R}  ${_GOLD}]||||[${_R}\n"
+  printf "      ${_GOLD}]||||[${_R}  ${_GOLD}║${_R} ${_BOLD}${_GOLD}${_t}${_R}${_GOLD}║${_R}  ${_GOLD}]||||[${_R}\n"
+  printf "      ${_GOLD}]||||[${_R}  ${_GOLD}║${_R} ${_DIM}${_s}${_R}${_GOLD}║${_R}  ${_GOLD}]||||[${_R}\n"
+  printf "      ${_GOLD}]||||[${_R}  ${_GOLD}╚══════════════════════════════╝${_R}  ${_GOLD}]||||[${_R}\n"
+  printf "      ${_DIM} ╨╨╨╨ ${_R}                                    ${_DIM} ╨╨╨╨ ${_R}\n"
+  echo ""
+}
+
+torch_banner "FINTHEON UPDATE v${UPDATE_VERSION}" "Priced In Capital"
 
 # ── Validate repo exists ─────────────────────────────────────────────────────
 

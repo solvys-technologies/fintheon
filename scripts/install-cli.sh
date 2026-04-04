@@ -174,20 +174,36 @@ case "$1" in
     echo ""
     ;;
   *)
+    _R=$'\033[0m'
+    _G=$'\033[38;2;199;159;74m'
+    _C=$'\033[38;2;240;234;214m'
+    _D=$'\033[38;2;100;85;50m'
+    _F1=$'\033[38;2;255;100;20m'
+    _F2=$'\033[38;2;255;160;40m'
+    _F3=$'\033[38;2;255;210;80m'
+    _EM=$'\033[38;2;180;60;20m'
+    _B=$'\033[1m'
     echo ""
-    echo "  Fintheon CLI v2.0.0"
-    echo "  ────────────────────────────────"
-    echo "  fintheon update    Pull latest, rebuild, restart"
-    echo "  fintheon start     Start backend + launch app"
-    echo "  fintheon stop      Stop everything"
-    echo "  fintheon status    Check if services are running"
-    echo "  fintheon logs      Tail backend logs"
-    echo "  fintheon oauth     Connect Anthropic subscription via VProxy"
-    echo "  fintheon login     Sign in to trading platforms (Google OAuth)"
-    echo "                     Platforms: tradingview, topstepx, kalshi, tradesea, tradovate, tradelocker"
-    echo "  fintheon peers     Run peer + Twitter round-robin onboarding"
-    echo "  fintheon setup     Re-run first-time setup"
-    echo "  fintheon version   Show current version"
+    printf "      ${_F3}  )  ${_R}                                    ${_F3}  )  ${_R}\n"
+    printf "      ${_F2} ( ) ${_R}                                    ${_F2} ( ) ${_R}\n"
+    printf "      ${_F1}  )(  ${_R}                                   ${_F1}  )(  ${_R}\n"
+    printf "      ${_EM} /||\ ${_R}                                   ${_EM} /||\ ${_R}\n"
+    printf "      ${_G}]||||[${_R}  ${_G}╔══════════════════════════════╗${_R}  ${_G}]||||[${_R}\n"
+    printf "      ${_G}]||||[${_R}  ${_G}║${_R} ${_B}${_G}%-30s${_R}${_G}║${_R}  ${_G}]||||[${_R}\n" "FINTHEON CLI v2.0.0"
+    printf "      ${_G}]||||[${_R}  ${_G}║${_R} ${_D}%-30s${_R}${_G}║${_R}  ${_G}]||||[${_R}\n" "Priced In Capital"
+    printf "      ${_G}]||||[${_R}  ${_G}╚══════════════════════════════╝${_R}  ${_G}]||||[${_R}\n"
+    printf "      ${_D} ╨╨╨╨ ${_R}                                    ${_D} ╨╨╨╨ ${_R}\n"
+    echo ""
+    printf "  ${_G}update${_R}    ${_D}Pull latest, rebuild, restart${_R}\n"
+    printf "  ${_G}start${_R}     ${_D}Start backend + launch app${_R}\n"
+    printf "  ${_G}stop${_R}      ${_D}Stop everything${_R}\n"
+    printf "  ${_G}status${_R}    ${_D}Check if services are running${_R}\n"
+    printf "  ${_G}logs${_R}      ${_D}Tail backend logs${_R}\n"
+    printf "  ${_G}oauth${_R}     ${_D}Connect Anthropic via VProxy${_R}\n"
+    printf "  ${_G}login${_R}     ${_D}Sign in to trading platforms${_R}\n"
+    printf "  ${_G}peers${_R}     ${_D}Peer + Twitter onboarding${_R}\n"
+    printf "  ${_G}setup${_R}     ${_D}Re-run first-time setup${_R}\n"
+    printf "  ${_G}version${_R}   ${_D}Show current version${_R}\n"
     echo ""
     ;;
 esac
