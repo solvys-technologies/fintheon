@@ -734,7 +734,7 @@ export default function RiskFlowMini({
               {filtered.length === 0 ? (
                 <div className="flex items-center justify-center h-24 text-zinc-700 text-xs">
                   {alerts.length === 0
-                    ? (initialLoaded ? 'No alerts — run: launchctl load ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist' : 'Loading feed...')
+                    ? (initialLoaded ? 'Waiting for signals...' : 'Loading feed...')
                     : 'No matching alerts'}
                 </div>
               ) : (
