@@ -65,6 +65,13 @@ export interface IframeUrls {
   research: string;
 }
 
+export interface ProposerIframeSource {
+  id: string;
+  label: string;
+  url: string;
+  builtin?: boolean;
+}
+
 export type PrimaryBroker = 'rithmic' | 'projectx' | 'mmt';
 export type DefaultLayout = 'combined' | 'tickers-only';
 export type DefaultPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradingview';
@@ -120,6 +127,12 @@ interface SettingsContextType {
   /** Minimum votes for a bulletin idea to surface (default: 3) */
   bulletinVoteThreshold: number;
   setBulletinVoteThreshold: (threshold: number) => void;
+  /** Proposer iFrame sources list (built-in + custom) */
+  proposerIframeSources: ProposerIframeSource[];
+  setProposerIframeSources: (sources: ProposerIframeSource[]) => void;
+  /** ID of the default proposer iFrame source */
+  proposerDefaultIframe: string;
+  setProposerDefaultIframe: (id: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -274,6 +287,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     loadFromStorage('bulletinVoteThreshold', 3)
   );
 
+  const BUILTIN_PROPOSER_SOURCES: ProposerIframeSource[] = [
+    { id: 'tradingview', label: 'TradingView', url: 'https://www.tradingview.com/chart', builtin: true },
+    { id: 'unusual-whales', label: 'Unusual Whales', url: 'https://unusualwhales.com/flow', builtin: true },
+    { id: 'kalshi', label: 'Kalshi Markets', url: 'https://kalshi.com/browse/economics', builtin: true },
+    { id: 'tradesea', label: 'TradeSea', url: 'https://app.tradesea.ai/trade', builtin: true },
+    { id: 'tradovate', label: 'Tradovate', url: 'https://trader.tradovate.com', builtin: true },
+  ];
+
+  const [proposerIframeSources, setProposerIframeSources] = useState<ProposerIframeSource[]>(() => {
+    const stored = loadFromStorage<ProposerIframeSource[]>('proposerIframeSources', []);
+    // Merge: always include builtins, append custom entries from storage
+    const customEntries = stored.filter((s: ProposerIframeSource) => !s.builtin);
+    return [...BUILTIN_PROPOSER_SOURCES, ...customEntries];
+  });
+  const [proposerDefaultIframe, setProposerDefaultIframe] = useState<string>(() =>
+    loadFromStorage('proposerDefaultIframe', 'tradingview')
+  );
+
   // Track whether initial backend fetch has completed to avoid saving back stale data
   const backendSynced = useRef(false);
 
@@ -304,6 +335,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.defaultLayout) setDefaultLayout(remote.defaultLayout as DefaultLayout);
         if (remote.defaultPlatform) setDefaultPlatform(remote.defaultPlatform as DefaultPlatform);
         if (remote.bulletinVoteThreshold !== undefined) setBulletinVoteThreshold(remote.bulletinVoteThreshold as number);
+        if (remote.proposerIframeSources) {
+          const remoteSources = remote.proposerIframeSources as ProposerIframeSource[];
+          const customEntries = remoteSources.filter((s: ProposerIframeSource) => !s.builtin);
+          setProposerIframeSources([...BUILTIN_PROPOSER_SOURCES, ...customEntries]);
+        }
+        if (remote.proposerDefaultIframe) setProposerDefaultIframe(remote.proposerDefaultIframe as string);
       }
       backendSynced.current = true;
     });
@@ -336,6 +373,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       defaultLayout,
       defaultPlatform,
       bulletinVoteThreshold,
+      proposerIframeSources,
+      proposerDefaultIframe,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -346,7 +385,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (backendSynced.current) {
       saveBackendSettings(settings);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName, autoRefresh, interviewCompleted, tradingGoals, instrumentsTraded, discordUsername, tradingRoadblocks, psychAssistAutoStart, hermesEnabled, voiceEnabled, defaultLayout, defaultPlatform, bulletinVoteThreshold]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName, autoRefresh, interviewCompleted, tradingGoals, instrumentsTraded, discordUsername, tradingRoadblocks, psychAssistAutoStart, hermesEnabled, voiceEnabled, defaultLayout, defaultPlatform, bulletinVoteThreshold, proposerIframeSources, proposerDefaultIframe]);
 
   return (
     <SettingsContext.Provider
@@ -399,6 +438,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setDefaultPlatform,
         bulletinVoteThreshold,
         setBulletinVoteThreshold,
+        proposerIframeSources,
+        setProposerIframeSources,
+        proposerDefaultIframe,
+        setProposerDefaultIframe,
       }}
     >
       {children}

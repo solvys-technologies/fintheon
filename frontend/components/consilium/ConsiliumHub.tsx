@@ -105,7 +105,8 @@ function usePanelState(key: string, defaultValue: boolean): [boolean, () => void
 }
 
 export function ConsiliumHub() {
-  const { selectedSymbol, iframeUrls } = useSettings();
+  const { selectedSymbol, iframeUrls, proposerIframeSources, proposerDefaultIframe } = useSettings();
+  const [proposalsView, setProposalsView] = useState<'proposals' | 'iframe'>('proposals');
   const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
   const [sanctumSubView, setSanctumSubView] = useState<SanctumSubView>('narratives');
   const [boardroomSubView, setBoardroomSubView] = useState<BoardroomSubView>('forum');
@@ -682,13 +683,46 @@ export function ConsiliumHub() {
           style={{ transition: 'width 280ms var(--ease-spring), border-width 280ms' }}
         >
           <div
-            className="w-80 h-full overflow-y-auto bg-[var(--fintheon-bg)]"
+            className="w-80 h-full flex flex-col bg-[var(--fintheon-bg)]"
             style={{
               opacity: showProposals ? 1 : 0,
               transition: 'opacity 200ms ease 80ms',
             }}
           >
-            <ProposalWidget />
+            {/* View toggle: Proposals vs iFrame */}
+            <div className="shrink-0 flex items-center border-b border-[var(--fintheon-accent)]/10 px-2 py-1.5 gap-1">
+              <button
+                onClick={() => setProposalsView('proposals')}
+                className={`px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                  proposalsView === 'proposals'
+                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                Proposals
+              </button>
+              <button
+                onClick={() => setProposalsView('iframe')}
+                className={`px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                  proposalsView === 'iframe'
+                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {proposerIframeSources.find(s => s.id === proposerDefaultIframe)?.label || 'iFrame'}
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {proposalsView === 'proposals' ? (
+                <ProposalWidget />
+              ) : (
+                <EmbeddedBrowserFrame
+                  title={proposerIframeSources.find(s => s.id === proposerDefaultIframe)?.label || 'Proposer'}
+                  src={proposerIframeSources.find(s => s.id === proposerDefaultIframe)?.url || 'https://www.tradingview.com/chart'}
+                  className="w-full h-full"
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>

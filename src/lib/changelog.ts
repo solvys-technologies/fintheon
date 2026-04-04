@@ -11,7 +11,7 @@ export const changelog: ChangelogEntry[] = [
   {
     date: '2026-04-04T12:00:00',
     agent: 'claude-code',
-    summary: '[v1.4.0] T1-T4: Default connectors (RiskFlow/Aquarium/Boardroom + UW MCP), chat icons in Consilium bar, sidebar icons fixed (correct nav + mini sessions popover), SessionsDropdown replaces full-screen modal.',
+    summary: '[v1.4.0] T1-T5 unified release: Default connectors (RiskFlow/Aquarium/Boardroom + UW MCP), chat icons in Consilium bar, sidebar icons fixed, SessionsDropdown replaces full-screen modal, Settings iFrame list with persistent proposer default (5 built-in sources + custom).',
     files: [
       'frontend/types/mcp.ts',
       'frontend/lib/internalConnectors.ts',
@@ -24,6 +24,9 @@ export const changelog: ChangelogEntry[] = [
       'frontend/components/ChatInterface.tsx',
       'frontend/components/consilium/ConsiliumHub.tsx',
       'frontend/components/layout/ChatPanel.tsx',
+      'frontend/contexts/SettingsContext.tsx',
+      'frontend/components/settings/IframesTab.tsx',
+      'frontend/components/SettingsPanel.tsx',
       'backend-hono/src/routes/mcp/index.ts',
       'backend-hono/src/routes/harper/index.ts',
       'backend-hono/src/services/harper-handler.ts',
