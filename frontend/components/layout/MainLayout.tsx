@@ -14,6 +14,7 @@ import { TimelineOverlay, TimelineToggleButton } from './TimelineOverlay';
 import { FloatingWidget } from './FloatingWidget';
 import { PanelPosition } from './DraggablePanel';
 import { useBackend } from '../../lib/backend';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { EmotionalResonanceMonitor } from '../mission-control/EmotionalResonanceMonitor';
 import { BlindspotsWidget } from '../mission-control/BlindspotsWidget';
@@ -79,6 +80,8 @@ export function MainLayout() {
 // Main layout component - no authentication needed
 function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform, developerSettings, voiceEnabled } = useSettings();
+  const { theme } = useTheme();
+  const isStone = theme.name === 'solvys-stone';
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   // Team onboarding — auto-show on first run or after version update
@@ -658,7 +661,7 @@ function MainLayoutInner() {
 
           {/* Browser layer */}
           {topStepXEnabled && (
-            <div className={`absolute inset-0 z-10 ${browserVisible ? 'animate-browser-in' : 'animate-browser-out'}`}>
+            <div className={`absolute inset-0 z-10 ${isStone ? 'bg-black' : ''} ${browserVisible ? 'animate-browser-in' : 'animate-browser-out'}`}>
               <TradingBrowser
                 primaryPlatform={selectedPlatform}
                 onPrimaryPlatformChange={setSelectedPlatform}
