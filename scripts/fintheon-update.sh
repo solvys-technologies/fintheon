@@ -164,11 +164,12 @@ fi
 if npm run desktop:build 2>&1 | grep -E "✓|building.*DMG|Built" | tail -2; then
   ok "DMG built"
 
-  # Install to /Applications
-  DMG_PATH="$FINTHEON_ROOT/desktop-dist/Fintheon-1.0.0-arm64.dmg"
-  if [[ -f "$DMG_PATH" ]]; then
+  # Install to /Applications — find the newest DMG regardless of version in filename
+  DMG_PATH=$(ls -t "$FINTHEON_ROOT/desktop-dist"/Fintheon-*-arm64.dmg 2>/dev/null | head -1)
+  if [[ -n "$DMG_PATH" && -f "$DMG_PATH" ]]; then
+    DMG_NAME=$(basename "$DMG_PATH")
     # Copy to Downloads
-    cp "$DMG_PATH" "$HOME/Downloads/Fintheon-1.0.0-arm64.dmg" 2>/dev/null || true
+    cp "$DMG_PATH" "$HOME/Downloads/$DMG_NAME" 2>/dev/null || true
 
     # Eject any existing volumes
     for vol in /Volumes/Fintheon*; do
