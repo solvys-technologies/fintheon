@@ -29,10 +29,11 @@ export const corsConfig = {
     'http://127.0.0.1:7777',
     ];
 
-    if (!origin) return null;
+    // Electron sends null/empty origin (file:// protocol) — allow it
+    if (!origin) return '*';
     if (allowlist.includes(origin)) return origin;
-    // Dev convenience: Vite may hop ports; allow any localhost origin.
-    if (isDev && isLocalhostOrigin(origin)) return origin;
+    // Allow any localhost origin (Electron, Vite dev, port hopping)
+    if (isLocalhostOrigin(origin)) return origin;
     return null;
   },
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

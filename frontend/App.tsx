@@ -13,7 +13,6 @@ import { ContextBankProvider } from './contexts/ContextBankContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { VoiceProvider, useVoice } from './contexts/VoiceContext';
 import { ERProvider } from './contexts/ERContext';
-import { TeamPresenceProvider } from './contexts/TeamPresenceContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { NotificationContainer } from './components/NotificationToast';
 import { ToastContainer } from './components/ui/Toast';
@@ -110,7 +109,7 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
           const token = await getAccessToken();
           if (token && !cancelled) {
             const result = await migrateLocalStorageToCloud(token);
-            if (result.migrated) console.log(`[Init] Synced ${result.keysCount} keys`);
+            // migration complete
           }
         } catch (err) {
           console.warn('[Init] Migration skipped:', err);

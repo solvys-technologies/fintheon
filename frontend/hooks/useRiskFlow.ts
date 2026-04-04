@@ -23,7 +23,7 @@ export function useRiskFlowSSE(onItem: (item: RiskFlowItem) => void) {
         sourceRef.current = source
 
         source.onopen = () => {
-          console.log('[RiskFlow] SSE connection opened')
+          // SSE connected
         }
 
         source.onmessage = (event) => {

@@ -1,14 +1,8 @@
-// [claude-code 2026-03-05] Phase 2A: Added iframe controls + heartbeat status
-// [claude-code 2026-03-07] Slide-up panel with Terminal + Changelog tabs
-// [claude-code 2026-03-10] Notion + X CLI status indicators in toolbar strip.
-// [claude-code 2026-03-14] Fintheon CLI: run shell commands via Electron; "/" slash-command suggestions.
-// [claude-code 2026-03-20] Terminal now works in browser via backend SSE (not just Electron)
-// [claude-code 2026-03-22] Add errors tab to slide-up panel for persistent error log with expandable details
+// [claude-code 2026-04-03] Removed stale heartbeat/pulse/NTN/X indicators — system status now from /api/diagnostics only
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText, AlertTriangle } from 'lucide-react';
 import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TradingBrowser';
 import { changelog } from '../../../src/lib/changelog';
-import { useSourceStatus } from '../../hooks/useSourceStatus';
 import { useErrorLog } from '../../hooks/useErrorLog';
 import { useSystemStatus } from '../../hooks/useSystemStatus';
 import { useGateway } from '../../contexts/GatewayContext';
@@ -75,8 +69,6 @@ interface FooterToolbarProps {
   onSplitViewToggle?: () => void;
   allowSplitView?: boolean;
   onPowerOff?: () => void;
-  peersOpen?: boolean;
-  onTogglePeers?: () => void;
 }
 
 export function FooterToolbar({
@@ -89,8 +81,6 @@ export function FooterToolbar({
   onSplitViewToggle,
   allowSplitView = false,
   onPowerOff,
-  peersOpen = false,
-  onTogglePeers,
 }: FooterToolbarProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<PanelTab>('terminal');
@@ -226,16 +216,8 @@ export function FooterToolbar({
   }, []);
 
   const runShellCommand = useCallback((cmd: string) => {
-    setCliHistory((prev) => [...prev, { type: 'input', text: cmd }, { type: 'output', text: 'Running...' }]);
-    if (window.electron?.runShellCommand) {
-      window.electron.runShellCommand(cmd).then((r) => {
-        if (!r.ok) {
-          setCliHistory((prev) => [...prev, { type: 'output', text: r.error ?? 'Failed to run command' }]);
-        }
-      });
-    } else {
-      runViaBackend(cmd);
-    }
+    // Always use backend SSE — Electron IPC cwd is inside the .app bundle and unreliable
+    runViaBackend(cmd);
   }, [runViaBackend]);
 
   const handleCli = useCallback(
@@ -336,7 +318,6 @@ export function FooterToolbar({
     }
   };
 
-  const sourceStatus = useSourceStatus();
   const { errorCount } = useErrorLog();
   const { overall: systemOverall, services } = useSystemStatus();
   const { status: gatewayStatus } = useGateway();
@@ -556,18 +537,6 @@ export function FooterToolbar({
           <Users className="w-3 h-3" />
         </button>
 
-        <button
-          onClick={() => openTab('team')}
-          className={`flex items-center gap-1 text-[10px] transition-colors ${
-            panelOpen && activeTab === 'team'
-              ? 'text-[var(--fintheon-accent)]'
-              : 'text-zinc-600 hover:text-zinc-400'
-          }`}
-          title="Team"
-        >
-          <Users className="w-3 h-3" />
-        </button>
-
         <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
 
         {/* Quick CLI — always available in toolbar */}
@@ -678,24 +647,7 @@ export function FooterToolbar({
           </>
         )}
 
-        {/* Peers toggle — left of status indicators */}
-        {onTogglePeers && (
-          <>
-            <button
-              onClick={onTogglePeers}
-              className={`flex items-center gap-1.5 text-[10px] transition-colors ${
-                peersOpen
-                  ? 'text-[var(--fintheon-accent)]'
-                  : 'text-zinc-500 hover:text-[var(--fintheon-accent)]'
-              }`}
-              title={peersOpen ? 'Hide Peers' : 'Show Peers'}
-            >
-              <span className={`inline-block w-1.5 h-1.5 rounded-full ${peersOpen ? 'bg-[var(--fintheon-accent)]' : 'bg-zinc-600'}`} />
-              <span className="font-medium tracking-wider uppercase">Peers</span>
-            </button>
-            <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-          </>
-        )}
+        {/* S14-T6: Peers toggle removed — team status is in footer Team tab */}
 
         {/* Fetch status — shows during refresh or polling */}
         {fetchStatus && (
@@ -709,37 +661,6 @@ export function FooterToolbar({
           </div>
         )}
         {fetchStatus && <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />}
-
-        {/* Restored source status indicators (legacy footer lights) */}
-        <div className="flex items-center gap-2 shrink-0">
-          <span
-            className="flex items-center gap-1 text-[10px]"
-            title={`Notion: ${sourceStatus.notion ? 'connected' : 'disconnected'}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.notion ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
-            <span className={sourceStatus.notion ? 'text-emerald-400/60' : 'text-zinc-700'}>NTN</span>
-          </span>
-          <span
-            className="flex items-center gap-1 text-[10px]"
-            title={`X CLI: ${sourceStatus.twitterCli ? 'connected' : 'disconnected'}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.twitterCli ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
-            <span className={sourceStatus.twitterCli ? 'text-emerald-400/60' : 'text-zinc-700'}>X</span>
-          </span>
-        </div>
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-
-        {/* Restored footer heartbeat/pulse */}
-        <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
-          <span>heartbeat</span>
-        </div>
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
-        <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-          <span>pulse</span>
-        </div>
-        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
 
         {/* System status indicators — real-time from /api/diagnostics */}
         <div className="flex items-center gap-2.5 shrink-0">

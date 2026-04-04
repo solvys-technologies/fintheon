@@ -330,12 +330,14 @@ export async function addMessage(
 
   const result = await sql`
     INSERT INTO ai_messages (
-      conversation_id, role, content, model, 
+      conversation_id, user_id, role, content, model,
       input_tokens, output_tokens, total_tokens, cost_usd, metadata
     )
     VALUES (
-      ${conversationId}, ${message.role}, ${message.content}, ${message.model ?? null},
-      ${message.inputTokens ?? null}, ${message.outputTokens ?? null}, 
+      ${conversationId},
+      (SELECT user_id FROM ai_conversations WHERE id = ${conversationId}),
+      ${message.role}, ${message.content}, ${message.model ?? null},
+      ${message.inputTokens ?? null}, ${message.outputTokens ?? null},
       ${message.totalTokens ?? null}, ${message.costUsd ?? null},
       ${message.metadata ? JSON.stringify(message.metadata) : null}
     )

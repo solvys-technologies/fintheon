@@ -1,4 +1,3 @@
-// [claude-code 2026-02-26] Replace balance KPI with status + platform tracker; remove P&L pill graphic.
 import { useSettings } from '../../contexts/SettingsContext';
 import { useState, useEffect } from 'react';
 import { useBackend } from '../../lib/backend';

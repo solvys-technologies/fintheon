@@ -242,7 +242,7 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
             </div>
           )}
           {/* Main content — Brief left, Calendar right */}
-          <div className="flex-1 min-h-[420px] flex mt-2">
+          <div className="flex-1 min-h-[520px] flex mt-2">
             <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
               {/* Left: Morning Daily Brief (55%) */}
               <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col">

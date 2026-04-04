@@ -1,19 +1,14 @@
-// [claude-code 2026-02-26] Support dockable PsychAssist in Zen layout.
 // [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
 // [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
 // [claude-code 2026-03-20] S3:T4c: Linked Strategium ↔ RiskFlow collapse — both expand/collapse together
 // [claude-code 2026-03-22] Replaced "The Tape" in Castra with RiskFlowMini (same as non-iFrame Strategium)
 // [claude-code 2026-03-31] S12-T2: Added Documents tab (TipTap editor)
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X, MessageSquare, Users, Cpu, Clock } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import type { IVScoreResponse } from '../../types/market-data';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
-import { MinimalFeedSection } from '../feed/MinimalFeedSection';
-import { KanbanTitle } from '../ui/KanbanTitle';
 import { MinimalTapeWidget } from '../feed/MinimalTapeWidget';
-import { RiskFlowMain } from '../feed/RiskFlowMain';
-import { ConsiliumHub } from '../consilium/ConsiliumHub';
 import { TradingBrowser, type TradingPlatform } from '../TradingBrowser';
 import { TimelineOverlay, TimelineToggleButton } from './TimelineOverlay';
 import { FloatingWidget } from './FloatingWidget';
@@ -26,43 +21,30 @@ import { AccountTrackerWidget } from '../mission-control/AccountTrackerWidget';
 import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
-import { MainDashboard } from '../executive/MainDashboard';
-import { Scriptorium } from '../executive/Scriptorium';
+// [claude-code 2026-04-03] S14-T5: Scriptorium standalone tab removed — knowledge archive accessed via Apparatus dropdown
 import { SectionBreadcrumb } from './SectionBreadcrumb';
 import RiskFlowMini from '../RiskFlowMini';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { SearchModal } from '../search/SearchModal';
-import { ChatSidebar } from '../chat/ChatSidebar';
-import { SessionsPanel } from '../chat/SessionsPanel';
-import { SettingsPage } from '../SettingsPanel';
 import { useSettings } from '../../contexts/SettingsContext';
 import { PsychAssistDockable, type PsychAssistDockTarget } from './PsychAssistDockable';
 import { FooterToolbar } from './FooterToolbar';
 import { EmbeddedBrowserFrame } from './EmbeddedBrowserFrame';
 import { ScheduleProvider } from '../../contexts/ScheduleContext';
-import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
-import { EconCalendar } from '../econ/EconCalendar';
-import { NarrativeProvider } from '../../contexts/NarrativeContext';
-import { NarrativeMap } from '../narrative/NarrativeMap';
-import { PerformanceJournal } from '../journal/PerformanceJournal';
-import { ProposalWidget } from '../proposals/ProposalWidget';
-import { ApparatusMap } from '../apparatus/ApparatusMap';
-import { DocumentsView } from '../editor/DocumentsView';
-import { SharedMemoryPanel } from '../memory/SharedMemoryPanel';
-import { RefinementEngine } from '../refinement/RefinementEngine';
+// [claude-code 2026-04-03] S14-T5: Removed DocumentsView, SharedMemoryPanel, ResearchBoard standalone imports — now in ConsiliumHub
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 // [claude-code 2026-03-16] Hermes moved from standalone page into Settings tab
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
 import { RegimeMini } from '../mission-control/RegimeMini';
 import { MiniProposalCard } from '../mission-control/MiniProposalCard';
 import { SessionCalendarMini } from '../mission-control/SessionCalendarMini';
-import { WidgetArrangeMenu } from '../mission-control/WidgetArrangeMenu';
 import { DNDProvider, useDND } from '../../contexts/DNDContext';
 import { NotificationCenter } from '../NotificationCenter';
-import { PeerCarousel } from '../peers/PeerCarousel';
-import { PeerOnboarding } from '../peers/PeerOnboarding';
+import { TabRenderer } from './TabRenderer';
+import { MissionControlContent } from './MissionControlContent';
+import { ChatPanel } from './ChatPanel';
+// [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
 import { VoiceWidget, VoiceRoomHeaderButton, type VoiceWidgetDockTarget } from '../peers/VoiceWidget';
-import ResearchBoard from '../research/ResearchBoard';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -72,10 +54,8 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'documents' | 'research' | 'memory' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
-
-const MISSION_WIDGETS_PER_PAGE = 2;
 
 function normalizeOrder<T extends string>(order: T[], defaults: readonly T[]): T[] {
   const deduped = order.filter((id, idx) => defaults.includes(id) && order.indexOf(id) === idx);
@@ -97,14 +77,7 @@ function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform, developerSettings, voiceEnabled } = useSettings();
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
-  const [showPeersPanel, setShowPeersPanel] = useState(false);
-  const [showPeerOnboarding, setShowPeerOnboarding] = useState(() => {
-    try {
-      return localStorage.getItem('fintheon:peer-onboarded:v1') !== 'true';
-    } catch {
-      return true;
-    }
-  });
+  // S14-T6: Peers panel + onboarding removed — team status lives in footer panel only
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showRefinement, setShowRefinement] = useState(false);
@@ -143,7 +116,6 @@ function MainLayoutInner() {
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] = useState(false);
   const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [showSessionsPopup, setShowSessionsPopup] = useState(false);
   const [showVoiceWidget, setShowVoiceWidget] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [sidebarOverlayVisible, setSidebarOverlayVisible] = useState(false);
@@ -151,8 +123,6 @@ function MainLayoutInner() {
     normalizeOrder(getMissionWidgetOrder(), DEFAULT_MISSION_WIDGET_ORDER)
   );
   const [missionWidgetVisibility, setMissionWidgetVisibilityState] = useState<Record<MissionWidgetId, boolean>>(getMissionWidgetVisibility);
-  const [missionDeckPage, setMissionDeckPage] = useState(0);
-  const missionDeckRef = useRef<HTMLDivElement>(null);
   const [psychAssistTarget, setPsychAssistTarget] = useState<PsychAssistDockTarget>(() => {
     try {
       return (localStorage.getItem('fintheon:psychassist-target:v1') as PsychAssistDockTarget) || 'floating';
@@ -229,9 +199,8 @@ function MainLayoutInner() {
       '2': 'analysis',
       '3': 'riskflow',
       '4': 'econ',
-      '6': 'scriptorium',
-      '7': 'narrative',
-      '8': 'research',
+      '5': 'performance',
+      '6': 'settings',
     };
 
     const handler = (e: KeyboardEvent) => {
@@ -474,122 +443,16 @@ function MainLayoutInner() {
     return normalized.map((id) => ({ id, label: missionWidgetRegistry[id].label }));
   }, [missionWidgetOrder, missionWidgetRegistry]);
 
-  const missionWidgetPages = useMemo(() => {
-    const pages: Array<typeof orderedMissionWidgets> = [];
-    for (let i = 0; i < orderedMissionWidgets.length; i += MISSION_WIDGETS_PER_PAGE) {
-      pages.push(orderedMissionWidgets.slice(i, i + MISSION_WIDGETS_PER_PAGE));
-    }
-    return pages.length > 0 ? pages : [[]];
-  }, [orderedMissionWidgets]);
-
-  useEffect(() => {
-    setMissionDeckPage((prev) => Math.min(prev, Math.max(0, missionWidgetPages.length - 1)));
-  }, [missionWidgetPages.length]);
-
-  const scrollMissionDeckToPage = useCallback((idx: number) => {
-    setMissionDeckPage(idx);
-    const el = missionDeckRef.current;
-    if (!el) return;
-    const pages = el.querySelectorAll('[data-mission-page]');
-    if (pages[idx]) {
-      pages[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, []);
-
-  const handleMissionDeckScroll = useCallback(() => {
-    const el = missionDeckRef.current;
-    if (!el) return;
-    const pages = el.querySelectorAll('[data-mission-page]');
-    let closest = 0;
-    let minDist = Infinity;
-    pages.forEach((page, idx) => {
-      const rect = page.getBoundingClientRect();
-      const offset = Math.abs(rect.top - el.getBoundingClientRect().top);
-      if (offset < minDist) {
-        minDist = offset;
-        closest = idx;
-      }
-    });
-    setMissionDeckPage(closest);
-  }, []);
-
-  // Reusable Mission Control content block: snap deck with exactly 2 widgets per page.
-  const missionControlContent = (collapseFn?: () => void) => (
-    <div className="h-full flex flex-col" data-tour-target="strategium">
-      <KanbanTitle
-        title="Strategium"
-        tone="gold"
-        headerRight={
-          <div className="flex items-center gap-0.5">
-            <WidgetArrangeMenu
-              widgets={allMissionWidgets}
-              visibility={missionWidgetVisibility}
-              onReorder={handleMissionWidgetReorder}
-              onToggleVisibility={handleMissionWidgetToggleVisibility}
-            />
-            {collapseFn && (
-              <button
-                onClick={collapseFn}
-                className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
-                title="Collapse panel"
-              >
-                <ChevronRight className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />
-              </button>
-            )}
-          </div>
-        }
-      />
-
-      <div className="mt-2 flex-1 min-h-0 relative">
-        <div
-          ref={missionDeckRef}
-          onScroll={handleMissionDeckScroll}
-          className="h-full overflow-y-auto snap-y snap-mandatory"
-        >
-          {missionWidgetPages.map((page, pageIdx) => (
-            <section
-              key={`mission-page-${pageIdx}`}
-              data-mission-page={pageIdx}
-              className="min-h-full snap-start grid grid-rows-2 divide-y divide-[var(--fintheon-accent)]/15"
-            >
-              {[0, 1].map((slotIdx) => {
-                const widget = page[slotIdx];
-                if (!widget) {
-                  return <div key={`slot-${slotIdx}`} className="p-3" />;
-                }
-                return (
-                  <div key={widget.id} className="p-3">
-                    {widget.node}
-                  </div>
-                );
-              })}
-            </section>
-          ))}
-        </div>
-
-        {missionWidgetPages.length > 1 && (
-          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-2">
-            {missionWidgetPages.map((_, idx) => (
-              <button
-                key={`mission-dot-${idx}`}
-                onClick={() => scrollMissionDeckToPage(idx)}
-                title={`Mission page ${idx + 1}`}
-                className="group relative flex items-center justify-center"
-              >
-                <div
-                  className={`transition-all duration-300 rounded-full ${
-                    missionDeckPage === idx
-                      ? 'w-[3px] h-8 bg-[var(--fintheon-accent)]'
-                      : 'w-[2px] h-5 bg-gray-700 hover:bg-gray-500'
-                  }`}
-                />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  const renderMissionControl = useCallback((collapseFn?: () => void) => (
+    <MissionControlContent
+      orderedMissionWidgets={orderedMissionWidgets}
+      allMissionWidgets={allMissionWidgets}
+      missionWidgetVisibility={missionWidgetVisibility}
+      onReorder={handleMissionWidgetReorder}
+      onToggleVisibility={handleMissionWidgetToggleVisibility}
+      collapseFn={collapseFn}
+    />
+  ), [orderedMissionWidgets, allMissionWidgets, missionWidgetVisibility, handleMissionWidgetReorder, handleMissionWidgetToggleVisibility]);
 
   // When TopStepX is enabled, render panels based on layout option
   if (topStepXEnabled) {
@@ -613,7 +476,7 @@ function MainLayoutInner() {
                 {/* Mission Control: 50% height, no overflow into tape */}
                 <section className={`${combinedTapeCollapsed ? 'flex-1' : 'h-1/2'} min-h-0 overflow-y-auto border-b border-[var(--fintheon-accent)]/20`}>
                   <div className="p-3 h-full">
-                    {missionControlContent(() => setCombinedPanelCollapsed(true))}
+                    {renderMissionControl(() => setCombinedPanelCollapsed(true))}
                   </div>
                 </section>
                 {/* RiskFlow: 50% when expanded, 168px collapsed preview at bottom */}
@@ -647,7 +510,7 @@ function MainLayoutInner() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = showRefinement || activeTab === 'scriptorium' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'performance' || activeTab === 'proposals' || activeTab === 'documents' || activeTab === 'research' || activeTab === 'memory' || activeTab === 'settings';
+    const hideRightPanel = showRefinement || activeTab === 'analysis' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'apparatus' || activeTab === 'performance' || activeTab === 'proposals' || activeTab === 'settings';
     if (!hideRightPanel) {
       rightPanels.push(
         <div
@@ -671,7 +534,7 @@ function MainLayoutInner() {
               <div className={`${riskFlowCollapsed ? 'flex-1' : 'h-1/2'} flex flex-col transition-all duration-300 bg-[var(--fintheon-surface)]`}>
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   <div className="p-3 h-full">
-                    {missionControlContent(() => setMissionControlCollapsed(true))}
+                    {renderMissionControl(() => setMissionControlCollapsed(true))}
                   </div>
                 </div>
               </div>
@@ -744,31 +607,7 @@ function MainLayoutInner() {
         }
       />
 
-      {/* Peers panel — slides down from top when toggled from footer */}
-      <div
-        className={`overflow-hidden border-b border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)]/95 transition-all duration-300 ease-in-out ${showPeersPanel ? 'max-h-[240px] py-2 px-3' : 'max-h-0'}`}
-      >
-        <div className="mb-2 flex items-center gap-3">
-          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--fintheon-accent)' }}>
-            Peers
-          </span>
-          {/* Capability health lights — footer StatusIndicator style */}
-          <div className="flex items-center gap-2">
-            {[
-              { label: 'Claude CLI', key: 'claude-cli' },
-              { label: 'Twitter', key: 'twitter-cli' },
-              { label: 'Hermes', key: 'hermes' },
-              { label: 'Voice', key: 'voice' },
-            ].map(({ label, key }) => (
-              <span key={key} className="flex items-center gap-1 text-[10px] text-zinc-500" title={label}>
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-zinc-600" />
-                {label}
-              </span>
-            ))}
-          </div>
-        </div>
-        <PeerCarousel collapsed={false} />
-      </div>
+      {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
 
       <div className="flex-1 flex overflow-hidden relative">
         <div className="relative">
@@ -822,82 +661,13 @@ function MainLayoutInner() {
 
           {/* Main content layer */}
           <div className={`h-full relative flex-1 flex flex-col ${topStepXEnabled ? 'pointer-events-none' : ''}`} style={{ opacity: topStepXEnabled ? 0 : 1, transition: 'opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-              <div className="flex-1 min-h-0 overflow-hidden">
-              {showRefinement && (
-                <div key="refinement" className="h-full w-full animate-fade-in-tab">
-                  <RefinementEngine />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'dashboard' && (
-                <div key="dashboard" data-tour-target="dashboard" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <MainDashboard onNavigateTab={(tab) => navigateTab(tab as NavTab)} />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'analysis' && (
-                <div key="analysis" data-tour-target="chat" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ConsiliumHub />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'riskflow' && (
-                <div key="riskflow" data-tour-target="riskflow" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <RiskFlowMain />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'econ' && (
-                <div key="econ" data-tour-target="econ" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <EconCalendarProvider>
-                    <EconCalendar />
-                  </EconCalendarProvider>
-                </div>
-              )}
-              {!showRefinement && activeTab === 'narrative' && (
-                <div key="narrative" data-tour-target="narrative" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <NarrativeProvider>
-                    <NarrativeMap />
-                  </NarrativeProvider>
-                </div>
-              )}
-              {!showRefinement && activeTab === 'apparatus' && (
-                <div key="apparatus" data-tour-target="apparatus" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ApparatusMap />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'scriptorium' && (
-                <div key="scriptorium" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <Scriptorium />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'documents' && (
-                <div key="documents" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <DocumentsView />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'memory' && (
-                <div key="memory" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <SharedMemoryPanel />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'proposals' && (
-                <div key="proposals" data-tour-target="proposals" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ProposalWidget />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'performance' && (
-                <div key="performance" data-tour-target="performance" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <PerformanceJournal />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'research' && (
-                <div key="research" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ResearchBoard />
-                </div>
-              )}
-              {!showRefinement && activeTab === 'settings' && (
-                <div key="settings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <SettingsPage />
-                </div>
-              )}
-              </div>
+              <TabRenderer
+                activeTab={activeTab}
+                tabTransitioning={tabTransitioning}
+                prevTab={prevTab}
+                showRefinement={showRefinement}
+                navigateTab={navigateTab}
+              />
             </div>
         </div>
 
@@ -959,73 +729,7 @@ function MainLayoutInner() {
         )}
 
         {/* Global chat panel — slide in/out from right */}
-        <div
-          className={`absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl transition-transform duration-300 ease-in-out ${showChat ? 'translate-x-0' : 'translate-x-full'}`}
-          style={{ pointerEvents: showChat ? 'auto' : 'none' }}
-        >
-          <div className="flex items-center justify-between px-3 py-2 flex-shrink-0">
-            {/* Left icons — match main Consilium functions + session history */}
-            <div className="flex items-center gap-0.5">
-              <button
-                onClick={() => { setShowChat(false); navigateTab('analysis'); }}
-                className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
-                title="Ask Harp (full)"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => { setShowChat(false); navigateTab('analysis'); }}
-                className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
-                title="Boardroom"
-              >
-                <Users className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => { setShowChat(false); navigateTab('analysis'); }}
-                className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
-                title="Apparatus"
-              >
-                <Cpu className="w-3.5 h-3.5" />
-              </button>
-              {/* Session history popup */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowSessionsPopup((v: boolean) => !v)}
-                  className={`p-1.5 rounded-md transition-colors ${showSessionsPopup ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10' : 'text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8'}`}
-                  title="Sessions"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                </button>
-                {showSessionsPopup && (
-                  <div
-                    className="absolute top-full right-0 mt-1 z-50 w-[240px] max-h-[280px] rounded-lg border overflow-hidden backdrop-blur-xl"
-                    style={{
-                      borderColor: 'color-mix(in srgb, var(--fintheon-accent) 25%, transparent)',
-                      backgroundColor: 'color-mix(in srgb, var(--fintheon-bg) 95%, var(--fintheon-accent) 5%)',
-                      boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
-                    }}
-                  >
-                    <SessionsPanel
-                      onSelectSession={(id) => { setShowSessionsPopup(false); }}
-                      onNewSession={() => { setShowSessionsPopup(false); }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Close */}
-            <button
-              onClick={() => setShowChat(false)}
-              className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
-              title="Close"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <ChatSidebar />
-          </div>
-        </div>
+        <ChatPanel showChat={showChat} onClose={() => setShowChat(false)} navigateTab={navigateTab} />
       </div>
 
       <SessionCountdownWidget />
@@ -1040,8 +744,6 @@ function MainLayoutInner() {
         onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
         allowSplitView={topStepXEnabled}
         onPowerOff={handleBrowserToggle}
-        peersOpen={showPeersPanel}
-        onTogglePeers={() => setShowPeersPanel((v) => !v)}
       />
 
       {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}
@@ -1062,24 +764,7 @@ function MainLayoutInner() {
       {/* First-time user tour + interview + setup wizard */}
       <FirstTimeTour onNavigate={(tab) => navigateTab(tab as NavTab)} />
 
-      <PeerOnboarding
-        open={showPeerOnboarding}
-        onClose={() => {
-          setShowPeerOnboarding(false);
-          try {
-            localStorage.setItem('fintheon:peer-onboarded:v1', 'true');
-          } catch {
-            // ignore localStorage write errors
-          }
-        }}
-        onComplete={() => {
-          try {
-            localStorage.setItem('fintheon:peer-onboarded:v1', 'true');
-          } catch {
-            // ignore localStorage write errors
-          }
-        }}
-      />
+      {/* S14-T6: PeerOnboarding removed — team onboarding will be rebuilt separately if needed */}
     </div>
     </ScheduleProvider>
   );

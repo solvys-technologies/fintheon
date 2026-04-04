@@ -28,6 +28,8 @@ const ENV_EXAMPLE = join(BACKEND_DIR, '.env.example');
 const ENV_FILE = join(BACKEND_DIR, '.env');
 const FRONTEND_ENV = join(FRONTEND_DIR, '.env.local');
 const DEFAULT_PORT = 8080;
+const FLY_DEPLOYED_SUPABASE_DATABASE_URL =
+  'postgresql://postgres.nrcfnzclbjboctptxaxx:Pricedinresearch0670963957%24@aws-0-us-west-2.pooler.supabase.com:5432/postgres';
 
 /* ------------------------------------------------------------------ */
 /*  Setup context — accumulated across steps                           */
@@ -38,6 +40,7 @@ interface SetupContext {
   openRouterKey: string;
   openAiKey: string;
   databaseUrl: string;
+  vproxyReady: boolean;
   hermesInstalled: boolean;
   backendRunning: boolean;
   backendAlreadyRunning: boolean;
@@ -48,6 +51,7 @@ const ctx: SetupContext = {
   openRouterKey: '',
   openAiKey: '',
   databaseUrl: '',
+  vproxyReady: false,
   hermesInstalled: false,
   backendRunning: false,
   backendAlreadyRunning: false,
@@ -205,7 +209,7 @@ async function collectApiKeys() {
 
   const existing = parseEnvFile(ENV_FILE);
 
-  // --- OpenRouter API Key (required for AI) ---
+  // --- OpenRouter API Key (optional fallback) ---
   if (existing.OPENROUTER_API_KEY) {
     const keep = await p.confirm({
       message: `OpenRouter key already configured (${pc.dim(existing.OPENROUTER_API_KEY.slice(0, 10) + '...')}). Keep it?`,
@@ -218,34 +222,26 @@ async function collectApiKeys() {
   }
 
   if (!ctx.openRouterKey) {
-    let attempts = 0;
-    while (attempts < 3) {
-      const key = await p.password({
-        message: 'OpenRouter API key (sk-or-...):',
-        validate: (v) => {
-          if (!v) return 'Required for AI features';
-          if (!v.startsWith('sk-or-')) return 'Must start with sk-or-';
-          if (v.length < 20) return 'Key seems too short';
-        },
-      });
+    const maybeKey = await p.password({
+      message: 'OpenRouter API key (optional fallback, press Enter to skip):',
+      validate: (v) => {
+        if (!v) return;
+        if (!v.startsWith('sk-or-')) return 'Must start with sk-or-';
+        if (v.length < 20) return 'Key seems too short';
+      },
+    });
 
-      if (p.isCancel(key)) { p.cancel('Setup cancelled.'); process.exit(0); }
+    if (p.isCancel(maybeKey)) { p.cancel('Setup cancelled.'); process.exit(0); }
 
+    if (maybeKey) {
       const s = p.spinner();
-      s.start('Validating key with OpenRouter');
-      const valid = await validateOpenRouterKey(key);
-      s.stop(valid ? 'Key validated' : 'Key validation failed');
-
+      s.start('Validating OpenRouter fallback key');
+      const valid = await validateOpenRouterKey(maybeKey);
+      s.stop(valid ? 'OpenRouter fallback key validated' : 'OpenRouter key validation failed');
       if (valid) {
-        ctx.openRouterKey = key;
-        break;
-      }
-
-      attempts++;
-      if (attempts < 3) {
-        p.log.warn('Invalid key — try again. Get yours at https://openrouter.ai/settings/keys');
+        ctx.openRouterKey = maybeKey;
       } else {
-        p.log.error('Could not validate key after 3 attempts — continuing without AI');
+        p.log.warn('Invalid OpenRouter key — skipping fallback provider');
       }
     }
   }
@@ -278,14 +274,22 @@ async function collectApiKeys() {
 /* ------------------------------------------------------------------ */
 
 function writeEnvFiles() {
+  const databaseUrl = ctx.databaseUrl || FLY_DEPLOYED_SUPABASE_DATABASE_URL;
+  if (!ctx.databaseUrl) ctx.databaseUrl = databaseUrl;
+
   // Backend .env
   const updates: Record<string, string> = {
     BYPASS_AUTH: 'true',
+    DATABASE_URL: databaseUrl,
+    USE_VPROXY_ANTHROPIC: 'true',
+    VPROXY_BASE_URL: 'http://localhost:8317',
+    VPROXY_API_KEY: 'CLI_PROXY_API_KEY',
+    VPROXY_ANTHROPIC_MODEL: 'claude-opus-4.6',
+    AI_PRIMARY_PROVIDER: 'anthropic-vproxy',
   };
 
   if (ctx.openRouterKey) updates.OPENROUTER_API_KEY = ctx.openRouterKey;
   if (ctx.openAiKey) updates.OPENAI_API_KEY = ctx.openAiKey;
-  if (ctx.databaseUrl) updates.DATABASE_URL = ctx.databaseUrl;
   if (ctx.port !== DEFAULT_PORT) updates.PORT = String(ctx.port);
 
   // If no .env exists, seed from .env.example first
@@ -312,7 +316,41 @@ function writeEnvFiles() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Step F: Port detection                                             */
+/*  Step F: VProxy Anthropic OAuth                                     */
+/* ------------------------------------------------------------------ */
+
+async function ensureVProxyOAuth() {
+  const oauthScript = join(ROOT, 'scripts', 'vproxy-anthropic-oauth.sh');
+  if (!existsSync(oauthScript)) {
+    p.log.warn('VProxy OAuth helper script missing — run fintheon oauth later');
+    return;
+  }
+
+  const shouldRun = await p.confirm({
+    message: 'Connect Anthropic subscription via VProxy now?',
+    initialValue: true,
+  });
+  if (p.isCancel(shouldRun)) { p.cancel('Setup cancelled.'); process.exit(0); }
+  if (!shouldRun) {
+    p.log.info('Skipping OAuth for now. Run later with: fintheon oauth');
+    return;
+  }
+
+  const s = p.spinner();
+  s.start('Launching VProxy Anthropic OAuth');
+  const result = await runCommand('bash', [oauthScript, '--yes'], { cwd: ROOT });
+  if (result.ok) {
+    s.stop('Anthropic OAuth complete');
+    ctx.vproxyReady = true;
+  } else {
+    s.stop('Anthropic OAuth failed');
+    p.log.warn('You can retry later with: fintheon oauth');
+    if (result.stderr) p.log.warn(result.stderr.slice(0, 200));
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Step G: Port detection                                             */
 /* ------------------------------------------------------------------ */
 
 async function detectPort() {
@@ -366,7 +404,7 @@ async function detectPort() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Step G: Build & start backend                                      */
+/*  Step H: Build & start backend                                      */
 /* ------------------------------------------------------------------ */
 
 async function buildAndStartBackend() {
@@ -415,7 +453,7 @@ async function buildAndStartBackend() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Step H: Verify health                                              */
+/*  Step I: Verify health                                              */
 /* ------------------------------------------------------------------ */
 
 async function verifyHealth() {
@@ -445,11 +483,11 @@ async function verifyHealth() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Step I: Verify Hermes gateway                                      */
+/*  Step J: Verify Hermes gateway                                      */
 /* ------------------------------------------------------------------ */
 
 async function verifyHermes() {
-  if (!ctx.backendRunning || !ctx.openRouterKey) return;
+  if (!ctx.backendRunning) return;
 
   try {
     const res = await fetch(`http://localhost:${ctx.port}/api/diagnostics`, {
@@ -478,11 +516,11 @@ async function verifyHermes() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Step J: Harper welcome message                                     */
+/*  Step K: Harper welcome message                                     */
 /* ------------------------------------------------------------------ */
 
 async function triggerWelcome() {
-  if (!ctx.backendRunning || !ctx.openRouterKey) {
+  if (!ctx.backendRunning) {
     p.log.info(pc.dim('Skipping welcome message (backend or AI not available)'));
     return;
   }
@@ -529,15 +567,18 @@ async function triggerWelcome() {
 
 function showSummary() {
   const backendStatus = ctx.backendRunning ? pc.green('[running]') : pc.red('[stopped]');
-  const hermesStatus = ctx.openRouterKey ? pc.green('[ok]') : pc.yellow('[no key]');
+  const hermesStatus = ctx.vproxyReady ? pc.green('[oauth ready]') : pc.yellow('[run fintheon oauth]');
   const dbStatus = ctx.databaseUrl ? pc.green('[connected]') : pc.dim('[in-memory]');
 
   console.log('');
   p.log.success(pc.bold('Setup Complete'));
   console.log('');
   console.log(`  Backend:    http://localhost:${ctx.port}  ${backendStatus}`);
-  console.log(`  Hermes AI:  OpenRouter             ${hermesStatus}`);
+  console.log(`  Hermes AI:  Anthropic via VProxy   ${hermesStatus}`);
   console.log(`  Database:   ${ctx.databaseUrl ? 'PostgreSQL' : 'In-memory mode'}         ${dbStatus}`);
+  if (ctx.openRouterKey) {
+    console.log(`  Fallback:   OpenRouter configured  ${pc.green('[ok]')}`);
+  }
   console.log('');
   console.log(pc.dim('  Next steps:'));
   console.log(`    1. Start frontend:  ${pc.cyan('cd frontend && bun run dev')}`);
@@ -563,6 +604,7 @@ async function main() {
   await installHermes();
 
   // Phase 2: API Keys & Environment
+  await ensureVProxyOAuth();
   await collectApiKeys();
   await detectPort();
   writeEnvFiles();

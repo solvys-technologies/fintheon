@@ -85,7 +85,7 @@ export function DeskPanel({ peers, isAdmin, onUpdated }: DeskPanelProps) {
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-[var(--fintheon-text)]">Desk Admin</h3>
-          <p className="text-[11px] text-zinc-400">Create desks and assign peers.</p>
+          <p className="text-[11px] text-zinc-400">Create desks and assign team members.</p>
         </div>
         <button
           onClick={() => setShowCreate((value) => !value)}
@@ -159,7 +159,7 @@ export function DeskPanel({ peers, isAdmin, onUpdated }: DeskPanelProps) {
             </div>
           ))}
           {peers.length === 0 && (
-            <p className="text-xs text-zinc-500">No peers available for assignment yet.</p>
+            <p className="text-xs text-zinc-500">No team members available for assignment yet.</p>
           )}
         </div>
       )}

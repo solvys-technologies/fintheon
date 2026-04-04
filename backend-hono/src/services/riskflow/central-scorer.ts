@@ -278,7 +278,17 @@ export async function scoringCycle(): Promise<void> {
     });
 
     // Run through the existing AI enrichment pipeline (Grok analyzer)
-    const enrichedItems = await enrichFeedWithAnalysis(feedItems);
+    // Graceful degradation: if AI enrichment fails entirely, proceed with
+    // deterministic-only items so the feed is never empty.
+    let enrichedItems: FeedItem[];
+    try {
+      enrichedItems = await enrichFeedWithAnalysis(feedItems);
+    } catch (enrichErr) {
+      log.warn('AI enrichment failed, using deterministic scores only:', {
+        error: enrichErr instanceof Error ? enrichErr.message : String(enrichErr),
+      });
+      enrichedItems = feedItems;
+    }
 
     // Classify risk type for enriched items
     for (const item of enrichedItems) {

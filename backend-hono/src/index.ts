@@ -10,7 +10,7 @@ validateEnv();
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { serve } from '@hono/node-server';
+// serve import removed — Bun auto-serves via default export
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 import { corsConfig } from './config/cors.js';
@@ -91,12 +91,14 @@ app.notFound((c) => {
   return c.json({ error: 'Not found', code: 'NOT_FOUND', requestId }, 404);
 });
 
-// Start server
-serve({ fetch: app.fetch, port: config.PORT });
-
-log.info('Server started', { port: config.PORT, env: config.NODE_ENV });
+// Bun auto-serves the default export — no explicit serve() needed.
+// The explicit call caused EADDRINUSE in production mode.
+log.info('Server starting', { port: config.PORT, env: config.NODE_ENV });
 
 // Boot background services
 bootServices();
 
-export default app;
+export default {
+  fetch: app.fetch,
+  port: config.PORT,
+};

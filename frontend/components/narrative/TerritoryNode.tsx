@@ -1,3 +1,4 @@
+// [claude-code 2026-04-04] Territory nodes are now circles with radial gradient + ring pulse animation
 import type { NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
 
@@ -5,27 +6,27 @@ export interface TerritoryNodeData {
   title: string;
   color: string;
   count: number;
-  width: number;
-  height: number;
+  size: number;
 }
 
 export function TerritoryNode({ data }: NodeProps & { data: TerritoryNodeData }) {
-  const { title, color, count, width, height } = data;
+  const { title, color, count, size } = data;
 
   return (
     <div
       style={{
-        width,
-        height,
-        background: `linear-gradient(135deg, ${color}08 0%, ${color}04 50%, transparent 100%)`,
+        width: size,
+        height: size,
+        background: `radial-gradient(circle at 50% 50%, ${color}0a 0%, ${color}04 60%, transparent 100%)`,
         border: `1.5px solid ${color}22`,
-        borderRadius: 6,
+        borderRadius: '50%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
         pointerEvents: 'none',
+        animation: 'territory-ring-pulse 4s ease-in-out infinite',
       }}
     >
       <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1 }} />
@@ -33,17 +34,25 @@ export function TerritoryNode({ data }: NodeProps & { data: TerritoryNodeData })
       <Handle type="target" position={Position.Left} id="left" style={{ opacity: 0, width: 1, height: 1 }} />
       <Handle type="source" position={Position.Right} id="right" style={{ opacity: 0, width: 1, height: 1 }} />
 
-      <div style={{ textAlign: 'center', pointerEvents: 'none' }}>
+      <div
+        style={{
+          textAlign: 'center',
+          pointerEvents: 'none',
+          background: `radial-gradient(circle, ${color}18 0%, transparent 70%)`,
+          padding: '24px 18px',
+          borderRadius: '50%',
+        }}
+      >
         <div
           style={{
-            fontSize: 28,
+            fontSize: 32,
             fontWeight: 800,
             color,
             fontFamily: 'var(--font-heading)',
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
             opacity: 0.85,
-            textShadow: `0 0 60px ${color}30, 0 2px 20px ${color}15`,
+            textShadow: `0 0 80px ${color}40, 0 0 40px ${color}25, 0 2px 20px ${color}15`,
             lineHeight: '1.15',
             padding: '0 18px',
           }}
@@ -62,18 +71,6 @@ export function TerritoryNode({ data }: NodeProps & { data: TerritoryNodeData })
           {count} catalysts
         </div>
       </div>
-
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 3,
-          background: `linear-gradient(to top, ${color}15, transparent)`,
-          borderRadius: '0 0 6px 6px',
-        }}
-      />
     </div>
   );
 }

@@ -48,6 +48,19 @@ describe('validateEnv', () => {
     });
   });
 
+  it('allows missing OPENROUTER_API_KEY when VProxy Anthropic is enabled', () => {
+    withEnv({ ...FULL_VALID_ENV, OPENROUTER_API_KEY: undefined, USE_VPROXY_ANTHROPIC: 'true' }, () => {
+      const result = validateEnv();
+      expect(result.ok).toBe(true);
+    });
+  });
+
+  it('fails when OPENROUTER_API_KEY is missing and VProxy Anthropic is disabled', () => {
+    withEnv({ ...FULL_VALID_ENV, OPENROUTER_API_KEY: undefined, USE_VPROXY_ANTHROPIC: 'false' }, () => {
+      expect(() => validateEnv()).toThrow('process.exit called');
+    });
+  });
+
   it('accepts NEON_DATABASE_URL as DATABASE_URL alias', () => {
     withEnv({ ...FULL_VALID_ENV, DATABASE_URL: undefined, NEON_DATABASE_URL: 'postgresql://u:p@h/db' }, () => {
       const result = validateEnv();

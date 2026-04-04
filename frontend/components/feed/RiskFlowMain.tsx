@@ -1,6 +1,7 @@
 // [claude-code 2026-03-05] Add filter tabs: All, High, Medium, Proposals
 // [claude-code 2026-03-10] Dropdown filters (Priority + Source), X/FJ filter, X CLI status dot.
 // [claude-code 2026-03-26] T4: Replace inline cards with RiskFlowDetailCard, remove dead helpers
+// [claude-code 2026-04-03] Fix IntersectionObserver root for overflow container, add Critical/Low priority filters
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Bell, BellOff, RefreshCw, Loader2 } from 'lucide-react';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
@@ -9,12 +10,13 @@ import { useBackend } from '../../lib/backend';
 import { RiskFlowDetailCard } from './RiskFlowDetailCard';
 import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
 
-type PriorityFilter = 'all' | 'high' | 'medium';
+type PriorityFilter = 'all' | 'critical' | 'high' | 'medium' | 'low';
 type SourceFilter = 'all' | 'notion' | 'twitter';
 
 export function RiskFlowMain() {
   const { alerts, markAllSeen, isSeen, refresh, refreshing, loadMore, loadingMore, hasMore } = useRiskFlow();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sourceStatus = useSourceStatus();
   const backend = useBackend();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -36,7 +38,7 @@ export function RiskFlowMain() {
           void loadMore();
         }
       },
-      { rootMargin: '200px' },
+      { root: scrollContainerRef.current, rootMargin: '200px' },
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -63,22 +65,26 @@ export function RiskFlowMain() {
     }
   };
 
+  const critCount = alerts.filter((a) => a.severity === 'critical').length;
   const highCount = alerts.filter((a) => a.severity === 'high').length;
   const medCount = alerts.filter((a) => a.severity === 'medium').length;
+  const lowCount = alerts.filter((a) => a.severity === 'low').length;
   const proposalCount = alerts.filter((a) => a.source === 'notion-trade-idea').length;
 
   const items = useMemo(() => {
     if (showProposals) return alerts.filter((a) => a.source === 'notion-trade-idea');
     let base = [...alerts];
-    if (priorityFilter === 'high') base = base.filter((a) => a.severity === 'high');
+    if (priorityFilter === 'critical') base = base.filter((a) => a.severity === 'critical');
+    else if (priorityFilter === 'high') base = base.filter((a) => a.severity === 'high');
     else if (priorityFilter === 'medium') base = base.filter((a) => a.severity === 'medium');
+    else if (priorityFilter === 'low') base = base.filter((a) => a.severity === 'low');
     if (sourceFilter === 'notion') base = base.filter((a) => a.source === 'notion-trade-idea' || (a.source as string).toLowerCase().includes('notion'));
     else if (sourceFilter === 'twitter') base = base.filter((a) => (a.source as string) === 'TwitterCli' || (a.source as string) === 'FinancialJuice' || (a.source as string).toLowerCase().includes('twitter'));
     return base;
   }, [alerts, priorityFilter, sourceFilter, showProposals]);
 
   return (
-    <div className="h-full overflow-y-auto px-0 pt-0 pb-0">
+    <div ref={scrollContainerRef} className="h-full overflow-y-auto px-0 pt-0 pb-0">
       <div className="flex items-center justify-between mb-2 mt-1 px-3">
         <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em]">
           <span className="text-[var(--fintheon-accent)] font-semibold tracking-[0.15em]">RiskFlow</span>
@@ -125,8 +131,10 @@ export function RiskFlowMain() {
           className="text-[10px] px-2 py-1 rounded bg-[var(--fintheon-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--fintheon-accent)]/40 cursor-pointer"
         >
           <option value="all">Priority: All ({alerts.length})</option>
+          <option value="critical">Critical ({critCount})</option>
           <option value="high">High ({highCount})</option>
           <option value="medium">Medium ({medCount})</option>
+          <option value="low">Low ({lowCount})</option>
         </select>
         <select
           value={showProposals ? 'all' : sourceFilter}

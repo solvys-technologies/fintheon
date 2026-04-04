@@ -11,12 +11,12 @@ interface AgentConfig {
 }
 
 const AGENT_MAP: Record<BoardroomAgent, AgentConfig> = {
-  'Harper-Opus': { label: 'Harper', role: 'CAO', icon: Crown, accentClass: 'text-[#c79f4a]' },
-  'Oracle':        { label: 'Oracle', role: 'All-Seer', icon: Eye, accentClass: 'text-[#a89060]' },
-  'Feucht':        { label: 'Feucht', role: 'Risk Desk', icon: Zap, accentClass: 'text-[#d4af37]' },
-  'Consul':        { label: 'Consul', role: 'Fundamentals', icon: Scroll, accentClass: 'text-[#8a7a50]' },
-  'Herald':        { label: 'Herald', role: 'Sentiment', icon: Megaphone, accentClass: 'text-[#b8963a]' },
-  'Unknown':       { label: 'Agent', role: 'Unknown', icon: MessageCircle, accentClass: 'text-[#6b6040]' },
+  'Harper-Opus': { label: 'Harper', role: 'CAO', icon: Crown, accentClass: 'text-[#D4AF37]' },
+  'Oracle':        { label: 'Oracle', role: 'All-Seer', icon: Eye, accentClass: 'text-[#D4AF37]' },
+  'Feucht':        { label: 'Feucht', role: 'Risk Desk', icon: Zap, accentClass: 'text-[#D4AF37]' },
+  'Consul':        { label: 'Consul', role: 'Fundamentals', icon: Scroll, accentClass: 'text-[#D4AF37]' },
+  'Herald':        { label: 'Herald', role: 'Sentiment', icon: Megaphone, accentClass: 'text-[#D4AF37]' },
+  'Unknown':       { label: 'Agent', role: 'Unknown', icon: MessageCircle, accentClass: 'text-[#D4AF37]/60' },
 };
 
 interface AgentBadgeProps {
@@ -49,12 +49,12 @@ export function AgentBadge({ agent, size = 'md' }: AgentBadgeProps) {
 }
 
 export const AGENT_ACCENT_HEX: Record<BoardroomAgent, string> = {
-  'Harper-Opus': '#c79f4a',
-  'Oracle': '#a89060',
-  'Feucht': '#d4af37',
-  'Consul': '#8a7a50',
-  'Herald': '#b8963a',
-  'Unknown': '#6b6040',
+  'Harper-Opus': '#D4AF37',
+  'Oracle': '#D4AF37',
+  'Feucht': '#D4AF37',
+  'Consul': '#D4AF37',
+  'Herald': '#D4AF37',
+  'Unknown': '#D4AF3760',
 };
 
 export { AGENT_MAP };

@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useBackend } from '../../lib/backend';
 import { useAuth } from '../../contexts/AuthContext';
 
-interface PeerOnboardingProps {
+interface TeamOnboardingProps {
   open: boolean;
   onClose: () => void;
   onComplete?: () => void;
@@ -16,7 +16,7 @@ const CAPABILITY_OPTIONS = [
   { id: 'hermes', label: 'Hermes' },
 ] as const;
 
-export function PeerOnboarding({ open, onClose, onComplete }: PeerOnboardingProps) {
+export function TeamOnboarding({ open, onClose, onComplete }: TeamOnboardingProps) {
   const backend = useBackend();
   const { isAuthenticated, user } = useAuth();
   const [step, setStep] = useState(1);
@@ -25,7 +25,7 @@ export function PeerOnboarding({ open, onClose, onComplete }: PeerOnboardingProp
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [deviceName, setDeviceName] = useState(() => {
-    const fallback = typeof navigator !== 'undefined' ? navigator.platform : 'Peer Device';
+    const fallback = typeof navigator !== 'undefined' ? navigator.platform : 'Fintheon Device';
     return `Fintheon ${fallback}`;
   });
   const [capabilities, setCapabilities] = useState<string[]>(['twitter-cli']);
@@ -71,12 +71,12 @@ export function PeerOnboarding({ open, onClose, onComplete }: PeerOnboardingProp
     }
   }
 
-  async function handleRegisterPeer() {
+  async function handleRegister() {
     setBusy(true);
     setError(null);
     try {
       const result = await backend.peers.register({
-        deviceName: deviceName.trim() || 'Fintheon Peer',
+        deviceName: deviceName.trim() || 'Fintheon Device',
         platform: typeof navigator !== 'undefined' ? navigator.platform : 'unknown',
         capabilities,
         hermesAvailable: capabilities.includes('hermes'),
@@ -96,7 +96,7 @@ export function PeerOnboarding({ open, onClose, onComplete }: PeerOnboardingProp
       <div className="w-full max-w-xl rounded-2xl border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-surface)] p-4">
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className="text-base font-semibold text-[var(--fintheon-text)]">Peer Onboarding</h2>
+            <h2 className="text-base font-semibold text-[var(--fintheon-text)]">Team Onboarding</h2>
             <p className="text-xs text-zinc-400">Step {step} of 4</p>
           </div>
           <button
@@ -148,7 +148,7 @@ export function PeerOnboarding({ open, onClose, onComplete }: PeerOnboardingProp
             <input
               value={deviceName}
               onChange={(e) => setDeviceName(e.target.value)}
-              placeholder="Peer device name"
+              placeholder="Device name"
               className="w-full rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] px-3 py-2 text-sm text-[var(--fintheon-text)]"
             />
             <button
@@ -163,7 +163,7 @@ export function PeerOnboarding({ open, onClose, onComplete }: PeerOnboardingProp
 
         {step === 3 && (
           <div className="space-y-3">
-            <p className="text-sm text-zinc-300">Select this peer’s capabilities.</p>
+            <p className="text-sm text-zinc-300">Select this device capabilities.</p>
             <div className="grid gap-2">
               {CAPABILITY_OPTIONS.map((option) => (
                 <label
@@ -180,18 +180,18 @@ export function PeerOnboarding({ open, onClose, onComplete }: PeerOnboardingProp
               ))}
             </div>
             <button
-              onClick={() => void handleRegisterPeer()}
+              onClick={() => void handleRegister()}
               disabled={busy}
               className="rounded border border-[var(--fintheon-accent)]/35 px-3 py-1.5 text-sm font-medium text-[var(--fintheon-accent)] disabled:opacity-50"
             >
-              {busy ? 'Registering…' : 'Register Peer'}
+              {busy ? 'Registering…' : 'Register Device'}
             </button>
           </div>
         )}
 
         {step === 4 && (
           <div className="space-y-3">
-            <p className="text-sm text-zinc-300">Peer registration complete.</p>
+            <p className="text-sm text-zinc-300">Registration complete.</p>
             <p className="rounded border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] px-3 py-2 text-sm text-[var(--fintheon-text)]">
               Assigned desk: {assignedDesk}
             </p>

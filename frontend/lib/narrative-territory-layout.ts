@@ -1,3 +1,4 @@
+// [claude-code 2026-04-04] TERRITORY_LAYOUT uses { x, y, r } (circle radii), 3-tier semantic zoom (macro/narratives/themes)
 import type { CatalystCard } from './narrative-types';
 
 export interface NarrativeThread {
@@ -8,16 +9,16 @@ export interface NarrativeThread {
 }
 
 export const NARRATIVE_THREADS: NarrativeThread[] = [
-  { slug: 'middle-east-conflict', title: 'Middle Eastern Conflict', color: '#F59E0B', shortTitle: 'Middle East' },
-  { slug: 'liquidity-credit-contraction', title: 'Liquidity & Credit', color: '#8B5CF6', shortTitle: 'Liquidity' },
+  { slug: 'middle-east-conflict', title: 'Middle Eastern Conflict', color: '#EF4444', shortTitle: 'Middle East' },
+  { slug: 'liquidity-credit-contraction', title: 'Liquidity & Credit', color: '#14B8A6', shortTitle: 'Liquidity' },
   { slug: 'ai-singularity', title: 'The Singularity', color: '#3B82F6', shortTitle: 'AI' },
-  { slug: 'usd-jpy-carry-trade', title: 'USD-JPY Carry Trade', color: '#EC4899', shortTitle: 'Carry Trade' },
+  { slug: 'usd-jpy-carry-trade', title: 'USD-JPY Carry Trade', color: '#14B8A6', shortTitle: 'Carry Trade' },
   { slug: 'trade-war', title: 'Trade War', color: '#EF4444', shortTitle: 'Trade War' },
-  { slug: 'us-china-relations', title: 'US-China Relations', color: '#14B8A6', shortTitle: 'US-China' },
-  { slug: 'rate-cut-cycle', title: 'Rate Cut Cycle', color: '#34D399', shortTitle: 'Rate Cuts' },
-  { slug: 'trump-presidency', title: 'Trump Presidency', color: '#F97316', shortTitle: 'Trump' },
-  { slug: 'price-stability', title: 'Price Stability', color: '#FBBF24', shortTitle: 'Inflation' },
-  { slug: 'maximum-employment', title: 'Max Employment', color: '#A78BFA', shortTitle: 'Employment' },
+  { slug: 'us-china-relations', title: 'US-China Relations', color: '#EF4444', shortTitle: 'US-China' },
+  { slug: 'rate-cut-cycle', title: 'Rate Cut Cycle', color: '#14B8A6', shortTitle: 'Rate Cuts' },
+  { slug: 'trump-presidency', title: 'Trump Presidency', color: '#EF4444', shortTitle: 'Trump' },
+  { slug: 'price-stability', title: 'Price Stability', color: '#14B8A6', shortTitle: 'Inflation' },
+  { slug: 'maximum-employment', title: 'Max Employment', color: '#14B8A6', shortTitle: 'Employment' },
 ];
 
 export const THREAD_MAP = Object.fromEntries(
@@ -30,25 +31,25 @@ const COL = 420;
 const ROW = 340;
 const GAP = 20;
 
-export const TERRITORY_LAYOUT: Record<string, { x: number; y: number; w: number; h: number }> = {
-  'middle-east-conflict': { x: 0, y: 0, w: COL * 1.4, h: ROW * 1.1 },
-  'trump-presidency': { x: COL * 1.4 + GAP, y: ROW * 0.3, w: COL * 1.2, h: ROW * 0.9 },
-  'rate-cut-cycle': { x: COL * 2.6 + GAP * 2, y: 0, w: COL * 1.5, h: ROW * 1.1 },
-  'price-stability': { x: COL * 2.2 + GAP, y: ROW * 1.1 + GAP, w: COL * 1.2, h: ROW * 0.9 },
-  'maximum-employment': { x: COL * 3.4 + GAP * 2, y: ROW * 1.1 + GAP, w: COL * 0.8, h: ROW * 0.9 },
-  'trade-war': { x: 0, y: ROW * 1.2 + GAP, w: COL * 1.2, h: ROW * 1.3 },
-  'usd-jpy-carry-trade': { x: COL * 1.5 + GAP, y: ROW * 2.1 + GAP * 2, w: COL * 1.0, h: ROW * 0.9 },
-  'liquidity-credit-contraction': { x: COL * 2.8 + GAP * 2, y: ROW * 2.1 + GAP * 2, w: COL * 1.0, h: ROW * 0.9 },
-  'us-china-relations': { x: COL * 0.8, y: ROW * 2.7 + GAP * 2, w: COL * 1.0, h: ROW * 0.9 },
-  'ai-singularity': { x: 0, y: ROW * 3.2 + GAP * 3, w: COL * 1.0, h: ROW * 0.9 },
+export const TERRITORY_LAYOUT: Record<string, { x: number; y: number; r: number }> = {
+  'middle-east-conflict': { x: 0, y: 0, r: Math.max(COL * 1.4, ROW * 1.1) / 2 },
+  'trump-presidency': { x: COL * 1.4 + GAP, y: ROW * 0.3, r: Math.max(COL * 1.2, ROW * 0.9) / 2 },
+  'rate-cut-cycle': { x: COL * 2.6 + GAP * 2, y: 0, r: Math.max(COL * 1.5, ROW * 1.1) / 2 },
+  'price-stability': { x: COL * 2.2 + GAP, y: ROW * 1.1 + GAP, r: Math.max(COL * 1.2, ROW * 0.9) / 2 },
+  'maximum-employment': { x: COL * 3.4 + GAP * 2, y: ROW * 1.1 + GAP, r: Math.max(COL * 0.8, ROW * 0.9) / 2 },
+  'trade-war': { x: 0, y: ROW * 1.2 + GAP, r: Math.max(COL * 1.2, ROW * 1.3) / 2 },
+  'usd-jpy-carry-trade': { x: COL * 1.5 + GAP, y: ROW * 2.1 + GAP * 2, r: Math.max(COL * 1.0, ROW * 0.9) / 2 },
+  'liquidity-credit-contraction': { x: COL * 2.8 + GAP * 2, y: ROW * 2.1 + GAP * 2, r: Math.max(COL * 1.0, ROW * 0.9) / 2 },
+  'us-china-relations': { x: COL * 0.8, y: ROW * 2.7 + GAP * 2, r: Math.max(COL * 1.0, ROW * 0.9) / 2 },
+  'ai-singularity': { x: 0, y: ROW * 3.2 + GAP * 3, r: Math.max(COL * 1.0, ROW * 0.9) / 2 },
 };
 
 export const HUB_POSITIONS = Object.fromEntries(
   Object.entries(TERRITORY_LAYOUT).map(([slug, territory]) => [
     slug,
     {
-      x: territory.x + territory.w / 2,
-      y: territory.y + territory.h / 2,
+      x: territory.x + territory.r,
+      y: territory.y + territory.r,
     },
   ]),
 ) as Record<string, { x: number; y: number }>;
@@ -59,13 +60,14 @@ export const SEVERITY_COLORS: Record<'high' | 'medium' | 'low', string> = {
   low: '#6B7280',
 };
 
-export const CROSS_NARRATIVE_GOLD = '#c79f4a';
+export const CROSS_NARRATIVE_GOLD = '#CC5500';
 
-export type SemanticNarrativeView = 'narratives' | 'themes';
+export type SemanticNarrativeView = 'macro' | 'narratives' | 'themes';
 
 export function getSemanticZoom(zoom: number): SemanticNarrativeView {
-  if (zoom >= 0.35) return 'themes';
-  return 'narratives';
+  if (zoom >= 0.45) return 'themes';
+  if (zoom >= 0.15) return 'narratives';
+  return 'macro';
 }
 
 export function safeSlug(raw: string | undefined | null): string {

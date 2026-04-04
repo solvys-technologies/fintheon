@@ -15,24 +15,24 @@ import { COMMANDMENTS } from './commandments-data';
 
 // ─── Data ─────────────────────────────────────────────────────
 const AGENTS: AgentNode[] = [
-  { id: 'harper', label: 'Harper', role: 'CAO — Chief Approval Officer', accentColor: '#c79f4a', memories: [
+  { id: 'harper', label: 'Harper', role: 'CAO — Chief Approval Officer', accentColor: '#D4AF37', memories: [
     { id: 'h1', fact: 'All Trade Ideas must flow through Harper for gatekeeper validation', source: 'boardroom', timestamp: '2026-03-20T09:00:00', confidence: 1.0, version: 3 },
     { id: 'h2', fact: 'Morning Daily Brief delivered pre-market — macro overview + key levels', source: 'data', timestamp: '2026-03-20T06:30:00', confidence: 0.95, version: 2 },
     { id: 'h3', fact: 'Cross-desk risk aggregation flagged elevated NQ exposure', source: 'trade', timestamp: '2026-03-20T10:15:00', confidence: 0.88, version: 1 },
   ]},
-  { id: 'oracle', label: 'Oracle', role: 'All-Seer — Prediction & Macro', accentColor: '#a89060', memories: [
+  { id: 'oracle', label: 'Oracle', role: 'All-Seer — Prediction & Macro', accentColor: '#D4AF37', memories: [
     { id: 'o1', fact: 'Kalshi S&P prediction: 72% probability SPX closes above 5800', source: 'trade', timestamp: '2026-03-20T08:45:00', confidence: 0.72, version: 4 },
     { id: 'o2', fact: 'FOMC dot plot shift — 2 rate cuts priced for 2026 vs 3 prior', source: 'twitter', timestamp: '2026-03-19T16:00:00', confidence: 0.82, version: 1 },
   ]},
-  { id: 'feucht', label: 'Feucht', role: 'Risk Desk — Futures Execution', accentColor: '#d4af37', memories: [
+  { id: 'feucht', label: 'Feucht', role: 'Risk Desk — Futures Execution', accentColor: '#D4AF37', memories: [
     { id: 'f1', fact: '/NQ morning flush model triggered — watching 20450 for entry', source: 'trade', timestamp: '2026-03-20T09:32:00', confidence: 0.78, version: 2 },
     { id: 'f2', fact: 'VIX at 14.2 — low vol regime, reducing position sizes', source: 'miroshark', timestamp: '2026-03-20T09:00:00', confidence: 0.91, version: 1 },
   ]},
-  { id: 'consul', label: 'Consul', role: 'Fundamentals — Earnings & Thesis', accentColor: '#8a7a50', memories: [
+  { id: 'consul', label: 'Consul', role: 'Fundamentals — Earnings & Thesis', accentColor: '#D4AF37', memories: [
     { id: 'c1', fact: 'NVDA earnings beat +12% — raised guidance on AI data center demand', source: 'data', timestamp: '2026-03-19T20:00:00', confidence: 0.92, version: 3 },
     { id: 'c2', fact: 'Mega-cap tech P/E compression: avg forward P/E dropped from 32x to 28x', source: 'miroshark', timestamp: '2026-03-20T06:00:00', confidence: 0.85, version: 2 },
   ]},
-  { id: 'herald', label: 'Herald', role: 'Sentiment — Social & Mood', accentColor: '#b8963a', memories: [
+  { id: 'herald', label: 'Herald', role: 'Sentiment — Social & Mood', accentColor: '#D4AF37', memories: [
     { id: 'he1', fact: 'NQ bearish skew 62% — put/call ratio elevated at 1.4', source: 'twitter', timestamp: '2026-03-20T10:00:00', confidence: 0.74, version: 2 },
     { id: 'he2', fact: 'AAII survey: extreme bearish (48%) — contrarian bullish signal', source: 'data', timestamp: '2026-03-20T08:30:00', confidence: 0.81, version: 1 },
   ]},

@@ -158,7 +158,6 @@ export async function readScoredItems(options?: {
   let query = sb
     .from('scored_riskflow_items')
     .select('*')
-    .order('macro_level', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(options?.limit ?? 100);
 

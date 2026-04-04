@@ -13,7 +13,6 @@ import {
 import { getFeed } from './riskflow/feed-service.js';
 import { selectModel, createModelClient, getFallbackModel, markProviderUnhealthy, type AiModelKey } from './ai/model-selector.js';
 import { generateTextViaClaude } from './claude-sdk/process-manager.js';
-import { isAvailable as isClaudeAvailable } from './claude-sdk/process-manager.js';
 import { createLogger } from '../lib/logger.js';
 import { MARKET_REGIMES, type MarketRegime } from '../types/regime.js';
 import { setRegime } from './regime/regime-service.js';
@@ -178,18 +177,13 @@ ${
   let text: string;
   let usedProvider = 'claude-local';
 
-  // Primary: Claude CLI (free via Max subscription)
-  if (isClaudeAvailable()) {
-    try {
-      log.info('Generating brief via Claude CLI...');
-      text = await generateTextViaClaude(prompt);
-      log.info(`Claude CLI generated ${text.length} chars`);
-    } catch (cliErr: any) {
-      log.warn('Claude CLI failed, falling back to OpenRouter', { error: cliErr?.message });
-      text = '';
-    }
-  } else {
-    log.warn('Claude CLI not available, using OpenRouter');
+  // Primary: Harper provider path (VProxy Anthropic preferred, Claude CLI fallback).
+  try {
+    log.info('Generating brief via Harper provider path...')
+    text = await generateTextViaClaude(prompt)
+    log.info(`Harper provider generated ${text.length} chars`)
+  } catch (cliErr: any) {
+    log.warn('Harper provider path failed, falling back to OpenRouter', { error: cliErr?.message })
     text = '';
   }
 

@@ -1,4 +1,4 @@
-// S13-T2: Team presence via Supabase Realtime Presence
+// [claude-code 2026-04-03] S14-T6: Extended presence payload with service status + user status
 import { createContext, useContext, useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
@@ -6,16 +6,18 @@ import { useSettings } from './SettingsContext';
 import { useGateway } from './GatewayContext';
 import { useFintheonAgents } from './FintheonAgentContext';
 import { useSourceStatus } from '../hooks/useSourceStatus';
-import type { TeamMember, DeviceStatus, PresencePayload } from '../types/team';
+import type { TeamMember, PresencePayload, UserStatus } from '../types/team';
 
 interface TeamPresenceContextValue {
   teamMembers: TeamMember[];
   isConnected: boolean;
+  setUserStatus: (status: UserStatus) => void;
 }
 
 const TeamPresenceContext = createContext<TeamPresenceContextValue>({
   teamMembers: [],
   isConnected: false,
+  setUserStatus: () => {},
 });
 
 export function TeamPresenceProvider({ children }: { children: ReactNode }) {
@@ -27,11 +29,16 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [userStatus, setUserStatusState] = useState<UserStatus>('online');
   const channelRef = useRef<ReturnType<NonNullable<typeof supabase>['channel']> | null>(null);
 
   const caoName = agents.find((a) => a.id === 'harper-opus')?.name || 'Harper-Opus';
   const caoOnline = hermesStatus === 'ok' || gatewayStatus === 'connected';
   const displayName = traderName || 'Anonymous';
+
+  const setUserStatus = useCallback((status: UserStatus) => {
+    setUserStatusState(status);
+  }, []);
 
   const buildPayload = useCallback((): PresencePayload => ({
     userId,
@@ -40,7 +47,17 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
     caoOnline,
     twitterCliPolling: sourceStatus.twitterCli,
     inCall: false, // T3/T4 will wire this
-  }), [userId, displayName, caoName, caoOnline, sourceStatus.twitterCli]);
+    userStatus,
+    services: {
+      twitterCli: sourceStatus.twitterCli,
+      aiRuntime: caoOnline,
+      newsfeedPolling: {
+        active: sourceStatus.notion || sourceStatus.twitterCli || sourceStatus.xApi,
+        lastUpdate: new Date().toISOString(),
+      },
+      backendConnection: true, // always true if this code is running
+    },
+  }), [userId, displayName, caoName, caoOnline, sourceStatus.twitterCli, sourceStatus.notion, sourceStatus.xApi, userStatus]);
 
   // Connect to Supabase Realtime Presence channel
   useEffect(() => {
@@ -57,9 +74,15 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
 
         for (const [key, presences] of Object.entries(state)) {
           // Take the latest presence entry for each user
-          const latest = (presences as PresencePayload[])[0];
+          const latest = (presences as unknown as PresencePayload[])[0];
           if (!latest) continue;
 
+          const defaultServices = {
+            twitterCli: false,
+            aiRuntime: false,
+            newsfeedPolling: { active: false, lastUpdate: new Date().toISOString() },
+            backendConnection: true,
+          };
           members.push({
             userId: key,
             displayName: latest.displayName,
@@ -73,6 +96,8 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
               online: true,
               lastSeen: new Date().toISOString(),
               inCall: latest.inCall,
+              userStatus: latest.userStatus || 'online',
+              services: latest.services || defaultServices,
             },
           });
         }
@@ -90,7 +115,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
 
     return () => {
       channel.untrack();
-      supabase.removeChannel(channel);
+      supabase?.removeChannel(channel);
       channelRef.current = null;
       setIsConnected(false);
     };
@@ -105,7 +130,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
   }, [buildPayload, isConnected]);
 
   return (
-    <TeamPresenceContext.Provider value={{ teamMembers, isConnected }}>
+    <TeamPresenceContext.Provider value={{ teamMembers, isConnected, setUserStatus }}>
       {children}
     </TeamPresenceContext.Provider>
   );

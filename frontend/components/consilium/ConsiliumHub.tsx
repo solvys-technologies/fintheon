@@ -1,9 +1,9 @@
+// [claude-code 2026-04-03] Spring-physics CSS transitions for dropdowns, tab content, side panels
+// [claude-code 2026-04-03] S14-T3: Consilium restructure — Boardroom + Apparatus as dropdowns
 // [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (Aquarium)
 // [claude-code 2026-03-28] S7: Sanctum dropdown (NarrativeFlow/Aquarium/Timeline) inside Consilium tab bar
-// [claude-code 2026-03-24] Persistence refactor: load latest report on mount, persist after simulation
-// [claude-code 2026-03-24] Thread selectedSymbol from settings into Sanctum for TradingView chart
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
-import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield } from 'lucide-react';
+import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield, Brain, NotebookText } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
 import { Sanctum } from '../narrative/Sanctum';
@@ -13,28 +13,44 @@ import { MiroSharkDebatePanel } from '../miroshark/MiroSharkDebatePanel';
 import { NarrativeMap } from '../narrative/NarrativeMap';
 import { NarrativeProvider, useNarrative } from '../../contexts/NarrativeContext';
 import { ApparatusFlowMap } from '../apparatus/ApparatusFlowMap';
+import { BulletinFeed } from '../bulletin/BulletinFeed';
+import { DocumentsView } from '../editor/DocumentsView';
+import { SharedMemoryPanel } from '../memory/SharedMemoryPanel';
 import { AiLoader } from '../chat/FintheonThread';
 import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/miroshark';
 
 const ChatInterface = lazy(() => import('../ChatInterface'));
+const ResearchBoard = lazy(() => import('../research/ResearchBoard'));
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-// Top-level tabs: Sanctum is a dropdown, others are direct tabs
+// Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
 type ConsiliumTab = 'sanctum' | 'chat' | 'boardroom' | 'apparatus';
-// Sanctum sub-views (inside the dropdown)
 type SanctumSubView = 'narratives' | 'aquarium' | 'timeline';
+type BoardroomSubView = 'forum' | 'imperium' | 'agentic-chat' | 'scriptorium';
+type ApparatusSubView = 'desk' | 'fileroom';
 
+// Chat is the only direct button now
 const REGULAR_TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquare }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'boardroom', label: 'Boardroom', icon: Users },
-  { id: 'apparatus', label: 'Apparatus', icon: Cpu },
 ];
 
 const SANCTUM_SUB_VIEWS: { id: SanctumSubView; label: string; subtitle?: string; icon: typeof GitBranch }[] = [
-  { id: 'narratives', label: 'NarrativeMap', icon: GitBranch },
-  { id: 'aquarium', label: 'Aquarium', subtitle: 'shark tank', icon: Fish },
-  { id: 'timeline', label: 'Timeline', icon: Clock },
+  { id: 'timeline', label: 'Timeline', subtitle: 'Track the catalysts', icon: Clock },
+  { id: 'narratives', label: 'NarrativeFlow', subtitle: 'Visualize the situation', icon: GitBranch },
+  { id: 'aquarium', label: 'Aquarium', subtitle: 'The Shark Tank. Deliberate it.', icon: Fish },
+];
+
+const BOARDROOM_SUB_VIEWS: { id: BoardroomSubView; label: string; subtitle?: string; icon: typeof MessageSquare }[] = [
+  { id: 'forum', label: 'Forum', subtitle: 'Team bulletin & chat', icon: MessageSquare },
+  { id: 'imperium', label: 'Imperium', subtitle: 'Task command & assignment', icon: Shield },
+  { id: 'agentic-chat', label: 'Agentic Chatroom', subtitle: 'Chat with Hermes & CAO', icon: Cpu },
+  { id: 'scriptorium', label: 'Scriptorium', subtitle: 'Document editor', icon: NotebookText },
+];
+
+const APPARATUS_SUB_VIEWS: { id: ApparatusSubView; label: string; subtitle?: string; icon: typeof Cpu }[] = [
+  { id: 'desk', label: 'Desk', subtitle: 'Agent dossiers & monitoring', icon: Users },
+  { id: 'fileroom', label: 'Fileroom', subtitle: 'AI-generated context bank', icon: Brain },
 ];
 
 /** Bridge: reads NarrativeContext lanes → SanctumNarrative[] for Sanctum (Aquarium) */
@@ -91,14 +107,19 @@ export function ConsiliumHub() {
   const { selectedSymbol } = useSettings();
   const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
   const [sanctumSubView, setSanctumSubView] = useState<SanctumSubView>('narratives');
+  const [boardroomSubView, setBoardroomSubView] = useState<BoardroomSubView>('forum');
+  const [apparatusSubView, setApparatusSubView] = useState<ApparatusSubView>('desk');
   const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>('chat');
   const [displayedSubView, setDisplayedSubView] = useState<SanctumSubView>('narratives');
+  const [displayedBoardroomSub, setDisplayedBoardroomSub] = useState<BoardroomSubView>('forum');
+  const [displayedApparatusSub, setDisplayedApparatusSub] = useState<ApparatusSubView>('desk');
   const [sanctumDropdownOpen, setSanctumDropdownOpen] = useState(false);
+  const [boardroomDropdownOpen, setBoardroomDropdownOpen] = useState(false);
+  const [apparatusDropdownOpen, setApparatusDropdownOpen] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [mirosharkData, setMirosharkData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
   const [macroContext, setMacroContext] = useState<SimulationContext | null>(null);
-  // Only one slide-out panel at a time (proposals or debate)
   type ActivePanel = 'proposals' | 'debate' | null;
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const showProposals = activePanel === 'proposals';
@@ -107,18 +128,29 @@ export function ConsiliumHub() {
   const toggleDebate = useCallback(() => setActivePanel(prev => prev === 'debate' ? null : 'debate'), []);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Close Sanctum dropdown on outside click
+  // Close dropdowns on outside click
   const sanctumDropdownRef = useRef<HTMLDivElement>(null);
+  const boardroomDropdownRef = useRef<HTMLDivElement>(null);
+  const apparatusDropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (!sanctumDropdownOpen) return;
+    const anyOpen = sanctumDropdownOpen || boardroomDropdownOpen || apparatusDropdownOpen;
+    if (!anyOpen) return;
     const handler = (e: MouseEvent) => {
-      if (sanctumDropdownRef.current && !sanctumDropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (sanctumDropdownOpen && sanctumDropdownRef.current && !sanctumDropdownRef.current.contains(target)) {
         setSanctumDropdownOpen(false);
+      }
+      if (boardroomDropdownOpen && boardroomDropdownRef.current && !boardroomDropdownRef.current.contains(target)) {
+        setBoardroomDropdownOpen(false);
+      }
+      if (apparatusDropdownOpen && apparatusDropdownRef.current && !apparatusDropdownRef.current.contains(target)) {
+        setApparatusDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [sanctumDropdownOpen]);
+  }, [sanctumDropdownOpen, boardroomDropdownOpen, apparatusDropdownOpen]);
 
   // Tab transition: fade out (150ms) → swap content → fade in (200ms)
   const handleTabChange = useCallback((tab: ConsiliumTab) => {
@@ -143,6 +175,36 @@ export function ConsiliumHub() {
     transitionRef.current = setTimeout(() => {
       setDisplayedTab('sanctum');
       setDisplayedSubView(sub);
+      setTransitioning(false);
+    }, 150);
+  }, [activeTab]);
+
+  const handleBoardroomSubChange = useCallback((sub: BoardroomSubView) => {
+    setBoardroomSubView(sub);
+    setBoardroomDropdownOpen(false);
+    if (activeTab !== 'boardroom') {
+      setActiveTab('boardroom');
+    }
+    setTransitioning(true);
+    if (transitionRef.current) clearTimeout(transitionRef.current);
+    transitionRef.current = setTimeout(() => {
+      setDisplayedTab('boardroom');
+      setDisplayedBoardroomSub(sub);
+      setTransitioning(false);
+    }, 150);
+  }, [activeTab]);
+
+  const handleApparatusSubChange = useCallback((sub: ApparatusSubView) => {
+    setApparatusSubView(sub);
+    setApparatusDropdownOpen(false);
+    if (activeTab !== 'apparatus') {
+      setActiveTab('apparatus');
+    }
+    setTransitioning(true);
+    if (transitionRef.current) clearTimeout(transitionRef.current);
+    transitionRef.current = setTimeout(() => {
+      setDisplayedTab('apparatus');
+      setDisplayedApparatusSub(sub);
       setTransitioning(false);
     }, 150);
   }, [activeTab]);
@@ -256,6 +318,23 @@ export function ConsiliumHub() {
           Consilium
         </h2>
 
+        {/* Chat button (direct) */}
+        {REGULAR_TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => handleTabChange(id)}
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeTab === id
+                ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
+                : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
+            }`}
+            style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
+          >
+            <Icon size={13} />
+            {label}
+          </button>
+        ))}
+
         {/* Sanctum tab with dropdown */}
         <div ref={sanctumDropdownRef} className="relative">
           <button
@@ -272,43 +351,139 @@ export function ConsiliumHub() {
             <ChevronDown size={10} className={`opacity-50 transition-transform ${sanctumDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
-          {sanctumDropdownOpen && (
-            <div className="absolute top-full left-0 mt-1 z-50 min-w-[180px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden">
-              {SANCTUM_SUB_VIEWS.map(({ id, label, subtitle, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => handleSanctumSubChange(id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
-                    sanctumSubView === id && activeTab === 'sanctum'
-                      ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-                      : 'text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5'
-                  }`}
-                >
-                  <Icon size={13} />
+          <div
+            className="absolute top-full left-0 mt-1 z-50 min-w-[220px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
+            style={{
+              opacity: sanctumDropdownOpen ? 1 : 0,
+              transform: sanctumDropdownOpen ? 'translateY(0) scale(1)' : 'translateY(-4px) scale(0.97)',
+              pointerEvents: sanctumDropdownOpen ? 'auto' : 'none',
+              transition: 'opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)',
+            }}
+          >
+            {SANCTUM_SUB_VIEWS.map(({ id, label, subtitle, icon: Icon }, idx) => (
+              <button
+                key={id}
+                onClick={() => handleSanctumSubChange(id)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                  sanctumSubView === id && activeTab === 'sanctum'
+                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                    : 'text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5'
+                }`}
+                style={{
+                  opacity: sanctumDropdownOpen ? 1 : 0,
+                  transform: sanctumDropdownOpen ? 'translateX(0)' : 'translateX(-6px)',
+                  transition: `opacity 200ms var(--ease-spring) ${idx * 40}ms, transform 200ms var(--ease-spring) ${idx * 40}ms`,
+                }}
+              >
+                <Icon size={13} className="shrink-0 mt-0.5" />
+                <div className="flex flex-col items-start">
                   <span className="font-medium">{label}</span>
-                  {subtitle && <span className="italic text-[10px] opacity-50">{subtitle}</span>}
-                </button>
-              ))}
-            </div>
-          )}
+                  {subtitle && <span className="text-[10px] opacity-40 leading-tight">{subtitle}</span>}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Regular tabs: Chat, Boardroom, Scorecards, Apparatus */}
-        {REGULAR_TABS.map(({ id, label, icon: Icon }) => (
+        {/* Boardroom dropdown */}
+        <div ref={boardroomDropdownRef} className="relative">
           <button
-            key={id}
-            onClick={() => handleTabChange(id)}
+            onClick={() => setBoardroomDropdownOpen(v => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeTab === id
+              activeTab === 'boardroom'
                 ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
                 : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
             }`}
             style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
           >
-            <Icon size={13} />
-            {label}
+            <Users size={13} />
+            Boardroom
+            <ChevronDown size={10} className={`opacity-50 transition-transform ${boardroomDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
-        ))}
+
+          <div
+            className="absolute top-full left-0 mt-1 z-50 min-w-[200px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
+            style={{
+              opacity: boardroomDropdownOpen ? 1 : 0,
+              transform: boardroomDropdownOpen ? 'translateY(0) scale(1)' : 'translateY(-4px) scale(0.97)',
+              pointerEvents: boardroomDropdownOpen ? 'auto' : 'none',
+              transition: 'opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)',
+            }}
+          >
+            {BOARDROOM_SUB_VIEWS.map(({ id, label, subtitle, icon: Icon }, idx) => (
+              <button
+                key={id}
+                onClick={() => handleBoardroomSubChange(id)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                  boardroomSubView === id && activeTab === 'boardroom'
+                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                    : 'text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5'
+                }`}
+                style={{
+                  opacity: boardroomDropdownOpen ? 1 : 0,
+                  transform: boardroomDropdownOpen ? 'translateX(0)' : 'translateX(-6px)',
+                  transition: `opacity 200ms var(--ease-spring) ${idx * 40}ms, transform 200ms var(--ease-spring) ${idx * 40}ms`,
+                }}
+              >
+                <Icon size={13} className="shrink-0 mt-0.5" />
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">{label}</span>
+                  {subtitle && <span className="text-[10px] opacity-40 leading-tight">{subtitle}</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Apparatus dropdown */}
+        <div ref={apparatusDropdownRef} className="relative">
+          <button
+            onClick={() => setApparatusDropdownOpen(v => !v)}
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeTab === 'apparatus'
+                ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
+                : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
+            }`}
+            style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
+          >
+            <Cpu size={13} />
+            Apparatus
+            <ChevronDown size={10} className={`opacity-50 transition-transform ${apparatusDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          <div
+            className="absolute top-full left-0 mt-1 z-50 min-w-[210px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
+            style={{
+              opacity: apparatusDropdownOpen ? 1 : 0,
+              transform: apparatusDropdownOpen ? 'translateY(0) scale(1)' : 'translateY(-4px) scale(0.97)',
+              pointerEvents: apparatusDropdownOpen ? 'auto' : 'none',
+              transition: 'opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)',
+            }}
+          >
+            {APPARATUS_SUB_VIEWS.map(({ id, label, subtitle, icon: Icon }, idx) => (
+              <button
+                key={id}
+                onClick={() => handleApparatusSubChange(id)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                  apparatusSubView === id && activeTab === 'apparatus'
+                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                    : 'text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5'
+                }`}
+                style={{
+                  opacity: apparatusDropdownOpen ? 1 : 0,
+                  transform: apparatusDropdownOpen ? 'translateX(0)' : 'translateX(-6px)',
+                  transition: `opacity 200ms var(--ease-spring) ${idx * 40}ms, transform 200ms var(--ease-spring) ${idx * 40}ms`,
+                }}
+              >
+                <Icon size={13} className="shrink-0 mt-0.5" />
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">{label}</span>
+                  {subtitle && <span className="text-[10px] opacity-40 leading-tight">{subtitle}</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="flex-1" />
 
@@ -346,7 +521,11 @@ export function ConsiliumHub() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <div
           className="flex-1 min-h-0 min-w-0 overflow-hidden"
-          style={{ opacity: transitioning ? 0 : 1, transition: 'opacity 200ms ease' }}
+          style={{
+            opacity: transitioning ? 0 : 1,
+            transform: transitioning ? 'translateY(6px)' : 'translateY(0)',
+            transition: 'opacity 220ms var(--ease-spring), transform 220ms var(--ease-spring)',
+          }}
         >
           {/* Sanctum sub-views — shared NarrativeProvider so seeds carry across views */}
           {displayedTab === 'sanctum' && (
@@ -365,34 +544,68 @@ export function ConsiliumHub() {
             </NarrativeProvider>
           )}
 
-          {/* Regular tabs */}
+          {/* Chat */}
           {displayedTab === 'chat' && (
             <Suspense fallback={<AiLoader />}>
               <ChatInterface surfaceId="chat" />
             </Suspense>
           )}
-          {displayedTab === 'boardroom' && <AgentChattr />}
-          {displayedTab === 'apparatus' && <ApparatusFlowMap />}
+
+          {/* Boardroom sub-views */}
+          {displayedTab === 'boardroom' && (
+            <>
+              {displayedBoardroomSub === 'forum' && <BulletinFeed />}
+              {displayedBoardroomSub === 'imperium' && (
+                <Suspense fallback={<AiLoader />}>
+                  <ResearchBoard />
+                </Suspense>
+              )}
+              {displayedBoardroomSub === 'agentic-chat' && <AgentChattr />}
+              {displayedBoardroomSub === 'scriptorium' && <DocumentsView />}
+            </>
+          )}
+
+          {/* Apparatus sub-views */}
+          {displayedTab === 'apparatus' && (
+            <>
+              {displayedApparatusSub === 'desk' && <ApparatusFlowMap />}
+              {displayedApparatusSub === 'fileroom' && <SharedMemoryPanel mode="fileroom" />}
+            </>
+          )}
         </div>
 
         {/* Collapsible Debate panel */}
         <div
-          className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out border-l border-[var(--fintheon-accent)]/10 ${
+          className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
             showDebate ? 'w-80' : 'w-0 border-l-0'
           }`}
+          style={{ transition: 'width 280ms var(--ease-spring), border-width 280ms' }}
         >
-          <div className="w-80 h-full overflow-hidden bg-[var(--fintheon-bg)]">
+          <div
+            className="w-80 h-full overflow-hidden bg-[var(--fintheon-bg)]"
+            style={{
+              opacity: showDebate ? 1 : 0,
+              transition: 'opacity 200ms ease 80ms',
+            }}
+          >
             <MiroSharkDebatePanel simulationId={mirosharkData?.simulationId ?? null} />
           </div>
         </div>
 
         {/* Collapsible Proposals + Scorecards right panel */}
         <div
-          className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out border-l border-[var(--fintheon-accent)]/10 ${
+          className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
             showProposals ? 'w-80' : 'w-0 border-l-0'
           }`}
+          style={{ transition: 'width 280ms var(--ease-spring), border-width 280ms' }}
         >
-          <div className="w-80 h-full overflow-y-auto bg-[var(--fintheon-bg)]">
+          <div
+            className="w-80 h-full overflow-y-auto bg-[var(--fintheon-bg)]"
+            style={{
+              opacity: showProposals ? 1 : 0,
+              transition: 'opacity 200ms ease 80ms',
+            }}
+          >
             <ProposalWidget />
           </div>
         </div>

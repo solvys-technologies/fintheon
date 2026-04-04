@@ -1,4 +1,3 @@
-// [claude-code 2026-02-26] Make RiskFlow subsection collapsible in Mission Control stack.
 // [claude-code 2026-03-03] Add trade idea row rendering (gold border, click-to-modal).
 // [claude-code 2026-03-10] Status dots (X CLI), dropdown filters (Priority + Source), X filter.
 // [claude-code 2026-03-10] T3: critical severity renders same as high (pulse + red text)

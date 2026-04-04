@@ -16,7 +16,7 @@ const COLUMNS = [
 
 const AGENTS = ['Harper-Opus', 'Oracle', 'Feucht', 'Consul', 'Herald']
 
-interface PeerOption {
+interface TeamMemberOption {
   id: string
   displayName: string
 }
@@ -26,7 +26,7 @@ export default function ResearchBoard() {
   const { userId } = useAuth()
 
   const [tasks, setTasks] = useState<ResearchTask[]>([])
-  const [peers, setPeers] = useState<PeerOption[]>([])
+  const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([])
   const [loading, setLoading] = useState(true)
   const [showNewForm, setShowNewForm] = useState(false)
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
@@ -56,24 +56,24 @@ export default function ResearchBoard() {
     }
   }, [backend, deskFilter])
 
-  const loadPeers = useCallback(async () => {
+  const loadTeamMembers = useCallback(async () => {
     try {
       const res = await backend.peers.list()
-      setPeers(
+      setTeamMembers(
         res.peers.map((p: { userId: string; user?: { displayName: string } }) => ({
           id: p.userId,
           displayName: p.user?.displayName || 'Unknown',
         }))
       )
     } catch {
-      setPeers([])
+      setTeamMembers([])
     }
   }, [backend])
 
   useEffect(() => {
     void refreshTasks()
-    void loadPeers()
-  }, [refreshTasks, loadPeers])
+    void loadTeamMembers()
+  }, [refreshTasks, loadTeamMembers])
 
   const handleCreateTask = async () => {
     if (!newTitle.trim()) return
@@ -136,7 +136,7 @@ export default function ResearchBoard() {
     <div className="flex h-full flex-col gap-4 p-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-[var(--fintheon-text)]">Research Board</h2>
+        <h2 className="text-lg font-bold text-[var(--fintheon-text)]">Imperium</h2>
         <div className="flex items-center gap-2">
           {/* Desk filter placeholder */}
           <div className="flex items-center gap-1 rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0a08] px-2 py-1">
@@ -194,8 +194,8 @@ export default function ResearchBoard() {
               onChange={(e) => setNewAssignedTo(e.target.value)}
               className="rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#111] px-3 py-2 text-sm text-[var(--fintheon-text)] outline-none"
             >
-              <option value="">Assign to peer...</option>
-              {peers.map((p) => (
+              <option value="">Assign to team member...</option>
+              {teamMembers.map((p) => (
                 <option key={p.id} value={p.id}>{p.displayName}</option>
               ))}
             </select>

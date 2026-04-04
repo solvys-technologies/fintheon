@@ -11,6 +11,7 @@ import { harperChat, isHarperAvailable, type HarperChatRequest } from '../../ser
 import { createRequestCognition } from '../../services/cognition-emitter.js'
 import * as conversationStore from '../../services/ai/conversation-store.js'
 import type { BridgeStreamEvent } from '../../services/claude-sdk/bridge.js'
+import { isVProxyAnthropicEnabled } from '../../services/vproxy/anthropic-client.js'
 
 export function createHarperRoutes() {
   const app = new Hono()
@@ -18,7 +19,13 @@ export function createHarperRoutes() {
   // ── Status check ─────────────────────────────────────────────────────────
   app.get('/status', async (c) => {
     const available = await isHarperAvailable()
-    return c.json({ available, agent: 'harper-opus', model: 'claude-opus-local' })
+    const usingVProxy = isVProxyAnthropicEnabled()
+    return c.json({
+      available,
+      agent: 'harper-opus',
+      model: usingVProxy ? (process.env.VPROXY_ANTHROPIC_MODEL ?? 'claude-opus-4.6') : 'claude-opus-local',
+      provider: usingVProxy ? 'anthropic-vproxy' : 'claude-cli',
+    })
   })
 
   // ── Chat (streaming SSE) ─────────────────────────────────────────────────

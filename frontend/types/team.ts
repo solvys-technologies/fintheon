@@ -1,14 +1,25 @@
-// S13-T1: Team presence and device status types
+// [claude-code 2026-04-03] S14-T6: Extended with service status lights + status dropdown + staleness util
+
+export type UserStatus = 'online' | 'away' | 'busy' | 'dnd' | 'offline';
+
+export interface ServiceStatus {
+  twitterCli: boolean;
+  aiRuntime: boolean;
+  newsfeedPolling: { active: boolean; lastUpdate: string };
+  backendConnection: boolean;
+}
 
 export interface DeviceStatus {
   userId: string;
-  displayName: string;       // User's chosen nametag from settings
-  caoName: string;           // User's CAO name (renamed Harper-Opus)
-  caoOnline: boolean;        // Whether their CAO agent is running
-  twitterCliPolling: boolean; // Whether their Twitter CLI is actively polling
-  online: boolean;           // Whether the user's app is open
-  lastSeen: string;          // ISO timestamp
-  inCall: boolean;           // Whether they're in a LiveKit voice room
+  displayName: string;
+  caoName: string;
+  caoOnline: boolean;
+  twitterCliPolling: boolean;
+  online: boolean;
+  lastSeen: string;
+  inCall: boolean;
+  userStatus: UserStatus;
+  services: ServiceStatus;
 }
 
 export interface TeamMember {
@@ -25,4 +36,25 @@ export interface PresencePayload {
   caoOnline: boolean;
   twitterCliPolling: boolean;
   inCall: boolean;
+  userStatus: UserStatus;
+  services: ServiceStatus;
+}
+
+/** Returns true if the given ISO timestamp is older than `thresholdMinutes`. */
+export function isStale(lastUpdate: string, thresholdMinutes: number): boolean {
+  const diff = Date.now() - new Date(lastUpdate).getTime();
+  return diff > thresholdMinutes * 60 * 1000;
+}
+
+/** Human-friendly relative time string. */
+export function timeAgo(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'just now';
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.max(0, Math.floor(diffMs / 60000));
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const hours = Math.floor(diffMin / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }

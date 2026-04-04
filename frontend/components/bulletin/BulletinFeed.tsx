@@ -1,16 +1,25 @@
-// [claude-code 2026-03-31] S12-T1: Bulletin feed — list posts, new post form, realtime, voting
-import { useCallback, useEffect, useState } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+// [claude-code 2026-04-03] Discord-style forum redesign — PromptBox, message grouping, scroll container, hover actions
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Loader2, ChevronDown, Send } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useBackend } from '../../lib/backend';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { BulletinPost, type BulletinPostData } from './BulletinPost';
 import type { VoteType } from './VotingControls';
+import { PromptBox } from '../ui/chatgpt-prompt-input';
 
 interface DeskOption {
   id: string;
   name: string;
+}
+
+/** Check if two posts should be grouped (same author, within 5 minutes) */
+function shouldGroup(prev: BulletinPostData, curr: BulletinPostData): boolean {
+  if (prev.authorId !== curr.authorId) return false;
+  const pTime = new Date(prev.createdAt).getTime();
+  const cTime = new Date(curr.createdAt).getTime();
+  return Math.abs(cTime - pTime) < 5 * 60 * 1000;
 }
 
 export function BulletinFeed() {
@@ -22,11 +31,17 @@ export function BulletinFeed() {
   const [loading, setLoading] = useState(true);
   const [desks, setDesks] = useState<DeskOption[]>([]);
   const [selectedDesk, setSelectedDesk] = useState<string>('');
-  const [newContent, setNewContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [expandedThread, setExpandedThread] = useState<string | null>(null);
   const [threadReplies, setThreadReplies] = useState<Record<string, BulletinPostData[]>>({});
   const [replyContent, setReplyContent] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, []);
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -35,7 +50,6 @@ export function BulletinFeed() {
       const result = await backend.bulletin.listPosts(params);
       setPosts(result.posts);
 
-      // Fetch user votes for all posts
       const votes: Record<string, VoteType> = {};
       for (const post of result.posts) {
         const voteResult = await backend.bulletin.getVotes(post.id);
@@ -53,6 +67,11 @@ export function BulletinFeed() {
   useEffect(() => {
     void fetchPosts();
   }, [fetchPosts]);
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    scrollToBottom();
+  }, [posts.length, scrollToBottom]);
 
   // Load desks
   useEffect(() => {
@@ -72,7 +91,6 @@ export function BulletinFeed() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'peer_bulletin' },
         (payload) => {
-          // Detect promotion
           if (
             payload.eventType === 'UPDATE' &&
             payload.new &&
@@ -95,15 +113,18 @@ export function BulletinFeed() {
     };
   }, [fetchPosts, addToast]);
 
-  const handleSubmit = async () => {
-    if (!newContent.trim() || submitting) return;
+  const handleSubmit = async (msg: string, images?: string[]) => {
+    if (!msg.trim() || submitting) return;
     setSubmitting(true);
     try {
+      const contentParts = images?.length
+        ? images.map((img) => ({ type: 'image' as const, data: img }))
+        : undefined;
       await backend.bulletin.createPost({
-        content: newContent.trim(),
+        content: msg.trim(),
+        contentParts,
         deskId: selectedDesk || undefined,
       });
-      setNewContent('');
       await fetchPosts();
     } catch (err) {
       console.error('[BulletinFeed] Failed to create post:', err);
@@ -136,6 +157,15 @@ export function BulletinFeed() {
     }
   };
 
+  const handleDelete = async (postId: string) => {
+    try {
+      await backend.bulletin.deletePost(postId);
+      await fetchPosts();
+    } catch (err) {
+      console.error('[BulletinFeed] Delete failed:', err);
+    }
+  };
+
   const submitReply = async (parentId: string) => {
     if (!replyContent.trim()) return;
     try {
@@ -153,102 +183,119 @@ export function BulletinFeed() {
   };
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[var(--fintheon-text)]">Bulletin Board</h3>
+    <div className="relative flex h-full flex-col">
+      {/* Header bar */}
+      <div className="flex items-center gap-3 px-4 py-2">
+        <span className="text-xs font-semibold text-[var(--fintheon-text)]">Forum</span>
         {desks.length > 0 && (
-          <select
-            value={selectedDesk}
-            onChange={(e) => setSelectedDesk(e.target.value)}
-            className="rounded border border-zinc-700 bg-[var(--fintheon-bg)] px-2 py-1 text-xs text-zinc-300"
-          >
-            <option value="">All Desks</option>
-            {desks.map((d) => (
-              <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedDesk}
+              onChange={(e) => setSelectedDesk(e.target.value)}
+              className="appearance-none rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] px-2.5 py-1.5 pr-7 text-[11px] text-[var(--fintheon-text)]/60 outline-none transition-colors hover:border-[var(--fintheon-accent)]/40 focus:border-[var(--fintheon-accent)]/40"
+            >
+              <option value="">All Desks</option>
+              {desks.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+            <ChevronDown size={10} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--fintheon-text)]/30" />
+          </div>
+        )}
+        <div className="flex-1" />
+        <span className="text-[10px] font-mono text-[var(--fintheon-muted)]/40">
+          {posts.length} messages
+        </span>
+      </div>
+
+      {/* Scrollable message area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto py-2">
+        {loading ? (
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-6">
+            <span className="text-sm text-[var(--fintheon-accent)]/40">No messages yet</span>
+            <span className="text-center text-xs text-[var(--fintheon-text)]/20">
+              Be the first to share a trade idea.
+            </span>
+          </div>
+        ) : (
+          posts.map((post, idx) => {
+            const prev = idx > 0 ? posts[idx - 1] : null;
+            const isGrouped = prev ? shouldGroup(prev, post) : false;
+
+            return (
+              <div key={post.id}>
+                <BulletinPost
+                  post={post}
+                  isGrouped={isGrouped}
+                  userVote={userVotes[post.id] ?? null}
+                  onVote={handleVote}
+                  onReply={handleReply}
+                  onDelete={post.authorId === userId ? handleDelete : undefined}
+                  userId={userId}
+                />
+
+                {/* Thread expansion */}
+                {expandedThread === post.id && (
+                  <div className="ml-12 mr-4 mt-1 mb-2 rounded-lg border-l-2 border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/30 pl-4 py-2">
+                    {(threadReplies[post.id] ?? []).map((reply, rIdx) => {
+                      const prevReply = rIdx > 0 ? threadReplies[post.id][rIdx - 1] : null;
+                      const isReplyGrouped = prevReply ? shouldGroup(prevReply, reply) : false;
+                      return (
+                        <BulletinPost
+                          key={reply.id}
+                          post={reply}
+                          isGrouped={isReplyGrouped}
+                          userVote={userVotes[reply.id] ?? null}
+                          onVote={handleVote}
+                          onReply={() => {}}
+                          userId={userId}
+                        />
+                      );
+                    })}
+                    <div className="flex gap-2 mt-1 pr-4">
+                      <input
+                        value={replyContent}
+                        onChange={(e) => setReplyContent(e.target.value)}
+                        placeholder="Reply to thread..."
+                        className="flex-1 rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] px-3 py-1.5 text-xs text-[var(--fintheon-text)] placeholder-[var(--fintheon-text)]/20 outline-none transition-colors focus:border-[var(--fintheon-accent)]/40"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void submitReply(post.id);
+                        }}
+                      />
+                      <button
+                        onClick={() => void submitReply(post.id)}
+                        className="rounded-lg border border-[var(--fintheon-accent)]/30 px-2.5 py-1.5 text-[var(--fintheon-accent)] transition-colors hover:bg-[var(--fintheon-accent)]/10"
+                      >
+                        <Send className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
-      {/* New post form */}
-      <div className="rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] p-3">
-        <textarea
-          value={newContent}
-          onChange={(e) => setNewContent(e.target.value)}
-          placeholder="Post a trade idea... (use $AAPL or /ES for instruments)"
-          rows={2}
-          className="w-full resize-none rounded border border-zinc-700/50 bg-[var(--fintheon-bg)] px-3 py-2 text-sm text-zinc-300 placeholder-zinc-600 focus:border-[var(--fintheon-accent)]/40 focus:outline-none"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) void handleSubmit();
-          }}
+      {/* PromptBox input */}
+      <div className="px-2">
+        <PromptBox
+          compact
+          onSend={(msg, images) => handleSubmit(msg, images)}
+          isProcessing={submitting}
+          placeholder="Message the forum..."
+          thinkHarder={false}
+          setThinkHarder={() => {}}
+          activeSkill={null}
+          onSelectSkill={() => {}}
+          showSkills={false}
+          onToggleSkills={() => {}}
         />
-        <div className="mt-2 flex justify-end">
-          <button
-            onClick={() => void handleSubmit()}
-            disabled={!newContent.trim() || submitting}
-            className="inline-flex items-center gap-1.5 rounded border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--fintheon-accent)] transition-colors hover:bg-[var(--fintheon-accent)]/20 disabled:opacity-40"
-          >
-            {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-            Post
-          </button>
-        </div>
       </div>
-
-      {/* Posts list */}
-      {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
-        </div>
-      ) : posts.length === 0 ? (
-        <div className="rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)] px-4 py-6 text-center text-sm text-zinc-400">
-          No posts yet. Be the first to share a trade idea.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {posts.map((post) => (
-            <div key={post.id}>
-              <BulletinPost
-                post={post}
-                userVote={userVotes[post.id] ?? null}
-                onVote={handleVote}
-                onReply={handleReply}
-              />
-
-              {/* Expanded thread */}
-              {expandedThread === post.id && (
-                <div className="ml-6 mt-2 space-y-2 border-l border-zinc-700/40 pl-4">
-                  {(threadReplies[post.id] ?? []).map((reply) => (
-                    <BulletinPost
-                      key={reply.id}
-                      post={reply}
-                      userVote={userVotes[reply.id] ?? null}
-                      onVote={handleVote}
-                      onReply={() => {}}
-                    />
-                  ))}
-                  <div className="flex gap-2">
-                    <input
-                      value={replyContent}
-                      onChange={(e) => setReplyContent(e.target.value)}
-                      placeholder="Reply..."
-                      className="flex-1 rounded border border-zinc-700/50 bg-[var(--fintheon-bg)] px-3 py-1.5 text-xs text-zinc-300 placeholder-zinc-600 focus:border-[var(--fintheon-accent)]/40 focus:outline-none"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') void submitReply(post.id);
-                      }}
-                    />
-                    <button
-                      onClick={() => void submitReply(post.id)}
-                      className="rounded border border-[var(--fintheon-accent)]/30 px-2 py-1 text-xs text-[var(--fintheon-accent)]"
-                    >
-                      <Send className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+    </div>
   );
 }

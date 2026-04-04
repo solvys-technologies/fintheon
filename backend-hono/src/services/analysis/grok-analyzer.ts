@@ -135,6 +135,9 @@ async function analyzeWithAi(
 
   const prompt = buildAnalysisPrompt(headline, source)
 
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+
   try {
     const { text } = await generateText({
       model,
@@ -144,6 +147,7 @@ async function analyzeWithAi(
       ],
       temperature: 0.1,
       maxOutputTokens: 512,
+      abortSignal: controller.signal,
     })
 
     markProviderHealthy(selection.provider)
@@ -151,6 +155,8 @@ async function analyzeWithAi(
   } catch (error) {
     markProviderUnhealthy(selection.provider)
     throw error
+  } finally {
+    clearTimeout(timeout)
   }
 }
 

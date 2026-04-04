@@ -17,7 +17,7 @@ export function getPollingConfig(now = new Date()): PollingConfig {
     return { interval: 180_000, isHotHours: false };
   }
 
-  const isHotHours = hour >= 8 && hour < 11;
+  const isHotHours = hour >= 6 && hour < 20;
   return {
     interval: isHotHours ? 60_000 : 180_000,
     isHotHours,

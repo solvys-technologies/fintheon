@@ -27,8 +27,7 @@ export default function NewsFeed() {
 
     // Check if symbol changed (clear and re-fetch)
     if (prevSymbolRef.current !== null && prevSymbolRef.current !== currentSymbol) {
-      console.log(`[NewsFeed] Instrument changed: ${prevSymbolRef.current} -> ${currentSymbol}`);
-      setRiskflow([]); // Clear existing items
+      setRiskflow([]); // Clear existing items on instrument change
     }
 
     prevSymbolRef.current = currentSymbol;

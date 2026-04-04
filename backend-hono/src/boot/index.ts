@@ -109,6 +109,20 @@ export function validateEnv(): ValidationResult {
     );
   }
 
+  // OPENROUTER_API_KEY can be omitted when Harper runs through local VProxy Anthropic.
+  const vproxyEnabled = process.env.USE_VPROXY_ANTHROPIC !== 'false';
+  if (vproxyEnabled) {
+    const before = criticalErrors.length;
+    for (let i = criticalErrors.length - 1; i >= 0; i--) {
+      if (criticalErrors[i].includes('OPENROUTER_API_KEY')) {
+        criticalErrors.splice(i, 1);
+      }
+    }
+    if (criticalErrors.length < before) {
+      warnings.push('[INFO] OPENROUTER_API_KEY not required because USE_VPROXY_ANTHROPIC is enabled');
+    }
+  }
+
   // --- Required vars (warnings, not fatal) ---
   for (const spec of REQUIRED_VARS) {
     const value = process.env[spec.name];
@@ -172,9 +186,13 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL!,
   SUPABASE_URL: process.env.SUPABASE_URL!,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY!,
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY ?? '',
   OPENROUTER_APP_URL: process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
   OPENROUTER_APP_NAME: process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
+  USE_VPROXY_ANTHROPIC: process.env.USE_VPROXY_ANTHROPIC !== 'false',
+  VPROXY_BASE_URL: process.env.VPROXY_BASE_URL ?? 'http://localhost:8317',
+  VPROXY_API_KEY: process.env.VPROXY_API_KEY ?? 'CLI_PROXY_API_KEY',
+  VPROXY_ANTHROPIC_MODEL: process.env.VPROXY_ANTHROPIC_MODEL ?? 'claude-opus-4.6',
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   VERCEL_AI_GATEWAY_API_KEY: process.env.VERCEL_AI_GATEWAY_API_KEY,
   EXA_API_KEY: process.env.EXA_API_KEY,

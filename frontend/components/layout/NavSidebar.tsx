@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Bell, BellOff, Wrench, ClipboardList, FileText, Brain } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Bell, BellOff, Wrench } from 'lucide-react';
 import { useDND } from '../../contexts/DNDContext';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'documents' | 'research' | 'memory' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -18,16 +18,11 @@ interface NavSidebarProps {
   refinementActive?: boolean;
 }
 
-const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom' | 'narrative' | 'apparatus' | 'proposals'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
+const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'feed' | 'narrative' | 'apparatus' | 'proposals' | 'performance' | 'settings'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
   dashboard: { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
   analysis: { id: 'analysis', icon: Landmark, label: 'Consilium', description: 'Narrative analytics center' },
   riskflow: { id: 'riskflow', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
-  scriptorium: { id: 'scriptorium', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
-  performance: { id: 'performance', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
-  documents: { id: 'documents', icon: FileText, label: 'Docs', description: 'TipTap document editor' },
-  research: { id: 'research', icon: ClipboardList, label: 'Research', description: 'Research task board — deep-dive kanban' },
-  memory: { id: 'memory', icon: Brain, label: 'Memory', description: 'Shared team memory — cross-agent KV store' },
 };
 
 // Icon size: original was w-6 h-6 (24px). 35% smaller = ~15.6px → w-4 h-4 (16px)

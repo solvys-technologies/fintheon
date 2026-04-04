@@ -20,6 +20,11 @@ import {
   type ClaudeSDKConfig,
 } from './process-manager.js'
 import { getSessionManager } from './session-manager.js'
+import {
+  getVProxyHealth,
+  isVProxyAnthropicEnabled,
+  streamTextViaVProxy,
+} from '../vproxy/anthropic-client.js'
 
 const LOG_PREFIX = '[ClaudeSDK:Bridge]'
 
@@ -58,6 +63,11 @@ export interface BridgeChatResult {
  * Check if Claude SDK bridge is available for use.
  */
 export async function isBridgeAvailable(): Promise<boolean> {
+  if (isVProxyAnthropicEnabled()) {
+    const vproxy = await getVProxyHealth()
+    if (vproxy.available) return true
+  }
+
   if (!isAvailable()) {
     const h = await getHealth()
     return h.available
@@ -81,6 +91,32 @@ export function bridgeChat(request: BridgeChatRequest, configOverrides?: Partial
   const maxTurns = thinkHarder ? 5 : 3
 
   const spawnOpts: Partial<ClaudeSDKConfig> = { effort, maxTurns, ...configOverrides }
+
+  // Preferred route: Anthropic via local VProxy gateway.
+  if (isVProxyAnthropicEnabled()) {
+    console.log(`${LOG_PREFIX} Routing through VProxy Anthropic stream`)
+    let fullText = ''
+    let aborted = false
+    const controller = new AbortController()
+
+    const vproxyStream = wrapVProxyStream(
+      prompt,
+      spawnOpts,
+      (text) => { fullText += text },
+      () => aborted,
+      controller.signal,
+      true,
+    )
+
+    return {
+      stream: vproxyStream,
+      abort: () => {
+        aborted = true
+        controller.abort()
+      },
+      getFullText: () => fullText,
+    }
+  }
 
   // Try persistent session for streaming
   const session = getSessionManager()
@@ -166,6 +202,53 @@ async function* wrapSessionStream(
   if (!hasStartedText) {
     yield { type: 'text-start', id: messageId }
     hasStartedText = true
+  }
+  yield { type: 'text-end', id: messageId }
+}
+
+async function* wrapVProxyStream(
+  prompt: string,
+  options: Partial<ClaudeSDKConfig>,
+  onText: (text: string) => void,
+  isAborted: () => boolean,
+  abortSignal: AbortSignal,
+  enableTools = false,
+): AsyncGenerator<BridgeStreamEvent> {
+  const messageId = `vproxy-${Date.now()}`
+  let textStarted = false
+
+  try {
+    const result = streamTextViaVProxy({
+      prompt,
+      systemPrompt: options.systemPrompt,
+      model: options.model,
+      maxOutputTokens: 8192,
+      abortSignal,
+      enableTools,
+    })
+
+    for await (const delta of result.textStream) {
+      if (isAborted()) break
+      if (!delta) continue
+      if (!textStarted) {
+        textStarted = true
+        yield { type: 'text-start', id: messageId }
+      }
+      onText(delta)
+      yield { type: 'text-delta', id: messageId, delta }
+    }
+  } catch (err) {
+    if (isAborted()) {
+      return
+    }
+    console.warn(`${LOG_PREFIX} VProxy stream failed, falling back to Claude CLI`, err)
+    const { process: proc, abort } = spawnClaudeProcess(prompt, options)
+    yield* parseClaudeStream(proc, onText, isAborted, abort)
+    return
+  }
+
+  if (!textStarted) {
+    yield { type: 'text-start', id: messageId }
   }
   yield { type: 'text-end', id: messageId }
 }

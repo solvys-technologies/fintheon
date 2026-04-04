@@ -17,6 +17,7 @@ import type { HermesAgentRole } from './hermes-service.js'
 import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from './ai/agent-instructions/index.js'
 import { buildThoughtBankPromptBlock } from './ai/agent-instructions/thought-bank-awareness.js'
 import { createLogger } from '../lib/logger.js'
+import { getVProxyHealth, isVProxyAnthropicEnabled } from './vproxy/anthropic-client.js'
 
 const log = createLogger('Hermes')
 
@@ -435,19 +436,18 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
     messages.push({ role: 'user', content: request.message })
   }
 
-  // Primary: Claude CLI (free via Max subscription)
+  // Primary for Harper: Anthropic via VProxy (subscription OAuth)
   const claudePrompt = systemPrompt + '\n\n' + messages.filter(m => m.role === 'user').map(m => typeof m.content === 'string' ? m.content : '[multimodal]').join('\n')
 
   try {
     const { generateTextViaClaude } = await import('./claude-sdk/process-manager.js')
-    const { isAvailable } = await import('./claude-sdk/process-manager.js')
-
-    if (isAvailable()) {
-      log.info('Calling Claude CLI', { agent: agentInfo.agent })
+    const shouldUseHarperProvider = agentInfo.agent === 'harper-cao'
+    if (shouldUseHarperProvider) {
+      log.info('Calling Harper provider (Anthropic via VProxy preferred)', { agent: agentInfo.agent })
       const content = await generateTextViaClaude(claudePrompt, { timeoutMs: 60_000 })
 
       if (content) {
-        log.info('Claude CLI response received', { preview: content.substring(0, 50) })
+        log.info('Harper provider response received', { preview: content.substring(0, 50) })
         return {
           content,
           agent: agentInfo.agent,
@@ -457,7 +457,7 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
       }
     }
   } catch (cliErr) {
-    log.warn('Claude CLI failed, falling back to OpenRouter', { error: String(cliErr) })
+    log.warn('Harper provider failed, falling back to OpenRouter', { error: String(cliErr) })
   }
 
   // Fallback: OpenRouter
@@ -567,9 +567,22 @@ export async function initHermesAgent(): Promise<void> {
     log.warn('Gateway launch skipped (non-fatal)', { error: err instanceof Error ? err.message : String(err) })
   }
 
+  if (isVProxyAnthropicEnabled()) {
+    try {
+      const vproxyHealth = await getVProxyHealth(true)
+      if (vproxyHealth.available) {
+        log.info('VProxy warm-up complete (harper-cao ready)', { baseUrl: vproxyHealth.baseUrl })
+        return
+      }
+      log.warn('VProxy warm-up failed (non-fatal)', { error: vproxyHealth.error, baseUrl: vproxyHealth.baseUrl })
+    } catch (error) {
+      log.warn('VProxy warm-up failed (non-fatal)', { error: error instanceof Error ? error.message : String(error) })
+    }
+  }
+
   const apiKey = process.env.OPENROUTER_API_KEY ?? ''
   if (!apiKey) {
-    log.info('OPENROUTER_API_KEY not set — skipping warm-up')
+    log.info('OPENROUTER_API_KEY not set — skipping OpenRouter warm-up')
     return
   }
 
@@ -618,4 +631,3 @@ export async function* streamHermesChat(request: HermesChatRequest): AsyncGenera
     await new Promise(resolve => setTimeout(resolve, 10))
   }
 }
-

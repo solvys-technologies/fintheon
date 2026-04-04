@@ -170,7 +170,11 @@ export const AggregateCardNode = memo(function AggregateCardNode({
       </div>
 
       {expanded && (
-        <div style={{ padding: '0 10px 12px', maxHeight: 400, overflowY: 'auto' }}>
+        <div
+          className="aggregate-card-scroll"
+          onWheel={(e) => e.stopPropagation()}
+          style={{ padding: '0 10px 12px', maxHeight: 400, overflowY: 'auto' }}
+        >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {sortedCards.map((card, index) => {
               const cardSeverityColor = SEVERITY_COLORS[card.severity ?? 'low'];

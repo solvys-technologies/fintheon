@@ -1,3 +1,4 @@
+// [claude-code 2026-04-03] Spring-physics enter/exit transitions (scale+bounce enter, decisive exit)
 // [claude-code 2026-04-01] iOS26 Liquid Glass restyle + position-aware animation direction
 import { useEffect, useState } from 'react';
 import { X, Check, AlertTriangle, Loader2, Info, BellOff, Activity } from 'lucide-react';
@@ -40,10 +41,15 @@ function ToastItem({ toast, onDismiss, onBlock }: {
 
   return (
     <div
-      className="transition-all duration-300 ease-out group"
+      className="group"
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateX(0)' : `translateX(${slideX})`,
+        transform: isVisible
+          ? 'translateX(0) scale(1)'
+          : `translateX(${slideX}) scale(0.95)`,
+        transition: isVisible
+          ? 'opacity 350ms var(--ease-spring), transform 400ms var(--ease-bounce)'
+          : 'opacity 200ms ease-out, transform 200ms ease-out',
         pointerEvents: 'auto',
         minWidth: '280px',
         maxWidth: '380px',

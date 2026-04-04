@@ -4,6 +4,7 @@
  * Day 17 - Phase 5 Integration
  */
 
+// [claude-code 2026-04-03] Chronological sort (publishedAt DESC), cold start bumped to 200 items
 // [claude-code 2026-03-24] Pass VIX data into calculateIVScore for continuous curve multiplier + sub-scores
 // [claude-code 2026-03-11] Integrated point estimator for commentary point ranges + VIX feed
 // [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
@@ -77,12 +78,9 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
 let feedCache: FeedItem[] | null = null;
 
 function sortFeedItems(items: FeedItem[]): FeedItem[] {
-  return [...items].sort((a, b) => {
-    const macroA = a.macroLevel ?? 1;
-    const macroB = b.macroLevel ?? 1;
-    if (macroB !== macroA) return macroB - macroA;
-    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
-  });
+  return [...items].sort((a, b) =>
+    new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+  );
 }
 
 function normalizeIvScore(score: number): number {
@@ -137,7 +135,7 @@ function countUrgencySignals(item: FeedItem, analyzed: AnalyzedHeadline): number
  */
 async function warmCacheFromDB(): Promise<void> {
   try {
-    const scored = await readScoredItems({ limit: 50 });
+    const scored = await readScoredItems({ limit: 200 });
     if (scored.length === 0) return;
 
     const items = sortFeedItems(scored.map(scoredToFeedItem)).slice(0, MAX_FEED_ITEMS);
@@ -633,15 +631,10 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
 
   // No fallback needed — unified feed shows everything
 
-  // Sort by macro level (highest first), then by published date
-  items.sort((a, b) => {
-    // Macro level priority (4 > 3 > 2 > 1)
-    const macroA = a.macroLevel ?? 1;
-    const macroB = b.macroLevel ?? 1;
-    if (macroB !== macroA) return macroB - macroA;
-    // Then by date (newest first)
-    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
-  });
+  // Sort chronologically (newest first)
+  items.sort((a, b) =>
+    new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+  );
 
     // Apply pagination (offset + limit)
     const limit = Math.min(filters?.limit ?? MAX_FEED_ITEMS, MAX_FEED_ITEMS);

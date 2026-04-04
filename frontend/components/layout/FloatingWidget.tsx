@@ -1,4 +1,3 @@
-// [claude-code 2026-02-26] Zen layout uses a separate dockable PsychAssist widget.
 // [claude-code 2026-03-11] T2: FloatingWidget now accepts IVScoreResponse from backend
 // [claude-code 2026-03-11] Toast notifications with source icons + implied points
 import { useState, useEffect, useRef } from 'react';

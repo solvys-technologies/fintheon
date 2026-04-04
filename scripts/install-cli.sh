@@ -7,6 +7,7 @@
 #   fintheon start     — Start backend + launch app
 #   fintheon stop      — Stop everything
 #   fintheon logs      — Tail backend logs
+#   fintheon oauth     — Connect Anthropic subscription via VProxy
 #   fintheon peers     — Run per-device peer/Twitter onboarding
 #   fintheon setup     — Re-run first-time setup
 #   fintheon version   — Show current version
@@ -113,6 +114,14 @@ case "$1" in
       echo "  Start with: fintheon start"
     fi
     ;;
+  oauth)
+    if [[ -f "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" ]]; then
+      bash "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"
+    else
+      echo "  Missing script: $FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh"
+      exit 1
+    fi
+    ;;
   peers)
     if [[ -f "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" ]]; then
       bash "$FINTHEON_ROOT/scripts/peer-bootstrap.sh"
@@ -164,6 +173,7 @@ case "$1" in
     echo "  fintheon stop      Stop everything"
     echo "  fintheon status    Check if services are running"
     echo "  fintheon logs      Tail backend logs"
+    echo "  fintheon oauth     Connect Anthropic subscription via VProxy"
     echo "  fintheon peers     Run peer + Twitter round-robin onboarding"
     echo "  fintheon setup     Re-run first-time setup"
     echo "  fintheon version   Show current version"

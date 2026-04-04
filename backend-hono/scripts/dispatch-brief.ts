@@ -14,6 +14,9 @@ const RECIPIENT = '+15618490392';
 const LOG_DIR = join(import.meta.dir, '..', 'logs');
 const LOG_FILE = join(LOG_DIR, `dispatch-${BRIEF_TYPE.toLowerCase()}.log`);
 const CLAUDE_PATH = '/Users/tifos/.local/bin/claude';
+const VPROXY_BASE_URL = (process.env.VPROXY_BASE_URL ?? 'http://localhost:8317').replace(/\/+$/, '');
+const VPROXY_API_KEY = process.env.VPROXY_API_KEY ?? 'CLI_PROXY_API_KEY';
+const VPROXY_MODEL = process.env.VPROXY_ANTHROPIC_MODEL ?? 'claude-opus-4.6';
 
 mkdirSync(LOG_DIR, { recursive: true });
 
@@ -180,8 +183,49 @@ async function fetchContext(): Promise<string> {
   return parts.join('\n') || 'No recent context available. Generate based on general market awareness.';
 }
 
-// ── Generate via Claude CLI (Sonnet) ──
-function generateViaClaude(prompt: string, context: string): string {
+// ── Generate via VProxy Anthropic (preferred) ──
+async function generateViaVProxy(prompt: string, context: string): Promise<string> {
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const fullPrompt = `${prompt}\n\nHere is the current market context:\n\n${context}\n\nGenerate the brief now. Today is ${today}.`;
+
+  const response = await fetch(`${VPROXY_BASE_URL}/v1/messages`, {
+    method: 'POST',
+    headers: {
+      'x-api-key': VPROXY_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: VPROXY_MODEL,
+      max_tokens: 8192,
+      messages: [{ role: 'user', content: fullPrompt }],
+    }),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`VProxy Anthropic error ${response.status}: ${errorText.slice(0, 200)}`);
+  }
+
+  const payload = await response.json() as {
+    content?: Array<{ type?: string; text?: string }>;
+  };
+  const text = (payload.content ?? [])
+    .filter((block) => block.type === 'text' && typeof block.text === 'string')
+    .map((block) => block.text ?? '')
+    .join('')
+    .trim();
+
+  if (!text) {
+    throw new Error('VProxy Anthropic returned empty content');
+  }
+
+  return text;
+}
+
+// ── Generate via Claude CLI (fallback) ──
+function generateViaClaudeCli(prompt: string, context: string): string {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const fullPrompt = `${prompt}\n\nHere is the current market context:\n\n${context}\n\nGenerate the brief now. Today is ${today}.`;
 
@@ -195,13 +239,13 @@ function generateViaClaude(prompt: string, context: string): string {
 }
 
 // ── Persist to Supabase ──
-async function persistBrief(content: string): Promise<string | null> {
+async function persistBrief(content: string, generatedBy: string): Promise<string | null> {
   const { data, error } = await supabase
     .from('briefs')
     .insert({
       brief_type: BRIEF_TYPE,
       content,
-      generated_by: 'claude-cli-opus',
+      generated_by: generatedBy,
       category: BRIEF_TYPE === 'TOTT' ? 'weekly' : 'daily',
     })
     .select('id')
@@ -233,8 +277,16 @@ async function main() {
   const context = await fetchContext();
   log(`Context: ${context.length} chars`);
 
-  log('Generating brief via Claude CLI (Sonnet)...');
-  const content = generateViaClaude(config.prompt, context);
+  let content = '';
+  let generatedBy = 'vproxy-anthropic';
+  try {
+    log(`Generating brief via VProxy Anthropic (${VPROXY_MODEL})...`);
+    content = await generateViaVProxy(config.prompt, context);
+  } catch (vproxyErr) {
+    log(`VProxy generation failed, falling back to Claude CLI: ${vproxyErr instanceof Error ? vproxyErr.message : String(vproxyErr)}`);
+    generatedBy = 'claude-cli-opus';
+    content = generateViaClaudeCli(config.prompt, context);
+  }
   log(`Generated: ${content.length} chars`);
 
   if (!content || content.length < 50) {
@@ -244,7 +296,7 @@ async function main() {
   }
 
   log('Persisting to Supabase...');
-  const briefId = await persistBrief(content);
+  const briefId = await persistBrief(content, generatedBy);
   log(`Persisted: ${briefId ?? 'failed'}`);
 
   const msg = `📊 ${config.label}\n\n${content}`;

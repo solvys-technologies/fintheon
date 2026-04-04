@@ -1,4 +1,3 @@
-// [claude-code 2026-02-26] Add heading toolbar dock zone + optional docked widgets slot.
 // [claude-code 2026-03-03] Toolbar items reorderable via getToolbarOrder/setToolbarOrder.
 // [claude-code 2026-03-11] T2: IV score wired to backend /api/market-data/iv-score — replaces local quickIVScore
 // [claude-code 2026-03-20] S3:T4b: Merge platform/layout into one toolbar slot; DND moves to header when iFrame active
@@ -16,7 +15,6 @@ import { useToast } from '../../contexts/ToastContext';
 import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
-import { CallButton } from '../voice/CallButton';
 import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power, Bell, BellOff } from 'lucide-react';
 import { WhatsNewButton } from '../onboarding/FirstTimeTour';
 import { TraderNametag } from '../TraderNametag';
@@ -24,7 +22,7 @@ import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TradingBrowser';
 import { useDND } from '../../contexts/DNDContext';
 
-type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'scriptorium' | 'econ' | 'narrative' | 'performance' | 'proposals' | 'apparatus' | 'documents' | 'research' | 'memory' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'econ' | 'narrative' | 'performance' | 'proposals' | 'apparatus' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   dashboard: 'Dashboard',
@@ -33,13 +31,9 @@ const TAB_LABELS: Record<NavTab, string> = {
   proposals: 'Proposals',
   apparatus: 'Apparatus',
   riskflow: 'RiskFlow',
-  scriptorium: 'Scriptorium',
   econ: 'Economic Calendar',
   narrative: 'NarrativeMap',
   performance: 'Performance',
-  documents: 'Documents',
-  research: 'Research',
-  memory: 'Shared Memory',
   settings: 'Settings',
 };
 
@@ -569,10 +563,7 @@ export function TopHeader({
             }
             if (id === 'voice') {
               return wrapper(
-                <>
-                  <HeaderVoiceControl compact={topStepXEnabled && layoutOption === 'tickers-only'} />
-                  <CallButton />
-                </>
+                <HeaderVoiceControl compact={topStepXEnabled && layoutOption === 'tickers-only'} />
               );
             }
             if (id === 'ivScore') {

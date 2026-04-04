@@ -1,5 +1,5 @@
-// [claude-code 2026-03-31] S12-T1: Voting controls — check/x/up/down with counts
-import { Check, X, ArrowUp, ArrowDown } from 'lucide-react';
+// [claude-code 2026-04-03] Discord-style reaction pills — compact, only show non-zero, gold active state
+import { Check, X, ArrowUp, ArrowDown, Plus } from 'lucide-react';
 
 export type VoteType = 'up' | 'down' | 'check' | 'x';
 
@@ -18,26 +18,36 @@ const BUTTONS: { type: VoteType; Icon: typeof Check; label: string }[] = [
 ];
 
 export function VotingControls({ bulletinId, votes, userVote, onVote }: VotingControlsProps) {
+  const visibleButtons = BUTTONS.filter(({ type }) => votes[type] > 0);
+
   return (
-    <div className="flex items-center gap-1.5">
-      {BUTTONS.map(({ type, Icon, label }) => {
+    <div className="flex flex-wrap items-center gap-1">
+      {visibleButtons.map(({ type, Icon, label }) => {
         const isActive = userVote === type;
         return (
           <button
             key={type}
             onClick={() => onVote(type)}
             title={label}
-            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] transition-colors ${
+            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] transition-colors ${
               isActive
-                ? 'border-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
-                : 'border-zinc-700/50 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+                ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
+                : 'bg-[var(--fintheon-surface)] text-[var(--fintheon-text)]/40 border border-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/25 hover:text-[var(--fintheon-text)]/60'
             }`}
           >
-            <Icon className="h-3 w-3" />
+            <Icon className="h-2.5 w-2.5" />
             <span>{votes[type]}</span>
           </button>
         );
       })}
+      {/* Add reaction button */}
+      <button
+        onClick={() => onVote('up')}
+        title="Add reaction"
+        className="inline-flex items-center justify-center rounded-full border border-dashed border-[var(--fintheon-accent)]/10 px-1 py-0.5 text-[var(--fintheon-text)]/20 transition-colors hover:border-[var(--fintheon-accent)]/25 hover:text-[var(--fintheon-accent)]/50"
+      >
+        <Plus className="h-2.5 w-2.5" />
+      </button>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // [claude-code 2026-03-09] Added cancel on click during speaking/thinking, mic denied-state UI
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MicOff } from 'lucide-react';
+import { Mic, MicOff } from 'lucide-react';
 import { useVoice } from '../../contexts/VoiceContext';
 import { resolveVoiceOrbState } from '../../types/voice';
 import { VoiceAuroraOrb } from './VoiceAuroraOrb';
@@ -165,6 +165,9 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
     return enabled ? 'Disable voice assistant' : 'Enable voice assistant';
   };
 
+  // Show the aurora orb only when actively listening/speaking/thinking/error/infraction
+  const showOrb = enabled && orbState !== 'idle';
+
   return (
     <button
       type="button"
@@ -173,15 +176,19 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
       className={`relative rounded-full transition-colors ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-90'}`}
       title={getTitle()}
     >
-      {enabled ? (
+      {showOrb ? (
         <VoiceAuroraOrb state={orbState} compact={compact} />
       ) : (
-        /* Dormant state: MicOff icon inside the orb shell */
+        /* Dormant/idle state: bordered mic icon — Mic when enabled, MicOff when disabled */
         <div
           className="rounded-full bg-[#070704] flex items-center justify-center"
-          style={{ width: compact ? '24px' : '28px', height: compact ? '24px' : '28px', border: '1.5px solid var(--fintheon-accent)' }}
+          style={{ width: compact ? '24px' : '28px', height: compact ? '24px' : '28px', border: `1.5px solid var(--fintheon-accent)` }}
         >
-          <MicOff className="w-3 h-3 text-zinc-500" />
+          {enabled ? (
+            <Mic className="w-3 h-3 text-[var(--fintheon-accent)]/60" />
+          ) : (
+            <MicOff className="w-3 h-3 text-zinc-500" />
+          )}
         </div>
       )}
     </button>

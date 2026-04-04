@@ -459,8 +459,19 @@ export function useVoiceAssistant(options?: UseVoiceAssistantOptions) {
       ? { deviceId: { exact: selectedDeviceId }, echoCancellation: true, noiseSuppression: true }
       : { echoCancellation: true, noiseSuppression: true };
 
-    navigator.mediaDevices
-      .getUserMedia({ audio: audioConstraints })
+    // Try selected device first, fall back to system default if it fails
+    const getStream = () =>
+      navigator.mediaDevices
+        .getUserMedia({ audio: audioConstraints })
+        .catch((err) => {
+          if (selectedDeviceId) {
+            console.warn('[VoiceAssistant] Selected mic failed, falling back to default:', err.message);
+            return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+          }
+          throw err;
+        });
+
+    getStream()
       .then((stream) => {
         if (!enabledRef.current) {
           stream.getTracks().forEach((t) => t.stop());

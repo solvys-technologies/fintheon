@@ -1,132 +1,96 @@
-// [claude-code 2026-03-05] Phase 3B-E: Redesigned voice orb — idle lens, green listening, waveform speaking, radar thinking
-import { getVoiceOrbColor, type VoiceOrbState } from '../../types/voice';
+// [claude-code 2026-04-03] SiriOrb-based voice indicator — gold idle/listening, green speaking, red error/infraction
+import { useMemo } from 'react';
+import type { VoiceOrbState } from '../../types/voice';
 
 interface VoiceAuroraOrbProps {
   state: VoiceOrbState;
   compact?: boolean;
 }
 
-function hexToRgba(hex: string, alpha: number): string {
-  const clean = hex.replace('#', '');
-  const value = parseInt(clean, 16);
-  const r = (value >> 16) & 255;
-  const g = (value >> 8) & 255;
-  const b = value & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
+const STATE_CONFIG: Record<VoiceOrbState, { c1: string; c2: string; c3: string; speed: number; border: string }> = {
+  idle:       { c1: 'oklch(72% 0.12 70)',  c2: 'oklch(68% 0.10 55)',  c3: 'oklch(75% 0.14 80)',  speed: 24, border: 'var(--fintheon-accent)' },
+  listening:  { c1: 'oklch(72% 0.14 70)',  c2: 'oklch(70% 0.12 60)',  c3: 'oklch(78% 0.16 75)',  speed: 14, border: 'var(--fintheon-accent)' },
+  speaking:   { c1: 'oklch(72% 0.18 145)', c2: 'oklch(68% 0.14 155)', c3: 'oklch(75% 0.16 135)', speed: 8,  border: '#22c55e' },
+  thinking:   { c1: 'oklch(72% 0.12 70)',  c2: 'oklch(68% 0.10 55)',  c3: 'oklch(75% 0.14 80)',  speed: 6,  border: 'var(--fintheon-accent)' },
+  error:      { c1: 'oklch(60% 0.20 25)',  c2: 'oklch(55% 0.18 15)',  c3: 'oklch(65% 0.22 30)',  speed: 30, border: '#ef4444' },
+  infraction: { c1: 'oklch(60% 0.22 25)',  c2: 'oklch(55% 0.20 15)',  c3: 'oklch(65% 0.24 30)',  speed: 4,  border: '#ef4444' },
+};
 
 export function VoiceAuroraOrb({ state, compact = false }: VoiceAuroraOrbProps) {
   const size = compact ? 24 : 28;
-  const color = getVoiceOrbColor(state);
+  const cfg = STATE_CONFIG[state];
+  const blur = Math.max(size * 0.08, 4);
+  const contrast = Math.max(size * 0.003, 1.6);
+  const orbId = useMemo(() => `orb-${Math.random().toString(36).slice(2, 8)}`, []);
 
   return (
     <>
       <style>{`
-        @keyframes voiceListenPulse {
-          0%, 100% { border-color: #16a34a; box-shadow: 0 0 6px rgba(34,197,94,0.2); }
-          50% { border-color: #22c55e; box-shadow: 0 0 14px rgba(34,197,94,0.5); }
+        @property --${orbId}-angle {
+          syntax: "<angle>";
+          inherits: false;
+          initial-value: 0deg;
         }
-        @keyframes waveBar {
-          0%, 100% { height: 20%; }
-          50% { height: 80%; }
+        @keyframes ${orbId}-rotate {
+          from { --${orbId}-angle: 0deg; }
+          to { --${orbId}-angle: 360deg; }
         }
-        @keyframes radarPulse {
-          0% { transform: scale(0); opacity: 0.7; }
-          100% { transform: scale(1); opacity: 0; }
-        }
-        @keyframes voiceAlert {
-          0%, 100% { transform: scale(1); opacity: 0.88; }
-          50% { transform: scale(1.16); opacity: 1; }
-        }
-        .voice-alert { animation: voiceAlert 0.66s ease-in-out infinite; }
       `}</style>
 
       <div
         aria-hidden="true"
         className="relative rounded-full shrink-0"
-        style={{ width: `${size}px`, height: `${size}px` }}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          border: `1.5px solid ${cfg.border}`,
+          transition: 'border-color 0.4s ease',
+        }}
       >
-        {/* === IDLE: empty gold-bordered circle === */}
-        {state === 'idle' && (
+        {/* Orb core */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: '1px',
+            borderRadius: '50%',
+            overflow: 'hidden',
+            display: 'grid',
+            gridTemplateAreas: '"stack"',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 30%, transparent 70%)',
+          }}
+        >
           <div
-            className="absolute inset-0 rounded-full bg-[#070704]"
-            style={{ border: '1.5px solid var(--fintheon-accent)' }}
-          />
-        )}
-
-        {/* === LISTENING: green pulsing border === */}
-        {state === 'listening' && (
-          <div
-            className="absolute inset-0 rounded-full bg-[#070704]"
             style={{
-              border: '1.5px solid #16a34a',
-              animation: 'voiceListenPulse 2s ease-in-out infinite',
-              background: 'radial-gradient(circle, rgba(34,197,94,0.08) 0%, #070704 70%)',
+              gridArea: 'stack',
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              background: [
+                `conic-gradient(from calc(var(--${orbId}-angle) * 1.2) at 30% 65%, ${cfg.c3} 0deg, transparent 45deg 315deg, ${cfg.c3} 360deg)`,
+                `conic-gradient(from calc(var(--${orbId}-angle) * 0.8) at 70% 35%, ${cfg.c2} 0deg, transparent 60deg 300deg, ${cfg.c2} 360deg)`,
+                `conic-gradient(from calc(var(--${orbId}-angle) * -1.5) at 65% 75%, ${cfg.c1} 0deg, transparent 90deg 270deg, ${cfg.c1} 360deg)`,
+                `conic-gradient(from calc(var(--${orbId}-angle) * 2.1) at 25% 25%, ${cfg.c2} 0deg, transparent 30deg 330deg, ${cfg.c2} 360deg)`,
+                `radial-gradient(ellipse 120% 80% at 40% 60%, ${cfg.c3} 0%, transparent 50%)`,
+              ].join(', '),
+              filter: `blur(${blur}px) contrast(${contrast}) saturate(1.3)`,
+              animation: `${orbId}-rotate ${cfg.speed}s linear infinite`,
+              transform: 'translateZ(0)',
+              willChange: 'transform',
+              transition: 'filter 0.4s ease',
             }}
           />
-        )}
-
-        {/* === SPEAKING: 7 dynamic waveform bars with glow === */}
-        {state === 'speaking' && (
+          {/* Gloss overlay */}
           <div
-            className="absolute inset-0 rounded-full bg-[#070704] overflow-hidden"
-            style={{ border: '1.5px solid var(--fintheon-accent)' }}
-          >
-            <div className="absolute inset-0" style={{ background: 'radial-gradient(circle, rgba(199,159,74,0.12) 0%, transparent 70%)' }} />
-            <div className="absolute inset-0 flex items-center justify-center gap-[1.5px]">
-              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-                <div
-                  key={i}
-                  className="rounded-full"
-                  style={{
-                    width: '2px',
-                    height: '15%',
-                    backgroundColor: 'var(--fintheon-accent)',
-                    opacity: 0.7 + (i % 2) * 0.3,
-                    boxShadow: '0 0 6px rgba(199,159,74,0.5)',
-                    animation: `waveBar ${0.6 + (i % 3) * 0.15}s ease-in-out ${i * 0.08}s infinite`,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* === THINKING: gold radar pulses === */}
-        {state === 'thinking' && (
-          <div
-            className="absolute inset-0 rounded-full bg-[#070704] overflow-hidden"
-            style={{ border: '1.5px solid var(--fintheon-accent)' }}
-          >
-            {[0, 0.6, 1.2].map((delay, i) => (
-              <div
-                key={i}
-                className="absolute inset-[15%] rounded-full"
-                style={{
-                  border: '1px solid rgba(199,159,74,0.5)',
-                  animation: `radarPulse 1.8s ease-out ${delay}s infinite`,
-                }}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* === INFRACTION: red pulsing === */}
-        {state === 'infraction' && (
-          <>
-            <div
-              className="absolute inset-0 rounded-full bg-[#070704]"
-              style={{
-                border: '1.5px solid #ef4444',
-                background: 'radial-gradient(circle, rgba(239,68,68,0.15) 0%, #070704 70%)',
-              }}
-            />
-            <div
-              className="absolute inset-0 rounded-full voice-alert"
-              style={{ boxShadow: `0 0 20px ${hexToRgba('#ef4444', 0.3)}` }}
-            />
-          </>
-        )}
+            style={{
+              gridArea: 'stack',
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 45% 55%, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 30%, transparent 60%)',
+              mixBlendMode: 'overlay',
+            }}
+          />
+        </div>
       </div>
     </>
   );

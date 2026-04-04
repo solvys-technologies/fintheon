@@ -27,7 +27,8 @@ interface ProcessEntry {
 const processes = new Map<string, ProcessEntry>();
 
 function isLocalRequest(c: Context): boolean {
-  if (process.env.NODE_ENV === 'production') return false;
+  // Allow terminal access from localhost in all environments.
+  // This is a desktop Electron app — the backend always runs locally.
   const host = c.req.header('host') || '';
   return host.startsWith('localhost:') || host.startsWith('127.0.0.1:');
 }

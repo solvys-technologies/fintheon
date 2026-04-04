@@ -14,6 +14,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { createLogger } from '../../lib/logger.js'
 import { getSessionManager } from './session-manager.js'
+import { generateTextViaVProxy, isVProxyAnthropicEnabled } from '../vproxy/anthropic-client.js'
 
 const log = createLogger('ClaudeSDK')
 
@@ -226,8 +227,25 @@ export function spawnClaudeProcess(prompt: string, options?: Partial<ClaudeSDKCo
  * Claude inference without the AI SDK client pattern.
  */
 export async function generateTextViaClaude(prompt: string, options?: Partial<ClaudeSDKConfig>): Promise<string> {
+  // Preferred path for Harper flows: Anthropic via local VProxy gateway.
+  if (isVProxyAnthropicEnabled()) {
+    try {
+      return await generateTextViaVProxy({
+        prompt,
+        systemPrompt: options?.systemPrompt,
+        model: options?.model,
+        maxOutputTokens: 8192,
+        timeoutMs: options?.timeoutMs ?? config.timeoutMs,
+      })
+    } catch (err) {
+      log.warn('VProxy Anthropic request failed — falling back to Claude CLI', {
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
   if (!isAvailable()) {
-    throw new Error('Claude CLI not available — bridge disabled')
+    throw new Error('Claude CLI not available and VProxy request failed')
   }
 
   // Try persistent session first (serialized, no concurrency management needed)

@@ -10,6 +10,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import type { UIMessage } from 'ai';
 import { API_BASE_URL } from '../constants.js';
+import { getAccessToken } from '../../../lib/supabase';
 
 /** Convert backend ChatMessage -> UIMessage for useChat hydration */
 function backendToUIMessage(msg: { id: string; role: string; content: string; createdAt?: string }): UIMessage {
@@ -41,6 +42,10 @@ export function useHermesChat(
 
     const headers = new Headers(init?.headers);
     headers.set('Content-Type', 'application/json');
+
+    // Attach Supabase JWT for backend auth
+    const token = await getAccessToken();
+    if (token) headers.set('Authorization', `Bearer ${token}`);
 
     // Attach GitHub OAuth token for GitHub Models (DeepSeek R1)
     const ghToken = localStorage.getItem('github_token');
@@ -207,7 +212,10 @@ export function useHermesChat(
 
     (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/ai/conversations/${conversationId}`);
+        const token = await getAccessToken();
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(`${API_BASE_URL}/api/ai/conversations/${conversationId}`, { headers });
         if (!res.ok || cancelled) return;
         const data = await res.json();
         const msgs: UIMessage[] = (data.messages ?? [])

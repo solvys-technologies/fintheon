@@ -31,7 +31,7 @@ const SECTIONS = [
   { id: 'analysis', title: 'Analysis', tab: 'analysis' },
   { id: 'riskflow', title: 'RiskFlow', tab: 'riskflow' },
   { id: 'boardroom', title: 'Board Room', tab: 'boardroom' },
-  { id: 'scriptorium', title: 'Scriptorium', tab: 'scriptorium' },
+  { id: 'consilium', title: 'Consilium', tab: 'analysis' },
 ];
 
 /* ------------------------------------------------------------------ */

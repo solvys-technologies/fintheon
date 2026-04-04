@@ -238,12 +238,6 @@ class ApiClient {
         }
 
         const jsonData = await response.json();
-        console.log(`[API] Response for ${endpoint}:`, {
-          status: response.status,
-          contentType,
-          dataKeys: Object.keys(jsonData),
-          dataType: typeof jsonData
-        });
         return jsonData;
       } catch (error) {
         const isApiError = error && typeof error === 'object' && 'code' in error;

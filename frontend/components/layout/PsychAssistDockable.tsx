@@ -1,4 +1,3 @@
-// [claude-code 2026-02-26] Dockable PsychAssist widget for Zen layout (float ↔ header).
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GripVertical, PictureInPicture2, X } from 'lucide-react';
 import { CompactERMonitor } from '../mission-control/CompactERMonitor';

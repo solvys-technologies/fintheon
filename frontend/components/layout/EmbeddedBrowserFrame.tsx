@@ -1,5 +1,3 @@
-// [claude-code 2026-02-26] Improve OAuth behavior for embedded surfaces (Notion, TradeSea, etc).
-
 import { isElectron } from '../../lib/platform';
 
 interface EmbeddedBrowserFrameProps {

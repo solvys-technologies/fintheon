@@ -1,13 +1,12 @@
-// S13-T2: Team presence panel — slide-up tab content in FooterToolbar
+// [claude-code 2026-04-03] S14-T6: Team status panel — clean status card grid
 import { useTeamPresence } from '../../contexts/TeamPresenceContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { UserCard } from './UserCard';
+import { TeamMemberCard } from './TeamMemberCard';
 
 export function TeamPanel() {
   const { teamMembers, isConnected } = useTeamPresence();
   const { userId } = useAuth();
 
-  // Current user first, then others sorted by displayName
   const self = teamMembers.find((m) => m.userId === userId);
   const others = teamMembers
     .filter((m) => m.userId !== userId)
@@ -30,12 +29,14 @@ export function TeamPanel() {
         )}
       </div>
 
-      {/* User cards */}
-      <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0">
-        {self && <UserCard member={self} isSelf />}
-        {others.map((member) => (
-          <UserCard key={member.userId} member={member} />
-        ))}
+      {/* Status card grid */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="grid grid-cols-2 gap-2">
+          {self && <TeamMemberCard member={self} isSelf />}
+          {others.map((member) => (
+            <TeamMemberCard key={member.userId} member={member} />
+          ))}
+        </div>
         {others.length === 0 && self && (
           <div className="text-center text-[10px] text-zinc-600 font-mono py-4">
             No other team members online

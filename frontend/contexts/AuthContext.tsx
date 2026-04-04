@@ -37,13 +37,12 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
 const DEV = import.meta.env.DEV;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(!BYPASS_AUTH);
+  const [isLoading, setIsLoading] = useState(true);
   const [tier, setTier] = useState<UserTier>('fintheon_pro');
 
   // GitHub OAuth state (separate from Supabase — used for GitHub Models access)
@@ -80,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // --- Supabase Auth ---
   useEffect(() => {
-    if (!supabase || BYPASS_AUTH) {
+    if (!supabase) {
       setIsLoading(false);
       return;
     }
@@ -97,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (event === 'TOKEN_REFRESHED') {
-        DEV && console.log('[Auth] Session token refreshed');
+        // token refreshed — no action needed
       }
       if (event === 'SIGNED_OUT') {
         setSession(null);
@@ -111,7 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Set session from tokens (implicit flow — access_token + refresh_token)
   const setSessionFromTokens = useCallback(async (accessToken: string, refreshToken: string) => {
     if (!supabase) return;
-    DEV && console.log('[Auth] Setting session from tokens...');
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.setSession({
@@ -121,7 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         DEV && console.error('[Auth] setSession failed:', error.message);
       } else {
-        DEV && console.log('[Auth] Session established:', data.session?.user?.email);
         setSession(data.session);
         setUser(data.session?.user ?? null);
       }
@@ -134,14 +131,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Exchange a PKCE auth code for a Supabase session
   const exchangeCode = useCallback(async (code: string) => {
     if (!supabase || !code) return;
-    DEV && console.log('[Auth] Exchanging code:', code.slice(0, 8) + '...');
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
         DEV && console.error('[Auth] Code exchange failed:', error.message);
       } else {
-        DEV && console.log('[Auth] Session established:', data.session?.user?.email);
         setSession(data.session);
         setUser(data.session?.user ?? null);
       }
@@ -162,10 +157,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Listen for Electron deep link callback
   useEffect(() => {
-    if (!supabase || BYPASS_AUTH) return;
+    if (!supabase) return;
 
     const handleDeepLink = async (url: string) => {
-      DEV && console.log('[Auth] Deep link received:', url);
       try {
         const parsed = new URL(url);
         const params: Record<string, string> = {};
@@ -191,7 +185,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startPolling = useCallback(() => {
     if (pollingRef.current) return;
-    DEV && console.log('[Auth] Starting auth poll...');
     pollingRef.current = setInterval(async () => {
       try {
         const res = await fetch(`${API_BASE}/api/auth/supabase/pending`);
@@ -199,7 +192,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await res.json() as Record<string, string | null>;
         // Check if we got tokens or a code
         if (data.access_token || (data.code && data.code !== null)) {
-          DEV && console.log('[Auth] Poll found auth data');
           if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
           await handleAuthData(data as Record<string, string>);
         }
@@ -237,7 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getAccessToken = useCallback(async (): Promise<string | null> => {
-    if (!supabase || BYPASS_AUTH) return null;
+    if (!supabase) return null;
     const { data: { session: s } } = await supabase.auth.getSession();
     return s?.access_token ?? null;
   }, []);
@@ -275,8 +267,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setGhUser(data.user);
   }, []);
 
-  const isAuthenticated = BYPASS_AUTH || session !== null;
-  const userId = user?.id ?? 'local-user';
+  const isAuthenticated = session !== null;
+  const userId = user?.id ?? '';
 
   return (
     <AuthContext.Provider
