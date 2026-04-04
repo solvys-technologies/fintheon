@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-04T20:00:00',
+    agent: 'claude-code',
+    summary: 'S7-T1: Created Fintheon Oscillator Pine v6 indicator — SMI Ergodic of volume delta with ANTILAG, proximity maps, dynamic zones, multi-pivot divergence detection, confluence scoring, and webhook alerts',
+    files: ['docs/tradingview-pine/FINTHEON-Oscillator.pine'],
+  },
+  {
+    date: '2026-04-04T19:00:00',
+    agent: 'claude-code',
+    summary: 'S7-T2: Upgraded LQDelta Overlay — removed Retest text (labelup/down), tick chart support (Auto resolution), adjustable EMA thickness, fixed 0-volume bug (seed pivot bar), dual-TF liquidity with staleness, sweep labels (Solvys Gold), HTF EMA cross alerts (always-on, size.large red), full alert system with JSON webhooks',
+    files: ['docs/tradingview-pine/LQDELTA-Overlay.pine'],
+  },
+  {
+    date: '2026-04-04T18:00:00',
+    agent: 'claude-code',
+    summary: 'Fix Harper agentic loop: switch VProxy from textStream→fullStream (text was invisible during multi-step tool calls), normalize model IDs to hyphens (VProxy rejects dots with 502), auto-approve read-only tools, add 30s approval timeout, fix EventSource reconnection.',
+    files: [
+      'backend-hono/src/services/claude-sdk/bridge.ts',
+      'backend-hono/src/services/vproxy/anthropic-client.ts',
+      'backend-hono/src/services/tool-approval-store.ts',
+      'backend-hono/src/boot/index.ts',
+      'backend-hono/src/routes/harper/index.ts',
+      'frontend/components/chat/hooks/useToolApprovals.ts',
+    ],
+  },
+  {
     date: '2026-04-04T12:00:00',
     agent: 'claude-code',
     summary: '[v1.4.0] T1-T5 unified release: Default connectors (RiskFlow/Aquarium/Boardroom + UW MCP), chat icons in Consilium bar, sidebar icons fixed, SessionsDropdown replaces full-screen modal, Settings iFrame list with persistent proposer default (5 built-in sources + custom).',

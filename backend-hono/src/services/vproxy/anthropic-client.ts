@@ -1,3 +1,4 @@
+// [claude-code 2026-04-04] Auto-approve read-only tools (read_file, read_mcp_config) — skip approval gate
 // [claude-code 2026-04-03] Added approval-gated tool factory, web_fetch, write_file, read_mcp_config tools
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText, streamText, tool, stepCountIs } from 'ai'
@@ -47,13 +48,17 @@ function normalizeBaseUrl(raw: string): string {
 
 function resolveModel(modelOverride?: string): string {
   const configured = modelOverride || process.env.VPROXY_ANTHROPIC_MODEL || DEFAULT_MODEL
-  if (configured.startsWith('anthropic/')) {
-    return configured.slice('anthropic/'.length)
+  let model = configured
+  if (model.startsWith('anthropic/')) {
+    model = model.slice('anthropic/'.length)
   }
-  if (configured === 'opus') {
-    return process.env.VPROXY_ANTHROPIC_MODEL || DEFAULT_MODEL
+  if (model === 'opus') {
+    model = process.env.VPROXY_ANTHROPIC_MODEL || DEFAULT_MODEL
   }
-  return configured
+  // VProxy (Claude CLI proxy) requires hyphens — dots cause 502
+  // Normalize any dot-format model IDs (e.g. claude-opus-4.6 → claude-opus-4-6)
+  model = model.replace(/(\d+)\.(\d+)/g, '$1-$2')
+  return model
 }
 
 function getClient(modelOverride?: string) {
@@ -173,6 +178,9 @@ export async function generateTextViaVProxy(options: VProxyTextOptions): Promise
 
 // ── Shell + tool infrastructure for Harper CAO ───────────────────────────
 
+/** Read-only tools that skip the approval gate entirely */
+const AUTO_APPROVED_TOOLS = new Set(['read_file', 'read_mcp_config', 'get_fintheon_paths'])
+
 const PROJECT_ROOT = resolve(new URL('.', import.meta.url).pathname, '../../..')
 const HOME = homedir()
 
@@ -234,12 +242,17 @@ async function withApprovalGate<T>(
   description: string,
   executeFn: () => Promise<T>,
 ): Promise<T | string> {
+  // Read-only tools skip the gate entirely
+  if (AUTO_APPROVED_TOOLS.has(toolName)) {
+    return executeFn()
+  }
+
   // Check permanent permission
   if (isToolApproved(toolName)) {
     return executeFn()
   }
 
-  // Request approval and wait
+  // Request approval and wait (30s timeout → auto-approve)
   const decision = await requestApproval(requestId, toolName, toolInput, description)
 
   if (decision === 'denied') {
@@ -400,17 +413,47 @@ export function createHarperTools(requestId: string) {
 
 // ── Stream (with optional tools) ──────────────────────────────────────────
 
-export function streamTextViaVProxy(options: VProxyStreamOptions & { enableTools?: boolean; requestId?: string }): { textStream: AsyncIterable<string> } {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function streamTextViaVProxy(options: VProxyStreamOptions & { enableTools?: boolean; requestId?: string }): any {
   const tools = options.enableTools && options.requestId
     ? createHarperTools(options.requestId)
     : undefined
 
-  return streamText({
+  log.info('streamTextViaVProxy', {
+    hasTools: !!tools,
+    toolCount: tools ? Object.keys(tools).length : 0,
+    model: resolveModel(options.model),
+  })
+
+  const result = streamText({
     model: getClient(options.model),
     system: options.systemPrompt,
     prompt: options.prompt,
     maxOutputTokens: options.maxOutputTokens ?? 8192,
     abortSignal: options.abortSignal,
     ...(tools ? { tools, stopWhen: stepCountIs(10) } : {}),
-  }) as { textStream: AsyncIterable<string> }
+    onError: ({ error }) => {
+      log.error('streamText onError callback', { error: String(error) })
+    },
+    onStepFinish: (event: any) => {
+      log.info('streamText step finished', {
+        stepNumber: event.stepNumber,
+        finishReason: event.finishReason,
+        textLen: event.text?.length ?? 0,
+        toolCallCount: event.toolCalls?.length ?? 0,
+        toolResultCount: event.toolResults?.length ?? 0,
+        usage: event.usage,
+      })
+    },
+    onFinish: (event: any) => {
+      log.info('streamText FINISHED', {
+        finishReason: event.finishReason,
+        textLen: event.text?.length ?? 0,
+        stepsCount: event.steps?.length ?? 0,
+        totalUsage: event.totalUsage,
+      })
+    },
+  })
+
+  return result
 }

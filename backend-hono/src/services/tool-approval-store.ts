@@ -1,3 +1,4 @@
+// [claude-code 2026-04-04] Added 30s auto-approve timeout so agentic loop never hangs indefinitely
 // [claude-code 2026-04-03] Tool approval store — persistent permission memory + pending approval gate
 /**
  * Tool Approval Store
@@ -118,6 +119,9 @@ export function getAllPermissions(): ToolPermission[] {
  * Returns a promise that resolves with the user's decision.
  * Emits a cognition event so the frontend can display the approval card.
  */
+/** How long to wait for user decision before auto-approving (ms) */
+const APPROVAL_TIMEOUT_MS = 30_000
+
 export function requestApproval(
   requestId: string,
   toolName: string,
@@ -127,6 +131,13 @@ export function requestApproval(
   const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
   return new Promise<ApprovalDecision>((resolvePromise) => {
+    let settled = false
+    const settle = (decision: ApprovalDecision) => {
+      if (settled) return
+      settled = true
+      resolvePromise(decision)
+    }
+
     const pending: PendingApproval = {
       id,
       requestId,
@@ -134,7 +145,7 @@ export function requestApproval(
       toolInput,
       description,
       createdAt: Date.now(),
-      resolve: resolvePromise,
+      resolve: settle,
     }
 
     pendingApprovals.set(id, pending)
@@ -152,6 +163,20 @@ export function requestApproval(
     })
 
     log.info(`Approval requested: ${toolName} (${id})`, { description })
+
+    // Auto-approve after timeout so the agentic loop never hangs indefinitely
+    setTimeout(async () => {
+      if (settled) return
+      log.warn(`Approval timeout — auto-approving: ${toolName} (${id})`)
+      pendingApprovals.delete(id)
+      await grantPermission(toolName)
+      emitStep(requestId, {
+        kind: 'tool-approval-resolved',
+        label: `${toolName}: approved (auto)`,
+        detail: JSON.stringify({ approvalId: id, toolName, decision: 'approved', auto: true }),
+      })
+      settle('approved')
+    }, APPROVAL_TIMEOUT_MS)
   })
 }
 

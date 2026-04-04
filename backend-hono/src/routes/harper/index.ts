@@ -31,7 +31,7 @@ export function createHarperRoutes() {
     return c.json({
       available,
       agent: 'harper-opus',
-      model: usingVProxy ? (process.env.VPROXY_ANTHROPIC_MODEL ?? 'claude-opus-4.6') : 'claude-opus-local',
+      model: usingVProxy ? (process.env.VPROXY_ANTHROPIC_MODEL ?? 'claude-opus-4-6') : 'claude-opus-local',
       provider: usingVProxy ? 'anthropic-vproxy' : 'claude-cli',
     })
   })

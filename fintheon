@@ -164,7 +164,16 @@ HERMESEOF
 
   info "Installing MCP servers..."
 
-  npx -y tradingview-mcp-server --version 2>/dev/null && ok "TradingView MCP" || warn "TradingView MCP install failed"
+  # TradingView MCP Bridge (CDP-based, tradesdontlie/tradingview-mcp)
+  TV_MCP_DIR="$HOME/Documents/Codebases/tradingview-mcp"
+  if [ -d "$TV_MCP_DIR" ]; then
+    ok "TradingView MCP (already cloned)"
+  else
+    info "Cloning tradingview-mcp..."
+    git clone https://github.com/tradesdontlie/tradingview-mcp.git "$TV_MCP_DIR" 2>/dev/null && \
+      cd "$TV_MCP_DIR" && npm install --silent 2>/dev/null && ok "TradingView MCP" || warn "TradingView MCP clone/install failed"
+    cd "$FINTHEON_ROOT"
+  fi
   npx -y exa-mcp-server --version 2>/dev/null && ok "Exa MCP" || warn "Exa MCP install failed"
 
   # ── 4. JS dependencies ────────────────────────────────────────────

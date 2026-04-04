@@ -1,3 +1,4 @@
+// [claude-code 2026-04-04] Switch VProxy from textStream→fullStream to capture text across multi-step tool calls
 // [claude-code 2026-03-10] Claude SDK Bridge — relays Fintheon chat to Claude Code CLI stream-json
 /**
  * Claude SDK Bridge
@@ -232,19 +233,53 @@ async function* wrapVProxyStream(
       requestId,
     })
 
-    for await (const delta of result.textStream) {
+    let deltaCount = 0
+    let toolCallCount = 0
+    let stepCount = 0
+    // Use fullStream to capture text across multi-step tool calling.
+    // textStream only yields text-type content and misses text generated
+    // after tool results are sent back to the model.
+    for await (const part of result.fullStream) {
       if (isAborted()) break
-      if (!delta) continue
-      if (!textStarted) {
-        textStarted = true
-        yield { type: 'text-start', id: messageId }
+
+      if (part.type === 'step-start') stepCount++
+
+      switch (part.type) {
+        case 'text-delta':
+          if (part.text) {
+            deltaCount++
+            if (!textStarted) {
+              textStarted = true
+              yield { type: 'text-start', id: messageId }
+            }
+            onText(part.text)
+            yield { type: 'text-delta', id: messageId, delta: part.text }
+          }
+          break
+        case 'tool-call':
+          toolCallCount++
+          yield {
+            type: 'tool-use',
+            id: messageId,
+            metadata: { toolName: part.toolName, toolCallId: part.toolCallId },
+          }
+          break
+        case 'error':
+          console.error(`${LOG_PREFIX} fullStream error event:`, (part as any).error)
+          yield {
+            type: 'error',
+            id: messageId,
+            delta: (part as any).error?.message ?? 'VProxy stream error',
+          }
+          break
+        // tool-result, step-start, step-finish, etc. — skip
       }
-      onText(delta)
-      yield { type: 'text-delta', id: messageId, delta }
     }
+    console.log(`${LOG_PREFIX} VProxy fullStream ended (${deltaCount} text deltas, ${toolCallCount} tool calls, textStarted=${textStarted})`)
   } catch (err) {
     if (isAborted()) return
-    console.warn(`${LOG_PREFIX} VProxy stream failed, falling back to Claude CLI`, err)
+    console.error(`${LOG_PREFIX} VProxy stream error:`, err)
+    console.warn(`${LOG_PREFIX} Falling back to Claude CLI`)
     const { process: proc, abort } = spawnClaudeProcess(prompt, options)
     yield* parseClaudeStream(proc, onText, isAborted, abort)
     return

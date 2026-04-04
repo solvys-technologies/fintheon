@@ -192,7 +192,7 @@ export const env = {
   USE_VPROXY_ANTHROPIC: process.env.USE_VPROXY_ANTHROPIC !== 'false',
   VPROXY_BASE_URL: process.env.VPROXY_BASE_URL ?? 'http://localhost:8317',
   VPROXY_API_KEY: process.env.VPROXY_API_KEY ?? 'CLI_PROXY_API_KEY',
-  VPROXY_ANTHROPIC_MODEL: process.env.VPROXY_ANTHROPIC_MODEL ?? 'claude-opus-4.6',
+  VPROXY_ANTHROPIC_MODEL: process.env.VPROXY_ANTHROPIC_MODEL ?? 'claude-opus-4-6',
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   VERCEL_AI_GATEWAY_API_KEY: process.env.VERCEL_AI_GATEWAY_API_KEY,
   EXA_API_KEY: process.env.EXA_API_KEY,

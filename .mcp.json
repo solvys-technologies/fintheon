@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "tradingview": {
-      "command": "npx",
-      "args": ["-y", "tradingview-mcp-server"]
+      "command": "node",
+      "args": ["/Users/tifos/Documents/Codebases/tradingview-mcp/src/mcp-server.js"]
     },
     "exa": {
       "command": "npx",
