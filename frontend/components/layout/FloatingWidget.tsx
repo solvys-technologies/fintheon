@@ -7,6 +7,7 @@ import { useBackend } from '../../lib/backend';
 import type { RiskFlowItem } from '../../types/api';
 import type { IVScoreResponse } from '../../types/market-data';
 import { X, Trash2 } from 'lucide-react';
+import { ivHeatColor } from '../../types/miroshark';
 
 function XLogo({ className }: { className?: string }) {
   return (
@@ -284,8 +285,8 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
                             {newsItem.direction === 'Bullish' ? '▲' : newsItem.direction === 'Bearish' ? '▼' : '◆'}
                           </span>
                         )}
-                        <span className="text-[var(--fintheon-accent)] font-medium drop-shadow-sm">
-                          ±{(newsItem.pointRange ?? newsItem.ivScore!).toFixed(0)} pts
+                        <span className="font-mono font-bold drop-shadow-sm" style={{ color: ivHeatColor(Number(newsItem.ivScore ?? newsItem.pointRange ?? 0)) }}>
+                          IV {Number(newsItem.ivScore ?? newsItem.pointRange ?? 0).toFixed(1)}
                         </span>
                       </div>
                     )}

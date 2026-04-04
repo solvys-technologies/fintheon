@@ -54,9 +54,9 @@ function RiskItem({ item, isExpanded, onToggle }: { item: RiskFlowCatalyst; isEx
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {item.price_brain_score?.impliedPoints != null && (
-            <span className="text-[8px] font-mono text-[var(--fintheon-muted)]/50">
-              {item.price_brain_score.impliedPoints > 0 ? '+' : ''}{item.price_brain_score.impliedPoints}pts
+          {item.iv_score != null && (
+            <span className="text-[8px] font-mono font-bold" style={{ color: ivHeatColor(Number(item.iv_score)) }}>
+              IV {Number(item.iv_score).toFixed(1)}
             </span>
           )}
           <span className="text-[8px] font-mono font-bold" style={{ color: dirColor }}>

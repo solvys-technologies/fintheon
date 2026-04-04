@@ -99,11 +99,12 @@ function DirectionBadge({ alert }: { alert: RiskFlowAlert }) {
   );
 }
 
-function PointRangeBadge({ points, instrument }: { points?: number | null; instrument?: string | null }) {
-  const hasScore = points != null && points !== 0;
+function IVScoreBadge({ alert }: { alert: RiskFlowAlert }) {
+  const score = (alert as any).ivScore;
+  if (score == null) return null;
   return (
-    <span className="text-[9px] text-zinc-500 tabular-nums" title={`Implied ${instrument ?? ''} move`}>
-      {instrument ? `${instrument} ` : ''}{hasScore ? `±${Math.abs(points).toFixed(0)} pts` : '0-5 pts'}
+    <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number(score)) }}>
+      IV {Number(score).toFixed(1)}
     </span>
   );
 }

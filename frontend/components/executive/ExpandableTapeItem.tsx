@@ -5,6 +5,7 @@
 import { useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp, ChevronRight, ExternalLink, Diff, TrendingDown, Sparkles } from 'lucide-react';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
+import { ivHeatColor } from '../../types/miroshark';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../../lib/riskflow-feed';
 import { useBackend } from '../../lib/backend';
 import { DetailFooter } from '../feed/DetailFooter';
@@ -149,9 +150,11 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
             const dir = inferDirection(alert);
             return <span className="text-[9px] font-semibold" style={{ color: dir === 'Bullish' ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>{dir === 'Bullish' ? '▲' : '▼'}</span>;
           })()}
-          <span className="text-[9px] text-zinc-500 tabular-nums">
-            {alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}pt` : '0-5pt'}
-          </span>
+          {(alert as any).ivScore != null && (
+            <span className="text-[9px] font-mono font-bold tabular-nums" style={{ color: ivHeatColor(Number((alert as any).ivScore)) }}>
+              IV {Number((alert as any).ivScore).toFixed(1)}
+            </span>
+          )}
           <span className={`text-[10px] ${isVivid ? 'text-gray-500' : 'text-gray-600'}`}>
             {timeAgo(alert.publishedAt)}
           </span>
