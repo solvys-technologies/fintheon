@@ -160,7 +160,14 @@ HERMESEOF
     fi
   fi
 
-  # ── 3. JS dependencies ────────────────────────────────────────────
+  # ── 3. MCP servers (pre-cache so npx doesn't cold-start) ────────
+
+  info "Installing MCP servers..."
+
+  npx -y tradingview-mcp-server --version 2>/dev/null && ok "TradingView MCP" || warn "TradingView MCP install failed"
+  npx -y exa-mcp-server --version 2>/dev/null && ok "Exa MCP" || warn "Exa MCP install failed"
+
+  # ── 4. JS dependencies ────────────────────────────────────────────
 
   info "Installing JS dependencies..."
   cd "$FINTHEON_ROOT"
