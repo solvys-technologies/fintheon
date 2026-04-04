@@ -9,18 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: '2026-04-04T06:00:00',
+    date: '2026-04-04T12:00:00',
     agent: 'claude-code',
-    summary: 'T1-T3: Default connectors (RiskFlow/Aquarium/Boardroom + UW MCP), chat icons in Consilium bar, sidebar icons fixed (correct nav targets + mini sessions dropdown via consilium-nav-store).',
+    summary: '[v1.4.0] T1-T4: Default connectors (RiskFlow/Aquarium/Boardroom + UW MCP), chat icons in Consilium bar, sidebar icons fixed (correct nav + mini sessions popover), SessionsDropdown replaces full-screen modal.',
     files: [
       'frontend/types/mcp.ts',
       'frontend/lib/internalConnectors.ts',
       'frontend/lib/consilium-nav-store.ts',
       'frontend/hooks/useMcpConnectors.ts',
       'frontend/components/chat/McpConnectorPopup.tsx',
-      'frontend/components/chat/hooks/useHermesChat.ts',
-      'frontend/components/consilium/ConsiliumHub.tsx',
+      'frontend/components/chat/SessionsDropdown.tsx',
+      'frontend/components/chat/ChatHeader.tsx',
       'frontend/components/chat/ChatSidebar.tsx',
+      'frontend/components/ChatInterface.tsx',
+      'frontend/components/consilium/ConsiliumHub.tsx',
       'frontend/components/layout/ChatPanel.tsx',
       'backend-hono/src/routes/mcp/index.ts',
       'backend-hono/src/routes/harper/index.ts',
