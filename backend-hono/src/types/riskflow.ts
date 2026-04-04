@@ -31,6 +31,8 @@ export interface FeedItem {
   source: NewsSource;
   headline: string;
   body?: string;
+  /** Source URL for linking back to original article/tweet */
+  url?: string;
   symbols: string[];
   tags: string[];
   isBreaking: boolean;

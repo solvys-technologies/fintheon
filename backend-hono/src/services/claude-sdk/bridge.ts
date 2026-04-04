@@ -37,6 +37,8 @@ export interface BridgeChatRequest {
   thinkHarder?: boolean
   /** Additional context (e.g. Exa research results) */
   researchContext?: string
+  /** Request ID for cognition events (tool approval gating) */
+  requestId?: string
 }
 
 export interface BridgeStreamEvent {
@@ -81,7 +83,7 @@ export async function isBridgeAvailable(): Promise<boolean> {
  * falls back to per-request spawnClaudeProcess if session is down.
  */
 export function bridgeChat(request: BridgeChatRequest, configOverrides?: Partial<ClaudeSDKConfig>): BridgeChatResult {
-  const { message, history, researchContext, thinkHarder } = request
+  const { message, history, researchContext, thinkHarder, requestId } = request
 
   // Build the prompt with conversation context
   const prompt = buildPrompt(message, history, researchContext)
@@ -106,6 +108,7 @@ export function bridgeChat(request: BridgeChatRequest, configOverrides?: Partial
       () => aborted,
       controller.signal,
       true,
+      requestId,
     )
 
     return {
@@ -213,6 +216,7 @@ async function* wrapVProxyStream(
   isAborted: () => boolean,
   abortSignal: AbortSignal,
   enableTools = false,
+  requestId?: string,
 ): AsyncGenerator<BridgeStreamEvent> {
   const messageId = `vproxy-${Date.now()}`
   let textStarted = false
@@ -225,6 +229,7 @@ async function* wrapVProxyStream(
       maxOutputTokens: 8192,
       abortSignal,
       enableTools,
+      requestId,
     })
 
     for await (const delta of result.textStream) {

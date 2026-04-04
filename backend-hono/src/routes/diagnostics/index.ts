@@ -8,6 +8,8 @@ import { isPollingActive } from '../../services/riskflow/feed-poller.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
 import { initHermesAgent } from '../../services/hermes-handler.js';
 import { createLogger } from '../../lib/logger.js';
+import { triggerReflect, isReflectRunning } from '../../services/autoresearch/reflect-scheduler.js';
+import { getLatestReflectReport } from '../../services/autoresearch/reflect-engine.js';
 
 const log = createLogger('Diagnostics');
 
@@ -237,6 +239,36 @@ export function createDiagnosticsRoutes(): Hono {
       log.warn('Hermes restart failed', { error: detail });
       return c.json({ success: false, message: detail }, 500);
     }
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  REFLECT — news analysis quality self-improvement                   */
+  /* ------------------------------------------------------------------ */
+
+  router.get('/reflect/latest', async (c) => {
+    const report = await getLatestReflectReport();
+    if (!report) {
+      return c.json({ error: 'No REFLECT report available yet' }, 404);
+    }
+    return c.json(report);
+  });
+
+  router.post('/reflect/run', async (c) => {
+    if (isReflectRunning()) {
+      return c.json({ error: 'REFLECT is already running' }, 429);
+    }
+
+    const body = await c.req.json<{ daysBack?: number }>().catch(() => ({ daysBack: 7 }));
+    const daysBack = body.daysBack ?? 7;
+
+    log.info(`Manual REFLECT trigger — ${daysBack} days`);
+
+    // Run async, return immediately
+    triggerReflect(daysBack).catch(err =>
+      log.error('Manual REFLECT failed:', { error: String(err) })
+    );
+
+    return c.json({ status: 'started', daysBack });
   });
 
   return router;

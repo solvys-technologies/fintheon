@@ -14,7 +14,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { HermesAgentRole } from './hermes-service.js'
-import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from './ai/agent-instructions/index.js'
+import { getAgentSystemPrompt, extractSkillTag, buildFeedContext, buildReflectContext } from './ai/agent-instructions/index.js'
 import { buildThoughtBankPromptBlock } from './ai/agent-instructions/thought-bank-awareness.js'
 import { createLogger } from '../lib/logger.js'
 import { getVProxyHealth, isVProxyAnthropicEnabled } from './vproxy/anthropic-client.js'
@@ -418,10 +418,12 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
   const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
   // Inject live RiskFlow headlines so agents can reference real-time data
   const feedContext = await buildFeedContext()
+  // REFLECT context — news analysis quality report (only for Harper standups)
+  const reflectContext = agentInfo.agent === 'harper-cao' ? await buildReflectContext() : ''
   // Cross-agent thought bank awareness — what other agents are thinking
   const agentDisplayName = BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? 'Harper-Opus'
   const thoughtBankBlock = await buildThoughtBankPromptBlock(agentDisplayName)
-  const systemPrompt = basePrompt + feedContext + thoughtBankBlock
+  const systemPrompt = basePrompt + feedContext + reflectContext + thoughtBankBlock
   const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: 'system', content: systemPrompt }
   ]

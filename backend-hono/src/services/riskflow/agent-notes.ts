@@ -120,11 +120,11 @@ async function fetchItemById(itemId: string): Promise<ScoredRow | null> {
   const { data, error } = await sb
     .from('scored_riskflow_items')
     .select('id, headline, body, macro_level, tags, econ_data, sub_scores')
-    .eq('id', itemId)
+    .eq('tweet_id', itemId)
     .single();
 
   if (error) {
-    log.error('Failed to fetch item by id', { itemId, error: error.message });
+    log.error('Failed to fetch item by tweet_id', { itemId, error: error.message });
     return null;
   }
   return data as ScoredRow | null;

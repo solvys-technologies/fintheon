@@ -9,6 +9,59 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-03T23:30:00',
+    agent: 'claude-code',
+    summary: 'REFLECT engine — nightly news analysis quality self-improvement loop. 5 metrics (direction accuracy, score calibration, scoring bias, macro level accuracy, tag coverage), auto-adjustment recommendations, Harper standup integration. Endpoints: GET /diagnostics/reflect/latest, POST /diagnostics/reflect/run. Scheduler runs at 04:00 UTC when ENABLE_REFLECT=true.',
+    files: [
+      'backend-hono/src/services/autoresearch/reflect-engine.ts',
+      'backend-hono/src/services/autoresearch/reflect-scheduler.ts',
+      'backend-hono/src/boot/services.ts',
+      'backend-hono/src/routes/diagnostics/index.ts',
+      'backend-hono/src/services/ai/agent-instructions/index.ts',
+      'backend-hono/src/services/hermes-handler.ts',
+    ],
+  },
+  {
+    date: '2026-04-03T23:00:00',
+    agent: 'claude-code',
+    summary: 'MiroShark Analyst Refactor — Sprint 1+2: Replace gov-official personas with 5 market analyst personas (FlowTrader, VolDesk, MacroPM, CreditAnalyst, RetailSentiment) as primary debate layer. Add headline subject tagging for anti-groupthink routing. Rebuild deliberation pipeline from 3 to 4 phases with full reasoning passthrough (fix lossy extractGovAssessments), convergence detection, devil\'s advocate trigger, and consensus scoring. Gov officials now conditional on geopolitical content. Frontend updated for new phase structure.',
+    files: [
+      'backend-hono/src/services/riskflow/headline-tagger.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+      'backend-hono/src/services/miroshark/miroshark-client.ts',
+      'backend-hono/src/services/miroshark/miroshark-types.ts',
+      'backend-hono/src/services/miroshark/miroshark-seed.ts',
+      'backend-hono/src/services/miroshark/miroshark-service.ts',
+      'backend-hono/src/services/miroshark/miroshark-deliberation.ts',
+      'backend-hono/src/routes/miroshark/handlers.ts',
+      'backend-hono/src/routes/miroshark/index.ts',
+      'frontend/components/miroshark/MiroSharkDebatePanel.tsx',
+    ],
+  },
+  {
+    date: '2026-04-04T02:00:00',
+    agent: 'claude-code',
+    summary: 'Remove implied point scoring from RiskFlow cards, show IV score in footer, fix generate-note ID mismatch (tweet_id), remove sparkle from Generate Note button, add toast on note generation',
+    files: [
+      'frontend/components/feed/RiskFlowDetailCard.tsx',
+      'backend-hono/src/services/riskflow/agent-notes.ts',
+    ],
+  },
+  {
+    date: '2026-04-04T01:00:00',
+    agent: 'claude-code',
+    summary: 'Replace Firecrawl with Exa for commentary scraping — searches X/Twitter via Exa neural search to bypass CLI rate limits. Added POI accounts (Araghchi, IsraeliPM, SecDef, USTreasury, WhiteHouse, VP, ECB). Removed @mendable/firecrawl-js dependency. Updated central-scorer OSINT_ACCOUNTS with POIs.',
+    files: [
+      'backend-hono/src/services/riskflow/commentary-scraper.ts',
+      'backend-hono/src/services/exa-service.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+      'backend-hono/package.json',
+      'backend-hono/.env.example',
+      'backend-hono/.env.template',
+      'SETUP.md',
+    ],
+  },
+  {
     date: '2026-04-03T00:00:00',
     agent: 'claude-code',
     summary: 'Add spring-physics CSS transitions to Consilium dropdowns (stagger), tab content (vertical shift), side panels (width+opacity), and toast notifications (scale+bounce enter)',

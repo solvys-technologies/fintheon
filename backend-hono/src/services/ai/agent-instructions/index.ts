@@ -140,3 +140,41 @@ export async function buildFeedContext(): Promise<string> {
     return ''
   }
 }
+
+/**
+ * Build a REFLECT context block for Harper standup prompts.
+ * Returns the latest news analysis quality report so Harper can flag scoring issues.
+ */
+export async function buildReflectContext(): Promise<string> {
+  try {
+    const { getLatestReflectReport } = await import('../../autoresearch/reflect-engine.js');
+    const report = await getLatestReflectReport();
+    if (!report) return '';
+
+    const criticalCount = report.findings.filter((f: any) => f.severity === 'critical').length;
+    const warningCount = report.findings.filter((f: any) => f.severity === 'warning').length;
+
+    let block = `\n\n## REFLECT — News Analysis Quality Report (${report.generatedAt.slice(0, 10)})`;
+    block += `\n${report.summary}`;
+
+    if (criticalCount > 0 || warningCount > 0) {
+      block += '\n\nFindings:';
+      for (const f of report.findings) {
+        if (f.severity === 'info') continue;
+        block += `\n- [${f.severity.toUpperCase()}] ${f.message} → ${f.recommendation}`;
+      }
+    }
+
+    if (report.adjustments.length > 0) {
+      block += '\n\nRecommended adjustments:';
+      for (const a of report.adjustments) {
+        block += `\n- ${a.parameter}: ${a.reason}`;
+      }
+    }
+
+    block += '\n\nMention any critical REFLECT findings in your standup. If all metrics are healthy, note that scoring quality is on track.';
+    return block;
+  } catch {
+    return '';
+  }
+}

@@ -5,14 +5,16 @@
 import { EventEmitter } from 'events'
 
 export type CognitionStepKind =
-  | 'agent-route'      // Which agent was selected and why
-  | 'context-build'    // Conversation history loaded, context assembled
-  | 'skill-check'      // Skill permission enforcement
-  | 'tool-dispatch'    // External tool call (Exa, Notion, market data)
-  | 'gateway-call'     // OpenRouter (Opus 4.6) API request
-  | 'gateway-fallback' // Gateway failed → local fallback
-  | 'response-ready'   // Full response assembled, streaming begins
-  | 'error'            // Processing error
+  | 'agent-route'           // Which agent was selected and why
+  | 'context-build'         // Conversation history loaded, context assembled
+  | 'skill-check'           // Skill permission enforcement
+  | 'tool-dispatch'         // External tool call (Exa, Notion, market data)
+  | 'tool-approval-needed'  // Tool requires user approval before execution
+  | 'tool-approval-resolved'// User approved or denied a tool request
+  | 'gateway-call'          // OpenRouter (Opus 4.6) API request
+  | 'gateway-fallback'      // Gateway failed → local fallback
+  | 'response-ready'        // Full response assembled, streaming begins
+  | 'error'                 // Processing error
 
 export interface CognitionStep {
   kind: CognitionStepKind

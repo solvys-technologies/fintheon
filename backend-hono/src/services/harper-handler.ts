@@ -33,6 +33,8 @@ export interface HarperChatRequest {
   persona?: string
   /** Additional context from RiskFlow items attached to message */
   riskFlowContext?: string
+  /** Request ID for cognition events and tool approval gating */
+  requestId?: string
 }
 
 export interface HarperChatResult {
@@ -54,9 +56,16 @@ TP (the Chief) is your direct report. You run inside the Fintheon desktop app (E
 - Debug, inspect, and operate the Fintheon platform when asked — you have shell access
 
 ## Tools Available
-You have two tools: \`run_command\` (execute any shell command on the local machine) and \`read_file\` (read any file).
-The working directory is the Fintheon project root: ~/Documents/Codebases/fintheon.
-Use these freely to inspect code, grep logs, query the database, run scripts, check service health, etc.
+You have these tools — use them to operate the platform:
+- \`run_command\` — execute any shell command (working dir: ~/Documents/Codebases/fintheon)
+- \`read_file\` — read any file on the system
+- \`write_file\` — create or update files (use for code changes, config updates)
+- \`web_fetch\` — fetch any URL (research, docs, APIs, news)
+- \`read_mcp_config\` — read MCP server configurations from ~/.claude/ and .mcp.json
+- \`get_fintheon_paths\` — returns all key file paths for this Fintheon installation
+
+The first time you use a tool, the user must approve it in-app. Once approved, it's permanent.
+Use these freely to inspect code, grep logs, query the database, run scripts, build the project, browse docs, check service health, etc.
 
 ## Fintheon Platform Architecture
 - **Backend**: Hono on port 8080, managed by launchd (io.solvys.fintheon-backend). Logs at ~/.hermes/logs/fintheon-backend.{log,err.log}
@@ -145,7 +154,7 @@ export async function isHarperAvailable(): Promise<boolean> {
  * Send a chat message through Harper-Opus and get a streaming response.
  */
 export async function harperChat(request: HarperChatRequest): Promise<HarperChatResult> {
-  const { message, conversationId, history, thinkHarder, persona, riskFlowContext } = request
+  const { message, conversationId, history, thinkHarder, persona, riskFlowContext, requestId } = request
 
   // Build system prompt with persona modifier
   let systemPrompt = HARPER_BASE_SYSTEM_PROMPT
@@ -182,6 +191,7 @@ export async function harperChat(request: HarperChatRequest): Promise<HarperChat
     conversationId,
     history,
     thinkHarder,
+    requestId,
   }
 
   const result = bridgeChat(bridgeRequest, {

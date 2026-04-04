@@ -5,13 +5,21 @@
  * GET  /api/harper/status — check if Claude CLI is available
  */
 
+// [claude-code 2026-04-03] Added tool-decision + permissions endpoints for in-app approval gate
 import { Hono } from 'hono'
 import { createUIMessageStreamResponse } from 'ai'
 import { harperChat, isHarperAvailable, type HarperChatRequest } from '../../services/harper-handler.js'
 import { createRequestCognition } from '../../services/cognition-emitter.js'
 import * as conversationStore from '../../services/ai/conversation-store.js'
 import type { BridgeStreamEvent } from '../../services/claude-sdk/bridge.js'
-import { isVProxyAnthropicEnabled } from '../../services/vproxy/anthropic-client.js'
+import { isVProxyAnthropicEnabled, FINTHEON_PATHS } from '../../services/vproxy/anthropic-client.js'
+import {
+  resolveApproval,
+  getAllPermissions,
+  revokePermission,
+  getPendingApprovals,
+  type ApprovalDecision,
+} from '../../services/tool-approval-store.js'
 
 export function createHarperRoutes() {
   const app = new Hono()
@@ -89,6 +97,7 @@ export function createHarperRoutes() {
         thinkHarder: body.thinkHarder,
         persona: body.persona,
         riskFlowContext: body.riskFlowContext,
+        requestId,
       }
 
       const result = await harperChat(request)
@@ -226,6 +235,40 @@ export function createHarperRoutes() {
         details: error instanceof Error ? error.message : String(error),
       }, 500)
     }
+  })
+
+  // ── Tool Decision (approve/deny pending tool use) ─────────────────────────
+  app.post('/tool-decision', async (c) => {
+    const body = await c.req.json<{ approvalId: string; decision: ApprovalDecision }>()
+    if (!body.approvalId || !['approved', 'denied'].includes(body.decision)) {
+      return c.json({ error: 'approvalId and decision (approved|denied) required' }, 400)
+    }
+
+    const result = await resolveApproval(body.approvalId, body.decision)
+    if (!result.found) {
+      return c.json({ error: 'Approval not found or already resolved' }, 404)
+    }
+
+    return c.json({ ok: true, toolName: result.toolName, decision: body.decision })
+  })
+
+  // ── Permissions CRUD ─────────────────────────────────────────────────────
+  app.get('/permissions', (c) => {
+    return c.json({
+      permissions: getAllPermissions(),
+      pending: getPendingApprovals(),
+    })
+  })
+
+  app.delete('/permissions/:toolName', async (c) => {
+    const toolName = c.req.param('toolName')
+    await revokePermission(toolName)
+    return c.json({ ok: true, revoked: toolName })
+  })
+
+  // ── Fintheon Paths (for frontend display) ────────────────────────────────
+  app.get('/paths', (c) => {
+    return c.json(FINTHEON_PATHS)
   })
 
   return app

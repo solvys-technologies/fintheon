@@ -53,6 +53,7 @@ import { createBulletinRoutes } from './bulletin/index.js';
 import { createSkillsRoutes } from './skills/index.js';
 import { createMemoryRoutes } from './memory/index.js';
 import { createEditorRoutes } from './editor/index.js';
+import { createMcpRoutes } from './mcp/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -103,6 +104,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/predictions', predictionsRoutes);
   // Harper-Opus — Claude CLI chat via SDK bridge (public, local-only)
   app.route('/api/harper', createHarperRoutes());
+  // MCP registry — live read/write of ~/.claude/mcp.json (public, local-only)
+  app.route('/api/mcp', createMcpRoutes());
 
   // Supabase OAuth callback relay — serves HTML that deep-links back to Electron
   app.route('/api/auth/supabase', createAuthCallbackRoute());

@@ -5,6 +5,7 @@ import { useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp, ExternalLink, Sparkles } from 'lucide-react';
 import type { RiskFlowAlert } from '../../lib/riskflow-feed';
 import { inferDirection } from '../../lib/riskflow-feed';
+import { useToast } from '../../contexts/ToastContext';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
 import { BeatMissBadge } from './BeatMissBadge';
 import { DetailFooter } from './DetailFooter';
@@ -55,21 +56,22 @@ function SourceIcon({ source, className }: { source: string; className?: string 
 
 export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDetailCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const { addToast } = useToast();
   const sev = SEVERITY_CONFIG[alert.severity];
   const isHigh = alert.severity === 'high' || alert.severity === 'critical';
   const dir = inferDirection(alert);
   const isBull = dir === 'Bullish';
   const hasEconData = alert.econData && alert.econData.beatMiss;
   const hasSubScores = !!alert.subScores;
-  const pts = alert.pointRange ?? 0;
 
   const handleGenerateNote = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (onGenerateNote) {
       const rawId = alert.id.replace(/^backend-/, '');
       onGenerateNote(rawId);
+      addToast('Generating analyst note...', 'info');
     }
-  }, [alert.id, onGenerateNote]);
+  }, [alert.id, onGenerateNote, addToast]);
 
   return (
     <div
@@ -118,10 +120,12 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
 
         <span className="flex-1" />
 
-        {/* Points */}
-        <span className="text-[10px] text-zinc-500 tabular-nums">
-          {alert.instrument ? `${alert.instrument} ` : ''}{pts > 0 ? `±${pts.toFixed(0)} pts` : '0-5 pts'}
-        </span>
+        {/* IV Score */}
+        {(alert as any).ivScore != null && (
+          <span className="text-[10px] font-mono tabular-nums text-[var(--fintheon-accent)]/70">
+            IV {Number((alert as any).ivScore).toFixed(1)}
+          </span>
+        )}
 
         {/* Priority badge — rounded */}
         <span className={`ml-2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border`}>
@@ -166,7 +170,6 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
                 onClick={handleGenerateNote}
                 className="flex items-center gap-1.5 text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors mb-3 px-1"
               >
-                <Sparkles className="w-3 h-3" />
                 <span>Generate Note +</span>
               </button>
             ) : null}
@@ -215,13 +218,6 @@ export function RiskFlowDetailCard({ alert, seen, onGenerateNote }: RiskFlowDeta
               {(alert as any).ivScore != null && (
                 <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/60">
                   IV {Number((alert as any).ivScore).toFixed(1)}
-                </span>
-              )}
-              {pts !== 0 && (
-                <span className={`text-[9px] font-mono font-bold ${
-                  isBull ? 'text-[var(--fintheon-bullish)]' : 'text-[var(--fintheon-bearish)]'
-                }`}>
-                  ±{Math.abs(pts).toFixed(0)} pts
                 </span>
               )}
             </div>

@@ -17,6 +17,7 @@ export interface RawRiskFlowItem {
   source?: string;
   headline?: string;
   body?: string;
+  url?: string;
   symbols?: string[];
   tags?: string[];
   is_breaking?: boolean;

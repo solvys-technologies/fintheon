@@ -82,6 +82,11 @@ const AGENT_PERSONAS: Record<MiroSharkAgent['role'], { persona: string }> = {
   'middle-east-envoy': { persona: 'Middle East Envoy — de-escalation, ceasefire broker' },
   'trade-rep': { persona: 'US Trade Representative — tariff implementation, trade deals' },
   'trade-advisor': { persona: 'Trade Advisor — protectionist, manufacturing onshoring' },
+  // Market analyst roles (used by analyst debate engine)
+  'flow-analyst': { persona: 'Flow trader — order flow, dark pools, GEX, dealer gamma' },
+  'vol-analyst': { persona: 'Vol desk — volatility surface, term structure, skew' },
+  'macro-analyst': { persona: 'Macro PM — cross-asset, regime detection, FRED' },
+  'credit-analyst': { persona: 'Credit analyst — HY/IG spreads, CDS, leveraged loans' },
 };
 
 function buildEntities(lanes: NarrativeLaneInput[], catalysts: CatalystCardInput[]): MiroSharkEntity[] {

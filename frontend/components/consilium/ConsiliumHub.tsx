@@ -3,7 +3,7 @@
 // [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (Aquarium)
 // [claude-code 2026-03-28] S7: Sanctum dropdown (NarrativeFlow/Aquarium/Timeline) inside Consilium tab bar
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
-import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield, Brain, NotebookText } from 'lucide-react';
+import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield, Brain, BookOpen } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { AgentChattr } from './AgentChattr';
 import { Sanctum } from '../narrative/Sanctum';
@@ -14,12 +14,12 @@ import { NarrativeMap } from '../narrative/NarrativeMap';
 import { NarrativeProvider, useNarrative } from '../../contexts/NarrativeContext';
 import { ApparatusFlowMap } from '../apparatus/ApparatusFlowMap';
 import { BulletinFeed } from '../bulletin/BulletinFeed';
-import { DocumentsView } from '../editor/DocumentsView';
+import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
 import { SharedMemoryPanel } from '../memory/SharedMemoryPanel';
 import { AiLoader } from '../chat/FintheonThread';
 import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/miroshark';
 
-const ChatInterface = lazy(() => import('../ChatInterface'));
+import { ChatSidebar } from '../chat/ChatSidebar';
 const ResearchBoard = lazy(() => import('../research/ResearchBoard'));
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -27,7 +27,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 // Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
 type ConsiliumTab = 'sanctum' | 'chat' | 'boardroom' | 'apparatus';
 type SanctumSubView = 'narratives' | 'aquarium' | 'timeline';
-type BoardroomSubView = 'forum' | 'imperium' | 'agentic-chat' | 'scriptorium';
+type BoardroomSubView = 'forum' | 'imperium' | 'agentic-chat' | 'research';
 type ApparatusSubView = 'desk' | 'fileroom';
 
 // Chat is the only direct button now
@@ -45,7 +45,7 @@ const BOARDROOM_SUB_VIEWS: { id: BoardroomSubView; label: string; subtitle?: str
   { id: 'forum', label: 'Forum', subtitle: 'Team bulletin & chat', icon: MessageSquare },
   { id: 'imperium', label: 'Imperium', subtitle: 'Task command & assignment', icon: Shield },
   { id: 'agentic-chat', label: 'Agentic Chatroom', subtitle: 'Chat with Hermes & CAO', icon: Cpu },
-  { id: 'scriptorium', label: 'Scriptorium', subtitle: 'Document editor', icon: NotebookText },
+  { id: 'research', label: 'Research', subtitle: 'Notion knowledge base', icon: BookOpen },
 ];
 
 const APPARATUS_SUB_VIEWS: { id: ApparatusSubView; label: string; subtitle?: string; icon: typeof Cpu }[] = [
@@ -104,7 +104,7 @@ function usePanelState(key: string, defaultValue: boolean): [boolean, () => void
 }
 
 export function ConsiliumHub() {
-  const { selectedSymbol } = useSettings();
+  const { selectedSymbol, iframeUrls } = useSettings();
   const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
   const [sanctumSubView, setSanctumSubView] = useState<SanctumSubView>('narratives');
   const [boardroomSubView, setBoardroomSubView] = useState<BoardroomSubView>('forum');
@@ -546,9 +546,9 @@ export function ConsiliumHub() {
 
           {/* Chat */}
           {displayedTab === 'chat' && (
-            <Suspense fallback={<AiLoader />}>
-              <ChatInterface surfaceId="chat" />
-            </Suspense>
+            <div className="h-full w-full max-w-3xl mx-auto">
+              <ChatSidebar />
+            </div>
           )}
 
           {/* Boardroom sub-views */}
@@ -561,7 +561,13 @@ export function ConsiliumHub() {
                 </Suspense>
               )}
               {displayedBoardroomSub === 'agentic-chat' && <AgentChattr />}
-              {displayedBoardroomSub === 'scriptorium' && <DocumentsView />}
+              {displayedBoardroomSub === 'research' && (
+                <EmbeddedBrowserFrame
+                  title="Research"
+                  src={iframeUrls.research || 'https://www.notion.so/2db141b0da7d80efa647ee7f6d5153f5'}
+                  className="w-full h-full"
+                />
+              )}
             </>
           )}
 

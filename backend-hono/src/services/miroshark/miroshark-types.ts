@@ -14,9 +14,13 @@ export interface MiroSharkAgent {
   id: string;
   persona: string;
   role: 'macro-strategist' | 'sentiment-analyst' | 'geopolitical-analyst' | 'earnings-analyst' | 'risk-manager' | 'contrarian' | 'fundamentals' | 'sentiment'
-    | 'central-banker' | 'executive' | 'treasury-secretary' | 'foreign-policy' | 'commerce-secretary' | 'middle-east-envoy' | 'trade-rep' | 'trade-advisor';
+    | 'central-banker' | 'executive' | 'treasury-secretary' | 'foreign-policy' | 'commerce-secretary' | 'middle-east-envoy' | 'trade-rep' | 'trade-advisor'
+    | 'flow-analyst' | 'vol-analyst' | 'macro-analyst' | 'credit-analyst';
   narrativeCategories: string[];
 }
+
+/** Which layer produced a deliberation result */
+export type DebateLayer = 'market-analysts' | 'gov-officials';
 
 // ── Deliberation Pipeline Types ─────────────────────────────────────────────
 
@@ -50,15 +54,26 @@ export interface HarperOpusScoring {
   finalBriefing: string;
   actionabilityScore: number;
   contestedTheses: string[];
+  /** Consensus score 0-100. 40-70 = healthy. 90+ = groupthink risk. */
+  consensusScore?: number;
+  /** Number of analysts whose projectedIV diverges by > 1.5 from mean */
+  healthyDisagreementCount?: number;
+  /** Whether the devil's advocate contrarian was triggered */
+  contrarianTriggered?: boolean;
 }
 
-export type DeliberationPhase = 'idle' | 'miroshark-sim' | 'hermes-deliberation' | 'harper-scoring' | 'complete' | 'interrupted';
+export type DeliberationPhase = 'idle' | 'market-analysts' | 'gov-officials' | 'hermes-deliberation' | 'harper-scoring' | 'complete' | 'interrupted';
 
 export interface DeliberationState {
   simulationId: string;
   phase: DeliberationPhase;
   phaseStartedAt: string;
+  /** Phase 1: Market analyst assessments (primary layer) */
+  analystResults?: MarketAnalystAssessment[];
+  /** Phase 1.5: Gov official assessments (conditional — geopolitical content) */
   mirosharkResults?: GovOfficialAssessment[];
+  /** Whether the gov-official phase was skipped */
+  govOfficialsSkipped?: boolean;
   hermesResults?: HermesDeliberation[];
   harperScoring?: HarperOpusScoring;
   userInjection?: string;
@@ -152,6 +167,27 @@ export interface MiroSharkReport {
   generatedAt: string;
   briefing?: MiroSharkBriefing;
   contextSnapshot?: SimulationContext;
+  /** Which debate layer produced this report */
+  debateLayer?: DebateLayer;
+  /** Whether the gov-official layer was also run (geopolitical content detected) */
+  govOfficialReport?: MiroSharkReport;
+}
+
+// ── Market Analyst Assessment (Sprint 2 deliberation) ──────────────────────
+
+export interface MarketAnalystAssessment {
+  agentId: string;
+  name: string;
+  title: string;
+  role: string;
+  subjects: string[];
+  assessment: string;
+  confidence: number;
+  keyConcern: string;
+  projectedIVScore: number;
+  regimeShiftProbability: number;
+  categoryScores: MiroSharkCategoryScore[];
+  headlineCount: number;
 }
 
 export interface MiroSharkPrediction {

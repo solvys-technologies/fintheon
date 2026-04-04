@@ -131,6 +131,27 @@ function normalizeTweet(raw: any): TwitterCliTweet | null {
   };
 }
 
+/**
+ * Fetch the authenticated user's bookmarks.
+ * Command: twitter bookmarks --json [-n N]
+ */
+export async function fetchBookmarks(
+  opts?: { limit?: number }
+): Promise<TwitterCliTweet[]> {
+  const args = ['bookmarks', '--json'];
+  if (opts?.limit) args.push('-n', String(opts.limit));
+
+  const result = await execFileNoThrow(TWITTER_BIN, args, { timeout: 20_000 });
+  if (!result || result.exitCode !== 0 || !result.stdout.trim()) {
+    if (result?.stderr) {
+      console.warn('[TwitterCli] fetchBookmarks stderr:', result.stderr.slice(0, 200));
+    }
+    return [];
+  }
+
+  return parseTweetJson(result.stdout);
+}
+
 /** Normalize Twitter date string ("Thu Mar 10 12:00:00 +0000 2026") to ISO */
 function normalizeDate(dateStr: string): string {
   try {

@@ -69,7 +69,7 @@ These are embedded in `.env.example` with production defaults:
 - `DATABASE_URL` / `NEON_DATABASE_URL` — app uses in-memory fallback automatically
 - `SUPABASE_SERVICE_ROLE_KEY` — only for production multi-user auth
 - `NOTION_API_KEY` — legacy, migrating away
-- `EXA_API_KEY`, `FRED_API_KEY`, `FIRECRAWL_API_KEY` — optional research APIs
+- `EXA_API_KEY`, `FRED_API_KEY` — optional research APIs (Exa replaces Firecrawl)
 
 ### Optional Variables
 

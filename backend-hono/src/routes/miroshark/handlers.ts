@@ -16,7 +16,7 @@ import {
   getDeliberationState,
   injectUserTake,
 } from '../../services/miroshark/miroshark-service.js';
-import { getGovOfficials } from '../../services/miroshark/miroshark-client.js';
+import { getGovOfficials, getMarketAnalysts } from '../../services/miroshark/miroshark-client.js';
 import { assembleSimulationContext } from '../../services/miroshark/miroshark-context.js';
 import { isSkillEnabled } from '../../config/feature-flags.js';
 import type { SanctumPreset } from '../../services/miroshark/miroshark-types.js';
@@ -233,4 +233,12 @@ export async function handleGetOfficials(c: Context) {
   if (blocked) return blocked;
 
   return c.json({ officials: getGovOfficials() });
+}
+
+/** GET /analysts — list of market analyst agent metadata */
+export async function handleGetAnalysts(c: Context) {
+  const blocked = checkEnabled(c);
+  if (blocked) return blocked;
+
+  return c.json({ analysts: getMarketAnalysts() });
 }

@@ -1,101 +1,9 @@
-// [claude-code 2026-03-23] T3: Hook for MCP connector state — removed alpha-vantage, twitter-cli→riskflow, playwright always-on
+// [claude-code 2026-04-03] Rewritten: fetch live MCP config from backend (reads ~/.claude/mcp.json)
 import { useState, useEffect, useCallback } from 'react';
-import type { McpServerConfig, McpServerId, McpServerListResponse } from '../types/mcp';
+import type { McpServerConfig, McpServerId } from '../types/mcp';
 import { API_BASE_URL } from '../components/chat/constants';
 
 const STORAGE_KEY = 'fintheon:mcp-active-connectors';
-
-/** Static fallback when T1 backend routes are not yet available */
-const DEFAULT_SERVERS: McpServerConfig[] = [
-  {
-    id: 'exa',
-    name: 'Exa Search',
-    description: 'Neural web search for financial research',
-    transport: 'stdio',
-    command: 'npx',
-    args: ['-y', '@modelcontextprotocol/server-exa'],
-    enabled: true,
-    installed: true,
-    requiresApiKey: true,
-    apiKeyEnvVar: 'EXA_API_KEY',
-    hasApiKey: true,
-    toolCount: 3,
-    category: 'search',
-  },
-  {
-    id: 'notion',
-    name: 'Notion',
-    description: 'Trade ideas, daily P&L, and meeting notes',
-    transport: 'stdio',
-    command: 'npx',
-    args: ['-y', '@modelcontextprotocol/server-notion'],
-    enabled: true,
-    installed: true,
-    requiresApiKey: true,
-    apiKeyEnvVar: 'NOTION_API_KEY',
-    hasApiKey: true,
-    toolCount: 8,
-    category: 'productivity',
-  },
-  {
-    id: 'yahoo-finance',
-    name: 'Yahoo Finance',
-    description: 'Real-time quotes, options chain, fundamentals',
-    transport: 'stdio',
-    command: 'npx',
-    args: ['-y', 'mcp-yahoo-finance'],
-    enabled: true,
-    installed: true,
-    requiresApiKey: false,
-    hasApiKey: true,
-    toolCount: 12,
-    category: 'data',
-  },
-  {
-    id: 'unusual-whales',
-    name: 'Unusual Whales',
-    description: 'Dark pool flow, congressional trades, options sweeps',
-    transport: 'stdio',
-    command: 'npx',
-    args: ['-y', 'mcp-unusual-whales'],
-    enabled: true,
-    installed: true,
-    requiresApiKey: true,
-    apiKeyEnvVar: 'UNUSUAL_WHALES_API_KEY',
-    hasApiKey: false,
-    toolCount: 15,
-    category: 'data',
-  },
-  {
-    id: 'riskflow',
-    name: 'RiskFlow',
-    description: 'Live news headlines, macro events, and sentiment from the RiskFlow feed',
-    transport: 'stdio',
-    command: 'internal',
-    args: [],
-    enabled: false,
-    installed: true,
-    requiresApiKey: false,
-    hasApiKey: true,
-    toolCount: 4,
-    category: 'data',
-  },
-  {
-    id: 'playwright',
-    name: 'Playwright Browser',
-    description: 'Headless browser for scraping and screenshots',
-    transport: 'stdio',
-    command: 'npx',
-    args: ['-y', '@playwright/mcp'],
-    enabled: true,
-    installed: true,
-    requiresApiKey: false,
-    hasApiKey: true,
-    toolCount: 20,
-    category: 'browser',
-    locked: true,
-  },
-];
 
 export function useMcpConnectors() {
   const [servers, setServers] = useState<McpServerConfig[]>([]);
@@ -105,46 +13,69 @@ export function useMcpConnectors() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
+  // Fetch live config from backend
+  const fetchServers = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/mcp`);
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json() as { servers: McpServerConfig[] };
+      const fetched = data.servers ?? [];
+      setServers(fetched);
 
-    /** Ensure locked connectors are always in the active set */
-    const ensureLocked = (list: McpServerConfig[], ids: McpServerId[]): McpServerId[] => {
-      const lockedIds = list.filter((s) => s.locked && s.enabled).map((s) => s.id);
-      const merged = new Set(ids);
-      for (const id of lockedIds) merged.add(id);
-      return Array.from(merged);
-    };
-
-    // T1 backend MCP routes not yet deployed — use static defaults directly
-    // to avoid 404 network noise on every page load
-    if (!cancelled) {
-      setServers(DEFAULT_SERVERS);
-      if (!localStorage.getItem(STORAGE_KEY)) {
-        setActiveIds(ensureLocked(DEFAULT_SERVERS, DEFAULT_SERVERS.filter((s) => s.enabled).map((s) => s.id)));
-      } else {
-        setActiveIds((prev) => ensureLocked(DEFAULT_SERVERS, prev));
-      }
+      // Sync activeIds with server enabled state (backend is source of truth)
+      const enabledIds = fetched.filter(s => s.enabled).map(s => s.id);
+      // Ensure locked servers are always active
+      const lockedIds = fetched.filter(s => s.locked && s.enabled).map(s => s.id);
+      const merged = new Set([...enabledIds, ...lockedIds]);
+      const next = Array.from(merged) as McpServerId[];
+      setActiveIds(next);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Backend unavailable — keep whatever we have
+    } finally {
       setLoading(false);
     }
-
-    return () => { cancelled = true; };
   }, []);
 
-  const toggle = useCallback((id: McpServerId, enabled: boolean) => {
+  useEffect(() => {
+    fetchServers();
+  }, [fetchServers]);
+
+  const toggle = useCallback(async (id: McpServerId, enabled: boolean) => {
     // Locked connectors can't be toggled
     const server = servers.find((s) => s.id === id);
     if (server?.locked) return;
 
+    // Optimistic UI update
     setActiveIds((prev) => {
-      const next = enabled ? [...prev, id] : prev.filter((x) => x !== id);
+      const next = enabled ? [...new Set([...prev, id])] : prev.filter((x) => x !== id);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       return next;
     });
 
-    // TODO: re-enable when T1 backend MCP routes are deployed
-    // fetch(`${API_BASE_URL}/api/mcp/${id}/toggle`, { ... });
-  }, []);
+    setServers((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, enabled } : s))
+    );
 
-  return { servers, activeIds, toggle, loading };
+    // Persist to backend
+    try {
+      await fetch(`${API_BASE_URL}/api/mcp/${id}/toggle`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      });
+    } catch {
+      // Revert on failure
+      setActiveIds((prev) => {
+        const reverted = enabled ? prev.filter((x) => x !== id) : [...prev, id];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(reverted));
+        return reverted;
+      });
+      setServers((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, enabled: !enabled } : s))
+      );
+    }
+  }, [servers]);
+
+  return { servers, activeIds, toggle, loading, refetch: fetchServers };
 }

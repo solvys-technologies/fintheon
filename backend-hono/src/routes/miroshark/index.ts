@@ -7,7 +7,7 @@ import {
   handleSimulate, handleStatus, handleReport, handleInject,
   handleGetContext, handleGetHistory, handleGetLatest,
   handleRollingWindow, handleAutoRunCheck, handleRunningState,
-  handleGetDeliberation, handleInjectTake, handleGetOfficials,
+  handleGetDeliberation, handleInjectTake, handleGetOfficials, handleGetAnalysts,
 } from './handlers.js';
 
 export function createMirosharkRoutes(): Hono {
@@ -28,6 +28,7 @@ export function createMirosharkRoutes(): Hono {
   app.get('/deliberation/:id', handleGetDeliberation);
   app.post('/deliberation/:id/inject', handleInjectTake);
   app.get('/officials', handleGetOfficials);
+  app.get('/analysts', handleGetAnalysts);
 
   return app;
 }

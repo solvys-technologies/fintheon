@@ -7,7 +7,13 @@ export type McpServerId =
   | 'notion'
   | 'unusual-whales'
   | 'yahoo-finance'
-  | 'riskflow';
+  | 'riskflow'
+  | 'framer'
+  | 'close-crm'
+  | 'qc-mcp'
+  | 'tradingview'
+  | 'figma'
+  | (string & {});
 
 export type McpTransport = 'stdio' | 'sse' | 'http';
 
@@ -25,8 +31,10 @@ export interface McpServerConfig {
   apiKeyEnvVar?: string;
   hasApiKey: boolean;
   toolCount?: number;
-  category: 'data' | 'search' | 'browser' | 'productivity' | 'social';
+  category: 'data' | 'search' | 'browser' | 'productivity' | 'social' | 'trading';
   locked?: boolean;
+  source?: 'claude' | 'project';
+  url?: string;
 }
 
 export interface McpRegistryState {

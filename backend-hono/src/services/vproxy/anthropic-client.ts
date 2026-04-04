@@ -1,10 +1,13 @@
+// [claude-code 2026-04-03] Added approval-gated tool factory, web_fetch, write_file, read_mcp_config tools
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText, streamText, tool, stepCountIs } from 'ai'
 import { z } from 'zod'
 import { spawn } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { homedir } from 'node:os'
 import { createLogger } from '../../lib/logger.js'
+import { isToolApproved, requestApproval } from '../tool-approval-store.js'
 
 const log = createLogger('VProxyAnthropic')
 
@@ -168,9 +171,25 @@ export async function generateTextViaVProxy(options: VProxyTextOptions): Promise
   return result.text
 }
 
-// ── Shell tool for Harper CAO ─────────────────────────────────────────────
+// ── Shell + tool infrastructure for Harper CAO ───────────────────────────
 
 const PROJECT_ROOT = resolve(new URL('.', import.meta.url).pathname, '../../..')
+const HOME = homedir()
+
+/** Key file paths Harper and the user should know about */
+export const FINTHEON_PATHS = {
+  projectRoot: PROJECT_ROOT,
+  frontend: resolve(PROJECT_ROOT, 'frontend'),
+  backend: resolve(PROJECT_ROOT, 'backend-hono'),
+  electron: resolve(PROJECT_ROOT, 'electron'),
+  claudeConfig: resolve(HOME, '.claude'),
+  claudeSettings: resolve(HOME, '.claude', 'settings.json'),
+  mcpConfig: resolve(PROJECT_ROOT, '.mcp.json'),
+  mcpConfigVscode: resolve(PROJECT_ROOT, '.vscode', 'mcp.json'),
+  toolPermissions: resolve(HOME, '.fintheon', 'tool-permissions.json'),
+  hermesLogs: resolve(HOME, '.hermes', 'logs'),
+  fintheonData: resolve(HOME, '.fintheon'),
+}
 
 function runShell(command: string, timeoutMs = 30_000): Promise<{ stdout: string; stderr: string; exitCode: number | null }> {
   return new Promise((res) => {
@@ -203,45 +222,195 @@ function runShell(command: string, timeoutMs = 30_000): Promise<{ stdout: string
   })
 }
 
-const harperTools = {
-  run_command: tool({
-    description: 'Run a shell command on the local machine. The working directory is the Fintheon project root. Use this to inspect files, grep code, check logs, run scripts, query the database, or execute any CLI tool.',
-    inputSchema: z.object({
-      command: z.string().describe('The shell command to execute (bash)'),
-    }) as z.ZodType<{ command: string }>,
-    execute: async ({ command }) => {
-      log.info('Harper tool: run_command', { command: command.slice(0, 120) })
-      const result = await runShell(command)
-      return (result.stdout + (result.stderr ? `\n[stderr] ${result.stderr}` : '')).slice(0, 12_000)
-    },
-  }),
-  read_file: tool({
-    description: 'Read the contents of a file from the Fintheon codebase or system. Returns the full text content.',
-    inputSchema: z.object({
-      path: z.string().describe('Absolute path or path relative to the Fintheon project root'),
-    }) as z.ZodType<{ path: string }>,
-    execute: async ({ path: filePath }) => {
-      const abs = filePath.startsWith('/') ? filePath : resolve(PROJECT_ROOT, filePath)
-      log.info('Harper tool: read_file', { path: abs })
-      try {
-        const content = await readFile(abs, 'utf8')
-        return content.slice(0, 20_000) + (content.length > 20_000 ? '\n[truncated]' : '')
-      } catch (err) {
-        return `Error: ${err instanceof Error ? err.message : String(err)}`
-      }
-    },
-  }),
+/**
+ * Wraps a tool execute function with the approval gate.
+ * If the tool is permanently approved, executes immediately.
+ * Otherwise, emits a cognition event and waits for user decision.
+ */
+async function withApprovalGate<T>(
+  requestId: string,
+  toolName: string,
+  toolInput: Record<string, unknown>,
+  description: string,
+  executeFn: () => Promise<T>,
+): Promise<T | string> {
+  // Check permanent permission
+  if (isToolApproved(toolName)) {
+    return executeFn()
+  }
+
+  // Request approval and wait
+  const decision = await requestApproval(requestId, toolName, toolInput, description)
+
+  if (decision === 'denied') {
+    return `[Permission denied] User denied ${toolName}. Do not retry this tool.`
+  }
+
+  return executeFn()
+}
+
+/**
+ * Create Harper tools bound to a specific requestId for approval gating.
+ * Each chat request gets its own tool set so approvals route correctly.
+ */
+export function createHarperTools(requestId: string) {
+  return {
+    run_command: tool({
+      description: 'Run a shell command on the local machine. The working directory is the Fintheon project root. Use this to inspect files, grep code, check logs, run scripts, query the database, build the project, or execute any CLI tool.',
+      inputSchema: z.object({
+        command: z.string().describe('The shell command to execute (bash)'),
+      }) as z.ZodType<{ command: string }>,
+      execute: async ({ command }) => {
+        log.info('Harper tool: run_command', { command: command.slice(0, 120) })
+        return withApprovalGate(
+          requestId,
+          'run_command',
+          { command },
+          `Run shell command: ${command.slice(0, 200)}`,
+          async () => {
+            const result = await runShell(command)
+            return (result.stdout + (result.stderr ? `\n[stderr] ${result.stderr}` : '')).slice(0, 12_000)
+          },
+        )
+      },
+    }),
+
+    read_file: tool({
+      description: 'Read the contents of a file from the Fintheon codebase or system. Returns the full text content.',
+      inputSchema: z.object({
+        path: z.string().describe('Absolute path or path relative to the Fintheon project root'),
+      }) as z.ZodType<{ path: string }>,
+      execute: async ({ path: filePath }) => {
+        const abs = filePath.startsWith('/') ? filePath : resolve(PROJECT_ROOT, filePath)
+        log.info('Harper tool: read_file', { path: abs })
+        return withApprovalGate(
+          requestId,
+          'read_file',
+          { path: abs },
+          `Read file: ${abs}`,
+          async () => {
+            try {
+              const content = await readFile(abs, 'utf8')
+              return content.slice(0, 20_000) + (content.length > 20_000 ? '\n[truncated]' : '')
+            } catch (err) {
+              return `Error: ${err instanceof Error ? err.message : String(err)}`
+            }
+          },
+        )
+      },
+    }),
+
+    write_file: tool({
+      description: 'Write content to a file. Use this to create or update files in the Fintheon codebase.',
+      inputSchema: z.object({
+        path: z.string().describe('Absolute path or path relative to the Fintheon project root'),
+        content: z.string().describe('The content to write'),
+      }) as z.ZodType<{ path: string; content: string }>,
+      execute: async ({ path: filePath, content }) => {
+        const abs = filePath.startsWith('/') ? filePath : resolve(PROJECT_ROOT, filePath)
+        log.info('Harper tool: write_file', { path: abs, contentLen: content.length })
+        return withApprovalGate(
+          requestId,
+          'write_file',
+          { path: abs, contentLength: content.length },
+          `Write file: ${abs} (${content.length} chars)`,
+          async () => {
+            try {
+              await writeFile(abs, content, 'utf8')
+              return `Successfully wrote ${content.length} chars to ${abs}`
+            } catch (err) {
+              return `Error: ${err instanceof Error ? err.message : String(err)}`
+            }
+          },
+        )
+      },
+    }),
+
+    web_fetch: tool({
+      description: 'Fetch a URL and return the text content. Use this to browse the internet, read documentation, check APIs, or research topics.',
+      inputSchema: z.object({
+        url: z.string().describe('The URL to fetch'),
+        maxChars: z.number().optional().describe('Max characters to return (default 15000)'),
+      }) as z.ZodType<{ url: string; maxChars?: number }>,
+      execute: async ({ url, maxChars }) => {
+        const limit = maxChars ?? 15_000
+        log.info('Harper tool: web_fetch', { url })
+        return withApprovalGate(
+          requestId,
+          'web_fetch',
+          { url },
+          `Fetch URL: ${url}`,
+          async () => {
+            try {
+              const resp = await fetch(url, {
+                headers: { 'User-Agent': 'Fintheon/Harper-Opus (research agent)' },
+                signal: AbortSignal.timeout(15_000),
+              })
+              if (!resp.ok) return `HTTP ${resp.status}: ${resp.statusText}`
+              const text = await resp.text()
+              return text.slice(0, limit) + (text.length > limit ? '\n[truncated]' : '')
+            } catch (err) {
+              return `Fetch error: ${err instanceof Error ? err.message : String(err)}`
+            }
+          },
+        )
+      },
+    }),
+
+    read_mcp_config: tool({
+      description: 'Read the MCP (Model Context Protocol) server configuration from the local machine. Returns configs from ~/.claude/settings.json, .mcp.json, and .vscode/mcp.json.',
+      inputSchema: z.object({}) as z.ZodType<Record<string, never>>,
+      execute: async () => {
+        log.info('Harper tool: read_mcp_config')
+        return withApprovalGate(
+          requestId,
+          'read_mcp_config',
+          {},
+          'Read MCP server configuration files',
+          async () => {
+            const results: Record<string, string> = {}
+            const paths = [
+              { key: 'claude_settings', path: FINTHEON_PATHS.claudeSettings },
+              { key: 'project_mcp', path: FINTHEON_PATHS.mcpConfig },
+              { key: 'vscode_mcp', path: FINTHEON_PATHS.mcpConfigVscode },
+            ]
+            for (const { key, path } of paths) {
+              try {
+                results[key] = await readFile(path, 'utf8')
+              } catch {
+                results[key] = '(not found)'
+              }
+            }
+            return JSON.stringify(results, null, 2).slice(0, 20_000)
+          },
+        )
+      },
+    }),
+
+    get_fintheon_paths: tool({
+      description: 'Returns the key file paths for the Fintheon installation on this device. Use this to know where config, logs, data, and source files live.',
+      inputSchema: z.object({}) as z.ZodType<Record<string, never>>,
+      execute: async () => {
+        // No approval needed — read-only, no side effects
+        return JSON.stringify(FINTHEON_PATHS, null, 2)
+      },
+    }),
+  }
 }
 
 // ── Stream (with optional tools) ──────────────────────────────────────────
 
-export function streamTextViaVProxy(options: VProxyStreamOptions & { enableTools?: boolean }): { textStream: AsyncIterable<string> } {
+export function streamTextViaVProxy(options: VProxyStreamOptions & { enableTools?: boolean; requestId?: string }): { textStream: AsyncIterable<string> } {
+  const tools = options.enableTools && options.requestId
+    ? createHarperTools(options.requestId)
+    : undefined
+
   return streamText({
     model: getClient(options.model),
     system: options.systemPrompt,
     prompt: options.prompt,
     maxOutputTokens: options.maxOutputTokens ?? 8192,
     abortSignal: options.abortSignal,
-    ...(options.enableTools ? { tools: harperTools, stopWhen: stepCountIs(10) } : {}),
+    ...(tools ? { tools, stopWhen: stepCountIs(10) } : {}),
   }) as { textStream: AsyncIterable<string> }
 }

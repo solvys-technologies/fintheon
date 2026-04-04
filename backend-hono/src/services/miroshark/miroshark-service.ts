@@ -6,7 +6,7 @@
 import type { MiroSharkPrediction, MiroSharkReport, MiroSharkSimulation, MiroSharkInjection, SanctumPreset, SimulationContext, EconPrintStat, RollingWindowQuery, AggregatedRollingData, MiroSharkRunSummary, MiroSharkBriefing, DeliberationState } from './miroshark-types.js';
 // @ts-ignore — T1 creates this file
 import { resetRunningState } from './miroshark-reactive.js';
-import { isMiroSharkEnabled, runDebate } from './miroshark-client.js';
+import { isMiroSharkEnabled, runDebate, runMarketAnalystDebate, hasGeopoliticalContent } from './miroshark-client.js';
 import { convertNarrativeToSeed } from './miroshark-seed.js';
 import { assembleSimulationContext } from './miroshark-context.js';
 import { generateBriefing } from './miroshark-briefing.js';
@@ -103,8 +103,19 @@ export async function startPrediction(
 
     seedCache.set(simId, seed);
 
-    const report = await runDebate(seed);
+    // Primary: market analyst debate (5 personas with subject-filtered headlines)
+    const report = await runMarketAnalystDebate(seed);
     report.simulationId = simId;
+    report.debateLayer = 'market-analysts';
+
+    // Conditional: gov-official debate for geopolitical content
+    const geoActive = await hasGeopoliticalContent();
+    if (geoActive) {
+      console.log('[MiroShark] Geopolitical content detected — running gov-official second layer');
+      const govReport = await runDebate(seed);
+      govReport.debateLayer = 'gov-officials';
+      report.govOfficialReport = govReport;
+    }
 
     // Generate briefing
     const briefing = generateBriefing(report, context);
@@ -191,8 +202,9 @@ export async function injectScenarioVariable(
       ],
     };
 
-    const report = await runDebate(modifiedSeed);
+    const report = await runMarketAnalystDebate(modifiedSeed);
     report.simulationId = simId;
+    report.debateLayer = 'market-analysts';
 
     const prediction = reportToPrediction(simId, report);
     predictionCache.set(simId, prediction);

@@ -13,7 +13,7 @@ const SHORTCUTS = [
   { keys: '\u2318\u21E71', label: 'Dashboard' },
   { keys: '\u2318\u21E72', label: 'Sanctum' },
   { keys: '\u2318\u21E73', label: 'RiskFlow' },
-  { keys: '\u2318\u21E74', label: 'Scriptorium' },
+  { keys: '\u2318\u21E74', label: 'Consilium' },
   { keys: '\u2318\u21E75', label: 'Calendar' },
   { keys: '\u2318\u21E76', label: 'Narratives' },
   { keys: '\u2318\u21E77', label: 'Performance' },

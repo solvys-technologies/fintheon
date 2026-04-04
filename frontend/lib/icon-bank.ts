@@ -375,7 +375,6 @@ export const SECTION_ICONS = {
   sanctum:      'window-chart-line',  // Charts & data
   econIntel:    'calendar-days',      // Economic calendar
   consilium:    'msgs',               // Agent council
-  scriptorium:  'pen-writing-4',      // Writing/journal
   missionCtrl:  'gauge-3',            // Dashboard gauges
   apparatus:    'sitemap-4',          // Flow maps
   chat:         'msg-bubble-user',    // AI chat

@@ -12,6 +12,7 @@ interface ExaSearchOptions {
   numResults?: number
   type?: 'auto' | 'neural' | 'keyword'
   useAutoprompt?: boolean
+  includeDomains?: string[]
 }
 
 const EXA_API_URL = 'https://api.exa.ai/search'
@@ -34,24 +35,27 @@ export async function exaSearch(
     return []
   }
 
-  const { numResults = 5, type = 'auto', useAutoprompt = true } = options
+  const { numResults = 5, type = 'auto', useAutoprompt = true, includeDomains } = options
 
   try {
+    const body: Record<string, unknown> = {
+      query,
+      numResults,
+      type,
+      useAutoprompt,
+      contents: {
+        text: { maxCharacters: 500 },
+      },
+    }
+    if (includeDomains?.length) body.includeDomains = includeDomains
+
     const response = await fetch(EXA_API_URL, {
       method: 'POST',
       headers: {
         'x-api-key': apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        query,
-        numResults,
-        type,
-        useAutoprompt,
-        contents: {
-          text: { maxCharacters: 500 },
-        },
-      }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(8000),
     })
 

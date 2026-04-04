@@ -10,6 +10,7 @@ import { startEconEnricher } from '../services/cron/econ-enricher.js';
 import { startEconTwitterPoller } from '../services/twitter-cli/index.js';
 import { startExaScheduledMonitor } from '../services/riskflow/exa-scheduled-monitor.js';
 import { initClaudeSDK } from '../services/claude-sdk/process-manager.js';
+import { initToolApprovalStore } from '../services/tool-approval-store.js';
 import { startPersistentSession } from '../services/claude-sdk/session-manager.js';
 import { initHermesAgent, isHermesAvailable } from '../services/hermes-handler.js';
 import {
@@ -27,14 +28,14 @@ import { startCentralScorer } from '../services/riskflow/central-scorer.js';
 import { startIVScoreTicker } from '../services/market-data/iv-score-ticker.js';
 import { initVIXRescore } from '../services/riskflow/vix-rescore.js';
 import { startAgentNotesCron } from '../services/riskflow/agent-notes.js';
-// [2026-03-30] Commentary scraper DISABLED — all headline ingestion now via twitter-cli pipeline
-// The Firecrawl scraper was redundant (FJ requires auth, ForexLive 404'd, ZH only source working)
-// import { startCommentaryScraper } from '../services/riskflow/commentary-scraper.js';
+// [claude-code 2026-04-04] Re-enabled: Exa-powered X scraper bypasses CLI rate limits
+import { startCommentaryScraper } from '../services/riskflow/commentary-scraper.js';
 import { startMarketImpactEnricher } from '../services/cron/market-impact-enricher.js';
 import { startCatalystPromoter } from '../services/riskflow/catalyst-promoter.js';
 import { isComputerUseAvailable } from '../services/skills/tradingview-trade-plan.js';
 import * as projectxService from '../services/projectx-service.js';
 import { startSharedMemoryCleanup } from '../services/peers/shared-memory.js';
+import { startReflectScheduler } from '../services/autoresearch/reflect-scheduler.js';
 
 const log = createLogger('Boot');
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -167,6 +168,9 @@ export async function bootServices(): Promise<void> {
     log.warn('Hermes init failed (non-fatal)', { error: String(err) })
   );
 
+  // Tool approval store (load persistent permissions)
+  initToolApprovalStore().catch(err => log.warn('Tool approval store init failed', { error: String(err) }));
+
   // Claude SDK bridge (non-blocking)
   initClaudeSDK()
     .then(() => startPersistentSession())
@@ -184,10 +188,8 @@ export async function bootServices(): Promise<void> {
   startAgentNotesCron();
   log.info('AgentNotesCron started');
 
-  // [2026-03-30] Commentary scraper DISABLED — replaced by continuous twitter-cli polling
-  // FJ behind auth wall, ForexLive rebranded (404), only ZH worked. All sources now polled via X.
-  // startCommentaryScraper();
-  log.info('CommentaryScraper DISABLED — headlines ingested via twitter-cli continuous polling');
+  startCommentaryScraper();
+  log.info('CommentaryScraper started (Exa X-powered)');
 
   // Market impact enricher (24h — enriches HIGH/CRITICAL scored items with NQ/ES/YM daily close)
   startMarketImpactEnricher();
@@ -213,6 +215,9 @@ export async function bootServices(): Promise<void> {
 
   // Shared memory cleanup cron (30min — expires entries past TTL)
   startSharedMemoryCleanup();
+
+  // REFLECT scheduler (04:00 UTC daily — news analysis quality self-improvement)
+  startReflectScheduler();
 
   log.info('All services initialized');
 }

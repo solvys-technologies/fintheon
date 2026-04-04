@@ -10,6 +10,7 @@ import {
   readUnscoredItems,
   readScoredItems,
   writeScoredItems,
+  writeConsiliumMessage,
   type RawRiskFlowItem,
   type ScoredRiskFlowItem,
 } from '../supabase-service.js';
@@ -22,6 +23,7 @@ import { getInstrumentConfig } from '../iv-scoring-v2.js';
 import { fetchVIX } from '../vix-service.js';
 import { shouldTriggerReactiveAdjustment, adjustScoresForRiskFlow, getRunningState, setRunningState } from '../miroshark/miroshark-reactive.js';
 import { generateNotesForCriticalItems } from './agent-notes.js';
+import { tagHeadlineSubjects } from './headline-tagger.js';
 
 const log = createLogger('CentralScorer');
 
@@ -45,6 +47,14 @@ const DEITAONE_ACCOUNTS = new Set([
 const OSINT_ACCOUNTS = new Set([
   'osintdefender', 'intikinetik',
   'thespectatorindex', 'schizointel', 'menchosint', 'clashreport',
+  // Key POIs — official/government accounts with market-moving weight
+  'aboragchi',       // Abbas Araghchi — Iran FM
+  'israelipm',       // Israeli PM Office
+  'secdef',          // US Secretary of Defense
+  'ustreasury',      // US Treasury
+  'whitehouse',      // White House
+  'vp',              // Vice President
+  'ecb',             // European Central Bank
 ]);
 
 /** Keywords that indicate economic calendar / data releases */
@@ -212,6 +222,7 @@ function rawToFeedItem(raw: RawRiskFlowItem & { id: string }): FeedItem {
     source: normalizeSource(raw.source, raw.headline || '', raw.tags || []),
     headline: raw.headline || '',
     body: raw.body,
+    url: raw.url,
     symbols: raw.symbols || [],
     tags: raw.tags || [],
     isBreaking: raw.is_breaking || false,
@@ -230,6 +241,7 @@ function feedItemToScored(item: FeedItem, rawId: string): ScoredRiskFlowItem {
     source: item.source,
     headline: item.headline,
     body: item.body,
+    url: item.url,
     symbols: item.symbols,
     tags: item.tags,
     is_breaking: item.isBreaking,
@@ -294,6 +306,19 @@ export async function scoringCycle(): Promise<void> {
     for (const item of enrichedItems) {
       if (!item.riskType) {
         item.riskType = classifyRiskType(item.headline, item.tags || []);
+      }
+    }
+
+    // Subject tagging for MiroShark persona routing (anti-groupthink)
+    for (const item of enrichedItems) {
+      const subjectTags = tagHeadlineSubjects(item.headline, item.tags || []);
+      if (subjectTags.length > 0) {
+        if (!item.tags) item.tags = [];
+        // Store subject tags with 'subj:' prefix to distinguish from other tags
+        for (const st of subjectTags) {
+          const prefixed = `subj:${st}`;
+          if (!item.tags.includes(prefixed)) item.tags.push(prefixed);
+        }
       }
     }
 
@@ -376,6 +401,20 @@ export async function scoringCycle(): Promise<void> {
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
 
+    // Push High/Critical items to Consilium so they appear in the agent chat
+    for (const item of enrichedItems) {
+      if (item.macroLevel && item.macroLevel >= 3) {
+        const tier = item.macroLevel === 4 ? 'Critical' : 'High';
+        writeConsiliumMessage({
+          agent_name: 'CentralScorer',
+          agent_role: 'riskflow-scorer',
+          content: `[${tier}] ${item.headline}`,
+          message_type: `RiskFlow-${tier}`,
+          metadata: { source: item.source, itemId: item.id },
+        }).catch((err) => log.warn('Consilium push failed', { error: String(err) }));
+      }
+    }
+
     // S3: Auto-generate agent notes for any critical items that were just scored
     const hasCritical = enrichedItems.some(i => i.macroLevel === 4);
     if (hasCritical) {
@@ -401,6 +440,7 @@ export function scoredToFeedItem(scored: ScoredRiskFlowItem): FeedItem {
     source: normalizeSource(scored.source, scored.headline || '', scored.tags || []),
     headline: scored.headline || '',
     body: scored.body,
+    url: scored.url,
     symbols: scored.symbols || [],
     tags: scored.tags || [],
     isBreaking: scored.is_breaking || false,

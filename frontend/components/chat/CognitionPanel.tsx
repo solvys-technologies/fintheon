@@ -10,6 +10,8 @@ export type CognitionStepKind =
   | 'context-build'
   | 'skill-check'
   | 'tool-dispatch'
+  | 'tool-approval-needed'
+  | 'tool-approval-resolved'
   | 'gateway-call'
   | 'gateway-fallback'
   | 'response-ready'
@@ -31,14 +33,16 @@ interface Props {
 // Icon per step kind — text-based, no colored emojis
 function StepIcon({ kind }: { kind: CognitionStepKind }) {
   const glyphs: Record<CognitionStepKind, string> = {
-    'agent-route':      '→',
-    'context-build':    '≡',
-    'skill-check':      '✓',
-    'tool-dispatch':    '⊙',
-    'gateway-call':     '⇌',
-    'gateway-fallback': '↩',
-    'response-ready':   '◆',
-    'error':            '✕',
+    'agent-route':           '→',
+    'context-build':         '≡',
+    'skill-check':           '✓',
+    'tool-dispatch':         '⊙',
+    'tool-approval-needed':  '⚑',
+    'tool-approval-resolved':'✓',
+    'gateway-call':          '⇌',
+    'gateway-fallback':      '↩',
+    'response-ready':        '◆',
+    'error':                 '✕',
   }
   return (
     <span className="text-[var(--fintheon-accent)] font-mono text-[10px] w-3 shrink-0 select-none">
