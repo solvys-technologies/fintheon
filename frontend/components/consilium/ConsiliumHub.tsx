@@ -5,6 +5,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
 import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield, Brain, BookOpen } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useConsiliumNav } from '../../lib/consilium-nav-store';
 import { AgentChattr } from './AgentChattr';
 import { Sanctum } from '../narrative/Sanctum';
 import { TimelinePanel } from '../narrative/TimelinePanel';
@@ -152,6 +153,9 @@ export function ConsiliumHub() {
     return () => document.removeEventListener('mousedown', handler);
   }, [sanctumDropdownOpen, boardroomDropdownOpen, apparatusDropdownOpen]);
 
+  // Consume pending tab requests from external navigation (e.g. ChatPanel sidebar icons)
+  const { pendingTab, clearPending } = useConsiliumNav();
+
   // Tab transition: fade out (150ms) → swap content → fade in (200ms)
   const handleTabChange = useCallback((tab: ConsiliumTab) => {
     if (tab === activeTab && tab !== 'sanctum') return;
@@ -208,6 +212,21 @@ export function ConsiliumHub() {
       setTransitioning(false);
     }, 150);
   }, [activeTab]);
+
+  // Consume pending tab from external navigation (ChatPanel sidebar icons)
+  useEffect(() => {
+    if (!pendingTab) return;
+    clearPending();
+    if (pendingTab === 'chat') {
+      handleTabChange('chat');
+    } else if (pendingTab === 'boardroom') {
+      handleBoardroomSubChange('forum');
+    } else if (pendingTab === 'apparatus') {
+      handleApparatusSubChange('desk');
+    } else if (pendingTab === 'sanctum') {
+      handleSanctumSubChange('narratives');
+    }
+  }, [pendingTab, clearPending, handleTabChange, handleBoardroomSubChange, handleApparatusSubChange, handleSanctumSubChange]);
 
   useEffect(() => {
     return () => { if (transitionRef.current) clearTimeout(transitionRef.current); };
