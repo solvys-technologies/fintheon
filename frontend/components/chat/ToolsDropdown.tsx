@@ -153,11 +153,15 @@ export function ToolsDropdown({
                   {server.requiresApiKey && !server.hasApiKey && (
                     <AlertTriangle size={10} className="text-yellow-500/60 shrink-0" />
                   )}
-                  <Toggle
-                    checked={isActive && canToggle}
-                    onChange={(v) => onToggleConnector(server.id, v)}
-                    disabled={!canToggle}
-                  />
+                  {server.locked ? (
+                    <span className="text-[9px] text-emerald-500/70 font-medium uppercase tracking-wider shrink-0">Always on</span>
+                  ) : (
+                    <Toggle
+                      checked={isActive && canToggle}
+                      onChange={(v) => onToggleConnector(server.id, v)}
+                      disabled={!canToggle}
+                    />
+                  )}
                 </div>
               );
             })}

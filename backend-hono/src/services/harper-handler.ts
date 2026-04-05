@@ -146,6 +146,34 @@ information asymmetry detection. Fast, alert-oriented.`,
 // ── Internal Connector Context Builders ───────────────────────────────────
 
 /**
+ * Build RiskFlow context: injects recent high-macro catalysts so Harper can cite them.
+ * Always-on (locked connector) — gives Harper awareness of the current feed state.
+ */
+async function buildRiskFlowContext(): Promise<string> {
+  try {
+    const { readScoredItems } = await import('./supabase-service.js')
+    const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+    const items = await readScoredItems({ minMacroLevel: 2, limit: 15, since })
+    if (!items.length) return ''
+
+    const lines = items.map((item: any) => {
+      const ts = item.published_at ?? item.created_at ?? ''
+      const src = item.source ?? 'unknown'
+      const sentiment = item.sentiment_direction ?? '—'
+      const macro = item.macro_level ?? '?'
+      return `[${ts}] [L${macro}] [${sentiment}] ${item.headline} (${src})`
+    })
+
+    return `\n\n--- RISKFLOW — Recent Catalysts (last 6h, L2+) ---
+${lines.join('\n')}
+
+You can reference these catalysts by headline when discussing market narratives. To search for more items or insert new catalysts, use the run_command tool to query the scored_riskflow_items table via Supabase CLI or curl localhost:8080/api/riskflow/feed.`
+  } catch {
+    return ''
+  }
+}
+
+/**
  * Build Aquarium context: injects latest MiroShark simulation summary.
  */
 async function buildAquariumContext(): Promise<string> {
@@ -220,6 +248,17 @@ export async function harperChat(request: HarperChatRequest): Promise<HarperChat
   }
 
   // Inject internal connector context based on active connectors
+  if (activeConnectors?.includes('riskflow')) {
+    try {
+      const riskFlowContext2 = await buildRiskFlowContext()
+      if (riskFlowContext2) {
+        systemPrompt += riskFlowContext2
+      }
+    } catch (err) {
+      log.warn('Failed to build RiskFlow context (non-fatal)', { error: String(err) })
+    }
+  }
+
   if (activeConnectors?.includes('aquarium')) {
     try {
       const aquariumContext = await buildAquariumContext()

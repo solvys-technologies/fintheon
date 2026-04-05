@@ -27,15 +27,17 @@ import { isTwitterCliInstalled, pollTwitterForEconNews, getWarmCacheItems } from
 import { estimatePoints, shouldUncapNarrativePressure } from '../market-data/point-estimator.js';
 import { fetchVIX } from '../vix-service.js';
 import { createLogger } from '../../lib/logger.js';
-import { writeRawItems, readScoredItems, type RawRiskFlowItem, type ScoredRiskFlowItem } from '../supabase-service.js';
+import { writeRawItems, type RawRiskFlowItem } from '../supabase-service.js';
 import { isSupabaseConfigured } from '../../config/supabase.js';
-import { scoredToFeedItem } from './central-scorer.js';
 import { assignMacroLevel } from '../../utils/assign-macro-level.js';
 import { extractFJEmojiFromText, fjTierFromEmoji } from '../twitter-cli/fj-emoji-filter.js';
+import {
+  getFeedCache, isCacheStale, getMaxFeedItems,
+  warmCacheFromDB, updateFeedCache,
+} from './feed-cache.js';
+import { applyFilters, generateMockFeed } from './feed-filters.js';
 
 const log = createLogger('RiskFlow');
-// [claude-code 2026-04-01] Bumped from 100 → 500. All scored items should be accessible.
-const MAX_FEED_ITEMS = 500;
 const isDev = process.env.NODE_ENV !== 'production';
 const ALLOW_MOCK_FALLBACK = process.env.RISKFLOW_ALLOW_MOCK_FALLBACK === 'true';
 
@@ -73,17 +75,6 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
     published_at: item.publishedAt,
     submitted_by: 'feed-service',
   };
-}
-
-// In-memory cache — seeded from scored DB on boot, then re-synced periodically from DB.
-let feedCache: FeedItem[] | null = null;
-let lastCacheRefreshMs = 0;
-const CACHE_REFRESH_INTERVAL_MS = 120_000; // Re-sync from DB every 2 minutes
-
-function sortFeedItems(items: FeedItem[]): FeedItem[] {
-  return [...items].sort((a, b) =>
-    new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-  );
 }
 
 function normalizeIvScore(score: number): number {
@@ -132,42 +123,8 @@ function countUrgencySignals(item: FeedItem, analyzed: AnalyzedHeadline): number
   return signals;
 }
 
-/**
- * Cold-start cache warm from scored_riskflow_items.
- * Called during boot so first feed request is never empty if DB already has data.
- */
-async function warmCacheFromDB(): Promise<void> {
-  try {
-    const scored = await readScoredItems({ limit: 200 });
-    if (scored.length === 0) return;
-
-    const items = sortFeedItems(scored.map(scoredToFeedItem)).slice(0, MAX_FEED_ITEMS);
-    feedCache = items;
-    lastCacheRefreshMs = Date.now();
-    log.info(`[FeedService] Cache synced with ${items.length} items from DB`);
-  } catch (err) {
-    log.warn('[FeedService] Cold-start seed failed (non-fatal)', { error: String(err) });
-  }
-}
-
-// Backward-compatible export used by existing boot initialization.
-export async function seedCacheFromDb(): Promise<void> {
-  await warmCacheFromDB();
-}
-
-/**
- * Write-through cache update used by pollers after successful enrichment cycles.
- * Empty updates are ignored so warm cache is never replaced with [].
- */
-export function updateFeedCache(items: FeedItem[]): void {
-  if (items.length === 0) return;
-
-  const nextItems = sortFeedItems(items).slice(0, MAX_FEED_ITEMS);
-  feedCache = nextItems;
-  lastCacheRefreshMs = Date.now();
-  log.info(`[FeedService] Cache updated with ${nextItems.length} items`);
-}
-
+// Re-export cache lifecycle functions for consumers that import from feed-service
+export { seedCacheFromDb, updateFeedCache } from './feed-cache.js';
 
 /**
  * Map RiskFlow NewsSource to Analysis NewsSource
@@ -358,80 +315,6 @@ export async function enrichFeedWithAnalysis(items: FeedItem[]): Promise<FeedIte
   return enriched;
 }
 
-/**
- * Apply filters to feed items
- */
-function applyFilters(items: FeedItem[], filters: FeedFilters): FeedItem[] {
-  let filtered = [...items];
-
-  if (filters.sources?.length) {
-    filtered = filtered.filter(item => filters.sources!.includes(item.source));
-  }
-
-  if (filters.symbols?.length) {
-    const symbolSet = new Set(filters.symbols.map(s => s.toUpperCase()));
-    filtered = filtered.filter(item =>
-      item.symbols.some(s => symbolSet.has(s.toUpperCase()))
-    );
-  }
-
-  if (filters.tags?.length) {
-    const tagSet = new Set(filters.tags.map(t => t.toUpperCase()));
-    filtered = filtered.filter(item =>
-      item.tags.some(t => tagSet.has(t.toUpperCase()))
-    );
-  }
-
-  if (filters.breakingOnly) {
-    filtered = filtered.filter(item => item.isBreaking);
-  }
-
-  if (filters.minIvScore !== undefined) {
-    filtered = filtered.filter(item => (item.ivScore ?? 0) >= filters.minIvScore!);
-  }
-
-  // Filter by macro level (1-4 scale)
-  if (filters.minMacroLevel !== undefined) {
-    filtered = filtered.filter(item => (item.macroLevel ?? 1) >= filters.minMacroLevel!);
-  }
-
-  // [claude-code 2026-04-01] Strip foreign economic DATA prints (CPI, PPI, GDP, PMI, etc.)
-  // Keep foreign commentary, geopolitical, rate decisions, and persons of interest.
-  filtered = filtered.filter(item => !isForeignEconPrint(item.headline));
-
-  return filtered;
-}
-
-// Foreign country prefixes that appear before econ data keywords
-const FOREIGN_PREFIXES = [
-  'french', 'france', 'german', 'euro area', 'eurozone', 'japanese',
-  'japan', 'chinese', 'china', 'british', 'uk ', 'canadian', 'canada',
-  'swiss', 'australian', 'australia', 'brazilian', 'brazil', 'indian',
-  'india', 'mexican', 'mexico', 'spanish', 'spain', 'italian', 'italy',
-  'swedish', 'sweden', 'norwegian', 'norway', 'korean', 'korea',
-  'turkish', 'new zealand', 'south african',
-];
-
-// Econ data keywords — if headline has FOREIGN_PREFIX + one of these, it's foreign econ data
-const ECON_DATA_KEYWORDS = [
-  'cpi', 'ppi', 'gdp', 'pmi', 'hicp', 'employment', 'unemployment',
-  'retail sales', 'trade balance', 'current account', 'industrial production',
-  'consumer confidence', 'business confidence', 'housing', 'home sales',
-  'inflation', 'deflation', 'wage', 'payroll', 'manufacturing',
-  'services pmi', 'composite pmi', 'factory orders', 'construction',
-  'actual', 'forecast', 'previous', 'revised',
-  'foreign bond investment', 'foreign investment',
-  'service ppi', 'public deficit',
-];
-
-function isForeignEconPrint(headline: string): boolean {
-  const lower = headline.toLowerCase();
-  // Must match a foreign prefix AND an econ data keyword
-  const hasForeignPrefix = FOREIGN_PREFIXES.some(p => lower.includes(p));
-  if (!hasForeignPrefix) return false;
-  const hasEconKeyword = ECON_DATA_KEYWORDS.some(k => lower.includes(k));
-  return hasEconKeyword;
-}
 
 /**
  * Fetch fresh feed from twitter-cli + economic prints + Polymarket odds
@@ -469,72 +352,6 @@ async function fetchFreshFeed(): Promise<FeedItem[]> {
 }
 
 /**
- * Generate mock feed for development
- */
-function generateMockFeed(): FeedItem[] {
-  const now = new Date();
-  const mockItems: FeedItem[] = [
-    {
-      id: 'mock-1',
-      source: 'FinancialJuice',
-      headline: 'BREAKING: Fed signals potential rate cut in March meeting',
-      body: 'Federal Reserve officials indicate openness to rate cuts amid cooling inflation data.',
-      symbols: ['ES', 'NQ', 'SPY'],
-      tags: ['FED', 'FOMC', 'RATES'],
-      isBreaking: true,
-      urgency: 'immediate',
-      publishedAt: new Date(now.getTime() - 5 * 60_000).toISOString(),
-    },
-    {
-      id: 'mock-2',
-      source: 'OSINTSources',
-      headline: 'CPI comes in at 2.9% YoY, below expectations of 3.1%',
-      body: 'Consumer Price Index shows continued disinflation trend.',
-      symbols: ['ES', 'NQ', 'TLT'],
-      tags: ['CPI', 'INFLATION'],
-      isBreaking: true,
-      urgency: 'immediate',
-      ivScore: 8.5,
-      publishedAt: new Date(now.getTime() - 15 * 60_000).toISOString(),
-    },
-    {
-      id: 'mock-3',
-      source: 'FinancialJuice',
-      headline: 'NVDA announces new AI chip with 2x performance improvement',
-      symbols: ['NVDA', 'AMD', 'INTC'],
-      tags: ['TECH', 'AI'],
-      isBreaking: false,
-      urgency: 'high',
-      publishedAt: new Date(now.getTime() - 30 * 60_000).toISOString(),
-    },
-    {
-      id: 'mock-4',
-      source: 'OSINTSources',
-      headline: 'Oil prices surge on Middle East tensions',
-      body: 'Crude oil jumps 3% as geopolitical risks escalate.',
-      symbols: ['CL', 'USO', 'XLE'],
-      tags: ['OIL', 'COMMODITIES'],
-      isBreaking: false,
-      urgency: 'normal',
-      publishedAt: new Date(now.getTime() - 45 * 60_000).toISOString(),
-    },
-    {
-      id: 'mock-5',
-      source: 'FinancialJuice',
-      headline: 'Initial jobless claims at 220K vs 215K expected',
-      symbols: ['ES', 'NQ'],
-      tags: ['JOBS', 'NFP'],
-      isBreaking: false,
-      urgency: 'normal',
-      ivScore: 4.2,
-      publishedAt: new Date(now.getTime() - 60 * 60_000).toISOString(),
-    },
-  ];
-
-  return mockItems;
-}
-
-/**
  * Get feed items — reads from scored_riskflow_items (Supabase) as source of truth.
  * In-memory feedCache is seeded from scored DB and then updated write-through by pollers.
  * Falls back to legacy news_feed_items if Supabase is unavailable.
@@ -543,11 +360,10 @@ function generateMockFeed(): FeedItem[] {
  * Scores now persist across restarts because they live in Supabase.
  */
 async function getCachedFeed(): Promise<FeedItem[]> {
+  const feedCache = getFeedCache();
+
   // Return warm cache if present AND recently refreshed from DB.
-  // Periodic re-sync ensures items added via Central Scorer or manual ingestion
-  // appear in RiskFlow even when the poller returns 0 new items.
-  const cacheAge = Date.now() - lastCacheRefreshMs;
-  if (feedCache && cacheAge < CACHE_REFRESH_INTERVAL_MS) {
+  if (feedCache && !isCacheStale()) {
     return feedCache;
   }
 
@@ -555,8 +371,8 @@ async function getCachedFeed(): Promise<FeedItem[]> {
   if (feedCache && isSupabaseConfigured()) {
     try {
       await warmCacheFromDB();
-      lastCacheRefreshMs = Date.now();
-      if (feedCache) return feedCache;
+      const refreshed = getFeedCache();
+      if (refreshed) return refreshed;
     } catch {
       // DB re-sync failed — serve stale cache rather than empty
       return feedCache;
@@ -566,14 +382,15 @@ async function getCachedFeed(): Promise<FeedItem[]> {
   try {
     if (isSupabaseConfigured()) {
       await warmCacheFromDB();
-      if (feedCache) return feedCache;
+      const warmed = getFeedCache();
+      if (warmed) return warmed;
     }
 
     // Fallback: legacy news_feed_items (migration compatibility)
-    const legacyItems = await newsCache.getCachedFeed({ limit: MAX_FEED_ITEMS, hoursBack: 48 });
+    const legacyItems = await newsCache.getCachedFeed({ limit: getMaxFeedItems(), hoursBack: 48 });
     if (legacyItems.length > 0) {
       updateFeedCache(legacyItems);
-      return feedCache ?? legacyItems;
+      return getFeedCache() ?? legacyItems;
     }
 
     // Optional mock fallback (disabled by default)
@@ -581,20 +398,20 @@ async function getCachedFeed(): Promise<FeedItem[]> {
       const mockItems = generateMockFeed();
       const enrichedItems = await enrichFeedWithAnalysis(mockItems);
       updateFeedCache(enrichedItems);
-      return feedCache ?? enrichedItems;
+      return getFeedCache() ?? enrichedItems;
     }
 
     // Last resort: fetch directly from sources if all caches are empty
     const rawItems = await fetchFreshFeed();
-    if (rawItems.length === 0) return feedCache ?? [];
+    if (rawItems.length === 0) return getFeedCache() ?? [];
 
     const enrichedItems = await enrichFeedWithAnalysis(rawItems);
     await newsCache.storeFeedItems(enrichedItems).catch(() => {});
     updateFeedCache(enrichedItems);
-    return feedCache ?? enrichedItems;
+    return getFeedCache() ?? enrichedItems;
   } catch (error) {
     log.error('[FeedService] Fetch failed, serving stale cache', { error: String(error) });
-    return feedCache ?? [];
+    return getFeedCache() ?? [];
   }
 }
 
@@ -605,7 +422,7 @@ async function getCachedFeed(): Promise<FeedItem[]> {
  */
 // [claude-code 2026-03-27] Rescore in-memory feed for regime-aware V3 scoring
 export async function rescoreInMemoryFeed(): Promise<number> {
-  const items = feedCache ?? [];
+  const items = getFeedCache() ?? [];
   if (items.length === 0) {
     log.info('rescoreInMemoryFeed: no cached items to rescore');
     return 0;
@@ -677,7 +494,7 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
   );
 
     // Apply pagination (offset + limit)
-    const limit = Math.min(filters?.limit ?? MAX_FEED_ITEMS, MAX_FEED_ITEMS);
+    const limit = Math.min(filters?.limit ?? getMaxFeedItems(), getMaxFeedItems());
     const offset = filters?.offset ?? 0;
     const paginatedItems = items.slice(offset, offset + limit);
 
@@ -709,6 +526,3 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
 export async function getBreakingNews(userId: string): Promise<FeedResponse> {
   return getFeed(userId, { breakingOnly: true, limit: 10 });
 }
-
-// Non-blocking module warm-up so cache can populate ahead of first poll cycle.
-void warmCacheFromDB();

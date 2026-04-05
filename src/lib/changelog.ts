@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-05T12:00:00',
+    agent: 'claude-code',
+    summary: 'Phase 6 MCP track completion: RiskFlow connector context injection (Harper can now cite recent catalysts), ToolsDropdown locked connector "Always on" label, feed cache merge-not-replace fix (prevents history collapse on poll delta), central-scorer timeout + circuit-breaker, frontend auto-refresh toggle removal (backend polling is autonomous), feed-service.ts decomposition into feed-cache.ts + feed-filters.ts for <300-line policy.',
+    files: [
+      'backend-hono/src/services/harper-handler.ts',
+      'backend-hono/src/services/riskflow/feed-service.ts',
+      'backend-hono/src/services/riskflow/feed-cache.ts',
+      'backend-hono/src/services/riskflow/feed-filters.ts',
+      'backend-hono/src/services/riskflow/central-scorer.ts',
+      'backend-hono/src/services/riskflow/feed-poller.ts',
+      'frontend/components/chat/ToolsDropdown.tsx',
+      'frontend/components/feed/FeedSection.tsx',
+    ],
+  },
+  {
     date: '2026-04-04T22:30:00',
     agent: 'claude-code',
     summary: 'Fix RiskFlow feed staleness: cache now re-syncs from Supabase every 2min so items from Central Scorer and manual ingestion appear without waiting for poller. Also replaced BULLISH/BEARISH text with chevron arrows and right-aligned IV scores in card footers.',

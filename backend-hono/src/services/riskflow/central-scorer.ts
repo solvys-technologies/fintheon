@@ -208,10 +208,24 @@ export function applyPOIBoost(item: FeedItem): string | null {
 
 const SCORING_INTERVAL = 30_000; // 30 seconds
 const BATCH_SIZE = 20;
+const ENRICHMENT_TIMEOUT_MS = 45_000; // 45s timeout for AI enrichment
 const ENABLE_CENTRAL_SCORING = process.env.ENABLE_CENTRAL_SCORING === 'true';
 
 let scoringTimer: ReturnType<typeof setInterval> | null = null;
 let isScoring = false;
+let consecutiveScoringFailures = 0;
+const SCORING_WARN_THRESHOLD = 5;
+const SCORING_BACKOFF_MS = 60_000;
+let lastScoringAttemptMs = 0;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`[CentralScorer] ${label} timed out after ${ms}ms`)), ms),
+    ),
+  ]);
+}
 
 /**
  * Convert a raw Supabase item into a FeedItem for the existing enrichment pipeline
@@ -268,6 +282,15 @@ function feedItemToScored(item: FeedItem, rawId: string): ScoredRiskFlowItem {
  */
 export async function scoringCycle(): Promise<void> {
   if (isScoring) return;
+
+  // Back off after repeated failures
+  if (
+    consecutiveScoringFailures >= SCORING_WARN_THRESHOLD &&
+    Date.now() - lastScoringAttemptMs < SCORING_BACKOFF_MS
+  ) {
+    return;
+  }
+  lastScoringAttemptMs = Date.now();
   isScoring = true;
 
   try {
@@ -290,15 +313,18 @@ export async function scoringCycle(): Promise<void> {
     });
 
     // Run through the existing AI enrichment pipeline (Grok analyzer)
-    // Graceful degradation: if AI enrichment fails entirely, proceed with
+    // Graceful degradation: if AI enrichment fails/times out, proceed with
     // deterministic-only items so the feed is never empty.
     let enrichedItems: FeedItem[];
     try {
-      enrichedItems = await enrichFeedWithAnalysis(feedItems);
+      enrichedItems = await withTimeout(
+        enrichFeedWithAnalysis(feedItems),
+        ENRICHMENT_TIMEOUT_MS,
+        'enrichFeedWithAnalysis',
+      );
     } catch (enrichErr) {
-      log.warn('AI enrichment failed, using deterministic scores only:', {
-        error: enrichErr instanceof Error ? enrichErr.message : String(enrichErr),
-      });
+      const msg = enrichErr instanceof Error ? enrichErr.message : String(enrichErr);
+      log.warn('AI enrichment failed, using deterministic scores only:', { error: msg });
       enrichedItems = feedItems;
     }
 
@@ -400,6 +426,7 @@ export async function scoringCycle(): Promise<void> {
 
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
+    consecutiveScoringFailures = 0;
 
     // Push High/Critical items to Consilium so they appear in the agent chat
     for (const item of enrichedItems) {
@@ -445,7 +472,13 @@ export async function scoringCycle(): Promise<void> {
       );
     }
   } catch (err) {
-    log.error(' Scoring cycle error:', { error: err instanceof Error ? err.message : String(err) });
+    consecutiveScoringFailures++;
+    const msg = err instanceof Error ? err.message : String(err);
+    if (consecutiveScoringFailures >= SCORING_WARN_THRESHOLD) {
+      log.error(`[CentralScorer] ${consecutiveScoringFailures} consecutive failures — backing off to 60s`, { error: msg });
+    } else {
+      log.error('Scoring cycle error:', { error: msg, consecutiveScoringFailures });
+    }
   } finally {
     isScoring = false;
   }

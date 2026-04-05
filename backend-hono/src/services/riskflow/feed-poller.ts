@@ -9,7 +9,8 @@
 // [claude-code 2026-03-27] S3: Write raw items to raw_riskflow_items for central scorer pipeline
 // [claude-code 2026-04-02] Removed user autoRefresh gating — backend polling is autonomous.
 import * as newsCache from './news-cache.js';
-import { enrichFeedWithAnalysis, updateFeedCache } from './feed-service.js';
+import { enrichFeedWithAnalysis } from './feed-service.js';
+import { updateFeedCache } from './feed-cache.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import { fetchEconomicFeed } from './economic-feed.js';
 import { isTwitterCliInstalled, pollTwitterForEconNews, manualRefreshTweets } from '../twitter-cli/index.js';
