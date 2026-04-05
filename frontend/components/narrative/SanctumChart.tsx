@@ -31,7 +31,7 @@ const COMPARE_SYMBOLS = ['COMEX:GC1!', 'SP:SPX', 'NASDAQ:QQQ'];
 
 interface SanctumChartProps {
   timeSeries: MiroSharkTimePoint[];
-  rollingDays: 7 | 14 | 30;
+  rollingDays: number;
   selectedSymbol?: string;
   compositeIV?: number;
   confidence?: number;

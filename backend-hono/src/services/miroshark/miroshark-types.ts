@@ -313,7 +313,7 @@ export interface RunningAnalysisSnapshot {
 }
 
 export interface RollingWindowQuery {
-  days: 1 | 7 | 14 | 30;
+  days: 1 | 5 | 7 | 14 | 30;
   preset?: SanctumPreset;
   limit?: number;
 }

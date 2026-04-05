@@ -118,7 +118,10 @@ if (typeof globalThis.Bun === 'undefined') {
   });
 }
 
+// SSE streams (Harper chat, cognition) go silent for 30s+ during tool calls.
+// Bun's default idleTimeout (10s) kills these connections → ERR_INCOMPLETE_CHUNKED_ENCODING.
 export default {
   fetch: app.fetch,
   port: config.PORT,
+  idleTimeout: 0,
 };

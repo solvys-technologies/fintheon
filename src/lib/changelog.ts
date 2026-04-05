@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-06T00:10:00',
+    agent: 'claude-code',
+    summary: 'Fix peer-bootstrap Supabase prompt + add feed test-fire. (1) Removed interactive email/password prompt — uses SUPABASE_SERVICE_ROLE_KEY from backend .env automatically. (2) Auth middleware now accepts service role key as bearer token for internal bootstrap calls. (3) peer-bootstrap fires /api/riskflow/refresh after registration to verify pipeline. (4) Backend peer register route triggers forcePoll() when twitter-round-robin peer comes online.',
+    files: [
+      'scripts/peer-bootstrap.sh',
+      'backend-hono/src/middleware/auth.ts',
+      'backend-hono/src/routes/peers/index.ts',
+    ],
+  },
+  {
     date: '2026-04-05T23:55:00',
     agent: 'claude-code',
     summary: 'Fix ERR_INCOMPLETE_CHUNKED_ENCODING on Harper chat + cognition SSE streams. Root causes: (1) pipeThrough(TransformStream) in Bun 1.3.x fails to terminate chunked encoding — now encodes SSE bytes directly in source ReadableStream, (2) long tool-call silences (TradingView MCP etc.) cause Bun/Chrome to drop idle connections — added 8s SSE heartbeat comments + [DONE] terminator to both Harper stream-adapter and cognition stream.',

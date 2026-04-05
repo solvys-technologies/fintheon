@@ -435,7 +435,7 @@ export async function getRollingWindowData(query: RollingWindowQuery): Promise<A
 
 // ── Auto-run Detection ──
 
-const STALENESS_THRESHOLD_HOURS = 12;
+const STALENESS_THRESHOLD_HOURS = 6;
 
 export async function shouldAutoRun(): Promise<{ shouldRun: boolean; lastRunAt: string | null; staleness: number }> {
   const sb = getSupabaseClient();

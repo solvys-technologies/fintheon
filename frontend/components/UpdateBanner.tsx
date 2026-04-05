@@ -1,9 +1,7 @@
-// [claude-code 2026-03-29] Bottom-right update toast — auto-downloads in background, Install Now restarts
+// [claude-code 2026-04-05] Bottom-right update toast — Install Now / Later CTAs, auto-downloads in background
 import { useEffect, useState, useCallback } from 'react';
 import { Download, X, Loader2, RotateCw } from 'lucide-react';
 import type { UpdateInfo, UpdateProgress } from '../types/electron';
-
-const SUPPRESS_KEY = 'fintheon-update-suppressed';
 
 type UpdateState = 'idle' | 'downloading' | 'ready';
 
@@ -19,12 +17,7 @@ export function UpdateBanner() {
     if (!el?.onUpdateAvailable) return;
 
     el.onUpdateAvailable((updateInfo) => {
-      // If user suppressed this version, skip
-      const suppressed = localStorage.getItem(SUPPRESS_KEY);
-      if (suppressed === updateInfo.version) return;
-
       setInfo(updateInfo);
-      // autoDownload is on — go straight to downloading state
       setState('downloading');
       setDismissed(false);
     });
@@ -57,18 +50,10 @@ export function UpdateBanner() {
     window.electron?.installUpdate();
   }, []);
 
-  const handleDismiss = useCallback(() => {
+  const handleLater = useCallback(() => {
     setEntered(false);
     setTimeout(() => setDismissed(true), 300);
   }, []);
-
-  const handleSuppress = useCallback(() => {
-    if (info?.version) {
-      localStorage.setItem(SUPPRESS_KEY, info.version);
-    }
-    setEntered(false);
-    setTimeout(() => setDismissed(true), 300);
-  }, [info]);
 
   if (state === 'idle' || dismissed) return null;
 
@@ -107,7 +92,7 @@ export function UpdateBanner() {
             className="text-[13px] font-semibold"
             style={{ color: 'var(--fintheon-text)' }}
           >
-            {isReady ? 'Update ready' : 'Updating'}
+            {isReady ? 'Update ready' : 'New update available'}
             {info?.version && (
               <span style={{ color: 'var(--fintheon-accent)', marginLeft: '4px' }}>
                 v{info.version}
@@ -116,7 +101,7 @@ export function UpdateBanner() {
           </span>
         </div>
         <button
-          onClick={handleDismiss}
+          onClick={handleLater}
           className="flex items-center justify-center rounded text-gray-500 hover:text-white transition-colors"
           style={{ width: '22px', height: '22px' }}
         >
@@ -158,20 +143,28 @@ export function UpdateBanner() {
           </div>
         )}
 
-        {/* Actions — right-aligned */}
-        <div className="flex items-center justify-between">
+        {/* Actions — Later + Install Now */}
+        <div className="flex items-center justify-end" style={{ gap: '8px' }}>
           <button
-            onClick={handleSuppress}
-            className="text-[10px] transition-colors"
-            style={{ color: 'rgba(156,163,175,0.5)' }}
+            onClick={handleLater}
+            className="text-[11px] transition-colors"
+            style={{
+              padding: '5px 12px',
+              borderRadius: '6px',
+              color: 'rgba(156,163,175,0.7)',
+              backgroundColor: 'transparent',
+              border: '1px solid rgba(156,163,175,0.15)',
+            }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'rgba(156,163,175,0.8)';
+              e.currentTarget.style.color = 'rgba(156,163,175,1)';
+              e.currentTarget.style.borderColor = 'rgba(156,163,175,0.3)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'rgba(156,163,175,0.5)';
+              e.currentTarget.style.color = 'rgba(156,163,175,0.7)';
+              e.currentTarget.style.borderColor = 'rgba(156,163,175,0.15)';
             }}
           >
-            Don't show again
+            Later
           </button>
 
           <button

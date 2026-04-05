@@ -1,8 +1,10 @@
-// [claude-code 2026-03-24] Supabase JWT auth — optional auth for public access, requireAuth for protected routes
+// [claude-code 2026-04-05] Supabase JWT auth — optional auth for public access, requireAuth for protected routes
+// Service role key accepted as bearer token for internal bootstrap (peer-bootstrap, cron, etc.)
 import type { Context, Next } from 'hono';
 import { verifySupabaseToken } from '../services/supabase-auth.js';
 
 const BYPASS_AUTH = process.env.BYPASS_AUTH === 'true';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const ANON_USER = { userId: 'anon', email: 'anonymous' } as const;
 const LOCAL_USER = { userId: 'local-user', email: 'user@local' } as const;
@@ -34,6 +36,12 @@ export const authMiddleware = async (c: Context, next: Next) => {
   }
 
   const token = authHeader.slice(7);
+
+  // Service role key = trusted internal caller (peer-bootstrap, cron jobs, etc.)
+  if (SERVICE_ROLE_KEY && token === SERVICE_ROLE_KEY) {
+    setAuthContext(c, LOCAL_USER);
+    return await next();
+  }
 
   try {
     const payload = await verifySupabaseToken(token);

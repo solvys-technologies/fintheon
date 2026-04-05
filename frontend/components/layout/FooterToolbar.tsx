@@ -275,7 +275,7 @@ export function FooterToolbar({
       if (lower === 'help') {
         newHistory.push({
           type: 'output',
-          text: 'Built-in: help, changelog, clear, status, version. Slash: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port',
+          text: 'Built-in: help, changelog, clear, status, version, update. Slash: /start-backend, /frontend, /install, /build, /typecheck, /hermes-start, /hermes-restart, /hermes-port',
         });
         newHistory.push({
           type: 'output',
@@ -300,8 +300,32 @@ export function FooterToolbar({
         return;
       }
       if (lower === 'version') {
-        newHistory.push({ type: 'output', text: `Fintheon Epoch ${EPOCH_VERSION} | Build 2026-03-14` });
+        newHistory.push({ type: 'output', text: `Fintheon Epoch ${EPOCH_VERSION}` });
         setCliHistory(newHistory);
+        return;
+      }
+      // Intercept update commands — the bash script kills the app, so use Electron auto-updater instead
+      if (lower === 'update' || lower === 'fintheon update') {
+        newHistory.push({ type: 'output', text: 'Checking for updates via Electron auto-updater...' });
+        setCliHistory(newHistory);
+        if (window.electron?.checkForUpdate) {
+          window.electron.checkForUpdate().then(({ ok }) => {
+            setCliHistory((prev) => [
+              ...prev,
+              { type: 'output', text: ok ? 'Update check triggered — banner will appear if an update is available.' : 'Update check failed or already up to date.' },
+            ]);
+          }).catch(() => {
+            setCliHistory((prev) => [
+              ...prev,
+              { type: 'output', text: 'Update check failed — try again from an external terminal: fintheon update' },
+            ]);
+          });
+        } else {
+          setCliHistory((prev) => [
+            ...prev,
+            { type: 'output', text: 'Not running in Electron — use external terminal: fintheon update' },
+          ]);
+        }
         return;
       }
       setCliHistory(newHistory);

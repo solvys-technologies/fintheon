@@ -5,7 +5,7 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
 const REPO = 'solvys-technologies/fintheon'
-const GITHUB_API = `https://api.github.com/repos/${REPO}/tags`
+const GITHUB_API = `https://api.github.com/repos/${REPO}/releases`
 
 // Read version from root package.json at startup
 let PKG_VERSION = '1.0.0'
@@ -24,20 +24,26 @@ async function getLatestTag(): Promise<string | null> {
   }
 
   try {
-    const res = await fetch(GITHUB_API, {
-      headers: { Accept: 'application/json', 'User-Agent': 'Fintheon-Update-Check' },
-    })
+    const headers: Record<string, string> = { Accept: 'application/json', 'User-Agent': 'Fintheon-Update-Check' }
+    // Private repo needs auth — use GITHUB_TOKEN or GH_TOKEN if available
+    const ghToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
+    if (ghToken) headers['Authorization'] = `token ${ghToken}`
+    const res = await fetch(GITHUB_API, { headers })
 
     if (!res.ok) {
       console.warn(`[Version] GitHub API returned ${res.status}`)
       return cachedLatest?.tag ?? null
     }
 
-    const tags = (await res.json()) as { name: string }[]
-    if (!tags.length) return null
+    const releases = (await res.json()) as { tag_name: string; draft: boolean; prerelease: boolean }[]
+    if (!releases.length) return null
 
-    // Tags are returned newest-first by GitHub
-    const latest = tags[0].name
+    // Filter to non-draft, non-prerelease, clean semver only
+    const stable = releases.filter((r) => !r.draft && !r.prerelease && /^v\d+\.\d+\.\d+$/.test(r.tag_name))
+    if (!stable.length) return null
+
+    // Releases are returned newest-first by GitHub
+    const latest = stable[0].tag_name
     cachedLatest = { tag: latest, fetchedAt: Date.now() }
     return latest
   } catch (err) {

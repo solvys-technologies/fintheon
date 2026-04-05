@@ -1,4 +1,4 @@
-// [claude-code 2026-03-30] Claude Peers Sprint 1 — peer/auth/desk/voice endpoints
+// [claude-code 2026-04-05] Claude Peers — peer/auth/desk/voice endpoints + test-fire on twitter-round-robin registration
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import {
@@ -9,6 +9,10 @@ import {
   registerPeer,
   sendHeartbeat,
 } from '../../services/peers/peer-registry.js'
+import { forcePoll } from '../../services/riskflow/feed-poller.js'
+import { createLogger } from '../../lib/logger.js'
+
+const log = createLogger('PeersRoute')
 import {
   assignPeerToDesk,
   createDesk,
@@ -42,6 +46,16 @@ export function createPeersRoutes(): Hono {
     }
 
     const peer = await registerPeer(userId, body)
+
+    // Test-fire: when a peer with twitter-round-robin comes online, trigger an immediate feed poll
+    const caps = body.capabilities ?? []
+    if (caps.includes('twitter-round-robin')) {
+      log.info(`Peer ${body.deviceName} registered with twitter-round-robin — test-firing feed poll`)
+      forcePoll().catch((err) =>
+        log.warn('Test-fire feed poll failed (non-fatal)', { error: String(err) })
+      )
+    }
+
     return c.json({ peer })
   })
 

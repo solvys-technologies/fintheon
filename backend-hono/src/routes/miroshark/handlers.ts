@@ -169,8 +169,8 @@ export async function handleRollingWindow(c: Context) {
   const blocked = checkEnabled(c);
   if (blocked) return blocked;
 
-  const daysParam = parseInt(c.req.query('days') ?? '7', 10);
-  const validDays = [1, 7, 14, 30].includes(daysParam) ? daysParam as 1 | 7 | 14 | 30 : 7;
+  const daysParam = parseInt(c.req.query('days') ?? '5', 10);
+  const validDays = ([1, 5, 7, 14, 30].includes(daysParam) ? daysParam : 5) as 1 | 5 | 7 | 14 | 30;
   const limit = parseInt(c.req.query('limit') ?? '50', 10);
 
   const data = await getRollingWindowData({ days: validDays, limit: Math.min(limit, 100) });

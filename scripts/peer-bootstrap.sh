@@ -147,46 +147,33 @@ ensure_twitter_auth() {
   fi
 }
 
-backend_uses_bypass_auth() {
-  local env_file="$FINTHEON_ROOT/backend-hono/.env"
-  [[ -f "$env_file" ]] && grep -Eq '^BYPASS_AUTH=true' "$env_file"
-}
-
 fetch_access_token() {
-  if backend_uses_bypass_auth; then
-    ok "Backend BYPASS_AUTH=true detected; using local-user auth context" >&2
-    return
-  fi
-
+  # 1. Explicit token override (e.g. CI)
   if [[ -n "${FINTHEON_SUPABASE_TOKEN:-}" ]]; then
     echo "$FINTHEON_SUPABASE_TOKEN"
     return
   fi
 
-  local email="${FINTHEON_SUPABASE_EMAIL:-}"
-  local password="${FINTHEON_SUPABASE_PASSWORD:-}"
-
-  if [[ -z "$email" ]]; then
-    read -r -p "Supabase email: " email
+  # 2. Read SUPABASE_SERVICE_ROLE_KEY from backend .env (one account services all devices)
+  local env_file="$FINTHEON_ROOT/backend-hono/.env"
+  if [[ -f "$env_file" ]]; then
+    local srk
+    srk="$(grep -E '^SUPABASE_SERVICE_ROLE_KEY=' "$env_file" | head -1 | cut -d= -f2-)"
+    if [[ -n "$srk" ]]; then
+      ok "Using service role key for peer auth" >&2
+      echo "$srk"
+      return
+    fi
   fi
-  if [[ -z "$password" ]]; then
-    read -r -s -p "Supabase password: " password
-    echo ""
+
+  # 3. Check if BYPASS_AUTH is set (local dev)
+  if [[ -f "$env_file" ]] && grep -Eq '^BYPASS_AUTH=true' "$env_file"; then
+    ok "Backend BYPASS_AUTH=true detected; using local-user auth context" >&2
+    return
   fi
 
-  local login_json
-  login_json="$(curl -sS -X POST "$API_BASE/api/auth/login" \
-    -H "Content-Type: application/json" \
-    -d "{\"email\":\"$email\",\"password\":\"$password\"}")"
-
-  local token
-  token="$(python3 -c 'import json,sys; d=json.loads(sys.stdin.read()); print(((d.get("session") or {}).get("access_token")) or "")' <<<"$login_json")"
-  if [[ -z "$token" ]]; then
-    echo "[error] Login failed. Response:"
-    echo "$login_json"
-    exit 1
-  fi
-  echo "$token"
+  warn "No SUPABASE_SERVICE_ROLE_KEY found in backend-hono/.env — peer registration may fail" >&2
+  warn "Run 'fintheon update' after the backend has loaded secrets from the vault" >&2
 }
 
 ensure_twitter_cli
@@ -251,4 +238,19 @@ echo "  Twitter CLI installed: $TWITTER_INSTALLED"
 echo "  Twitter auth ready:    $TWITTER_AUTHENTICATED"
 echo "  Round-robin enrolled:  $ROUND_ROBIN_ENROLLED"
 echo "  Config: $PEER_CONFIG"
+
+# Test fire: trigger an immediate feed poll to verify the pipeline works on this device
+if [[ "$ROUND_ROBIN_ENROLLED" == true ]]; then
+  info "Test-firing feed poll to verify pipeline..."
+  TEST_FIRE="$(curl -sS -X POST "$API_BASE/api/riskflow/refresh" \
+    "${AUTH_HEADER[@]}" \
+    -H "Content-Type: application/json" \
+    -o /dev/null -w "%{http_code}" 2>/dev/null || echo "000")"
+  if [[ "$TEST_FIRE" == "200" ]]; then
+    ok "Feed pipeline test-fire successful"
+  else
+    warn "Feed test-fire returned HTTP $TEST_FIRE (non-fatal — backend may still be starting)"
+  fi
+fi
+
 echo ""
