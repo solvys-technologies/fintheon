@@ -744,7 +744,7 @@ function MainLayoutInner() {
         )}
 
         {/* Global chat panel — slide in/out from right */}
-        <ChatPanel showChat={showChat} onClose={() => setShowChat(false)} navigateTab={navigateTab} />
+        <ChatPanel showChat={showChat} onClose={() => setShowChat(false)} navigateTab={(tab) => navigateTab(tab as NavTab)} />
       </div>
 
       <SessionCountdownWidget />
