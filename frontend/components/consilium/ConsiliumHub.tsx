@@ -22,6 +22,7 @@ import { useHarperOps } from '../../hooks/useHarperOps';
 import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/miroshark';
 
 import { ChatSidebar } from '../chat/ChatSidebar';
+import { SessionsModal } from '../chat/SessionsModal';
 import { HarperActivityFeed } from './HarperActivityFeed';
 const ResearchBoard = lazy(() => import('../research/ResearchBoard'));
 
@@ -132,6 +133,7 @@ export function ConsiliumHub() {
   const toggleProposals = useCallback(() => setActivePanel(prev => prev === 'proposals' ? null : 'proposals'), []);
   const toggleDebate = useCallback(() => setActivePanel(prev => prev === 'debate' ? null : 'debate'), []);
   const [showHarperFeed, setShowHarperFeed] = useState(true);
+  const [showSessionsDropdown, setShowSessionsDropdown] = useState(false);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close dropdowns on outside click
@@ -282,6 +284,23 @@ export function ConsiliumHub() {
     return () => { cancelled = true; };
   }, []);
 
+  const applyReport = useCallback((report: Record<string, any>, simId?: string) => {
+    setMirosharkData({
+      simulationId: simId ?? report.simulationId ?? '',
+      status: 'complete',
+      compositeIV: report.compositeIV ?? report.nextSessionScore ?? 0,
+      confidence: report.confidence ?? 0,
+      regimeShiftProbability: report.regimeShiftProbability ?? 0,
+      categoryScores: report.categoryScores ?? [],
+      timeSeries: report.timeSeries ?? [],
+      generatedEvents: report.generatedEvents ?? [],
+      scenarios: report.scenarios ?? [],
+      briefing: report.briefing ?? null,
+      contextSnapshot: report.contextSnapshot ?? null,
+    });
+    fetchContext();
+  }, [fetchContext]);
+
   const handleRunMiroShark = useCallback(async (preset?: SanctumPreset) => {
     setMirosharkData(prev => prev
       ? { ...prev, status: 'running' }
@@ -289,36 +308,17 @@ export function ConsiliumHub() {
     );
 
     try {
-      // Check for a recent run (<12h) by ANY user before triggering a new simulation
-      const staleRes = await fetch(`${API_BASE}/api/miroshark/auto-run-check`);
-      if (staleRes.ok) {
-        const { shouldRun, staleness } = await staleRes.json();
-        if (!shouldRun) {
-          // Recent run exists — load latest instead of re-running
-          const latestRes = await fetch(`${API_BASE}/api/miroshark/latest`);
-          if (latestRes.ok) {
-            const report = await latestRes.json();
-            if (report) {
-              setMirosharkData({
-                simulationId: report.simulationId ?? '',
-                status: 'complete',
-                compositeIV: report.compositeIV ?? 0,
-                confidence: report.confidence ?? 0,
-                regimeShiftProbability: report.regimeShiftProbability ?? 0,
-                categoryScores: report.categoryScores ?? [],
-                timeSeries: report.timeSeries ?? [],
-                generatedEvents: report.generatedEvents ?? [],
-                scenarios: report.scenarios ?? [],
-                briefing: report.briefing ?? null,
-                contextSnapshot: report.contextSnapshot ?? null,
-              });
-              fetchContext();
-              return;
-            }
-          }
+      // Step 1: try to load the latest persisted run
+      const latestRes = await fetch(`${API_BASE}/api/miroshark/latest`);
+      if (latestRes.ok) {
+        const report = await latestRes.json();
+        if (report && (report.compositeIV > 0 || report.nextSessionScore > 0)) {
+          applyReport(report);
+          return;
         }
       }
 
+      // Step 2: no existing run — kick off a new simulation
       const simRes = await fetch(`${API_BASE}/api/miroshark/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -334,32 +334,15 @@ export function ConsiliumHub() {
       const reportRes = await fetch(`${API_BASE}/api/miroshark/report/${simulationId}`);
       if (!reportRes.ok) throw new Error(`Report fetch failed: ${reportRes.status}`);
       const report = await reportRes.json();
-
-      setMirosharkData({
-        simulationId,
-        status: 'complete',
-        compositeIV: report.nextSessionScore ?? 5,
-        confidence: report.confidence ?? 0.5,
-        regimeShiftProbability: report.regimeShiftProbability ?? 0.1,
-        categoryScores: report.categoryScores ?? [],
-        timeSeries: report.timeSeries ?? [],
-        generatedEvents: report.generatedEvents ?? [],
-        scenarios: report.scenarios ?? [],
-        briefing: report.briefing ?? null,
-        contextSnapshot: report.contextSnapshot ?? null,
-      });
-
-      // Refresh context after simulation
-      fetchContext();
+      applyReport(report, simulationId);
     } catch (err) {
       console.error('[MiroShark] Run failed:', err);
-      // Only set error status if user had existing data (preserves idle state on auto-run failure)
       setMirosharkData(prev => prev
         ? { ...prev, status: 'error', error: err instanceof Error ? err.message : 'Unknown error' }
         : null
       );
     }
-  }, [fetchContext]);
+  }, [applyReport]);
 
   const activeSanctumSub = SANCTUM_SUB_VIEWS.find(v => v.id === sanctumSubView) ?? SANCTUM_SUB_VIEWS[0];
   const SanctumIcon = activeSanctumSub.icon;
@@ -561,13 +544,27 @@ export function ConsiliumHub() {
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
-            <button
-              onClick={() => window.dispatchEvent(new Event('fintheon:chat-toggle-history'))}
-              className="p-1.5 text-zinc-500 hover:text-[#c79f4a] transition-colors"
-              title="History"
-            >
-              <Clock className="w-3.5 h-3.5" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowSessionsDropdown(v => !v)}
+                className="p-1.5 text-zinc-500 hover:text-[#c79f4a] transition-colors"
+                title="History"
+              >
+                <Clock className="w-3.5 h-3.5" />
+              </button>
+              <SessionsModal
+                isOpen={showSessionsDropdown}
+                onClose={() => setShowSessionsDropdown(false)}
+                onSelectSession={(id) => {
+                  window.dispatchEvent(new CustomEvent('fintheon:chat-load-session', { detail: { id } }));
+                  setShowSessionsDropdown(false);
+                }}
+                onNewSession={() => {
+                  window.dispatchEvent(new Event('fintheon:chat-new'));
+                  setShowSessionsDropdown(false);
+                }}
+              />
+            </div>
           </div>
         )}
 

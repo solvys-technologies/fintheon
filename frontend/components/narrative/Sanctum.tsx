@@ -64,7 +64,8 @@ function confidenceInterpretation(confidence: number): string {
 
 
 export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, narratives, selectedSymbol = '/MNQ' }: SanctumProps) {
-  const [rollingDays, setRollingDays] = useState<7 | 14 | 30>(14);
+  // Guardrailed 5-day rolling window — no user toggle
+  const rollingDays = 5 as const;
   const [running, setRunning] = useState(false);
   const [preset, setPreset] = useState<SanctumPreset>(() => {
     try {
@@ -141,8 +142,6 @@ export function Sanctum({ data, onRun, catalysts, riskflowItems, macroContext, n
         isLoading={isLoading}
         status={status}
         hasData={!!data && data.compositeIV > 0}
-        rollingDays={rollingDays}
-        onRollingChange={setRollingDays}
       />
 
       <div className="flex flex-1 min-h-0">

@@ -98,9 +98,16 @@ export async function handleCognitionStream(c: Context) {
       data: JSON.stringify({ requestId }),
     })
 
+    // Heartbeat every 8s — prevents Bun/Chrome from dropping the connection
+    // during long tool-call silences (SSE comment lines are ignored by EventSource)
+    const heartbeat = setInterval(async () => {
+      try { await stream.writeSSE({ event: 'heartbeat', data: '' }) } catch { /* closed */ }
+    }, 8_000)
+
     // Use a Promise that resolves when the stream is done, no polling
     await new Promise<void>((resolve) => {
       const cleanup = () => {
+        clearInterval(heartbeat)
         clearTimeout(timeout)
         offStep()
         offEnd()

@@ -16,14 +16,10 @@ interface SanctumHeaderProps {
   isLoading: boolean;
   status: 'idle' | 'running' | 'complete' | 'error';
   hasData: boolean;
-  rollingDays: 7 | 14 | 30;
-  onRollingChange: (d: 7 | 14 | 30) => void;
 }
 
-const ROLLING_OPTIONS = [7, 14, 30] as const;
-
 export function SanctumHeader({
-  preset, onPresetChange, onRun, isLoading, status, hasData, rollingDays, onRollingChange,
+  preset, onPresetChange, onRun, isLoading, status, hasData,
 }: SanctumHeaderProps) {
   const [uploadOpen, setUploadOpen] = useState(false);
 
@@ -55,22 +51,7 @@ export function SanctumHeader({
         <div className="flex items-center gap-3">
           <SanctumPresets active={preset} onChange={onPresetChange} />
 
-          <div className="flex items-center rounded border border-[var(--fintheon-border)]/15 overflow-hidden">
-            {ROLLING_OPTIONS.map(d => (
-              <button
-                key={d}
-                onClick={() => onRollingChange(d)}
-                className={`px-2 py-1 text-[10px] transition-colors ${
-                  rollingDays === d
-                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8'
-                    : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]'
-                }`}
-                style={{ fontFamily: 'var(--font-body)' }}
-              >
-                {d}d
-              </button>
-            ))}
-          </div>
+          <span className="text-[10px] text-[var(--fintheon-muted)]/50" style={{ fontFamily: 'var(--font-body)' }}>5d window</span>
 
           <button
             onClick={() => setUploadOpen(true)}

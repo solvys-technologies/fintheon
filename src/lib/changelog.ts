@@ -9,6 +9,12 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-05T23:55:00',
+    agent: 'claude-code',
+    summary: 'Fix ERR_INCOMPLETE_CHUNKED_ENCODING on Harper chat + cognition SSE streams. Root causes: (1) pipeThrough(TransformStream) in Bun 1.3.x fails to terminate chunked encoding — now encodes SSE bytes directly in source ReadableStream, (2) long tool-call silences (TradingView MCP etc.) cause Bun/Chrome to drop idle connections — added 8s SSE heartbeat comments + [DONE] terminator to both Harper stream-adapter and cognition stream.',
+    files: ['backend-hono/src/services/strands/stream-adapter.ts', 'backend-hono/src/routes/ai/handlers/queue.ts'],
+  },
+  {
     date: '2026-04-05T23:30:00',
     agent: 'claude-code',
     summary: 'Strands Phase 8: Full cutover — replaced all Vercel AI SDK imports with Strands agents across 15 backend files. Removed @ai-sdk/openai, @ai-sdk/xai, @ai-sdk/groq, @ai-sdk/gateway packages. Kept ai + @ai-sdk/anthropic for bridge chain (pending bridge deprecation). Deleted dead model-selector.ts. Added invokeAgent() helper for one-shot generation.',

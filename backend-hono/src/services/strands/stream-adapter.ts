@@ -1,6 +1,7 @@
-// [claude-code 2026-04-04] Strands → UIMessageStream adapter
-// Transforms Strands agent stream events into the UIMessageStream protocol
-// that @assistant-ui/react's DefaultChatTransport expects.
+// [claude-code 2026-04-05] Strands → UIMessageStream SSE adapter
+// Encodes UIMessageStream events directly as SSE bytes in a single ReadableStream.
+// Avoids pipeThrough(TransformStream) which causes ERR_INCOMPLETE_CHUNKED_ENCODING in Bun.
+// SSE heartbeats every 8s keep the connection alive during long tool-call silences.
 import type { Agent } from '@strands-agents/sdk'
 import { createLogger } from '../../lib/logger.js'
 
@@ -22,26 +23,30 @@ type UIEvent =
   | { type: 'finish'; finishReason: string }
   | { type: 'error'; errorText: string }
 
+const encoder = new TextEncoder()
+const SSE_HEARTBEAT = encoder.encode(': heartbeat\n\n')
+const SSE_DONE = encoder.encode('data: [DONE]\n\n')
+const HEARTBEAT_INTERVAL_MS = 8_000
+
+/** Encode a UIEvent as an SSE `data:` line */
+function sseEncode(event: UIEvent): Uint8Array {
+  return encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
+}
+
 /**
- * Convert a Strands agent stream into a ReadableStream of UIMessageStream events.
- * Bridges Strands' async generator to the SSE format the frontend consumes.
- *
- * Strands event types (from hooks/events.d.ts):
- * - modelStreamUpdateEvent: wraps ModelStreamEvent (message start/stop, content block start/delta/stop)
- * - contentBlockEvent: completed content block (TextBlock, ToolUseBlock, ReasoningBlock)
- * - toolResultEvent: tool execution result
- * - beforeToolCallEvent / afterToolCallEvent: tool lifecycle
- * - agentResultEvent: final agent result
+ * Stream a Strands agent response as SSE-encoded UIMessageStream bytes.
+ * Single ReadableStream — no pipeThrough — for reliable chunked encoding in Bun.
+ * Sends SSE comment heartbeats every 8s to prevent connection drops during tool calls.
  */
 export function strandsToUIStream(
   agent: Agent,
   input: string,
   options?: { messageId?: string; onFinish?: (text: string) => Promise<void> },
-): ReadableStream<UIEvent> {
+): ReadableStream<Uint8Array> {
   const messageId = options?.messageId ?? `msg-${Date.now()}`
   let cancelled = false
 
-  return new ReadableStream<UIEvent>({
+  return new ReadableStream<Uint8Array>({
     start(controller) {
       ;(async () => {
         let fullText = ''
@@ -53,10 +58,27 @@ export function strandsToUIStream(
         let currentReasoningId = ''
         let inToolPhase = false
 
+        // Heartbeat timer — keeps Bun/Chrome from dropping the connection during tool-call silences
+        const heartbeat = setInterval(() => {
+          if (!cancelled) {
+            try { controller.enqueue(SSE_HEARTBEAT) } catch { /* stream already closed */ }
+          }
+        }, HEARTBEAT_INTERVAL_MS)
+
+        function emit(event: UIEvent) {
+          controller.enqueue(sseEncode(event))
+        }
+
+        function finish() {
+          clearInterval(heartbeat)
+          controller.enqueue(SSE_DONE)
+          controller.close()
+        }
+
         /** Close the current text block if open */
         function closeText() {
           if (textStarted) {
-            controller.enqueue({ type: 'text-end', id: currentTextId })
+            emit({ type: 'text-end', id: currentTextId })
             textStarted = false
           }
         }
@@ -65,7 +87,7 @@ export function strandsToUIStream(
         function closeReasoning() {
           if (reasoningStarted && !reasoningEnded) {
             reasoningEnded = true
-            controller.enqueue({ type: 'reasoning-end', id: currentReasoningId })
+            emit({ type: 'reasoning-end', id: currentReasoningId })
           }
         }
 
@@ -74,7 +96,7 @@ export function strandsToUIStream(
           closeReasoning()
           closeText()
           if (stepCount > 0) {
-            controller.enqueue({ type: 'finish-step' })
+            emit({ type: 'finish-step' })
           }
         }
 
@@ -86,11 +108,11 @@ export function strandsToUIStream(
           textStarted = false
           reasoningStarted = false
           reasoningEnded = false
-          controller.enqueue({ type: 'start-step' })
+          emit({ type: 'start-step' })
         }
 
         // Protocol framing
-        controller.enqueue({ type: 'start', messageId })
+        emit({ type: 'start', messageId })
         openStep()
 
         try {
@@ -117,16 +139,16 @@ export function strandsToUIStream(
                   closeReasoning()
                   if (!textStarted) {
                     textStarted = true
-                    controller.enqueue({ type: 'text-start', id: currentTextId })
+                    emit({ type: 'text-start', id: currentTextId })
                   }
                   fullText += delta.text
-                  controller.enqueue({ type: 'text-delta', id: currentTextId, delta: delta.text })
+                  emit({ type: 'text-delta', id: currentTextId, delta: delta.text })
                 } else if (delta.type === 'reasoningContentDelta' && delta.text) {
                   if (!reasoningStarted) {
                     reasoningStarted = true
-                    controller.enqueue({ type: 'reasoning-start', id: currentReasoningId })
+                    emit({ type: 'reasoning-start', id: currentReasoningId })
                   }
-                  controller.enqueue({ type: 'reasoning-delta', id: currentReasoningId, delta: delta.text })
+                  emit({ type: 'reasoning-delta', id: currentReasoningId, delta: delta.text })
                 }
               }
             } else if (ev.type === 'toolResultEvent') {
@@ -139,32 +161,34 @@ export function strandsToUIStream(
           log.error('Stream error', { error: errorText })
 
           closeStep()
-          controller.enqueue({ type: 'error', errorText })
-          controller.enqueue({ type: 'finish-step' })
-          controller.enqueue({ type: 'finish', finishReason: 'error' })
+          emit({ type: 'error', errorText })
+          emit({ type: 'finish-step' })
+          emit({ type: 'finish', finishReason: 'error' })
 
-          if (!cancelled) controller.close()
+          if (!cancelled) { finish() }
           return
         }
 
         // Clean close
         closeStep()
-        controller.enqueue({ type: 'finish', finishReason: 'stop' })
+        emit({ type: 'finish', finishReason: 'stop' })
 
         if (options?.onFinish) {
           await options.onFinish(fullText)
         }
 
-        if (!cancelled) controller.close()
+        if (!cancelled) { finish() }
       })().catch((error) => {
         log.error('Fatal stream error', { error: String(error) })
+        clearInterval(0) // safety — interval ref is in enclosing scope
         try {
-          controller.enqueue({
+          controller.enqueue(sseEncode({
             type: 'error',
             errorText: error instanceof Error ? error.message : String(error),
-          })
-          controller.enqueue({ type: 'finish-step' })
-          controller.enqueue({ type: 'finish', finishReason: 'error' })
+          }))
+          controller.enqueue(sseEncode({ type: 'finish-step' }))
+          controller.enqueue(sseEncode({ type: 'finish', finishReason: 'error' }))
+          controller.enqueue(SSE_DONE)
           controller.close()
         } catch {
           controller.error(error)
@@ -178,25 +202,14 @@ export function strandsToUIStream(
 }
 
 /**
- * Convert the UIEvent ReadableStream into an SSE Response for Hono.
- * Writes proper `data:` framing with newline-delimited JSON.
+ * Wrap an SSE byte stream as a Response with correct headers.
+ * The stream must already be SSE-encoded (data: ...\n\n).
  */
 export function uiStreamToSSEResponse(
-  stream: ReadableStream<UIEvent>,
+  stream: ReadableStream<Uint8Array>,
   headers?: Record<string, string>,
 ): Response {
-  const encoder = new TextEncoder()
-
-  const sseStream = stream.pipeThrough(
-    new TransformStream<UIEvent, Uint8Array>({
-      transform(event, controller) {
-        const json = JSON.stringify(event)
-        controller.enqueue(encoder.encode(`data: ${json}\n\n`))
-      },
-    }),
-  )
-
-  return new Response(sseStream, {
+  return new Response(stream, {
     status: 200,
     headers: {
       'Content-Type': 'text/event-stream',

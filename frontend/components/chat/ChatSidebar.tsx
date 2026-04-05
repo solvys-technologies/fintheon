@@ -1,4 +1,4 @@
-// [claude-code 2026-04-04] T2: Chat icons moved to Consilium bar — event-driven new chat, run report, toggle history
+// [claude-code 2026-04-05] T2: Chat icons moved to Consilium bar — event-driven new chat, run report, load session
 // [claude-code 2026-03-28] S8-T7: Single-pane sidebar with agent-plan inline
 // S13-T1: Renamed to ChatSidebar, surfaceId=chat
 import { useCallback, useState, useEffect } from 'react';
@@ -8,7 +8,6 @@ import { useHermesRuntime } from './useHermesRuntime';
 import { FintheonThread } from './FintheonThread';
 import { FintheonComposer } from './FintheonComposer';
 import { CognitionPanel } from './CognitionPanel';
-import { SessionsModal } from './SessionsModal';
 
 function ChatSidebarInner({ lastError, lastRequestId, thinkHarder, setThinkHarder, conversationId, setConversationId, clearConversationId }: { lastError: string | null; lastRequestId: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void; conversationId: string | undefined; setConversationId: (id: string) => void; clearConversationId: () => void }) {
   const { activeAgent } = useFintheonAgents();
@@ -17,7 +16,6 @@ function ChatSidebarInner({ lastError, lastRequestId, thinkHarder, setThinkHarde
 
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
-  const [showSessions, setShowSessions] = useState(false);
 
   const handleSend = useCallback((msg: string) => {
     runtime.append({ role: 'user', content: [{ type: 'text', text: msg }] });
@@ -27,17 +25,20 @@ function ChatSidebarInner({ lastError, lastRequestId, thinkHarder, setThinkHarde
   useEffect(() => {
     const onNewChat = () => clearConversationId();
     const onRunReport = () => { if (!isRunning) handleSend('Run the MDB report'); };
-    const onToggleHistory = () => setShowSessions(v => !v);
+    const onLoadSession = (e: Event) => {
+      const id = (e as CustomEvent).detail?.id;
+      if (id) setConversationId(id);
+    };
 
     window.addEventListener('fintheon:chat-new', onNewChat);
     window.addEventListener('fintheon:chat-run-report', onRunReport);
-    window.addEventListener('fintheon:chat-toggle-history', onToggleHistory);
+    window.addEventListener('fintheon:chat-load-session', onLoadSession);
     return () => {
       window.removeEventListener('fintheon:chat-new', onNewChat);
       window.removeEventListener('fintheon:chat-run-report', onRunReport);
-      window.removeEventListener('fintheon:chat-toggle-history', onToggleHistory);
+      window.removeEventListener('fintheon:chat-load-session', onLoadSession);
     };
-  }, [clearConversationId, handleSend, isRunning]);
+  }, [clearConversationId, handleSend, isRunning, setConversationId]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.07),transparent_38%),#070704]">
@@ -63,14 +64,6 @@ function ChatSidebarInner({ lastError, lastRequestId, thinkHarder, setThinkHarde
         onSelectSkill={setActiveSkill}
         showSkills={showSkills}
         onToggleSkills={() => setShowSkills((v) => !v)}
-      />
-
-      <SessionsModal
-        isOpen={showSessions}
-        onClose={() => setShowSessions(false)}
-        onSelectSession={(id) => { setConversationId(id); setShowSessions(false); }}
-        onNewSession={() => { clearConversationId(); setShowSessions(false); }}
-        currentConversationId={conversationId}
       />
     </div>
   );

@@ -1,6 +1,6 @@
-// [claude-code 2026-04-03] Sessions modal — centered overlay like Claude Code VSCode conversation history
+// [claude-code 2026-04-05] Sessions dropdown — compact list anchored under the Clock icon, no overlay
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { X, Search, MessageSquare, Plus, Loader2, Trash2 } from 'lucide-react';
+import { Search, MessageSquare, Plus, Loader2, Trash2, X } from 'lucide-react';
 import { API_BASE_URL } from './constants';
 
 interface ConversationSummary {
@@ -64,8 +64,9 @@ export function SessionsModal({ isOpen, onClose, onSelectSession, onNewSession, 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch sessions when modal opens
+  // Fetch sessions when dropdown opens
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
@@ -84,6 +85,18 @@ export function SessionsModal({ isOpen, onClose, onSelectSession, onNewSession, 
       requestAnimationFrame(() => searchRef.current?.focus());
     }
   }, [isOpen]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen, onClose]);
 
   // Filter by search
   const filtered = search.trim()
@@ -132,169 +145,139 @@ export function SessionsModal({ isOpen, onClose, onSelectSession, onNewSession, 
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh]"
-      onClick={onClose}
+      ref={dropdownRef}
+      className="absolute right-0 top-full mt-1 w-[300px] rounded-lg border overflow-hidden z-50"
+      style={{
+        borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)',
+        backgroundColor: 'var(--fintheon-surface)',
+        boxShadow: '0 12px 36px rgba(0,0,0,0.6), 0 0 1px rgba(212,175,55,0.15)',
+        maxHeight: '400px',
+      }}
       onKeyDown={handleKeyDown}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      {/* Search header */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ borderColor: 'color-mix(in srgb, var(--fintheon-accent) 12%, transparent)' }}>
+        <Search size={13} className="text-zinc-500 shrink-0" />
+        <input
+          ref={searchRef}
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search conversations..."
+          className="flex-1 bg-transparent text-[12px] text-[var(--fintheon-text)] placeholder:text-zinc-600 outline-none"
+        />
+        <button
+          onClick={() => { onNewSession(); onClose(); }}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] transition-colors shrink-0"
+          style={{
+            color: 'var(--fintheon-accent)',
+            backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 10%, transparent)',
+          }}
+          title="New conversation"
+        >
+          <Plus size={11} />
+          New
+        </button>
+        <button
+          onClick={onClose}
+          className="p-0.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors"
+        >
+          <X size={13} />
+        </button>
+      </div>
 
-      {/* Modal */}
-      <div
-        className="relative w-full max-w-[520px] rounded-xl border overflow-hidden animate-fade-slide-in"
-        style={{
-          borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)',
-          backgroundColor: 'var(--fintheon-surface)',
-          boxShadow: '0 25px 60px rgba(0,0,0,0.7), 0 0 1px rgba(212,175,55,0.15)',
-          maxHeight: '70vh',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Search header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: 'color-mix(in srgb, var(--fintheon-accent) 12%, transparent)' }}>
-          <Search size={15} className="text-zinc-500 shrink-0" />
-          <input
-            ref={searchRef}
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search conversations..."
-            className="flex-1 bg-transparent text-[13px] text-[var(--fintheon-text)] placeholder:text-zinc-600 outline-none"
-          />
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => { onNewSession(); onClose(); }}
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-colors"
-              style={{
-                color: 'var(--fintheon-accent)',
-                backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 10%, transparent)',
-              }}
-              title="New conversation"
-            >
-              <Plus size={12} />
-              New
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        </div>
-
-        {/* Session list */}
-        <div ref={listRef} className="overflow-y-auto" style={{ maxHeight: 'calc(70vh - 52px)', scrollbarWidth: 'thin' }}>
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 size={16} className="animate-spin" style={{ color: 'var(--fintheon-accent)' }} />
-            </div>
-          )}
-
-          {!loading && filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <MessageSquare size={20} className="mb-2 text-zinc-700" />
-              <p className="text-[12px] text-zinc-600">
-                {search ? 'No matching conversations' : 'No conversations yet'}
-              </p>
-              {!search && (
-                <p className="text-[10px] text-zinc-700 mt-1">
-                  Start chatting to create your first session
-                </p>
-              )}
-            </div>
-          )}
-
-          {!loading && Object.entries(grouped).map(([dateLabel, items]) => {
-            // Compute the flat index offset for this group
-            const groupStartIndex = flatFiltered.indexOf(items[0]);
-            return (
-              <div key={dateLabel}>
-                <div
-                  className="px-4 py-1.5 text-[10px] font-semibold tracking-widest uppercase sticky top-0"
-                  style={{
-                    color: 'var(--fintheon-accent)',
-                    backgroundColor: 'var(--fintheon-surface)',
-                    borderBottom: '1px solid color-mix(in srgb, var(--fintheon-accent) 6%, transparent)',
-                  }}
-                >
-                  {dateLabel}
-                </div>
-                {items.map((session, i) => {
-                  const flatIndex = groupStartIndex + i;
-                  const isSelected = flatIndex === selectedIndex;
-                  const isActive = session.id === currentConversationId;
-                  return (
-                    <button
-                      key={session.id}
-                      data-index={flatIndex}
-                      onClick={() => { onSelectSession(session.id); onClose(); }}
-                      onMouseEnter={() => setSelectedIndex(flatIndex)}
-                      className="w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors group/item"
-                      style={{
-                        backgroundColor: isSelected
-                          ? 'color-mix(in srgb, var(--fintheon-accent) 8%, transparent)'
-                          : 'transparent',
-                        borderLeft: isActive
-                          ? '2px solid var(--fintheon-accent)'
-                          : '2px solid transparent',
-                      }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span
-                            className="text-[12px] font-medium truncate"
-                            style={{ color: isActive ? 'var(--fintheon-accent)' : 'var(--fintheon-text)' }}
-                          >
-                            {session.title}
-                          </span>
-                          <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums">
-                            {formatRelativeDate(session.lastMessageAt)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-zinc-600">
-                            {session.messageCount} message{session.messageCount !== 1 ? 's' : ''}
-                          </span>
-                          {session.model && (
-                            <span className="text-[9px] font-mono" style={{ color: 'color-mix(in srgb, var(--fintheon-accent) 40%, transparent)' }}>
-                              {session.model}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {/* Delete on hover */}
-                      <button
-                        onClick={(e) => handleDelete(session.id, e)}
-                        className="p-1 rounded opacity-0 group-hover/item:opacity-100 transition-all text-zinc-600 hover:text-red-400 hover:bg-red-500/10"
-                        title="Delete"
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Footer hint */}
-        {!loading && filtered.length > 0 && (
-          <div
-            className="px-4 py-1.5 text-center border-t"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--fintheon-accent) 8%, transparent)',
-              backgroundColor: 'color-mix(in srgb, var(--fintheon-bg) 95%, var(--fintheon-accent) 5%)',
-            }}
-          >
-            <span className="text-[9px] text-zinc-600 tracking-wide">
-              <kbd className="px-1 py-0.5 rounded bg-zinc-800/50 text-zinc-500 text-[8px] font-mono">↑↓</kbd> navigate
-              {' '}<kbd className="px-1 py-0.5 rounded bg-zinc-800/50 text-zinc-500 text-[8px] font-mono">↵</kbd> select
-              {' '}<kbd className="px-1 py-0.5 rounded bg-zinc-800/50 text-zinc-500 text-[8px] font-mono">esc</kbd> close
-            </span>
+      {/* Session list */}
+      <div ref={listRef} className="overflow-y-auto" style={{ maxHeight: '340px', scrollbarWidth: 'thin' }}>
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={14} className="animate-spin" style={{ color: 'var(--fintheon-accent)' }} />
           </div>
         )}
+
+        {!loading && filtered.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 px-3 text-center">
+            <MessageSquare size={16} className="mb-1.5 text-zinc-700" />
+            <p className="text-[11px] text-zinc-600">
+              {search ? 'No matching conversations' : 'No conversations yet'}
+            </p>
+            {!search && (
+              <p className="text-[9px] text-zinc-700 mt-0.5">
+                Start chatting to create your first session
+              </p>
+            )}
+          </div>
+        )}
+
+        {!loading && Object.entries(grouped).map(([dateLabel, items]) => {
+          const groupStartIndex = flatFiltered.indexOf(items[0]);
+          return (
+            <div key={dateLabel}>
+              <div
+                className="px-3 py-1 text-[9px] font-semibold tracking-widest uppercase sticky top-0"
+                style={{
+                  color: 'var(--fintheon-accent)',
+                  backgroundColor: 'var(--fintheon-surface)',
+                  borderBottom: '1px solid color-mix(in srgb, var(--fintheon-accent) 6%, transparent)',
+                }}
+              >
+                {dateLabel}
+              </div>
+              {items.map((session, i) => {
+                const flatIndex = groupStartIndex + i;
+                const isSelected = flatIndex === selectedIndex;
+                const isActive = session.id === currentConversationId;
+                return (
+                  <button
+                    key={session.id}
+                    data-index={flatIndex}
+                    onClick={() => { onSelectSession(session.id); onClose(); }}
+                    onMouseEnter={() => setSelectedIndex(flatIndex)}
+                    className="w-full text-left px-3 py-2 flex items-center gap-2 transition-colors group/item"
+                    style={{
+                      backgroundColor: isSelected
+                        ? 'color-mix(in srgb, var(--fintheon-accent) 8%, transparent)'
+                        : 'transparent',
+                      borderLeft: isActive
+                        ? '2px solid var(--fintheon-accent)'
+                        : '2px solid transparent',
+                    }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span
+                          className="text-[11px] font-medium truncate"
+                          style={{ color: isActive ? 'var(--fintheon-accent)' : 'var(--fintheon-text)' }}
+                        >
+                          {session.title}
+                        </span>
+                        <span className="text-[9px] text-zinc-600 shrink-0 tabular-nums">
+                          {formatRelativeDate(session.lastMessageAt)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[9px] text-zinc-600">
+                          {session.messageCount} msg{session.messageCount !== 1 ? 's' : ''}
+                        </span>
+                        {session.model && (
+                          <span className="text-[8px] font-mono" style={{ color: 'color-mix(in srgb, var(--fintheon-accent) 40%, transparent)' }}>
+                            {session.model}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => handleDelete(session.id, e)}
+                      className="p-0.5 rounded opacity-0 group-hover/item:opacity-100 transition-all text-zinc-600 hover:text-red-400 hover:bg-red-500/10"
+                      title="Delete"
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
