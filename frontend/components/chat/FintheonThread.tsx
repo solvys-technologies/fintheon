@@ -444,7 +444,7 @@ function extractText(msg: any): string {
   return parts
     .filter((p: any) => p.type === 'text' && typeof p.text === 'string')
     .map((p: any) => p.text)
-    .join('\n');
+    .join('\n\n');
 }
 
 function extractReasoning(msg: any): string {

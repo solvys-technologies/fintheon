@@ -88,7 +88,7 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
       />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 relative">
           <FintheonThread
             onSend={handleSend}
             isLoading={isRunning}
@@ -98,6 +98,9 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
             lastError={lastError}
             lastRequestId={lastRequestId}
           />
+          {/* Fade-to-black gradient above composer */}
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10" style={{ height: '80px', background: 'linear-gradient(to bottom, transparent, var(--fintheon-bg))' }} />
+          <div className="relative z-20 shrink-0">
           <FintheonComposer
             thinkHarder={thinkHarder}
             setThinkHarder={setThinkHarder}
@@ -108,6 +111,7 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
             onToggleSkills={() => setShowSkills((v) => !v)}
             disabledSkills={disabledSkills}
           />
+          </div>
         </div>
 
         {/* Preview pane — right side, only in dual-pane mode (Chat main) */}

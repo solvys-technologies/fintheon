@@ -370,7 +370,7 @@ export function PromptBox({
         <div
           className={[
             'relative flex flex-col rounded-2xl border transition-all duration-200',
-            'backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,0.35)]',
+            'backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)]',
             text
               ? 'border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25'
               : 'border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/35',

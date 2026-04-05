@@ -16,6 +16,12 @@ const HOME = homedir()
 /** Read-only tools that skip the approval gate */
 const AUTO_APPROVED_TOOLS = new Set(['read_file', 'read_mcp_config', 'get_fintheon_paths'])
 
+/** Ensure tool results are never empty — VProxy/OpenAI rejects empty content */
+function ensureNonEmpty(result: unknown): string {
+  const s = typeof result === 'string' ? result : JSON.stringify(result ?? '')
+  return s.trim().length > 0 ? s : '(no output)'
+}
+
 /** Key file paths Harper and the user should know about */
 export const FINTHEON_PATHS = {
   projectRoot: PROJECT_ROOT,
@@ -110,7 +116,7 @@ export function createHarperTools(requestId: string) {
             return (r.stdout + (r.stderr ? `\n[stderr] ${r.stderr}` : '')).slice(0, 12_000)
           },
         )
-        return result
+        return ensureNonEmpty(result)
       },
     }),
 
@@ -131,7 +137,7 @@ export function createHarperTools(requestId: string) {
             return `Error: ${err instanceof Error ? err.message : String(err)}`
           }
         })
-        return result
+        return ensureNonEmpty(result)
       },
     }),
 
@@ -159,7 +165,7 @@ export function createHarperTools(requestId: string) {
             }
           },
         )
-        return result
+        return ensureNonEmpty(result)
       },
     }),
 
@@ -193,7 +199,7 @@ export function createHarperTools(requestId: string) {
             }
           },
         )
-        return result
+        return ensureNonEmpty(result)
       },
     }),
 
@@ -226,7 +232,7 @@ export function createHarperTools(requestId: string) {
             return JSON.stringify(results, null, 2).slice(0, 20_000)
           },
         )
-        return result
+        return ensureNonEmpty(result)
       },
     }),
 
