@@ -84,15 +84,9 @@ function MainLayoutInner() {
   const isStone = theme.name === 'solvys-stone';
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
-  // Team onboarding — auto-show on first run or after version update
-  const [showTeamOnboarding, setShowTeamOnboarding] = useState(() => {
-    const onboardedVersion = localStorage.getItem(TEAM_ONBOARDED_KEY);
-    return onboardedVersion !== EPOCH_VERSION;
-  });
-  const handleTeamOnboardingComplete = useCallback(() => {
-    localStorage.setItem(TEAM_ONBOARDED_KEY, EPOCH_VERSION);
-    setShowTeamOnboarding(false);
-  }, []);
+  // Team onboarding removed — single Supabase account serves all devices
+  const showTeamOnboarding = false;
+  const handleTeamOnboardingComplete = useCallback(() => {}, []);
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showRefinement, setShowRefinement] = useState(false);
