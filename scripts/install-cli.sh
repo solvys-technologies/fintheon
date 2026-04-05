@@ -139,6 +139,84 @@ case "$1" in
       exit 1
     fi
     ;;
+  doctor)
+    echo ""
+    echo "  Fintheon Doctor — System Health Check"
+    echo "  ────────────────────────────────────────"
+
+    # Backend
+    if curl -s localhost:8080/health > /dev/null 2>&1; then
+      echo "  Backend:      ✓ Running on :8080"
+    else
+      echo "  Backend:      ✗ Not running"
+    fi
+
+    # VProxy
+    if curl -s localhost:8317/v1/models -H "Authorization: Bearer CLI_PROXY_API_KEY" 2>/dev/null | grep -q "claude"; then
+      echo "  VProxy:       ✓ Claude models available on :8317"
+    else
+      echo "  VProxy:       ✗ No Claude models (run: fintheon oauth)"
+    fi
+
+    # Strands SDK
+    if [[ -d "$FINTHEON_ROOT/backend-hono/node_modules/@strands-agents" ]]; then
+      STRANDS_VER=$(cat "$FINTHEON_ROOT/backend-hono/node_modules/@strands-agents/sdk/package.json" 2>/dev/null | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+      echo "  Strands SDK:  ✓ $STRANDS_VER"
+    else
+      echo "  Strands SDK:  ✗ Not installed (run: fintheon update)"
+    fi
+
+    # Zod version
+    ZOD_VER=$(cat "$FINTHEON_ROOT/backend-hono/node_modules/zod/package.json" 2>/dev/null | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+    if [[ "$ZOD_VER" == 4* ]]; then
+      echo "  Zod:          ✓ v$ZOD_VER"
+    else
+      echo "  Zod:          ✗ v$ZOD_VER (need v4+, run: fintheon update)"
+    fi
+
+    # Claude Code hooks
+    if [[ -f "$FINTHEON_ROOT/.claude/settings.json" ]] && grep -q "hooks" "$FINTHEON_ROOT/.claude/settings.json" 2>/dev/null; then
+      HOOK_COUNT=$(ls "$FINTHEON_ROOT/.claude/hooks/"*.sh 2>/dev/null | wc -l | tr -d ' ')
+      echo "  Hooks:        ✓ $HOOK_COUNT scripts in .claude/hooks/"
+    else
+      echo "  Hooks:        ✗ Not configured"
+    fi
+
+    # jq
+    if command -v jq &>/dev/null; then
+      echo "  jq:           ✓ $(jq --version 2>/dev/null || echo 'available')"
+    else
+      echo "  jq:           ⚠ Missing (hooks use python3 fallback)"
+    fi
+
+    # Build check
+    cd "$FINTHEON_ROOT/backend-hono" 2>/dev/null
+    if bun run build 2>&1 | tail -1 | grep -q "tsc"; then
+      echo "  Build:        ✓ Compiles"
+    else
+      echo "  Build:        ✗ Errors present"
+    fi
+
+    # App
+    if [[ -d /Applications/Fintheon.app ]]; then
+      echo "  App:          ✓ Installed"
+    else
+      echo "  App:          ✗ Not installed"
+    fi
+
+    # Git
+    cd "$FINTHEON_ROOT" 2>/dev/null
+    echo "  Version:      $(git describe --tags --always 2>/dev/null || echo 'unknown')"
+    echo "  Branch:       $(git branch --show-current 2>/dev/null || echo 'unknown')"
+    DIRTY=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$DIRTY" -eq 0 ]]; then
+      echo "  Working tree:  Clean"
+    else
+      echo "  Working tree:  $DIRTY uncommitted changes"
+    fi
+
+    echo ""
+    ;;
   version)
     cd "$FINTHEON_ROOT" 2>/dev/null || exit 1
     VERSION=$(git describe --tags --always 2>/dev/null || echo "unknown")
@@ -203,6 +281,7 @@ case "$1" in
     printf "  ${_G}login${_R}     ${_D}Sign in to trading platforms${_R}\n"
     printf "  ${_G}peers${_R}     ${_D}Peer + Twitter onboarding${_R}\n"
     printf "  ${_G}setup${_R}     ${_D}Re-run first-time setup${_R}\n"
+    printf "  ${_G}doctor${_R}    ${_D}Full system health check${_R}\n"
     printf "  ${_G}version${_R}   ${_D}Show current version${_R}\n"
     echo ""
     ;;

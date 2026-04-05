@@ -98,42 +98,37 @@ export async function handleCognitionStream(c: Context) {
       data: JSON.stringify({ requestId }),
     })
 
-    let done = false
-
-    const offStep = onStep(requestId, async (step) => {
-      if (done) return
-      await stream.writeSSE({
-        event: 'step',
-        data: JSON.stringify(step),
-      })
-    })
-
-    const offEnd = onEnd(requestId, async (ev) => {
-      if (done) return
-      done = true
-      await stream.writeSSE({
-        event: 'done',
-        data: JSON.stringify(ev),
-      })
-    })
-
-    // Wait for done or 90s timeout
-    const timeout = setTimeout(() => {
-      done = true
-      offStep()
-      offEnd()
-    }, 90_000)
-
-    // Block until done
+    // Use a Promise that resolves when the stream is done, no polling
     await new Promise<void>((resolve) => {
-      const check = setInterval(() => {
-        if (done) {
-          clearInterval(check)
-          clearTimeout(timeout)
-          offStep()
-          resolve()
-        }
-      }, 100)
+      const cleanup = () => {
+        clearTimeout(timeout)
+        offStep()
+        offEnd()
+        resolve()
+      }
+
+      const offStep = onStep(requestId, async (step) => {
+        await stream.writeSSE({
+          event: 'step',
+          data: JSON.stringify(step),
+        })
+      })
+
+      const offEnd = onEnd(requestId, async (ev) => {
+        await stream.writeSSE({
+          event: 'done',
+          data: JSON.stringify(ev),
+        })
+        cleanup()
+      })
+
+      // 90s safety timeout
+      const timeout = setTimeout(() => {
+        stream.writeSSE({
+          event: 'done',
+          data: JSON.stringify({ requestId, totalMs: 90_000 }),
+        }).finally(cleanup)
+      }, 90_000)
     })
   })
 }

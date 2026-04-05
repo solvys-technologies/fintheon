@@ -157,15 +157,22 @@ export async function seedCacheFromDb(): Promise<void> {
 
 /**
  * Write-through cache update used by pollers after successful enrichment cycles.
+ * Merges new items into the existing cache (deduped by ID) so the full feed
+ * is never replaced by a small batch of newly polled items.
  * Empty updates are ignored so warm cache is never replaced with [].
  */
+// [claude-code 2026-04-05] Fix: merge new items into cache instead of replacing — prevents feed wipe on poll
 export function updateFeedCache(items: FeedItem[]): void {
   if (items.length === 0) return;
 
-  const nextItems = sortFeedItems(items).slice(0, MAX_FEED_ITEMS);
+  const existing = feedCache ?? [];
+  const existingIds = new Set(existing.map(i => i.id));
+  const newItems = items.filter(i => !existingIds.has(i.id));
+  const merged = [...newItems, ...existing];
+  const nextItems = sortFeedItems(merged).slice(0, MAX_FEED_ITEMS);
   feedCache = nextItems;
   lastCacheRefreshMs = Date.now();
-  log.info(`[FeedService] Cache updated with ${nextItems.length} items`);
+  log.info(`[FeedService] Cache updated: ${newItems.length} new, ${nextItems.length} total`);
 }
 
 
@@ -708,6 +715,26 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
  */
 export async function getBreakingNews(userId: string): Promise<FeedResponse> {
   return getFeed(userId, { breakingOnly: true, limit: 10 });
+}
+
+// [claude-code 2026-04-05] Feed health snapshot for Harper monitoring hook
+export function getFeedHealth(): {
+  cacheSize: number;
+  cacheAgeMs: number;
+  oldestItemAge: string | null;
+  newestItemAge: string | null;
+} {
+  const now = Date.now();
+  const items = feedCache ?? [];
+  const sorted = items.length > 0
+    ? items.map(i => new Date(i.publishedAt).getTime()).sort((a, b) => b - a)
+    : [];
+  return {
+    cacheSize: items.length,
+    cacheAgeMs: lastCacheRefreshMs ? now - lastCacheRefreshMs : -1,
+    oldestItemAge: sorted.length > 0 ? new Date(sorted[sorted.length - 1]).toISOString() : null,
+    newestItemAge: sorted.length > 0 ? new Date(sorted[0]).toISOString() : null,
+  };
 }
 
 // Non-blocking module warm-up so cache can populate ahead of first poll cycle.

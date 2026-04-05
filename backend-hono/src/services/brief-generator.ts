@@ -1,8 +1,6 @@
-// [claude-code 2026-03-22] Extracted brief generation logic — shared by data routes + dispatch scheduler
-// [claude-code 2026-03-23] Fix: use createModelClient() instead of passing raw model key to generateText
-// [claude-code 2026-03-25] Add Nous Direct fallback when OpenRouter DNS fails (EAI_AGAIN)
+// [claude-code 2026-04-05] Strands Phase 8: Replace generateText + OpenRouter fallback with invokeAgent
 // [claude-code 2026-03-26] S2-T2: Add regime classification to MDB prompt + auto-parse after generation
-import { generateText } from 'ai';
+import { invokeAgent } from './strands/index.js';
 import {
   writeBrief,
   readLatestBrief,
@@ -11,8 +9,6 @@ import {
   type BriefRecord,
 } from './supabase-service.js';
 import { getFeed } from './riskflow/feed-service.js';
-import { selectModel, createModelClient, getFallbackModel, markProviderUnhealthy, type AiModelKey } from './ai/model-selector.js';
-import { generateTextViaClaude } from './claude-sdk/process-manager.js';
 import { createLogger } from '../lib/logger.js';
 import { MARKET_REGIMES, type MarketRegime } from '../types/regime.js';
 import { setRegime } from './regime/regime-service.js';
@@ -175,52 +171,16 @@ ${
 }`;
 
   let text: string;
-  let usedProvider = 'claude-local';
+  const usedProvider = 'strands-vproxy';
 
-  // Primary: Harper provider path (VProxy Anthropic preferred, Claude CLI fallback).
-  try {
-    log.info('Generating brief via Harper provider path...')
-    text = await generateTextViaClaude(prompt)
-    log.info(`Harper provider generated ${text.length} chars`)
-  } catch (cliErr: any) {
-    log.warn('Harper provider path failed, falling back to OpenRouter', { error: cliErr?.message })
-    text = '';
-  }
-
-  // Fallback: OpenRouter (if Claude CLI failed or unavailable)
-  if (!text) {
-    const selection = selectModel({
-      taskType: 'analysis',
-      maxBudgetUsd: isFull ? 0.05 : 0.01,
-    });
-    usedProvider = selection.provider;
-
-    try {
-      const model = createModelClient(selection.model as AiModelKey);
-      const result = await generateText({ model, prompt });
-      text = result.text;
-    } catch (err: any) {
-      const isNetworkError = ['EAI_AGAIN', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNREFUSED', 'ECONNRESET', 'fetch failed', 'Insufficient credits']
-        .some((code) => err?.message?.includes(code) || err?.cause?.code === code);
-
-      if (!isNetworkError) throw err;
-
-      log.warn('OpenRouter failed too, attempting Nous Direct fallback', {
-        primaryModel: selection.model,
-        error: err?.message ?? String(err),
-      });
-      markProviderUnhealthy(selection.provider);
-
-      const fallback = getFallbackModel(selection.model as AiModelKey);
-      if (!fallback) throw err;
-
-      const fallbackModel = createModelClient(fallback.model as AiModelKey);
-      const fallbackResult = await generateText({ model: fallbackModel, prompt });
-      text = fallbackResult.text;
-      usedProvider = fallback.provider;
-      log.info(`Fallback succeeded via ${fallback.model}`, { provider: fallback.provider });
-    }
-  }
+  log.info('Generating brief via Strands agent...');
+  const result = await invokeAgent({
+    systemPrompt: 'You are Fintheon, a macro trading assistant for Priced In Capital.',
+    userPrompt: prompt,
+    model: { temperature: 0.4, maxTokens: isFull ? 4096 : 1024 },
+  });
+  text = result.text;
+  log.info(`Strands agent generated ${text.length} chars`);
 
   // Auto-detect regime from MDB output (MDB only — parse after generation)
   if (briefType === 'MDB') {

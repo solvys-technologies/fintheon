@@ -1,0 +1,44 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "command": ".claude/hooks/block-dangerous.sh"
+      },
+      {
+        "matcher": "Write|Edit",
+        "command": ".claude/hooks/protect-files.sh"
+      },
+      {
+        "matcher": "Bash",
+        "command": ".claude/hooks/require-tests-for-pr.sh"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "command": "npx prettier --write \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+      },
+      {
+        "matcher": "Write|Edit",
+        "command": "cd \"$CLAUDE_PROJECT_DIR\" && bun run build 2>&1 | tail -5 || true"
+      },
+      {
+        "matcher": "Write|Edit",
+        "command": "cd \"$CLAUDE_PROJECT_DIR\" && npx eslint \"$CLAUDE_FILE_PATH\" --fix 2>&1 | tail -10 || true"
+      },
+      {
+        "matcher": "Bash",
+        "command": ".claude/hooks/log-commands.sh"
+      }
+    ],
+    "Stop": [
+      {
+        "command": ".claude/hooks/auto-commit.sh"
+      },
+      {
+        "command": ".claude/hooks/harper-feed-health.sh"
+      }
+    ]
+  }
+}

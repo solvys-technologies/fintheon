@@ -15,10 +15,71 @@ while [[ -L "$SOURCE" ]]; do
 done
 FINTHEON_ROOT="$(cd "$(dirname "$SOURCE")" && pwd)"
 
-ok()   { echo "  ✓ $1"; }
-warn() { echo "  ⚠ $1"; }
-fail() { echo "  ✗ $1"; exit 1; }
-info() { echo "  · $1"; }
+# ── Solvys Gold ANSI palette ──────────────────────────────────────────────────
+_R='\033[0m'
+_GOLD='\033[38;2;199;159;74m'
+_CREAM='\033[38;2;240;234;214m'
+_DIM='\033[38;2;100;85;50m'
+_FIRE1='\033[38;2;255;100;20m'
+_FIRE2='\033[38;2;255;160;40m'
+_FIRE3='\033[38;2;255;210;80m'
+_EMBER='\033[38;2;180;60;20m'
+_GREEN='\033[38;2;120;200;120m'
+_RED='\033[38;2;220;60;60m'
+_YELLOW='\033[38;2;220;190;80m'
+_BOLD='\033[1m'
+
+ok()   { echo -e "  ${_GREEN}✓${_R} ${_CREAM}$1${_R}"; }
+warn() { echo -e "  ${_YELLOW}⚠${_R} ${_CREAM}$1${_R}"; }
+fail() { echo -e "  ${_RED}✗${_R} ${_CREAM}$1${_R}"; exit 1; }
+info() { echo -e "  ${_DIM}·${_R} ${_CREAM}$1${_R}"; }
+
+torch_banner() {
+  local title="$1"
+  local subtitle="${2:-}"
+  echo ""
+  echo -e "      ${_FIRE3}  )  ${_R}                                    ${_FIRE3}  (  ${_R}"
+  echo -e "      ${_FIRE2} ( \\ ${_R}                                    ${_FIRE2} / ) ${_R}"
+  echo -e "      ${_FIRE1}  )( ${_R}                                    ${_FIRE1}  )( ${_R}"
+  echo -e "      ${_EMBER} /|\\${_R}                                     ${_EMBER} /|\\${_R}"
+  echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╔══════════════════════════════╗${_R}  ${_GOLD}]|||[${_R}"
+  printf -v _t "%-30s" "$title"
+  echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_BOLD}${_GOLD}${_t}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+  if [[ -n "$subtitle" ]]; then
+    printf -v _s "%-30s" "$subtitle"
+    echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_DIM}${_s}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+  fi
+  echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╚══════════════════════════════╝${_R}  ${_GOLD}]|||[${_R}"
+  echo -e "      ${_DIM} ╨╨╨ ${_R}                                    ${_DIM} ╨╨╨ ${_R}"
+  echo ""
+}
+
+torch_status() {
+  local line1="$1" line2="${2:-}" line3="${3:-}" line4="${4:-}"
+  echo ""
+  echo -e "      ${_FIRE3}  )  ${_R}                                    ${_FIRE3}  (  ${_R}"
+  echo -e "      ${_FIRE2} ( \\ ${_R}                                    ${_FIRE2} / ) ${_R}"
+  echo -e "      ${_FIRE1}  )( ${_R}                                    ${_FIRE1}  )( ${_R}"
+  echo -e "      ${_EMBER} /|\\${_R}                                     ${_EMBER} /|\\${_R}"
+  echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╔══════════════════════════════╗${_R}  ${_GOLD}]|||[${_R}"
+  printf -v _p1 "%-30s" "$line1"
+  echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_BOLD}${_GOLD}${_p1}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+  echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R}                                ${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+  for line in "$line2" "$line3" "$line4"; do
+    if [[ -n "$line" ]]; then
+      printf -v _px "%-30s" "$line"
+      echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_CREAM}${_px}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
+    fi
+  done
+  echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╚══════════════════════════════╝${_R}  ${_GOLD}]|||[${_R}"
+  echo -e "      ${_DIM} ╨╨╨ ${_R}                                    ${_DIM} ╨╨╨ ${_R}"
+  echo ""
+}
+
+section() {
+  echo ""
+  echo -e "  ${_GOLD}── $1 ${_DIM}─────────────────────────────────────${_R}"
+}
 
 # Public bootstrap constants (NOT secrets — vault handles the rest)
 _SUPABASE_URL="https://nrcfnzclbjboctptxaxx.supabase.co"
@@ -26,17 +87,13 @@ _SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 _DATABASE_URL="postgresql://postgres.nrcfnzclbjboctptxaxx:Pricedinresearch0670963957%24@aws-0-us-west-2.pooler.supabase.com:5432/postgres"
 
 do_install() {
-  echo ""
-  echo "  FINTHEON INSTALL"
-  echo "  ─────────────────────────────────"
-  echo "  No API keys needed. Sign in with Google."
-  echo ""
+  torch_banner "FINTHEON INSTALL" "No API keys needed. Sign in."
 
   local SHELL_PROFILE="$HOME/.zprofile"
 
   # ── 1. Core runtimes (Homebrew, Node, Bun, Python, uv) ────────────
 
-  info "Installing core runtimes..."
+  section "Core Runtimes"
 
   # Homebrew
   if ! command -v brew &>/dev/null; then
@@ -89,7 +146,7 @@ do_install() {
 
   # ── 2. Platform tools (Claude CLI, Hermes, Twitter CLI, VProxy) ───
 
-  info "Installing platform tools..."
+  section "Platform Tools"
 
   # Claude CLI — AI agent backbone
   if ! command -v claude &>/dev/null; then
@@ -162,7 +219,7 @@ HERMESEOF
 
   # ── 3. MCP servers (pre-cache so npx doesn't cold-start) ────────
 
-  info "Installing MCP servers..."
+  section "MCP Servers"
 
   # TradingView MCP Bridge (CDP-based, tradesdontlie/tradingview-mcp)
   TV_MCP_DIR="$HOME/Documents/Codebases/tradingview-mcp"
@@ -178,7 +235,7 @@ HERMESEOF
 
   # ── 4. JS dependencies ────────────────────────────────────────────
 
-  info "Installing JS dependencies..."
+  section "Dependencies"
   cd "$FINTHEON_ROOT"
   bun install 2>/dev/null || bun install
   ok "Root deps"
@@ -270,20 +327,16 @@ FENVEOF
 
   do_start
 
-  echo ""
-  echo "  ╔══════════════════════════════════════════════════════╗"
-  echo "  ║  FINTHEON IS READY                                   ║"
-  echo "  ║                                                      ║"
-  echo "  ║  Backend:  http://localhost:8080                     ║"
-  echo "  ║  CLI:      fintheon start | stop | update | logs     ║"
-  echo "  ║                                                      ║"
-  echo "  ║  Open the app and sign in with Google.               ║"
-  echo "  ╚══════════════════════════════════════════════════════╝"
-  echo ""
+  torch_status \
+    "FINTHEON IS READY" \
+    "Backend: http://localhost:8080" \
+    "CLI: fintheon start|stop|update" \
+    "Sign in with Google to begin."
+  _close_terminal
 }
 
 do_start() {
-  echo "  Starting Fintheon..."
+  section "Starting Fintheon"
   cd "$FINTHEON_ROOT/backend-hono"
   lsof -ti:8080 | xargs kill -9 2>/dev/null || true
   sleep 1
@@ -304,6 +357,12 @@ do_start() {
   fi
 }
 
+_close_terminal() {
+  # Give the user a moment to see the final banner, then close this terminal window
+  sleep 2
+  osascript -e 'tell application "Terminal" to close (every window whose name contains "fintheon")' 2>/dev/null || true
+}
+
 case "${1:-help}" in
   install|setup)
     do_install
@@ -315,11 +374,11 @@ case "${1:-help}" in
     do_start
     ;;
   stop)
-    echo "  Stopping Fintheon..."
+    info "Stopping Fintheon..."
     pkill -f "Fintheon" 2>/dev/null || true
     pkill -f "electron.*fintheon" 2>/dev/null || true
     lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-    echo "  ✓ Stopped"
+    ok "Stopped"
     ;;
   restart)
     "$0" stop
@@ -330,12 +389,23 @@ case "${1:-help}" in
     tail -f /tmp/fintheon-backend.log
     ;;
   status)
+    echo ""
+    echo -e "  ${_GOLD}Fintheon Status${_R}"
+    echo -e "  ${_DIM}────────────────────────────────${_R}"
     if lsof -i:8080 > /dev/null 2>&1; then
-      echo "  ✓ Backend running on :8080"
+      ok "Backend running on :8080"
       curl -s localhost:8080/health | python3 -m json.tool 2>/dev/null || true
     else
-      echo "  ✗ Backend not running"
+      echo -e "  ${_RED}✗${_R} ${_CREAM}Backend not running${_R}"
     fi
+    if pgrep -f "Fintheon" > /dev/null 2>&1; then
+      ok "App running"
+    else
+      info "App not running"
+    fi
+    VERSION=$(cd "$FINTHEON_ROOT" && git describe --tags --always 2>/dev/null || echo "unknown")
+    echo -e "  ${_DIM}·${_R} ${_CREAM}Version: ${_GOLD}$VERSION${_R}"
+    echo ""
     ;;
   oauth)
     if [[ -f "$FINTHEON_ROOT/scripts/vproxy-anthropic-oauth.sh" ]]; then
@@ -352,22 +422,31 @@ case "${1:-help}" in
     fi
     ;;
   version)
-    cd "$FINTHEON_ROOT" && git describe --tags --always 2>/dev/null || echo "unknown"
+    VERSION=$(cd "$FINTHEON_ROOT" && git describe --tags --always 2>/dev/null || echo "unknown")
+    echo -e "  ${_GOLD}Fintheon ${_BOLD}$VERSION${_R}"
     ;;
   *)
+    VERSION=$(cd "$FINTHEON_ROOT" && git describe --tags --always 2>/dev/null || echo "")
     echo ""
-    echo "  Fintheon CLI"
-    echo "  ─────────────────────────────────"
-    echo "  fintheon install    First-time setup (all tools)"
-    echo "  fintheon update     Pull latest + rebuild"
-    echo "  fintheon start      Start backend + launch app"
-    echo "  fintheon stop       Stop everything"
-    echo "  fintheon restart    Stop + start"
-    echo "  fintheon logs       Tail backend logs"
-    echo "  fintheon status     Check if running"
-    echo "  fintheon oauth      Connect Anthropic subscription"
-    echo "  fintheon peers      Twitter round-robin onboarding"
-    echo "  fintheon version    Show current version"
+    echo -e "      ${_FIRE3}  )  ${_R}                              ${_FIRE3}  (  ${_R}"
+    echo -e "      ${_FIRE2} ( \\ ${_R}  ${_BOLD}${_GOLD}FINTHEON${_R} ${_DIM}$VERSION${_R}      ${_FIRE2} / ) ${_R}"
+    echo -e "      ${_FIRE1}  )( ${_R}  ${_DIM}Priced In Capital${_R}       ${_FIRE1}  )( ${_R}"
+    echo -e "      ${_GOLD}]|||[${_R}                              ${_GOLD}]|||[${_R}"
+    echo -e "      ${_DIM} ╨╨╨ ${_R}                              ${_DIM} ╨╨╨ ${_R}"
+    echo ""
+    echo -e "  ${_GOLD}Commands${_R}"
+    echo -e "  ${_DIM}────────────────────────────────────────${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}install${_R}       ${_DIM}First-time setup${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}update${_R}        ${_DIM}Pull latest + rebuild${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}start${_R}         ${_DIM}Start backend + app${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}stop${_R}          ${_DIM}Stop everything${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}restart${_R}       ${_DIM}Stop + start${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}logs${_R}          ${_DIM}Tail backend logs${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}status${_R}        ${_DIM}Check if running${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}oauth${_R}         ${_DIM}Connect Anthropic${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}dispatchers${_R}   ${_DIM}Brief dispatch schedules${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}peers${_R}         ${_DIM}Twitter round-robin${_R}"
+    echo -e "  ${_CREAM}fintheon ${_GOLD}version${_R}       ${_DIM}Show current version${_R}"
     echo ""
     ;;
 esac

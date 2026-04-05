@@ -1,8 +1,7 @@
 // [claude-code 2026-03-28] S8-T5: MiroShark gov official debate engine — 8 personas replacing 5 debate agents
 // Hybrid worldview: baked-in base + 14-day RiskFlow headline augmentation per official
 
-import { generateText } from 'ai';
-import { selectModel, createModelClient, type AiModelKey } from '../ai/model-selector.js';
+import { invokeAgent } from '../strands/index.js';
 import { isSkillEnabled } from '../../config/feature-flags.js';
 import { getSupabaseClient } from '../../config/supabase.js';
 import type {
@@ -209,19 +208,12 @@ async function runGovAgent(
   context: string,
   headlines: string[],
 ): Promise<MiroSharkAgentResponse> {
-  const selection = selectModel({ taskType: 'reasoning' });
-  const model = createModelClient(selection.model as AiModelKey);
-
   const systemPrompt = buildAgentSystemPrompt(agent.persona, headlines);
 
-  const { text } = await generateText({
-    model,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: context },
-    ],
-    temperature: 0.4,
-    maxOutputTokens: 1024,
+  const { text } = await invokeAgent({
+    systemPrompt,
+    userPrompt: context,
+    model: { temperature: 0.4, maxTokens: 1024 },
   });
 
   const parsed = parseJsonSafe<Omit<MiroSharkAgentResponse, 'agentId'>>(text);
@@ -676,19 +668,12 @@ async function runAnalystAgent(
   context: string,
   headlines: string[],
 ): Promise<MiroSharkAgentResponse> {
-  const selection = selectModel({ taskType: 'reasoning' });
-  const model = createModelClient(selection.model as AiModelKey);
-
   const systemPrompt = buildAnalystSystemPrompt(analyst.persona, headlines);
 
-  const { text } = await generateText({
-    model,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: context },
-    ],
-    temperature: 0.5, // Slightly higher than gov officials for more diversity
-    maxOutputTokens: 1024,
+  const { text } = await invokeAgent({
+    systemPrompt,
+    userPrompt: context,
+    model: { temperature: 0.5, maxTokens: 1024 },
   });
 
   const parsed = parseJsonSafe<Omit<MiroSharkAgentResponse, 'agentId'>>(text);

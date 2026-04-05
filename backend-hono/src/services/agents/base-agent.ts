@@ -4,8 +4,7 @@
  * Phase 6 - Day 20
  */
 
-import { generateText } from 'ai'
-import { selectModel, createModelClient, type AiModelKey } from '../ai/model-selector.js'
+import { invokeAgent } from '../strands/index.js'
 import { sql, isDatabaseAvailable } from '../../config/database.js'
 import type { AgentType, AgentReport, AgentReportRow } from '../../types/agents.js'
 
@@ -48,22 +47,10 @@ export async function runAgent<T>(
 ): Promise<{ report: T; latencyMs: number; model: string }> {
   const startTime = Date.now()
 
-  // Select model based on task type
-  const selection = selectModel({
-    taskType: config.taskType,
-    requiresSpeed: config.agentType === 'market_data',
-  })
-
-  const model = createModelClient(selection.model as AiModelKey)
-
-  const { text } = await generateText({
-    model,
-    messages: [
-      { role: 'system', content: config.systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    temperature: 0.3,
-    maxOutputTokens: 2048,
+  const { text } = await invokeAgent({
+    systemPrompt: config.systemPrompt,
+    userPrompt,
+    model: { temperature: 0.3, maxTokens: 2048 },
   })
 
   const reportData = config.parseResponse(text)
@@ -72,7 +59,7 @@ export async function runAgent<T>(
   return {
     report: reportData as T,
     latencyMs,
-    model: selection.model,
+    model: 'strands-vproxy',
   }
 }
 

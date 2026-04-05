@@ -14,8 +14,7 @@
  *   - Consul: provides fundamental risk context via research debate (Stage 3)
  */
 
-import { generateText } from 'ai'
-import { selectModel, createModelClient, type AiModelKey } from '../ai/model-selector.js'
+import { invokeAgent } from '../strands/index.js'
 import { sql, isDatabaseAvailable } from '../../config/database.js'
 import type {
   RiskAssessment,
@@ -112,19 +111,12 @@ export async function assessProposal(
   userId: string,
   input: RiskManagerInput
 ): Promise<RiskAssessment> {
-  const selection = selectModel({ taskType: 'reasoning' })
-  const model = createModelClient(selection.model as AiModelKey)
-
   const prompt = buildPrompt(input)
 
-  const { text } = await generateText({
-    model,
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: prompt },
-    ],
-    temperature: 0.2,
-    maxOutputTokens: 1024,
+  const { text } = await invokeAgent({
+    systemPrompt: SYSTEM_PROMPT,
+    userPrompt: prompt,
+    model: { temperature: 0.2, maxTokens: 1024 },
   })
 
   const parsed = parseJsonSafe<Partial<RiskAssessment>>(text)

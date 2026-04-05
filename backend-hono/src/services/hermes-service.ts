@@ -9,14 +9,8 @@
  * Inference: OpenRouter (Nous subscription) + Claude Opus 4.6
  */
 
-import { createOpenAI } from '@ai-sdk/openai'
+// [claude-code 2026-04-05] Strands Phase 8: Removed @ai-sdk/openai import — types/interfaces kept for consumers
 import type { AiProviderType, AiRequestCost } from '../types/ai-types.js'
-
-const OPENROUTER_BASE = 'https://openrouter.ai/api/v1'
-const HERMES_BASE_URL = process.env.OPENROUTER_BASE_URL
-  ? `${process.env.OPENROUTER_BASE_URL.replace(/\/+$/, '')}/v1`
-  : OPENROUTER_BASE
-const HERMES_API_KEY = process.env.OPENROUTER_API_KEY
 
 // [claude-code 2026-03-16] Agent roster v7.9: merged PMA, added Herald
 // P.I.C. Agent Hierarchy
@@ -153,34 +147,12 @@ export const buildHermesHeaders = (config?: {
 }
 
 /**
- * Check if Hermes / OpenRouter is available
+ * Check if Hermes / Strands is available
+ * Now checks VProxy via Strands provider instead of OpenRouter API key.
  */
 export const isHermesAvailable = (): boolean => {
-  return Boolean(HERMES_API_KEY && HERMES_API_KEY.length > 0)
-}
-
-/**
- * Create a Hermes client using OpenAI-compatible interface
- * Calls OpenRouter (Opus 4.6) via Nous subscription
- */
-export const createHermesClient = (modelId?: string) => {
-  if (!HERMES_API_KEY) {
-    throw new Error('Missing OPENROUTER_API_KEY environment variable')
-  }
-
-  const headers = buildHermesHeaders()
-
-  const hermes = createOpenAI({
-    apiKey: HERMES_API_KEY,
-    baseURL: HERMES_BASE_URL,
-    headers: {
-      ...(headers as Record<string, string>),
-      'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
-      'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
-    },
-  })
-
-  return hermes(modelId ?? 'xai/grok-4-fast')
+  // VProxy is always configured locally — return true if env isn't explicitly disabled
+  return process.env.USE_VPROXY_ANTHROPIC !== 'false'
 }
 
 

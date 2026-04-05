@@ -3,8 +3,7 @@
 
 import { createLogger } from '../../lib/logger.js';
 import { getSupabaseClient } from '../../config/supabase.js';
-import { selectModel, createModelClient, type AiModelKey } from '../ai/model-selector.js';
-import { generateText } from 'ai';
+import { invokeAgent } from '../strands/index.js';
 
 const log = createLogger('AgentNotes');
 
@@ -32,9 +31,6 @@ interface NoteInput {
  * Generate a tactical agent note for a single item using Oracle's model
  */
 export async function generateAgentNote(item: NoteInput): Promise<string> {
-  const selection = selectModel({ taskType: 'reasoning', inputChars: 500 });
-  const model = createModelClient(selection.model as AiModelKey);
-
   // Build user prompt with all available context
   let userPrompt = `Headline: ${item.headline}`;
   if (item.summary) userPrompt += `\nSummary: ${item.summary}`;
@@ -59,14 +55,10 @@ export async function generateAgentNote(item: NoteInput): Promise<string> {
     if (scoreParts.length > 0) userPrompt += `\nScore Context: ${scoreParts.join(' | ')}`;
   }
 
-  const { text } = await generateText({
-    model,
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ],
-    temperature: 0.3,
-    maxOutputTokens: 200,
+  const { text } = await invokeAgent({
+    systemPrompt: SYSTEM_PROMPT,
+    userPrompt,
+    model: { temperature: 0.3, maxTokens: 200 },
   });
 
   return text.trim();

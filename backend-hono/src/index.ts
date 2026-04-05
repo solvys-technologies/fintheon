@@ -107,8 +107,14 @@ bootServices();
 // Bun auto-serves via default export. Node needs @hono/node-server.
 if (typeof globalThis.Bun === 'undefined') {
   import('@hono/node-server').then(({ serve }) => {
-    serve({ fetch: app.fetch, port: config.PORT });
-    log.info('Server listening (Node)', { port: config.PORT });
+    const server = serve({ fetch: app.fetch, port: config.PORT }) as any;
+    // SSE streams (Harper chat, cognition) can run 10+ minutes during tool-call loops.
+    // Disable ALL Node HTTP server timeouts to prevent mid-stream kills.
+    server.requestTimeout = 0;     // Node 18+ (default 300s)
+    server.headersTimeout = 0;     // Header receive timeout (default 60s)
+    server.timeout = 0;            // Legacy socket idle timeout (default 0 but some envs set it)
+    server.keepAliveTimeout = 0;   // Keep-alive idle timeout
+    log.info('Server listening (Node, no timeouts)', { port: config.PORT });
   });
 }
 

@@ -4,8 +4,7 @@
  * Phase 6 - Day 23
  */
 
-import { generateText } from 'ai'
-import { selectModel, createModelClient, type AiModelKey } from '../ai/model-selector.js'
+import { invokeAgent } from '../strands/index.js'
 import { sql, isDatabaseAvailable } from '../../config/database.js'
 import type {
   DebateResult,
@@ -88,8 +87,6 @@ export async function runDebate(
     consensusScore
   )
 
-  const selection = selectModel({ taskType: 'research' })
-
   const result: DebateResult = {
     id: crypto.randomUUID(),
     userId,
@@ -99,7 +96,7 @@ export async function runDebate(
     debateRounds,
     consensusScore,
     finalAssessment,
-    model: selection.model,
+    model: 'strands-vproxy',
     totalLatencyMs: Date.now() - startTime,
     createdAt: new Date().toISOString(),
   }
@@ -119,19 +116,12 @@ async function runDebateRound(
   bearish: ResearcherReport,
   previousRounds: { bullish: string; bearish: string }[]
 ): Promise<DebateRound> {
-  const selection = selectModel({ taskType: 'reasoning' })
-  const model = createModelClient(selection.model as AiModelKey)
-
   const prompt = buildRoundPrompt(round, bullish, bearish, previousRounds)
 
-  const { text } = await generateText({
-    model,
-    messages: [
-      { role: 'system', content: MODERATOR_SYSTEM_PROMPT },
-      { role: 'user', content: prompt },
-    ],
-    temperature: 0.4,
-    maxOutputTokens: 1024,
+  const { text } = await invokeAgent({
+    systemPrompt: MODERATOR_SYSTEM_PROMPT,
+    userPrompt: prompt,
+    model: { temperature: 0.4, maxTokens: 1024 },
   })
 
   const parsed = parseJsonSafe<Omit<DebateRound, 'round'>>(text)
@@ -197,19 +187,12 @@ async function generateFinalAssessment(
   rounds: DebateRound[],
   consensusScore: number
 ): Promise<DebateResult['finalAssessment']> {
-  const selection = selectModel({ taskType: 'reasoning' })
-  const model = createModelClient(selection.model as AiModelKey)
-
   const prompt = buildConsensusPrompt(bullish, bearish, rounds, consensusScore)
 
-  const { text } = await generateText({
-    model,
-    messages: [
-      { role: 'system', content: CONSENSUS_SYSTEM_PROMPT },
-      { role: 'user', content: prompt },
-    ],
-    temperature: 0.3,
-    maxOutputTokens: 512,
+  const { text } = await invokeAgent({
+    systemPrompt: CONSENSUS_SYSTEM_PROMPT,
+    userPrompt: prompt,
+    model: { temperature: 0.3, maxTokens: 512 },
   })
 
   const parsed = parseJsonSafe<{

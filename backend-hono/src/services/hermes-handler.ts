@@ -17,7 +17,7 @@ import type { HermesAgentRole } from './hermes-service.js'
 import { getAgentSystemPrompt, extractSkillTag, buildFeedContext, buildReflectContext } from './ai/agent-instructions/index.js'
 import { buildThoughtBankPromptBlock } from './ai/agent-instructions/thought-bank-awareness.js'
 import { createLogger } from '../lib/logger.js'
-import { getVProxyHealth, isVProxyAnthropicEnabled } from './vproxy/anthropic-client.js'
+import { checkVProxyHealth, isVProxyEnabled } from './strands/index.js'
 
 const log = createLogger('Hermes')
 
@@ -569,14 +569,14 @@ export async function initHermesAgent(): Promise<void> {
     log.warn('Gateway launch skipped (non-fatal)', { error: err instanceof Error ? err.message : String(err) })
   }
 
-  if (isVProxyAnthropicEnabled()) {
+  if (isVProxyEnabled()) {
     try {
-      const vproxyHealth = await getVProxyHealth(true)
+      const vproxyHealth = await checkVProxyHealth(true)
       if (vproxyHealth.available) {
-        log.info('VProxy warm-up complete (harper-cao ready)', { baseUrl: vproxyHealth.baseUrl })
+        log.info('VProxy warm-up complete (Strands ready)')
         return
       }
-      log.warn('VProxy warm-up failed (non-fatal)', { error: vproxyHealth.error, baseUrl: vproxyHealth.baseUrl })
+      log.warn('VProxy warm-up failed (non-fatal)', { error: vproxyHealth.error })
     } catch (error) {
       log.warn('VProxy warm-up failed (non-fatal)', { error: error instanceof Error ? error.message : String(error) })
     }

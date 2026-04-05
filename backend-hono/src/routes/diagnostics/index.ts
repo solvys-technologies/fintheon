@@ -5,6 +5,7 @@ import { Hono } from 'hono';
 import { pingDb } from '../../db/optimized.js';
 import { supabaseAuthHealth } from '../../services/supabase-auth.js';
 import { isPollingActive } from '../../services/riskflow/feed-poller.js';
+import { getFeedHealth } from '../../services/riskflow/feed-service.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
 import { initHermesAgent } from '../../services/hermes-handler.js';
 import { createLogger } from '../../lib/logger.js';
@@ -269,6 +270,17 @@ export function createDiagnosticsRoutes(): Hono {
     );
 
     return c.json({ status: 'started', daysBack });
+  });
+
+  // [claude-code 2026-04-05] Feed health endpoint for Harper monitoring hook
+  router.get('/feed-health', (c) => {
+    const health = getFeedHealth();
+    const pollerRunning = isPollingActive();
+    const status = health.cacheSize === 0 ? 'empty'
+      : !pollerRunning ? 'poller_stopped'
+      : health.cacheAgeMs > 300_000 ? 'stale'
+      : 'healthy';
+    return c.json({ status, pollerRunning, ...health });
   });
 
   return router;

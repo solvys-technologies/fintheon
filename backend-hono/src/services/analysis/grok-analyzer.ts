@@ -4,8 +4,7 @@
  * Day 16 - Phase 5 Implementation
  */
 
-import { generateText } from 'ai'
-import { selectModel, createModelClient, markProviderUnhealthy, markProviderHealthy, type AiModelKey } from '../ai/model-selector.js'
+import { invokeAgent } from '../strands/index.js'
 import { parseHeadline } from '../headline-parser.js'
 import { detectHotPrint } from '../hot-print-detector.js'
 import type { ParsedHeadline, HotPrint, RawArticle, NewsSource } from '../../types/news-analysis.js'
@@ -128,35 +127,18 @@ async function analyzeWithAi(
   headline: string,
   source: NewsSource
 ): Promise<Partial<ParsedHeadline>> {
-  // Headline scoring uses OpenRouter only — Claude CLI is too expensive per-headline
-  // (each spawn creates a full context window). Reserve Claude CLI for briefs + chat.
-  const selection = selectModel({ taskType: 'news', requiresSpeed: true })
-  const model = createModelClient(selection.model as AiModelKey)
-
   const prompt = buildAnalysisPrompt(headline, source)
 
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
-
   try {
-    const { text } = await generateText({
-      model,
-      messages: [
-        { role: 'system', content: 'You are a financial news parser. Extract structured data from headlines. Respond only with valid JSON.' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.1,
-      maxOutputTokens: 512,
-      abortSignal: controller.signal,
+    const { text } = await invokeAgent({
+      systemPrompt: 'You are a financial news parser. Extract structured data from headlines. Respond only with valid JSON.',
+      userPrompt: prompt,
+      model: { temperature: 0.1, maxTokens: 512 },
     })
 
-    markProviderHealthy(selection.provider)
     return parseAiResponse(text)
   } catch (error) {
-    markProviderUnhealthy(selection.provider)
     throw error
-  } finally {
-    clearTimeout(timeout)
   }
 }
 

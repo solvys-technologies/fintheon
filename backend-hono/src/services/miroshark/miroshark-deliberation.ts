@@ -2,8 +2,7 @@
 // Phase 1: Market analysts (always) → Phase 1.5: Gov officials (conditional) → Phase 2: Hermes → Phase 3: Harper
 // Fixes: full reasoning passthrough (no more lossy one-line summaries), convergence detection, devil's advocate
 
-import { generateText } from 'ai';
-import { selectModel, createModelClient, type AiModelKey } from '../ai/model-selector.js';
+import { invokeAgent } from '../strands/index.js';
 import type { HermesAgentRole } from '../hermes-service.js';
 import type {
   MiroSharkReport,
@@ -246,17 +245,10 @@ Return ONLY the JSON object, no markdown fences.`;
 
   const results = await Promise.allSettled(
     HERMES_DELIBERATION_AGENTS.map(async (agentRole) => {
-      const selection = selectModel({ taskType: 'reasoning' });
-      const model = createModelClient(selection.model as AiModelKey);
-
-      const { text } = await generateText({
-        model,
-        messages: [
-          { role: 'system', content: `You are ${getHermesDisplayName(agentRole)}, a P.I.C. Hermes agent. Evaluate the MiroShark market analysis from your perspective as a ${getHermesRole(agentRole)}.` },
-          { role: 'user', content: deliberationPrompt },
-        ],
-        temperature: 0.3,
-        maxOutputTokens: 512,
+      const { text } = await invokeAgent({
+        systemPrompt: `You are ${getHermesDisplayName(agentRole)}, a P.I.C. Hermes agent. Evaluate the MiroShark market analysis from your perspective as a ${getHermesRole(agentRole)}.`,
+        userPrompt: deliberationPrompt,
+        model: { temperature: 0.3, maxTokens: 512 },
       });
 
       const parsed = parseJsonSafe<{ verdict: string; reasoning: string; confidence: number }>(text);
@@ -325,9 +317,6 @@ async function runHarperScoring(
   contrarianTriggered: boolean,
   userInjection?: string,
 ): Promise<HarperOpusScoring> {
-  const selection = selectModel({ taskType: 'reasoning' });
-  const model = createModelClient(selection.model as AiModelKey);
-
   const hermesAgree = hermesResults.filter(h => h.verdict === 'agree').length;
   const hermesDisagree = hermesResults.filter(h => h.verdict === 'disagree').length;
   const isContested = hermesDisagree >= 2 || (hermesAgree < hermesResults.length / 2);
@@ -375,14 +364,10 @@ Respond with valid JSON:
 
 Return ONLY JSON, no markdown.`;
 
-  const { text } = await generateText({
-    model,
-    messages: [
-      { role: 'system', content: 'You are Harper-Opus, the Chief Agentic Officer of Priced In Capital. You make the final call on which market theses to surface, which to downgrade, and how to score the combined intelligence from market analysts and Hermes agents. Be decisive. Think like a PM running a book.' },
-      { role: 'user', content: scoringPrompt },
-    ],
-    temperature: 0.3,
-    maxOutputTokens: 1024,
+  const { text } = await invokeAgent({
+    systemPrompt: 'You are Harper-Opus, the Chief Agentic Officer of Priced In Capital. You make the final call on which market theses to surface, which to downgrade, and how to score the combined intelligence from market analysts and Hermes agents. Be decisive. Think like a PM running a book.',
+    userPrompt: scoringPrompt,
+    model: { temperature: 0.3, maxTokens: 1024 },
   });
 
   const parsed = parseJsonSafe<HarperOpusScoring>(text);

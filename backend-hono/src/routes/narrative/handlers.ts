@@ -1,8 +1,8 @@
+// [claude-code 2026-04-05] Strands Phase 8: Replace generateText with invokeAgent
 // [claude-code 2026-03-31] Added GET /api/narrative/catalysts — auto-population endpoint for NarrativeFlow
 // [claude-code 2026-03-30] Narrative endpoints — threads, card-links, LLM scoring
 import type { Context } from 'hono'
-import { generateText } from 'ai'
-import { selectModel, createModelClient, markProviderUnhealthy, type AiModelKey } from '../../services/ai/model-selector.js'
+import { invokeAgent } from '../../services/strands/index.js'
 import { getSupabaseClient } from '../../config/supabase.js'
 
 export interface ScoredCandidate {
@@ -99,19 +99,19 @@ function stripMarkdownFences(text: string): string {
 }
 
 async function callLlm(prompt: string): Promise<{ parsed: unknown[] | null; provider: string }> {
-  const selection = selectModel({ taskType: 'sentiment' })
-  const model = createModelClient(selection.model as AiModelKey)
-
   try {
-    const { text } = await generateText({ model, prompt })
+    const { text } = await invokeAgent({
+      systemPrompt: 'You are a market catalyst analyst for Priced In Capital.',
+      userPrompt: prompt,
+      model: { temperature: 0.3, maxTokens: 2048 },
+    })
     const cleaned = stripMarkdownFences(text)
     const parsed = JSON.parse(cleaned)
     if (!Array.isArray(parsed)) throw new Error('LLM response is not an array')
-    return { parsed, provider: selection.provider }
+    return { parsed, provider: 'strands-vproxy' }
   } catch (err) {
     console.error('[Narrative] LLM call or parse failed:', err)
-    markProviderUnhealthy(selection.provider)
-    return { parsed: null, provider: selection.provider }
+    return { parsed: null, provider: 'strands-vproxy' }
   }
 }
 

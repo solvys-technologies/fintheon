@@ -158,6 +158,13 @@ else
   warn "vproxy-anthropic-oauth.sh not found — skipping OAuth check"
 fi
 
+# ── Step 6.5: Ensure Claude Code hooks are executable ───────────────────────
+
+if [[ -d "$FINTHEON_ROOT/.claude/hooks" ]]; then
+  chmod +x "$FINTHEON_ROOT/.claude/hooks/"*.sh 2>/dev/null || true
+  ok "Claude Code hooks executable"
+fi
+
 # ── Step 7: Rebuild backend ─────────────────────────────────────────────────
 
 step "7/11" "Building backend..."

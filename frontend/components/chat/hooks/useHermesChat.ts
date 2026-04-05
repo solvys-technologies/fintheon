@@ -64,15 +64,15 @@ export function useHermesChat(
       }
     }
 
-    // [claude-code 2026-03-29] Extended timeout: Claude CLI deliberation can take 5+ minutes
+    // [claude-code 2026-04-05] No timeout for Harper — Strands tool loops can run 10+ minutes
     const controller = new AbortController();
     const isHarper = agentOverride === 'harper-cao';
-    const timeoutMs = isHarper ? 300_000 : 65_000; // 5min for Harper-Opus, 65s for Hermes
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const timeoutMs = isHarper ? 0 : 120_000; // No timeout for Harper, 2min for others
+    const timeoutId = timeoutMs > 0 ? setTimeout(() => controller.abort(), timeoutMs) : null;
 
     try {
       const response = await fetch(fullUrl, { ...init, headers, body, signal: controller.signal });
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
 
       if (!response.ok) {
         let errText = `Chat request failed (${response.status})`;
@@ -93,7 +93,7 @@ export function useHermesChat(
 
       return response;
     } catch (error) {
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
       if (error instanceof DOMException && error.name === 'AbortError') {
         setLastError('Request timed out — please try again.');
         throw error;

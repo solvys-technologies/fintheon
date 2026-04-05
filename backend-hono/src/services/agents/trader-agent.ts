@@ -4,8 +4,7 @@
  * Phase 6 - Day 24
  */
 
-import { generateText } from 'ai'
-import { selectModel, createModelClient, type AiModelKey } from '../ai/model-selector.js'
+import { invokeAgent } from '../strands/index.js'
 import type {
   TradingProposal,
   TradingStrategy,
@@ -83,19 +82,12 @@ export async function generateProposal(
   userId: string,
   input: TraderInput
 ): Promise<TradingProposal> {
-  const selection = selectModel({ taskType: 'reasoning' })
-  const model = createModelClient(selection.model as AiModelKey)
-
   const prompt = buildPrompt(input)
 
-  const { text } = await generateText({
-    model,
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: prompt },
-    ],
-    temperature: 0.3,
-    maxOutputTokens: 1024,
+  const { text } = await invokeAgent({
+    systemPrompt: SYSTEM_PROMPT,
+    userPrompt: prompt,
+    model: { temperature: 0.3, maxTokens: 1024 },
   })
 
   const parsed = parseJsonSafe<Omit<TradingProposal, 'id' | 'userId' | 'createdAt'>>(text)
