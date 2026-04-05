@@ -39,4 +39,4 @@ execution-bridge/.venv/
 supabase/.temp/
 fintheon-debug-sprint/
 agentic-refactor-plan-v2/
-frontend/public/halftone-heroes/
+# halftone-heroes kept in repo for login screen backgrounds

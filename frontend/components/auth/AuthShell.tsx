@@ -1,20 +1,29 @@
-// [claude-code 2026-03-31] Login screen — hero-bg-2, top-aligned layout, frosted branding window
-import React from 'react';
+// [claude-code 2026-04-05] Login screen — shuffled hero backgrounds, top-aligned layout, frosted branding window
+import React, { useMemo } from 'react';
 import { TimeQuote } from './TimeQuote';
 import { GoogleSignInButton } from './GoogleSignInButton';
+
+const HERO_BACKGROUNDS = [
+  './halftone-heroes/hero-bg-1.png',
+  './halftone-heroes/hero-bg-2.png',
+  './halftone-heroes/hero-bg-3.png',
+];
 
 type AuthShellProps = {
   onSignIn: () => void;
   isLoading?: boolean;
 };
 
-export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = false }) => (
+export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = false }) => {
+  const bg = useMemo(() => HERO_BACKGROUNDS[Math.floor(Math.random() * HERO_BACKGROUNDS.length)], []);
+
+  return (
   <div className="relative min-h-screen w-full overflow-hidden bg-[#050402] text-white selection:bg-yellow-500/30">
 
-    {/* Hero background — bull vs bear halftone (relative path for Electron) */}
+    {/* Hero background — shuffled halftone (relative path for Electron) */}
     <div
       className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-[0.18]"
-      style={{ backgroundImage: "url('./halftone-heroes/hero-bg-2.png')" }}
+      style={{ backgroundImage: `url('${bg}')` }}
     />
     {/* Gradient overlay — darkens left for text readability */}
     <div className="absolute inset-0 z-[1] bg-gradient-to-r from-[#050402]/95 via-[#050402]/70 to-[#050402]/40" />
@@ -79,4 +88,5 @@ export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = fals
       </div>
     </main>
   </div>
-);
+  );
+};

@@ -17,11 +17,7 @@ import type {
  * List all conversations for user
  */
 export async function handleListConversations(c: Context) {
-  const userId = c.get('userId') as string | undefined
-
-  if (!userId) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
+  const userId = (c.get('userId') as string | undefined) || 'anonymous'
 
   try {
     const limit = parseInt(c.req.query('limit') ?? '20', 10)
@@ -55,11 +51,7 @@ export async function handleListConversations(c: Context) {
  * Get a single conversation with messages
  */
 export async function handleGetConversation(c: Context) {
-  const userId = c.get('userId') as string | undefined
-
-  if (!userId) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
+  const userId = (c.get('userId') as string | undefined) || 'anonymous'
 
   const conversationId = c.req.param('id')
 
@@ -89,11 +81,7 @@ export async function handleGetConversation(c: Context) {
  * Create a new conversation
  */
 export async function handleCreateConversation(c: Context) {
-  const userId = c.get('userId') as string | undefined
-
-  if (!userId) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
+  const userId = (c.get('userId') as string | undefined) || 'anonymous'
 
   try {
     const body = await c.req.json<CreateConversationRequest>().catch(() => ({}))
@@ -112,11 +100,7 @@ export async function handleCreateConversation(c: Context) {
  * Update a conversation
  */
 export async function handleUpdateConversation(c: Context) {
-  const userId = c.get('userId') as string | undefined
-
-  if (!userId) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
+  const userId = (c.get('userId') as string | undefined) || 'anonymous'
 
   const conversationId = c.req.param('id')
 
@@ -154,11 +138,7 @@ export async function handleUpdateConversation(c: Context) {
  * Delete a conversation
  */
 export async function handleDeleteConversation(c: Context) {
-  const userId = c.get('userId') as string | undefined
-
-  if (!userId) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
+  const userId = (c.get('userId') as string | undefined) || 'anonymous'
 
   const conversationId = c.req.param('id')
 
@@ -185,11 +165,7 @@ export async function handleDeleteConversation(c: Context) {
  * Archive a conversation
  */
 export async function handleArchiveConversation(c: Context) {
-  const userId = c.get('userId') as string | undefined
-
-  if (!userId) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
+  const userId = (c.get('userId') as string | undefined) || 'anonymous'
 
   const conversationId = c.req.param('id')
 
@@ -220,11 +196,7 @@ export async function handleArchiveConversation(c: Context) {
  * Unarchive a conversation
  */
 export async function handleUnarchiveConversation(c: Context) {
-  const userId = c.get('userId') as string | undefined
-
-  if (!userId) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
+  const userId = (c.get('userId') as string | undefined) || 'anonymous'
 
   const conversationId = c.req.param('id')
 
