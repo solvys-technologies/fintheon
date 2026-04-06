@@ -178,8 +178,9 @@ export function FooterToolbar({
         const es = new EventSource(`${API_BASE}/api/terminal/stream/${data.processId}`);
         activeProcessRef.current = { processId: data.processId, es };
 
+        const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
         const onData = (e: MessageEvent) => {
-          const lines = String(e.data).split('\n').filter(Boolean);
+          const lines = stripAnsi(String(e.data)).split('\n').filter(Boolean);
           setCliHistory((prev) => [...prev, ...lines.map((text) => ({ type: 'output' as const, text }))]);
         };
         es.addEventListener('stdout', onData);
