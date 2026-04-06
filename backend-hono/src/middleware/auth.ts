@@ -6,7 +6,7 @@ import { verifySupabaseToken } from '../services/supabase-auth.js';
 const BYPASS_AUTH = process.env.BYPASS_AUTH === 'true';
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-const ANON_USER = { userId: 'anon', email: 'anonymous' } as const;
+const ANON_USER = { userId: 'anonymous', email: 'anonymous' } as const;
 const LOCAL_USER = { userId: 'local-user', email: 'user@local' } as const;
 
 function setAuthContext(c: Context, user: { userId: string; email: string }) {
@@ -59,7 +59,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
  */
 export const requireAuth = async (c: Context, next: Next) => {
   const userId = c.get('userId');
-  if (!userId || userId === 'anon') {
+  if (!userId || userId === 'anonymous') {
     return c.json({ error: 'Authentication required', hint: 'Provide a Bearer token in the Authorization header' }, 401);
   }
   return await next();
