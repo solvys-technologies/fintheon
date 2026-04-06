@@ -11,10 +11,11 @@ const HERO_BACKGROUNDS = [
 
 type AuthShellProps = {
   onSignIn: () => void;
+  onSkipAuth?: () => void;
   isLoading?: boolean;
 };
 
-export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = false }) => {
+export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, onSkipAuth, isLoading = false }) => {
   const bg = useMemo(() => HERO_BACKGROUNDS[Math.floor(Math.random() * HERO_BACKGROUNDS.length)], []);
 
   return (

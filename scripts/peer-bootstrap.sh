@@ -209,9 +209,9 @@ DESK_NAME="$(python3 -c 'import json,sys; d=json.loads(sys.stdin.read()); print(
 USER_ID="$(python3 -c 'import json,sys; d=json.loads(sys.stdin.read()); print(((d.get("peer") or {}).get("userId")) or "local-user")' <<<"$REGISTER_JSON")"
 
 if [[ -z "$PEER_ID" ]]; then
-  echo "[error] Peer register/update failed. Response:"
-  echo "$REGISTER_JSON"
-  exit 1
+  warn "Peer register/update failed (429 rate limit or backend unreachable). Continuing setup..."
+  info "Response: $(echo "$REGISTER_JSON" | head -c 200)"
+  # Don't exit — continue with setup so the terminal flow completes
 fi
 
 mkdir -p "$(dirname "$PEER_CONFIG")"

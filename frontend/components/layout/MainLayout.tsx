@@ -45,7 +45,7 @@ import { TabRenderer } from './TabRenderer';
 import { MissionControlContent } from './MissionControlContent';
 import { ChatPanel } from './ChatPanel';
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
-import { TeamOnboarding } from '../team/TeamOnboarding';
+// TeamOnboarding removed — exposes Supabase login to end users, security risk
 import { EPOCH_VERSION } from '../../lib/epoch-version';
 import { VoiceWidget, VoiceRoomHeaderButton, type VoiceWidgetDockTarget } from '../peers/VoiceWidget';
 import {
@@ -60,7 +60,7 @@ import {
 type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
-const TEAM_ONBOARDED_KEY = 'fintheon-team-onboarded-version';
+// TEAM_ONBOARDED_KEY removed
 
 function normalizeOrder<T extends string>(order: T[], defaults: readonly T[]): T[] {
   const deduped = order.filter((id, idx) => defaults.includes(id) && order.indexOf(id) === idx);
@@ -84,9 +84,6 @@ function MainLayoutInner() {
   const isStone = theme.name === 'solvys-stone';
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
-  // Team onboarding removed — single Supabase account serves all devices
-  const showTeamOnboarding = false;
-  const handleTeamOnboardingComplete = useCallback(() => {}, []);
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showRefinement, setShowRefinement] = useState(false);
@@ -774,11 +771,12 @@ function MainLayoutInner() {
       <FirstTimeTour onNavigate={(tab) => navigateTab(tab as NavTab)} />
 
       {/* Team onboarding — auto-shows on first run or version update */}
+      {/* TeamOnboarding permanently removed — security risk, exposes Supabase credentials
       <TeamOnboarding
-        open={showTeamOnboarding}
-        onClose={handleTeamOnboardingComplete}
-        onComplete={handleTeamOnboardingComplete}
-      />
+        open={false}
+        onClose={() => {}}
+        onComplete={() => {}}
+      /> */}
     </div>
     </ScheduleProvider>
   );
