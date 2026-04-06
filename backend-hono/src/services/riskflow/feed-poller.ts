@@ -12,10 +12,13 @@ import * as newsCache from './news-cache.js';
 import { enrichFeedWithAnalysis, updateFeedCache } from './feed-service.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import { fetchEconomicFeed } from './economic-feed.js';
-import { isTwitterCliInstalled, pollTwitterForEconNews, manualRefreshTweets } from '../twitter-cli/index.js';
+import { isTwitterCliInstalled, pollTwitterForEconNews, manualRefreshTweets, isRateLimited } from '../twitter-cli/index.js';
 import { writeRawItems, type RawRiskFlowItem } from '../supabase-service.js';
 import { isSupabaseConfigured } from '../../config/supabase.js';
 import { getPollingConfig } from './polling-config.js';
+import { pollCommentary } from './commentary-scraper.js';
+import { checkForScheduledEvents } from './exa-scheduled-monitor.js';
+import { exaSearch, isExaAvailable } from '../exa-service.js';
 import type { FeedItem } from '../../types/riskflow.js';
 import { createLogger } from '../../lib/logger.js';
 
@@ -102,6 +105,108 @@ function maybeLogHealth(): void {
   _itemsSinceLastLog = 0;
 }
 
+// ── Exa Fallback (runs when Twitter CLI is 429'd) ───────────────────────────
+// Searches the same macro/geopolitical keywords via Exa neural search,
+// pulling from wire services that mirror what FJ/DeItaOne/OSINT cover.
+
+const EXA_FALLBACK_DOMAINS = [
+  'financialjuice.com',
+  'zerohedge.com',
+  'reuters.com',
+  'bloomberg.com',
+  'macenews.com',
+  'citrini.com',
+  'cnbc.com',
+  'wsj.com',
+];
+
+const EXA_FALLBACK_QUERIES = [
+  'breaking market news Fed rate CPI NFP tariff today',
+  'Iran Israel military strike missile ceasefire Houthi',
+  'Trump tariff trade war Bessent Treasury',
+  'FOMC Powell rate cut inflation economic data',
+  'oil OPEC crude geopolitical supply disruption',
+];
+
+const exaFallbackSeenIds = new Set<string>();
+
+function hashForDedup(s: string): string {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+  return Math.abs(h).toString(36);
+}
+
+async function runExaFallback(): Promise<number> {
+  if (!isExaAvailable()) {
+    log.info('[ExaFallback] EXA_API_KEY not set — skipping');
+    return 0;
+  }
+  if (!isSupabaseConfigured()) return 0;
+
+  log.info('[ExaFallback] Twitter rate-limited — running Exa wire search as fallback');
+  let totalWritten = 0;
+
+  for (const query of EXA_FALLBACK_QUERIES) {
+    try {
+      const results = await exaSearch(query, {
+        numResults: 8,
+        type: 'auto',
+        useAutoprompt: true,
+        includeDomains: EXA_FALLBACK_DOMAINS,
+      });
+
+      const items: RawRiskFlowItem[] = [];
+      for (const r of results) {
+        const title = r.title?.trim();
+        if (!title || title.length < 15) continue;
+        if (/^(home|about|contact|subscribe|sign in|menu|cookie)/i.test(title)) continue;
+        // Filter junk: session prep pages, download/app ads, marketing noise
+        if (/\b(download the app|session prep|pre-?session|sign up|create account|free trial|subscribe now|get started|install|app store|google play|newsletter|webinar|podcast|sponsored)\b/i.test(title)) continue;
+
+        const bucket = r.publishedDate?.slice(0, 13) ?? new Date().toISOString().slice(0, 13);
+        const id = `exa-fb-${hashForDedup(`${title.toLowerCase()}|${bucket}`)}`;
+        if (exaFallbackSeenIds.has(id)) continue;
+        exaFallbackSeenIds.add(id);
+
+        const fullText = `${title} ${r.text || ''}`;
+        const isMacro = /\b(fed|fomc|cpi|ppi|gdp|nfp|pce|inflation|jobless|retail sales|rate)\b/i.test(fullText);
+        const isGeo = /\b(iran|israel|missile|strike|houthi|hezbollah|irgc|ceasefire|tariff|trade war)\b/i.test(fullText);
+        const isBreaking = /\b(breaking|urgent|alert|flash)\b/i.test(fullText);
+
+        items.push({
+          tweet_id: id,
+          source: isMacro ? 'FinancialJuice' : isGeo ? 'OSINTSources' : 'Custom',
+          headline: title,
+          body: (r.text || '').replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300) || undefined,
+          url: r.url || undefined,
+          symbols: [],
+          tags: [],
+          is_breaking: isBreaking,
+          urgency: isBreaking ? 'immediate' : 'normal',
+          published_at: r.publishedDate ?? new Date().toISOString(),
+          submitted_by: 'feed-poller:exa-fallback',
+        });
+      }
+
+      if (items.length > 0) {
+        const written = await writeRawItems(items);
+        totalWritten += written;
+      }
+    } catch (err) {
+      log.warn(`[ExaFallback] Query failed: "${query.slice(0, 40)}"`, { error: String(err) });
+    }
+  }
+
+  // Also run existing Exa scrapers (commentary + scheduled events)
+  await Promise.all([
+    pollCommentary().catch(err => log.warn('[ExaFallback] Commentary scrape failed:', { error: String(err) })),
+    checkForScheduledEvents().catch(err => log.warn('[ExaFallback] Scheduled events failed:', { error: String(err) })),
+  ]);
+
+  log.info(`[ExaFallback] Done — ${totalWritten} new items written to raw_riskflow_items`);
+  return totalWritten;
+}
+
 /**
  * Poll for new feed items and process them
  */
@@ -127,6 +232,13 @@ async function pollForNewItems(): Promise<void> {
   _pollsSinceLastLog++;
 
   try {
+    // ── Exa fallback when Twitter is rate-limited ──
+    if (isRateLimited()) {
+      await runExaFallback();
+      consecutivePollingFailures = 0;
+      return;
+    }
+
     // Check twitter-cli availability with explicit logging
     const twitterAvailable = await isTwitterCliInstalled();
     if (!twitterAvailable) {
