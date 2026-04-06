@@ -70,8 +70,35 @@ export interface ConsiliumMessageRecord {
 // ─── Raw Items (all instances push) ─────────────────────────────
 
 export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
+  if (items.length === 0) return 0;
+
+  // [claude-code 2026-04-06] Primary: raw SQL (Supabase JS upsert silently fails)
+  if (isDatabaseAvailable() && dbSql) {
+    try {
+      let written = 0;
+      for (const item of items) {
+        const result = await dbSql`
+          INSERT INTO raw_riskflow_items (
+            tweet_id, source, headline, body, symbols, tags,
+            is_breaking, urgency, published_at, submitted_by
+          ) VALUES (
+            ${item.tweet_id}, ${item.source}, ${item.headline},
+            ${item.body ?? null}, ${item.symbols ?? []}, ${item.tags ?? []},
+            ${item.is_breaking ?? false}, ${item.urgency ?? 'normal'},
+            ${item.published_at ?? new Date().toISOString()}, ${item.submitted_by ?? 'unknown'}
+          ) ON CONFLICT (tweet_id) DO NOTHING
+        `;
+        written++;
+      }
+      return written;
+    } catch (err) {
+      console.error('[Supabase] writeRawItems SQL error:', (err as Error).message);
+    }
+  }
+
+  // Fallback: Supabase JS client
   const sb = getSupabaseClient();
-  if (!sb || items.length === 0) return 0;
+  if (!sb) return 0;
 
   const { data, error } = await sb
     .from('raw_riskflow_items')
@@ -79,7 +106,7 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
     .select('id');
 
   if (error) {
-    console.error('[Supabase] writeRawItems error:', error.message);
+    console.error('[Supabase] writeRawItems client error:', error.message);
     return 0;
   }
   return data?.length ?? 0;
