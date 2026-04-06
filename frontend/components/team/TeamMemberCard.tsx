@@ -27,7 +27,7 @@ function ServiceLight({ label, active, warning }: { label: string; active: boole
   const displayLabel = warning || label;
   const titleText = warning ? `${label}: ${warning}` : `${label}: ${active ? 'OK' : 'Down'}`;
   return (
-    <span className="flex items-center gap-1 text-[9px] text-zinc-500 font-mono" title={titleText}>
+    <span className="flex items-center gap-1 text-[9px] text-[var(--fintheon-muted)] font-mono" title={titleText}>
       <span className={`inline-block w-1.5 h-1.5 rounded-full ${color} ${warning ? 'animate-pulse' : ''}`} />
       {displayLabel}
     </span>
@@ -76,7 +76,7 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
           </button>
 
           {isSelf && (
-            <span className="text-[9px] text-zinc-500 font-mono shrink-0">(You)</span>
+            <span className="text-[9px] text-[var(--fintheon-muted)] font-mono shrink-0">(You)</span>
           )}
 
           {/* Status dropdown — only for self */}
@@ -105,7 +105,7 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
               <Phone className="w-3 h-3" />
             </div>
           )}
-          <span className="text-[9px] text-zinc-500 font-mono">{timeAgo(presence.lastSeen)}</span>
+          <span className="text-[9px] text-[var(--fintheon-muted)] font-mono">{timeAgo(presence.lastSeen)}</span>
         </div>
       </div>
 

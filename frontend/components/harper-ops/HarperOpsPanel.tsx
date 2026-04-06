@@ -1,4 +1,5 @@
 // [claude-code 2026-04-04] Harper Ops Panel — autonomous loop monitoring + control
+// [claude-code 2026-04-06] Theme-sensitive: uses --fintheon-* vars for colors + inherited font-family
 import { useState } from 'react'
 import { Bot, Heart, Zap, AlertTriangle, Check, X, RefreshCw } from 'lucide-react'
 import { useHarperOps, type OpsEntry } from '../../hooks/useHarperOps'
@@ -45,7 +46,7 @@ function OpsFeedItem({ entry, onApprove, onDeny }: {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="border-b border-white/5 py-2 px-3 hover:bg-white/[0.02] transition-colors">
+    <div className="border-b border-[var(--fintheon-accent)]/8 py-2 px-3 hover:bg-[var(--fintheon-accent)]/[0.03] transition-colors">
       <div
         className="flex items-start gap-2 cursor-pointer"
         onClick={() => setExpanded(!expanded)}
@@ -58,14 +59,14 @@ function OpsFeedItem({ entry, onApprove, onDeny }: {
             </span>
             <div className={`w-1.5 h-1.5 rounded-full ${severityDot(entry.severity)}`} />
           </div>
-          <p className="text-[11px] text-zinc-300 mt-0.5 leading-snug truncate">
+          <p className="text-[11px] text-[var(--fintheon-text)]/80 mt-0.5 leading-snug truncate">
             {entry.title}
           </p>
         </div>
       </div>
 
       {expanded && entry.detail && (
-        <div className="mt-2 ml-5 text-[10px] text-zinc-500 font-mono whitespace-pre-wrap leading-relaxed border-l border-white/5 pl-3">
+        <div className="mt-2 ml-5 text-[10px] text-[var(--fintheon-muted)] font-mono whitespace-pre-wrap leading-relaxed border-l border-[var(--fintheon-accent)]/10 pl-3">
           {entry.detail.slice(0, 1000)}
         </div>
       )}
@@ -102,21 +103,21 @@ export function HarperOpsPanel() {
   const queueDepth = status?.loop?.queueDepth ?? 0
 
   return (
-    <div className="h-full flex flex-col text-zinc-300">
+    <div className="h-full flex flex-col text-[var(--fintheon-text)]" style={{ fontFamily: 'var(--font-body)' }}>
       {/* Status bar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/[0.01]">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/8 bg-[var(--fintheon-accent)]/[0.02]">
         <div className="flex items-center gap-2">
           <Bot className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
           <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--fintheon-accent)]">
             Harper Ops
           </span>
-          <div className={`w-2 h-2 rounded-full ${loopAlive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'}`} />
-          <span className="text-[9px] font-mono text-zinc-600">
+          <div className={`w-2 h-2 rounded-full ${loopAlive ? 'bg-emerald-400 animate-pulse' : 'bg-[var(--fintheon-muted)]/40'}`} />
+          <span className="text-[9px] font-mono text-[var(--fintheon-muted)]">
             {loopAlive ? 'ALIVE' : 'OFFLINE'}
           </span>
         </div>
 
-        <div className="flex items-center gap-3 text-[9px] font-mono text-zinc-600">
+        <div className="flex items-center gap-3 text-[9px] font-mono text-[var(--fintheon-muted)]">
           {lastHb && (
             <span>Last HB: {formatTime(lastHb)}</span>
           )}
@@ -130,22 +131,22 @@ export function HarperOpsPanel() {
       </div>
 
       {/* Quick actions */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/5">
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--fintheon-accent)]/8">
         <button
           onClick={triggerHeartbeat}
-          className="flex items-center gap-1 px-2 py-1 text-[9px] font-mono uppercase tracking-wider bg-white/5 text-zinc-400 rounded hover:bg-white/10 hover:text-zinc-200 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-[9px] font-mono uppercase tracking-wider bg-[var(--fintheon-accent)]/5 text-[var(--fintheon-muted)] rounded hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-text)] transition-colors"
         >
           <RefreshCw className="w-2.5 h-2.5" /> Heartbeat
         </button>
         <button
           onClick={() => triggerTask('scoring-qa')}
-          className="flex items-center gap-1 px-2 py-1 text-[9px] font-mono uppercase tracking-wider bg-white/5 text-zinc-400 rounded hover:bg-white/10 hover:text-zinc-200 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-[9px] font-mono uppercase tracking-wider bg-[var(--fintheon-accent)]/5 text-[var(--fintheon-muted)] rounded hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-text)] transition-colors"
         >
           <Zap className="w-2.5 h-2.5" /> Scoring QA
         </button>
         <button
           onClick={() => triggerTask('narrative-synthesis')}
-          className="flex items-center gap-1 px-2 py-1 text-[9px] font-mono uppercase tracking-wider bg-white/5 text-zinc-400 rounded hover:bg-white/10 hover:text-zinc-200 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-[9px] font-mono uppercase tracking-wider bg-[var(--fintheon-accent)]/5 text-[var(--fintheon-muted)] rounded hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-text)] transition-colors"
         >
           <Zap className="w-2.5 h-2.5" /> Narrative
         </button>
@@ -154,7 +155,7 @@ export function HarperOpsPanel() {
       {/* Feed */}
       <div className="flex-1 overflow-y-auto">
         {loading && (
-          <div className="p-4 text-center text-[10px] font-mono text-zinc-600">
+          <div className="p-4 text-center text-[10px] font-mono text-[var(--fintheon-muted)]">
             Loading Harper Ops...
           </div>
         )}
@@ -166,7 +167,7 @@ export function HarperOpsPanel() {
         )}
 
         {!loading && feed.length === 0 && (
-          <div className="p-4 text-center text-[10px] font-mono text-zinc-600">
+          <div className="p-4 text-center text-[10px] font-mono text-[var(--fintheon-muted)]">
             No ops activity yet. Enable HARPER_AUTONOMOUS_ENABLED=true to start.
           </div>
         )}

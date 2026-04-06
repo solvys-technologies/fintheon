@@ -15,7 +15,7 @@ export function TeamPanel() {
   const onlineCount = teamMembers.filter((m) => m.presence.online).length;
 
   return (
-    <div className="h-full flex flex-col px-3 py-2">
+    <div className="h-full flex flex-col px-3 py-2" style={{ fontFamily: 'var(--font-body)' }}>
       {/* Header */}
       <div className="flex items-center gap-2 mb-2 shrink-0">
         <h3 className="text-[11px] font-semibold tracking-[0.14em] text-[var(--fintheon-accent)] uppercase font-mono">

@@ -36,6 +36,10 @@ export function useHermesChat(
   const thinkHarderRef = useRef(thinkHarder);
   useEffect(() => { thinkHarderRef.current = thinkHarder; }, [thinkHarder]);
 
+  // [claude-code 2026-04-06] Ref for conversationId to avoid stale closures in transport callbacks
+  const conversationIdRef = useRef(conversationId);
+  useEffect(() => { conversationIdRef.current = conversationId; }, [conversationId]);
+
   const fetchFn = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
@@ -51,12 +55,14 @@ export function useHermesChat(
     const ghToken = localStorage.getItem('github_token');
     if (ghToken) headers.set('X-GitHub-Token', ghToken);
 
+    // Use ref to get current conversationId (avoids stale closure in transport)
+    const currentConvId = conversationIdRef.current;
     let body = init?.body;
-    if (body && conversationId) {
+    if (body && currentConvId) {
       try {
         const bodyObj = typeof body === 'string' ? JSON.parse(body) : body;
         if (typeof bodyObj === 'object' && bodyObj !== null) {
-          bodyObj.conversationId = conversationId;
+          bodyObj.conversationId = currentConvId;
           body = JSON.stringify(bodyObj);
         }
       } catch (e) {
@@ -103,7 +109,7 @@ export function useHermesChat(
       }
       throw error;
     }
-  }, [conversationId, setConversationId]);
+  }, [setConversationId]);
 
   // Harper-Opus routes through dedicated /api/harper/chat for full Fintheon context injection
   const isHarperRoute = agentOverride === 'harper-cao';
@@ -145,7 +151,7 @@ export function useHermesChat(
             body: {
               message: msgText,
               history,
-              ...(conversationId && { conversationId }),
+              ...(conversationIdRef.current && { conversationId: conversationIdRef.current }),
               ...(thinkHarderRef.current && { thinkHarder: true }),
               userContext: (() => {
                 try {
