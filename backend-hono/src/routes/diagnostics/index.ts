@@ -283,6 +283,36 @@ export function createDiagnosticsRoutes(): Hono {
     return c.json({ status: 'started', daysBack });
   });
 
+  // [claude-code 2026-04-06] Debug: check unscored items count
+  router.get('/unscored-check', async (c) => {
+    try {
+      const { readUnscoredItems } = await import('../../services/supabase-service.js');
+      const { isCentralScorerRunning, scoringCycle } = await import('../../services/riskflow/central-scorer.js');
+      const items = await readUnscoredItems(5);
+      return c.json({
+        unscoredCount: items.length,
+        scorerRunning: isCentralScorerRunning(),
+        sampleIds: items.map(i => i.tweet_id),
+        sampleHeadlines: items.map(i => (i.headline || '').slice(0, 60)),
+      });
+    } catch (err) {
+      return c.json({ error: String(err) }, 500);
+    }
+  });
+
+  // Force score unscored items NOW
+  router.post('/force-score', async (c) => {
+    try {
+      const { scoringCycle } = await import('../../services/riskflow/central-scorer.js');
+      await scoringCycle();
+      const { readUnscoredItems } = await import('../../services/supabase-service.js');
+      const remaining = await readUnscoredItems(1);
+      return c.json({ success: true, remainingUnscored: remaining.length });
+    } catch (err) {
+      return c.json({ error: String(err) }, 500);
+    }
+  });
+
   // [claude-code 2026-04-05] Feed health endpoint for Harper monitoring hook
   router.get('/feed-health', (c) => {
     const health = getFeedHealth();

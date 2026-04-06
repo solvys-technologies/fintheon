@@ -234,9 +234,9 @@ function rawToFeedItem(raw: RawRiskFlowItem & { id: string }): FeedItem {
 /**
  * Convert an enriched FeedItem back to a ScoredRiskFlowItem for Supabase
  */
-function feedItemToScored(item: FeedItem, rawId: string): ScoredRiskFlowItem {
+function feedItemToScored(item: FeedItem, rawId: string | null): ScoredRiskFlowItem {
   return {
-    raw_item_id: rawId,
+    raw_item_id: rawId ?? undefined,
     tweet_id: item.id,
     source: item.source,
     headline: item.headline,
@@ -393,9 +393,11 @@ export async function scoringCycle(): Promise<void> {
     }
 
     // Convert back to scored format and write to Supabase
+    // [claude-code 2026-04-06] Pass null for missing rawId — empty string '' breaks uuid column
+    // and poisons the entire upsert batch
     const scoredItems = enrichedItems.map((item) => {
-      const rawId = rawIdMap.get(item.id) || '';
-      return feedItemToScored(item, rawId);
+      const rawId = rawIdMap.get(item.id) || null;
+      return feedItemToScored(item, rawId as any);
     });
 
     const written = await writeScoredItems(scoredItems);

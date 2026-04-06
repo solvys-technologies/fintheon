@@ -133,8 +133,54 @@ export async function readUnscoredItems(limit = 50): Promise<(RawRiskFlowItem & 
 // ─── Scored Items (central agent writes, all read) ──────────────
 
 export async function writeScoredItems(items: ScoredRiskFlowItem[]): Promise<number> {
+  if (items.length === 0) return 0;
+
+  // [claude-code 2026-04-06] Primary: raw SQL (Supabase JS upsert was silently failing)
+  if (isDatabaseAvailable() && dbSql) {
+    try {
+      let written = 0;
+      for (const item of items) {
+        await dbSql`
+          INSERT INTO scored_riskflow_items (
+            raw_item_id, tweet_id, source, headline, body, symbols, tags,
+            is_breaking, urgency, sentiment, iv_score, macro_level,
+            published_at, analyzed_at, scored_by, price_brain_score,
+            sub_scores, risk_type, agent_note, agent_note_generated_at, econ_data
+          ) VALUES (
+            ${item.raw_item_id ?? null}, ${item.tweet_id}, ${item.source}, ${item.headline},
+            ${item.body ?? null}, ${item.symbols ?? []}, ${item.tags ?? []},
+            ${item.is_breaking ?? false}, ${item.urgency ?? 'normal'}, ${item.sentiment ?? null},
+            ${item.iv_score ?? null}, ${item.macro_level ?? null},
+            ${item.published_at ?? new Date().toISOString()}, ${item.analyzed_at ?? new Date().toISOString()},
+            ${item.scored_by ?? 'central-agent'}, ${item.price_brain_score ? JSON.stringify(item.price_brain_score) : null}::jsonb,
+            ${item.sub_scores ? JSON.stringify(item.sub_scores) : null}::jsonb, ${item.risk_type ?? null},
+            ${item.agent_note ?? null}, ${item.agent_note_generated_at ?? null},
+            ${item.econ_data ? JSON.stringify(item.econ_data) : null}::jsonb
+          ) ON CONFLICT (tweet_id) DO UPDATE SET
+            sentiment = EXCLUDED.sentiment,
+            iv_score = EXCLUDED.iv_score,
+            macro_level = EXCLUDED.macro_level,
+            analyzed_at = EXCLUDED.analyzed_at,
+            price_brain_score = EXCLUDED.price_brain_score,
+            sub_scores = EXCLUDED.sub_scores,
+            risk_type = EXCLUDED.risk_type,
+            agent_note = EXCLUDED.agent_note,
+            agent_note_generated_at = EXCLUDED.agent_note_generated_at,
+            econ_data = EXCLUDED.econ_data
+        `;
+        written++;
+      }
+      return written;
+    } catch (err) {
+      console.error('[Supabase] writeScoredItems SQL error:', (err as Error).message, (err as Error).stack?.slice(0, 300));
+      // Log the failing item for debugging
+      console.error('[Supabase] Failed item sample:', JSON.stringify(items[0]?.tweet_id), 'raw_item_id:', items[0]?.raw_item_id);
+    }
+  }
+
+  // Fallback: Supabase JS client
   const sb = getSupabaseClient();
-  if (!sb || items.length === 0) return 0;
+  if (!sb) return 0;
 
   const { data, error } = await sb
     .from('scored_riskflow_items')
@@ -142,7 +188,7 @@ export async function writeScoredItems(items: ScoredRiskFlowItem[]): Promise<num
     .select('id');
 
   if (error) {
-    console.error('[Supabase] writeScoredItems error:', error.message);
+    console.error('[Supabase] writeScoredItems client error:', error.message);
     return 0;
   }
   return data?.length ?? 0;
