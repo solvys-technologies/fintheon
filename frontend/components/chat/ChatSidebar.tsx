@@ -42,34 +42,29 @@ function ChatSidebarInner({ lastError, lastRequestId, thinkHarder, setThinkHarde
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.07),transparent_38%),#070704]">
-      <div className="flex-1 min-h-0 relative">
-        <FintheonThread
-          onSend={handleSend}
-          isLoading={isRunning}
-          agentName={activeAgent?.name}
-          lastError={lastError}
-          lastRequestId={lastRequestId}
-          compact
-        />
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10" style={{ height: '40%', background: 'linear-gradient(to bottom, transparent 0%, var(--fintheon-bg) 100%)' }} />
-      </div>
+      <FintheonThread
+        onSend={handleSend}
+        isLoading={isRunning}
+        agentName={activeAgent?.name}
+        lastError={lastError}
+        lastRequestId={lastRequestId}
+        compact
+      />
       {/* Agent plan / cognition inline in sidebar — shows task progress when streaming */}
       {lastRequestId && isRunning && (
         <div className="px-3 pb-2">
           <CognitionPanel requestId={lastRequestId} isStreaming={isRunning} />
         </div>
       )}
-      <div className="relative z-20 shrink-0">
-        <FintheonComposer
-          thinkHarder={thinkHarder}
-          setThinkHarder={setThinkHarder}
-          lastError={lastError}
-          activeSkill={activeSkill}
-          onSelectSkill={setActiveSkill}
-          showSkills={showSkills}
-          onToggleSkills={() => setShowSkills((v) => !v)}
-        />
-      </div>
+      <FintheonComposer
+        thinkHarder={thinkHarder}
+        setThinkHarder={setThinkHarder}
+        lastError={lastError}
+        activeSkill={activeSkill}
+        onSelectSkill={setActiveSkill}
+        showSkills={showSkills}
+        onToggleSkills={() => setShowSkills((v) => !v)}
+      />
     </div>
   );
 }

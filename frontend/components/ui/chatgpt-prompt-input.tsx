@@ -275,7 +275,7 @@ export function PromptBox({
 
   return (
     <div
-      className="pt-4 pb-4 px-4 bg-[linear-gradient(180deg,rgba(5,5,0,0.15),rgba(5,5,0,0.88))] backdrop-blur-xl"
+      className="pt-4 pb-4 px-4 bg-[linear-gradient(180deg,transparent,var(--fintheon-bg))]"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
