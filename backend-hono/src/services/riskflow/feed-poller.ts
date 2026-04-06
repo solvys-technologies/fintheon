@@ -136,7 +136,7 @@ function hashForDedup(s: string): string {
   return Math.abs(h).toString(36);
 }
 
-async function runExaFallback(): Promise<number> {
+export async function runExaFallback(): Promise<number> {
   if (!isExaAvailable()) {
     log.info('[ExaFallback] EXA_API_KEY not set — skipping');
     return 0;

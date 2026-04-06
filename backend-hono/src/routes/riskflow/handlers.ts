@@ -770,14 +770,23 @@ export async function handleRefresh(c: Context) {
 
   try {
     let polled = false;
+    let exaFallbackRan = false;
 
-    // 1. Poll for fresh items — OWNER ONLY (prevents rate-limit blocking for other users)
+    // 1. Primary: Twitter CLI poll — OWNER ONLY
     if (isOwner) {
       await forcePoll();
       polled = true;
     }
 
-    // 1b. Exa scrapes — run regardless of polling window (manual refresh = full refresh)
+    // 1b. If Twitter is rate-limited (or not owner), run Exa wire fallback
+    const { isRateLimited } = await import('../../services/twitter-cli/index.js');
+    const { runExaFallback } = await import('../../services/riskflow/feed-poller.js');
+    if (isRateLimited() || !polled) {
+      await runExaFallback();
+      exaFallbackRan = true;
+    }
+
+    // 1c. Always run Exa scrapers (commentary + scheduled events)
     const { checkForScheduledEvents } = await import('../../services/riskflow/exa-scheduled-monitor.js');
     const { pollCommentary } = await import('../../services/riskflow/commentary-scraper.js');
     await Promise.all([
@@ -809,7 +818,7 @@ export async function handleRefresh(c: Context) {
       });
     });
 
-    return c.json({ success: true, polled, rescored, refreshedAt: new Date().toISOString() });
+    return c.json({ success: true, polled, exaFallbackRan, rescored, refreshedAt: new Date().toISOString() });
   } catch (error) {
     console.error('[RiskFlow] Refresh error:', error);
     return c.json({ error: 'Refresh failed' }, 500);
