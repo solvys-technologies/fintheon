@@ -392,9 +392,27 @@ export async function scoringCycle(): Promise<void> {
       }
     }
 
+    // [claude-code 2026-04-06] Drop Low/Medium (macroLevel 1-2) from web scrapes.
+    // Only High (3) and Critical (4) from Exa/commentary are worth keeping.
+    // Twitter CLI items keep all levels.
+    const WEB_SCRAPE_PREFIXES = ['exa-', 'commentary-scraper:', 'feed-poller:exa'];
+    const beforeCount = enrichedItems.length;
+    enrichedItems = enrichedItems.filter((item) => {
+      const ml = item.macroLevel ?? 1;
+      if (ml >= 3) return true; // Always keep High/Critical
+      // Check if this item came from a web scrape source
+      const rawId = rawIdMap.get(item.id);
+      const rawItem = rawId ? unscoredItems.find(r => r.id === rawId) : null;
+      const submittedBy = (rawItem as any)?.submitted_by ?? '';
+      const isWebScrape = WEB_SCRAPE_PREFIXES.some(p => submittedBy.startsWith(p));
+      return !isWebScrape; // Keep non-web-scrape items at any level
+    });
+    const dropped = beforeCount - enrichedItems.length;
+    if (dropped > 0) {
+      log.info(` Dropped ${dropped} Low/Medium web scrape items (kept ${enrichedItems.length})`);
+    }
+
     // Convert back to scored format and write to Supabase
-    // [claude-code 2026-04-06] Pass null for missing rawId — empty string '' breaks uuid column
-    // and poisons the entire upsert batch
     const scoredItems = enrichedItems.map((item) => {
       const rawId = rawIdMap.get(item.id) || null;
       return feedItemToScored(item, rawId as any);
