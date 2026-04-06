@@ -147,6 +147,18 @@ export function useHermesChat(
               history,
               ...(conversationId && { conversationId }),
               ...(thinkHarderRef.current && { thinkHarder: true }),
+              userContext: (() => {
+                try {
+                  const get = (k: string) => { try { return JSON.parse(localStorage.getItem(k) ?? 'null'); } catch { return localStorage.getItem(k); } };
+                  return {
+                    traderName: get('traderName') || undefined,
+                    selectedSymbol: get('selectedSymbol') || undefined,
+                    tradingGoals: get('tradingGoals') || undefined,
+                    instrumentsTraded: get('instrumentsTraded') || undefined,
+                    riskSettings: get('riskSettings') || undefined,
+                  };
+                } catch { return {}; }
+              })(),
               activeConnectors: (() => {
                 try { return JSON.parse(localStorage.getItem('fintheon:mcp-active-connectors') ?? '[]'); }
                 catch { return []; }

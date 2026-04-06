@@ -57,6 +57,13 @@ export function createHarperRoutes() {
         persona?: string
         riskFlowContext?: string
         activeConnectors?: string[]
+        userContext?: {
+          traderName?: string
+          selectedSymbol?: { symbol: string; name: string }
+          tradingGoals?: string
+          instrumentsTraded?: string[]
+          riskSettings?: Record<string, unknown>
+        }
       }>()
 
       const message = body.message?.trim()
@@ -99,6 +106,7 @@ export function createHarperRoutes() {
           persona: body.persona,
           riskFlowContext: body.riskFlowContext,
           activeConnectors: body.activeConnectors,
+          userContext: body.userContext,
         },
         {
           'Access-Control-Allow-Origin': c.req.header('Origin') || '*',

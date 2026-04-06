@@ -10,6 +10,14 @@ import { createLogger } from '../../../lib/logger.js'
 
 const log = createLogger('HarperAgent')
 
+export interface UserContext {
+  traderName?: string
+  selectedSymbol?: { symbol: string; name: string }
+  tradingGoals?: string
+  instrumentsTraded?: string[]
+  riskSettings?: Record<string, unknown>
+}
+
 export interface HarperChatOptions {
   message: string
   conversationId: string
@@ -20,6 +28,7 @@ export interface HarperChatOptions {
   persona?: string
   riskFlowContext?: string
   activeConnectors?: string[]
+  userContext?: UserContext
 }
 
 /**
@@ -82,6 +91,20 @@ export function streamHarperChat(
 
   if (options.riskFlowContext) {
     prompt = `[RiskFlow Context]\n${options.riskFlowContext}\n\n${prompt}`
+  }
+
+  // Inject user context so Harper addresses the user correctly and knows their setup
+  if (options.userContext) {
+    const uc = options.userContext
+    const lines: string[] = []
+    if (uc.traderName) lines.push(`The user's name/callsign is "${uc.traderName}". Always address them as ${uc.traderName}, never "TP" or "Trader".`)
+    if (uc.selectedSymbol) lines.push(`Active instrument: ${uc.selectedSymbol.symbol} (${uc.selectedSymbol.name})`)
+    if (uc.tradingGoals) lines.push(`Trading goals: ${uc.tradingGoals}`)
+    if (uc.instrumentsTraded?.length) lines.push(`Instruments traded: ${uc.instrumentsTraded.join(', ')}`)
+    if (uc.riskSettings) lines.push(`Risk settings: ${JSON.stringify(uc.riskSettings)}`)
+    if (lines.length > 0) {
+      prompt = `[User Profile]\n${lines.join('\n')}\n\n${prompt}`
+    }
   }
 
   const stream = strandsToUIStream(agent, prompt, {
