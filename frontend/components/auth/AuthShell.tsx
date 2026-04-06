@@ -35,14 +35,14 @@ export const AuthShell: React.FC<AuthShellProps> = ({ onSignIn, isLoading = fals
         {/* Frosted glass window */}
         <div className="rounded-xl border border-[#c79f4a]/10 bg-[#050402]/60 px-8 py-8 backdrop-blur-sm">
           {/* Logo + Title inline */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             <img
               src="./logo.png"
               alt="Fintheon"
-              className="h-10 w-10 object-contain opacity-90 drop-shadow-[0_0_10px_rgba(199,159,74,0.3)]"
+              className="h-14 w-14 object-contain opacity-90 drop-shadow-[0_0_10px_rgba(199,159,74,0.3)]"
             />
             <h1
-              className="text-3xl font-light tracking-[0.5em] text-[#c79f4a] drop-shadow-[0_0_12px_rgba(199,159,74,0.4)]"
+              className="text-3xl font-light tracking-[0.18em] text-[#c79f4a] drop-shadow-[0_0_12px_rgba(199,159,74,0.4)]"
               style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
             >
               FINTHEON

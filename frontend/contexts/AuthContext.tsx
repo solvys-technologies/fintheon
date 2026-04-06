@@ -208,17 +208,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async () => {
-    const data = await signInWithGoogle();
-    if (data.url) {
-      // Open in system browser via Electron shell.openExternal
-      if (window.electron?.openExternal) {
-        window.electron.openExternal(data.url);
+    try {
+      const data = await signInWithGoogle();
+      if (data.url) {
+        // Open in system browser via Electron shell.openExternal
+        if (window.electron?.openExternal) {
+          window.electron.openExternal(data.url);
+        } else {
+          window.location.href = data.url;
+        }
+        // Start polling backend for the auth code as fallback
+        startPolling();
       } else {
-        window.location.href = data.url;
+        console.error('[Auth] signInWithGoogle returned no URL:', data);
       }
-      // Start polling backend for the auth code as fallback
-      // (deep link may not fire reliably on all macOS versions)
-      startPolling();
+    } catch (err) {
+      console.error('[Auth] Google sign-in failed:', err);
     }
   }, [startPolling]);
 
