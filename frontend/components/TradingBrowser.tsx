@@ -4,10 +4,11 @@ import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
 import { useSettings } from '../contexts/SettingsContext';
 import { useTheme } from '../contexts/ThemeContext';
 
-export type TradingPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradelocker' | 'tradingview';
+export type TradingPlatform = 'topstepx' | 'topstep-dashboard' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradelocker' | 'tradingview';
 
 export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
   topstepx: 'TopStepX',
+  'topstep-dashboard': 'TopStep Dashboard',
   mmt: 'MMT',
   kalshi: 'Kalshi',
   research: 'Research',
@@ -19,8 +20,9 @@ export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
 
 export const PLATFORM_URLS: Record<TradingPlatform, string> = {
   topstepx: 'https://www.topstepx.com',
+  'topstep-dashboard': 'https://dashboard.topstep.com',
   mmt: 'https://app.mmt.gg',
-  kalshi: 'https://kalshi.com/browse/economics',
+  kalshi: 'https://kalshi.com/category/economics',
   research: import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so',
   tradesea: 'https://app.tradesea.ai/trade',
   tradovate: 'https://trader.tradovate.com',

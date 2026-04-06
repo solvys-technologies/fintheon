@@ -74,7 +74,7 @@ export interface ProposerIframeSource {
 
 export type PrimaryBroker = 'rithmic' | 'projectx' | 'mmt';
 export type DefaultLayout = 'combined' | 'tickers-only';
-export type DefaultPlatform = 'topstepx' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradingview';
+export type DefaultPlatform = 'topstepx' | 'topstep-dashboard' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradingview';
 
 interface SettingsContextType {
   apiKeys: APIKeys;
@@ -290,7 +290,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const BUILTIN_PROPOSER_SOURCES: ProposerIframeSource[] = [
     { id: 'tradingview', label: 'TradingView', url: 'https://www.tradingview.com/chart', builtin: true },
     { id: 'unusual-whales', label: 'Unusual Whales', url: 'https://unusualwhales.com/flow', builtin: true },
-    { id: 'kalshi', label: 'Kalshi Markets', url: 'https://kalshi.com/browse/economics', builtin: true },
+    { id: 'kalshi', label: 'Kalshi Markets', url: 'https://kalshi.com/category/economics', builtin: true },
+    { id: 'topstep-dashboard', label: 'TopStep Dashboard', url: 'https://dashboard.topstep.com', builtin: true },
     { id: 'tradesea', label: 'TradeSea', url: 'https://app.tradesea.ai/trade', builtin: true },
     { id: 'tradovate', label: 'Tradovate', url: 'https://trader.tradovate.com', builtin: true },
   ];
