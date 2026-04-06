@@ -199,7 +199,7 @@ if [[ -n "$ACCESS_TOKEN" ]]; then
   AUTH_HEADER=(-H "Authorization: Bearer $ACCESS_TOKEN")
 fi
 
-REGISTER_JSON="$(curl -sS -X POST "$API_BASE/api/peers/register" \
+REGISTER_JSON="$(curl -sS --max-time 10 -X POST "$API_BASE/api/peers/register" \
   "${AUTH_HEADER[@]}" \
   -H "Content-Type: application/json" \
   -d "{\"deviceName\":\"$DEVICE_NAME\",\"platform\":\"$(uname -s | tr '[:upper:]' '[:lower:]')\",\"capabilities\":$CAPABILITIES,\"hermesAvailable\":$(command -v hermes >/dev/null 2>&1 && echo true || echo false)}")"
@@ -242,7 +242,7 @@ echo "  Config: $PEER_CONFIG"
 # Test fire: trigger an immediate feed poll to verify the pipeline works on this device
 if [[ "$ROUND_ROBIN_ENROLLED" == true ]]; then
   info "Test-firing feed poll to verify pipeline..."
-  TEST_FIRE="$(curl -sS -X POST "$API_BASE/api/riskflow/refresh" \
+  TEST_FIRE="$(curl -sS --max-time 10 -X POST "$API_BASE/api/riskflow/refresh" \
     "${AUTH_HEADER[@]}" \
     -H "Content-Type: application/json" \
     -o /dev/null -w "%{http_code}" 2>/dev/null || echo "000")"
