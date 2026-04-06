@@ -98,8 +98,8 @@ function ChatInterfaceInner({ conversationId, setConversationId, clearConversati
             lastError={lastError}
             lastRequestId={lastRequestId}
           />
-          {/* Fade-to-black gradient above composer */}
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10" style={{ height: '140px', background: 'linear-gradient(to bottom, transparent, var(--fintheon-bg))' }} />
+          {/* Fade-to-black — covers bottom 40% of the entire chat area */}
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10" style={{ height: '40%', background: 'linear-gradient(to bottom, transparent 0%, var(--fintheon-bg) 100%)' }} />
           <div className="relative z-20 shrink-0">
           <FintheonComposer
             thinkHarder={thinkHarder}

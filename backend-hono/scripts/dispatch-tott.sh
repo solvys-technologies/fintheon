@@ -47,7 +47,9 @@ fi
 log "Triggering $BRIEF_TYPE generation..."
 RESPONSE=""
 for i in $(seq 1 $MAX_RETRIES); do
-  RESPONSE=$(curl -s -X POST "$BACKEND_URL/api/data/brief/generate" 2>> "$LOG_FILE") && break
+  RESPONSE=$(curl -s --max-time 120 -X POST "$BACKEND_URL/api/data/brief/generate" \
+    -H "Content-Type: application/json" \
+    -d "{\"type\":\"$BRIEF_TYPE\"}" 2>> "$LOG_FILE") && break
   log "Attempt $i failed. Retrying in ${RETRY_DELAY}s..."
   sleep "$RETRY_DELAY"
 done
