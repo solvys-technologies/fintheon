@@ -202,17 +202,15 @@ export function useHermesChat(
     },
   });
 
-  // [claude-code 2026-03-09] Hydrate messages from backend when remounting with persisted conversationId
+  // [claude-code 2026-04-05] Hydrate messages when conversationId changes (session switch or remount)
   useEffect(() => {
     if (!conversationId || hydratedRef.current === conversationId) return;
-    // Only hydrate if the thread is currently empty (remount scenario)
-    if (useChatMessages.length > 0) {
-      hydratedRef.current = conversationId;
-      return;
-    }
 
     let cancelled = false;
     hydratedRef.current = conversationId;
+
+    // Clear existing messages so the new session loads fresh
+    setUseChatMessages([]);
 
     (async () => {
       try {
