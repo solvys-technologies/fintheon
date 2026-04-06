@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FileText, RefreshCw, Sparkles, ChevronDown, Clock } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
-import { useSettings } from '../../contexts/SettingsContext';
-import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
+
 
 /** Simple markdown-ish renderer for brief text — bolds, bullets, headers */
 function BriefContent({ text }: { text: string }) {
@@ -110,7 +109,6 @@ function getNextBriefCountdown(): { label: string; hoursAway: number } | null {
 
 export function BriefMiniWidget() {
   const backend = useBackend();
-  const { autoRefresh } = useSettings();
   const [todayBriefs, setTodayBriefs] = useState<TodayBrief[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -154,12 +152,9 @@ export function BriefMiniWidget() {
 
   useEffect(() => {
     fetchTodayBriefs();
-    const interval = setInterval(() => {
-      if (!autoRefresh) return;
-      fetchTodayBriefs();
-    }, 60_000);
+    const interval = setInterval(() => { fetchTodayBriefs(); }, 60_000);
     return () => clearInterval(interval);
-  }, [fetchTodayBriefs, autoRefresh]);
+  }, [fetchTodayBriefs]);
 
   // Update countdown every minute
   useEffect(() => {
@@ -250,7 +245,6 @@ export function BriefMiniWidget() {
           >
             <Sparkles className={`w-2.5 h-2.5 ${generating ? 'animate-pulse' : ''}`} />
           </button>
-          <AutoRefreshToggle size="xs" />
           <button
             type="button"
             onClick={handleRefresh}

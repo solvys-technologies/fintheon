@@ -102,7 +102,7 @@ function convertRiskFlowToFeedItem(riskflowItem: RiskFlowItem): FeedItemType | n
 
 export function FeedSection() {
   const backend = useBackend();
-  const { mockDataEnabled, autoRefresh } = useSettings();
+  const { mockDataEnabled } = useSettings();
   const [feedItems, setFeedItems] = useState<FeedItemType[]>([]);
   const [showMDBModal, setShowMDBModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -169,13 +169,10 @@ export function FeedSection() {
     initializeNews();
 
     // Then fetch every 15 seconds (just refresh the list, don't sync every time)
-    const interval = setInterval(() => {
-      if (!autoRefresh) return;
-      fetchNews();
-    }, 15000);
+    const interval = setInterval(() => { fetchNews(); }, 15000);
 
     return () => clearInterval(interval);
-  }, [backend, mockDataEnabled, autoRefresh]);
+  }, [backend, mockDataEnabled]);
 
   const handleBreakingNews = useCallback((item: RiskFlowItem) => {
     const converted = convertRiskFlowToFeedItem(item);

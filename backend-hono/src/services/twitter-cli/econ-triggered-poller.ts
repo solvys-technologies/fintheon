@@ -4,7 +4,7 @@
 // [claude-code 2026-03-16] Smart polling: event-window-only (T-5min to T+15min)
 // [claude-code 2026-03-23] Wired rate limiter for Twitter CLI calls
 
-import { searchTweets, fetchUserTimeline, isTwitterCliInstalled } from './twitter-cli-service.js';
+import { searchTweets, fetchUserTimeline, isTwitterCliInstalled, isRateLimited, getRateLimitCooldownMs } from './twitter-cli-service.js';
 import { createRateLimiter } from '../rate-limiter.js';
 import { getPollingConfig } from '../riskflow/polling-config.js';
 
@@ -96,6 +96,25 @@ const ALL_CONTINUOUS_ACCOUNTS = [
   ...OSINT_ACCOUNTS,
   ...GEOPOLITICAL_ACCOUNTS,
 ] as const;
+
+// ── Account Rotation ────────────────────────────────────────────────────────
+// Priority accounts polled EVERY cycle. Others rotate in batches of 3.
+const PRIORITY_ACCOUNTS: readonly string[] = [...FJ_ACCOUNTS, ...WIRE_ACCOUNTS]; // financialjuice, DeItaone
+const ROTATING_ACCOUNTS: readonly string[] = ALL_CONTINUOUS_ACCOUNTS.filter(
+  a => !PRIORITY_ACCOUNTS.includes(a)
+);
+let rotationIndex = 0;
+const ROTATION_BATCH_SIZE = 3;
+
+/** Get accounts for this poll cycle: priority + next batch of rotating accounts */
+function getAccountsForCycle(): string[] {
+  const batch: string[] = [...PRIORITY_ACCOUNTS];
+  for (let i = 0; i < ROTATION_BATCH_SIZE; i++) {
+    batch.push(ROTATING_ACCOUNTS[(rotationIndex + i) % ROTATING_ACCOUNTS.length]);
+  }
+  rotationIndex = (rotationIndex + ROTATION_BATCH_SIZE) % ROTATING_ACCOUNTS.length;
+  return [...new Set(batch)]; // dedupe
+}
 
 // Geopolitical search terms — burst-polled when conflict escalation detected
 const GEOPOLITICAL_SEARCH_TERMS = [
@@ -466,6 +485,11 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
     return [];
   }
 
+  if (isRateLimited()) {
+    console.warn(`[EconTwitterPoller] Rate limited — cooldown ${Math.round(getRateLimitCooldownMs() / 1000)}s remaining, skipping cycle`);
+    return [];
+  }
+
   const today = new Date().toISOString().slice(0, 10);
 
   // ── 1. Econ calendar: fetch events for burst scheduling + actual extraction ──
@@ -492,10 +516,11 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
     console.warn('[EconTwitterPoller] Failed to fetch econ calendar:', err);
   }
 
-  // ── 2. ALWAYS poll all accounts (continuous — never gated by events) ──
+  // ── 2. Poll accounts using rotation (priority always, others in batches of 3) ──
+  const cycleAccounts = getAccountsForCycle();
   const allTweetPromises: Promise<Array<{ id: string; text: string; author: string; publishedAt: string }>>[] = [];
 
-  for (const account of ALL_CONTINUOUS_ACCOUNTS) {
+  for (const account of cycleAccounts) {
     allTweetPromises.push(twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }));
   }
 
@@ -534,7 +559,7 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
   );
 
   if (feedItems.length > 0) {
-    console.log(`[EconTwitterPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw across ${ALL_CONTINUOUS_ACCOUNTS.length} accounts)`);
+    console.log(`[EconTwitterPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw across ${cycleAccounts.length} accounts: ${cycleAccounts.join(', ')})`);
     pushToSupabase(feedItems).catch(() => {});
   } else if (uniqueTweets.length > 0) {
     console.debug(`[EconTwitterPoller] ${uniqueTweets.length} raw tweets fetched, 0 passed medium+ filter`);
@@ -691,11 +716,16 @@ export async function manualRefreshTweets(): Promise<FeedItem[]> {
     return [];
   }
 
-  console.log('[ManualRefresh] Fetching all continuous account timelines (rate-limited)...');
+  if (isRateLimited()) {
+    console.warn(`[ManualRefresh] Rate limited — cooldown ${Math.round(getRateLimitCooldownMs() / 1000)}s remaining`);
+    return [];
+  }
 
-  const allAccounts = [...ALL_CONTINUOUS_ACCOUNTS];
+  const cycleAccounts = getAccountsForCycle();
+  console.log(`[ManualRefresh] Fetching ${cycleAccounts.length} accounts (rotation): ${cycleAccounts.join(', ')}`);
+
   const batches = await Promise.allSettled(
-    allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
+    cycleAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
   );
   const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 

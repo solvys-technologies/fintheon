@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-06T13:05:00',
+    agent: 'claude-code',
+    summary: 'Fix Twitter CLI 429 rate limit killing feed for 2+ days. Root cause: polling 11 accounts every 60-180s exceeded cookie-auth rate limits (~50/15min). Fix: (1) Account rotation — poll 5 accounts/cycle (FJ+DeItaOne always + 3 rotating) instead of all 11. (2) Global 429 cooldown — detects rate_limited in CLI output, pauses ALL calls for 90s, auto-resumes. (3) Rate limit status exposed in /api/riskflow/sources + Team Card (amber pulsing "Rate Limited" light). (4) Removed AutoRefreshToggle from all 5 frontend locations — backend polling is autonomous. (5) Harper feed-health hook enhanced: checks item age staleness (>2h alert) + Twitter 429 status.',
+    files: [
+      'backend-hono/src/services/twitter-cli/twitter-cli-service.ts',
+      'backend-hono/src/services/twitter-cli/econ-triggered-poller.ts',
+      'backend-hono/src/services/twitter-cli/index.ts',
+      'backend-hono/src/routes/riskflow/handlers.ts',
+      'backend-hono/src/routes/diagnostics/index.ts',
+      'frontend/hooks/useSourceStatus.ts',
+      'frontend/types/team.ts',
+      'frontend/contexts/TeamPresenceContext.tsx',
+      'frontend/components/team/TeamMemberCard.tsx',
+      'frontend/components/executive/MainDashboard.tsx',
+      'frontend/components/RiskFlowMini.tsx',
+      'frontend/components/journal/PerformanceJournal.tsx',
+      'frontend/components/mission-control/BriefMiniWidget.tsx',
+      'frontend/components/feed/FeedSection.tsx',
+      'frontend/components/feed/MinimalTapeWidget.tsx',
+      '.claude/hooks/harper-feed-health.sh',
+    ],
+  },
+  {
     date: '2026-04-06T00:10:00',
     agent: 'claude-code',
     summary: 'Fix peer-bootstrap Supabase prompt + add feed test-fire. (1) Removed interactive email/password prompt — uses SUPABASE_SERVICE_ROLE_KEY from backend .env automatically. (2) Auth middleware now accepts service role key as bearer token for internal bootstrap calls. (3) peer-bootstrap fires /api/riskflow/refresh after registration to verify pipeline. (4) Backend peer register route triggers forcePoll() when twitter-round-robin peer comes online.',

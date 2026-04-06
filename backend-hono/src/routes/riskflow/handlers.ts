@@ -856,13 +856,17 @@ export async function handleRescore(c: Context) {
 
 /** GET /api/riskflow/sources — connection status for data source indicators */
 export async function handleGetSources(c: Context) {
+  const { isRateLimited, getRateLimitCooldownMs } = await import('../../services/twitter-cli/index.js');
   const [twitterCli] = await Promise.all([
     isTwitterCliInstalled().catch(() => false),
   ]);
   const supabaseUp = isSupabaseConfigured();
+  const rateLimited = isRateLimited();
   return c.json({
     notion: supabaseUp, // Now backed by Supabase instead of Notion poller
-    twitterCli,
+    twitterCli: twitterCli && !rateLimited, // false when rate limited
+    twitterRateLimited: rateLimited,
+    twitterCooldownSec: rateLimited ? Math.round(getRateLimitCooldownMs() / 1000) : 0,
     xApi: false, // Deprecated — replaced by twitter-cli
   });
 }

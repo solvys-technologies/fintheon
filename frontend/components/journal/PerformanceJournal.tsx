@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { BookOpen, User, Bot, RefreshCw, Eye, AlertTriangle } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 import { useERSafe } from '../../contexts/ERContext';
-import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
 import { KPICard } from './KPICard';
 import { BloombergChart, type ChartPeriod, type ChartMetric } from './BloombergChart';
 import { ERTrendChart } from './ERTrendChart';
@@ -138,7 +137,6 @@ export function PerformanceJournal() {
           <span className="text-sm font-semibold text-[var(--fintheon-text)]">Performance</span>
         </div>
         <div className="flex items-center gap-1">
-          <AutoRefreshToggle />
           <button onClick={fetchData} disabled={loading} className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors">
             <RefreshCw className={`w-3.5 h-3.5 text-[var(--fintheon-muted)] ${loading ? 'animate-spin' : ''}`} />
           </button>

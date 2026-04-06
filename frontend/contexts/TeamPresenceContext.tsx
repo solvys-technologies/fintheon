@@ -50,6 +50,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
     userStatus,
     services: {
       twitterCli: sourceStatus.twitterCli,
+      twitterRateLimited: sourceStatus.twitterRateLimited,
       aiRuntime: caoOnline,
       newsfeedPolling: {
         active: sourceStatus.backendReachable && (sourceStatus.notion || sourceStatus.twitterCli || sourceStatus.xApi),
@@ -57,7 +58,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
       },
       backendConnection: sourceStatus.backendReachable,
     },
-  }), [userId, displayName, caoName, caoOnline, sourceStatus.twitterCli, sourceStatus.notion, sourceStatus.xApi, sourceStatus.backendReachable, sourceStatus.lastPollSuccess, userStatus]);
+  }), [userId, displayName, caoName, caoOnline, sourceStatus.twitterCli, sourceStatus.twitterRateLimited, sourceStatus.notion, sourceStatus.xApi, sourceStatus.backendReachable, sourceStatus.lastPollSuccess, userStatus]);
 
   // Connect to Supabase Realtime Presence channel
   useEffect(() => {
@@ -79,6 +80,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
 
           const defaultServices = {
             twitterCli: false,
+            twitterRateLimited: false,
             aiRuntime: false,
             newsfeedPolling: { active: false, lastUpdate: new Date().toISOString() },
             backendConnection: false,

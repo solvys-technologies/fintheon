@@ -4,6 +4,8 @@ export {
   isTwitterCliInstalled,
   searchTweets,
   fetchUserTimeline,
+  isRateLimited,
+  getRateLimitCooldownMs,
   type TwitterCliTweet,
 } from './twitter-cli-service.js';
 

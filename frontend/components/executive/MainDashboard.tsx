@@ -15,7 +15,6 @@ import { RegimeTrackerModal } from '../regimes/RegimeTrackerModal';
 import { SetupGuideCard, shouldShowSetupGuide } from '../onboarding/SetupGuideCard';
 import { BlindspotsInterview } from '../onboarding/BlindspotsInterview';
 import { RefreshCw } from 'lucide-react';
-import { AutoRefreshToggle } from '../ui/AutoRefreshToggle';
 import { useSettings } from '../../contexts/SettingsContext';
 
 const DASHBOARD_PAGES = ['Briefing', 'RiskFlow'];
@@ -33,7 +32,6 @@ function briefTypeToLabel(bt: string): string {
 export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string) => void }) {
   const backend = useBackend();
   const settings = useSettings();
-  const { autoRefresh } = settings;
   const [activePage, setActivePage] = useState(0); // default to Briefing
   const containerRef = useRef<HTMLDivElement>(null);
   const [ntnText, setNtnText] = useState('');
@@ -110,15 +108,12 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
       }
     };
     void load();
-    const interval = setInterval(() => {
-      if (!autoRefresh) return;
-      void load();
-    }, 60_000);
+    const interval = setInterval(() => { void load(); }, 60_000);
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [backend, autoRefresh]);
+  }, [backend]);
 
   // Core KPIs from Daily P&L data
   useEffect(() => {
@@ -136,15 +131,12 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
       }
     };
     void load();
-    const interval = setInterval(() => {
-      if (!autoRefresh) return;
-      void load();
-    }, 60_000);
+    const interval = setInterval(() => { void load(); }, 60_000);
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [backend, autoRefresh]);
+  }, [backend]);
 
   // RiskFlow: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
   const { alerts, markAllSeen, isSeen, refresh, refreshing } = useRiskFlow();
@@ -251,7 +243,6 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
                   tone="gold"
                   headerRight={
                     <div className="flex items-center gap-1">
-                      <AutoRefreshToggle size="xs" />
                       <button
                         type="button"
                         onClick={refreshBrief}
@@ -344,7 +335,6 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
           <div className="flex-1 min-h-0 flex flex-col">
             <KanbanTitle title="RiskFlow" tag="Alerts + Signals" tone="emerald" headerRight={
               <div className="flex items-center gap-1">
-                <AutoRefreshToggle size="xs" />
                 <button
                   type="button"
                   onClick={() => { void refresh(); }}
@@ -393,7 +383,6 @@ export function MainDashboard({ onNavigateTab }: { onNavigateTab?: (tab: string)
         <div data-dash-page="1" className="min-h-full snap-start pt-0.5 pb-1 px-2 flex flex-col">
           <KanbanTitle title="RiskFlow" tag="Full Feed" tone="emerald" headerRight={
               <div className="flex items-center gap-1">
-                <AutoRefreshToggle size="xs" />
                 <button
                   type="button"
                   onClick={() => { void refresh(); }}

@@ -22,11 +22,14 @@ function statusDotColor(status: UserStatus): string {
   return STATUS_OPTIONS.find((s) => s.value === status)?.color ?? 'bg-zinc-500';
 }
 
-function ServiceLight({ label, active }: { label: string; active: boolean }) {
+function ServiceLight({ label, active, warning }: { label: string; active: boolean; warning?: string }) {
+  const color = warning ? 'bg-amber-400' : active ? 'bg-emerald-400' : 'bg-red-400';
+  const displayLabel = warning || label;
+  const titleText = warning ? `${label}: ${warning}` : `${label}: ${active ? 'OK' : 'Down'}`;
   return (
-    <span className="flex items-center gap-1 text-[9px] text-zinc-500 font-mono" title={`${label}: ${active ? 'OK' : 'Down'}`}>
-      <span className={`inline-block w-1.5 h-1.5 rounded-full ${active ? 'bg-emerald-400' : 'bg-red-400'}`} />
-      {label}
+    <span className="flex items-center gap-1 text-[9px] text-zinc-500 font-mono" title={titleText}>
+      <span className={`inline-block w-1.5 h-1.5 rounded-full ${color} ${warning ? 'animate-pulse' : ''}`} />
+      {displayLabel}
     </span>
   );
 }
@@ -108,7 +111,11 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
 
       {/* Service status lights */}
       <div className="flex items-center gap-3 mt-2">
-        <ServiceLight label="Twitter" active={presence.services.twitterCli} />
+        <ServiceLight
+          label="Twitter"
+          active={presence.services.twitterCli}
+          warning={presence.services.twitterRateLimited ? 'Rate Limited' : undefined}
+        />
         <ServiceLight label="AI" active={presence.services.aiRuntime} />
         <ServiceLight label="Feed" active={presence.services.newsfeedPolling.active && !newsfeedStale} />
         <ServiceLight label="Backend" active={presence.services.backendConnection} />

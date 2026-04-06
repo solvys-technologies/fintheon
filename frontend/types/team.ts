@@ -4,6 +4,7 @@ export type UserStatus = 'online' | 'away' | 'busy' | 'dnd' | 'offline';
 
 export interface ServiceStatus {
   twitterCli: boolean;
+  twitterRateLimited: boolean;
   aiRuntime: boolean;
   newsfeedPolling: { active: boolean; lastUpdate: string };
   backendConnection: boolean;

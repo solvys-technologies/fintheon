@@ -1,4 +1,5 @@
 // [claude-code 2026-03-10] twitter-cli wrapper — cookie-based Twitter scraping via execFile (no shell injection)
+// [claude-code 2026-04-06] Added global 429 cooldown — pauses all CLI calls for 90s after rate limit hit
 
 import { execFileNoThrow } from '../../utils/execFileNoThrow.js';
 
@@ -7,6 +8,25 @@ import { execFileNoThrow } from '../../utils/execFileNoThrow.js';
 const TWITTER_BIN =
   process.env.TWITTER_CLI_PATH ??
   `${process.env.HOME ?? '/Users/tifos'}/.local/bin/twitter`;
+
+// ── Global 429 Rate Limit Cooldown ──────────────────────────────────────────
+const RATE_LIMIT_COOLDOWN_MS = 90_000; // 90s pause after any 429
+let rateLimitedUntil = 0;
+
+/** Check if we're currently in a 429 cooldown window */
+export function isRateLimited(): boolean {
+  return Date.now() < rateLimitedUntil;
+}
+
+/** Get remaining cooldown ms (0 if not rate limited) */
+export function getRateLimitCooldownMs(): number {
+  return Math.max(0, rateLimitedUntil - Date.now());
+}
+
+function markRateLimited(): void {
+  rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+  console.warn(`[TwitterCli] 429 rate limit hit — pausing ALL calls for ${RATE_LIMIT_COOLDOWN_MS / 1000}s (until ${new Date(rateLimitedUntil).toISOString()})`);
+}
 
 export interface TwitterCliTweet {
   id: string;
@@ -33,13 +53,17 @@ export async function searchTweets(
   query: string,
   opts?: { limit?: number; filter?: 'top' | 'latest' }
 ): Promise<TwitterCliTweet[]> {
+  if (isRateLimited()) return [];
+
   const args = ['search', query, '--json'];
   if (opts?.filter) args.push('-t', opts.filter);
   if (opts?.limit) args.push('-n', String(opts.limit));
 
   const result = await execFileNoThrow(TWITTER_BIN, args, { timeout: 15_000 });
   if (!result || result.exitCode !== 0 || !result.stdout.trim()) {
-    if (result?.stderr) {
+    if (result?.stderr?.includes('429') || result?.stdout?.includes('rate_limited')) {
+      markRateLimited();
+    } else if (result?.stderr) {
       console.warn('[TwitterCli] searchTweets stderr:', result.stderr.slice(0, 200));
     }
     return [];
@@ -56,12 +80,16 @@ export async function fetchUserTimeline(
   username: string,
   opts?: { limit?: number }
 ): Promise<TwitterCliTweet[]> {
+  if (isRateLimited()) return [];
+
   const args = ['user-posts', username, '--json'];
   if (opts?.limit) args.push('-n', String(opts.limit));
 
   const result = await execFileNoThrow(TWITTER_BIN, args, { timeout: 15_000 });
   if (!result || result.exitCode !== 0 || !result.stdout.trim()) {
-    if (result?.stderr) {
+    if (result?.stderr?.includes('429') || result?.stdout?.includes('rate_limited')) {
+      markRateLimited();
+    } else if (result?.stderr) {
       console.warn('[TwitterCli] fetchUserTimeline stderr:', result.stderr.slice(0, 200));
     }
     return [];
@@ -138,12 +166,16 @@ function normalizeTweet(raw: any): TwitterCliTweet | null {
 export async function fetchBookmarks(
   opts?: { limit?: number }
 ): Promise<TwitterCliTweet[]> {
+  if (isRateLimited()) return [];
+
   const args = ['bookmarks', '--json'];
   if (opts?.limit) args.push('-n', String(opts.limit));
 
   const result = await execFileNoThrow(TWITTER_BIN, args, { timeout: 20_000 });
   if (!result || result.exitCode !== 0 || !result.stdout.trim()) {
-    if (result?.stderr) {
+    if (result?.stderr?.includes('429') || result?.stdout?.includes('rate_limited')) {
+      markRateLimited();
+    } else if (result?.stderr) {
       console.warn('[TwitterCli] fetchBookmarks stderr:', result.stderr.slice(0, 200));
     }
     return [];

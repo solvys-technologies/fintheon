@@ -6,7 +6,7 @@ import { pingDb } from '../../db/optimized.js';
 import { supabaseAuthHealth } from '../../services/supabase-auth.js';
 import { isPollingActive } from '../../services/riskflow/feed-poller.js';
 import { getFeedHealth } from '../../services/riskflow/feed-service.js';
-import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
+import { isTwitterCliInstalled, isRateLimited, getRateLimitCooldownMs } from '../../services/twitter-cli/index.js';
 import { initHermesAgent } from '../../services/hermes-handler.js';
 import { createLogger } from '../../lib/logger.js';
 import { triggerReflect, isReflectRunning } from '../../services/autoresearch/reflect-scheduler.js';
@@ -109,12 +109,23 @@ function checkRiskFlowPoller(): ServiceDiagnostic {
 async function checkTwitterCli(): Promise<ServiceDiagnostic> {
   try {
     const installed = await isTwitterCliInstalled();
-    return {
-      name: 'Twitter CLI',
-      status: installed ? 'ok' : 'unavailable',
-      detail: installed ? 'Installed' : 'Not installed',
-      fix: installed ? undefined : 'Install twitter-cli: go install github.com/solvys/twitter-cli@latest',
-    };
+    if (!installed) {
+      return {
+        name: 'Twitter CLI',
+        status: 'unavailable',
+        detail: 'Not installed',
+        fix: 'Install twitter-cli: go install github.com/solvys/twitter-cli@latest',
+      };
+    }
+    if (isRateLimited()) {
+      const cooldownSec = Math.round(getRateLimitCooldownMs() / 1000);
+      return {
+        name: 'Twitter CLI',
+        status: 'degraded',
+        detail: `Rate limited (429) — cooldown ${cooldownSec}s remaining`,
+      };
+    }
+    return { name: 'Twitter CLI', status: 'ok', detail: 'Installed' };
   } catch {
     return {
       name: 'Twitter CLI',

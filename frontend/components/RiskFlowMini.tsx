@@ -19,7 +19,6 @@ import { useBackend } from '../lib/backend';
 
 import { SEVERITY_CONFIG } from '../lib/severity-config';
 import { ivHeatColor } from '../types/miroshark';
-import { AutoRefreshToggle } from './ui/AutoRefreshToggle';
 
 // ── SVG Source Logos ──────────────────────────────────────────────────────────
 
@@ -647,8 +646,6 @@ export default function RiskFlowMini({
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <AutoRefreshToggle />
-              <span className="text-[8px] text-zinc-600 hidden xl:inline">Auto 30s</span>
               <button
                 type="button"
                 onClick={() => { void refresh(); }}
