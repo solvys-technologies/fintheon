@@ -370,10 +370,10 @@ export function PromptBox({
         <div
           className={[
             'relative flex flex-col rounded-2xl border transition-all duration-200',
-            'backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)]',
+            'backdrop-blur-xl',
             text
-              ? 'border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25'
-              : 'border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/35',
+              ? 'border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25 shadow-[0_0_24px_rgba(199,159,74,0.08)]'
+              : 'border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/35 shadow-[0_0_16px_rgba(199,159,74,0.04)]',
             disabled ? 'opacity-50 pointer-events-none' : '',
             vanishing ? 'animate-prompt-vanish' : '',
           ].join(' ')}
@@ -451,10 +451,12 @@ export function PromptBox({
               <button
               onClick={isProcessing && onStop ? onStop : handleSend}
               disabled={!text.trim() && images.length === 0 && !isProcessing}
-              className={`flex items-center justify-center rounded-full transition-all ${
+              className={`flex items-center justify-center rounded-full transition-all duration-300 ${
                 isProcessing
-                  ? 'bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black'
-                  : 'bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[var(--fintheon-accent)] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
+                  ? 'bg-red-500/80 hover:bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.3)]'
+                  : text.trim()
+                    ? 'bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black shadow-[0_0_20px_rgba(199,159,74,0.4)] hover:shadow-[0_0_28px_rgba(199,159,74,0.55)]'
+                    : 'bg-[var(--fintheon-accent)] text-black disabled:opacity-30 disabled:hover:bg-[var(--fintheon-accent)] shadow-[0_4px_12px_rgba(199,159,74,0.15)]'
               }`}
               style={{ width: '34px', height: '34px' }}
               title={isProcessing ? 'Stop' : 'Send'}
