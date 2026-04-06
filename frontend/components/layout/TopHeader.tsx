@@ -326,18 +326,18 @@ export function TopHeader({
     <div
       id="fintheon-heading-toolbar"
       data-tour-target="toolbar"
-      className={`relative bg-[var(--fintheon-surface)] flex items-center justify-between pl-6 pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[52px]' : 'h-[56px]'}`}
+      className={`relative bg-[var(--fintheon-surface)] flex items-center justify-between px-3 lg:px-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[52px]' : 'h-[56px]'}`}
     >
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-2 lg:gap-4 xl:gap-6">
         <div className={`flex items-center gap-3 transition-opacity duration-150 ${hideBranding ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <div className="flex flex-col leading-tight">
             <span className="text-[12px] font-semibold tracking-[0.22em] text-[var(--fintheon-accent)] uppercase">
               {instanceName}
             </span>
-            <span className="text-[10px] tracking-[0.18em] text-gray-500 uppercase">
+            <span className="text-[10px] tracking-[0.18em] text-gray-500 uppercase hidden lg:block">
               Priced In Capital
             </span>
-            <span className="text-[9px] text-gray-600 italic">
+            <span className="text-[9px] text-gray-600 italic hidden xl:block">
               {(() => { const h = new Date().getHours(); if (h < 12) return 'Ave. The markets stir.'; if (h < 17) return 'The Forum is active.'; return "The day's battles are done."; })()}
             </span>
           </div>
@@ -396,7 +396,7 @@ export function TopHeader({
         </div>
       </div>
       
-      <div className="flex items-center gap-4 min-w-0 overflow-x-auto overflow-y-hidden flex-shrink">
+      <div className="flex items-center gap-1.5 lg:gap-3 min-w-0 flex-shrink">
         <div className="flex items-center gap-2 flex-shrink-0">
           <WhatsNewButton />
           {psychAssistHeadingWidget}
