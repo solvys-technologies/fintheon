@@ -873,7 +873,10 @@ export async function handleGetSources(c: Context) {
   const rateLimited = isRateLimited();
   return c.json({
     notion: supabaseUp, // Now backed by Supabase instead of Notion poller
-    twitterCli: twitterCli && !rateLimited, // false when rate limited
+    // [claude-code 2026-04-06] twitterCli = binary installed, NOT rate limit state.
+    // Rate limit is a separate field (twitterRateLimited). Merging them made both
+    // Twitter AND Feed status lights red during normal 429 cooldowns.
+    twitterCli: twitterCli,
     twitterRateLimited: rateLimited,
     twitterCooldownSec: rateLimited ? Math.round(getRateLimitCooldownMs() / 1000) : 0,
     xApi: false, // Deprecated — replaced by twitter-cli

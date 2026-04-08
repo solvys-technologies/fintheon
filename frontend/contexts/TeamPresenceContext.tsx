@@ -6,6 +6,7 @@ import { useSettings } from './SettingsContext';
 import { useGateway } from './GatewayContext';
 import { useFintheonAgents } from './FintheonAgentContext';
 import { useSourceStatus } from '../hooks/useSourceStatus';
+import { useToast } from './ToastContext';
 import type { TeamMember, PresencePayload, UserStatus } from '../types/team';
 
 interface TeamPresenceContextValue {
@@ -26,6 +27,23 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
   const { status: gatewayStatus, hermesStatus } = useGateway();
   const { agents } = useFintheonAgents();
   const sourceStatus = useSourceStatus();
+  const { addToast } = useToast();
+  const prevRateLimited = useRef(false);
+
+  // [claude-code 2026-04-06] One-liner toast when Twitter 429 kicks in or recovers
+  useEffect(() => {
+    if (sourceStatus.twitterRateLimited && !prevRateLimited.current) {
+      addToast(
+        `Twitter rate limited — cooling down ${sourceStatus.twitterCooldownSec}s`,
+        'info',
+        undefined,
+        'connection-status',
+      );
+    } else if (!sourceStatus.twitterRateLimited && prevRateLimited.current) {
+      addToast('Twitter polling resumed', 'success', undefined, 'connection-status');
+    }
+    prevRateLimited.current = sourceStatus.twitterRateLimited;
+  }, [sourceStatus.twitterRateLimited, sourceStatus.twitterCooldownSec, addToast]);
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isConnected, setIsConnected] = useState(false);

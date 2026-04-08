@@ -13,6 +13,7 @@ import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
 import { useMcpConnectors } from '../../hooks/useMcpConnectors';
 import { PersonaDropdown } from './PersonaDropdown';
 import { ToolsDropdown } from './ToolsDropdown';
+import { ProviderDropdown, useHarperProvider } from './ProviderDropdown';
 import { API_BASE_URL } from './constants';
 
 /* ------------------------------------------------------------------ */
@@ -48,6 +49,7 @@ export function FintheonComposer({
   const voice = useVoice();
   const { activeAgent } = useFintheonAgents();
   const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
+  const { provider, setProvider } = useHarperProvider();
 
   // Fetch skills from backend — merge with prop-level disabled skills
   useEffect(() => {
@@ -108,6 +110,7 @@ export function FintheonComposer({
     runtime.cancelRun();
   }, [runtime]);
 
+  const providerEl = <ProviderDropdown provider={provider} onChange={setProvider} />;
   const personaEl = <PersonaDropdown />;
 
   const toolsEl = (
@@ -139,6 +142,7 @@ export function FintheonComposer({
       voiceEnabled={voice.enabled}
       voiceState={voice.runtimeState}
       onToggleVoice={voice.toggleEnabled}
+      providerSlot={providerEl}
       personaSlot={personaEl}
       toolsSlot={toolsEl}
     />

@@ -9,6 +9,33 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-04-06T17:00:00',
+    agent: 'claude-code',
+    summary: 'Add YouTube floating miniplayer — draggable, minimizable, persists across tab/browser changes. Toggle via Cmd+Shift+Y. State + position saved to localStorage.',
+    files: [
+      'frontend/components/layout/YouTubeMiniplayer.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+    ],
+  },
+  {
+    date: '2026-04-06T16:15:00',
+    agent: 'claude-code',
+    summary: 'Fix status indicator lights + add rate-limit toast. (1) Backend /sources was returning twitterCli=false during 429 cooldowns — made both Twitter and Feed lights red. Fixed: twitterCli now reports binary-installed state only, rate limit stays in separate field. Twitter light goes amber during cooldown, Feed stays green. (2) Added one-liner toast notification when Twitter gets rate limited and when it recovers.',
+    files: [
+      'backend-hono/src/routes/riskflow/handlers.ts',
+      'frontend/contexts/TeamPresenceContext.tsx',
+    ],
+  },
+  {
+    date: '2026-04-06T15:50:00',
+    agent: 'claude-code',
+    summary: 'Fix feed showing only 11 items (was 482 in DB). Two root causes: (1) matchesWatchlist() required symbol/tag match ON TOP of source match — FJ items tagged with non-default keywords (LABOR, TARIFFS) got silently dropped. Fixed: source match alone is sufficient. (2) Cold-start cache seed was 200 items, starving the 500-item MAX_FEED_ITEMS cap. Fixed: seed now pulls MAX_FEED_ITEMS from DB. Feed went from 11 → 482 items after fix.',
+    files: [
+      'backend-hono/src/services/riskflow/watchlist-service.ts',
+      'backend-hono/src/services/riskflow/feed-service.ts',
+    ],
+  },
+  {
     date: '2026-04-06T13:05:00',
     agent: 'claude-code',
     summary: 'Fix Twitter CLI 429 rate limit killing feed for 2+ days. Root cause: polling 11 accounts every 60-180s exceeded cookie-auth rate limits (~50/15min). Fix: (1) Account rotation — poll 5 accounts/cycle (FJ+DeItaOne always + 3 rotating) instead of all 11. (2) Global 429 cooldown — detects rate_limited in CLI output, pauses ALL calls for 90s, auto-resumes. (3) Rate limit status exposed in /api/riskflow/sources + Team Card (amber pulsing "Rate Limited" light). (4) Removed AutoRefreshToggle from all 5 frontend locations — backend polling is autonomous. (5) Harper feed-health hook enhanced: checks item age staleness (>2h alert) + Twitter 429 status.',

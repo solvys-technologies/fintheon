@@ -147,10 +147,15 @@ export function useHermesChat(
               .map((p: any) => p.text)
               .join('') || '',
           }));
+          // Read provider from localStorage (set by ProviderDropdown)
+          const harperProvider = (() => {
+            try { return localStorage.getItem('fintheon:harper-provider') || 'local'; } catch { return 'local'; }
+          })();
           return {
             body: {
               message: msgText,
               history,
+              provider: harperProvider,
               ...(conversationIdRef.current && { conversationId: conversationIdRef.current }),
               ...(thinkHarderRef.current && { thinkHarder: true }),
               userContext: (() => {

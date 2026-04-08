@@ -12,7 +12,7 @@ import * as newsCache from './news-cache.js';
 import { enrichFeedWithAnalysis, updateFeedCache } from './feed-service.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import { fetchEconomicFeed } from './economic-feed.js';
-import { isTwitterCliInstalled, pollTwitterForEconNews, manualRefreshTweets, isRateLimited } from '../twitter-cli/index.js';
+import { isTwitterCliInstalled, pollTwitterForEconNews, manualRefreshTweets, isRateLimited, markPollSuccess, markPollEmpty } from '../twitter-cli/index.js';
 import { writeRawItems, type RawRiskFlowItem } from '../supabase-service.js';
 import { isSupabaseConfigured } from '../../config/supabase.js';
 import { getPollingConfig } from './polling-config.js';
@@ -257,10 +257,21 @@ async function pollForNewItems(): Promise<void> {
       }),
     ]);
 
+    // Track Twitter empty polls — triggers Exa fallback after consecutive empties
+    if (twitterAvailable && twitterCliItems.length === 0) {
+      markPollEmpty();
+      // If now considered rate limited after this empty poll, run Exa fallback
+      if (isRateLimited()) {
+        log.info('Twitter returning empty — running Exa fallback for headlines');
+        await runExaFallback();
+      }
+    } else if (twitterCliItems.length > 0) {
+      markPollSuccess();
+    }
+
     const rawItems: FeedItem[] = [...econItems, ...twitterCliItems];
 
     if (rawItems.length === 0) {
-      // Log when both sources return empty so operators know the pipeline is idle
       log.info(`Poll cycle: 0 items from all sources (twitter-cli: ${twitterAvailable ? 'available' : 'unavailable'}, econ: checked)`);
       consecutivePollingFailures = 0;
       return;

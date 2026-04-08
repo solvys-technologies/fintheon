@@ -1,3 +1,4 @@
+// [claude-code 2026-04-07] Fix: Hash on headline only (not publishedBucket) to prevent duplicate IDs
 // [claude-code 2026-04-04] Exa-powered catalyst scraper + Twitter bookmark poller
 // Exa: neural search for wire coverage, POI statements, OSINT, Mag7, liquidity
 // Bookmarks: keyword-matched against active Narrative threads → only signal, no noise
@@ -23,7 +24,7 @@ let scraperTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const NARRATIVE_KEYWORDS: Record<string, RegExp> = {
   'middle-east-conflict': /\b(iran|israel|irgc|houthi|hezbollah|hamas|gaza|lebanon|netanyahu|araghchi|khamenei|hormuz|strait|missile|ceasefire|idf)\b/i,
-  'liquidity-credit-contraction': /\b(liquidity|credit (crunch|contraction|spread)|repo|reverse repo|TGA|treasury general|RRP|QT|quantitative tight|bank (run|stress|fail)|svb|deposit flight|btfp|credit (tight|crack))\b/i,
+  'liquidity-credit-contraction': /\b(liquidity|credit (crunch|contraction|spread)|repo|reverse repo|TGA|treasury general|RRP|QT|quantitative tight|bank (run|stress|fail)|svb|deposit flight|btfp|credit (tight|crack)|private credit|redemption gate|withdrawal limit|fund gate)\b/i,
   'ai-singularity': /\b(nvidia|nvda|openai|anthropic|deepmind|google ai|microsoft ai|meta ai|apple intelligence|mag.?7|magnificent|artificial intelligence|AGI|GPU|H100|H200|blackwell|data center|AI capex|AI spend)\b/i,
   'usd-jpy-carry-trade': /\b(usd.?jpy|carry trade|yen|boj|bank of japan|japan rate|intervention|ueda)\b/i,
   'trade-war': /\b(tariff|trade war|import duty|reciprocal tariff|liberation day|customs|duties|retaliatory|section 301|trade deficit)\b/i,
@@ -105,7 +106,7 @@ const SEARCH_GROUPS: SearchGroup[] = [
   // ── Liquidity & Credit Stress ─────────────────────────────────
   {
     name: 'Liquidity-Credit',
-    query: 'liquidity crisis OR credit spread widening OR repo rate spike OR reverse repo OR TGA drawdown OR bank stress OR deposit flight OR Treasury auction OR quantitative tightening',
+    query: 'private credit redemption gate withdrawal limit OR liquidity crisis OR credit spread widening OR repo rate spike OR reverse repo OR TGA drawdown OR bank stress OR deposit flight OR Treasury auction OR quantitative tightening',
     source: 'FinancialJuice',
     idPrefix: 'exa-liq',
     numResults: 8,
@@ -161,7 +162,7 @@ function extractTags(text: string): string[] {
   if (/\b(breaking|urgent|alert)\b/i.test(text)) tags.push('BREAKING');
   if (/\b(nuclear|enrichment|uranium|iaea)\b/i.test(text)) tags.push('NUCLEAR');
   if (/\b(nvidia|nvda|meta|msft|aapl|goog|amzn|tsla|mag.?7|magnificent)\b/i.test(text)) tags.push('MAG7');
-  if (/\b(liquidity|credit spread|repo|TGA|QT|bank stress)\b/i.test(text)) tags.push('LIQUIDITY');
+  if (/\b(liquidity|credit spread|repo|TGA|QT|bank stress|private credit|redemption|withdrawal)\b/i.test(text)) tags.push('LIQUIDITY');
   return [...new Set(tags)];
 }
 
@@ -172,9 +173,11 @@ function exaToRawItem(result: ExaSearchResult, group: SearchGroup): RawRiskFlowI
   if (!title || title.length < 15 || title.length > 500) return null;
   if (/^(home|about|contact|subscribe|sign in|log in|menu|cookie)/i.test(title)) return null;
 
+  // [claude-code 2026-04-07] FIX: Hash on headline ONLY — not publishedBucket.
+  // The old approach created different IDs for the same article when Exa returned
+  // slightly different publishedDate values across scrape cycles, causing duplicates.
   const normalizedTitle = title.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-  const publishedBucket = result.publishedDate?.slice(0, 13) ?? new Date().toISOString().slice(0, 13);
-  const id = `${group.idPrefix}-${hashString(`${normalizedTitle}|${publishedBucket}`)}`;
+  const id = `${group.idPrefix}-${hashString(normalizedTitle)}`;
   if (submittedIds.has(id)) return null;
 
   const fullText = `${title} ${result.text}`;

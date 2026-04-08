@@ -253,6 +253,11 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "tradingview.com") return true;
     if (host.endsWith(".tradingview.com")) return true;
 
+    // YouTube (miniplayer)
+    if (host === "youtube.com") return true;
+    if (host.endsWith(".youtube.com")) return true;
+    if (host === "youtu.be") return true;
+
     // Google auth relay domains
     if (host.endsWith(".google.com")) return true;
     if (host.endsWith(".gstatic.com")) return true;

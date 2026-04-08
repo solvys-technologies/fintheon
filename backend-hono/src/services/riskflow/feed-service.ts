@@ -138,7 +138,8 @@ function countUrgencySignals(item: FeedItem, analyzed: AnalyzedHeadline): number
  */
 async function warmCacheFromDB(): Promise<void> {
   try {
-    const scored = await readScoredItems({ limit: 200 });
+    // [claude-code 2026-04-06] Was 200 — matched MAX_FEED_ITEMS (500) so cache isn't artificially starved
+    const scored = await readScoredItems({ limit: MAX_FEED_ITEMS });
     if (scored.length === 0) return;
 
     const items = sortFeedItems(scored.map(scoredToFeedItem)).slice(0, MAX_FEED_ITEMS);

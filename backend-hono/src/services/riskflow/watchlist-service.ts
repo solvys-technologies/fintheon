@@ -73,28 +73,16 @@ export function removeSymbols(userId: string, symbols: string[]): Watchlist {
   return updateWatchlist(userId, { symbols: filtered });
 }
 
+// [claude-code 2026-04-06] Source match alone is sufficient — symbol/tag gate was hiding FJ items
+// tagged with non-default keywords (LABOR, TARIFFS, etc). macroLevel scoring handles priority.
 /**
- * Check if item matches watchlist filters
+ * Check if item matches watchlist filters.
+ * Source match alone passes the item. Symbol/tag matching is for future
+ * prioritisation, not gating.
  */
 export function matchesWatchlist(
   watchlist: Watchlist,
   item: { symbols: string[]; tags: string[]; source: NewsSource }
 ): boolean {
-  // Check source filter
-  if (!watchlist.sources.includes(item.source)) {
-    return false;
-  }
-
-  // Check symbol overlap
-  const hasMatchingSymbol = item.symbols.some(s =>
-    watchlist.symbols.includes(s.toUpperCase())
-  );
-
-  // Check tag overlap
-  const hasMatchingTag = item.tags.some(t =>
-    watchlist.tags.includes(t.toUpperCase())
-  );
-
-  // Match if any symbol or tag matches (or if item has no symbols/tags)
-  return hasMatchingSymbol || hasMatchingTag || (item.symbols.length === 0 && item.tags.length === 0);
+  return watchlist.sources.includes(item.source);
 }

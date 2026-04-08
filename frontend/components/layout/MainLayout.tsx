@@ -44,6 +44,7 @@ import { NotificationCenter } from '../NotificationCenter';
 import { TabRenderer } from './TabRenderer';
 import { MissionControlContent } from './MissionControlContent';
 import { ChatPanel } from './ChatPanel';
+import { YouTubeMiniplayer } from './YouTubeMiniplayer';
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
 // TeamOnboarding removed — exposes Supabase login to end users, security risk
 import { EPOCH_VERSION } from '../../lib/epoch-version';
@@ -124,6 +125,9 @@ function MainLayoutInner() {
   const [showChat, setShowChat] = useState(false);
   const [showVoiceWidget, setShowVoiceWidget] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showYouTubeMiniplayer, setShowYouTubeMiniplayer] = useState(() => {
+    try { return localStorage.getItem('fintheon:yt-miniplayer-open') === 'true'; } catch { return false; }
+  });
   const [sidebarOverlayVisible, setSidebarOverlayVisible] = useState(false);
   const [missionWidgetOrder, setMissionWidgetOrderState] = useState<MissionWidgetId[]>(() =>
     normalizeOrder(getMissionWidgetOrder(), DEFAULT_MISSION_WIDGET_ORDER)
@@ -210,6 +214,16 @@ function MainLayoutInner() {
     };
 
     const handler = (e: KeyboardEvent) => {
+      // Cmd+Shift+Y -> YouTube miniplayer
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        setShowYouTubeMiniplayer((v) => {
+          const next = !v;
+          try { localStorage.setItem('fintheon:yt-miniplayer-open', String(next)); } catch { /* ignore */ }
+          return next;
+        });
+        return;
+      }
       // Cmd+K -> Search
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
@@ -732,6 +746,14 @@ function MainLayoutInner() {
             }}
             onDismiss={() => setShowTapeNotification(false)}
           />
+        )}
+
+        {/* YouTube floating miniplayer — persists independent of TradingBrowser */}
+        {showYouTubeMiniplayer && (
+          <YouTubeMiniplayer onClose={() => {
+            setShowYouTubeMiniplayer(false);
+            try { localStorage.setItem('fintheon:yt-miniplayer-open', 'false'); } catch { /* ignore */ }
+          }} />
         )}
 
         {/* Global chat panel — slide in/out from right */}

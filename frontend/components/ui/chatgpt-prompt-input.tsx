@@ -80,9 +80,10 @@ export interface PromptBoxProps {
   // Queue chips
   queueJobs?: Array<{ jobId: string; status: string; position: number }>;
   onCancelJob?: (jobId: string) => void;
-  // Slots for persona + tools dropdowns
+  // Slots for persona + tools + provider dropdowns
   personaSlot?: React.ReactNode;
   toolsSlot?: React.ReactNode;
+  providerSlot?: React.ReactNode;
   // Boardroom: swap pulsing icon for newspaper RiskFlow picker
   onRiskFlowPick?: () => void;
 }
@@ -114,6 +115,7 @@ export function PromptBox({
   onCancelJob,
   personaSlot,
   toolsSlot,
+  providerSlot,
   onRiskFlowPick,
 }: PromptBoxProps) {
   const [text, setText] = useState('');
@@ -446,6 +448,7 @@ export function PromptBox({
 
             {/* Right: Persona + Usage + Send/Stop */}
             <div className="flex items-center gap-2">
+              {providerSlot}
               {personaSlot}
               <UsageRing />
               <button
@@ -453,7 +456,7 @@ export function PromptBox({
               disabled={!text.trim() && images.length === 0 && !isProcessing}
               className={`flex items-center justify-center rounded-full transition-all duration-300 ${
                 isProcessing
-                  ? 'bg-red-500/80 hover:bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.3)]'
+                  ? 'bg-[var(--fintheon-accent)]/80 hover:bg-[var(--fintheon-accent)] text-black shadow-[0_0_12px_rgba(199,159,74,0.3)]'
                   : text.trim()
                     ? 'bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black shadow-[0_0_20px_rgba(199,159,74,0.4)] hover:shadow-[0_0_28px_rgba(199,159,74,0.55)]'
                     : 'bg-[var(--fintheon-accent)] text-black disabled:opacity-30 disabled:hover:bg-[var(--fintheon-accent)] shadow-[0_4px_12px_rgba(199,159,74,0.15)]'

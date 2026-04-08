@@ -10,12 +10,14 @@ const TWITTER_BIN =
   `${process.env.HOME ?? '/Users/tifos'}/.local/bin/twitter`;
 
 // ── Global 429 Rate Limit Cooldown ──────────────────────────────────────────
-const RATE_LIMIT_COOLDOWN_MS = 90_000; // 90s pause after any 429
+const RATE_LIMIT_COOLDOWN_MS = 300_000; // 5 min pause after any 429 (Twitter limits last 15min+)
 let rateLimitedUntil = 0;
+let consecutiveEmptyPolls = 0;
+const EMPTY_POLL_THRESHOLD = 2; // After 2 consecutive empty polls, assume still rate limited
 
-/** Check if we're currently in a 429 cooldown window */
+/** Check if we're currently in a 429 cooldown window OR getting empty results */
 export function isRateLimited(): boolean {
-  return Date.now() < rateLimitedUntil;
+  return Date.now() < rateLimitedUntil || consecutiveEmptyPolls >= EMPTY_POLL_THRESHOLD;
 }
 
 /** Get remaining cooldown ms (0 if not rate limited) */
@@ -23,8 +25,22 @@ export function getRateLimitCooldownMs(): number {
   return Math.max(0, rateLimitedUntil - Date.now());
 }
 
+/** Record that a poll returned results — resets empty counter */
+export function markPollSuccess(): void {
+  consecutiveEmptyPolls = 0;
+}
+
+/** Record that a poll returned 0 items — increments empty counter */
+export function markPollEmpty(): void {
+  consecutiveEmptyPolls++;
+  if (consecutiveEmptyPolls >= EMPTY_POLL_THRESHOLD) {
+    console.warn(`[TwitterCli] ${consecutiveEmptyPolls} consecutive empty polls — treating as rate limited, Exa fallback will fire`);
+  }
+}
+
 function markRateLimited(): void {
   rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+  consecutiveEmptyPolls = EMPTY_POLL_THRESHOLD; // Immediately qualify for Exa fallback
   console.warn(`[TwitterCli] 429 rate limit hit — pausing ALL calls for ${RATE_LIMIT_COOLDOWN_MS / 1000}s (until ${new Date(rateLimitedUntil).toISOString()})`);
 }
 

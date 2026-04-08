@@ -6,6 +6,8 @@ export {
   fetchUserTimeline,
   isRateLimited,
   getRateLimitCooldownMs,
+  markPollSuccess,
+  markPollEmpty,
   type TwitterCliTweet,
 } from './twitter-cli-service.js';
 

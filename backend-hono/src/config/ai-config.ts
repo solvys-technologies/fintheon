@@ -442,8 +442,8 @@ export const defaultAiConfig: AiConfig = {
     fallbackMap: {
       sonnet: 'openrouter-sonnet',
       grok: 'openrouter-grok',
-      'openrouter-sonnet': 'openrouter-opus',
-      'openrouter-opus': 'nous-direct',
+      'openrouter-sonnet': 'nous-direct',
+      'openrouter-opus': 'openrouter-sonnet',
       'openrouter-grok': 'openrouter-grok-420',
       'openrouter-grok-420': 'openrouter-sonnet',
       // Hermes fallbacks (fall back to OpenRouter equivalents)

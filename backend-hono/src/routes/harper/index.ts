@@ -40,14 +40,6 @@ export function createHarperRoutes() {
 
     c.header('X-Request-Id', requestId)
 
-    // Check availability
-    const available = await isStrandsAvailable()
-    if (!available) {
-      cognition.step('error', 'Strands/VProxy unavailable', 'VProxy not detected or at capacity')
-      cognition.done()
-      return c.json({ error: 'Harper-Opus unavailable — VProxy not detected' }, 503)
-    }
-
     try {
       const body = await c.req.json<{
         message: string
@@ -57,6 +49,7 @@ export function createHarperRoutes() {
         persona?: string
         riskFlowContext?: string
         activeConnectors?: string[]
+        provider?: 'local' | 'nous' | 'orouter'
         userContext?: {
           traderName?: string
           selectedSymbol?: { symbol: string; name: string }
@@ -92,8 +85,9 @@ export function createHarperRoutes() {
         model: 'harper-opus',
       })
 
-      cognition.step('agent-route', 'Harper-Opus (Strands)', `Persona: ${body.persona ?? 'harper-opus'}`)
-      cognition.step('gateway-call', 'Streaming from Claude Opus', 'Strands agent, VProxy, MCP tools available')
+      const providerLabel = body.provider === 'nous' ? 'Nous Sonnet' : body.provider === 'orouter' ? 'OpenRouter Opus' : 'VProxy Local'
+      cognition.step('agent-route', `Harper-Opus (${providerLabel})`, `Persona: ${body.persona ?? 'harper-opus'}`)
+      cognition.step('gateway-call', `Streaming via ${providerLabel}`, 'Strands agent, MCP tools available')
 
       const response = streamHarperChat(
         {
@@ -107,6 +101,7 @@ export function createHarperRoutes() {
           riskFlowContext: body.riskFlowContext,
           activeConnectors: body.activeConnectors,
           userContext: body.userContext,
+          provider: body.provider,
         },
         {
           'Access-Control-Allow-Origin': c.req.header('Origin') || '*',

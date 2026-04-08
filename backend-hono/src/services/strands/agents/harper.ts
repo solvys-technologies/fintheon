@@ -1,5 +1,5 @@
 // [claude-code 2026-04-05] Harper-Opus agent — Strands-based CAO with tools + streaming + cognition telemetry
-import { createAgent } from '../agent-factory.js'
+import { createAgent, type HarperProvider } from '../agent-factory.js'
 import { createHarperTools } from '../harper-tools.js'
 import { getAllSolvysTools } from '../skills/index.js'
 import { strandsToUIStream, uiStreamToSSEResponse } from '../stream-adapter.js'
@@ -29,6 +29,8 @@ export interface HarperChatOptions {
   riskFlowContext?: string
   activeConnectors?: string[]
   userContext?: UserContext
+  /** AI provider override: local (VProxy), nous (Sonnet via Nous), orouter (Opus via OpenRouter) */
+  provider?: HarperProvider
 }
 
 /**
@@ -38,7 +40,7 @@ export interface HarperChatOptions {
  */
 export function createHarperAgent(
   requestId: string,
-  opts?: { conversationId?: string; userId?: string },
+  opts?: { conversationId?: string; userId?: string; provider?: HarperProvider },
 ) {
   const coreTools = createHarperTools(requestId)
   const solvysTools = getAllSolvysTools()
@@ -60,6 +62,7 @@ export function createHarperAgent(
       maxTokens: 16384,
     },
     conversationManager,
+    provider: opts?.provider,
   })
 }
 
@@ -72,7 +75,7 @@ export function streamHarperChat(
   responseHeaders?: Record<string, string>,
 ): Response {
   const { message, requestId, conversationId, userId } = options
-  const agent = createHarperAgent(requestId, { conversationId, userId })
+  const agent = createHarperAgent(requestId, { conversationId, userId, provider: options.provider })
 
   // Instrument agent with cognition telemetry for SSE observability
   const cleanupCognition = withCognition(agent, requestId)

@@ -134,6 +134,7 @@ async function analyzeWithAi(
       systemPrompt: 'You are a financial news parser. Extract structured data from headlines. Respond only with valid JSON.',
       userPrompt: prompt,
       model: { temperature: 0.1, maxTokens: 512 },
+      provider: 'grok',
     })
 
     return parseAiResponse(text)

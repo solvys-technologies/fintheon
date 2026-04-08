@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X, Scroll, Plus, Clock } from 'lucide-react';
 import { ChatSidebar } from '../chat/ChatSidebar';
 import { SessionsModal } from '../chat/SessionsModal';
+import { ProviderDropdown, useHarperProvider } from '../chat/ProviderDropdown';
 
 interface ChatPanelProps {
   showChat: boolean;
@@ -13,6 +14,7 @@ interface ChatPanelProps {
 
 export function ChatPanel({ showChat, onClose }: ChatPanelProps) {
   const [showSessionsDropdown, setShowSessionsDropdown] = useState(false);
+  const { provider, setProvider } = useHarperProvider();
 
   return (
     <div
@@ -56,6 +58,7 @@ export function ChatPanel({ showChat, onClose }: ChatPanelProps) {
               }}
             />
           </div>
+          <ProviderDropdown provider={provider} onChange={setProvider} compact />
         </div>
         {/* Close */}
         <button

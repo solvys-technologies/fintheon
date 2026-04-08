@@ -1,7 +1,7 @@
 // [claude-code 2026-04-04] Strands SDK barrel export
 // Provider + factory
 export { createVProxyModel, checkVProxyHealth, isVProxyEnabled } from './provider.js'
-export { createAgent, isStrandsAvailable, tool, z } from './agent-factory.js'
+export { createAgent, isStrandsAvailable, tool, z, type HarperProvider } from './agent-factory.js'
 
 // Harper tools + solvys skills
 export { createHarperTools, FINTHEON_PATHS } from './harper-tools.js'
