@@ -1,7 +1,9 @@
+// [claude-code 2026-04-10] Serve AI-generated Aquarium outlook (Oracle/Nous) when fresh, fall back to heuristic
 // [claude-code 2026-03-28] S7: Forward-looking performance prediction endpoint
 // Aggregates scored FJ items + scheduled econ events → per-instrument outlook
 import { Hono } from 'hono';
 import { getSupabaseClient } from '../config/supabase.js';
+import { getAIAquariumOutlook } from '../services/riskflow/aquarium-scheduler.js';
 
 const app = new Hono();
 
@@ -26,6 +28,20 @@ interface InstrumentOutlook {
 
 // GET /api/predictions/outlook
 app.get('/outlook', async (c) => {
+  // Serve AI-generated outlook if fresh (< 4 hours)
+  const ai = getAIAquariumOutlook()
+  if (ai) {
+    const ageMs = Date.now() - new Date(ai.generatedAt).getTime()
+    if (ageMs < 4 * 60 * 60 * 1000) {
+      return c.json({
+        instruments: ai.instruments,
+        fetchedAt: ai.generatedAt,
+        source: ai.source,
+        ageMinutes: Math.round(ageMs / 60_000),
+      })
+    }
+  }
+
   try {
     const sb = getSupabaseClient();
     if (!sb) {

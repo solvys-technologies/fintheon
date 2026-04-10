@@ -7,6 +7,8 @@
 
 import { Hono } from 'hono'
 import { streamHarperChat, isStrandsAvailable, isVProxyEnabled, FINTHEON_PATHS } from '../../services/strands/index.js'
+import { checkVProxyHealth } from '../../services/strands/provider.js'
+import { uiStreamToSSEResponse } from '../../services/strands/stream-adapter.js'
 import { createRequestCognition } from '../../services/cognition-emitter.js'
 import * as conversationStore from '../../services/ai/conversation-store.js'
 import {
@@ -85,7 +87,36 @@ export function createHarperRoutes() {
         model: 'harper-opus',
       })
 
-      const providerLabel = body.provider === 'nous' ? 'Nous Sonnet' : body.provider === 'orouter' ? 'OpenRouter Opus' : 'VProxy Local'
+      // VProxy pre-flight — if Local selected but VProxy is down, stream a friendly error
+      const isLocalProvider = !body.provider || body.provider === 'local'
+      if (isLocalProvider) {
+        const health = await checkVProxyHealth(true) // force fresh check
+        if (!health.available) {
+          const enc = new TextEncoder()
+          const msgId = `harper-${Date.now()}`
+          const sseError = (ev: object) => enc.encode(`data: ${JSON.stringify(ev)}\n\n`)
+          const stream = new ReadableStream<Uint8Array>({
+            start(ctrl) {
+              ctrl.enqueue(sseError({ type: 'start', messageId: msgId }))
+              ctrl.enqueue(sseError({ type: 'start-step' }))
+              ctrl.enqueue(sseError({ type: 'text-start', id: 'txt-1' }))
+              const msg = `⚠️ VProxy (Local) is not available right now. Switch the provider dropdown to **Nous** or **ORouter** to continue. (${health.error ?? 'connection refused'})`
+              ctrl.enqueue(sseError({ type: 'text-delta', id: 'txt-1', delta: msg }))
+              ctrl.enqueue(sseError({ type: 'text-end', id: 'txt-1' }))
+              ctrl.enqueue(sseError({ type: 'finish-step' }))
+              ctrl.enqueue(sseError({ type: 'finish', finishReason: 'stop' }))
+              ctrl.enqueue(enc.encode('data: [DONE]\n\n'))
+              ctrl.close()
+            },
+          })
+          return uiStreamToSSEResponse(stream, {
+            'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
+            'X-Request-Id': requestId,
+          })
+        }
+      }
+
+      const providerLabel = body.provider === 'nous' ? 'Nous (Arcee/Qwen)' : body.provider === 'orouter' ? 'OpenRouter Opus' : 'VProxy Local'
       cognition.step('agent-route', `Harper-Opus (${providerLabel})`, `Persona: ${body.persona ?? 'harper-opus'}`)
       cognition.step('gateway-call', `Streaming via ${providerLabel}`, 'Strands agent, MCP tools available')
 

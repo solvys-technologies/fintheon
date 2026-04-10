@@ -38,6 +38,7 @@ import * as projectxService from '../services/projectx-service.js';
 import { startSharedMemoryCleanup } from '../services/peers/shared-memory.js';
 import { startReflectScheduler } from '../services/autoresearch/reflect-scheduler.js';
 import { startMiroSharkDaily } from '../services/cron/miroshark-daily.js';
+import { startAquariumScheduler } from '../services/riskflow/aquarium-scheduler.js';
 import { bootHarperAutonomous } from '../services/harper-autonomous/index.js';
 
 const log = createLogger('Boot');
@@ -222,6 +223,9 @@ export async function bootServices(): Promise<void> {
   // MiroShark daily auto-run (6:00 AM ET weekdays — once per day before MDB)
   startMiroSharkDaily();
   log.info('MiroSharkDaily cron scheduled');
+
+  // Aquarium AI scheduler (Oracle/Nous — 30min interval, first run 20s after boot)
+  startAquariumScheduler();
 
   // REFLECT scheduler (04:00 UTC daily — news analysis quality self-improvement)
   startReflectScheduler();
