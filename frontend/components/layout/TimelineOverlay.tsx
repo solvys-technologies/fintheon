@@ -50,6 +50,143 @@ const NARRATIVE_THREADS = [
   { slug: "maximum-employment", title: "Max Employment", color: "#A78BFA" },
 ] as const;
 
+// Keyword fallback for items that lack narrativeThreads — match headline/tags/riskType
+const THREAD_KEYWORDS: Record<string, string[]> = {
+  "middle-east-conflict": [
+    "iran",
+    "israel",
+    "houthi",
+    "gaza",
+    "beirut",
+    "hezbollah",
+    "irgc",
+    "middle east",
+    "middle-east",
+    "ceasefire",
+    "missile",
+    "strike",
+  ],
+  "liquidity-credit-contraction": [
+    "liquidity",
+    "credit",
+    "spreads",
+    "repo",
+    "overnight",
+    "funding",
+    "cdx",
+    "cds",
+    "tightening",
+    "bank stress",
+  ],
+  "ai-singularity": [
+    "nvidia",
+    "openai",
+    "anthropic",
+    "deepseek",
+    "gpt",
+    "gemini",
+    "ai chip",
+    "datacenter",
+    "stargate",
+    "inference",
+    "singularity",
+    "agi",
+  ],
+  "usd-jpy-carry-trade": [
+    "jpy",
+    "yen",
+    "usd/jpy",
+    "carry trade",
+    "boj",
+    "bank of japan",
+    "ueda",
+    "japan rate",
+    "yen intervention",
+  ],
+  "trade-war": [
+    "tariff",
+    "trade war",
+    "duties",
+    "export control",
+    "wto",
+    "section 301",
+    "reciprocal tariff",
+  ],
+  "us-china-relations": [
+    "china",
+    "beijing",
+    "xi jinping",
+    "pboc",
+    "pla",
+    "taiwan",
+    "south china sea",
+    "us-china",
+    "decoupling",
+  ],
+  "rate-cut-cycle": [
+    "fomc",
+    "federal reserve",
+    "rate cut",
+    "rate hike",
+    "fed funds",
+    "powell",
+    "basis points",
+    "bps",
+    "dovish",
+    "hawkish",
+    "qe",
+    "qt",
+  ],
+  "trump-presidency": [
+    "trump",
+    "white house",
+    "executive order",
+    "doge",
+    "musk doge",
+    "potus",
+    "administration",
+    "oval office",
+  ],
+  "price-stability": [
+    "cpi",
+    "pce",
+    "inflation",
+    "deflation",
+    "core inflation",
+    "ppi",
+    "supercore",
+    "price index",
+  ],
+  "maximum-employment": [
+    "nfp",
+    "payrolls",
+    "unemployment",
+    "jobless claims",
+    "jolts",
+    "labor market",
+    "jobs report",
+    "hiring",
+    "layoffs",
+  ],
+};
+
+function itemMatchesThread(item: FeedItem, slug: string): boolean {
+  // Primary: use narrativeThreads field if populated
+  const threads = item.narrativeThreads ?? [];
+  if (threads.length > 0) return threads.includes(slug);
+  // Fallback: keyword match across headline, tags, and riskType
+  const keywords = THREAD_KEYWORDS[slug];
+  if (!keywords) return false;
+  const haystack = [
+    item.headline ?? item.title ?? "",
+    ...(item.tags ?? []),
+    item.riskType ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+  return keywords.some((kw) => haystack.includes(kw));
+}
+
 const MACRO_COLOR: Record<number, string> = {
   4: "#EF4444",
   3: "#c79f4a",
@@ -116,20 +253,20 @@ export function TimelineOverlay({ open, onClose }: TimelineOverlayProps) {
 
   const filteredItems = useMemo(() => {
     if (selectedThread === "all") return items;
-    return items.filter((item) => {
-      const threads = item.narrativeThreads ?? [];
-      return threads.includes(selectedThread);
-    });
+    return items.filter((item) => itemMatchesThread(item, selectedThread));
   }, [items, selectedThread]);
 
   const dateGroups = useMemo(() => groupByDate(filteredItems), [filteredItems]);
 
-  // Count items per thread for the dropdown
+  // Count items per thread — use keyword fallback so counts reflect actual matches
   const threadCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const item of items) {
-      for (const t of item.narrativeThreads ?? []) {
-        counts.set(t, (counts.get(t) ?? 0) + 1);
+      for (const thread of NARRATIVE_THREADS) {
+        if (thread.slug === "all") continue;
+        if (itemMatchesThread(item, thread.slug)) {
+          counts.set(thread.slug, (counts.get(thread.slug) ?? 0) + 1);
+        }
       }
     }
     return counts;
@@ -175,8 +312,8 @@ export function TimelineOverlay({ open, onClose }: TimelineOverlayProps) {
           </button>
         </div>
 
-        {/* Narrative dropdown */}
-        <div className="shrink-0 px-4 py-2 border-b border-[var(--fintheon-accent)]/5 relative">
+        {/* Narrative dropdown — z-10 ensures it stacks above the overflow-y-auto items list below */}
+        <div className="shrink-0 px-4 py-2 border-b border-[var(--fintheon-accent)]/5 relative z-10">
           <button
             onClick={() => setDropdownOpen((v) => !v)}
             className="flex items-center justify-between w-full px-3 py-2 rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)] text-left transition-colors hover:border-[var(--fintheon-accent)]/25"

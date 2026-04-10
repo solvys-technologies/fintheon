@@ -1,3 +1,4 @@
+// [claude-code 2026-04-10] Use shared round-robin getNextBaseUrl() from strands/provider
 // [claude-code 2026-04-04] Auto-approve read-only tools (read_file, read_mcp_config) — skip approval gate
 // [claude-code 2026-04-03] Added approval-gated tool factory, web_fetch, write_file, read_mcp_config tools
 import { createAnthropic } from "@ai-sdk/anthropic";
@@ -9,6 +10,7 @@ import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { createLogger } from "../../lib/logger.js";
 import { isToolApproved, requestApproval } from "../tool-approval-store.js";
+import { getNextBaseUrl } from "../strands/provider.js";
 
 const log = createLogger("VProxyAnthropic");
 
@@ -63,9 +65,8 @@ function resolveModel(modelOverride?: string): string {
 }
 
 function getClient(modelOverride?: string) {
-  const baseUrl = normalizeBaseUrl(
-    process.env.VPROXY_BASE_URL || DEFAULT_BASE_URL,
-  );
+  // Use round-robin base URL from shared provider config
+  const baseUrl = getNextBaseUrl();
   const apiKey = process.env.VPROXY_API_KEY || DEFAULT_API_KEY;
   const anthropic = createAnthropic({
     apiKey,
