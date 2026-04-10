@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-10T00:00:00",
+    agent: "claude-code",
+    summary:
+      "S8-T1: AgentBus foundation — typed pub/sub bus, DAG/task types, SurfaceRouter SSE skeleton, Supabase migration for agent_dags + agent_tasks tables",
+    files: [
+      "backend-hono/src/services/agent-bus/types.ts",
+      "backend-hono/src/services/agent-bus/bus.ts",
+      "backend-hono/src/services/agent-bus/surface-router.ts",
+      "backend-hono/src/services/agent-bus/index.ts",
+      "supabase/migrations/20260410_agent_bus.sql",
+    ],
+  },
+  {
     date: "2026-04-06T17:00:00",
     agent: "claude-code",
     summary:
@@ -4283,6 +4296,17 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/chat/PulseComposer.tsx",
       "frontend/components/chat/ChatGreeting.tsx",
       "frontend/styles/custom.css",
+    ],
+  },
+  {
+    date: "2026-04-10T00:00:00",
+    agent: "claude-code",
+    summary:
+      "VProxy round-robin: VPROXY_URLS env var (comma-separated) spreads chat and scoring load across multiple Claude CLI proxy agents; per-endpoint health caching; getNextBaseUrl() shared between provider.ts and anthropic-client.ts. TimelineOverlay: keyword-fallback filter so narrative thread selection works on items lacking narrativeThreads field; thread counts now reflect keyword matches; dropdown z-10 fix for stacking above overflow-y-auto items list.",
+    files: [
+      "backend-hono/src/services/strands/provider.ts",
+      "backend-hono/src/services/vproxy/anthropic-client.ts",
+      "frontend/components/layout/TimelineOverlay.tsx",
     ],
   },
 ];
