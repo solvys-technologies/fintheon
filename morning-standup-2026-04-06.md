@@ -8,19 +8,22 @@
 
 ## INFRASTRUCTURE STATUS
 
-| System | Status | Notes |
-|--------|--------|-------|
-| Hono backend (8080) | ❌ OFFLINE | Not running. Cannot trigger from sandbox (network isolation). |
-| Agent standup | ❌ NOT FIRED | Agents did not clock in. Manual trigger needed. |
-| RiskFlow feed | ❌ UNAVAILABLE | Reconstructed from web sources. |
-| IV aggregate | ❌ UNAVAILABLE | VIX sourced from CBOE/web. |
-| Computer use (TopStepX) | ❌ TIMED OUT | User not present for approval. Levels not charted. |
+| System                  | Status         | Notes                                                         |
+| ----------------------- | -------------- | ------------------------------------------------------------- |
+| Hono backend (8080)     | ❌ OFFLINE     | Not running. Cannot trigger from sandbox (network isolation). |
+| Agent standup           | ❌ NOT FIRED   | Agents did not clock in. Manual trigger needed.               |
+| RiskFlow feed           | ❌ UNAVAILABLE | Reconstructed from web sources.                               |
+| IV aggregate            | ❌ UNAVAILABLE | VIX sourced from CBOE/web.                                    |
+| Computer use (TopStepX) | ❌ TIMED OUT   | User not present for approval. Levels not charted.            |
 
 **ACTION REQUIRED:** Start the Hono backend manually:
+
 ```bash
 cd ~/Documents/Codebases/fintheon/backend-hono && bun run dev
 ```
+
 Then trigger standup:
+
 ```bash
 curl -s -X POST http://localhost:8080/api/boardroom/standup/morning-standup
 ```
@@ -45,16 +48,16 @@ curl -s -X POST http://localhost:8080/api/boardroom/standup/morning-standup
 
 ### Economic Calendar — Week of April 6
 
-| Day | Time (ET) | Event | Impact |
-|-----|-----------|-------|--------|
-| **Mon 4/6** | **10:00 AM** | **ISM Services PMI (March)** | **⚠️ MEDIUM-HIGH** |
-| Tue 4/7 | 10:00 AM | Durable Orders (Feb prelim) | Medium |
-| Tue 4/7 | 3:00 PM | Consumer Credit (Feb) | Low |
-| **Wed 4/8** | **2:00 PM** | **FOMC Minutes** | **🔴 HIGH** |
-| Wed 4/8 | Pre-market | Constellation Brands, Delta earnings | Medium |
-| **Thu 4/9** | **8:30 AM** | **GDP final Q4, PCE, Personal Income, Claims** | **🔴 HIGH** |
-| **Fri 4/10** | **8:30 AM** | **CPI (March)** | **🔴🔴 HIGHEST** |
-| Fri 4/10 | 10:00 AM | Michigan Sentiment (prelim) | Medium |
+| Day          | Time (ET)    | Event                                          | Impact             |
+| ------------ | ------------ | ---------------------------------------------- | ------------------ |
+| **Mon 4/6**  | **10:00 AM** | **ISM Services PMI (March)**                   | **⚠️ MEDIUM-HIGH** |
+| Tue 4/7      | 10:00 AM     | Durable Orders (Feb prelim)                    | Medium             |
+| Tue 4/7      | 3:00 PM      | Consumer Credit (Feb)                          | Low                |
+| **Wed 4/8**  | **2:00 PM**  | **FOMC Minutes**                               | **🔴 HIGH**        |
+| Wed 4/8      | Pre-market   | Constellation Brands, Delta earnings           | Medium             |
+| **Thu 4/9**  | **8:30 AM**  | **GDP final Q4, PCE, Personal Income, Claims** | **🔴 HIGH**        |
+| **Fri 4/10** | **8:30 AM**  | **CPI (March)**                                | **🔴🔴 HIGHEST**   |
+| Fri 4/10     | 10:00 AM     | Michigan Sentiment (prelim)                    | Medium             |
 
 **No mega-cap earnings pre-market today.**
 
@@ -78,26 +81,26 @@ ISM Services PMI at 10:00 AM ET is today's scheduled print. It is the sole high-
 
 ### LONG SETUP (Base Case — ISM prints 52+)
 
-| Level | Price | Label | Reasoning |
-|-------|-------|-------|-----------|
-| **Entry** | 24,220 | ENTRY | 40% retracement of expected spike to ~24,400. Fib 38.2% confluence with prior session VWAP. |
-| **Stop Loss** | 24,120 | STOP | Below Friday close, below 24,100 round support. 100pts risk. **Non-negotiable (C12).** |
-| **Target 1** | 24,370 | T1 (base) | 150pts, 1.5:1 R:R. Prior week high zone. |
-| **Target 2** | 24,520 | T2 (home run) | 300pts, 3:1 R:R. Approaches 200-day SMA. PDPT zone (~$1,500 on 10 contracts). |
-| **Invalidation** | 24,050 | INVALID | Below overnight low structure. Thesis dead. |
-| **LTF Liq Pool 1** | 24,100 | LIQ | Round number, Friday close cluster. Stop magnet → sweep → reclaim = entry signal. |
-| **LTF Liq Pool 2** | 24,400 | LIQ | Prior week high. Short stops stacked above. Break confirms momentum for T2. |
-| **HTF Pivot** | 24,000 | PIVOT | Major psychological round. Weekly support. Break = thesis flips short. |
+| Level              | Price  | Label         | Reasoning                                                                                   |
+| ------------------ | ------ | ------------- | ------------------------------------------------------------------------------------------- |
+| **Entry**          | 24,220 | ENTRY         | 40% retracement of expected spike to ~24,400. Fib 38.2% confluence with prior session VWAP. |
+| **Stop Loss**      | 24,120 | STOP          | Below Friday close, below 24,100 round support. 100pts risk. **Non-negotiable (C12).**      |
+| **Target 1**       | 24,370 | T1 (base)     | 150pts, 1.5:1 R:R. Prior week high zone.                                                    |
+| **Target 2**       | 24,520 | T2 (home run) | 300pts, 3:1 R:R. Approaches 200-day SMA. PDPT zone (~$1,500 on 10 contracts).               |
+| **Invalidation**   | 24,050 | INVALID       | Below overnight low structure. Thesis dead.                                                 |
+| **LTF Liq Pool 1** | 24,100 | LIQ           | Round number, Friday close cluster. Stop magnet → sweep → reclaim = entry signal.           |
+| **LTF Liq Pool 2** | 24,400 | LIQ           | Prior week high. Short stops stacked above. Break confirms momentum for T2.                 |
+| **HTF Pivot**      | 24,000 | PIVOT         | Major psychological round. Weekly support. Break = thesis flips short.                      |
 
 ### SHORT SETUP (Contingency — ISM prints sub-50)
 
-| Level | Price |
-|-------|-------|
-| Entry | 24,180 |
-| Stop | 24,280 (100pts) |
-| T1 | 24,030 (150pts) |
-| T2 | 23,880 (300pts) |
-| Invalidation | 24,350 |
+| Level        | Price           |
+| ------------ | --------------- |
+| Entry        | 24,180          |
+| Stop         | 24,280 (100pts) |
+| T1           | 24,030 (150pts) |
+| T2           | 23,880 (300pts) |
+| Invalidation | 24,350          |
 
 ### Time Window
 
@@ -108,6 +111,7 @@ ISM Services PMI at 10:00 AM ET is today's scheduled print. It is the sole high-
 ### Conviction: MEDIUM-HIGH
 
 Strong jobs data + ceasefire tailwind + ISM as tradeable catalyst. Not max conviction because:
+
 1. Relief rally (not trend reversal) — overhead resistance at 200-day SMA
 2. Iran headlines can flip sentiment instantly
 3. CPI Friday looms — positioning may stay cautious
@@ -116,16 +120,16 @@ Strong jobs data + ceasefire tailwind + ISM as tradeable catalyst. Not max convi
 
 ## COMMANDMENT CHECKS
 
-| # | Rule | Status |
-|---|------|--------|
-| C3 | No shot-in-the-dark trades | ✅ Thesis present: 40/40 Club, ISM catalyst |
-| C7 | No doubling down on losers | ✅ No open positions |
-| C11 | Some days there's nothing to do | ✅ Catalyst identified, not forcing |
-| C12 | Be right or be right out | ✅ Stop loss defined at 24,120 |
-| C14 | Morning routine gate | ✅ This standup IS the routine |
-| — | 11:30 AM hard stop | ✅ Time window 10:02-10:05 AM |
-| — | 120s blackout | ✅ Baked into time window |
-| — | PDPT cap $1,550 | ✅ T2 = ~$1,500 |
+| #   | Rule                            | Status                                      |
+| --- | ------------------------------- | ------------------------------------------- |
+| C3  | No shot-in-the-dark trades      | ✅ Thesis present: 40/40 Club, ISM catalyst |
+| C7  | No doubling down on losers      | ✅ No open positions                        |
+| C11 | Some days there's nothing to do | ✅ Catalyst identified, not forcing         |
+| C12 | Be right or be right out        | ✅ Stop loss defined at 24,120              |
+| C14 | Morning routine gate            | ✅ This standup IS the routine              |
+| —   | 11:30 AM hard stop              | ✅ Time window 10:02-10:05 AM               |
+| —   | 120s blackout                   | ✅ Baked into time window                   |
+| —   | PDPT cap $1,550                 | ✅ T2 = ~$1,500                             |
 
 ---
 
@@ -169,6 +173,6 @@ curl -s -X POST http://localhost:8080/api/boardroom/trade-idea \
 
 ---
 
-*Harper-Hermes, CAO — Priced In Capital*
-*Standup executed: April 6, 2026 pre-market*
-*Note: Prices are estimates from web-sourced data. Verify against live charts before execution.*
+_Harper-Hermes, CAO — Priced In Capital_
+_Standup executed: April 6, 2026 pre-market_
+_Note: Prices are estimates from web-sourced data. Verify against live charts before execution._

@@ -3,14 +3,24 @@
 // [claude-code 2026-03-14] Removed MarketWatch RSS polling — feed now Notion + backend only.
 // [claude-code 2026-03-14] XCLI: minMacroLevel=0 so all items show regardless of macro level.
 // [claude-code 2026-03-12] Instrument persistence: passes selectedSymbol to backend feed poll
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import type { RiskFlowAlert } from '../lib/riskflow-feed';
-import { ensureScoring, downgradeNonFinancialBreaking } from '../lib/riskflow-feed';
-import { useBackend } from '../lib/backend';
-import { decodeHtmlEntities } from '../lib/html-entities';
-import { useSettings } from './SettingsContext';
-import type { NotionPollStatus } from '../lib/services';
-import type { RiskFlowItem } from '../types/api';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import type { RiskFlowAlert } from "../lib/riskflow-feed";
+import {
+  ensureScoring,
+  downgradeNonFinancialBreaking,
+} from "../lib/riskflow-feed";
+import { useBackend } from "../lib/backend";
+import { decodeHtmlEntities } from "../lib/html-entities";
+import { useSettings } from "./SettingsContext";
+import type { NotionPollStatus } from "../lib/services";
+import type { RiskFlowItem } from "../types/api";
 
 // [claude-code 2026-03-16] T2: ensureScoring + downgradeNonFinancialBreaking on merged feed
 
@@ -47,7 +57,7 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   isSeen: () => false,
   refresh: async () => {},
   refreshing: false,
-  fetchStatus: '',
+  fetchStatus: "",
   loadMore: async () => {},
   loadingMore: false,
   hasMore: false,
@@ -57,26 +67,26 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
 const NOTION_POLL_MS = 30_000;
 const BACKEND_FEED_POLL_MS = 15_000;
 
-function macroLevelToSeverity(level: number): RiskFlowAlert['severity'] {
-  if (level >= 4) return 'critical';
-  if (level >= 3) return 'high';
-  if (level >= 2) return 'medium';
-  return 'low';
+function macroLevelToSeverity(level: number): RiskFlowAlert["severity"] {
+  if (level >= 4) return "critical";
+  if (level >= 3) return "high";
+  if (level >= 2) return "medium";
+  return "low";
 }
 
-function mapBackendSource(source: string): RiskFlowAlert['source'] {
+function mapBackendSource(source: string): RiskFlowAlert["source"] {
   const s = source.toLowerCase();
-  if (s === 'financialjuice') return 'financial-juice';
-  if (s === 'osintsources') return 'osint-sources';
-  if (s === 'economiccalendar') return 'economic-calendar';
-  if (s === 'polymarket') return 'polymarket';
-  if (s === 'kalshi') return 'kalshi-whale';
-  if (s === 'twittercli') return 'twitter-cli';
-  return 'backend';
+  if (s === "financialjuice") return "financial-juice";
+  if (s === "osintsources") return "osint-sources";
+  if (s === "economiccalendar") return "economic-calendar";
+  if (s === "polymarket") return "polymarket";
+  if (s === "kalshi") return "kalshi-whale";
+  if (s === "twittercli") return "twitter-cli";
+  return "backend";
 }
 
 // [claude-code 2026-03-28] S9-T2: Removed dismissedIds — items are never hidden
-const SEEN_STORAGE_KEY = 'fintheon:riskflow-seen:v1';
+const SEEN_STORAGE_KEY = "fintheon:riskflow-seen:v1";
 
 function loadStoredIds(key: string): Set<string> {
   try {
@@ -84,7 +94,7 @@ function loadStoredIds(key: string): Set<string> {
     if (!raw) return new Set();
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return new Set();
-    return new Set(parsed.filter((v: unknown) => typeof v === 'string'));
+    return new Set(parsed.filter((v: unknown) => typeof v === "string"));
   } catch {
     return new Set();
   }
@@ -103,15 +113,20 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const { selectedSymbol } = useSettings();
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
-  const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
-  const [seenIds, setSeenIds] = useState<Set<string>>(() => loadStoredIds(SEEN_STORAGE_KEY));
+  const [notionPollStatus, setNotionPollStatus] =
+    useState<NotionPollStatus | null>(null);
+  const [seenIds, setSeenIds] = useState<Set<string>>(() =>
+    loadStoredIds(SEEN_STORAGE_KEY),
+  );
   const [refreshing, setRefreshing] = useState(false);
-  const [fetchStatus, setFetchStatus] = useState('');
+  const [fetchStatus, setFetchStatus] = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
   const notionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
   // Track how many items have been loaded (initial 50 + loadMore pages) so polls don't reset scroll progress
   const loadedCountRef = useRef(50);
 
@@ -123,45 +138,51 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         backend.notion.getPollStatus(),
       ]);
       const converted: RiskFlowAlert[] = ideas.map((idea) => {
-        const displayName = idea.title || idea.ticker || 'Trade Idea';
+        const displayName = idea.title || idea.ticker || "Trade Idea";
         return {
-        id: `notion-ti-${idea.id}`,
-        headline: decodeHtmlEntities(`${idea.direction.toUpperCase()} — ${displayName}${idea.entry ? ` @ ${idea.entry}` : ''}`),
-        summary: decodeHtmlEntities(
-          idea.hermesDescription
-          ?? `${displayName} — ${idea.direction} trade idea${idea.confidence ? ` (${idea.confidence} confidence)` : ''}`
-        ),
-        url: idea.notionUrl,
-        publishedAt: idea.createdAt,
-        source: 'notion-trade-idea' as const,
-        severity: (idea.confidence === 'high' || idea.confidence === 'max') ? 'high'
-          : idea.confidence === 'medium' ? 'medium' : 'low',
-        tags: [idea.direction, idea.timeframe ?? ''].filter(Boolean),
-        tradeIdea: {
-          title: displayName,
-          ticker: idea.ticker || displayName,
-          direction: idea.direction,
-          entry: idea.entry,
-          stopLoss: idea.stopLoss,
-          takeProfit: idea.takeProfit,
-          potentialRisk: idea.potentialRisk,
-          potentialProfit: idea.potentialProfit,
-          riskRewardRatio: idea.riskRewardRatio,
-          confidence: idea.confidence,
-          timeframe: idea.timeframe,
-          sourceAgent: idea.sourceAgent,
-          hermesDescription: idea.hermesDescription,
-          notionUrl: idea.notionUrl,
-        },
-      };
+          id: `notion-ti-${idea.id}`,
+          headline: decodeHtmlEntities(
+            `${idea.direction.toUpperCase()} — ${displayName}${idea.entry ? ` @ ${idea.entry}` : ""}`,
+          ),
+          summary: decodeHtmlEntities(
+            idea.hermesDescription ??
+              `${displayName} — ${idea.direction} trade idea${idea.confidence ? ` (${idea.confidence} confidence)` : ""}`,
+          ),
+          url: idea.notionUrl,
+          publishedAt: idea.createdAt,
+          source: "notion-trade-idea" as const,
+          severity:
+            idea.confidence === "high" || idea.confidence === "max"
+              ? "high"
+              : idea.confidence === "medium"
+                ? "medium"
+                : "low",
+          tags: [idea.direction, idea.timeframe ?? ""].filter(Boolean),
+          tradeIdea: {
+            title: displayName,
+            ticker: idea.ticker || displayName,
+            direction: idea.direction,
+            entry: idea.entry,
+            stopLoss: idea.stopLoss,
+            takeProfit: idea.takeProfit,
+            potentialRisk: idea.potentialRisk,
+            potentialProfit: idea.potentialProfit,
+            riskRewardRatio: idea.riskRewardRatio,
+            confidence: idea.confidence,
+            timeframe: idea.timeframe,
+            sourceAgent: idea.sourceAgent,
+            hermesDescription: idea.hermesDescription,
+            notionUrl: idea.notionUrl,
+          },
+        };
       });
       setNotionAlerts(converted);
       setNotionPollStatus(pollStatus);
       console.debug(
-        `[RiskFlowContext] Notion poll: ${ideas.length} proposals (cache=${pollStatus.tradeIdeaCount}, running=${pollStatus.running})`
+        `[RiskFlowContext] Notion poll: ${ideas.length} proposals (cache=${pollStatus.tradeIdeaCount}, running=${pollStatus.running})`,
       );
     } catch (err) {
-      console.warn('[RiskFlowContext] Notion poll error:', err);
+      console.warn("[RiskFlowContext] Notion poll error:", err);
     }
   }, [backend]);
 
@@ -179,17 +200,24 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   // Uses loadedCountRef so polls fetch all items the user has scrolled through (not just first 50)
   const pollBackendFeed = useCallback(async () => {
     try {
-      setFetchStatus('Fetching scored items...');
-      const response = await backend.riskflow.list({ minMacroLevel: 0, limit: loadedCountRef.current, instrument: selectedSymbol.symbol });
+      setFetchStatus("Fetching scored items...");
+      const response = await backend.riskflow.list({
+        minMacroLevel: 0,
+        limit: loadedCountRef.current,
+        instrument: selectedSymbol.symbol,
+      });
       const alerts: RiskFlowAlert[] = response.items.map((item) => ({
         id: `backend-${item.id}`,
         headline: item.title,
-        summary: item.summary || item.content || '',
+        summary: item.summary || item.content || "",
         url: item.url,
         publishedAt:
-          typeof item.publishedAt === 'string'
+          typeof item.publishedAt === "string"
             ? item.publishedAt
-            : (item.publishedAt instanceof Date ? item.publishedAt : new Date(item.publishedAt)).toISOString(),
+            : (item.publishedAt instanceof Date
+                ? item.publishedAt
+                : new Date(item.publishedAt)
+              ).toISOString(),
         source: mapBackendSource(item.source),
         severity: macroLevelToSeverity(item.macroLevel ?? 0),
         symbols: item.symbols ?? [],
@@ -202,7 +230,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         authorHandle: item.authorHandle ?? null,
         ivScore: item.ivScore ?? null,
         subScores: item.subScores ?? null,
-        riskType: (item.riskType as RiskFlowAlert['riskType']) ?? null,
+        riskType: (item.riskType as RiskFlowAlert["riskType"]) ?? null,
         agentNote: item.agentNote ?? null,
         agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
         econData: item.econData ?? null,
@@ -216,12 +244,14 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       setHasMore(response.hasMore ?? false);
       setInitialLoaded(true);
       setFetchStatus(`${alerts.length} items loaded`);
-      setTimeout(() => setFetchStatus(''), 2000);
-      console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items, hasMore: ${response.hasMore} (instrument=${selectedSymbol.symbol})`);
+      setTimeout(() => setFetchStatus(""), 2000);
+      console.debug(
+        `[RiskFlowContext] Backend feed poll: ${alerts.length} items, hasMore: ${response.hasMore} (instrument=${selectedSymbol.symbol})`,
+      );
     } catch (err) {
-      setFetchStatus('Feed fetch failed');
-      setTimeout(() => setFetchStatus(''), 3000);
-      console.warn('[RiskFlowContext] Backend feed poll error:', err);
+      setFetchStatus("Feed fetch failed");
+      setTimeout(() => setFetchStatus(""), 3000);
+      console.warn("[RiskFlowContext] Backend feed poll error:", err);
       setInitialLoaded(true);
     }
   }, [backend, selectedSymbol.symbol]);
@@ -240,12 +270,15 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       const newAlerts: RiskFlowAlert[] = response.items.map((item) => ({
         id: `backend-${item.id}`,
         headline: item.title,
-        summary: item.summary || item.content || '',
+        summary: item.summary || item.content || "",
         url: item.url,
         publishedAt:
-          typeof item.publishedAt === 'string'
+          typeof item.publishedAt === "string"
             ? item.publishedAt
-            : (item.publishedAt instanceof Date ? item.publishedAt : new Date(item.publishedAt)).toISOString(),
+            : (item.publishedAt instanceof Date
+                ? item.publishedAt
+                : new Date(item.publishedAt)
+              ).toISOString(),
         source: mapBackendSource(item.source),
         severity: macroLevelToSeverity(item.macroLevel ?? 0),
         symbols: item.symbols ?? [],
@@ -258,7 +291,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         authorHandle: item.authorHandle ?? null,
         ivScore: item.ivScore ?? null,
         subScores: item.subScores ?? null,
-        riskType: (item.riskType as RiskFlowAlert['riskType']) ?? null,
+        riskType: (item.riskType as RiskFlowAlert["riskType"]) ?? null,
         agentNote: item.agentNote ?? null,
         agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
         econData: item.econData ?? null,
@@ -268,17 +301,25 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         status: (item as any).status ?? null,
         marketImpact: (item as any).marketImpact ?? null,
       }));
-      setBackendAlerts(prev => [...prev, ...newAlerts]);
+      setBackendAlerts((prev) => [...prev, ...newAlerts]);
       setHasMore(response.hasMore ?? false);
       // Bump loaded count so subsequent polls fetch the full set
       loadedCountRef.current = backendAlerts.length + newAlerts.length;
-      console.debug(`[RiskFlowContext] Loaded ${newAlerts.length} more items (total: ${loadedCountRef.current})`);
+      console.debug(
+        `[RiskFlowContext] Loaded ${newAlerts.length} more items (total: ${loadedCountRef.current})`,
+      );
     } catch (err) {
-      console.warn('[RiskFlowContext] loadMore error:', err);
+      console.warn("[RiskFlowContext] loadMore error:", err);
     } finally {
       setLoadingMore(false);
     }
-  }, [backend, selectedSymbol.symbol, backendAlerts.length, loadingMore, hasMore]);
+  }, [
+    backend,
+    selectedSymbol.symbol,
+    backendAlerts.length,
+    loadingMore,
+    hasMore,
+  ]);
 
   useEffect(() => {
     void pollBackendFeed();
@@ -296,18 +337,21 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const lastOnOpenRefresh = useRef(0);
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState !== 'visible') return;
+      if (document.visibilityState !== "visible") return;
       const now = Date.now();
       if (now - lastOnOpenRefresh.current < 5 * 60 * 1000) return;
       lastOnOpenRefresh.current = now;
-      console.debug('[RiskFlowContext] App became visible — triggering on-open refresh');
+      console.debug(
+        "[RiskFlowContext] App became visible — triggering on-open refresh",
+      );
       // Fire refresh (may take 30s+ for owner's X poll) but don't block feed display
       backend.riskflow.refresh().catch(() => {});
       // Immediately fetch cached scored items so feed displays fast
       pollBackendFeed();
     };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
   }, [backend, pollBackendFeed]);
 
   // Merge: Notion (pinned) → Backend feed
@@ -320,15 +364,19 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   // FIX 4: Downgrade non-financial BREAKING headlines
   downgradeNonFinancialBreaking(merged);
   const visibleAlerts = merged;
-  const highCount = visibleAlerts.filter((a) => a.severity === 'high' || a.severity === 'critical').length;
-  const mediumCount = visibleAlerts.filter((a) => a.severity === 'medium').length;
-  const lowCount = visibleAlerts.filter((a) => a.severity === 'low').length;
+  const highCount = visibleAlerts.filter(
+    (a) => a.severity === "high" || a.severity === "critical",
+  ).length;
+  const mediumCount = visibleAlerts.filter(
+    (a) => a.severity === "medium",
+  ).length;
+  const lowCount = visibleAlerts.filter((a) => a.severity === "low").length;
 
   // Stabilize merged ids so clearAll doesn't change every render
   const mergedIdsRef = useRef<string[]>([]);
   const mergedIds = merged.map((a) => a.id);
-  const mergedIdsKey = mergedIds.join(',');
-  if (mergedIdsRef.current.join(',') !== mergedIdsKey) {
+  const mergedIdsKey = mergedIds.join(",");
+  if (mergedIdsRef.current.join(",") !== mergedIdsKey) {
     mergedIdsRef.current = mergedIds;
   }
 
@@ -369,25 +417,25 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const isSeen = useCallback((id: string) => {
-    return seenIds.has(id);
-  }, [seenIds]);
+  const isSeen = useCallback(
+    (id: string) => {
+      return seenIds.has(id);
+    },
+    [seenIds],
+  );
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      setFetchStatus('Polling Twitter feeds...');
+      setFetchStatus("Polling Twitter feeds...");
       await backend.riskflow.refresh().catch((err: unknown) => {
-        console.warn('[RiskFlow] Manual refresh failed:', err);
-        setFetchStatus('Backend refresh failed — fetching cached data');
+        console.warn("[RiskFlow] Manual refresh failed:", err);
+        setFetchStatus("Backend refresh failed — fetching cached data");
       });
-      setFetchStatus('Scoring & classifying items...');
-      await Promise.all([
-        pollNotion(),
-        pollBackendFeed(),
-      ]);
-      setFetchStatus('Feed updated');
-      setTimeout(() => setFetchStatus(''), 3000);
+      setFetchStatus("Scoring & classifying items...");
+      await Promise.all([pollNotion(), pollBackendFeed()]);
+      setFetchStatus("Feed updated");
+      setTimeout(() => setFetchStatus(""), 3000);
     } finally {
       setRefreshing(false);
     }

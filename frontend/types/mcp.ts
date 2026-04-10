@@ -1,25 +1,25 @@
 // [claude-code 2026-04-04] MCP registry frontend types — mirror of backend types/mcp.ts + internal connectors
 
 export type McpServerId =
-  | 'playwright'
-  | 'fmp'
-  | 'exa'
-  | 'notion'
-  | 'unusual-whales'
-  | 'yahoo-finance'
-  | 'riskflow'
-  | 'framer'
-  | 'close-crm'
-  | 'qc-mcp'
-  | 'tradingview'
-  | 'figma'
-  | 'aquarium'
-  | 'boardroom'
+  | "playwright"
+  | "fmp"
+  | "exa"
+  | "notion"
+  | "unusual-whales"
+  | "yahoo-finance"
+  | "riskflow"
+  | "framer"
+  | "close-crm"
+  | "qc-mcp"
+  | "tradingview"
+  | "figma"
+  | "aquarium"
+  | "boardroom"
   | (string & {});
 
-export type McpTransport = 'stdio' | 'sse' | 'http';
+export type McpTransport = "stdio" | "sse" | "http";
 
-export type ConnectorSource = 'claude' | 'project' | 'internal';
+export type ConnectorSource = "claude" | "project" | "internal";
 
 export interface McpServerConfig {
   id: McpServerId;
@@ -35,7 +35,14 @@ export interface McpServerConfig {
   apiKeyEnvVar?: string;
   hasApiKey: boolean;
   toolCount?: number;
-  category: 'data' | 'search' | 'browser' | 'productivity' | 'social' | 'trading' | 'internal';
+  category:
+    | "data"
+    | "search"
+    | "browser"
+    | "productivity"
+    | "social"
+    | "trading"
+    | "internal";
   locked?: boolean;
   source?: ConnectorSource;
   url?: string;

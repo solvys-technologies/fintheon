@@ -1,216 +1,280 @@
-import type { ParsedHeadline, NewsSource, UrgencyLevel, MarketDirection } from '../types/news-analysis.js'
-import { extractSpeaker } from './commentator/speaker-extractor.js'
-import { CATALYST_LEVEL_CRITERIA } from '../config/catalyst-levels.js'
+import type {
+  ParsedHeadline,
+  NewsSource,
+  UrgencyLevel,
+  MarketDirection,
+} from "../types/news-analysis.js";
+import { extractSpeaker } from "./commentator/speaker-extractor.js";
+import { CATALYST_LEVEL_CRITERIA } from "../config/catalyst-levels.js";
 
-const breakingPatterns = [/^BREAKING[:\s-]/i, /^JUST IN[:\s-]/i, /^ALERT[:\s-]/i, /^URGENT[:\s-]/i]
+const breakingPatterns = [
+  /^BREAKING[:\s-]/i,
+  /^JUST IN[:\s-]/i,
+  /^ALERT[:\s-]/i,
+  /^URGENT[:\s-]/i,
+];
 const econDataPatterns = [
   /([\w\s]+?):\s*Actual\s+([\d.,]+%?)\s+vs\s+(?:Expected|Forecast|Exp)\s+([\d.,]+%?)/i,
   /([\w\s]+?)\s+Actual\s+([\d.,]+%?)\s+vs\s+(?:Exp|Forecast|Expected)\s+([\d.,]+%?)/i,
-  /([\w\s]+?)\s+([\w\s]+?):\s*([\d.,]+%?)\s+\(Actual\)\s+vs\s+([\d.,]+%?)\s+(?:Expected|Forecast)/i
-]
+  /([\w\s]+?)\s+([\w\s]+?):\s*([\d.,]+%?)\s+\(Actual\)\s+vs\s+([\d.,]+%?)\s+(?:Expected|Forecast)/i,
+];
 const actionPattern =
-  /(FED|ECB|BOE|BOJ|PBOC|POWELL|YELLEN|TREASURY|CONGRESS|CHINA|US|UK|EU|GERMANY|JAPAN|OPEC)\s+(raises|cuts|hikes|slashes|holds|signals|warns|confirms)\s+([\w\s%]+?)(?:\s+by\s+([\d.,]+)\s*(bps|%|points))?(?=$|\.)/i
+  /(FED|ECB|BOE|BOJ|PBOC|POWELL|YELLEN|TREASURY|CONGRESS|CHINA|US|UK|EU|GERMANY|JAPAN|OPEC)\s+(raises|cuts|hikes|slashes|holds|signals|warns|confirms)\s+([\w\s%]+?)(?:\s+by\s+([\d.,]+)\s*(bps|%|points))?(?=$|\.)/i;
 
-const symbolRegex = /\$[A-Z]{1,5}\b/g
-export const LEVEL4_EMOJIS = ['⚠️', '🔴', '🚨']
-export const MAJOR_MACRO_PRINTS = ['cpiPrint', 'ppiPrint', 'nfpPrint', 'gdpPrint', 'fedDecision']
+const symbolRegex = /\$[A-Z]{1,5}\b/g;
+export const LEVEL4_EMOJIS = ["⚠️", "🔴", "🚨"];
+export const MAJOR_MACRO_PRINTS = [
+  "cpiPrint",
+  "ppiPrint",
+  "nfpPrint",
+  "gdpPrint",
+  "fedDecision",
+];
 
 // Financial Juice emoji tiers — used by fj-emoji-filter.ts and for consistent reference
 export const FJ_EMOJI_TIERS = {
-  critical: ['🔴'],
-  high: ['⚠️', '🚨'],
-  medium: ['🟡', '🟠'],
-  low: ['🔵'],
-} as const
+  critical: ["🔴"],
+  high: ["⚠️", "🚨"],
+  medium: ["🟡", "🟠"],
+  low: ["🔵"],
+} as const;
 
 const ALL_KEYWORDS = Object.values(CATALYST_LEVEL_CRITERIA)
   .flatMap((criteria) => criteria.keywords)
-  .map((keyword) => keyword.toLowerCase())
+  .map((keyword) => keyword.toLowerCase());
 
 export function hasLevel4Emoji(text: string): boolean {
-  return LEVEL4_EMOJIS.some((emoji) => text.includes(emoji))
+  return LEVEL4_EMOJIS.some((emoji) => text.includes(emoji));
 }
 
 // Canonical keyword emitters for macro-level assignment.
 // Each matcher emits a normalized keyword string used by assignMacroLevel.
 const MACRO_KEYWORD_PATTERNS: Array<{ pattern: RegExp; keyword: string }> = [
-  { pattern: /\bfed\s+rate\s+decision\b/i, keyword: 'fed rate decision' },
-  { pattern: /\bfomc\s+decision\b/i, keyword: 'fomc decision' },
-  { pattern: /\brate(?:s)?\s+cut(?:s)?\b/i, keyword: 'rate cut' },
-  { pattern: /\brate(?:s)?\s+hike(?:s|d)?\b/i, keyword: 'rate hike' },
-  { pattern: /\bfomc\s+minutes\b/i, keyword: 'fomc minutes' },
-  { pattern: /\bhousing\s+starts?\b/i, keyword: 'housing starts' },
-  { pattern: /\bconsumer\s+confidence\b/i, keyword: 'consumer confidence' },
-  { pattern: /\bretail\s+sales\b/i, keyword: 'retail sales' },
-  { pattern: /\bjobless\b/i, keyword: 'jobless' },
-  { pattern: /\btariff\b/i, keyword: 'tariff' },
-  { pattern: /\bsanction\b/i, keyword: 'sanction' },
-  { pattern: /\btreasury\b/i, keyword: 'treasury' },
-  { pattern: /\bopec\b/i, keyword: 'opec' },
-  { pattern: /\bnato\b/i, keyword: 'nato' },
-  { pattern: /\b(invasion|missile|nuclear|strait of hormuz|ceasefire)\b/i, keyword: 'geopolitical escalation' },
-  { pattern: /\b(circuit\s+breaker|flash\s+crash|halt)\b/i, keyword: 'market structure shock' },
-  { pattern: /\b(cpi|ppi|gdp|nfp|pce|inflation)\b/i, keyword: 'macro print' },
-  { pattern: /\b(earnings|revenue|eps|guidance)\b/i, keyword: 'earnings' },
-]
+  { pattern: /\bfed\s+rate\s+decision\b/i, keyword: "fed rate decision" },
+  { pattern: /\bfomc\s+decision\b/i, keyword: "fomc decision" },
+  { pattern: /\brate(?:s)?\s+cut(?:s)?\b/i, keyword: "rate cut" },
+  { pattern: /\brate(?:s)?\s+hike(?:s|d)?\b/i, keyword: "rate hike" },
+  { pattern: /\bfomc\s+minutes\b/i, keyword: "fomc minutes" },
+  { pattern: /\bhousing\s+starts?\b/i, keyword: "housing starts" },
+  { pattern: /\bconsumer\s+confidence\b/i, keyword: "consumer confidence" },
+  { pattern: /\bretail\s+sales\b/i, keyword: "retail sales" },
+  { pattern: /\bjobless\b/i, keyword: "jobless" },
+  { pattern: /\btariff\b/i, keyword: "tariff" },
+  { pattern: /\bsanction\b/i, keyword: "sanction" },
+  { pattern: /\btreasury\b/i, keyword: "treasury" },
+  { pattern: /\bopec\b/i, keyword: "opec" },
+  { pattern: /\bnato\b/i, keyword: "nato" },
+  {
+    pattern: /\b(invasion|missile|nuclear|strait of hormuz|ceasefire)\b/i,
+    keyword: "geopolitical escalation",
+  },
+  {
+    pattern: /\b(circuit\s+breaker|flash\s+crash|halt)\b/i,
+    keyword: "market structure shock",
+  },
+  { pattern: /\b(cpi|ppi|gdp|nfp|pce|inflation)\b/i, keyword: "macro print" },
+  { pattern: /\b(earnings|revenue|eps|guidance)\b/i, keyword: "earnings" },
+];
 
 export function getMatchedKeywords(text: string): string[] {
-  const matches = new Set<string>()
+  const matches = new Set<string>();
   for (const { pattern, keyword } of MACRO_KEYWORD_PATTERNS) {
-    if (pattern.test(text)) matches.add(keyword)
+    if (pattern.test(text)) matches.add(keyword);
   }
-  return [...matches]
+  return [...matches];
 }
 
-const knownTickers = ['SPY', 'QQQ', 'ES', 'NQ', 'IWM', 'TLT', 'ZN', 'ZB', 'DXY', 'VIX', 'CL', 'GC', 'BTC', 'ETH']
+const knownTickers = [
+  "SPY",
+  "QQQ",
+  "ES",
+  "NQ",
+  "IWM",
+  "TLT",
+  "ZN",
+  "ZB",
+  "DXY",
+  "VIX",
+  "CL",
+  "GC",
+  "BTC",
+  "ETH",
+];
 
-const defaultParsedHeadline = (text: string, source: NewsSource): ParsedHeadline => ({
+const defaultParsedHeadline = (
+  text: string,
+  source: NewsSource,
+): ParsedHeadline => ({
   raw: text,
   source,
   symbols: [],
   isBreaking: false,
-  urgency: 'normal',
+  urgency: "normal",
   tags: [],
-  confidence: 0.35
-})
+  confidence: 0.35,
+});
 
-const detectBreaking = (text: string): { isBreaking: boolean; urgency: UrgencyLevel } => {
-  const matched = breakingPatterns.some((regex) => regex.test(text))
-  if (matched) return { isBreaking: true, urgency: 'immediate' }
-  if (/DEVELOPING|JUST NOW|FLASH/i.test(text)) return { isBreaking: true, urgency: 'high' }
-  return { isBreaking: false, urgency: 'normal' }
-}
+const detectBreaking = (
+  text: string,
+): { isBreaking: boolean; urgency: UrgencyLevel } => {
+  const matched = breakingPatterns.some((regex) => regex.test(text));
+  if (matched) return { isBreaking: true, urgency: "immediate" };
+  if (/DEVELOPING|JUST NOW|FLASH/i.test(text))
+    return { isBreaking: true, urgency: "high" };
+  return { isBreaking: false, urgency: "normal" };
+};
 
 const extractSymbols = (text: string): string[] => {
-  const inline = text.match(symbolRegex)?.map((s) => s.replace('$', '').toUpperCase()) ?? []
-  const inferred = knownTickers.filter((ticker) => new RegExp(`\\b${ticker}\\b`, 'i').test(text))
-  return Array.from(new Set([...inline, ...inferred]))
-}
+  const inline =
+    text.match(symbolRegex)?.map((s) => s.replace("$", "").toUpperCase()) ?? [];
+  const inferred = knownTickers.filter((ticker) =>
+    new RegExp(`\\b${ticker}\\b`, "i").test(text),
+  );
+  return Array.from(new Set([...inline, ...inferred]));
+};
 
 const detectEventType = (text: string): string | undefined => {
-  const upper = text.toUpperCase()
-  if (upper.includes('CPI')) return 'cpiPrint'
-  if (upper.includes('PPI')) return 'ppiPrint'
-  if (upper.includes('NFP') || upper.includes('PAYROLL')) return 'nfpPrint'
-  if (upper.includes('GDP')) return 'gdpPrint'
-  if (upper.includes('FED') || upper.includes('FOMC') || upper.includes('POWELL')) return 'fedDecision'
-  if (upper.includes('EARNINGS') || upper.includes('EPS')) return 'earnings'
-  if (upper.includes('SANCTION') || upper.includes('WAR') || upper.includes('TENSION')) return 'geopolitical'
-  if (upper.includes('BANK') && upper.includes('CRISIS')) return 'bankingCrisis'
-  return undefined
-}
+  const upper = text.toUpperCase();
+  if (upper.includes("CPI")) return "cpiPrint";
+  if (upper.includes("PPI")) return "ppiPrint";
+  if (upper.includes("NFP") || upper.includes("PAYROLL")) return "nfpPrint";
+  if (upper.includes("GDP")) return "gdpPrint";
+  if (
+    upper.includes("FED") ||
+    upper.includes("FOMC") ||
+    upper.includes("POWELL")
+  )
+    return "fedDecision";
+  if (upper.includes("EARNINGS") || upper.includes("EPS")) return "earnings";
+  if (
+    upper.includes("SANCTION") ||
+    upper.includes("WAR") ||
+    upper.includes("TENSION")
+  )
+    return "geopolitical";
+  if (upper.includes("BANK") && upper.includes("CRISIS"))
+    return "bankingCrisis";
+  return undefined;
+};
 
 const extractNumbers = (text: string) => {
   for (const pattern of econDataPatterns) {
-    const match = text.match(pattern)
-    if (!match) continue
-    const [, label, actualText, forecastText] = match
+    const match = text.match(pattern);
+    if (!match) continue;
+    const [, label, actualText, forecastText] = match;
     return {
       label: label.trim(),
       actualText,
       forecastText,
-      actual: parseFloat(actualText.replace(/[^-\d.]/g, '')),
-      forecast: parseFloat(forecastText.replace(/[^-\d.]/g, '')),
-      unit: actualText.includes('%') ? '%' : undefined
-    }
+      actual: parseFloat(actualText.replace(/[^-\d.]/g, "")),
+      forecast: parseFloat(forecastText.replace(/[^-\d.]/g, "")),
+      unit: actualText.includes("%") ? "%" : undefined,
+    };
   }
-  return undefined
-}
+  return undefined;
+};
 
 const parseActionStatement = (text: string) => {
-  const match = text.match(actionPattern)
-  if (!match) return undefined
-  const [, entity, action, target, magnitudeText, unit] = match
+  const match = text.match(actionPattern);
+  if (!match) return undefined;
+  const [, entity, action, target, magnitudeText, unit] = match;
   return {
     entity: entity.toUpperCase(),
     action: action.toLowerCase(),
     target: target.trim(),
-    magnitude: magnitudeText ? parseFloat(magnitudeText.replace(/[^-\d.]/g, '')) : undefined,
-    unit
-  }
-}
+    magnitude: magnitudeText
+      ? parseFloat(magnitudeText.replace(/[^-\d.]/g, ""))
+      : undefined,
+    unit,
+  };
+};
 
 const inferMarketReaction = (
-  text: string
-): { direction: MarketDirection; intensity: 'mild' | 'moderate' | 'severe' } | undefined => {
+  text: string,
+):
+  | { direction: MarketDirection; intensity: "mild" | "moderate" | "severe" }
+  | undefined => {
   if (/markets?\s+(?:tumble|drop|sell off|sink|slide)/i.test(text)) {
     return {
-      direction: 'down',
-      intensity: /tumble|plunge|crash/i.test(text) ? 'severe' : 'moderate'
-    }
+      direction: "down",
+      intensity: /tumble|plunge|crash/i.test(text) ? "severe" : "moderate",
+    };
   }
   if (/markets?\s+(?:surge|jump|rally|rip)/i.test(text)) {
     return {
-      direction: 'up',
-      intensity: /surge|rip|soar/i.test(text) ? 'severe' : 'moderate'
-    }
+      direction: "up",
+      intensity: /surge|rip|soar/i.test(text) ? "severe" : "moderate",
+    };
   }
-  return undefined
-}
+  return undefined;
+};
 
 export interface ParseHeadlineOptions {
-  source?: NewsSource
+  source?: NewsSource;
 }
 
 export interface HeadlineParseResult {
-  parsed: ParsedHeadline
-  isConfident: boolean
+  parsed: ParsedHeadline;
+  isConfident: boolean;
 }
 
-export const parseHeadline = (text: string, options?: ParseHeadlineOptions): HeadlineParseResult => {
-  const trimmed = text.trim()
-  const source = options?.source ?? 'Custom'
-  const parsed = defaultParsedHeadline(trimmed, source)
-  const { isBreaking, urgency } = detectBreaking(trimmed)
-  parsed.isBreaking = isBreaking
-  parsed.urgency = urgency
+export const parseHeadline = (
+  text: string,
+  options?: ParseHeadlineOptions,
+): HeadlineParseResult => {
+  const trimmed = text.trim();
+  const source = options?.source ?? "Custom";
+  const parsed = defaultParsedHeadline(trimmed, source);
+  const { isBreaking, urgency } = detectBreaking(trimmed);
+  parsed.isBreaking = isBreaking;
+  parsed.urgency = urgency;
 
-  parsed.symbols = extractSymbols(trimmed)
-  parsed.eventType = detectEventType(trimmed)
-  parsed.marketReaction = inferMarketReaction(trimmed)
+  parsed.symbols = extractSymbols(trimmed);
+  parsed.eventType = detectEventType(trimmed);
+  parsed.marketReaction = inferMarketReaction(trimmed);
 
-  const actionInfo = parseActionStatement(trimmed)
+  const actionInfo = parseActionStatement(trimmed);
   if (actionInfo) {
-    parsed.entity = actionInfo.entity
-    parsed.action = actionInfo.action.toUpperCase()
-    parsed.target = actionInfo.target
-    parsed.magnitude = actionInfo.magnitude
-    parsed.unit = actionInfo.unit
-    parsed.confidence += 0.25
+    parsed.entity = actionInfo.entity;
+    parsed.action = actionInfo.action.toUpperCase();
+    parsed.target = actionInfo.target;
+    parsed.magnitude = actionInfo.magnitude;
+    parsed.unit = actionInfo.unit;
+    parsed.confidence += 0.25;
   }
 
-  const numberInfo = extractNumbers(trimmed)
+  const numberInfo = extractNumbers(trimmed);
   if (numberInfo) {
     parsed.numbers = {
       actual: numberInfo.actual,
       actualText: numberInfo.actualText,
       forecast: numberInfo.forecast,
       forecastText: numberInfo.forecastText,
-      unit: numberInfo.unit
-    }
-    parsed.confidence += 0.25
-    parsed.tags.push('economic-data')
-    parsed.eventType ??= 'economicData'
+      unit: numberInfo.unit,
+    };
+    parsed.confidence += 0.25;
+    parsed.tags.push("economic-data");
+    parsed.eventType ??= "economicData";
   }
 
   // Speaker extraction — adds speaker/institution fields but does NOT affect scoring (T5 scope)
-  const speakerInfo = extractSpeaker(trimmed)
+  const speakerInfo = extractSpeaker(trimmed);
   if (speakerInfo.speaker) {
-    parsed.speaker = speakerInfo.speaker
-    parsed.speakerInstitution = speakerInfo.institution ?? undefined
-    parsed.isOfficialStatement = speakerInfo.isOfficial
+    parsed.speaker = speakerInfo.speaker;
+    parsed.speakerInstitution = speakerInfo.institution ?? undefined;
+    parsed.isOfficialStatement = speakerInfo.isOfficial;
   }
 
   if (parsed.symbols.length > 0) {
-    parsed.confidence += 0.15
+    parsed.confidence += 0.15;
   }
   if (parsed.eventType) {
-    parsed.tags.push(parsed.eventType)
-    parsed.confidence += 0.1
+    parsed.tags.push(parsed.eventType);
+    parsed.confidence += 0.1;
   }
 
-  parsed.confidence = Math.min(1, Math.max(0, parsed.confidence))
-  const isConfident = parsed.confidence >= 0.65
+  parsed.confidence = Math.min(1, Math.max(0, parsed.confidence));
+  const isConfident = parsed.confidence >= 0.65;
 
-  return { parsed, isConfident }
-}
+  return { parsed, isConfident };
+};

@@ -12,17 +12,24 @@ export function MiroSharkPrediction({
   projectedScore,
   isTop = false,
 }: MiroSharkPredictionProps) {
-  const scoreColor = projectedScore >= 7 ? '#EF4444'
-    : projectedScore >= 5 ? '#F59E0B'
-    : '#34D399';
+  const scoreColor =
+    projectedScore >= 7
+      ? "#EF4444"
+      : projectedScore >= 5
+        ? "#F59E0B"
+        : "#34D399";
 
   return (
     <div
       className="relative rounded-lg p-3 border transition-all duration-300"
       style={{
-        backgroundColor: 'rgba(10, 10, 0, 0.7)',
-        borderColor: isTop ? 'rgba(212, 175, 55, 0.4)' : 'rgba(255, 255, 255, 0.06)',
-        animation: isTop ? 'miroshark-pulse 2s ease-in-out infinite' : undefined,
+        backgroundColor: "rgba(10, 10, 0, 0.7)",
+        borderColor: isTop
+          ? "rgba(212, 175, 55, 0.4)"
+          : "rgba(255, 255, 255, 0.06)",
+        animation: isTop
+          ? "miroshark-pulse 2s ease-in-out infinite"
+          : undefined,
       }}
     >
       {/* AI badge */}
@@ -30,8 +37,8 @@ export function MiroSharkPrediction({
         <span
           className="text-[8px] font-bold px-1.5 py-0.5 rounded-full"
           style={{
-            backgroundColor: 'rgba(212, 175, 55, 0.15)',
-            color: 'var(--fintheon-accent)',
+            backgroundColor: "rgba(212, 175, 55, 0.15)",
+            color: "var(--fintheon-accent)",
           }}
         >
           AI
@@ -63,7 +70,7 @@ export function MiroSharkPrediction({
           className="h-full rounded-full transition-all duration-500"
           style={{
             width: `${probability * 100}%`,
-            backgroundColor: 'var(--fintheon-accent)',
+            backgroundColor: "var(--fintheon-accent)",
             opacity: 0.6,
           }}
         />

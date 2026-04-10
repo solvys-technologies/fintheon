@@ -6,9 +6,9 @@
  * Replace the base URL with your Hono backend endpoint.
  */
 
-import { emitApiError } from './errorBus';
+import { emitApiError } from "./errorBus";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 // Global auth failure state - stops all polling when auth fails
 let authFailed = false;
@@ -43,7 +43,10 @@ function acquireSlot(): Promise<void> {
     return Promise.resolve();
   }
   return new Promise((resolve) => {
-    queue.push(() => { inFlight++; resolve(); });
+    queue.push(() => {
+      inFlight++;
+      resolve();
+    });
   });
 }
 
@@ -57,7 +60,7 @@ function releaseSlot() {
 function isResourceExhausted(error: unknown): boolean {
   if (!(error instanceof TypeError)) return false;
   const msg = error.message.toLowerCase();
-  return msg.includes('failed to fetch') && inFlight >= MAX_CONCURRENT - 1;
+  return msg.includes("failed to fetch") && inFlight >= MAX_CONCURRENT - 1;
 }
 
 // Export function to reset auth state (call on successful login)
@@ -71,38 +74,45 @@ export function resetAuthState() {
 // Check if auth has failed and we should skip requests
 function shouldSkipRequest(): boolean {
   if (!authFailed) return false;
-  
+
   // Reset if enough time has passed
-  if (authFailedTimestamp && Date.now() - authFailedTimestamp > AUTH_RETRY_DELAY_MS) {
+  if (
+    authFailedTimestamp &&
+    Date.now() - authFailedTimestamp > AUTH_RETRY_DELAY_MS
+  ) {
     authFailed = false;
     authFailedTimestamp = null;
     consecutive401Count = 0;
     return false;
   }
-  
+
   return true;
 }
 
 // Track 401 errors to prevent flooding
 function handle401Error(): void {
   const now = Date.now();
-  
+
   // Reset counter if it's been more than 1 minute since last 401
   if (last401Timestamp && now - last401Timestamp > 60000) {
     consecutive401Count = 0;
   }
-  
+
   consecutive401Count++;
   last401Timestamp = now;
-  
+
   // Set global auth failure flag to stop future requests
   authFailed = true;
   authFailedTimestamp = now;
-  
+
   if (consecutive401Count >= MAX_401_COUNT) {
-    console.warn(`[API] Multiple auth failures (${consecutive401Count}). Auto-logout disabled for debugging.`);
+    console.warn(
+      `[API] Multiple auth failures (${consecutive401Count}). Auto-logout disabled for debugging.`,
+    );
   } else if (consecutive401Count < MAX_401_COUNT) {
-    console.warn(`[API] Auth failed (${consecutive401Count}/${MAX_401_COUNT}). Auto-logout disabled for debugging.`);
+    console.warn(
+      `[API] Auth failed (${consecutive401Count}/${MAX_401_COUNT}). Auto-logout disabled for debugging.`,
+    );
   }
 }
 
@@ -116,14 +126,17 @@ class ApiClient {
   private baseUrl: string;
   private getAuthToken?: () => Promise<string | null>;
 
-  constructor(baseUrl: string = API_BASE_URL, getAuthToken?: () => Promise<string | null>) {
-    this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+  constructor(
+    baseUrl: string = API_BASE_URL,
+    getAuthToken?: () => Promise<string | null>,
+  ) {
+    this.baseUrl = baseUrl.replace(/\/$/, ""); // Remove trailing slash
     this.getAuthToken = getAuthToken;
   }
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
@@ -141,22 +154,24 @@ class ApiClient {
     url: string,
     endpoint: string,
     options: RequestInit,
-    attempt: number
+    attempt: number,
   ): Promise<T> {
     const execute = async (attempt: number): Promise<T> => {
       // Skip request if auth has failed recently (prevents error cascade)
       // But exempt public endpoints that don't require auth
-      const isPublicEndpoint = endpoint.startsWith('/api/riskflow/') ||
-        endpoint.startsWith('/api/predictions/') ||
-        endpoint.startsWith('/api/data/') ||
-        endpoint.startsWith('/api/miroshark/') ||
-        endpoint.startsWith('/api/diagnostics/') ||
-        endpoint.startsWith('/api/market-data/') ||
-        endpoint.startsWith('/api/market/');
+      const isPublicEndpoint =
+        endpoint.startsWith("/api/riskflow/") ||
+        endpoint.startsWith("/api/predictions/") ||
+        endpoint.startsWith("/api/data/") ||
+        endpoint.startsWith("/api/miroshark/") ||
+        endpoint.startsWith("/api/diagnostics/") ||
+        endpoint.startsWith("/api/market-data/") ||
+        endpoint.startsWith("/api/market/");
       if (!isPublicEndpoint && shouldSkipRequest()) {
         const err: ApiError = {
-          code: 'auth_skipped',
-          message: 'Skipping request due to recent auth failure. Will retry in 30s.',
+          code: "auth_skipped",
+          message:
+            "Skipping request due to recent auth failure. Will retry in 30s.",
           status: 401,
         };
         emitApiError({ ...err, endpoint });
@@ -164,7 +179,7 @@ class ApiClient {
       }
 
       const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       };
 
@@ -172,7 +187,8 @@ class ApiClient {
       if (this.getAuthToken) {
         const token = await this.getAuthToken();
         if (token) {
-          (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+          (headers as Record<string, string>)["Authorization"] =
+            `Bearer ${token}`;
         }
       }
 
@@ -193,12 +209,14 @@ class ApiClient {
 
           const error: ApiError = {
             code: errorData.code || `http_${response.status}`,
-            message: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+            message:
+              errorData.message ||
+              `HTTP ${response.status}: ${response.statusText}`,
             status: response.status,
           };
 
           if (response.status === 401) {
-            error.code = errorData.code || 'unauthenticated';
+            error.code = errorData.code || "unauthenticated";
             handle401Error();
             emitApiError({ ...error, endpoint });
             throw error;
@@ -213,10 +231,13 @@ class ApiClient {
           }
 
           if (response.status === 404) {
-            error.code = 'not_found';
+            error.code = "not_found";
           } else if (response.status >= 500) {
-            error.code = 'server_error';
-            console.error(`[API] Server error ${response.status} for ${endpoint}:`, errorData);
+            error.code = "server_error";
+            console.error(
+              `[API] Server error ${response.status} for ${endpoint}:`,
+              errorData,
+            );
           }
 
           // Reset 401 counter on successful requests
@@ -230,24 +251,32 @@ class ApiClient {
         }
 
         // Handle empty responses
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          console.warn(`[API] Unexpected content-type: ${contentType} for ${endpoint}, returning empty object`);
-          console.warn(`[API] Response status: ${response.status}, headers:`, Object.fromEntries(response.headers.entries()));
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          console.warn(
+            `[API] Unexpected content-type: ${contentType} for ${endpoint}, returning empty object`,
+          );
+          console.warn(
+            `[API] Response status: ${response.status}, headers:`,
+            Object.fromEntries(response.headers.entries()),
+          );
           return {} as T;
         }
 
         const jsonData = await response.json();
         return jsonData;
       } catch (error) {
-        const isApiError = error && typeof error === 'object' && 'code' in error;
+        const isApiError =
+          error && typeof error === "object" && "code" in error;
 
         // Don't retry on resource exhaustion — retrying makes it worse
         if (!isApiError && isResourceExhausted(error)) {
-          console.warn(`[API] Resource exhaustion on ${endpoint} — skipping retry`);
+          console.warn(
+            `[API] Resource exhaustion on ${endpoint} — skipping retry`,
+          );
           const netErr: ApiError = {
-            code: 'resource_exhausted',
-            message: 'Too many concurrent requests. Try again shortly.',
+            code: "resource_exhausted",
+            message: "Too many concurrent requests. Try again shortly.",
           };
           emitApiError({ ...netErr, endpoint });
           throw netErr;
@@ -267,8 +296,9 @@ class ApiClient {
         }
 
         const netErr: ApiError = {
-          code: 'network_error',
-          message: error instanceof Error ? error.message : 'Network request failed',
+          code: "network_error",
+          message:
+            error instanceof Error ? error.message : "Network request failed",
         };
         emitApiError({ ...netErr, endpoint });
         throw netErr;
@@ -279,32 +309,32 @@ class ApiClient {
   }
 
   async get<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'GET' });
+    return this.request<T>(endpoint, { method: "GET" });
   }
 
   async post<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
-      method: 'POST',
+      method: "POST",
       body: data ? JSON.stringify(data) : undefined,
     });
   }
 
   async put<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
-      method: 'PUT',
+      method: "PUT",
       body: data ? JSON.stringify(data) : undefined,
     });
   }
 
   async patch<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
-      method: 'PATCH',
+      method: "PATCH",
       body: data ? JSON.stringify(data) : undefined,
     });
   }
 
   async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
+    return this.request<T>(endpoint, { method: "DELETE" });
   }
 
   // Create a new client instance with updated auth token getter

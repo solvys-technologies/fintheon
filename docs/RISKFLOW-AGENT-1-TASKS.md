@@ -1,4 +1,5 @@
 # RiskFlow Implementation Tasks - Agent 1 (Cursor)
+
 ## Backend Infrastructure & Data Pipeline
 
 > **Agent**: Cursor
@@ -10,6 +11,7 @@
 ## Week 1: RiskFlow Core Infrastructure
 
 ### Fix Authentication & Feed Stability (Days 1-2)
+
 - [ ] Fix Clerk JWT verification in `auth.ts`
 - [ ] Implement exponential backoff for 401 errors
 - [ ] Add rate limiting middleware to prevent cascades
@@ -17,15 +19,17 @@
 - [ ] Implement proper pagination:
   ```typescript
   interface FeedPagination {
-    limit: number;      // max 50
-    offset: number;     // for pagination
-    after?: string;     // timestamp cursor
+    limit: number; // max 50
+    offset: number; // for pagination
+    after?: string; // timestamp cursor
     symbols?: string[]; // user watchlist
   }
   ```
 
 ### Database Optimization (Day 3)
+
 - [ ] Create optimal indexes for RiskFlow:
+
   ```sql
   -- Performance indexes
   CREATE INDEX idx_news_published_desc ON news_articles(published_at DESC);
@@ -63,11 +67,13 @@
   ```
 
 ### X API Integration (Days 4-5)
+
 - [ ] Create `backend-hono/src/services/x-api-service.ts`:
+
   ```typescript
   class XApiService {
     private rateLimiter: RateLimiter;
-    private sources = ['FinancialJuice', 'InsiderWire'];
+    private sources = ["FinancialJuice", "InsiderWire"];
 
     async fetchLatestTweets(): Promise<Tweet[]> {
       // Implement with rate limiting
@@ -80,6 +86,7 @@
     }
   }
   ```
+
 - [ ] Implement rate limiting for X API:
   - 300 requests per 15 minutes (Free tier)
   - Queue system for requests
@@ -97,7 +104,9 @@
 ## Week 2: FMP Economics Integration
 
 ### FMP API Setup (Days 1-2)
+
 - [ ] Create `backend-hono/src/services/fmp-service.ts`:
+
   ```typescript
   class FMPService {
     private apiKey: string = process.env.FMP_API_KEY;
@@ -112,11 +121,13 @@
 
     async detectHotPrint(event: EconomicEvent): boolean {
       // Check if print deviates significantly
-      const deviation = Math.abs(event.actual - event.forecast) / event.forecast;
+      const deviation =
+        Math.abs(event.actual - event.forecast) / event.forecast;
       return deviation > 0.1; // 10% deviation = hot
     }
   }
   ```
+
 - [ ] Implement economic event monitoring:
   - Poll every 1 minute during market hours
   - Check for new releases
@@ -128,10 +139,12 @@
   - GDP > 0.5% deviation
 
 ### Data Fusion Pipeline (Days 3-4)
+
 - [ ] Create unified news processor:
+
   ```typescript
   class NewsProcessor {
-    async processIncomingData(source: 'X' | 'FMP', data: any): NewsArticle {
+    async processIncomingData(source: "X" | "FMP", data: any): NewsArticle {
       // Standardize format
       // Extract key information
       // Assign initial macro level
@@ -144,13 +157,16 @@
     }
   }
   ```
+
 - [ ] Implement deduplication:
   - Check for similar headlines
   - Merge duplicate events
   - Prioritize official sources
 
 ### Real-time Feed Engine (Day 5)
+
 - [ ] Create `backend-hono/src/services/riskflow-engine.ts`:
+
   ```typescript
   class RiskFlowEngine {
     private refreshInterval = 60000; // 1 minute
@@ -182,7 +198,9 @@
 ## Week 3: Performance & Caching
 
 ### Caching Layer (Days 1-2)
+
 - [ ] Implement in-memory caching:
+
   ```typescript
   class RiskFlowCache {
     private feedCache: Map<string, CachedFeed> = new Map();
@@ -199,17 +217,19 @@
     async setFeed(userId: string, items: RiskFlowItem[]): void {
       this.feedCache.set(userId, {
         items,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   }
   ```
+
 - [ ] Add Redis caching (optional):
   - User feed cache (60s TTL)
   - Economic events (5min TTL)
   - Symbol mappings (1hr TTL)
 
 ### Query Optimization (Day 3)
+
 - [ ] Optimize database queries:
   ```sql
   -- Optimized feed query
@@ -238,7 +258,9 @@
   ```
 
 ### WebSocket Support (Days 4-5)
+
 - [ ] Add real-time updates:
+
   ```typescript
   class RiskFlowWebSocket {
     async handleConnection(ws: WebSocket, userId: string) {
@@ -259,7 +281,9 @@
 ## Week 4: Overnight Monitoring & Alerts
 
 ### Overnight Watch System (Days 1-3)
+
 - [ ] Create `backend-hono/src/services/overnight-monitor.ts`:
+
   ```typescript
   class OvernightMonitor {
     private watchList: Map<string, WatchConfig> = new Map();
@@ -284,7 +308,9 @@
   ```
 
 ### Push Notification System (Days 4-5)
+
 - [ ] Implement push notifications:
+
   ```typescript
   class PushNotificationService {
     async sendAlert(userId: string, alert: Alert) {
@@ -300,6 +326,7 @@
     }
   }
   ```
+
 - [ ] Create notification templates:
   - Breaking news alert
   - Hot print notification
@@ -311,25 +338,28 @@
 ## Week 5: User Customization & Intelligence
 
 ### User Watchlist Management (Days 1-2)
+
 - [ ] Create watchlist API:
   ```typescript
   // POST /api/riskflow/watchlist
   interface WatchlistUpdate {
-    symbols: string[];          // Primary symbols
+    symbols: string[]; // Primary symbols
     alertThresholds: {
-      ivImpact: number;        // Min IV to alert
-      macroLevel: number;      // Min macro level
+      ivImpact: number; // Min IV to alert
+      macroLevel: number; // Min macro level
     };
     customAlerts: {
-      keywords: string[];      // "war", "crash", etc
-      patterns: string[];      // Regex patterns
+      keywords: string[]; // "war", "crash", etc
+      patterns: string[]; // Regex patterns
     };
     overnightMonitoring: boolean;
   }
   ```
 
 ### Implied Points Ticker (Days 3-4)
+
 - [ ] Create daily performance tracker:
+
   ```typescript
   class ImpliedPointsTracker {
     private dailyPoints = 0;
@@ -349,6 +379,7 @@
   ```
 
 ### Smart Feed Ranking (Day 5)
+
 - [ ] Implement intelligent sorting:
   ```typescript
   class FeedRanker {
@@ -371,6 +402,7 @@
 ## Critical Performance Requirements
 
 ### Speed Targets
+
 - Feed refresh: < 1 second processing
 - API response: < 200ms (cached)
 - Database query: < 50ms
@@ -378,12 +410,14 @@
 - FMP fetch: < 1 second
 
 ### Reliability Targets
+
 - 99.9% uptime
 - Zero data loss
 - Graceful degradation on API failures
 - Automatic recovery from errors
 
 ### Scale Targets
+
 - Handle 1000+ concurrent users
 - Process 10,000+ news items/day
 - Store 1M+ historical articles
@@ -394,6 +428,7 @@
 ## Testing Checklist
 
 ### Unit Tests
+
 - [ ] X API service tests
 - [ ] FMP service tests
 - [ ] News processor tests
@@ -401,6 +436,7 @@
 - [ ] Watchlist management tests
 
 ### Integration Tests
+
 - [ ] End-to-end feed refresh
 - [ ] User watchlist filtering
 - [ ] Overnight monitoring
@@ -408,6 +444,7 @@
 - [ ] Database performance
 
 ### Load Tests
+
 - [ ] 1000 concurrent users
 - [ ] 100 requests/second
 - [ ] 24-hour stability test
@@ -418,30 +455,35 @@
 ## Success Metrics
 
 ### Week 1
+
 ✅ Authentication working (0 errors)
 ✅ Feed limited to 50 items
 ✅ X API integrated with both sources
 ✅ Database optimized with indexes
 
 ### Week 2
+
 ✅ FMP economics integrated
 ✅ Hot prints detected automatically
 ✅ Feed refreshes every 60 seconds
 ✅ Data fusion working correctly
 
 ### Week 3
+
 ✅ Response times < 200ms
 ✅ Caching reduces DB load 80%
 ✅ WebSocket updates working
 ✅ Query performance optimized
 
 ### Week 4
+
 ✅ Overnight monitoring active
 ✅ Push notifications working
 ✅ Market shakers detected
 ✅ Proposals generated from alerts
 
 ### Week 5
+
 ✅ User watchlists functional
 ✅ Implied points tracking
 ✅ Smart feed ranking
@@ -452,12 +494,14 @@
 ## Dependencies
 
 ### Required from Agent 2
+
 - Grok analysis results format
 - IV scoring methodology
 - Sentiment classification
 - Hot print criteria
 
 ### External Requirements
+
 - X API credentials valid
 - FMP API key configured
 - Push notification service

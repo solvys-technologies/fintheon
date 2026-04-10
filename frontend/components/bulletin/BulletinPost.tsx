@@ -1,7 +1,7 @@
 // [claude-code 2026-04-03] Discord-style message row — avatar, grouping, hover action bar, image thumbnails
-import { useState, useCallback } from 'react';
-import { MessageSquare, ArrowRight, Trash2, Copy, Check } from 'lucide-react';
-import { VotingControls, type VoteType } from './VotingControls';
+import { useState, useCallback } from "react";
+import { MessageSquare, ArrowRight, Trash2, Copy, Check } from "lucide-react";
+import { VotingControls, type VoteType } from "./VotingControls";
 
 export interface BulletinPostData {
   id: string;
@@ -32,10 +32,10 @@ interface BulletinPostProps {
 
 function formatRelativeTime(input: string): string {
   const date = new Date(input);
-  if (Number.isNaN(date.getTime())) return 'just now';
+  if (Number.isNaN(date.getTime())) return "just now";
   const diffMs = Date.now() - date.getTime();
   const diffMin = Math.max(0, Math.floor(diffMs / 60000));
-  if (diffMin < 1) return 'just now';
+  if (diffMin < 1) return "just now";
   if (diffMin < 60) return `${diffMin}m ago`;
   const hours = Math.floor(diffMin / 60);
   if (hours < 24) return `${hours}h ago`;
@@ -46,18 +46,22 @@ function formatRelativeTime(input: string): string {
 function formatFullDate(input: string): string {
   try {
     const d = new Date(input);
-    return d.toLocaleString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: false,
+    return d.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
     });
   } catch {
-    return '';
+    return "";
   }
 }
 
 function getInitials(authorAgent: string | null, authorId: string): string {
   if (authorAgent) {
-    if (authorAgent === 'Harper-Opus') return 'H';
+    if (authorAgent === "Harper-Opus") return "H";
     return authorAgent.charAt(0).toUpperCase();
   }
   return authorId.slice(0, 2).toUpperCase();
@@ -85,7 +89,9 @@ export function BulletinPost({
   const [copied, setCopied] = useState(false);
   const authorLabel = post.authorAgent ?? post.authorId.slice(0, 8);
   const initials = getInitials(post.authorAgent, post.authorId);
-  const avatarColor = post.authorAgent ? 'var(--fintheon-accent)' : getAvatarColor(post.authorId);
+  const avatarColor = post.authorAgent
+    ? "var(--fintheon-accent)"
+    : getAvatarColor(post.authorId);
 
   const totalVotes = post.voteUp + post.voteDown + post.voteCheck + post.voteX;
 
@@ -94,17 +100,20 @@ export function BulletinPost({
       await navigator.clipboard.writeText(post.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch { /* clipboard unavailable */ }
+    } catch {
+      /* clipboard unavailable */
+    }
   }, [post.content]);
 
   // Extract images from contentParts
   const images = (post.contentParts ?? [])
-    .filter((p) => p.type === 'image' && typeof p.data === 'string')
+    .filter((p) => p.type === "image" && typeof p.data === "string")
     .map((p) => p.data as string);
 
   return (
-    <div className="group/msg relative flex gap-3 px-4 hover:bg-[var(--fintheon-accent)]/[0.03] transition-colors"
-      style={{ paddingTop: isGrouped ? '2px' : '10px', paddingBottom: '2px' }}
+    <div
+      className="group/msg relative flex gap-3 px-4 hover:bg-[var(--fintheon-accent)]/[0.03] transition-colors"
+      style={{ paddingTop: isGrouped ? "2px" : "10px", paddingBottom: "2px" }}
     >
       {/* Avatar column — 32px wide */}
       <div className="w-8 flex-shrink-0">
@@ -123,13 +132,18 @@ export function BulletinPost({
         {/* Author line — only on first message of group */}
         {!isGrouped && (
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[13px] font-semibold text-[var(--fintheon-text)]">{authorLabel}</span>
+            <span className="text-[13px] font-semibold text-[var(--fintheon-text)]">
+              {authorLabel}
+            </span>
             {post.authorAgent && (
               <span className="rounded px-1 py-0.5 text-[9px] uppercase tracking-wider text-[var(--fintheon-accent)]/60 bg-[var(--fintheon-accent)]/8">
                 Agent
               </span>
             )}
-            <span className="text-[11px] text-[var(--fintheon-text)]/25" title={formatFullDate(post.createdAt)}>
+            <span
+              className="text-[11px] text-[var(--fintheon-text)]/25"
+              title={formatFullDate(post.createdAt)}
+            >
               {formatRelativeTime(post.createdAt)}
             </span>
             {post.promotedToProposal && (
@@ -153,7 +167,7 @@ export function BulletinPost({
               <div
                 key={idx}
                 className="h-32 max-w-[240px] overflow-hidden rounded-lg border border-[var(--fintheon-accent)]/15 cursor-pointer"
-                onClick={() => window.open(src, '_blank')}
+                onClick={() => window.open(src, "_blank")}
               >
                 <img src={src} alt="" className="h-full w-full object-cover" />
               </div>
@@ -184,7 +198,7 @@ export function BulletinPost({
         {/* Vote button (opens pills if no votes yet) */}
         {totalVotes === 0 && (
           <button
-            onClick={() => onVote(post.id, 'up')}
+            onClick={() => onVote(post.id, "up")}
             title="Vote"
             className="rounded p-1 text-[var(--fintheon-text)]/30 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
           >
@@ -197,14 +211,20 @@ export function BulletinPost({
           className="rounded p-1 text-[var(--fintheon-text)]/30 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
         >
           <MessageSquare className="h-3.5 w-3.5" />
-          {replyCount > 0 && <span className="ml-0.5 text-[10px]">{replyCount}</span>}
+          {replyCount > 0 && (
+            <span className="ml-0.5 text-[10px]">{replyCount}</span>
+          )}
         </button>
         <button
           onClick={handleCopy}
-          title={copied ? 'Copied' : 'Copy'}
+          title={copied ? "Copied" : "Copy"}
           className="rounded p-1 text-[var(--fintheon-text)]/30 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"
         >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? (
+            <Check className="h-3.5 w-3.5" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
         </button>
         {onDelete && (
           <button

@@ -1,7 +1,7 @@
 // [claude-code 2026-03-24] PsychAssist ER Scoring Engine — deterministic client-side tilt detection
 //   Replaces slow Claude sentiment analysis with instant regex-based curse/breathing detection.
 //   Scale: 12.5 (calm) → 0 (neutral) → -12.5 (full tilt). Decay: 5x per curse.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -12,9 +12,9 @@ const BREATHING_PENALTY = -0.2;
 const BASE_DECAY_MINUTES = 1;
 const DECAY_MULTIPLIER = 5;
 const DECAY_TICK_MS = 1000;
-const STORAGE_KEY = 'psychassist_current_score';
-const CURSE_COUNT_KEY = 'psychassist_curse_count';
-const LAST_TRIGGER_KEY = 'psychassist_last_trigger';
+const STORAGE_KEY = "psychassist_current_score";
+const CURSE_COUNT_KEY = "psychassist_curse_count";
+const LAST_TRIGGER_KEY = "psychassist_last_trigger";
 
 // ─── Detection patterns ────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ const BREATHING_PATTERNS = [
   /\[exhales?\]/i,
 ];
 
-export type EREventType = 'curse' | 'breathing' | 'decay_reset';
+export type EREventType = "curse" | "breathing" | "decay_reset";
 
 export interface EREvent {
   eventType: EREventType;
@@ -73,13 +73,18 @@ function clamp(val: number, min: number, max: number): number {
 
 function computeDecayWindowMs(curseCount: number): number {
   if (curseCount <= 0) return 0;
-  return BASE_DECAY_MINUTES * Math.pow(DECAY_MULTIPLIER, curseCount - 1) * 60_000;
+  return (
+    BASE_DECAY_MINUTES * Math.pow(DECAY_MULTIPLIER, curseCount - 1) * 60_000
+  );
 }
 
 function readPersistedState(): ERScoringState {
   try {
-    const score = parseFloat(localStorage.getItem(STORAGE_KEY) || '0');
-    const curseCount = parseInt(localStorage.getItem(CURSE_COUNT_KEY) || '0', 10);
+    const score = parseFloat(localStorage.getItem(STORAGE_KEY) || "0");
+    const curseCount = parseInt(
+      localStorage.getItem(CURSE_COUNT_KEY) || "0",
+      10,
+    );
     const lastTrigger = localStorage.getItem(LAST_TRIGGER_KEY);
     return {
       score: Number.isFinite(score) ? score : 0,
@@ -98,7 +103,9 @@ function persistState(state: ERScoringState): void {
     if (state.lastTriggerAt) {
       localStorage.setItem(LAST_TRIGGER_KEY, String(state.lastTriggerAt));
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 // ─── Detection ─────────────────────────────────────────────────────────────
@@ -116,7 +123,10 @@ function detectCurses(text: string): string[] {
     if (match) {
       matches.push(match[0]);
       // Blank out the matched region so shorter patterns can't re-match
-      remaining = remaining.slice(0, match.index!) + ' '.repeat(match[0].length) + remaining.slice(match.index! + match[0].length);
+      remaining =
+        remaining.slice(0, match.index!) +
+        " ".repeat(match[0].length) +
+        remaining.slice(match.index! + match[0].length);
     }
   }
   return matches;
@@ -165,19 +175,30 @@ export function useERScoring(options?: UseERScoringOptions) {
 
         // Decay: linear interpolation from last trigger score toward 0
         // Rate: score moves to 0 over the full decay window
-        const decayRate = Math.abs(prev.score) / (decayWindowMs / DECAY_TICK_MS);
+        const decayRate =
+          Math.abs(prev.score) / (decayWindowMs / DECAY_TICK_MS);
         const direction = prev.score > 0 ? -1 : 1;
         const newScore = prev.score + direction * decayRate;
 
         // If crossed zero or decay window expired, reset
-        if ((direction > 0 && newScore >= 0) || (direction < 0 && newScore <= 0) || elapsed >= decayWindowMs) {
-          const resetState: ERScoringState = { score: 0, curseCount: 0, lastTriggerAt: null };
+        if (
+          (direction > 0 && newScore >= 0) ||
+          (direction < 0 && newScore <= 0) ||
+          elapsed >= decayWindowMs
+        ) {
+          const resetState: ERScoringState = {
+            score: 0,
+            curseCount: 0,
+            lastTriggerAt: null,
+          };
           persistState(resetState);
 
           // Dispatch score event
-          window.dispatchEvent(new CustomEvent('psychassist:score', {
-            detail: { score: 0, timestamp: Date.now() },
-          }));
+          window.dispatchEvent(
+            new CustomEvent("psychassist:score", {
+              detail: { score: 0, timestamp: Date.now() },
+            }),
+          );
 
           return resetState;
         }
@@ -187,9 +208,11 @@ export function useERScoring(options?: UseERScoringOptions) {
         persistState(nextState);
 
         // Dispatch score event on decay tick
-        window.dispatchEvent(new CustomEvent('psychassist:score', {
-          detail: { score: clamped, timestamp: Date.now() },
-        }));
+        window.dispatchEvent(
+          new CustomEvent("psychassist:score", {
+            detail: { score: clamped, timestamp: Date.now() },
+          }),
+        );
 
         return nextState;
       });
@@ -229,13 +252,14 @@ export function useERScoring(options?: UseERScoringOptions) {
       indicators.push(match);
 
       onEventRef.current?.({
-        eventType: 'curse',
+        eventType: "curse",
         triggerText: match,
         penalty: CURSE_PENALTY,
         scoreBefore,
         scoreAfter,
         curseCount: newCurseCount,
-        decayWindowMinutes: BASE_DECAY_MINUTES * Math.pow(DECAY_MULTIPLIER, newCurseCount - 1),
+        decayWindowMinutes:
+          BASE_DECAY_MINUTES * Math.pow(DECAY_MULTIPLIER, newCurseCount - 1),
         transcriptSnippet: snippet,
       });
     }
@@ -254,7 +278,7 @@ export function useERScoring(options?: UseERScoringOptions) {
       indicators.push(match);
 
       onEventRef.current?.({
-        eventType: 'breathing',
+        eventType: "breathing",
         triggerText: match,
         penalty: BREATHING_PENALTY,
         scoreBefore,
@@ -270,14 +294,18 @@ export function useERScoring(options?: UseERScoringOptions) {
     stateRef.current = current;
 
     // Dispatch events IMMEDIATELY (synchronous, not deferred by React batching)
-    window.dispatchEvent(new CustomEvent('psychassist:score', {
-      detail: { score: current.score, timestamp: now },
-    }));
+    window.dispatchEvent(
+      new CustomEvent("psychassist:score", {
+        detail: { score: current.score, timestamp: now },
+      }),
+    );
 
     if (indicators.length > 0) {
-      window.dispatchEvent(new CustomEvent('psychassist:infraction', {
-        detail: { timestamp: now, indicators },
-      }));
+      window.dispatchEvent(
+        new CustomEvent("psychassist:infraction", {
+          detail: { timestamp: now, indicators },
+        }),
+      );
     }
 
     // Then update React state (can be batched — UI will catch up, but event bus is already hot)
@@ -287,21 +315,28 @@ export function useERScoring(options?: UseERScoringOptions) {
   // ─── Manual reset (for testing / session boundaries) ─────────────────────
 
   const reset = useCallback(() => {
-    const resetState: ERScoringState = { score: 0, curseCount: 0, lastTriggerAt: null };
+    const resetState: ERScoringState = {
+      score: 0,
+      curseCount: 0,
+      lastTriggerAt: null,
+    };
     setState(resetState);
     persistState(resetState);
-    window.dispatchEvent(new CustomEvent('psychassist:score', {
-      detail: { score: 0, timestamp: Date.now() },
-    }));
+    window.dispatchEvent(
+      new CustomEvent("psychassist:score", {
+        detail: { score: 0, timestamp: Date.now() },
+      }),
+    );
   }, []);
 
   return {
     score: state.score,
     curseCount: state.curseCount,
     lastTriggerAt: state.lastTriggerAt,
-    decayWindowMinutes: state.curseCount > 0
-      ? BASE_DECAY_MINUTES * Math.pow(DECAY_MULTIPLIER, state.curseCount - 1)
-      : 0,
+    decayWindowMinutes:
+      state.curseCount > 0
+        ? BASE_DECAY_MINUTES * Math.pow(DECAY_MULTIPLIER, state.curseCount - 1)
+        : 0,
     processTranscript,
     reset,
   };

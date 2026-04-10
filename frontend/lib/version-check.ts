@@ -1,7 +1,7 @@
 // [claude-code 2026-04-01] Version check — polls /api/version, fires update-available toast on mismatch
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-const BUILD_VERSION = import.meta.env.VITE_APP_VERSION || '0.0.0';
+const BUILD_VERSION = import.meta.env.VITE_APP_VERSION || "0.0.0";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let alreadyNotified = false;

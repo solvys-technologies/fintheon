@@ -25,19 +25,40 @@ All shared types for the AgentBus system. Every other track imports from this fi
 
 ```typescript
 // --- Agent IDs ---
-export type HermesAgentId = 'oracle' | 'feucht' | 'consul' | 'herald' | 'harper';
+export type HermesAgentId =
+  | "oracle"
+  | "feucht"
+  | "consul"
+  | "herald"
+  | "harper";
 
 // --- DAG Types ---
-export type DAGStatus = 'pending' | 'running' | 'complete' | 'failed' | 'cancelled';
-export type TaskStatus = 'pending' | 'running' | 'complete' | 'failed' | 'cancelled' | 'timeout';
-export type TaskType = 'analysis' | 'scoring' | 'synthesis' | 'discovery' | 'deliberation';
-export type SurfaceId = 'chat' | 'sidebar' | 'narrative' | 'boardroom';
+export type DAGStatus =
+  | "pending"
+  | "running"
+  | "complete"
+  | "failed"
+  | "cancelled";
+export type TaskStatus =
+  | "pending"
+  | "running"
+  | "complete"
+  | "failed"
+  | "cancelled"
+  | "timeout";
+export type TaskType =
+  | "analysis"
+  | "scoring"
+  | "synthesis"
+  | "discovery"
+  | "deliberation";
+export type SurfaceId = "chat" | "sidebar" | "narrative" | "boardroom";
 
 export interface DAGDefinition {
   conversationId?: string;
   userId?: string;
   surface: SurfaceId;
-  template?: string;  // 'miroshark-deliberation' | 'ad-hoc'
+  template?: string; // 'miroshark-deliberation' | 'ad-hoc'
   input: Record<string, unknown>;
   tasks: TaskDefinition[];
 }
@@ -74,7 +95,7 @@ export interface TaskRecord {
   wave: number;
   input: Record<string, unknown>;
   output: Record<string, unknown> | null;
-  deps: string[];  // task IDs
+  deps: string[]; // task IDs
   startedAt: string | null;
   completedAt: string | null;
   durationMs: number | null;
@@ -83,14 +104,14 @@ export interface TaskRecord {
 
 // --- Bus Message Types ---
 export type BusTopic =
-  | 'dag.task.dispatch'
-  | 'dag.task.result'
-  | 'dag.task.error'
-  | 'dag.status'
-  | 'surface.narrative'
-  | 'surface.sidebar'
-  | 'surface.boardroom'
-  | 'harper.synthesis';
+  | "dag.task.dispatch"
+  | "dag.task.result"
+  | "dag.task.error"
+  | "dag.status"
+  | "surface.narrative"
+  | "surface.sidebar"
+  | "surface.boardroom"
+  | "harper.synthesis";
 
 export interface BusMessage<T = unknown> {
   topic: BusTopic;
@@ -104,7 +125,7 @@ export interface BusMessage<T = unknown> {
 
 // --- Surface Event Types (SSE payloads) ---
 export interface AgentStreamEvent {
-  type: 'agent-start' | 'agent-delta' | 'agent-complete' | 'agent-error';
+  type: "agent-start" | "agent-delta" | "agent-complete" | "agent-error";
   dagId: string;
   taskId: string;
   agentId: HermesAgentId;
@@ -112,14 +133,14 @@ export interface AgentStreamEvent {
 }
 
 export interface DAGProgressEvent {
-  type: 'dag-start' | 'dag-wave' | 'dag-complete' | 'dag-error';
+  type: "dag-start" | "dag-wave" | "dag-complete" | "dag-error";
   dagId: string;
   wave: number;
   tasks: Array<{ id: string; agentId: HermesAgentId; status: TaskStatus }>;
 }
 
 export interface NarrativePushEvent {
-  type: 'catalyst-discovered';
+  type: "catalyst-discovered";
   dagId: string;
   agentId: HermesAgentId;
   catalyst: {
@@ -133,7 +154,7 @@ export interface NarrativePushEvent {
 }
 
 export interface SidebarNotifyEvent {
-  type: 'agent-finding';
+  type: "agent-finding";
   dagId: string;
   agentId: HermesAgentId;
   summary: string;
@@ -144,7 +165,7 @@ export interface SidebarNotifyEvent {
 export const MAX_CONCURRENT_AGENTS = 5;
 export const MAX_TASKS_PER_DAG = 10;
 export const TASK_TIMEOUT_MS = 90_000;
-export const DAG_TIMEOUT_MS = 300_000;  // 5 minutes
+export const DAG_TIMEOUT_MS = 300_000; // 5 minutes
 ```
 
 ### 2. `backend-hono/src/services/agent-bus/bus.ts` (~150 lines)
@@ -152,8 +173,8 @@ export const DAG_TIMEOUT_MS = 300_000;  // 5 minutes
 The central pub/sub engine. In-process, typed, with wildcard topic matching.
 
 ```typescript
-import { EventEmitter } from 'events';
-import type { BusTopic, BusMessage } from './types';
+import { EventEmitter } from "events";
+import type { BusTopic, BusMessage } from "./types";
 
 /**
  * AgentBus — typed in-process pub/sub for inter-agent communication.
@@ -171,7 +192,10 @@ class AgentBus {
   }
 
   /** Publish a typed message to a topic */
-  publish<T>(topic: BusTopic, message: Omit<BusMessage<T>, 'topic' | 'timestamp'>): void {
+  publish<T>(
+    topic: BusTopic,
+    message: Omit<BusMessage<T>, "topic" | "timestamp">,
+  ): void {
     const full: BusMessage<T> = {
       ...message,
       topic,
@@ -180,14 +204,17 @@ class AgentBus {
     this.messageCount++;
     this.emitter.emit(topic, full);
     // Also emit to wildcard subscribers (e.g., 'dag.*' listens to all dag topics)
-    const prefix = topic.split('.').slice(0, -1).join('.');
+    const prefix = topic.split(".").slice(0, -1).join(".");
     if (prefix) {
       this.emitter.emit(`${prefix}.*`, full);
     }
   }
 
   /** Subscribe to a specific topic */
-  subscribe<T>(topic: BusTopic | `${string}.*`, handler: (msg: BusMessage<T>) => void): () => void {
+  subscribe<T>(
+    topic: BusTopic | `${string}.*`,
+    handler: (msg: BusMessage<T>) => void,
+  ): () => void {
     this.emitter.on(topic, handler);
     return () => this.emitter.off(topic, handler);
   }
@@ -201,9 +228,10 @@ class AgentBus {
   get stats() {
     return {
       messageCount: this.messageCount,
-      listenerCount: this.emitter.listenerCount('dag.task.dispatch') +
-                     this.emitter.listenerCount('dag.task.result') +
-                     this.emitter.listenerCount('surface.boardroom'),
+      listenerCount:
+        this.emitter.listenerCount("dag.task.dispatch") +
+        this.emitter.listenerCount("dag.task.result") +
+        this.emitter.listenerCount("surface.boardroom"),
     };
   }
 
@@ -223,9 +251,15 @@ export const agentBus = new AgentBus();
 Manages SSE client subscriptions per surface. Generalizes the pattern from `sse-broadcaster.ts`.
 
 ```typescript
-import type { ReadableStreamDefaultController } from 'stream/web';
-import type { SurfaceId, AgentStreamEvent, DAGProgressEvent, NarrativePushEvent, SidebarNotifyEvent } from './types';
-import { agentBus } from './bus';
+import type { ReadableStreamDefaultController } from "stream/web";
+import type {
+  SurfaceId,
+  AgentStreamEvent,
+  DAGProgressEvent,
+  NarrativePushEvent,
+  SidebarNotifyEvent,
+} from "./types";
+import { agentBus } from "./bus";
 
 interface SSEClient {
   controller: ReadableStreamDefaultController<Uint8Array>;
@@ -236,7 +270,7 @@ interface SSEClient {
 
 /**
  * SurfaceRouter — manages SSE subscriptions per surface.
- * 
+ *
  * Each surface (narrative, sidebar, boardroom) gets its own SSE endpoint.
  * Clients register via addClient(), receive typed events from the AgentBus.
  */
@@ -248,34 +282,38 @@ class SurfaceRouter {
   start(): void {
     // Route boardroom events
     this.unsubscribers.push(
-      agentBus.subscribe<AgentStreamEvent>('surface.boardroom', (msg) => {
-        this.broadcastToSurface('boardroom', msg.payload);
-      })
+      agentBus.subscribe<AgentStreamEvent>("surface.boardroom", (msg) => {
+        this.broadcastToSurface("boardroom", msg.payload);
+      }),
     );
 
     // Route narrative push events
     this.unsubscribers.push(
-      agentBus.subscribe<NarrativePushEvent>('surface.narrative', (msg) => {
-        this.broadcastToSurface('narrative', msg.payload);
-      })
+      agentBus.subscribe<NarrativePushEvent>("surface.narrative", (msg) => {
+        this.broadcastToSurface("narrative", msg.payload);
+      }),
     );
 
     // Route sidebar notifications
     this.unsubscribers.push(
-      agentBus.subscribe<SidebarNotifyEvent>('surface.sidebar', (msg) => {
-        this.broadcastToSurface('sidebar', msg.payload);
-      })
+      agentBus.subscribe<SidebarNotifyEvent>("surface.sidebar", (msg) => {
+        this.broadcastToSurface("sidebar", msg.payload);
+      }),
     );
   }
 
   /** Stop all subscriptions */
   stop(): void {
-    this.unsubscribers.forEach(unsub => unsub());
+    this.unsubscribers.forEach((unsub) => unsub());
     this.unsubscribers = [];
   }
 
   /** Register an SSE client for a surface */
-  addClient(controller: ReadableStreamDefaultController<Uint8Array>, userId: string, surface: SurfaceId): void {
+  addClient(
+    controller: ReadableStreamDefaultController<Uint8Array>,
+    userId: string,
+    surface: SurfaceId,
+  ): void {
     this.clients.add({ controller, userId, surface, connectedAt: Date.now() });
   }
 
@@ -325,12 +363,12 @@ export const surfaceRouter = new SurfaceRouter();
 Barrel export for clean imports.
 
 ```typescript
-export { agentBus } from './bus';
-export { surfaceRouter } from './surface-router';
-export * from './types';
+export { agentBus } from "./bus";
+export { surfaceRouter } from "./surface-router";
+export * from "./types";
 ```
 
-### 5. Supabase migration: `supabase/migrations/20260405_agent_bus.sql` (~50 lines)
+### 5. Supabase migration: `supabase/migrations/20260410_agent_bus.sql` (~50 lines)
 
 ```sql
 -- AgentBus: DAG + Task persistence for multi-agent orchestration

@@ -1,14 +1,14 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
-import { useRef, useEffect, useCallback, useState } from 'react';
-import { useNarrative } from '../../contexts/NarrativeContext';
-import type { NarrativeLane, Rope } from '../../lib/narrative-types';
-import type { BubbleState } from '../../lib/narrative-physics';
+import { useRef, useEffect, useCallback, useState } from "react";
+import { useNarrative } from "../../contexts/NarrativeContext";
+import type { NarrativeLane, Rope } from "../../lib/narrative-types";
+import type { BubbleState } from "../../lib/narrative-physics";
 import {
   initBubble,
   stepPhysics,
   triggerRopeSwing,
   getZoneBounds,
-} from '../../lib/narrative-physics';
+} from "../../lib/narrative-physics";
 import {
   clearCanvas,
   drawZoneBackgrounds,
@@ -16,22 +16,25 @@ import {
   drawNarrativeCard,
   drawRope,
   drawTimeDividers,
-} from '../../lib/narrative-canvas-renderer';
+} from "../../lib/narrative-canvas-renderer";
 import {
   getZoomConfig,
   screenToWorld,
   clampScale,
   fitToView,
   type CameraState,
-} from '../../lib/narrative-zoom';
-import type { ZoomLevel } from '../../lib/narrative-types';
+} from "../../lib/narrative-zoom";
+import type { ZoomLevel } from "../../lib/narrative-types";
 
 interface NarrativeCanvasProps {
   zoomLevel?: ZoomLevel;
   visibleLaneIds?: Set<string>;
 }
 
-export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasProps) {
+export function NarrativeCanvas({
+  zoomLevel,
+  visibleLaneIds,
+}: NarrativeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { state, dispatch } = useNarrative();
@@ -43,8 +46,9 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
   const lastMouse = useRef({ x: 0, y: 0 });
 
   const effectiveZoom = zoomLevel ?? state.zoomLevel;
-  const activeLanes = state.lanes.filter(l =>
-    l.status !== 'archived' && (!visibleLaneIds || visibleLaneIds.has(l.id))
+  const activeLanes = state.lanes.filter(
+    (l) =>
+      l.status !== "archived" && (!visibleLaneIds || visibleLaneIds.has(l.id)),
   );
   const zoomConfig = getZoomConfig(effectiveZoom);
 
@@ -55,7 +59,7 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
     const w = canvas.width / (window.devicePixelRatio || 1);
     const h = canvas.height / (window.devicePixelRatio || 1);
 
-    const existing = new Map(bubblesRef.current.map(b => [b.id, b]));
+    const existing = new Map(bubblesRef.current.map((b) => [b.id, b]));
     bubblesRef.current = activeLanes.map((lane, i) => {
       const prev = existing.get(lane.id);
       if (prev) {
@@ -76,7 +80,7 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     let lastTime = performance.now();
@@ -111,8 +115,10 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
       // Draw ropes
       if (zoomConfig.showRopes) {
         for (const rope of state.ropes) {
-          const fromBubble = bubblesRef.current.find(b => b.id === rope.fromId);
-          const toBubble = bubblesRef.current.find(b => b.id === rope.toId);
+          const fromBubble = bubblesRef.current.find(
+            (b) => b.id === rope.fromId,
+          );
+          const toBubble = bubblesRef.current.find((b) => b.id === rope.toId);
           if (fromBubble && toBubble) {
             drawRope(
               ctx!,
@@ -129,7 +135,7 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
       }
 
       // Draw narrative cards
-      const laneMap = new Map(state.lanes.map(l => [l.id, l]));
+      const laneMap = new Map(state.lanes.map((l) => [l.id, l]));
       for (const bubble of bubblesRef.current) {
         const lane = laneMap.get(bubble.id);
         if (!lane) continue;
@@ -149,7 +155,13 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
 
     frameRef.current = requestAnimationFrame(render);
     return () => cancelAnimationFrame(frameRef.current);
-  }, [state.ropes, state.lanes, hoveredLaneId, state.selectedLaneId, zoomConfig]);
+  }, [
+    state.ropes,
+    state.lanes,
+    hoveredLaneId,
+    state.selectedLaneId,
+    zoomConfig,
+  ]);
 
   // Resize observer
   useEffect(() => {
@@ -157,7 +169,7 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
-    const observer = new ResizeObserver(entries => {
+    const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
         const dpr = window.devicePixelRatio || 1;
@@ -182,7 +194,11 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const cam = cameraRef.current;
-    const world = screenToWorld(e.clientX - rect.left - cam.x, e.clientY - rect.top - cam.y, { ...cam, x: 0, y: 0 });
+    const world = screenToWorld(
+      e.clientX - rect.left - cam.x,
+      e.clientY - rect.top - cam.y,
+      { ...cam, x: 0, y: 0 },
+    );
 
     // Pan
     if (isDragging.current) {
@@ -196,9 +212,12 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
     }
 
     // Hover detection
-    const hit = bubblesRef.current.find(b =>
-      world.x >= b.x && world.x <= b.x + b.width &&
-      world.y >= b.y && world.y <= b.y + b.height
+    const hit = bubblesRef.current.find(
+      (b) =>
+        world.x >= b.x &&
+        world.x <= b.x + b.width &&
+        world.y >= b.y &&
+        world.y <= b.y + b.height,
     );
     setHoveredLaneId(hit?.id ?? null);
   }, []);
@@ -207,54 +226,72 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
     isDragging.current = false;
   }, []);
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const cam = cameraRef.current;
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    const world = screenToWorld(sx - cam.x, sy - cam.y, { ...cam, x: 0, y: 0 });
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const cam = cameraRef.current;
+      const sx = e.clientX - rect.left;
+      const sy = e.clientY - rect.top;
+      const world = screenToWorld(sx - cam.x, sy - cam.y, {
+        ...cam,
+        x: 0,
+        y: 0,
+      });
 
-    const hit = bubblesRef.current.find(b =>
-      world.x >= b.x && world.x <= b.x + b.width &&
-      world.y >= b.y && world.y <= b.y + b.height
-    );
+      const hit = bubblesRef.current.find(
+        (b) =>
+          world.x >= b.x &&
+          world.x <= b.x + b.width &&
+          world.y >= b.y &&
+          world.y <= b.y + b.height,
+      );
 
-    if (hit) {
-      dispatch({ type: 'UPDATE_LANE', id: hit.id, updates: {} }); // select
-      // Trigger rope swings for connected ropes
-      for (const rope of state.ropes) {
-        if (rope.fromId === hit.id || rope.toId === hit.id) {
-          triggerRopeSwing(rope.id, performance.now() / 1000);
+      if (hit) {
+        dispatch({ type: "UPDATE_LANE", id: hit.id, updates: {} }); // select
+        // Trigger rope swings for connected ropes
+        for (const rope of state.ropes) {
+          if (rope.fromId === hit.id || rope.toId === hit.id) {
+            triggerRopeSwing(rope.id, performance.now() / 1000);
+          }
         }
       }
-    }
-  }, [dispatch, state.ropes]);
+    },
+    [dispatch, state.ropes],
+  );
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const cam = cameraRef.current;
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-    const newScale = clampScale(cam.scale * zoomFactor, zoomConfig);
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      const cam = cameraRef.current;
+      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+      const newScale = clampScale(cam.scale * zoomFactor, zoomConfig);
 
-    // Zoom toward mouse position
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
+      // Zoom toward mouse position
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
 
-    cameraRef.current = {
-      x: mx - (mx - cam.x) * (newScale / cam.scale),
-      y: my - (my - cam.y) * (newScale / cam.scale),
-      scale: newScale,
-    };
-  }, [zoomConfig]);
+      cameraRef.current = {
+        x: mx - (mx - cam.x) * (newScale / cam.scale),
+        y: my - (my - cam.y) * (newScale / cam.scale),
+        scale: newScale,
+      };
+    },
+    [zoomConfig],
+  );
 
   const handleDoubleClick = useCallback(() => {
     // Double-click zooms in one level
-    const nextLevel = zoomLevel === 'year' ? 'quarter' : zoomLevel === 'quarter' ? 'month' : 'week';
-    dispatch({ type: 'SET_ZOOM', level: nextLevel });
+    const nextLevel =
+      zoomLevel === "year"
+        ? "quarter"
+        : zoomLevel === "quarter"
+          ? "month"
+          : "week";
+    dispatch({ type: "SET_ZOOM", level: nextLevel });
   }, [dispatch, zoomLevel]);
 
   return (
@@ -275,7 +312,10 @@ export function NarrativeCanvas({ zoomLevel, visibleLaneIds }: NarrativeCanvasPr
 }
 
 function getBubbleBounds(bubbles: BubbleState[]) {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   for (const b of bubbles) {
     minX = Math.min(minX, b.x);
     minY = Math.min(minY, b.y);

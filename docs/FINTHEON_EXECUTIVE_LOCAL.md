@@ -37,4 +37,3 @@ npm run dev
 
 - Local instance name is controlled by `/Users/tifos/Desktop/Priced In Capital/fintheon/.env.local`:
   - `VITE_FINTHEON_INSTANCE_NAME="Fintheon Executive"`
-

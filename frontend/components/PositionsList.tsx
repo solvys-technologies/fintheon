@@ -18,27 +18,33 @@ export default function PositionsList() {
       const data = await backend.trading.listPositions();
       setPositions(data.positions);
     } catch (error) {
-      console.warn('Failed to load positions:', error);
+      console.warn("Failed to load positions:", error);
     }
   };
 
   if (positions.length === 0) {
     return (
       <div className="bg-[#140a00] rounded-lg p-4">
-        <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-3">Active Positions</h3>
-        <p className="text-xs text-zinc-600 text-center py-4">No active positions</p>
+        <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-3">
+          Active Positions
+        </h3>
+        <p className="text-xs text-zinc-600 text-center py-4">
+          No active positions
+        </p>
       </div>
     );
   }
-  
+
   return (
     <div className="bg-[#140a00] rounded-lg p-4 space-y-3">
-      <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Active Positions</h3>
-      
+      <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+        Active Positions
+      </h3>
+
       <div className="space-y-2">
         {positions.map((position) => {
           const isProfit = (position.pnl ?? 0) >= 0;
-          
+
           return (
             <div
               key={position.id}
@@ -47,28 +53,56 @@ export default function PositionsList() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   {position.side === "long" ? (
-                    <Diff className="w-3 h-3" style={{ color: 'var(--fintheon-bullish)' }} />
+                    <Diff
+                      className="w-3 h-3"
+                      style={{ color: "var(--fintheon-bullish)" }}
+                    />
                   ) : (
-                    <TrendingDown className="w-3 h-3" style={{ color: 'var(--fintheon-bearish)' }} />
+                    <TrendingDown
+                      className="w-3 h-3"
+                      style={{ color: "var(--fintheon-bearish)" }}
+                    />
                   )}
-                  <span className="text-xs font-medium text-white">{position.symbol}</span>
+                  <span className="text-xs font-medium text-white">
+                    {position.symbol}
+                  </span>
                 </div>
-                <span className="text-[9px] text-zinc-500 uppercase">{position.side}</span>
+                <span className="text-[9px] text-zinc-500 uppercase">
+                  {position.side}
+                </span>
               </div>
-              
+
               <div className="flex justify-between text-[9px]">
                 <span className="text-zinc-500">Size: {position.size}</span>
-                <span className="text-zinc-500">Entry: ${(position.entryPrice ?? 0).toLocaleString()}</span>
+                <span className="text-zinc-500">
+                  Entry: ${(position.entryPrice ?? 0).toLocaleString()}
+                </span>
               </div>
-              
+
               <div className="flex justify-between items-center pt-1 border-t border-zinc-900/50">
                 <span className="text-[9px] text-zinc-600">P&L</span>
                 <div className="text-right">
-                  <div className="text-xs font-mono font-bold" style={{ color: isProfit ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
-                    {isProfit ? "+" : ""}{(position.pnl ?? 0).toFixed(2)}
+                  <div
+                    className="text-xs font-mono font-bold"
+                    style={{
+                      color: isProfit
+                        ? "var(--fintheon-bullish)"
+                        : "var(--fintheon-bearish)",
+                    }}
+                  >
+                    {isProfit ? "+" : ""}
+                    {(position.pnl ?? 0).toFixed(2)}
                   </div>
-                  <div className="text-[8px]" style={{ color: isProfit ? 'color-mix(in srgb, var(--fintheon-bullish) 70%, transparent)' : 'color-mix(in srgb, var(--fintheon-bearish) 70%, transparent)' }}>
-                    {isProfit ? "+" : ""}{(position.pnlPercentage ?? 0).toFixed(2)}%
+                  <div
+                    className="text-[8px]"
+                    style={{
+                      color: isProfit
+                        ? "color-mix(in srgb, var(--fintheon-bullish) 70%, transparent)"
+                        : "color-mix(in srgb, var(--fintheon-bearish) 70%, transparent)",
+                    }}
+                  >
+                    {isProfit ? "+" : ""}
+                    {(position.pnlPercentage ?? 0).toFixed(2)}%
                   </div>
                 </div>
               </div>

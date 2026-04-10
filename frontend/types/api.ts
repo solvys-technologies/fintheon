@@ -1,27 +1,27 @@
 /**
  * API Type Definitions
- * 
+ *
  * These types match the expected API responses from your Hono backend.
  * Update these to match your actual backend response types.
  */
 
 export interface PriceBrainScore {
-  sentiment: 'Bullish' | 'Bearish' | 'Neutral';
-  classification: 'Cyclical' | 'Counter-cyclical' | 'Neutral';
+  sentiment: "Bullish" | "Bearish" | "Neutral";
+  classification: "Cyclical" | "Counter-cyclical" | "Neutral";
   impliedPoints: number | null;
   instrument: string | null;
 }
 
-export type PolymarketMarketType = 
-  | 'rate_cut' 
-  | 'cpi' 
-  | 'nfp' 
-  | 'interest_rate'
-  | 'jerome_powell'
-  | 'donald_trump_tariffs'
-  | 'politics'
-  | 'gdp'
-  | 'interest_rate_futures';
+export type PolymarketMarketType =
+  | "rate_cut"
+  | "cpi"
+  | "nfp"
+  | "interest_rate"
+  | "jerome_powell"
+  | "donald_trump_tariffs"
+  | "politics"
+  | "gdp"
+  | "interest_rate_futures";
 
 export interface PolymarketOdds {
   marketId: string;
@@ -50,12 +50,12 @@ export interface RiskFlowItem {
   source: string;
   url?: string;
   publishedAt: Date | string;
-  sentiment?: 'positive' | 'negative' | 'neutral' | 'bullish' | 'bearish';
+  sentiment?: "positive" | "negative" | "neutral" | "bullish" | "bearish";
   ivImpact?: number;
   ivScore?: number;
   pointRange?: number | null;
-  direction?: 'Bullish' | 'Bearish' | 'Neutral' | null;
-  impact?: 'high' | 'medium' | 'low';
+  direction?: "Bullish" | "Bearish" | "Neutral" | null;
+  impact?: "high" | "medium" | "low";
   symbols?: string[];
   isBreaking?: boolean;
   category?: string;
@@ -67,19 +67,32 @@ export interface RiskFlowItem {
   proposal?: {
     id: string;
     ticker: string;
-    direction: 'long' | 'short';
+    direction: "long" | "short";
     entry: number;
     stopLoss: number;
     takeProfit: number[];
-    status: 'pending' | 'approved' | 'rejected' | 'executed' | 'expired';
+    status: "pending" | "approved" | "rejected" | "executed" | "expired";
     screenshotUrl?: string;
   };
   // [claude-code 2026-03-26] T1: Rich scoring data threaded from backend
-  subScores?: { eventWeight: number; timing: number; deviation: number; momentum: number; vixContext: number; vixMultiplier: number } | null;
+  subScores?: {
+    eventWeight: number;
+    timing: number;
+    deviation: number;
+    momentum: number;
+    vixContext: number;
+    vixMultiplier: number;
+  } | null;
   riskType?: string | null;
   agentNote?: string | null;
   agentNoteGeneratedAt?: string | null;
-  econData?: { actual?: number | null; forecast?: number | null; previous?: number | null; beatMiss?: 'beat' | 'miss' | 'inline' | null; surprisePercent?: number | null } | null;
+  econData?: {
+    actual?: number | null;
+    forecast?: number | null;
+    previous?: number | null;
+    beatMiss?: "beat" | "miss" | "inline" | null;
+    surprisePercent?: number | null;
+  } | null;
 }
 
 // Alias for backward compatibility
@@ -98,7 +111,7 @@ export interface Account {
   dailyPnl?: number;
   dailyTarget?: number;
   dailyLossLimit?: number;
-  tier?: 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
+  tier?: "free" | "fintheon" | "fintheon_plus" | "fintheon_pro";
   tradingEnabled?: boolean;
   autoTrade?: boolean;
   riskManagement?: boolean;

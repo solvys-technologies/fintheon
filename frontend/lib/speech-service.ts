@@ -6,7 +6,11 @@ type SpeechCallback = (transcript: string) => void;
 type ErrorCallback = (error: string) => void;
 
 // Web Speech API types — not all browsers export these globally
-type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T } ? T : any;
+type SpeechRecognitionType = typeof window extends {
+  SpeechRecognition: infer T;
+}
+  ? T
+  : any;
 
 interface SpeechServiceState {
   isListening: boolean;
@@ -22,35 +26,43 @@ const state: SpeechServiceState = {
 
 /** Check if Web Speech API is available (Chrome/Electron) */
 export function isSpeechSupported(): boolean {
-  return typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  return (
+    typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
+  );
 }
 
 /** Check if TTS is available */
 export function isTTSSupported(): boolean {
-  return typeof window !== 'undefined' && 'speechSynthesis' in window;
+  return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
 /** Start listening via Web Speech API — returns transcript via callback */
-export function startListening(onResult: SpeechCallback, onError?: ErrorCallback): void {
+export function startListening(
+  onResult: SpeechCallback,
+  onError?: ErrorCallback,
+): void {
   if (!isSpeechSupported()) {
-    onError?.('Speech recognition not supported in this browser');
+    onError?.("Speech recognition not supported in this browser");
     return;
   }
 
   if (state.isListening) return;
 
-  const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const SpeechRecognitionClass =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
   if (!SpeechRecognitionClass) {
-    onError?.('SpeechRecognition constructor not available');
+    onError?.("SpeechRecognition constructor not available");
     return;
   }
   state.recognition = new SpeechRecognitionClass();
   state.recognition.continuous = false;
   state.recognition.interimResults = false;
-  state.recognition.lang = 'en-US';
+  state.recognition.lang = "en-US";
 
   state.recognition.onresult = (event: any) => {
-    const transcript = event.results?.[0]?.[0]?.transcript ?? '';
+    const transcript = event.results?.[0]?.[0]?.transcript ?? "";
     onResult(transcript);
   };
 
@@ -107,6 +119,8 @@ export function stopSpeaking(): void {
 }
 
 /** Get current state */
-export function getSpeechState(): Readonly<Pick<SpeechServiceState, 'isListening' | 'isSpeaking'>> {
+export function getSpeechState(): Readonly<
+  Pick<SpeechServiceState, "isListening" | "isSpeaking">
+> {
   return { isListening: state.isListening, isSpeaking: state.isSpeaking };
 }

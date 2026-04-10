@@ -1,12 +1,12 @@
 // [claude-code 2026-03-23] MiroShark Sanctum frontend types — expanded for snap-scroll dashboard + presets
 
 export type MiroSharkRiskCategory =
-  | 'geopolitical'
-  | 'political'
-  | 'monetary-policy'
-  | 'earnings-corporate'
-  | 'market-structure'
-  | 'black-swan';
+  | "geopolitical"
+  | "political"
+  | "monetary-policy"
+  | "earnings-corporate"
+  | "market-structure"
+  | "black-swan";
 
 export interface MiroSharkCategoryScore {
   category: MiroSharkRiskCategory;
@@ -45,7 +45,7 @@ export interface MiroSharkScenario {
 
 export interface SanctumData {
   simulationId: string;
-  status: 'idle' | 'running' | 'complete' | 'error';
+  status: "idle" | "running" | "complete" | "error";
   error?: string;
   compositeIV: number;
   confidence: number;
@@ -59,22 +59,22 @@ export interface SanctumData {
 }
 
 export const RISK_CATEGORY_LABELS: Record<MiroSharkRiskCategory, string> = {
-  'geopolitical': 'Geopolitical',
-  'political': 'Political',
-  'monetary-policy': 'Monetary Policy',
-  'earnings-corporate': 'Earnings',
-  'market-structure': 'Mkt Structure',
-  'black-swan': 'Black Swan',
+  geopolitical: "Geopolitical",
+  political: "Political",
+  "monetary-policy": "Monetary Policy",
+  "earnings-corporate": "Earnings",
+  "market-structure": "Mkt Structure",
+  "black-swan": "Black Swan",
 };
 
 /** @deprecated Use ivHeatColor(score) instead — dynamic heat-map coloring based on IV value */
 export const RISK_CATEGORY_COLORS: Record<MiroSharkRiskCategory, string> = {
-  'geopolitical': '#EF4444',
-  'political': '#8B5CF6',
-  'monetary-policy': '#3B82F6',
-  'earnings-corporate': '#10B981',
-  'market-structure': '#F59E0B',
-  'black-swan': '#EC4899',
+  geopolitical: "#EF4444",
+  political: "#8B5CF6",
+  "monetary-policy": "#3B82F6",
+  "earnings-corporate": "#10B981",
+  "market-structure": "#F59E0B",
+  "black-swan": "#EC4899",
 };
 
 /**
@@ -86,32 +86,44 @@ export function ivHeatColor(score: number): string {
   // 0.0 → teal #14B8A6, 0.5 → amber #F59E0B, 1.0 → red #EF4444
   if (t <= 0.5) {
     const p = t / 0.5; // 0→1 within low–mid
-    const r = Math.round(0x14 + (0xF5 - 0x14) * p);
-    const g = Math.round(0xB8 + (0x9E - 0xB8) * p);
-    const b = Math.round(0xA6 + (0x0B - 0xA6) * p);
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    const r = Math.round(0x14 + (0xf5 - 0x14) * p);
+    const g = Math.round(0xb8 + (0x9e - 0xb8) * p);
+    const b = Math.round(0xa6 + (0x0b - 0xa6) * p);
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
   }
   const p = (t - 0.5) / 0.5; // 0→1 within mid–high
-  const r = Math.round(0xF5 + (0xEF - 0xF5) * p);
-  const g = Math.round(0x9E + (0x44 - 0x9E) * p);
-  const b = Math.round(0x0B + (0x44 - 0x0B) * p);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  const r = Math.round(0xf5 + (0xef - 0xf5) * p);
+  const g = Math.round(0x9e + (0x44 - 0x9e) * p);
+  const b = Math.round(0x0b + (0x44 - 0x0b) * p);
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }
 
-export const COMPOSITE_COLOR = '#c79f4a';
+export const COMPOSITE_COLOR = "#c79f4a";
 
 // --- Sanctum Preset System ---
 
-export type SanctumPreset = 'full-brief' | 'chart-focus' | 'econ-watch' | 'risk-scan';
+export type SanctumPreset =
+  | "full-brief"
+  | "chart-focus"
+  | "econ-watch"
+  | "risk-scan";
 
-export const AUDITORIUM_PRESETS: { id: SanctumPreset; label: string; description: string }[] = [
-  { id: 'full-brief', label: 'Full Brief', description: 'All pages' },
-  { id: 'chart-focus', label: 'Chart Focus', description: 'IV chart expanded' },
-  { id: 'econ-watch', label: 'Econ Watch', description: 'Economic events' },
-  { id: 'risk-scan', label: 'Risk Scan', description: 'Sectors & scenarios' },
+export const AUDITORIUM_PRESETS: {
+  id: SanctumPreset;
+  label: string;
+  description: string;
+}[] = [
+  { id: "full-brief", label: "Full Brief", description: "All pages" },
+  { id: "chart-focus", label: "Chart Focus", description: "IV chart expanded" },
+  { id: "econ-watch", label: "Econ Watch", description: "Economic events" },
+  { id: "risk-scan", label: "Risk Scan", description: "Sectors & scenarios" },
 ];
 
-export const AUDITORIUM_PAGES = ['Command Center', 'Econ Intel', 'Risk & Narratives'] as const;
+export const AUDITORIUM_PAGES = [
+  "Command Center",
+  "Econ Intel",
+  "Risk & Narratives",
+] as const;
 
 // --- Economic Intelligence Types ---
 
@@ -136,7 +148,7 @@ export interface EconPrint {
   forecast: number;
   previous: number;
   surprise: number;
-  direction: 'beat' | 'miss' | 'inline';
+  direction: "beat" | "miss" | "inline";
 }
 
 export interface EconHistoryPrint {
@@ -146,7 +158,7 @@ export interface EconHistoryPrint {
   forecast: number | null;
   previous: number | null;
   surprise: number | null;
-  direction: 'beat' | 'miss' | 'inline' | null;
+  direction: "beat" | "miss" | "inline" | null;
   ivScore: number | null;
 }
 
@@ -171,7 +183,7 @@ export interface EconScoredItem {
     actual?: number;
     forecast?: number;
     previous?: number;
-    beatMiss?: 'beat' | 'miss' | 'inline';
+    beatMiss?: "beat" | "miss" | "inline";
     surprisePercent?: number;
   } | null;
   publishedAt: string | null;
@@ -190,7 +202,7 @@ export interface EconCardData {
   lastPrint?: EconPrint;
   printHistory?: EconHistoryPrint[];
   scoredItems?: EconScoredItem[];
-  agentConsensus?: 'beat' | 'miss' | 'inline';
+  agentConsensus?: "beat" | "miss" | "inline";
   agentConfidence?: number;
 }
 
@@ -221,7 +233,7 @@ export interface RiskFlowCatalyst {
     actual?: number;
     forecast?: number;
     previous?: number;
-    beatMiss?: 'beat' | 'miss' | 'inline';
+    beatMiss?: "beat" | "miss" | "inline";
     surprisePercent?: number;
   } | null;
   risk_type?: string | null;
@@ -241,7 +253,7 @@ export interface EconPrintStat {
   forecast: number | null;
   previous: number | null;
   surprise: number | null;
-  direction: 'beat' | 'miss' | 'inline' | null;
+  direction: "beat" | "miss" | "inline" | null;
   ivScore: number | null;
   printedAt: string | null;
 }
@@ -268,7 +280,7 @@ export interface MacroIndicator {
   label: string;
   value: number;
   unit: string;
-  stressLevel: 'low' | 'moderate' | 'elevated' | 'high';
+  stressLevel: "low" | "moderate" | "elevated" | "high";
 }
 
 export interface SanctumNarrative {
@@ -310,7 +322,7 @@ export interface RollingWindowData {
   avgCompositeIV: number;
   avgConfidence: number;
   avgRegimeShift: number;
-  trendDirection: 'rising' | 'falling' | 'stable';
+  trendDirection: "rising" | "falling" | "stable";
   periodStart: string;
   periodEnd: string;
 }

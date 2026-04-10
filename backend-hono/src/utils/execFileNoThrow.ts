@@ -1,7 +1,7 @@
 // [claude-code 2026-03-10] Safe execFile wrapper — prevents shell injection, returns null on failure
 
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
@@ -19,7 +19,7 @@ export interface ExecFileResult {
 export async function execFileNoThrow(
   file: string,
   args: string[],
-  opts?: { timeout?: number }
+  opts?: { timeout?: number },
 ): Promise<ExecFileResult | null> {
   try {
     const { stdout, stderr } = await execFileAsync(file, args, {
@@ -30,8 +30,8 @@ export async function execFileNoThrow(
     // execFile throws with .stdout/.stderr even on non-zero exit
     if (err?.stdout !== undefined || err?.stderr !== undefined) {
       return {
-        stdout: err.stdout ?? '',
-        stderr: err.stderr ?? '',
+        stdout: err.stdout ?? "",
+        stderr: err.stderr ?? "",
         exitCode: err.code ?? 1,
       };
     }

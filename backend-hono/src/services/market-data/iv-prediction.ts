@@ -1,10 +1,13 @@
 // [claude-code 2026-03-16] IV prediction service — heuristic fallback + MiroShark integration
 // [claude-code 2026-03-16] Removed simulationId param — auto-checks latest cached prediction
 
-import type { IVPrediction, IVPredictionScenario } from './iv-prediction-types.js';
-import type { BlendedIVScore } from './iv-scorer.js';
-import { isSkillEnabled } from '../../config/feature-flags.js';
-import { getLatestCachedPrediction } from '../miroshark/miroshark-service.js';
+import type {
+  IVPrediction,
+  IVPredictionScenario,
+} from "./iv-prediction-types.js";
+import type { BlendedIVScore } from "./iv-scorer.js";
+import { isSkillEnabled } from "../../config/feature-flags.js";
+import { getLatestCachedPrediction } from "../miroshark/miroshark-service.js";
 
 /**
  * Generate an IV prediction for the next session.
@@ -15,7 +18,7 @@ export async function generateIVPrediction(
   currentScore: BlendedIVScore,
 ): Promise<IVPrediction> {
   // Try MiroShark first — auto-fetch latest cached prediction
-  if (isSkillEnabled('miroshark')) {
+  if (isSkillEnabled("miroshark")) {
     const mfPrediction = getLatestCachedPrediction();
     if (mfPrediction) {
       return {
@@ -23,7 +26,7 @@ export async function generateIVPrediction(
         confidence: mfPrediction.confidence,
         regimeShiftProbability: mfPrediction.regimeShiftProbability,
         scenarios: mfPrediction.scenarios,
-        source: 'miroshark',
+        source: "miroshark",
         generatedAt: mfPrediction.generatedAt,
       };
     }
@@ -43,26 +46,33 @@ function heuristicPrediction(score: BlendedIVScore): IVPrediction {
   const reversion = (meanTarget - now) * 0.15;
 
   // VIX momentum: large VIX moves carry into the next session
-  const momentum = vixChange > 10 ? 0.8
-    : vixChange > 5 ? 0.4
-    : vixChange < -10 ? -0.6
-    : vixChange < -5 ? -0.3
-    : 0;
+  const momentum =
+    vixChange > 10
+      ? 0.8
+      : vixChange > 5
+        ? 0.4
+        : vixChange < -10
+          ? -0.6
+          : vixChange < -5
+            ? -0.3
+            : 0;
 
   // VIX spike persistence: spikes tend to persist
-  const spikeBias = score.vix.isSpike && score.vix.spikeDirection === 'up' ? 0.5 : 0;
+  const spikeBias =
+    score.vix.isSpike && score.vix.spikeDirection === "up" ? 0.5 : 0;
 
-  const projected = Math.max(0, Math.min(10, now + reversion + momentum + spikeBias));
+  const projected = Math.max(
+    0,
+    Math.min(10, now + reversion + momentum + spikeBias),
+  );
   const delta = Math.abs(projected - now);
 
   // Confidence is lower when projected change is large
   const confidence = Math.max(0.3, 0.85 - delta * 0.1);
 
   // Regime shift: probability of score moving ±3 or more
-  const regimeShift = vix > 30 ? 0.4
-    : vix > 22 ? 0.2
-    : Math.abs(vixChange) > 15 ? 0.25
-    : 0.05;
+  const regimeShift =
+    vix > 30 ? 0.4 : vix > 22 ? 0.2 : Math.abs(vixChange) > 15 ? 0.25 : 0.05;
 
   const scenarios = buildHeuristicScenarios(now, projected, vix, vixChange);
 
@@ -71,19 +81,22 @@ function heuristicPrediction(score: BlendedIVScore): IVPrediction {
     confidence: Number(confidence.toFixed(2)),
     regimeShiftProbability: Number(regimeShift.toFixed(2)),
     scenarios,
-    source: 'heuristic',
+    source: "heuristic",
     generatedAt: new Date().toISOString(),
   };
 }
 
 function buildHeuristicScenarios(
-  current: number, projected: number, vix: number, vixChange: number,
+  current: number,
+  projected: number,
+  vix: number,
+  vixChange: number,
 ): IVPredictionScenario[] {
   const scenarios: IVPredictionScenario[] = [];
 
   // Base case — continuation
   scenarios.push({
-    label: 'Continuation',
+    label: "Continuation",
     probability: 0.5,
     projectedScore: Number(projected.toFixed(1)),
   });
@@ -91,7 +104,7 @@ function buildHeuristicScenarios(
   // Risk-on scenario — score drops
   const riskOn = Math.max(0, projected - 1.5);
   scenarios.push({
-    label: 'Risk-on rally',
+    label: "Risk-on rally",
     probability: vixChange < -5 ? 0.3 : 0.2,
     projectedScore: Number(riskOn.toFixed(1)),
   });
@@ -99,14 +112,15 @@ function buildHeuristicScenarios(
   // Escalation scenario — score rises
   const escalation = Math.min(10, projected + 2);
   scenarios.push({
-    label: vix > 22 ? 'Volatility spike' : 'Headline escalation',
+    label: vix > 22 ? "Volatility spike" : "Headline escalation",
     probability: vixChange > 5 ? 0.3 : 0.15,
     projectedScore: Number(escalation.toFixed(1)),
   });
 
   // Normalize probabilities
   const total = scenarios.reduce((s, sc) => s + sc.probability, 0);
-  for (const sc of scenarios) sc.probability = Number((sc.probability / total).toFixed(2));
+  for (const sc of scenarios)
+    sc.probability = Number((sc.probability / total).toFixed(2));
 
   // Sort by probability descending
   scenarios.sort((a, b) => b.probability - a.probability);

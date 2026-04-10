@@ -1,4 +1,5 @@
 # Pre-Staged News Entry — Risk Management Specification
+
 <!-- claude-code 2026-02-28 | Confirmed by TP with all 4 recommendations approved -->
 
 ## Overview
@@ -20,13 +21,14 @@ Pre-staged news entries are limit orders placed at known Fib levels BEFORE a sch
 - **Manually selectable** from higher timeframes based on event severity
 - The algo should expose a parameter for HTF fib source selection
 
-| Event Severity | Fib Timeframe | Examples |
-|---------------|---------------|----------|
-| Standard | 15-min / 1H | Weekly claims, minor PMI |
-| Significant | 1H / 4H | PPI, retail sales, GDP revision |
-| Major | 4H+ | CPI, FOMC, NFP, surprise geopolitical |
+| Event Severity | Fib Timeframe | Examples                              |
+| -------------- | ------------- | ------------------------------------- |
+| Standard       | 15-min / 1H   | Weekly claims, minor PMI              |
+| Significant    | 1H / 4H       | PPI, retail sales, GDP revision       |
+| Major          | 4H+           | CPI, FOMC, NFP, surprise geopolitical |
 
 ### Distance Expectation
+
 - Price may be **75–100+ points away** from the HTF fib level at fill time
 - This is normal — the trade targets the bounce at that level, not proximity
 
@@ -56,6 +58,7 @@ Pre-staged news entries are limit orders placed at known Fib levels BEFORE a sch
 - Rationale: News volatility in first 2 minutes creates false signals — any stop movement risks premature exit
 
 ### After Blackout Expires
+
 - **Immediately move stop to breakeven** — not gradual, immediate
 - This is different from standard models where BE requires scale-in + DCA clearance
 - From breakeven, normal trailing phases resume (Phase 3: 20 EMA − 7pts, Phase 4: 100 EMA trail)
@@ -75,11 +78,13 @@ Pre-staged news entries are limit orders placed at known Fib levels BEFORE a sch
 ## Re-Entry After Stop-Out
 
 ### If stopped out of news entry:
+
 - Re-enter at **next 25-pt handle that price sweeps to**
 - These handles attract market participants — the sweep creates a new micro-setup
 - Same 10 contracts, same risk management rules apply to re-entry
 
 ### If stopped out of a scaled-in position (standard Ripper, not pre-staged):
+
 - Re-enter on **retest of the level**
 - OR when **Antilag shows sync** AFTER stop-out but BEFORE EMA overtake (optional)
 

@@ -1,13 +1,21 @@
 // [claude-code 2026-03-14] Theme context — color + font theme, applies CSS variables to :root
 // [claude-code 2026-03-24] Add backend settings sync for per-user theme persistence
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from "react";
 import {
   type ThemeConfig,
   THEME_PRESETS,
   DEFAULT_THEME,
   loadStoredTheme,
   saveTheme,
-} from '../lib/theme';
+} from "../lib/theme";
 import {
   type FontTheme,
   type FontThemeId,
@@ -15,9 +23,9 @@ import {
   DEFAULT_FONT_THEME,
   loadStoredFontTheme,
   saveFontTheme,
-} from '../lib/font-theme';
+} from "../lib/font-theme";
 
-const BACKEND_SETTINGS_URL = '/api/settings';
+const BACKEND_SETTINGS_URL = "/api/settings";
 
 interface ThemeContextValue {
   theme: ThemeConfig;
@@ -34,20 +42,26 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function applyThemeToDOM(theme: ThemeConfig) {
   const root = document.documentElement;
-  root.style.setProperty('--fintheon-accent', theme.accent);
-  root.style.setProperty('--fintheon-bg', theme.bg);
-  root.style.setProperty('--fintheon-text', theme.text);
-  root.style.setProperty('--fintheon-bullish', theme.bullish);
-  root.style.setProperty('--fintheon-bearish', theme.bearish);
-  root.style.setProperty('--fintheon-surface', theme.surface);
-  root.style.setProperty('--fintheon-border', theme.border);
-  root.style.setProperty('--fintheon-muted', theme.muted);
+  root.style.setProperty("--fintheon-accent", theme.accent);
+  root.style.setProperty("--fintheon-bg", theme.bg);
+  root.style.setProperty("--fintheon-text", theme.text);
+  root.style.setProperty("--fintheon-bullish", theme.bullish);
+  root.style.setProperty("--fintheon-bearish", theme.bearish);
+  root.style.setProperty("--fintheon-surface", theme.surface);
+  root.style.setProperty("--fintheon-border", theme.border);
+  root.style.setProperty("--fintheon-muted", theme.muted);
   // Severity colors — used by RiskFlow badges, alerts, status indicators
-  root.style.setProperty('--fintheon-severe', theme.severe ?? '#EF4444');
-  root.style.setProperty('--fintheon-neutral-severe', theme.neutralSevere ?? '#F59E0B');
-  root.style.setProperty('--fintheon-neutral', theme.neutral ?? '#6B7280');
-  root.style.setProperty('--fintheon-low-neutral', theme.lowNeutral ?? '#3B82F6');
-  root.style.setProperty('--fintheon-low', theme.low ?? '#34D399');
+  root.style.setProperty("--fintheon-severe", theme.severe ?? "#EF4444");
+  root.style.setProperty(
+    "--fintheon-neutral-severe",
+    theme.neutralSevere ?? "#F59E0B",
+  );
+  root.style.setProperty("--fintheon-neutral", theme.neutral ?? "#6B7280");
+  root.style.setProperty(
+    "--fintheon-low-neutral",
+    theme.lowNeutral ?? "#3B82F6",
+  );
+  root.style.setProperty("--fintheon-low", theme.low ?? "#34D399");
 }
 
 function applyFontThemeToDOM(fontTheme: FontTheme) {
@@ -55,8 +69,8 @@ function applyFontThemeToDOM(fontTheme: FontTheme) {
   // Prepend 'Readable Digits' so digits/numbers always render in Inter
   const bodyStack = `'Readable Digits', ${fontTheme.fontBody}`;
   const headingStack = `'Readable Digits', ${fontTheme.fontHeading}`;
-  root.style.setProperty('--font-body', bodyStack);
-  root.style.setProperty('--font-heading', headingStack);
+  root.style.setProperty("--font-body", bodyStack);
+  root.style.setProperty("--font-heading", headingStack);
   // Apply directly to body to bypass Tailwind v4 preflight specificity
   document.body.style.fontFamily = bodyStack;
 }
@@ -75,12 +89,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
 
   const [pompaEnabled, setPompaEnabled] = useState<boolean>(() => {
-    const stored = localStorage.getItem('fintheon:pompa-mode');
-    return stored !== null ? stored === 'true' : true;
+    const stored = localStorage.getItem("fintheon:pompa-mode");
+    return stored !== null ? stored === "true" : true;
   });
 
   useEffect(() => {
-    localStorage.setItem('fintheon:pompa-mode', String(pompaEnabled));
+    localStorage.setItem("fintheon:pompa-mode", String(pompaEnabled));
   }, [pompaEnabled]);
 
   const backendSynced = useRef(false);
@@ -103,13 +117,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyFontThemeToDOM(fontTheme);
 
     // Fetch backend settings and apply stored theme (backend is source of truth)
-    fetch(BACKEND_SETTINGS_URL, { credentials: 'include' })
+    fetch(BACKEND_SETTINGS_URL, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const remote = data?.settings;
         if (remote?.appearance) {
           const { colorTheme, fontThemeId, pompaMode } = remote.appearance;
-          if (colorTheme && typeof colorTheme === 'object' && colorTheme.accent) {
+          if (
+            colorTheme &&
+            typeof colorTheme === "object" &&
+            colorTheme.accent
+          ) {
             const restored = colorTheme as ThemeConfig;
             setThemeState(restored);
             applyThemeToDOM(restored);
@@ -141,15 +159,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       pompaMode: pompaEnabled,
     };
     fetch(BACKEND_SETTINGS_URL, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ settings: { appearance } }),
     }).catch(() => {});
   }, [theme, fontTheme, pompaEnabled]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, presets: THEME_PRESETS, fontTheme, setFontTheme, fontThemes: FONT_THEMES, pompaEnabled, setPompaEnabled }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        setTheme,
+        presets: THEME_PRESETS,
+        fontTheme,
+        setFontTheme,
+        fontThemes: FONT_THEMES,
+        pompaEnabled,
+        setPompaEnabled,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
@@ -157,6 +186,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
+  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
   return ctx;
 }

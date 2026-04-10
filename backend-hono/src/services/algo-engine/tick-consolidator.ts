@@ -1,7 +1,7 @@
 // [claude-code 2026-03-26] S1-T1: Algo engine foundation — tick-to-bar consolidator
 // Ported from QuantConnect's TickConsolidator (1000 ticks for NQ, 500 for ES)
 
-import type { Tick, Bar } from './types.js';
+import type { Tick, Bar } from "./types.js";
 
 /**
  * Aggregates raw ticks into bars of a fixed tick count.
@@ -18,7 +18,8 @@ export class TickConsolidator {
    * @param onBarComplete Callback fired when a bar completes
    */
   constructor(tickCount: number, onBarComplete: (bar: Bar) => void) {
-    if (tickCount < 1) throw new Error('TickConsolidator tickCount must be >= 1');
+    if (tickCount < 1)
+      throw new Error("TickConsolidator tickCount must be >= 1");
     this.tickCount = tickCount;
     this.onBarComplete = onBarComplete;
     this.currentBar = null;

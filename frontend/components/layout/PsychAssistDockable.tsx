@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { GripVertical, PictureInPicture2, X } from 'lucide-react';
-import { CompactERMonitor } from '../mission-control/CompactERMonitor';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { GripVertical, PictureInPicture2, X } from "lucide-react";
+import { CompactERMonitor } from "../mission-control/CompactERMonitor";
 
-export type PsychAssistDockTarget = 'floating' | 'header';
+export type PsychAssistDockTarget = "floating" | "header";
 
 interface PsychAssistDockableProps {
   target: PsychAssistDockTarget;
@@ -24,8 +24,8 @@ export function PsychAssistDockable({
   onDockToHeader,
   onUndockToFloating,
   onClose,
-  storageKey = 'fintheon:psychassist-floating-pos:v1',
-  headerDockZoneId = 'fintheon-heading-toolbar',
+  storageKey = "fintheon:psychassist-floating-pos:v1",
+  headerDockZoneId = "fintheon-heading-toolbar",
 }: PsychAssistDockableProps) {
   const [pos, setPos] = useState<Pos>({ x: 24, y: 92 });
   const [dragging, setDragging] = useState(false);
@@ -36,7 +36,7 @@ export function PsychAssistDockable({
       const raw = localStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<Pos>;
-        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+        if (typeof parsed.x === "number" && typeof parsed.y === "number") {
           setPos({ x: parsed.x, y: parsed.y });
           return;
         }
@@ -46,7 +46,10 @@ export function PsychAssistDockable({
     }
 
     // Sensible default near top-right but below header
-    const x = typeof window !== 'undefined' ? Math.max(24, window.innerWidth - 360) : 24;
+    const x =
+      typeof window !== "undefined"
+        ? Math.max(24, window.innerWidth - 360)
+        : 24;
     setPos({ x, y: 92 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -77,24 +80,30 @@ export function PsychAssistDockable({
       const dockZone = document.getElementById(headerDockZoneId);
       if (!dockZone) return;
       const rect = dockZone.getBoundingClientRect();
-      const inside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+      const inside =
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom;
       if (inside) onDockToHeader();
     };
 
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleUp);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
     return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
     };
   }, [dragging, headerDockZoneId, onDockToHeader]);
 
-  const floating = target === 'floating';
+  const floating = target === "floating";
 
   const body = useMemo(() => {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-[var(--fintheon-accent)] font-semibold tracking-[0.14em] uppercase">PsychAssist</span>
+        <span className="text-[10px] text-[var(--fintheon-accent)] font-semibold tracking-[0.14em] uppercase">
+          PsychAssist
+        </span>
         <div className="flex-1 min-w-0">
           <CompactERMonitor />
         </div>
@@ -129,7 +138,7 @@ export function PsychAssistDockable({
   return (
     <div
       className="fixed z-50 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-2xl px-3 py-2 shadow-2xl"
-      style={{ left: `${pos.x}px`, top: `${pos.y}px`, width: '340px' }}
+      style={{ left: `${pos.x}px`, top: `${pos.y}px`, width: "340px" }}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
@@ -174,4 +183,3 @@ export function PsychAssistDockable({
     </div>
   );
 }
-

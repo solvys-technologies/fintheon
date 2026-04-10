@@ -16,33 +16,38 @@
  *   - Session persistence in Supabase (harper_sessions)
  */
 
-import { isBridgeAvailable, bridgeChat, type BridgeStreamEvent, type BridgeChatRequest } from './claude-sdk/bridge.js'
-import { buildFeedContext } from './ai/agent-instructions/index.js'
-import { createLogger } from '../lib/logger.js'
+import {
+  isBridgeAvailable,
+  bridgeChat,
+  type BridgeStreamEvent,
+  type BridgeChatRequest,
+} from "./claude-sdk/bridge.js";
+import { buildFeedContext } from "./ai/agent-instructions/index.js";
+import { createLogger } from "../lib/logger.js";
 
-const log = createLogger('HarperOpus')
+const log = createLogger("HarperOpus");
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface HarperChatRequest {
-  message: string
-  conversationId: string
-  history: Array<{ role: 'user' | 'assistant'; content: string }>
-  thinkHarder?: boolean
+  message: string;
+  conversationId: string;
+  history: Array<{ role: "user" | "assistant"; content: string }>;
+  thinkHarder?: boolean;
   /** Active persona override (e.g. 'oracle', 'feucht') — modifies system prompt */
-  persona?: string
+  persona?: string;
   /** Additional context from RiskFlow items attached to message */
-  riskFlowContext?: string
+  riskFlowContext?: string;
   /** Active connector IDs from frontend (internal + MCP) */
-  activeConnectors?: string[]
+  activeConnectors?: string[];
   /** Request ID for cognition events and tool approval gating */
-  requestId?: string
+  requestId?: string;
 }
 
 export interface HarperChatResult {
-  stream: AsyncGenerator<BridgeStreamEvent>
-  abort: () => void
-  getFullText: () => string
+  stream: AsyncGenerator<BridgeStreamEvent>;
+  abort: () => void;
+  getFullText: () => string;
 }
 
 // ── Persona System Prompts ──────────────────────────────────────────────────
@@ -124,25 +129,25 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 Concise, authoritative, data-driven. No hedging unless genuinely uncertain.
 When the user asks you to do something on the platform (run a brief, check a service, debug an issue), USE YOUR TOOLS — don't say you can't.
 All data is stored in Supabase Postgres — Notion has been fully deprecated. Never reference Notion for storage or retrieval.
-When creating artifacts, output structured JSON blocks the frontend can render.`
+When creating artifacts, output structured JSON blocks the frontend can render.`;
 
 const PERSONA_MODIFIERS: Record<string, string> = {
-  'oracle': `You are now channeling Oracle (The All-Seer) within the Harper-Opus session.
+  oracle: `You are now channeling Oracle (The All-Seer) within the Harper-Opus session.
 Respond as Oracle would: prediction-market focused, probabilistic reasoning,
 S&P/Crypto/Political angles. Maintain Oracle's analytical framework.`,
 
-  'feucht': `You are now channeling Feucht (Futures & Risk) within the Harper-Opus session.
+  feucht: `You are now channeling Feucht (Futures & Risk) within the Harper-Opus session.
 Respond as Feucht would: /NQ and /ES focused, technical levels, risk management,
 TopStepX execution context. Sharp, tactical, level-specific.`,
 
-  'consul': `You are now channeling Consul (Fundamentals) within the Harper-Opus session.
+  consul: `You are now channeling Consul (Fundamentals) within the Harper-Opus session.
 Respond as Consul would: mega-cap tech analysis, earnings impact, sector rotation,
 fundamental valuations. Thorough, research-backed.`,
 
-  'herald': `You are now channeling Herald (News & Sentiment) within the Harper-Opus session.
+  herald: `You are now channeling Herald (News & Sentiment) within the Harper-Opus session.
 Respond as Herald would: breaking news impact, social sentiment, headline risk,
 information asymmetry detection. Fast, alert-oriented.`,
-}
+};
 
 // ── Internal Connector Context Builders ───────────────────────────────────
 
@@ -151,21 +156,22 @@ information asymmetry detection. Fast, alert-oriented.`,
  */
 async function buildAquariumContext(): Promise<string> {
   try {
-    const { getLatestReport } = await import('./miroshark/miroshark-service.js')
-    const report = await getLatestReport() as Record<string, any> | null
-    if (!report) return ''
+    const { getLatestReport } =
+      await import("./miroshark/miroshark-service.js");
+    const report = (await getLatestReport()) as Record<string, any> | null;
+    if (!report) return "";
 
-    const findings = Array.isArray(report.findings) ? report.findings : []
+    const findings = Array.isArray(report.findings) ? report.findings : [];
 
     return `\n\n--- AQUARIUM (MiroShark) — Latest Simulation ---
-Run: ${report.id ?? 'unknown'} | ${report.completedAt ?? report.createdAt ?? 'time unknown'}
-Preset: ${report.preset ?? 'default'}
-${report.summary ?? 'No summary available.'}
-${findings.length ? '\nKey findings:\n' + findings.map((f: any, i: number) => `${i + 1}. ${f}`).join('\n') : ''}
+Run: ${report.id ?? "unknown"} | ${report.completedAt ?? report.createdAt ?? "time unknown"}
+Preset: ${report.preset ?? "default"}
+${report.summary ?? "No summary available."}
+${findings.length ? "\nKey findings:\n" + findings.map((f: any, i: number) => `${i + 1}. ${f}`).join("\n") : ""}
 
-You can discuss this simulation run, critique its conclusions, or suggest follow-up analysis.`
+You can discuss this simulation run, critique its conclusions, or suggest follow-up analysis.`;
   } catch {
-    return ''
+    return "";
   }
 }
 
@@ -180,7 +186,7 @@ You are in Boardroom investigation mode. When the user describes a narrative or 
 3. Review catalysts discovered during research
 4. Suggest new catalysts to insert into RiskFlow DB via run_command tool
 
-Conduct this like a structured analyst research session. Ask clarifying questions, propose investigation angles, and coordinate cross-agent analysis.`
+Conduct this like a structured analyst research session. Ask clarifying questions, propose investigation angles, and coordinate cross-agent analysis.`;
 }
 
 // ── Handler ─────────────────────────────────────────────────────────────────
@@ -189,60 +195,75 @@ Conduct this like a structured analyst research session. Ask clarifying question
  * Check if Harper-Opus (Claude CLI) is available.
  */
 export async function isHarperAvailable(): Promise<boolean> {
-  return isBridgeAvailable()
+  return isBridgeAvailable();
 }
 
 /**
  * Send a chat message through Harper-Opus and get a streaming response.
  */
-export async function harperChat(request: HarperChatRequest): Promise<HarperChatResult> {
-  const { message, conversationId, history, thinkHarder, persona, riskFlowContext, activeConnectors, requestId } = request
+export async function harperChat(
+  request: HarperChatRequest,
+): Promise<HarperChatResult> {
+  const {
+    message,
+    conversationId,
+    history,
+    thinkHarder,
+    persona,
+    riskFlowContext,
+    activeConnectors,
+    requestId,
+  } = request;
 
   // Build system prompt with persona modifier
-  let systemPrompt = HARPER_BASE_SYSTEM_PROMPT
+  let systemPrompt = HARPER_BASE_SYSTEM_PROMPT;
 
   if (persona && PERSONA_MODIFIERS[persona]) {
-    systemPrompt += `\n\n--- PERSONA ACTIVE ---\n${PERSONA_MODIFIERS[persona]}`
+    systemPrompt += `\n\n--- PERSONA ACTIVE ---\n${PERSONA_MODIFIERS[persona]}`;
   }
 
   // Inject Fintheon context
   try {
-    const feedContext = await buildFeedContext()
+    const feedContext = await buildFeedContext();
     if (feedContext) {
-      systemPrompt += `\n\n--- FINTHEON CONTEXT ---\n${feedContext}`
+      systemPrompt += `\n\n--- FINTHEON CONTEXT ---\n${feedContext}`;
     }
   } catch (err) {
-    log.warn('Failed to build feed context (non-fatal)', { error: String(err) })
+    log.warn("Failed to build feed context (non-fatal)", {
+      error: String(err),
+    });
   }
 
   // Add RiskFlow items if attached
   if (riskFlowContext) {
-    systemPrompt += `\n\n--- ATTACHED RISKFLOW ITEMS ---\n${riskFlowContext}`
+    systemPrompt += `\n\n--- ATTACHED RISKFLOW ITEMS ---\n${riskFlowContext}`;
   }
 
   // Inject internal connector context based on active connectors
-  if (activeConnectors?.includes('aquarium')) {
+  if (activeConnectors?.includes("aquarium")) {
     try {
-      const aquariumContext = await buildAquariumContext()
+      const aquariumContext = await buildAquariumContext();
       if (aquariumContext) {
-        systemPrompt += aquariumContext
+        systemPrompt += aquariumContext;
       }
     } catch (err) {
-      log.warn('Failed to build Aquarium context (non-fatal)', { error: String(err) })
+      log.warn("Failed to build Aquarium context (non-fatal)", {
+        error: String(err),
+      });
     }
   }
 
-  if (activeConnectors?.includes('boardroom')) {
-    systemPrompt += buildBoardroomContext()
+  if (activeConnectors?.includes("boardroom")) {
+    systemPrompt += buildBoardroomContext();
   }
 
-  log.info('Harper-Opus chat request', {
+  log.info("Harper-Opus chat request", {
     conversationId,
-    persona: persona ?? 'harper-opus',
+    persona: persona ?? "harper-opus",
     thinkHarder: !!thinkHarder,
     messageLen: message.length,
     historyLen: history.length,
-  })
+  });
 
   const bridgeRequest: BridgeChatRequest = {
     message,
@@ -250,14 +271,14 @@ export async function harperChat(request: HarperChatRequest): Promise<HarperChat
     history,
     thinkHarder,
     requestId,
-  }
+  };
 
   const result = bridgeChat(bridgeRequest, {
     systemPrompt,
-    model: 'opus',
-    effort: thinkHarder ? 'high' : 'medium',
+    model: "opus",
+    effort: thinkHarder ? "high" : "medium",
     maxTurns: thinkHarder ? 5 : 3,
-  })
+  });
 
-  return result
+  return result;
 }

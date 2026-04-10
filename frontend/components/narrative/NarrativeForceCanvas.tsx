@@ -1,5 +1,5 @@
 // [claude-code 2026-04-04] Loading sequence, Save Layout button, 3-tier zoom (macro/narratives/themes), skip force sim on saved positions
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
   Panel,
@@ -11,8 +11,8 @@ import {
   type Edge,
   type Node,
   type NodeTypes,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import {
   forceCollide,
   forceLink,
@@ -22,9 +22,9 @@ import {
   forceY,
   type SimulationLinkDatum,
   type SimulationNodeDatum,
-} from 'd3-force';
-import { useNarrative } from '../../contexts/NarrativeContext';
-import type { CatalystCard } from '../../lib/narrative-types';
+} from "d3-force";
+import { useNarrative } from "../../contexts/NarrativeContext";
+import type { CatalystCard } from "../../lib/narrative-types";
 import {
   CROSS_NARRATIVE_ROPE,
   HUB_POSITIONS,
@@ -35,15 +35,18 @@ import {
   getSemanticZoom,
   safeSlug,
   type SemanticNarrativeView,
-} from '../../lib/narrative-territory-layout';
-import { computeConcentricPositions, type RingCard } from '../../lib/narrative-force-layout';
-import type { CanvasTool } from './NarrativeFloatingToolbar';
-import { AggregateCardNode } from './AggregateCardNode';
-import { NarrativeHubNode } from './NarrativeHubNode';
-import { TerritoryNode } from './TerritoryNode';
+} from "../../lib/narrative-territory-layout";
+import {
+  computeConcentricPositions,
+  type RingCard,
+} from "../../lib/narrative-force-layout";
+import type { CanvasTool } from "./NarrativeFloatingToolbar";
+import { AggregateCardNode } from "./AggregateCardNode";
+import { NarrativeHubNode } from "./NarrativeHubNode";
+import { TerritoryNode } from "./TerritoryNode";
 
 // ── Persistent node positions (localStorage) ──────────────────
-const POSITIONS_KEY = 'fintheon-narrative-positions';
+const POSITIONS_KEY = "fintheon-narrative-positions";
 
 function loadSavedPositions(): Map<string, { x: number; y: number }> {
   try {
@@ -59,7 +62,9 @@ function loadSavedPositions(): Map<string, { x: number; y: number }> {
 function saveNodePosition(nodeId: string, x: number, y: number) {
   try {
     const raw = localStorage.getItem(POSITIONS_KEY);
-    const obj = raw ? (JSON.parse(raw) as Record<string, { x: number; y: number }>) : {};
+    const obj = raw
+      ? (JSON.parse(raw) as Record<string, { x: number; y: number }>)
+      : {};
     obj[nodeId] = { x, y };
     localStorage.setItem(POSITIONS_KEY, JSON.stringify(obj));
   } catch {
@@ -97,7 +102,7 @@ const CANVAS_CSS = `
 
 interface SimNode extends SimulationNodeDatum {
   id: string;
-  nodeKind: 'hub' | 'card';
+  nodeKind: "hub" | "card";
   threadSlug: string;
 }
 
@@ -119,7 +124,7 @@ function buildSimData(catalysts: CatalystCard[]) {
     const position = HUB_POSITIONS[thread.slug] ?? { x: 0, y: 0 };
     simNodes.push({
       id: `hub-${thread.slug}`,
-      nodeKind: 'hub',
+      nodeKind: "hub",
       threadSlug: thread.slug,
       x: position.x,
       y: position.y,
@@ -132,13 +137,17 @@ function buildSimData(catalysts: CatalystCard[]) {
 
     simNodes.push({
       id: card.id,
-      nodeKind: 'card',
+      nodeKind: "card",
       threadSlug,
       x: hub.x + (Math.random() - 0.5) * 120,
       y: hub.y + (Math.random() - 0.5) * 120,
     });
 
-    simLinks.push({ source: card.id, target: `hub-${threadSlug}`, strength: 0.75 });
+    simLinks.push({
+      source: card.id,
+      target: `hub-${threadSlug}`,
+      strength: 0.75,
+    });
   }
 
   return { simNodes, simLinks };
@@ -162,21 +171,43 @@ function runForceSimulation(
   }
 
   const simulation = forceSimulation<SimNode>(simNodes)
-    .force('charge', forceManyBody<SimNode>().strength((node) => (node.nodeKind === 'hub' ? -400 : -50)))
     .force(
-      'link',
+      "charge",
+      forceManyBody<SimNode>().strength((node) =>
+        node.nodeKind === "hub" ? -400 : -50,
+      ),
+    )
+    .force(
+      "link",
       forceLink<SimNode, SimLink>(simLinks)
         .id((node) => node.id)
         .distance((link) => {
           const source = link.source as SimNode;
           const target = link.target as SimNode;
-          return source.nodeKind === 'hub' || target.nodeKind === 'hub' ? 100 : 70;
+          return source.nodeKind === "hub" || target.nodeKind === "hub"
+            ? 100
+            : 70;
         })
         .strength((link) => link.strength),
     )
-    .force('collide', forceCollide<SimNode>().radius((node) => (node.nodeKind === 'hub' ? 90 : 55)).strength(0.6))
-    .force('clusterX', forceX<SimNode>((node) => HUB_POSITIONS[node.threadSlug]?.x ?? 0).strength((node) => (node.nodeKind === 'hub' ? 0.35 : 0.18)))
-    .force('clusterY', forceY<SimNode>((node) => HUB_POSITIONS[node.threadSlug]?.y ?? 0).strength((node) => (node.nodeKind === 'hub' ? 0.35 : 0.18)))
+    .force(
+      "collide",
+      forceCollide<SimNode>()
+        .radius((node) => (node.nodeKind === "hub" ? 90 : 55))
+        .strength(0.6),
+    )
+    .force(
+      "clusterX",
+      forceX<SimNode>(
+        (node) => HUB_POSITIONS[node.threadSlug]?.x ?? 0,
+      ).strength((node) => (node.nodeKind === "hub" ? 0.35 : 0.18)),
+    )
+    .force(
+      "clusterY",
+      forceY<SimNode>(
+        (node) => HUB_POSITIONS[node.threadSlug]?.y ?? 0,
+      ).strength((node) => (node.nodeKind === "hub" ? 0.35 : 0.18)),
+    )
     .alphaDecay(0.012)
     .velocityDecay(0.35)
     .stop();
@@ -197,13 +228,14 @@ function crossNarrativeEdges(catalysts: CatalystCard[]): Map<string, number> {
   const threadPairs = new Map<string, number>();
 
   for (const catalyst of catalysts) {
-    if (!catalyst.narrativeThreads || catalyst.narrativeThreads.length < 2) continue;
+    if (!catalyst.narrativeThreads || catalyst.narrativeThreads.length < 2)
+      continue;
 
     for (let i = 0; i < catalyst.narrativeThreads.length; i += 1) {
       for (let j = i + 1; j < catalyst.narrativeThreads.length; j += 1) {
         const threadA = safeSlug(catalyst.narrativeThreads[i]);
         const threadB = safeSlug(catalyst.narrativeThreads[j]);
-        const key = [threadA, threadB].sort().join('|');
+        const key = [threadA, threadB].sort().join("|");
         threadPairs.set(key, (threadPairs.get(key) ?? 0) + 1);
       }
     }
@@ -226,7 +258,7 @@ function buildNarrativeView(
     const diameter = territory.r * 2;
     nodes.push({
       id: `territory-${thread.slug}`,
-      type: 'territory',
+      type: "territory",
       position: { x: territory.x, y: territory.y },
       data: {
         title: thread.title,
@@ -241,7 +273,7 @@ function buildNarrativeView(
   }
 
   for (const [key, count] of crossNarrativeEdges(catalysts)) {
-    const [threadA, threadB] = key.split('|');
+    const [threadA, threadB] = key.split("|");
     const territoryA = TERRITORY_LAYOUT[threadA];
     const territoryB = TERRITORY_LAYOUT[threadB];
     if (!territoryA || !territoryB) continue;
@@ -250,22 +282,22 @@ function buildNarrativeView(
       id: `narrative-rope-${key}`,
       source: `territory-${threadA}`,
       target: `territory-${threadB}`,
-      type: 'default',
+      type: "default",
       style: {
         stroke: CROSS_NARRATIVE_ROPE,
         strokeWidth: Math.min(2.5 + count * 0.3, 6),
         opacity: 0.08 + Math.min(count * 0.02, 0.12),
       },
       animated: true,
-      className: 'narrative-rope-shimmer',
+      className: "narrative-rope-shimmer",
       label: count > 2 ? `${count}` : undefined,
       labelStyle: {
-        fill: '#14B8A6',
+        fill: "#14B8A6",
         fontSize: 9,
-        fontFamily: 'var(--font-mono)',
+        fontFamily: "var(--font-mono)",
         opacity: 0.4,
       },
-      labelBgStyle: { fill: '#050402', fillOpacity: 0.8 },
+      labelBgStyle: { fill: "#050402", fillOpacity: 0.8 },
     });
   }
 
@@ -288,7 +320,7 @@ function buildThemeView(
 
     nodes.push({
       id: `hub-${thread.slug}`,
-      type: 'narrativeHub',
+      type: "narrativeHub",
       position: hub,
       data: {
         slug: thread.slug,
@@ -303,7 +335,9 @@ function buildThemeView(
 
   const groups = new Map<string, CatalystCard[]>();
   for (const catalyst of catalysts) {
-    const threadSlug = safeSlug(catalyst.narrative ?? catalyst.narrativeThreads?.[0]);
+    const threadSlug = safeSlug(
+      catalyst.narrative ?? catalyst.narrativeThreads?.[0],
+    );
     const month = getMonthKey(catalyst.date);
     const groupKey = `${threadSlug}::${month}`;
     const list = groups.get(groupKey) ?? [];
@@ -314,7 +348,7 @@ function buildThemeView(
   const MAX_PER_CARD = 25;
 
   for (const [groupKey, groupCards] of groups) {
-    const [threadSlug, month] = groupKey.split('::');
+    const [threadSlug, month] = groupKey.split("::");
     const thread = THREAD_MAP[threadSlug];
     if (!thread) continue;
 
@@ -345,14 +379,19 @@ function buildThemeView(
     const baseLabel = `${thread.shortTitle} — ${month}`;
 
     for (let page = 0; page < pageCount; page++) {
-      const chunk = groupCards.slice(page * MAX_PER_CARD, (page + 1) * MAX_PER_CARD);
+      const chunk = groupCards.slice(
+        page * MAX_PER_CARD,
+        (page + 1) * MAX_PER_CARD,
+      );
       const isSplit = pageCount > 1;
       const groupId = isSplit ? `${baseGroupId}-p${page}` : baseGroupId;
-      const label = isSplit ? `${baseLabel} ${page + 1}/${pageCount}` : baseLabel;
+      const label = isSplit
+        ? `${baseLabel} ${page + 1}/${pageCount}`
+        : baseLabel;
 
       nodes.push({
         id: groupId,
-        type: 'aggregate',
+        type: "aggregate",
         position: { x: cx, y: cy + page * 80 },
         data: {
           label,
@@ -370,7 +409,7 @@ function buildThemeView(
         id: `theme-edge-${groupId}`,
         source: groupId,
         target: `hub-${threadSlug}`,
-        type: 'default',
+        type: "default",
         style: { stroke: thread.color, strokeWidth: 1, opacity: 0.15 },
       });
 
@@ -381,7 +420,7 @@ function buildThemeView(
           id: `sibling-edge-${groupId}`,
           source: prevId,
           target: groupId,
-          type: 'default',
+          type: "default",
           style: { stroke: thread.color, strokeWidth: 0.5, opacity: 0.08 },
         });
       }
@@ -389,28 +428,29 @@ function buildThemeView(
   }
 
   for (const [key, count] of crossNarrativeEdges(catalysts)) {
-    const [threadA, threadB] = key.split('|');
+    const [threadA, threadB] = key.split("|");
     edges.push({
       id: `hub-rope-${key}`,
       source: `hub-${threadA}`,
       target: `hub-${threadB}`,
-      type: 'default',
+      type: "default",
       style: {
         stroke: CROSS_NARRATIVE_ROPE,
         strokeWidth: Math.min(1 + count * 0.12, 2.5),
         opacity: 0.06 + Math.min(count * 0.01, 0.1),
       },
       animated: true,
-      className: 'narrative-rope-shimmer',
+      className: "narrative-rope-shimmer",
     });
   }
 
   return { nodes, edges };
 }
 
-function buildMacroView(
-  cardsByThread: Map<string, CatalystCard[]>,
-): { nodes: Node[]; edges: Edge[] } {
+function buildMacroView(cardsByThread: Map<string, CatalystCard[]>): {
+  nodes: Node[];
+  edges: Edge[];
+} {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
@@ -421,7 +461,7 @@ function buildMacroView(
     const diameter = territory.r * 2;
     nodes.push({
       id: `territory-${thread.slug}`,
-      type: 'territory',
+      type: "territory",
       position: { x: territory.x, y: territory.y },
       data: {
         title: thread.shortTitle,
@@ -469,7 +509,10 @@ interface NarrativeForceCanvasProps {
   onScaleChange?: (scale: number) => void;
   onSelectCard?: (id: string) => void;
   onEditCard?: (card: CatalystCard) => void;
-  onZoomFnsReady?: (fns: { zoomTo: (level: number) => void; fitView: () => void }) => void;
+  onZoomFnsReady?: (fns: {
+    zoomTo: (level: number) => void;
+    fitView: () => void;
+  }) => void;
 }
 
 function NarrativeFlowCanvas({
@@ -485,18 +528,22 @@ function NarrativeFlowCanvas({
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [currentView, setCurrentView] = useState<SemanticNarrativeView>('narratives');
-  const [forcedView, setForcedView] = useState<SemanticNarrativeView | null>(null);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [loadingPhase, setLoadingPhase] = useState<'loading' | 'settling' | 'ready'>(
-    hasSavedPositions() ? 'ready' : 'loading',
+  const [currentView, setCurrentView] =
+    useState<SemanticNarrativeView>("narratives");
+  const [forcedView, setForcedView] = useState<SemanticNarrativeView | null>(
+    null,
   );
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [loadingPhase, setLoadingPhase] = useState<
+    "loading" | "settling" | "ready"
+  >(hasSavedPositions() ? "ready" : "loading");
   const [transitioning, setTransitioning] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
 
-  const zoomViewRef = useRef<SemanticNarrativeView>('narratives');
+  const zoomViewRef = useRef<SemanticNarrativeView>("narratives");
   const didFitRef = useRef(false);
-  const persistedPositionsRef = useRef<Map<string, { x: number; y: number }>>(loadSavedPositions());
+  const persistedPositionsRef =
+    useRef<Map<string, { x: number; y: number }>>(loadSavedPositions());
 
   useEffect(() => {
     onZoomFnsReady?.({
@@ -507,15 +554,17 @@ function NarrativeFlowCanvas({
 
   const filteredCatalysts = useMemo(() => {
     const TIMEFRAME_DAYS: Record<string, number> = {
-      '1d': 1,
-      '1w': 7,
-      '2w': 14,
-      '1m': 30,
-      '3m': 90,
-      '6m': 180,
-      '1y': 365,
+      "1d": 1,
+      "1w": 7,
+      "2w": 14,
+      "1m": 30,
+      "3m": 90,
+      "6m": 180,
+      "1y": 365,
     };
-    const tfDays = timeframeFilter ? TIMEFRAME_DAYS[timeframeFilter] : undefined;
+    const tfDays = timeframeFilter
+      ? TIMEFRAME_DAYS[timeframeFilter]
+      : undefined;
     const tfCutoff = tfDays ? Date.now() - tfDays * 86400000 : undefined;
 
     let catalysts = state.catalysts.filter((card) => {
@@ -524,17 +573,26 @@ function NarrativeFlowCanvas({
         if (cardTime < tfCutoff) return false;
       }
 
-      const primaryThread = safeSlug(card.narrative ?? card.narrativeThreads?.[0]);
+      const primaryThread = safeSlug(
+        card.narrative ?? card.narrativeThreads?.[0],
+      );
 
       if (visibleLaneIds.size > 0 && !visibleLaneIds.has(primaryThread)) {
         return false;
       }
 
-      if (state.categoryFilter.size > 0 && card.category && !state.categoryFilter.has(card.category)) {
+      if (
+        state.categoryFilter.size > 0 &&
+        card.category &&
+        !state.categoryFilter.has(card.category)
+      ) {
         return false;
       }
 
-      if (state.filterSentiment !== 'all' && card.sentiment !== state.filterSentiment) {
+      if (
+        state.filterSentiment !== "all" &&
+        card.sentiment !== state.filterSentiment
+      ) {
         return false;
       }
 
@@ -542,17 +600,28 @@ function NarrativeFlowCanvas({
     });
 
     if (activeTags.size > 0) {
-      catalysts = catalysts.filter((card) => card.tags?.some((tag) => activeTags.has(tag)) ?? false);
+      catalysts = catalysts.filter(
+        (card) => card.tags?.some((tag) => activeTags.has(tag)) ?? false,
+      );
     }
 
     return catalysts;
-  }, [state.catalysts, state.categoryFilter, state.filterSentiment, visibleLaneIds, activeTags, timeframeFilter]);
+  }, [
+    state.catalysts,
+    state.categoryFilter,
+    state.filterSentiment,
+    visibleLaneIds,
+    activeTags,
+    timeframeFilter,
+  ]);
 
   const cardsByThread = useMemo(() => {
     const map = new Map<string, CatalystCard[]>();
 
     for (const catalyst of filteredCatalysts) {
-      const threadSlug = safeSlug(catalyst.narrative ?? catalyst.narrativeThreads?.[0]);
+      const threadSlug = safeSlug(
+        catalyst.narrative ?? catalyst.narrativeThreads?.[0],
+      );
       const list = map.get(threadSlug) ?? [];
       list.push(catalyst);
       map.set(threadSlug, list);
@@ -564,14 +633,14 @@ function NarrativeFlowCanvas({
   const positions = useMemo(() => {
     const saved = loadSavedPositions();
     if (saved.size > 10) {
-      setLoadingPhase('ready');
+      setLoadingPhase("ready");
       return saved;
     }
-    setLoadingPhase('loading');
+    setLoadingPhase("loading");
     const { simNodes, simLinks } = buildSimData(filteredCatalysts);
     const result = runForceSimulation(simNodes, simLinks);
-    setLoadingPhase('settling');
-    setTimeout(() => setLoadingPhase('ready'), 400);
+    setLoadingPhase("settling");
+    setTimeout(() => setLoadingPhase("ready"), 400);
     return result;
   }, [filteredCatalysts]);
 
@@ -584,13 +653,15 @@ function NarrativeFlowCanvas({
     });
   }, []);
 
-  const applyPersistedPositions = useCallback((nextNodes: Node[]): Node[] => (
-    nextNodes.map((node) => {
-      const persisted = persistedPositionsRef.current.get(node.id);
-      if (!persisted) return node;
-      return { ...node, position: persisted };
-    })
-  ), []);
+  const applyPersistedPositions = useCallback(
+    (nextNodes: Node[]): Node[] =>
+      nextNodes.map((node) => {
+        const persisted = persistedPositionsRef.current.get(node.id);
+        if (!persisted) return node;
+        return { ...node, position: persisted };
+      }),
+    [],
+  );
 
   const rebuildView = useCallback(
     (view: SemanticNarrativeView) => {
@@ -599,17 +670,34 @@ function NarrativeFlowCanvas({
         setEdges(result.edges);
       };
 
-      if (view === 'macro') {
+      if (view === "macro") {
         apply(buildMacroView(cardsByThread));
         return;
       }
-      if (view === 'narratives') {
+      if (view === "narratives") {
         apply(buildNarrativeView(filteredCatalysts, cardsByThread));
         return;
       }
-      apply(buildThemeView(positions, filteredCatalysts, cardsByThread, expandedGroups, toggleExpandedGroup));
+      apply(
+        buildThemeView(
+          positions,
+          filteredCatalysts,
+          cardsByThread,
+          expandedGroups,
+          toggleExpandedGroup,
+        ),
+      );
     },
-    [applyPersistedPositions, cardsByThread, expandedGroups, filteredCatalysts, positions, setEdges, setNodes, toggleExpandedGroup],
+    [
+      applyPersistedPositions,
+      cardsByThread,
+      expandedGroups,
+      filteredCatalysts,
+      positions,
+      setEdges,
+      setNodes,
+      toggleExpandedGroup,
+    ],
   );
 
   useEffect(() => {
@@ -633,7 +721,10 @@ function NarrativeFlowCanvas({
     didFitRef.current = true;
     requestAnimationFrame(() => {
       reactFlow.fitView({ padding: 0.08, duration: 0 });
-      setTimeout(() => reactFlow.fitView({ padding: 0.08, duration: 450 }), 250);
+      setTimeout(
+        () => reactFlow.fitView({ padding: 0.08, duration: 450 }),
+        250,
+      );
     });
   }, [nodes.length, reactFlow]);
 
@@ -671,14 +762,19 @@ function NarrativeFlowCanvas({
       zoomViewRef.current = view;
       setCurrentView(view);
       rebuildView(view);
-      setTimeout(() => reactFlow.fitView({ padding: 0.08, duration: 450 }), 150);
+      setTimeout(
+        () => reactFlow.fitView({ padding: 0.08, duration: 450 }),
+        150,
+      );
     },
     [forcedView, reactFlow, rebuildView],
   );
 
   const handleSaveLayout = useCallback(() => {
     saveAllPositions(nodes);
-    persistedPositionsRef.current = new Map(nodes.map((n) => [n.id, n.position]));
+    persistedPositionsRef.current = new Map(
+      nodes.map((n) => [n.id, n.position]),
+    );
     setSaveFlash(true);
     setTimeout(() => setSaveFlash(false), 1200);
   }, [nodes]);
@@ -726,50 +822,56 @@ function NarrativeFlowCanvas({
     setTimeout(() => reactFlow.fitView({ padding: 0.1, duration: 400 }), 100);
   }, [forcedView, currentView, rebuildView, reactFlow, cardsByThread]);
 
-  const handleNodeDragStop = useCallback((_event: React.MouseEvent, node: Node) => {
-    persistedPositionsRef.current.set(node.id, node.position);
-    saveNodePosition(node.id, node.position.x, node.position.y);
-  }, []);
+  const handleNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      persistedPositionsRef.current.set(node.id, node.position);
+      saveNodePosition(node.id, node.position.x, node.position.y);
+    },
+    [],
+  );
 
   const activeView = forcedView ?? currentView;
 
   return (
-    <div className="w-full h-full relative" style={{ backgroundColor: 'var(--fintheon-bg)' }}>
+    <div
+      className="w-full h-full relative"
+      style={{ backgroundColor: "var(--fintheon-bg)" }}
+    >
       <style>{CANVAS_CSS}</style>
 
-      {loadingPhase !== 'ready' && (
+      {loadingPhase !== "ready" && (
         <div
           style={{
-            position: 'absolute',
+            position: "absolute",
             inset: 0,
             zIndex: 50,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--fintheon-bg)',
-            opacity: loadingPhase === 'settling' ? 0 : 1,
-            transition: 'opacity 400ms ease',
-            pointerEvents: loadingPhase === 'settling' ? 'none' : 'auto',
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "var(--fintheon-bg)",
+            opacity: loadingPhase === "settling" ? 0 : 1,
+            transition: "opacity 400ms ease",
+            pointerEvents: loadingPhase === "settling" ? "none" : "auto",
           }}
         >
           <div
             style={{
               width: 28,
               height: 28,
-              border: '2px solid #c79f4a20',
-              borderTop: '2px solid #c79f4a',
-              borderRadius: '50%',
-              animation: 'spin-gold 0.8s linear infinite',
+              border: "2px solid #c79f4a20",
+              borderTop: "2px solid #c79f4a",
+              borderRadius: "50%",
+              animation: "spin-gold 0.8s linear infinite",
               marginBottom: 14,
             }}
           />
           <span
             style={{
               fontSize: 12,
-              color: '#c79f4a',
-              fontFamily: 'var(--font-mono)',
-              letterSpacing: '0.06em',
+              color: "#c79f4a",
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.06em",
               opacity: 0.7,
             }}
           >
@@ -787,10 +889,14 @@ function NarrativeFlowCanvas({
         defaultViewport={{ x: 0, y: 0, zoom: 0.15 }}
         minZoom={0.04}
         maxZoom={1.8}
-        panOnDrag={activeTool === 'hand' || activeTool === 'select'}
-        selectionOnDrag={activeTool === 'multi-select'}
+        panOnDrag={activeTool === "hand" || activeTool === "select"}
+        selectionOnDrag={activeTool === "multi-select"}
         proOptions={{ hideAttribution: true }}
-        style={{ backgroundColor: 'var(--fintheon-bg)', opacity: transitioning ? 0.4 : 1, transition: 'opacity 300ms ease' }}
+        style={{
+          backgroundColor: "var(--fintheon-bg)",
+          opacity: transitioning ? 0.4 : 1,
+          transition: "opacity 300ms ease",
+        }}
         onMove={handleViewportMove}
         onNodeDragStop={handleNodeDragStop}
       >
@@ -799,128 +905,141 @@ function NarrativeFlowCanvas({
         {/* Narrative/Theme toggle moved to NarrativeFilterDropdown */}
 
         <Panel position="bottom-left">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div
-            style={{
-              display: 'flex',
-              gap: 12,
-              alignItems: 'center',
-              padding: '6px 12px',
-              background: 'color-mix(in srgb, #0a0a00 85%, transparent)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid #D4AF3712',
-              borderRadius: 8,
-            }}
-          >
-            <span
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div
               style={{
-                fontSize: 10,
-                color: 'var(--fintheon-accent)',
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 600,
+                display: "flex",
+                gap: 12,
+                alignItems: "center",
+                padding: "6px 12px",
+                background: "color-mix(in srgb, #0a0a00 85%, transparent)",
+                backdropFilter: "blur(16px)",
+                border: "1px solid #D4AF3712",
+                borderRadius: 8,
               }}
             >
-              {filteredCatalysts.length} catalysts
-            </span>
-            <span
-              style={{
-                fontSize: 10,
-                color: 'var(--fintheon-muted)',
-                fontFamily: 'var(--font-mono)',
-                opacity: 0.5,
-              }}
-            >
-              {NARRATIVE_THREADS.length} narratives
-            </span>
-            <span
-              style={{
-                fontSize: 10,
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: activeView === 'macro' ? '#c79f4a' : activeView === 'narratives' ? '#F59E0B' : '#8B5CF6',
-              }}
-            >
-              {activeView} view
-            </span>
-            {forcedView && (
               <span
                 style={{
-                  fontSize: 8,
-                  color: 'var(--fintheon-accent)',
-                  fontFamily: 'var(--font-mono)',
-                  opacity: 0.5,
-                  textTransform: 'uppercase',
+                  fontSize: 10,
+                  color: "var(--fintheon-accent)",
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 600,
                 }}
               >
-                locked
+                {filteredCatalysts.length} catalysts
               </span>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button
-              onClick={handleSaveLayout}
-              style={{
-                padding: '4px 10px',
-                fontSize: 9,
-                fontFamily: 'var(--font-mono)',
-                color: saveFlash ? '#c79f4a' : 'var(--fintheon-muted)',
-                background: 'color-mix(in srgb, #0a0a00 70%, transparent)',
-                border: `1px solid ${saveFlash ? '#c79f4a30' : '#D4AF3710'}`,
-                borderRadius: 6,
-                cursor: 'pointer',
-                opacity: saveFlash ? 1 : 0.6,
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-              onMouseLeave={(e) => { if (!saveFlash) e.currentTarget.style.opacity = '0.6'; }}
-            >
-              {saveFlash ? 'Saved' : 'Save Layout'}
-            </button>
-            <button
-              onClick={handleResetLayout}
-              style={{
-                padding: '4px 10px',
-                fontSize: 9,
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--fintheon-muted)',
-                background: 'color-mix(in srgb, #0a0a00 70%, transparent)',
-                border: '1px solid #D4AF3710',
-                borderRadius: 6,
-                cursor: 'pointer',
-                opacity: 0.6,
-                transition: 'opacity 0.15s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.6'; }}
-            >
-              Reset Layout
-            </button>
-          </div>
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "var(--fintheon-muted)",
+                  fontFamily: "var(--font-mono)",
+                  opacity: 0.5,
+                }}
+              >
+                {NARRATIVE_THREADS.length} narratives
+              </span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color:
+                    activeView === "macro"
+                      ? "#c79f4a"
+                      : activeView === "narratives"
+                        ? "#F59E0B"
+                        : "#8B5CF6",
+                }}
+              >
+                {activeView} view
+              </span>
+              {forcedView && (
+                <span
+                  style={{
+                    fontSize: 8,
+                    color: "var(--fintheon-accent)",
+                    fontFamily: "var(--font-mono)",
+                    opacity: 0.5,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  locked
+                </span>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <button
+                onClick={handleSaveLayout}
+                style={{
+                  padding: "4px 10px",
+                  fontSize: 9,
+                  fontFamily: "var(--font-mono)",
+                  color: saveFlash ? "#c79f4a" : "var(--fintheon-muted)",
+                  background: "color-mix(in srgb, #0a0a00 70%, transparent)",
+                  border: `1px solid ${saveFlash ? "#c79f4a30" : "#D4AF3710"}`,
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  opacity: saveFlash ? 1 : 0.6,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = "1";
+                }}
+                onMouseLeave={(e) => {
+                  if (!saveFlash) e.currentTarget.style.opacity = "0.6";
+                }}
+              >
+                {saveFlash ? "Saved" : "Save Layout"}
+              </button>
+              <button
+                onClick={handleResetLayout}
+                style={{
+                  padding: "4px 10px",
+                  fontSize: 9,
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--fintheon-muted)",
+                  background: "color-mix(in srgb, #0a0a00 70%, transparent)",
+                  border: "1px solid #D4AF3710",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  opacity: 0.6,
+                  transition: "opacity 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = "1";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = "0.6";
+                }}
+              >
+                Reset Layout
+              </button>
+            </div>
           </div>
         </Panel>
 
         <Panel position="bottom-right">
           <div
             style={{
-              padding: '10px 14px',
-              background: 'color-mix(in srgb, #0a0a00 85%, transparent)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid #D4AF3712',
+              padding: "10px 14px",
+              background: "color-mix(in srgb, #0a0a00 85%, transparent)",
+              backdropFilter: "blur(16px)",
+              border: "1px solid #D4AF3712",
               borderRadius: 8,
-              display: 'flex',
-              flexDirection: 'column',
+              display: "flex",
+              flexDirection: "column",
               gap: 5,
             }}
           >
             <span
               style={{
                 fontSize: 8,
-                color: 'var(--fintheon-muted)',
-                fontFamily: 'var(--font-mono)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
+                color: "var(--fintheon-muted)",
+                fontFamily: "var(--font-mono)",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
                 marginBottom: 2,
                 opacity: 0.5,
               }}
@@ -929,13 +1048,23 @@ function NarrativeFlowCanvas({
             </span>
 
             {NARRATIVE_THREADS.map((thread) => (
-              <div key={thread.slug} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <div style={{ width: 7, height: 7, borderRadius: 2, background: thread.color }} />
+              <div
+                key={thread.slug}
+                style={{ display: "flex", alignItems: "center", gap: 7 }}
+              >
+                <div
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: 2,
+                    background: thread.color,
+                  }}
+                />
                 <span
                   style={{
                     fontSize: 10,
                     color: thread.color,
-                    fontFamily: 'var(--font-body)',
+                    fontFamily: "var(--font-body)",
                     fontWeight: 500,
                     opacity: 0.8,
                   }}
@@ -945,8 +1074,8 @@ function NarrativeFlowCanvas({
                 <span
                   style={{
                     fontSize: 9,
-                    color: 'var(--fintheon-muted)',
-                    fontFamily: 'var(--font-mono)',
+                    color: "var(--fintheon-muted)",
+                    fontFamily: "var(--font-mono)",
                     opacity: 0.4,
                   }}
                 >

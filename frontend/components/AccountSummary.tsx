@@ -37,10 +37,10 @@ export default function AccountSummary() {
       setAccount(data);
       return true;
     } catch (error: any) {
-      console.warn('Failed to load account:', error);
+      console.warn("Failed to load account:", error);
       // If unauthorized, stop polling
-      if (error?.status === 401 || error?.code === 'auth_skipped') {
-        console.warn('Account polling stopped due to auth failure');
+      if (error?.status === 401 || error?.code === "auth_skipped") {
+        console.warn("Account polling stopped due to auth failure");
         return false;
       }
       return true; // Continue polling for other errors
@@ -67,22 +67,30 @@ export default function AccountSummary() {
 
   return (
     <div className="bg-[#140a00] rounded-lg p-4 space-y-3">
-      <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Account Summary</h3>
+      <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+        Account Summary
+      </h3>
 
       <div className="space-y-2">
         <div className="flex justify-between items-baseline">
           <span className="text-[10px] text-zinc-500">Balance</span>
-          <span className="text-sm font-mono text-white">${account.balance.toLocaleString()}</span>
+          <span className="text-sm font-mono text-white">
+            ${account.balance.toLocaleString()}
+          </span>
         </div>
 
         <div className="flex justify-between items-baseline">
           <span className="text-[10px] text-zinc-500">Equity</span>
-          <span className="text-sm font-mono text-white">${(account.equity ?? account.balance).toLocaleString()}</span>
+          <span className="text-sm font-mono text-white">
+            ${(account.equity ?? account.balance).toLocaleString()}
+          </span>
         </div>
 
         <div className="flex justify-between items-baseline">
           <span className="text-[10px] text-zinc-500">Margin Used</span>
-          <span className="text-sm font-mono text-zinc-400">${(account.marginUsed ?? 0).toLocaleString()}</span>
+          <span className="text-sm font-mono text-zinc-400">
+            ${(account.marginUsed ?? 0).toLocaleString()}
+          </span>
         </div>
       </div>
 
@@ -90,11 +98,27 @@ export default function AccountSummary() {
         <div className="flex justify-between items-baseline mb-2">
           <span className="text-[10px] text-zinc-500">Daily P&L</span>
           <div className="text-right">
-            <div className="text-sm font-mono font-bold" style={{ color: isPositive ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)' }}>
-              {isPositive ? "+" : ""}{(account.dailyPnl ?? 0).toFixed(2)}
+            <div
+              className="text-sm font-mono font-bold"
+              style={{
+                color: isPositive
+                  ? "var(--fintheon-bullish)"
+                  : "var(--fintheon-bearish)",
+              }}
+            >
+              {isPositive ? "+" : ""}
+              {(account.dailyPnl ?? 0).toFixed(2)}
             </div>
-            <div className="text-[9px]" style={{ color: isPositive ? 'color-mix(in srgb, var(--fintheon-bullish) 70%, transparent)' : 'color-mix(in srgb, var(--fintheon-bearish) 70%, transparent)' }}>
-              {isPositive ? "+" : ""}{pnlPercentage.toFixed(2)}%
+            <div
+              className="text-[9px]"
+              style={{
+                color: isPositive
+                  ? "color-mix(in srgb, var(--fintheon-bullish) 70%, transparent)"
+                  : "color-mix(in srgb, var(--fintheon-bearish) 70%, transparent)",
+              }}
+            >
+              {isPositive ? "+" : ""}
+              {pnlPercentage.toFixed(2)}%
             </div>
           </div>
         </div>
@@ -103,7 +127,9 @@ export default function AccountSummary() {
           <div
             className="h-full transition-all"
             style={{
-              backgroundColor: isPositive ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)',
+              backgroundColor: isPositive
+                ? "var(--fintheon-bullish)"
+                : "var(--fintheon-bearish)",
               width: `${barWidth}%`,
               marginLeft: isPositive ? "50%" : `${50 - barWidth}%`,
             }}

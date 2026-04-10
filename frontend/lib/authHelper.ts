@@ -20,9 +20,11 @@ export async function signOutUser(): Promise<void> {
     try {
       await signOutCallback();
     } catch (error) {
-      console.error('[AuthHelper] Error signing out:', error);
+      console.error("[AuthHelper] Error signing out:", error);
     }
   } else {
-    console.warn('[AuthHelper] Sign-out callback not registered. User may need to manually sign out.');
+    console.warn(
+      "[AuthHelper] Sign-out callback not registered. User may need to manually sign out.",
+    );
   }
 }

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-16] Positioned tooltip for spotlight tour — auto-positions around target
-import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 interface TourStep {
   title: string;
@@ -9,7 +9,7 @@ interface TourStep {
   targetSelector: string;
 }
 
-type TooltipPosition = 'auto' | 'top' | 'bottom' | 'left' | 'right';
+type TooltipPosition = "auto" | "top" | "bottom" | "left" | "right";
 
 interface TourTooltipProps {
   targetRect: { x: number; y: number; width: number; height: number } | null;
@@ -27,22 +27,31 @@ const TOOLTIP_WIDTH = 340;
 
 function pickPosition(
   rect: { x: number; y: number; width: number; height: number },
-  preferred: TooltipPosition
-): 'top' | 'bottom' | 'left' | 'right' {
-  if (preferred !== 'auto') return preferred;
+  preferred: TooltipPosition,
+): "top" | "bottom" | "left" | "right" {
+  if (preferred !== "auto") return preferred;
 
   const spaceTop = rect.y;
   const spaceBottom = window.innerHeight - (rect.y + rect.height);
   const spaceLeft = rect.x;
   const spaceRight = window.innerWidth - (rect.x + rect.width);
 
-  const spaces = { bottom: spaceBottom, top: spaceTop, right: spaceRight, left: spaceLeft };
-  return Object.entries(spaces).sort((a, b) => b[1] - a[1])[0][0] as 'top' | 'bottom' | 'left' | 'right';
+  const spaces = {
+    bottom: spaceBottom,
+    top: spaceTop,
+    right: spaceRight,
+    left: spaceLeft,
+  };
+  return Object.entries(spaces).sort((a, b) => b[1] - a[1])[0][0] as
+    | "top"
+    | "bottom"
+    | "left"
+    | "right";
 }
 
 export function TourTooltip({
   targetRect,
-  position = 'auto',
+  position = "auto",
   step,
   stepIndex,
   totalSteps,
@@ -68,19 +77,19 @@ export function TourTooltip({
   let left = 0;
 
   switch (side) {
-    case 'bottom':
+    case "bottom":
       top = targetRect.y + targetRect.height + TOOLTIP_GAP;
       left = targetRect.x + targetRect.width / 2 - TOOLTIP_WIDTH / 2;
       break;
-    case 'top':
+    case "top":
       top = targetRect.y - tooltipHeight - TOOLTIP_GAP;
       left = targetRect.x + targetRect.width / 2 - TOOLTIP_WIDTH / 2;
       break;
-    case 'right':
+    case "right":
       top = targetRect.y + targetRect.height / 2 - tooltipHeight / 2;
       left = targetRect.x + targetRect.width + TOOLTIP_GAP;
       break;
-    case 'left':
+    case "left":
       top = targetRect.y + targetRect.height / 2 - tooltipHeight / 2;
       left = targetRect.x - TOOLTIP_WIDTH - TOOLTIP_GAP;
       break;
@@ -98,13 +107,15 @@ export function TourTooltip({
         top,
         left,
         width: TOOLTIP_WIDTH,
-        transition: 'all 300ms ease',
+        transition: "all 300ms ease",
       }}
     >
       <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-xl overflow-hidden">
         {/* Content */}
         <div className="px-5 py-4">
-          <div className="text-lg font-semibold text-white mb-1.5">{step.title}</div>
+          <div className="text-lg font-semibold text-white mb-1.5">
+            {step.title}
+          </div>
           <p className="text-sm text-[var(--fintheon-muted,#9ca3af)] leading-relaxed">
             {step.description}
           </p>
@@ -119,10 +130,10 @@ export function TourTooltip({
                 key={i}
                 className={`w-1.5 h-1.5 rounded-full transition-colors ${
                   i === stepIndex
-                    ? 'bg-[var(--fintheon-accent)]'
+                    ? "bg-[var(--fintheon-accent)]"
                     : i < stepIndex
-                    ? 'bg-[var(--fintheon-accent)]/40'
-                    : 'bg-white/10'
+                      ? "bg-[var(--fintheon-accent)]/40"
+                      : "bg-white/10"
                 }`}
               />
             ))}
@@ -149,7 +160,7 @@ export function TourTooltip({
               onClick={onNext}
               className="flex items-center gap-0.5 px-4 py-1.5 text-xs font-medium bg-[var(--fintheon-accent)] text-black rounded hover:brightness-110 transition-all"
             >
-              {isLast ? 'Get Started' : 'Next'}
+              {isLast ? "Get Started" : "Next"}
               {!isLast && <ChevronRight className="w-3 h-3" />}
             </button>
           </div>

@@ -1,7 +1,7 @@
 // [claude-code 2026-03-06] NarrativeFlow GhostCard — semi-transparent card for future scheduled events
-import { useState, useEffect } from 'react';
-import type { CatalystCard as CatalystCardType } from '../../lib/narrative-types';
-import CatalystCard from './CatalystCard';
+import { useState, useEffect } from "react";
+import type { CatalystCard as CatalystCardType } from "../../lib/narrative-types";
+import CatalystCard from "./CatalystCard";
 
 interface GhostCardProps {
   catalyst: CatalystCardType;
@@ -38,7 +38,7 @@ export default function GhostCard({
   // If no longer a ghost, render as a normal CatalystCard (with optional solidify animation)
   if (!catalyst.isGhost) {
     return (
-      <div className={solidified ? 'ghost-solidify' : ''}>
+      <div className={solidified ? "ghost-solidify" : ""}>
         <CatalystCard
           catalyst={catalyst}
           compact={compact}
@@ -56,18 +56,19 @@ export default function GhostCard({
     <div
       ref={cardRef}
       className={[
-        'rounded-xl cursor-pointer select-none transition-all duration-200 relative',
-        compact ? 'px-2 py-1.5 w-[120px]' : 'px-3 py-2.5 w-[160px]',
-      ].join(' ')}
+        "rounded-xl cursor-pointer select-none transition-all duration-200 relative",
+        compact ? "px-2 py-1.5 w-[120px]" : "px-3 py-2.5 w-[160px]",
+      ].join(" ")}
       style={{
         opacity: 0.5,
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 60%, transparent)',
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        backgroundColor:
+          "color-mix(in srgb, var(--fintheon-surface) 60%, transparent)",
         border: `1px dashed color-mix(in srgb, var(--fintheon-border) 40%, transparent)`,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-        minHeight: compact ? 'auto' : '80px',
-        filter: 'saturate(0.7)',
+        boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+        minHeight: compact ? "auto" : "80px",
+        filter: "saturate(0.7)",
       }}
       onClick={() => onSelect(catalyst.id)}
       draggable={!!onDragStart}
@@ -78,9 +79,10 @@ export default function GhostCard({
       <span
         className="absolute top-1 right-1.5 rounded-full px-1.5 py-0.5 font-medium uppercase"
         style={{
-          fontSize: '7px',
-          color: 'var(--fintheon-muted)',
-          backgroundColor: 'color-mix(in srgb, var(--fintheon-muted) 15%, transparent)',
+          fontSize: "7px",
+          color: "var(--fintheon-muted)",
+          backgroundColor:
+            "color-mix(in srgb, var(--fintheon-muted) 15%, transparent)",
         }}
       >
         Scheduled
@@ -90,8 +92,8 @@ export default function GhostCard({
       <p
         className="font-semibold leading-tight truncate pr-10"
         style={{
-          fontSize: compact ? '10px' : '11px',
-          color: 'var(--fintheon-text)',
+          fontSize: compact ? "10px" : "11px",
+          color: "var(--fintheon-text)",
         }}
       >
         {catalyst.title}
@@ -100,9 +102,12 @@ export default function GhostCard({
       {!compact && (
         <p
           className="mt-1 truncate"
-          style={{ fontSize: '9px', color: 'var(--fintheon-muted)' }}
+          style={{ fontSize: "9px", color: "var(--fintheon-muted)" }}
         >
-          {new Date(catalyst.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {new Date(catalyst.date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })}
         </p>
       )}
     </div>

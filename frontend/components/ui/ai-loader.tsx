@@ -1,5 +1,5 @@
 // [claude-code 2026-03-10] AI Loader — rotating glow circle + text animation, Solvys Gold palette
-import { cn } from '../../lib/utils';
+import { cn } from "../../lib/utils";
 
 interface AiLoaderProps {
   text?: string;
@@ -7,17 +7,21 @@ interface AiLoaderProps {
   className?: string;
 }
 
-export function AiLoader({ text = 'Thinking...', size = 40, className }: AiLoaderProps) {
+export function AiLoader({
+  text = "Thinking...",
+  size = 40,
+  className,
+}: AiLoaderProps) {
   const r = size / 2 - 3; // ring radius with padding
 
   return (
-    <div className={cn('flex flex-col items-center gap-3', className)}>
+    <div className={cn("flex flex-col items-center gap-3", className)}>
       <div className="relative" style={{ width: size, height: size }}>
         {/* Outer glow */}
         <svg
           viewBox={`0 0 ${size} ${size}`}
           className="animate-spin"
-          style={{ animationDuration: '2.4s' }}
+          style={{ animationDuration: "2.4s" }}
         >
           <circle
             cx={size / 2}
@@ -28,7 +32,7 @@ export function AiLoader({ text = 'Thinking...', size = 40, className }: AiLoade
             strokeWidth={2.5}
             strokeLinecap="round"
             strokeDasharray={`${r * 1.8} ${r * 4.5}`}
-            style={{ filter: 'drop-shadow(0 0 4px var(--fintheon-accent))' }}
+            style={{ filter: "drop-shadow(0 0 4px var(--fintheon-accent))" }}
           />
         </svg>
         {/* Inner dot */}
@@ -41,8 +45,8 @@ export function AiLoader({ text = 'Thinking...', size = 40, className }: AiLoade
             style={{
               width: 6,
               height: 6,
-              background: 'var(--fintheon-accent)',
-              boxShadow: '0 0 8px var(--fintheon-accent)',
+              background: "var(--fintheon-accent)",
+              boxShadow: "0 0 8px var(--fintheon-accent)",
             }}
           />
         </span>
@@ -51,7 +55,7 @@ export function AiLoader({ text = 'Thinking...', size = 40, className }: AiLoade
       {text && (
         <span
           className="text-sm font-medium animate-pulse"
-          style={{ color: 'var(--fintheon-accent)' }}
+          style={{ color: "var(--fintheon-accent)" }}
         >
           {text}
         </span>

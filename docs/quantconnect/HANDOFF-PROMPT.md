@@ -1,4 +1,5 @@
 # Handoff Prompt — QuantConnect Strategy Specs
+
 <!-- claude-code 2026-03-03 | All 14 questions resolved, Rithmic API research complete, all specs ready to code -->
 <!-- claude-code 2026-02-28 | Updated — 10 of 14 questions resolved, 4 remaining -->
 
@@ -15,14 +16,14 @@ These specs are written for **Harper** (CAO / OpenClaw agent) to implement on **
 
 ## What's Done
 
-| File | Status |
-|------|--------|
-| `STRATEGY-40-40-CLUB.md` | **Updated** — all 14 questions resolved, Anchored VWAP spec + footprint chart roadmap added |
-| `STRATEGY-FLUSH.md` | **Updated** — soft-bounded timing windows, resolved questions cross-referenced |
-| `STRATEGY-RIPPER.md` | **Updated** — 120s blackout clarified, volatility spike risk governor added |
-| `ANTILAG-SPEC.md` | Complete — composite signal with pseudocode |
-| `PRE-STAGED-NEWS-ENTRY.md` | Complete — 120s blackout, severity mapping, Harper checklist |
-| `VIDEO-ANALYSIS-NOTES.md` | Complete — Clip 1 (Antilag) + Clip 2 (Macro Flush) |
+| File                       | Status                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------- |
+| `STRATEGY-40-40-CLUB.md`   | **Updated** — all 14 questions resolved, Anchored VWAP spec + footprint chart roadmap added |
+| `STRATEGY-FLUSH.md`        | **Updated** — soft-bounded timing windows, resolved questions cross-referenced              |
+| `STRATEGY-RIPPER.md`       | **Updated** — 120s blackout clarified, volatility spike risk governor added                 |
+| `ANTILAG-SPEC.md`          | Complete — composite signal with pseudocode                                                 |
+| `PRE-STAGED-NEWS-ENTRY.md` | Complete — 120s blackout, severity mapping, Harper checklist                                |
+| `VIDEO-ANALYSIS-NOTES.md`  | Complete — Clip 1 (Antilag) + Clip 2 (Macro Flush)                                          |
 
 ---
 
@@ -55,6 +56,7 @@ These specs are written for **Harper** (CAO / OpenClaw agent) to implement on **
 **Finding:** Rithmic does NOT provide pre-built footprint charts or volume profiles. However, raw tick-by-tick data IS available via the `TICKER_PLANT` WebSocket endpoint.
 
 **What Harper can build from raw tick data:**
+
 1. **Footprint charts** — classify each trade as buyer/seller-initiated via BBO comparison, aggregate delta per price level per bar
 2. **Anchored volume profile** — aggregate volume at each price level, anchor to the same VWAP catalyst points
 

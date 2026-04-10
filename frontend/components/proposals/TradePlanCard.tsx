@@ -1,29 +1,49 @@
 // [claude-code 2026-03-31] S13-T2: TradePlanCard — displays generated trade plan for a proposal
-import { useState } from 'react';
-import { Target, TrendingUp, ChevronDown, ChevronUp, RefreshCw, BarChart3, Shield } from 'lucide-react';
-import { useBackend } from '../../lib/backend';
-import type { TradePlanData } from '../../types/feed';
+import { useState } from "react";
+import {
+  Target,
+  TrendingUp,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  BarChart3,
+  Shield,
+} from "lucide-react";
+import { useBackend } from "../../lib/backend";
+import type { TradePlanData } from "../../types/feed";
 
 const TREND_LABELS: Record<string, { label: string; color: string }> = {
-  ripper: { label: 'RIPPER', color: 'text-emerald-400 bg-emerald-500/10' },
-  strong_trend: { label: 'STRONG TREND', color: 'text-[#c79f4a] bg-[#c79f4a]/10' },
-  weak_trend: { label: 'WEAK TREND', color: 'text-amber-500/70 bg-amber-500/10' },
+  ripper: { label: "RIPPER", color: "text-emerald-400 bg-emerald-500/10" },
+  strong_trend: {
+    label: "STRONG TREND",
+    color: "text-[#c79f4a] bg-[#c79f4a]/10",
+  },
+  weak_trend: {
+    label: "WEAK TREND",
+    color: "text-amber-500/70 bg-amber-500/10",
+  },
 };
 
 interface TradePlanCardProps {
   proposalId: string;
   instrument: string;
-  direction: 'long' | 'short' | 'flat';
+  direction: "long" | "short" | "flat";
   tradePlan: TradePlanData;
   onRefresh?: () => void;
 }
 
-export function TradePlanCard({ proposalId, instrument, direction, tradePlan, onRefresh }: TradePlanCardProps) {
+export function TradePlanCard({
+  proposalId,
+  instrument,
+  direction,
+  tradePlan,
+  onRefresh,
+}: TradePlanCardProps) {
   const backend = useBackend();
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
-  const isLong = direction === 'long';
+  const isLong = direction === "long";
 
   async function handleRegenerate() {
     setRegenerating(true);
@@ -44,15 +64,19 @@ export function TradePlanCard({ proposalId, instrument, direction, tradePlan, on
         <div className="flex items-center gap-2">
           <BarChart3 size={16} className="text-[#c79f4a]" />
           <span className="text-sm font-medium text-[#f0ead6]">Trade Plan</span>
-          <span className="text-xs text-[#f0ead6]/50">{tradePlan.timeframe}</span>
+          <span className="text-xs text-[#f0ead6]/50">
+            {tradePlan.timeframe}
+          </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-            isLong
-              ? 'bg-emerald-500/10 text-emerald-400'
-              : 'bg-red-500/10 text-red-400'
-          }`}>
-            {isLong ? 'LONG' : 'SHORT'} {instrument}
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded ${
+              isLong
+                ? "bg-emerald-500/10 text-emerald-400"
+                : "bg-red-500/10 text-red-400"
+            }`}
+          >
+            {isLong ? "LONG" : "SHORT"} {instrument}
           </span>
           <button
             onClick={handleRegenerate}
@@ -60,7 +84,10 @@ export function TradePlanCard({ proposalId, instrument, direction, tradePlan, on
             className="p-1 rounded hover:bg-[#c79f4a]/10 text-[#f0ead6]/40 hover:text-[#c79f4a] transition-colors disabled:opacity-50"
             title="Regenerate Plan"
           >
-            <RefreshCw size={14} className={regenerating ? 'animate-spin' : ''} />
+            <RefreshCw
+              size={14}
+              className={regenerating ? "animate-spin" : ""}
+            />
           </button>
         </div>
       </div>
@@ -68,10 +95,14 @@ export function TradePlanCard({ proposalId, instrument, direction, tradePlan, on
       {/* Trend Template Badge */}
       {tradePlan.trendTemplate && TREND_LABELS[tradePlan.trendTemplate] && (
         <div className="flex items-center gap-1.5">
-          <span className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded ${TREND_LABELS[tradePlan.trendTemplate].color}`}>
+          <span
+            className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded ${TREND_LABELS[tradePlan.trendTemplate].color}`}
+          >
             {TREND_LABELS[tradePlan.trendTemplate].label}
           </span>
-          <span className="text-[10px] text-[#f0ead6]/30">Fib Zone Classification</span>
+          <span className="text-[10px] text-[#f0ead6]/30">
+            Fib Zone Classification
+          </span>
         </div>
       )}
 
@@ -116,10 +147,15 @@ export function TradePlanCard({ proposalId, instrument, direction, tradePlan, on
       <div className="flex items-center gap-3 text-xs">
         <div className="flex items-center gap-1.5">
           <span className="text-[#f0ead6]/40">R:R</span>
-          <span className={`font-mono font-medium ${
-            tradePlan.riskRewardRatio >= 2 ? 'text-emerald-400' :
-            tradePlan.riskRewardRatio >= 1 ? 'text-[#c79f4a]' : 'text-red-400'
-          }`}>
+          <span
+            className={`font-mono font-medium ${
+              tradePlan.riskRewardRatio >= 2
+                ? "text-emerald-400"
+                : tradePlan.riskRewardRatio >= 1
+                  ? "text-[#c79f4a]"
+                  : "text-red-400"
+            }`}
+          >
             {tradePlan.riskRewardRatio.toFixed(1)}
           </span>
         </div>
@@ -129,13 +165,18 @@ export function TradePlanCard({ proposalId, instrument, direction, tradePlan, on
           <div className="w-16 h-1.5 rounded-full bg-[#f0ead6]/10 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
-                tradePlan.confidence >= 70 ? 'bg-emerald-400' :
-                tradePlan.confidence >= 40 ? 'bg-[#c79f4a]' : 'bg-red-400'
+                tradePlan.confidence >= 70
+                  ? "bg-emerald-400"
+                  : tradePlan.confidence >= 40
+                    ? "bg-[#c79f4a]"
+                    : "bg-red-400"
               }`}
               style={{ width: `${tradePlan.confidence}%` }}
             />
           </div>
-          <span className="font-mono text-[#f0ead6]/60">{tradePlan.confidence}</span>
+          <span className="font-mono text-[#f0ead6]/60">
+            {tradePlan.confidence}
+          </span>
         </div>
       </div>
 
@@ -145,7 +186,10 @@ export function TradePlanCard({ proposalId, instrument, direction, tradePlan, on
           <div className="text-xs text-[#f0ead6]/40 mb-1">Key Levels</div>
           <div className="flex flex-wrap gap-1.5">
             {tradePlan.keyLevels.map((kl, i) => (
-              <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-[#f0ead6]/5 text-[#f0ead6]/60 font-mono">
+              <span
+                key={i}
+                className="text-xs px-1.5 py-0.5 rounded bg-[#f0ead6]/5 text-[#f0ead6]/60 font-mono"
+              >
                 {kl.label}: {kl.price.toLocaleString()}
               </span>
             ))}
@@ -203,15 +247,22 @@ function PriceRow({
   highlight?: boolean;
 }) {
   return (
-    <div className={`flex items-center justify-between px-2 py-1 rounded ${bgColor} ${
-      highlight ? 'ring-1 ring-[#c79f4a]/20' : ''
-    }`}>
+    <div
+      className={`flex items-center justify-between px-2 py-1 rounded ${bgColor} ${
+        highlight ? "ring-1 ring-[#c79f4a]/20" : ""
+      }`}
+    >
       <div className={`flex items-center gap-1.5 text-xs ${color}`}>
         {icon}
         <span className="font-medium">{label}</span>
       </div>
-      <span className={`font-mono text-xs ${highlight ? 'text-[#c79f4a] font-semibold' : 'text-[#f0ead6]/70'}`}>
-        {price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      <span
+        className={`font-mono text-xs ${highlight ? "text-[#c79f4a] font-semibold" : "text-[#f0ead6]/70"}`}
+      >
+        {price.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
       </span>
     </div>
   );

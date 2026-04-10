@@ -1,11 +1,11 @@
 // [claude-code 2026-03-22] Mini widget — Supabase auth (replaces Clerk)
-import React, { useState, useEffect } from 'react';
-import { createRoot } from 'react-dom/client';
-import { AuthProvider } from './frontend/contexts/AuthContext';
-import { SettingsProvider } from './frontend/contexts/SettingsContext';
-import { FloatingWidget } from './frontend/components/layout/FloatingWidget';
-import { useBackend } from './frontend/lib/backend';
-import './index.css';
+import React, { useState, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import { AuthProvider } from "./frontend/contexts/AuthContext";
+import { SettingsProvider } from "./frontend/contexts/SettingsContext";
+import { FloatingWidget } from "./frontend/components/layout/FloatingWidget";
+import { useBackend } from "./frontend/lib/backend";
+import "./index.css";
 
 /**
  * Mini Widget App - Standalone floating widget for persistent display
@@ -22,15 +22,18 @@ function MiniWidgetApp() {
       try {
         const newsClient = (backend as any).news;
         const baseClient = (newsClient as any).baseClient;
-        const response = await baseClient.callTypedAPI('/news/fetch-vix', { method: 'GET', body: undefined });
+        const response = await baseClient.callTypedAPI("/news/fetch-vix", {
+          method: "GET",
+          body: undefined,
+        });
         if (response.ok) {
           const data = await response.json();
-          if (data && typeof data.value === 'number') {
+          if (data && typeof data.value === "number") {
             setVix(data.value);
           }
         }
       } catch (error) {
-        console.error('[MiniWidget] Failed to fetch VIX:', error);
+        console.error("[MiniWidget] Failed to fetch VIX:", error);
       }
     };
 
@@ -42,7 +45,9 @@ function MiniWidgetApp() {
   // Simulate IV score updates
   useEffect(() => {
     const interval = setInterval(() => {
-      setIvScore(prev => Math.max(0, Math.min(10, prev + (Math.random() - 0.5) * 0.5)));
+      setIvScore((prev) =>
+        Math.max(0, Math.min(10, prev + (Math.random() - 0.5) * 0.5)),
+      );
     }, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -55,7 +60,7 @@ function MiniWidgetApp() {
     <div className="min-h-screen bg-transparent">
       <div
         className="fixed top-0 left-0 right-0 h-4 cursor-move"
-        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+        style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
       />
       <div className="pt-2">
         <FloatingWidget
@@ -80,7 +85,7 @@ function MiniWidgetRoot() {
 }
 
 // Mount the app
-const container = document.getElementById('root');
+const container = document.getElementById("root");
 if (container) {
   const root = createRoot(container);
   root.render(<MiniWidgetRoot />);

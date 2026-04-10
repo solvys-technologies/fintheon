@@ -1,14 +1,14 @@
 // [claude-code 2026-03-31] S13-T2: TradePlanStatus — small badge shown on proposal cards
-import { Loader2, CheckCircle2, CircleOff } from 'lucide-react';
+import { Loader2, CheckCircle2, CircleOff } from "lucide-react";
 
-type TradePlanState = 'generating' | 'ready' | 'unavailable';
+type TradePlanState = "generating" | "ready" | "unavailable";
 
 interface TradePlanStatusProps {
   state: TradePlanState;
 }
 
 export function TradePlanStatus({ state }: TradePlanStatusProps) {
-  if (state === 'generating') {
+  if (state === "generating") {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-[#c79f4a]/70">
         <Loader2 size={12} className="animate-spin" />
@@ -17,7 +17,7 @@ export function TradePlanStatus({ state }: TradePlanStatusProps) {
     );
   }
 
-  if (state === 'ready') {
+  if (state === "ready") {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-[#c79f4a]">
         <CheckCircle2 size={12} />

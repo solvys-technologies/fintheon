@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, ReactNode } from 'react';
-import { GripVertical, X } from 'lucide-react';
+import { useState, useRef, useEffect, ReactNode } from "react";
+import { GripVertical, X } from "lucide-react";
 
-export type PanelPosition = 'left' | 'right' | 'floating';
+export type PanelPosition = "left" | "right" | "floating";
 
 interface DraggablePanelProps {
   children: ReactNode;
@@ -15,10 +15,10 @@ interface DraggablePanelProps {
 export function DraggablePanel({
   children,
   title,
-  defaultPosition = 'right',
+  defaultPosition = "right",
   onPositionChange,
   onClose,
-  className = '',
+  className = "",
 }: DraggablePanelProps) {
   const [position, setPosition] = useState<PanelPosition>(defaultPosition);
   const [isDragging, setIsDragging] = useState(false);
@@ -27,7 +27,7 @@ export function DraggablePanel({
   const panelRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (position !== 'floating') return;
+    if (position !== "floating") return;
     setIsDragging(true);
     const rect = panelRef.current?.getBoundingClientRect();
     if (rect) {
@@ -37,10 +37,10 @@ export function DraggablePanel({
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || position !== 'floating') return;
+    if (!isDragging || position !== "floating") return;
     const newX = e.clientX - offset.x;
     const newY = e.clientY - offset.y;
-    
+
     if (panelRef.current) {
       panelRef.current.style.left = `${newX}px`;
       panelRef.current.style.top = `${newY}px`;
@@ -54,11 +54,11 @@ export function DraggablePanel({
   // Attach global mouse events for dragging
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
       return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
       };
     }
   }, [isDragging]);
@@ -68,31 +68,34 @@ export function DraggablePanel({
     onPositionChange?.(newPosition);
   };
 
-  const baseClasses = 'bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 flex flex-col';
-  
-  if (position === 'floating') {
+  const baseClasses =
+    "bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 flex flex-col";
+
+  if (position === "floating") {
     return (
       <div
         ref={panelRef}
         className={`${baseClasses} fixed z-50 rounded-lg shadow-2xl ${className}`}
-        style={{ width: '320px', height: '400px' }}
+        style={{ width: "320px", height: "400px" }}
         onMouseDown={handleMouseDown}
       >
         <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/20 cursor-move">
           <div className="flex items-center gap-2">
             <GripVertical className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
-            <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">{title}</h3>
+            <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">
+              {title}
+            </h3>
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => handlePositionChange('right')}
+              onClick={() => handlePositionChange("right")}
               className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] text-xs"
               title="Dock Right"
             >
               →
             </button>
             <button
-              onClick={() => handlePositionChange('left')}
+              onClick={() => handlePositionChange("left")}
               className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] text-xs"
               title="Dock Left"
             >
@@ -117,17 +120,21 @@ export function DraggablePanel({
   return (
     <div className={`${baseClasses} ${className}`}>
       <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/20">
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">{title}</h3>
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">
+          {title}
+        </h3>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => handlePositionChange(position === 'left' ? 'right' : 'left')}
+            onClick={() =>
+              handlePositionChange(position === "left" ? "right" : "left")
+            }
             className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] text-xs"
-            title={position === 'left' ? 'Move Right' : 'Move Left'}
+            title={position === "left" ? "Move Right" : "Move Left"}
           >
-            {position === 'left' ? '→' : '←'}
+            {position === "left" ? "→" : "←"}
           </button>
           <button
-            onClick={() => handlePositionChange('floating')}
+            onClick={() => handlePositionChange("floating")}
             className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
             title="Float"
           >

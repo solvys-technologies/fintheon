@@ -45,4 +45,4 @@ require automatic enforcement — flag violations immediately.
 - No agent has unilateral override power. TP is always the final decider.
 - 11:30 AM EST: hard stop on all trading. No exceptions.
 - 120-second blackout after scheduled news releases. No entries during blackout.
-`
+`;

@@ -40,10 +40,22 @@
     { "name": "AfterHours", "multiplier": 0.7, "start": 16, "end": 19 }
   ],
   "vixMultipliers": [
-    { "max": 15, "multiplier": 0.8, "context": "Low fear, choppy PA around 20/100 EMA" },
+    {
+      "max": 15,
+      "multiplier": 0.8,
+      "context": "Low fear, choppy PA around 20/100 EMA"
+    },
     { "max": 20, "multiplier": 1.0, "context": "Neutral, base hits" },
-    { "max": 30, "multiplier": 1.2, "context": "Elevated, trendy PA respecting 20/50 EMA" },
-    { "max": 999999, "multiplier": 1.5, "context": "High fear, home run potential" }
+    {
+      "max": 30,
+      "multiplier": 1.2,
+      "context": "Elevated, trendy PA respecting 20/50 EMA"
+    },
+    {
+      "max": 999999,
+      "multiplier": 1.5,
+      "context": "High fear, home run potential"
+    }
   ],
   "decayHalfLives": {
     "fedDecision": 120,

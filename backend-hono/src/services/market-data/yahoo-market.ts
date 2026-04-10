@@ -1,10 +1,10 @@
 // [claude-code 2026-03-23] Yahoo Finance market data client — replaces FMP
 // [claude-code 2026-03-14] Original implementation
 // No API key needed. Uses Yahoo Finance v8 chart API.
-import type { StockQuote, VixData } from './types.js';
+import type { StockQuote, VixData } from "./types.js";
 
-const YAHOO_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
-const HEADERS = { 'User-Agent': 'Mozilla/5.0' };
+const YAHOO_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
+const HEADERS = { "User-Agent": "Mozilla/5.0" };
 
 async function yahooFetch(symbol: string): Promise<any> {
   const url = `${YAHOO_BASE}/${encodeURIComponent(symbol)}?range=1d&interval=1m`;
@@ -43,8 +43,8 @@ export async function getQuote(symbol: string): Promise<StockQuote> {
  */
 export async function getIntradayBars(
   symbol: string,
-  range: string = '1d',
-  interval: string = '1m',
+  range: string = "1d",
+  interval: string = "1m",
 ): Promise<Array<{ timestamp: number; close: number }>> {
   const url = `${YAHOO_BASE}/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
   const res = await fetch(url, {
@@ -77,7 +77,7 @@ export async function getPriceNear(
   targetTime: Date,
 ): Promise<number | null> {
   try {
-    const bars = await getIntradayBars(symbol, '5d', '5m');
+    const bars = await getIntradayBars(symbol, "5d", "5m");
     if (bars.length === 0) return null;
 
     const targetMs = targetTime.getTime();
@@ -99,10 +99,10 @@ export async function getPriceNear(
 }
 
 export async function getVix(): Promise<VixData> {
-  const result = await yahooFetch('%5EVIX');
+  const result = await yahooFetch("%5EVIX");
   const meta = result.meta;
   const value = meta?.regularMarketPrice;
-  if (value == null) throw new Error('VIX quote missing price');
+  if (value == null) throw new Error("VIX quote missing price");
 
   const prevClose = meta?.chartPreviousClose ?? meta?.previousClose ?? value;
   const change = value - prevClose;

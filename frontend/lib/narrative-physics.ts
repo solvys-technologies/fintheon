@@ -1,6 +1,6 @@
 // [claude-code 2026-03-16] Physics simulation for NarrativeCanvas — float, repulsion, containment, rope swing
 
-import type { NarrativeCategory } from './narrative-types';
+import type { NarrativeCategory } from "./narrative-types";
 
 export interface BubbleState {
   id: string;
@@ -25,8 +25,13 @@ export interface RopeSwingState {
 
 /** Zone layout for each narrative category — positioned as columns across the canvas */
 const ZONE_COLUMNS: NarrativeCategory[] = [
-  'geopolitical', 'macroeconomic', 'monetary',
-  'market-structure', 'supply-chain', 'black-swan', 'earnings',
+  "geopolitical",
+  "macroeconomic",
+  "monetary",
+  "market-structure",
+  "supply-chain",
+  "black-swan",
+  "earnings",
 ];
 
 export function getZoneBounds(
@@ -46,7 +51,7 @@ export function getZoneBounds(
 }
 
 export function getAllZoneBounds(canvasWidth: number, canvasHeight: number) {
-  return ZONE_COLUMNS.map(cat => ({
+  return ZONE_COLUMNS.map((cat) => ({
     category: cat,
     bounds: getZoneBounds(cat, canvasWidth, canvasHeight),
   }));
@@ -77,11 +82,17 @@ export function initBubble(
 }
 
 /** Gentle sine-wave float animation — updates y velocity */
-export function applyFloat(bubble: BubbleState, time: number, dt: number): void {
-  const floatForce = Math.sin(time * 0.8 + bubble.phase) * bubble.amplitude * 0.3;
+export function applyFloat(
+  bubble: BubbleState,
+  time: number,
+  dt: number,
+): void {
+  const floatForce =
+    Math.sin(time * 0.8 + bubble.phase) * bubble.amplitude * 0.3;
   bubble.vy += floatForce * dt;
   // Horizontal drift
-  const driftForce = Math.cos(time * 0.5 + bubble.phase * 1.7) * bubble.amplitude * 0.1;
+  const driftForce =
+    Math.cos(time * 0.5 + bubble.phase * 1.7) * bubble.amplitude * 0.1;
   bubble.vx += driftForce * dt;
 }
 
@@ -126,7 +137,7 @@ export function applyRepulsion(bubbles: BubbleState[]): void {
 
       const minSep = (a.width + b.width) / 2 + minDist;
       if (dist < minSep && dist > 0) {
-        const force = (minSep - dist) / dist * repulsionStrength;
+        const force = ((minSep - dist) / dist) * repulsionStrength;
         const fx = dx * force * 0.5;
         const fy = dy * force * 0.5;
         a.vx -= fx;
@@ -174,8 +185,8 @@ export function triggerRopeSwing(ropeId: string, now: number): void {
   activeSwings.set(ropeId, {
     ropeId,
     amplitude: 12 + Math.random() * 8, // pixels of sway
-    gamma: 2.5,    // damping coefficient
-    omega: 6,      // angular frequency
+    gamma: 2.5, // damping coefficient
+    omega: 6, // angular frequency
     startTime: now,
   });
 }
@@ -193,7 +204,9 @@ export function getRopeSwingOffset(ropeId: string, now: number): number {
   }
 
   // Damped spring oscillation: x(t) = A * e^(-γt) * cos(ωt)
-  return swing.amplitude * Math.exp(-swing.gamma * t) * Math.cos(swing.omega * t);
+  return (
+    swing.amplitude * Math.exp(-swing.gamma * t) * Math.cos(swing.omega * t)
+  );
 }
 
 /** Clean up expired swings */

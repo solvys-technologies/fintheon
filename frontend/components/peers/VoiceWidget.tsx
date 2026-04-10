@@ -1,13 +1,26 @@
 // [claude-code 2026-04-01] LiveKit Cloud voice — real WebRTC audio via @livekit/components-react
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { Mic, MicOff, PhoneOff, Users, GripVertical, Phone, PictureInPicture2, X } from 'lucide-react';
-import { LiveKitRoom, useLocalParticipant, useParticipants } from '@livekit/components-react';
-import { useBackend } from '../../lib/backend';
-import { useAuth } from '../../contexts/AuthContext';
-import { VoiceAudioRenderer } from './VoiceAudioRenderer';
-import type { VoiceParticipantRecord } from './types';
+import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  Mic,
+  MicOff,
+  PhoneOff,
+  Users,
+  GripVertical,
+  Phone,
+  PictureInPicture2,
+  X,
+} from "lucide-react";
+import {
+  LiveKitRoom,
+  useLocalParticipant,
+  useParticipants,
+} from "@livekit/components-react";
+import { useBackend } from "../../lib/backend";
+import { useAuth } from "../../contexts/AuthContext";
+import { VoiceAudioRenderer } from "./VoiceAudioRenderer";
+import type { VoiceParticipantRecord } from "./types";
 
-export type VoiceWidgetDockTarget = 'floating' | 'header';
+export type VoiceWidgetDockTarget = "floating" | "header";
 
 type Position = { x: number; y: number };
 
@@ -17,22 +30,39 @@ function clamp(value: number, min: number, max: number): number {
 
 /* ── Compact header-docked voice button (legacy — kept for minimal header icon) ── */
 
-export function VoiceRoomHeaderButton({ onClick, participantCount, joined }: { onClick: () => void; participantCount: number; joined: boolean }) {
+export function VoiceRoomHeaderButton({
+  onClick,
+  participantCount,
+  joined,
+}: {
+  onClick: () => void;
+  participantCount: number;
+  joined: boolean;
+}) {
   return (
     <div className="flex items-center gap-1">
       <button
         onClick={onClick}
         className={`relative p-1.5 rounded-lg transition-colors ${
           joined
-            ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
-            : 'text-gray-500 hover:text-gray-300 hover:bg-zinc-800/50'
+            ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
+            : "text-gray-500 hover:text-gray-300 hover:bg-zinc-800/50"
         }`}
-        title={joined ? `Voice Room (${participantCount} in call)` : 'Voice Room'}
+        title={
+          joined ? `Voice Room (${participantCount} in call)` : "Voice Room"
+        }
       >
         <Phone className="w-3.5 h-3.5" />
       </button>
       {joined && (
-        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide" style={{ color: 'var(--fintheon-accent)', backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 12%, transparent)' }}>
+        <span
+          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide"
+          style={{
+            color: "var(--fintheon-accent)",
+            backgroundColor:
+              "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
+          }}
+        >
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
           {participantCount}
         </span>
@@ -57,8 +87,8 @@ export function VoiceWidget({
   onDockToHeader,
   onUndockToFloating,
   onClose,
-  storageKey = 'fintheon:voice-widget-floating-pos:v1',
-  headerDockZoneId = 'fintheon-heading-toolbar',
+  storageKey = "fintheon:voice-widget-floating-pos:v1",
+  headerDockZoneId = "fintheon-heading-toolbar",
 }: VoiceWidgetProps) {
   const backend = useBackend();
   const { userId } = useAuth();
@@ -69,7 +99,9 @@ export function VoiceWidget({
   const [joining, setJoining] = useState(false);
   const [joined, setJoined] = useState(false);
   const [roomId, setRoomId] = useState<string | null>(null);
-  const [participants, setParticipants] = useState<VoiceParticipantRecord[]>([]);
+  const [participants, setParticipants] = useState<VoiceParticipantRecord[]>(
+    [],
+  );
   const [configured, setConfigured] = useState(false);
   // LiveKit state
   const [lkToken, setLkToken] = useState<string | null>(null);
@@ -81,18 +113,27 @@ export function VoiceWidget({
       const raw = localStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<Position>;
-        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+        if (typeof parsed.x === "number" && typeof parsed.y === "number") {
           setPos({ x: parsed.x, y: parsed.y });
           return;
         }
       }
-    } catch { /* ignore */ }
-    const x = typeof window !== 'undefined' ? Math.max(24, window.innerWidth - 300) : 24;
+    } catch {
+      /* ignore */
+    }
+    const x =
+      typeof window !== "undefined"
+        ? Math.max(24, window.innerWidth - 300)
+        : 24;
     setPos({ x, y: 180 });
   }, []);
 
   useEffect(() => {
-    try { localStorage.setItem(storageKey, JSON.stringify(pos)); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(pos));
+    } catch {
+      /* ignore */
+    }
   }, [pos, storageKey]);
 
   // Drag logic with drop-zone detection
@@ -100,8 +141,16 @@ export function VoiceWidget({
     if (!dragging) return;
 
     const onMove = (e: MouseEvent) => {
-      const nextX = clamp(e.clientX - dragOffset.current.x, 8, window.innerWidth - 280);
-      const nextY = clamp(e.clientY - dragOffset.current.y, 74, window.innerHeight - 220);
+      const nextX = clamp(
+        e.clientX - dragOffset.current.x,
+        8,
+        window.innerWidth - 280,
+      );
+      const nextY = clamp(
+        e.clientY - dragOffset.current.y,
+        74,
+        window.innerHeight - 220,
+      );
       setPos({ x: nextX, y: nextY });
     };
 
@@ -110,15 +159,19 @@ export function VoiceWidget({
       const dockZone = document.getElementById(headerDockZoneId);
       if (!dockZone) return;
       const rect = dockZone.getBoundingClientRect();
-      const inside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+      const inside =
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom;
       if (inside) onDockToHeader();
     };
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
     return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
     };
   }, [dragging, headerDockZoneId, onDockToHeader]);
 
@@ -138,7 +191,9 @@ export function VoiceWidget({
   async function handleJoin() {
     setJoining(true);
     try {
-      const res = await backend.peers.joinVoice({ roomName: 'Claude Peers Group Call' });
+      const res = await backend.peers.joinVoice({
+        roomName: "Claude Peers Group Call",
+      });
       setRoomId(res.room.id);
       setConfigured(res.configured);
       setJoined(true);
@@ -147,7 +202,9 @@ export function VoiceWidget({
         setLkToken(res.token);
         setLkUrl(res.url);
       } else {
-        const participantsRes = await backend.peers.listVoiceParticipants(res.room.id);
+        const participantsRes = await backend.peers.listVoiceParticipants(
+          res.room.id,
+        );
         setParticipants(participantsRes.participants);
       }
     } finally {
@@ -178,7 +235,7 @@ export function VoiceWidget({
           disabled={joining}
           className="flex-1 rounded border border-[var(--fintheon-accent)]/30 px-2 py-1.5 text-xs font-medium text-[var(--fintheon-accent)] disabled:opacity-50"
         >
-          {joining ? 'Joining...' : 'Join Call'}
+          {joining ? "Joining..." : "Join Call"}
         </button>
       ) : (
         <>
@@ -186,8 +243,12 @@ export function VoiceWidget({
             onClick={handleMuteToggle}
             className="inline-flex flex-1 items-center justify-center gap-1 rounded border border-[var(--fintheon-accent)]/25 px-2 py-1.5 text-xs text-[var(--fintheon-text)]"
           >
-            {muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-            {muted ? 'Unmute' : 'Mute'}
+            {muted ? (
+              <MicOff className="h-3.5 w-3.5" />
+            ) : (
+              <Mic className="h-3.5 w-3.5" />
+            )}
+            {muted ? "Unmute" : "Mute"}
           </button>
           <button
             onClick={() => void handleLeave()}
@@ -201,7 +262,7 @@ export function VoiceWidget({
     </div>
   );
 
-  const floating = target === 'floating';
+  const floating = target === "floating";
 
   /* ── Header-docked mode (static toolbar) ── */
   const headerContent = !floating ? (
@@ -214,7 +275,9 @@ export function VoiceWidget({
         <PictureInPicture2 className="w-3.5 h-3.5" />
       </button>
       <Phone className="w-3 h-3 text-[var(--fintheon-accent)]" />
-      <span className="text-[10px] text-[var(--fintheon-accent)] font-semibold tracking-[0.14em] uppercase">Voice</span>
+      <span className="text-[10px] text-[var(--fintheon-accent)] font-semibold tracking-[0.14em] uppercase">
+        Voice
+      </span>
       <span className="text-[10px] text-zinc-500 flex items-center gap-1">
         <Users className="w-3 h-3" />
         {participants.length}
@@ -224,9 +287,13 @@ export function VoiceWidget({
           <button
             onClick={handleMuteToggle}
             className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-400 hover:text-[var(--fintheon-accent)] transition-colors"
-            title={muted ? 'Unmute' : 'Mute'}
+            title={muted ? "Unmute" : "Mute"}
           >
-            {muted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+            {muted ? (
+              <MicOff className="w-3.5 h-3.5" />
+            ) : (
+              <Mic className="w-3.5 h-3.5" />
+            )}
           </button>
           <button
             onClick={() => void handleLeave()}
@@ -243,7 +310,7 @@ export function VoiceWidget({
           disabled={joining}
           className="text-[10px] text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-50"
         >
-          {joining ? 'Joining...' : 'Join'}
+          {joining ? "Joining..." : "Join"}
         </button>
       )}
       {onClose && (
@@ -262,8 +329,17 @@ export function VoiceWidget({
     const content = headerContent!;
     if (lkToken && lkUrl) {
       return (
-        <LiveKitRoom serverUrl={lkUrl} token={lkToken} audio video={false} connect>
-          <LiveKitVoiceSync muted={muted} onParticipantsChange={setParticipants} />
+        <LiveKitRoom
+          serverUrl={lkUrl}
+          token={lkToken}
+          audio
+          video={false}
+          connect
+        >
+          <LiveKitVoiceSync
+            muted={muted}
+            onParticipantsChange={setParticipants}
+          />
           <VoiceAudioRenderer />
           {content}
         </LiveKitRoom>
@@ -337,7 +413,9 @@ export function VoiceWidget({
           </div>
         ))}
         {participants.length === 0 && (
-          <span className="text-[11px] text-zinc-500">No participants yet.</span>
+          <span className="text-[11px] text-zinc-500">
+            No participants yet.
+          </span>
         )}
       </div>
 
@@ -351,8 +429,17 @@ export function VoiceWidget({
 
   if (lkToken && lkUrl) {
     return (
-      <LiveKitRoom serverUrl={lkUrl} token={lkToken} audio video={false} connect>
-        <LiveKitVoiceSync muted={muted} onParticipantsChange={setParticipants} />
+      <LiveKitRoom
+        serverUrl={lkUrl}
+        token={lkToken}
+        audio
+        video={false}
+        connect
+      >
+        <LiveKitVoiceSync
+          muted={muted}
+          onParticipantsChange={setParticipants}
+        />
         <VoiceAudioRenderer />
         {floatingContent}
       </LiveKitRoom>
@@ -364,7 +451,10 @@ export function VoiceWidget({
 
 /* ── LiveKit sync: mute state + participant list ── */
 
-function LiveKitVoiceSync({ muted, onParticipantsChange }: {
+function LiveKitVoiceSync({
+  muted,
+  onParticipantsChange,
+}: {
   muted: boolean;
   onParticipantsChange: (p: VoiceParticipantRecord[]) => void;
 }) {

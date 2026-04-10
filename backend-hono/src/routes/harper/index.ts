@@ -5,120 +5,143 @@
  * GET  /api/harper/status — check if VProxy/Strands is available
  */
 
-import { Hono } from 'hono'
-import { streamHarperChat, isStrandsAvailable, isVProxyEnabled, FINTHEON_PATHS } from '../../services/strands/index.js'
-import { checkVProxyHealth } from '../../services/strands/provider.js'
-import { uiStreamToSSEResponse } from '../../services/strands/stream-adapter.js'
-import { createRequestCognition } from '../../services/cognition-emitter.js'
-import * as conversationStore from '../../services/ai/conversation-store.js'
+import { Hono } from "hono";
+import {
+  streamHarperChat,
+  isStrandsAvailable,
+  isVProxyEnabled,
+  FINTHEON_PATHS,
+} from "../../services/strands/index.js";
+import { checkVProxyHealth } from "../../services/strands/provider.js";
+import { uiStreamToSSEResponse } from "../../services/strands/stream-adapter.js";
+import { createRequestCognition } from "../../services/cognition-emitter.js";
+import * as conversationStore from "../../services/ai/conversation-store.js";
 import {
   resolveApproval,
   getAllPermissions,
   revokePermission,
   getPendingApprovals,
   type ApprovalDecision,
-} from '../../services/tool-approval-store.js'
+} from "../../services/tool-approval-store.js";
 
 export function createHarperRoutes() {
-  const app = new Hono()
+  const app = new Hono();
 
   // ── Status check ─────────────────────────────────────────────────────────
-  app.get('/status', async (c) => {
-    const available = await isStrandsAvailable()
-    const usingVProxy = isVProxyEnabled()
+  app.get("/status", async (c) => {
+    const available = await isStrandsAvailable();
+    const usingVProxy = isVProxyEnabled();
     return c.json({
       available,
-      agent: 'harper-opus',
-      model: usingVProxy ? (process.env.VPROXY_ANTHROPIC_MODEL ?? 'claude-opus-4-6') : 'claude-opus-local',
-      provider: usingVProxy ? 'strands-vproxy' : 'strands-local',
-    })
-  })
+      agent: "harper-opus",
+      model: usingVProxy
+        ? (process.env.VPROXY_ANTHROPIC_MODEL ?? "claude-opus-4-6")
+        : "claude-opus-local",
+      provider: usingVProxy ? "strands-vproxy" : "strands-local",
+    });
+  });
 
   // ── Chat (streaming SSE) ─────────────────────────────────────────────────
-  app.post('/chat', async (c) => {
-    const startTime = Date.now()
-    const requestId = `harper-${Date.now()}-${Math.random().toString(36).substring(7)}`
-    const cognition = createRequestCognition(requestId, startTime)
+  app.post("/chat", async (c) => {
+    const startTime = Date.now();
+    const requestId = `harper-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const cognition = createRequestCognition(requestId, startTime);
 
-    c.header('X-Request-Id', requestId)
+    c.header("X-Request-Id", requestId);
 
     try {
       const body = await c.req.json<{
-        message: string
-        conversationId?: string
-        history?: Array<{ role: 'user' | 'assistant'; content: string }>
-        thinkHarder?: boolean
-        persona?: string
-        riskFlowContext?: string
-        activeConnectors?: string[]
-        provider?: 'local' | 'nous' | 'orouter'
+        message: string;
+        conversationId?: string;
+        history?: Array<{ role: "user" | "assistant"; content: string }>;
+        thinkHarder?: boolean;
+        persona?: string;
+        riskFlowContext?: string;
+        activeConnectors?: string[];
+        provider?: "local" | "nous" | "orouter";
         userContext?: {
-          traderName?: string
-          selectedSymbol?: { symbol: string; name: string }
-          tradingGoals?: string
-          instrumentsTraded?: string[]
-          riskSettings?: Record<string, unknown>
-        }
-      }>()
+          traderName?: string;
+          selectedSymbol?: { symbol: string; name: string };
+          tradingGoals?: string;
+          instrumentsTraded?: string[];
+          riskSettings?: Record<string, unknown>;
+        };
+      }>();
 
-      const message = body.message?.trim()
+      const message = body.message?.trim();
       if (!message) {
-        return c.json({ error: 'Message is required' }, 400)
+        return c.json({ error: "Message is required" }, 400);
       }
 
       // Get or create conversation
-      const userId = (c.get('userId' as never) as string) || 'anonymous'
-      const reqConversationId = body.conversationId ?? undefined
+      const userId = (c.get("userId" as never) as string) || "anonymous";
+      const reqConversationId = body.conversationId ?? undefined;
       let conversation = reqConversationId
         ? await conversationStore.getConversation(reqConversationId, userId)
-        : null
+        : null;
       if (!conversation) {
         conversation = await conversationStore.createConversation(userId, {
           title: message.slice(0, 60),
-          model: 'harper-opus',
-        })
+          model: "harper-opus",
+        });
       }
 
       // Store user message
       await conversationStore.addMessage(conversation.id, {
         conversationId: conversation.id,
-        role: 'user',
+        role: "user",
         content: message,
-        model: 'harper-opus',
-      })
+        model: "harper-opus",
+      });
 
       // VProxy pre-flight — if Local selected but VProxy is down, stream a friendly error
-      const isLocalProvider = !body.provider || body.provider === 'local'
+      const isLocalProvider = !body.provider || body.provider === "local";
       if (isLocalProvider) {
-        const health = await checkVProxyHealth(true) // force fresh check
+        const health = await checkVProxyHealth(true); // force fresh check
         if (!health.available) {
-          const enc = new TextEncoder()
-          const msgId = `harper-${Date.now()}`
-          const sseError = (ev: object) => enc.encode(`data: ${JSON.stringify(ev)}\n\n`)
+          const enc = new TextEncoder();
+          const msgId = `harper-${Date.now()}`;
+          const sseError = (ev: object) =>
+            enc.encode(`data: ${JSON.stringify(ev)}\n\n`);
           const stream = new ReadableStream<Uint8Array>({
             start(ctrl) {
-              ctrl.enqueue(sseError({ type: 'start', messageId: msgId }))
-              ctrl.enqueue(sseError({ type: 'start-step' }))
-              ctrl.enqueue(sseError({ type: 'text-start', id: 'txt-1' }))
-              const msg = `⚠️ VProxy (Local) is not available right now. Switch the provider dropdown to **Nous** or **ORouter** to continue. (${health.error ?? 'connection refused'})`
-              ctrl.enqueue(sseError({ type: 'text-delta', id: 'txt-1', delta: msg }))
-              ctrl.enqueue(sseError({ type: 'text-end', id: 'txt-1' }))
-              ctrl.enqueue(sseError({ type: 'finish-step' }))
-              ctrl.enqueue(sseError({ type: 'finish', finishReason: 'stop' }))
-              ctrl.enqueue(enc.encode('data: [DONE]\n\n'))
-              ctrl.close()
+              ctrl.enqueue(sseError({ type: "start", messageId: msgId }));
+              ctrl.enqueue(sseError({ type: "start-step" }));
+              ctrl.enqueue(sseError({ type: "text-start", id: "txt-1" }));
+              const msg = `⚠️ VProxy (Local) is not available right now. Switch the provider dropdown to **Nous** or **ORouter** to continue. (${health.error ?? "connection refused"})`;
+              ctrl.enqueue(
+                sseError({ type: "text-delta", id: "txt-1", delta: msg }),
+              );
+              ctrl.enqueue(sseError({ type: "text-end", id: "txt-1" }));
+              ctrl.enqueue(sseError({ type: "finish-step" }));
+              ctrl.enqueue(sseError({ type: "finish", finishReason: "stop" }));
+              ctrl.enqueue(enc.encode("data: [DONE]\n\n"));
+              ctrl.close();
             },
-          })
+          });
           return uiStreamToSSEResponse(stream, {
-            'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
-            'X-Request-Id': requestId,
-          })
+            "Access-Control-Allow-Origin": c.req.header("Origin") || "*",
+            "X-Request-Id": requestId,
+          });
         }
       }
 
-      const providerLabel = body.provider === 'nous' ? 'Nous (Arcee/Qwen)' : body.provider === 'orouter' ? 'OpenRouter Opus' : 'VProxy Local'
-      cognition.step('agent-route', `Harper-Opus (${providerLabel})`, `Persona: ${body.persona ?? 'harper-opus'}`)
-      cognition.step('gateway-call', `Streaming via ${providerLabel}`, 'Strands agent, MCP tools available')
+      const providerLabel =
+        body.provider === "nous"
+          ? "Nous (Arcee/Qwen)"
+          : body.provider === "orouter"
+            ? "OpenRouter Opus"
+            : "VProxy Local";
+      cognition.step(
+        "agent-route",
+        `Harper-Opus (${providerLabel})`,
+        `Persona: ${body.persona ?? "harper-opus"}`,
+      );
+      cognition.step(
+        "gateway-call",
+        `Streaming via ${providerLabel}`,
+        "Strands agent, MCP tools available",
+      );
 
       const response = streamHarperChat(
         {
@@ -135,60 +158,78 @@ export function createHarperRoutes() {
           provider: body.provider,
         },
         {
-          'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Request-Id, X-Hermes-Agent',
+          "Access-Control-Allow-Origin": c.req.header("Origin") || "*",
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Expose-Headers":
+            "X-Conversation-Id, X-Request-Id, X-Hermes-Agent",
         },
-      )
+      );
 
-      const duration = Date.now() - startTime
-      cognition.step('response-ready', 'Stream initiated', `${duration}ms to first byte`)
-      cognition.done()
+      const duration = Date.now() - startTime;
+      cognition.step(
+        "response-ready",
+        "Stream initiated",
+        `${duration}ms to first byte`,
+      );
+      cognition.done();
 
-      return response
+      return response;
     } catch (error) {
-      console.error(`[HarperOpus][${requestId}] Handler error:`, error)
-      cognition.done()
-      return c.json({
-        error: 'Harper-Opus request failed',
-        details: error instanceof Error ? error.message : String(error),
-      }, 500)
+      console.error(`[HarperOpus][${requestId}] Handler error:`, error);
+      cognition.done();
+      return c.json(
+        {
+          error: "Harper-Opus request failed",
+          details: error instanceof Error ? error.message : String(error),
+        },
+        500,
+      );
     }
-  })
+  });
 
   // ── Tool Decision (approve/deny pending tool use) ─────────────────────────
-  app.post('/tool-decision', async (c) => {
-    const body = await c.req.json<{ approvalId: string; decision: ApprovalDecision }>()
-    if (!body.approvalId || !['approved', 'denied'].includes(body.decision)) {
-      return c.json({ error: 'approvalId and decision (approved|denied) required' }, 400)
+  app.post("/tool-decision", async (c) => {
+    const body = await c.req.json<{
+      approvalId: string;
+      decision: ApprovalDecision;
+    }>();
+    if (!body.approvalId || !["approved", "denied"].includes(body.decision)) {
+      return c.json(
+        { error: "approvalId and decision (approved|denied) required" },
+        400,
+      );
     }
 
-    const result = await resolveApproval(body.approvalId, body.decision)
+    const result = await resolveApproval(body.approvalId, body.decision);
     if (!result.found) {
-      return c.json({ error: 'Approval not found or already resolved' }, 404)
+      return c.json({ error: "Approval not found or already resolved" }, 404);
     }
 
-    return c.json({ ok: true, toolName: result.toolName, decision: body.decision })
-  })
+    return c.json({
+      ok: true,
+      toolName: result.toolName,
+      decision: body.decision,
+    });
+  });
 
   // ── Permissions CRUD ─────────────────────────────────────────────────────
-  app.get('/permissions', (c) => {
+  app.get("/permissions", (c) => {
     return c.json({
       permissions: getAllPermissions(),
       pending: getPendingApprovals(),
-    })
-  })
+    });
+  });
 
-  app.delete('/permissions/:toolName', async (c) => {
-    const toolName = c.req.param('toolName')
-    await revokePermission(toolName)
-    return c.json({ ok: true, revoked: toolName })
-  })
+  app.delete("/permissions/:toolName", async (c) => {
+    const toolName = c.req.param("toolName");
+    await revokePermission(toolName);
+    return c.json({ ok: true, revoked: toolName });
+  });
 
   // ── Fintheon Paths (for frontend display) ────────────────────────────────
-  app.get('/paths', (c) => {
-    return c.json(FINTHEON_PATHS)
-  })
+  app.get("/paths", (c) => {
+    return c.json(FINTHEON_PATHS);
+  });
 
-  return app
+  return app;
 }

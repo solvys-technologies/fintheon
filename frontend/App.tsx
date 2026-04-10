@@ -1,30 +1,33 @@
 // [claude-code 2026-03-24] Auth gate with init screen, cloud migration, and soft fade-in
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { migrateLocalStorageToCloud, isMigrationComplete } from './lib/data-migration';
-import { SettingsProvider } from './contexts/SettingsContext';
-import { ThreadProvider } from './contexts/ThreadContext';
-import { ToastProvider } from './contexts/ToastContext';
-import { GatewayProvider } from './contexts/GatewayContext';
-import { FintheonAgentProvider } from './contexts/FintheonAgentContext';
-import { TeamPresenceProvider } from './contexts/TeamPresenceContext';
-import { RiskFlowProvider } from './contexts/RiskFlowContext';
-import { ContextBankProvider } from './contexts/ContextBankContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { VoiceProvider, useVoice } from './contexts/VoiceContext';
-import { ERProvider } from './contexts/ERContext';
-import { MainLayout } from './components/layout/MainLayout';
-import { NotificationContainer } from './components/NotificationToast';
-import { ToastContainer } from './components/ui/Toast';
-import { PreMarketReminder } from './components/PreMarketReminder';
-import { GitHubOAuthCallback } from './components/GitHubOAuthCallback';
-import { UpdateBanner } from './components/UpdateBanner';
-import { ApiErrorToastBridge } from './components/ApiErrorToastBridge';
-import { VersionChecker } from './components/VersionChecker';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { SystemStatusProvider } from './contexts/SystemStatusContext';
-import { migrateStorageKeys } from './lib/storage-migration';
-import { AuthShell } from './components/auth/AuthShell';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import {
+  migrateLocalStorageToCloud,
+  isMigrationComplete,
+} from "./lib/data-migration";
+import { SettingsProvider } from "./contexts/SettingsContext";
+import { ThreadProvider } from "./contexts/ThreadContext";
+import { ToastProvider } from "./contexts/ToastContext";
+import { GatewayProvider } from "./contexts/GatewayContext";
+import { FintheonAgentProvider } from "./contexts/FintheonAgentContext";
+import { TeamPresenceProvider } from "./contexts/TeamPresenceContext";
+import { RiskFlowProvider } from "./contexts/RiskFlowContext";
+import { ContextBankProvider } from "./contexts/ContextBankContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { VoiceProvider, useVoice } from "./contexts/VoiceContext";
+import { ERProvider } from "./contexts/ERContext";
+import { MainLayout } from "./components/layout/MainLayout";
+import { NotificationContainer } from "./components/NotificationToast";
+import { ToastContainer } from "./components/ui/Toast";
+import { PreMarketReminder } from "./components/PreMarketReminder";
+import { GitHubOAuthCallback } from "./components/GitHubOAuthCallback";
+import { UpdateBanner } from "./components/UpdateBanner";
+import { ApiErrorToastBridge } from "./components/ApiErrorToastBridge";
+import { VersionChecker } from "./components/VersionChecker";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { SystemStatusProvider } from "./contexts/SystemStatusContext";
+import { migrateStorageKeys } from "./lib/storage-migration";
+import { AuthShell } from "./components/auth/AuthShell";
 
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();
@@ -32,13 +35,13 @@ migrateStorageKeys();
 // [claude-code 2026-03-13] VoiceBorderPulse — green pulse when listening, gold when speaking
 function VoiceBorderPulse() {
   const { runtimeState, enabled } = useVoice();
-  if (!enabled || runtimeState === 'idle') return null;
+  if (!enabled || runtimeState === "idle") return null;
 
-  const isListening = runtimeState === 'listening';
-  const isSpeaking = runtimeState === 'speaking';
+  const isListening = runtimeState === "listening";
+  const isSpeaking = runtimeState === "speaking";
   if (!isListening && !isSpeaking) return null;
 
-  const color = isListening ? 'rgba(34,197,94,' : 'rgba(199,159,74,';
+  const color = isListening ? "rgba(34,197,94," : "rgba(199,159,74,";
 
   return (
     <>
@@ -52,7 +55,7 @@ function VoiceBorderPulse() {
         className="fixed inset-0 pointer-events-none z-[90]"
         style={{
           border: `2px solid ${color}0.5)`,
-          animation: 'voiceBorderPulse 2s ease-in-out infinite',
+          animation: "voiceBorderPulse 2s ease-in-out infinite",
           boxShadow: `inset 0 0 20px ${color}0.15)`,
         }}
       />
@@ -62,17 +65,23 @@ function VoiceBorderPulse() {
 
 // [claude-code 2026-03-24] Init status messages for post-login loading screen
 const INIT_STEPS = [
-  'Restoring session',
-  'Connecting to backend',
-  'Syncing preferences',
-  'Loading workspace',
+  "Restoring session",
+  "Connecting to backend",
+  "Syncing preferences",
+  "Loading workspace",
 ] as const;
 
 /**
  * Post-login init screen — checks backend, runs migration, then fades into the app.
  * User can skip at any time (no warning popup).
  */
-function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => void }) {
+function InitScreen({
+  onReady,
+  onSkip,
+}: {
+  onReady: () => void;
+  onSkip: () => void;
+}) {
   const { getAccessToken } = useAuth();
   const [stepIdx, setStepIdx] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
@@ -83,22 +92,26 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
     hasRun.current = true;
 
     let cancelled = false;
-    const API = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    const API = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
     (async () => {
       // Step 0: Restoring session (already done by AuthContext, brief pause)
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 400));
       if (cancelled) return;
 
       // Step 1: Backend health check
       setStepIdx(1);
       for (let i = 0; i < 8; i++) {
         try {
-          const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(2000) });
+          const res = await fetch(`${API}/health`, {
+            signal: AbortSignal.timeout(2000),
+          });
           if (res.ok) break;
-        } catch { /* retry */ }
+        } catch {
+          /* retry */
+        }
         if (cancelled) return;
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 800));
       }
       if (cancelled) return;
 
@@ -112,22 +125,26 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
             // migration complete
           }
         } catch (err) {
-          console.warn('[Init] Migration skipped:', err);
+          console.warn("[Init] Migration skipped:", err);
         }
       }
       if (cancelled) return;
 
       // Step 3: Loading workspace
       setStepIdx(3);
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 300));
       if (cancelled) return;
 
       // Done — trigger fade-out then ready
       setFadeOut(true);
-      setTimeout(() => { if (!cancelled) onReady(); }, 600);
+      setTimeout(() => {
+        if (!cancelled) onReady();
+      }, 600);
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [getAccessToken, onReady]);
 
   const fuseProgress = (stepIdx + 1) / INIT_STEPS.length;
@@ -162,7 +179,7 @@ function InitScreen({ onReady, onSkip }: { onReady: () => void; onSkip: () => vo
             className="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-[#c79f4a] transition-all duration-700 ease-out"
             style={{
               left: `calc(${fuseProgress * 100}% - 3px)`,
-              boxShadow: '0 0 6px rgba(199, 159, 74, 0.7)',
+              boxShadow: "0 0 6px rgba(199, 159, 74, 0.7)",
             }}
           />
         </div>
@@ -204,7 +221,11 @@ function AuthGate() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#050402]">
         <div className="flex flex-col items-center gap-4">
-          <img src="./logo.png" alt="Fintheon" className="h-16 w-16 animate-pulse opacity-60" />
+          <img
+            src="./logo.png"
+            alt="Fintheon"
+            className="h-16 w-16 animate-pulse opacity-60"
+          />
           <p className="text-xs tracking-[0.3em] text-[#c79f4a]/50">LOADING</p>
         </div>
       </div>
@@ -224,20 +245,20 @@ function AuthGate() {
       className="transition-opacity duration-700 ease-out"
       style={{ opacity: appVisible ? 1 : 0 }}
     >
-    <SettingsProvider>
-      <ToastProvider>
-        <GatewayProvider>
-        <SystemStatusProvider>
-          <FintheonAgentProvider>
-            <TeamPresenceProvider>
-            <RiskFlowProvider>
-            <ContextBankProvider>
-            <ThreadProvider>
-            <VoiceProvider>
-            <ERProvider>
-              <div className="dark">
-                <VoiceBorderPulse />
-                <style>{`
+      <SettingsProvider>
+        <ToastProvider>
+          <GatewayProvider>
+            <SystemStatusProvider>
+              <FintheonAgentProvider>
+                <TeamPresenceProvider>
+                  <RiskFlowProvider>
+                    <ContextBankProvider>
+                      <ThreadProvider>
+                        <VoiceProvider>
+                          <ERProvider>
+                            <div className="dark">
+                              <VoiceBorderPulse />
+                              <style>{`
                   * {
                     scrollbar-width: thin;
                     scrollbar-color: var(--fintheon-accent) var(--fintheon-surface);
@@ -272,26 +293,26 @@ function AuthGate() {
                     pointer-events: none;
                   }
                 `}</style>
-                <ApiErrorToastBridge />
-                <VersionChecker />
-                <UpdateBanner />
-                <GitHubOAuthCallback />
-                <MainLayout />
-                <NotificationContainer />
-                <ToastContainer />
-                <PreMarketReminder />
-              </div>
-            </ERProvider>
-            </VoiceProvider>
-            </ThreadProvider>
-            </ContextBankProvider>
-            </RiskFlowProvider>
-            </TeamPresenceProvider>
-          </FintheonAgentProvider>
-        </SystemStatusProvider>
-        </GatewayProvider>
-      </ToastProvider>
-    </SettingsProvider>
+                              <ApiErrorToastBridge />
+                              <VersionChecker />
+                              <UpdateBanner />
+                              <GitHubOAuthCallback />
+                              <MainLayout />
+                              <NotificationContainer />
+                              <ToastContainer />
+                              <PreMarketReminder />
+                            </div>
+                          </ERProvider>
+                        </VoiceProvider>
+                      </ThreadProvider>
+                    </ContextBankProvider>
+                  </RiskFlowProvider>
+                </TeamPresenceProvider>
+              </FintheonAgentProvider>
+            </SystemStatusProvider>
+          </GatewayProvider>
+        </ToastProvider>
+      </SettingsProvider>
     </div>
   );
 }
@@ -303,11 +324,11 @@ function AuthGate() {
 export default function App() {
   return (
     <ErrorBoundary>
-    <ThemeProvider>
-    <AuthProvider>
-      <AuthGate />
-    </AuthProvider>
-    </ThemeProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AuthGate />
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

@@ -19,9 +19,15 @@ if (sentryDsn) {
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration(),
     ],
-    tracesSampleRate: Number(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? "0.1"),
-    replaysSessionSampleRate: Number(import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE ?? "0.01"),
-    replaysOnErrorSampleRate: Number(import.meta.env.VITE_SENTRY_REPLAYS_ERROR_SAMPLE_RATE ?? "1.0"),
+    tracesSampleRate: Number(
+      import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? "0.1",
+    ),
+    replaysSessionSampleRate: Number(
+      import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE ?? "0.01",
+    ),
+    replaysOnErrorSampleRate: Number(
+      import.meta.env.VITE_SENTRY_REPLAYS_ERROR_SAMPLE_RATE ?? "1.0",
+    ),
   });
 
   if (typeof window !== "undefined") {
@@ -34,8 +40,8 @@ const ErrorFallback = () => (
     <div className="max-w-md text-center space-y-3">
       <h1 className="text-xl font-semibold">Something went wrong</h1>
       <p className="text-sm text-gray-300">
-        Our team has been notified via Sentry. Please refresh the page or contact support if the issue
-        persists.
+        Our team has been notified via Sentry. Please refresh the page or
+        contact support if the issue persists.
       </p>
       <button
         className="rounded bg-white/10 px-4 py-2 text-sm"
@@ -56,5 +62,5 @@ const Root = sentryDsn ? (
 );
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>{Root}</React.StrictMode>
+  <React.StrictMode>{Root}</React.StrictMode>,
 );

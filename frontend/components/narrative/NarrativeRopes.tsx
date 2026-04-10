@@ -1,8 +1,8 @@
 // [claude-code 2026-04-04] S5-T5: SVG rope renderer — gradient energy lines between connected cards
-import { useMemo, useState } from 'react';
-import type { RopeConnection } from '../../lib/narrative-rope-engine';
-import type { CanvasViewport } from '../../lib/narrative-types';
-import { THREAD_MAP } from '../../lib/narrative-territory-layout';
+import { useMemo, useState } from "react";
+import type { RopeConnection } from "../../lib/narrative-rope-engine";
+import type { CanvasViewport } from "../../lib/narrative-types";
+import { THREAD_MAP } from "../../lib/narrative-territory-layout";
 
 interface CardRect {
   x: number;
@@ -19,7 +19,12 @@ interface NarrativeRopesProps {
 }
 
 /** Check if a rect is within the visible viewport (frustum culling) */
-function isVisible(rect: CardRect, vp: CanvasViewport, containerW: number, containerH: number): boolean {
+function isVisible(
+  rect: CardRect,
+  vp: CanvasViewport,
+  containerW: number,
+  containerH: number,
+): boolean {
   const sx = rect.x * vp.scale + vp.x;
   const sy = rect.y * vp.scale + vp.y;
   const sw = rect.width * vp.scale;
@@ -46,7 +51,7 @@ function buildPath(from: CardRect, to: CardRect): string {
   return `M ${x1} ${y1} C ${x1 + cpOffset} ${y1}, ${x2 - cpOffset} ${y2}, ${x2} ${y2}`;
 }
 
-const ACCENT_GOLD = '#D4AF37';
+const ACCENT_GOLD = "#D4AF37";
 
 function resolveThreadColor(narrative: string | undefined): string {
   if (!narrative) return ACCENT_GOLD;
@@ -62,14 +67,16 @@ export default function NarrativeRopes({
   const [hoveredRopeId, setHoveredRopeId] = useState<string | null>(null);
 
   const visibleRopes = useMemo(() => {
-    const cw = typeof window !== 'undefined' ? window.innerWidth : 1920;
-    const ch = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    const cw = typeof window !== "undefined" ? window.innerWidth : 1920;
+    const ch = typeof window !== "undefined" ? window.innerHeight : 1080;
 
-    return connections.filter(conn => {
+    return connections.filter((conn) => {
       const from = cardPositions.get(conn.fromId);
       const to = cardPositions.get(conn.toId);
       if (!from || !to) return false;
-      return isVisible(from, viewport, cw, ch) || isVisible(to, viewport, cw, ch);
+      return (
+        isVisible(from, viewport, cw, ch) || isVisible(to, viewport, cw, ch)
+      );
     });
   }, [connections, cardPositions, viewport]);
 
@@ -78,10 +85,10 @@ export default function NarrativeRopes({
   return (
     <svg
       className="absolute inset-0 w-full h-full"
-      style={{ pointerEvents: 'none', overflow: 'visible', zIndex: 1 }}
+      style={{ pointerEvents: "none", overflow: "visible", zIndex: 1 }}
     >
       <defs>
-        {visibleRopes.map(conn => {
+        {visibleRopes.map((conn) => {
           const from = cardPositions.get(conn.fromId)!;
           const to = cardPositions.get(conn.toId)!;
           const fromColor = resolveThreadColor(conn.fromNarrative);
@@ -105,10 +112,10 @@ export default function NarrativeRopes({
       <g
         style={{
           transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`,
-          transformOrigin: '0 0',
+          transformOrigin: "0 0",
         }}
       >
-        {visibleRopes.map(conn => {
+        {visibleRopes.map((conn) => {
           const from = cardPositions.get(conn.fromId)!;
           const to = cardPositions.get(conn.toId)!;
           const path = buildPath(from, to);
@@ -120,7 +127,8 @@ export default function NarrativeRopes({
           const baseOpacity = 0.1 + conn.strength * 0.3;
           const opacity = isCardHovered || isRopeHovered ? 0.8 : baseOpacity;
           const baseWidth = 1 + conn.strength * 3;
-          const strokeWidth = isCardHovered || isRopeHovered ? baseWidth + 1.5 : baseWidth;
+          const strokeWidth =
+            isCardHovered || isRopeHovered ? baseWidth + 1.5 : baseWidth;
 
           return (
             <g key={conn.id}>
@@ -134,8 +142,8 @@ export default function NarrativeRopes({
                 strokeDasharray="8 16"
                 className="rope-energy-line"
                 style={{
-                  willChange: 'opacity',
-                  transition: 'opacity 0.2s ease, stroke-width 0.2s ease',
+                  willChange: "opacity",
+                  transition: "opacity 0.2s ease, stroke-width 0.2s ease",
                 }}
               />
               <path
@@ -143,35 +151,42 @@ export default function NarrativeRopes({
                 fill="none"
                 stroke="transparent"
                 strokeWidth={12}
-                style={{ pointerEvents: 'stroke', cursor: 'default' }}
+                style={{ pointerEvents: "stroke", cursor: "default" }}
                 onMouseEnter={() => setHoveredRopeId(conn.id)}
                 onMouseLeave={() => setHoveredRopeId(null)}
               />
-              {isRopeHovered && (() => {
-                const mx = (from.x + from.width + to.x) / 2;
-                const my = (from.y + from.height / 2 + to.y + to.height / 2) / 2 - 16;
-                return (
-                  <foreignObject x={mx - 60} y={my - 10} width={120} height={24}>
-                    <div
-                      style={{
-                        fontSize: '8px',
-                        fontFamily: 'monospace',
-                        color: 'var(--fintheon-accent)',
-                        backgroundColor: 'rgba(5,4,2,0.9)',
-                        border: '1px solid #D4AF3733',
-                        borderRadius: '3px',
-                        padding: '2px 6px',
-                        textAlign: 'center',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
+              {isRopeHovered &&
+                (() => {
+                  const mx = (from.x + from.width + to.x) / 2;
+                  const my =
+                    (from.y + from.height / 2 + to.y + to.height / 2) / 2 - 16;
+                  return (
+                    <foreignObject
+                      x={mx - 60}
+                      y={my - 10}
+                      width={120}
+                      height={24}
                     >
-                      {conn.sharedTags.join(' \u00b7 ')}
-                    </div>
-                  </foreignObject>
-                );
-              })()}
+                      <div
+                        style={{
+                          fontSize: "8px",
+                          fontFamily: "monospace",
+                          color: "var(--fintheon-accent)",
+                          backgroundColor: "rgba(5,4,2,0.9)",
+                          border: "1px solid #D4AF3733",
+                          borderRadius: "3px",
+                          padding: "2px 6px",
+                          textAlign: "center",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {conn.sharedTags.join(" \u00b7 ")}
+                      </div>
+                    </foreignObject>
+                  );
+                })()}
             </g>
           );
         })}

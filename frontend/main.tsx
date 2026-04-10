@@ -6,12 +6,15 @@ import "./index.css";
 // Suppress noisy third-party warnings (e.g. Snowplow "Invalid environment undefined")
 const _origWarn = console.warn;
 console.warn = (...args: unknown[]) => {
-  if (args.some(a => typeof a === 'string' && a.includes('Invalid environment'))) return;
+  if (
+    args.some((a) => typeof a === "string" && a.includes("Invalid environment"))
+  )
+    return;
   _origWarn.apply(console, args);
 };
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
 );

@@ -12,20 +12,20 @@
  * Agent roster: Harper-Opus (CAO), Feucht (Futures), Consul (Fundamentals), Oracle (Quant), Herald (Sentiment)
  */
 
-import { appendToBoardroom } from './hermes-sessions.js';
-import { handleHermesChat } from './hermes-handler.js';
-import type { HermesAgentRole } from './hermes-service.js';
-import { storeThought, updateThoughtMessageId } from './thought-bank-store.js';
-import type { ThoughtCategory } from '../types/thought-bank.js';
-import type { AgentName } from '../types/context-bank.js';
+import { appendToBoardroom } from "./hermes-sessions.js";
+import { handleHermesChat } from "./hermes-handler.js";
+import type { HermesAgentRole } from "./hermes-service.js";
+import { storeThought, updateThoughtMessageId } from "./thought-bank-store.js";
+import type { ThoughtCategory } from "../types/thought-bank.js";
+import type { AgentName } from "../types/context-bank.js";
 
 /** Standup task types matching boardroom-cron.ts schedule IDs */
 export type StandupTask =
-  | 'morning-standup'
-  | 'checkin-8am'
-  | 'econ-scan'
-  | 'premarket'
-  | 'market-open';
+  | "morning-standup"
+  | "checkin-8am"
+  | "econ-scan"
+  | "premarket"
+  | "market-open";
 
 interface AgentStandupConfig {
   role: HermesAgentRole;
@@ -34,36 +34,36 @@ interface AgentStandupConfig {
 }
 
 const BOARDROOM_AGENTS: AgentStandupConfig[] = [
-  { role: 'harper-cao', displayName: 'Harper-Opus', emoji: '🎩' },
-  { role: 'futures-desk', displayName: 'Feucht', emoji: '⚡' },
-  { role: 'fundamentals-desk', displayName: 'Consul', emoji: '📜' },
-  { role: 'pma-merged', displayName: 'Oracle', emoji: '📊' },
-  { role: 'herald', displayName: 'Herald', emoji: '👴' },
+  { role: "harper-cao", displayName: "Harper-Opus", emoji: "🎩" },
+  { role: "futures-desk", displayName: "Feucht", emoji: "⚡" },
+  { role: "fundamentals-desk", displayName: "Consul", emoji: "📜" },
+  { role: "pma-merged", displayName: "Oracle", emoji: "📊" },
+  { role: "herald", displayName: "Herald", emoji: "👴" },
 ];
 
 /** Prompts for each standup phase */
 const STANDUP_PROMPTS: Record<StandupTask, string> = {
-  'morning-standup': `[BOARDROOM STANDUP — 7:30 AM ET]
+  "morning-standup": `[BOARDROOM STANDUP — 7:30 AM ET]
 It's time for the morning standup. You are clocking in to the PIC boardroom.
 Provide your initial read on overnight moves, key levels to watch, and your bias for today.
 Keep it concise — 3-5 bullet points. Reference specific price levels where possible.`,
 
-  'checkin-8am': `[BOARDROOM CHECK-IN — 8:00 AM ET]
+  "checkin-8am": `[BOARDROOM CHECK-IN — 8:00 AM ET]
 30-minute check-in. Update the boardroom on any developments since 7:30 AM.
 Focus on: pre-market moves, overnight gaps, and any notable order flow.
 If nothing has changed, say so briefly.`,
 
-  'econ-scan': `[ECONOMIC DATA SCAN — 8:30 AM ET]
+  "econ-scan": `[ECONOMIC DATA SCAN — 8:30 AM ET]
 Scan for any economic data releases hitting at 8:30 AM (CPI, PPI, jobless claims, etc.).
 Report: actual vs consensus, market reaction, and implications for today's trading.
 If no data today, flag upcoming catalysts this week.`,
 
-  'premarket': `[PRE-MARKET FINAL — 9:00 AM ET]
+  premarket: `[PRE-MARKET FINAL — 9:00 AM ET]
 Final pre-market assessment. The opening bell is 30 minutes away.
 Provide: bias confirmation/reversal, key levels for open, risk/reward setups.
 Flag any positions that need attention at the open.`,
 
-  'market-open': `[MARKET OPEN WRAP — 9:30 AM ET]
+  "market-open": `[MARKET OPEN WRAP — 9:30 AM ET]
 The bell has rung. Report on opening action: gap fill or trend?
 Update key levels based on opening print. Any immediate setups triggered?
 Brief summary — what's the plan for the first 30 minutes of RTH?`,
@@ -90,8 +90,12 @@ interface ParsedThought {
 }
 
 function parseThoughtBankResponse(rawResponse: string): ParsedThought {
-  const titleMatch = rawResponse.match(/<THOUGHT_TITLE>([\s\S]*?)<\/THOUGHT_TITLE>/i);
-  const fullMatch = rawResponse.match(/<FULL_ANALYSIS>([\s\S]*?)<\/FULL_ANALYSIS>/i);
+  const titleMatch = rawResponse.match(
+    /<THOUGHT_TITLE>([\s\S]*?)<\/THOUGHT_TITLE>/i,
+  );
+  const fullMatch = rawResponse.match(
+    /<FULL_ANALYSIS>([\s\S]*?)<\/FULL_ANALYSIS>/i,
+  );
   const briefMatch = rawResponse.match(/<BRIEF>([\s\S]*?)<\/BRIEF>/i);
 
   const title = titleMatch ? titleMatch[1].trim() : null;
@@ -103,7 +107,7 @@ function parseThoughtBankResponse(rawResponse: string): ParsedThought {
     briefSummary = briefMatch[1].trim();
   } else {
     const sentences = fullAnalysis.split(/(?<=[.!?])\s+/).slice(0, 3);
-    briefSummary = sentences.join(' ');
+    briefSummary = sentences.join(" ");
   }
 
   return { title, fullAnalysis, briefSummary };
@@ -117,7 +121,7 @@ function parseThoughtBankResponse(rawResponse: string): ParsedThought {
 async function spawnAgentResponse(
   agent: AgentStandupConfig,
   prompt: string,
-  category: ThoughtCategory = 'spontaneous'
+  category: ThoughtCategory = "spontaneous",
 ): Promise<void> {
   try {
     const response = await handleHermesChat({
@@ -138,51 +142,62 @@ async function spawnAgentResponse(
 
     // Post brief to boardroom with thought ID in metadata
     const briefContent = `${agent.emoji} **${agent.displayName}**: ${parsed.briefSummary}`;
-    const messageId = await appendToBoardroom(briefContent, 'assistant', { thoughtId: thought.id });
+    const messageId = await appendToBoardroom(briefContent, "assistant", {
+      thoughtId: thought.id,
+    });
 
     // Link thought to its boardroom message
     if (messageId) {
       await updateThoughtMessageId(thought.id, messageId);
     }
 
-    console.log(`[BoardroomSpawner] ${agent.displayName} posted brief (thought: ${thought.id})`);
+    console.log(
+      `[BoardroomSpawner] ${agent.displayName} posted brief (thought: ${thought.id})`,
+    );
   } catch (error) {
     console.error(`[BoardroomSpawner] ${agent.displayName} failed:`, error);
     const fallback = `${agent.emoji} **${agent.displayName}**: _[Agent unavailable — check OpenRouter connection]_`;
-    await appendToBoardroom(fallback, 'assistant');
+    await appendToBoardroom(fallback, "assistant");
   }
 }
 
 /**
  * Run a full standup round. Harper opens, then all agents respond in parallel.
  */
-export async function spawnBoardroomStandup(task: StandupTask): Promise<{ success: boolean; task: StandupTask }> {
+export async function spawnBoardroomStandup(
+  task: StandupTask,
+): Promise<{ success: boolean; task: StandupTask }> {
   const prompt = STANDUP_PROMPTS[task];
   if (!prompt) {
     console.error(`[BoardroomSpawner] Unknown task: ${task}`);
     return { success: false, task };
   }
 
-  const timestamp = new Date().toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/New_York',
+  const timestamp = new Date().toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/New_York",
   });
 
   console.log(`[BoardroomSpawner] Starting ${task} at ${timestamp} ET`);
 
   // Harper opens the standup
   const harper = BOARDROOM_AGENTS[0];
-  const openingMessage = `🎩 **Harper-Opus** — _Opening ${task.replace(/-/g, ' ')} at ${timestamp} ET_\n\nAll agents, report in.`;
-  await appendToBoardroom(openingMessage, 'assistant');
+  const openingMessage = `🎩 **Harper-Opus** — _Opening ${task.replace(/-/g, " ")} at ${timestamp} ET_\n\nAll agents, report in.`;
+  await appendToBoardroom(openingMessage, "assistant");
 
   // Spawn Harper first (as moderator)
-  await spawnAgentResponse(harper, prompt + '\n\nYou are moderating this standup. Set the tone and ask agents to report.', 'standup');
+  await spawnAgentResponse(
+    harper,
+    prompt +
+      "\n\nYou are moderating this standup. Set the tone and ask agents to report.",
+    "standup",
+  );
 
   // Spawn remaining agents in parallel
   const otherAgents = BOARDROOM_AGENTS.slice(1);
   await Promise.allSettled(
-    otherAgents.map((agent) => spawnAgentResponse(agent, prompt, 'standup'))
+    otherAgents.map((agent) => spawnAgentResponse(agent, prompt, "standup")),
   );
 
   console.log(`[BoardroomSpawner] ${task} complete`);
@@ -193,7 +208,10 @@ export async function spawnBoardroomStandup(task: StandupTask): Promise<{ succes
  * Spawn all agents for a breaking news response.
  * Used by boardroom-news-trigger.ts after an alert is posted.
  */
-export async function spawnBoardroomNewsResponse(headline: string, eventType: string): Promise<void> {
+export async function spawnBoardroomNewsResponse(
+  headline: string,
+  eventType: string,
+): Promise<void> {
   const prompt = `[BREAKING NEWS — EMERGENCY BOARDROOM]
 A Macro Level 3-4 event has been detected:
 Event: ${eventType}
@@ -206,7 +224,9 @@ What action should we take? Be concise and decisive.`;
 
   // All agents respond in parallel for breaking news (speed matters)
   await Promise.allSettled(
-    BOARDROOM_AGENTS.map((agent) => spawnAgentResponse(agent, prompt, 'news-response'))
+    BOARDROOM_AGENTS.map((agent) =>
+      spawnAgentResponse(agent, prompt, "news-response"),
+    ),
   );
 
   console.log(`[BoardroomSpawner] Breaking news response complete`);
@@ -216,30 +236,100 @@ What action should we take? Be concise and decisive.`;
 
 /** Keyword sets for determining agent relevance to a user message */
 const AGENT_KEYWORDS: Record<string, string[]> = {
-  'futures-desk': [
-    'futures', 'nq', 'es', 'mnq', 'mes', 'risk', 'position', 'stop', 'vix',
-    'volatility', 'trade', 'entry', 'exit', 'drawdown', 'topstep', 'level',
-    'price', 'bid', 'ask', 'fill', 'execution', 'contract', 'lot', 'size',
+  "futures-desk": [
+    "futures",
+    "nq",
+    "es",
+    "mnq",
+    "mes",
+    "risk",
+    "position",
+    "stop",
+    "vix",
+    "volatility",
+    "trade",
+    "entry",
+    "exit",
+    "drawdown",
+    "topstep",
+    "level",
+    "price",
+    "bid",
+    "ask",
+    "fill",
+    "execution",
+    "contract",
+    "lot",
+    "size",
   ],
-  'pma-merged': [
-    'prediction', 'probability', 'kalshi', 'forecast', 'cycle', 'correlation',
-    'model', 'quant', 'spx', 'btc', 'crypto', 'regime', 'statistical',
-    'backtest', 'alpha', 'signal', 'indicator', 'pattern',
+  "pma-merged": [
+    "prediction",
+    "probability",
+    "kalshi",
+    "forecast",
+    "cycle",
+    "correlation",
+    "model",
+    "quant",
+    "spx",
+    "btc",
+    "crypto",
+    "regime",
+    "statistical",
+    "backtest",
+    "alpha",
+    "signal",
+    "indicator",
+    "pattern",
   ],
-  'fundamentals-desk': [
-    'earnings', 'revenue', 'pe', 'valuation', 'company', 'stock', 'nvda',
-    'aapl', 'fundamental', 'thesis', 'sec', 'antitrust', 'gdp', 'rate',
-    'fed', 'fomc', 'inflation', 'cpi', 'ppi', 'macro', 'economic',
+  "fundamentals-desk": [
+    "earnings",
+    "revenue",
+    "pe",
+    "valuation",
+    "company",
+    "stock",
+    "nvda",
+    "aapl",
+    "fundamental",
+    "thesis",
+    "sec",
+    "antitrust",
+    "gdp",
+    "rate",
+    "fed",
+    "fomc",
+    "inflation",
+    "cpi",
+    "ppi",
+    "macro",
+    "economic",
   ],
   herald: [
-    'news', 'sentiment', 'twitter', 'aaii', 'survey', 'headline', 'breaking',
-    'media', 'bearish', 'bullish', 'fear', 'greed', 'narrative', 'flow',
-    'put', 'call', 'skew', 'crowd', 'retail',
+    "news",
+    "sentiment",
+    "twitter",
+    "aaii",
+    "survey",
+    "headline",
+    "breaking",
+    "media",
+    "bearish",
+    "bullish",
+    "fear",
+    "greed",
+    "narrative",
+    "flow",
+    "put",
+    "call",
+    "skew",
+    "crowd",
+    "retail",
   ],
 };
 
 /** Sub-agents only (excludes Harper — she always goes last as CAO) */
-const SUB_AGENTS = BOARDROOM_AGENTS.filter(a => a.role !== 'harper-cao');
+const SUB_AGENTS = BOARDROOM_AGENTS.filter((a) => a.role !== "harper-cao");
 
 /**
  * Score agent relevance to a message based on keyword frequency.
@@ -284,21 +374,29 @@ export async function spawnBoardroomBroadcast(
   userMessage: string,
   thinkHarder = false,
 ): Promise<void> {
-  console.log(`[BoardroomSpawner] @everyone broadcast: "${userMessage.slice(0, 80)}..."`);
+  console.log(
+    `[BoardroomSpawner] @everyone broadcast: "${userMessage.slice(0, 80)}..."`,
+  );
 
   // Post the user's message to boardroom
-  await appendToBoardroom(`**Human Executive** (@everyone): ${userMessage}`, 'user');
+  await appendToBoardroom(
+    `**Human Executive** (@everyone): ${userMessage}`,
+    "user",
+  );
 
   // Build cross-agent thought context for richer responses
-  let thoughtContext = '';
+  let thoughtContext = "";
   try {
-    const { buildThoughtBankPromptBlock } = await import('./ai/agent-instructions/thought-bank-awareness.js');
-    thoughtContext = await buildThoughtBankPromptBlock('Harper-Opus');
-  } catch { /* graceful degradation */ }
+    const { buildThoughtBankPromptBlock } =
+      await import("./ai/agent-instructions/thought-bank-awareness.js");
+    thoughtContext = await buildThoughtBankPromptBlock("Harper-Opus");
+  } catch {
+    /* graceful degradation */
+  }
 
   // Order sub-agents by relevance
   const ordered = orderByRelevance(userMessage);
-  const harper = BOARDROOM_AGENTS.find(a => a.role === 'harper-cao')!;
+  const harper = BOARDROOM_AGENTS.find((a) => a.role === "harper-cao")!;
 
   // Collect responses for context chain
   const responses: string[] = [];
@@ -306,24 +404,24 @@ export async function spawnBoardroomBroadcast(
   // Sub-agents respond sequentially, most relevant first
   for (const agent of ordered) {
     const contextBlock = responses.length
-      ? `\n\nPrior agent responses (for context):\n${responses.join('\n---\n')}`
-      : '';
+      ? `\n\nPrior agent responses (for context):\n${responses.join("\n---\n")}`
+      : "";
 
     const prompt = `[BOARDROOM — @everyone broadcast from the Human Executive]
 Message: "${userMessage}"
 ${contextBlock}
-${thoughtContext ? `\n${thoughtContext}` : ''}
+${thoughtContext ? `\n${thoughtContext}` : ""}
 
 Respond to the Human Executive's message from your desk's perspective.${
-  thinkHarder ? ' Think deeper — provide extra analysis and reasoning.' : ''
-} Be concise but substantive. 3-5 sentences max unless the topic demands more.`;
+      thinkHarder ? " Think deeper — provide extra analysis and reasoning." : ""
+    } Be concise but substantive. 3-5 sentences max unless the topic demands more.`;
 
-    await spawnAgentResponse(agent, prompt, 'broadcast');
+    await spawnAgentResponse(agent, prompt, "broadcast");
     responses.push(`${agent.displayName}: [responded]`);
   }
 
   // Harper (CAO) always responds last — synthesizes and moderates
-  const allResponses = responses.join('\n');
+  const allResponses = responses.join("\n");
   const harperPrompt = `[BOARDROOM — @everyone broadcast from the Human Executive]
 Message: "${userMessage}"
 
@@ -331,10 +429,12 @@ All sub-agents have reported in:
 ${allResponses}
 
 You are the CAO. Synthesize the team's input, resolve any conflicts, and provide the final word.${
-    thinkHarder ? ' Think deeper — provide extra analysis.' : ''
+    thinkHarder ? " Think deeper — provide extra analysis." : ""
   } Address the Human Executive directly.`;
 
-  await spawnAgentResponse(harper, harperPrompt, 'broadcast');
+  await spawnAgentResponse(harper, harperPrompt, "broadcast");
 
-  console.log(`[BoardroomSpawner] @everyone broadcast complete (${ordered.length + 1} agents responded)`);
+  console.log(
+    `[BoardroomSpawner] @everyone broadcast complete (${ordered.length + 1} agents responded)`,
+  );
 }

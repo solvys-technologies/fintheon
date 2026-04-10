@@ -1,12 +1,19 @@
-import { ChevronLeft, ChevronRight, MoveLeft, MoveRight, GripVertical, X } from 'lucide-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { EmotionalResonanceMonitor } from './EmotionalResonanceMonitor';
-import { BlindspotsWidget } from './BlindspotsWidget';
-import { AlgoStatusWidget } from './AlgoStatusWidget';
-import { AccountTrackerWidget } from './AccountTrackerWidget';
-import { RegimeMini } from './RegimeMini';
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoveLeft,
+  MoveRight,
+  GripVertical,
+  X,
+} from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { EmotionalResonanceMonitor } from "./EmotionalResonanceMonitor";
+import { BlindspotsWidget } from "./BlindspotsWidget";
+import { AlgoStatusWidget } from "./AlgoStatusWidget";
+import { AccountTrackerWidget } from "./AccountTrackerWidget";
+import { RegimeMini } from "./RegimeMini";
 
-import { PanelPosition } from '../layout/DraggablePanel';
+import { PanelPosition } from "../layout/DraggablePanel";
 
 interface MissionControlPanelProps {
   collapsed: boolean;
@@ -17,13 +24,13 @@ interface MissionControlPanelProps {
   onHide?: () => void;
 }
 
-export function MissionControlPanel({ 
-  collapsed, 
-  onToggleCollapse, 
+export function MissionControlPanel({
+  collapsed,
+  onToggleCollapse,
   topStepXEnabled = false,
-  position = 'right',
+  position = "right",
   onPositionChange,
-  onHide
+  onHide,
 }: MissionControlPanelProps) {
   const [erScore, setErScore] = useState<number>(0);
   const [headerHovered, setHeaderHovered] = useState(false);
@@ -33,7 +40,10 @@ export function MissionControlPanel({
   // Collapsed hover-peek: slide open on hover, close on leave
   const handleCollapsedEnter = useCallback(() => {
     if (!collapsed) return;
-    if (peekTimerRef.current) { clearTimeout(peekTimerRef.current); peekTimerRef.current = null; }
+    if (peekTimerRef.current) {
+      clearTimeout(peekTimerRef.current);
+      peekTimerRef.current = null;
+    }
     setPeekOpen(true);
   }, [collapsed]);
 
@@ -50,14 +60,14 @@ export function MissionControlPanel({
 
   // Determine visual width
   const isVisuallyExpanded = !collapsed || peekOpen;
-  const panelWidth = isVisuallyExpanded ? 'w-72' : 'w-3';
+  const panelWidth = isVisuallyExpanded ? "w-72" : "w-3";
 
   return (
     <div
       className={`relative bg-[var(--fintheon-bg)] transition-all duration-200 ease-out ${panelWidth}`}
       onMouseEnter={handleCollapsedEnter}
       onMouseLeave={handleCollapsedLeave}
-      style={{ minWidth: collapsed && !peekOpen ? '12px' : undefined }}
+      style={{ minWidth: collapsed && !peekOpen ? "12px" : undefined }}
     >
       {/* Collapsed thin hover-trigger strip */}
       {collapsed && !peekOpen && (
@@ -67,31 +77,35 @@ export function MissionControlPanel({
       )}
 
       {/* Full panel content — shown when expanded or peek-open */}
-      <div className={`h-full flex flex-col transition-opacity duration-150 ${isVisuallyExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div
+        className={`h-full flex flex-col transition-opacity duration-150 ${isVisuallyExpanded ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+      >
         {/* Header */}
         <div
           className="h-12 flex items-center justify-between px-3"
           onMouseEnter={() => setHeaderHovered(true)}
           onMouseLeave={() => setHeaderHovered(false)}
         >
-          <h2 className="text-sm font-semibold text-[var(--fintheon-accent)]">Mission Control</h2>
+          <h2 className="text-sm font-semibold text-[var(--fintheon-accent)]">
+            Mission Control
+          </h2>
 
           <div className="flex items-center gap-1">
             {/* TopStepX controls */}
             {topStepXEnabled && onPositionChange && (
               <>
-                {position === 'right' && (
+                {position === "right" && (
                   <button
-                    onClick={() => onPositionChange('left')}
+                    onClick={() => onPositionChange("left")}
                     className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
                     title="Move Left"
                   >
                     <MoveLeft className="w-3.5 h-3.5" />
                   </button>
                 )}
-                {position === 'left' && (
+                {position === "left" && (
                   <button
-                    onClick={() => onPositionChange('right')}
+                    onClick={() => onPositionChange("right")}
                     className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
                     title="Move Right"
                   >
@@ -99,7 +113,7 @@ export function MissionControlPanel({
                   </button>
                 )}
                 <button
-                  onClick={() => onPositionChange('floating')}
+                  onClick={() => onPositionChange("floating")}
                   className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
                   title="Float"
                 >

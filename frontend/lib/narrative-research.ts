@@ -1,8 +1,8 @@
 // [claude-code 2026-03-27] AI research call wrapper — lightweight drill-deeper for NarrativeFlow
 
-import type { ResearchBullet } from './narrative-types';
+import type { ResearchBullet } from "./narrative-types";
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export interface ResearchDrillRequest {
   highlightedText: string;
@@ -17,10 +17,12 @@ export interface ResearchDrillResponse {
   provider: string;
 }
 
-export async function drillResearch(req: ResearchDrillRequest): Promise<ResearchDrillResponse> {
+export async function drillResearch(
+  req: ResearchDrillRequest,
+): Promise<ResearchDrillResponse> {
   const res = await fetch(`${API_BASE}/api/narrative/research-drill`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
   });
   if (!res.ok) throw new Error(`Research drill failed: ${res.status}`);

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-10] Frontend mirror of backend market-data types
 
-export type MarketDataProvider = 'fmp' | 'unusual-whales' | 'yahoo-finance';
+export type MarketDataProvider = "fmp" | "unusual-whales" | "yahoo-finance";
 
 export interface StockQuote {
   symbol: string;
@@ -35,19 +35,29 @@ export interface GammaExposure {
 
 export interface OptionsWall {
   symbol: string;
-  putWalls: Array<{ strike: number; volume: number; oi: number; notional: number }>;
-  callWalls: Array<{ strike: number; volume: number; oi: number; notional: number }>;
+  putWalls: Array<{
+    strike: number;
+    volume: number;
+    oi: number;
+    notional: number;
+  }>;
+  callWalls: Array<{
+    strike: number;
+    volume: number;
+    oi: number;
+    notional: number;
+  }>;
   maxPain: number;
   timestamp: string;
 }
 
 export interface OptionsFlowItem {
-  type: 'call' | 'put';
+  type: "call" | "put";
   strike: number;
   expiry: string;
   premium: number;
   volume: number;
-  sentiment: 'bullish' | 'bearish' | 'neutral';
+  sentiment: "bullish" | "bearish" | "neutral";
   unusual: boolean;
 }
 
@@ -79,7 +89,7 @@ export interface IVScoreResponse {
     level: number;
     percentChange: number;
     isSpike: boolean;
-    spikeDirection: 'up' | 'down' | 'none';
+    spikeDirection: "up" | "down" | "none";
     staleMinutes: number;
   };
   eventCount: number;
@@ -89,7 +99,7 @@ export interface IVScoreResponse {
     scaledPoints: number;
     scaledTicks: number;
     scaledDollarRisk: number;
-    urgency: 'low' | 'moderate' | 'elevated' | 'high' | 'extreme';
+    urgency: "low" | "moderate" | "elevated" | "high" | "extreme";
     implied: {
       impliedPct: number;
       basePoints: number;
@@ -107,8 +117,12 @@ export interface IVScoreResponse {
     nextSessionScore: number;
     confidence: number;
     regimeShiftProbability: number;
-    scenarios: Array<{ label: string; probability: number; projectedScore: number }>;
-    source: 'miroshark' | 'heuristic';
+    scenarios: Array<{
+      label: string;
+      probability: number;
+      projectedScore: number;
+    }>;
+    source: "miroshark" | "heuristic";
     generatedAt: string;
   };
   /** V3: Systemic risk overlay data */

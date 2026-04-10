@@ -1,10 +1,10 @@
 // [claude-code 2026-03-09] Added cancel on click during speaking/thinking, mic denied-state UI
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Mic, MicOff } from 'lucide-react';
-import { useVoice } from '../../contexts/VoiceContext';
-import { resolveVoiceOrbState } from '../../types/voice';
-import { VoiceAuroraOrb } from './VoiceAuroraOrb';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Mic, MicOff } from "lucide-react";
+import { useVoice } from "../../contexts/VoiceContext";
+import { resolveVoiceOrbState } from "../../types/voice";
+import { VoiceAuroraOrb } from "./VoiceAuroraOrb";
 
 const INFRACTION_HOLD_MS = 8_000;
 const INFRACTION_WINDOW_MS = 5 * 60_000;
@@ -27,7 +27,7 @@ interface PsychAssistInfractionEvent {
 
 function readCurrentErScore(): number {
   try {
-    const raw = localStorage.getItem('psychassist_current_score');
+    const raw = localStorage.getItem("psychassist_current_score");
     const score = raw ? parseFloat(raw) : 0;
     return Number.isFinite(score) ? score : 0;
   } catch {
@@ -35,7 +35,9 @@ function readCurrentErScore(): number {
   }
 }
 
-export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps) {
+export function HeaderVoiceControl({
+  compact = false,
+}: HeaderVoiceControlProps) {
   const {
     enabled,
     runtimeState,
@@ -56,13 +58,14 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
   const evaluateIntervention = useCallback(
     (now: number) => {
       infractionTimestampsRef.current = infractionTimestampsRef.current.filter(
-        (ts) => now - ts <= INFRACTION_WINDOW_MS
+        (ts) => now - ts <= INFRACTION_WINDOW_MS,
       );
 
       if (!enabled) return;
       if (now < cooldownUntilRef.current) return;
 
-      const hitInfractionThreshold = infractionTimestampsRef.current.length >= INFRACTION_THRESHOLD;
+      const hitInfractionThreshold =
+        infractionTimestampsRef.current.length >= INFRACTION_THRESHOLD;
       const hitScoreThreshold = currentScore <= ER_THRESHOLD;
 
       if (!hitInfractionThreshold && !hitScoreThreshold) return;
@@ -73,7 +76,7 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
         infractionCount: infractionTimestampsRef.current.length,
       });
     },
-    [currentScore, enabled, respondToInfraction]
+    [currentScore, enabled, respondToInfraction],
   );
 
   useEffect(() => {
@@ -85,7 +88,7 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
 
     const handleScore = (event: Event) => {
       const detail = (event as CustomEvent<PsychAssistScoreEvent>).detail;
-      if (typeof detail?.score === 'number' && Number.isFinite(detail.score)) {
+      if (typeof detail?.score === "number" && Number.isFinite(detail.score)) {
         setCurrentScore(detail.score);
       }
     };
@@ -93,25 +96,37 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
     const handleInfraction = (event: Event) => {
       const detail = (event as CustomEvent<PsychAssistInfractionEvent>).detail;
       const timestamp =
-        typeof detail?.timestamp === 'number' && Number.isFinite(detail.timestamp)
+        typeof detail?.timestamp === "number" &&
+        Number.isFinite(detail.timestamp)
           ? detail.timestamp
           : Date.now();
 
       setLastInfractionAt(timestamp);
       infractionTimestampsRef.current = [
-        ...infractionTimestampsRef.current.filter((ts) => timestamp - ts <= INFRACTION_WINDOW_MS),
+        ...infractionTimestampsRef.current.filter(
+          (ts) => timestamp - ts <= INFRACTION_WINDOW_MS,
+        ),
         timestamp,
       ];
       evaluateIntervention(timestamp);
     };
 
-    window.addEventListener('psychassist:score', handleScore as EventListener);
-    window.addEventListener('psychassist:infraction', handleInfraction as EventListener);
+    window.addEventListener("psychassist:score", handleScore as EventListener);
+    window.addEventListener(
+      "psychassist:infraction",
+      handleInfraction as EventListener,
+    );
 
     return () => {
       clearInterval(scoreInterval);
-      window.removeEventListener('psychassist:score', handleScore as EventListener);
-      window.removeEventListener('psychassist:infraction', handleInfraction as EventListener);
+      window.removeEventListener(
+        "psychassist:score",
+        handleScore as EventListener,
+      );
+      window.removeEventListener(
+        "psychassist:infraction",
+        handleInfraction as EventListener,
+      );
     };
   }, [evaluateIntervention]);
 
@@ -144,8 +159,8 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
 
   const orbState = resolveVoiceOrbState(runtimeState, hasRecentInfraction);
 
-  const isBusy = runtimeState === 'thinking' || runtimeState === 'speaking';
-  const isMicDenied = micPermission === 'denied';
+  const isBusy = runtimeState === "thinking" || runtimeState === "speaking";
+  const isMicDenied = micPermission === "denied";
   const isDisabled = !isSupported || isMicDenied;
 
   const handleClick = useCallback(() => {
@@ -158,22 +173,22 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
   }, [isBusy, enabled, cancel, toggleEnabled]);
 
   const getTitle = () => {
-    if (isMicDenied) return 'Microphone blocked. Enable in browser settings.';
-    if (!isSupported) return 'Voice recognition unavailable in this browser';
-    if (isBusy && enabled) return 'Cancel current voice operation';
-    if (runtimeState === 'error') return 'Voice error — recovering...';
-    return enabled ? 'Disable voice assistant' : 'Enable voice assistant';
+    if (isMicDenied) return "Microphone blocked. Enable in browser settings.";
+    if (!isSupported) return "Voice recognition unavailable in this browser";
+    if (isBusy && enabled) return "Cancel current voice operation";
+    if (runtimeState === "error") return "Voice error — recovering...";
+    return enabled ? "Disable voice assistant" : "Enable voice assistant";
   };
 
   // Show the aurora orb only when actively listening/speaking/thinking/error/infraction
-  const showOrb = enabled && orbState !== 'idle';
+  const showOrb = enabled && orbState !== "idle";
 
   return (
     <button
       type="button"
       onClick={handleClick}
       disabled={isDisabled}
-      className={`relative rounded-full transition-colors ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-90'}`}
+      className={`relative rounded-full transition-colors ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-90"}`}
       title={getTitle()}
     >
       {showOrb ? (
@@ -182,7 +197,11 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
         /* Dormant/idle state: bordered mic icon — Mic when enabled, MicOff when disabled */
         <div
           className="rounded-full bg-[#070704] flex items-center justify-center"
-          style={{ width: compact ? '24px' : '28px', height: compact ? '24px' : '28px', border: `1.5px solid var(--fintheon-accent)` }}
+          style={{
+            width: compact ? "24px" : "28px",
+            height: compact ? "24px" : "28px",
+            border: `1.5px solid var(--fintheon-accent)`,
+          }}
         >
           {enabled ? (
             <Mic className="w-3 h-3 text-[var(--fintheon-accent)]/60" />

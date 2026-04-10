@@ -5,10 +5,10 @@ export class AppError extends Error {
     message: string,
     public code: string,
     public statusCode: number,
-    public context?: Record<string, unknown>
+    public context?: Record<string, unknown>,
   ) {
     super(message);
-    this.name = 'AppError';
+    this.name = "AppError";
   }
 }
 
@@ -16,24 +16,24 @@ export class NotFoundError extends AppError {
   constructor(resource: string, id?: string) {
     super(
       id ? `${resource} '${id}' not found` : `${resource} not found`,
-      'NOT_FOUND',
+      "NOT_FOUND",
       404,
-      { resource, id }
+      { resource, id },
     );
-    this.name = 'NotFoundError';
+    this.name = "NotFoundError";
   }
 }
 
 export class ValidationError extends AppError {
   constructor(message: string, field?: string) {
-    super(message, 'VALIDATION_ERROR', 400, field ? { field } : undefined);
-    this.name = 'ValidationError';
+    super(message, "VALIDATION_ERROR", 400, field ? { field } : undefined);
+    this.name = "ValidationError";
   }
 }
 
 export class ExternalServiceError extends AppError {
   constructor(service: string, message: string) {
-    super(`${service}: ${message}`, 'EXTERNAL_SERVICE_ERROR', 502, { service });
-    this.name = 'ExternalServiceError';
+    super(`${service}: ${message}`, "EXTERNAL_SERVICE_ERROR", 502, { service });
+    this.name = "ExternalServiceError";
   }
 }

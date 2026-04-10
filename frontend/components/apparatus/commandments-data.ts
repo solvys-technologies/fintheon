@@ -1,188 +1,252 @@
 // [claude-code 2026-03-22] Source of Truth fusion — full 14 commandments with metadata
-import type { Commandment } from './types';
+import type { Commandment } from "./types";
 
 export const COMMANDMENTS: Commandment[] = [
   {
     number: 1,
-    text: 'There is always another trade',
-    fullText: 'Anti-FOMO anchor. The market offers infinite opportunities. Never chase a missed entry — the next setup is always coming.',
-    blockLevel: 'soft',
-    coreLessons: ['Anti-FOMO', 'Anti-revenge trading', 'Patience is edge'],
+    text: "There is always another trade",
+    fullText:
+      "Anti-FOMO anchor. The market offers infinite opportunities. Never chase a missed entry — the next setup is always coming.",
+    blockLevel: "soft",
+    coreLessons: ["Anti-FOMO", "Anti-revenge trading", "Patience is edge"],
     agentUsage: {
-      Harper: 'Cites after missed entries or during loss streaks',
-      Feucht: 'References when rejecting low-conviction setups',
+      Harper: "Cites after missed entries or during loss streaks",
+      Feucht: "References when rejecting low-conviction setups",
     },
     relatedCommandments: [13],
-    backgroundStory: 'Born from a string of revenge trades in September 2024 when a missed /NQ entry at the 50-fib led to three consecutive forced re-entries, each worse than the last. The $2,100 drawdown that followed taught the desk that chasing is more expensive than missing.',
+    backgroundStory:
+      "Born from a string of revenge trades in September 2024 when a missed /NQ entry at the 50-fib led to three consecutive forced re-entries, each worse than the last. The $2,100 drawdown that followed taught the desk that chasing is more expensive than missing.",
   },
   {
     number: 2,
-    text: 'The markets will always trade',
-    fullText: 'Patience anchor. No single session defines you. Markets don\'t close forever.',
-    blockLevel: 'guidance',
-    coreLessons: ['No session defines you', 'Markets are infinite', 'Patience over desperation'],
+    text: "The markets will always trade",
+    fullText:
+      "Patience anchor. No single session defines you. Markets don't close forever.",
+    blockLevel: "guidance",
+    coreLessons: [
+      "No session defines you",
+      "Markets are infinite",
+      "Patience over desperation",
+    ],
     agentUsage: {
-      Harper: 'Uses when TP is desperate or under financial pressure',
-      All: 'Reinforces during dead calendar days',
+      Harper: "Uses when TP is desperate or under financial pressure",
+      All: "Reinforces during dead calendar days",
     },
     relatedCommandments: [],
-    backgroundStory: 'Written during a two-week cold streak in October 2024 when zero setups triggered and the urge to force a trade peaked daily. The realization that sitting out IS the position kept the account intact through a choppy tape.',
+    backgroundStory:
+      "Written during a two-week cold streak in October 2024 when zero setups triggered and the urge to force a trade peaked daily. The realization that sitting out IS the position kept the account intact through a choppy tape.",
   },
   {
     number: 3,
-    text: 'No shot in the dark trades',
-    fullText: 'Every trade needs a thesis backed by the playbook. If confluence score is below threshold, the trade is blocked.',
-    blockLevel: 'hard',
-    coreLessons: ['Conviction required', 'Thesis before entry', 'No guessing'],
+    text: "No shot in the dark trades",
+    fullText:
+      "Every trade needs a thesis backed by the playbook. If confluence score is below threshold, the trade is blocked.",
+    blockLevel: "hard",
+    coreLessons: ["Conviction required", "Thesis before entry", "No guessing"],
     agentUsage: {
-      Feucht: 'Pre-trade checklist gate — blocks if confluence < threshold',
-      Harper: 'Validates conviction level before approval',
+      Feucht: "Pre-trade checklist gate — blocks if confluence < threshold",
+      Harper: "Validates conviction level before approval",
     },
     relatedCommandments: [8, 10],
-    backgroundStory: 'Codified after the BLS revision of August 21st, 2024, when 818,000 jobs vanished from the record. A "gut feel" NQ long placed without checking the economic calendar got stopped out in minutes. Hard-block rule was born that night.',
+    backgroundStory:
+      'Codified after the BLS revision of August 21st, 2024, when 818,000 jobs vanished from the record. A "gut feel" NQ long placed without checking the economic calendar got stopped out in minutes. Hard-block rule was born that night.',
   },
   {
     number: 4,
-    text: 'You can\'t go broke taking profits',
-    fullText: 'PDPT exists for a reason ($1,550). Take the money. Don\'t hold past target hoping for more.',
-    blockLevel: 'soft',
-    coreLessons: ['PDPT discipline', 'Profit management', 'Greed kills'],
+    text: "You can't go broke taking profits",
+    fullText:
+      "PDPT exists for a reason ($1,550). Take the money. Don't hold past target hoping for more.",
+    blockLevel: "soft",
+    coreLessons: ["PDPT discipline", "Profit management", "Greed kills"],
     agentUsage: {
-      Feucht: 'Flags when holding past PDPT $1,550 target',
-      Harper: 'Profit management reminder',
+      Feucht: "Flags when holding past PDPT $1,550 target",
+      Harper: "Profit management reminder",
     },
     relatedCommandments: [9],
-    backgroundStory: 'A +$2,400 NQ short that turned into a -$300 loss because the exit was moved three times "for more." The PDPT target ($1,550/day) was established that week as a non-negotiable profit ceiling to combat greed.',
+    backgroundStory:
+      'A +$2,400 NQ short that turned into a -$300 loss because the exit was moved three times "for more." The PDPT target ($1,550/day) was established that week as a non-negotiable profit ceiling to combat greed.',
   },
   {
     number: 5,
-    text: 'Know what tape you\'re trading',
-    fullText: 'Regime detection must happen before setup selection. Wrong model on wrong tape = losses.',
-    blockLevel: 'soft',
-    coreLessons: ['Regime detection first', 'Match model to tape', 'No blind entries'],
+    text: "Know what tape you're trading",
+    fullText:
+      "Regime detection must happen before setup selection. Wrong model on wrong tape = losses.",
+    blockLevel: "soft",
+    coreLessons: [
+      "Regime detection first",
+      "Match model to tape",
+      "No blind entries",
+    ],
     agentUsage: {
-      Feucht: 'Must identify tape type before recommending setups',
-      Oracle: 'Identifies regime (trending/choppy, efficient/inefficient)',
+      Feucht: "Must identify tape type before recommending setups",
+      Oracle: "Identifies regime (trending/choppy, efficient/inefficient)",
     },
     relatedCommandments: [3],
-    backgroundStory: 'Three consecutive losing sessions in November 2024 traced to applying a trending model during a choppy, mean-reverting tape. Oracle built the regime detection system that same weekend.',
+    backgroundStory:
+      "Three consecutive losing sessions in November 2024 traced to applying a trending model during a choppy, mean-reverting tape. Oracle built the regime detection system that same weekend.",
   },
   {
     number: 6,
-    text: 'Never make back losses the same way you lost them',
-    fullText: 'Anti-revenge trading. The #1 weakness. If you lost on NQ long, don\'t immediately re-enter NQ long.',
-    blockLevel: 'soft',
-    coreLessons: ['Anti-revenge', 'Switch instrument or direction', 'Cool-down period'],
+    text: "Never make back losses the same way you lost them",
+    fullText:
+      "Anti-revenge trading. The #1 weakness. If you lost on NQ long, don't immediately re-enter NQ long.",
+    blockLevel: "soft",
+    coreLessons: [
+      "Anti-revenge",
+      "Switch instrument or direction",
+      "Cool-down period",
+    ],
     agentUsage: {
-      Harper: 'Flags re-entry on same instrument/direction after loss',
-      PsychAssist: 'Primary tilt detection vector',
+      Harper: "Flags re-entry on same instrument/direction after loss",
+      PsychAssist: "Primary tilt detection vector",
     },
     relatedCommandments: [1, 7, 13],
-    backgroundStory: 'The single most expensive behavioral pattern in the fund\'s history. A -$800 NQ long loss was immediately followed by another NQ long "to get it back," then another. Total damage: -$3,200 in 40 minutes. PsychAssist\'s tilt detection system was built specifically to prevent this.',
+    backgroundStory:
+      "The single most expensive behavioral pattern in the fund's history. A -$800 NQ long loss was immediately followed by another NQ long \"to get it back,\" then another. Total damage: -$3,200 in 40 minutes. PsychAssist's tilt detection system was built specifically to prevent this.",
   },
   {
     number: 7,
-    text: 'No doubling down on losers',
-    fullText: 'Conviction is not stubbornness. If the position is losing, cut it. Do NOT add to it. Reassess from scratch.',
-    blockLevel: 'hard',
-    coreLessons: ['Cut losers immediately', 'Conviction != stubbornness', 'Fresh reassessment'],
+    text: "No doubling down on losers",
+    fullText:
+      "Conviction is not stubbornness. If the position is losing, cut it. Do NOT add to it. Reassess from scratch.",
+    blockLevel: "hard",
+    coreLessons: [
+      "Cut losers immediately",
+      "Conviction != stubbornness",
+      "Fresh reassessment",
+    ],
     agentUsage: {
-      Feucht: 'Blocks adding to losing positions automatically',
-      'Risk Manager': 'Rejects proposals that increase exposure on losers',
+      Feucht: "Blocks adding to losing positions automatically",
+      "Risk Manager": "Rejects proposals that increase exposure on losers",
     },
     relatedCommandments: [6, 12],
-    backgroundStory: 'Feucht added to a losing /NQ long twice during the Yen Flash Crash of August 5th, 2024, convinced the thesis was right. By the time the third add was blocked manually, the position was -$2,800. Hard-block rule was immediate.',
+    backgroundStory:
+      "Feucht added to a losing /NQ long twice during the Yen Flash Crash of August 5th, 2024, convinced the thesis was right. By the time the third add was blocked manually, the position was -$2,800. Hard-block rule was immediate.",
   },
   {
     number: 8,
-    text: 'Good traders buy from good prices',
-    fullText: '"Good traders buy from good prices, and a good trade is a hard trade." Entry at the last line of defense — Fibonacci level where price must hold or thesis is invalidated.',
-    blockLevel: 'soft',
-    coreLessons: ['Entry quality is everything', 'Last line of defense', 'Min R:R 2:1'],
+    text: "Good traders buy from good prices",
+    fullText:
+      '"Good traders buy from good prices, and a good trade is a hard trade." Entry at the last line of defense — Fibonacci level where price must hold or thesis is invalidated.',
+    blockLevel: "soft",
+    coreLessons: [
+      "Entry quality is everything",
+      "Last line of defense",
+      "Min R:R 2:1",
+    ],
     agentUsage: {
-      Feucht: 'Fibonacci entry quality gate, validates key level',
-      Harper: 'Validates entry is at a key level, not chasing',
+      Feucht: "Fibonacci entry quality gate, validates key level",
+      Harper: "Validates entry is at a key level, not chasing",
     },
     relatedCommandments: [3, 12],
-    mentorSource: 'Dr. David Paul',
-    backgroundStory: 'Derived from Dr. David Paul\'s mentorship framework. The phrase "a good trade is a hard trade" was first tested when a textbook 61.8% fib entry on /NQ felt terrifying to take — and it ran 180 points. The best entries always feel uncomfortable.',
+    mentorSource: "Dr. David Paul",
+    backgroundStory:
+      'Derived from Dr. David Paul\'s mentorship framework. The phrase "a good trade is a hard trade" was first tested when a textbook 61.8% fib entry on /NQ felt terrifying to take — and it ran 180 points. The best entries always feel uncomfortable.',
   },
   {
     number: 9,
-    text: 'Good things happen to traders who wait',
-    fullText: 'Don\'t force trades. The setup comes to you. Session discipline — if there\'s no setup, there\'s no trade.',
-    blockLevel: 'soft',
-    coreLessons: ['Don\'t force it', 'Setup comes to you', 'Patience pays'],
+    text: "Good things happen to traders who wait",
+    fullText:
+      "Don't force trades. The setup comes to you. Session discipline — if there's no setup, there's no trade.",
+    blockLevel: "soft",
+    coreLessons: ["Don't force it", "Setup comes to you", "Patience pays"],
     agentUsage: {
-      All: 'Reinforced during slow/quiet markets',
-      Harper: 'Session discipline reminder',
+      All: "Reinforced during slow/quiet markets",
+      Harper: "Session discipline reminder",
     },
     relatedCommandments: [2, 11],
-    backgroundStory: 'On November 7th, 2024, the Fed pivot day, patience paid off spectacularly. Instead of chasing the initial spike, the desk waited 45 minutes for a pullback to the 38.2% fib. The entry ran 240 points by close.',
+    backgroundStory:
+      "On November 7th, 2024, the Fed pivot day, patience paid off spectacularly. Instead of chasing the initial spike, the desk waited 45 minutes for a pullback to the 38.2% fib. The entry ran 240 points by close.",
   },
   {
     number: 10,
-    text: 'Only fight for things worth fighting for',
-    fullText: 'Not every move deserves your capital. If the setup has degraded, walk away. Protect capital for the next high-conviction play.',
-    blockLevel: 'soft',
-    coreLessons: ['Thesis validation before entry', 'Walk away from degraded setups', 'Capital preservation'],
+    text: "Only fight for things worth fighting for",
+    fullText:
+      "Not every move deserves your capital. If the setup has degraded, walk away. Protect capital for the next high-conviction play.",
+    blockLevel: "soft",
+    coreLessons: [
+      "Thesis validation before entry",
+      "Walk away from degraded setups",
+      "Capital preservation",
+    ],
     agentUsage: {
-      Harper: 'Recommends walking away if setup has degraded',
-      Feucht: 'Thesis re-validation before execution',
+      Harper: "Recommends walking away if setup has degraded",
+      Feucht: "Thesis re-validation before execution",
     },
     relatedCommandments: [3, 11],
-    backgroundStory: 'A degraded setup on /ES during the Liberation Day tariff shock was still taken because "the original thesis was good." It wasn\'t anymore — context had changed entirely. Capital preservation over ego preservation.',
+    backgroundStory:
+      'A degraded setup on /ES during the Liberation Day tariff shock was still taken because "the original thesis was good." It wasn\'t anymore — context had changed entirely. Capital preservation over ego preservation.',
   },
   {
     number: 11,
-    text: 'Some days there is nothing to do',
-    fullText: 'Action bias is the enemy. On dead calendars with no catalyst, the right trade is no trade.',
-    blockLevel: 'soft',
-    coreLessons: ['Action bias kills', 'No catalyst = no trade', 'Sitting out IS a position'],
+    text: "Some days there is nothing to do",
+    fullText:
+      "Action bias is the enemy. On dead calendars with no catalyst, the right trade is no trade.",
+    blockLevel: "soft",
+    coreLessons: [
+      "Action bias kills",
+      "No catalyst = no trade",
+      "Sitting out IS a position",
+    ],
     agentUsage: {
-      Harper: 'Actively recommends sitting out on dead calendars',
-      All: 'Daily no-trade recommendation when no catalyst present',
+      Harper: "Actively recommends sitting out on dead calendars",
+      All: "Daily no-trade recommendation when no catalyst present",
     },
     relatedCommandments: [2, 9],
-    backgroundStory: 'A dead Friday between Christmas and New Year\'s 2024 — zero economic data, thin volume, no catalyst. A boredom trade was placed "just to have skin in the game." It chopped around for two hours and stopped out. The lesson cost $400 and a Friday afternoon.',
+    backgroundStory:
+      'A dead Friday between Christmas and New Year\'s 2024 — zero economic data, thin volume, no catalyst. A boredom trade was placed "just to have skin in the game." It chopped around for two hours and stopped out. The lesson cost $400 and a Friday afternoon.',
   },
   {
     number: 12,
-    text: 'Be right or be right out',
-    fullText: 'Stop-loss is non-negotiable. Quick cuts, no hoping, no praying. Every trade must have a defined stop before entry.',
-    blockLevel: 'hard',
-    coreLessons: ['Stop-loss mandatory', 'Quick cuts', 'No hoping or praying'],
+    text: "Be right or be right out",
+    fullText:
+      "Stop-loss is non-negotiable. Quick cuts, no hoping, no praying. Every trade must have a defined stop before entry.",
+    blockLevel: "hard",
+    coreLessons: ["Stop-loss mandatory", "Quick cuts", "No hoping or praying"],
     agentUsage: {
-      Feucht: 'Stop-loss enforcement on every trade',
-      'Risk Manager': 'Rejects proposals without a defined stop-loss level',
+      Feucht: "Stop-loss enforcement on every trade",
+      "Risk Manager": "Rejects proposals without a defined stop-loss level",
     },
     relatedCommandments: [7, 8],
-    backgroundStory: 'August 5th, 2024, Yen Flash Crash. A position without a pre-defined stop rode all the way down. Manual exit at the worst possible moment cost the desk more than the original thesis would have lost at the planned invalidation level.',
+    backgroundStory:
+      "August 5th, 2024, Yen Flash Crash. A position without a pre-defined stop rode all the way down. Manual exit at the worst possible moment cost the desk more than the original thesis would have lost at the planned invalidation level.",
   },
   {
     number: 13,
-    text: 'There is always another trade',
-    fullText: 'Bookend with Commandment 1. The repetition is intentional. This is the last thought before every forced or marginal trade.',
-    blockLevel: 'soft',
-    coreLessons: ['Circuit breaker reminder', 'End-of-session anchor', 'Walk away clean'],
+    text: "There is always another trade",
+    fullText:
+      "Bookend with Commandment 1. The repetition is intentional. This is the last thought before every forced or marginal trade.",
+    blockLevel: "soft",
+    coreLessons: [
+      "Circuit breaker reminder",
+      "End-of-session anchor",
+      "Walk away clean",
+    ],
     agentUsage: {
-      Harper: 'Circuit breaker reminder at end of session',
-      All: 'Final check before any forced or marginal trade',
+      Harper: "Circuit breaker reminder at end of session",
+      All: "Final check before any forced or marginal trade",
     },
     relatedCommandments: [1],
-    backgroundStory: 'The deliberate bookend. After every session that ended badly, this was the phrase that prevented the walk to the desk the next morning from feeling like dread. The market will be there tomorrow. Step away clean.',
+    backgroundStory:
+      "The deliberate bookend. After every session that ended badly, this was the phrase that prevented the walk to the desk the next morning from feeling like dread. The market will be there tomorrow. Step away clean.",
   },
   {
     number: 14,
-    text: 'The morning routine is non-negotiable',
-    fullText: 'Skip the 30-45 min calibration and you\'re trading blind. The routine IS the edge. No routine, no trades.',
-    blockLevel: 'hard',
-    coreLessons: ['Routine is the edge', 'No routine = no trading', 'Calibration before execution'],
+    text: "The morning routine is non-negotiable",
+    fullText:
+      "Skip the 30-45 min calibration and you're trading blind. The routine IS the edge. No routine, no trades.",
+    blockLevel: "hard",
+    coreLessons: [
+      "Routine is the edge",
+      "No routine = no trading",
+      "Calibration before execution",
+    ],
     agentUsage: {
-      Harper: 'Checks morning routine completion before approving first trade',
-      PsychAssist: 'Gates trading until routine is verified complete',
+      Harper: "Checks morning routine completion before approving first trade",
+      PsychAssist: "Gates trading until routine is verified complete",
     },
     relatedCommandments: [3],
-    backgroundStory: 'Two of the worst trading days in fund history — both started with a skipped morning routine. No levels drawn, no overnight move reviewed, no economic calendar checked. The correlation was undeniable. Hard-block rule enforced by PsychAssist.',
+    backgroundStory:
+      "Two of the worst trading days in fund history — both started with a skipped morning routine. No levels drawn, no overnight move reviewed, no economic calendar checked. The correlation was undeniable. Hard-block rule enforced by PsychAssist.",
   },
 ];

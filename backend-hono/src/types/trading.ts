@@ -3,8 +3,8 @@
  * Type definitions for trading operations
  */
 
-export type PositionSide = 'long' | 'short';
-export type PositionStatus = 'open' | 'closed' | 'pending';
+export type PositionSide = "long" | "short";
+export type PositionStatus = "open" | "closed" | "pending";
 
 export interface Position {
   id: string;
@@ -45,10 +45,10 @@ export interface ToggleAlgoResponse {
 
 // --- Test Trade Types ---
 
-export type StrategyModel = '40-40-club' | 'flush' | 'ripper';
-export type FibZone = 'ripper' | 'strong' | 'weak';
-export type EventSeverity = 'standard' | 'significant' | 'major';
-export type TradingMode = 'combine' | 'funded';
+export type StrategyModel = "40-40-club" | "flush" | "ripper";
+export type FibZone = "ripper" | "strong" | "weak";
+export type EventSeverity = "standard" | "significant" | "major";
+export type TradingMode = "combine" | "funded";
 
 export interface TestTradeRequest {
   strategy: StrategyModel;

@@ -1,44 +1,56 @@
 // [claude-code 2026-03-11] Track 7B: Upgraded ER Monitor — escalating interventions (visual ER<-1, voice ER<-3, lockout ER<-5), VAD indicator
-import { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, AlertTriangle, Diff, ShieldAlert, Lock, Volume2 } from 'lucide-react';
-import { WaveformCanvas } from './WaveformCanvas';
-import { Button } from '../ui/Button';
-import { StopMonitoringModal } from './StopMonitoringModal';
-import { useBackend } from '../../lib/backend';
-import { useERSafe } from '../../contexts/ERContext';
-import type { InterventionLevel } from '../../contexts/ERContext';
+import { useState, useEffect, useRef } from "react";
+import {
+  Mic,
+  MicOff,
+  AlertTriangle,
+  Diff,
+  ShieldAlert,
+  Lock,
+  Volume2,
+} from "lucide-react";
+import { WaveformCanvas } from "./WaveformCanvas";
+import { Button } from "../ui/Button";
+import { StopMonitoringModal } from "./StopMonitoringModal";
+import { useBackend } from "../../lib/backend";
+import { useERSafe } from "../../contexts/ERContext";
+import type { InterventionLevel } from "../../contexts/ERContext";
 
 interface EmotionalResonanceMonitorProps {
   onERScoreChange?: (score: number) => void;
 }
 
-function InterventionBanner({ level, score, onDismissLockout }: {
+function InterventionBanner({
+  level,
+  score,
+  onDismissLockout,
+}: {
   level: InterventionLevel;
   score: number;
   onDismissLockout: () => void;
 }) {
-  if (level === 'none') return null;
+  if (level === "none") return null;
 
   const config = {
     visual: {
       icon: AlertTriangle,
-      bg: 'bg-orange-500/10 border-orange-500/20',
-      text: 'text-orange-400',
-      label: 'Tilt Warning',
-      message: 'ER score dropping. Check your emotional state.',
+      bg: "bg-orange-500/10 border-orange-500/20",
+      text: "text-orange-400",
+      label: "Tilt Warning",
+      message: "ER score dropping. Check your emotional state.",
     },
     voice: {
       icon: Volume2,
-      bg: 'bg-red-500/10 border-red-500/20',
-      text: 'text-red-400',
-      label: 'Voice Intervention',
-      message: 'Active tilt detected. Step away from the screen.',
+      bg: "bg-red-500/10 border-red-500/20",
+      text: "text-red-400",
+      label: "Voice Intervention",
+      message: "Active tilt detected. Step away from the screen.",
     },
     lockout: {
       icon: Lock,
-      bg: 'bg-red-600/20 border-red-600/40',
-      text: 'text-red-500',
-      label: 'LOCKOUT RECOMMENDED',
+      bg: "bg-red-600/20 border-red-600/40",
+      text: "text-red-500",
+      label: "LOCKOUT RECOMMENDED",
       message: `ER at ${score.toFixed(1)}. Trading should stop until you recover.`,
     },
   }[level];
@@ -50,10 +62,14 @@ function InterventionBanner({ level, score, onDismissLockout }: {
     <div className={`border rounded p-2 ${config.bg} animate-pulse`}>
       <div className="flex items-center gap-1.5">
         <Icon className={`w-3.5 h-3.5 ${config.text}`} />
-        <span className={`text-[10px] font-bold ${config.text}`}>{config.label}</span>
+        <span className={`text-[10px] font-bold ${config.text}`}>
+          {config.label}
+        </span>
       </div>
-      <p className={`text-[9px] mt-1 ${config.text} opacity-80`}>{config.message}</p>
-      {level === 'lockout' && (
+      <p className={`text-[9px] mt-1 ${config.text} opacity-80`}>
+        {config.message}
+      </p>
+      {level === "lockout" && (
         <button
           onClick={onDismissLockout}
           className="mt-1.5 text-[9px] text-[var(--fintheon-muted)] underline hover:text-[var(--fintheon-text)] transition-colors"
@@ -65,7 +81,9 @@ function InterventionBanner({ level, score, onDismissLockout }: {
   );
 }
 
-export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanceMonitorProps) {
+export function EmotionalResonanceMonitor({
+  onERScoreChange,
+}: EmotionalResonanceMonitorProps) {
   const backend = useBackend();
   const erContext = useERSafe();
 
@@ -73,7 +91,8 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
   const [localIsMonitoring, setLocalIsMonitoring] = useState(false);
   const [localErScore, setLocalErScore] = useState(0);
   const [showStopModal, setShowStopModal] = useState(false);
-  const [localAudioContext, setLocalAudioContext] = useState<AudioContext | null>(null);
+  const [localAudioContext, setLocalAudioContext] =
+    useState<AudioContext | null>(null);
   const [localAnalyser, setLocalAnalyser] = useState<AnalyserNode | null>(null);
   const [overtradingStatus, setOvertradingStatus] = useState<{
     isOvertrading: boolean;
@@ -95,33 +114,40 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
   const isMonitoring = erContext?.isMonitoring ?? localIsMonitoring;
   const erScore = erContext?.erScore ?? localErScore;
   const analyser = erContext?.analyser ?? localAnalyser;
-  const interventionLevel = erContext?.interventionLevel ?? 'none';
+  const interventionLevel = erContext?.interventionLevel ?? "none";
   const isLockedOut = erContext?.isLockedOut ?? false;
   const vadActive = erContext?.vadActive ?? false;
   const lastSentiment = erContext?.lastSentiment ?? null;
 
-  const resonanceState = erScore > 0.5 ? 'Steadfast' : erScore < -0.5 ? 'Tilted' : 'Poised';
+  const resonanceState =
+    erScore > 0.5 ? "Steadfast" : erScore < -0.5 ? "Tilted" : "Poised";
   const stateColor = {
-    Steadfast: 'text-emerald-400',
-    Tilted: 'text-red-500',
-    Poised: 'text-gray-400',
+    Steadfast: "text-emerald-400",
+    Tilted: "text-red-500",
+    Poised: "text-gray-400",
   };
 
   // Border glow based on intervention level
   const borderClass = {
-    none: 'border-[var(--fintheon-accent)]/10',
-    visual: 'border-orange-500/40',
-    voice: 'border-red-500/50',
-    lockout: 'border-red-600/70',
+    none: "border-[var(--fintheon-accent)]/10",
+    visual: "border-orange-500/40",
+    voice: "border-red-500/50",
+    lockout: "border-red-600/70",
   }[interventionLevel];
 
   const safeLocalStorage = {
     getItem: (key: string): string | null => {
-      try { return typeof window !== 'undefined' ? localStorage.getItem(key) : null; } catch { return null; }
+      try {
+        return typeof window !== "undefined" ? localStorage.getItem(key) : null;
+      } catch {
+        return null;
+      }
     },
     setItem: (key: string, value: string): void => {
-      try { if (typeof window !== 'undefined') localStorage.setItem(key, value); } catch {}
-    }
+      try {
+        if (typeof window !== "undefined") localStorage.setItem(key, value);
+      } catch {}
+    },
   };
 
   const startMonitoring = async () => {
@@ -136,7 +162,7 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
       mediaStreamRef.current = stream;
       const ctx = new AudioContext();
       // [claude-code 2026-03-14] Chromium/Electron starts AudioContext SUSPENDED — must resume
-      if (ctx.state === 'suspended') await ctx.resume();
+      if (ctx.state === "suspended") await ctx.resume();
       const analyserNode = ctx.createAnalyser();
       analyserNode.fftSize = 256;
       const source = ctx.createMediaStreamSource(stream);
@@ -152,16 +178,22 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
 
       try {
         const saveResult = await backend.er.saveSession({
-          finalScore: 0, timeInTiltSeconds: 0, infractionCount: 0, sessionDurationSeconds: 0,
+          finalScore: 0,
+          timeInTiltSeconds: 0,
+          infractionCount: 0,
+          sessionDurationSeconds: 0,
         });
         sessionIdRef.current = saveResult.sessionId;
-        safeLocalStorage.setItem('psychassist_session_id', saveResult.sessionId.toString());
-        safeLocalStorage.setItem('psychassist_active', 'true');
+        safeLocalStorage.setItem(
+          "psychassist_session_id",
+          saveResult.sessionId.toString(),
+        );
+        safeLocalStorage.setItem("psychassist_active", "true");
       } catch (err) {
-        console.error('Failed to create ER session:', err);
+        console.error("Failed to create ER session:", err);
       }
     } catch (err) {
-      console.error('Failed to start monitoring:', err);
+      console.error("Failed to start monitoring:", err);
     }
   };
 
@@ -173,12 +205,14 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
     }
 
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
     }
     if (localAudioContext) {
-      try { await localAudioContext.close(); } catch {}
+      try {
+        await localAudioContext.close();
+      } catch {}
     }
-    safeLocalStorage.setItem('psychassist_active', 'false');
+    safeLocalStorage.setItem("psychassist_active", "false");
     sessionIdRef.current = null;
     setLocalAudioContext(null);
     setLocalAnalyser(null);
@@ -196,7 +230,7 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
   useEffect(() => {
     if (erContext) return; // shared context handles persistence
     const timer = setTimeout(() => {
-      const saved = safeLocalStorage.getItem('psychassist_current_score');
+      const saved = safeLocalStorage.getItem("psychassist_current_score");
       if (saved) {
         const savedScore = parseFloat(saved);
         if (!isNaN(savedScore) && isFinite(savedScore)) {
@@ -215,19 +249,23 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
 
   // Dispatch score event
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     window.dispatchEvent(
-      new CustomEvent('psychassist:score', {
+      new CustomEvent("psychassist:score", {
         detail: { score: erScore, timestamp: Date.now() },
-      })
+      }),
     );
   }, [erScore]);
 
   return (
-    <div className={`p-2.5 rounded transition-colors duration-300${interventionLevel !== 'none' ? ` border ${borderClass}` : ''}`}>
+    <div
+      className={`p-2.5 rounded transition-colors duration-300${interventionLevel !== "none" ? ` border ${borderClass}` : ""}`}
+    >
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          <h3 className="text-xs font-semibold text-[var(--fintheon-accent)]">PsychAssist</h3>
+          <h3 className="text-xs font-semibold text-[var(--fintheon-accent)]">
+            PsychAssist
+          </h3>
           {vadActive && (
             <span className="flex items-center gap-0.5 text-[8px] text-emerald-400 bg-emerald-400/10 rounded px-1 py-0.5">
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
@@ -236,11 +274,16 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
           )}
         </div>
         <div className="flex items-center gap-1">
-          {interventionLevel !== 'none' && (
-            <ShieldAlert className={`w-3 h-3 ${
-              interventionLevel === 'lockout' ? 'text-red-500 animate-pulse' :
-              interventionLevel === 'voice' ? 'text-red-400' : 'text-orange-400'
-            }`} />
+          {interventionLevel !== "none" && (
+            <ShieldAlert
+              className={`w-3 h-3 ${
+                interventionLevel === "lockout"
+                  ? "text-red-500 animate-pulse"
+                  : interventionLevel === "voice"
+                    ? "text-red-400"
+                    : "text-orange-400"
+              }`}
+            />
           )}
           {isMonitoring ? (
             <Mic className="w-3 h-3 text-emerald-400 animate-pulse" />
@@ -254,7 +297,10 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
         <div className="relative h-16 bg-black/50 rounded border border-[var(--fintheon-accent)]/10 overflow-hidden">
           <div className="absolute inset-0 scanline-overlay" />
           {isMonitoring && analyser ? (
-            <WaveformCanvas analyser={analyser} tiltMode={resonanceState === 'Tilted'} />
+            <WaveformCanvas
+              analyser={analyser}
+              tiltMode={resonanceState === "Tilted"}
+            />
           ) : (
             <div className="h-full flex items-center justify-center text-[10px] text-gray-500">
               Monitoring Inactive
@@ -280,7 +326,9 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
         {isLockedOut && (
           <div className="bg-red-900/30 border border-red-600/50 rounded p-2.5 text-center">
             <Lock className="w-5 h-5 text-red-500 mx-auto mb-1" />
-            <div className="text-[11px] text-red-400 font-bold">TRADING LOCKOUT</div>
+            <div className="text-[11px] text-red-400 font-bold">
+              TRADING LOCKOUT
+            </div>
             <div className="text-[9px] text-red-400/70 mt-0.5">
               ER below -5. All trading should cease until emotional recovery.
             </div>
@@ -296,14 +344,17 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
         {/* Last sentiment (from Haiku) */}
         {lastSentiment && lastSentiment.tiltIndicators.length > 0 && (
           <div className="text-[9px] text-[var(--fintheon-muted)] bg-black/20 rounded p-1.5">
-            <span className="text-[var(--fintheon-accent)]">Haiku:</span> {lastSentiment.summary}
+            <span className="text-[var(--fintheon-accent)]">Haiku:</span>{" "}
+            {lastSentiment.summary}
           </div>
         )}
 
         {overtradingStatus?.isOvertrading && (
           <div className="flex items-center gap-1.5 text-[10px] text-orange-500 bg-orange-500/10 border border-orange-500/20 rounded p-1.5">
             <Diff className="w-3 h-3" />
-            <span>Overtrading: {overtradingStatus.tradesInWindow} trades in 15min</span>
+            <span>
+              Overtrading: {overtradingStatus.tradesInWindow} trades in 15min
+            </span>
           </div>
         )}
 

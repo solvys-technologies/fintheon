@@ -1,13 +1,19 @@
 // [claude-code 2026-03-26] S2-T3: Commentator registry service — in-memory cache + fuzzy match + CRUD delegation
 
-import type { CommentatorEntry, CommentatorTier } from '../../types/commentator.js';
-import { TIER_DEFAULT_MULTIPLIERS, UNTAGGED_MULTIPLIER } from '../../types/commentator.js';
+import type {
+  CommentatorEntry,
+  CommentatorTier,
+} from "../../types/commentator.js";
+import {
+  TIER_DEFAULT_MULTIPLIERS,
+  UNTAGGED_MULTIPLIER,
+} from "../../types/commentator.js";
 import {
   readCommentatorRegistry,
   writeCommentator,
   updateCommentatorEntry,
   deactivateCommentator,
-} from '../supabase-service.js';
+} from "../supabase-service.js";
 
 // ─── In-memory cache ──────────────────────────────────────────
 
@@ -35,7 +41,7 @@ export async function getRegistry(): Promise<CommentatorEntry[]> {
 }
 
 export async function addCommentator(
-  entry: Omit<CommentatorEntry, 'id' | 'createdAt'>
+  entry: Omit<CommentatorEntry, "id" | "createdAt">,
 ): Promise<CommentatorEntry | null> {
   const id = await writeCommentator(entry);
   if (!id) return null;
@@ -46,7 +52,7 @@ export async function addCommentator(
 
 export async function updateCommentator(
   id: string,
-  updates: Partial<CommentatorEntry>
+  updates: Partial<CommentatorEntry>,
 ): Promise<void> {
   // Map TS field names to DB column names
   const dbUpdates: Record<string, unknown> = {};
@@ -54,8 +60,10 @@ export async function updateCommentator(
   if (updates.aliases !== undefined) dbUpdates.aliases = updates.aliases;
   if (updates.tier !== undefined) dbUpdates.tier = updates.tier;
   if (updates.role !== undefined) dbUpdates.role = updates.role;
-  if (updates.institution !== undefined) dbUpdates.institution = updates.institution;
-  if (updates.weightMultiplier !== undefined) dbUpdates.weight_multiplier = updates.weightMultiplier;
+  if (updates.institution !== undefined)
+    dbUpdates.institution = updates.institution;
+  if (updates.weightMultiplier !== undefined)
+    dbUpdates.weight_multiplier = updates.weightMultiplier;
   if (updates.active !== undefined) dbUpdates.active = updates.active;
 
   await updateCommentatorEntry(id, dbUpdates);
@@ -69,11 +77,17 @@ export async function removeCommentator(id: string): Promise<void> {
 
 // ─── Speaker Lookup ───────────────────────────────────────────
 
-export async function getMultiplierForSpeaker(speakerName: string): Promise<number> {
+export async function getMultiplierForSpeaker(
+  speakerName: string,
+): Promise<number> {
   const reg = await getRegistry();
   const match = fuzzyMatchSpeaker(speakerName, reg);
   if (!match) return UNTAGGED_MULTIPLIER;
-  return match.weightMultiplier ?? TIER_DEFAULT_MULTIPLIERS[match.tier as CommentatorTier] ?? UNTAGGED_MULTIPLIER;
+  return (
+    match.weightMultiplier ??
+    TIER_DEFAULT_MULTIPLIERS[match.tier as CommentatorTier] ??
+    UNTAGGED_MULTIPLIER
+  );
 }
 
 /**
@@ -82,7 +96,7 @@ export async function getMultiplierForSpeaker(speakerName: string): Promise<numb
  */
 export function fuzzyMatchSpeaker(
   name: string,
-  entries: CommentatorEntry[]
+  entries: CommentatorEntry[],
 ): CommentatorEntry | null {
   const needle = name.toLowerCase().trim();
   if (!needle) return null;
@@ -96,9 +110,11 @@ export function fuzzyMatchSpeaker(
   // Pass 2: partial match — needle is a substring of alias or vice versa
   for (const entry of entries) {
     if (entry.name.toLowerCase().includes(needle)) return entry;
-    if (entry.aliases.some((a) => a.toLowerCase().includes(needle))) return entry;
+    if (entry.aliases.some((a) => a.toLowerCase().includes(needle)))
+      return entry;
     // Reverse: alias is a substring of needle (e.g. needle = "Jerome Powell", alias = "Powell")
-    if (entry.aliases.some((a) => needle.includes(a.toLowerCase()))) return entry;
+    if (entry.aliases.some((a) => needle.includes(a.toLowerCase())))
+      return entry;
   }
 
   return null;

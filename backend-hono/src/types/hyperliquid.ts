@@ -27,7 +27,7 @@ export interface HyperliquidOrder {
   oid: number;
   coin: string;
   /** "A" = sell, "B" = buy */
-  side: 'A' | 'B';
+  side: "A" | "B";
   sz: string;
   limitPx: string;
   orderType: string;
@@ -36,11 +36,11 @@ export interface HyperliquidOrder {
 }
 
 export interface HyperliquidOrderType {
-  limit?: { tif: 'Gtc' | 'Ioc' | 'Alo' };
+  limit?: { tif: "Gtc" | "Ioc" | "Alo" };
   trigger?: {
     triggerPx: string;
     isMarket: boolean;
-    tpsl: 'tp' | 'sl';
+    tpsl: "tp" | "sl";
   };
 }
 
@@ -61,7 +61,7 @@ export interface HyperliquidOrderStatus {
 }
 
 export interface HyperliquidOrderResponse {
-  status: 'ok' | 'err';
+  status: "ok" | "err";
   response?: {
     type: string;
     data: {

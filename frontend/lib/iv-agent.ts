@@ -11,13 +11,18 @@
  * for display in the Fintheon UI.
  */
 
-import { type IVScoreResult, type IVScoringInput, computeIVScore, quickIVScore } from './iv-scoring';
+import {
+  type IVScoreResult,
+  type IVScoringInput,
+  computeIVScore,
+  quickIVScore,
+} from "./iv-scoring";
 
 // ─── Agent Request/Response Types ────────────────────────────────────────────
 
 /** Shape of what we'd send to the Hermes agent */
 export interface IVAgentRequest {
-  type: 'iv_analysis';
+  type: "iv_analysis";
   payload: {
     scoring: IVScoreResult;
     rawInput: IVScoringInput;
@@ -54,10 +59,10 @@ export interface FormattedIVDisplay {
 }
 
 const ENV_EMOJI: Record<string, string> = {
-  'Low Vol': '🟢',
-  'Normal': '🔵',
-  'Elevated': '🟡',
-  'Crisis': '🔴',
+  "Low Vol": "🟢",
+  Normal: "🔵",
+  Elevated: "🟡",
+  Crisis: "🔴",
 };
 
 export function formatIVForDisplay(result: IVScoreResult): FormattedIVDisplay {
@@ -65,17 +70,29 @@ export function formatIVForDisplay(result: IVScoreResult): FormattedIVDisplay {
     score: result.score,
     legacyScore: result.legacyScore,
     environment: result.environment,
-    environmentEmoji: ENV_EMOJI[result.environment] || '⚪',
+    environmentEmoji: ENV_EMOJI[result.environment] || "⚪",
     sizingLabel: result.sizing.label,
     sizingMultiplier: `${Math.round(result.sizing.sizeMultiplier * 100)}%`,
     sizingDetail: result.sizing.detail,
     summary: `IV Score: ${result.score}/100 (${result.environment}) — ${result.sizing.label}`,
     lastUpdated: new Date(result.timestamp).toLocaleTimeString(),
     components: [
-      { label: 'VIX vs Avg', value: result.components.vixVsAvg, weight: '35%' },
-      { label: 'Term Structure', value: result.components.termStructure, weight: '20%' },
-      { label: 'Put/Call Signal', value: result.components.putCallSignal, weight: '15%' },
-      { label: 'IV Percentile', value: result.components.ivPercentile, weight: '30%' },
+      { label: "VIX vs Avg", value: result.components.vixVsAvg, weight: "35%" },
+      {
+        label: "Term Structure",
+        value: result.components.termStructure,
+        weight: "20%",
+      },
+      {
+        label: "Put/Call Signal",
+        value: result.components.putCallSignal,
+        weight: "15%",
+      },
+      {
+        label: "IV Percentile",
+        value: result.components.ivPercentile,
+        weight: "30%",
+      },
     ],
   };
 }
@@ -97,7 +114,7 @@ export function formatIVForDisplay(result: IVScoreResult): FormattedIVDisplay {
  *   { "messages": [...], "agentOverride": "iv-analyst" }
  */
 export async function requestAgentAnalysis(
-  _input: IVScoringInput
+  _input: IVScoringInput,
 ): Promise<IVAgentResponse | null> {
   // TODO: Implement Hermes agent call via backend
   // const result = computeIVScore(input);
@@ -109,4 +126,9 @@ export async function requestAgentAnalysis(
 
 // ─── Convenience Exports ─────────────────────────────────────────────────────
 
-export { computeIVScore, quickIVScore, type IVScoreResult, type IVScoringInput };
+export {
+  computeIVScore,
+  quickIVScore,
+  type IVScoreResult,
+  type IVScoringInput,
+};

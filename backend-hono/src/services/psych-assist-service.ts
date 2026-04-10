@@ -1,33 +1,42 @@
 // [claude-code 2026-03-23] Wired lockout-protocol + tilt-detector into psych-assist-service
-import { query } from '../db/optimized.js'
-import { detectTiltSignals, computeTiltRisk } from './psych-assist/tilt-detector.js'
-import type { TiltSignal, TiltDetectorContext } from './psych-assist/tilt-detector.js'
+import { query } from "../db/optimized.js";
+import {
+  detectTiltSignals,
+  computeTiltRisk,
+} from "./psych-assist/tilt-detector.js";
+import type {
+  TiltSignal,
+  TiltDetectorContext,
+} from "./psych-assist/tilt-detector.js";
 import {
   evaluateLockout,
   isTradeBlocked,
   dismissLockout,
   submitDebrief,
   createLockoutSession,
-} from './psych-assist/lockout-protocol.js'
-import type { LockoutState, LockoutSessionState } from './psych-assist/lockout-protocol.js'
+} from "./psych-assist/lockout-protocol.js";
+import type {
+  LockoutState,
+  LockoutSessionState,
+} from "./psych-assist/lockout-protocol.js";
 
 export type PsychScores = {
-  executions: number
-  emotionalControl: number
-  planAdherence: number
-  riskSizing: number
-  adaptability: number
-}
+  executions: number;
+  emotionalControl: number;
+  planAdherence: number;
+  riskSizing: number;
+  adaptability: number;
+};
 
 export interface PsychProfile {
-  userId: string
-  blindSpots: string[]
-  goal: string | null
-  orientationComplete: boolean
-  psychScores: PsychScores
-  lastAssessmentAt: string | null
-  updatedAt: string
-  createdAt: string
+  userId: string;
+  blindSpots: string[];
+  goal: string | null;
+  orientationComplete: boolean;
+  psychScores: PsychScores;
+  lastAssessmentAt: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 
 const DEFAULT_SCORES: PsychScores = {
@@ -35,57 +44,61 @@ const DEFAULT_SCORES: PsychScores = {
   emotionalControl: 6,
   planAdherence: 6,
   riskSizing: 6,
-  adaptability: 6
-}
+  adaptability: 6,
+};
 
 const normalizeBlindSpots = (blindSpots?: unknown): string[] => {
-  if (!Array.isArray(blindSpots)) return []
+  if (!Array.isArray(blindSpots)) return [];
   return blindSpots
-    .map((spot) => (typeof spot === 'string' ? spot.trim() : ''))
+    .map((spot) => (typeof spot === "string" ? spot.trim() : ""))
     .filter((spot) => spot.length > 0)
-    .slice(0, 3)
-}
+    .slice(0, 3);
+};
 
 const sanitizeGoal = (goal?: unknown): string | null => {
-  if (typeof goal !== 'string') return null
-  const trimmed = goal.trim()
-  return trimmed.length ? trimmed : null
-}
+  if (typeof goal !== "string") return null;
+  const trimmed = goal.trim();
+  return trimmed.length ? trimmed : null;
+};
 
 const normalizeScore = (value: unknown): number => {
-  if (typeof value !== 'number' || Number.isNaN(value)) return 0
-  const clamped = Math.max(0, Math.min(10, Math.round(value)))
-  return clamped % 2 === 0 ? clamped : clamped - 1
-}
+  if (typeof value !== "number" || Number.isNaN(value)) return 0;
+  const clamped = Math.max(0, Math.min(10, Math.round(value)));
+  return clamped % 2 === 0 ? clamped : clamped - 1;
+};
 
 const normalizeScores = (scores?: Record<string, unknown>): PsychScores => {
-  const incoming = scores ?? {}
+  const incoming = scores ?? {};
   return {
     executions: normalizeScore(incoming.executions),
     emotionalControl: normalizeScore(incoming.emotionalControl),
     planAdherence: normalizeScore(incoming.planAdherence),
     riskSizing: normalizeScore(incoming.riskSizing),
-    adaptability: normalizeScore(incoming.adaptability)
-  }
-}
+    adaptability: normalizeScore(incoming.adaptability),
+  };
+};
 
 const mapProfile = (row: Record<string, unknown>): PsychProfile => {
-  const blindSpotsRaw = row.blind_spots
-  const scoresRaw = row.psych_scores as Record<string, unknown> | null
-  const mergedScores = { ...DEFAULT_SCORES, ...(scoresRaw ?? {}) }
+  const blindSpotsRaw = row.blind_spots;
+  const scoresRaw = row.psych_scores as Record<string, unknown> | null;
+  const mergedScores = { ...DEFAULT_SCORES, ...(scoresRaw ?? {}) };
   return {
     userId: String(row.user_id),
     blindSpots: Array.isArray(blindSpotsRaw)
-      ? blindSpotsRaw.map((spot) => (typeof spot === 'string' ? spot : String(spot)))
+      ? blindSpotsRaw.map((spot) =>
+          typeof spot === "string" ? spot : String(spot),
+        )
       : [],
     goal: row.goal ? String(row.goal) : null,
     orientationComplete: row.orientation_complete === true,
     psychScores: normalizeScores(mergedScores),
-    lastAssessmentAt: row.last_assessment_at ? String(row.last_assessment_at) : null,
+    lastAssessmentAt: row.last_assessment_at
+      ? String(row.last_assessment_at)
+      : null,
     createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at)
-  }
-}
+    updatedAt: String(row.updated_at),
+  };
+};
 
 export const createPsychAssistService = () => {
   const ensureProfile = async (userId: string): Promise<PsychProfile> => {
@@ -96,11 +109,11 @@ export const createPsychAssistService = () => {
       WHERE user_id = $1
       LIMIT 1
       `,
-      [userId]
-    )
+      [userId],
+    );
 
     if (result.rows.length) {
-      return mapProfile(result.rows[0] as Record<string, unknown>)
+      return mapProfile(result.rows[0] as Record<string, unknown>);
     }
 
     result = await query(
@@ -109,19 +122,29 @@ export const createPsychAssistService = () => {
       VALUES ($1, '[]'::jsonb, NULL, FALSE, $2::jsonb)
       RETURNING *
       `,
-      [userId, JSON.stringify(DEFAULT_SCORES)]
-    )
-    return mapProfile(result.rows[0] as Record<string, unknown>)
-  }
+      [userId, JSON.stringify(DEFAULT_SCORES)],
+    );
+    return mapProfile(result.rows[0] as Record<string, unknown>);
+  };
 
-  const updateProfile = async (userId: string, input: { blindSpots?: string[]; goal?: string | null; orientationComplete?: boolean }) => {
-    const current = await ensureProfile(userId)
+  const updateProfile = async (
+    userId: string,
+    input: {
+      blindSpots?: string[];
+      goal?: string | null;
+      orientationComplete?: boolean;
+    },
+  ) => {
+    const current = await ensureProfile(userId);
     const nextBlindSpots =
-      input.blindSpots !== undefined ? normalizeBlindSpots(input.blindSpots) : current.blindSpots
-    const nextGoal = input.goal !== undefined ? sanitizeGoal(input.goal) : current.goal
+      input.blindSpots !== undefined
+        ? normalizeBlindSpots(input.blindSpots)
+        : current.blindSpots;
+    const nextGoal =
+      input.goal !== undefined ? sanitizeGoal(input.goal) : current.goal;
     const orientationComplete = input.orientationComplete
       ? true
-      : current.orientationComplete
+      : current.orientationComplete;
 
     const result = await query(
       `
@@ -134,15 +157,15 @@ export const createPsychAssistService = () => {
           updated_at = NOW()
       RETURNING *
       `,
-      [userId, JSON.stringify(nextBlindSpots), nextGoal, orientationComplete]
-    )
+      [userId, JSON.stringify(nextBlindSpots), nextGoal, orientationComplete],
+    );
 
-    return mapProfile(result.rows[0] as Record<string, unknown>)
-  }
+    return mapProfile(result.rows[0] as Record<string, unknown>);
+  };
 
   const updateScores = async (userId: string, scores: Partial<PsychScores>) => {
-    await ensureProfile(userId)
-    const normalized = normalizeScores(scores as Record<string, unknown>)
+    await ensureProfile(userId);
+    const normalized = normalizeScores(scores as Record<string, unknown>);
     const result = await query(
       `
       UPDATE user_psychology
@@ -152,41 +175,44 @@ export const createPsychAssistService = () => {
       WHERE user_id = $1
       RETURNING *
       `,
-      [userId, JSON.stringify(normalized)]
-    )
-    return mapProfile(result.rows[0] as Record<string, unknown>)
-  }
+      [userId, JSON.stringify(normalized)],
+    );
+    return mapProfile(result.rows[0] as Record<string, unknown>);
+  };
 
   // Per-user lockout session tracking (in-memory, resets on server restart)
-  const sessions = new Map<string, LockoutSessionState>()
+  const sessions = new Map<string, LockoutSessionState>();
 
   const getSession = (userId: string): LockoutSessionState => {
     if (!sessions.has(userId)) {
-      sessions.set(userId, createLockoutSession())
+      sessions.set(userId, createLockoutSession());
     }
-    return sessions.get(userId)!
-  }
+    return sessions.get(userId)!;
+  };
 
-  const assessTradingReadiness = async (userId: string, context: TiltDetectorContext) => {
-    const profile = await ensureProfile(userId)
-    const session = getSession(userId)
+  const assessTradingReadiness = async (
+    userId: string,
+    context: TiltDetectorContext,
+  ) => {
+    const profile = await ensureProfile(userId);
+    const session = getSession(userId);
 
     // Detect tilt signals
-    const signals = detectTiltSignals(context)
-    const riskScore = computeTiltRisk(signals)
+    const signals = detectTiltSignals(context);
+    const riskScore = computeTiltRisk(signals);
 
     // Evaluate lockout (only if not already locked out)
-    let lockout: LockoutState | null = session.activeLockout
+    let lockout: LockoutState | null = session.activeLockout;
     if (!lockout) {
       lockout = evaluateLockout({
         consecutiveLosses: context.consecutiveLosses,
         previousLockoutsToday: session.lockoutCount,
         currentPnL: context.currentPnL,
         accountResetsToday: context.accountResetsToday,
-      })
+      });
       if (lockout) {
-        session.lockoutCount++
-        session.activeLockout = lockout
+        session.lockoutCount++;
+        session.activeLockout = lockout;
       }
     }
 
@@ -196,22 +222,25 @@ export const createPsychAssistService = () => {
       riskScore,
       lockout,
       isBlocked: isTradeBlocked(session),
-    }
-  }
+    };
+  };
 
   const handleDismissLockout = (userId: string): LockoutSessionState => {
-    const session = getSession(userId)
-    const updated = dismissLockout(session)
-    sessions.set(userId, updated)
-    return updated
-  }
+    const session = getSession(userId);
+    const updated = dismissLockout(session);
+    sessions.set(userId, updated);
+    return updated;
+  };
 
-  const handleSubmitDebrief = (userId: string, answers: Record<string, string>): LockoutSessionState => {
-    const session = getSession(userId)
-    const updated = submitDebrief(session, answers)
-    sessions.set(userId, updated)
-    return updated
-  }
+  const handleSubmitDebrief = (
+    userId: string,
+    answers: Record<string, string>,
+  ): LockoutSessionState => {
+    const session = getSession(userId);
+    const updated = submitDebrief(session, answers);
+    sessions.set(userId, updated);
+    return updated;
+  };
 
   return {
     getProfile: ensureProfile,
@@ -221,8 +250,13 @@ export const createPsychAssistService = () => {
     dismissLockout: handleDismissLockout,
     submitDebrief: handleSubmitDebrief,
     getSession,
-  }
-}
+  };
+};
 
 // Re-export types for route consumers
-export type { TiltSignal, TiltDetectorContext, LockoutState, LockoutSessionState }
+export type {
+  TiltSignal,
+  TiltDetectorContext,
+  LockoutState,
+  LockoutSessionState,
+};

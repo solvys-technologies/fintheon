@@ -1,11 +1,11 @@
 // [claude-code 2026-03-06] Regime store — localStorage persistence, CRUD, useRegimes hook
 // [claude-code 2026-03-12] Migrated from W/L to bullish/bearish ORB tracking, v2 storage key
 
-import { useState, useEffect, useCallback } from 'react';
-import { type TradingRegime, SEED_REGIMES } from './regimes';
+import { useState, useEffect, useCallback } from "react";
+import { type TradingRegime, SEED_REGIMES } from "./regimes";
 
-const STORAGE_KEY = 'fintheon:regime-tracker:v2';
-const OLD_STORAGE_KEY = 'fintheon:regime-tracker:v1';
+const STORAGE_KEY = "fintheon:regime-tracker:v2";
+const OLD_STORAGE_KEY = "fintheon:regime-tracker:v1";
 
 /** Migrate v1 (wins/losses) to v2 (bullishDays/bearishDays) */
 function migrateV1toV2(regimes: any[]): TradingRegime[] {
@@ -24,7 +24,8 @@ function loadRegimes(): TradingRegime[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed as TradingRegime[];
+      if (Array.isArray(parsed) && parsed.length > 0)
+        return parsed as TradingRegime[];
     }
     // Migrate from v1
     const oldRaw = localStorage.getItem(OLD_STORAGE_KEY);
@@ -62,11 +63,14 @@ export function useRegimes() {
     setRegimes((prev) => [...prev, regime]);
   }, []);
 
-  const updateRegime = useCallback((id: string, updates: Partial<TradingRegime>) => {
-    setRegimes((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ...updates } : r)),
-    );
-  }, []);
+  const updateRegime = useCallback(
+    (id: string, updates: Partial<TradingRegime>) => {
+      setRegimes((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, ...updates } : r)),
+      );
+    },
+    [],
+  );
 
   const deleteRegime = useCallback((id: string) => {
     setRegimes((prev) => prev.filter((r) => r.id !== id));
@@ -76,7 +80,11 @@ export function useRegimes() {
     setRegimes((prev) =>
       prev.map((r) =>
         r.id === id
-          ? { ...r, record: { ...r.record, bullishDays: r.record.bullishDays + 1 }, daysObserved: r.daysObserved + 1 }
+          ? {
+              ...r,
+              record: { ...r.record, bullishDays: r.record.bullishDays + 1 },
+              daysObserved: r.daysObserved + 1,
+            }
           : r,
       ),
     );
@@ -86,7 +94,11 @@ export function useRegimes() {
     setRegimes((prev) =>
       prev.map((r) =>
         r.id === id
-          ? { ...r, record: { ...r.record, bearishDays: r.record.bearishDays + 1 }, daysObserved: r.daysObserved + 1 }
+          ? {
+              ...r,
+              record: { ...r.record, bearishDays: r.record.bearishDays + 1 },
+              daysObserved: r.daysObserved + 1,
+            }
           : r,
       ),
     );

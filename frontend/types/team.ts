@@ -1,6 +1,6 @@
 // [claude-code 2026-04-03] S14-T6: Extended with service status lights + status dropdown + staleness util
 
-export type UserStatus = 'online' | 'away' | 'busy' | 'dnd' | 'offline';
+export type UserStatus = "online" | "away" | "busy" | "dnd" | "offline";
 
 export interface ServiceStatus {
   twitterCli: boolean;
@@ -50,10 +50,10 @@ export function isStale(lastUpdate: string, thresholdMinutes: number): boolean {
 /** Human-friendly relative time string. */
 export function timeAgo(iso: string): string {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return 'just now';
+  if (Number.isNaN(date.getTime())) return "just now";
   const diffMs = Date.now() - date.getTime();
   const diffMin = Math.max(0, Math.floor(diffMs / 60000));
-  if (diffMin < 1) return 'just now';
+  if (diffMin < 1) return "just now";
   if (diffMin < 60) return `${diffMin}m ago`;
   const hours = Math.floor(diffMin / 60);
   if (hours < 24) return `${hours}h ago`;

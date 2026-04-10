@@ -3,7 +3,7 @@
 // [claude-code 2026-03-23] MiroShark route handlers — preset-aware, context endpoint, history
 // [claude-code 2026-03-16] Switched to feature flag, local debate engine
 
-import type { Context } from 'hono';
+import type { Context } from "hono";
 import {
   startPrediction,
   pollStatus,
@@ -15,17 +15,23 @@ import {
   shouldAutoRun,
   getDeliberationState,
   injectUserTake,
-} from '../../services/miroshark/miroshark-service.js';
-import { getGovOfficials, getMarketAnalysts } from '../../services/miroshark/miroshark-client.js';
-import { assembleSimulationContext } from '../../services/miroshark/miroshark-context.js';
-import { isSkillEnabled } from '../../config/feature-flags.js';
-import type { SanctumPreset } from '../../services/miroshark/miroshark-types.js';
+} from "../../services/miroshark/miroshark-service.js";
+import {
+  getGovOfficials,
+  getMarketAnalysts,
+} from "../../services/miroshark/miroshark-client.js";
+import { assembleSimulationContext } from "../../services/miroshark/miroshark-context.js";
+import { isSkillEnabled } from "../../config/feature-flags.js";
+import type { SanctumPreset } from "../../services/miroshark/miroshark-types.js";
 // @ts-ignore — T1 creates this file
-import { getRunningState } from '../../services/miroshark/miroshark-reactive.js';
+import { getRunningState } from "../../services/miroshark/miroshark-reactive.js";
 
 function checkEnabled(c: Context): Response | null {
-  if (!isSkillEnabled('miroshark')) {
-    return c.json({ error: 'MiroShark is disabled', code: 'FEATURE_DISABLED' }, 403);
+  if (!isSkillEnabled("miroshark")) {
+    return c.json(
+      { error: "MiroShark is disabled", code: "FEATURE_DISABLED" },
+      403,
+    );
   }
   return null;
 }
@@ -39,17 +45,30 @@ export async function handleSimulate(c: Context) {
     preset?: SanctumPreset;
     narrativeState: {
       lanes: Array<{
-        id: string; title: string; instruments: string[];
-        directionBias: string; category: string; status: string;
-        healthScore: number; dateRange: { start: string; end: string | null };
+        id: string;
+        title: string;
+        instruments: string[];
+        directionBias: string;
+        category: string;
+        status: string;
+        healthScore: number;
+        dateRange: { start: string; end: string | null };
       }>;
       catalysts: Array<{
-        id: string; title: string; description: string; date: string;
-        sentiment: string; severity: string; narrativeIds: string[];
+        id: string;
+        title: string;
+        description: string;
+        date: string;
+        sentiment: string;
+        severity: string;
+        narrativeIds: string[];
       }>;
       ropes: Array<{
-        id: string; fromId: string; toId: string;
-        polarity: string; weight: number;
+        id: string;
+        fromId: string;
+        toId: string;
+        polarity: string;
+        weight: number;
       }>;
     };
     contextBank?: {
@@ -60,15 +79,15 @@ export async function handleSimulate(c: Context) {
   }>();
 
   if (!body.narrativeState?.lanes) {
-    return c.json({ error: 'narrativeState.lanes is required' }, 400);
+    return c.json({ error: "narrativeState.lanes is required" }, 400);
   }
 
   const result = await startPrediction(
     body.narrativeState,
     body.contextBank,
-    body.preset ?? 'full-brief',
+    body.preset ?? "full-brief",
   );
-  if ('error' in result) {
+  if ("error" in result) {
     return c.json({ error: result.error }, 500);
   }
   return c.json(result, 201);
@@ -79,10 +98,10 @@ export async function handleStatus(c: Context) {
   const blocked = checkEnabled(c);
   if (blocked) return blocked;
 
-  const simId = c.req.param('id');
+  const simId = c.req.param("id");
   const sim = pollStatus(simId);
   if (!sim) {
-    return c.json({ error: 'Simulation not found' }, 404);
+    return c.json({ error: "Simulation not found" }, 404);
   }
   return c.json(sim);
 }
@@ -92,10 +111,10 @@ export async function handleReport(c: Context) {
   const blocked = checkEnabled(c);
   if (blocked) return blocked;
 
-  const simId = c.req.param('id');
+  const simId = c.req.param("id");
   const prediction = getPredictions(simId);
   if (!prediction) {
-    return c.json({ error: 'Report not available' }, 404);
+    return c.json({ error: "Report not available" }, 404);
   }
   return c.json(prediction);
 }
@@ -105,7 +124,7 @@ export async function handleInject(c: Context) {
   const blocked = checkEnabled(c);
   if (blocked) return blocked;
 
-  const simId = c.req.param('id');
+  const simId = c.req.param("id");
   const body = await c.req.json<{
     variable: string;
     targetNarrativeIds: string[];
@@ -113,7 +132,7 @@ export async function handleInject(c: Context) {
   }>();
 
   if (!body.variable?.trim()) {
-    return c.json({ error: 'variable is required' }, 400);
+    return c.json({ error: "variable is required" }, 400);
   }
 
   const sim = await injectScenarioVariable(simId, {
@@ -123,7 +142,10 @@ export async function handleInject(c: Context) {
   });
 
   if (!sim) {
-    return c.json({ error: 'Injection failed — simulation may not exist' }, 400);
+    return c.json(
+      { error: "Injection failed — simulation may not exist" },
+      400,
+    );
   }
   return c.json(sim);
 }
@@ -134,11 +156,11 @@ export async function handleGetContext(c: Context) {
   if (blocked) return blocked;
 
   try {
-    const context = await assembleSimulationContext('full-brief');
+    const context = await assembleSimulationContext("full-brief");
     return c.json(context);
   } catch (err) {
-    console.error('[MiroShark] Context assembly failed:', err);
-    return c.json({ error: 'Failed to assemble context' }, 500);
+    console.error("[MiroShark] Context assembly failed:", err);
+    return c.json({ error: "Failed to assemble context" }, 500);
   }
 }
 
@@ -147,7 +169,7 @@ export async function handleGetHistory(c: Context) {
   const blocked = checkEnabled(c);
   if (blocked) return blocked;
 
-  const limit = parseInt(c.req.query('limit') ?? '20', 10);
+  const limit = parseInt(c.req.query("limit") ?? "20", 10);
   const history = await getRunHistory(Math.min(limit, 50));
   return c.json({ runs: history });
 }
@@ -169,11 +191,19 @@ export async function handleRollingWindow(c: Context) {
   const blocked = checkEnabled(c);
   if (blocked) return blocked;
 
-  const daysParam = parseInt(c.req.query('days') ?? '5', 10);
-  const validDays = ([1, 5, 7, 14, 30].includes(daysParam) ? daysParam : 5) as 1 | 5 | 7 | 14 | 30;
-  const limit = parseInt(c.req.query('limit') ?? '50', 10);
+  const daysParam = parseInt(c.req.query("days") ?? "5", 10);
+  const validDays = ([1, 5, 7, 14, 30].includes(daysParam) ? daysParam : 5) as
+    | 1
+    | 5
+    | 7
+    | 14
+    | 30;
+  const limit = parseInt(c.req.query("limit") ?? "50", 10);
 
-  const data = await getRollingWindowData({ days: validDays, limit: Math.min(limit, 100) });
+  const data = await getRollingWindowData({
+    days: validDays,
+    limit: Math.min(limit, 100),
+  });
   return c.json(data);
 }
 
@@ -200,10 +230,10 @@ export async function handleGetDeliberation(c: Context) {
   const blocked = checkEnabled(c);
   if (blocked) return blocked;
 
-  const simId = c.req.param('id');
+  const simId = c.req.param("id");
   const state = getDeliberationState(simId);
   if (!state) {
-    return c.json({ error: 'Deliberation not found' }, 404);
+    return c.json({ error: "Deliberation not found" }, 404);
   }
   return c.json(state);
 }
@@ -213,16 +243,19 @@ export async function handleInjectTake(c: Context) {
   const blocked = checkEnabled(c);
   if (blocked) return blocked;
 
-  const simId = c.req.param('id');
+  const simId = c.req.param("id");
   const body = await c.req.json<{ take: string }>();
 
   if (!body.take?.trim()) {
-    return c.json({ error: 'take is required' }, 400);
+    return c.json({ error: "take is required" }, 400);
   }
 
   const success = injectUserTake(simId, body.take.trim());
   if (!success) {
-    return c.json({ error: 'Cannot inject — deliberation not active or not found' }, 400);
+    return c.json(
+      { error: "Cannot inject — deliberation not active or not found" },
+      400,
+    );
   }
   return c.json({ success: true });
 }

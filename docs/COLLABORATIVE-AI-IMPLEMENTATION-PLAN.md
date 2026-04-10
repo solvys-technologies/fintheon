@@ -1,6 +1,5 @@
 # Collaborative AI System Implementation Plan
 
-
 ## Non-Negotiable Scope & UI Directives (Chief Override)
 
 - **Pulse-only scope**: All implementation in this plan targets **Pulse** exclusively. **Do not implement anything in ClawSpace** (deprecated).
@@ -21,13 +20,16 @@
 This document outlines the transformation of Fintheon's single-agent "PriceBrain Layer" into a **collaborative multi-agent AI system** inspired by the TradingAgents framework. Instead of one AI controlling all decisions, we'll implement specialized AI agents that work together like a professional trading firm.
 
 ### Current Problems
+
 1. **News Feed**: Has failed across all 3 backend iterations
 2. **AI Agent**: Cannot start conversations, no conversation history, no functional chat
 3. **Autopilot**: Cannot execute trades despite previous functionality with AWS Bedrock + X API
 4. **Peak Functionality**: Basic AWS Bedrock messages + RiskFlow with X API (until rate limits)
 
 ### Solution Approach
+
 Transform the backend from a single AI agent into a **collaborative multi-agent system** modeled after TradingAgents:
+
 - **Analyst Agents**: Fundamental, Sentiment, News, Technical
 - **Researcher Agents**: Bullish/Bearish debate teams
 - **Trader Agent**: Synthesizes analysis into trading proposals
@@ -40,18 +42,21 @@ Transform the backend from a single AI agent into a **collaborative multi-agent 
 ### What We Have (From Architecture Review)
 
 #### Backend Infrastructure (Hono on Fly.io)
+
 - **Database**: Neon PostgreSQL (working)
 - **Auth**: Clerk JWT (configured but failing with 401s)
 - **Deployment**: Fly.io at `pulse-api-withered-dust-1394.fly.dev`
 - **Health Check**: Working (`/health` endpoint functional)
 
 #### Existing Services (Backend)
+
 - **RiskFlow Service** (`/api/riskflow`): News feed with IV scoring
 - **Autopilot Service** (`/api/autopilot`): Proposal workflow (incomplete)
 - **ProjectX Service** (`/api/projectx`): TopStepX integration
 - **AI Service** (`/api/ai`): Currently returns empty conversations
 
 #### Critical Issues
+
 1. **Authentication Flow**: 401 errors flooding (2000+ in 30 seconds)
    - Frontend sends Clerk JWT, backend rejects
    - `CLERK_SECRET_KEY` may be misconfigured
@@ -75,6 +80,7 @@ Transform the backend from a single AI agent into a **collaborative multi-agent 
    - No strategy engine
 
 ### What We Lost (From Previous Iterations)
+
 - AWS Bedrock basic chat functionality
 - X API RiskFlow feed (worked until rate limits)
 - Autopilot execution capability
@@ -82,6 +88,7 @@ Transform the backend from a single AI agent into a **collaborative multi-agent 
 - Tilt detection system
 
 ### Technology Stack Currently in Place
+
 - **Backend**: Hono.js, TypeScript, Node.js
 - **Database**: Neon PostgreSQL (serverless)
 - **Auth**: Clerk (JWT-based)
@@ -99,23 +106,27 @@ The TradingAgents framework simulates a professional trading firm through specia
 #### Agent Hierarchy
 
 **1. Analyst Team** (Information Gathering)
+
 - **Fundamental Analyst**: Company financials, earnings, balance sheets
 - **Sentiment Analyst**: Social media, market sentiment, retail positioning
 - **News Analyst**: Global news, macroeconomic indicators, geopolitical events
 - **Technical Analyst**: Chart patterns, indicators, price action
 
 **2. Researcher Team** (Critical Analysis)
+
 - **Bullish Researchers**: Identify positive signals, opportunities, upside catalysts
 - **Bearish Researchers**: Identify risks, downside catalysts, red flags
 - **Structured Debates**: Critical assessment through opposing viewpoints
 
 **3. Trader Agent** (Decision Synthesis)
+
 - Reviews all analyst reports
 - Synthesizes bullish/bearish research
 - Determines trade timing, size, entry/exit
 - Produces decision signals with rationale
 
 **4. Risk Management Team** (Final Authority)
+
 - Assesses portfolio risks
 - Evaluates market volatility and liquidity
 - Implements risk mitigation strategies
@@ -132,6 +143,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 7. **Execution**: If approved, trade executed with monitoring
 
 ### Technology Stack (TradingAgents)
+
 - **Framework**: LangGraph (for agent orchestration)
 - **LLMs**: GPT-4o, o1-preview
 - **Data Sources**: yfinance, Alpha Vantage, news APIs
@@ -139,6 +151,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - **Communication**: Structured protocols, JSON reports
 
 ### Key Differentiators
+
 - **Specialization**: Each agent has narrow focus
 - **Dialectical Process**: Bullish vs Bearish debate
 - **Transparency**: Explainable decision trails
@@ -162,6 +175,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 #### Analyst Layer (Parallel Processing)
 
 **1. Market Data Analyst**
+
 - **Purpose**: Process real-time market data (VIX, price action, volume)
 - **Data Sources**:
   - ProjectX API (real-time quotes, trades, depth)
@@ -172,6 +186,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - **Update Frequency**: Real-time via SignalR, summary every 5 minutes
 
 **2. News & Sentiment Analyst**
+
 - **Purpose**: Analyze RiskFlow feed for market-moving news
 - **Data Sources**:
   - X API via `news-service.ts`
@@ -182,6 +197,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - **Update Frequency**: On new RiskFlow item (breaking news triggers immediate analysis)
 
 **3. Technical Analyst**
+
 - **Purpose**: Chart patterns, technical indicators, entry/exit signals
 - **Data Sources**:
   - Historical bars via ProjectX `/api/History/retrieveBars`
@@ -191,6 +207,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - **Update Frequency**: Every 1 minute for active symbols
 
 **4. Fundamental Analyst** (Future Phase)
+
 - **Purpose**: Company fundamentals, earnings, economic data
 - **Data Sources**: Economic calendar, earnings reports (future integration)
 - **Outputs**: Fundamental strength score, earnings impact
@@ -200,6 +217,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 #### Researcher Layer (Critical Analysis)
 
 **5. Bullish Researcher**
+
 - **Purpose**: Identify positive signals, upside opportunities
 - **Inputs**: All analyst reports
 - **Process**:
@@ -210,6 +228,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - **AI Model**: Reasoning model (GPT-4o, Claude Sonnet, or o1-preview)
 
 **6. Bearish Researcher**
+
 - **Purpose**: Identify risks, downside scenarios, red flags
 - **Inputs**: All analyst reports
 - **Process**:
@@ -220,6 +239,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - **AI Model**: Reasoning model (GPT-4o, Claude Sonnet, or o1-preview)
 
 **Debate Protocol**:
+
 - Bullish and Bearish researchers exchange 2-3 rounds of arguments
 - Each round refines thesis based on counterpoints
 - Final output: Balanced risk/reward assessment
@@ -227,6 +247,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 #### Decision Layer (Synthesis)
 
 **7. Trader Agent**
+
 - **Purpose**: Synthesize all analysis into trading proposal
 - **Inputs**:
   - Market Data Analyst report
@@ -251,6 +272,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 #### Risk Layer (Final Authority)
 
 **8. Risk Manager Agent**
+
 - **Purpose**: Final approval/rejection of trading proposals
 - **Inputs**:
   - Trader proposal
@@ -278,6 +300,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 ### Phase 1: Foundation & Authentication Fix (Week 1)
 
 #### Objectives
+
 - Fix authentication 401 errors
 - Stabilize RiskFlow feed
 - Set up Vercel AI SDK infrastructure
@@ -286,6 +309,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 #### Tasks
 
 **1.1 Fix Authentication Flow**
+
 - [ ] Debug Clerk JWT verification in `auth.ts`
 - [ ] Verify `CLERK_SECRET_KEY` matches Clerk dashboard
 - [ ] Add retry backoff logic in frontend API client
@@ -294,6 +318,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - [ ] Test auth flow end-to-end
 
 **1.2 Stabilize RiskFlow Feed**
+
 - [ ] Fix mock data flooding (limit to 50 items max)
 - [ ] Add pagination support (`limit`, `offset` params)
 - [ ] Implement cursor-based pagination for real-time feed
@@ -301,6 +326,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - [ ] Test with real X API data (manage rate limits)
 
 **1.3 Vercel AI SDK Setup**
+
 - [ ] Research Vercel AI Gateway configuration requirements
 - [ ] Install Vercel AI SDK (`ai`, `@ai-sdk/openai`, `@ai-sdk/anthropic`)
 - [ ] Configure AI Gateway API key in Fly.io secrets
@@ -309,6 +335,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - [ ] Set up streaming response support
 
 **1.4 Agent Orchestration Framework**
+
 - [ ] Design agent communication protocol (JSON schemas)
 - [ ] Create agent registry (`agent-registry.ts`)
 - [ ] Implement agent runner (`agent-runner.ts`) for parallel execution
@@ -317,6 +344,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - [ ] Implement agent state management (track active agents, reports)
 
 #### Deliverables
+
 - Authentication working (no 401 errors)
 - RiskFlow feed stable with pagination
 - Vercel AI SDK integrated and tested
@@ -329,6 +357,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 ### Phase 2: Analyst Agent Implementation (Week 2)
 
 #### Objectives
+
 - Implement Market Data Analyst
 - Implement News & Sentiment Analyst
 - Implement Technical Analyst
@@ -337,6 +366,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 #### Tasks
 
 **2.1 Market Data Analyst**
+
 - [ ] Create `market-data-analyst.ts` service
 - [ ] Define Market Data Analyst prompt template
 - [ ] Integrate ProjectX SignalR for real-time quotes
@@ -347,6 +377,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - [ ] Add caching for 5-minute summaries
 
 **2.2 News & Sentiment Analyst**
+
 - [ ] Create `news-sentiment-analyst.ts` service
 - [ ] Define News & Sentiment Analyst prompt template
 - [ ] Integrate with RiskFlow feed (`/api/riskflow/feed`)
@@ -357,6 +388,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - [ ] Add sentiment scoring cache
 
 **2.3 Technical Analyst**
+
 - [ ] Create `technical-analyst.ts` service
 - [ ] Define Technical Analyst prompt template
 - [ ] Integrate historical bars via ProjectX API
@@ -367,6 +399,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - [ ] Add 1-minute update cycle
 
 **2.4 Report Aggregation**
+
 - [ ] Create `analyst-reports.ts` aggregation service
 - [ ] Design unified report format
 - [ ] Implement report caching strategy
@@ -376,6 +409,7 @@ The TradingAgents framework simulates a professional trading firm through specia
 - [ ] Measure latency and optimize
 
 #### Database Schema
+
 ```sql
 CREATE TABLE agent_reports (
   id UUID PRIMARY KEY,
@@ -392,6 +426,7 @@ CREATE INDEX idx_agent_reports_created ON agent_reports(created_at DESC);
 ```
 
 #### Deliverables
+
 - 3 analyst agents fully functional
 - Report aggregation system working
 - Real-time analyst reports available via API
@@ -404,6 +439,7 @@ CREATE INDEX idx_agent_reports_created ON agent_reports(created_at DESC);
 ### Phase 3: Researcher & Debate System (Week 3)
 
 #### Objectives
+
 - Implement Bullish Researcher agent
 - Implement Bearish Researcher agent
 - Create debate protocol
@@ -412,6 +448,7 @@ CREATE INDEX idx_agent_reports_created ON agent_reports(created_at DESC);
 #### Tasks
 
 **3.1 Bullish Researcher Agent**
+
 - [ ] Create `bullish-researcher.ts` service
 - [ ] Define Bullish Researcher prompt template
 - [ ] Implement bullish case extraction logic
@@ -420,6 +457,7 @@ CREATE INDEX idx_agent_reports_created ON agent_reports(created_at DESC);
 - [ ] Test with analyst reports as input
 
 **3.2 Bearish Researcher Agent**
+
 - [ ] Create `bearish-researcher.ts` service
 - [ ] Define Bearish Researcher prompt template
 - [ ] Implement bearish case extraction logic
@@ -428,6 +466,7 @@ CREATE INDEX idx_agent_reports_created ON agent_reports(created_at DESC);
 - [ ] Test with analyst reports as input
 
 **3.3 Debate Protocol**
+
 - [ ] Create `debate-protocol.ts` orchestration service
 - [ ] Implement multi-round debate logic (2-3 rounds)
 - [ ] Add argument/counterargument tracking
@@ -436,6 +475,7 @@ CREATE INDEX idx_agent_reports_created ON agent_reports(created_at DESC);
 - [ ] Test full debate cycle with real market data
 
 **3.4 Debate Analysis**
+
 - [ ] Create `debate-analyzer.ts` service
 - [ ] Implement consensus detection
 - [ ] Calculate bullish/bearish score balance
@@ -443,6 +483,7 @@ CREATE INDEX idx_agent_reports_created ON agent_reports(created_at DESC);
 - [ ] Add debate quality metrics (argument strength, evidence quality)
 
 #### Database Schema
+
 ```sql
 CREATE TABLE researcher_debates (
   id UUID PRIMARY KEY,
@@ -461,6 +502,7 @@ CREATE INDEX idx_debates_created ON researcher_debates(created_at DESC);
 ```
 
 #### Deliverables
+
 - Bullish and Bearish researchers functional
 - Debate protocol working end-to-end
 - Debate transcripts stored and retrievable
@@ -473,6 +515,7 @@ CREATE INDEX idx_debates_created ON researcher_debates(created_at DESC);
 ### Phase 4: Trader Agent & Proposal Generation (Week 4)
 
 #### Objectives
+
 - Implement Trader Agent
 - Integrate with trading strategies (Morning Flush, VIX Fix, etc.)
 - Create proposal generation system
@@ -481,6 +524,7 @@ CREATE INDEX idx_debates_created ON researcher_debates(created_at DESC);
 #### Tasks
 
 **4.1 Trader Agent**
+
 - [ ] Create `trader-agent.ts` service
 - [ ] Define Trader Agent prompt template
 - [ ] Implement strategy matching logic (which model triggered?)
@@ -491,6 +535,7 @@ CREATE INDEX idx_debates_created ON researcher_debates(created_at DESC);
 - [ ] Test with full analyst + researcher pipeline
 
 **4.2 Trading Strategy Integration**
+
 - [ ] Map existing strategies to agent logic:
   - Morning Flush
   - Lunch/Power Hour Flush
@@ -505,6 +550,7 @@ CREATE INDEX idx_debates_created ON researcher_debates(created_at DESC);
 - [ ] Test each strategy with agent system
 
 **4.3 Proposal Generation**
+
 - [ ] Create `proposal-generator.ts` service
 - [ ] Design proposal schema (extend existing `autopilot_proposals`)
 - [ ] Add reasoning field with full agent report references
@@ -513,12 +559,14 @@ CREATE INDEX idx_debates_created ON researcher_debates(created_at DESC);
 - [ ] Add proposal modification support
 
 **4.4 Proposal API**
+
 - [ ] Update `/api/autopilot/propose` endpoint
 - [ ] Add agent report IDs to proposal metadata
 - [ ] Create `/api/autopilot/proposals/:id/reasoning` endpoint (full agent chain)
 - [ ] Test proposal creation from agent pipeline
 
 #### Database Schema Updates
+
 ```sql
 ALTER TABLE autopilot_proposals ADD COLUMN agent_reports JSONB;
 ALTER TABLE autopilot_proposals ADD COLUMN trader_reasoning TEXT;
@@ -527,6 +575,7 @@ ALTER TABLE autopilot_proposals ADD COLUMN debate_id UUID REFERENCES researcher_
 ```
 
 #### Deliverables
+
 - Trader Agent fully functional
 - All trading strategies integrated
 - Proposal generation working end-to-end
@@ -539,6 +588,7 @@ ALTER TABLE autopilot_proposals ADD COLUMN debate_id UUID REFERENCES researcher_
 ### Phase 5: Risk Manager & Execution (Week 5)
 
 #### Objectives
+
 - Implement Risk Manager Agent
 - Create risk validation system
 - Integrate ProjectX order execution
@@ -547,6 +597,7 @@ ALTER TABLE autopilot_proposals ADD COLUMN debate_id UUID REFERENCES researcher_
 #### Tasks
 
 **5.1 Risk Manager Agent**
+
 - [ ] Create `risk-manager-agent.ts` service
 - [ ] Define Risk Manager prompt template
 - [ ] Implement risk rule validation:
@@ -562,6 +613,7 @@ ALTER TABLE autopilot_proposals ADD COLUMN debate_id UUID REFERENCES researcher_
 - [ ] Test with real proposals
 
 **5.2 Risk Validation System**
+
 - [ ] Create `risk-validator.ts` service
 - [ ] Implement hard risk checks (programmatic):
   - Daily loss limit exceeded?
@@ -576,6 +628,7 @@ ALTER TABLE autopilot_proposals ADD COLUMN debate_id UUID REFERENCES researcher_
 - [ ] Create risk override mechanism (user approval)
 
 **5.3 ProjectX Order Execution**
+
 - [ ] Update `projectx-client.ts` for order placement
 - [ ] Implement bracket order creation (entry + stop + target)
 - [ ] Add order status tracking via SignalR
@@ -585,6 +638,7 @@ ALTER TABLE autopilot_proposals ADD COLUMN debate_id UUID REFERENCES researcher_
 - [ ] Test with ProjectX API (sim account first)
 
 **5.4 Full Pipeline Integration**
+
 - [ ] Create `agent-pipeline.ts` orchestrator
 - [ ] Implement end-to-end workflow:
   1. Market event triggers analysis
@@ -600,6 +654,7 @@ ALTER TABLE autopilot_proposals ADD COLUMN debate_id UUID REFERENCES researcher_
 - [ ] Test full pipeline with real market data
 
 #### Database Schema
+
 ```sql
 CREATE TABLE risk_assessments (
   id UUID PRIMARY KEY,
@@ -616,6 +671,7 @@ CREATE INDEX idx_risk_assessments_proposal ON risk_assessments(proposal_id);
 ```
 
 #### Deliverables
+
 - Risk Manager Agent functional
 - Risk validation system working
 - ProjectX order execution integrated
@@ -628,6 +684,7 @@ CREATE INDEX idx_risk_assessments_proposal ON risk_assessments(proposal_id);
 ### Phase 6: Chat Interface & Conversation System (Week 6)
 
 #### Objectives
+
 - Implement AI chat interface backend
 - Create conversation management system
 - Integrate chat with agent pipeline
@@ -636,6 +693,7 @@ CREATE INDEX idx_risk_assessments_proposal ON risk_assessments(proposal_id);
 #### Tasks
 
 **6.1 Chat Backend**
+
 - [ ] Update `/api/ai/chat` endpoint
 - [ ] Implement conversation threading
 - [ ] Add message persistence
@@ -644,6 +702,7 @@ CREATE INDEX idx_risk_assessments_proposal ON risk_assessments(proposal_id);
 - [ ] Test chat with Vercel AI SDK
 
 **6.2 Conversation Management**
+
 - [ ] Create `conversation-manager.ts` service
 - [ ] Implement conversation history retrieval
 - [ ] Add conversation search/filtering
@@ -652,6 +711,7 @@ CREATE INDEX idx_risk_assessments_proposal ON risk_assessments(proposal_id);
 - [ ] Test with multiple concurrent conversations
 
 **6.3 Agent Reasoning Queries**
+
 - [ ] Add "Explain this proposal" chat command
 - [ ] Create "Why did risk manager reject?" query
 - [ ] Implement "What are analysts seeing?" summary
@@ -659,12 +719,14 @@ CREATE INDEX idx_risk_assessments_proposal ON risk_assessments(proposal_id);
 - [ ] Create natural language query interface for agent reports
 
 **6.4 Chat API**
+
 - [ ] Update `/api/ai/conversations` endpoint
 - [ ] Create `/api/ai/conversations/:id` endpoint
 - [ ] Add `/api/ai/chat/stream` for real-time streaming
 - [ ] Test chat with frontend integration
 
 #### Database Schema
+
 ```sql
 CREATE TABLE ai_conversations (
   id UUID PRIMARY KEY,
@@ -688,6 +750,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 ```
 
 #### Deliverables
+
 - Chat backend fully functional
 - Conversation management working
 - Agent reasoning queries implemented
@@ -700,6 +763,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 ### Phase 7: Frontend Integration & Testing (Week 7)
 
 #### Objectives
+
 - Connect frontend to collaborative AI backend
 - Update ChatInterface component
 - Update AutopilotWidget with agent reasoning
@@ -708,6 +772,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 #### Tasks
 
 **7.1 Frontend API Client Updates**
+
 - [ ] Update API client for new endpoints
 - [ ] Add agent report fetching
 - [ ] Implement debate transcript display
@@ -715,6 +780,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 - [ ] Test all API calls
 
 **7.2 ChatInterface Integration**
+
 - [ ] Update ChatInterface to use new `/api/ai/chat`
 - [ ] Add streaming support for responses
 - [ ] Implement conversation threading UI
@@ -722,6 +788,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 - [ ] Test chat with real backend
 
 **7.3 Autopilot Widget Updates**
+
 - [ ] Display agent reasoning in proposals
 - [ ] Show analyst reports summary
 - [ ] Add debate transcript view
@@ -729,12 +796,14 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 - [ ] Test proposal flow end-to-end
 
 **7.4 RiskFlow Integration**
+
 - [ ] Connect News & Sentiment Analyst to RiskFlow feed
 - [ ] Display AI-generated sentiment in feed cards
 - [ ] Add "Ask AI about this news" button
 - [ ] Test real-time news analysis
 
 **7.5 End-to-End Testing**
+
 - [ ] Test full pipeline with real market data
 - [ ] Verify proposal generation workflow
 - [ ] Test chat interface with agent queries
@@ -743,6 +812,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 - [ ] Error handling and edge cases
 
 #### Deliverables
+
 - Frontend fully integrated with collaborative AI backend
 - Chat interface functional
 - Autopilot widget showing agent reasoning
@@ -755,6 +825,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 ### Phase 8: Optimization & Production (Week 8)
 
 #### Objectives
+
 - Optimize agent performance
 - Add caching and rate limiting
 - Implement monitoring and logging
@@ -763,6 +834,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 #### Tasks
 
 **8.1 Performance Optimization**
+
 - [ ] Add agent report caching (Redis or in-memory)
 - [ ] Implement parallel agent execution
 - [ ] Optimize database queries
@@ -770,6 +842,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 - [ ] Reduce latency on proposal generation
 
 **8.2 Rate Limiting & Cost Control**
+
 - [ ] Implement AI API rate limiting
 - [ ] Add usage tracking per user tier
 - [ ] Create cost estimation for agent pipeline
@@ -777,6 +850,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 - [ ] Test rate limit handling
 
 **8.3 Monitoring & Logging**
+
 - [ ] Add agent execution logging
 - [ ] Create agent performance metrics
 - [ ] Implement error tracking (Sentry or similar)
@@ -784,6 +858,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 - [ ] Create audit trail for all trades
 
 **8.4 Production Deployment**
+
 - [ ] Deploy to Fly.io production
 - [ ] Configure environment variables
 - [ ] Run database migrations
@@ -791,6 +866,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 - [ ] Monitor for issues
 
 **8.5 Documentation**
+
 - [ ] Update architecture documentation
 - [ ] Create agent system guide
 - [ ] Document API endpoints
@@ -798,6 +874,7 @@ CREATE INDEX idx_messages_created ON ai_messages(created_at DESC);
 - [ ] Create handoff document for future development
 
 #### Deliverables
+
 - Optimized agent system
 - Production deployment complete
 - Monitoring and logging in place
@@ -817,6 +894,7 @@ You are the Market Data Analyst for a professional trading firm.
 Your role: Analyze real-time market data and classify current market conditions.
 
 Context:
+
 - Symbol: {symbol}
 - Current Price: {current_price}
 - VIX Level: {vix_level}
@@ -824,6 +902,7 @@ Context:
 - Recent Price Action: {price_action_summary}
 
 Tasks:
+
 1. Classify market regime (Trending Up, Trending Down, Ranging, Volatile)
 2. Assess volatility state (Low, Normal, High, Extreme)
 3. Identify key support/resistance levels
@@ -832,13 +911,13 @@ Tasks:
 
 Output format (JSON):
 {
-  "market_regime": "string",
-  "volatility_state": "string",
-  "support_level": number,
-  "resistance_level": number,
-  "volume_profile": "string",
-  "key_observations": ["string"],
-  "confidence": number
+"market_regime": "string",
+"volatility_state": "string",
+"support_level": number,
+"resistance_level": number,
+"volume_profile": "string",
+"key_observations": ["string"],
+"confidence": number
 }
 
 Be concise, data-driven, and objective.
@@ -852,11 +931,13 @@ You are the News & Sentiment Analyst for a professional trading firm.
 Your role: Analyze market news and sentiment to assess potential market impact.
 
 Context:
+
 - Recent News: {news_items}
 - Sentiment Indicators: {sentiment_data}
 - Scheduled Events: {scheduled_events}
 
 Tasks:
+
 1. Classify overall sentiment (Bullish, Bearish, Neutral)
 2. Score IV impact (0-10, where 10 is extreme market-moving news)
 3. Identify macro level (1=low, 2=medium, 3=high, 4=extreme)
@@ -865,13 +946,13 @@ Tasks:
 
 Output format (JSON):
 {
-  "sentiment": "string",
-  "iv_impact": number,
-  "macro_level": number,
-  "breaking_news_detected": boolean,
-  "key_catalysts": ["string"],
-  "risk_factors": ["string"],
-  "confidence": number
+"sentiment": "string",
+"iv_impact": number,
+"macro_level": number,
+"breaking_news_detected": boolean,
+"key_catalysts": ["string"],
+"risk_factors": ["string"],
+"confidence": number
 }
 
 Focus on market-moving information, not noise.
@@ -885,12 +966,14 @@ You are the Technical Analyst for a professional trading firm.
 Your role: Analyze chart patterns and technical indicators to identify trading opportunities.
 
 Context:
+
 - Symbol: {symbol}
 - Historical Data: {ohlcv_data}
 - Indicators: {indicators}
 - Timeframe: {timeframe}
 
 Tasks:
+
 1. Identify current trend (Uptrend, Downtrend, Sideways)
 2. Detect chart patterns (Breakouts, Reversals, Continuations)
 3. Assess technical indicators (RSI, MACD, Moving Averages)
@@ -899,17 +982,17 @@ Tasks:
 
 Output format (JSON):
 {
-  "trend": "string",
-  "patterns_detected": ["string"],
-  "indicators_summary": {
-    "rsi": number,
-    "macd": "string",
-    "moving_averages": "string"
-  },
-  "entry_level": number,
-  "exit_level": number,
-  "stop_loss": number,
-  "confidence": number
+"trend": "string",
+"patterns_detected": ["string"],
+"indicators_summary": {
+"rsi": number,
+"macd": "string",
+"moving_averages": "string"
+},
+"entry_level": number,
+"exit_level": number,
+"stop_loss": number,
+"confidence": number
 }
 
 Use objective technical analysis, avoid speculation.
@@ -923,11 +1006,13 @@ You are the Bullish Researcher for a professional trading firm.
 Your role: Identify and argue for positive market scenarios based on analyst reports.
 
 Context:
+
 - Market Data Report: {market_data_report}
 - News & Sentiment Report: {news_sentiment_report}
 - Technical Report: {technical_report}
 
 Tasks:
+
 1. Extract all bullish signals from reports
 2. Assess probability of upside scenarios
 3. Identify catalysts for positive price movement
@@ -936,12 +1021,12 @@ Tasks:
 
 Output format (JSON):
 {
-  "bullish_thesis": "string",
-  "bullish_signals": ["string"],
-  "upside_catalysts": ["string"],
-  "probability_upside": number,
-  "counterarguments_to_bears": ["string"],
-  "confidence": number
+"bullish_thesis": "string",
+"bullish_signals": ["string"],
+"upside_catalysts": ["string"],
+"probability_upside": number,
+"counterarguments_to_bears": ["string"],
+"confidence": number
 }
 
 Be rigorous but advocate for the bullish case.
@@ -955,11 +1040,13 @@ You are the Bearish Researcher for a professional trading firm.
 Your role: Identify and argue for risk scenarios based on analyst reports.
 
 Context:
+
 - Market Data Report: {market_data_report}
 - News & Sentiment Report: {news_sentiment_report}
 - Technical Report: {technical_report}
 
 Tasks:
+
 1. Extract all bearish signals from reports
 2. Assess probability of downside scenarios
 3. Identify risk factors for negative price movement
@@ -968,12 +1055,12 @@ Tasks:
 
 Output format (JSON):
 {
-  "bearish_thesis": "string",
-  "bearish_signals": ["string"],
-  "downside_risks": ["string"],
-  "probability_downside": number,
-  "counterarguments_to_bulls": ["string"],
-  "confidence": number
+"bearish_thesis": "string",
+"bearish_signals": ["string"],
+"downside_risks": ["string"],
+"probability_downside": number,
+"counterarguments_to_bulls": ["string"],
+"confidence": number
 }
 
 Be rigorous but advocate for the bearish case.
@@ -987,6 +1074,7 @@ You are the Trader for a professional trading firm.
 Your role: Synthesize all analyst and researcher reports to create a trading proposal.
 
 Context:
+
 - Market Data Report: {market_data_report}
 - News & Sentiment Report: {news_sentiment_report}
 - Technical Report: {technical_report}
@@ -996,6 +1084,7 @@ Context:
 - Account State: {account_state}
 
 Tasks:
+
 1. Evaluate which strategy (if any) is triggered
 2. Determine optimal trade direction (long/short)
 3. Calculate position size based on conviction
@@ -1005,17 +1094,17 @@ Tasks:
 
 Output format (JSON):
 {
-  "trade_recommended": boolean,
-  "strategy_name": "string",
-  "symbol": "string",
-  "side": "long" | "short",
-  "size": number,
-  "entry_price": number,
-  "stop_loss": number,
-  "take_profit": number,
-  "reasoning": "string",
-  "analyst_references": ["string"],
-  "confidence": number
+"trade_recommended": boolean,
+"strategy_name": "string",
+"symbol": "string",
+"side": "long" | "short",
+"size": number,
+"entry_price": number,
+"stop_loss": number,
+"take_profit": number,
+"reasoning": "string",
+"analyst_references": ["string"],
+"confidence": number
 }
 
 Only recommend trades with high conviction. When in doubt, don't trade.
@@ -1029,6 +1118,7 @@ You are the Risk Manager for a professional trading firm.
 Your role: Final approval/rejection authority for all trading proposals.
 
 Context:
+
 - Trading Proposal: {trader_proposal}
 - Account State: {account_state}
 - Open Positions: {open_positions}
@@ -1037,6 +1127,7 @@ Context:
 - Breaking News: {breaking_news}
 
 Tasks:
+
 1. Validate proposal against risk rules (programmatic checks already done)
 2. Assess market conditions for execution risk
 3. Evaluate if risk/reward is favorable
@@ -1046,17 +1137,17 @@ Tasks:
 
 Output format (JSON):
 {
-  "decision": "approved" | "rejected" | "modified",
-  "risk_score": number,
-  "rejection_reason": "string" | null,
-  "modification_suggestions": {} | null,
-  "risk_assessment": {
-    "position_risk": "string",
-    "market_risk": "string",
-    "correlation_risk": "string",
-    "overall_risk": "string"
-  },
-  "confidence": number
+"decision": "approved" | "rejected" | "modified",
+"risk_score": number,
+"rejection_reason": "string" | null,
+"modification_suggestions": {} | null,
+"risk_assessment": {
+"position_risk": "string",
+"market_risk": "string",
+"correlation_risk": "string",
+"overall_risk": "string"
+},
+"confidence": number
 }
 
 Prioritize capital preservation over profit. Reject aggressively when uncertain.
@@ -1069,17 +1160,20 @@ Prioritize capital preservation over profit. Reject aggressively when uncertain.
 ### New Agent API Endpoints
 
 #### Analyst Reports
+
 - `GET /api/agents/reports/market-data` - Latest market data analyst report
 - `GET /api/agents/reports/news-sentiment` - Latest news & sentiment report
 - `GET /api/agents/reports/technical` - Latest technical analyst report
 - `GET /api/agents/reports/all` - All latest analyst reports
 
 #### Researcher Debates
+
 - `GET /api/agents/debates/latest` - Latest debate transcript
 - `GET /api/agents/debates/:id` - Specific debate by ID
 - `POST /api/agents/debates/trigger` - Manually trigger debate
 
 #### Trading Proposals
+
 - `POST /api/autopilot/propose` - Create proposal (now powered by agent pipeline)
 - `GET /api/autopilot/proposals` - List proposals with agent reasoning
 - `GET /api/autopilot/proposals/:id/reasoning` - Full agent reasoning chain
@@ -1087,10 +1181,12 @@ Prioritize capital preservation over profit. Reject aggressively when uncertain.
 - `POST /api/autopilot/execute` - Execute approved proposal
 
 #### Risk Management
+
 - `GET /api/agents/risk/assessment/:proposalId` - Risk assessment for proposal
 - `GET /api/agents/risk/status` - Current risk status (limits, exposure)
 
 #### Chat Interface
+
 - `POST /api/ai/chat` - Send message to AI (with streaming)
 - `GET /api/ai/conversations` - List user conversations
 - `GET /api/ai/conversations/:id` - Get conversation history
@@ -1103,41 +1199,49 @@ Prioritize capital preservation over profit. Reject aggressively when uncertain.
 ### Phase Completion Criteria
 
 **Phase 1**: Foundation
+
 - [ ] Zero 401 authentication errors
 - [ ] RiskFlow feed stable with < 50 items
 - [ ] Vercel AI SDK generating text successfully
 
 **Phase 2**: Analysts
+
 - [ ] 3 analyst agents producing reports
 - [ ] Reports generated in < 10 seconds
 - [ ] 90%+ uptime for analyst services
 
 **Phase 3**: Researchers
+
 - [ ] Debate completes in < 30 seconds
 - [ ] Consensus score accurately reflects bullish/bearish balance
 - [ ] Debate quality score > 7/10
 
 **Phase 4**: Trader
+
 - [ ] Trader agent generates valid proposals
 - [ ] Proposals match enabled trading strategies
 - [ ] Position sizing logic correct
 
 **Phase 5**: Risk & Execution
+
 - [ ] Risk manager correctly approves/rejects proposals
 - [ ] ProjectX order execution succeeds > 95%
 - [ ] Full pipeline completes in < 60 seconds
 
 **Phase 6**: Chat
+
 - [ ] Chat responds in < 5 seconds
 - [ ] Conversation history persists correctly
 - [ ] Agent reasoning queries work
 
 **Phase 7**: Frontend
+
 - [ ] All frontend components display agent data
 - [ ] No UI errors or crashes
 - [ ] User can complete full workflow (view analysis → approve proposal → execute)
 
 **Phase 8**: Production
+
 - [ ] System handles 100 concurrent users
 - [ ] Agent pipeline cost < $0.50 per proposal
 - [ ] 99% uptime over 1 week
@@ -1145,6 +1249,7 @@ Prioritize capital preservation over profit. Reject aggressively when uncertain.
 ### Key Performance Indicators
 
 **Latency**:
+
 - Market Data Analyst: < 5 seconds
 - News & Sentiment Analyst: < 10 seconds
 - Technical Analyst: < 5 seconds
@@ -1152,16 +1257,19 @@ Prioritize capital preservation over profit. Reject aggressively when uncertain.
 - Full pipeline: < 60 seconds
 
 **Quality**:
+
 - Analyst report confidence: > 70%
 - Trader proposal confidence: > 60%
 - Risk manager approval rate: 20-40% (reject most proposals)
 
 **Reliability**:
+
 - Agent uptime: > 99%
 - API error rate: < 1%
 - Database query success: > 99.9%
 
 **Cost**:
+
 - Average cost per proposal: < $0.50
 - Daily AI API cost per user: < $5
 - Monthly infrastructure cost: < $500
@@ -1173,42 +1281,51 @@ Prioritize capital preservation over profit. Reject aggressively when uncertain.
 ### Technical Risks
 
 **Risk 1: AI API Rate Limits**
+
 - Mitigation: Implement caching, use multiple providers, add fallback models
 - Contingency: Degrade to single-agent system if multi-agent fails
 
 **Risk 2: Agent Pipeline Latency Too High**
+
 - Mitigation: Parallel execution, caching, pre-computation
 - Contingency: Reduce debate rounds, simplify analyst logic
 
 **Risk 3: Database Performance Issues**
+
 - Mitigation: Add indexes, optimize queries, use read replicas
 - Contingency: Move to faster database tier on Neon
 
 **Risk 4: ProjectX API Failures**
+
 - Mitigation: Retry logic, error handling, fallback to manual execution
 - Contingency: Disable autopilot, manual trading only
 
 ### Business Risks
 
 **Risk 1: Agent Recommendations Perform Poorly**
+
 - Mitigation: Extensive backtesting, paper trading phase, human oversight
 - Contingency: Disable autopilot, revert to manual trading
 
 **Risk 2: User Adoption Low**
+
 - Mitigation: Clear UI, onboarding, education, demo mode
 - Contingency: Keep old system as fallback
 
 **Risk 3: Cost Overruns**
+
 - Mitigation: Usage limits, tier-based access, cost monitoring
 - Contingency: Reduce agent complexity, use cheaper models
 
 ### Security Risks
 
 **Risk 1: Unauthorized Trade Execution**
+
 - Mitigation: Human-in-the-loop, Clerk auth, audit trails
 - Contingency: Emergency kill switch, rollback mechanism
 
 **Risk 2: Data Breach**
+
 - Mitigation: Encrypted secrets, secure database, minimal data retention
 - Contingency: Incident response plan, user notification
 
@@ -1227,31 +1344,37 @@ Prioritize capital preservation over profit. Reject aggressively when uncertain.
 ### Questions to Answer Before Starting
 
 #### Authentication
+
 - What is the exact `CLERK_SECRET_KEY` value? (from Clerk dashboard)
 - Should we add retry backoff in frontend or backend?
 - What rate limiting strategy? (exponential backoff, max retries)
 
 #### AI Models
+
 - Which AI models should we use? (GPT-4o, Claude Sonnet, o1-preview, etc.)
 - Should we implement model selection dropdown for users?
 - What's the budget for AI API costs per user/month?
 
 #### Trading Strategies
+
 - For each strategy (Morning Flush, VIX Fix, etc.), what are the exact entry criteria?
 - Should all strategies be enabled by default, or user-selectable?
 - What are the risk parameters per strategy? (max size, max loss, etc.)
 
 #### Risk Management
+
 - What are the daily loss limits? (per user tier)
 - What are position size limits? (per strategy, per account)
 - Should risk manager be AI-only, or allow human override?
 
 #### Chat Interface
+
 - Should chat have access to all agent reports, or summarized view?
 - Should users be able to trigger manual agent analysis via chat?
 - What's the expected chat response time? (< 5 seconds, < 10 seconds?)
 
 #### Deployment
+
 - Should we deploy to production incrementally, or all at once?
 - What's the rollback strategy if something breaks?
 - Should we use feature flags for gradual rollout?
@@ -1263,36 +1386,42 @@ Prioritize capital preservation over profit. Reject aggressively when uncertain.
 ### Future Enhancements (Post-Phase 8)
 
 **1. Advanced Agent Types**
+
 - **Options Analyst**: IV analysis, Greeks, options strategies
 - **Macro Economist**: GDP, inflation, interest rates, central bank policy
 - **Sector Analyst**: Industry-specific analysis
 - **Correlation Analyst**: Cross-asset correlations, hedging strategies
 
 **2. Agent Learning & Improvement**
+
 - Track agent performance over time
 - Fine-tune agent prompts based on outcomes
 - Implement reinforcement learning for agent optimization
 - A/B testing for agent configurations
 
 **3. Multi-User Collaboration**
+
 - Share agent reports with other users
 - Collaborative trading rooms
 - Agent performance leaderboards
 - Community-driven agent improvements
 
 **4. Real-Time Agent Dashboard**
+
 - Live view of agent activities
 - Agent health monitoring
 - Performance metrics visualization
 - Agent "thinking" visualization (show reasoning process)
 
 **5. Advanced Risk Management**
+
 - Portfolio-level risk analysis
 - Scenario analysis (what-if simulations)
 - Stress testing
 - Dynamic risk adjustment based on market conditions
 
 **6. Integration with External Data**
+
 - Earnings calendars
 - Economic data releases
 - Insider trading data

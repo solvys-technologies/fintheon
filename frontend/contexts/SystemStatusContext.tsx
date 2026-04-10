@@ -1,13 +1,20 @@
 // [claude-code 2026-03-22] Unified system status context — polls /api/diagnostics for per-service health
 
-import { createContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import { useGateway } from './GatewayContext';
+import {
+  createContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from "react";
+import { useGateway } from "./GatewayContext";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-type StatusLevel = 'ok' | 'degraded' | 'error' | 'unknown';
+type StatusLevel = "ok" | "degraded" | "error" | "unknown";
 
 export interface ServiceHealth {
   name: string;
@@ -27,7 +34,7 @@ export interface SystemStatusValue {
 }
 
 export const SystemStatusContext = createContext<SystemStatusValue>({
-  overall: 'unknown',
+  overall: "unknown",
   services: [],
   lastFullCheck: null,
   isChecking: false,
@@ -42,29 +49,29 @@ const POLL_INTERVAL_MS = 30_000;
 
 /** Map backend service names → short display keys for the footer */
 const KEY_MAP: Record<string, string> = {
-  'Hermes AI (OpenRouter)': 'ai',
-  'Supabase': 'database',
-  'RiskFlow Feed Poller': 'feed',
-  'Twitter CLI': 'x-cli',
-  'Supabase Auth': 'auth',
-  'TradingView': 'chart',
+  "Hermes AI (OpenRouter)": "ai",
+  Supabase: "database",
+  "RiskFlow Feed Poller": "feed",
+  "Twitter CLI": "x-cli",
+  "Supabase Auth": "auth",
+  TradingView: "chart",
 };
 
 const SHORT_NAMES: Record<string, string> = {
-  'Hermes AI (OpenRouter)': 'AI',
-  'Supabase': 'Database',
-  'RiskFlow Feed Poller': 'Feed',
-  'Twitter CLI': 'X',
-  'Supabase Auth': 'Auth',
-  'TradingView': 'Chart',
+  "Hermes AI (OpenRouter)": "AI",
+  Supabase: "Database",
+  "RiskFlow Feed Poller": "Feed",
+  "Twitter CLI": "X",
+  "Supabase Auth": "Auth",
+  TradingView: "Chart",
 };
 
 function normalizeStatus(s: string): StatusLevel {
-  if (s === 'ok') return 'ok';
-  if (s === 'degraded') return 'degraded';
-  if (s === 'error') return 'error';
-  if (s === 'unavailable') return 'error';
-  return 'unknown';
+  if (s === "ok") return "ok";
+  if (s === "degraded") return "degraded";
+  if (s === "error") return "error";
+  if (s === "unavailable") return "error";
+  return "unknown";
 }
 
 /* ------------------------------------------------------------------ */
@@ -73,16 +80,18 @@ function normalizeStatus(s: string): StatusLevel {
 
 export function SystemStatusProvider({ children }: { children: ReactNode }) {
   const { status: gatewayStatus, gatewayUrl } = useGateway();
-  const [overall, setOverall] = useState<StatusLevel>('unknown');
+  const [overall, setOverall] = useState<StatusLevel>("unknown");
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [lastFullCheck, setLastFullCheck] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const prevGatewayStatus = useRef(gatewayStatus);
 
   const fetchDiagnostics = useCallback(async () => {
-    if (gatewayStatus !== 'connected') {
-      setOverall('unknown');
-      setServices((prev) => prev.map((s) => ({ ...s, status: 'unknown' as StatusLevel })));
+    if (gatewayStatus !== "connected") {
+      setOverall("unknown");
+      setServices((prev) =>
+        prev.map((s) => ({ ...s, status: "unknown" as StatusLevel })),
+      );
       return;
     }
 
@@ -91,16 +100,21 @@ export function SystemStatusProvider({ children }: { children: ReactNode }) {
       const res = await fetch(`${gatewayUrl}/api/diagnostics`, {
         signal: AbortSignal.timeout(8000),
       });
-      const data = await res.json() as {
+      const data = (await res.json()) as {
         timestamp: string;
         overall: string;
-        services: Array<{ name: string; status: string; detail?: string; fix?: string }>;
+        services: Array<{
+          name: string;
+          status: string;
+          detail?: string;
+          fix?: string;
+        }>;
       };
 
       const now = new Date().toISOString();
       const mapped: ServiceHealth[] = data.services.map((svc) => ({
         name: SHORT_NAMES[svc.name] ?? svc.name,
-        key: KEY_MAP[svc.name] ?? svc.name.toLowerCase().replace(/\s+/g, '-'),
+        key: KEY_MAP[svc.name] ?? svc.name.toLowerCase().replace(/\s+/g, "-"),
         status: normalizeStatus(svc.status),
         detail: svc.detail,
         fix: svc.fix,
@@ -112,7 +126,7 @@ export function SystemStatusProvider({ children }: { children: ReactNode }) {
       setLastFullCheck(now);
     } catch {
       // If diagnostics fetch fails but gateway is connected, mark as degraded
-      setOverall('degraded');
+      setOverall("degraded");
     } finally {
       setIsChecking(false);
     }
@@ -120,7 +134,7 @@ export function SystemStatusProvider({ children }: { children: ReactNode }) {
 
   // Poll on interval
   useEffect(() => {
-    if (gatewayStatus !== 'connected') return;
+    if (gatewayStatus !== "connected") return;
 
     fetchDiagnostics();
     const interval = setInterval(fetchDiagnostics, POLL_INTERVAL_MS);
@@ -129,14 +143,25 @@ export function SystemStatusProvider({ children }: { children: ReactNode }) {
 
   // Immediate refresh when gateway transitions to connected
   useEffect(() => {
-    if (prevGatewayStatus.current !== 'connected' && gatewayStatus === 'connected') {
+    if (
+      prevGatewayStatus.current !== "connected" &&
+      gatewayStatus === "connected"
+    ) {
       fetchDiagnostics();
     }
     prevGatewayStatus.current = gatewayStatus;
   }, [gatewayStatus, fetchDiagnostics]);
 
   return (
-    <SystemStatusContext.Provider value={{ overall, services, lastFullCheck, isChecking, refreshNow: fetchDiagnostics }}>
+    <SystemStatusContext.Provider
+      value={{
+        overall,
+        services,
+        lastFullCheck,
+        isChecking,
+        refreshNow: fetchDiagnostics,
+      }}
+    >
       {children}
     </SystemStatusContext.Provider>
   );

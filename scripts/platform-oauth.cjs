@@ -10,15 +10,21 @@ const os = require("os");
 
 // Share the same userData directory as the main Fintheon app so the
 // persist:fintheon partition writes cookies to the same store.
-app.setPath("userData", path.join(os.homedir(), "Library", "Application Support", "Fintheon"));
+app.setPath(
+  "userData",
+  path.join(os.homedir(), "Library", "Application Support", "Fintheon"),
+);
 
 const PLATFORMS = {
-  tradingview: { url: "https://www.tradingview.com/accounts/signin/", title: "TradingView" },
-  topstepx:    { url: "https://www.topstepx.com",                    title: "TopStepX" },
-  kalshi:      { url: "https://kalshi.com/log-in",                    title: "Kalshi" },
-  tradesea:    { url: "https://app.tradesea.ai",                      title: "TradeSea" },
-  tradovate:   { url: "https://trader.tradovate.com",                 title: "Tradovate" },
-  tradelocker: { url: "https://app.tradelocker.com",                  title: "TradeLocker" },
+  tradingview: {
+    url: "https://www.tradingview.com/accounts/signin/",
+    title: "TradingView",
+  },
+  topstepx: { url: "https://www.topstepx.com", title: "TopStepX" },
+  kalshi: { url: "https://kalshi.com/log-in", title: "Kalshi" },
+  tradesea: { url: "https://app.tradesea.ai", title: "TradeSea" },
+  tradovate: { url: "https://trader.tradovate.com", title: "Tradovate" },
+  tradelocker: { url: "https://app.tradelocker.com", title: "TradeLocker" },
 };
 
 const CHROME_UA =
@@ -28,8 +34,12 @@ const platformKey = process.argv[2];
 const platform = PLATFORMS[platformKey];
 
 if (!platform) {
-  console.error(`\n  Usage: npx electron scripts/platform-oauth.cjs <platform>\n`);
-  console.error(`  Available platforms: ${Object.keys(PLATFORMS).join(", ")}\n`);
+  console.error(
+    `\n  Usage: npx electron scripts/platform-oauth.cjs <platform>\n`,
+  );
+  console.error(
+    `  Available platforms: ${Object.keys(PLATFORMS).join(", ")}\n`,
+  );
   process.exit(1);
 }
 

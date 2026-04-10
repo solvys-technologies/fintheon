@@ -1,4 +1,5 @@
 # Fintheon v3.0 Fresh Implementation Plan
+
 ## Clean Slate Backend Rebuild
 
 > **Created**: 2026-01-10
@@ -11,6 +12,7 @@
 ## Executive Summary
 
 This plan strips the existing backend of bloated/broken code and rebuilds with:
+
 - **300-line maximum per file** (non-negotiable)
 - **AI-agent-friendly file structure**
 - **Phased delivery** with working deployments at each phase
@@ -21,6 +23,7 @@ This plan strips the existing backend of bloated/broken code and rebuilds with:
 ## Current State Assessment
 
 ### ✅ What Works
+
 - Fly.io deployment pipeline
 - Neon PostgreSQL connection
 - CORS configuration (including `app.pricedinresearch.io`)
@@ -28,6 +31,7 @@ This plan strips the existing backend of bloated/broken code and rebuilds with:
 - Clerk auth middleware (needs testing)
 
 ### ❌ What's Broken/Missing
+
 - `/api/account` - 404 Not Found
 - `/api/market/vix` - 404 Not Found
 - `/api/notifications` - 404 Not Found
@@ -37,13 +41,14 @@ This plan strips the existing backend of bloated/broken code and rebuilds with:
 - AI services have files > 600 lines (violates rules)
 
 ### 🔴 Files Violating 300-Line Rule
-| File | Lines | Action |
-|------|-------|--------|
-| `ai-model-service.ts` | 622 | Strip & rebuild |
-| `chat-service.ts` | 459 | Strip & rebuild |
-| `provider-health.ts` | 392 | Strip & rebuild |
-| `ai-cost-tracker.ts` | 345 | Strip & rebuild |
-| `conversation-manager.ts` | 312 | Split |
+
+| File                      | Lines | Action          |
+| ------------------------- | ----- | --------------- |
+| `ai-model-service.ts`     | 622   | Strip & rebuild |
+| `chat-service.ts`         | 459   | Strip & rebuild |
+| `provider-health.ts`      | 392   | Strip & rebuild |
+| `ai-cost-tracker.ts`      | 345   | Strip & rebuild |
+| `conversation-manager.ts` | 312   | Split           |
 
 ---
 
@@ -161,9 +166,11 @@ backend-hono/src/
 ## Phase Breakdown
 
 ### Phase 1: Foundation (Days 1-3)
+
 **Goal**: Core infrastructure that everything else depends on
 
 #### Day 1: Strip & Scaffold
+
 - [ ] Delete all files in `routes/` (except keep `psych-assist.ts` as reference)
 - [ ] Delete violating files in `services/` (> 300 lines)
 - [ ] Create new folder structure per target above
@@ -171,6 +178,7 @@ backend-hono/src/
 - [ ] Update `index.ts` to new modular structure
 
 #### Day 2: Account Routes
+
 - [ ] Create `routes/account/index.ts`
 - [ ] Create `routes/account/handlers.ts`:
   - `GET /api/account` - Get current user account
@@ -183,6 +191,7 @@ backend-hono/src/
 - [ ] Test all endpoints locally
 
 #### Day 3: Deploy & Verify Foundation
+
 - [ ] Run `npx tsc` - fix any TypeScript errors
 - [ ] Deploy to Fly.io
 - [ ] Verify endpoints work from `app.pricedinresearch.io`:
@@ -192,6 +201,7 @@ backend-hono/src/
 - [ ] Commit: `[v.5.10.1] feat: Phase 1 - Account routes foundation`
 
 **Phase 1 Deliverables**:
+
 - ✅ `/api/account` - 200 OK
 - ✅ `/api/account/tier` - 200 OK
 - ✅ `/health` - 200 OK
@@ -199,9 +209,11 @@ backend-hono/src/
 ---
 
 ### Phase 2: Core Data Routes (Days 4-6)
+
 **Goal**: Market data, notifications, basic trading
 
 #### Day 4: Market Routes
+
 - [ ] Create `routes/market/index.ts`
 - [ ] Create `routes/market/handlers.ts`:
   - `GET /api/market/vix` - Get current VIX
@@ -210,6 +222,7 @@ backend-hono/src/
 - [ ] Test VIX endpoint
 
 #### Day 5: Notifications Routes
+
 - [ ] Create `routes/notifications/index.ts`
 - [ ] Create `routes/notifications/handlers.ts`:
   - `GET /api/notifications` - List user notifications
@@ -218,6 +231,7 @@ backend-hono/src/
 - [ ] Create `db/queries/notifications.ts`
 
 #### Day 6: Trading Routes (Basic)
+
 - [ ] Create `routes/trading/index.ts`
 - [ ] Create `routes/trading/handlers.ts`:
   - `GET /api/trading/positions` - List positions
@@ -226,6 +240,7 @@ backend-hono/src/
 - [ ] Commit: `[v.5.10.2] feat: Phase 2 - Market, Notifications, Trading routes`
 
 **Phase 2 Deliverables**:
+
 - ✅ `/api/market/vix` - 200 OK
 - ✅ `/api/notifications` - 200 OK
 - ✅ `/api/trading/positions` - 200 OK
@@ -233,9 +248,11 @@ backend-hono/src/
 ---
 
 ### Phase 3: ProjectX Integration (Days 7-9)
+
 **Goal**: Connect to TopStepX for real account data
 
 #### Day 7: ProjectX Client
+
 - [ ] Create `services/projectx/client.ts`:
   - Token authentication
   - Account fetching
@@ -245,6 +262,7 @@ backend-hono/src/
   - Credential storage
 
 #### Day 8: ProjectX Routes
+
 - [ ] Create `routes/projectx/index.ts`
 - [ ] Create `routes/projectx/handlers.ts`:
   - `GET /api/projectx/accounts` - List linked accounts
@@ -252,20 +270,24 @@ backend-hono/src/
 - [ ] Test with real ProjectX API
 
 #### Day 9: Deploy & Verify
+
 - [ ] Verify ProjectX connection works
 - [ ] Test account sync flow
 - [ ] Commit: `[v.5.10.3] feat: Phase 3 - ProjectX integration`
 
 **Phase 3 Deliverables**:
+
 - ✅ `/api/projectx/accounts` - Returns real accounts
 - ✅ ProjectX auth flow working
 
 ---
 
 ### Phase 4: RiskFlow Feed (Days 10-14)
+
 **Goal**: News feed with X API integration
 
 #### Day 10: RiskFlow Infrastructure
+
 - [ ] Create `routes/riskflow/index.ts`
 - [ ] Create `routes/riskflow/handlers.ts`:
   - `GET /api/riskflow/feed` - Get news feed
@@ -273,6 +295,7 @@ backend-hono/src/
 - [ ] Create database tables for news articles
 
 #### Day 11: X API Client
+
 - [ ] Create `services/riskflow/x-client.ts`:
   - Rate limiting (300 req/15min)
   - Fetch from @FinancialJuice
@@ -280,17 +303,20 @@ backend-hono/src/
   - Tweet parsing
 
 #### Day 12: Feed Service
+
 - [ ] Create `services/riskflow/feed-service.ts`:
   - Aggregate news from sources
   - Apply user watchlist filter
   - Pagination support (max 50 items)
 
 #### Day 13-14: Testing & Deploy
+
 - [ ] Test with real X API
 - [ ] Verify feed pagination works
 - [ ] Commit: `[v.5.10.4] feat: Phase 4 - RiskFlow feed with X API`
 
 **Phase 4 Deliverables**:
+
 - ✅ `/api/riskflow/feed` - Returns paginated news
 - ✅ X API integration working
 - ✅ User watchlist filtering
@@ -298,15 +324,18 @@ backend-hono/src/
 ---
 
 ### Phase 5: AI Analysis Layer (Days 15-19)
+
 **Goal**: Grok analysis for news, IV scoring
 
 #### Day 15: AI Model Selector
+
 - [ ] Create `services/ai/model-selector.ts`:
   - Vercel AI Gateway integration
   - Model routing (Grok for news, Claude for chat)
   - Fallback logic
 
 #### Day 16: News Analysis
+
 - [ ] Create `services/analysis/grok-analyzer.ts`:
   - Parse financial headlines
   - Extract symbols, events
@@ -316,11 +345,13 @@ backend-hono/src/
   - Classify macro level
 
 #### Day 17: Integrate with RiskFlow
+
 - [ ] Update `feed-service.ts` to call Grok analysis
 - [ ] Store analyzed articles in database
 - [ ] Add sentiment/IV to feed response
 
 #### Day 18-19: AI Chat Routes
+
 - [ ] Create `routes/ai/handlers/chat.ts`
 - [ ] Create `routes/ai/handlers/conversations.ts`
 - [ ] Create `services/ai/conversation-store.ts`
@@ -328,6 +359,7 @@ backend-hono/src/
 - [ ] Commit: `[v.5.10.5] feat: Phase 5 - AI analysis layer`
 
 **Phase 5 Deliverables**:
+
 - ✅ News analyzed by Grok
 - ✅ IV scores calculated
 - ✅ `/api/ai/chat` working
@@ -336,26 +368,31 @@ backend-hono/src/
 ---
 
 ### Phase 6: Collaborative AI Agents (Days 20-25)
+
 **Goal**: Multi-agent system per architecture docs
 
 #### Day 20-21: Analyst Agents
+
 - [ ] Create Market Data Analyst
-- [ ] Create News & Sentiment Analyst  
+- [ ] Create News & Sentiment Analyst
 - [ ] Create Technical Analyst
 - [ ] Store reports in database
 
 #### Day 22-23: Researcher Agents
+
 - [ ] Create Bullish Researcher
 - [ ] Create Bearish Researcher
 - [ ] Implement debate protocol
 
 #### Day 24-25: Trader & Risk Manager
+
 - [ ] Create Trader Agent
 - [ ] Create Risk Manager Agent
 - [ ] Wire up full pipeline
 - [ ] Commit: `[v.5.10.6] feat: Phase 6 - Collaborative AI agents`
 
 **Phase 6 Deliverables**:
+
 - ✅ Analyst reports generating
 - ✅ Researcher debate working
 - ✅ Trading proposals from agents
@@ -384,6 +421,7 @@ curl https://pulse-api-withered-dust-1394.fly.dev/api/account \
 ## File Line Count Enforcement
 
 Before every commit, run:
+
 ```bash
 find src -name "*.ts" -exec wc -l {} + | awk '$1 > 300 {print "❌ OVER 300:", $0}'
 ```
@@ -409,14 +447,14 @@ FMP_API_KEY=                # Financial Modeling Prep (optional)
 
 ## Success Metrics
 
-| Phase | Metric | Target |
-|-------|--------|--------|
-| 1 | Account routes working | 100% |
-| 2 | Core data routes working | 100% |
-| 3 | ProjectX accounts loading | Real data |
-| 4 | RiskFlow feed loading | < 50 items, paginated |
-| 5 | AI analysis running | < 500ms per item |
-| 6 | Agent pipeline complete | < 60s end-to-end |
+| Phase | Metric                    | Target                |
+| ----- | ------------------------- | --------------------- |
+| 1     | Account routes working    | 100%                  |
+| 2     | Core data routes working  | 100%                  |
+| 3     | ProjectX accounts loading | Real data             |
+| 4     | RiskFlow feed loading     | < 50 items, paginated |
+| 5     | AI analysis running       | < 500ms per item      |
+| 6     | Agent pipeline complete   | < 60s end-to-end      |
 
 ---
 
@@ -425,6 +463,7 @@ FMP_API_KEY=                # Financial Modeling Prep (optional)
 Each phase is deployed independently. If a phase fails:
 
 1. Revert to previous deployment:
+
    ```bash
    fly releases -a pulse-api-withered-dust-1394
    fly deploy --image <previous-image>
@@ -441,6 +480,7 @@ Each phase is deployed independently. If a phase fails:
 **Start with Phase 1, Day 1: Strip & Scaffold**
 
 Command to strip violating files:
+
 ```bash
 cd /Users/tifos/Desktop/Pulse/Developer/Pulse/pulse/backend-hono/src
 

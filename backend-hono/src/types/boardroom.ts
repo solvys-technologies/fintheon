@@ -13,19 +13,19 @@
  */
 
 export type BoardroomAgent =
-  | 'Harper-Opus'
-  | 'Feucht'
-  | 'Consul'
-  | 'Oracle'
-  | 'Herald'
-  | 'Unknown';
+  | "Harper-Opus"
+  | "Feucht"
+  | "Consul"
+  | "Oracle"
+  | "Herald"
+  | "Unknown";
 
 export type BoardroomContentPartType =
-  | 'text'
-  | 'analysis'
-  | 'trade-idea'
-  | 'chart-ref'
-  | 'reaction';
+  | "text"
+  | "analysis"
+  | "trade-idea"
+  | "chart-ref"
+  | "reaction";
 
 export interface BoardroomContentPart {
   type: BoardroomContentPartType;
@@ -43,7 +43,7 @@ export interface BoardroomMessage {
   emoji: string;
   content: string;
   timestamp: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   metadata?: Record<string, unknown>;
   threadId?: string | null;
   peerId?: string | null;
@@ -53,7 +53,7 @@ export interface BoardroomMessage {
 
 export interface InterventionMessage {
   id: string;
-  sender: 'User' | 'Harper-Opus' | 'Unknown';
+  sender: "User" | "Harper-Opus" | "Unknown";
   content: string;
   timestamp: string;
 }
@@ -63,16 +63,16 @@ export interface InterventionMessage {
 /* ------------------------------------------------------------------ */
 
 export type InterventionType =
-  | 'risk_alert'
-  | 'overtrading_warning'
-  | 'rule_violation'
-  | 'market_event'
-  | 'position_check'
-  | 'huddle'
-  | 'standup'
-  | 'briefing';
+  | "risk_alert"
+  | "overtrading_warning"
+  | "rule_violation"
+  | "market_event"
+  | "position_check"
+  | "huddle"
+  | "standup"
+  | "briefing";
 
-export type InterventionSeverity = 'info' | 'warning' | 'critical';
+export type InterventionSeverity = "info" | "warning" | "critical";
 
 export interface StructuredIntervention {
   id: string;
@@ -88,8 +88,8 @@ export interface StructuredIntervention {
 /*  Trade Idea types                                                   */
 /* ------------------------------------------------------------------ */
 
-export type TradeDirection = 'long' | 'short' | 'neutral';
-export type ConvictionLevel = 'low' | 'medium' | 'high' | 'max';
+export type TradeDirection = "long" | "short" | "neutral";
+export type ConvictionLevel = "low" | "medium" | "high" | "max";
 
 export interface TradeIdea {
   id: string;

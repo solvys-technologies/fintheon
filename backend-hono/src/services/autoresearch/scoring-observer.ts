@@ -1,11 +1,14 @@
 // [claude-code 2026-03-23] Scoring observer — captures ScoringObservations when news items are scored
 // Hooks into the news cache pipeline to record predictions for later fitness evaluation.
 
-import type { ScoringObservation } from './types.js';
-import { storeObservation, updateObservationOutcome } from './observation-store.js';
-import { resolveOutcome } from './price-resolver.js';
-import { getCurrentSession } from '../iv-scoring-v2.js';
-import { calculateImpliedPoints } from '../iv-scoring-v2.js';
+import type { ScoringObservation } from "./types.js";
+import {
+  storeObservation,
+  updateObservationOutcome,
+} from "./observation-store.js";
+import { resolveOutcome } from "./price-resolver.js";
+import { getCurrentSession } from "../iv-scoring-v2.js";
+import { calculateImpliedPoints } from "../iv-scoring-v2.js";
 
 /** Default delay before checking outcome (minutes) */
 const DEFAULT_OUTCOME_DELAY = 30;
@@ -27,7 +30,11 @@ export async function recordObservation(params: {
   tags?: string[];
 }): Promise<void> {
   const session = getCurrentSession();
-  const implied = calculateImpliedPoints(params.vixLevel, params.currentPrice, params.instrument);
+  const implied = calculateImpliedPoints(
+    params.vixLevel,
+    params.currentPrice,
+    params.instrument,
+  );
 
   const obs: ScoringObservation = {
     id: params.id,
@@ -55,7 +62,10 @@ export async function recordObservation(params: {
  * Schedule a delayed price check to fill in the actual outcome.
  * Uses setTimeout for simplicity — in production this would be a proper job queue.
  */
-function scheduleOutcomeResolution(obs: ScoringObservation, delayMinutes: number): void {
+function scheduleOutcomeResolution(
+  obs: ScoringObservation,
+  delayMinutes: number,
+): void {
   const delayMs = delayMinutes * 60 * 1000;
 
   setTimeout(async () => {
@@ -70,7 +80,10 @@ function scheduleOutcomeResolution(obs: ScoringObservation, delayMinutes: number
         );
       }
     } catch (error) {
-      console.error(`[ScoringObserver] Outcome resolution failed for ${obs.id}:`, error);
+      console.error(
+        `[ScoringObserver] Outcome resolution failed for ${obs.id}:`,
+        error,
+      );
     }
   }, delayMs);
 }

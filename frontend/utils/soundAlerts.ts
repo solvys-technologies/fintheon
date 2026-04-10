@@ -1,4 +1,4 @@
-export type AlertType = 'info' | 'warning' | 'success' | 'error' | 'tilt';
+export type AlertType = "info" | "warning" | "success" | "error" | "tilt";
 
 const alertFrequencies: Record<AlertType, number[]> = {
   info: [440, 550],
@@ -12,7 +12,9 @@ export function playAlertSound(type: AlertType, enabled: boolean = true): void {
   if (!enabled) return;
 
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContext = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )();
     const frequencies = alertFrequencies[type];
     let startTime = audioContext.currentTime;
 
@@ -24,7 +26,7 @@ export function playAlertSound(type: AlertType, enabled: boolean = true): void {
       gainNode.connect(audioContext.destination);
 
       oscillator.frequency.value = freq;
-      oscillator.type = 'sine';
+      oscillator.type = "sine";
 
       gainNode.gain.setValueAtTime(0, startTime);
       gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
@@ -36,7 +38,7 @@ export function playAlertSound(type: AlertType, enabled: boolean = true): void {
       startTime += 0.25;
     });
   } catch (error) {
-    console.error('Failed to play alert sound:', error);
+    console.error("Failed to play alert sound:", error);
   }
 }
 
@@ -47,14 +49,16 @@ export function playIOSPing(enabled: boolean = true): void {
   if (!enabled) return;
 
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContext = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )();
     const now = audioContext.currentTime;
 
     // iOS ping is a short, high-pitched tone (around 800Hz) with quick decay
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
-    oscillator.type = 'sine';
+    oscillator.type = "sine";
     oscillator.frequency.value = 800;
 
     // Quick attack and decay (like iOS notification sound)
@@ -68,6 +72,6 @@ export function playIOSPing(enabled: boolean = true): void {
     oscillator.start(now);
     oscillator.stop(now + 0.15);
   } catch (error) {
-    console.error('Failed to play iOS ping:', error);
+    console.error("Failed to play iOS ping:", error);
   }
 }

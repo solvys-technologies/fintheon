@@ -1,5 +1,5 @@
 // [claude-code 2026-03-16] Hermes Command Center: activity log sub-component
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from "react";
 
 export interface ActivityLogEntry {
   id: string;
@@ -15,7 +15,12 @@ interface HermesActivityLogProps {
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  return d.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
 }
 
 export function HermesActivityLog({ entries }: HermesActivityLogProps) {
@@ -54,7 +59,9 @@ export function HermesActivityLog({ entries }: HermesActivityLogProps) {
                 {entry.intentDetected}
               </span>
             </div>
-            <p className="text-[10px] text-zinc-500 truncate">{entry.preview}</p>
+            <p className="text-[10px] text-zinc-500 truncate">
+              {entry.preview}
+            </p>
           </div>
         </div>
       ))}
@@ -66,22 +73,25 @@ export function HermesActivityLog({ entries }: HermesActivityLogProps) {
 export function useActivityLog() {
   const [entries, setEntries] = useState<ActivityLogEntry[]>([]);
 
-  const logActivity = useCallback((agentRouted: string, intentDetected: string, preview: string) => {
-    setEntries((prev) => {
-      const next = [
-        ...prev,
-        {
-          id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          timestamp: new Date().toISOString(),
-          agentRouted,
-          intentDetected,
-          preview: preview.slice(0, 120),
-        },
-      ];
-      // Keep last 10
-      return next.slice(-10);
-    });
-  }, []);
+  const logActivity = useCallback(
+    (agentRouted: string, intentDetected: string, preview: string) => {
+      setEntries((prev) => {
+        const next = [
+          ...prev,
+          {
+            id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            timestamp: new Date().toISOString(),
+            agentRouted,
+            intentDetected,
+            preview: preview.slice(0, 120),
+          },
+        ];
+        // Keep last 10
+        return next.slice(-10);
+      });
+    },
+    [],
+  );
 
   return { entries, logActivity };
 }

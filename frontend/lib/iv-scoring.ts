@@ -28,7 +28,7 @@ export interface IVScoringInput {
   ivPercentile?: number;
 }
 
-export type VolEnvironment = 'Low Vol' | 'Normal' | 'Elevated' | 'Crisis';
+export type VolEnvironment = "Low Vol" | "Normal" | "Elevated" | "Crisis";
 
 export interface SizingRecommendation {
   /** Multiplier for standard position size (e.g., 1.2 = 120% of normal) */
@@ -81,9 +81,9 @@ export interface FrontendIVConfig {
 /** Component weights (must sum to 1.0) */
 const DEFAULT_WEIGHTS = {
   vixVsAvg: 0.35,
-  termStructure: 0.20,
+  termStructure: 0.2,
   putCallSignal: 0.15,
-  ivPercentile: 0.30,
+  ivPercentile: 0.3,
 } as const;
 
 /** VIX thresholds for the 22 VIX Fixer playbook — OPEN ITEM: awaiting Chief input on final values */
@@ -121,11 +121,11 @@ function scoreTermStructure(spotVix: number, futures3m: number): number {
   // Normal contango: ~5% premium → low score
   // Flat: ~0% → moderate
   // Backwardation: negative → high score
-  if (spread >= 0.10) return 10;
+  if (spread >= 0.1) return 10;
   if (spread >= 0.05) return 25;
   if (spread >= 0.0) return 40;
   if (spread >= -0.05) return 65;
-  if (spread >= -0.10) return 80;
+  if (spread >= -0.1) return 80;
   return 95;
 }
 
@@ -140,7 +140,7 @@ function scorePutCall(current: number, avg: number): number {
   if (deviation <= 0.05) return 40;
   if (deviation <= 0.15) return 55;
   if (deviation <= 0.25) return 70;
-  if (deviation <= 0.40) return 85;
+  if (deviation <= 0.4) return 85;
   return 95;
 }
 
@@ -165,46 +165,52 @@ function deriveIvPercentile(vix: number): number {
 // ─── Environment Classification ──────────────────────────────────────────────
 
 function classifyEnvironment(score: number): VolEnvironment {
-  if (score < 25) return 'Low Vol';
-  if (score < 50) return 'Normal';
-  if (score < 75) return 'Elevated';
-  return 'Crisis';
+  if (score < 25) return "Low Vol";
+  if (score < 50) return "Normal";
+  if (score < 75) return "Elevated";
+  return "Crisis";
 }
 
 // ─── Sizing Recommendation (22 VIX Fixer Playbook) ──────────────────────────
 
-function getSizingRecommendation(score: number, vix: number): SizingRecommendation {
+function getSizingRecommendation(
+  score: number,
+  vix: number,
+): SizingRecommendation {
   if (score < 25) {
     return {
       sizeMultiplier: 1.25,
-      label: 'Scale Up',
+      label: "Scale Up",
       detail: `VIX at ${vix.toFixed(1)} — low vol regime. Favorable for full-size positions and premium selling strategies.`,
     };
   }
   if (score < 50) {
     return {
       sizeMultiplier: 1.0,
-      label: 'Normal Size',
+      label: "Normal Size",
       detail: `VIX at ${vix.toFixed(1)} — normal conditions. Standard position sizing applies.`,
     };
   }
   if (score < 75) {
     return {
       sizeMultiplier: 0.65,
-      label: 'Scale Down',
+      label: "Scale Down",
       detail: `VIX at ${vix.toFixed(1)} — elevated vol. Reduce size by ~35%. Wider stops, smaller lots.`,
     };
   }
   return {
     sizeMultiplier: 0.35,
-    label: 'Defensive',
+    label: "Defensive",
     detail: `VIX at ${vix.toFixed(1)} — crisis regime. Cut size to ~35%. Capital preservation mode. Only A+ setups.`,
   };
 }
 
 // ─── Main Scoring Function ───────────────────────────────────────────────────
 
-export function computeIVScore(input: IVScoringInput, config?: Partial<FrontendIVConfig>): IVScoreResult {
+export function computeIVScore(
+  input: IVScoringInput,
+  config?: Partial<FrontendIVConfig>,
+): IVScoreResult {
   const {
     vixCurrent,
     vix30dAvg = 18,
@@ -227,9 +233,9 @@ export function computeIVScore(input: IVScoringInput, config?: Partial<FrontendI
 
   const score = Math.round(
     components.vixVsAvg * weights.vixVsAvg +
-    components.termStructure * weights.termStructure +
-    components.putCallSignal * weights.putCallSignal +
-    components.ivPercentile * weights.ivPercentile
+      components.termStructure * weights.termStructure +
+      components.putCallSignal * weights.putCallSignal +
+      components.ivPercentile * weights.ivPercentile,
   );
 
   const clampedScore = Math.max(0, Math.min(100, score));
@@ -248,6 +254,9 @@ export function computeIVScore(input: IVScoringInput, config?: Partial<FrontendI
  * Quick score from just a VIX level (convenience function).
  * Uses sensible defaults for all other inputs.
  */
-export function quickIVScore(vix: number, config?: Partial<FrontendIVConfig>): IVScoreResult {
+export function quickIVScore(
+  vix: number,
+  config?: Partial<FrontendIVConfig>,
+): IVScoreResult {
   return computeIVScore({ vixCurrent: vix }, config);
 }

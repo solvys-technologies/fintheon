@@ -14,7 +14,7 @@ export const SKILL_INSTRUCTIONS: Record<string, string> = {
   NARRATIVE: `\n\n[Skill: Narrative]\nAnalyze current NarrativeFlow board state. Identify active narratives in the data cycle (PMI>PPI>CPI>PCE>GDP), recent catalysts, suggest new connections or flag stale theses. Apply third-order thinking.`,
   // [claude-code 2026-03-23] Browser Use Phase 2
   CHARTLEVELS: `\n\n[Skill: Chart Levels]\nDraw horizontal price lines on the TopStep X chart via Browser Use CLI. Extract entry, stop loss, and take profit levels from the current trade proposal or user message. Call POST /api/proposals/chart with { ticker, direction, entry, stopLoss, takeProfit }. Lines are drawn as colored horizontal rays: entry (green #22c55e), stop (red #ef4444), target (blue #3b82f6). Confirm back to the user with the plotted levels. Respects blackout period (8:30a-12p EST). If the user provides a ticker and levels, format the API call. If a recent proposal exists, use its levels automatically.`,
-}
+};
 
 export const DEEP_ANALYSIS_BLOCK = `\n\n[Deep Analysis Mode]
 You have been asked to think harder. Apply rigorous analytical reasoning:
@@ -23,4 +23,4 @@ You have been asked to think harder. Apply rigorous analytical reasoning:
 - Flag assumptions and uncertainty ranges
 - Provide structured output with clear sections
 - If research context is provided, synthesize it into your analysis
-- Apply third-order thinking: What does the crowd think? What does the crowd NOT see?`
+- Apply third-order thinking: What does the crowd think? What does the crowd NOT see?`;

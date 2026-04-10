@@ -1,7 +1,7 @@
 // [claude-code 2026-04-04] T4: History dropdown — Clock button toggles dropdown instead of modal
-import { useState } from 'react';
-import { Scroll, Plus, Clock } from 'lucide-react';
-import { SessionsDropdown } from './SessionsDropdown';
+import { useState } from "react";
+import { Scroll, Plus, Clock } from "lucide-react";
+import { SessionsDropdown } from "./SessionsDropdown";
 
 interface ChatHeaderProps {
   onRunMDB: () => void;
@@ -12,7 +12,14 @@ interface ChatHeaderProps {
   isLoading: boolean;
 }
 
-export function ChatHeader({ onRunMDB, onNewChat, onSelectSession, onNewSession, currentConversationId, isLoading }: ChatHeaderProps) {
+export function ChatHeader({
+  onRunMDB,
+  onNewChat,
+  onSelectSession,
+  onNewSession,
+  currentConversationId,
+  isLoading,
+}: ChatHeaderProps) {
   const [showHistory, setShowHistory] = useState(false);
 
   return (
@@ -36,7 +43,7 @@ export function ChatHeader({ onRunMDB, onNewChat, onSelectSession, onNewSession,
           </button>
           <div className="relative">
             <button
-              onClick={() => setShowHistory(v => !v)}
+              onClick={() => setShowHistory((v) => !v)}
               className="p-2 rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
               title="Sessions"
             >
@@ -45,8 +52,14 @@ export function ChatHeader({ onRunMDB, onNewChat, onSelectSession, onNewSession,
             {showHistory && (
               <SessionsDropdown
                 onClose={() => setShowHistory(false)}
-                onSelectSession={(id) => { onSelectSession(id); setShowHistory(false); }}
-                onNewSession={() => { onNewSession(); setShowHistory(false); }}
+                onSelectSession={(id) => {
+                  onSelectSession(id);
+                  setShowHistory(false);
+                }}
+                onNewSession={() => {
+                  onNewSession();
+                  setShowHistory(false);
+                }}
                 currentConversationId={currentConversationId}
               />
             )}
@@ -56,4 +69,3 @@ export function ChatHeader({ onRunMDB, onNewChat, onSelectSession, onNewSession,
     </div>
   );
 }
-

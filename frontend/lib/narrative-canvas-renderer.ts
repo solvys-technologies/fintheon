@@ -1,10 +1,18 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration — canvas reads CSS vars
 
-import type { NarrativeLane, NarrativeCategory, NarrativeStatus } from './narrative-types';
-import type { BubbleState } from './narrative-physics';
-import { getAllZoneBounds, getRopeSwingOffset, ZONE_COLUMNS } from './narrative-physics';
-import { computeCatenary } from './narrative-catenary';
-import type { ZoomConfig } from './narrative-zoom';
+import type {
+  NarrativeLane,
+  NarrativeCategory,
+  NarrativeStatus,
+} from "./narrative-types";
+import type { BubbleState } from "./narrative-physics";
+import {
+  getAllZoneBounds,
+  getRopeSwingOffset,
+  ZONE_COLUMNS,
+} from "./narrative-physics";
+import { computeCatenary } from "./narrative-catenary";
+import type { ZoomConfig } from "./narrative-zoom";
 
 // --- Theme color helpers ---
 
@@ -24,14 +32,14 @@ export function getThemeColors(): CanvasThemeColors {
   const style = getComputedStyle(document.documentElement);
   const get = (name: string) => style.getPropertyValue(name).trim();
   return {
-    accent: get('--fintheon-accent') || '#D4AF37',
-    bg: get('--fintheon-bg') || '#050402',
-    text: get('--fintheon-text') || '#f0ead6',
-    surface: get('--fintheon-surface') || '#0a0a00',
-    border: get('--fintheon-border') || '#D4AF37',
-    muted: get('--fintheon-muted') || '#6B7280',
-    bullish: get('--fintheon-bullish') || '#34D399',
-    bearish: get('--fintheon-bearish') || '#EF4444',
+    accent: get("--fintheon-accent") || "#D4AF37",
+    bg: get("--fintheon-bg") || "#050402",
+    text: get("--fintheon-text") || "#f0ead6",
+    surface: get("--fintheon-surface") || "#0a0a00",
+    border: get("--fintheon-border") || "#D4AF37",
+    muted: get("--fintheon-muted") || "#6B7280",
+    bullish: get("--fintheon-bullish") || "#34D399",
+    bearish: get("--fintheon-bearish") || "#EF4444",
   };
 }
 
@@ -44,32 +52,39 @@ function hexToRgba(hex: string, alpha: number): string {
 
 /** Resolve a value that may be a CSS var reference (e.g. 'var(--fintheon-accent)') */
 function resolveColor(color: string, colors: CanvasThemeColors): string {
-  if (color.startsWith('var(--fintheon-')) {
+  if (color.startsWith("var(--fintheon-")) {
     const key = color.slice(15, -1) as keyof CanvasThemeColors;
     return colors[key] || color;
   }
   return color;
 }
 
-function getStatusColor(status: NarrativeStatus, colors: CanvasThemeColors): string {
+function getStatusColor(
+  status: NarrativeStatus,
+  colors: CanvasThemeColors,
+): string {
   switch (status) {
-    case 'active': return colors.bullish;
-    case 'watching': return colors.accent;
-    case 'decayed': return colors.bearish;
-    case 'archived': return colors.muted;
+    case "active":
+      return colors.bullish;
+    case "watching":
+      return colors.accent;
+    case "decayed":
+      return colors.bearish;
+    case "archived":
+      return colors.muted;
   }
 }
 
 // --- Color mapping ---
 
 const CATEGORY_LABELS: Record<NarrativeCategory, string> = {
-  geopolitical: 'Geopolitical',
-  macroeconomic: 'Macroeconomic',
-  monetary: 'Monetary Policy',
-  'market-structure': 'Market Structure',
-  'supply-chain': 'Supply Chain',
-  'black-swan': 'Black Swan',
-  earnings: 'Earnings',
+  geopolitical: "Geopolitical",
+  macroeconomic: "Macroeconomic",
+  monetary: "Monetary Policy",
+  "market-structure": "Market Structure",
+  "supply-chain": "Supply Chain",
+  "black-swan": "Black Swan",
+  earnings: "Earnings",
 };
 
 // --- Zone rendering ---
@@ -113,9 +128,9 @@ export function drawZoneLabels(
   const zones = getAllZoneBounds(canvasWidth, canvasHeight);
   const colors = getThemeColors();
 
-  ctx.font = '11px Inter, system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
+  ctx.font = "11px Inter, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
   ctx.fillStyle = hexToRgba(colors.text, 0.25);
 
   for (const { category, bounds } of zones) {
@@ -154,7 +169,7 @@ export function drawNarrativeCard(
   ctx.fill();
 
   // Reset shadow for border
-  ctx.shadowColor = 'transparent';
+  ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
   drawRoundedRect(ctx, x, y, width, height, radius);
@@ -164,23 +179,25 @@ export function drawNarrativeCard(
 
   // Card contents
   ctx.fillStyle = colors.text;
-  ctx.font = 'bold 13px Inter, system-ui, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  const titleText = lane.title.length > 22 ? lane.title.slice(0, 20) + '\u2026' : lane.title;
+  ctx.font = "bold 13px Inter, system-ui, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  const titleText =
+    lane.title.length > 22 ? lane.title.slice(0, 20) + "\u2026" : lane.title;
   ctx.fillText(titleText, x + 12, y + 14);
 
   // Category tag
   ctx.fillStyle = hexToRgba(colors.text, 0.35);
-  ctx.font = '10px Inter, system-ui, sans-serif';
-  ctx.fillText(CATEGORY_LABELS[lane.category] ?? '', x + 12, y + 34);
+  ctx.font = "10px Inter, system-ui, sans-serif";
+  ctx.fillText(CATEGORY_LABELS[lane.category] ?? "", x + 12, y + 34);
 
   // Direction bias indicator
-  const biasColor = lane.directionBias === 'long'
-    ? colors.bullish
-    : lane.directionBias === 'short'
-      ? colors.bearish
-      : colors.muted;
+  const biasColor =
+    lane.directionBias === "long"
+      ? colors.bullish
+      : lane.directionBias === "short"
+        ? colors.bearish
+        : colors.muted;
   ctx.fillStyle = biasColor;
   ctx.beginPath();
   ctx.arc(x + width - 20, y + 20, 5, 0, Math.PI * 2);
@@ -193,14 +210,21 @@ export function drawNarrativeCard(
   drawRoundedRect(ctx, x + 12, barY, barWidth, 4, 2);
   ctx.fill();
   ctx.fillStyle = statusColor;
-  drawRoundedRect(ctx, x + 12, barY, barWidth * Math.max(0, Math.min(1, lane.healthScore / 100)), 4, 2);
+  drawRoundedRect(
+    ctx,
+    x + 12,
+    barY,
+    barWidth * Math.max(0, Math.min(1, lane.healthScore / 100)),
+    4,
+    2,
+  );
   ctx.fill();
 
   // Catalyst dot count (if zoom shows it)
   if (zoomConfig.showCatalystDots) {
     ctx.fillStyle = hexToRgba(colors.accent, 0.7);
-    ctx.font = '10px Inter, system-ui, sans-serif';
-    ctx.textAlign = 'right';
+    ctx.font = "10px Inter, system-ui, sans-serif";
+    ctx.textAlign = "right";
     ctx.fillText(`${lane.instruments.length} inst`, x + width - 12, y + 34);
   }
 
@@ -215,7 +239,7 @@ export function drawRope(
   fromY: number,
   toX: number,
   toY: number,
-  polarity: 'reinforcing' | 'contradicting',
+  polarity: "reinforcing" | "contradicting",
   ropeId: string,
   now: number,
   weight = 0.5,
@@ -236,13 +260,17 @@ export function drawRope(
   ctx.beginPath();
   ctx.moveTo(fromX, fromY);
   ctx.bezierCurveTo(
-    cp1x, catenary.controlPoints[0].y,
-    cp2x, catenary.controlPoints[1].y,
-    toX, toY,
+    cp1x,
+    catenary.controlPoints[0].y,
+    cp2x,
+    catenary.controlPoints[1].y,
+    toX,
+    toY,
   );
 
   // Gradient energy line: source color -> target color
-  const srcColor = fromColor ?? (polarity === 'reinforcing' ? colors.bullish : colors.bearish);
+  const srcColor =
+    fromColor ?? (polarity === "reinforcing" ? colors.bullish : colors.bearish);
   const dstColor = toColor ?? srcColor;
   const gradient = ctx.createLinearGradient(fromX, fromY, toX, toY);
   gradient.addColorStop(0, hexToRgba(srcColor, 0.5));
@@ -264,7 +292,8 @@ export function drawRope(
     catenary.midpoint.x + swingOffset * 0.5,
     catenary.midpoint.y,
     2,
-    0, Math.PI * 2,
+    0,
+    Math.PI * 2,
   );
   ctx.fillStyle = hexToRgba(srcColor, 0.4);
   ctx.fill();
@@ -306,7 +335,11 @@ function drawRoundedRect(
 }
 
 /** Clear the canvas and fill with the current theme background */
-export function clearCanvas(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+export function clearCanvas(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+): void {
   const colors = getThemeColors();
   ctx.fillStyle = colors.bg;
   ctx.fillRect(0, 0, w, h);

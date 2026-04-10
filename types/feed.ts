@@ -1,7 +1,7 @@
 export interface IVIndicator {
   value: number;
-  type: 'Bullish' | 'Bearish' | 'Neutral';
-  classification: 'Cyclical' | 'Countercyclical' | 'Neutral';
+  type: "Bullish" | "Bearish" | "Neutral";
+  classification: "Cyclical" | "Countercyclical" | "Neutral";
 }
 
 export interface FeedItem {
@@ -9,8 +9,18 @@ export interface FeedItem {
   time: Date;
   text: string;
   source: string;
-  type: 'news' | 'market' | 'alert';
+  type: "news" | "market" | "alert";
   iv: IVIndicator;
 }
 
-export type NewsSource = 'FinancialJuice' | 'OSINTSources' | 'DeItaOne' | 'EconomicCalendar' | 'TwitterCli' | 'Bloomberg' | 'Reuters' | 'WSJ' | 'CNBC' | 'FT';
+export type NewsSource =
+  | "FinancialJuice"
+  | "OSINTSources"
+  | "DeItaOne"
+  | "EconomicCalendar"
+  | "TwitterCli"
+  | "Bloomberg"
+  | "Reuters"
+  | "WSJ"
+  | "CNBC"
+  | "FT";

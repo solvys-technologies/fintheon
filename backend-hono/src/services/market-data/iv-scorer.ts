@@ -2,12 +2,16 @@
 // Provides a single 0-10 composite score for the /api/market-data/iv-score endpoint.
 // V3: adds systemic risk overlay (causal chains, historical rhyming, credit signals)
 
-import { fetchVIX, type VIXData } from '../vix-service.js';
-import { calculateIVScoreV2, classifyEventType, type StackedEvent } from '../iv-scoring-v2.js';
-import { getCachedAssessment } from '../systemic/risk-detector.js';
-import { generateIVPrediction } from './iv-prediction.js';
-import type { IVPrediction } from './iv-prediction-types.js';
-import { getRunningAnalysisScore } from '../miroshark/miroshark-reactive.js';
+import { fetchVIX, type VIXData } from "../vix-service.js";
+import {
+  calculateIVScoreV2,
+  classifyEventType,
+  type StackedEvent,
+} from "../iv-scoring-v2.js";
+import { getCachedAssessment } from "../systemic/risk-detector.js";
+import { generateIVPrediction } from "./iv-prediction.js";
+import type { IVPrediction } from "./iv-prediction-types.js";
+import { getRunningAnalysisScore } from "../miroshark/miroshark-reactive.js";
 
 export interface BlendedIVScore {
   /** Composite 0-10 score (70% VIX + 20% catalyst heat + 10% MiroShark + systemic overlay) */
@@ -25,7 +29,7 @@ export interface BlendedIVScore {
     level: number;
     percentChange: number;
     isSpike: boolean;
-    spikeDirection: 'up' | 'down' | 'none';
+    spikeDirection: "up" | "down" | "none";
     staleMinutes: number;
   };
   /** Headline event count used */
@@ -78,7 +82,8 @@ function vixToScore(vix: number): number {
     { vix: 30, score: 9.5 },
     { vix: 50, score: 10 },
   ];
-  if (vix <= breakpoints[0].vix) return breakpoints[0].score * (vix / breakpoints[0].vix);
+  if (vix <= breakpoints[0].vix)
+    return breakpoints[0].score * (vix / breakpoints[0].vix);
   for (let i = 1; i < breakpoints.length; i++) {
     if (vix <= breakpoints[i].vix) {
       const prev = breakpoints[i - 1];
@@ -97,7 +102,7 @@ function vixToScore(vix: number): number {
  */
 export async function calculateBlendedIVScore(
   recentEvents: StackedEvent[],
-  instrument: string = '/ES',
+  instrument: string = "/ES",
   currentPrice?: number,
 ): Promise<BlendedIVScore> {
   const rationale: string[] = [];
@@ -105,7 +110,9 @@ export async function calculateBlendedIVScore(
   // Fetch VIX
   const vixData = await fetchVIX();
   const vixScore = vixToScore(vixData.level);
-  rationale.push(`VIX ${vixData.level.toFixed(1)} → component score ${vixScore.toFixed(1)}/10`);
+  rationale.push(
+    `VIX ${vixData.level.toFixed(1)} → component score ${vixScore.toFixed(1)}/10`,
+  );
 
   // Headline component via V2 engine
   let headlineScore = 0;
@@ -120,17 +127,21 @@ export async function calculateBlendedIVScore(
       isMarketClosed: false,
     });
     headlineScore = v2Result.score;
-    rationale.push(`${recentEvents.length} headline events → component score ${headlineScore.toFixed(1)}/10`);
+    rationale.push(
+      `${recentEvents.length} headline events → component score ${headlineScore.toFixed(1)}/10`,
+    );
   } else {
-    rationale.push('No recent headline events → headline component 0');
+    rationale.push("No recent headline events → headline component 0");
   }
 
   // MiroShark running analysis component
   const mirosharkScore = getRunningAnalysisScore();
   if (mirosharkScore > 0) {
-    rationale.push(`MiroShark running analysis → component score ${mirosharkScore.toFixed(1)}/10`);
+    rationale.push(
+      `MiroShark running analysis → component score ${mirosharkScore.toFixed(1)}/10`,
+    );
   } else {
-    rationale.push('No MiroShark running analysis → component 0');
+    rationale.push("No MiroShark running analysis → component 0");
   }
 
   // Dynamic weights: below VIX 16, keep VIX dominant ("stubborn" regime)
@@ -140,22 +151,27 @@ export async function calculateBlendedIVScore(
   if (vixData.level < 16) {
     effectiveVixWeight = 0.75;
     effectiveHeadlineWeight = 0.15;
-    effectiveMfWeight = 0.10;
+    effectiveMfWeight = 0.1;
   }
 
   // Blend
-  const blended = vixScore * effectiveVixWeight + headlineScore * effectiveHeadlineWeight + mirosharkScore * effectiveMfWeight;
+  const blended =
+    vixScore * effectiveVixWeight +
+    headlineScore * effectiveHeadlineWeight +
+    mirosharkScore * effectiveMfWeight;
   // VIX floor: elevated VIX guarantees minimum score (e.g. VIX 24 → vixScore 9 → floor 7)
   const vixFloor = Math.max(0, vixScore - 2);
   let finalScore = Math.max(blended, vixFloor);
 
   // V3: Apply systemic risk overlay (up to +2.5 pts)
   const systemicAssessment = getCachedAssessment();
-  let systemicData: BlendedIVScore['systemic'];
+  let systemicData: BlendedIVScore["systemic"];
 
   if (systemicAssessment && systemicAssessment.ivScoreOverlay > 0) {
     finalScore += systemicAssessment.ivScoreOverlay;
-    rationale.push(`Systemic overlay: +${systemicAssessment.ivScoreOverlay.toFixed(1)} (${systemicAssessment.rationale.slice(0, 2).join('; ')})`);
+    rationale.push(
+      `Systemic overlay: +${systemicAssessment.ivScoreOverlay.toFixed(1)} (${systemicAssessment.rationale.slice(0, 2).join("; ")})`,
+    );
 
     const topRhyme = systemicAssessment.rhymeMatches[0];
     systemicData = {
@@ -164,26 +180,34 @@ export async function calculateBlendedIVScore(
       activeChains: systemicAssessment.activeChains.length,
       rhymeMatches: systemicAssessment.rhymeMatches.length,
       creditSignals: systemicAssessment.creditSignalCount,
-      topRhyme: topRhyme ? {
-        crisisName: topRhyme.crisisName,
-        crisisYear: topRhyme.crisisYear,
-        matchScore: topRhyme.matchScore,
-        peakVix: topRhyme.peakVix,
-        maxDrawdown: topRhyme.maxDrawdown,
-      } : undefined,
+      topRhyme: topRhyme
+        ? {
+            crisisName: topRhyme.crisisName,
+            crisisYear: topRhyme.crisisYear,
+            matchScore: topRhyme.matchScore,
+            peakVix: topRhyme.peakVix,
+            maxDrawdown: topRhyme.maxDrawdown,
+          }
+        : undefined,
       rationale: systemicAssessment.rationale,
     };
   }
 
   const clamped = Math.min(10, Math.max(0, Number(finalScore.toFixed(1))));
-  rationale.push(`Blended: (${vixScore.toFixed(1)} × ${effectiveVixWeight}) + (${headlineScore.toFixed(1)} × ${effectiveHeadlineWeight}) + (${mirosharkScore.toFixed(1)} × ${effectiveMfWeight}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)}${systemicAssessment?.ivScoreOverlay ? ` + systemic ${systemicAssessment.ivScoreOverlay.toFixed(1)}` : ''} → ${clamped}`);
+  rationale.push(
+    `Blended: (${vixScore.toFixed(1)} × ${effectiveVixWeight}) + (${headlineScore.toFixed(1)} × ${effectiveHeadlineWeight}) + (${mirosharkScore.toFixed(1)} × ${effectiveMfWeight}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)}${systemicAssessment?.ivScoreOverlay ? ` + systemic ${systemicAssessment.ivScoreOverlay.toFixed(1)}` : ""} → ${clamped}`,
+  );
 
   const result: BlendedIVScore = {
     score: clamped,
     vixComponent: Number(vixScore.toFixed(1)),
     headlineComponent: Number(headlineScore.toFixed(1)),
     mirosharkComponent: Number(mirosharkScore.toFixed(1)),
-    weights: { vix: effectiveVixWeight, headlines: effectiveHeadlineWeight, miroshark: effectiveMfWeight },
+    weights: {
+      vix: effectiveVixWeight,
+      headlines: effectiveHeadlineWeight,
+      miroshark: effectiveMfWeight,
+    },
     vix: {
       level: vixData.level,
       percentChange: vixData.percentChange,
@@ -201,7 +225,7 @@ export async function calculateBlendedIVScore(
   try {
     result.prediction = await generateIVPrediction(result);
   } catch (err) {
-    console.error('[IV Scorer] prediction failed:', err);
+    console.error("[IV Scorer] prediction failed:", err);
   }
 
   return result;

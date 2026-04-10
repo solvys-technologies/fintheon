@@ -1,22 +1,28 @@
-import { Diff, TrendingDown } from 'lucide-react';
+import { Diff, TrendingDown } from "lucide-react";
 
 interface SessionCardProps {
   date: string;
   pnl: number;
-  resonanceState: 'Stable' | 'Tilt' | 'Neutral';
+  resonanceState: "Stable" | "Tilt" | "Neutral";
   onClick: () => void;
   isActive: boolean;
 }
 
-export function SessionCard({ date, pnl, resonanceState, onClick, isActive }: SessionCardProps) {
+export function SessionCard({
+  date,
+  pnl,
+  resonanceState,
+  onClick,
+  isActive,
+}: SessionCardProps) {
   const getResonanceColor = (state: string) => {
     switch (state) {
-      case 'Stable':
-        return 'text-emerald-400';
-      case 'Tilt':
-        return 'text-red-500';
+      case "Stable":
+        return "text-emerald-400";
+      case "Tilt":
+        return "text-red-500";
       default:
-        return 'text-gray-400';
+        return "text-gray-400";
     }
   };
 
@@ -25,8 +31,8 @@ export function SessionCard({ date, pnl, resonanceState, onClick, isActive }: Se
       onClick={onClick}
       className={`w-full p-3 rounded-lg border transition-all ${
         isActive
-          ? 'bg-[var(--fintheon-accent)]/10 border-[var(--fintheon-accent)]/30'
-          : 'bg-[var(--fintheon-surface)] border-zinc-900 hover:border-zinc-800'
+          ? "bg-[var(--fintheon-accent)]/10 border-[var(--fintheon-accent)]/30"
+          : "bg-[var(--fintheon-surface)] border-zinc-900 hover:border-zinc-800"
       }`}
     >
       <div className="text-sm font-medium text-white mb-2">{date}</div>
@@ -37,8 +43,10 @@ export function SessionCard({ date, pnl, resonanceState, onClick, isActive }: Se
           ) : (
             <TrendingDown className="w-4 h-4 text-red-500" />
           )}
-          <span className={`text-sm font-semibold ${pnl >= 0 ? 'text-emerald-400' : 'text-red-500'}`}>
-            {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+          <span
+            className={`text-sm font-semibold ${pnl >= 0 ? "text-emerald-400" : "text-red-500"}`}
+          >
+            {pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}
           </span>
         </div>
         <div className={`text-xs ${getResonanceColor(resonanceState)}`}>

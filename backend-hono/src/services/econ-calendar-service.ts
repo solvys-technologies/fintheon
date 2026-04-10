@@ -9,7 +9,7 @@ import {
   updateEconEventActual,
   type EconEventRecord,
   type EconPrintRecord,
-} from './supabase-service.js';
+} from "./supabase-service.js";
 
 // ── Types (preserved for backward compatibility) ────────────────────────────
 
@@ -37,7 +37,7 @@ export interface EconPrint {
   forecast: number | null;
   previous: number | null;
   surprise: number | null;
-  direction: 'beat' | 'miss' | 'inline' | null;
+  direction: "beat" | "miss" | "inline" | null;
   goodBeta: boolean;
   notionUrl: string;
 }
@@ -58,34 +58,49 @@ export async function fetchEconCalendar(opts?: {
 
 // ── Fetch Econ Prints (Historical Actuals) ──────────────────────────────────
 
-export async function fetchEconPrints(eventName?: string): Promise<EconPrint[]> {
+export async function fetchEconPrints(
+  eventName?: string,
+): Promise<EconPrint[]> {
   const records = await readEconPrintRecords({ eventName });
 
   return records.map((r) => {
     const actual = r.actual_value != null ? parseFloat(r.actual_value) : null;
-    const forecast = r.forecast_value != null ? parseFloat(r.forecast_value) : null;
-    const previous = r.previous_value != null ? parseFloat(r.previous_value) : null;
+    const forecast =
+      r.forecast_value != null ? parseFloat(r.forecast_value) : null;
+    const previous =
+      r.previous_value != null ? parseFloat(r.previous_value) : null;
 
-    const surprise = (actual !== null && forecast !== null && forecast !== 0 && !isNaN(actual) && !isNaN(forecast))
-      ? Math.round(((actual - forecast) / Math.abs(forecast)) * 10000) / 100
-      : null;
+    const surprise =
+      actual !== null &&
+      forecast !== null &&
+      forecast !== 0 &&
+      !isNaN(actual) &&
+      !isNaN(forecast)
+        ? Math.round(((actual - forecast) / Math.abs(forecast)) * 10000) / 100
+        : null;
 
-    const direction: EconPrint['direction'] =
-      (actual !== null && forecast !== null && !isNaN(actual) && !isNaN(forecast))
-        ? (actual > forecast ? 'beat' : actual < forecast ? 'miss' : 'inline')
+    const direction: EconPrint["direction"] =
+      actual !== null && forecast !== null && !isNaN(actual) && !isNaN(forecast)
+        ? actual > forecast
+          ? "beat"
+          : actual < forecast
+            ? "miss"
+            : "inline"
         : null;
 
     return {
       id: r.id!,
-      eventName: r.headline.split('|')[0].trim() || eventName || 'Unknown',
-      date: r.printed_at ? new Date(r.printed_at).toISOString().slice(0, 10) : '',
+      eventName: r.headline.split("|")[0].trim() || eventName || "Unknown",
+      date: r.printed_at
+        ? new Date(r.printed_at).toISOString().slice(0, 10)
+        : "",
       actual: isNaN(actual!) ? null : actual,
       forecast: isNaN(forecast!) ? null : forecast,
       previous: isNaN(previous!) ? null : previous,
       surprise,
       direction,
       goodBeta: false,
-      notionUrl: '',
+      notionUrl: "",
     };
   });
 }
@@ -107,14 +122,14 @@ export async function writeEconPrint(print: {
   });
 
   if (!result) return null;
-  return { id: result.id!, url: '' };
+  return { id: result.id!, url: "" };
 }
 
 // ── Update actual on an existing Economic Events row ────────────────────────
 
 export async function updateEventActual(
   eventId: string,
-  actual: string
+  actual: string,
 ): Promise<boolean> {
   return updateEconEventActual(eventId, actual);
 }
@@ -122,18 +137,18 @@ export async function updateEventActual(
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function impactToImportance(impact?: string): 1 | 2 | 3 {
-  if (impact === 'high') return 3;
-  if (impact === 'medium') return 2;
+  if (impact === "high") return 3;
+  if (impact === "medium") return 2;
   return 1;
 }
 
 function impactToEconEvent(r: EconEventRecord): EconEvent {
   return {
     id: r.id!,
-    name: r.name || 'Untitled Event',
+    name: r.name || "Untitled Event",
     date: r.date ?? undefined,
     time: r.time ?? undefined,
-    country: 'US',
+    country: "US",
     importance: impactToImportance(r.impact),
     forecast: r.forecast ?? undefined,
     previous: r.previous ?? undefined,
@@ -141,6 +156,6 @@ function impactToEconEvent(r: EconEventRecord): EconEvent {
     category: undefined,
     definition: r.detail ?? undefined,
     aiTicker: undefined,
-    notionUrl: '',
+    notionUrl: "",
   };
 }

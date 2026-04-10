@@ -1,18 +1,18 @@
 // [claude-code 2026-03-19] T1: Development event types for Consilium Intelligence Layer
 
-import type { BoardroomAgent } from './boardroom.js';
+import type { BoardroomAgent } from "./boardroom.js";
 
 export type DevelopmentCategory =
-  | 'risk_alert'
-  | 'trade_idea'
-  | 'regime_shift'
-  | 'standup'
-  | 'briefing'
-  | 'insight'
-  | 'market_event'
-  | 'huddle';
+  | "risk_alert"
+  | "trade_idea"
+  | "regime_shift"
+  | "standup"
+  | "briefing"
+  | "insight"
+  | "market_event"
+  | "huddle";
 
-export type DevelopmentSeverity = 'info' | 'warning' | 'critical';
+export type DevelopmentSeverity = "info" | "warning" | "critical";
 
 export interface DevelopmentEvent {
   id: string;

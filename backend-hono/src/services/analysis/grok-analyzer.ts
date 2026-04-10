@@ -4,29 +4,34 @@
  * Day 16 - Phase 5 Implementation
  */
 
-import { invokeAgent } from '../strands/index.js'
-import { parseHeadline } from '../headline-parser.js'
-import { detectHotPrint } from '../hot-print-detector.js'
-import type { ParsedHeadline, HotPrint, RawArticle, NewsSource } from '../../types/news-analysis.js'
+import { invokeAgent } from "../strands/index.js";
+import { parseHeadline } from "../headline-parser.js";
+import { detectHotPrint } from "../hot-print-detector.js";
+import type {
+  ParsedHeadline,
+  HotPrint,
+  RawArticle,
+  NewsSource,
+} from "../../types/news-analysis.js";
 
-const isDev = process.env.NODE_ENV !== 'production'
-const MAX_BATCH_SIZE = 10
-const TIMEOUT_MS = 15_000
+const isDev = process.env.NODE_ENV !== "production";
+const MAX_BATCH_SIZE = 10;
+const TIMEOUT_MS = 15_000;
 
 export interface AnalyzedHeadline {
-  raw: string
-  source: NewsSource
-  parsed: ParsedHeadline
-  hotPrint: HotPrint | null
-  confidence: number
-  usedAi: boolean
-  latencyMs: number
+  raw: string;
+  source: NewsSource;
+  parsed: ParsedHeadline;
+  hotPrint: HotPrint | null;
+  confidence: number;
+  usedAi: boolean;
+  latencyMs: number;
 }
 
 export interface BatchAnalysisResult {
-  items: AnalyzedHeadline[]
-  failedCount: number
-  totalLatencyMs: number
+  items: AnalyzedHeadline[];
+  failedCount: number;
+  totalLatencyMs: number;
 }
 
 /**
@@ -35,25 +40,27 @@ export interface BatchAnalysisResult {
  */
 export async function analyzeHeadline(
   headline: string,
-  source: NewsSource = 'Custom'
+  source: NewsSource = "Custom",
 ): Promise<AnalyzedHeadline> {
-  const startTime = Date.now()
-  
+  const startTime = Date.now();
+
   // Try deterministic parsing first
-  const { parsed, isConfident } = parseHeadline(headline, { source })
-  
+  const { parsed, isConfident } = parseHeadline(headline, { source });
+
   // Check for hot print using deterministic rules
-  let hotPrint: HotPrint | null = null
-  if (parsed.numbers?.actual !== undefined && 
-      parsed.numbers?.forecast !== undefined && 
-      parsed.eventType) {
+  let hotPrint: HotPrint | null = null;
+  if (
+    parsed.numbers?.actual !== undefined &&
+    parsed.numbers?.forecast !== undefined &&
+    parsed.eventType
+  ) {
     hotPrint = detectHotPrint({
       type: parsed.eventType,
       actual: parsed.numbers.actual,
       forecast: parsed.numbers.forecast,
       previous: parsed.numbers.previous,
       unit: parsed.numbers.unit,
-    })
+    });
   }
 
   // If confident in deterministic parse, return early
@@ -66,13 +73,13 @@ export async function analyzeHeadline(
       confidence: parsed.confidence,
       usedAi: false,
       latencyMs: Date.now() - startTime,
-    }
+    };
   }
 
   // Use AI for uncertain headlines
   try {
-    const aiParsed = await analyzeWithAi(headline, source)
-    
+    const aiParsed = await analyzeWithAi(headline, source);
+
     // Merge AI results with deterministic data
     const merged: ParsedHeadline = {
       ...parsed,
@@ -81,19 +88,22 @@ export async function analyzeHeadline(
       symbols: aiParsed.symbols?.length ? aiParsed.symbols : parsed.symbols,
       // Use higher confidence
       confidence: Math.max(parsed.confidence, aiParsed.confidence ?? 0),
-    }
+    };
 
     // Re-check for hot print with AI-enhanced data
-    if (!hotPrint && merged.numbers?.actual !== undefined && 
-        merged.numbers?.forecast !== undefined && 
-        merged.eventType) {
+    if (
+      !hotPrint &&
+      merged.numbers?.actual !== undefined &&
+      merged.numbers?.forecast !== undefined &&
+      merged.eventType
+    ) {
       hotPrint = detectHotPrint({
         type: merged.eventType,
         actual: merged.numbers.actual,
         forecast: merged.numbers.forecast,
         previous: merged.numbers.previous,
         unit: merged.numbers.unit,
-      })
+      });
     }
 
     return {
@@ -104,10 +114,10 @@ export async function analyzeHeadline(
       confidence: merged.confidence,
       usedAi: true,
       latencyMs: Date.now() - startTime,
-    }
+    };
   } catch (error) {
     // AI failed, return deterministic result
-    console.error('[GrokAnalyzer] AI analysis failed:', error)
+    console.error("[GrokAnalyzer] AI analysis failed:", error);
     return {
       raw: headline,
       source,
@@ -116,7 +126,7 @@ export async function analyzeHeadline(
       confidence: parsed.confidence,
       usedAi: false,
       latencyMs: Date.now() - startTime,
-    }
+    };
   }
 }
 
@@ -125,21 +135,22 @@ export async function analyzeHeadline(
  */
 async function analyzeWithAi(
   headline: string,
-  source: NewsSource
+  source: NewsSource,
 ): Promise<Partial<ParsedHeadline>> {
-  const prompt = buildAnalysisPrompt(headline, source)
+  const prompt = buildAnalysisPrompt(headline, source);
 
   try {
     const { text } = await invokeAgent({
-      systemPrompt: 'You are a financial news parser. Extract structured data from headlines. Respond only with valid JSON.',
+      systemPrompt:
+        "You are a financial news parser. Extract structured data from headlines. Respond only with valid JSON.",
       userPrompt: prompt,
       model: { temperature: 0.1, maxTokens: 512 },
-      provider: 'grok',
-    })
+      provider: "grok",
+    });
 
-    return parseAiResponse(text)
+    return parseAiResponse(text);
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 
@@ -168,7 +179,7 @@ Return JSON with these fields:
   "marketReaction": {"direction": "up|down|mixed", "intensity": "mild|moderate|severe"} or null,
   "numbers": {"actual": number, "forecast": number, "previous": number, "unit": string} or null,
   "confidence": 0.0-1.0
-}`
+}`;
 }
 
 /**
@@ -177,27 +188,29 @@ Return JSON with these fields:
 function parseAiResponse(text: string): Partial<ParsedHeadline> {
   try {
     // Clean up potential markdown formatting
-    const cleaned = text.replace(/```json\n?|\n?```/g, '').trim()
-    const parsed = JSON.parse(cleaned)
-    
+    const cleaned = text.replace(/```json\n?|\n?```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+
     return {
       entity: parsed.entity,
       action: parsed.action,
       target: parsed.target,
-      magnitude: typeof parsed.magnitude === 'number' ? parsed.magnitude : undefined,
+      magnitude:
+        typeof parsed.magnitude === "number" ? parsed.magnitude : undefined,
       unit: parsed.unit,
       symbols: Array.isArray(parsed.symbols) ? parsed.symbols : [],
       isBreaking: Boolean(parsed.isBreaking),
-      urgency: parsed.urgency ?? 'normal',
+      urgency: parsed.urgency ?? "normal",
       direction: parsed.direction,
       eventType: parsed.eventType,
       tags: Array.isArray(parsed.tags) ? parsed.tags : [],
       marketReaction: parsed.marketReaction,
       numbers: parsed.numbers,
-      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.5,
-    }
+      confidence:
+        typeof parsed.confidence === "number" ? parsed.confidence : 0.5,
+    };
   } catch {
-    return { confidence: 0.4 }
+    return { confidence: 0.4 };
   }
 }
 
@@ -205,35 +218,35 @@ function parseAiResponse(text: string): Partial<ParsedHeadline> {
  * Analyze a batch of articles
  */
 export async function analyzeNewsBatch(
-  articles: RawArticle[]
+  articles: RawArticle[],
 ): Promise<BatchAnalysisResult> {
-  const startTime = Date.now()
-  const items: AnalyzedHeadline[] = []
-  let failedCount = 0
+  const startTime = Date.now();
+  const items: AnalyzedHeadline[] = [];
+  let failedCount = 0;
 
   // Process in chunks
-  const chunks = chunkArray(articles, MAX_BATCH_SIZE)
-  
+  const chunks = chunkArray(articles, MAX_BATCH_SIZE);
+
   for (const chunk of chunks) {
     const promises = chunk.map(async (article) => {
       try {
-        const headline = article.headline ?? article.text ?? ''
-        return await analyzeHeadline(headline, article.source)
+        const headline = article.headline ?? article.text ?? "";
+        return await analyzeHeadline(headline, article.source);
       } catch {
-        failedCount++
-        return null
+        failedCount++;
+        return null;
       }
-    })
+    });
 
-    const results = await Promise.all(promises)
-    items.push(...results.filter((r): r is AnalyzedHeadline => r !== null))
+    const results = await Promise.all(promises);
+    items.push(...results.filter((r): r is AnalyzedHeadline => r !== null));
   }
 
   return {
     items,
     failedCount,
     totalLatencyMs: Date.now() - startTime,
-  }
+  };
 }
 
 /**
@@ -246,36 +259,39 @@ export function isBreakingNews(headline: string): boolean {
     /^ALERT[:\s-]/i,
     /^URGENT[:\s-]/i,
     /^FLASH[:\s-]/i,
-  ]
-  return breakingPatterns.some(p => p.test(headline))
+  ];
+  return breakingPatterns.some((p) => p.test(headline));
 }
 
 /**
  * Extract symbols from headline
  */
 export function extractSymbols(headline: string): string[] {
-  const symbolRegex = /\$[A-Z]{1,5}\b/g
-  const matches = headline.match(symbolRegex) ?? []
-  return [...new Set(matches.map(s => s.replace('$', '').toUpperCase()))]
+  const symbolRegex = /\$[A-Z]{1,5}\b/g;
+  const matches = headline.match(symbolRegex) ?? [];
+  return [...new Set(matches.map((s) => s.replace("$", "").toUpperCase()))];
 }
 
 /**
  * Utility: chunk array into smaller pieces
  */
 function chunkArray<T>(items: T[], size: number): T[][] {
-  const result: T[][] = []
+  const result: T[][] = [];
   for (let i = 0; i < items.length; i += size) {
-    result.push(items.slice(i, i + size))
+    result.push(items.slice(i, i + size));
   }
-  return result
+  return result;
 }
 
 /**
  * Mock analysis for dev mode
  */
-export function mockAnalysis(headline: string, source: NewsSource): AnalyzedHeadline {
-  const { parsed, isConfident } = parseHeadline(headline, { source })
-  
+export function mockAnalysis(
+  headline: string,
+  source: NewsSource,
+): AnalyzedHeadline {
+  const { parsed, isConfident } = parseHeadline(headline, { source });
+
   return {
     raw: headline,
     source,
@@ -284,5 +300,5 @@ export function mockAnalysis(headline: string, source: NewsSource): AnalyzedHead
     confidence: parsed.confidence,
     usedAi: false,
     latencyMs: 10,
-  }
+  };
 }

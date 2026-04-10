@@ -1,36 +1,49 @@
 // [claude-code 2026-03-30] S10: Briefing dropdown selector + countdown timer
 // [claude-code 2026-03-12] Made scrollable, removed line-clamp, renders markdown-style formatting
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { FileText, RefreshCw, Sparkles, ChevronDown, Clock } from 'lucide-react';
-import { useBackend } from '../../lib/backend';
-
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  FileText,
+  RefreshCw,
+  Sparkles,
+  ChevronDown,
+  Clock,
+} from "lucide-react";
+import { useBackend } from "../../lib/backend";
 
 /** Simple markdown-ish renderer for brief text — bolds, bullets, headers */
 function BriefContent({ text }: { text: string }) {
-  const lines = text.split('\n');
+  const lines = text.split("\n");
   return (
     <div className="space-y-1">
       {lines.map((line, i) => {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} className="h-1" />;
 
-        if (trimmed.startsWith('**') && trimmed.includes(':**')) {
-          const [header, ...rest] = trimmed.split(':**');
-          const headerText = header.replace(/\*\*/g, '');
-          const body = rest.join(':**').replace(/\*\*/g, '');
+        if (trimmed.startsWith("**") && trimmed.includes(":**")) {
+          const [header, ...rest] = trimmed.split(":**");
+          const headerText = header.replace(/\*\*/g, "");
+          const body = rest.join(":**").replace(/\*\*/g, "");
           return (
             <div key={i}>
-              <span className="text-[10px] font-bold text-[var(--fintheon-accent)]">{headerText}:</span>
-              {body && <span className="text-[10px] text-zinc-400 ml-1">{body}</span>}
+              <span className="text-[10px] font-bold text-[var(--fintheon-accent)]">
+                {headerText}:
+              </span>
+              {body && (
+                <span className="text-[10px] text-zinc-400 ml-1">{body}</span>
+              )}
             </div>
           );
         }
 
-        if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+        if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
           return (
             <div key={i} className="flex gap-1.5 pl-1">
-              <span className="text-[10px] text-[var(--fintheon-accent)]/60 shrink-0">-</span>
-              <span className="text-[10px] leading-relaxed text-zinc-400">{renderInlineBold(trimmed.slice(2))}</span>
+              <span className="text-[10px] text-[var(--fintheon-accent)]/60 shrink-0">
+                -
+              </span>
+              <span className="text-[10px] leading-relaxed text-zinc-400">
+                {renderInlineBold(trimmed.slice(2))}
+              </span>
             </div>
           );
         }
@@ -40,8 +53,12 @@ function BriefContent({ text }: { text: string }) {
           if (match) {
             return (
               <div key={i} className="flex gap-1.5 pl-1">
-                <span className="text-[10px] text-zinc-600 shrink-0">{match[1]}.</span>
-                <span className="text-[10px] leading-relaxed text-zinc-400">{renderInlineBold(match[2])}</span>
+                <span className="text-[10px] text-zinc-600 shrink-0">
+                  {match[1]}.
+                </span>
+                <span className="text-[10px] leading-relaxed text-zinc-400">
+                  {renderInlineBold(match[2])}
+                </span>
               </div>
             );
           }
@@ -60,17 +77,21 @@ function BriefContent({ text }: { text: string }) {
 function renderInlineBold(text: string): (string | React.ReactElement)[] {
   const parts = text.split(/\*\*(.*?)\*\*/g);
   return parts.map((part, i) =>
-    i % 2 === 1
-      ? <span key={i} className="font-semibold text-zinc-300">{part}</span>
-      : part
+    i % 2 === 1 ? (
+      <span key={i} className="font-semibold text-zinc-300">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
   );
 }
 
 // Brief schedule (ET hours) — used for countdown
 const BRIEF_SCHEDULE = [
-  { type: 'MDB', label: 'Dawn Dispatch', hour: 6, minute: 30 },
-  { type: 'ADB', label: 'Midday Dispatch', hour: 11, minute: 0 },
-  { type: 'PMDB', label: 'Dusk Dispatch', hour: 17, minute: 15 },
+  { type: "MDB", label: "Dawn Dispatch", hour: 6, minute: 30 },
+  { type: "ADB", label: "Midday Dispatch", hour: 11, minute: 0 },
+  { type: "PMDB", label: "Dusk Dispatch", hour: 17, minute: 15 },
 ] as const;
 
 interface TodayBrief {
@@ -83,7 +104,7 @@ interface TodayBrief {
 
 function getNextBriefCountdown(): { label: string; hoursAway: number } | null {
   const now = new Date();
-  const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const etStr = now.toLocaleString("en-US", { timeZone: "America/New_York" });
   const et = new Date(etStr);
   const etMinutes = et.getHours() * 60 + et.getMinutes();
   const day = et.getDay();
@@ -92,7 +113,10 @@ function getNextBriefCountdown(): { label: string; hoursAway: number } | null {
   if (day === 0 || day === 6) {
     // Next is Monday MDB
     const daysUntilMon = day === 0 ? 1 : 2;
-    return { label: 'Dawn Dispatch (Mon)', hoursAway: daysUntilMon * 24 - et.getHours() + 6 };
+    return {
+      label: "Dawn Dispatch (Mon)",
+      hoursAway: daysUntilMon * 24 - et.getHours() + 6,
+    };
   }
 
   for (const sched of BRIEF_SCHEDULE) {
@@ -104,7 +128,10 @@ function getNextBriefCountdown(): { label: string; hoursAway: number } | null {
   }
 
   // All today's briefs have passed — next is tomorrow's MDB
-  return { label: 'Dawn Dispatch', hoursAway: Math.ceil((24 * 60 - etMinutes + 6 * 60 + 30) / 60) };
+  return {
+    label: "Dawn Dispatch",
+    hoursAway: Math.ceil((24 * 60 - etMinutes + 6 * 60 + 30) / 60),
+  };
 }
 
 export function BriefMiniWidget() {
@@ -117,7 +144,7 @@ export function BriefMiniWidget() {
   const [generating, setGenerating] = useState(false);
   const [countdown, setCountdown] = useState(getNextBriefCountdown);
 
-  const API_BASE = (backend as any)?.baseUrl || 'http://localhost:8080';
+  const API_BASE = (backend as any)?.baseUrl || "http://localhost:8080";
 
   const fetchTodayBriefs = useCallback(async () => {
     try {
@@ -133,18 +160,25 @@ export function BriefMiniWidget() {
       // Try legacy endpoint
       try {
         const res = await backend.notion.getMdbBrief();
-        const text = res.items?.[0]?.detail ?? '';
+        const text = res.items?.[0]?.detail ?? "";
         if (text) {
-          setTodayBriefs([{
-            id: 'latest',
-            type: res.briefType ?? 'MDB',
-            label: res.briefType === 'MDB' ? 'Dawn Dispatch' : res.briefType ?? 'Brief',
-            content: text,
-            createdAt: new Date().toISOString(),
-          }]);
-          setSelectedId('latest');
+          setTodayBriefs([
+            {
+              id: "latest",
+              type: res.briefType ?? "MDB",
+              label:
+                res.briefType === "MDB"
+                  ? "Dawn Dispatch"
+                  : (res.briefType ?? "Brief"),
+              content: text,
+              createdAt: new Date().toISOString(),
+            },
+          ]);
+          setSelectedId("latest");
         }
-      } catch { /* silent */ }
+      } catch {
+        /* silent */
+      }
     } finally {
       setLoaded(true);
     }
@@ -152,19 +186,25 @@ export function BriefMiniWidget() {
 
   useEffect(() => {
     fetchTodayBriefs();
-    const interval = setInterval(() => { fetchTodayBriefs(); }, 60_000);
+    const interval = setInterval(() => {
+      fetchTodayBriefs();
+    }, 60_000);
     return () => clearInterval(interval);
   }, [fetchTodayBriefs]);
 
   // Update countdown every minute
   useEffect(() => {
-    const interval = setInterval(() => setCountdown(getNextBriefCountdown()), 60_000);
+    const interval = setInterval(
+      () => setCountdown(getNextBriefCountdown()),
+      60_000,
+    );
     return () => clearInterval(interval);
   }, []);
 
   const activeBrief = useMemo(
-    () => todayBriefs.find(b => b.id === selectedId) ?? todayBriefs[0] ?? null,
-    [todayBriefs, selectedId]
+    () =>
+      todayBriefs.find((b) => b.id === selectedId) ?? todayBriefs[0] ?? null,
+    [todayBriefs, selectedId],
   );
 
   const handleRefresh = async () => {
@@ -176,28 +216,37 @@ export function BriefMiniWidget() {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const res = await fetch(`${API_BASE}/api/data/brief/generate`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/data/brief/generate`, {
+        method: "POST",
+      });
       if (res.ok) {
         // Refetch to get the new brief
         await fetchTodayBriefs();
       }
-    } catch { /* silent */ } finally {
+    } catch {
+      /* silent */
+    } finally {
       setGenerating(false);
     }
   };
 
   const formatTime = (iso: string) => {
     try {
-      return new Date(iso).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        timeZone: 'America/New_York',
+      return new Date(iso).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "America/New_York",
       });
-    } catch { return ''; }
+    } catch {
+      return "";
+    }
   };
 
   return (
-    <div className="flex flex-col" style={{ minHeight: '320px', resize: 'vertical', overflow: 'auto' }}>
+    <div
+      className="flex flex-col"
+      style={{ minHeight: "320px", resize: "vertical", overflow: "auto" }}
+    >
       {/* Header with dropdown */}
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 relative">
@@ -209,26 +258,35 @@ export function BriefMiniWidget() {
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-1 text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--fintheon-accent)] hover:text-[var(--fintheon-text)] transition-colors"
           >
-            {activeBrief?.label ?? 'Briefings'}
-            {todayBriefs.length > 1 && <ChevronDown className={`w-2.5 h-2.5 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />}
+            {activeBrief?.label ?? "Briefings"}
+            {todayBriefs.length > 1 && (
+              <ChevronDown
+                className={`w-2.5 h-2.5 transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
+              />
+            )}
           </button>
 
           {/* Dropdown menu */}
           {dropdownOpen && todayBriefs.length > 1 && (
             <div className="absolute top-full left-0 mt-1 z-50 min-w-[180px] py-1 bg-[#0a0a07] border border-zinc-800">
-              {todayBriefs.map(b => (
+              {todayBriefs.map((b) => (
                 <button
                   key={b.id}
                   type="button"
-                  onClick={() => { setSelectedId(b.id); setDropdownOpen(false); }}
+                  onClick={() => {
+                    setSelectedId(b.id);
+                    setDropdownOpen(false);
+                  }}
                   className={`w-full flex items-center justify-between px-3 py-1.5 text-left text-[10px] transition-colors ${
                     b.id === selectedId
-                      ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/5'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/5"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
                   }`}
                 >
                   <span className="font-semibold">{b.label}</span>
-                  <span className="text-[9px] text-zinc-600 ml-2">{formatTime(b.createdAt)}</span>
+                  <span className="text-[9px] text-zinc-600 ml-2">
+                    {formatTime(b.createdAt)}
+                  </span>
                 </button>
               ))}
             </div>
@@ -243,7 +301,9 @@ export function BriefMiniWidget() {
             className="p-0.5 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
             title="AI Generate brief"
           >
-            <Sparkles className={`w-2.5 h-2.5 ${generating ? 'animate-pulse' : ''}`} />
+            <Sparkles
+              className={`w-2.5 h-2.5 ${generating ? "animate-pulse" : ""}`}
+            />
           </button>
           <button
             type="button"
@@ -252,14 +312,19 @@ export function BriefMiniWidget() {
             className="p-0.5 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
             title="Refresh brief"
           >
-            <RefreshCw className={`w-2.5 h-2.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-2.5 h-2.5 ${refreshing ? "animate-spin" : ""}`}
+            />
           </button>
         </div>
       </div>
 
       {/* Close dropdown on outside click */}
       {dropdownOpen && (
-        <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setDropdownOpen(false)}
+        />
       )}
 
       {/* Brief content */}
@@ -278,7 +343,10 @@ export function BriefMiniWidget() {
               disabled={generating}
               className="flex items-center gap-1 px-2 py-1 text-[9px] font-semibold text-[var(--fintheon-accent)] hover:text-[var(--fintheon-text)] transition-colors disabled:opacity-40"
             >
-              <Sparkles className={`w-3 h-3 ${generating ? 'animate-pulse' : ''}`} /> Generate Brief
+              <Sparkles
+                className={`w-3 h-3 ${generating ? "animate-pulse" : ""}`}
+              />{" "}
+              Generate Brief
             </button>
           </div>
         )}
@@ -289,8 +357,10 @@ export function BriefMiniWidget() {
         <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-zinc-800/50">
           <Clock className="w-2.5 h-2.5 text-zinc-600" />
           <span className="text-[9px] text-zinc-600">
-            Next: <span className="text-zinc-500">{countdown.label}</span>
-            {' '}in <span className="text-[var(--fintheon-accent)]/70 font-medium">{countdown.hoursAway}h</span>
+            Next: <span className="text-zinc-500">{countdown.label}</span> in{" "}
+            <span className="text-[var(--fintheon-accent)]/70 font-medium">
+              {countdown.hoursAway}h
+            </span>
           </span>
         </div>
       )}

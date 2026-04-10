@@ -1,26 +1,28 @@
 // S13-T3: Compact call button for TopHeader toolbar
-import { Phone, PhoneOff, Loader2 } from 'lucide-react';
-import { useLiveKitRoom } from '../../hooks/useLiveKitRoom';
+import { Phone, PhoneOff, Loader2 } from "lucide-react";
+import { useLiveKitRoom } from "../../hooks/useLiveKitRoom";
 
 export function CallButton() {
-  const { callState, participants, connect, disconnect, error } = useLiveKitRoom();
+  const { callState, participants, connect, disconnect, error } =
+    useLiveKitRoom();
 
-  const isConnected = callState === 'connected';
-  const isConnecting = callState === 'connecting';
-  const isError = callState === 'error';
-  const isDisabled = isError && error?.includes('not configured');
+  const isConnected = callState === "connected";
+  const isConnecting = callState === "connecting";
+  const isError = callState === "error";
+  const isDisabled = isError && error?.includes("not configured");
 
   const handleClick = () => {
     if (isConnected) disconnect();
-    else if (callState === 'idle' || isError) connect();
+    else if (callState === "idle" || isError) connect();
   };
 
   const getTitle = () => {
-    if (isDisabled) return 'Voice calls not configured — add LiveKit keys in .env';
-    if (isConnecting) return 'Connecting...';
+    if (isDisabled)
+      return "Voice calls not configured — add LiveKit keys in .env";
+    if (isConnecting) return "Connecting...";
     if (isConnected) return `Leave Call (${participants.length} in room)`;
     if (isError) return `Error: ${error}`;
-    return 'Join Call';
+    return "Join Call";
   };
 
   return (
@@ -29,10 +31,10 @@ export function CallButton() {
       disabled={isConnecting || isDisabled}
       className={`relative p-2 rounded-lg text-xs font-medium transition-colors ${
         isConnected
-          ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25'
+          ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
           : isDisabled
-            ? 'bg-[var(--fintheon-bg)] border border-zinc-700/30 text-zinc-600 cursor-not-allowed'
-            : 'bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/50'
+            ? "bg-[var(--fintheon-bg)] border border-zinc-700/30 text-zinc-600 cursor-not-allowed"
+            : "bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/50"
       } disabled:opacity-50`}
       title={getTitle()}
     >

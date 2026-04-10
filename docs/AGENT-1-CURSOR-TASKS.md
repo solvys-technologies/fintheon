@@ -1,13 +1,11 @@
 # Agent 1 Tasks: Cursor (Backend Infrastructure & Trading Logic)
 
-
 ## Non-Negotiable Scope & UI Directives (Chief Override)
 
 - **Pulse-only scope**: All implementation in this plan targets **Pulse** exclusively. **Do not implement anything in ClawSpace** (deprecated).
 - **UI source standard**: Any new or updated chat UI elements/components must be sourced from **21st.dev** patterns/components first, then adapted to Pulse.
 - **No blank assistant bubble while thinking**: When the agent is working/thinking and not yet streaming tokens, do **not** render an empty assistant message bubble. Only render assistant bubble once stream/output begins.
 - **Sticky bottom chat behavior**: Chat view must stay pinned to the bottom during active conversation/streaming (with robust auto-scroll + bottom-lock behavior) unless the user intentionally scrolls up.
-
 
 > **Agent**: Cursor
 > **Focus**: Backend infrastructure, trading strategies, ProjectX integration
@@ -18,6 +16,7 @@
 ## Week 1: Foundation & Critical Fixes
 
 ### Priority 1: Fix Authentication (401 Errors)
+
 - [ ] Debug `backend-hono/src/middleware/auth.ts` Clerk JWT verification
 - [ ] Verify `CLERK_SECRET_KEY` in Fly.io matches Clerk dashboard
 - [ ] Add proper error logging to identify exact JWT validation failure
@@ -27,6 +26,7 @@
 - [ ] Verify CORS headers include Authorization
 
 ### Priority 2: Stabilize RiskFlow Feed
+
 - [ ] Fix mock data generator to limit to 50 items max
 - [ ] Implement pagination in `/api/riskflow/feed` endpoint
   - Add `limit` parameter (default: 50, max: 100)
@@ -43,7 +43,9 @@
 - [ ] Test with real X API integration
 
 ### Priority 3: Database Schema Preparation
+
 - [ ] Create migration for agent system tables:
+
   ```sql
   -- Agent reports storage
   CREATE TABLE agent_reports (
@@ -94,6 +96,7 @@
 ## Week 2: Trading Strategy Engine Implementation
 
 ### Implement Core Trading Strategies
+
 - [ ] Create `backend-hono/src/services/strategies/` directory structure
 - [ ] Implement strategy base class:
   ```typescript
@@ -106,6 +109,7 @@
   ```
 
 ### Strategy 1: 40/40 Club (Bread & Butter)
+
 - [ ] Create `forty-forty-club.ts` strategy implementation
 - [ ] Implement opening range break detection (5/10 min candles)
 - [ ] Add ES/NQ correlation check (both must break)
@@ -118,6 +122,7 @@
 - [ ] Set target logic (40pts or 3RR, whichever closer)
 
 ### Strategy 2: Print Charged Ripper
+
 - [ ] Create `print-charged-ripper.ts` strategy
 - [ ] Implement hot economic print detection
 - [ ] Add Fibonacci retracement calculator
@@ -126,6 +131,7 @@
 - [ ] Set entry on 21 MA (1000T)
 
 ### Strategy 3: Morning Flush
+
 - [ ] Create `morning-flush.ts` strategy
 - [ ] Define time windows (8:00-9:20, 11:30-1:30)
 - [ ] Implement exhaustion detection (15-20min parabolic)
@@ -135,6 +141,7 @@
 - [ ] Set max trade duration (1hr 15min)
 
 ### Strategy 4: Lunch/Power Hour Flush
+
 - [ ] Create `lunch-power-flush.ts` strategy
 - [ ] Define time windows (11:00/12:03, 2:40-4:00)
 - [ ] Implement overbought/oversold detection
@@ -143,6 +150,7 @@
 - [ ] Set entry on 20 MA (1000T)
 
 ### Strategy 5: 22 VIX Fixer
+
 - [ ] Create `vix-fixer.ts` strategy
 - [ ] Implement VIX panic zone detection (22+)
 - [ ] Add "large drop not traded" logic (track user trades)
@@ -154,6 +162,7 @@
 ## Week 3: Antilag Detection System
 
 ### Core Antilag Implementation
+
 - [ ] Create `backend-hono/src/services/antilag-detector.ts`
 - [ ] Implement tick surge detection algorithm:
   ```typescript
@@ -173,6 +182,7 @@
 - [ ] Add configurable thresholds per instrument pair
 
 ### Real-time Tick Processing
+
 - [ ] Integrate with ProjectX SignalR for tick data
 - [ ] Create tick aggregation service (1000 tick bars)
 - [ ] Implement tick velocity calculator
@@ -184,6 +194,7 @@
 ## Week 4: Autopilot Proposal System
 
 ### Proposal Generation Engine
+
 - [ ] Create `backend-hono/src/services/autopilot/proposal-generator.ts`
 - [ ] Implement proposal creation from strategy signals
 - [ ] Add position sizing calculator based on:
@@ -195,6 +206,7 @@
 - [ ] Add proposal modification support
 
 ### Proposal API Endpoints
+
 - [ ] Implement `POST /api/autopilot/propose`
 - [ ] Implement `GET /api/autopilot/proposals`
 - [ ] Implement `GET /api/autopilot/proposals/:id`
@@ -203,6 +215,7 @@
 - [ ] Add WebSocket support for real-time proposal updates
 
 ### Semi-Autopilot Mode
+
 - [ ] Create instrument watchlist management:
   ```typescript
   interface WatchlistConfig {
@@ -222,6 +235,7 @@
 ## Week 5: ProjectX Integration & Execution
 
 ### Order Execution System
+
 - [ ] Update `backend/projectx/projectx_client.ts` for order placement
 - [ ] Implement bracket order creation:
   ```typescript
@@ -236,6 +250,7 @@
 - [ ] Create execution retry mechanism
 
 ### ProjectX API Compliance
+
 - [ ] Verify all endpoint URLs match documentation exactly
 - [ ] Ensure field names are case-sensitive correct
 - [ ] Use numeric enum values (not strings)
@@ -243,6 +258,7 @@
 - [ ] Implement proper error handling for all status codes
 
 ### Position Management
+
 - [ ] Create position tracking service
 - [ ] Implement P&L calculation
 - [ ] Add position modification support
@@ -254,6 +270,7 @@
 ## Week 6: Risk Validation Framework
 
 ### Risk Rules Engine
+
 - [ ] Create `backend-hono/src/services/risk/risk-validator.ts`
 - [ ] Implement hard risk checks:
   - Daily loss limit validation
@@ -265,6 +282,7 @@
 - [ ] Create breaking news pause detection (5-10 min)
 
 ### Risk Monitoring
+
 - [ ] Implement real-time P&L tracking
 - [ ] Add drawdown monitoring
 - [ ] Create risk exposure dashboard data
@@ -279,6 +297,7 @@
 ## Week 7: Performance & Optimization
 
 ### Backend Performance
+
 - [ ] Add Redis caching for:
   - Market data (5 second TTL)
   - Strategy evaluations (1 second TTL)
@@ -289,6 +308,7 @@
 - [ ] Profile and optimize hot code paths
 
 ### Error Handling & Recovery
+
 - [ ] Implement comprehensive error handling
 - [ ] Add circuit breakers for external APIs
 - [ ] Create fallback mechanisms for:
@@ -303,6 +323,7 @@
 ## Week 8: Testing & Production Deployment
 
 ### Comprehensive Testing
+
 - [ ] Unit tests for all strategy implementations
 - [ ] Integration tests for ProjectX API
 - [ ] Test antilag detection with real tick data
@@ -311,6 +332,7 @@
 - [ ] Test all error scenarios
 
 ### Production Deployment
+
 - [ ] Update Fly.io deployment configuration
 - [ ] Configure production environment variables:
   ```bash
@@ -324,6 +346,7 @@
 - [ ] Create rollback plan
 
 ### Documentation
+
 - [ ] Document all API endpoints
 - [ ] Create strategy configuration guide
 - [ ] Write antilag detection documentation
@@ -336,41 +359,49 @@
 ## Success Criteria
 
 ### Week 1
+
 - ✅ Zero authentication errors
 - ✅ RiskFlow feed stable (< 50 items)
 - ✅ Database schema ready
 
 ### Week 2
+
 - ✅ All 5 trading strategies implemented
 - ✅ Strategy signals generating correctly
 - ✅ Time windows enforced
 
 ### Week 3
+
 - ✅ Antilag detection working
 - ✅ Tick surge alerts functional
 - ✅ Price synchronization validated
 
 ### Week 4
+
 - ✅ Proposals generating from strategies
 - ✅ User approval workflow working
 - ✅ Watchlist management functional
 
 ### Week 5
+
 - ✅ ProjectX orders executing
 - ✅ Bracket orders working
 - ✅ Position tracking accurate
 
 ### Week 6
+
 - ✅ Risk rules enforced
 - ✅ Breaking news pauses working
 - ✅ Circuit breakers functional
 
 ### Week 7
+
 - ✅ Response times < 1 second
 - ✅ Caching working properly
 - ✅ Error recovery tested
 
 ### Week 8
+
 - ✅ All tests passing
 - ✅ Deployed to production
 - ✅ Documentation complete
@@ -380,16 +411,19 @@
 ## Dependencies & Blockers
 
 ### Required from User
+
 - [ ] Exact antilag thresholds (tick surge amount)
 - [ ] Position sizing rules per strategy
 - [ ] Risk parameters (managed in TopStepX)
 
 ### Required from Agent 2 (Claude Code)
+
 - [ ] Agent report schemas for integration
 - [ ] AI model response formats
 - [ ] Chat interface API contracts
 
 ### External Dependencies
+
 - [ ] ProjectX API access and credentials
 - [ ] X API rate limits sufficient
 - [ ] Clerk authentication working
@@ -400,18 +434,23 @@
 ## Communication Points with Agent 2
 
 ### Week 2
+
 - Share strategy signal formats for Trader Agent
 
 ### Week 3
+
 - Provide antilag detection data for Technical Analyst
 
 ### Week 4
+
 - Share proposal schema for Risk Manager integration
 
 ### Week 5
+
 - Coordinate execution confirmation for chat interface
 
 ### Week 6
+
 - Share risk validation rules for Risk Manager Agent
 
 ---

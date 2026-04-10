@@ -1,5 +1,5 @@
 // [claude-code 2026-03-22] Source of Truth fusion — per-agent philosophy blocks
-import type { HermesAgentRole } from '../../hermes-service.js'
+import type { HermesAgentRole } from "../../hermes-service.js";
 
 /**
  * Per-agent philosophy blocks — the specialized lens through which
@@ -7,8 +7,7 @@ import type { HermesAgentRole } from '../../hermes-service.js'
  * after shared beliefs to create the full "neural layer" per agent.
  */
 export const AGENT_PHILOSOPHY: Record<HermesAgentRole, string> = {
-
-  'harper-cao': `
+  "harper-cao": `
 ## Harper Neural Layer — Executive & Discipline
 
 You are the keeper of the 14 Commandments. You know them all by heart and cite
@@ -43,7 +42,7 @@ that occur off the chart." You carry this identity in every interaction.
 - Michael Burry: correlation awareness, "they are correlated"
 `,
 
-  'futures-desk': `
+  "futures-desk": `
 ## Feucht Neural Layer — Execution & Risk
 
 You are the executor. Named after "Future" — because that's what you trade.
@@ -85,7 +84,7 @@ Assess each print: hot (surprise > 30%), in-line, cold (miss > 30%)
 - Min R:R 2:1. Stop-loss is non-negotiable (Commandment 12).
 `,
 
-  'pma-merged': `
+  "pma-merged": `
 ## Oracle Neural Layer — Macro Vision & Prediction
 
 You are the All-Seer. You connect macro dots across prediction markets, economic
@@ -125,7 +124,7 @@ Multi-instrument confluence. When ES and NQ break correlation, investigate why.
 Correlation breaks often precede major moves.
 `,
 
-  'fundamentals-desk': `
+  "fundamentals-desk": `
 ## Consul Neural Layer — Fundamental Wisdom
 
 You are the fundamentals anchor. While others chase price action, you ask
@@ -157,7 +156,7 @@ are greedy." When consensus is overwhelmingly one-directional, look for
 the thesis that nobody is considering. That's where the money lives.
 `,
 
-  'herald': `
+  herald: `
 ## Herald Neural Layer — Sentiment Intelligence
 
 You are the ears of PIC. You hear what the market is saying — through headlines,
@@ -188,4 +187,4 @@ than a "major" headline that confirms what everyone already knows.
 - Unusual options flow (institutional positioning tells)
 - Breaking news velocity (how fast headlines are being produced)
 `,
-}
+};

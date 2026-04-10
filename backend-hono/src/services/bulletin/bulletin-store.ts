@@ -1,9 +1,9 @@
 // [claude-code 2026-03-31] S12-T1: Bulletin board store — DB + in-memory fallback
-import { sql, isDatabaseAvailable } from '../../config/database.js'
-import type { BulletinPost, BulletinPostInput } from '../../types/bulletin.js'
+import { sql, isDatabaseAvailable } from "../../config/database.js";
+import type { BulletinPost, BulletinPostInput } from "../../types/bulletin.js";
 
-const MEMORY_CAP = 500
-const memoryPosts = new Map<string, BulletinPost>()
+const MEMORY_CAP = 500;
+const memoryPosts = new Map<string, BulletinPost>();
 
 function mapRowToPost(row: Record<string, unknown>): BulletinPost {
   return {
@@ -12,7 +12,7 @@ function mapRowToPost(row: Record<string, unknown>): BulletinPost {
     authorAgent: (row.author_agent as string) ?? null,
     deskId: (row.desk_id as string) ?? null,
     content: String(row.content),
-    contentParts: (row.content_parts as BulletinPost['contentParts']) ?? null,
+    contentParts: (row.content_parts as BulletinPost["contentParts"]) ?? null,
     parentId: (row.parent_id as string) ?? null,
     voteUp: Number(row.vote_up ?? 0),
     voteDown: Number(row.vote_down ?? 0),
@@ -20,12 +20,14 @@ function mapRowToPost(row: Record<string, unknown>): BulletinPost {
     voteX: Number(row.vote_x ?? 0),
     promotedToProposal: Boolean(row.promoted_to_proposal),
     createdAt: String(row.created_at),
-  }
+  };
 }
 
-export async function createPost(input: BulletinPostInput): Promise<BulletinPost> {
-  const id = crypto.randomUUID()
-  const now = new Date().toISOString()
+export async function createPost(
+  input: BulletinPostInput,
+): Promise<BulletinPost> {
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
 
   if (isDatabaseAvailable()) {
     const result = await sql`
@@ -41,8 +43,8 @@ export async function createPost(input: BulletinPostInput): Promise<BulletinPost
         ${input.parentId ?? null}
       )
       RETURNING *
-    `
-    return mapRowToPost(result[0])
+    `;
+    return mapRowToPost(result[0]);
   }
 
   const post: BulletinPost = {
@@ -59,22 +61,22 @@ export async function createPost(input: BulletinPostInput): Promise<BulletinPost
     voteX: 0,
     promotedToProposal: false,
     createdAt: now,
-  }
-  memoryPosts.set(id, post)
+  };
+  memoryPosts.set(id, post);
   if (memoryPosts.size > MEMORY_CAP) {
-    const oldest = memoryPosts.keys().next().value
-    if (oldest) memoryPosts.delete(oldest)
+    const oldest = memoryPosts.keys().next().value;
+    if (oldest) memoryPosts.delete(oldest);
   }
-  return post
+  return post;
 }
 
 export async function listPosts(filter?: {
-  deskId?: string
-  limit?: number
-  offset?: number
+  deskId?: string;
+  limit?: number;
+  offset?: number;
 }): Promise<BulletinPost[]> {
-  const limit = filter?.limit ?? 50
-  const offset = filter?.offset ?? 0
+  const limit = filter?.limit ?? 50;
+  const offset = filter?.offset ?? 0;
 
   if (isDatabaseAvailable()) {
     if (filter?.deskId) {
@@ -83,47 +85,55 @@ export async function listPosts(filter?: {
         WHERE parent_id IS NULL AND desk_id = ${filter.deskId}
         ORDER BY created_at DESC
         LIMIT ${limit} OFFSET ${offset}
-      `
-      return result.map(mapRowToPost)
+      `;
+      return result.map(mapRowToPost);
     }
     const result = await sql`
       SELECT * FROM peer_bulletin
       WHERE parent_id IS NULL
       ORDER BY created_at DESC
       LIMIT ${limit} OFFSET ${offset}
-    `
-    return result.map(mapRowToPost)
+    `;
+    return result.map(mapRowToPost);
   }
 
-  let posts = Array.from(memoryPosts.values()).filter((p) => !p.parentId)
-  if (filter?.deskId) posts = posts.filter((p) => p.deskId === filter.deskId)
+  let posts = Array.from(memoryPosts.values()).filter((p) => !p.parentId);
+  if (filter?.deskId) posts = posts.filter((p) => p.deskId === filter.deskId);
   return posts
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(offset, offset + limit)
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+    .slice(offset, offset + limit);
 }
 
 export async function getPost(id: string): Promise<BulletinPost | null> {
   if (isDatabaseAvailable()) {
-    const result = await sql`SELECT * FROM peer_bulletin WHERE id = ${id}`
-    if (result.length === 0) return null
-    return mapRowToPost(result[0])
+    const result = await sql`SELECT * FROM peer_bulletin WHERE id = ${id}`;
+    if (result.length === 0) return null;
+    return mapRowToPost(result[0]);
   }
-  return memoryPosts.get(id) ?? null
+  return memoryPosts.get(id) ?? null;
 }
 
-export async function getPostReplies(parentId: string): Promise<BulletinPost[]> {
+export async function getPostReplies(
+  parentId: string,
+): Promise<BulletinPost[]> {
   if (isDatabaseAvailable()) {
     const result = await sql`
       SELECT * FROM peer_bulletin
       WHERE parent_id = ${parentId}
       ORDER BY created_at ASC
-    `
-    return result.map(mapRowToPost)
+    `;
+    return result.map(mapRowToPost);
   }
 
   return Array.from(memoryPosts.values())
     .filter((p) => p.parentId === parentId)
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
 }
 
 export async function deletePost(id: string, userId: string): Promise<boolean> {
@@ -132,12 +142,12 @@ export async function deletePost(id: string, userId: string): Promise<boolean> {
       DELETE FROM peer_bulletin
       WHERE id = ${id} AND author_id = ${userId}
       RETURNING id
-    `
-    return result.length > 0
+    `;
+    return result.length > 0;
   }
 
-  const post = memoryPosts.get(id)
-  if (!post || post.authorId !== userId) return false
-  memoryPosts.delete(id)
-  return true
+  const post = memoryPosts.get(id);
+  if (!post || post.authorId !== userId) return false;
+  memoryPosts.delete(id);
+  return true;
 }

@@ -1,5 +1,23 @@
-import { useState, useRef, useEffect, useCallback, type KeyboardEvent, type ChangeEvent, type ClipboardEvent } from 'react';
-import { ArrowUp, Square, Plus, Wrench, Brain, Mic, X, GitBranch, Plug2 } from 'lucide-react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  type KeyboardEvent,
+  type ChangeEvent,
+  type ClipboardEvent,
+} from "react";
+import {
+  ArrowUp,
+  Square,
+  Plus,
+  Wrench,
+  Brain,
+  Mic,
+  X,
+  GitBranch,
+  Plug2,
+} from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -34,7 +52,7 @@ export function FintheonChatInput({
   onStop,
   onSteer,
   isProcessing = false,
-  placeholder = 'The board awaits your command...',
+  placeholder = "The board awaits your command...",
   thinkHarder,
   setThinkHarder,
   onOpenAttach,
@@ -46,11 +64,11 @@ export function FintheonChatInput({
   onSlashSelect,
   addExternalImage,
   disabled = false,
-  draftKey = 'fintheon:draft-analysis',
+  draftKey = "fintheon:draft-analysis",
 }: FintheonChatInputProps) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [images, setImages] = useState<string[]>([]);
-  const [steerText, setSteerText] = useState('');
+  const [steerText, setSteerText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   /* Draft persistence — load on mount */
@@ -80,7 +98,7 @@ export function FintheonChatInput({
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
+    el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [text]);
 
@@ -89,11 +107,11 @@ export function FintheonChatInput({
     const msg = text.trim();
     if (!msg && images.length === 0) return;
     onSend(msg, images);
-    setText('');
+    setText("");
     setImages([]);
     localStorage.removeItem(draftKey);
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
     }
   }, [text, images, onSend, draftKey]);
 
@@ -101,7 +119,7 @@ export function FintheonChatInput({
   const lastSpaceRef = useRef(0);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (isProcessing && onStop) {
         onStop();
@@ -110,7 +128,7 @@ export function FintheonChatInput({
       }
       return;
     }
-    if (e.key === ' ' && isProcessing && onStop) {
+    if (e.key === " " && isProcessing && onStop) {
       const now = Date.now();
       if (now - lastSpaceRef.current < 400) {
         e.preventDefault();
@@ -126,13 +144,13 @@ export function FintheonChatInput({
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      if (item.type.startsWith('image/')) {
+      if (item.type.startsWith("image/")) {
         e.preventDefault();
         const blob = item.getAsFile();
         if (blob) {
           const reader = new FileReader();
           reader.onload = () => {
-            if (typeof reader.result === 'string') {
+            if (typeof reader.result === "string") {
               setImages((prev) => [...prev, reader.result as string]);
             }
           };
@@ -147,12 +165,12 @@ export function FintheonChatInput({
   };
 
   const handleSteerKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && steerText.trim() && onSteer) {
+    if (e.key === "Enter" && steerText.trim() && onSteer) {
       e.preventDefault();
       onSteer(steerText.trim());
-      setSteerText('');
+      setSteerText("");
     }
-    if (e.key === 'Escape') setSteerText('');
+    if (e.key === "Escape") setSteerText("");
   };
 
   return (
@@ -160,7 +178,10 @@ export function FintheonChatInput({
       {/* Steer queue strip — shown while processing */}
       {isProcessing && onSteer && (
         <div className="flex items-center gap-2 mb-2 px-3 h-9 rounded-xl border border-[var(--fintheon-accent)]/20 bg-[#0d0c09]/80 backdrop-blur-sm">
-          <GitBranch size={12} className="text-[var(--fintheon-accent)]/50 shrink-0" />
+          <GitBranch
+            size={12}
+            className="text-[var(--fintheon-accent)]/50 shrink-0"
+          />
           <input
             type="text"
             value={steerText}
@@ -170,7 +191,10 @@ export function FintheonChatInput({
             className="flex-1 bg-transparent text-[12px] text-zinc-300 placeholder:text-zinc-600 focus:outline-none"
           />
           {steerText && (
-            <button onClick={() => setSteerText('')} className="text-zinc-600 hover:text-zinc-400 transition-colors">
+            <button
+              onClick={() => setSteerText("")}
+              className="text-zinc-600 hover:text-zinc-400 transition-colors"
+            >
               <X size={12} />
             </button>
           )}
@@ -181,7 +205,10 @@ export function FintheonChatInput({
       {images.length > 0 && (
         <div className="flex gap-2 mb-2 px-2 overflow-x-auto">
           {images.map((src, idx) => (
-            <div key={idx} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[var(--fintheon-accent)]/20">
+            <div
+              key={idx}
+              className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[var(--fintheon-accent)]/20"
+            >
               <img src={src} alt="" className="w-full h-full object-cover" />
               <button
                 onClick={() => removeImage(idx)}
@@ -197,14 +224,17 @@ export function FintheonChatInput({
       {/* Main container — 21st-dev-inspired clean shell w/ Fintheon palette */}
       <div
         className={[
-          'relative flex flex-col rounded-2xl border transition-all duration-200',
-          'backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,0.35)]',
+          "relative flex flex-col rounded-2xl border transition-all duration-200",
+          "backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,0.35)]",
           text
-            ? 'border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25'
-            : 'border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/35',
-          disabled ? 'opacity-50 pointer-events-none' : '',
-        ].join(' ')}
-        style={{ background: 'linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))' }}
+            ? "border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25"
+            : "border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/35",
+          disabled ? "opacity-50 pointer-events-none" : "",
+        ].join(" ")}
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))",
+        }}
       >
         {/* Textarea */}
         <textarea
@@ -214,7 +244,11 @@ export function FintheonChatInput({
             const val = e.target.value;
             setText(val);
             // Slash-command detection: text starts with /
-            if (val.startsWith('/') && !val.includes(' ') && !val.includes('\n')) {
+            if (
+              val.startsWith("/") &&
+              !val.includes(" ") &&
+              !val.includes("\n")
+            ) {
               onSlashTrigger?.(val.slice(1));
             } else {
               onSlashDismiss?.();
@@ -226,20 +260,23 @@ export function FintheonChatInput({
           rows={1}
           className="resize-none bg-transparent text-[13px] text-white placeholder:text-zinc-500 focus:outline-none overflow-y-auto"
           style={{
-            padding: '14px 16px 8px',
-            maxHeight: '170px',
-            lineHeight: '1.5',
+            padding: "14px 16px 8px",
+            maxHeight: "170px",
+            lineHeight: "1.5",
           }}
         />
 
         {/* Bottom bar */}
-        <div className="flex items-center justify-between" style={{ padding: '8px 10px 10px' }}>
+        <div
+          className="flex items-center justify-between"
+          style={{ padding: "8px 10px 10px" }}
+        >
           {/* Left: Attach + Connectors + Skills */}
           <div className="flex items-center gap-1">
             <button
               onClick={onOpenAttach}
               className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-              style={{ width: '32px', height: '32px' }}
+              style={{ width: "32px", height: "32px" }}
               title="Attach"
             >
               <Plus size={16} />
@@ -248,20 +285,20 @@ export function FintheonChatInput({
               type="button"
               onClick={onOpenConnectors}
               className="relative flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-              style={{ width: '32px', height: '32px' }}
+              style={{ width: "32px", height: "32px" }}
               title="Connectors"
             >
               <Plug2 size={14} />
               {connectorCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--fintheon-accent)] text-[8px] text-[var(--fintheon-bg)] flex items-center justify-center font-bold leading-none">
-                  {connectorCount > 9 ? '9+' : connectorCount}
+                  {connectorCount > 9 ? "9+" : connectorCount}
                 </span>
               )}
             </button>
             <button
               onClick={onOpenSkills}
               className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-              style={{ width: '32px', height: '32px' }}
+              style={{ width: "32px", height: "32px" }}
               title="Skills"
             >
               <Wrench size={14} />
@@ -272,13 +309,13 @@ export function FintheonChatInput({
           <div className="flex items-center gap-1">
             <button
               onClick={() => setThinkHarder(!thinkHarder)}
-              title={thinkHarder ? 'Deep Counsel ON' : 'Deep Counsel OFF'}
+              title={thinkHarder ? "Deep Counsel ON" : "Deep Counsel OFF"}
               className={`flex items-center justify-center transition-all ${
                 thinkHarder
-                  ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15 rounded-lg'
-                  : 'text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 rounded-lg'
+                  ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15 rounded-lg"
+                  : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 rounded-lg"
               }`}
-              style={{ width: '32px', height: '32px' }}
+              style={{ width: "32px", height: "32px" }}
             >
               <Brain size={14} />
             </button>
@@ -287,11 +324,11 @@ export function FintheonChatInput({
               disabled={!text.trim() && images.length === 0 && !isProcessing}
               className={`flex items-center justify-center rounded-full transition-all ${
                 isProcessing
-                  ? 'bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black'
-                  : 'bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[var(--fintheon-accent)] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
+                  ? "bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black"
+                  : "bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[var(--fintheon-accent)] shadow-[0_8px_20px_rgba(212,175,55,0.25)]"
               }`}
-              style={{ width: '34px', height: '34px' }}
-              title={isProcessing ? 'Stop' : 'Send'}
+              style={{ width: "34px", height: "34px" }}
+              title={isProcessing ? "Stop" : "Send"}
             >
               {isProcessing ? (
                 <Square size={12} fill="currentColor" />

@@ -1,9 +1,15 @@
 // [claude-code 2026-03-27] S2-T7: Regime control panel — display + manual override
-import { useState, useEffect } from 'react';
-import { Shield, ChevronDown } from 'lucide-react';
-import { MARKET_REGIMES, REGIME_LABELS, type MarketRegime } from '../../types/regime';
+import { useState, useEffect } from "react";
+import { Shield, ChevronDown } from "lucide-react";
+import {
+  MARKET_REGIMES,
+  REGIME_LABELS,
+  type MarketRegime,
+} from "../../types/regime";
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
+const API_BASE = (
+  import.meta.env.VITE_API_URL || "http://localhost:8080"
+).replace(/\/$/, "");
 
 interface RegimeState {
   regime: MarketRegime;
@@ -13,14 +19,14 @@ interface RegimeState {
 }
 
 const REGIME_COLORS: Record<MarketRegime, string> = {
-  BULL_TREND: 'text-emerald-400',
-  BEAR_TREND: 'text-red-400',
-  CONSOLIDATION: 'text-zinc-400',
-  GEO_TENSIONS: 'text-orange-400',
-  MACRO_ECON: 'text-cyan-400',
-  RISK_OFF: 'text-rose-400',
-  EARNINGS_SEASON: 'text-violet-400',
-  ILLIQUID_STUPIDITY: 'text-amber-400',
+  BULL_TREND: "text-emerald-400",
+  BEAR_TREND: "text-red-400",
+  CONSOLIDATION: "text-zinc-400",
+  GEO_TENSIONS: "text-orange-400",
+  MACRO_ECON: "text-cyan-400",
+  RISK_OFF: "text-rose-400",
+  EARNINGS_SEASON: "text-violet-400",
+  ILLIQUID_STUPIDITY: "text-amber-400",
 };
 
 interface RegimeControlProps {
@@ -31,7 +37,7 @@ interface RegimeControlProps {
 export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [overriding, setOverriding] = useState(false);
-  const [hint, setHint] = useState('');
+  const [hint, setHint] = useState("");
   // Optimistic local override — shows selection immediately, not after parent refetch
   const [localOverride, setLocalOverride] = useState<MarketRegime | null>(null);
 
@@ -47,11 +53,18 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
     setDropdownOpen(false);
     setLocalOverride(newRegime); // Show selection immediately
     try {
-      await fetch(`${API_BASE}/api/regime/set`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ regime: newRegime, notes: 'Manual override from Refinement Engine' }) }).then(r => r.json());
-      setHint('Regime changed — Re-Score All to apply');
+      await fetch(`${API_BASE}/api/regime/set`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          regime: newRegime,
+          notes: "Manual override from Refinement Engine",
+        }),
+      }).then((r) => r.json());
+      setHint("Regime changed — Re-Score All to apply");
       onRegimeChanged();
     } catch (err) {
-      console.error('[RegimeControl] Override failed:', err);
+      console.error("[RegimeControl] Override failed:", err);
       setLocalOverride(null); // Revert on failure
     } finally {
       setOverriding(false);
@@ -61,12 +74,13 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
   // Clear hint after 8 seconds
   useEffect(() => {
     if (!hint) return;
-    const t = setTimeout(() => setHint(''), 8000);
+    const t = setTimeout(() => setHint(""), 8000);
     return () => clearTimeout(t);
   }, [hint]);
 
-  const currentRegime = localOverride ?? regime?.regime ?? 'CONSOLIDATION';
-  const colorClass = REGIME_COLORS[currentRegime] ?? REGIME_COLORS.CONSOLIDATION;
+  const currentRegime = localOverride ?? regime?.regime ?? "CONSOLIDATION";
+  const colorClass =
+    REGIME_COLORS[currentRegime] ?? REGIME_COLORS.CONSOLIDATION;
 
   return (
     <div className="space-y-2">
@@ -76,14 +90,19 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
       </div>
 
       {/* Current regime badge */}
-      <div className={`inline-flex items-center gap-2 px-2.5 py-1.5 text-[11px] font-bold tracking-wide ${colorClass}`}>
+      <div
+        className={`inline-flex items-center gap-2 px-2.5 py-1.5 text-[11px] font-bold tracking-wide ${colorClass}`}
+      >
         {REGIME_LABELS[currentRegime]}
       </div>
 
       {/* Confidence + source */}
       <div className="text-[10px] text-zinc-500 space-y-0.5">
-        <div>Confidence: {regime ? `${Math.round(regime.confidence * 100)}%` : '\u2014'}</div>
-        <div>Source: {regime?.detectedBy ?? 'unknown'}</div>
+        <div>
+          Confidence:{" "}
+          {regime ? `${Math.round(regime.confidence * 100)}%` : "\u2014"}
+        </div>
+        <div>Source: {regime?.detectedBy ?? "unknown"}</div>
       </div>
 
       {/* Override dropdown */}
@@ -93,7 +112,7 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
           disabled={overriding}
           className="flex items-center gap-1.5 px-2 py-1 rounded border border-zinc-700 text-[10px] text-zinc-400 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-colors disabled:opacity-50"
         >
-          {overriding ? 'Overriding...' : 'Override'}
+          {overriding ? "Overriding..." : "Override"}
           <ChevronDown className="w-3 h-3" />
         </button>
 
@@ -104,7 +123,9 @@ export function RegimeControl({ regime, onRegimeChanged }: RegimeControlProps) {
                 key={r}
                 onClick={() => handleOverride(r)}
                 className={`w-full text-left px-3 py-1.5 text-[10px] transition-colors hover:bg-[var(--fintheon-accent)]/10 ${
-                  r === currentRegime ? 'text-[var(--fintheon-accent)] font-bold' : 'text-zinc-400'
+                  r === currentRegime
+                    ? "text-[var(--fintheon-accent)] font-bold"
+                    : "text-zinc-400"
                 }`}
               >
                 {REGIME_LABELS[r]}

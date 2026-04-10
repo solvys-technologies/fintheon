@@ -4,9 +4,19 @@
  * Phase 6 - Day 20
  */
 
-import { runAgent, saveAgentReport, getLatestReport, parseJsonResponse, calculateConfidence } from './base-agent.js'
-import type { NewsSentimentReport, AgentReport, Sentiment } from '../../types/agents.js'
-import type { FeedItem } from '../../types/riskflow.js'
+import {
+  runAgent,
+  saveAgentReport,
+  getLatestReport,
+  parseJsonResponse,
+  calculateConfidence,
+} from "./base-agent.js";
+import type {
+  NewsSentimentReport,
+  AgentReport,
+  Sentiment,
+} from "../../types/agents.js";
+import type { FeedItem } from "../../types/riskflow.js";
 
 const SYSTEM_PROMPT = `You are a News & Sentiment Analyst for an intraday futures trading desk focused on NASDAQ (/MNQ, /NQ).
 
@@ -52,17 +62,17 @@ Focus on:
 3. Geopolitical developments
 4. Sector-specific news affecting tech/NASDAQ
 
-Respond with valid JSON only, no additional text.`
+Respond with valid JSON only, no additional text.`;
 
 export interface NewsSentimentInput {
   headlines: {
-    headline: string
-    source: string
-    isBreaking: boolean
-    ivScore?: number
-    publishedAt: string
-  }[]
-  upcomingEvents?: string[]
+    headline: string;
+    source: string;
+    isBreaking: boolean;
+    ivScore?: number;
+    publishedAt: string;
+  }[];
+  upcomingEvents?: string[];
 }
 
 /**
@@ -70,46 +80,46 @@ export interface NewsSentimentInput {
  */
 export async function analyzeNewsSentiment(
   userId: string,
-  input?: NewsSentimentInput
+  input?: NewsSentimentInput,
 ): Promise<AgentReport> {
   // Check for cached report
-  const cached = await getLatestReport(userId, 'news_sentiment')
+  const cached = await getLatestReport(userId, "news_sentiment");
   if (cached) {
-    return cached
+    return cached;
   }
 
   // Use mock data if no input provided
-  const data = input ?? getMockNewsData()
+  const data = input ?? getMockNewsData();
 
-  const userPrompt = buildPrompt(data)
+  const userPrompt = buildPrompt(data);
 
   const { report, latencyMs, model } = await runAgent<NewsSentimentReport>(
     {
-      agentType: 'news_sentiment',
-      taskType: 'news',
+      agentType: "news_sentiment",
+      taskType: "news",
       systemPrompt: SYSTEM_PROMPT,
       parseResponse: (text) => parseJsonResponse<NewsSentimentReport>(text),
     },
     { userId },
-    userPrompt
-  )
+    userPrompt,
+  );
 
   // Calculate confidence based on data quality
-  const hasBreaking = data.headlines.some(h => h.isBreaking)
-  const hasIvScores = data.headlines.some(h => h.ivScore !== undefined)
-  
+  const hasBreaking = data.headlines.some((h) => h.isBreaking);
+  const hasIvScores = data.headlines.some((h) => h.ivScore !== undefined);
+
   const confidenceScore = calculateConfidence([
     { weight: 0.4, value: Math.min(1, data.headlines.length / 10) },
     { weight: 0.2, value: hasBreaking ? 1 : 0.6 },
     { weight: 0.2, value: hasIvScores ? 1 : 0.5 },
     { weight: 0.2, value: data.upcomingEvents?.length ? 1 : 0.7 },
-  ])
+  ]);
 
-  return saveAgentReport(userId, 'news_sentiment', report, {
+  return saveAgentReport(userId, "news_sentiment", report, {
     confidenceScore,
     model,
     latencyMs,
-  })
+  });
 }
 
 /**
@@ -117,105 +127,111 @@ export async function analyzeNewsSentiment(
  */
 export function feedToSentimentInput(items: FeedItem[]): NewsSentimentInput {
   return {
-    headlines: items.map(item => ({
+    headlines: items.map((item) => ({
       headline: item.headline,
       source: item.source,
       isBreaking: item.isBreaking,
       ivScore: item.ivScore,
       publishedAt: item.publishedAt,
     })),
-  }
+  };
 }
 
 /**
  * Build user prompt from news data
  */
 function buildPrompt(data: NewsSentimentInput): string {
-  const sections: string[] = ['Analyze the following financial news headlines:']
+  const sections: string[] = [
+    "Analyze the following financial news headlines:",
+  ];
 
   data.headlines.forEach((h, i) => {
-    const breaking = h.isBreaking ? '[BREAKING] ' : ''
-    const iv = h.ivScore !== undefined ? ` (IV: ${h.ivScore})` : ''
-    sections.push(`${i + 1}. ${breaking}${h.headline}${iv} - ${h.source}`)
-  })
+    const breaking = h.isBreaking ? "[BREAKING] " : "";
+    const iv = h.ivScore !== undefined ? ` (IV: ${h.ivScore})` : "";
+    sections.push(`${i + 1}. ${breaking}${h.headline}${iv} - ${h.source}`);
+  });
 
   if (data.upcomingEvents?.length) {
-    sections.push('\nUpcoming scheduled events:')
-    data.upcomingEvents.forEach(event => sections.push(`- ${event}`))
+    sections.push("\nUpcoming scheduled events:");
+    data.upcomingEvents.forEach((event) => sections.push(`- ${event}`));
   }
 
-  sections.push('\nDetermine overall sentiment and identify key catalysts for NQ futures.')
+  sections.push(
+    "\nDetermine overall sentiment and identify key catalysts for NQ futures.",
+  );
 
-  return sections.join('\n')
+  return sections.join("\n");
 }
 
 /**
  * Get mock news data for development
  */
 function getMockNewsData(): NewsSentimentInput {
-  const now = new Date()
+  const now = new Date();
   return {
     headlines: [
       {
-        headline: 'Fed officials signal patience on rate cuts amid sticky inflation',
-        source: 'Reuters',
+        headline:
+          "Fed officials signal patience on rate cuts amid sticky inflation",
+        source: "Reuters",
         isBreaking: false,
         ivScore: 6,
         publishedAt: new Date(now.getTime() - 30 * 60_000).toISOString(),
       },
       {
-        headline: 'BREAKING: CPI comes in at 2.9% YoY, below 3.1% forecast',
-        source: 'FinancialJuice',
+        headline: "BREAKING: CPI comes in at 2.9% YoY, below 3.1% forecast",
+        source: "FinancialJuice",
         isBreaking: true,
         ivScore: 8.5,
         publishedAt: new Date(now.getTime() - 15 * 60_000).toISOString(),
       },
       {
-        headline: 'NVDA announces new AI chip with 2x performance boost',
-        source: 'Bloomberg',
+        headline: "NVDA announces new AI chip with 2x performance boost",
+        source: "Bloomberg",
         isBreaking: false,
         ivScore: 5,
         publishedAt: new Date(now.getTime() - 45 * 60_000).toISOString(),
       },
       {
-        headline: 'Tech earnings season kicks off with mixed guidance',
-        source: 'OSINTSources',
+        headline: "Tech earnings season kicks off with mixed guidance",
+        source: "OSINTSources",
         isBreaking: false,
         publishedAt: new Date(now.getTime() - 60 * 60_000).toISOString(),
       },
     ],
     upcomingEvents: [
-      'FOMC minutes release - Today 2pm ET',
-      'Initial jobless claims - Tomorrow 8:30am ET',
+      "FOMC minutes release - Today 2pm ET",
+      "Initial jobless claims - Tomorrow 8:30am ET",
     ],
-  }
+  };
 }
 
 /**
  * Aggregate sentiment from multiple headlines
  */
 export function aggregateSentiment(
-  headlines: { sentiment: Sentiment; weight: number }[]
+  headlines: { sentiment: Sentiment; weight: number }[],
 ): { overall: Sentiment; score: number } {
   if (headlines.length === 0) {
-    return { overall: 'neutral', score: 0 }
+    return { overall: "neutral", score: 0 };
   }
 
   const sentimentValues: Record<Sentiment, number> = {
     bullish: 1,
     neutral: 0,
     bearish: -1,
-  }
+  };
 
-  const totalWeight = headlines.reduce((sum, h) => sum + h.weight, 0)
-  const weightedScore = headlines.reduce(
-    (sum, h) => sum + sentimentValues[h.sentiment] * h.weight,
-    0
-  ) / totalWeight
+  const totalWeight = headlines.reduce((sum, h) => sum + h.weight, 0);
+  const weightedScore =
+    headlines.reduce(
+      (sum, h) => sum + sentimentValues[h.sentiment] * h.weight,
+      0,
+    ) / totalWeight;
 
-  let overall: Sentiment = 'neutral'
-  if (weightedScore > 0.2) overall = 'bullish'
-  if (weightedScore < -0.2) overall = 'bearish'
+  let overall: Sentiment = "neutral";
+  if (weightedScore > 0.2) overall = "bullish";
+  if (weightedScore < -0.2) overall = "bearish";
 
-  return { overall, score: weightedScore }
+  return { overall, score: weightedScore };
 }

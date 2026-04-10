@@ -1,9 +1,9 @@
 // [claude-code 2026-03-22] ErrorLogPanel — persistent error log with expandable "More Info" dropdowns
 
-import { useState } from 'react';
-import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
-import { useErrorLog } from '../../hooks/useErrorLog';
-import type { ErrorLogEntry } from '../../lib/errorLog';
+import { useState } from "react";
+import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { useErrorLog } from "../../hooks/useErrorLog";
+import type { ErrorLogEntry } from "../../lib/errorLog";
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -54,13 +54,17 @@ function ErrorRow({ entry }: { entry: ErrorLogEntry }) {
           {entry.endpoint && (
             <div className="text-[10px]">
               <span className="text-zinc-500">Endpoint: </span>
-              <span className="text-[var(--fintheon-text)]/60 font-mono">{entry.endpoint}</span>
+              <span className="text-[var(--fintheon-text)]/60 font-mono">
+                {entry.endpoint}
+              </span>
             </div>
           )}
 
           <div className="text-[10px]">
             <span className="text-zinc-500">Code: </span>
-            <span className="text-[var(--fintheon-text)]/60 font-mono">{entry.code}</span>
+            <span className="text-[var(--fintheon-text)]/60 font-mono">
+              {entry.code}
+            </span>
           </div>
 
           {entry.status && (
@@ -72,13 +76,17 @@ function ErrorRow({ entry }: { entry: ErrorLogEntry }) {
 
           <div className="text-[10px]">
             <span className="text-zinc-500">Message: </span>
-            <span className="text-[var(--fintheon-text)]/70">{entry.message}</span>
+            <span className="text-[var(--fintheon-text)]/70">
+              {entry.message}
+            </span>
           </div>
 
           {entry.fix && (
             <div className="text-[10px] px-2 py-1.5 rounded bg-[var(--fintheon-accent)]/8 border border-[var(--fintheon-accent)]/15">
               <span className="text-[var(--fintheon-accent)]">Fix: </span>
-              <span className="text-[var(--fintheon-text)]/70">{entry.fix}</span>
+              <span className="text-[var(--fintheon-text)]/70">
+                {entry.fix}
+              </span>
             </div>
           )}
 

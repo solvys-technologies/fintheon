@@ -1,28 +1,28 @@
 // [claude-code 2026-03-23] Price resolver — fetches instrument prices at specific times for outcome tracking
 // Uses Yahoo Finance intraday bars to find the closest price to a given timestamp.
 
-import type { ScoringObservation } from './types.js';
-import { getIntradayBars, getPriceNear } from '../market-data/yahoo-market.js';
+import type { ScoringObservation } from "./types.js";
+import { getIntradayBars, getPriceNear } from "../market-data/yahoo-market.js";
 
 /** Yahoo symbol mapping for futures */
 const FUTURES_TO_YAHOO: Record<string, string> = {
-  '/ES': 'ES=F',
-  '/MES': 'ES=F',
-  '/NQ': 'NQ=F',
-  '/MNQ': 'NQ=F',
-  '/YM': 'YM=F',
-  '/MYM': 'YM=F',
-  '/RTY': 'RTY=F',
-  '/M2K': 'RTY=F',
-  '/CL': 'CL=F',
-  '/GC': 'GC=F',
-  '/SI': 'SI=F',
-  '/NG': 'NG=F',
-  '/ZB': 'ZB=F',
-  '/ZN': 'ZN=F',
-  '/6E': '6E=F',
-  '/6J': '6J=F',
-  '/6B': '6B=F',
+  "/ES": "ES=F",
+  "/MES": "ES=F",
+  "/NQ": "NQ=F",
+  "/MNQ": "NQ=F",
+  "/YM": "YM=F",
+  "/MYM": "YM=F",
+  "/RTY": "RTY=F",
+  "/M2K": "RTY=F",
+  "/CL": "CL=F",
+  "/GC": "GC=F",
+  "/SI": "SI=F",
+  "/NG": "NG=F",
+  "/ZB": "ZB=F",
+  "/ZN": "ZN=F",
+  "/6E": "6E=F",
+  "/6J": "6J=F",
+  "/6B": "6B=F",
 };
 
 /**
@@ -44,7 +44,10 @@ export async function resolvePriceAt(
     const yahooSymbol = resolveYahooSymbol(instrument);
     return await getPriceNear(yahooSymbol, timestamp);
   } catch (error) {
-    console.error(`[PriceResolver] Failed to resolve price for ${instrument} at ${timestamp.toISOString()}:`, error);
+    console.error(
+      `[PriceResolver] Failed to resolve price for ${instrument} at ${timestamp.toISOString()}:`,
+      error,
+    );
     return null;
   }
 }
@@ -78,8 +81,8 @@ export async function resolveOutcome(
  */
 export async function getInstrumentBars(
   instrument: string,
-  range: string = '1d',
-  interval: string = '1m',
+  range: string = "1d",
+  interval: string = "1m",
 ): Promise<Array<{ timestamp: number; close: number }>> {
   const yahooSymbol = resolveYahooSymbol(instrument);
   return getIntradayBars(yahooSymbol, range, interval);

@@ -76,11 +76,7 @@ export class HealingBowlPlayer {
       const reverbTime = 3.0; // 3 seconds of reverb tail
       const sampleRate = this.audioContext.sampleRate;
       const length = sampleRate * reverbTime;
-      const impulse = this.audioContext.createBuffer(
-        2,
-        length,
-        sampleRate
-      );
+      const impulse = this.audioContext.createBuffer(2, length, sampleRate);
 
       // Fill impulse response with decaying noise
       for (let channel = 0; channel < 2; channel++) {
@@ -226,7 +222,7 @@ export class HealingBowlPlayer {
     oscillator.frequency.setValueAtTime(soundConfig.startFreq, now);
     oscillator.frequency.exponentialRampToValueAtTime(
       soundConfig.endFreq,
-      now + soundConfig.duration
+      now + soundConfig.duration,
     );
 
     // Sharp attack, quick decay
@@ -234,7 +230,7 @@ export class HealingBowlPlayer {
     gainNode.gain.linearRampToValueAtTime(0.4, now + 0.01); // Very fast attack
     gainNode.gain.exponentialRampToValueAtTime(
       0.001,
-      now + soundConfig.duration
+      now + soundConfig.duration,
     );
 
     // Connect through reverb (more wet for shock sounds)

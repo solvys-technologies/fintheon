@@ -1,9 +1,14 @@
 // [claude-code 2026-03-28] S8-T8: Agent Context Bank — unified memory storage, user-scoped partitions
-import { getSupabaseClient } from '../config/supabase.js';
+import { getSupabaseClient } from "../config/supabase.js";
 
 // ─── Types ──────────────────────────────────────────────────────
 
-export type MemoryType = 'soul' | 'protocol' | 'observation' | 'preference' | 'artifact';
+export type MemoryType =
+  | "soul"
+  | "protocol"
+  | "observation"
+  | "preference"
+  | "artifact";
 
 export interface AgentMemoryEntry {
   id?: string;
@@ -27,8 +32,25 @@ export interface AgentMemoryFilter {
   include_expired?: boolean;
 }
 
-const VALID_MEMORY_TYPES: MemoryType[] = ['soul', 'protocol', 'observation', 'preference', 'artifact'];
-const VALID_AGENTS = ['harper-opus', 'oracle', 'feucht', 'consul', 'herald', 'sentinel', 'charles', 'horace', 'codi', 'price'];
+const VALID_MEMORY_TYPES: MemoryType[] = [
+  "soul",
+  "protocol",
+  "observation",
+  "preference",
+  "artifact",
+];
+const VALID_AGENTS = [
+  "harper-opus",
+  "oracle",
+  "feucht",
+  "consul",
+  "herald",
+  "sentinel",
+  "charles",
+  "horace",
+  "codi",
+  "price",
+];
 
 // ─── Validation ─────────────────────────────────────────────────
 
@@ -46,37 +68,42 @@ export function isValidAgentId(id: string): boolean {
 export async function getContextForAgent(
   userId: string,
   agentId: string,
-  filter?: Pick<AgentMemoryFilter, 'memory_type' | 'include_expired'>
+  filter?: Pick<AgentMemoryFilter, "memory_type" | "include_expired">,
 ): Promise<AgentMemoryEntry[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   let query = sb
-    .from('agent_context_bank')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('exclude_from_sync', false)
+    .from("agent_context_bank")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("exclude_from_sync", false)
     .or(`agent_id.eq.${agentId},is_shared.eq.true`)
-    .order('updated_at', { ascending: false });
+    .order("updated_at", { ascending: false });
 
   if (filter?.memory_type) {
-    query = query.eq('memory_type', filter.memory_type);
+    query = query.eq("memory_type", filter.memory_type);
   }
   if (!filter?.include_expired) {
-    query = query.or('expires_at.is.null,expires_at.gt.now()');
+    query = query.or("expires_at.is.null,expires_at.gt.now()");
   }
 
   const { data, error } = await query;
 
   if (error) {
-    console.error('[AgentContextBank] getContextForAgent error:', error.message);
+    console.error(
+      "[AgentContextBank] getContextForAgent error:",
+      error.message,
+    );
     return [];
   }
   return data ?? [];
 }
 
 /** Save or update a single memory entry */
-export async function saveMemory(entry: AgentMemoryEntry): Promise<AgentMemoryEntry | null> {
+export async function saveMemory(
+  entry: AgentMemoryEntry,
+): Promise<AgentMemoryEntry | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
@@ -95,26 +122,29 @@ export async function saveMemory(entry: AgentMemoryEntry): Promise<AgentMemoryEn
   // If id provided, upsert; otherwise insert
   if (entry.id) {
     const { data, error } = await sb
-      .from('agent_context_bank')
-      .upsert({ id: entry.id, ...row }, { onConflict: 'id' })
+      .from("agent_context_bank")
+      .upsert({ id: entry.id, ...row }, { onConflict: "id" })
       .select()
       .single();
 
     if (error) {
-      console.error('[AgentContextBank] saveMemory upsert error:', error.message);
+      console.error(
+        "[AgentContextBank] saveMemory upsert error:",
+        error.message,
+      );
       return null;
     }
     return data;
   }
 
   const { data, error } = await sb
-    .from('agent_context_bank')
+    .from("agent_context_bank")
     .insert(row)
     .select()
     .single();
 
   if (error) {
-    console.error('[AgentContextBank] saveMemory insert error:', error.message);
+    console.error("[AgentContextBank] saveMemory insert error:", error.message);
     return null;
   }
   return data;
@@ -123,7 +153,7 @@ export async function saveMemory(entry: AgentMemoryEntry): Promise<AgentMemoryEn
 /** Bulk sync from Claude CLI memory — upserts by matching user_id + agent_id + content hash */
 export async function syncFromCliMemory(
   userId: string,
-  entries: Omit<AgentMemoryEntry, 'user_id'>[]
+  entries: Omit<AgentMemoryEntry, "user_id">[],
 ): Promise<{ synced: number; errors: number }> {
   const sb = getSupabaseClient();
   if (!sb) return { synced: 0, errors: 0 };
@@ -146,35 +176,33 @@ export async function syncFromCliMemory(
 
     // Check for existing entry with same content for this user+agent
     const { data: existing } = await sb
-      .from('agent_context_bank')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('agent_id', entry.agent_id)
-      .eq('content', entry.content)
+      .from("agent_context_bank")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("agent_id", entry.agent_id)
+      .eq("content", entry.content)
       .limit(1)
       .single();
 
     if (existing) {
       // Update existing
       const { error } = await sb
-        .from('agent_context_bank')
+        .from("agent_context_bank")
         .update({ ...row, updated_at: new Date().toISOString() })
-        .eq('id', existing.id);
+        .eq("id", existing.id);
 
       if (error) {
-        console.error('[AgentContextBank] sync update error:', error.message);
+        console.error("[AgentContextBank] sync update error:", error.message);
         errors++;
       } else {
         synced++;
       }
     } else {
       // Insert new
-      const { error } = await sb
-        .from('agent_context_bank')
-        .insert(row);
+      const { error } = await sb.from("agent_context_bank").insert(row);
 
       if (error) {
-        console.error('[AgentContextBank] sync insert error:', error.message);
+        console.error("[AgentContextBank] sync insert error:", error.message);
         errors++;
       } else {
         synced++;
@@ -182,27 +210,31 @@ export async function syncFromCliMemory(
     }
   }
 
-  console.log(`[AgentContextBank] Sync complete: ${synced} synced, ${errors} errors`);
+  console.log(
+    `[AgentContextBank] Sync complete: ${synced} synced, ${errors} errors`,
+  );
   return { synced, errors };
 }
 
 /** Get shared protocol entries (soul + protocol) visible to all agents for a user */
-export async function getSharedProtocol(userId: string): Promise<AgentMemoryEntry[]> {
+export async function getSharedProtocol(
+  userId: string,
+): Promise<AgentMemoryEntry[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const { data, error } = await sb
-    .from('agent_context_bank')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('is_shared', true)
-    .in('memory_type', ['soul', 'protocol'])
-    .or('expires_at.is.null,expires_at.gt.now()')
-    .order('memory_type')
-    .order('updated_at', { ascending: false });
+    .from("agent_context_bank")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("is_shared", true)
+    .in("memory_type", ["soul", "protocol"])
+    .or("expires_at.is.null,expires_at.gt.now()")
+    .order("memory_type")
+    .order("updated_at", { ascending: false });
 
   if (error) {
-    console.error('[AgentContextBank] getSharedProtocol error:', error.message);
+    console.error("[AgentContextBank] getSharedProtocol error:", error.message);
     return [];
   }
   return data ?? [];
@@ -215,12 +247,16 @@ export async function seedNewUser(userId: string): Promise<number> {
 
   // Get all master template entries
   const { data: masters, error: fetchErr } = await sb
-    .from('agent_context_bank')
-    .select('*')
-    .eq('is_master', true);
+    .from("agent_context_bank")
+    .select("*")
+    .eq("is_master", true);
 
   if (fetchErr || !masters?.length) {
-    if (fetchErr) console.error('[AgentContextBank] seedNewUser fetch error:', fetchErr.message);
+    if (fetchErr)
+      console.error(
+        "[AgentContextBank] seedNewUser fetch error:",
+        fetchErr.message,
+      );
     return 0;
   }
 
@@ -238,49 +274,60 @@ export async function seedNewUser(userId: string): Promise<number> {
   }));
 
   const { data, error } = await sb
-    .from('agent_context_bank')
+    .from("agent_context_bank")
     .insert(cloned)
-    .select('id');
+    .select("id");
 
   if (error) {
-    console.error('[AgentContextBank] seedNewUser insert error:', error.message);
+    console.error(
+      "[AgentContextBank] seedNewUser insert error:",
+      error.message,
+    );
     return 0;
   }
   return data?.length ?? 0;
 }
 
 /** Delete a single memory entry (owned by user) */
-export async function deleteMemory(userId: string, memoryId: string): Promise<boolean> {
+export async function deleteMemory(
+  userId: string,
+  memoryId: string,
+): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb) return false;
 
   const { error } = await sb
-    .from('agent_context_bank')
+    .from("agent_context_bank")
     .delete()
-    .eq('id', memoryId)
-    .eq('user_id', userId);
+    .eq("id", memoryId)
+    .eq("user_id", userId);
 
   if (error) {
-    console.error('[AgentContextBank] deleteMemory error:', error.message);
+    console.error("[AgentContextBank] deleteMemory error:", error.message);
     return false;
   }
   return true;
 }
 
 /** Get all memories for a user (admin/handoff use) */
-export async function getAllUserMemories(userId: string): Promise<AgentMemoryEntry[]> {
+export async function getAllUserMemories(
+  userId: string,
+): Promise<AgentMemoryEntry[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const { data, error } = await sb
-    .from('agent_context_bank')
-    .select('*')
-    .eq('user_id', userId)
-    .order('agent_id')
-    .order('updated_at', { ascending: false });
+    .from("agent_context_bank")
+    .select("*")
+    .eq("user_id", userId)
+    .order("agent_id")
+    .order("updated_at", { ascending: false });
 
   if (error) {
-    console.error('[AgentContextBank] getAllUserMemories error:', error.message);
+    console.error(
+      "[AgentContextBank] getAllUserMemories error:",
+      error.message,
+    );
     return [];
   }
   return data ?? [];

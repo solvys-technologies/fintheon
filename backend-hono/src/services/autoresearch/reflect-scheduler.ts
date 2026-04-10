@@ -1,10 +1,10 @@
 // [claude-code 2026-04-03] REFLECT scheduler — runs nightly analysis of news scoring quality
 // Triggers at 04:00 UTC daily. Results available for Harper morning standup.
 
-import { runReflect } from './reflect-engine.js';
-import { createLogger } from '../../lib/logger.js';
+import { runReflect } from "./reflect-engine.js";
+import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger('REFLECTScheduler');
+const log = createLogger("REFLECTScheduler");
 
 let schedulerTimer: ReturnType<typeof setTimeout> | null = null;
 let isRunning = false;
@@ -13,12 +13,12 @@ let isRunning = false;
  * Start the REFLECT scheduler. Runs at 04:00 UTC daily.
  */
 export function startReflectScheduler(): void {
-  if (process.env.ENABLE_REFLECT !== 'true') {
-    log.info('REFLECT disabled (set ENABLE_REFLECT=true to enable)');
+  if (process.env.ENABLE_REFLECT !== "true") {
+    log.info("REFLECT disabled (set ENABLE_REFLECT=true to enable)");
     return;
   }
 
-  log.info('REFLECT scheduler started — runs daily at 04:00 UTC');
+  log.info("REFLECT scheduler started — runs daily at 04:00 UTC");
   scheduleNextRun();
 }
 
@@ -26,7 +26,7 @@ export function stopReflectScheduler(): void {
   if (schedulerTimer) {
     clearTimeout(schedulerTimer);
     schedulerTimer = null;
-    log.info('REFLECT scheduler stopped');
+    log.info("REFLECT scheduler stopped");
   }
 }
 
@@ -41,7 +41,9 @@ function scheduleNextRun(): void {
   }
 
   const delayMs = next.getTime() - now.getTime();
-  log.info(`Next REFLECT run at ${next.toISOString()} (in ${(delayMs / 3600000).toFixed(1)}h)`);
+  log.info(
+    `Next REFLECT run at ${next.toISOString()} (in ${(delayMs / 3600000).toFixed(1)}h)`,
+  );
 
   schedulerTimer = setTimeout(async () => {
     await executeReflect();
@@ -51,19 +53,23 @@ function scheduleNextRun(): void {
 
 async function executeReflect(): Promise<void> {
   if (isRunning) {
-    log.warn('REFLECT already running — skipping');
+    log.warn("REFLECT already running — skipping");
     return;
   }
 
   isRunning = true;
-  log.info('Starting nightly REFLECT analysis...');
+  log.info("Starting nightly REFLECT analysis...");
 
   try {
     const report = await runReflect(7); // Last 7 days
-    log.info(`REFLECT complete: ${report.findings.length} findings, ${report.adjustments.length} adjustments`);
+    log.info(
+      `REFLECT complete: ${report.findings.length} findings, ${report.adjustments.length} adjustments`,
+    );
     log.info(`Summary: ${report.summary}`);
   } catch (err) {
-    log.error('REFLECT failed:', { error: err instanceof Error ? err.message : String(err) });
+    log.error("REFLECT failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   } finally {
     isRunning = false;
   }

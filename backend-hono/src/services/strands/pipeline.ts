@@ -15,24 +15,24 @@
 // Herald and the initial market context run as source nodes (parallel).
 // Oracle depends on Herald. Consul depends on Oracle. Feucht depends on Consul.
 
-import { Graph } from '@strands-agents/sdk/multiagent'
-import { createOracleAgent } from './agents/oracle.js'
-import { createFeuchtAgent } from './agents/feucht.js'
-import { createConsulAgent } from './agents/consul.js'
-import { createHeraldAgent } from './agents/herald.js'
-import { createLogger } from '../../lib/logger.js'
+import { Graph } from "@strands-agents/sdk/multiagent";
+import { createOracleAgent } from "./agents/oracle.js";
+import { createFeuchtAgent } from "./agents/feucht.js";
+import { createConsulAgent } from "./agents/consul.js";
+import { createHeraldAgent } from "./agents/herald.js";
+import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger('StrandsPipeline')
+const log = createLogger("StrandsPipeline");
 
 export interface PipelineInput {
   /** User's query or trade thesis to evaluate */
-  thesis: string
+  thesis: string;
   /** Optional market context (VIX, regime, etc.) */
-  marketContext?: string
+  marketContext?: string;
   /** Include full debate (bull vs bear)? */
-  includeDebate?: boolean
+  includeDebate?: boolean;
   /** Include trade proposal generation? */
-  includeProposal?: boolean
+  includeProposal?: boolean;
 }
 
 /**
@@ -45,79 +45,87 @@ export interface PipelineInput {
  * 4. Feucht validates risk + generates proposal
  */
 export function createPICPipeline() {
-  const herald = createHeraldAgent()
-  const oracle = createOracleAgent()
-  const consul = createConsulAgent()
-  const feucht = createFeuchtAgent()
+  const herald = createHeraldAgent();
+  const oracle = createOracleAgent();
+  const consul = createConsulAgent();
+  const feucht = createFeuchtAgent();
 
   const graph = new Graph({
-    id: 'pic-pipeline',
+    id: "pic-pipeline",
     nodes: [herald, oracle, consul, feucht],
     edges: [
-      ['herald', 'oracle'],
-      ['oracle', 'consul'],
-      ['consul', 'feucht'],
+      ["herald", "oracle"],
+      ["oracle", "consul"],
+      ["consul", "feucht"],
     ],
     maxConcurrency: 2,
     maxSteps: 10,
-  })
+  });
 
-  return graph
+  return graph;
 }
 
 /**
  * Run the full PIC pipeline and return the final result.
  */
 export async function runPICPipeline(input: PipelineInput) {
-  const startTime = Date.now()
-  log.info('PIC pipeline started', { thesis: input.thesis.slice(0, 100) })
+  const startTime = Date.now();
+  log.info("PIC pipeline started", { thesis: input.thesis.slice(0, 100) });
 
-  const graph = createPICPipeline()
+  const graph = createPICPipeline();
 
-  const prompt = buildPipelinePrompt(input)
-  const result = await graph.invoke(prompt)
+  const prompt = buildPipelinePrompt(input);
+  const result = await graph.invoke(prompt);
 
-  const duration = Date.now() - startTime
-  log.info('PIC pipeline complete', { durationMs: duration })
+  const duration = Date.now() - startTime;
+  log.info("PIC pipeline complete", { durationMs: duration });
 
   return {
     result: result.toString(),
     durationMs: duration,
-  }
+  };
 }
 
 /**
  * Stream the PIC pipeline for real-time frontend updates.
  */
 export async function* streamPICPipeline(input: PipelineInput) {
-  const startTime = Date.now()
-  log.info('PIC pipeline stream started', { thesis: input.thesis.slice(0, 100) })
+  const startTime = Date.now();
+  log.info("PIC pipeline stream started", {
+    thesis: input.thesis.slice(0, 100),
+  });
 
-  const graph = createPICPipeline()
-  const prompt = buildPipelinePrompt(input)
+  const graph = createPICPipeline();
+  const prompt = buildPipelinePrompt(input);
 
   for await (const event of graph.stream(prompt)) {
-    yield event
+    yield event;
   }
 
-  log.info('PIC pipeline stream complete', { durationMs: Date.now() - startTime })
+  log.info("PIC pipeline stream complete", {
+    durationMs: Date.now() - startTime,
+  });
 }
 
 function buildPipelinePrompt(input: PipelineInput): string {
-  const parts: string[] = []
+  const parts: string[] = [];
 
   if (input.marketContext) {
-    parts.push(`[Market Context]\n${input.marketContext}`)
+    parts.push(`[Market Context]\n${input.marketContext}`);
   }
 
-  parts.push(`[Trading Thesis / Query]\n${input.thesis}`)
+  parts.push(`[Trading Thesis / Query]\n${input.thesis}`);
 
   if (input.includeDebate !== false) {
-    parts.push('[Instructions] Include a bull vs bear debate with conviction scoring.')
+    parts.push(
+      "[Instructions] Include a bull vs bear debate with conviction scoring.",
+    );
   }
   if (input.includeProposal !== false) {
-    parts.push('[Instructions] Generate a trade proposal with entry/stop/target levels and risk assessment.')
+    parts.push(
+      "[Instructions] Generate a trade proposal with entry/stop/target levels and risk assessment.",
+    );
   }
 
-  return parts.join('\n\n')
+  return parts.join("\n\n");
 }

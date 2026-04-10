@@ -8,13 +8,13 @@
 
 ## Morning Standup Schedule (Weekdays Only)
 
-| Job Name | Cron Expression | Time (ET) | Description |
-|----------|-----------------|-----------|-------------|
-| `pic-standup-730` | `30 7 * * 1-5` | 7:30 AM | Initial standup - agent wake-up |
-| `pic-checkin-800` | `0 8 * * 1-5` | 8:00 AM | 30 min before open |
-| `pic-checkin-830` | `30 8 * * 1-5` | 8:30 AM | Economic data scan |
-| `pic-premarket-900` | `0 9 * * 1-5` | 9:00 AM | Final prep, 30 min to open |
-| `pic-marketopen-930` | `30 9 * * 1-5` | 9:30 AM | Market open wrap |
+| Job Name             | Cron Expression | Time (ET) | Description                     |
+| -------------------- | --------------- | --------- | ------------------------------- |
+| `pic-standup-730`    | `30 7 * * 1-5`  | 7:30 AM   | Initial standup - agent wake-up |
+| `pic-checkin-800`    | `0 8 * * 1-5`   | 8:00 AM   | 30 min before open              |
+| `pic-checkin-830`    | `30 8 * * 1-5`  | 8:30 AM   | Economic data scan              |
+| `pic-premarket-900`  | `0 9 * * 1-5`   | 9:00 AM   | Final prep, 30 min to open      |
+| `pic-marketopen-930` | `30 9 * * 1-5`  | 9:30 AM   | Market open wrap                |
 
 ---
 
@@ -23,11 +23,13 @@
 ### Option 1: System Cron (Linux/macOS)
 
 1. **Open crontab:**
+
    ```bash
    crontab -e
    ```
 
 2. **Add these lines:**
+
    ```cron
    # PIC Boardroom Morning Standup (Eastern Time)
    # Note: Set TZ=America/New_York or adjust times to your local TZ
@@ -64,26 +66,30 @@ Using `node-cron` package in the backend:
 
 ```typescript
 // backend-hono/src/cron/boardroom-scheduler.ts
-import cron from 'node-cron';
-import { spawnBoardroomStandup } from '../services/boardroom-spawner.js';
+import cron from "node-cron";
+import { spawnBoardroomStandup } from "../services/boardroom-spawner.js";
 
 // Morning standup schedule (ET)
 const schedules = [
-  { cron: '30 7 * * 1-5', task: 'morning-standup', label: '7:30 AM Standup' },
-  { cron: '0 8 * * 1-5', task: 'checkin-8am', label: '8:00 AM Check-in' },
-  { cron: '30 8 * * 1-5', task: 'econ-scan', label: '8:30 AM Econ Scan' },
-  { cron: '0 9 * * 1-5', task: 'premarket', label: '9:00 AM Pre-Market' },
-  { cron: '30 9 * * 1-5', task: 'market-open', label: '9:30 AM Market Open' },
+  { cron: "30 7 * * 1-5", task: "morning-standup", label: "7:30 AM Standup" },
+  { cron: "0 8 * * 1-5", task: "checkin-8am", label: "8:00 AM Check-in" },
+  { cron: "30 8 * * 1-5", task: "econ-scan", label: "8:30 AM Econ Scan" },
+  { cron: "0 9 * * 1-5", task: "premarket", label: "9:00 AM Pre-Market" },
+  { cron: "30 9 * * 1-5", task: "market-open", label: "9:30 AM Market Open" },
 ];
 
 // Initialize all schedules
 schedules.forEach(({ cron: cronExpr, task, label }) => {
-  cron.schedule(cronExpr, async () => {
-    console.log(`[Boardroom] Triggering ${label}`);
-    await spawnBoardroomStandup(task);
-  }, {
-    timezone: 'America/New_York',
-  });
+  cron.schedule(
+    cronExpr,
+    async () => {
+      console.log(`[Boardroom] Triggering ${label}`);
+      await spawnBoardroomStandup(task);
+    },
+    {
+      timezone: "America/New_York",
+    },
+  );
 });
 ```
 
@@ -96,6 +102,7 @@ The breaking news trigger is **not cron-based** — it's event-driven via Herald
 **Endpoint:** `POST /api/boardroom/trigger/breaking-news`
 
 **Payload:**
+
 ```json
 {
   "eventType": "CPI",
@@ -107,6 +114,7 @@ The breaking news trigger is **not cron-based** — it's event-driven via Herald
 ```
 
 **Integration:**
+
 - Herald sentinel detects breaking news
 - Calls webhook to trigger boardroom
 - All agents wake up and comment within 60 seconds
@@ -116,6 +124,7 @@ The breaking news trigger is **not cron-based** — it's event-driven via Herald
 ## Testing
 
 ### Manual Trigger
+
 ```bash
 # Test morning standup
 curl -X POST http://localhost:8080/api/boardroom/standup/morning \
@@ -135,6 +144,7 @@ curl -X POST http://localhost:8080/api/boardroom/trigger/breaking-news \
 ```
 
 ### Verify in UI
+
 1. Open Fintheon app
 2. Navigate to Concilium → Boardroom
 3. Watch for messages at scheduled times

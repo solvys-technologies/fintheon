@@ -17,20 +17,39 @@ export interface TiltWarning {
 }
 
 // Part-aware message types (21st SDK pattern)
-export interface TextPart { type: 'text'; text: string }
-export interface ReasoningPart { type: 'reasoning'; text: string }
+export interface TextPart {
+  type: "text";
+  text: string;
+}
+export interface ReasoningPart {
+  type: "reasoning";
+  text: string;
+}
 export interface ToolInvocationPart {
-  type: 'tool-invocation'; toolName: string; args: Record<string, any>;
-  state: 'pending' | 'running' | 'done' | 'error'; id: string;
+  type: "tool-invocation";
+  toolName: string;
+  args: Record<string, any>;
+  state: "pending" | "running" | "done" | "error";
+  id: string;
 }
 export interface ToolResultPart {
-  type: 'tool-result'; toolInvocationId: string; output: string;
-  exitCode?: number; durationMs?: number;
+  type: "tool-result";
+  toolInvocationId: string;
+  output: string;
+  exitCode?: number;
+  durationMs?: number;
 }
-export type MessagePart = TextPart | ReasoningPart | ToolInvocationPart | ToolResultPart;
+export type MessagePart =
+  | TextPart
+  | ReasoningPart
+  | ToolInvocationPart
+  | ToolResultPart;
 export interface ChatMessage {
-  id: string; role: 'user' | 'assistant'; parts: MessagePart[];
-  createdAt: Date; cancelled?: boolean;
+  id: string;
+  role: "user" | "assistant";
+  parts: MessagePart[];
+  createdAt: Date;
+  cancelled?: boolean;
 }
 
 export interface ConversationSession {

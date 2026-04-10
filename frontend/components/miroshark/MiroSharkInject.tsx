@@ -1,9 +1,9 @@
 // [claude-code 2026-04-05] Fixed 404: added API_BASE to fetch call (was using relative URL)
 // [claude-code 2026-03-16] God's Eye View — variable injection modal for MiroShark
-import { useState, useCallback } from 'react';
-import { X, Zap } from 'lucide-react';
+import { useState, useCallback } from "react";
+import { X, Zap } from "lucide-react";
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 interface MiroSharkInjectProps {
   open: boolean;
@@ -12,14 +12,21 @@ interface MiroSharkInjectProps {
   narratives: Array<{ id: string; title: string }>;
 }
 
-export function MiroSharkInject({ open, onClose, simulationId, narratives }: MiroSharkInjectProps) {
-  const [variable, setVariable] = useState('');
-  const [selectedNarratives, setSelectedNarratives] = useState<Set<string>>(new Set());
+export function MiroSharkInject({
+  open,
+  onClose,
+  simulationId,
+  narratives,
+}: MiroSharkInjectProps) {
+  const [variable, setVariable] = useState("");
+  const [selectedNarratives, setSelectedNarratives] = useState<Set<string>>(
+    new Set(),
+  );
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
   const toggleNarrative = useCallback((id: string) => {
-    setSelectedNarratives(prev => {
+    setSelectedNarratives((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -32,24 +39,27 @@ export function MiroSharkInject({ open, onClose, simulationId, narratives }: Mir
     setSubmitting(true);
     setResult(null);
     try {
-      const res = await fetch(`${API_BASE}/api/miroshark/inject/${simulationId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          variable: variable.trim(),
-          targetNarrativeIds: [...selectedNarratives],
-          description: `User-injected scenario: ${variable.trim()}`,
-        }),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/miroshark/inject/${simulationId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            variable: variable.trim(),
+            targetNarrativeIds: [...selectedNarratives],
+            description: `User-injected scenario: ${variable.trim()}`,
+          }),
+        },
+      );
       const data = await res.json();
       if (res.ok) {
-        setResult('Variable injected — simulation re-running');
-        setVariable('');
+        setResult("Variable injected — simulation re-running");
+        setVariable("");
       } else {
-        setResult(data.error || 'Injection failed');
+        setResult(data.error || "Injection failed");
       }
     } catch {
-      setResult('Connection error');
+      setResult("Connection error");
     } finally {
       setSubmitting(false);
     }
@@ -62,7 +72,10 @@ export function MiroSharkInject({ open, onClose, simulationId, narratives }: Mir
       {/* Backdrop */}
       <div
         className="absolute inset-0"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)' }}
+        style={{
+          backgroundColor: "rgba(0, 0, 0, 0.6)",
+          backdropFilter: "blur(4px)",
+        }}
         onClick={onClose}
       />
 
@@ -70,9 +83,9 @@ export function MiroSharkInject({ open, onClose, simulationId, narratives }: Mir
       <div
         className="relative w-96 rounded-xl border p-5"
         style={{
-          backgroundColor: 'rgba(10, 10, 0, 0.95)',
-          borderColor: 'rgba(212, 175, 55, 0.25)',
-          backdropFilter: 'blur(16px)',
+          backgroundColor: "rgba(10, 10, 0, 0.95)",
+          borderColor: "rgba(212, 175, 55, 0.25)",
+          backdropFilter: "blur(16px)",
         }}
       >
         {/* Close button */}
@@ -85,14 +98,21 @@ export function MiroSharkInject({ open, onClose, simulationId, narratives }: Mir
 
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
-          <Zap className="w-4 h-4" style={{ color: 'var(--fintheon-accent)' }} />
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--fintheon-text)' }}>
+          <Zap
+            className="w-4 h-4"
+            style={{ color: "var(--fintheon-accent)" }}
+          />
+          <h3
+            className="text-sm font-semibold"
+            style={{ color: "var(--fintheon-text)" }}
+          >
             God&apos;s Eye View
           </h3>
         </div>
 
         <p className="text-[11px] text-gray-500 mb-4">
-          Inject a hypothetical variable into the running simulation to see how agents react.
+          Inject a hypothetical variable into the running simulation to see how
+          agents react.
         </p>
 
         {/* Variable input */}
@@ -103,12 +123,12 @@ export function MiroSharkInject({ open, onClose, simulationId, narratives }: Mir
           <input
             type="text"
             value={variable}
-            onChange={e => setVariable(e.target.value)}
+            onChange={(e) => setVariable(e.target.value)}
             placeholder="Fed cuts 50bp surprise, China invades Taiwan…"
             className="w-full px-3 py-2 rounded-lg text-xs bg-zinc-900/60 border
               text-[var(--fintheon-text)] placeholder-gray-600
               focus:outline-none focus:border-[var(--fintheon-accent)]/50"
-            style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+            style={{ borderColor: "rgba(255, 255, 255, 0.08)" }}
           />
         </div>
 
@@ -118,7 +138,7 @@ export function MiroSharkInject({ open, onClose, simulationId, narratives }: Mir
             Target Narratives
           </label>
           <div className="max-h-32 overflow-y-auto space-y-1">
-            {narratives.map(n => (
+            {narratives.map((n) => (
               <label
                 key={n.id}
                 className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer
@@ -130,7 +150,9 @@ export function MiroSharkInject({ open, onClose, simulationId, narratives }: Mir
                   onChange={() => toggleNarrative(n.id)}
                   className="w-3 h-3 rounded accent-[var(--fintheon-accent)]"
                 />
-                <span className="text-[11px] text-gray-300 truncate">{n.title}</span>
+                <span className="text-[11px] text-gray-300 truncate">
+                  {n.title}
+                </span>
               </label>
             ))}
           </div>
@@ -138,7 +160,9 @@ export function MiroSharkInject({ open, onClose, simulationId, narratives }: Mir
 
         {/* Result message */}
         {result && (
-          <p className={`text-[11px] mb-3 ${result.includes('error') || result.includes('failed') ? 'text-red-400' : 'text-emerald-400'}`}>
+          <p
+            className={`text-[11px] mb-3 ${result.includes("error") || result.includes("failed") ? "text-red-400" : "text-emerald-400"}`}
+          >
             {result}
           </p>
         )}
@@ -150,11 +174,11 @@ export function MiroSharkInject({ open, onClose, simulationId, narratives }: Mir
           className="w-full py-2 rounded-lg text-xs font-medium
             transition-colors disabled:opacity-30"
           style={{
-            backgroundColor: 'rgba(212, 175, 55, 0.15)',
-            color: 'var(--fintheon-accent)',
+            backgroundColor: "rgba(212, 175, 55, 0.15)",
+            color: "var(--fintheon-accent)",
           }}
         >
-          {submitting ? 'Injecting…' : 'Run Scenario'}
+          {submitting ? "Injecting…" : "Run Scenario"}
         </button>
       </div>
     </div>

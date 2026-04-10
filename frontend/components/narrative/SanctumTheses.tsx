@@ -1,8 +1,13 @@
 // [claude-code 2026-03-28] S8-T4: Volatility amplifier multiplier replaces probability/score bars
-import { useState, useEffect } from 'react';
-import type { MiroSharkScenario, MiroSharkCategoryScore } from '../../types/miroshark';
+import { useState, useEffect } from "react";
+import type {
+  MiroSharkScenario,
+  MiroSharkCategoryScore,
+} from "../../types/miroshark";
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
+const API_BASE = (
+  import.meta.env.VITE_API_URL || "http://localhost:8080"
+).replace(/\/$/, "");
 
 interface SanctumThesesProps {
   scenarios: MiroSharkScenario[];
@@ -11,12 +16,16 @@ interface SanctumThesesProps {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 7) return 'var(--fintheon-severe)';
-  if (score >= 5) return 'var(--fintheon-neutral-severe)';
-  return 'var(--fintheon-low)';
+  if (score >= 7) return "var(--fintheon-severe)";
+  if (score >= 5) return "var(--fintheon-neutral-severe)";
+  return "var(--fintheon-low)";
 }
 
-export function SanctumTheses({ scenarios, categoryScores, expanded }: SanctumThesesProps) {
+export function SanctumTheses({
+  scenarios,
+  categoryScores,
+  expanded,
+}: SanctumThesesProps) {
   const [multipliers, setMultipliers] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -27,17 +36,27 @@ export function SanctumTheses({ scenarios, categoryScores, expanded }: SanctumTh
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled && data.multipliers) setMultipliers(data.multipliers);
-      } catch { /* silent */ }
+      } catch {
+        /* silent */
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const compositeAvg = categoryScores.length > 0
-    ? categoryScores.reduce((s, c) => s + c.ivScore, 0) / categoryScores.length
-    : 5;
+  const compositeAvg =
+    categoryScores.length > 0
+      ? categoryScores.reduce((s, c) => s + c.ivScore, 0) /
+        categoryScores.length
+      : 5;
 
   const sorted = [...scenarios]
-    .sort((a, b) => Math.abs(b.projectedScore - compositeAvg) - Math.abs(a.projectedScore - compositeAvg))
+    .sort(
+      (a, b) =>
+        Math.abs(b.projectedScore - compositeAvg) -
+        Math.abs(a.projectedScore - compositeAvg),
+    )
     .slice(0, expanded ? 10 : 5);
 
   if (sorted.length === 0) {
@@ -49,12 +68,15 @@ export function SanctumTheses({ scenarios, categoryScores, expanded }: SanctumTh
   }
 
   return (
-    <div className={`grid gap-3 ${expanded ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3'}`}>
+    <div
+      className={`grid gap-3 ${expanded ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3"}`}
+    >
       {sorted.map((thesis, idx) => {
         const volatility = Math.abs(thesis.projectedScore - compositeAvg);
         const isTop = idx === 0;
         // Volatility amplifier: how much more volatile vs baseline
-        const baseMultiplier = compositeAvg > 0 ? thesis.projectedScore / compositeAvg : 1;
+        const baseMultiplier =
+          compositeAvg > 0 ? thesis.projectedScore / compositeAvg : 1;
         const regimeMultiplier = multipliers[thesis.label] ?? null;
         const amplifier = regimeMultiplier ?? baseMultiplier;
 
@@ -63,8 +85,8 @@ export function SanctumTheses({ scenarios, categoryScores, expanded }: SanctumTh
             key={thesis.label + idx}
             className={`rounded-lg border p-4 transition-colors ${
               isTop
-                ? 'border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/5'
-                : 'border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40'
+                ? "border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/5"
+                : "border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40"
             }`}
           >
             {/* Header */}

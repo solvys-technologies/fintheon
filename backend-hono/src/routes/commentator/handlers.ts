@@ -1,15 +1,15 @@
 // [claude-code 2026-03-26] S2-T3: Commentator CRUD handlers + speaker identify endpoint
 
-import type { Context } from 'hono';
+import type { Context } from "hono";
 import {
   getRegistry,
   addCommentator,
   updateCommentator,
   removeCommentator,
   getMultiplierForSpeaker,
-} from '../../services/commentator/commentator-service.js';
-import { extractSpeaker } from '../../services/commentator/speaker-extractor.js';
-import { TIER_DEFAULT_MULTIPLIERS } from '../../types/commentator.js';
+} from "../../services/commentator/commentator-service.js";
+import { extractSpeaker } from "../../services/commentator/speaker-extractor.js";
+import { TIER_DEFAULT_MULTIPLIERS } from "../../types/commentator.js";
 
 // GET /api/commentator/registry
 export async function handleGetRegistry(c: Context) {
@@ -29,16 +29,19 @@ export async function handleAddCommentator(c: Context) {
   }>();
 
   if (!body.name || !body.tier) {
-    return c.json({ error: 'name and tier are required' }, 400);
+    return c.json({ error: "name and tier are required" }, 400);
   }
   if (body.tier < 1 || body.tier > 3) {
-    return c.json({ error: 'tier must be 1, 2, or 3' }, 400);
+    return c.json({ error: "tier must be 1, 2, or 3" }, 400);
   }
 
   const tier = body.tier as 1 | 2 | 3;
   // New entries go to the bottom — get current max rank
   const currentRegistry = await getRegistry();
-  const maxRank = currentRegistry.reduce((max, e) => Math.max(max, e.rank ?? 0), 0);
+  const maxRank = currentRegistry.reduce(
+    (max, e) => Math.max(max, e.rank ?? 0),
+    0,
+  );
 
   const entry = await addCommentator({
     name: body.name,
@@ -52,15 +55,15 @@ export async function handleAddCommentator(c: Context) {
   });
 
   if (!entry) {
-    return c.json({ error: 'Failed to add commentator' }, 500);
+    return c.json({ error: "Failed to add commentator" }, 500);
   }
   return c.json({ entry }, 201);
 }
 
 // PUT /api/commentator/:id
 export async function handleUpdateCommentator(c: Context) {
-  const id = c.req.param('id');
-  if (!id) return c.json({ error: 'id is required' }, 400);
+  const id = c.req.param("id");
+  if (!id) return c.json({ error: "id is required" }, 400);
 
   const body = await c.req.json<Record<string, unknown>>();
   await updateCommentator(id, body);
@@ -69,8 +72,8 @@ export async function handleUpdateCommentator(c: Context) {
 
 // DELETE /api/commentator/:id
 export async function handleDeleteCommentator(c: Context) {
-  const id = c.req.param('id');
-  if (!id) return c.json({ error: 'id is required' }, 400);
+  const id = c.req.param("id");
+  if (!id) return c.json({ error: "id is required" }, 400);
 
   await removeCommentator(id);
   return c.json({ ok: true });
@@ -80,14 +83,16 @@ export async function handleDeleteCommentator(c: Context) {
 export async function handleReorderCommentators(c: Context) {
   const body = await c.req.json<{ orderedIds: string[] }>();
   if (!body.orderedIds || !Array.isArray(body.orderedIds)) {
-    return c.json({ error: 'orderedIds array is required' }, 400);
+    return c.json({ error: "orderedIds array is required" }, 400);
   }
 
-  const { reorderCommentators } = await import('../../services/supabase-service.js');
+  const { reorderCommentators } =
+    await import("../../services/supabase-service.js");
   await reorderCommentators(body.orderedIds);
 
   // Clear cache so next read picks up new order
-  const { clearRegistryCache } = await import('../../services/commentator/commentator-service.js');
+  const { clearRegistryCache } =
+    await import("../../services/commentator/commentator-service.js");
   clearRegistryCache();
 
   return c.json({ ok: true, count: body.orderedIds.length });
@@ -95,7 +100,8 @@ export async function handleReorderCommentators(c: Context) {
 
 // POST /api/commentator/seed — seed default commentator roster (idempotent)
 export async function handleSeedCommentators(c: Context) {
-  const { seedDefaultCommentators } = await import('../../services/supabase-service.js');
+  const { seedDefaultCommentators } =
+    await import("../../services/supabase-service.js");
   const seeded = await seedDefaultCommentators();
   return c.json({ seeded });
 }
@@ -104,7 +110,7 @@ export async function handleSeedCommentators(c: Context) {
 export async function handleIdentifySpeaker(c: Context) {
   const body = await c.req.json<{ headline: string }>();
   if (!body.headline) {
-    return c.json({ error: 'headline is required' }, 400);
+    return c.json({ error: "headline is required" }, 400);
   }
 
   const extraction = extractSpeaker(body.headline);
@@ -115,9 +121,8 @@ export async function handleIdentifySpeaker(c: Context) {
     multiplier = await getMultiplierForSpeaker(extraction.speaker);
     // Look up tier from registry if available
     const registry = await getRegistry();
-    const { fuzzyMatchSpeaker } = await import(
-      '../../services/commentator/commentator-service.js'
-    );
+    const { fuzzyMatchSpeaker } =
+      await import("../../services/commentator/commentator-service.js");
     const match = fuzzyMatchSpeaker(extraction.speaker, registry);
     if (match) tier = match.tier;
   }

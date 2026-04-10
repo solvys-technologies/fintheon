@@ -1,14 +1,33 @@
 // [claude-code 2026-03-28] NarrativeFlow shared types — all tracks import from here
 // S5-T1: Added TreeNode, CanvasViewport, ZOOM_THRESHOLDS, marketImpact on CatalystCard
-export type CatalystSentiment = 'bullish' | 'bearish';
-export type NarrativeCategory = 'geopolitical' | 'macroeconomic' | 'monetary' | 'market-structure' | 'supply-chain' | 'black-swan' | 'earnings';
-export type CatalystSource = 'rss' | 'user' | 'agent' | 'riskflow' | 'riskflow-import' | 'brief' | 'research';
-export type CatalystSeverity = 'high' | 'medium' | 'low';
-export type NarrativeStatus = 'active' | 'watching' | 'archived' | 'decayed';
-export type DirectionBias = 'long' | 'short' | 'neutral';
-export type RopePolarity = 'reinforcing' | 'contradicting';
-export type ZoomLevel = 'week' | 'month' | 'quarter' | 'year';
-export type CatalystTemplateType = 'fomc' | 'cpi' | 'earnings' | 'geopolitical' | 'custom';
+export type CatalystSentiment = "bullish" | "bearish";
+export type NarrativeCategory =
+  | "geopolitical"
+  | "macroeconomic"
+  | "monetary"
+  | "market-structure"
+  | "supply-chain"
+  | "black-swan"
+  | "earnings";
+export type CatalystSource =
+  | "rss"
+  | "user"
+  | "agent"
+  | "riskflow"
+  | "riskflow-import"
+  | "brief"
+  | "research";
+export type CatalystSeverity = "high" | "medium" | "low";
+export type NarrativeStatus = "active" | "watching" | "archived" | "decayed";
+export type DirectionBias = "long" | "short" | "neutral";
+export type RopePolarity = "reinforcing" | "contradicting";
+export type ZoomLevel = "week" | "month" | "quarter" | "year";
+export type CatalystTemplateType =
+  | "fomc"
+  | "cpi"
+  | "earnings"
+  | "geopolitical"
+  | "custom";
 
 export interface NarrativeLane {
   id: string;
@@ -32,7 +51,7 @@ export interface ResearchBullet {
   id: string;
   boldPhrase: string;
   explanation: string;
-  source: 'ai' | 'user' | 'riskflow';
+  source: "ai" | "user" | "riskflow";
   highlightable: boolean;
 }
 
@@ -62,9 +81,9 @@ export interface CatalystCard {
   isGhost: boolean;
   templateType: CatalystTemplateType | null;
   position: { x: number; y: number } | null;
-  tags?: string[];  // user-defined tags for filtering/organizing
+  tags?: string[]; // user-defined tags for filtering/organizing
   category?: NarrativeCategory;
-  riskflowItemId?: string;              // link back to scored_riskflow_items
+  riskflowItemId?: string; // link back to scored_riskflow_items
   marketImpact?: {
     nq: { points: number; percent: number } | null;
     es: { points: number; percent: number } | null;
@@ -73,8 +92,8 @@ export interface CatalystCard {
   };
   narrative?: string; // primary narrative thread slug (e.g. "middle-east-conflict", "rate-cut-cycle")
   narrativeThreads?: string[]; // all narrative thread slugs this card belongs to (for rope connections)
-  directionBias?: 'bullish' | 'bearish' | 'neutral';
-  status?: 'active' | 'monitoring' | 'resolved';
+  directionBias?: "bullish" | "bearish" | "neutral";
+  status?: "active" | "monitoring" | "resolved";
   dateRange?: { start: string; end: string | null };
   researchBullets?: ResearchBullet[];
   parentHighlight?: string;
@@ -88,9 +107,9 @@ export interface CatalystCard {
 export interface Rope {
   id: string;
   fromId: string;
-  fromType: 'catalyst' | 'lane';
+  fromType: "catalyst" | "lane";
   toId: string;
-  toType: 'catalyst' | 'lane';
+  toType: "catalyst" | "lane";
   polarity: RopePolarity;
   weight: number;
   approved: boolean;
@@ -116,7 +135,7 @@ export interface NarrativeConflict {
 }
 
 export interface AgentProviderConfig {
-  provider: 'hermes' | 'github-models' | 'manual';
+  provider: "hermes" | "github-models" | "manual";
   autoApprove: boolean;
   model?: string;
 }
@@ -131,9 +150,9 @@ export interface NarrativeFlowState {
   currentWeekStart: string;
   selectedCatalystId: string | null;
   selectedLaneId: string | null;
-  filterSentiment: CatalystSentiment | 'all';
+  filterSentiment: CatalystSentiment | "all";
   categoryFilter: Set<NarrativeCategory>; // empty set = show all
-  severitySort: 'severity' | 'date' | 'health' | null;
+  severitySort: "severity" | "date" | "health" | null;
   heatmapEnabled: boolean;
   replayMode: boolean;
   replayPosition: number;
@@ -152,48 +171,67 @@ export interface NarrativeSnapshot {
 }
 
 export type NarrativeAction =
-  | { type: 'ADD_LANE'; lane: Omit<NarrativeLane, 'id' | 'createdAt' | 'updatedAt'> }
-  | { type: 'UPDATE_LANE'; id: string; updates: Partial<NarrativeLane> }
-  | { type: 'REMOVE_LANE'; id: string }
-  | { type: 'REORDER_LANES'; ids: string[] }
-  | { type: 'FORK_LANE'; laneId: string; title: string }
-  | { type: 'ADD_CATALYST'; catalyst: Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'> }
-  | { type: 'UPDATE_CATALYST'; id: string; updates: Partial<CatalystCard> }
-  | { type: 'REMOVE_CATALYST'; id: string }
-  | { type: 'MOVE_CATALYST'; id: string; date: string; position: { x: number; y: number } | null }
-  | { type: 'ADD_ROPE'; rope: Omit<Rope, 'id' | 'createdAt'> }
-  | { type: 'REMOVE_ROPE'; id: string }
-  | { type: 'APPROVE_ROPE'; id: string }
-  | { type: 'ADD_CONFLUENCE'; node: Omit<ConfluenceNode, 'id'> }
-  | { type: 'REMOVE_CONFLUENCE'; id: string }
-  | { type: 'ADD_CONFLICT'; conflict: Omit<NarrativeConflict, 'id'> }
-  | { type: 'RESOLVE_CONFLICT'; id: string }
-  | { type: 'SET_ZOOM'; level: ZoomLevel }
-  | { type: 'SET_WEEK'; weekStart: string }
-  | { type: 'SET_FILTER'; sentiment: CatalystSentiment | 'all' }
-  | { type: 'TOGGLE_HEATMAP' }
-  | { type: 'SET_REPLAY_MODE'; enabled: boolean }
-  | { type: 'SET_REPLAY_POSITION'; position: number }
-  | { type: 'BULK_ADD_CATALYSTS'; catalysts: CatalystCard[] }
-  | { type: 'IMPORT_CATALYSTS'; catalysts: Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'>[] }
-  | { type: 'TAG_CATALYST'; catalystId: string; tags: string[] }
-  | { type: 'TAKE_SNAPSHOT' }
-  | { type: 'RESTORE_SNAPSHOT' }
-  | { type: 'HIGHLIGHT_BRANCH'; parentId: string; highlightText: string; childCard: Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'> }
-  | { type: 'ADD_RESEARCH_BULLETS'; cardId: string; bullets: ResearchBullet[] }
-  | { type: 'MOVE_CARD_TO_LANE'; cardId: string; targetLaneId: string }
-  | { type: 'SET_VIEWPORT'; viewport: Partial<CanvasViewport> }
-  | { type: 'SET_DATE_FILTER'; filter: { start: string; end: string } | null }
-  | { type: 'SET_CATEGORY_FILTER'; categories: Set<NarrativeCategory> }
-  | { type: 'SET_SEVERITY_SORT'; sort: 'severity' | 'date' | 'health' | null }
-  | { type: 'TOGGLE_CATEGORY'; category: NarrativeCategory };
+  | {
+      type: "ADD_LANE";
+      lane: Omit<NarrativeLane, "id" | "createdAt" | "updatedAt">;
+    }
+  | { type: "UPDATE_LANE"; id: string; updates: Partial<NarrativeLane> }
+  | { type: "REMOVE_LANE"; id: string }
+  | { type: "REORDER_LANES"; ids: string[] }
+  | { type: "FORK_LANE"; laneId: string; title: string }
+  | {
+      type: "ADD_CATALYST";
+      catalyst: Omit<CatalystCard, "id" | "createdAt" | "updatedAt">;
+    }
+  | { type: "UPDATE_CATALYST"; id: string; updates: Partial<CatalystCard> }
+  | { type: "REMOVE_CATALYST"; id: string }
+  | {
+      type: "MOVE_CATALYST";
+      id: string;
+      date: string;
+      position: { x: number; y: number } | null;
+    }
+  | { type: "ADD_ROPE"; rope: Omit<Rope, "id" | "createdAt"> }
+  | { type: "REMOVE_ROPE"; id: string }
+  | { type: "APPROVE_ROPE"; id: string }
+  | { type: "ADD_CONFLUENCE"; node: Omit<ConfluenceNode, "id"> }
+  | { type: "REMOVE_CONFLUENCE"; id: string }
+  | { type: "ADD_CONFLICT"; conflict: Omit<NarrativeConflict, "id"> }
+  | { type: "RESOLVE_CONFLICT"; id: string }
+  | { type: "SET_ZOOM"; level: ZoomLevel }
+  | { type: "SET_WEEK"; weekStart: string }
+  | { type: "SET_FILTER"; sentiment: CatalystSentiment | "all" }
+  | { type: "TOGGLE_HEATMAP" }
+  | { type: "SET_REPLAY_MODE"; enabled: boolean }
+  | { type: "SET_REPLAY_POSITION"; position: number }
+  | { type: "BULK_ADD_CATALYSTS"; catalysts: CatalystCard[] }
+  | {
+      type: "IMPORT_CATALYSTS";
+      catalysts: Omit<CatalystCard, "id" | "createdAt" | "updatedAt">[];
+    }
+  | { type: "TAG_CATALYST"; catalystId: string; tags: string[] }
+  | { type: "TAKE_SNAPSHOT" }
+  | { type: "RESTORE_SNAPSHOT" }
+  | {
+      type: "HIGHLIGHT_BRANCH";
+      parentId: string;
+      highlightText: string;
+      childCard: Omit<CatalystCard, "id" | "createdAt" | "updatedAt">;
+    }
+  | { type: "ADD_RESEARCH_BULLETS"; cardId: string; bullets: ResearchBullet[] }
+  | { type: "MOVE_CARD_TO_LANE"; cardId: string; targetLaneId: string }
+  | { type: "SET_VIEWPORT"; viewport: Partial<CanvasViewport> }
+  | { type: "SET_DATE_FILTER"; filter: { start: string; end: string } | null }
+  | { type: "SET_CATEGORY_FILTER"; categories: Set<NarrativeCategory> }
+  | { type: "SET_SEVERITY_SORT"; sort: "severity" | "date" | "health" | null }
+  | { type: "TOGGLE_CATEGORY"; category: NarrativeCategory };
 
 // ── Tree-map layout types (S5-T1) ──────────────────────────────
 
 export interface TreeNode {
   id: string;
   label: string;
-  type: 'root' | 'category' | 'time-bucket' | 'card';
+  type: "root" | "category" | "time-bucket" | "card";
   children: TreeNode[];
   category?: NarrativeCategory;
   timeBucket?: string; // column key
@@ -201,22 +239,22 @@ export interface TreeNode {
 }
 
 export interface CanvasViewport {
-  x: number;        // pan offset X
-  y: number;        // pan offset Y
-  scale: number;    // CSS transform scale (0.1 - 3.0)
+  x: number; // pan offset X
+  y: number; // pan offset Y
+  scale: number; // CSS transform scale (0.1 - 3.0)
   zoomLevel: ZoomLevel; // semantic zoom level derived from scale thresholds
 }
 
 export const ZOOM_THRESHOLDS: Record<ZoomLevel, [number, number]> = {
-  'week': [1.5, 3.0],     // close zoom = individual cards
-  'month': [0.8, 1.5],    // medium = week aggregates
-  'quarter': [0.4, 0.8],  // far = month aggregates
-  'year': [0.1, 0.4],     // very far = quarter aggregates
+  week: [1.5, 3.0], // close zoom = individual cards
+  month: [0.8, 1.5], // medium = week aggregates
+  quarter: [0.4, 0.8], // far = month aggregates
+  year: [0.1, 0.4], // very far = quarter aggregates
 };
 
 export const DEFAULT_VIEWPORT: CanvasViewport = {
   x: 0,
   y: 0,
   scale: 1.0,
-  zoomLevel: 'month',
+  zoomLevel: "month",
 };

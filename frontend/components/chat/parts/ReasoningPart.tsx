@@ -1,13 +1,16 @@
 // [claude-code 2026-03-06] Collapsible reasoning/thinking part renderer
-import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface ReasoningPartProps {
   text: string;
   defaultOpen?: boolean;
 }
 
-export function ReasoningPartRenderer({ text, defaultOpen = false }: ReasoningPartProps) {
+export function ReasoningPartRenderer({
+  text,
+  defaultOpen = false,
+}: ReasoningPartProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (

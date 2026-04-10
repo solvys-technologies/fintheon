@@ -5,15 +5,17 @@
  * exchange actions using EIP-712 typed data (Hyperliquid's phantomAgent domain).
  */
 
-import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';
-import { type Hex, encodePacked, keccak256, toHex } from 'viem';
+import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
+import { type Hex, encodePacked, keccak256, toHex } from "viem";
 
 // Hyperliquid chain IDs
 const MAINNET_CHAIN_ID = 42161; // Arbitrum One
 const TESTNET_CHAIN_ID = 421614; // Arbitrum Sepolia
 
 function getChainId(): number {
-  return process.env.HYPERLIQUID_TESTNET === 'true' ? TESTNET_CHAIN_ID : MAINNET_CHAIN_ID;
+  return process.env.HYPERLIQUID_TESTNET === "true"
+    ? TESTNET_CHAIN_ID
+    : MAINNET_CHAIN_ID;
 }
 
 let cachedAccount: PrivateKeyAccount | null = null;
@@ -22,7 +24,7 @@ function getAccount(): PrivateKeyAccount {
   if (cachedAccount) return cachedAccount;
 
   const pk = process.env.HYPERLIQUID_PRIVATE_KEY;
-  if (!pk) throw new Error('HYPERLIQUID_PRIVATE_KEY not set');
+  if (!pk) throw new Error("HYPERLIQUID_PRIVATE_KEY not set");
 
   cachedAccount = privateKeyToAccount(pk as Hex);
   return cachedAccount;
@@ -44,11 +46,22 @@ export function getVaultAddress(): string | undefined {
  * Compute the connection ID (source + nonce hash) used in Hyperliquid's
  * phantomAgent EIP-712 signing scheme.
  */
-function connectionId(action: Record<string, unknown>, nonce: number, vaultAddress?: string): Hex {
+function connectionId(
+  action: Record<string, unknown>,
+  nonce: number,
+  vaultAddress?: string,
+): Hex {
   const source = vaultAddress
-    ? keccak256(encodePacked(['address', 'address'], [action.type as Hex ?? '0x0', vaultAddress as Hex]))
-    : keccak256(encodePacked(['string'], ['a']));
-  return keccak256(encodePacked(['bytes32', 'uint64'], [source, BigInt(nonce)])) as Hex;
+    ? keccak256(
+        encodePacked(
+          ["address", "address"],
+          [(action.type as Hex) ?? "0x0", vaultAddress as Hex],
+        ),
+      )
+    : keccak256(encodePacked(["string"], ["a"]));
+  return keccak256(
+    encodePacked(["bytes32", "uint64"], [source, BigInt(nonce)]),
+  ) as Hex;
 }
 
 /**
@@ -64,16 +77,16 @@ export async function signAction(
   const chainId = getChainId();
 
   const domain = {
-    name: 'Exchange',
-    version: '1',
+    name: "Exchange",
+    version: "1",
     chainId,
-    verifyingContract: '0x0000000000000000000000000000000000000000' as Hex,
+    verifyingContract: "0x0000000000000000000000000000000000000000" as Hex,
   } as const;
 
   const types = {
     Agent: [
-      { name: 'source', type: 'string' },
-      { name: 'connectionId', type: 'bytes32' },
+      { name: "source", type: "string" },
+      { name: "connectionId", type: "bytes32" },
     ],
   } as const;
 
@@ -82,9 +95,16 @@ export async function signAction(
   const signature = await account.signTypedData({
     domain,
     types,
-    primaryType: 'Agent',
+    primaryType: "Agent",
     message: {
-      source: vaultAddress ? keccak256(encodePacked(['address', 'address'], [action.type as Hex ?? '0x0', vaultAddress as Hex])) : 'a',
+      source: vaultAddress
+        ? keccak256(
+            encodePacked(
+              ["address", "address"],
+              [(action.type as Hex) ?? "0x0", vaultAddress as Hex],
+            ),
+          )
+        : "a",
       connectionId: cid,
     },
   });

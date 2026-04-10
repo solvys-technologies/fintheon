@@ -1,13 +1,10 @@
 // [claude-code 2026-04-03] Supabase JWT always attached — no auth bypass in any environment
-import { getAccessToken } from './supabase';
+import { getAccessToken } from "./supabase";
 import ApiClient from "./apiClient";
 import { createBackendClient, type BackendClient } from "./services";
 
 // Authenticated API client — always sends Supabase JWT
-const apiClient = new ApiClient(
-  undefined,
-  async () => getAccessToken(),
-);
+const apiClient = new ApiClient(undefined, async () => getAccessToken());
 
 const backendClient = createBackendClient(apiClient);
 

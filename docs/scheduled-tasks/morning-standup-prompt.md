@@ -1,28 +1,32 @@
 # Fintheon — Claude Desktop Scheduled Task Prompts
+
 # All tasks use model: claude-opus-4-6
+
 # Backend: Fintheon Hono server on localhost:8080
+
 # Timezone: America/New_York (ET)
 
 ---
 
 ## Schedule Overview
 
-| # | Task | Claude Desktop Schedule | Backend Cron (backup) |
-|---|------|------------------------|----------------------|
-| 1 | Pre-market news monitor | Every 15 min, 4:00–6:29 AM ET, Mon–Fri | — (Claude Desktop only) |
-| 2 | Dispatch MDB | 6:30 AM ET, Mon–Fri | `30 6 * * 1-5` (dispatch-scheduler) |
-| 3 | **Morning standup + trade proposal + chart** | **7:15 AM ET, Mon–Fri** | `30 7 * * 1-5` (boardroom-scheduler standup only) |
-| 4 | Boardroom checkin | 8:00 AM ET, Mon–Fri | `0 8 * * 1-5` |
-| 5 | Boardroom econ scan | 8:35 AM ET, Mon–Fri | `30 8 * * 1-5` (backend fires at 8:30) |
-| 6 | Boardroom premarket | 9:00 AM ET, Mon–Fri | `0 9 * * 1-5` |
-| 7 | Boardroom market open | 9:35 AM ET, Mon–Fri | `30 9 * * 1-5` (backend fires at 9:30) |
-| 8 | Dispatch ADB | 10:45 AM ET, Mon–Fri | `45 10 * * 1-5` |
-| 9 | Dispatch PMDB | 5:15 PM ET, Mon–Fri | `15 17 * * 1-5` |
-| 10 | Dispatch TOTT | 4:30 PM ET, Sunday | `30 16 * * 0` |
+| #   | Task                                         | Claude Desktop Schedule                | Backend Cron (backup)                             |
+| --- | -------------------------------------------- | -------------------------------------- | ------------------------------------------------- |
+| 1   | Pre-market news monitor                      | Every 15 min, 4:00–6:29 AM ET, Mon–Fri | — (Claude Desktop only)                           |
+| 2   | Dispatch MDB                                 | 6:30 AM ET, Mon–Fri                    | `30 6 * * 1-5` (dispatch-scheduler)               |
+| 3   | **Morning standup + trade proposal + chart** | **7:15 AM ET, Mon–Fri**                | `30 7 * * 1-5` (boardroom-scheduler standup only) |
+| 4   | Boardroom checkin                            | 8:00 AM ET, Mon–Fri                    | `0 8 * * 1-5`                                     |
+| 5   | Boardroom econ scan                          | 8:35 AM ET, Mon–Fri                    | `30 8 * * 1-5` (backend fires at 8:30)            |
+| 6   | Boardroom premarket                          | 9:00 AM ET, Mon–Fri                    | `0 9 * * 1-5`                                     |
+| 7   | Boardroom market open                        | 9:35 AM ET, Mon–Fri                    | `30 9 * * 1-5` (backend fires at 9:30)            |
+| 8   | Dispatch ADB                                 | 10:45 AM ET, Mon–Fri                   | `45 10 * * 1-5`                                   |
+| 9   | Dispatch PMDB                                | 5:15 PM ET, Mon–Fri                    | `15 17 * * 1-5`                                   |
+| 10  | Dispatch TOTT                                | 4:30 PM ET, Sunday                     | `30 16 * * 0`                                     |
 
 **Why dual scheduling**: The backend has its own node-cron for dispatches and standups, but it only fires when the Hono server is running. Claude Desktop fires regardless. Dispatch endpoints have idempotency guards — if the backend cron already generated the brief, the Claude Desktop trigger is a no-op. Boardroom standups always append new messages (no idempotency), so Claude Desktop fires 15 min early / 5 min late to avoid double-triggering with the backend cron.
 
 ---
+
 ---
 
 ## TASK 1 — Pre-market News Monitor

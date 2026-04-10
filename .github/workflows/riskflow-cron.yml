@@ -5,7 +5,7 @@ name: Riskflow Prefetch Cron
 # approximating a 2-minute interval between requests.
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:

@@ -1,11 +1,14 @@
 // [claude-code 2026-03-28] Market impact enricher — nightly cron enriches HIGH/CRITICAL scored items with NQ/ES/YM daily close
 
-import { fetchDailyClose } from '../market-data/daily-close-service.js';
-import { readItemsNeedingMarketImpact, writeMarketImpact } from '../supabase-service.js';
-import type { MarketImpactData } from '../supabase-service.js';
-import { createLogger } from '../../lib/logger.js';
+import { fetchDailyClose } from "../market-data/daily-close-service.js";
+import {
+  readItemsNeedingMarketImpact,
+  writeMarketImpact,
+} from "../supabase-service.js";
+import type { MarketImpactData } from "../supabase-service.js";
+import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger('MarketImpact');
+const log = createLogger("MarketImpact");
 
 const MAX_ITEMS_PER_RUN = 50;
 const MAX_AGE_DAYS = 365;
@@ -28,7 +31,7 @@ export async function runMarketImpactEnrichment(): Promise<{
   try {
     const items = await readItemsNeedingMarketImpact(MAX_ITEMS_PER_RUN);
     if (items.length === 0) {
-      log.info('No items needing market impact');
+      log.info("No items needing market impact");
       return { processed: 0, enriched: 0, errors: 0 };
     }
 
@@ -41,7 +44,10 @@ export async function runMarketImpactEnrichment(): Promise<{
       .slice(0, 10);
 
     for (const item of items) {
-      const date = (item.published_at ?? (item as any).created_at ?? '').slice(0, 10);
+      const date = (item.published_at ?? (item as any).created_at ?? "").slice(
+        0,
+        10,
+      );
       if (!date || date < cutoffDate) continue;
 
       if (!byDate.has(date)) byDate.set(date, []);
@@ -51,7 +57,10 @@ export async function runMarketImpactEnrichment(): Promise<{
     log.info(`Processing ${processed} items across ${byDate.size} dates`);
 
     // Fetch daily close for each unique date
-    const closeCache = new Map<string, Awaited<ReturnType<typeof fetchDailyClose>>>();
+    const closeCache = new Map<
+      string,
+      Awaited<ReturnType<typeof fetchDailyClose>>
+    >();
 
     for (const date of byDate.keys()) {
       try {
@@ -64,16 +73,25 @@ export async function runMarketImpactEnrichment(): Promise<{
     }
 
     // Build updates
-    const updates: Array<{ tweet_id: string; market_impact: MarketImpactData }> = [];
+    const updates: Array<{
+      tweet_id: string;
+      market_impact: MarketImpactData;
+    }> = [];
 
     for (const [date, tweetIds] of byDate) {
       const closes = closeCache.get(date);
       if (!closes) continue;
 
       const impact: MarketImpactData = {
-        nq: closes.nq ? { points: closes.nq.change, percent: closes.nq.changePercent } : null,
-        es: closes.es ? { points: closes.es.change, percent: closes.es.changePercent } : null,
-        ym: closes.ym ? { points: closes.ym.change, percent: closes.ym.changePercent } : null,
+        nq: closes.nq
+          ? { points: closes.nq.change, percent: closes.nq.changePercent }
+          : null,
+        es: closes.es
+          ? { points: closes.es.change, percent: closes.es.changePercent }
+          : null,
+        ym: closes.ym
+          ? { points: closes.ym.change, percent: closes.ym.changePercent }
+          : null,
         asOf: date,
       };
 
@@ -88,9 +106,11 @@ export async function runMarketImpactEnrichment(): Promise<{
       enriched = written;
     }
 
-    log.info(`Enriched ${enriched}/${processed} items across ${byDate.size} dates`);
+    log.info(
+      `Enriched ${enriched}/${processed} items across ${byDate.size} dates`,
+    );
   } catch (err) {
-    log.error('Market impact enrichment failed', { error: String(err) });
+    log.error("Market impact enrichment failed", { error: String(err) });
     errors++;
   }
 
@@ -103,16 +123,16 @@ let enricherTimer: ReturnType<typeof setInterval> | null = null;
 const INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function startMarketImpactEnricher(): void {
-  log.info('Starting market impact enricher (24h interval)');
+  log.info("Starting market impact enricher (24h interval)");
 
   // Run once on boot
   runMarketImpactEnrichment().catch((err) =>
-    log.error('Initial run error', { error: String(err) })
+    log.error("Initial run error", { error: String(err) }),
   );
 
   enricherTimer = setInterval(() => {
     runMarketImpactEnrichment().catch((err) =>
-      log.error('Scheduled run error', { error: String(err) })
+      log.error("Scheduled run error", { error: String(err) }),
     );
   }, INTERVAL_MS);
 }

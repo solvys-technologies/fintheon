@@ -14,15 +14,23 @@ import type {
   InterventionSeverity,
   TradeDirection,
   ConvictionLevel,
-} from './services';
+} from "./services";
 
-export type { TriggerInterventionParams, TradeIdeaParams, InterventionType, InterventionSeverity, TradeDirection, ConvictionLevel };
+export type {
+  TriggerInterventionParams,
+  TradeIdeaParams,
+  InterventionType,
+  InterventionSeverity,
+  TradeDirection,
+  ConvictionLevel,
+};
 
 /* ------------------------------------------------------------------ */
 /*  Message classification helpers (used by BoardroomChat)             */
 /* ------------------------------------------------------------------ */
 
-const INTERVENTION_RE = /^(ℹ️|⚠️|🚨)\s\*\*\[(RISK ALERT|OVERTRADING WARNING|RULE VIOLATION|MARKET EVENT|POSITION CHECK)\]\*\*/;
+const INTERVENTION_RE =
+  /^(ℹ️|⚠️|🚨)\s\*\*\[(RISK ALERT|OVERTRADING WARNING|RULE VIOLATION|MARKET EVENT|POSITION CHECK)\]\*\*/;
 const TRADE_IDEA_RE = /^(🟢|🔴|🟡)\s\*\*\[TRADE IDEA\]\*\*/;
 
 export function isInterventionMessage(content: string): boolean {
@@ -67,10 +75,12 @@ export type ParsedTradeIdea = {
 };
 
 export function parseTradeIdea(content: string): ParsedTradeIdea | null {
-  const lines = content.split('\n').filter(Boolean);
+  const lines = content.split("\n").filter(Boolean);
   if (lines.length < 3) return null;
 
-  const headerMatch = lines[0].match(/^(?:🟢|🔴|🟡)\s\*\*\[TRADE IDEA\]\*\*\s—\s(\w+)/);
+  const headerMatch = lines[0].match(
+    /^(?:🟢|🔴|🟡)\s\*\*\[TRADE IDEA\]\*\*\s—\s(\w+)/,
+  );
   if (!headerMatch) return null;
   const agent = headerMatch[1];
 
@@ -89,23 +99,23 @@ export function parseTradeIdea(content: string): ParsedTradeIdea | null {
 
   for (let i = 2; i < lines.length; i++) {
     const line = lines[i];
-    if (line.startsWith('Entry:')) {
-      const parts = line.split('|').map((s) => s.trim());
+    if (line.startsWith("Entry:")) {
+      const parts = line.split("|").map((s) => s.trim());
       for (const p of parts) {
-        if (p.startsWith('Entry:')) entry = p.replace('Entry:', '').trim();
-        if (p.startsWith('Stop:')) stopLoss = p.replace('Stop:', '').trim();
-        if (p.startsWith('Target:')) target = p.replace('Target:', '').trim();
+        if (p.startsWith("Entry:")) entry = p.replace("Entry:", "").trim();
+        if (p.startsWith("Stop:")) stopLoss = p.replace("Stop:", "").trim();
+        if (p.startsWith("Target:")) target = p.replace("Target:", "").trim();
       }
       thesisStartIdx = i + 1;
-    } else if (line.startsWith('Key Levels:')) {
-      keyLevels = line.replace('Key Levels:', '').trim();
+    } else if (line.startsWith("Key Levels:")) {
+      keyLevels = line.replace("Key Levels:", "").trim();
       thesisStartIdx = i + 1;
     } else {
       break;
     }
   }
 
-  const thesis = lines.slice(thesisStartIdx).join('\n');
+  const thesis = lines.slice(thesisStartIdx).join("\n");
 
   return {
     direction: direction.toLowerCase() as TradeDirection,
@@ -130,28 +140,34 @@ export interface AgentTopicMatch {
 }
 
 // [claude-code 2026-03-16] Agent roster v7.9: 6→5 agents (Sentinel→Feucht, Charles→Oracle, Horace→Herald)
-const AGENT_TOPICS: Record<string, { keywords: RegExp; description: string }> = {
-  Feucht: {
-    keywords: /volatility|iv|vix|options|gamma|theta|skew|vol.?surface|implied|futures|spread|risk|drawdown|exposure|margin|stop.?loss|max.?loss|position.?size|limit|breach/i,
-    description: 'Futures, execution, volatility, and risk management',
-  },
-  Herald: {
-    keywords: /sentiment|news|social|twitter|x\.com|headline|report/i,
-    description: 'News sentiment and social signals',
-  },
-  Oracle: {
-    keywords: /macro|fed|rate|cpi|gdp|employment|inflation|yield|bond|treasury|polymarket|prediction|execution|order|fill|slippage|entry|exit|position|trade|buy|sell|close|open/i,
-    description: 'All-seer — prediction markets, macro intelligence, and execution oversight',
-  },
-  Consul: {
-    keywords: /fundamental|valuation|earnings|revenue|pe|eps|mega.?cap|large.?cap|balance.?sheet|cashflow|dividend|guidance|margin/i,
-    description: 'Fundamentals and mega-caps desk',
-  },
-  'Harper-Opus': {
-    keywords: /strategy|plan|review|summary|overview|coordination|meeting|agenda/i,
-    description: 'CAO — executive strategy and oversight',
-  },
-};
+const AGENT_TOPICS: Record<string, { keywords: RegExp; description: string }> =
+  {
+    Feucht: {
+      keywords:
+        /volatility|iv|vix|options|gamma|theta|skew|vol.?surface|implied|futures|spread|risk|drawdown|exposure|margin|stop.?loss|max.?loss|position.?size|limit|breach/i,
+      description: "Futures, execution, volatility, and risk management",
+    },
+    Herald: {
+      keywords: /sentiment|news|social|twitter|x\.com|headline|report/i,
+      description: "News sentiment and social signals",
+    },
+    Oracle: {
+      keywords:
+        /macro|fed|rate|cpi|gdp|employment|inflation|yield|bond|treasury|polymarket|prediction|execution|order|fill|slippage|entry|exit|position|trade|buy|sell|close|open/i,
+      description:
+        "All-seer — prediction markets, macro intelligence, and execution oversight",
+    },
+    Consul: {
+      keywords:
+        /fundamental|valuation|earnings|revenue|pe|eps|mega.?cap|large.?cap|balance.?sheet|cashflow|dividend|guidance|margin/i,
+      description: "Fundamentals and mega-caps desk",
+    },
+    "Harper-Opus": {
+      keywords:
+        /strategy|plan|review|summary|overview|coordination|meeting|agenda/i,
+      description: "CAO — executive strategy and oversight",
+    },
+  };
 
 /**
  * Given a message, return agents ranked by topic relevance.
@@ -163,7 +179,7 @@ export function matchAgentsToTopic(message: string): AgentTopicMatch[] {
     const matches = message.match(keywords);
     if (matches) {
       // Score based on number of keyword matches
-      const allMatches = message.match(new RegExp(keywords.source, 'gi'));
+      const allMatches = message.match(new RegExp(keywords.source, "gi"));
       const relevance = Math.min(1, (allMatches?.length ?? 1) * 0.3);
       results.push({ agent, relevance });
     }

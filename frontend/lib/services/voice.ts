@@ -16,7 +16,7 @@ export interface VoiceSpeakResponse {
   responseText: string;
   audioBase64?: string;
   audioMimeType?: string;
-  mode?: 'chat' | 'infraction';
+  mode?: "chat" | "infraction";
 }
 
 export interface VoiceSentimentResponse {
@@ -25,15 +25,17 @@ export interface VoiceSentimentResponse {
   keywords: string[];
   tiltIndicators: string[];
   summary: string;
-  provider: 'claude-haiku' | 'fallback';
+  provider: "claude-haiku" | "fallback";
 }
 
 // Notifications Service
 export class NotificationsService {
-  constructor(private client: ApiClient) { }
+  constructor(private client: ApiClient) {}
 
   async list(): Promise<any[]> {
-    const response = await this.client.get<{ notifications: any[] }>('/api/notifications');
+    const response = await this.client.get<{ notifications: any[] }>(
+      "/api/notifications",
+    );
     return response.notifications || [];
   }
 
@@ -44,10 +46,12 @@ export class NotificationsService {
 
 // ER Service (Emotional Resonance)
 export class ERService {
-  constructor(private client: ApiClient) { }
+  constructor(private client: ApiClient) {}
 
   async getSessions(): Promise<any[]> {
-    const response = await this.client.get<{ sessions: any[] }>('/api/er/sessions');
+    const response = await this.client.get<{ sessions: any[] }>(
+      "/api/er/sessions",
+    );
     return response.sessions || [];
   }
 
@@ -57,15 +61,18 @@ export class ERService {
   }
 
   async saveSession(data: any): Promise<any> {
-    return this.client.post('/api/er/sessions', data);
+    return this.client.post("/api/er/sessions", data);
   }
 
   async saveSnapshot(data: any): Promise<any> {
-    return this.client.post('/api/er/snapshots', data);
+    return this.client.post("/api/er/snapshots", data);
   }
 
-  async checkOvertrading(params?: { windowMinutes?: number; threshold?: number }): Promise<any> {
-    return this.client.post('/api/er/check-overtrading', params ?? {});
+  async checkOvertrading(params?: {
+    windowMinutes?: number;
+    threshold?: number;
+  }): Promise<any> {
+    return this.client.post("/api/er/check-overtrading", params ?? {});
   }
 
   /** Fire-and-forget: persist an ER scoring event to Supabase */
@@ -79,7 +86,7 @@ export class ERService {
     decayWindowMinutes: number | null;
     transcriptSnippet: string | null;
   }): Promise<{ ok: boolean }> {
-    return this.client.post('/api/psych/er-event', event);
+    return this.client.post("/api/psych/er-event", event);
   }
 
   /** Fetch recent ER events for dashboard */
@@ -98,17 +105,17 @@ export class VoiceService {
     prompt?: string;
     text?: string;
   }): Promise<VoiceTranscriptionResponse> {
-    return this.client.post('/api/voice/transcribe', data);
+    return this.client.post("/api/voice/transcribe", data);
   }
 
   async speak(data: {
     text: string;
     conversationId?: string;
-    mode?: 'chat' | 'infraction';
+    mode?: "chat" | "infraction";
     includeAudio?: boolean;
     agent?: string;
   }): Promise<VoiceSpeakResponse> {
-    return this.client.post('/api/voice/speak', data);
+    return this.client.post("/api/voice/speak", data);
   }
 
   async analyzeSentiment(data: {
@@ -117,13 +124,13 @@ export class VoiceService {
     mimeType?: string;
     context?: string;
   }): Promise<VoiceSentimentResponse> {
-    return this.client.post('/api/voice/analyze-sentiment', data);
+    return this.client.post("/api/voice/analyze-sentiment", data);
   }
 }
 
 // Events Service
 export class EventsService {
-  constructor(private client: ApiClient) { }
+  constructor(private client: ApiClient) {}
 
   async list(): Promise<any[]> {
     // Stub - backend doesn't have this endpoint

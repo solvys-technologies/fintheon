@@ -1,15 +1,15 @@
 // [claude-code 2026-03-10] Animated text — useAnimatedText hook with framer-motion
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "../../lib/utils";
 
 /* ─── Hook: useAnimatedText ─── */
 export function useAnimatedText(text: string, speed = 30) {
-  const [displayed, setDisplayed] = useState('');
+  const [displayed, setDisplayed] = useState("");
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    setDisplayed('');
+    setDisplayed("");
     setDone(false);
     if (!text) return;
 
@@ -34,10 +34,15 @@ interface AnimatedTextProps {
   text: string;
   speed?: number;
   className?: string;
-  as?: 'span' | 'p' | 'div';
+  as?: "span" | "p" | "div";
 }
 
-export function AnimatedText({ text, speed = 30, className, as: Tag = 'span' }: AnimatedTextProps) {
+export function AnimatedText({
+  text,
+  speed = 30,
+  className,
+  as: Tag = "span",
+}: AnimatedTextProps) {
   const { displayed } = useAnimatedText(text, speed);
 
   return (

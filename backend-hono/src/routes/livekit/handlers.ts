@@ -1,5 +1,5 @@
 // S13-T3: LiveKit token generation for group voice calls
-import { AccessToken } from 'livekit-server-sdk';
+import { AccessToken } from "livekit-server-sdk";
 
 export async function generateToken(req: {
   roomName: string;
@@ -11,7 +11,9 @@ export async function generateToken(req: {
   const livekitUrl = process.env.LIVEKIT_URL;
 
   if (!apiKey || !apiSecret || !livekitUrl) {
-    throw new Error('LiveKit not configured — set LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL');
+    throw new Error(
+      "LiveKit not configured — set LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL",
+    );
   }
 
   const at = new AccessToken(apiKey, apiSecret, {

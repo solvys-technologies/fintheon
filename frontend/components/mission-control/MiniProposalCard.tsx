@@ -1,11 +1,11 @@
 // [claude-code 2026-03-20] 8c: Compact proposal card for Strategium — one-liner under Regime Tracker
-import { useState, useEffect, useCallback } from 'react';
-import { Target, Diff, TrendingDown } from 'lucide-react';
-import { useBackend } from '../../lib/backend';
+import { useState, useEffect, useCallback } from "react";
+import { Target, Diff, TrendingDown } from "lucide-react";
+import { useBackend } from "../../lib/backend";
 
 interface MiniProposal {
   instrument: string;
-  direction: 'long' | 'short' | 'flat';
+  direction: "long" | "short" | "flat";
   entryPrice?: number;
   confidence: number;
 }
@@ -46,10 +46,14 @@ export function MiniProposalCard({ onExpand }: MiniProposalCardProps) {
 
   if (!proposal) return null;
 
-  const isLong = proposal.direction === 'long';
-  const isShort = proposal.direction === 'short';
+  const isLong = proposal.direction === "long";
+  const isShort = proposal.direction === "short";
   const DirectionIcon = isLong ? Diff : isShort ? TrendingDown : Target;
-  const dirColor = isLong ? 'text-emerald-400' : isShort ? 'text-red-400' : 'text-zinc-400';
+  const dirColor = isLong
+    ? "text-emerald-400"
+    : isShort
+      ? "text-red-400"
+      : "text-zinc-400";
 
   return (
     <button
@@ -65,7 +69,9 @@ export function MiniProposalCard({ onExpand }: MiniProposalCardProps) {
       </span>
 
       <DirectionIcon className={`w-3 h-3 ${dirColor} flex-shrink-0`} />
-      <span className={`text-[9px] font-semibold ${dirColor} uppercase flex-shrink-0`}>
+      <span
+        className={`text-[9px] font-semibold ${dirColor} uppercase flex-shrink-0`}
+      >
         {proposal.direction}
       </span>
 
@@ -75,9 +81,15 @@ export function MiniProposalCard({ onExpand }: MiniProposalCardProps) {
         </span>
       )}
 
-      <span className={`text-[9px] font-bold ml-auto flex-shrink-0 ${
-        proposal.confidence >= 70 ? 'text-emerald-400' : proposal.confidence >= 50 ? 'text-yellow-400' : 'text-red-400'
-      }`}>
+      <span
+        className={`text-[9px] font-bold ml-auto flex-shrink-0 ${
+          proposal.confidence >= 70
+            ? "text-emerald-400"
+            : proposal.confidence >= 50
+              ? "text-yellow-400"
+              : "text-red-400"
+        }`}
+      >
         {proposal.confidence}%
       </span>
     </button>

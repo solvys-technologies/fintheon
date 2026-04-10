@@ -3,48 +3,59 @@
  * Simplified for local single-user mode - no authentication
  */
 
-import { useCallback, useState } from 'react';
-import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
-import { API_BASE_URL } from '../constants.js';
+import { useCallback, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import { API_BASE_URL } from "../constants.js";
 
-export function useChatWithAuth(conversationId: string | undefined, setConversationId: (id: string) => void) {
+export function useChatWithAuth(
+  conversationId: string | undefined,
+  setConversationId: (id: string) => void,
+) {
   const [isStreaming, setIsStreaming] = useState(false);
 
-  const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+  const fetchWithAuth = useCallback(
+    async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      const fullUrl = url.startsWith("http") ? url : `${API_BASE_URL}${url}`;
 
-    const headers = new Headers(init?.headers);
-    headers.set('Content-Type', 'application/json');
-    // No auth header needed in local mode
+      const headers = new Headers(init?.headers);
+      headers.set("Content-Type", "application/json");
+      // No auth header needed in local mode
 
-    let body = init?.body;
-    if (body && conversationId) {
-      try {
-        const bodyObj = typeof body === 'string' ? JSON.parse(body) : body;
-        if (typeof bodyObj === 'object' && bodyObj !== null) {
-          bodyObj.conversationId = conversationId;
-          body = JSON.stringify(bodyObj);
+      let body = init?.body;
+      if (body && conversationId) {
+        try {
+          const bodyObj = typeof body === "string" ? JSON.parse(body) : body;
+          if (typeof bodyObj === "object" && bodyObj !== null) {
+            bodyObj.conversationId = conversationId;
+            body = JSON.stringify(bodyObj);
+          }
+        } catch (e) {
+          // Ignore parse errors
         }
-      } catch (e) {
-        // Ignore parse errors
       }
-    }
 
-    const response = await fetch(fullUrl, {
-      ...init,
-      headers,
-      body,
-    });
+      const response = await fetch(fullUrl, {
+        ...init,
+        headers,
+        body,
+      });
 
-    const convId = response.headers.get('X-Conversation-Id');
-    if (convId) {
-      setConversationId(convId);
-    }
+      const convId = response.headers.get("X-Conversation-Id");
+      if (convId) {
+        setConversationId(convId);
+      }
 
-    return response;
-  }, [conversationId, setConversationId]);
+      return response;
+    },
+    [conversationId, setConversationId],
+  );
 
   const {
     messages: useChatMessages,
@@ -61,10 +72,11 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
           body: {
             messages: messages.map((msg) => ({
               role: msg.role,
-              content: msg.parts
-                ?.filter((part: any) => part.type === 'text')
-                .map((part: any) => part.text)
-                .join('') || '',
+              content:
+                msg.parts
+                  ?.filter((part: any) => part.type === "text")
+                  .map((part: any) => part.text)
+                  .join("") || "",
             })),
             ...(conversationId && { conversationId }),
           },
@@ -79,7 +91,8 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
     },
   });
 
-  const isLoading = isStreaming || status === 'streaming' || status === 'submitted';
+  const isLoading =
+    isStreaming || status === "streaming" || status === "submitted";
 
   return {
     messages: useChatMessages,

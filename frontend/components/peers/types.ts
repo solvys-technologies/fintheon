@@ -1,5 +1,5 @@
-export type PeerStatus = 'online' | 'away' | 'offline';
-export type PeerRole = 'admin' | 'peer';
+export type PeerStatus = "online" | "away" | "offline";
+export type PeerRole = "admin" | "peer";
 
 export interface PeerUser {
   id: string;
@@ -38,4 +38,3 @@ export interface VoiceParticipantRecord {
   peerId: string;
   joinedAt: string;
 }
-

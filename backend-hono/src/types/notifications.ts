@@ -3,8 +3,13 @@
  * Type definitions for user notifications
  */
 
-export type NotificationType = 'system' | 'alert' | 'trade' | 'news' | 'achievement';
-export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type NotificationType =
+  | "system"
+  | "alert"
+  | "trade"
+  | "news"
+  | "achievement";
+export type NotificationPriority = "low" | "medium" | "high" | "urgent";
 
 export interface Notification {
   id: string;

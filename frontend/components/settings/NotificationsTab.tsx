@@ -1,9 +1,12 @@
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — notifications tab
-import React from 'react';
-import { Volume2, Mic } from 'lucide-react';
-import Toggle from '../Toggle';
-import { useToast } from '../../contexts/ToastContext';
-import { HEALING_BOWL_SOUNDS, healingBowlPlayer } from '../../utils/healingBowlSounds';
+import React from "react";
+import { Volume2, Mic } from "lucide-react";
+import Toggle from "../Toggle";
+import { useToast } from "../../contexts/ToastContext";
+import {
+  HEALING_BOWL_SOUNDS,
+  healingBowlPlayer,
+} from "../../utils/healingBowlSounds";
 
 interface NotificationsTabProps {
   alertConfig: any;
@@ -15,43 +18,61 @@ interface NotificationsTabProps {
   };
 }
 
-export function NotificationsTab({ alertConfig, setAlertConfig, voiceMemory }: NotificationsTabProps) {
+export function NotificationsTab({
+  alertConfig,
+  setAlertConfig,
+  voiceMemory,
+}: NotificationsTabProps) {
   return (
     <>
       <section>
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Alert Configuration</h3>
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+          Alert Configuration
+        </h3>
         <div className="space-y-3">
           <Toggle
             label="Price Alerts"
             enabled={alertConfig.priceAlerts}
-            onChange={(val) => setAlertConfig({ ...alertConfig, priceAlerts: val })}
+            onChange={(val) =>
+              setAlertConfig({ ...alertConfig, priceAlerts: val })
+            }
           />
           <Toggle
             label="Psychological Alerts"
             enabled={alertConfig.psychAlerts}
-            onChange={(val) => setAlertConfig({ ...alertConfig, psychAlerts: val })}
+            onChange={(val) =>
+              setAlertConfig({ ...alertConfig, psychAlerts: val })
+            }
           />
           <Toggle
             label="News Alerts"
             enabled={alertConfig.newsAlerts}
-            onChange={(val) => setAlertConfig({ ...alertConfig, newsAlerts: val })}
+            onChange={(val) =>
+              setAlertConfig({ ...alertConfig, newsAlerts: val })
+            }
           />
           <Toggle
             label="Sound Enabled"
             enabled={alertConfig.soundEnabled}
-            onChange={(val) => setAlertConfig({ ...alertConfig, soundEnabled: val })}
+            onChange={(val) =>
+              setAlertConfig({ ...alertConfig, soundEnabled: val })
+            }
           />
           <Toggle
             label="Nametag Emotional Indicator"
             enabled={alertConfig.nametagEmoPulse ?? true}
-            onChange={(val) => setAlertConfig({ ...alertConfig, nametagEmoPulse: val })}
+            onChange={(val) =>
+              setAlertConfig({ ...alertConfig, nametagEmoPulse: val })
+            }
           />
 
           {/* VIX Spike Threshold */}
           <div className="flex items-center justify-between">
             <div>
               <span className="text-sm text-white">VIX Spike Threshold</span>
-              <p className="text-[10px] text-gray-500">Toast when VIX crosses above this level</p>
+              <p className="text-[10px] text-gray-500">
+                Toast when VIX crosses above this level
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -60,7 +81,12 @@ export function NotificationsTab({ alertConfig, setAlertConfig, voiceMemory }: N
                 max={40}
                 step={1}
                 value={alertConfig.vixSpikeThreshold ?? 22}
-                onChange={(e) => setAlertConfig({ ...alertConfig, vixSpikeThreshold: Number(e.target.value) })}
+                onChange={(e) =>
+                  setAlertConfig({
+                    ...alertConfig,
+                    vixSpikeThreshold: Number(e.target.value),
+                  })
+                }
                 className="w-20 accent-[var(--fintheon-accent)]"
               />
               <span className="text-sm font-mono text-[var(--fintheon-accent)] w-6 text-right">
@@ -75,28 +101,37 @@ export function NotificationsTab({ alertConfig, setAlertConfig, voiceMemory }: N
       <DndResetSection />
 
       <section className="pt-6">
-        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Healing Bowl Sound</h3>
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+          Healing Bowl Sound
+        </h3>
         <p className="text-xs text-gray-500 mb-4">
-          Select a sound to play when emotional tilt is detected. Calm sounds are relaxing, shock sounds are alerting.
+          Select a sound to play when emotional tilt is detected. Calm sounds
+          are relaxing, shock sounds are alerting.
         </p>
         <div className="space-y-2">
           {HEALING_BOWL_SOUNDS.map((sound) => (
             <div
               key={sound.id}
-              className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${alertConfig.healingBowlSound === sound.id
-                ? 'bg-[var(--fintheon-accent)]/20 border-[var(--fintheon-accent)]/40'
-                : 'bg-[var(--fintheon-surface)] border-zinc-800 hover:border-zinc-700'
-                }`}
-              onClick={() => setAlertConfig({ ...alertConfig, healingBowlSound: sound.id })}
+              className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
+                alertConfig.healingBowlSound === sound.id
+                  ? "bg-[var(--fintheon-accent)]/20 border-[var(--fintheon-accent)]/40"
+                  : "bg-[var(--fintheon-surface)] border-zinc-800 hover:border-zinc-700"
+              }`}
+              onClick={() =>
+                setAlertConfig({ ...alertConfig, healingBowlSound: sound.id })
+              }
             >
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium text-white">{sound.name}</span>
+                  <span className="text-sm font-medium text-white">
+                    {sound.name}
+                  </span>
                   <span
-                    className={`text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full ${sound.type === 'calm'
-                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                      : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                      }`}
+                    className={`text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                      sound.type === "calm"
+                        ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                        : "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                    }`}
                   >
                     {sound.type}
                   </span>
@@ -124,10 +159,11 @@ export function NotificationsTab({ alertConfig, setAlertConfig, voiceMemory }: N
           Microphone Device
         </h3>
         <p className="text-xs text-gray-500 mb-4">
-          Select which microphone to use for voice commands. Changes apply on next voice session.
+          Select which microphone to use for voice commands. Changes apply on
+          next voice session.
         </p>
         <select
-          value={voiceMemory.micDeviceId ?? ''}
+          value={voiceMemory.micDeviceId ?? ""}
           onChange={(e) => voiceMemory.setMicDeviceId(e.target.value || null)}
           className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/40 cursor-pointer"
         >
@@ -156,9 +192,12 @@ function DndResetSection() {
 
   return (
     <section className="pt-6">
-      <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">Blocked Notifications</h3>
+      <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+        Blocked Notifications
+      </h3>
       <p className="text-xs text-gray-500 mb-3">
-        You've hidden {blockedTypes.length} notification type{blockedTypes.length > 1 ? 's' : ''} via "Don't Show Again".
+        You've hidden {blockedTypes.length} notification type
+        {blockedTypes.length > 1 ? "s" : ""} via "Don't Show Again".
       </p>
       <div className="flex flex-wrap gap-2 mb-3">
         {blockedTypes.map((type: string) => (
@@ -166,9 +205,9 @@ function DndResetSection() {
             key={type}
             className="text-[10px] px-2 py-1 rounded-full border"
             style={{
-              borderColor: 'var(--fintheon-accent)',
-              color: 'var(--fintheon-accent)',
-              backgroundColor: 'rgba(199,159,74,0.08)',
+              borderColor: "var(--fintheon-accent)",
+              color: "var(--fintheon-accent)",
+              backgroundColor: "rgba(199,159,74,0.08)",
             }}
           >
             {type}
@@ -179,12 +218,16 @@ function DndResetSection() {
         onClick={resetBlockedNotifications}
         className="text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors"
         style={{
-          borderColor: 'rgba(239,68,68,0.3)',
-          color: '#EF4444',
-          backgroundColor: 'transparent',
+          borderColor: "rgba(239,68,68,0.3)",
+          color: "#EF4444",
+          backgroundColor: "transparent",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.1)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.1)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "transparent";
+        }}
       >
         Reset All — Show Everything
       </button>

@@ -1,29 +1,29 @@
 // [claude-code 2026-04-05] Strands Phase 8: Replace generateText + OpenRouter fallback with invokeAgent
 // [claude-code 2026-03-26] S2-T2: Add regime classification to MDB prompt + auto-parse after generation
-import { invokeAgent } from './strands/index.js';
+import { invokeAgent } from "./strands/index.js";
 import {
   writeBrief,
   readLatestBrief,
   readEconEvents,
   type BriefType,
   type BriefRecord,
-} from './supabase-service.js';
-import { getFeed } from './riskflow/feed-service.js';
-import { createLogger } from '../lib/logger.js';
-import { MARKET_REGIMES, type MarketRegime } from '../types/regime.js';
-import { setRegime } from './regime/regime-service.js';
+} from "./supabase-service.js";
+import { getFeed } from "./riskflow/feed-service.js";
+import { createLogger } from "../lib/logger.js";
+import { MARKET_REGIMES, type MarketRegime } from "../types/regime.js";
+import { setRegime } from "./regime/regime-service.js";
 
-const log = createLogger('BriefGenerator');
+const log = createLogger("BriefGenerator");
 
 /* ------------------------------------------------------------------ */
 /*  Brief type rotation (time-of-day / day-of-week)                    */
 /* ------------------------------------------------------------------ */
 
 export const BRIEF_LABELS: Record<string, string> = {
-  MDB: 'Morning Daily Brief (MDB)',
-  ADB: 'Afternoon Daily Brief (ADB)',
-  PMDB: 'Post-Market Daily Brief (PMDB)',
-  WT: 'The Weekly Tribune',
+  MDB: "Morning Daily Brief (MDB)",
+  ADB: "Afternoon Daily Brief (ADB)",
+  PMDB: "Post-Market Daily Brief (PMDB)",
+  WT: "The Weekly Tribune",
 };
 
 export function getCurrentBriefType(): BriefType {
@@ -32,13 +32,13 @@ export function getCurrentBriefType(): BriefType {
   const h = now.getHours();
   const timeVal = h * 60 + now.getMinutes();
   // WT: Sunday >= 17:00 through Monday < 07:00
-  if (day === 0 && timeVal >= 17 * 60) return 'WT';
-  if (day === 1 && h < 7) return 'WT';
+  if (day === 0 && timeVal >= 17 * 60) return "WT";
+  if (day === 1 && h < 7) return "WT";
   // PMDB stays active overnight until MDB fires at 6:30 AM
-  if (timeVal < 6 * 60 + 30) return 'PMDB';
-  if (timeVal >= 17 * 60 + 30) return 'PMDB';
-  if (timeVal >= 11 * 60) return 'ADB';
-  return 'MDB';
+  if (timeVal < 6 * 60 + 30) return "PMDB";
+  if (timeVal >= 17 * 60 + 30) return "PMDB";
+  if (timeVal >= 11 * 60) return "ADB";
+  return "MDB";
 }
 
 /* ------------------------------------------------------------------ */
@@ -58,44 +58,43 @@ export interface GenerateBriefResult {
  * store in Supabase, and return the result.
  */
 export async function generateBrief(
-  overrideType?: BriefType
+  overrideType?: BriefType,
 ): Promise<GenerateBriefResult> {
   const briefType = overrideType ?? getCurrentBriefType();
   const today = new Date().toISOString().slice(0, 10);
 
   const [feedResponse, econEvents] = await Promise.allSettled([
-    getFeed('system', { limit: 20 }),
+    getFeed("system", { limit: 20 }),
     readEconEvents({ from: today, to: today }),
   ]);
 
   const feedItems =
-    feedResponse.status === 'fulfilled'
+    feedResponse.status === "fulfilled"
       ? feedResponse.value.items.slice(0, 15)
       : [];
-  const events =
-    econEvents.status === 'fulfilled' ? econEvents.value : [];
+  const events = econEvents.status === "fulfilled" ? econEvents.value : [];
 
   const feedSummary =
     feedItems.length > 0
       ? feedItems
           .map(
             (item: any, i: number) =>
-              `${i + 1}. [${item.macroLevel >= 3 ? 'HIGH' : 'MED'}] ${item.headline}`
+              `${i + 1}. [${item.macroLevel >= 3 ? "HIGH" : "MED"}] ${item.headline}`,
           )
-          .join('\n')
-      : 'No significant feed items at this time.';
+          .join("\n")
+      : "No significant feed items at this time.";
 
   const econSummary =
     events.length > 0
       ? events
           .map(
             (e) =>
-              `• ${e.name}${e.time ? ` at ${e.time}` : ''}${e.actual != null ? ` — Actual: ${e.actual}` : ''}${e.forecast != null ? `, Forecast: ${e.forecast}` : ''}`
+              `• ${e.name}${e.time ? ` at ${e.time}` : ""}${e.actual != null ? ` — Actual: ${e.actual}` : ""}${e.forecast != null ? `, Forecast: ${e.forecast}` : ""}`,
           )
-          .join('\n')
-      : 'No major economic events today.';
+          .join("\n")
+      : "No major economic events today.";
 
-  const isFull = briefType === 'MDB' || briefType === 'WT';
+  const isFull = briefType === "MDB" || briefType === "WT";
 
   const prompt = isFull
     ? `You are Fintheon, a macro trading assistant for Priced In Capital. Generate a comprehensive ${BRIEF_LABELS[briefType]}.
@@ -108,7 +107,7 @@ ${feedSummary}
 
 ## Instructions
 ${
-  briefType === 'MDB'
+  briefType === "MDB"
     ? `Write a full Morning Daily Brief in this exact format:
 
 **Day Type:** [Macro/Catalyst/Drift/Compounding] — one-line reason
@@ -165,17 +164,18 @@ ${feedSummary}
 
 ## Instructions
 ${
-  briefType === 'ADB'
-    ? 'Write 3-5 bullet points covering ONLY new headlines and data since the morning that moved or could move the market. Skip anything already covered in the MDB. Be direct and actionable. Max 200 words.'
-    : 'Write 3-5 bullet points covering ONLY new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 200 words.'
+  briefType === "ADB"
+    ? "Write 3-5 bullet points covering ONLY new headlines and data since the morning that moved or could move the market. Skip anything already covered in the MDB. Be direct and actionable. Max 200 words."
+    : "Write 3-5 bullet points covering ONLY new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 200 words."
 }`;
 
   let text: string;
-  const usedProvider = 'strands-vproxy';
+  const usedProvider = "strands-vproxy";
 
-  log.info('Generating brief via Strands agent...');
+  log.info("Generating brief via Strands agent...");
   const result = await invokeAgent({
-    systemPrompt: 'You are Fintheon, a macro trading assistant for Priced In Capital.',
+    systemPrompt:
+      "You are Fintheon, a macro trading assistant for Priced In Capital.",
     userPrompt: prompt,
     model: { temperature: 0.4, maxTokens: isFull ? 4096 : 1024 },
   });
@@ -183,18 +183,20 @@ ${
   log.info(`Strands agent generated ${text.length} chars`);
 
   // Auto-detect regime from MDB output (MDB only — parse after generation)
-  if (briefType === 'MDB') {
+  if (briefType === "MDB") {
     try {
       const regimeMatch = text.match(/\*\*Market Regime:\*\*\s*(\w+)/);
       if (regimeMatch) {
         const detected = regimeMatch[1] as MarketRegime;
         if (MARKET_REGIMES.includes(detected)) {
-          await setRegime(detected, 'mdb_agent', 0.8, 'Auto-detected from MDB');
+          await setRegime(detected, "mdb_agent", 0.8, "Auto-detected from MDB");
           log.info(`Regime auto-set from MDB: ${detected}`);
         }
       }
     } catch (err) {
-      log.warn('Regime auto-detection from MDB failed (non-fatal)', { error: String(err) });
+      log.warn("Regime auto-detection from MDB failed (non-fatal)", {
+        error: String(err),
+      });
     }
   }
 
@@ -202,7 +204,7 @@ ${
   const stored = await writeBrief({
     brief_type: briefType,
     content: text,
-    generated_by: 'hermes',
+    generated_by: "hermes",
     category: briefType,
   });
 
@@ -224,7 +226,9 @@ ${
 /**
  * Check if a brief of the given type was already generated today.
  */
-export async function wasBriefGeneratedToday(type: BriefType): Promise<boolean> {
+export async function wasBriefGeneratedToday(
+  type: BriefType,
+): Promise<boolean> {
   const latest = await readLatestBrief(type);
   if (!latest?.created_at) return false;
   const today = new Date().toISOString().slice(0, 10);

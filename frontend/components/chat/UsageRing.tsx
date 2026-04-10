@@ -1,6 +1,6 @@
 // [claude-code 2026-03-30] Daily usage ring — circular indicator with countdown to reset
-import { useState, useEffect } from 'react';
-import { API_BASE_URL } from './constants';
+import { useState, useEffect } from "react";
+import { API_BASE_URL } from "./constants";
 
 interface UsageData {
   requestCount: number;
@@ -12,7 +12,7 @@ interface UsageData {
 }
 
 function formatCountdown(ms: number): string {
-  if (ms <= 0) return 'now';
+  if (ms <= 0) return "now";
   const h = Math.floor(ms / 3_600_000);
   const m = Math.floor((ms % 3_600_000) / 60_000);
   if (h > 0) return `${h}h ${m}m`;
@@ -41,7 +41,10 @@ export function UsageRing() {
     };
     fetchUsage();
     const interval = setInterval(fetchUsage, 30_000);
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   // Tick countdown every 60s
@@ -64,21 +67,26 @@ export function UsageRing() {
 
   // Color: gold when low, amber when mid, red when high
   const ringColor =
-    pct >= 90 ? '#EF4444' :
-    pct >= 70 ? '#F59E0B' :
-    'var(--fintheon-accent)';
+    pct >= 90 ? "#EF4444" : pct >= 70 ? "#F59E0B" : "var(--fintheon-accent)";
 
   return (
     <div
       className="relative flex items-center justify-center cursor-default group"
-      style={{ width: '30px', height: '30px' }}
+      style={{ width: "30px", height: "30px" }}
       title={`${data.requestCount}/${data.dailyCap} today \u00b7 Resets in ${formatCountdown(countdown)}`}
     >
       {/* SVG ring */}
-      <svg width="30" height="30" viewBox="0 0 28 28" className="rotate-[-90deg]">
+      <svg
+        width="30"
+        height="30"
+        viewBox="0 0 28 28"
+        className="rotate-[-90deg]"
+      >
         {/* Background track */}
         <circle
-          cx="14" cy="14" r={radius}
+          cx="14"
+          cy="14"
+          r={radius}
           fill="none"
           stroke="currentColor"
           strokeWidth={stroke}
@@ -87,7 +95,9 @@ export function UsageRing() {
         {/* Filled arc */}
         {pct > 0 && (
           <circle
-            cx="14" cy="14" r={radius}
+            cx="14"
+            cy="14"
+            r={radius}
             fill="none"
             stroke={ringColor}
             strokeWidth={stroke}

@@ -1,7 +1,7 @@
 // [claude-code 2026-04-03] S14-T6: Team status panel — clean status card grid
-import { useTeamPresence } from '../../contexts/TeamPresenceContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { TeamMemberCard } from './TeamMemberCard';
+import { useTeamPresence } from "../../contexts/TeamPresenceContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { TeamMemberCard } from "./TeamMemberCard";
 
 export function TeamPanel() {
   const { teamMembers, isConnected } = useTeamPresence();
@@ -15,7 +15,10 @@ export function TeamPanel() {
   const onlineCount = teamMembers.filter((m) => m.presence.online).length;
 
   return (
-    <div className="h-full flex flex-col px-3 py-2" style={{ fontFamily: 'var(--font-body)' }}>
+    <div
+      className="h-full flex flex-col px-3 py-2"
+      style={{ fontFamily: "var(--font-body)" }}
+    >
       {/* Header */}
       <div className="flex items-center gap-2 mb-2 shrink-0">
         <h3 className="text-[11px] font-semibold tracking-[0.14em] text-[var(--fintheon-accent)] uppercase font-mono">
@@ -25,7 +28,9 @@ export function TeamPanel() {
           {onlineCount} online
         </span>
         {!isConnected && (
-          <span className="text-[9px] text-zinc-600 font-mono italic">connecting...</span>
+          <span className="text-[9px] text-zinc-600 font-mono italic">
+            connecting...
+          </span>
         )}
       </div>
 
@@ -44,7 +49,9 @@ export function TeamPanel() {
         )}
         {teamMembers.length === 0 && (
           <div className="text-center text-[10px] text-zinc-600 font-mono py-4">
-            {isConnected ? 'No team members online' : 'Connecting to presence...'}
+            {isConnected
+              ? "No team members online"
+              : "Connecting to presence..."}
           </div>
         )}
       </div>

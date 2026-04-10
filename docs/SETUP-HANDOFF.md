@@ -34,6 +34,7 @@ BYPASS_AUTH=true
 **DO NOT ask users for or set**: `DATABASE_URL`, `NEON_DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NOTION_API_KEY`, `FMP_API_KEY`, `CLERK_SECRET_KEY`. The app works without all of them.
 
 Optional (only if user specifically wants voice features):
+
 ```bash
 OPENAI_API_KEY=<key>                       # Voice only (Whisper + TTS)
 ```
@@ -56,11 +57,13 @@ The backend starts these services in order (see `backend-hono/src/index.ts`):
 ### Electron Auto-Start
 
 When the Electron app launches (`electron/main.cjs`), it automatically:
+
 1. Checks for `backend-hono/dist/index.js`
 2. Spawns `node dist/index.js` as a child process
 3. Kills the backend on app quit
 
 For this to work, the backend must be built first:
+
 ```bash
 cd backend-hono && npx tsc && cd ..
 ```
@@ -102,27 +105,27 @@ cd backend-hono && npx tsc --noEmit   # Type check only
 
 ## API Routes Overview
 
-| Route | Auth | Description |
-|-------|------|-------------|
-| `GET /api/market-data/iv-score` | No | Blended IV score (60% VIX + 40% headlines) |
-| `GET /api/riskflow/feed` | Yes* | RiskFlow feed items |
-| `GET /api/riskflow/sources` | Yes* | Source connection status (Notion, X) |
-| `GET /api/notion/trade-ideas` | No | Notion trade ideas |
-| `GET /api/notion/ntn-brief` | No | AI-generated daily brief |
-| `GET /api/notion/schedule` | No | Economic calendar events |
-| `GET /api/journal/entries` | No | Trading journal entries |
-| `GET /api/journal/summary` | No | Journal summary stats |
-| `GET /api/regimes` | No | Active trading regimes |
-| `GET /api/market-data/quotes` | No | Market quotes via FMP |
+| Route                           | Auth  | Description                                |
+| ------------------------------- | ----- | ------------------------------------------ |
+| `GET /api/market-data/iv-score` | No    | Blended IV score (60% VIX + 40% headlines) |
+| `GET /api/riskflow/feed`        | Yes\* | RiskFlow feed items                        |
+| `GET /api/riskflow/sources`     | Yes\* | Source connection status (Notion, X)       |
+| `GET /api/notion/trade-ideas`   | No    | Notion trade ideas                         |
+| `GET /api/notion/ntn-brief`     | No    | AI-generated daily brief                   |
+| `GET /api/notion/schedule`      | No    | Economic calendar events                   |
+| `GET /api/journal/entries`      | No    | Trading journal entries                    |
+| `GET /api/journal/summary`      | No    | Journal summary stats                      |
+| `GET /api/regimes`              | No    | Active trading regimes                     |
+| `GET /api/market-data/quotes`   | No    | Market quotes via FMP                      |
 
-*RiskFlow routes skip auth for cron endpoints.
+\*RiskFlow routes skip auth for cron endpoints.
 
 ## Key Notion Databases
 
-| Database | ID | Purpose |
-|----------|----|---------|
+| Database    | ID                                 | Purpose                     |
+| ----------- | ---------------------------------- | --------------------------- |
 | Trade Ideas | `136fa9a2069e4afc835e0e139ead49f2` | Agent/human trade proposals |
-| Daily P&L | `ee7d03052a424dcb95f6406c166e7584` | Daily performance tracking |
+| Daily P&L   | `ee7d03052a424dcb95f6406c166e7584` | Daily performance tracking  |
 
 ## Common Issues
 

@@ -2,24 +2,31 @@
 // [claude-code 2026-03-24] Persistence refactor: Run → Update button label when data exists
 // [claude-code 2026-03-23] Persistent Sanctum header — presets, run button, status, rolling period
 // [claude-code 2026-03-25] Theme-sensitive fonts — use var(--font-heading) and var(--font-body)
-import { useState, useCallback } from 'react';
-import { Zap, Loader2, Upload, X } from 'lucide-react';
-import type { SanctumPreset } from '../../types/miroshark';
-import { SanctumPresets } from './SanctumPresets';
+import { useState, useCallback } from "react";
+import { Zap, Loader2, Upload, X } from "lucide-react";
+import type { SanctumPreset } from "../../types/miroshark";
+import { SanctumPresets } from "./SanctumPresets";
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
+const API_BASE = (
+  import.meta.env.VITE_API_URL || "http://localhost:8080"
+).replace(/\/$/, "");
 
 interface SanctumHeaderProps {
   preset: SanctumPreset;
   onPresetChange: (p: SanctumPreset) => void;
   onRun: () => void;
   isLoading: boolean;
-  status: 'idle' | 'running' | 'complete' | 'error';
+  status: "idle" | "running" | "complete" | "error";
   hasData: boolean;
 }
 
 export function SanctumHeader({
-  preset, onPresetChange, onRun, isLoading, status, hasData,
+  preset,
+  onPresetChange,
+  onRun,
+  isLoading,
+  status,
+  hasData,
 }: SanctumHeaderProps) {
   const [uploadOpen, setUploadOpen] = useState(false);
 
@@ -29,20 +36,29 @@ export function SanctumHeader({
         <div className="flex items-center gap-3">
           <span
             className="text-[10px] font-bold text-[var(--fintheon-accent)]/70 uppercase tracking-widest"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            style={{ fontFamily: "var(--font-heading)" }}
           >
             Aquarium
           </span>
-          <span className="text-[8px] italic text-[var(--fintheon-muted)]/40 tracking-wide" style={{ fontFamily: 'var(--font-body)' }}>
+          <span
+            className="text-[8px] italic text-[var(--fintheon-muted)]/40 tracking-wide"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
             shark tank
           </span>
-          {status === 'complete' && (
-            <span className="text-[9px] px-2 py-0.5 rounded bg-[var(--fintheon-low)]/10 text-[var(--fintheon-low)] font-bold" style={{ fontFamily: 'var(--font-body)' }}>
+          {status === "complete" && (
+            <span
+              className="text-[9px] px-2 py-0.5 rounded bg-[var(--fintheon-low)]/10 text-[var(--fintheon-low)] font-bold"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
               LIVE
             </span>
           )}
-          {status === 'error' && (
-            <span className="text-[9px] px-2 py-0.5 rounded bg-[var(--fintheon-severe)]/10 text-[var(--fintheon-severe)] font-bold" style={{ fontFamily: 'var(--font-body)' }}>
+          {status === "error" && (
+            <span
+              className="text-[9px] px-2 py-0.5 rounded bg-[var(--fintheon-severe)]/10 text-[var(--fintheon-severe)] font-bold"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
               ERROR
             </span>
           )}
@@ -51,12 +67,17 @@ export function SanctumHeader({
         <div className="flex items-center gap-3">
           <SanctumPresets active={preset} onChange={onPresetChange} />
 
-          <span className="text-[10px] text-[var(--fintheon-muted)]/50" style={{ fontFamily: 'var(--font-body)' }}>5d window</span>
+          <span
+            className="text-[10px] text-[var(--fintheon-muted)]/50"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
+            5d window
+          </span>
 
           <button
             onClick={() => setUploadOpen(true)}
             className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors border border-[var(--fintheon-border)]/20 text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/5"
-            style={{ fontFamily: 'var(--font-body)' }}
+            style={{ fontFamily: "var(--font-body)" }}
           >
             <Upload className="w-3 h-3" />
             Upload
@@ -66,15 +87,21 @@ export function SanctumHeader({
             onClick={onRun}
             disabled={isLoading}
             className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-40"
-            style={{ fontFamily: 'var(--font-body)' }}
+            style={{ fontFamily: "var(--font-body)" }}
           >
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-            {isLoading ? 'Updating...' : (hasData ? 'Update' : 'Run')}
+            {isLoading ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Zap className="w-3 h-3" />
+            )}
+            {isLoading ? "Updating..." : hasData ? "Update" : "Run"}
           </button>
         </div>
       </div>
 
-      {uploadOpen && <UploadContextModal onClose={() => setUploadOpen(false)} />}
+      {uploadOpen && (
+        <UploadContextModal onClose={() => setUploadOpen(false)} />
+      )}
     </>
   );
 }
@@ -82,29 +109,37 @@ export function SanctumHeader({
 // ─── Upload Context Modal ───────────────────────────────────────
 
 function UploadContextModal({ onClose }: { onClose: () => void }) {
-  const [rawText, setRawText] = useState('');
-  const [instrument, setInstrument] = useState('/ES');
-  const [phase, setPhase] = useState<'input' | 'preview' | 'done'>('input');
-  const [preview, setPreview] = useState<{ total: number; parsed: number; skipped: number } | null>(null);
+  const [rawText, setRawText] = useState("");
+  const [instrument, setInstrument] = useState("/ES");
+  const [phase, setPhase] = useState<"input" | "preview" | "done">("input");
+  const [preview, setPreview] = useState<{
+    total: number;
+    parsed: number;
+    skipped: number;
+  } | null>(null);
   const [result, setResult] = useState<{ stored: number } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleParse = useCallback(async () => {
     if (!rawText.trim()) return;
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const res = await fetch(`${API_BASE}/api/calibration/bulk-parse`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rawText, instrument }),
       });
       const data = await res.json();
-      setPreview({ total: data.total, parsed: data.parsed?.length ?? 0, skipped: data.skipped });
-      setPhase('preview');
+      setPreview({
+        total: data.total,
+        parsed: data.parsed?.length ?? 0,
+        skipped: data.skipped,
+      });
+      setPhase("preview");
     } catch (err: any) {
-      setError(err?.message || 'Parse failed');
+      setError(err?.message || "Parse failed");
     } finally {
       setLoading(false);
     }
@@ -112,12 +147,12 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
 
   const handleIngest = useCallback(async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       // Bulk ingest (parse + store)
       const ingestRes = await fetch(`${API_BASE}/api/calibration/bulk-ingest`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rawText, instrument }),
       });
       const ingestData = await ingestRes.json();
@@ -126,22 +161,22 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
       if (ingestData.parsed > 0) {
         // Re-parse to get items for context upload
         const parseRes = await fetch(`${API_BASE}/api/calibration/bulk-parse`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ rawText, instrument }),
         });
         const parseData = await parseRes.json();
         await fetch(`${API_BASE}/api/calibration/upload-context`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ items: parseData.parsed }),
         });
       }
 
       setResult({ stored: ingestData.stored ?? 0 });
-      setPhase('done');
+      setPhase("done");
     } catch (err: any) {
-      setError(err?.message || 'Ingest failed');
+      setError(err?.message || "Ingest failed");
     } finally {
       setLoading(false);
     }
@@ -155,48 +190,64 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
       <div
         className="max-w-lg w-full max-h-[70vh] flex flex-col rounded-xl shadow-[0_0_40px_rgba(199,159,74,0.15)]"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 95%, transparent)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid color-mix(in srgb, var(--fintheon-border) 30%, transparent)',
+          backgroundColor:
+            "color-mix(in srgb, var(--fintheon-surface) 95%, transparent)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border:
+            "1px solid color-mix(in srgb, var(--fintheon-border) 30%, transparent)",
         }}
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-border)]/20">
           <div className="flex items-center gap-2">
             <Upload className="w-4 h-4 text-[var(--fintheon-accent)]" />
-            <h2 className="text-sm font-bold text-[var(--fintheon-accent)]" style={{ fontFamily: 'var(--font-heading)' }}>
+            <h2
+              className="text-sm font-bold text-[var(--fintheon-accent)]"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
               Upload Context
             </h2>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-zinc-900 rounded transition-all">
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-zinc-900 rounded transition-all"
+          >
             <X className="w-4 h-4 text-zinc-500" />
           </button>
         </div>
 
         {/* Content */}
         <div className="flex-1 min-h-0 overflow-y-auto px-5 py-3 flex flex-col gap-3">
-          {phase === 'input' && (
+          {phase === "input" && (
             <>
-              <label className="text-[10px] text-[var(--fintheon-muted)] uppercase tracking-wider" style={{ fontFamily: 'var(--font-body)' }}>
+              <label
+                className="text-[10px] text-[var(--fintheon-muted)] uppercase tracking-wider"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
                 Paste raw Financial Juice posts
               </label>
               <textarea
                 value={rawText}
-                onChange={e => setRawText(e.target.value)}
+                onChange={(e) => setRawText(e.target.value)}
                 placeholder="Paste FJ headlines here... One per line or separated by blank lines."
                 rows={10}
                 className="w-full rounded-lg px-3 py-2 text-xs bg-[var(--fintheon-bg)] border border-[var(--fintheon-border)]/20 text-[var(--fintheon-text)] placeholder:text-[var(--fintheon-muted)]/40 focus:outline-none focus:border-[var(--fintheon-accent)]/40 resize-y"
-                style={{ fontFamily: 'var(--font-body)' }}
+                style={{ fontFamily: "var(--font-body)" }}
               />
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-[var(--fintheon-muted)]" style={{ fontFamily: 'var(--font-body)' }}>Instrument</label>
+                <label
+                  className="text-[10px] text-[var(--fintheon-muted)]"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  Instrument
+                </label>
                 <select
                   value={instrument}
-                  onChange={e => setInstrument(e.target.value)}
+                  onChange={(e) => setInstrument(e.target.value)}
                   className="rounded px-2 py-1 text-[10px] bg-[var(--fintheon-bg)] border border-[var(--fintheon-border)]/20 text-[var(--fintheon-text)]"
-                  style={{ fontFamily: 'var(--font-body)' }}
+                  style={{ fontFamily: "var(--font-body)" }}
                 >
                   <option value="/ES">/ES</option>
                   <option value="/NQ">/NQ</option>
@@ -207,25 +258,41 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
             </>
           )}
 
-          {phase === 'preview' && preview && (
+          {phase === "preview" && preview && (
             <div className="flex flex-col gap-2 py-4">
-              <p className="text-xs text-[var(--fintheon-text)]" style={{ fontFamily: 'var(--font-body)' }}>
-                <span className="font-bold text-[var(--fintheon-accent)]">{preview.parsed}</span> headlines parsed from{' '}
+              <p
+                className="text-xs text-[var(--fintheon-text)]"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                <span className="font-bold text-[var(--fintheon-accent)]">
+                  {preview.parsed}
+                </span>{" "}
+                headlines parsed from{" "}
                 <span className="font-bold">{preview.total}</span> chunks
                 {preview.skipped > 0 && (
-                  <span className="text-[var(--fintheon-muted)]"> ({preview.skipped} skipped)</span>
+                  <span className="text-[var(--fintheon-muted)]">
+                    {" "}
+                    ({preview.skipped} skipped)
+                  </span>
                 )}
               </p>
-              <p className="text-[10px] text-[var(--fintheon-muted)]" style={{ fontFamily: 'var(--font-body)' }}>
-                Items will be stored in calibration_observations and fed to MiroShark context.
+              <p
+                className="text-[10px] text-[var(--fintheon-muted)]"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                Items will be stored in calibration_observations and fed to
+                MiroShark context.
               </p>
             </div>
           )}
 
-          {phase === 'done' && result && (
+          {phase === "done" && result && (
             <div className="flex flex-col items-center gap-2 py-8">
               <span className="text-2xl">&#10003;</span>
-              <p className="text-xs text-[var(--fintheon-text)] font-bold" style={{ fontFamily: 'var(--font-body)' }}>
+              <p
+                className="text-xs text-[var(--fintheon-text)] font-bold"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
                 {result.stored} observations stored + MiroShark context updated
               </p>
             </div>
@@ -236,22 +303,22 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--fintheon-border)]/20">
-          {phase === 'input' && (
+          {phase === "input" && (
             <button
               onClick={handleParse}
               disabled={loading || !rawText.trim()}
               className="px-4 py-2 rounded-lg text-xs font-medium transition-all bg-[var(--fintheon-accent)] hover:brightness-110 text-black disabled:opacity-30"
-              style={{ fontFamily: 'var(--font-body)' }}
+              style={{ fontFamily: "var(--font-body)" }}
             >
-              {loading ? 'Parsing...' : 'Parse Preview'}
+              {loading ? "Parsing..." : "Parse Preview"}
             </button>
           )}
-          {phase === 'preview' && (
+          {phase === "preview" && (
             <>
               <button
-                onClick={() => setPhase('input')}
+                onClick={() => setPhase("input")}
                 className="px-4 py-2 rounded-lg text-xs font-medium text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] transition-colors"
-                style={{ fontFamily: 'var(--font-body)' }}
+                style={{ fontFamily: "var(--font-body)" }}
               >
                 Back
               </button>
@@ -259,17 +326,17 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
                 onClick={handleIngest}
                 disabled={loading}
                 className="px-4 py-2 rounded-lg text-xs font-medium transition-all bg-[var(--fintheon-accent)] hover:brightness-110 text-black disabled:opacity-30"
-                style={{ fontFamily: 'var(--font-body)' }}
+                style={{ fontFamily: "var(--font-body)" }}
               >
-                {loading ? 'Ingesting...' : 'Ingest'}
+                {loading ? "Ingesting..." : "Ingest"}
               </button>
             </>
           )}
-          {phase === 'done' && (
+          {phase === "done" && (
             <button
               onClick={onClose}
               className="px-4 py-2 rounded-lg text-xs font-medium transition-all bg-[var(--fintheon-accent)] hover:brightness-110 text-black"
-              style={{ fontFamily: 'var(--font-body)' }}
+              style={{ fontFamily: "var(--font-body)" }}
             >
               Done
             </button>

@@ -27,7 +27,10 @@ const DEFAULT_CONFIG = { backendAutostart: true, launchOnLogin: false };
 function readStartupConfig() {
   try {
     if (fs.existsSync(CONFIG_PATH)) {
-      return { ...DEFAULT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")) };
+      return {
+        ...DEFAULT_CONFIG,
+        ...JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")),
+      };
     }
   } catch {}
   return { ...DEFAULT_CONFIG };
@@ -50,7 +53,10 @@ async function isBackendAlive() {
         resolve(res.statusCode < 500);
       });
       req.on("error", () => resolve(false));
-      req.setTimeout(2000, () => { req.destroy(); resolve(false); });
+      req.setTimeout(2000, () => {
+        req.destroy();
+        resolve(false);
+      });
     });
   } catch {
     return false;
@@ -84,13 +90,16 @@ async function startBackend() {
   if (!fs.existsSync(distEntry)) {
     console.warn("[Electron] Backend dist not found — attempting build...");
     try {
-      execFileSync("bun", ["run", "build"], { cwd: backendDir, stdio: "inherit" });
+      execFileSync("bun", ["run", "build"], {
+        cwd: backendDir,
+        stdio: "inherit",
+      });
       console.log("[Electron] Backend build succeeded");
     } catch (buildErr) {
       console.error("[Electron] Backend build failed:", buildErr.message);
       dialog.showErrorBox(
         "Backend Not Built",
-        "The backend could not be compiled.\n\nRun manually:\n  cd backend-hono && bun run build\n\nThen relaunch the app."
+        "The backend could not be compiled.\n\nRun manually:\n  cd backend-hono && bun run build\n\nThen relaunch the app.",
       );
       return { ok: false, detail: "build failed" };
     }
@@ -98,10 +107,16 @@ async function startBackend() {
 
   const envPath = path.join(backendDir, ".env");
   const runtimeNodeEnv = app.isPackaged ? "production" : "development";
-  console.log(`[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`);
+  console.log(
+    `[Electron] Starting backend server... (cwd: ${backendDir}, env: ${envPath})`,
+  );
   backendProcess = spawn("node", [distEntry], {
     cwd: backendDir,
-    env: { ...process.env, NODE_ENV: runtimeNodeEnv, DOTENV_CONFIG_PATH: envPath },
+    env: {
+      ...process.env,
+      NODE_ENV: runtimeNodeEnv,
+      DOTENV_CONFIG_PATH: envPath,
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
@@ -141,25 +156,36 @@ async function stopBackend() {
 
     const hardKillTimer = setTimeout(() => {
       if (!proc.killed) {
-        console.warn("[Electron] Backend did not exit after SIGTERM; sending SIGKILL");
+        console.warn(
+          "[Electron] Backend did not exit after SIGTERM; sending SIGKILL",
+        );
         try {
           proc.kill("SIGKILL");
         } catch (error) {
-          finish({ ok: false, detail: `sigkill failed: ${error?.message ?? "unknown error"}` });
+          finish({
+            ok: false,
+            detail: `sigkill failed: ${error?.message ?? "unknown error"}`,
+          });
         }
       }
     }, 6000);
 
     proc.once("exit", (code, signal) => {
       clearTimeout(hardKillTimer);
-      finish({ ok: true, detail: `exited (${code ?? "null"}${signal ? `, ${signal}` : ""})` });
+      finish({
+        ok: true,
+        detail: `exited (${code ?? "null"}${signal ? `, ${signal}` : ""})`,
+      });
     });
 
     try {
       proc.kill("SIGTERM");
     } catch (error) {
       clearTimeout(hardKillTimer);
-      finish({ ok: false, detail: `sigterm failed: ${error?.message ?? "unknown error"}` });
+      finish({
+        ok: false,
+        detail: `sigterm failed: ${error?.message ?? "unknown error"}`,
+      });
     }
   });
 
@@ -214,9 +240,12 @@ function setupAutoUpdater() {
 
   // Check immediately, then every 30 minutes
   autoUpdater.checkForUpdates().catch(() => {});
-  setInterval(() => {
-    autoUpdater.checkForUpdates().catch(() => {});
-  }, 30 * 60 * 1000);
+  setInterval(
+    () => {
+      autoUpdater.checkForUpdates().catch(() => {});
+    },
+    30 * 60 * 1000,
+  );
 }
 
 const shouldAllowInAppPopup = (urlString) => {
@@ -283,13 +312,19 @@ function createWindow() {
     },
   });
 
-  const rendererPath = path.join(__dirname, "..", "frontend", "dist", "index.html");
+  const rendererPath = path.join(
+    __dirname,
+    "..",
+    "frontend",
+    "dist",
+    "index.html",
+  );
   win.loadFile(rendererPath);
   mainWindow = win;
 }
 
 // [claude-code 2026-03-23] Browser Use Phase 2 — enable CDP for browser-use CLI
-app.commandLine.appendSwitch('remote-debugging-port', '9222');
+app.commandLine.appendSwitch("remote-debugging-port", "9222");
 
 // macOS: handle fintheon:// URLs when app is already running
 app.on("open-url", (event, url) => {
@@ -354,15 +389,19 @@ app.whenReady().then(async () => {
   // Browser Use Phase 2 — CDP enabled via commandLine switch, no in-process handlers needed
 
   // Chrome-like user-agent so Google doesn't block sign-in in Electron popups
-  const CHROME_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+  const CHROME_UA =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
   // Open Google OAuth in a standalone popup with Chrome UA so Google allows it.
   // Shares the persist:fintheon partition so session cookies carry back to the webview.
   const openGooglePopup = (navUrl) => {
     try {
       const parsed = new URL(navUrl);
-      if (parsed.hostname !== "accounts.google.com" &&
-          !parsed.hostname.endsWith(".accounts.google.com")) return false;
+      if (
+        parsed.hostname !== "accounts.google.com" &&
+        !parsed.hostname.endsWith(".accounts.google.com")
+      )
+        return false;
       const popup = new BrowserWindow({
         width: 520,
         height: 760,
@@ -384,8 +423,10 @@ app.whenReady().then(async () => {
       popup.webContents.on("will-redirect", (_rEvent, redirectUrl) => {
         try {
           const rParsed = new URL(redirectUrl);
-          if (rParsed.hostname !== "accounts.google.com" &&
-              !rParsed.hostname.endsWith(".google.com")) {
+          if (
+            rParsed.hostname !== "accounts.google.com" &&
+            !rParsed.hostname.endsWith(".google.com")
+          ) {
             setTimeout(() => popup.close(), 1500);
           }
         } catch {}
@@ -394,15 +435,19 @@ app.whenReady().then(async () => {
       popup.webContents.on("did-navigate", (_navEvent, doneUrl) => {
         try {
           const doneParsed = new URL(doneUrl);
-          if (doneParsed.hostname !== "accounts.google.com" &&
-              !doneParsed.hostname.endsWith(".google.com") &&
-              !doneParsed.hostname.endsWith(".gstatic.com")) {
+          if (
+            doneParsed.hostname !== "accounts.google.com" &&
+            !doneParsed.hostname.endsWith(".google.com") &&
+            !doneParsed.hostname.endsWith(".gstatic.com")
+          ) {
             setTimeout(() => popup.close(), 1500);
           }
         } catch {}
       });
       return true;
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   };
 
   // Handle window.open and Google OAuth across ALL web contents (webviews + popups).
@@ -444,11 +489,16 @@ app.whenReady().then(async () => {
         if (openGooglePopup(navUrl)) navEvent.preventDefault();
       });
 
-      contents.on("did-start-navigation", (_navEvent, navUrl, isInPlace, isMainFrame) => {
-        if (isMainFrame && openGooglePopup(navUrl)) {
-          try { contents.goBack(); } catch {}
-        }
-      });
+      contents.on(
+        "did-start-navigation",
+        (_navEvent, navUrl, isInPlace, isMainFrame) => {
+          if (isMainFrame && openGooglePopup(navUrl)) {
+            try {
+              contents.goBack();
+            } catch {}
+          }
+        },
+      );
     } catch {
       // Best-effort only.
     }
@@ -484,7 +534,10 @@ ipcMain.handle("toggle-mini-widget", () => {
 
 // [claude-code 2026-03-24] Open URL in system browser (for OAuth flows)
 ipcMain.handle("open-external", (_event, url) => {
-  if (typeof url === "string" && (url.startsWith("https://") || url.startsWith("http://"))) {
+  if (
+    typeof url === "string" &&
+    (url.startsWith("https://") || url.startsWith("http://"))
+  ) {
     shell.openExternal(url);
   }
   return { ok: true };
@@ -524,7 +577,8 @@ ipcMain.handle("get-startup-config", () => {
 
 ipcMain.handle("set-startup-config", (_event, patch) => {
   const cfg = readStartupConfig();
-  if (typeof patch.backendAutostart === "boolean") cfg.backendAutostart = patch.backendAutostart;
+  if (typeof patch.backendAutostart === "boolean")
+    cfg.backendAutostart = patch.backendAutostart;
   if (typeof patch.launchOnLogin === "boolean") {
     cfg.launchOnLogin = patch.launchOnLogin;
     app.setLoginItemSettings({ openAtLogin: patch.launchOnLogin });
@@ -539,7 +593,10 @@ ipcMain.handle("start-backend", async () => {
   const startResult = await startBackend();
   if (!startResult.ok) return startResult;
   const healthy = await waitForBackendHealthy(15000);
-  return { ok: healthy, detail: healthy ? "healthy" : "started but not healthy yet" };
+  return {
+    ok: healthy,
+    detail: healthy ? "healthy" : "started but not healthy yet",
+  };
 });
 
 ipcMain.handle("stop-backend", async () => {
@@ -577,7 +634,11 @@ ipcMain.handle("run-shell-command", (event, command) => {
   });
   child.on("exit", (code, signal) => {
     try {
-      sender.send("cli-output", { type: "exit", code: code ?? null, signal: signal ?? null });
+      sender.send("cli-output", {
+        type: "exit",
+        code: code ?? null,
+        signal: signal ?? null,
+      });
     } catch (_) {}
   });
   child.on("error", (err) => {
@@ -593,25 +654,38 @@ ipcMain.handle("run-shell-command", (event, command) => {
 ipcMain.handle("browser-use-command", async (_event, args) => {
   const { execFile } = require("child_process");
   return new Promise((resolve) => {
-    execFile("browser-use", ["--cdp-url", "http://localhost:9222", "--json", ...args], {
-      timeout: 30000,
-      env: { ...process.env },
-    }, (error, stdout, stderr) => {
-      if (error) resolve({ ok: false, error: error.message, stderr });
-      else {
-        try { resolve({ ok: true, data: JSON.parse(stdout) }); }
-        catch { resolve({ ok: true, data: stdout.trim() }); }
-      }
-    });
+    execFile(
+      "browser-use",
+      ["--cdp-url", "http://localhost:9222", "--json", ...args],
+      {
+        timeout: 30000,
+        env: { ...process.env },
+      },
+      (error, stdout, stderr) => {
+        if (error) resolve({ ok: false, error: error.message, stderr });
+        else {
+          try {
+            resolve({ ok: true, data: JSON.parse(stdout) });
+          } catch {
+            resolve({ ok: true, data: stdout.trim() });
+          }
+        }
+      },
+    );
   });
 });
 
 ipcMain.handle("browser-use-status", async () => {
   const { execFile } = require("child_process");
   return new Promise((resolve) => {
-    execFile("browser-use", ["--json", "sessions"], { timeout: 5000 }, (error, stdout) => {
-      if (error) resolve({ running: false });
-      else resolve({ running: true, sessions: stdout.trim() });
-    });
+    execFile(
+      "browser-use",
+      ["--json", "sessions"],
+      { timeout: 5000 },
+      (error, stdout) => {
+        if (error) resolve({ running: false });
+        else resolve({ running: true, sessions: stdout.trim() });
+      },
+    );
   });
 });

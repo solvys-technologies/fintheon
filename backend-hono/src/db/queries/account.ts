@@ -3,10 +3,16 @@
  * CRUD operations for user accounts
  */
 
-import { sql, isDatabaseAvailable } from '../../config/database.js';
-import type { Account, UserTier, AccountSettings } from '../../types/account.js';
+import { sql, isDatabaseAvailable } from "../../config/database.js";
+import type {
+  Account,
+  UserTier,
+  AccountSettings,
+} from "../../types/account.js";
 
-export async function getAccountByUserId(userId: string): Promise<Account | null> {
+export async function getAccountByUserId(
+  userId: string,
+): Promise<Account | null> {
   if (!isDatabaseAvailable()) return null;
 
   const result = await sql`
@@ -19,9 +25,13 @@ export async function getAccountByUserId(userId: string): Promise<Account | null
   return mapRowToAccount(row);
 }
 
-export async function createAccount(userId: string, email: string, initialBalance = 0): Promise<Account> {
+export async function createAccount(
+  userId: string,
+  email: string,
+  initialBalance = 0,
+): Promise<Account> {
   if (!isDatabaseAvailable()) {
-    throw new Error('Database not available');
+    throw new Error("Database not available");
   }
 
   const result = await sql`
@@ -33,7 +43,10 @@ export async function createAccount(userId: string, email: string, initialBalanc
   return mapRowToAccount(result[0]);
 }
 
-export async function updateAccountSettings(userId: string, settings: AccountSettings): Promise<Account | null> {
+export async function updateAccountSettings(
+  userId: string,
+  settings: AccountSettings,
+): Promise<Account | null> {
   if (!isDatabaseAvailable()) return null;
 
   const result = await sql`
@@ -52,7 +65,10 @@ export async function updateAccountSettings(userId: string, settings: AccountSet
   return mapRowToAccount(result[0]);
 }
 
-export async function updateAccountTier(userId: string, tier: UserTier): Promise<Account | null> {
+export async function updateAccountTier(
+  userId: string,
+  tier: UserTier,
+): Promise<Account | null> {
   if (!isDatabaseAvailable()) return null;
 
   const result = await sql`
@@ -69,8 +85,8 @@ function mapRowToAccount(row: Record<string, unknown>): Account {
   return {
     id: String(row.id),
     userId: String(row.user_id),
-    email: String(row.email || ''),
-    tier: (row.tier as UserTier) || 'free',
+    email: String(row.email || ""),
+    tier: (row.tier as UserTier) || "free",
     balance: Number(row.balance) || 0,
     dailyPnl: Number(row.daily_pnl) || 0,
     tradingEnabled: Boolean(row.trading_enabled),

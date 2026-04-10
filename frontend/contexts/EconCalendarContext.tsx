@@ -1,8 +1,15 @@
 // [claude-code 2026-03-05] Economic Calendar context — polls Notion econ events on 60s interval.
 // [claude-code 2026-03-07] Session date snaps to next day after 9PM
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import baseBackend from '../lib/backend';
-import type { EconEventItem, EconPrintItem } from '../lib/services';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import baseBackend from "../lib/backend";
+import type { EconEventItem, EconPrintItem } from "../lib/services";
 
 /** After 9PM local, the "session date" rolls to tomorrow */
 function getSessionDate(): string {
@@ -38,7 +45,7 @@ const EconCalendarContext = createContext<EconCalendarContextValue>({
 const POLL_INTERVAL_MS = 60_000;
 
 function getWeekRange(dateStr: string): { from: string; to: string } {
-  const d = new Date(dateStr + 'T12:00:00');
+  const d = new Date(dateStr + "T12:00:00");
   const day = d.getDay();
   const monday = new Date(d);
   monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
@@ -50,7 +57,11 @@ function getWeekRange(dateStr: string): { from: string; to: string } {
   };
 }
 
-export function EconCalendarProvider({ children }: { children: React.ReactNode }) {
+export function EconCalendarProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [events, setEvents] = useState<EconEventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +75,8 @@ export function EconCalendarProvider({ children }: { children: React.ReactNode }
       setEvents(result);
       setError(null);
     } catch (err) {
-      console.warn('[EconCalendar] Fetch error:', err);
-      setError('Failed to load calendar');
+      console.warn("[EconCalendar] Fetch error:", err);
+      setError("Failed to load calendar");
     } finally {
       setLoading(false);
     }
@@ -74,16 +85,33 @@ export function EconCalendarProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     setLoading(true);
     void fetchEvents();
-    intervalRef.current = setInterval(() => { void fetchEvents(); }, POLL_INTERVAL_MS);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    intervalRef.current = setInterval(() => {
+      void fetchEvents();
+    }, POLL_INTERVAL_MS);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [fetchEvents]);
 
-  const fetchPrints = useCallback(async (eventName: string): Promise<EconPrintItem[]> => {
-    return baseBackend.econCalendar.getPrints(eventName);
-  }, []);
+  const fetchPrints = useCallback(
+    async (eventName: string): Promise<EconPrintItem[]> => {
+      return baseBackend.econCalendar.getPrints(eventName);
+    },
+    [],
+  );
 
   return (
-    <EconCalendarContext.Provider value={{ events, loading, error, selectedDate, setSelectedDate, fetchPrints, refresh: fetchEvents }}>
+    <EconCalendarContext.Provider
+      value={{
+        events,
+        loading,
+        error,
+        selectedDate,
+        setSelectedDate,
+        fetchPrints,
+        refresh: fetchEvents,
+      }}
+    >
       {children}
     </EconCalendarContext.Provider>
   );

@@ -1,4 +1,5 @@
 # AutoPilot System QA & UX Sweep
+
 ## Comprehensive Gap Analysis Report
 
 > **Date**: 2026-01-11
@@ -13,17 +14,17 @@ The AutoPilot system has **partial implementation** with a solid foundation but 
 
 ### Implementation Score: 60% Complete
 
-| Component | Status | Score |
-|-----------|--------|-------|
-| Agent Infrastructure | ✅ Complete | 100% |
-| Analyst Agents | ✅ Complete | 100% |
-| Researcher Debate | ✅ Complete | 100% |
-| Trader Agent | ✅ Complete | 100% |
-| Risk Manager | ✅ Complete | 100% |
-| Proposal Workflow | ⚠️ Partial | 40% |
-| Order Execution | ❌ Missing | 0% |
-| Frontend Integration | ⚠️ Partial | 50% |
-| Real-time Updates | ❌ Missing | 0% |
+| Component            | Status      | Score |
+| -------------------- | ----------- | ----- |
+| Agent Infrastructure | ✅ Complete | 100%  |
+| Analyst Agents       | ✅ Complete | 100%  |
+| Researcher Debate    | ✅ Complete | 100%  |
+| Trader Agent         | ✅ Complete | 100%  |
+| Risk Manager         | ✅ Complete | 100%  |
+| Proposal Workflow    | ⚠️ Partial  | 40%   |
+| Order Execution      | ❌ Missing  | 0%    |
+| Frontend Integration | ⚠️ Partial  | 50%   |
+| Real-time Updates    | ❌ Missing  | 0%    |
 
 ---
 
@@ -33,19 +34,20 @@ The AutoPilot system has **partial implementation** with a solid foundation but 
 
 **File Location**: `backend-hono/src/services/agents/`
 
-| Agent | File | Model | Status |
-|-------|------|-------|--------|
-| Market Data Analyst | `market-data-analyst.ts` | Haiku | ✅ Working |
-| News Sentiment Analyst | `news-sentiment-analyst.ts` | Grok | ✅ Working |
-| Technical Analyst | `technical-analyst.ts` | Haiku | ✅ Working |
-| Bullish Researcher | `bullish-researcher.ts` | Opus | ✅ Working |
-| Bearish Researcher | `bearish-researcher.ts` | Opus | ✅ Working |
-| Debate Protocol | `debate-protocol.ts` | Opus | ✅ Working |
-| Trader Agent | `trader-agent.ts` | Opus | ✅ Working |
-| Risk Manager | `risk-manager.ts` | Opus | ✅ Working |
-| Pipeline Orchestrator | `pipeline.ts` | N/A | ✅ Working |
+| Agent                  | File                        | Model | Status     |
+| ---------------------- | --------------------------- | ----- | ---------- |
+| Market Data Analyst    | `market-data-analyst.ts`    | Haiku | ✅ Working |
+| News Sentiment Analyst | `news-sentiment-analyst.ts` | Grok  | ✅ Working |
+| Technical Analyst      | `technical-analyst.ts`      | Haiku | ✅ Working |
+| Bullish Researcher     | `bullish-researcher.ts`     | Opus  | ✅ Working |
+| Bearish Researcher     | `bearish-researcher.ts`     | Opus  | ✅ Working |
+| Debate Protocol        | `debate-protocol.ts`        | Opus  | ✅ Working |
+| Trader Agent           | `trader-agent.ts`           | Opus  | ✅ Working |
+| Risk Manager           | `risk-manager.ts`           | Opus  | ✅ Working |
+| Pipeline Orchestrator  | `pipeline.ts`               | N/A   | ✅ Working |
 
 **Features Working**:
+
 - Full pipeline execution (`runAgentPipeline`)
 - Quick analysis (`runAnalystsOnly`)
 - Agent report caching (in-memory + database)
@@ -56,44 +58,44 @@ The AutoPilot system has **partial implementation** with a solid foundation but 
 
 **File Location**: `backend-hono/src/routes/agents/`
 
-| Endpoint | Method | Handler | Status |
-|----------|--------|---------|--------|
-| `/api/agents/analyze` | POST | `handleAnalyze` | ✅ Working |
-| `/api/agents/quick-analysis` | POST | `handleQuickAnalysis` | ✅ Working |
-| `/api/agents/reports` | GET | `handleGetReports` | ✅ Working |
-| `/api/agents/debates` | GET | `handleGetDebates` | ✅ Working |
-| `/api/agents/proposals` | GET | `handleGetProposals` | ✅ Working |
-| `/api/agents/status` | GET | `handleGetStatus` | ✅ Working |
+| Endpoint                     | Method | Handler               | Status     |
+| ---------------------------- | ------ | --------------------- | ---------- |
+| `/api/agents/analyze`        | POST   | `handleAnalyze`       | ✅ Working |
+| `/api/agents/quick-analysis` | POST   | `handleQuickAnalysis` | ✅ Working |
+| `/api/agents/reports`        | GET    | `handleGetReports`    | ✅ Working |
+| `/api/agents/debates`        | GET    | `handleGetDebates`    | ✅ Working |
+| `/api/agents/proposals`      | GET    | `handleGetProposals`  | ✅ Working |
+| `/api/agents/status`         | GET    | `handleGetStatus`     | ✅ Working |
 
 ### 1.3 Trading API Routes
 
 **File Location**: `backend-hono/src/routes/trading/`
 
-| Endpoint | Method | Status |
-|----------|--------|--------|
-| `/api/trading/positions` | GET | ✅ Mock data |
-| `/api/trading/algo-status` | GET | ✅ Working |
-| `/api/trading/toggle-algo` | POST | ✅ Working |
+| Endpoint                   | Method | Status       |
+| -------------------------- | ------ | ------------ |
+| `/api/trading/positions`   | GET    | ✅ Mock data |
+| `/api/trading/algo-status` | GET    | ✅ Working   |
+| `/api/trading/toggle-algo` | POST   | ✅ Working   |
 
 ### 1.4 Database Schema
 
 **File Location**: `backend-hono/migrations/005_agent_tables.sql`
 
-| Table | Purpose | Status |
-|-------|---------|--------|
-| `agent_reports` | Store analyst/agent outputs | ✅ Created |
-| `researcher_debates` | Store debate transcripts | ✅ Created |
-| `risk_assessments` | Store risk manager decisions | ✅ Created |
-| `user_psychology` | Store trader blind spots | ✅ Created |
-| `user_settings` | Store autopilot preferences | ✅ Created |
+| Table                | Purpose                      | Status     |
+| -------------------- | ---------------------------- | ---------- |
+| `agent_reports`      | Store analyst/agent outputs  | ✅ Created |
+| `researcher_debates` | Store debate transcripts     | ✅ Created |
+| `risk_assessments`   | Store risk manager decisions | ✅ Created |
+| `user_psychology`    | Store trader blind spots     | ✅ Created |
+| `user_settings`      | Store autopilot preferences  | ✅ Created |
 
 ### 1.5 Frontend Components
 
-| Component | File | Status |
-|-----------|------|--------|
-| ProposalModal | `frontend/components/ProposalModal.tsx` | ✅ Complete |
+| Component        | File                                                       | Status      |
+| ---------------- | ---------------------------------------------------------- | ----------- |
+| ProposalModal    | `frontend/components/ProposalModal.tsx`                    | ✅ Complete |
 | AlgoStatusWidget | `frontend/components/mission-control/AlgoStatusWidget.tsx` | ✅ Complete |
-| Backend Services | `frontend/lib/services.ts` | ✅ Complete |
+| Backend Services | `frontend/lib/services.ts`                                 | ✅ Complete |
 
 ---
 
@@ -106,13 +108,14 @@ The AutoPilot system has **partial implementation** with a solid foundation but 
 ```typescript
 // MISSING ENDPOINTS
 POST /api/autopilot/propose      // Create proposal from strategy signal
-POST /api/autopilot/acknowledge  // User approves/rejects proposal  
+POST /api/autopilot/acknowledge  // User approves/rejects proposal
 POST /api/autopilot/execute      // Execute approved proposal via ProjectX
 GET  /api/autopilot/proposals    // List pending proposals with status
 GET  /api/autopilot/proposals/:id // Get proposal details
 ```
 
-**Current Gap**: 
+**Current Gap**:
+
 - Proposals are generated in pipeline but stored as `agent_reports` with type `trader`
 - No dedicated proposal storage with status tracking (pending/approved/rejected/executed)
 - No acknowledge/execute workflow
@@ -160,12 +163,15 @@ interface BracketOrder {
   takeProfit: TakeProfitOrder;
 }
 
-async function executeProposal(proposalId: string): Promise<ExecutionResult>
-async function createBracketOrder(proposal: TradingProposal): Promise<BracketOrder>
-async function getOrderStatus(orderId: string): Promise<OrderStatus>
+async function executeProposal(proposalId: string): Promise<ExecutionResult>;
+async function createBracketOrder(
+  proposal: TradingProposal,
+): Promise<BracketOrder>;
+async function getOrderStatus(orderId: string): Promise<OrderStatus>;
 ```
 
 **Current Gap**:
+
 - `trading-service.ts` uses in-memory store and mock positions
 - No actual ProjectX API integration for order placement
 - No bracket order creation
@@ -186,14 +192,23 @@ interface TradingStrategy {
 }
 
 // MISSING STRATEGIES
-- forty-forty-club.ts
-- print-charged-ripper.ts
-- morning-flush.ts
-- lunch-power-flush.ts
-- vix-fixer.ts
+-forty -
+  forty -
+  club.ts -
+  print -
+  charged -
+  ripper.ts -
+  morning -
+  flush.ts -
+  lunch -
+  power -
+  flush.ts -
+  vix -
+  fixer.ts;
 ```
 
 **Current Gap**:
+
 - Strategies are listed in `trader-agent.ts` prompt but not implemented as actual detection engines
 - No automatic strategy triggering based on market conditions
 - No strategy evaluation loop
@@ -220,11 +235,13 @@ interface AntilagSignal {
 ### 2.6 Real-time Updates (Critical for UX)
 
 **Required**:
+
 - WebSocket support for proposal updates
 - Server-Sent Events (SSE) for agent status
 - Real-time proposal notification push
 
 **Current Gap**:
+
 - RiskFlow has SSE (`sse-broadcaster.ts`) but not used for autopilot
 - No WebSocket implementation
 
@@ -232,14 +249,15 @@ interface AntilagSignal {
 
 **Missing Components**:
 
-| Component | Purpose | Status |
-|-----------|---------|--------|
-| ProposalQueue | List pending proposals | ❌ Missing |
-| ProposalNotification | Toast when new proposal | ❌ Missing |
-| ProposalHistory | List executed/rejected | ❌ Missing |
-| ExecutionConfirmation | Show execution result | ❌ Missing |
+| Component             | Purpose                 | Status     |
+| --------------------- | ----------------------- | ---------- |
+| ProposalQueue         | List pending proposals  | ❌ Missing |
+| ProposalNotification  | Toast when new proposal | ❌ Missing |
+| ProposalHistory       | List executed/rejected  | ❌ Missing |
+| ExecutionConfirmation | Show execution result   | ❌ Missing |
 
 **AlgoStatusWidget Gap**:
+
 - Toggle switch works but doesn't trigger agent pipeline
 - No connection between toggle and proposal generation
 - No real-time proposal count display
@@ -250,29 +268,29 @@ interface AntilagSignal {
 
 ### 3.1 Agent 1 Spec Gaps (Backend)
 
-| Week | Task | Spec Status | Implementation Status |
-|------|------|-------------|----------------------|
-| 1 | Fix Auth 401 | ✅ Required | ⚠️ May have issues |
-| 1 | Stabilize RiskFlow | ✅ Required | ✅ Complete |
-| 1 | Database Schema | ✅ Required | ✅ Complete |
-| 2 | Trading Strategies | ✅ Required | ❌ Not Implemented |
-| 3 | Antilag Detection | ✅ Required | ❌ Not Implemented |
-| 4 | Proposal System | ✅ Required | ⚠️ Partial |
-| 5 | ProjectX Execution | ✅ Required | ❌ Not Implemented |
-| 6 | Risk Validation | ✅ Required | ✅ Complete |
+| Week | Task               | Spec Status | Implementation Status |
+| ---- | ------------------ | ----------- | --------------------- |
+| 1    | Fix Auth 401       | ✅ Required | ⚠️ May have issues    |
+| 1    | Stabilize RiskFlow | ✅ Required | ✅ Complete           |
+| 1    | Database Schema    | ✅ Required | ✅ Complete           |
+| 2    | Trading Strategies | ✅ Required | ❌ Not Implemented    |
+| 3    | Antilag Detection  | ✅ Required | ❌ Not Implemented    |
+| 4    | Proposal System    | ✅ Required | ⚠️ Partial            |
+| 5    | ProjectX Execution | ✅ Required | ❌ Not Implemented    |
+| 6    | Risk Validation    | ✅ Required | ✅ Complete           |
 
 ### 3.2 Agent 2 Spec Gaps (AI)
 
-| Week | Task | Spec Status | Implementation Status |
-|------|------|-------------|----------------------|
-| 1 | AI SDK Setup | ✅ Required | ✅ Complete |
-| 2 | Analyst Agents | ✅ Required | ✅ Complete |
-| 3 | Debate System | ✅ Required | ✅ Complete |
-| 4 | Trader Agent | ✅ Required | ✅ Complete |
-| 5 | Risk Manager | ✅ Required | ✅ Complete |
-| 5 | QuickFintheon | ✅ Required | ⚠️ Partial |
-| 6 | Chat + Agent Queries | ✅ Required | ⚠️ Partial |
-| 7 | Full Pipeline | ✅ Required | ✅ Complete |
+| Week | Task                 | Spec Status | Implementation Status |
+| ---- | -------------------- | ----------- | --------------------- |
+| 1    | AI SDK Setup         | ✅ Required | ✅ Complete           |
+| 2    | Analyst Agents       | ✅ Required | ✅ Complete           |
+| 3    | Debate System        | ✅ Required | ✅ Complete           |
+| 4    | Trader Agent         | ✅ Required | ✅ Complete           |
+| 5    | Risk Manager         | ✅ Required | ✅ Complete           |
+| 5    | QuickFintheon        | ✅ Required | ⚠️ Partial            |
+| 6    | Chat + Agent Queries | ✅ Required | ⚠️ Partial            |
+| 7    | Full Pipeline        | ✅ Required | ✅ Complete           |
 
 ---
 
@@ -300,10 +318,17 @@ backend-hono/migrations/006_trading_proposals.sql
 
 ```typescript
 // proposal-service.ts
-export async function createProposal(pipelineResult: AgentPipelineResult): Promise<TradingProposal>
-export async function acknowledgeProposal(id: string, decision: 'approved' | 'rejected'): Promise<void>
-export async function executeProposal(id: string): Promise<ExecutionResult>
-export async function getPendingProposals(userId: string): Promise<TradingProposal[]>
+export async function createProposal(
+  pipelineResult: AgentPipelineResult,
+): Promise<TradingProposal>;
+export async function acknowledgeProposal(
+  id: string,
+  decision: "approved" | "rejected",
+): Promise<void>;
+export async function executeProposal(id: string): Promise<ExecutionResult>;
+export async function getPendingProposals(
+  userId: string,
+): Promise<TradingProposal[]>;
 ```
 
 ### Phase 2: Execution Layer (Priority: High)
@@ -332,16 +357,16 @@ backend-hono/src/services/projectx/execution.ts  # New file
 
 ```typescript
 // Add to backend-hono/src/services/
-websocket/proposal-broadcaster.ts
-websocket/agent-status.ts
+websocket / proposal - broadcaster.ts;
+websocket / agent - status.ts;
 ```
 
 **3.2 Frontend Integration**
 
 ```typescript
 // Hook for real-time proposals
-frontend/hooks/useProposalNotifications.ts
-frontend/components/ProposalNotification.tsx
+frontend / hooks / useProposalNotifications.ts;
+frontend / components / ProposalNotification.tsx;
 ```
 
 ### Phase 4: Strategy Engine (Priority: Medium)

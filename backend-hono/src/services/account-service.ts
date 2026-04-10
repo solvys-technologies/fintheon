@@ -3,28 +3,43 @@
  * Business logic for account operations
  */
 
-import * as accountQueries from '../db/queries/account.js';
-import type { Account, UserTier, AccountSettings, TierResponse } from '../types/account.js';
+import * as accountQueries from "../db/queries/account.js";
+import type {
+  Account,
+  UserTier,
+  AccountSettings,
+  TierResponse,
+} from "../types/account.js";
 
 export async function getAccount(userId: string): Promise<Account | null> {
   return accountQueries.getAccountByUserId(userId);
 }
 
-export async function getOrCreateAccount(userId: string, email: string): Promise<Account> {
+export async function getOrCreateAccount(
+  userId: string,
+  email: string,
+): Promise<Account> {
   const existing = await accountQueries.getAccountByUserId(userId);
   if (existing) return existing;
 
   return accountQueries.createAccount(userId, email);
 }
 
-export async function createAccount(userId: string, email: string, initialBalance?: number): Promise<Account> {
+export async function createAccount(
+  userId: string,
+  email: string,
+  initialBalance?: number,
+): Promise<Account> {
   const existing = await accountQueries.getAccountByUserId(userId);
   if (existing) return existing;
 
   return accountQueries.createAccount(userId, email, initialBalance);
 }
 
-export async function updateSettings(userId: string, settings: AccountSettings): Promise<Account | null> {
+export async function updateSettings(
+  userId: string,
+  settings: AccountSettings,
+): Promise<Account | null> {
   return accountQueries.updateAccountSettings(userId, settings);
 }
 
@@ -37,11 +52,14 @@ export async function getTier(userId: string): Promise<TierResponse> {
 
   return {
     tier: account.tier,
-    requiresSelection: account.tier === 'free',
+    requiresSelection: account.tier === "free",
   };
 }
 
-export async function selectTier(userId: string, tier: UserTier): Promise<Account | null> {
+export async function selectTier(
+  userId: string,
+  tier: UserTier,
+): Promise<Account | null> {
   return accountQueries.updateAccountTier(userId, tier);
 }
 
@@ -50,7 +68,7 @@ export async function getFeatures(userId: string): Promise<{
   features: Array<{ name: string; requiredTier: string; hasAccess: boolean }>;
 }> {
   const account = await accountQueries.getAccountByUserId(userId);
-  const tier = account?.tier || 'free';
+  const tier = account?.tier || "free";
 
   const tierLevel: Record<UserTier, number> = {
     free: 0,
@@ -60,10 +78,10 @@ export async function getFeatures(userId: string): Promise<{
   };
 
   const features = [
-    { name: 'riskflow', requiredTier: 'free' },
-    { name: 'ai_chat', requiredTier: 'fintheon' },
-    { name: 'autopilot', requiredTier: 'fintheon_plus' },
-    { name: 'agents', requiredTier: 'fintheon_pro' },
+    { name: "riskflow", requiredTier: "free" },
+    { name: "ai_chat", requiredTier: "fintheon" },
+    { name: "autopilot", requiredTier: "fintheon_plus" },
+    { name: "agents", requiredTier: "fintheon_pro" },
   ];
 
   return {

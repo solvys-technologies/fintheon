@@ -1,7 +1,7 @@
 // [claude-code 2026-03-20] Supabase cloud service — full data layer replacing Notion + scoring, ER, settings, consilium
 // [claude-code 2026-03-19] Supabase cloud service — centralized scoring, ER persistence, user settings, consilium
-import { getSupabaseClient, isSupabaseConfigured } from '../config/supabase.js';
-import { sql as dbSql, isDatabaseAvailable } from '../config/database.js';
+import { getSupabaseClient, isSupabaseConfigured } from "../config/supabase.js";
+import { sql as dbSql, isDatabaseAvailable } from "../config/database.js";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -40,7 +40,10 @@ export interface ScoredRiskFlowItem extends RawRiskFlowItem {
   agent_note_generated_at?: string;
   econ_data?: Record<string, unknown>;
   market_impact?: MarketImpactData | null;
-  instrument_scores?: Record<string, { sentiment: string; impliedPoints: number }>;
+  instrument_scores?: Record<
+    string,
+    { sentiment: string; impliedPoints: number }
+  >;
 }
 
 export interface ERScoreRecord {
@@ -84,15 +87,18 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
           ) VALUES (
             ${item.tweet_id}, ${item.source}, ${item.headline},
             ${item.body ?? null}, ${item.symbols ?? []}, ${item.tags ?? []},
-            ${item.is_breaking ?? false}, ${item.urgency ?? 'normal'},
-            ${item.published_at ?? new Date().toISOString()}, ${item.submitted_by ?? 'unknown'}
+            ${item.is_breaking ?? false}, ${item.urgency ?? "normal"},
+            ${item.published_at ?? new Date().toISOString()}, ${item.submitted_by ?? "unknown"}
           ) ON CONFLICT (tweet_id) DO NOTHING
         `;
         written++;
       }
       return written;
     } catch (err) {
-      console.error('[Supabase] writeRawItems SQL error:', (err as Error).message);
+      console.error(
+        "[Supabase] writeRawItems SQL error:",
+        (err as Error).message,
+      );
     }
   }
 
@@ -101,12 +107,12 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
   if (!sb) return 0;
 
   const { data, error } = await sb
-    .from('raw_riskflow_items')
-    .upsert(items, { onConflict: 'tweet_id', ignoreDuplicates: true })
-    .select('id');
+    .from("raw_riskflow_items")
+    .upsert(items, { onConflict: "tweet_id", ignoreDuplicates: true })
+    .select("id");
 
   if (error) {
-    console.error('[Supabase] writeRawItems client error:', error.message);
+    console.error("[Supabase] writeRawItems client error:", error.message);
     return 0;
   }
   return data?.length ?? 0;
@@ -116,7 +122,9 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
 // Supabase JS client .not('in', subquery) silently returns empty — never use it.
 // The two-query JS fallback also fails when unscored items are scattered across thousands of rows.
 // Raw SQL NOT EXISTS is the only reliable approach.
-export async function readUnscoredItems(limit = 50): Promise<(RawRiskFlowItem & { id: string })[]> {
+export async function readUnscoredItems(
+  limit = 50,
+): Promise<(RawRiskFlowItem & { id: string })[]> {
   // Primary: use the pg Pool SQL driver (same one boardroom-store uses)
   if (isDatabaseAvailable() && dbSql) {
     try {
@@ -131,7 +139,10 @@ export async function readUnscoredItems(limit = 50): Promise<(RawRiskFlowItem & 
       `;
       return rows as (RawRiskFlowItem & { id: string })[];
     } catch (err) {
-      console.error('[Supabase] readUnscoredItems SQL failed, trying Supabase client fallback:', (err as Error).message);
+      console.error(
+        "[Supabase] readUnscoredItems SQL failed, trying Supabase client fallback:",
+        (err as Error).message,
+      );
     }
   }
 
@@ -140,18 +151,18 @@ export async function readUnscoredItems(limit = 50): Promise<(RawRiskFlowItem & 
   if (!sb) return [];
 
   const { data: rawItems } = await sb
-    .from('raw_riskflow_items')
-    .select('*')
-    .order('created_at', { ascending: false })
+    .from("raw_riskflow_items")
+    .select("*")
+    .order("created_at", { ascending: false })
     .limit(limit * 5);
 
   if (!rawItems?.length) return [];
 
   const tweetIds = rawItems.map((r) => r.tweet_id);
   const { data: scoredItems } = await sb
-    .from('scored_riskflow_items')
-    .select('tweet_id')
-    .in('tweet_id', tweetIds);
+    .from("scored_riskflow_items")
+    .select("tweet_id")
+    .in("tweet_id", tweetIds);
 
   const scoredSet = new Set((scoredItems ?? []).map((s) => s.tweet_id));
   return rawItems.filter((r) => !scoredSet.has(r.tweet_id)).slice(0, limit);
@@ -159,7 +170,9 @@ export async function readUnscoredItems(limit = 50): Promise<(RawRiskFlowItem & 
 
 // ─── Scored Items (central agent writes, all read) ──────────────
 
-export async function writeScoredItems(items: ScoredRiskFlowItem[]): Promise<number> {
+export async function writeScoredItems(
+  items: ScoredRiskFlowItem[],
+): Promise<number> {
   if (items.length === 0) return 0;
 
   // [claude-code 2026-04-06] Primary: raw SQL (Supabase JS upsert was silently failing)
@@ -176,10 +189,10 @@ export async function writeScoredItems(items: ScoredRiskFlowItem[]): Promise<num
           ) VALUES (
             ${item.raw_item_id ?? null}, ${item.tweet_id}, ${item.source}, ${item.headline},
             ${item.body ?? null}, ${item.symbols ?? []}, ${item.tags ?? []},
-            ${item.is_breaking ?? false}, ${item.urgency ?? 'normal'}, ${item.sentiment ?? null},
+            ${item.is_breaking ?? false}, ${item.urgency ?? "normal"}, ${item.sentiment ?? null},
             ${item.iv_score ?? null}, ${item.macro_level ?? null},
             ${item.published_at ?? new Date().toISOString()}, ${item.analyzed_at ?? new Date().toISOString()},
-            ${item.scored_by ?? 'central-agent'}, ${item.price_brain_score ? JSON.stringify(item.price_brain_score) : null}::jsonb,
+            ${item.scored_by ?? "central-agent"}, ${item.price_brain_score ? JSON.stringify(item.price_brain_score) : null}::jsonb,
             ${item.sub_scores ? JSON.stringify(item.sub_scores) : null}::jsonb, ${item.risk_type ?? null},
             ${item.agent_note ?? null}, ${item.agent_note_generated_at ?? null},
             ${item.econ_data ? JSON.stringify(item.econ_data) : null}::jsonb
@@ -199,9 +212,18 @@ export async function writeScoredItems(items: ScoredRiskFlowItem[]): Promise<num
       }
       return written;
     } catch (err) {
-      console.error('[Supabase] writeScoredItems SQL error:', (err as Error).message, (err as Error).stack?.slice(0, 300));
+      console.error(
+        "[Supabase] writeScoredItems SQL error:",
+        (err as Error).message,
+        (err as Error).stack?.slice(0, 300),
+      );
       // Log the failing item for debugging
-      console.error('[Supabase] Failed item sample:', JSON.stringify(items[0]?.tweet_id), 'raw_item_id:', items[0]?.raw_item_id);
+      console.error(
+        "[Supabase] Failed item sample:",
+        JSON.stringify(items[0]?.tweet_id),
+        "raw_item_id:",
+        items[0]?.raw_item_id,
+      );
     }
   }
 
@@ -210,12 +232,12 @@ export async function writeScoredItems(items: ScoredRiskFlowItem[]): Promise<num
   if (!sb) return 0;
 
   const { data, error } = await sb
-    .from('scored_riskflow_items')
-    .upsert(items, { onConflict: 'tweet_id', ignoreDuplicates: false })
-    .select('id');
+    .from("scored_riskflow_items")
+    .upsert(items, { onConflict: "tweet_id", ignoreDuplicates: false })
+    .select("id");
 
   if (error) {
-    console.error('[Supabase] writeScoredItems client error:', error.message);
+    console.error("[Supabase] writeScoredItems client error:", error.message);
     return 0;
   }
   return data?.length ?? 0;
@@ -230,21 +252,21 @@ export async function readScoredItems(options?: {
   if (!sb) return [];
 
   let query = sb
-    .from('scored_riskflow_items')
-    .select('*')
-    .order('created_at', { ascending: false })
+    .from("scored_riskflow_items")
+    .select("*")
+    .order("created_at", { ascending: false })
     .limit(options?.limit ?? 100);
 
   if (options?.minMacroLevel) {
-    query = query.gte('macro_level', options.minMacroLevel);
+    query = query.gte("macro_level", options.minMacroLevel);
   }
   if (options?.since) {
-    query = query.gte('created_at', options.since);
+    query = query.gte("created_at", options.since);
   }
 
   const { data, error } = await query;
   if (error) {
-    console.error('[Supabase] readScoredItems error:', error.message);
+    console.error("[Supabase] readScoredItems error:", error.message);
     return [];
   }
   return data ?? [];
@@ -256,23 +278,28 @@ export async function readScoredItems(options?: {
  * Read scored items that need market impact enrichment:
  * macro_level >= 3, no market_impact, older than 24h.
  */
-export async function readItemsNeedingMarketImpact(limit = 50): Promise<ScoredRiskFlowItem[]> {
+export async function readItemsNeedingMarketImpact(
+  limit = 50,
+): Promise<ScoredRiskFlowItem[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await sb
-    .from('scored_riskflow_items')
-    .select('*')
-    .gte('macro_level', 3)
-    .is('market_impact', null)
-    .lt('created_at', cutoff)
-    .order('created_at', { ascending: false })
+    .from("scored_riskflow_items")
+    .select("*")
+    .gte("macro_level", 3)
+    .is("market_impact", null)
+    .lt("created_at", cutoff)
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) {
-    console.error('[Supabase] readItemsNeedingMarketImpact error:', error.message);
+    console.error(
+      "[Supabase] readItemsNeedingMarketImpact error:",
+      error.message,
+    );
     return [];
   }
   return data ?? [];
@@ -290,12 +317,14 @@ export async function writeMarketImpact(
   let written = 0;
   for (const { tweet_id, market_impact } of updates) {
     const { error } = await sb
-      .from('scored_riskflow_items')
+      .from("scored_riskflow_items")
       .update({ market_impact })
-      .eq('tweet_id', tweet_id);
+      .eq("tweet_id", tweet_id);
 
     if (error) {
-      console.error('[Supabase] writeMarketImpact error:', error.message, { tweet_id });
+      console.error("[Supabase] writeMarketImpact error:", error.message, {
+        tweet_id,
+      });
     } else {
       written++;
     }
@@ -309,14 +338,22 @@ export async function writeMarketImpact(
  * Called fire-and-forget from the feed handler — never blocks the response.
  */
 export async function writeInstrumentScores(
-  updates: Array<{ tweet_id: string; instrument: string; sentiment: string; impliedPoints: number }>,
+  updates: Array<{
+    tweet_id: string;
+    instrument: string;
+    sentiment: string;
+    impliedPoints: number;
+  }>,
 ): Promise<number> {
   const sb = getSupabaseClient();
   if (!sb || updates.length === 0) return 0;
 
   let written = 0;
   // Batch by tweet_id in case multiple instruments per item (future-proofing)
-  const grouped = new Map<string, Record<string, { sentiment: string; impliedPoints: number }>>();
+  const grouped = new Map<
+    string,
+    Record<string, { sentiment: string; impliedPoints: number }>
+  >();
   for (const { tweet_id, instrument, sentiment, impliedPoints } of updates) {
     if (!grouped.has(tweet_id)) grouped.set(tweet_id, {});
     grouped.get(tweet_id)![instrument] = { sentiment, impliedPoints };
@@ -326,19 +363,21 @@ export async function writeInstrumentScores(
     // Use RPC or raw update to merge JSONB — Supabase JS doesn't natively support || merge,
     // so we read-merge-write. For fire-and-forget this is acceptable.
     const { data: existing } = await sb
-      .from('scored_riskflow_items')
-      .select('instrument_scores')
-      .eq('tweet_id', tweet_id)
+      .from("scored_riskflow_items")
+      .select("instrument_scores")
+      .eq("tweet_id", tweet_id)
       .single();
 
     const merged = { ...(existing?.instrument_scores ?? {}), ...scores };
     const { error } = await sb
-      .from('scored_riskflow_items')
+      .from("scored_riskflow_items")
       .update({ instrument_scores: merged })
-      .eq('tweet_id', tweet_id);
+      .eq("tweet_id", tweet_id);
 
     if (error) {
-      console.error('[Supabase] writeInstrumentScores error:', error.message, { tweet_id });
+      console.error("[Supabase] writeInstrumentScores error:", error.message, {
+        tweet_id,
+      });
     } else {
       written++;
     }
@@ -352,27 +391,30 @@ export async function writeERSession(record: ERScoreRecord): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb) return false;
 
-  const { error } = await sb.from('er_scores').insert(record);
+  const { error } = await sb.from("er_scores").insert(record);
   if (error) {
-    console.error('[Supabase] writeERSession error:', error.message);
+    console.error("[Supabase] writeERSession error:", error.message);
     return false;
   }
   return true;
 }
 
-export async function readERSessions(userId: string, limit = 20): Promise<ERScoreRecord[]> {
+export async function readERSessions(
+  userId: string,
+  limit = 20,
+): Promise<ERScoreRecord[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const { data, error } = await sb
-    .from('er_scores')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+    .from("er_scores")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) {
-    console.error('[Supabase] readERSessions error:', error.message);
+    console.error("[Supabase] readERSessions error:", error.message);
     return [];
   }
   return data ?? [];
@@ -380,34 +422,42 @@ export async function readERSessions(userId: string, limit = 20): Promise<ERScor
 
 // ─── User Settings ──────────────────────────────────────────────
 
-export async function writeUserSettings(record: UserSettingsRecord): Promise<boolean> {
+export async function writeUserSettings(
+  record: UserSettingsRecord,
+): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb) return false;
 
   const { error } = await sb
-    .from('user_settings')
-    .upsert({ ...record, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    .from("user_settings")
+    .upsert(
+      { ...record, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
 
   if (error) {
-    console.error('[Supabase] writeUserSettings error:', error.message);
+    console.error("[Supabase] writeUserSettings error:", error.message);
     return false;
   }
   return true;
 }
 
-export async function readUserSettings(userId: string): Promise<UserSettingsRecord | null> {
+export async function readUserSettings(
+  userId: string,
+): Promise<UserSettingsRecord | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('user_settings')
-    .select('*')
-    .eq('user_id', userId)
+    .from("user_settings")
+    .select("*")
+    .eq("user_id", userId)
     .single();
 
   if (error) {
-    if (error.code !== 'PGRST116') { // not found is ok
-      console.error('[Supabase] readUserSettings error:', error.message);
+    if (error.code !== "PGRST116") {
+      // not found is ok
+      console.error("[Supabase] readUserSettings error:", error.message);
     }
     return null;
   }
@@ -416,30 +466,34 @@ export async function readUserSettings(userId: string): Promise<UserSettingsReco
 
 // ─── Consilium Messages ─────────────────────────────────────────
 
-export async function writeConsiliumMessage(record: ConsiliumMessageRecord): Promise<boolean> {
+export async function writeConsiliumMessage(
+  record: ConsiliumMessageRecord,
+): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb) return false;
 
-  const { error } = await sb.from('consilium_messages').insert(record);
+  const { error } = await sb.from("consilium_messages").insert(record);
   if (error) {
-    console.error('[Supabase] writeConsiliumMessage error:', error.message);
+    console.error("[Supabase] writeConsiliumMessage error:", error.message);
     return false;
   }
   return true;
 }
 
-export async function readConsiliumMessages(limit = 100): Promise<ConsiliumMessageRecord[]> {
+export async function readConsiliumMessages(
+  limit = 100,
+): Promise<ConsiliumMessageRecord[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const { data, error } = await sb
-    .from('consilium_messages')
-    .select('*')
-    .order('created_at', { ascending: true })
+    .from("consilium_messages")
+    .select("*")
+    .order("created_at", { ascending: true })
     .limit(limit);
 
   if (error) {
-    console.error('[Supabase] readConsiliumMessages error:', error.message);
+    console.error("[Supabase] readConsiliumMessages error:", error.message);
     return [];
   }
   return data ?? [];
@@ -451,7 +505,7 @@ export interface TradeIdeaRecord {
   id?: string;
   title: string;
   ticker?: string;
-  direction?: 'Long' | 'Short';
+  direction?: "Long" | "Short";
   entry_price?: number;
   stop_loss?: number;
   take_profit?: number;
@@ -468,18 +522,20 @@ export interface TradeIdeaRecord {
   updated_at?: string;
 }
 
-export async function writeTradeIdea(idea: Omit<TradeIdeaRecord, 'id' | 'created_at' | 'updated_at'>): Promise<TradeIdeaRecord | null> {
+export async function writeTradeIdea(
+  idea: Omit<TradeIdeaRecord, "id" | "created_at" | "updated_at">,
+): Promise<TradeIdeaRecord | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('trade_ideas')
+    .from("trade_ideas")
     .insert(idea)
     .select()
     .single();
 
   if (error) {
-    console.error('[Supabase] writeTradeIdea error:', error.message);
+    console.error("[Supabase] writeTradeIdea error:", error.message);
     return null;
   }
   return data;
@@ -493,34 +549,37 @@ export async function readTradeIdeas(filter?: {
   if (!sb) return [];
 
   let query = sb
-    .from('trade_ideas')
-    .select('*')
-    .order('created_at', { ascending: false })
+    .from("trade_ideas")
+    .select("*")
+    .order("created_at", { ascending: false })
     .limit(filter?.limit ?? 100);
 
   if (filter?.status) {
-    query = query.eq('status', filter.status);
+    query = query.eq("status", filter.status);
   }
 
   const { data, error } = await query;
   if (error) {
-    console.error('[Supabase] readTradeIdeas error:', error.message);
+    console.error("[Supabase] readTradeIdeas error:", error.message);
     return [];
   }
   return data ?? [];
 }
 
-export async function updateTradeIdeaStatus(id: string, status: string): Promise<boolean> {
+export async function updateTradeIdeaStatus(
+  id: string,
+  status: string,
+): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb) return false;
 
   const { error } = await sb
-    .from('trade_ideas')
+    .from("trade_ideas")
     .update({ status, updated_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq("id", id);
 
   if (error) {
-    console.error('[Supabase] updateTradeIdeaStatus error:', error.message);
+    console.error("[Supabase] updateTradeIdeaStatus error:", error.message);
     return false;
   }
   return true;
@@ -542,16 +601,18 @@ export interface DailyPnlRecord {
   created_at?: string;
 }
 
-export async function writeDailyPnl(record: Omit<DailyPnlRecord, 'id' | 'created_at'>): Promise<boolean> {
+export async function writeDailyPnl(
+  record: Omit<DailyPnlRecord, "id" | "created_at">,
+): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb) return false;
 
   const { error } = await sb
-    .from('daily_pnl')
-    .upsert(record, { onConflict: 'date' });
+    .from("daily_pnl")
+    .upsert(record, { onConflict: "date" });
 
   if (error) {
-    console.error('[Supabase] writeDailyPnl error:', error.message);
+    console.error("[Supabase] writeDailyPnl error:", error.message);
     return false;
   }
   return true;
@@ -566,17 +627,17 @@ export async function readDailyPnl(filter?: {
   if (!sb) return [];
 
   let query = sb
-    .from('daily_pnl')
-    .select('*')
-    .order('date', { ascending: false })
+    .from("daily_pnl")
+    .select("*")
+    .order("date", { ascending: false })
     .limit(filter?.limit ?? 30);
 
-  if (filter?.from) query = query.gte('date', filter.from);
-  if (filter?.to) query = query.lte('date', filter.to);
+  if (filter?.from) query = query.gte("date", filter.from);
+  if (filter?.to) query = query.lte("date", filter.to);
 
   const { data, error } = await query;
   if (error) {
-    console.error('[Supabase] readDailyPnl error:', error.message);
+    console.error("[Supabase] readDailyPnl error:", error.message);
     return [];
   }
   return data ?? [];
@@ -584,7 +645,7 @@ export async function readDailyPnl(filter?: {
 
 // ─── Briefs ─────────────────────────────────────────────────────
 
-export type BriefType = 'MDB' | 'ADB' | 'PMDB' | 'WT';
+export type BriefType = "MDB" | "ADB" | "PMDB" | "WT";
 
 export interface BriefRecord {
   id?: string;
@@ -596,52 +657,59 @@ export interface BriefRecord {
   created_at?: string;
 }
 
-export async function writeBrief(brief: Omit<BriefRecord, 'id' | 'created_at'>): Promise<BriefRecord | null> {
+export async function writeBrief(
+  brief: Omit<BriefRecord, "id" | "created_at">,
+): Promise<BriefRecord | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   // Archive previous active briefs of same type
   await sb
-    .from('briefs')
-    .update({ status: 'Archived' })
-    .eq('brief_type', brief.brief_type)
-    .eq('status', 'Active');
+    .from("briefs")
+    .update({ status: "Archived" })
+    .eq("brief_type", brief.brief_type)
+    .eq("status", "Active");
 
   const { data, error } = await sb
-    .from('briefs')
-    .insert({ ...brief, status: brief.status ?? 'Active' })
+    .from("briefs")
+    .insert({ ...brief, status: brief.status ?? "Active" })
     .select()
     .single();
 
   if (error) {
-    console.error('[Supabase] writeBrief error:', error.message);
+    console.error("[Supabase] writeBrief error:", error.message);
     return null;
   }
   return data;
 }
 
-export async function readBriefs(type?: BriefType, limit = 10): Promise<BriefRecord[]> {
+export async function readBriefs(
+  type?: BriefType,
+  limit = 10,
+): Promise<BriefRecord[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   let query = sb
-    .from('briefs')
-    .select('*')
-    .eq('status', 'Active')
-    .order('created_at', { ascending: false })
+    .from("briefs")
+    .select("*")
+    .eq("status", "Active")
+    .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (type) query = query.eq('brief_type', type);
+  if (type) query = query.eq("brief_type", type);
 
   const { data, error } = await query;
   if (error) {
-    console.error('[Supabase] readBriefs error:', error.message);
+    console.error("[Supabase] readBriefs error:", error.message);
     return [];
   }
   return data ?? [];
 }
 
-export async function readLatestBrief(type: BriefType): Promise<BriefRecord | null> {
+export async function readLatestBrief(
+  type: BriefType,
+): Promise<BriefRecord | null> {
   const briefs = await readBriefs(type, 1);
   return briefs[0] ?? null;
 }
@@ -657,23 +725,25 @@ export interface EconEventRecord {
   actual?: string;
   previous?: string;
   detail?: string;
-  impact?: 'low' | 'medium' | 'high';
+  impact?: "low" | "medium" | "high";
   created_at?: string;
   updated_at?: string;
 }
 
-export async function writeEconEvent(event: Omit<EconEventRecord, 'id' | 'created_at' | 'updated_at'>): Promise<EconEventRecord | null> {
+export async function writeEconEvent(
+  event: Omit<EconEventRecord, "id" | "created_at" | "updated_at">,
+): Promise<EconEventRecord | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('economic_events')
+    .from("economic_events")
     .insert(event)
     .select()
     .single();
 
   if (error) {
-    console.error('[Supabase] writeEconEvent error:', error.message);
+    console.error("[Supabase] writeEconEvent error:", error.message);
     return null;
   }
   return data;
@@ -687,33 +757,36 @@ export async function readEconEvents(dateRange?: {
   if (!sb) return [];
 
   let query = sb
-    .from('economic_events')
-    .select('*')
-    .order('date', { ascending: true })
+    .from("economic_events")
+    .select("*")
+    .order("date", { ascending: true })
     .limit(100);
 
-  if (dateRange?.from) query = query.gte('date', dateRange.from);
-  if (dateRange?.to) query = query.lte('date', dateRange.to);
+  if (dateRange?.from) query = query.gte("date", dateRange.from);
+  if (dateRange?.to) query = query.lte("date", dateRange.to);
 
   const { data, error } = await query;
   if (error) {
-    console.error('[Supabase] readEconEvents error:', error.message);
+    console.error("[Supabase] readEconEvents error:", error.message);
     return [];
   }
   return data ?? [];
 }
 
-export async function updateEconEventActual(id: string, actual: string): Promise<boolean> {
+export async function updateEconEventActual(
+  id: string,
+  actual: string,
+): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb) return false;
 
   const { error } = await sb
-    .from('economic_events')
+    .from("economic_events")
     .update({ actual, updated_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq("id", id);
 
   if (error) {
-    console.error('[Supabase] updateEconEventActual error:', error.message);
+    console.error("[Supabase] updateEconEventActual error:", error.message);
     return false;
   }
   return true;
@@ -733,18 +806,20 @@ export interface EconPrintRecord {
   printed_at?: string;
 }
 
-export async function writeEconPrint(print: Omit<EconPrintRecord, 'id' | 'printed_at'>): Promise<EconPrintRecord | null> {
+export async function writeEconPrint(
+  print: Omit<EconPrintRecord, "id" | "printed_at">,
+): Promise<EconPrintRecord | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('econ_prints')
+    .from("econ_prints")
     .insert(print)
     .select()
     .single();
 
   if (error) {
-    console.error('[Supabase] writeEconPrint error:', error.message);
+    console.error("[Supabase] writeEconPrint error:", error.message);
     return null;
   }
   return data;
@@ -758,18 +833,18 @@ export async function readEconPrints(filter?: {
   if (!sb) return [];
 
   let query = sb
-    .from('econ_prints')
-    .select('*')
-    .order('printed_at', { ascending: false })
+    .from("econ_prints")
+    .select("*")
+    .order("printed_at", { ascending: false })
     .limit(filter?.limit ?? 50);
 
   if (filter?.eventName) {
-    query = query.ilike('headline', `%${filter.eventName}%`);
+    query = query.ilike("headline", `%${filter.eventName}%`);
   }
 
   const { data, error } = await query;
   if (error) {
-    console.error('[Supabase] readEconPrints error:', error.message);
+    console.error("[Supabase] readEconPrints error:", error.message);
     return [];
   }
   return data ?? [];
@@ -781,17 +856,35 @@ export async function readEconPrints(filter?: {
  */
 // Keyword patterns per econ ticker — used to find relevant FJ tweets in scored items
 const ECON_KEYWORD_MAP: Record<string, string[]> = {
-  CPI: ['cpi', 'consumer price'],
-  PPI: ['ppi', 'producer price'],
-  PI: ['personal income'],
-  GDP: ['gdp', 'gross domestic'],
-  PMI: ['pmi', 'purchasing managers', 'ism manufacturing', 'ism services'],
-  PCE: ['pce', 'personal consumption'],
-  FOMC: ['fomc', 'fed rate', 'federal reserve', 'powell speaks', 'fed holds', 'fed cuts', 'fed hikes'],
-  CUTS: ['traders price in', 'rate cut', 'basis points', 'cuts priced', 'pricing in cuts', 'rate expectations'],
+  CPI: ["cpi", "consumer price"],
+  PPI: ["ppi", "producer price"],
+  PI: ["personal income"],
+  GDP: ["gdp", "gross domestic"],
+  PMI: ["pmi", "purchasing managers", "ism manufacturing", "ism services"],
+  PCE: ["pce", "personal consumption"],
+  FOMC: [
+    "fomc",
+    "fed rate",
+    "federal reserve",
+    "powell speaks",
+    "fed holds",
+    "fed cuts",
+    "fed hikes",
+  ],
+  CUTS: [
+    "traders price in",
+    "rate cut",
+    "basis points",
+    "cuts priced",
+    "pricing in cuts",
+    "rate expectations",
+  ],
 };
 
-export async function readEconHistory(ticker: string, limit = 10): Promise<{
+export async function readEconHistory(
+  ticker: string,
+  limit = 10,
+): Promise<{
   prints: EconPrintRecord[];
   scoredItems: ScoredRiskFlowItem[];
 }> {
@@ -799,32 +892,36 @@ export async function readEconHistory(ticker: string, limit = 10): Promise<{
   if (!sb) return { prints: [], scoredItems: [] };
 
   // Get keyword patterns for this ticker
-  const keywords = ECON_KEYWORD_MAP[ticker.toUpperCase()] ?? [ticker.toLowerCase()];
+  const keywords = ECON_KEYWORD_MAP[ticker.toUpperCase()] ?? [
+    ticker.toLowerCase(),
+  ];
 
   // Build OR filter: headline.ilike.%keyword1%,headline.ilike.%keyword2%,...
-  const orFilter = keywords.map(kw => `headline.ilike.%${kw}%`).join(',');
+  const orFilter = keywords.map((kw) => `headline.ilike.%${kw}%`).join(",");
 
   const [printsResult, scoredResult] = await Promise.allSettled([
     sb
-      .from('econ_prints')
-      .select('*')
+      .from("econ_prints")
+      .select("*")
       .or(orFilter)
-      .order('printed_at', { ascending: false })
+      .order("printed_at", { ascending: false })
       .limit(limit),
     sb
-      .from('scored_riskflow_items')
-      .select('*')
+      .from("scored_riskflow_items")
+      .select("*")
       .or(orFilter)
-      .order('created_at', { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(limit * 2),
   ]);
 
-  const prints = printsResult.status === 'fulfilled' && !printsResult.value.error
-    ? (printsResult.value.data ?? [])
-    : [];
-  const scoredItems = scoredResult.status === 'fulfilled' && !scoredResult.value.error
-    ? (scoredResult.value.data ?? [])
-    : [];
+  const prints =
+    printsResult.status === "fulfilled" && !printsResult.value.error
+      ? (printsResult.value.data ?? [])
+      : [];
+  const scoredItems =
+    scoredResult.status === "fulfilled" && !scoredResult.value.error
+      ? (scoredResult.value.data ?? [])
+      : [];
 
   return { prints, scoredItems };
 }
@@ -833,21 +930,25 @@ export async function readEconHistory(ticker: string, limit = 10): Promise<{
  * Fetch aggregated econ print stats for MiroShark context enrichment.
  * Returns recent prints with beat/miss patterns grouped by event type.
  */
-export async function readRecentEconPrintStats(sinceHours = 168): Promise<EconPrintRecord[]> {
+export async function readRecentEconPrintStats(
+  sinceHours = 168,
+): Promise<EconPrintRecord[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
-  const cutoff = new Date(Date.now() - sinceHours * 60 * 60 * 1000).toISOString();
+  const cutoff = new Date(
+    Date.now() - sinceHours * 60 * 60 * 1000,
+  ).toISOString();
 
   const { data, error } = await sb
-    .from('econ_prints')
-    .select('*')
-    .gte('printed_at', cutoff)
-    .order('printed_at', { ascending: false })
+    .from("econ_prints")
+    .select("*")
+    .gte("printed_at", cutoff)
+    .order("printed_at", { ascending: false })
     .limit(50);
 
   if (error) {
-    console.error('[Supabase] readRecentEconPrintStats error:', error.message);
+    console.error("[Supabase] readRecentEconPrintStats error:", error.message);
     return [];
   }
   return data ?? [];
@@ -857,7 +958,7 @@ export async function readRecentEconPrintStats(sinceHours = 168): Promise<EconPr
 
 export interface EREventRecord {
   user_id: string;
-  event_type: string;      // 'curse' | 'breathing' | 'decay_reset'
+  event_type: string; // 'curse' | 'breathing' | 'decay_reset'
   trigger_text: string | null;
   penalty: number;
   score_before: number;
@@ -871,27 +972,30 @@ export async function writeEREvent(record: EREventRecord): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb) return false;
 
-  const { error } = await sb.from('er_events').insert(record);
+  const { error } = await sb.from("er_events").insert(record);
   if (error) {
-    console.error('[Supabase] writeEREvent error:', error.message);
+    console.error("[Supabase] writeEREvent error:", error.message);
     return false;
   }
   return true;
 }
 
-export async function readEREvents(userId: string, limit = 50): Promise<(EREventRecord & { id: string; created_at: string })[]> {
+export async function readEREvents(
+  userId: string,
+  limit = 50,
+): Promise<(EREventRecord & { id: string; created_at: string })[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const { data, error } = await sb
-    .from('er_events')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+    .from("er_events")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) {
-    console.error('[Supabase] readEREvents error:', error.message);
+    console.error("[Supabase] readEREvents error:", error.message);
     return [];
   }
   return data ?? [];
@@ -905,7 +1009,7 @@ export interface UserProfileRecord {
   email?: string;
   display_name?: string;
   avatar_url?: string;
-  tier?: 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
+  tier?: "free" | "fintheon" | "fintheon_plus" | "fintheon_pro";
   onboarding_complete?: boolean;
   app_state?: Record<string, unknown>;
   created_at?: string;
@@ -916,34 +1020,45 @@ export async function getOrCreateProfile(
   supabaseUid: string,
   email?: string,
   displayName?: string,
-  avatarUrl?: string
+  avatarUrl?: string,
 ): Promise<UserProfileRecord | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   // Try to fetch existing profile
   const { data: existing, error: fetchErr } = await sb
-    .from('user_profiles')
-    .select('*')
-    .eq('supabase_uid', supabaseUid)
+    .from("user_profiles")
+    .select("*")
+    .eq("supabase_uid", supabaseUid)
     .single();
 
   if (existing) return existing;
 
   // PGRST116 = not found — create new profile
-  if (fetchErr && fetchErr.code !== 'PGRST116') {
-    console.error('[Supabase] getOrCreateProfile fetch error:', fetchErr.message);
+  if (fetchErr && fetchErr.code !== "PGRST116") {
+    console.error(
+      "[Supabase] getOrCreateProfile fetch error:",
+      fetchErr.message,
+    );
     return null;
   }
 
   const { data: created, error: createErr } = await sb
-    .from('user_profiles')
-    .insert({ supabase_uid: supabaseUid, email, display_name: displayName, avatar_url: avatarUrl })
+    .from("user_profiles")
+    .insert({
+      supabase_uid: supabaseUid,
+      email,
+      display_name: displayName,
+      avatar_url: avatarUrl,
+    })
     .select()
     .single();
 
   if (createErr) {
-    console.error('[Supabase] getOrCreateProfile create error:', createErr.message);
+    console.error(
+      "[Supabase] getOrCreateProfile create error:",
+      createErr.message,
+    );
     return null;
   }
   return created;
@@ -951,38 +1066,45 @@ export async function getOrCreateProfile(
 
 export async function updateProfile(
   supabaseUid: string,
-  fields: Partial<Pick<UserProfileRecord, 'email' | 'display_name' | 'avatar_url' | 'tier' | 'onboarding_complete'>>
+  fields: Partial<
+    Pick<
+      UserProfileRecord,
+      "email" | "display_name" | "avatar_url" | "tier" | "onboarding_complete"
+    >
+  >,
 ): Promise<UserProfileRecord | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('user_profiles')
+    .from("user_profiles")
     .update({ ...fields, updated_at: new Date().toISOString() })
-    .eq('supabase_uid', supabaseUid)
+    .eq("supabase_uid", supabaseUid)
     .select()
     .single();
 
   if (error) {
-    console.error('[Supabase] updateProfile error:', error.message);
+    console.error("[Supabase] updateProfile error:", error.message);
     return null;
   }
   return data;
 }
 
-export async function getAppState(supabaseUid: string): Promise<Record<string, unknown> | null> {
+export async function getAppState(
+  supabaseUid: string,
+): Promise<Record<string, unknown> | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('user_profiles')
-    .select('app_state')
-    .eq('supabase_uid', supabaseUid)
+    .from("user_profiles")
+    .select("app_state")
+    .eq("supabase_uid", supabaseUid)
     .single();
 
   if (error) {
-    if (error.code !== 'PGRST116') {
-      console.error('[Supabase] getAppState error:', error.message);
+    if (error.code !== "PGRST116") {
+      console.error("[Supabase] getAppState error:", error.message);
     }
     return null;
   }
@@ -991,18 +1113,18 @@ export async function getAppState(supabaseUid: string): Promise<Record<string, u
 
 export async function upsertAppState(
   supabaseUid: string,
-  state: Record<string, unknown>
+  state: Record<string, unknown>,
 ): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb) return false;
 
   const { error } = await sb
-    .from('user_profiles')
+    .from("user_profiles")
     .update({ app_state: state, updated_at: new Date().toISOString() })
-    .eq('supabase_uid', supabaseUid);
+    .eq("supabase_uid", supabaseUid);
 
   if (error) {
-    console.error('[Supabase] upsertAppState error:', error.message);
+    console.error("[Supabase] upsertAppState error:", error.message);
     return false;
   }
   return true;
@@ -1011,13 +1133,16 @@ export async function upsertAppState(
 // ─── Commentator Registry ──────────────────────────────────────
 
 export async function writeCommentator(
-  entry: Omit<import('../types/commentator.js').CommentatorEntry, 'id' | 'createdAt'>
+  entry: Omit<
+    import("../types/commentator.js").CommentatorEntry,
+    "id" | "createdAt"
+  >,
 ): Promise<string | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('commentator_registry')
+    .from("commentator_registry")
     .insert({
       name: entry.name,
       aliases: entry.aliases,
@@ -1028,28 +1153,30 @@ export async function writeCommentator(
       rank: entry.rank ?? 999,
       active: entry.active,
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) {
-    console.error('[Supabase] writeCommentator error:', error.message);
+    console.error("[Supabase] writeCommentator error:", error.message);
     return null;
   }
   return data?.id ?? null;
 }
 
-export async function readCommentatorRegistry(): Promise<import('../types/commentator.js').CommentatorEntry[]> {
+export async function readCommentatorRegistry(): Promise<
+  import("../types/commentator.js").CommentatorEntry[]
+> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const { data, error } = await sb
-    .from('commentator_registry')
-    .select('*')
-    .eq('active', true)
-    .order('rank', { ascending: true });
+    .from("commentator_registry")
+    .select("*")
+    .eq("active", true)
+    .order("rank", { ascending: true });
 
   if (error) {
-    console.error('[Supabase] readCommentatorRegistry error:', error.message);
+    console.error("[Supabase] readCommentatorRegistry error:", error.message);
     return [];
   }
 
@@ -1057,7 +1184,7 @@ export async function readCommentatorRegistry(): Promise<import('../types/commen
     id: row.id as string,
     name: row.name as string,
     aliases: (row.aliases as string[]) ?? [],
-    tier: row.tier as import('../types/commentator.js').CommentatorTier,
+    tier: row.tier as import("../types/commentator.js").CommentatorTier,
     role: (row.role as string) ?? undefined,
     institution: (row.institution as string) ?? undefined,
     weightMultiplier: Number(row.weight_multiplier ?? 1.0),
@@ -1069,18 +1196,18 @@ export async function readCommentatorRegistry(): Promise<import('../types/commen
 
 export async function updateCommentatorEntry(
   id: string,
-  updates: Record<string, unknown>
+  updates: Record<string, unknown>,
 ): Promise<void> {
   const sb = getSupabaseClient();
   if (!sb) return;
 
   const { error } = await sb
-    .from('commentator_registry')
+    .from("commentator_registry")
     .update(updates)
-    .eq('id', id);
+    .eq("id", id);
 
   if (error) {
-    console.error('[Supabase] updateCommentatorEntry error:', error.message);
+    console.error("[Supabase] updateCommentatorEntry error:", error.message);
   }
 }
 
@@ -1089,12 +1216,12 @@ export async function deactivateCommentator(id: string): Promise<void> {
   if (!sb) return;
 
   const { error } = await sb
-    .from('commentator_registry')
+    .from("commentator_registry")
     .update({ active: false })
-    .eq('id', id);
+    .eq("id", id);
 
   if (error) {
-    console.error('[Supabase] deactivateCommentator error:', error.message);
+    console.error("[Supabase] deactivateCommentator error:", error.message);
   }
 }
 
@@ -1106,8 +1233,11 @@ export async function reorderCommentators(orderedIds: string[]): Promise<void> {
   // Update rank for each commentator based on array position
   await Promise.all(
     orderedIds.map((id, index) =>
-      sb.from('commentator_registry').update({ rank: index + 1 }).eq('id', id)
-    )
+      sb
+        .from("commentator_registry")
+        .update({ rank: index + 1 })
+        .eq("id", id),
+    ),
   );
 }
 
@@ -1119,7 +1249,7 @@ export async function seedDefaultCommentators(): Promise<number> {
   const existing = await readCommentatorRegistry();
   if (existing.length > 0) return 0;
 
-  const { DEFAULT_COMMENTATORS } = await import('../types/commentator.js');
+  const { DEFAULT_COMMENTATORS } = await import("../types/commentator.js");
   let seeded = 0;
   for (const entry of DEFAULT_COMMENTATORS) {
     const id = await writeCommentator(entry);
@@ -1141,19 +1271,19 @@ export interface MarketRegimeRecord {
 }
 
 export async function writeRegimeState(
-  record: Omit<MarketRegimeRecord, 'id' | 'created_at'>
+  record: Omit<MarketRegimeRecord, "id" | "created_at">,
 ): Promise<MarketRegimeRecord | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('market_regimes')
+    .from("market_regimes")
     .insert({ ...record, active: record.active ?? true })
     .select()
     .single();
 
   if (error) {
-    console.error('[Supabase] writeRegimeState error:', error.message);
+    console.error("[Supabase] writeRegimeState error:", error.message);
     return null;
   }
   return data;
@@ -1164,16 +1294,16 @@ export async function readActiveRegime(): Promise<MarketRegimeRecord | null> {
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('market_regimes')
-    .select('*')
-    .eq('active', true)
-    .order('created_at', { ascending: false })
+    .from("market_regimes")
+    .select("*")
+    .eq("active", true)
+    .order("created_at", { ascending: false })
     .limit(1)
     .single();
 
   if (error) {
-    if (error.code !== 'PGRST116') {
-      console.error('[Supabase] readActiveRegime error:', error.message);
+    if (error.code !== "PGRST116") {
+      console.error("[Supabase] readActiveRegime error:", error.message);
     }
     return null;
   }
@@ -1185,27 +1315,29 @@ export async function deactivateCurrentRegime(): Promise<void> {
   if (!sb) return;
 
   const { error } = await sb
-    .from('market_regimes')
+    .from("market_regimes")
     .update({ active: false })
-    .eq('active', true);
+    .eq("active", true);
 
   if (error) {
-    console.error('[Supabase] deactivateCurrentRegime error:', error.message);
+    console.error("[Supabase] deactivateCurrentRegime error:", error.message);
   }
 }
 
-export async function readRegimeHistory(limit = 20): Promise<MarketRegimeRecord[]> {
+export async function readRegimeHistory(
+  limit = 20,
+): Promise<MarketRegimeRecord[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const { data, error } = await sb
-    .from('market_regimes')
-    .select('*')
-    .order('created_at', { ascending: false })
+    .from("market_regimes")
+    .select("*")
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) {
-    console.error('[Supabase] readRegimeHistory error:', error.message);
+    console.error("[Supabase] readRegimeHistory error:", error.message);
     return [];
   }
   return data ?? [];
@@ -1213,19 +1345,23 @@ export async function readRegimeHistory(limit = 20): Promise<MarketRegimeRecord[
 
 // ─── Scoring Calibration ────────────────────────────────────────
 
-import type { CalibrationEntry, RefinementAnnotation, CalibrationObservation } from '../types/calibration.js';
+import type {
+  CalibrationEntry,
+  RefinementAnnotation,
+  CalibrationObservation,
+} from "../types/calibration.js";
 
 export async function readCalibrationEntries(): Promise<CalibrationEntry[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const { data, error } = await sb
-    .from('scoring_calibration')
-    .select('*')
-    .order('event_type', { ascending: true });
+    .from("scoring_calibration")
+    .select("*")
+    .order("event_type", { ascending: true });
 
   if (error) {
-    console.error('[Supabase] readCalibrationEntries error:', error.message);
+    console.error("[Supabase] readCalibrationEntries error:", error.message);
     return [];
   }
   return (data ?? []).map((row: Record<string, unknown>) => ({
@@ -1234,7 +1370,7 @@ export async function readCalibrationEntries(): Promise<CalibrationEntry[]> {
     baseWeight: Number(row.base_weight),
     regimeOverrides: (row.regime_overrides as Record<string, number>) ?? {},
     updatedAt: row.updated_at as string,
-    updatedBy: (row.updated_by as string) ?? 'system',
+    updatedBy: (row.updated_by as string) ?? "system",
   }));
 }
 
@@ -1242,169 +1378,180 @@ export async function upsertCalibrationWeight(
   eventType: string,
   baseWeight: number,
   regimeOverrides?: Record<string, number>,
-  updatedBy?: string
+  updatedBy?: string,
 ): Promise<void> {
   const sb = getSupabaseClient();
   if (!sb) return;
 
-  const { error } = await sb
-    .from('scoring_calibration')
-    .upsert(
-      {
-        event_type: eventType,
-        base_weight: baseWeight,
-        regime_overrides: regimeOverrides ?? {},
-        updated_at: new Date().toISOString(),
-        updated_by: updatedBy ?? 'system',
-      },
-      { onConflict: 'event_type' }
-    );
+  const { error } = await sb.from("scoring_calibration").upsert(
+    {
+      event_type: eventType,
+      base_weight: baseWeight,
+      regime_overrides: regimeOverrides ?? {},
+      updated_at: new Date().toISOString(),
+      updated_by: updatedBy ?? "system",
+    },
+    { onConflict: "event_type" },
+  );
 
   if (error) {
-    console.error('[Supabase] upsertCalibrationWeight error:', error.message);
+    console.error("[Supabase] upsertCalibrationWeight error:", error.message);
   }
 }
 
 // ─── Refinement Annotations ─────────────────────────────────────
 
 export async function writeAnnotation(
-  ann: Omit<RefinementAnnotation, 'id' | 'createdAt'>
+  ann: Omit<RefinementAnnotation, "id" | "createdAt">,
 ): Promise<string | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('refinement_annotations')
+    .from("refinement_annotations")
     .insert({
       riskflow_item_id: ann.riskflowItemId,
       comment: ann.comment ?? null,
       flaw_tag: ann.flawTag ?? null,
       suggested_score: ann.suggestedScore ?? null,
-      created_by: ann.createdBy ?? 'tp',
+      created_by: ann.createdBy ?? "tp",
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) {
-    console.error('[Supabase] writeAnnotation error:', error.message);
+    console.error("[Supabase] writeAnnotation error:", error.message);
     return null;
   }
   return data?.id ?? null;
 }
 
-export async function readAnnotationsForItem(itemId: string): Promise<RefinementAnnotation[]> {
+export async function readAnnotationsForItem(
+  itemId: string,
+): Promise<RefinementAnnotation[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const { data, error } = await sb
-    .from('refinement_annotations')
-    .select('*')
-    .eq('riskflow_item_id', itemId)
-    .order('created_at', { ascending: false });
+    .from("refinement_annotations")
+    .select("*")
+    .eq("riskflow_item_id", itemId)
+    .order("created_at", { ascending: false });
 
   if (error) {
-    console.error('[Supabase] readAnnotationsForItem error:', error.message);
+    console.error("[Supabase] readAnnotationsForItem error:", error.message);
     return [];
   }
   return (data ?? []).map((row: Record<string, unknown>) => ({
     id: row.id as string,
     riskflowItemId: row.riskflow_item_id as string,
     comment: (row.comment as string) ?? undefined,
-    flawTag: (row.flaw_tag as RefinementAnnotation['flawTag']) ?? undefined,
-    suggestedScore: row.suggested_score != null ? Number(row.suggested_score) : undefined,
+    flawTag: (row.flaw_tag as RefinementAnnotation["flawTag"]) ?? undefined,
+    suggestedScore:
+      row.suggested_score != null ? Number(row.suggested_score) : undefined,
     createdAt: row.created_at as string,
-    createdBy: (row.created_by as string) ?? 'tp',
+    createdBy: (row.created_by as string) ?? "tp",
   }));
 }
 
 // ─── Calibration Observations ───────────────────────────────────
 
 export async function writeObservation(
-  obs: Omit<CalibrationObservation, 'id' | 'createdAt'>
+  obs: Omit<CalibrationObservation, "id" | "createdAt">,
 ): Promise<string | null> {
   const sb = getSupabaseClient();
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('calibration_observations')
+    .from("calibration_observations")
     .insert({
       headline: obs.headline,
       event_type: obs.eventType ?? null,
       predicted_iv_score: obs.predictedIVScore ?? null,
       actual_points_move: obs.actualPointsMove ?? null,
-      instrument: obs.instrument ?? '/ES',
+      instrument: obs.instrument ?? "/ES",
       regime_at_time: obs.regimeAtTime ?? null,
       vix_at_time: obs.vixAtTime ?? null,
       observed_at: obs.observedAt ?? null,
       notes: obs.notes ?? null,
-      source: obs.source ?? 'manual',
+      source: obs.source ?? "manual",
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) {
-    console.error('[Supabase] writeObservation error:', error.message);
+    console.error("[Supabase] writeObservation error:", error.message);
     return null;
   }
   return data?.id ?? null;
 }
 
-export async function readObservations(limit = 50): Promise<CalibrationObservation[]> {
+export async function readObservations(
+  limit = 50,
+): Promise<CalibrationObservation[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
 
   const { data, error } = await sb
-    .from('calibration_observations')
-    .select('*')
-    .order('created_at', { ascending: false })
+    .from("calibration_observations")
+    .select("*")
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) {
-    console.error('[Supabase] readObservations error:', error.message);
+    console.error("[Supabase] readObservations error:", error.message);
     return [];
   }
   return (data ?? []).map((row: Record<string, unknown>) => ({
     id: row.id as string,
     headline: row.headline as string,
     eventType: (row.event_type as string) ?? undefined,
-    predictedIVScore: row.predicted_iv_score != null ? Number(row.predicted_iv_score) : undefined,
-    actualPointsMove: row.actual_points_move != null ? Number(row.actual_points_move) : undefined,
-    instrument: (row.instrument as string) ?? '/ES',
-    regimeAtTime: (row.regime_at_time as CalibrationObservation['regimeAtTime']) ?? undefined,
+    predictedIVScore:
+      row.predicted_iv_score != null
+        ? Number(row.predicted_iv_score)
+        : undefined,
+    actualPointsMove:
+      row.actual_points_move != null
+        ? Number(row.actual_points_move)
+        : undefined,
+    instrument: (row.instrument as string) ?? "/ES",
+    regimeAtTime:
+      (row.regime_at_time as CalibrationObservation["regimeAtTime"]) ??
+      undefined,
     vixAtTime: row.vix_at_time != null ? Number(row.vix_at_time) : undefined,
     observedAt: (row.observed_at as string) ?? undefined,
     notes: (row.notes as string) ?? undefined,
-    source: (row.source as CalibrationObservation['source']) ?? 'manual',
+    source: (row.source as CalibrationObservation["source"]) ?? "manual",
     createdAt: row.created_at as string,
   }));
 }
 
 export async function writeObservationsBatch(
-  observations: Omit<CalibrationObservation, 'id' | 'createdAt'>[]
+  observations: Omit<CalibrationObservation, "id" | "createdAt">[],
 ): Promise<number> {
   const sb = getSupabaseClient();
   if (!sb || observations.length === 0) return 0;
 
-  const rows = observations.map(obs => ({
+  const rows = observations.map((obs) => ({
     headline: obs.headline,
     event_type: obs.eventType ?? null,
     predicted_iv_score: obs.predictedIVScore ?? null,
     actual_points_move: obs.actualPointsMove ?? null,
-    instrument: obs.instrument ?? '/ES',
+    instrument: obs.instrument ?? "/ES",
     regime_at_time: obs.regimeAtTime ?? null,
     vix_at_time: obs.vixAtTime ?? null,
     observed_at: obs.observedAt ?? null,
     notes: obs.notes ?? null,
-    source: obs.source ?? 'manual',
+    source: obs.source ?? "manual",
   }));
 
   const { data, error } = await sb
-    .from('calibration_observations')
+    .from("calibration_observations")
     .insert(rows)
-    .select('id');
+    .select("id");
 
   if (error) {
-    console.error('[Supabase] writeObservationsBatch error:', error.message);
+    console.error("[Supabase] writeObservationsBatch error:", error.message);
     return 0;
   }
   return data?.length ?? 0;
@@ -1418,7 +1565,10 @@ export async function checkSupabaseHealth(): Promise<boolean> {
   if (!sb) return false;
 
   try {
-    const { error } = await sb.from('scored_riskflow_items').select('id').limit(1);
+    const { error } = await sb
+      .from("scored_riskflow_items")
+      .select("id")
+      .limit(1);
     return !error;
   } catch {
     return false;

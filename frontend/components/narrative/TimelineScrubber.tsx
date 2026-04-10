@@ -1,7 +1,10 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Play, Pause, Square } from 'lucide-react';
-import type { NarrativeFlowState, CatalystCard } from '../../lib/narrative-types';
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { Play, Pause, Square } from "lucide-react";
+import type {
+  NarrativeFlowState,
+  CatalystCard,
+} from "../../lib/narrative-types";
 
 interface TimelineScrubberProps {
   state: NarrativeFlowState;
@@ -9,7 +12,11 @@ interface TimelineScrubberProps {
   dispatch: (action: any) => void;
 }
 
-export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubberProps) {
+export function TimelineScrubber({
+  state,
+  catalysts,
+  dispatch,
+}: TimelineScrubberProps) {
   const barRef = useRef<HTMLDivElement>(null);
   const [hoveredWeek, setHoveredWeek] = useState<string | null>(null);
   const [hoverX, setHoverX] = useState(0);
@@ -25,12 +32,22 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
       for (let i = 0; i < 12; i++) {
         const d = new Date(start);
         d.setDate(d.getDate() + i * 7);
-        weeks.push({ start: d.toISOString().slice(0, 10), bullish: 0, bearish: 0 });
+        weeks.push({
+          start: d.toISOString().slice(0, 10),
+          bullish: 0,
+          bearish: 0,
+        });
       }
-      return { weeks, minDate: weeks[0].start, maxDate: weeks[weeks.length - 1].start };
+      return {
+        weeks,
+        minDate: weeks[0].start,
+        maxDate: weeks[weeks.length - 1].start,
+      };
     }
 
-    const dates = catalysts.map((c) => new Date(c.date).getTime()).sort((a, b) => a - b);
+    const dates = catalysts
+      .map((c) => new Date(c.date).getTime())
+      .sort((a, b) => a - b);
     const min = new Date(dates[0]);
     const max = new Date(dates[dates.length - 1]);
 
@@ -53,8 +70,8 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
       for (const c of catalysts) {
         const cd = new Date(c.date).getTime();
         if (cd >= cursor.getTime() && cd < weekEnd.getTime()) {
-          if (c.sentiment === 'bullish') bullish++;
-          else if (c.sentiment === 'bearish') bearish++;
+          if (c.sentiment === "bullish") bullish++;
+          else if (c.sentiment === "bearish") bearish++;
         }
       }
       buckets.push({ start: weekStart, bullish, bearish });
@@ -63,8 +80,8 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
 
     return {
       weeks: buckets,
-      minDate: buckets[0]?.start ?? '',
-      maxDate: buckets[buckets.length - 1]?.start ?? '',
+      minDate: buckets[0]?.start ?? "",
+      maxDate: buckets[buckets.length - 1]?.start ?? "",
     };
   }, [catalysts]);
 
@@ -76,31 +93,28 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
     if (!state.replayMode) return;
     const interval = setInterval(() => {
       dispatch({
-        type: 'SET_REPLAY_POSITION',
+        type: "SET_REPLAY_POSITION",
         position: Math.min(1, state.replayPosition + step),
       });
       if (state.replayPosition >= 1) {
-        dispatch({ type: 'SET_REPLAY_MODE', enabled: false });
+        dispatch({ type: "SET_REPLAY_MODE", enabled: false });
       }
     }, 1000);
     return () => clearInterval(interval);
   }, [state.replayMode, state.replayPosition, step, dispatch]);
 
   // Click / drag to scrub
-  const positionFromEvent = useCallback(
-    (e: MouseEvent | React.MouseEvent) => {
-      if (!barRef.current) return 0;
-      const rect = barRef.current.getBoundingClientRect();
-      return Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    },
-    [],
-  );
+  const positionFromEvent = useCallback((e: MouseEvent | React.MouseEvent) => {
+    if (!barRef.current) return 0;
+    const rect = barRef.current.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  }, []);
 
   const jumpToPosition = useCallback(
     (pos: number) => {
       const weekIndex = Math.round(pos * (totalWeeks - 1));
       if (weeks[weekIndex]) {
-        dispatch({ type: 'SET_WEEK', weekStart: weeks[weekIndex].start });
+        dispatch({ type: "SET_WEEK", weekStart: weeks[weekIndex].start });
       }
     },
     [totalWeeks, weeks, dispatch],
@@ -122,11 +136,11 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
       jumpToPosition(pos);
     };
     const handleUp = () => setDragging(false);
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleUp);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
     return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
     };
   }, [dragging, positionFromEvent, jumpToPosition]);
 
@@ -159,7 +173,7 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
       if (d.getMonth() !== lastMonth) {
         lastMonth = d.getMonth();
         labels.push({
-          label: d.toLocaleDateString('en-US', { month: 'short' }),
+          label: d.toLocaleDateString("en-US", { month: "short" }),
           pct: (i / totalWeeks) * 100,
         });
       }
@@ -173,10 +187,10 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={() =>
-            dispatch({ type: 'SET_REPLAY_MODE', enabled: !state.replayMode })
+            dispatch({ type: "SET_REPLAY_MODE", enabled: !state.replayMode })
           }
           className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
-          title={state.replayMode ? 'Pause' : 'Play'}
+          title={state.replayMode ? "Pause" : "Play"}
         >
           {state.replayMode ? (
             <Pause className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
@@ -187,8 +201,8 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
         {state.replayMode && (
           <button
             onClick={() => {
-              dispatch({ type: 'SET_REPLAY_MODE', enabled: false });
-              dispatch({ type: 'SET_REPLAY_POSITION', position: 0 });
+              dispatch({ type: "SET_REPLAY_MODE", enabled: false });
+              dispatch({ type: "SET_REPLAY_POSITION", position: 0 });
             }}
             className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
             title="Stop"
@@ -210,10 +224,11 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
         <div className="absolute inset-0 flex">
           {weeks.map((w, i) => {
             let bg: string;
-            if (w.bullish > w.bearish) bg = 'var(--fintheon-bullish)';
-            else if (w.bearish > w.bullish) bg = 'var(--fintheon-bearish)';
-            else bg = 'var(--fintheon-muted)';
-            const opacity = w.bullish > w.bearish || w.bearish > w.bullish ? 0.3 : 0.15;
+            if (w.bullish > w.bearish) bg = "var(--fintheon-bullish)";
+            else if (w.bearish > w.bullish) bg = "var(--fintheon-bearish)";
+            else bg = "var(--fintheon-muted)";
+            const opacity =
+              w.bullish > w.bearish || w.bearish > w.bullish ? 0.3 : 0.15;
             return (
               <div
                 key={i}
@@ -244,7 +259,7 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
           className="absolute top-0 bottom-0 w-0.5 bg-[var(--fintheon-accent)] pointer-events-none"
           style={{
             left: `${playheadPct}%`,
-            transition: dragging ? 'none' : 'left 300ms ease',
+            transition: dragging ? "none" : "left 300ms ease",
           }}
         />
 
@@ -252,7 +267,7 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
         {hoveredWeek && (
           <div
             className="absolute -top-7 px-1.5 py-0.5 rounded text-[9px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-border)]/30 text-[var(--fintheon-text)] whitespace-nowrap pointer-events-none z-10"
-            style={{ left: hoverX, transform: 'translateX(-50%)' }}
+            style={{ left: hoverX, transform: "translateX(-50%)" }}
           >
             Week of {hoveredWeek}
           </div>
@@ -275,7 +290,10 @@ interface WeekBucket {
   bearish: number;
 }
 
-function getCurrentWeekPct(currentWeek: string | undefined, weeks: WeekBucket[]): number {
+function getCurrentWeekPct(
+  currentWeek: string | undefined,
+  weeks: WeekBucket[],
+): number {
   if (!currentWeek || weeks.length === 0) return 0;
   const idx = weeks.findIndex((w) => w.start === currentWeek);
   if (idx === -1) return 0;

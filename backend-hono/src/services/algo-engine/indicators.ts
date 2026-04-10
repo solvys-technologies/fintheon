@@ -1,7 +1,7 @@
 // [claude-code 2026-03-26] S1-T1: Algo engine foundation — stateful indicators (EMA, RSI, ATR)
 // Ported from QuantConnect FortyFortyClub/main.py — exact calculation methods preserved
 
-import type { Bar } from './types.js';
+import type { Bar } from "./types.js";
 
 /**
  * Exponential Moving Average.
@@ -15,7 +15,7 @@ export class EMA {
   private _sum: number;
 
   constructor(period: number) {
-    if (period < 1) throw new Error('EMA period must be >= 1');
+    if (period < 1) throw new Error("EMA period must be >= 1");
     this.period = period;
     this.multiplier = 2 / (period + 1);
     this._value = 0;
@@ -65,7 +65,7 @@ export class RSI {
   private _losses: number[];
 
   constructor(period: number) {
-    if (period < 1) throw new Error('RSI period must be >= 1');
+    if (period < 1) throw new Error("RSI period must be >= 1");
     this.period = period;
     this._avgGain = 0;
     this._avgLoss = 0;
@@ -150,7 +150,7 @@ export class ATR {
   private _trueRanges: number[];
 
   constructor(period: number) {
-    if (period < 1) throw new Error('ATR period must be >= 1');
+    if (period < 1) throw new Error("ATR period must be >= 1");
     this.period = period;
     this._prevClose = null;
     this._value = 0;
@@ -170,7 +170,7 @@ export class ATR {
       tr = Math.max(
         bar.high - bar.low,
         Math.abs(bar.high - this._prevClose),
-        Math.abs(bar.low - this._prevClose)
+        Math.abs(bar.low - this._prevClose),
       );
     }
 

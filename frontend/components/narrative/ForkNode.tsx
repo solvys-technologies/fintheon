@@ -1,6 +1,6 @@
 // [claude-code 2026-03-06] Visual diamond node at narrative lane fork points
-import { useState } from 'react';
-import type { NarrativeLane } from '../../lib/narrative-types';
+import { useState } from "react";
+import type { NarrativeLane } from "../../lib/narrative-types";
 
 interface ForkNodeProps {
   lane: NarrativeLane;
@@ -21,7 +21,7 @@ export function ForkNode({ lane, forkDate, position }: ForkNodeProps) {
       {/* Diamond shape */}
       <div
         className="w-4 h-4 rotate-45 border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-surface)]"
-        style={{ transition: 'border-color 200ms ease' }}
+        style={{ transition: "border-color 200ms ease" }}
       />
       {/* Fork lines (two lines branching down from diamond) */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-3">

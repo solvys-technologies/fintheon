@@ -1,9 +1,15 @@
 // [claude-code 2026-04-03] Extracted from MainLayout.tsx — Strategium snap deck with widget pages
-import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { ChevronRight } from 'lucide-react';
-import { KanbanTitle } from '../ui/KanbanTitle';
-import { WidgetArrangeMenu } from '../mission-control/WidgetArrangeMenu';
-import type { MissionWidgetId } from '../../lib/layoutOrderStorage';
+import React, {
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+} from "react";
+import { ChevronRight } from "lucide-react";
+import { KanbanTitle } from "../ui/KanbanTitle";
+import { WidgetArrangeMenu } from "../mission-control/WidgetArrangeMenu";
+import type { MissionWidgetId } from "../../lib/layoutOrderStorage";
 
 const MISSION_WIDGETS_PER_PAGE = 2;
 
@@ -35,30 +41,36 @@ export function MissionControlContent({
 
   const missionWidgetPages = useMemo(() => {
     const pages: Array<typeof orderedMissionWidgets> = [];
-    for (let i = 0; i < orderedMissionWidgets.length; i += MISSION_WIDGETS_PER_PAGE) {
+    for (
+      let i = 0;
+      i < orderedMissionWidgets.length;
+      i += MISSION_WIDGETS_PER_PAGE
+    ) {
       pages.push(orderedMissionWidgets.slice(i, i + MISSION_WIDGETS_PER_PAGE));
     }
     return pages.length > 0 ? pages : [[]];
   }, [orderedMissionWidgets]);
 
   useEffect(() => {
-    setMissionDeckPage((prev) => Math.min(prev, Math.max(0, missionWidgetPages.length - 1)));
+    setMissionDeckPage((prev) =>
+      Math.min(prev, Math.max(0, missionWidgetPages.length - 1)),
+    );
   }, [missionWidgetPages.length]);
 
   const scrollMissionDeckToPage = useCallback((idx: number) => {
     setMissionDeckPage(idx);
     const el = missionDeckRef.current;
     if (!el) return;
-    const pages = el.querySelectorAll('[data-mission-page]');
+    const pages = el.querySelectorAll("[data-mission-page]");
     if (pages[idx]) {
-      pages[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      pages[idx].scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, []);
 
   const handleMissionDeckScroll = useCallback(() => {
     const el = missionDeckRef.current;
     if (!el) return;
-    const pages = el.querySelectorAll('[data-mission-page]');
+    const pages = el.querySelectorAll("[data-mission-page]");
     let closest = 0;
     let minDist = Infinity;
     pages.forEach((page, idx) => {
@@ -137,8 +149,8 @@ export function MissionControlContent({
                 <div
                   className={`transition-all duration-300 rounded-full ${
                     missionDeckPage === idx
-                      ? 'w-[3px] h-8 bg-[var(--fintheon-accent)]'
-                      : 'w-[2px] h-5 bg-gray-700 hover:bg-gray-500'
+                      ? "w-[3px] h-8 bg-[var(--fintheon-accent)]"
+                      : "w-[2px] h-5 bg-gray-700 hover:bg-gray-500"
                   }`}
                 />
               </button>

@@ -1,7 +1,7 @@
 // [claude-code 2026-03-06] Part renderer for text content with markdown and widget detection
-import ReactMarkdown from 'react-markdown';
-import { FuturesChart } from '../widgets/FuturesChart';
-import { EconomicCalendar } from '../widgets/EconomicCalendar';
+import ReactMarkdown from "react-markdown";
+import { FuturesChart } from "../widgets/FuturesChart";
+import { EconomicCalendar } from "../widgets/EconomicCalendar";
 
 interface TextPartProps {
   text: string;
@@ -9,22 +9,26 @@ interface TextPartProps {
   onRenderWidget?: (widget: any) => React.ReactNode | null;
 }
 
-export function TextPartRenderer({ text, isStreaming, onRenderWidget }: TextPartProps) {
+export function TextPartRenderer({
+  text,
+  isStreaming,
+  onRenderWidget,
+}: TextPartProps) {
   return (
     <div className="text-sm text-zinc-300">
       <div className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:border prose-pre:border-gray-800 prose-sm">
         <ReactMarkdown
           components={{
             code: ({ node, inline, className, children, ...props }: any) => {
-              const match = /language-(\w+)/.exec(className || '');
-              const isJson = match && match[1] === 'json';
+              const match = /language-(\w+)/.exec(className || "");
+              const isJson = match && match[1] === "json";
 
               if (!inline && isJson) {
                 try {
-                  const content = String(children).replace(/\n$/, '');
+                  const content = String(children).replace(/\n$/, "");
                   const data = JSON.parse(content);
 
-                  if (data.widget === 'chart') {
+                  if (data.widget === "chart") {
                     return (
                       <div className="my-4">
                         <FuturesChart symbol={data.data?.symbol} />
@@ -32,7 +36,7 @@ export function TextPartRenderer({ text, isStreaming, onRenderWidget }: TextPart
                     );
                   }
 
-                  if (data.widget === 'calendar') {
+                  if (data.widget === "calendar") {
                     return (
                       <div className="my-4">
                         <EconomicCalendar />

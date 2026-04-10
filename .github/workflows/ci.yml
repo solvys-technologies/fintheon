@@ -3,12 +3,12 @@ name: Backend CI
 on:
   push:
     paths:
-      - 'backend-hono/**'
-      - '.github/workflows/ci.yml'
+      - "backend-hono/**"
+      - ".github/workflows/ci.yml"
   pull_request:
     paths:
-      - 'backend-hono/**'
-      - '.github/workflows/ci.yml'
+      - "backend-hono/**"
+      - ".github/workflows/ci.yml"
 
 jobs:
   backend-env-validation:
@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install backend dependencies
         working-directory: backend-hono

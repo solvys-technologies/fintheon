@@ -1,27 +1,27 @@
 /**
  * API Type Definitions
- * 
+ *
  * These types match the expected API responses from your Hono backend.
  * Update these to match your actual backend response types.
  */
 
 export interface PriceBrainScore {
-  sentiment: 'Bullish' | 'Bearish' | 'Neutral';
-  classification: 'Cyclical' | 'Counter-cyclical' | 'Neutral';
+  sentiment: "Bullish" | "Bearish" | "Neutral";
+  classification: "Cyclical" | "Counter-cyclical" | "Neutral";
   impliedPoints: number | null;
   instrument: string | null;
 }
 
-export type PolymarketMarketType = 
-  | 'rate_cut' 
-  | 'cpi' 
-  | 'nfp' 
-  | 'interest_rate'
-  | 'jerome_powell'
-  | 'donald_trump_tariffs'
-  | 'politics'
-  | 'gdp'
-  | 'interest_rate_futures';
+export type PolymarketMarketType =
+  | "rate_cut"
+  | "cpi"
+  | "nfp"
+  | "interest_rate"
+  | "jerome_powell"
+  | "donald_trump_tariffs"
+  | "politics"
+  | "gdp"
+  | "interest_rate_futures";
 
 export interface PolymarketOdds {
   marketId: string;
@@ -50,13 +50,13 @@ export interface NewsItem {
   source: string;
   url?: string;
   publishedAt: Date | string;
-  impact?: 'high' | 'medium' | 'low';
+  impact?: "high" | "medium" | "low";
   symbols?: string[];
   macroLevel?: 1 | 2 | 3 | 4;
   priceBrainScore?: PriceBrainScore;
   authorHandle?: string;
   isBreaking?: boolean;
-  sentiment?: 'positive' | 'negative' | 'neutral' | 'bullish' | 'bearish';
+  sentiment?: "positive" | "negative" | "neutral" | "bullish" | "bearish";
   ivImpact?: number;
   ivScore?: number;
   polymarketUpdate?: PolymarketUpdate;
@@ -69,7 +69,7 @@ export interface Account {
   dailyPnl: number;
   dailyTarget?: number;
   dailyLossLimit?: number;
-  tier?: 'free' | 'fintheon' | 'fintheon_plus' | 'fintheon_pro';
+  tier?: "free" | "fintheon" | "fintheon_plus" | "fintheon_pro";
   tradingEnabled?: boolean;
   autoTrade?: boolean;
   riskManagement?: boolean;
@@ -82,7 +82,7 @@ export interface Position {
   entryPrice: number;
   currentPrice: number;
   pnl: number;
-  side: 'long' | 'short';
+  side: "long" | "short";
 }
 
 export interface ChatResponse {

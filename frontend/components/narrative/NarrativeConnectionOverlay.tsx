@@ -1,7 +1,11 @@
 // [claude-code 2026-03-27] SVG overlay for parent→child branch arrows + cross-lane rope distinction
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CatalystCard, Rope } from '../../lib/narrative-types';
-import { computeCatenary, getCardAnchor, type Point } from '../../lib/narrative-catenary';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CatalystCard, Rope } from "../../lib/narrative-types";
+import {
+  computeCatenary,
+  getCardAnchor,
+  type Point,
+} from "../../lib/narrative-catenary";
 
 interface NarrativeConnectionOverlayProps {
   catalysts: CatalystCard[];
@@ -26,7 +30,7 @@ interface ComputedBranch {
 interface ComputedCrossRope {
   rope: Rope;
   path: ReturnType<typeof computeCatenary>;
-  polarity: 'reinforcing' | 'contradicting';
+  polarity: "reinforcing" | "contradicting";
 }
 
 export function NarrativeConnectionOverlay({
@@ -44,23 +48,23 @@ export function NarrativeConnectionOverlay({
     const container = containerRef.current;
     if (!container) return;
 
-    const recalc = () => forceUpdate(n => n + 1);
+    const recalc = () => forceUpdate((n) => n + 1);
     const observer = new ResizeObserver(recalc);
     observer.observe(container);
-    container.addEventListener('scroll', recalc, { passive: true });
+    container.addEventListener("scroll", recalc, { passive: true });
 
     return () => {
       observer.disconnect();
-      container.removeEventListener('scroll', recalc);
+      container.removeEventListener("scroll", recalc);
     };
   }, [containerRef]);
 
   // Identify parent→child branch connections
   const branchConnections = useMemo((): BranchConnection[] => {
     return catalysts
-      .filter(c => c.parentCardId && c.parentHighlight)
-      .map(child => {
-        const parent = catalysts.find(p => p.id === child.parentCardId);
+      .filter((c) => c.parentCardId && c.parentHighlight)
+      .map((child) => {
+        const parent = catalysts.find((p) => p.id === child.parentCardId);
         if (!parent) return null;
         return { parent, child, highlight: child.parentHighlight! };
       })
@@ -69,9 +73,9 @@ export function NarrativeConnectionOverlay({
 
   // Identify cross-lane ropes (endpoints in different categories)
   const crossLaneRopes = useMemo(() => {
-    return ropes.filter(rope => {
-      const fromCard = catalysts.find(c => c.id === rope.fromId);
-      const toCard = catalysts.find(c => c.id === rope.toId);
+    return ropes.filter((rope) => {
+      const fromCard = catalysts.find((c) => c.id === rope.fromId);
+      const toCard = catalysts.find((c) => c.id === rope.toId);
       if (!fromCard?.category || !toCard?.category) return false;
       return fromCard.category !== toCard.category;
     });
@@ -134,7 +138,12 @@ export function NarrativeConnectionOverlay({
         };
       })
       .filter((b): b is ComputedBranch => b !== null);
-  }, [branchConnections, containerRef, getCardCenter, getContainerRelativeAnchor]);
+  }, [
+    branchConnections,
+    containerRef,
+    getCardCenter,
+    getContainerRelativeAnchor,
+  ]);
 
   // Compute cross-lane rope paths
   const computedCrossRopes = useMemo((): ComputedCrossRope[] => {
@@ -159,7 +168,7 @@ export function NarrativeConnectionOverlay({
   return (
     <svg
       className="absolute inset-0 pointer-events-none"
-      style={{ zIndex: 10, width: '100%', height: '100%', overflow: 'visible' }}
+      style={{ zIndex: 10, width: "100%", height: "100%", overflow: "visible" }}
     >
       <defs>
         <marker
@@ -178,9 +187,9 @@ export function NarrativeConnectionOverlay({
       {/* Cross-lane ropes (behind branch arrows) */}
       {computedCrossRopes.map(({ rope, path, polarity }) => {
         const color =
-          polarity === 'reinforcing'
-            ? 'var(--fintheon-bullish)'
-            : 'var(--fintheon-bearish)';
+          polarity === "reinforcing"
+            ? "var(--fintheon-bullish)"
+            : "var(--fintheon-bearish)";
         return (
           <g key={rope.id} className="pointer-events-auto">
             <path
@@ -190,7 +199,7 @@ export function NarrativeConnectionOverlay({
               strokeWidth={2}
               strokeDasharray="12 6"
               opacity={0.6}
-              style={{ transition: 'opacity 0.3s ease' }}
+              style={{ transition: "opacity 0.3s ease" }}
             />
           </g>
         );
@@ -199,7 +208,8 @@ export function NarrativeConnectionOverlay({
       {/* Branch arrows (on top) */}
       {computedBranches.map(({ key, path, highlight }) => {
         const isHovered = hoveredBranch === key;
-        const label = highlight.length > 30 ? highlight.slice(0, 30) + '…' : highlight;
+        const label =
+          highlight.length > 30 ? highlight.slice(0, 30) + "…" : highlight;
         const labelWidth = Math.min(label.length * 5.5 + 12, 180);
 
         return (
@@ -210,7 +220,7 @@ export function NarrativeConnectionOverlay({
               fill="none"
               stroke="transparent"
               strokeWidth={12}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: "pointer" }}
               onMouseEnter={() => setHoveredBranch(key)}
               onMouseLeave={() => setHoveredBranch(null)}
             />
@@ -223,9 +233,9 @@ export function NarrativeConnectionOverlay({
               markerEnd="url(#branch-arrow)"
               opacity={isHovered ? 1 : 0.7}
               style={{
-                transition: 'stroke-width 0.2s ease, opacity 0.2s ease',
+                transition: "stroke-width 0.2s ease, opacity 0.2s ease",
                 ...(highlightMode
-                  ? { animation: 'branch-pulse 1.5s ease-in-out infinite' }
+                  ? { animation: "branch-pulse 1.5s ease-in-out infinite" }
                   : {}),
               }}
             />
@@ -247,7 +257,7 @@ export function NarrativeConnectionOverlay({
               fontSize={9}
               fontFamily="monospace"
               opacity={isHovered ? 1 : 0.7}
-              style={{ transition: 'opacity 0.2s ease' }}
+              style={{ transition: "opacity 0.2s ease" }}
             >
               {label}
             </text>

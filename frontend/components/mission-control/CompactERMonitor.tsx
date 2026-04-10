@@ -1,9 +1,9 @@
 // [claude-code 2026-03-14] Refactored to use useERSafe() from ERContext (shared state), local fallback retained
-import { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, AlertTriangle } from 'lucide-react';
-import { WaveformCanvas } from './WaveformCanvas';
-import { useBackend } from '../../lib/backend';
-import { useERSafe } from '../../contexts/ERContext';
+import { useState, useEffect, useRef } from "react";
+import { Mic, MicOff, AlertTriangle } from "lucide-react";
+import { WaveformCanvas } from "./WaveformCanvas";
+import { useBackend } from "../../lib/backend";
+import { useERSafe } from "../../contexts/ERContext";
 
 interface CompactERMonitorProps {
   onERScoreChange?: (score: number) => void;
@@ -21,7 +21,8 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   // Local state (fallback when not in ERProvider)
   const [localIsMonitoring, setLocalIsMonitoring] = useState(false);
   const [localErScore, setLocalErScore] = useState(0);
-  const [localAudioContext, setLocalAudioContext] = useState<AudioContext | null>(null);
+  const [localAudioContext, setLocalAudioContext] =
+    useState<AudioContext | null>(null);
   const [localAnalyser, setLocalAnalyser] = useState<AnalyserNode | null>(null);
   const [overtradingPenalty, setOvertradingPenalty] = useState<number>(0.5);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -36,16 +37,17 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   const erScore = erContext?.erScore ?? localErScore;
   const analyser = erContext?.analyser ?? localAnalyser;
 
-  const resonanceState = erScore > 0.5 ? 'Steadfast' : erScore < -0.5 ? 'Tilted' : 'Poised';
+  const resonanceState =
+    erScore > 0.5 ? "Steadfast" : erScore < -0.5 ? "Tilted" : "Poised";
   const stateColor = {
-    Steadfast: 'text-emerald-400',
-    Tilted: 'text-red-500',
-    Poised: 'text-gray-400',
+    Steadfast: "text-emerald-400",
+    Tilted: "text-red-500",
+    Poised: "text-gray-400",
   };
   const stateBgColor = {
-    Steadfast: 'bg-emerald-400',
-    Tilted: 'bg-red-500',
-    Poised: 'bg-gray-400',
+    Steadfast: "bg-emerald-400",
+    Tilted: "bg-red-500",
+    Poised: "bg-gray-400",
   };
 
   const startMonitoring = async () => {
@@ -62,7 +64,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
 
       const ctx = new AudioContext();
       // [claude-code 2026-03-14] Chromium/Electron starts AudioContext SUSPENDED — must resume
-      if (ctx.state === 'suspended') await ctx.resume();
+      if (ctx.state === "suspended") await ctx.resume();
       const analyserNode = ctx.createAnalyser();
       analyserNode.fftSize = 256;
 
@@ -78,7 +80,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
       infractionCountRef.current = 0;
       setLocalErScore(0);
 
-      if ('webkitSpeechRecognition' in window) {
+      if ("webkitSpeechRecognition" in window) {
         const SpeechRecognition = (window as any).webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
@@ -87,25 +89,32 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
         recognition.onresult = (event: any) => {
           const transcript = Array.from(event.results)
             .map((result: any) => result[0].transcript)
-            .join('');
+            .join("");
 
-          const aggressiveWords = ['fuck', 'shit', 'damn', 'stupid', 'idiot', 'hate'];
-          const hasAggression = aggressiveWords.some(word =>
-            transcript.toLowerCase().includes(word)
+          const aggressiveWords = [
+            "fuck",
+            "shit",
+            "damn",
+            "stupid",
+            "idiot",
+            "hate",
+          ];
+          const hasAggression = aggressiveWords.some((word) =>
+            transcript.toLowerCase().includes(word),
           );
 
           if (hasAggression) {
             infractionCountRef.current += 1;
-            setLocalErScore(prev => {
+            setLocalErScore((prev) => {
               const newScore = Math.max(-10, prev - 1.0);
-              if (typeof window !== 'undefined') {
+              if (typeof window !== "undefined") {
                 window.dispatchEvent(
-                  new CustomEvent('psychassist:infraction', {
+                  new CustomEvent("psychassist:infraction", {
                     detail: {
                       timestamp: Date.now(),
                       score: newScore,
                     },
-                  })
+                  }),
                 );
               }
               if (onERScoreChange) {
@@ -120,7 +129,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
         recognitionRef.current = recognition;
       }
     } catch (err) {
-      console.error('Failed to start monitoring:', err);
+      console.error("Failed to start monitoring:", err);
     }
   };
 
@@ -132,7 +141,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
     }
 
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
     }
     if (localAudioContext) {
       localAudioContext.close();
@@ -151,7 +160,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
     if (erContext) return; // shared context handles drift
     if (isMonitoring) {
       const interval = setInterval(() => {
-        setLocalErScore(prev => {
+        setLocalErScore((prev) => {
           const drift = (Math.random() - 0.5) * 0.3;
           const newScore = Math.max(-10, Math.min(10, prev + drift));
           if (onERScoreChange) {
@@ -171,8 +180,12 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
 
     const checkOvertrading = async () => {
       try {
-        const status = await backend.er.checkOvertrading({ windowMinutes: 15, threshold: 5 });
-        const penalty = typeof status.penalty === 'number' ? status.penalty : 0.5;
+        const status = await backend.er.checkOvertrading({
+          windowMinutes: 15,
+          threshold: 5,
+        });
+        const penalty =
+          typeof status.penalty === "number" ? status.penalty : 0.5;
         setOvertradingPenalty(penalty);
 
         if (status.isOvertrading) {
@@ -185,7 +198,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
           });
         }
       } catch (error) {
-        console.debug('Compact ER overtrading check failed:', error);
+        console.debug("Compact ER overtrading check failed:", error);
       }
     };
 
@@ -200,15 +213,15 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   }, [erScore, onERScoreChange]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     window.dispatchEvent(
-      new CustomEvent('psychassist:score', {
+      new CustomEvent("psychassist:score", {
         detail: {
           score: erScore,
           timestamp: Date.now(),
           overtradingPenalty,
         },
-      })
+      }),
     );
   }, [erScore, overtradingPenalty]);
 
@@ -218,7 +231,10 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
       <div className="relative h-8 flex-1 bg-black/50 rounded border border-[var(--fintheon-accent)]/10 overflow-hidden min-w-[100px]">
         <div className="absolute inset-0 scanline-overlay opacity-50" />
         {isMonitoring && analyser ? (
-          <WaveformCanvas analyser={analyser} tiltMode={resonanceState === 'Tilted'} />
+          <WaveformCanvas
+            analyser={analyser}
+            tiltMode={resonanceState === "Tilted"}
+          />
         ) : (
           <div className="h-full flex items-center justify-center text-[8px] text-gray-500">
             Inactive
@@ -229,7 +245,9 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
       {/* Score & State */}
       <div className="flex items-center gap-1.5">
         {/* Status indicator dot */}
-        <div className={`w-2 h-2 rounded-full ${stateBgColor[resonanceState]} ${isMonitoring ? 'animate-pulse' : ''}`} />
+        <div
+          className={`w-2 h-2 rounded-full ${stateBgColor[resonanceState]} ${isMonitoring ? "animate-pulse" : ""}`}
+        />
 
         {/* Score */}
         <div className="text-right">
@@ -243,7 +261,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
       </div>
 
       {/* Tilt warning */}
-      {resonanceState === 'Tilted' && (
+      {resonanceState === "Tilted" && (
         <AlertTriangle className="w-3 h-3 text-red-500 animate-pulse flex-shrink-0" />
       )}
 
@@ -252,10 +270,10 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
         onClick={isMonitoring ? stopMonitoring : startMonitoring}
         className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${
           isMonitoring
-            ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-            : 'bg-zinc-800/50 text-gray-400 hover:bg-zinc-700/50 hover:text-gray-300'
+            ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+            : "bg-zinc-800/50 text-gray-400 hover:bg-zinc-700/50 hover:text-gray-300"
         }`}
-        title={isMonitoring ? 'Stop PsychAssist' : 'Start PsychAssist'}
+        title={isMonitoring ? "Stop PsychAssist" : "Start PsychAssist"}
       >
         {isMonitoring ? (
           <Mic className="w-3 h-3" />

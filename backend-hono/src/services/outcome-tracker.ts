@@ -1,12 +1,19 @@
 // [claude-code 2026-03-19] T1: Outcome tracker — JSONL-backed agent prediction tracking + scorecards
 
-import { readFile, appendFile, writeFile, access } from 'node:fs/promises';
-import { join } from 'node:path';
-import { getBoardroomMessages } from './hermes-sessions.js';
-import type { TrackedPrediction, PredictionOutcome, AgentScorecard } from '../types/outcome-tracking.js';
-import type { BoardroomAgent } from '../types/boardroom.js';
+import { readFile, appendFile, writeFile, access } from "node:fs/promises";
+import { join } from "node:path";
+import { getBoardroomMessages } from "./hermes-sessions.js";
+import type {
+  TrackedPrediction,
+  PredictionOutcome,
+  AgentScorecard,
+} from "../types/outcome-tracking.js";
+import type { BoardroomAgent } from "../types/boardroom.js";
 
-const TRACKING_FILE = join(process.env.HOME ?? '', '.hermes/agents/main/outcome-tracking.jsonl');
+const TRACKING_FILE = join(
+  process.env.HOME ?? "",
+  ".hermes/agents/main/outcome-tracking.jsonl",
+);
 
 const safeJsonParse = <T>(line: string): T | null => {
   try {
@@ -17,27 +24,31 @@ const safeJsonParse = <T>(line: string): T | null => {
 };
 
 async function readAllPredictions(): Promise<TrackedPrediction[]> {
-  const content = await readFile(TRACKING_FILE, 'utf-8').catch(() => '');
+  const content = await readFile(TRACKING_FILE, "utf-8").catch(() => "");
   return content
-    .split('\n')
-    .map(l => l.trim())
+    .split("\n")
+    .map((l) => l.trim())
     .filter(Boolean)
-    .map(l => safeJsonParse<TrackedPrediction>(l))
+    .map((l) => safeJsonParse<TrackedPrediction>(l))
     .filter((p): p is TrackedPrediction => p !== null);
 }
 
-async function writeAllPredictions(predictions: TrackedPrediction[]): Promise<void> {
-  const content = predictions.map(p => JSON.stringify(p)).join('\n') + '\n';
-  await writeFile(TRACKING_FILE, content, 'utf-8');
+async function writeAllPredictions(
+  predictions: TrackedPrediction[],
+): Promise<void> {
+  const content = predictions.map((p) => JSON.stringify(p)).join("\n") + "\n";
+  await writeFile(TRACKING_FILE, content, "utf-8");
 }
 
-export async function trackPrediction(prediction: TrackedPrediction): Promise<void> {
-  const line = JSON.stringify(prediction) + '\n';
+export async function trackPrediction(
+  prediction: TrackedPrediction,
+): Promise<void> {
+  const line = JSON.stringify(prediction) + "\n";
   try {
     await access(TRACKING_FILE);
-    await appendFile(TRACKING_FILE, line, 'utf-8');
+    await appendFile(TRACKING_FILE, line, "utf-8");
   } catch {
-    await writeFile(TRACKING_FILE, line, 'utf-8');
+    await writeFile(TRACKING_FILE, line, "utf-8");
   }
 }
 
@@ -45,10 +56,10 @@ export async function resolvePrediction(
   id: string,
   outcome: PredictionOutcome,
   actualResult: string,
-  pnlImpact?: number
+  pnlImpact?: number,
 ): Promise<void> {
   const predictions = await readAllPredictions();
-  const idx = predictions.findIndex(p => p.id === id);
+  const idx = predictions.findIndex((p) => p.id === id);
   if (idx === -1) throw new Error(`Prediction not found: ${id}`);
 
   predictions[idx] = {
@@ -69,32 +80,34 @@ export async function getPredictions(filter?: {
   let predictions = await readAllPredictions();
 
   if (filter?.agent) {
-    predictions = predictions.filter(p => p.agent === filter.agent);
+    predictions = predictions.filter((p) => p.agent === filter.agent);
   }
   if (filter?.outcome) {
-    predictions = predictions.filter(p => p.outcome === filter.outcome);
+    predictions = predictions.filter((p) => p.outcome === filter.outcome);
   }
 
   return predictions;
 }
 
 export async function extractPredictions(): Promise<TrackedPrediction[]> {
-  const { messages } = await getBoardroomMessages('pic-boardroom');
+  const { messages } = await getBoardroomMessages("pic-boardroom");
   const predictions: TrackedPrediction[] = [];
 
   for (const msg of messages) {
-    if (!msg.content.includes('[TRADE IDEA]')) continue;
+    if (!msg.content.includes("[TRADE IDEA]")) continue;
 
     const content = msg.content;
 
     // Extract instrument
-    const instrumentMatch = content.match(/\b(\/ES|\/NQ|\/CL|SPX|VIX|BTC|ETH|[A-Z]{2,5})\b/i);
-    const instrument = instrumentMatch?.[1]?.toUpperCase() ?? 'UNKNOWN';
+    const instrumentMatch = content.match(
+      /\b(\/ES|\/NQ|\/CL|SPX|VIX|BTC|ETH|[A-Z]{2,5})\b/i,
+    );
+    const instrument = instrumentMatch?.[1]?.toUpperCase() ?? "UNKNOWN";
 
     // Extract direction
-    let direction: 'bullish' | 'bearish' | 'neutral' = 'neutral';
-    if (/\blong\b|bullish/i.test(content)) direction = 'bullish';
-    else if (/\bshort\b|bearish/i.test(content)) direction = 'bearish';
+    let direction: "bullish" | "bearish" | "neutral" = "neutral";
+    if (/\blong\b|bullish/i.test(content)) direction = "bullish";
+    else if (/\bshort\b|bearish/i.test(content)) direction = "bearish";
 
     // Extract prices
     const entryMatch = content.match(/entry[:\s]*\$?([\d,.]+)/i);
@@ -103,13 +116,17 @@ export async function extractPredictions(): Promise<TrackedPrediction[]> {
     predictions.push({
       id: msg.id,
       agent: msg.agent,
-      type: 'trade_idea',
+      type: "trade_idea",
       instrument,
-      prediction: content.split('\n')[0]?.slice(0, 120) ?? '',
+      prediction: content.split("\n")[0]?.slice(0, 120) ?? "",
       predictionDate: msg.timestamp,
       direction,
-      entryPrice: entryMatch ? parseFloat(entryMatch[1].replace(/,/g, '')) : undefined,
-      targetPrice: targetMatch ? parseFloat(targetMatch[1].replace(/,/g, '')) : undefined,
+      entryPrice: entryMatch
+        ? parseFloat(entryMatch[1].replace(/,/g, ""))
+        : undefined,
+      targetPrice: targetMatch
+        ? parseFloat(targetMatch[1].replace(/,/g, ""))
+        : undefined,
     });
   }
 
@@ -129,10 +146,12 @@ export async function getAgentScorecards(): Promise<AgentScorecard[]> {
   const scorecards: AgentScorecard[] = [];
 
   for (const [agent, preds] of agentMap) {
-    const resolved = preds.filter(p => p.outcome);
-    const correctCount = resolved.filter(p => p.outcome === 'correct').length;
-    const incorrectCount = resolved.filter(p => p.outcome === 'incorrect').length;
-    const partialCount = resolved.filter(p => p.outcome === 'partial').length;
+    const resolved = preds.filter((p) => p.outcome);
+    const correctCount = resolved.filter((p) => p.outcome === "correct").length;
+    const incorrectCount = resolved.filter(
+      (p) => p.outcome === "incorrect",
+    ).length;
+    const partialCount = resolved.filter((p) => p.outcome === "partial").length;
     const denomintor = resolved.length || 1;
     const winRate = correctCount / denomintor;
 
@@ -146,11 +165,13 @@ export async function getAgentScorecards(): Promise<AgentScorecard[]> {
 
     // Sort by prediction date for streak calculation
     const sorted = [...resolved].sort(
-      (a, b) => new Date(a.predictionDate).getTime() - new Date(b.predictionDate).getTime()
+      (a, b) =>
+        new Date(a.predictionDate).getTime() -
+        new Date(b.predictionDate).getTime(),
     );
 
     for (const p of sorted) {
-      if (p.outcome === 'correct') {
+      if (p.outcome === "correct") {
         currentRun++;
         if (currentRun > bestStreak) bestStreak = currentRun;
       } else {

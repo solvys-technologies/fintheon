@@ -1,32 +1,36 @@
 // [claude-code 2026-04-04] Persist last prediction to localStorage — shows instantly on startup, refreshes in background
 // [claude-code 2026-03-31] Added 120s polling interval (was static one-time fetch)
 // [claude-code 2026-03-28] S7: 5 forward-looking prediction cards under TradingView in Aquarium
-import { useState, useEffect, useRef } from 'react';
-import { Diff, TrendingDown, Minus, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import { Diff, TrendingDown, Minus, Loader2 } from "lucide-react";
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 interface InstrumentOutlook {
   symbol: string;
   name: string;
   ivScore: number;
-  lean: 'bullish' | 'bearish' | 'neutral';
+  lean: "bullish" | "bearish" | "neutral";
   range: [number, number];
-  conviction: 'low' | 'moderate' | 'elevated';
+  conviction: "low" | "moderate" | "elevated";
   drivers: string[];
   scoredItemCount: number;
 }
 
 const LEAN_CONFIG = {
-  bullish: { icon: Diff, color: 'var(--fintheon-bullish)', label: 'Bullish' },
-  bearish: { icon: TrendingDown, color: 'var(--fintheon-bearish)', label: 'Bearish' },
-  neutral: { icon: Minus, color: 'var(--fintheon-muted)', label: 'Neutral' },
+  bullish: { icon: Diff, color: "var(--fintheon-bullish)", label: "Bullish" },
+  bearish: {
+    icon: TrendingDown,
+    color: "var(--fintheon-bearish)",
+    label: "Bearish",
+  },
+  neutral: { icon: Minus, color: "var(--fintheon-muted)", label: "Neutral" },
 };
 
 const CONVICTION_COLOR: Record<string, string> = {
-  low: 'var(--fintheon-muted)',
-  moderate: 'var(--fintheon-accent)',
-  elevated: 'var(--fintheon-bearish)',
+  low: "var(--fintheon-muted)",
+  moderate: "var(--fintheon-accent)",
+  elevated: "var(--fintheon-bearish)",
 };
 
 function IVHeatBar({ score }: { score: number }) {
@@ -42,17 +46,23 @@ function IVHeatBar({ score }: { score: number }) {
   );
 }
 
-const CACHE_KEY = 'fintheon:aquarium-predictions';
+const CACHE_KEY = "fintheon:aquarium-predictions";
 
 function loadCachedOutlook(): InstrumentOutlook[] {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 function cacheOutlook(data: InstrumentOutlook[]): void {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* silent */ }
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch {
+    /* silent */
+  }
 }
 
 export function AquariumPredictionCards() {
@@ -76,7 +86,7 @@ export function AquariumPredictionCards() {
           cacheOutlook(instruments);
         }
       } catch (err) {
-        console.warn('[Predictions] fetch failed:', err);
+        console.warn("[Predictions] fetch failed:", err);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -87,7 +97,7 @@ export function AquariumPredictionCards() {
 
     // Poll every 120s when tab is visible
     pollRef.current = setInterval(() => {
-      if (document.visibilityState === 'visible') fetchOutlook();
+      if (document.visibilityState === "visible") fetchOutlook();
     }, 120_000);
 
     return () => {
@@ -114,7 +124,7 @@ export function AquariumPredictionCards() {
 
   return (
     <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-none">
-      {outlook.map(inst => {
+      {outlook.map((inst) => {
         const leanCfg = LEAN_CONFIG[inst.lean];
         const LeanIcon = leanCfg.icon;
         return (
@@ -122,9 +132,11 @@ export function AquariumPredictionCards() {
             key={inst.symbol}
             className="flex-shrink-0 w-[220px] rounded-lg border p-3 flex flex-col gap-2"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 80%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--fintheon-border) 20%, transparent)',
-              backdropFilter: 'blur(12px)',
+              backgroundColor:
+                "color-mix(in srgb, var(--fintheon-surface) 80%, transparent)",
+              borderColor:
+                "color-mix(in srgb, var(--fintheon-border) 20%, transparent)",
+              backdropFilter: "blur(12px)",
             }}
           >
             {/* Header: symbol + lean */}
@@ -133,8 +145,14 @@ export function AquariumPredictionCards() {
                 {inst.symbol}
               </span>
               <div className="flex items-center gap-1">
-                <LeanIcon className="w-3 h-3" style={{ color: leanCfg.color }} />
-                <span className="text-[8px] font-semibold uppercase" style={{ color: leanCfg.color }}>
+                <LeanIcon
+                  className="w-3 h-3"
+                  style={{ color: leanCfg.color }}
+                />
+                <span
+                  className="text-[8px] font-semibold uppercase"
+                  style={{ color: leanCfg.color }}
+                >
                   {leanCfg.label}
                 </span>
               </div>
@@ -143,23 +161,33 @@ export function AquariumPredictionCards() {
             {/* IV Heat bar */}
             <div>
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[7px] text-[var(--fintheon-muted)]/50 uppercase">Heat</span>
-                <span className="text-[8px] font-mono text-[var(--fintheon-text)]">{inst.ivScore.toFixed(1)}</span>
+                <span className="text-[7px] text-[var(--fintheon-muted)]/50 uppercase">
+                  Heat
+                </span>
+                <span className="text-[8px] font-mono text-[var(--fintheon-text)]">
+                  {inst.ivScore.toFixed(1)}
+                </span>
               </div>
               <IVHeatBar score={inst.ivScore} />
             </div>
 
             {/* Range */}
             <div className="flex items-center justify-between">
-              <span className="text-[7px] text-[var(--fintheon-muted)]/50 uppercase">Range</span>
+              <span className="text-[7px] text-[var(--fintheon-muted)]/50 uppercase">
+                Range
+              </span>
               <span className="text-[9px] font-mono text-[var(--fintheon-text)]">
-                {inst.range[0] > 0 ? '+' : ''}{inst.range[0]} to {inst.range[1] > 0 ? '+' : ''}{inst.range[1]} pts
+                {inst.range[0] > 0 ? "+" : ""}
+                {inst.range[0]} to {inst.range[1] > 0 ? "+" : ""}
+                {inst.range[1]} pts
               </span>
             </div>
 
             {/* Conviction */}
             <div className="flex items-center justify-between">
-              <span className="text-[7px] text-[var(--fintheon-muted)]/50 uppercase">Conviction</span>
+              <span className="text-[7px] text-[var(--fintheon-muted)]/50 uppercase">
+                Conviction
+              </span>
               <span
                 className="text-[8px] font-semibold uppercase px-1.5 py-0.5 rounded"
                 style={{
@@ -175,7 +203,12 @@ export function AquariumPredictionCards() {
             {inst.drivers.length > 0 && (
               <div className="pt-1 border-t border-[var(--fintheon-border)]/10">
                 {inst.drivers.slice(0, 2).map((d, i) => (
-                  <p key={i} className="text-[9px] text-[var(--fintheon-muted)]/50 line-clamp-2">{d}</p>
+                  <p
+                    key={i}
+                    className="text-[9px] text-[var(--fintheon-muted)]/50 line-clamp-2"
+                  >
+                    {d}
+                  </p>
                 ))}
               </div>
             )}

@@ -1,8 +1,8 @@
 // [claude-code 2026-03-19] Full-width message detail slide-over for Consilium
-import { useState } from 'react';
-import { X, Copy, Check } from 'lucide-react';
-import { AgentBadge } from './AgentBadge';
-import type { BoardroomMessage } from './ConsiliumMessage';
+import { useState } from "react";
+import { X, Copy, Check } from "lucide-react";
+import { AgentBadge } from "./AgentBadge";
+import type { BoardroomMessage } from "./ConsiliumMessage";
 
 interface ConsiliumMessageExpandedProps {
   message: BoardroomMessage | null;
@@ -10,11 +10,11 @@ interface ConsiliumMessageExpandedProps {
 }
 
 const PREFIX_LABELS: Record<string, string> = {
-  '[HUDDLE TRIGGERED]': 'HUDDLE',
-  '[PRE-MARKET BRIEF]': 'PRE-MARKET BRIEF',
-  '[POST-MARKET BRIEF]': 'POST-MARKET BRIEF',
-  '[TRADE IDEA]': 'TRADE IDEA',
-  '[STANDUP]': 'STANDUP',
+  "[HUDDLE TRIGGERED]": "HUDDLE",
+  "[PRE-MARKET BRIEF]": "PRE-MARKET BRIEF",
+  "[POST-MARKET BRIEF]": "POST-MARKET BRIEF",
+  "[TRADE IDEA]": "TRADE IDEA",
+  "[STANDUP]": "STANDUP",
 };
 
 function detectPrefix(content: string): string | null {
@@ -26,12 +26,12 @@ function detectPrefix(content: string): string | null {
 
 function formatFullTimestamp(iso: string): string {
   try {
-    return new Date(iso).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
+    return new Date(iso).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     });
   } catch {
@@ -39,7 +39,10 @@ function formatFullTimestamp(iso: string): string {
   }
 }
 
-export function ConsiliumMessageExpanded({ message, onClose }: ConsiliumMessageExpandedProps) {
+export function ConsiliumMessageExpanded({
+  message,
+  onClose,
+}: ConsiliumMessageExpandedProps) {
   const [copied, setCopied] = useState(false);
 
   if (!message) return null;
@@ -53,7 +56,10 @@ export function ConsiliumMessageExpanded({ message, onClose }: ConsiliumMessageE
   };
 
   return (
-    <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
         className="absolute bottom-0 right-0 top-0 flex w-[420px] flex-col border-l border-[#c79f4a]/20 bg-[#050402]"
         onClick={(e) => e.stopPropagation()}
@@ -93,7 +99,7 @@ export function ConsiliumMessageExpanded({ message, onClose }: ConsiliumMessageE
             className="flex items-center gap-2 rounded-full border border-[#c79f4a]/20 px-4 py-2 text-xs text-[#f0ead6]/60 transition-colors hover:border-[#c79f4a]/40 hover:text-[#f0ead6]"
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
-            {copied ? 'Copied' : 'Copy'}
+            {copied ? "Copied" : "Copy"}
           </button>
         </div>
       </div>

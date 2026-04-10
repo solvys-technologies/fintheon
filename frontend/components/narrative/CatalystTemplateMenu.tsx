@@ -1,7 +1,7 @@
 // [claude-code 2026-03-06] Dropdown menu for quick-adding typed catalysts in NarrativeFlow
-import { useEffect, useRef } from 'react';
-import { CATALYST_TEMPLATES } from '../../lib/narrative-templates';
-import type { CatalystTemplateType } from '../../lib/narrative-types';
+import { useEffect, useRef } from "react";
+import { CATALYST_TEMPLATES } from "../../lib/narrative-templates";
+import type { CatalystTemplateType } from "../../lib/narrative-types";
 
 interface CatalystTemplateMenuProps {
   open: boolean;
@@ -10,7 +10,12 @@ interface CatalystTemplateMenuProps {
   anchorPosition: { x: number; y: number };
 }
 
-export function CatalystTemplateMenu({ open, onClose, onSelect, anchorPosition }: CatalystTemplateMenuProps) {
+export function CatalystTemplateMenu({
+  open,
+  onClose,
+  onSelect,
+  anchorPosition,
+}: CatalystTemplateMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,13 +26,13 @@ export function CatalystTemplateMenu({ open, onClose, onSelect, anchorPosition }
       }
     };
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === "Escape") onClose();
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEsc);
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEsc);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEsc);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEsc);
     };
   }, [open, onClose]);
 
@@ -54,7 +59,9 @@ export function CatalystTemplateMenu({ open, onClose, onSelect, anchorPosition }
               <Icon className="w-4 h-4 text-[var(--fintheon-accent)] shrink-0" />
               <div>
                 <div className="font-medium text-xs">{template.label}</div>
-                <div className="text-[10px] text-[var(--fintheon-muted)]">{template.description}</div>
+                <div className="text-[10px] text-[var(--fintheon-muted)]">
+                  {template.description}
+                </div>
               </div>
             </button>
           );

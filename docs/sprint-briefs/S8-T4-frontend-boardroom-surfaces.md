@@ -29,7 +29,7 @@ Sprint 8, Track 4. You are building the **frontend integration** for the AgentBu
 Generic SSE subscription hook for AgentBus surface topics. Reusable across all surfaces.
 
 ```typescript
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState } from "react";
 
 interface UseAgentBusSSEOptions {
   /** SSE endpoint URL */
@@ -46,14 +46,16 @@ interface UseAgentBusSSEReturn<T> {
   /** All events received since connection */
   events: T[];
   /** Connection status */
-  status: 'connecting' | 'connected' | 'disconnected' | 'error';
+  status: "connecting" | "connected" | "disconnected" | "error";
   /** Manual reconnect */
   reconnect: () => void;
   /** Manual disconnect */
   disconnect: () => void;
 }
 
-export function useAgentBusSSE<T>(options: UseAgentBusSSEOptions): UseAgentBusSSEReturn<T> {
+export function useAgentBusSSE<T>(
+  options: UseAgentBusSSEOptions,
+): UseAgentBusSSEReturn<T> {
   // Implementation:
   // 1. Create EventSource on mount (if enabled)
   // 2. Parse SSE `data:` lines as JSON, accumulate in events[]
@@ -69,18 +71,33 @@ export function useAgentBusSSE<T>(options: UseAgentBusSSEOptions): UseAgentBusSS
 Specialized hook for Boardroom DAG execution — dispatches DAG and subscribes to its stream.
 
 ```typescript
-import { useState, useCallback } from 'react';
-import { useAgentBusSSE } from './useAgentBusSSE';
-import type { AgentStreamEvent, DAGProgressEvent, HermesAgentId } from '../../backend-hono/src/services/agent-bus/types';
+import { useState, useCallback } from "react";
+import { useAgentBusSSE } from "./useAgentBusSSE";
+import type {
+  AgentStreamEvent,
+  DAGProgressEvent,
+  HermesAgentId,
+} from "../../backend-hono/src/services/agent-bus/types";
 // NOTE: Import types from a shared location or duplicate the minimal subset needed
 
 interface BoardroomDAGState {
   dagId: string | null;
-  status: 'idle' | 'dispatching' | 'running' | 'complete' | 'error';
+  status: "idle" | "dispatching" | "running" | "complete" | "error";
   /** Per-agent accumulated text */
-  agentOutputs: Record<string, { agentId: HermesAgentId; text: string; status: 'pending' | 'streaming' | 'complete' | 'error' }>;
+  agentOutputs: Record<
+    string,
+    {
+      agentId: HermesAgentId;
+      text: string;
+      status: "pending" | "streaming" | "complete" | "error";
+    }
+  >;
   /** DAG wave progress */
-  progress: { currentWave: number; totalWaves: number; tasks: Array<{ id: string; agentId: string; status: string }> };
+  progress: {
+    currentWave: number;
+    totalWaves: number;
+    tasks: Array<{ id: string; agentId: string; status: string }>;
+  };
   /** Final synthesis from Harper */
   synthesis: string | null;
   error: string | null;
@@ -93,7 +110,10 @@ interface UseBoardroomDAGReturn extends BoardroomDAGState {
   cancel: () => Promise<void>;
 }
 
-export function useBoardroomDAG(conversationId: string, userId: string): UseBoardroomDAGReturn {
+export function useBoardroomDAG(
+  conversationId: string,
+  userId: string,
+): UseBoardroomDAGReturn {
   // Implementation:
   // 1. dispatch(): POST /api/boardroom/dag → get dagId
   // 2. Subscribe to /api/boardroom/dag/${dagId}/stream via useAgentBusSSE
@@ -114,16 +134,18 @@ export function useBoardroomDAG(conversationId: string, userId: string): UseBoar
 A per-agent streaming panel for Boardroom. Shows one agent's live output with status indicator.
 
 Props:
+
 ```typescript
 interface BoardroomAgentPanelProps {
   agentId: HermesAgentId;
   agentName: string;
   text: string;
-  status: 'pending' | 'streaming' | 'complete' | 'error';
+  status: "pending" | "streaming" | "complete" | "error";
 }
 ```
 
 Renders:
+
 - Agent name + avatar (use existing agent roster from FintheonAgentContext for name/color)
 - Status indicator: pulsing dot (streaming), checkmark (complete), X (error), dimmed (pending)
 - Streaming text with typewriter-style reveal (CSS `@keyframes` or simple opacity)
@@ -139,6 +161,7 @@ Layout: Each panel is a card in a CSS grid. Boardroom shows 2x2 grid for 4 agent
 Visual progress indicator for DAG execution waves.
 
 Props:
+
 ```typescript
 interface DAGProgressBarProps {
   currentWave: number;
@@ -148,6 +171,7 @@ interface DAGProgressBarProps {
 ```
 
 Renders:
+
 - Horizontal bar showing waves as segments
 - Each segment contains agent avatars/dots for tasks in that wave
 - Color coding: pending (dim), running (Solvys Gold pulse), complete (solid gold), error (red)
@@ -162,6 +186,7 @@ Renders:
 Replace polling-based message display with live DAG panels.
 
 Changes:
+
 - Import `useBoardroomDAG` hook
 - When user sends a message in Boardroom:
   - Call `dispatch(message)` instead of existing fetch-based approach
@@ -177,6 +202,7 @@ Changes:
 Integrate DAG components into the hub layout.
 
 Changes:
+
 - Import DAGProgressBar
 - Add a "Boardroom Mode" indicator when a DAG is running
 - Pass DAG state down to AgentChattr (or let AgentChattr manage its own state via hook)
@@ -186,6 +212,7 @@ Changes:
 Subscribe to `surface.narrative` SSE for auto-push catalyst cards.
 
 Changes:
+
 - Add SSE subscription using `useAgentBusSSE<NarrativePushEvent>`
 - Endpoint: `GET /api/dag/surface/narrative` (or similar — check what T2/T3 exposes)
 - On `catalyst-discovered` event:
@@ -200,6 +227,7 @@ Changes:
 Subscribe to `surface.sidebar` SSE for cross-agent notifications.
 
 Changes:
+
 - Add SSE subscription using `useAgentBusSSE<SidebarNotifyEvent>`
 - Endpoint: `GET /api/dag/surface/sidebar` (or similar)
 - On `agent-finding` event:

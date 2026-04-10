@@ -1,11 +1,13 @@
 # T1: Default Connectors — Internal + MCP
 
 ## Objective
+
 Wire up default connectors that appear in the CONNECTORS section of the chat ToolsDropdown. Currently shows "0 connectors active". After this track, 3 internal connectors + 4 MCP connectors should appear by default.
 
 ## Architecture
 
 ### Key Files
+
 - `frontend/components/chat/ToolsDropdown.tsx` — Combined Skills + Connectors dropdown UI
 - `frontend/components/chat/McpConnectorPopup.tsx` — Connector display with status dots
 - `frontend/hooks/useMcpConnectors.ts` — State management hook, fetches from `/api/mcp`
@@ -15,6 +17,7 @@ Wire up default connectors that appear in the CONNECTORS section of the chat Too
 - `.mcp.json` — Project-level MCP server configs (already has exa, notion, tradingview, framer, close_crm)
 
 ### Current State
+
 - Backend MCP route reads from `~/.claude/mcp.json` and project `.mcp.json`
 - Known servers registry in backend has metadata for: exa, notion, framer, close-crm, qc-mcp, tradingview, yahoo-finance, unusual-whales, playwright, figma
 - Frontend `useMcpConnectors()` fetches from `/api/mcp` and manages toggle state
@@ -23,6 +26,7 @@ Wire up default connectors that appear in the CONNECTORS section of the chat Too
 ## Requirements
 
 ### Internal Connectors (not MCP — these are in-app features routed through Harper chat)
+
 These are NOT MCP servers. They are "internal connectors" that appear in the connectors list but work by injecting context into Harper's prompt or triggering backend endpoints.
 
 1. **RiskFlow** — Cite a catalyst by prompting a search through the DB
@@ -45,6 +49,7 @@ These are NOT MCP servers. They are "internal connectors" that appear in the con
    - UI: Internal connector, toggleable
 
 ### MCP Connectors (external MCP servers)
+
 These are real MCP servers. Ensure they appear and can be toggled:
 
 4. **Notion** — Already in `.mcp.json` with API key auth. Should show as active.
@@ -55,17 +60,22 @@ These are real MCP servers. Ensure they appear and can be toggled:
 ## Implementation Plan
 
 ### Step 1: Add Internal Connector Type
+
 In `frontend/types/mcp.ts`, extend `McpServerConfig` to support internal connectors:
+
 ```typescript
-export type ConnectorSource = 'claude' | 'project' | 'internal';
+export type ConnectorSource = "claude" | "project" | "internal";
 // Add to McpServerConfig: source?: ConnectorSource
 ```
 
 ### Step 2: Register Internal Connectors
+
 In `frontend/hooks/useMcpConnectors.ts` or a new `internalConnectors.ts`, define the 3 internal connectors with their metadata. Merge them into the connector list alongside MCP servers.
 
 ### Step 3: Unusual Whales MCP Setup
+
 Research the correct NPM package for Unusual Whales MCP server. Add to `.mcp.json`:
+
 ```json
 "unusual-whales": {
   "command": "npx",
@@ -73,15 +83,19 @@ Research the correct NPM package for Unusual Whales MCP server. Add to `.mcp.jso
   "env": { "UW_API_KEY": "${UW_API_KEY}" }
 }
 ```
+
 Add to backend known servers registry in `backend-hono/src/routes/mcp/index.ts`.
 
 ### Step 4: Ensure MCP Connectors Show Active
+
 The backend `/api/mcp` endpoint reads `.mcp.json` and returns server configs. Verify exa, notion, tradingview show as `enabled: true` by default (not in disabled list at `~/.fintheon/mcp-disabled.json`).
 
 ### Step 5: Wire Internal Connectors to Harper Context
+
 When an internal connector is active, inject relevant context into Harper's system prompt. This happens in `backend-hono/src/services/harper-handler.ts` in the `harperChat()` function where `buildFeedContext()` is called.
 
 ## Constraints
+
 - Never bypass auth (Supabase JWT enforced)
 - Backend is launchd-managed (`io.solvys.fintheon-backend`), must `launchctl unload` before restart
 - Always `bun run build` (not just tsc) after backend changes

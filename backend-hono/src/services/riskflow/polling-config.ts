@@ -9,7 +9,9 @@ export type PollingConfig = {
  * - All other times (including weekends): 180s
  */
 export function getPollingConfig(now = new Date()): PollingConfig {
-  const etNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const etNow = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/New_York" }),
+  );
   const hour = etNow.getHours();
   const day = etNow.getDay(); // 0 = Sunday, 6 = Saturday
 

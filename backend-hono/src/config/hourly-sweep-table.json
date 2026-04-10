@@ -55,27 +55,99 @@
       "notes": "Bearish overnight lean — downside already extended"
     }
   },
-  "hour_0": { "high_sweep_pct": 0.35, "low_sweep_pct": 0.35, "post_sweep_fib_141": 0.30, "post_sweep_fib_168": 0.15, "retrace_to_open": 0.40, "retrace_to_swept_level": 0.85, "session": "overnight", "notes": "Low liquidity. Minimal sweep data." },
-  "hour_1": { "high_sweep_pct": 0.35, "low_sweep_pct": 0.35, "post_sweep_fib_141": 0.30, "post_sweep_fib_168": 0.15, "retrace_to_open": 0.40, "retrace_to_swept_level": 0.85, "session": "overnight", "notes": "Low liquidity." },
-  "hour_2": { "high_sweep_pct": 0.40, "low_sweep_pct": 0.40, "post_sweep_fib_141": 0.35, "post_sweep_fib_168": 0.18, "retrace_to_open": 0.45, "retrace_to_swept_level": 0.87, "session": "london_open", "notes": "London session opens. Volatility picks up." },
-  "hour_3": { "high_sweep_pct": 0.45, "low_sweep_pct": 0.45, "post_sweep_fib_141": 0.38, "post_sweep_fib_168": 0.20, "retrace_to_open": 0.48, "retrace_to_swept_level": 0.88, "session": "london", "notes": "London active trading." },
-  "hour_4": { "high_sweep_pct": 0.50, "low_sweep_pct": 0.50, "post_sweep_fib_141": 0.40, "post_sweep_fib_168": 0.22, "retrace_to_open": 0.50, "retrace_to_swept_level": 0.89, "session": "london", "notes": "London peak." },
-  "hour_5": { "high_sweep_pct": 0.48, "low_sweep_pct": 0.48, "post_sweep_fib_141": 0.38, "post_sweep_fib_168": 0.20, "retrace_to_open": 0.48, "retrace_to_swept_level": 0.88, "session": "london", "notes": "Pre-US. Some reduction." },
-  "hour_6": { "high_sweep_pct": 0.50, "low_sweep_pct": 0.50, "post_sweep_fib_141": 0.40, "post_sweep_fib_168": 0.22, "retrace_to_open": 0.52, "retrace_to_swept_level": 0.89, "session": "london_ny_overlap", "notes": "Overlap begins. Volatility rising." },
-  "hour_7": { "high_sweep_pct": 0.55, "low_sweep_pct": 0.55, "post_sweep_fib_141": 0.45, "post_sweep_fib_168": 0.25, "retrace_to_open": 0.55, "retrace_to_swept_level": 0.90, "session": "london_ny_overlap", "notes": "Pre-market active. 7:15 economic prints." },
+  "hour_0": {
+    "high_sweep_pct": 0.35,
+    "low_sweep_pct": 0.35,
+    "post_sweep_fib_141": 0.3,
+    "post_sweep_fib_168": 0.15,
+    "retrace_to_open": 0.4,
+    "retrace_to_swept_level": 0.85,
+    "session": "overnight",
+    "notes": "Low liquidity. Minimal sweep data."
+  },
+  "hour_1": {
+    "high_sweep_pct": 0.35,
+    "low_sweep_pct": 0.35,
+    "post_sweep_fib_141": 0.3,
+    "post_sweep_fib_168": 0.15,
+    "retrace_to_open": 0.4,
+    "retrace_to_swept_level": 0.85,
+    "session": "overnight",
+    "notes": "Low liquidity."
+  },
+  "hour_2": {
+    "high_sweep_pct": 0.4,
+    "low_sweep_pct": 0.4,
+    "post_sweep_fib_141": 0.35,
+    "post_sweep_fib_168": 0.18,
+    "retrace_to_open": 0.45,
+    "retrace_to_swept_level": 0.87,
+    "session": "london_open",
+    "notes": "London session opens. Volatility picks up."
+  },
+  "hour_3": {
+    "high_sweep_pct": 0.45,
+    "low_sweep_pct": 0.45,
+    "post_sweep_fib_141": 0.38,
+    "post_sweep_fib_168": 0.2,
+    "retrace_to_open": 0.48,
+    "retrace_to_swept_level": 0.88,
+    "session": "london",
+    "notes": "London active trading."
+  },
+  "hour_4": {
+    "high_sweep_pct": 0.5,
+    "low_sweep_pct": 0.5,
+    "post_sweep_fib_141": 0.4,
+    "post_sweep_fib_168": 0.22,
+    "retrace_to_open": 0.5,
+    "retrace_to_swept_level": 0.89,
+    "session": "london",
+    "notes": "London peak."
+  },
+  "hour_5": {
+    "high_sweep_pct": 0.48,
+    "low_sweep_pct": 0.48,
+    "post_sweep_fib_141": 0.38,
+    "post_sweep_fib_168": 0.2,
+    "retrace_to_open": 0.48,
+    "retrace_to_swept_level": 0.88,
+    "session": "london",
+    "notes": "Pre-US. Some reduction."
+  },
+  "hour_6": {
+    "high_sweep_pct": 0.5,
+    "low_sweep_pct": 0.5,
+    "post_sweep_fib_141": 0.4,
+    "post_sweep_fib_168": 0.22,
+    "retrace_to_open": 0.52,
+    "retrace_to_swept_level": 0.89,
+    "session": "london_ny_overlap",
+    "notes": "Overlap begins. Volatility rising."
+  },
+  "hour_7": {
+    "high_sweep_pct": 0.55,
+    "low_sweep_pct": 0.55,
+    "post_sweep_fib_141": 0.45,
+    "post_sweep_fib_168": 0.25,
+    "retrace_to_open": 0.55,
+    "retrace_to_swept_level": 0.9,
+    "session": "london_ny_overlap",
+    "notes": "Pre-market active. 7:15 economic prints."
+  },
   "hour_8": {
     "high_sweep_pct": 0.65,
     "low_sweep_pct": 0.65,
     "post_sweep_fib_141": 0.52,
-    "post_sweep_fib_168": 0.30,
+    "post_sweep_fib_168": 0.3,
     "retrace_to_open": 0.636,
     "retrace_to_swept_level": 0.91,
     "session": "NY_premarket",
     "breach_events": 2295,
     "reversion_events": 1460,
-    "high_breach_rev_pct": 0.640,
+    "high_breach_rev_pct": 0.64,
     "low_breach_rev_pct": 0.632,
-    "mae_avg_pct": 0.130,
+    "mae_avg_pct": 0.13,
     "mfe_avg_pct": 0.186,
     "mfe_mae_ratio": 1.43,
     "segment_00_20": 0.746,
@@ -84,8 +156,8 @@
     "notes": "8:30 economic data drops. 120-second blackout window. First 20 min have 74.6% reversion."
   },
   "hour_9": {
-    "high_sweep_pct": 0.80,
-    "low_sweep_pct": 0.80,
+    "high_sweep_pct": 0.8,
+    "low_sweep_pct": 0.8,
     "post_sweep_fib_141": 0.65,
     "post_sweep_fib_168": 0.42,
     "retrace_to_open": 0.752,
@@ -99,13 +171,13 @@
     "mfe_avg_pct": 0.306,
     "mfe_mae_ratio": 1.51,
     "segment_00_20": 0.874,
-    "segment_20_40": 0.630,
+    "segment_20_40": 0.63,
     "segment_40_60": 0.329,
     "notes": "HIGHEST reversion hour (75.2%). Market open — 87.4% reversion in first 20 min. Best MFE/MAE ratio (1.51x). The 40/40 Club primary window."
   },
   "hour_10": {
-    "high_sweep_pct": 0.70,
-    "low_sweep_pct": 0.70,
+    "high_sweep_pct": 0.7,
+    "low_sweep_pct": 0.7,
     "post_sweep_fib_141": 0.55,
     "post_sweep_fib_168": 0.35,
     "retrace_to_open": 0.593,
@@ -118,7 +190,7 @@
     "mae_avg_pct": 0.241,
     "mfe_avg_pct": 0.294,
     "mfe_mae_ratio": 1.22,
-    "segment_00_20": 0.680,
+    "segment_00_20": 0.68,
     "segment_20_40": 0.333,
     "segment_40_60": 0.125,
     "notes": "Second-highest MAE (0.241%). Trend continuation hour — lower reversion = directional follow-through."
@@ -129,7 +201,7 @@
     "post_sweep_fib_141": 0.42,
     "post_sweep_fib_168": 0.25,
     "retrace_to_open": 0.544,
-    "retrace_to_swept_level": 0.90,
+    "retrace_to_swept_level": 0.9,
     "session": "NY_midday",
     "breach_events": 2018,
     "reversion_events": 1097,
@@ -149,7 +221,7 @@
     "post_sweep_fib_141": 0.43,
     "post_sweep_fib_168": 0.26,
     "retrace_to_open": 0.556,
-    "retrace_to_swept_level": 0.90,
+    "retrace_to_swept_level": 0.9,
     "session": "NY_lunch",
     "breach_events": 2065,
     "reversion_events": 1148,
@@ -159,13 +231,13 @@
     "mfe_avg_pct": 0.197,
     "mfe_mae_ratio": 1.19,
     "segment_00_20": 0.683,
-    "segment_20_40": 0.310,
+    "segment_20_40": 0.31,
     "segment_40_60": 0.136,
     "notes": "Noon curve. Midday reversal zone. Symmetric high/low breach reversion."
   },
   "hour_13": {
-    "high_sweep_pct": 0.60,
-    "low_sweep_pct": 0.60,
+    "high_sweep_pct": 0.6,
+    "low_sweep_pct": 0.6,
     "post_sweep_fib_141": 0.48,
     "post_sweep_fib_168": 0.28,
     "retrace_to_open": 0.585,
@@ -186,8 +258,8 @@
   "hour_14": {
     "high_sweep_pct": 0.65,
     "low_sweep_pct": 0.65,
-    "post_sweep_fib_141": 0.50,
-    "post_sweep_fib_168": 0.30,
+    "post_sweep_fib_141": 0.5,
+    "post_sweep_fib_168": 0.3,
     "retrace_to_open": 0.585,
     "retrace_to_swept_level": 0.91,
     "session": "NY_afternoon",
@@ -204,8 +276,8 @@
     "notes": "Late afternoon. Higher 40-60 segment reversion (20.3%) than most hours."
   },
   "hour_15": {
-    "high_sweep_pct": 0.70,
-    "low_sweep_pct": 0.70,
+    "high_sweep_pct": 0.7,
+    "low_sweep_pct": 0.7,
     "post_sweep_fib_141": 0.55,
     "post_sweep_fib_168": 0.35,
     "retrace_to_open": 0.642,
@@ -223,12 +295,84 @@
     "segment_40_60": 0.199,
     "notes": "Power hour. Second-highest reversion (64.2%). 76.2% in first 20 min. MOC imbalances drive late moves."
   },
-  "hour_16": { "high_sweep_pct": 0.40, "low_sweep_pct": 0.40, "post_sweep_fib_141": 0.30, "post_sweep_fib_168": 0.15, "retrace_to_open": 0.45, "retrace_to_swept_level": 0.87, "session": "after_hours", "notes": "RTH closed. Low volume." },
-  "hour_17": { "high_sweep_pct": 0.30, "low_sweep_pct": 0.30, "post_sweep_fib_141": 0.25, "post_sweep_fib_168": 0.12, "retrace_to_open": 0.35, "retrace_to_swept_level": 0.85, "session": "after_hours", "notes": "Transition hour. Minimal activity." },
-  "hour_18": { "high_sweep_pct": 0.30, "low_sweep_pct": 0.30, "post_sweep_fib_141": 0.25, "post_sweep_fib_168": 0.12, "retrace_to_open": 0.35, "retrace_to_swept_level": 0.85, "session": "globex_open", "notes": "Globex opens at 18:00 ET Sunday." },
-  "hour_19": { "high_sweep_pct": 0.32, "low_sweep_pct": 0.32, "post_sweep_fib_141": 0.26, "post_sweep_fib_168": 0.13, "retrace_to_open": 0.38, "retrace_to_swept_level": 0.85, "session": "overnight", "notes": "Early overnight." },
-  "hour_20": { "high_sweep_pct": 0.35, "low_sweep_pct": 0.35, "post_sweep_fib_141": 0.28, "post_sweep_fib_168": 0.14, "retrace_to_open": 0.40, "retrace_to_swept_level": 0.86, "session": "asia_open", "notes": "Asia session opens. NQStats ALN framework begins here." },
-  "hour_21": { "high_sweep_pct": 0.35, "low_sweep_pct": 0.35, "post_sweep_fib_141": 0.28, "post_sweep_fib_168": 0.14, "retrace_to_open": 0.40, "retrace_to_swept_level": 0.86, "session": "asia", "notes": "Asia active." },
-  "hour_22": { "high_sweep_pct": 0.35, "low_sweep_pct": 0.35, "post_sweep_fib_141": 0.28, "post_sweep_fib_168": 0.14, "retrace_to_open": 0.40, "retrace_to_swept_level": 0.86, "session": "asia", "notes": "Asia active." },
-  "hour_23": { "high_sweep_pct": 0.33, "low_sweep_pct": 0.33, "post_sweep_fib_141": 0.27, "post_sweep_fib_168": 0.13, "retrace_to_open": 0.38, "retrace_to_swept_level": 0.85, "session": "asia_late", "notes": "Asia winding down." }
+  "hour_16": {
+    "high_sweep_pct": 0.4,
+    "low_sweep_pct": 0.4,
+    "post_sweep_fib_141": 0.3,
+    "post_sweep_fib_168": 0.15,
+    "retrace_to_open": 0.45,
+    "retrace_to_swept_level": 0.87,
+    "session": "after_hours",
+    "notes": "RTH closed. Low volume."
+  },
+  "hour_17": {
+    "high_sweep_pct": 0.3,
+    "low_sweep_pct": 0.3,
+    "post_sweep_fib_141": 0.25,
+    "post_sweep_fib_168": 0.12,
+    "retrace_to_open": 0.35,
+    "retrace_to_swept_level": 0.85,
+    "session": "after_hours",
+    "notes": "Transition hour. Minimal activity."
+  },
+  "hour_18": {
+    "high_sweep_pct": 0.3,
+    "low_sweep_pct": 0.3,
+    "post_sweep_fib_141": 0.25,
+    "post_sweep_fib_168": 0.12,
+    "retrace_to_open": 0.35,
+    "retrace_to_swept_level": 0.85,
+    "session": "globex_open",
+    "notes": "Globex opens at 18:00 ET Sunday."
+  },
+  "hour_19": {
+    "high_sweep_pct": 0.32,
+    "low_sweep_pct": 0.32,
+    "post_sweep_fib_141": 0.26,
+    "post_sweep_fib_168": 0.13,
+    "retrace_to_open": 0.38,
+    "retrace_to_swept_level": 0.85,
+    "session": "overnight",
+    "notes": "Early overnight."
+  },
+  "hour_20": {
+    "high_sweep_pct": 0.35,
+    "low_sweep_pct": 0.35,
+    "post_sweep_fib_141": 0.28,
+    "post_sweep_fib_168": 0.14,
+    "retrace_to_open": 0.4,
+    "retrace_to_swept_level": 0.86,
+    "session": "asia_open",
+    "notes": "Asia session opens. NQStats ALN framework begins here."
+  },
+  "hour_21": {
+    "high_sweep_pct": 0.35,
+    "low_sweep_pct": 0.35,
+    "post_sweep_fib_141": 0.28,
+    "post_sweep_fib_168": 0.14,
+    "retrace_to_open": 0.4,
+    "retrace_to_swept_level": 0.86,
+    "session": "asia",
+    "notes": "Asia active."
+  },
+  "hour_22": {
+    "high_sweep_pct": 0.35,
+    "low_sweep_pct": 0.35,
+    "post_sweep_fib_141": 0.28,
+    "post_sweep_fib_168": 0.14,
+    "retrace_to_open": 0.4,
+    "retrace_to_swept_level": 0.86,
+    "session": "asia",
+    "notes": "Asia active."
+  },
+  "hour_23": {
+    "high_sweep_pct": 0.33,
+    "low_sweep_pct": 0.33,
+    "post_sweep_fib_141": 0.27,
+    "post_sweep_fib_168": 0.13,
+    "retrace_to_open": 0.38,
+    "retrace_to_swept_level": 0.85,
+    "session": "asia_late",
+    "notes": "Asia winding down."
+  }
 }

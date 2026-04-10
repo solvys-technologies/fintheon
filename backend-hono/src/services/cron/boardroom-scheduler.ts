@@ -13,20 +13,23 @@
  *   9:30 AM — Market open wrap
  */
 
-import cron from 'node-cron';
-import { getEnabledSchedules } from '../../config/boardroom-cron.js';
-import { spawnBoardroomStandup, type StandupTask } from '../boardroom-spawner.js';
-import { createLogger } from '../../lib/logger.js';
+import cron from "node-cron";
+import { getEnabledSchedules } from "../../config/boardroom-cron.js";
+import {
+  spawnBoardroomStandup,
+  type StandupTask,
+} from "../boardroom-spawner.js";
+import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger('BoardroomScheduler');
+const log = createLogger("BoardroomScheduler");
 
 /** Map cron schedule IDs to StandupTask types */
 const SCHEDULE_ID_TO_TASK: Record<string, StandupTask> = {
-  'boardroom-standup-7-30': 'morning-standup',
-  'boardroom-standup-8-00': 'checkin-8am',
-  'boardroom-standup-8-30': 'econ-scan',
-  'boardroom-standup-9-00': 'premarket',
-  'boardroom-standup-9-30': 'market-open',
+  "boardroom-standup-7-30": "morning-standup",
+  "boardroom-standup-8-00": "checkin-8am",
+  "boardroom-standup-8-30": "econ-scan",
+  "boardroom-standup-9-00": "premarket",
+  "boardroom-standup-9-30": "market-open",
 };
 
 let scheduledJobs: cron.ScheduledTask[] = [];
@@ -38,14 +41,14 @@ let isRunning = false;
  */
 export function startBoardroomScheduler(): void {
   if (isRunning) {
-    log.info(' Already running');
+    log.info(" Already running");
     return;
   }
 
   const schedules = getEnabledSchedules();
 
   if (schedules.length === 0) {
-    log.info(' No enabled schedules found');
+    log.info(" No enabled schedules found");
     return;
   }
 
@@ -66,11 +69,13 @@ export function startBoardroomScheduler(): void {
           log.error(` Failed to run ${task}:`, error);
         }
       },
-      { timezone: schedule.timezone }
+      { timezone: schedule.timezone },
     );
 
     scheduledJobs.push(job);
-    console.log(`[BoardroomScheduler] Registered: ${schedule.description} (${schedule.cronExpression} ${schedule.timezone})`);
+    console.log(
+      `[BoardroomScheduler] Registered: ${schedule.description} (${schedule.cronExpression} ${schedule.timezone})`,
+    );
   }
 
   isRunning = true;
@@ -88,7 +93,7 @@ export function stopBoardroomScheduler(): void {
   }
   scheduledJobs = [];
   isRunning = false;
-  log.info(' Stopped all cron jobs');
+  log.info(" Stopped all cron jobs");
 }
 
 /**
@@ -104,7 +109,12 @@ export function isBoardroomSchedulerActive(): boolean {
 export function getBoardroomSchedulerStatus(): {
   active: boolean;
   jobCount: number;
-  schedules: Array<{ id: string; description: string; cron: string; timezone: string }>;
+  schedules: Array<{
+    id: string;
+    description: string;
+    cron: string;
+    timezone: string;
+  }>;
 } {
   const schedules = getEnabledSchedules();
   return {

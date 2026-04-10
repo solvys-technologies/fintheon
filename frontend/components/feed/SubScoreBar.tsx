@@ -1,22 +1,34 @@
 // [claude-code 2026-03-26] T4: Sub-score breakdown bar for RiskFlow detail cards
-import React from 'react';
-import type { SubScoreBreakdown } from '../../lib/riskflow-feed';
+import React from "react";
+import type { SubScoreBreakdown } from "../../lib/riskflow-feed";
 
 interface SubScoreBarProps {
   subScores: SubScoreBreakdown;
 }
 
 const SEGMENTS: Array<{
-  key: keyof Omit<SubScoreBreakdown, 'vixMultiplier' | 'regimeMultiplier' | 'regimeName' | 'commentatorMultiplier' | 'speaker'>;
+  key: keyof Omit<
+    SubScoreBreakdown,
+    | "vixMultiplier"
+    | "regimeMultiplier"
+    | "regimeName"
+    | "commentatorMultiplier"
+    | "speaker"
+  >;
   label: string;
   max: number;
   color: string;
 }> = [
-  { key: 'eventWeight', label: 'evt', max: 10, color: 'bg-[var(--fintheon-accent)]' },
-  { key: 'timing',      label: 'tim', max: 3,  color: 'bg-cyan-500' },
-  { key: 'deviation',   label: 'dev', max: 3,  color: 'bg-amber-500' },
-  { key: 'momentum',    label: 'mom', max: 2,  color: 'bg-rose-500' },
-  { key: 'vixContext',  label: 'vix', max: 10, color: 'bg-violet-500' },
+  {
+    key: "eventWeight",
+    label: "evt",
+    max: 10,
+    color: "bg-[var(--fintheon-accent)]",
+  },
+  { key: "timing", label: "tim", max: 3, color: "bg-cyan-500" },
+  { key: "deviation", label: "dev", max: 3, color: "bg-amber-500" },
+  { key: "momentum", label: "mom", max: 2, color: "bg-rose-500" },
+  { key: "vixContext", label: "vix", max: 10, color: "bg-violet-500" },
 ];
 
 const TOTAL_MAX = SEGMENTS.reduce((sum, s) => sum + s.max, 0); // 28

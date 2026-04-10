@@ -1,9 +1,37 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Landmark, LayoutDashboard, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Bell, BellOff, Wrench } from 'lucide-react';
-import { useDND } from '../../contexts/DNDContext';
-import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
+import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  Newspaper,
+  Settings,
+  LogOut,
+  Landmark,
+  LayoutDashboard,
+  CalendarDays,
+  GripVertical,
+  ChevronsRight,
+  ChevronsLeft,
+  BookOpenCheck,
+  Bell,
+  BellOff,
+  Wrench,
+} from "lucide-react";
+import { useDND } from "../../contexts/DNDContext";
+import {
+  getSidebarOrder,
+  setSidebarOrder,
+  type NavTabId,
+} from "../../lib/layoutOrderStorage";
 
-type NavTab = 'feed' | 'analysis' | 'riskflow' | 'dashboard' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
+type NavTab =
+  | "feed"
+  | "analysis"
+  | "riskflow"
+  | "dashboard"
+  | "econ"
+  | "narrative"
+  | "apparatus"
+  | "performance"
+  | "proposals"
+  | "settings";
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -18,11 +46,47 @@ interface NavSidebarProps {
   refinementActive?: boolean;
 }
 
-const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'feed' | 'narrative' | 'apparatus' | 'proposals' | 'performance' | 'settings'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
-  dashboard: { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
-  analysis: { id: 'analysis', icon: Landmark, label: 'Consilium', description: 'Narrative analytics center' },
-  riskflow: { id: 'riskflow', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
-  econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
+const NAV_ITEMS_MAP: Record<
+  Exclude<
+    NavTabId,
+    | "feed"
+    | "narrative"
+    | "apparatus"
+    | "proposals"
+    | "performance"
+    | "settings"
+  >,
+  {
+    id: NavTab;
+    icon: typeof LayoutDashboard;
+    label: string;
+    description: string;
+  }
+> = {
+  dashboard: {
+    id: "dashboard",
+    icon: LayoutDashboard,
+    label: "Dashboard",
+    description: "KPIs, calendar, RiskFlow",
+  },
+  analysis: {
+    id: "analysis",
+    icon: Landmark,
+    label: "Consilium",
+    description: "Narrative analytics center",
+  },
+  riskflow: {
+    id: "riskflow",
+    icon: Newspaper,
+    label: "RiskFlow",
+    description: "Market news & events",
+  },
+  econ: {
+    id: "econ",
+    icon: CalendarDays,
+    label: "Calendar",
+    description: "Economic calendar",
+  },
 };
 
 // Icon size: original was w-6 h-6 (24px). 35% smaller = ~15.6px → w-4 h-4 (16px)
@@ -86,18 +150,18 @@ export function NavSidebar({
   }, [onEditModeChange]);
 
   const handleDragStart = useCallback((e: React.DragEvent, id: NavTabId) => {
-    e.dataTransfer.setData('text/plain', id);
-    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData("text/plain", id);
+    e.dataTransfer.effectAllowed = "move";
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent, targetId: NavTabId) => {
     e.preventDefault();
-    const sourceId = e.dataTransfer.getData('text/plain') as NavTabId | '';
+    const sourceId = e.dataTransfer.getData("text/plain") as NavTabId | "";
     if (!sourceId || sourceId === targetId) return;
     setOrder((prev) => {
       const next = [...prev];
@@ -112,7 +176,10 @@ export function NavSidebar({
   }, []);
 
   const orderedItems = order
-    .filter((id): id is keyof typeof NAV_ITEMS_MAP => id in NAV_ITEMS_MAP && id !== 'performance')
+    .filter(
+      (id): id is keyof typeof NAV_ITEMS_MAP =>
+        id in NAV_ITEMS_MAP && id !== "performance",
+    )
     .map((tabId) => ({
       tabId,
       icon: NAV_ITEMS_MAP[tabId].icon,
@@ -122,9 +189,9 @@ export function NavSidebar({
 
   const sidebarContent = (
     <div
-      style={{ backgroundColor: 'var(--fintheon-surface)' }}
+      style={{ backgroundColor: "var(--fintheon-surface)" }}
       className={`h-full border-r fintheon-accent-border flex flex-col py-3 transition-all duration-200 ease-out ${
-        expanded ? 'w-48' : 'w-11'
+        expanded ? "w-48" : "w-11"
       }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -135,9 +202,13 @@ export function NavSidebar({
           type="button"
           onClick={() => setManualExpand((v) => !v)}
           className="w-full flex items-center justify-center py-1 rounded-md fintheon-nav-inactive transition-colors"
-          title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
+          title={expanded ? "Collapse sidebar" : "Expand sidebar"}
         >
-          {expanded ? <ChevronsLeft className="w-3.5 h-3.5" /> : <ChevronsRight className="w-3.5 h-3.5" />}
+          {expanded ? (
+            <ChevronsLeft className="w-3.5 h-3.5" />
+          ) : (
+            <ChevronsRight className="w-3.5 h-3.5" />
+          )}
         </button>
       </div>
 
@@ -148,12 +219,12 @@ export function NavSidebar({
             onClick={() => setEditMode((v) => !v)}
             className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
               editMode
-                ? 'fintheon-accent-border fintheon-nav-active-light'
-                : 'border-zinc-700 text-zinc-400 fintheon-accent-hover'
+                ? "fintheon-accent-border fintheon-nav-active-light"
+                : "border-zinc-700 text-zinc-400 fintheon-accent-hover"
             }`}
-            title={editMode ? 'Finish reordering' : 'Enable drag reorder'}
+            title={editMode ? "Finish reordering" : "Enable drag reorder"}
           >
-            {editMode ? 'Done' : 'Edit'}
+            {editMode ? "Done" : "Edit"}
           </button>
         </div>
       )}
@@ -164,10 +235,12 @@ export function NavSidebar({
             <div
               key={tabId}
               draggable={expanded && editMode}
-              onDragStart={editMode ? (e) => handleDragStart(e, tabId) : undefined}
+              onDragStart={
+                editMode ? (e) => handleDragStart(e, tabId) : undefined
+              }
               onDragOver={editMode ? handleDragOver : undefined}
               onDrop={editMode ? (e) => handleDrop(e, tabId) : undefined}
-              className={`flex items-center gap-1 rounded-md transition-colors ${expanded ? 'group' : ''}`}
+              className={`flex items-center gap-1 rounded-md transition-colors ${expanded ? "group" : ""}`}
             >
               {expanded && editMode && (
                 <div
@@ -181,21 +254,23 @@ export function NavSidebar({
                 onClick={() => onTabChange(tabId as NavTab)}
                 data-tour-target={tabId}
                 className={`flex-1 w-full flex items-center gap-2.5 rounded-md transition-colors min-w-0 ${
-                  expanded ? 'px-2 py-1.5' : 'justify-center py-1.5 px-0'
+                  expanded ? "px-2 py-1.5" : "justify-center py-1.5 px-0"
                 } ${
-                  isActive
-                    ? 'fintheon-nav-active'
-                    : 'fintheon-nav-inactive'
+                  isActive ? "fintheon-nav-active" : "fintheon-nav-inactive"
                 }`}
                 title={expanded ? undefined : label}
               >
                 <Icon className="w-4 h-4 shrink-0" />
                 {expanded && (
                   <div className="min-w-0 text-left">
-                    <div className={`text-[11px] font-semibold truncate ${isActive ? 'text-black' : ''}`}>
+                    <div
+                      className={`text-[11px] font-semibold truncate ${isActive ? "text-black" : ""}`}
+                    >
                       {label}
                     </div>
-                    <div className={`text-[9px] truncate ${isActive ? 'text-black/60' : 'text-gray-500'}`}>
+                    <div
+                      className={`text-[9px] truncate ${isActive ? "text-black/60" : "text-gray-500"}`}
+                    >
                       {description}
                     </div>
                   </div>
@@ -212,21 +287,25 @@ export function NavSidebar({
           <button
             onClick={onRefinementClick}
             className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
-              expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+              expanded ? "px-2 py-1.5" : "justify-center py-1.5"
             } ${
               refinementActive
-                ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
-                : 'fintheon-nav-inactive'
+                ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
+                : "fintheon-nav-inactive"
             }`}
-            title={expanded ? undefined : 'Refinement Engine'}
+            title={expanded ? undefined : "Refinement Engine"}
           >
             <Wrench className="w-4 h-4 shrink-0" />
             {expanded && (
               <div className="min-w-0 text-left">
-                <div className={`text-[11px] font-semibold truncate ${refinementActive ? 'text-[var(--fintheon-accent)]' : ''}`}>
+                <div
+                  className={`text-[11px] font-semibold truncate ${refinementActive ? "text-[var(--fintheon-accent)]" : ""}`}
+                >
                   Refinement
                 </div>
-                <div className={`text-[9px] truncate ${refinementActive ? 'text-[var(--fintheon-accent)]/60' : 'text-gray-500'}`}>
+                <div
+                  className={`text-[9px] truncate ${refinementActive ? "text-[var(--fintheon-accent)]/60" : "text-gray-500"}`}
+                >
                   Scoring calibration
                 </div>
               </div>
@@ -234,87 +313,107 @@ export function NavSidebar({
           </button>
         )}
         {/* DND / Notification Center — hidden when iFrame active (moved to TopHeader) */}
-        {!topStepXEnabled && <button
-          onClick={() => {
-            if (queueCount > 0) {
-              onNotificationCenterToggle?.();
-            } else {
-              toggleManualDnd();
+        {!topStepXEnabled && (
+          <button
+            onClick={() => {
+              if (queueCount > 0) {
+                onNotificationCenterToggle?.();
+              } else {
+                toggleManualDnd();
+              }
+            }}
+            className={`w-full flex items-center gap-2.5 rounded-md transition-colors relative ${
+              expanded ? "px-2 py-1.5" : "justify-center py-1.5"
+            } ${
+              dndActive
+                ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
+                : "fintheon-nav-inactive"
+            }`}
+            title={
+              expanded
+                ? undefined
+                : dndActive
+                  ? "Do Not Disturb (ON)"
+                  : "Notifications"
             }
-          }}
-          className={`w-full flex items-center gap-2.5 rounded-md transition-colors relative ${
-            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
-          } ${
-            dndActive
-              ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
-              : 'fintheon-nav-inactive'
-          }`}
-          title={expanded ? undefined : dndActive ? 'Do Not Disturb (ON)' : 'Notifications'}
-        >
-          {dndActive ? (
-            <BellOff className="w-4 h-4 shrink-0" />
-          ) : (
-            <Bell className="w-4 h-4 shrink-0" />
-          )}
-          {queueCount > 0 && (
-            <span className="absolute top-0.5 right-0.5 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-red-500/80 text-white text-[9px] font-bold leading-none">
-              {queueCount > 99 ? '99+' : queueCount}
-            </span>
-          )}
-          {expanded && (
-            <div className="min-w-0 text-left">
-              <div className={`text-[11px] font-semibold truncate ${dndActive ? 'text-[var(--fintheon-accent)]' : ''}`}>
-                {dndActive ? 'Do Not Disturb' : 'Notifications'}
+          >
+            {dndActive ? (
+              <BellOff className="w-4 h-4 shrink-0" />
+            ) : (
+              <Bell className="w-4 h-4 shrink-0" />
+            )}
+            {queueCount > 0 && (
+              <span className="absolute top-0.5 right-0.5 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-red-500/80 text-white text-[9px] font-bold leading-none">
+                {queueCount > 99 ? "99+" : queueCount}
+              </span>
+            )}
+            {expanded && (
+              <div className="min-w-0 text-left">
+                <div
+                  className={`text-[11px] font-semibold truncate ${dndActive ? "text-[var(--fintheon-accent)]" : ""}`}
+                >
+                  {dndActive ? "Do Not Disturb" : "Notifications"}
+                </div>
+                <div
+                  className={`text-[9px] truncate ${dndActive ? "text-[var(--fintheon-accent)]/60" : "text-gray-500"}`}
+                >
+                  {dndActive ? `${queueCount} queued` : "Click to enable DND"}
+                </div>
               </div>
-              <div className={`text-[9px] truncate ${dndActive ? 'text-[var(--fintheon-accent)]/60' : 'text-gray-500'}`}>
-                {dndActive ? `${queueCount} queued` : 'Click to enable DND'}
-              </div>
-            </div>
-          )}
-        </button>}
+            )}
+          </button>
+        )}
         {/* Performance */}
         <button
-          onClick={() => onTabChange('performance')}
+          onClick={() => onTabChange("performance")}
           data-tour-target="performance"
           className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
-            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+            expanded ? "px-2 py-1.5" : "justify-center py-1.5"
           } ${
-            activeTab === 'performance'
-              ? 'fintheon-nav-active'
-              : 'fintheon-nav-inactive'
+            activeTab === "performance"
+              ? "fintheon-nav-active"
+              : "fintheon-nav-inactive"
           }`}
-          title={expanded ? undefined : 'Performance'}
+          title={expanded ? undefined : "Performance"}
         >
           <BookOpenCheck className="w-4 h-4 shrink-0" />
           {expanded && (
             <div className="min-w-0 text-left">
-              <div className={`text-[11px] font-semibold truncate ${activeTab === 'performance' ? 'text-black' : ''}`}>
+              <div
+                className={`text-[11px] font-semibold truncate ${activeTab === "performance" ? "text-black" : ""}`}
+              >
                 Performance
               </div>
-              <div className={`text-[9px] truncate ${activeTab === 'performance' ? 'text-black/60' : 'text-gray-500'}`}>
+              <div
+                className={`text-[9px] truncate ${activeTab === "performance" ? "text-black/60" : "text-gray-500"}`}
+              >
                 ER history & KPIs
               </div>
             </div>
           )}
         </button>
         <button
-          onClick={() => onTabChange('settings')}
+          onClick={() => onTabChange("settings")}
           className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
-            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+            expanded ? "px-2 py-1.5" : "justify-center py-1.5"
           } ${
-            activeTab === 'settings'
-              ? 'fintheon-nav-active'
-              : 'fintheon-nav-inactive'
+            activeTab === "settings"
+              ? "fintheon-nav-active"
+              : "fintheon-nav-inactive"
           }`}
-          title={expanded ? undefined : 'Settings'}
+          title={expanded ? undefined : "Settings"}
         >
           <Settings className="w-4 h-4 shrink-0" />
           {expanded && (
             <div className="min-w-0 text-left">
-              <div className={`text-[11px] font-semibold truncate ${activeTab === 'settings' ? 'text-black' : ''}`}>
+              <div
+                className={`text-[11px] font-semibold truncate ${activeTab === "settings" ? "text-black" : ""}`}
+              >
                 Settings
               </div>
-              <div className={`text-[9px] truncate ${activeTab === 'settings' ? 'text-black/60' : 'text-gray-500'}`}>
+              <div
+                className={`text-[9px] truncate ${activeTab === "settings" ? "text-black/60" : "text-gray-500"}`}
+              >
                 Preferences & configuration
               </div>
             </div>
@@ -323,12 +422,14 @@ export function NavSidebar({
         <button
           onClick={onLogout}
           className={`w-full flex items-center gap-2.5 rounded-md text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors ${
-            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+            expanded ? "px-2 py-1.5" : "justify-center py-1.5"
           }`}
-          title={expanded ? undefined : 'Logout'}
+          title={expanded ? undefined : "Logout"}
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          {expanded && <span className="text-[11px] font-semibold">Logout</span>}
+          {expanded && (
+            <span className="text-[11px] font-semibold">Logout</span>
+          )}
         </button>
       </div>
     </div>

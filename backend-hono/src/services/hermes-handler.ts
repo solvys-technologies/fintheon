@@ -9,114 +9,210 @@
  * Architecture: User Message → Hermes → P.I.C. Agent → OpenRouter (Sonnet 4.6) → Response
  */
 
-import { execFile, spawn as spawnProcess } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
-import type { HermesAgentRole } from './hermes-service.js'
-import { getAgentSystemPrompt, extractSkillTag, buildFeedContext, buildReflectContext } from './ai/agent-instructions/index.js'
-import { buildThoughtBankPromptBlock } from './ai/agent-instructions/thought-bank-awareness.js'
-import { createLogger } from '../lib/logger.js'
-import { checkVProxyHealth, isVProxyEnabled } from './strands/index.js'
+import { execFile, spawn as spawnProcess } from "node:child_process";
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import type { HermesAgentRole } from "./hermes-service.js";
+import {
+  getAgentSystemPrompt,
+  extractSkillTag,
+  buildFeedContext,
+  buildReflectContext,
+} from "./ai/agent-instructions/index.js";
+import { buildThoughtBankPromptBlock } from "./ai/agent-instructions/thought-bank-awareness.js";
+import { createLogger } from "../lib/logger.js";
+import { checkVProxyHealth, isVProxyEnabled } from "./strands/index.js";
 
-const log = createLogger('Hermes')
+const log = createLogger("Hermes");
 
 export type ContentPart =
-  | { type: 'text'; text: string }
-  | { type: 'image_url'; image_url: { url: string } }
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
 
 export interface HermesMessage {
-  role: 'user' | 'assistant' | 'system'
-  content: string | ContentPart[]
+  role: "user" | "assistant" | "system";
+  content: string | ContentPart[];
 }
 
 export interface HermesChatRequest {
-  message: string
-  multimodalContent?: ContentPart[]
-  conversationId?: string
-  history?: HermesMessage[]
-  agentOverride?: HermesAgentRole
-  thinkHarder?: boolean
+  message: string;
+  multimodalContent?: ContentPart[];
+  conversationId?: string;
+  history?: HermesMessage[];
+  agentOverride?: HermesAgentRole;
+  thinkHarder?: boolean;
 }
 
 export interface HermesChatResponse {
-  content: string
-  agent: HermesAgentRole
-  confidence: number
+  content: string;
+  agent: HermesAgentRole;
+  confidence: number;
   metadata?: {
-    intent: string
-    symbols?: string[]
-    tradeDirection?: 'long' | 'short' | 'flat'
-    riskLevel?: 'low' | 'medium' | 'high'
-  }
+    intent: string;
+    symbols?: string[];
+    tradeDirection?: "long" | "short" | "flat";
+    riskLevel?: "low" | "medium" | "high";
+  };
 }
 
 // Intent detection patterns
-const INTENT_PATTERNS: { pattern: RegExp; agent: HermesAgentRole; intent: string }[] = [
+const INTENT_PATTERNS: {
+  pattern: RegExp;
+  agent: HermesAgentRole;
+  intent: string;
+}[] = [
   // Harper/CAO triggers
-  { pattern: /\b(earnings.?review|er.?journal|earnings.?journal|post.?earnings.?review)\b/i, agent: 'harper-cao', intent: 'earnings-psych' },
-  { pattern: /\b(mdb|morning.?daily.?brief|daily.?report|morning.?brief)/i, agent: 'harper-cao', intent: 'mdb-report' },
-  { pattern: /\b(trade.?approval|approve|reject|consolidat)/i, agent: 'harper-cao', intent: 'approval' },
-  { pattern: /\b(commandment|rule|13|trading.?rules)/i, agent: 'harper-cao', intent: 'rules' },
-  { pattern: /\b(psych|tilt|emotion|mental|eval)/i, agent: 'harper-cao', intent: 'psych-eval' },
-  { pattern: /\b(weekly.?tribune|tale.?of.?the.?tape|weekly|recap)/i, agent: 'harper-cao', intent: 'weekly-recap' },
+  {
+    pattern:
+      /\b(earnings.?review|er.?journal|earnings.?journal|post.?earnings.?review)\b/i,
+    agent: "harper-cao",
+    intent: "earnings-psych",
+  },
+  {
+    pattern: /\b(mdb|morning.?daily.?brief|daily.?report|morning.?brief)/i,
+    agent: "harper-cao",
+    intent: "mdb-report",
+  },
+  {
+    pattern: /\b(trade.?approval|approve|reject|consolidat)/i,
+    agent: "harper-cao",
+    intent: "approval",
+  },
+  {
+    pattern: /\b(commandment|rule|13|trading.?rules)/i,
+    agent: "harper-cao",
+    intent: "rules",
+  },
+  {
+    pattern: /\b(psych|tilt|emotion|mental|eval)/i,
+    agent: "harper-cao",
+    intent: "psych-eval",
+  },
+  {
+    pattern: /\b(weekly.?tribune|tale.?of.?the.?tape|weekly|recap)/i,
+    agent: "harper-cao",
+    intent: "weekly-recap",
+  },
 
   // Oracle (merged PMA) triggers — S&P, Crypto, Econ, Political
-  { pattern: /\b(spy|spx|s&?p|es|nasdaq|qqq|nq)\b/i, agent: 'pma-merged', intent: 'sp-analysis' },
-  { pattern: /\b(btc|bitcoin|eth|ethereum|crypto)\b/i, agent: 'pma-merged', intent: 'crypto-analysis' },
-  { pattern: /\b(kalshi|prediction.?market|probability)\b/i, agent: 'pma-merged', intent: 'prediction-market' },
-  { pattern: /\b(fed|fomc|rate|inflation|cpi|ppi)\b/i, agent: 'pma-merged', intent: 'fed-analysis' },
-  { pattern: /\b(election|political|policy|tariff)\b/i, agent: 'pma-merged', intent: 'political-analysis' },
-  { pattern: /\b(gdp|employment|jobs|unemployment)\b/i, agent: 'pma-merged', intent: 'econ-analysis' },
+  {
+    pattern: /\b(spy|spx|s&?p|es|nasdaq|qqq|nq)\b/i,
+    agent: "pma-merged",
+    intent: "sp-analysis",
+  },
+  {
+    pattern: /\b(btc|bitcoin|eth|ethereum|crypto)\b/i,
+    agent: "pma-merged",
+    intent: "crypto-analysis",
+  },
+  {
+    pattern: /\b(kalshi|prediction.?market|probability)\b/i,
+    agent: "pma-merged",
+    intent: "prediction-market",
+  },
+  {
+    pattern: /\b(fed|fomc|rate|inflation|cpi|ppi)\b/i,
+    agent: "pma-merged",
+    intent: "fed-analysis",
+  },
+  {
+    pattern: /\b(election|political|policy|tariff)\b/i,
+    agent: "pma-merged",
+    intent: "political-analysis",
+  },
+  {
+    pattern: /\b(gdp|employment|jobs|unemployment)\b/i,
+    agent: "pma-merged",
+    intent: "econ-analysis",
+  },
 
   // Herald triggers (News & Sentiment)
-  { pattern: /\b(sentiment|news|headline|social|twitter)\b/i, agent: 'herald', intent: 'news-sentiment' },
+  {
+    pattern: /\b(sentiment|news|headline|social|twitter)\b/i,
+    agent: "herald",
+    intent: "news-sentiment",
+  },
 
   // Futures Desk triggers
-  { pattern: /(\/nq|\/mnq|\/es|futures|topstep)/i, agent: 'futures-desk', intent: 'futures-trade' },
-  { pattern: /\b(fa.?ripper|ripper|setup|entry|exit)\b/i, agent: 'futures-desk', intent: 'setup-analysis' },
-  { pattern: /\b(technical|chart|support|resistance|ema|vwap)\b/i, agent: 'futures-desk', intent: 'technical' },
+  {
+    pattern: /(\/nq|\/mnq|\/es|futures|topstep)/i,
+    agent: "futures-desk",
+    intent: "futures-trade",
+  },
+  {
+    pattern: /\b(fa.?ripper|ripper|setup|entry|exit)\b/i,
+    agent: "futures-desk",
+    intent: "setup-analysis",
+  },
+  {
+    pattern: /\b(technical|chart|support|resistance|ema|vwap)\b/i,
+    agent: "futures-desk",
+    intent: "technical",
+  },
   // [claude-code 2026-03-23] Browser Use Phase 2 — chart levels skill trigger
-  { pattern: /\b(chart.?level|draw.?line|plot.?entry|plot.?level|mark.?chart|chart.?proposal)\b/i, agent: 'futures-desk', intent: 'chart-levels' },
+  {
+    pattern:
+      /\b(chart.?level|draw.?line|plot.?entry|plot.?level|mark.?chart|chart.?proposal)\b/i,
+    agent: "futures-desk",
+    intent: "chart-levels",
+  },
 
   // Fundamentals Desk triggers
-  { pattern: /\b(aapl|apple|msft|microsoft|nvda|nvidia|googl|google|meta|amzn|amazon|tsla|tesla)\b/i, agent: 'fundamentals-desk', intent: 'stock-analysis' },
-  { pattern: /\b(earnings|guidance|revenue|margin|pe|valuation)\b/i, agent: 'fundamentals-desk', intent: 'earnings' },
-  { pattern: /\b(mega.?cap|mag.?7|big.?tech)\b/i, agent: 'fundamentals-desk', intent: 'megacap' },
-]
+  {
+    pattern:
+      /\b(aapl|apple|msft|microsoft|nvda|nvidia|googl|google|meta|amzn|amazon|tsla|tesla)\b/i,
+    agent: "fundamentals-desk",
+    intent: "stock-analysis",
+  },
+  {
+    pattern: /\b(earnings|guidance|revenue|margin|pe|valuation)\b/i,
+    agent: "fundamentals-desk",
+    intent: "earnings",
+  },
+  {
+    pattern: /\b(mega.?cap|mag.?7|big.?tech)\b/i,
+    agent: "fundamentals-desk",
+    intent: "megacap",
+  },
+];
 
 // Symbol extraction patterns
 const SYMBOL_PATTERNS = [
   /\$([A-Z]{1,5})/g,
   /\b([A-Z]{2,5})\b(?=.*(?:stock|share|price|trade|buy|sell))/gi,
   /\b(\/[A-Z]{2,3})\b/g,
-  /\b(BTC|ETH|SOL|DOGE)\b/gi
-]
+  /\b(BTC|ETH|SOL|DOGE)\b/gi,
+];
 
 /**
  * Detect which P.I.C. agent should handle the message
  */
-export function detectAgent(message: string): { agent: HermesAgentRole; intent: string; confidence: number } {
+export function detectAgent(message: string): {
+  agent: HermesAgentRole;
+  intent: string;
+  confidence: number;
+} {
   for (const { pattern, agent, intent } of INTENT_PATTERNS) {
     if (pattern.test(message)) {
-      return { agent, intent, confidence: 0.85 }
+      return { agent, intent, confidence: 0.85 };
     }
   }
-  return { agent: 'harper-cao', intent: 'general', confidence: 0.6 }
+  return { agent: "harper-cao", intent: "general", confidence: 0.6 };
 }
 
 /**
  * Extract symbols from message
  */
 export function extractSymbols(message: string): string[] {
-  const symbols = new Set<string>()
+  const symbols = new Set<string>();
   for (const pattern of SYMBOL_PATTERNS) {
-    const matches = message.matchAll(pattern)
+    const matches = message.matchAll(pattern);
     for (const match of matches) {
-      symbols.add(match[1].toUpperCase())
+      symbols.add(match[1].toUpperCase());
     }
   }
-  return Array.from(symbols)
+  return Array.from(symbols);
 }
 
 /**
@@ -125,56 +221,59 @@ export function extractSymbols(message: string): string[] {
  */
 export function generateLocalResponse(
   request: HermesChatRequest,
-  agentInfo: { agent: HermesAgentRole; intent: string; confidence: number }
+  agentInfo: { agent: HermesAgentRole; intent: string; confidence: number },
 ): HermesChatResponse {
-  const { agent, intent } = agentInfo
-  const symbols = extractSymbols(request.message)
-  const skillTag = extractSkillTag(request.message)
-  const _agentPrompt = getAgentSystemPrompt(agent, { skillTag, thinkHarder: request.thinkHarder })
+  const { agent, intent } = agentInfo;
+  const symbols = extractSymbols(request.message);
+  const skillTag = extractSkillTag(request.message);
+  const _agentPrompt = getAgentSystemPrompt(agent, {
+    skillTag,
+    thinkHarder: request.thinkHarder,
+  });
 
-  let content: string
-  let tradeDirection: 'long' | 'short' | 'flat' | undefined
-  let riskLevel: 'low' | 'medium' | 'high' | undefined
+  let content: string;
+  let tradeDirection: "long" | "short" | "flat" | undefined;
+  let riskLevel: "low" | "medium" | "high" | undefined;
 
   switch (intent) {
-    case 'mdb-report':
-      content = generateMDBReport()
-      break
-    case 'weekly-recap':
-      content = generateWeeklyRecap()
-      break
-    case 'psych-eval':
-      content = generatePsychEval()
-      break
-    case 'earnings-psych':
-      content = generateFundamentalsAnalysis(symbols, request.message)
-      break
-    case 'rules':
-      content = generateRulesResponse(request.message)
-      break
-    case 'futures-trade':
-    case 'setup-analysis':
-      content = generateFuturesAnalysis(symbols, request.message)
-      tradeDirection = 'flat'
-      riskLevel = 'medium'
-      break
-    case 'stock-analysis':
-    case 'earnings':
-    case 'megacap':
-      content = generateFundamentalsAnalysis(symbols, request.message)
-      break
-    case 'prediction-market':
-    case 'sp-analysis':
-    case 'crypto-analysis':
-      content = generatePMAAnalysis(agent, symbols, request.message)
-      break
-    case 'fed-analysis':
-    case 'political-analysis':
-    case 'econ-analysis':
-      content = generateMacroAnalysis(intent, request.message)
-      break
+    case "mdb-report":
+      content = generateMDBReport();
+      break;
+    case "weekly-recap":
+      content = generateWeeklyRecap();
+      break;
+    case "psych-eval":
+      content = generatePsychEval();
+      break;
+    case "earnings-psych":
+      content = generateFundamentalsAnalysis(symbols, request.message);
+      break;
+    case "rules":
+      content = generateRulesResponse(request.message);
+      break;
+    case "futures-trade":
+    case "setup-analysis":
+      content = generateFuturesAnalysis(symbols, request.message);
+      tradeDirection = "flat";
+      riskLevel = "medium";
+      break;
+    case "stock-analysis":
+    case "earnings":
+    case "megacap":
+      content = generateFundamentalsAnalysis(symbols, request.message);
+      break;
+    case "prediction-market":
+    case "sp-analysis":
+    case "crypto-analysis":
+      content = generatePMAAnalysis(agent, symbols, request.message);
+      break;
+    case "fed-analysis":
+    case "political-analysis":
+    case "econ-analysis":
+      content = generateMacroAnalysis(intent, request.message);
+      break;
     default:
-      content = generateGeneralResponse(agent, request.message)
+      content = generateGeneralResponse(agent, request.message);
   }
 
   return {
@@ -185,15 +284,18 @@ export function generateLocalResponse(
       intent,
       symbols: symbols.length > 0 ? symbols : undefined,
       tradeDirection,
-      riskLevel
-    }
-  }
+      riskLevel,
+    },
+  };
 }
 
 // Response generators
 
 function generateMDBReport(): string {
-  const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  const time = new Date().toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   return `## MDB Report - ${time}
 
 ### Market Status
@@ -211,7 +313,7 @@ function generateMDBReport(): string {
 ### Today's Focus
 *Hermes is now connected. Agent pipeline ready.*
 
-**Next Steps**: Run "Check the Tape" for real-time market data, or ask about specific setups.`
+**Next Steps**: Run "Check the Tape" for real-time market data, or ask about specific setups.`;
 }
 
 function generateWeeklyRecap(): string {
@@ -233,7 +335,7 @@ function generateWeeklyRecap(): string {
 2. Good traders buy from good prices (Rule 8)
 3. No shot in the dark trades (Rule 3)
 
-*Full analytics available once trading data is synced.*`
+*Full analytics available once trading data is synced.*`;
 }
 
 function generatePsychEval(): string {
@@ -253,7 +355,7 @@ function generatePsychEval(): string {
 > "There is always another trade" (Rule 1)
 > "Be right or be right out" (Rule 12)
 
-*Share your thoughts and I'll provide a detailed assessment.*`
+*Share your thoughts and I'll provide a detailed assessment.*`;
 }
 
 function generateRulesResponse(_message: string): string {
@@ -270,20 +372,20 @@ function generateRulesResponse(_message: string): string {
     "10. Only fight for things worth fighting for",
     "11. Some days there is nothing to do",
     "12. Be right or be right out",
-    "13. There is always another trade"
-  ]
+    "13. There is always another trade",
+  ];
 
   return `## The 13 Commandments of P.I.C.
 
-${commandments.join('\n')}
+${commandments.join("\n")}
 
 ---
-*These rules define our trading discipline. Which one would you like to discuss?*`
+*These rules define our trading discipline. Which one would you like to discuss?*`;
 }
 
 function generateFuturesAnalysis(symbols: string[], _message: string): string {
-  const futures = symbols.filter(s => s.startsWith('/'))
-  const symbol = futures[0] || '/NQ'
+  const futures = symbols.filter((s) => s.startsWith("/"));
+  const symbol = futures[0] || "/NQ";
 
   return `## Futures Desk Analysis: ${symbol}
 
@@ -306,11 +408,14 @@ function generateFuturesAnalysis(symbols: string[], _message: string): string {
 - Position sizing: Follow max loss rules
 - Conviction level: Needs more data
 
-*Connect TopStepX data for live analysis.*`
+*Connect TopStepX data for live analysis.*`;
 }
 
-function generateFundamentalsAnalysis(symbols: string[], _message: string): string {
-  const symbol = symbols[0] || 'TECH'
+function generateFundamentalsAnalysis(
+  symbols: string[],
+  _message: string,
+): string {
+  const symbol = symbols[0] || "TECH";
 
   return `## Fundamentals Desk: ${symbol}
 
@@ -325,11 +430,15 @@ function generateFundamentalsAnalysis(symbols: string[], _message: string): stri
 ### Investment Thesis
 **Current View**: Awaiting analysis completion
 
-*For real-time fundamentals, ensure data feeds are connected.*`
+*For real-time fundamentals, ensure data feeds are connected.*`;
 }
 
-function generatePMAAnalysis(agent: HermesAgentRole, _symbols: string[], _message: string): string {
-  const focus = 'S&P 500, Crypto, Economic & Political'
+function generatePMAAnalysis(
+  agent: HermesAgentRole,
+  _symbols: string[],
+  _message: string,
+): string {
+  const focus = "S&P 500, Crypto, Economic & Political";
 
   return `## Oracle (All-Seer) Analysis: ${focus}
 
@@ -342,12 +451,16 @@ function generatePMAAnalysis(agent: HermesAgentRole, _symbols: string[], _messag
 ### Trade Ideas
 *Scan for high-probability setups once data syncs*
 
-*Connect Kalshi API for live prediction market data.*`
+*Connect Kalshi API for live prediction market data.*`;
 }
 
 function generateMacroAnalysis(intent: string, _message: string): string {
-  const topic = intent === 'fed-analysis' ? 'Federal Reserve' :
-    intent === 'political-analysis' ? 'Political Events' : 'Economic Data'
+  const topic =
+    intent === "fed-analysis"
+      ? "Federal Reserve"
+      : intent === "political-analysis"
+        ? "Political Events"
+        : "Economic Data";
 
   return `## Macro Analysis: ${topic}
 
@@ -362,17 +475,20 @@ function generateMacroAnalysis(intent: string, _message: string): string {
 - Volatility expectation: Moderate
 - Position adjustments: None recommended yet
 
-*For real-time macro analysis, connect to news and economic data feeds.*`
+*For real-time macro analysis, connect to news and economic data feeds.*`;
 }
 
-function generateGeneralResponse(agent: HermesAgentRole, _message: string): string {
+function generateGeneralResponse(
+  agent: HermesAgentRole,
+  _message: string,
+): string {
   const agentName = {
-    'harper-cao': 'Harper-Opus (CAO)',
-    'pma-merged': 'Oracle (All-Seer)',
-    'futures-desk': 'Feucht (Futures & Risk)',
-    'fundamentals-desk': 'Consul (Fundamentals)',
-    'herald': 'Herald (News & Sentiment)'
-  }[agent]
+    "harper-cao": "Harper-Opus (CAO)",
+    "pma-merged": "Oracle (All-Seer)",
+    "futures-desk": "Feucht (Futures & Risk)",
+    "fundamentals-desk": "Consul (Fundamentals)",
+    herald: "Herald (News & Sentiment)",
+  }[agent];
 
   return `## ${agentName} Response
 
@@ -381,131 +497,171 @@ I'm ${agentName}, part of the Hermes P.I.C. agent network.
 Your message has been received. Here's what I can help with:
 
 **My Capabilities:**
-${agent === 'harper-cao' ? '- MDB Reports & Daily Briefings\n- Trade Approvals\n- Psych Evaluations\n- Trading Rules & Discipline' : ''}
-${agent === 'pma-merged' ? '- S&P 500 & Crypto prediction markets\n- Fed/FOMC & macro analysis\n- Political event impact\n- Kalshi contract evaluation' : ''}
-${agent === 'futures-desk' ? '- /NQ, /ES, /MNQ trading\n- FA Ripper setups\n- Technical analysis\n- Risk management & exposure monitoring' : ''}
-${agent === 'fundamentals-desk' ? '- Mega-cap tech analysis\n- Earnings deep-dives\n- Valuation models' : ''}
-${agent === 'herald' ? '- News sentiment analysis\n- Social signal detection\n- Headline impact assessment' : ''}
+${agent === "harper-cao" ? "- MDB Reports & Daily Briefings\n- Trade Approvals\n- Psych Evaluations\n- Trading Rules & Discipline" : ""}
+${agent === "pma-merged" ? "- S&P 500 & Crypto prediction markets\n- Fed/FOMC & macro analysis\n- Political event impact\n- Kalshi contract evaluation" : ""}
+${agent === "futures-desk" ? "- /NQ, /ES, /MNQ trading\n- FA Ripper setups\n- Technical analysis\n- Risk management & exposure monitoring" : ""}
+${agent === "fundamentals-desk" ? "- Mega-cap tech analysis\n- Earnings deep-dives\n- Valuation models" : ""}
+${agent === "herald" ? "- News sentiment analysis\n- Social signal detection\n- Headline impact assessment" : ""}
 
-*Hermes local processing is active.*`
+*Hermes local processing is active.*`;
 }
 
-const OPENROUTER_OPUS_MODEL = 'anthropic/claude-sonnet-4-6'
-let hermesAvailable = false
+const OPENROUTER_OPUS_MODEL = "anthropic/claude-sonnet-4-6";
+let hermesAvailable = false;
 
 export function isHermesAvailable(): boolean {
-  return hermesAvailable
+  return hermesAvailable;
 }
 
 /** Map HermesAgentRole to display name for thought bank queries */
 const BOARDROOM_AGENT_NAMES: Record<string, string> = {
-  'harper-cao': 'Harper-Opus',
-  'futures-desk': 'Feucht',
-  'fundamentals-desk': 'Consul',
-  'pma-merged': 'Oracle',
-  'herald': 'Herald',
-}
+  "harper-cao": "Harper-Opus",
+  "futures-desk": "Feucht",
+  "fundamentals-desk": "Consul",
+  "pma-merged": "Oracle",
+  herald: "Herald",
+};
 
 /**
  * Main handler — routes through OpenRouter (Nous subscription) + Claude Sonnet 4.6
  */
-export async function handleHermesChat(request: HermesChatRequest): Promise<HermesChatResponse> {
+export async function handleHermesChat(
+  request: HermesChatRequest,
+): Promise<HermesChatResponse> {
   const agentInfo = request.agentOverride
-    ? { agent: request.agentOverride, intent: 'override', confidence: 1.0 }
-    : detectAgent(request.message)
+    ? { agent: request.agentOverride, intent: "override", confidence: 1.0 }
+    : detectAgent(request.message);
 
-  const skillTag = extractSkillTag(request.message)
-  const basePrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
+  const skillTag = extractSkillTag(request.message);
+  const basePrompt = getAgentSystemPrompt(agentInfo.agent, {
+    skillTag,
+    thinkHarder: request.thinkHarder,
+  });
   // Inject live RiskFlow headlines so agents can reference real-time data
-  const feedContext = await buildFeedContext()
+  const feedContext = await buildFeedContext();
   // REFLECT context — news analysis quality report (only for Harper standups)
-  const reflectContext = agentInfo.agent === 'harper-cao' ? await buildReflectContext() : ''
+  const reflectContext =
+    agentInfo.agent === "harper-cao" ? await buildReflectContext() : "";
   // Cross-agent thought bank awareness — what other agents are thinking
-  const agentDisplayName = BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? 'Harper-Opus'
-  const thoughtBankBlock = await buildThoughtBankPromptBlock(agentDisplayName)
-  const systemPrompt = basePrompt + feedContext + reflectContext + thoughtBankBlock
+  const agentDisplayName =
+    BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? "Harper-Opus";
+  const thoughtBankBlock = await buildThoughtBankPromptBlock(agentDisplayName);
+  const systemPrompt =
+    basePrompt + feedContext + reflectContext + thoughtBankBlock;
   const messages: { role: string; content: string | ContentPart[] }[] = [
-    { role: 'system', content: systemPrompt }
-  ]
+    { role: "system", content: systemPrompt },
+  ];
 
   if (request.history?.length) {
-    messages.push(...request.history.map(h => ({ role: h.role, content: h.content })))
+    messages.push(
+      ...request.history.map((h) => ({ role: h.role, content: h.content })),
+    );
   }
 
   if (request.multimodalContent?.length) {
-    messages.push({ role: 'user', content: request.multimodalContent })
+    messages.push({ role: "user", content: request.multimodalContent });
   } else {
-    messages.push({ role: 'user', content: request.message })
+    messages.push({ role: "user", content: request.message });
   }
 
   // Primary for Harper: Anthropic via VProxy (subscription OAuth)
-  const claudePrompt = systemPrompt + '\n\n' + messages.filter(m => m.role === 'user').map(m => typeof m.content === 'string' ? m.content : '[multimodal]').join('\n')
+  const claudePrompt =
+    systemPrompt +
+    "\n\n" +
+    messages
+      .filter((m) => m.role === "user")
+      .map((m) => (typeof m.content === "string" ? m.content : "[multimodal]"))
+      .join("\n");
 
   try {
-    const { generateTextViaClaude } = await import('./claude-sdk/process-manager.js')
-    const shouldUseHarperProvider = agentInfo.agent === 'harper-cao'
+    const { generateTextViaClaude } =
+      await import("./claude-sdk/process-manager.js");
+    const shouldUseHarperProvider = agentInfo.agent === "harper-cao";
     if (shouldUseHarperProvider) {
-      log.info('Calling Harper provider (Anthropic via VProxy preferred)', { agent: agentInfo.agent })
-      const content = await generateTextViaClaude(claudePrompt, { timeoutMs: 60_000 })
+      log.info("Calling Harper provider (Anthropic via VProxy preferred)", {
+        agent: agentInfo.agent,
+      });
+      const content = await generateTextViaClaude(claudePrompt, {
+        timeoutMs: 60_000,
+      });
 
       if (content) {
-        log.info('Harper provider response received', { preview: content.substring(0, 50) })
+        log.info("Harper provider response received", {
+          preview: content.substring(0, 50),
+        });
         return {
           content,
           agent: agentInfo.agent,
           confidence: agentInfo.confidence,
-          metadata: { intent: agentInfo.intent, symbols: extractSymbols(request.message) }
-        }
+          metadata: {
+            intent: agentInfo.intent,
+            symbols: extractSymbols(request.message),
+          },
+        };
       }
     }
   } catch (cliErr) {
-    log.warn('Harper provider failed, falling back to OpenRouter', { error: String(cliErr) })
+    log.warn("Harper provider failed, falling back to OpenRouter", {
+      error: String(cliErr),
+    });
   }
 
   // Fallback: OpenRouter
-  const apiKey = process.env.OPENROUTER_API_KEY ?? ''
-  const baseUrl = 'https://openrouter.ai/api/v1'
+  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
+  const baseUrl = "https://openrouter.ai/api/v1";
 
   if (!apiKey) {
-    log.warn('OPENROUTER_API_KEY not set and Claude CLI failed, using local fallback')
-    return generateLocalResponse(request, agentInfo)
+    log.warn(
+      "OPENROUTER_API_KEY not set and Claude CLI failed, using local fallback",
+    );
+    return generateLocalResponse(request, agentInfo);
   }
 
-  log.info('Calling OpenRouter', { agent: agentInfo.agent, messages: messages.length })
+  log.info("Calling OpenRouter", {
+    agent: agentInfo.agent,
+    messages: messages.length,
+  });
 
   try {
     const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
-        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer":
+          process.env.OPENROUTER_APP_URL ??
+          "https://fintheon-solvys.vercel.app",
+        "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
       },
       body: JSON.stringify({
         model: OPENROUTER_OPUS_MODEL,
         messages,
         max_tokens: 8192,
       }),
-    })
+    });
 
     if (!response.ok) {
-      const errorText = await response.text()
-      log.error('OpenRouter error', { status: response.status, body: errorText })
-      return generateLocalResponse(request, agentInfo)
+      const errorText = await response.text();
+      log.error("OpenRouter error", {
+        status: response.status,
+        body: errorText,
+      });
+      return generateLocalResponse(request, agentInfo);
     }
 
-    const data = await response.json() as {
-      choices?: { message?: { content?: string } }[]
-    }
-    const content = data.choices?.[0]?.message?.content ?? ''
+    const data = (await response.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const content = data.choices?.[0]?.message?.content ?? "";
 
     if (!content) {
-      log.warn('Empty response from OpenRouter, using local fallback')
-      return generateLocalResponse(request, agentInfo)
+      log.warn("Empty response from OpenRouter, using local fallback");
+      return generateLocalResponse(request, agentInfo);
     }
 
-    log.info('OpenRouter response received', { preview: content.substring(0, 50) })
+    log.info("OpenRouter response received", {
+      preview: content.substring(0, 50),
+    });
 
     return {
       content,
@@ -513,12 +669,12 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
       confidence: agentInfo.confidence,
       metadata: {
         intent: agentInfo.intent,
-        symbols: extractSymbols(request.message)
-      }
-    }
+        symbols: extractSymbols(request.message),
+      },
+    };
   } catch (error) {
-    log.error('OpenRouter request failed', { error: String(error) })
-    return generateLocalResponse(request, agentInfo)
+    log.error("OpenRouter request failed", { error: String(error) });
+    return generateLocalResponse(request, agentInfo);
   }
 }
 
@@ -528,108 +684,145 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
  * 2. Warm up OpenRouter (Sonnet 4.6) connection with a Harper (CAO) ping
  */
 export async function initHermesAgent(): Promise<void> {
-  const hermesEnabled = process.env.HERMES_ENABLED !== 'false'
-  const hermesConfigPath = join(homedir(), '.hermes', 'config.yaml')
-  const hermesConfigExists = existsSync(hermesConfigPath)
-  hermesAvailable = hermesEnabled && hermesConfigExists
+  const hermesEnabled = process.env.HERMES_ENABLED !== "false";
+  const hermesConfigPath = join(homedir(), ".hermes", "config.yaml");
+  const hermesConfigExists = existsSync(hermesConfigPath);
+  hermesAvailable = hermesEnabled && hermesConfigExists;
 
   if (!hermesAvailable) {
-    log.info('Hermes plugin not available', {
+    log.info("Hermes plugin not available", {
       hermesEnabled,
       hermesConfigPath,
       hermesConfigExists,
-    })
-    return
+    });
+    return;
   }
 
-  const hermesBin = process.env.HERMES_BINARY_PATH ?? 'hermes'
+  const hermesBin = process.env.HERMES_BINARY_PATH ?? "hermes";
 
   try {
     const gatewayRunning = await new Promise<boolean>((resolve) => {
-      const child = execFile(hermesBin, ['gateway', 'status'], { timeout: 5_000 }, (err, stdout) => {
-        if (err) { resolve(false); return }
-        resolve(stdout.toLowerCase().includes('running'))
-      })
-      child.on('error', () => resolve(false))
-    })
+      const child = execFile(
+        hermesBin,
+        ["gateway", "status"],
+        { timeout: 5_000 },
+        (err, stdout) => {
+          if (err) {
+            resolve(false);
+            return;
+          }
+          resolve(stdout.toLowerCase().includes("running"));
+        },
+      );
+      child.on("error", () => resolve(false));
+    });
     if (!gatewayRunning) {
-      log.info('Gateway not running — starting')
+      log.info("Gateway not running — starting");
       try {
-        const gw = spawnProcess(hermesBin, ['gateway', 'start'], { stdio: 'ignore', detached: true })
-        gw.on('error', () => {}) // swallow spawn errors (binary not found in production)
-        gw.unref()
-        log.info('Gateway start dispatched', { pid: gw.pid })
+        const gw = spawnProcess(hermesBin, ["gateway", "start"], {
+          stdio: "ignore",
+          detached: true,
+        });
+        gw.on("error", () => {}); // swallow spawn errors (binary not found in production)
+        gw.unref();
+        log.info("Gateway start dispatched", { pid: gw.pid });
       } catch {
-        log.warn('Hermes binary not found — gateway launch skipped (expected in cloud deployment)')
+        log.warn(
+          "Hermes binary not found — gateway launch skipped (expected in cloud deployment)",
+        );
       }
     } else {
-      log.info('Gateway already running')
+      log.info("Gateway already running");
     }
   } catch (err) {
-    log.warn('Gateway launch skipped (non-fatal)', { error: err instanceof Error ? err.message : String(err) })
+    log.warn("Gateway launch skipped (non-fatal)", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   if (isVProxyEnabled()) {
     try {
-      const vproxyHealth = await checkVProxyHealth(true)
+      const vproxyHealth = await checkVProxyHealth(true);
       if (vproxyHealth.available) {
-        log.info('VProxy warm-up complete (Strands ready)')
-        return
+        log.info("VProxy warm-up complete (Strands ready)");
+        return;
       }
-      log.warn('VProxy warm-up failed (non-fatal)', { error: vproxyHealth.error })
+      log.warn("VProxy warm-up failed (non-fatal)", {
+        error: vproxyHealth.error,
+      });
     } catch (error) {
-      log.warn('VProxy warm-up failed (non-fatal)', { error: error instanceof Error ? error.message : String(error) })
+      log.warn("VProxy warm-up failed (non-fatal)", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY ?? ''
+  const apiKey = process.env.OPENROUTER_API_KEY ?? "";
   if (!apiKey) {
-    log.info('OPENROUTER_API_KEY not set — skipping OpenRouter warm-up')
-    return
+    log.info("OPENROUTER_API_KEY not set — skipping OpenRouter warm-up");
+    return;
   }
 
   try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 15_000)
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
-        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer":
+            process.env.OPENROUTER_APP_URL ??
+            "https://fintheon-solvys.vercel.app",
+          "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
+        },
+        body: JSON.stringify({
+          model: OPENROUTER_OPUS_MODEL,
+          messages: [
+            {
+              role: "system",
+              content: "You are Harper, CAO of Priced In Capital.",
+            },
+            {
+              role: "user",
+              content:
+                "[SYSTEM] Agent initialization ping — confirm availability.",
+            },
+          ],
+          max_tokens: 64,
+        }),
+        signal: controller.signal,
       },
-      body: JSON.stringify({
-        model: OPENROUTER_OPUS_MODEL,
-        messages: [
-          { role: 'system', content: 'You are Harper, CAO of Priced In Capital.' },
-          { role: 'user', content: '[SYSTEM] Agent initialization ping — confirm availability.' },
-        ],
-        max_tokens: 64,
-      }),
-      signal: controller.signal,
-    })
-    clearTimeout(timeout)
+    );
+    clearTimeout(timeout);
     if (response.ok) {
-      log.info('OpenRouter warm-up complete (harper-cao ready)')
+      log.info("OpenRouter warm-up complete (harper-cao ready)");
     } else {
-      log.warn('OpenRouter warm-up failed (non-fatal)', { status: response.status })
+      log.warn("OpenRouter warm-up failed (non-fatal)", {
+        status: response.status,
+      });
     }
   } catch (error) {
-    log.warn('OpenRouter warm-up failed (non-fatal)', { error: error instanceof Error ? error.message : String(error) })
+    log.warn("OpenRouter warm-up failed (non-fatal)", {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
 /**
  * Stream Hermes response
  */
-export async function* streamHermesChat(request: HermesChatRequest): AsyncGenerator<string> {
-  const response = await handleHermesChat(request)
-  const content = response.content
-  const chunkSize = 20
+export async function* streamHermesChat(
+  request: HermesChatRequest,
+): AsyncGenerator<string> {
+  const response = await handleHermesChat(request);
+  const content = response.content;
+  const chunkSize = 20;
 
   for (let i = 0; i < content.length; i += chunkSize) {
-    yield content.slice(i, i + chunkSize)
-    await new Promise(resolve => setTimeout(resolve, 10))
+    yield content.slice(i, i + chunkSize);
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
 }

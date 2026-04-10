@@ -5,22 +5,36 @@
  * Exports match rithmic-service.ts contract so trading-service can call polymorphically.
  */
 
-import type { HyperliquidConnectionStatus, HyperliquidPosition } from '../types/hyperliquid.js';
-import * as client from './hyperliquid/client.js';
-import { hasCredentials as authHasCredentials, getWalletAddress } from './hyperliquid/auth.js';
+import type {
+  HyperliquidConnectionStatus,
+  HyperliquidPosition,
+} from "../types/hyperliquid.js";
+import * as client from "./hyperliquid/client.js";
+import {
+  hasCredentials as authHasCredentials,
+  getWalletAddress,
+} from "./hyperliquid/auth.js";
 
 /**
  * Normalize instrument symbols to Hyperliquid coin format.
  * Strips leading "/" and common futures prefixes, uppercases.
  */
 function normalizeSymbol(symbol: string): string {
-  let s = symbol.trim().replace(/^\//, '').toUpperCase();
+  let s = symbol.trim().replace(/^\//, "").toUpperCase();
   // Common futures → crypto mappings
   const aliasMap: Record<string, string> = {
-    BTCUSD: 'BTC', ETHUSD: 'ETH', SOLUSD: 'SOL',
-    'BTC-USD': 'BTC', 'ETH-USD': 'ETH', 'SOL-USD': 'SOL',
-    'BTC-PERP': 'BTC', 'ETH-PERP': 'ETH', 'SOL-PERP': 'SOL',
-    BTCUSDT: 'BTC', ETHUSDT: 'ETH', SOLUSDT: 'SOL',
+    BTCUSD: "BTC",
+    ETHUSD: "ETH",
+    SOLUSD: "SOL",
+    "BTC-USD": "BTC",
+    "ETH-USD": "ETH",
+    "SOL-USD": "SOL",
+    "BTC-PERP": "BTC",
+    "ETH-PERP": "ETH",
+    "SOL-PERP": "SOL",
+    BTCUSDT: "BTC",
+    ETHUSDT: "ETH",
+    SOLUSDT: "SOL",
   };
   if (aliasMap[s]) s = aliasMap[s];
   return s;
@@ -30,12 +44,15 @@ export function hasCredentials(_userId: string): boolean {
   return authHasCredentials();
 }
 
-export async function getConnectionStatus(_userId: string): Promise<HyperliquidConnectionStatus> {
+export async function getConnectionStatus(
+  _userId: string,
+): Promise<HyperliquidConnectionStatus> {
   try {
     await client.getMeta();
-    return { connected: true, message: 'Hyperliquid API reachable' };
+    return { connected: true, message: "Hyperliquid API reachable" };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Hyperliquid API unreachable';
+    const msg =
+      err instanceof Error ? err.message : "Hyperliquid API unreachable";
     return { connected: false, message: msg };
   }
 }
@@ -44,7 +61,7 @@ export async function executeOrder(
   _userId: string,
   params: {
     symbol: string;
-    direction: 'long' | 'short';
+    direction: "long" | "short";
     quantity: number;
     entryPrice?: number;
     stopLoss?: number;
@@ -57,7 +74,7 @@ export async function executeOrder(
     await client.warmCache();
 
     const coin = normalizeSymbol(params.symbol);
-    const isBuy = params.direction === 'long';
+    const isBuy = params.direction === "long";
 
     // Market order: IOC limit at a wide slippage price
     const slippagePx = isBuy ? 999_999 : 0.01;
@@ -68,41 +85,54 @@ export async function executeOrder(
       sz: params.quantity,
       limit_px: params.entryPrice ?? slippagePx,
       order_type: params.entryPrice
-        ? { limit: { tif: 'Gtc' } }   // limit order if entry price specified
-        : { limit: { tif: 'Ioc' } },   // market-like IOC otherwise
+        ? { limit: { tif: "Gtc" } } // limit order if entry price specified
+        : { limit: { tif: "Ioc" } }, // market-like IOC otherwise
       reduce_only: false,
       cloid: `FINTHEON-${Date.now()}`,
     });
 
-    if (result.status !== 'ok') {
-      return { success: false, error: result.error ?? 'Hyperliquid order rejected' };
+    if (result.status !== "ok") {
+      return {
+        success: false,
+        error: result.error ?? "Hyperliquid order rejected",
+      };
     }
 
     const statuses = result.response?.data?.statuses ?? [];
     const filled = statuses[0]?.filled;
     const resting = statuses[0]?.resting;
-    const orderId = filled?.oid?.toString() ?? resting?.oid?.toString() ?? `HL-${Date.now()}`;
+    const orderId =
+      filled?.oid?.toString() ?? resting?.oid?.toString() ?? `HL-${Date.now()}`;
 
     return { success: true, orderId };
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Hyperliquid order error';
+    const message =
+      err instanceof Error ? err.message : "Hyperliquid order error";
     return { success: false, error: message };
   }
 }
 
-export async function getPositions(_userId: string): Promise<HyperliquidPosition[]> {
+export async function getPositions(
+  _userId: string,
+): Promise<HyperliquidPosition[]> {
   const wallet = getWalletAddress();
   return client.getPositions(wallet);
 }
 
-export async function closePosition(_userId: string, coin: string): Promise<{ success: boolean; error?: string }> {
+export async function closePosition(
+  _userId: string,
+  coin: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     await client.warmCache();
     const normalized = normalizeSymbol(coin);
     const result = await client.closePosition(normalized);
-    return { success: result.status === 'ok' };
+    return { success: result.status === "ok" };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Close position error' };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Close position error",
+    };
   }
 }
 

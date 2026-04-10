@@ -10,6 +10,7 @@
 ## Context
 
 The "Liquidity + Delta Overlay (Priced In Research)" is an existing Pine v6 overlay indicator with 3 components:
+
 1. **Liquidity Swings** — pivot-based swing high/low zones with volume labels
 2. **Volume Delta Candles** — sub-bar volume delta visualization
 3. **EMA Cross + Retest** — 20/100 EMA with retest signals
@@ -39,18 +40,21 @@ This is a NEW file containing the upgraded indicator. Do NOT modify the user's l
 ### Fix 1: Remove "Retest" Text — Use Label Up/Down
 
 **Current code (lines ~213-214):**
+
 ```pine
 plotshape(showSignals and bullRetest ? low : na, "Bull Retest", shape.triangleup, location.belowbar, colUpVD, size = size.small, text = "Retest", textcolor = colUpVD)
 plotshape(showSignals and bearRetest ? high : na, "Bear Retest", shape.triangledown, location.abovebar, colDnVD, size = size.small, text = "Retest", textcolor = colDnVD)
 ```
 
 **Change to:**
+
 ```pine
 plotshape(showSignals and bullRetest ? low : na, "Bull Retest", shape.labelup, location.belowbar, colUpVD, size = size.normal)
 plotshape(showSignals and bearRetest ? high : na, "Bear Retest", shape.labeldown, location.abovebar, colDnVD, size = size.normal)
 ```
 
 Key changes:
+
 - `shape.triangleup` → `shape.labelup`
 - `shape.triangledown` → `shape.labeldown`
 - Remove `text = "Retest"` and `textcolor` entirely
@@ -100,12 +104,14 @@ else
 **Current:** Hardcoded `linewidth = 1` (fast) and `linewidth = 2` (slow).
 
 **Add inputs:**
+
 ```pine
 widthFast = input.int(1, 'Fast EMA Width', minval = 1, maxval = 5, group = grp3)
 widthSlow = input.int(2, 'Slow EMA Width', minval = 1, maxval = 5, group = grp3)
 ```
 
 **Update plots:**
+
 ```pine
 plot(showEMA ? fEMA : na, "Fast EMA", color = colFast, linewidth = widthFast)
 plot(showEMA ? sEMA : na, "Slow EMA", color = colSlow, linewidth = widthSlow)
@@ -116,6 +122,7 @@ Default: Slow (2) is 2x thicker than Fast (1).
 ### Fix 4: Default Colors Match Current Config
 
 Keep all current defaults exactly as they are in the code:
+
 - Fast EMA: `color.white`
 - Slow EMA: `#5b9cf6`
 - Up: `#089981`
@@ -128,6 +135,7 @@ Do NOT change any default color values.
 ### Fix 5: Volume Labels Showing "0" (BUG)
 
 **Root cause:** In `get_counts()`, when a new pivot fires (`not na(condition)`), it resets `count := 0.0, vol := 0.0`. The counting then only accumulates on SUBSEQUENT bars where `low[lengthLS] < top and high[lengthLS] > btm`. But the pivot bar itself — the bar that created the zone — is never counted because:
+
 1. On the pivot confirmation bar, the condition is `not na(condition)` so it resets to 0
 2. The `[lengthLS]` offset means it checks bars BEFORE the current bar, but the zone boundaries were just set from those same bars
 
@@ -166,6 +174,7 @@ Also verify: on higher timeframes (15m+), the zone width calculation `high[lengt
 ### Feature 1: Dual-Timeframe Liquidity + Staleness
 
 **New input group:**
+
 ```pine
 grp_lq_adv     = "1b. Liquidity Advanced"
 staleness_bars  = input.int(200, "Zone Staleness (bars)", group = grp_lq_adv, tooltip = "Zones older than this many bars are removed. Swept zones are removed immediately.")
@@ -177,30 +186,36 @@ confluence_tol   = input.float(0.5, "Confluence ATR Tolerance", group = grp_lq_a
 ```
 
 **Staleness logic:**
+
 - When `ph_crossed` or `pl_crossed` flips true → **immediately delete** the line AND box for that zone. Gone. No fading.
 - Zones older than `staleness_bars` → delete line + box on that bar.
 - Check zone age: `bar_index - zone_creation_bar > staleness_bars`
 
 **HTF Liquidity layer:**
+
 ```pine
 // Fetch HTF pivots
 [htf_ph, htf_pl, htf_high, htf_low] = request.security(syminfo.tickerid, htf_lq_tf, [ta.pivothigh(lengthLS, lengthLS), ta.pivotlow(lengthLS, lengthLS), high, low])
 ```
+
 - Render HTF zones as dimmer red boxes/lines (same visual structure as chart-TF zones but with `htf_lq_color`)
 - HTF zones also obey staleness and sweep-deletion rules
 
 **Confluence detection:**
 When a chart-TF zone level is within `confluence_tol * ATR` of an HTF zone level:
+
 ```pine
 float atr_val = ta.atr(14)
 bool is_confluence = math.abs(chart_zone_level - htf_zone_level) <= atr_val * confluence_tol
 ```
+
 - Both the chart-TF and HTF zone turn **bright orange** (`confluence_color`)
 - This is the highest-conviction signal — two timeframes of liquidity stacking at the same level
 
 ### Feature 2: Swept Zone Labels
 
 When a zone gets swept (price breaks through and `ph_crossed`/`pl_crossed` flips true):
+
 - Place a small gold (`#c79f4a`) label icon at the sweep point
 - Swing high swept → `label.style_label_down` at the high
 - Swing low swept → `label.style_label_up` at the low
@@ -224,6 +239,7 @@ show_htf_cross   = input.bool(true, "Show HTF EMA Cross Labels", group = grp_htf
 ```
 
 **Logic:**
+
 ```pine
 // Separate request.security for HTF EMA monitoring (independent of user's chart EMA settings)
 htf_ema_func() => [ta.ema(close, 20), ta.ema(close, 100)]

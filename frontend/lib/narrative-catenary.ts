@@ -20,7 +20,11 @@ function distance(a: Point, b: Point): number {
  * Compute a catenary-approximating cubic bezier between two points.
  * Uses a quadratic sag model for natural hanging-rope appearance.
  */
-export function computeCatenary(from: Point, to: Point, sag = 0.3): CatenaryPath {
+export function computeCatenary(
+  from: Point,
+  to: Point,
+  sag = 0.3,
+): CatenaryPath {
   const dist = distance(from, to);
   const midX = (from.x + to.x) / 2;
   const midY = Math.max(from.y, to.y) + sag * dist * 0.3;
@@ -71,14 +75,10 @@ export function getCardAnchor(cardRect: DOMRect, targetCenter: Point): Point {
 
   if (absDx / aspectRatio > absDy) {
     // Horizontal edge is closer
-    return dx > 0
-      ? { x: cardRect.right, y: cy }
-      : { x: cardRect.left, y: cy };
+    return dx > 0 ? { x: cardRect.right, y: cy } : { x: cardRect.left, y: cy };
   }
   // Vertical edge is closer
-  return dy > 0
-    ? { x: cx, y: cardRect.bottom }
-    : { x: cx, y: cardRect.top };
+  return dy > 0 ? { x: cx, y: cardRect.bottom } : { x: cx, y: cardRect.top };
 }
 
 /**
@@ -89,7 +89,10 @@ export function getLaneAnchor(laneRect: DOMRect, targetCenter: Point): Point {
   const cy = laneRect.top + laneRect.height / 2;
 
   // Lanes are wide horizontal bands — attach at top or bottom edge, horizontally aligned to target
-  const clampedX = Math.max(laneRect.left + 8, Math.min(targetCenter.x, laneRect.right - 8));
+  const clampedX = Math.max(
+    laneRect.left + 8,
+    Math.min(targetCenter.x, laneRect.right - 8),
+  );
 
   return targetCenter.y < cy
     ? { x: clampedX, y: laneRect.top }

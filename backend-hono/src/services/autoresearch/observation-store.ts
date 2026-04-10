@@ -1,7 +1,7 @@
 // [claude-code 2026-03-23] Observation store — persists ScoringObservations to DB + in-memory fallback
 // Part of the autoresearch system for tracking IV score predictions vs actual outcomes.
 
-import type { ScoringObservation } from './types.js';
+import type { ScoringObservation } from "./types.js";
 
 // In-memory fallback when DB is unavailable
 let memoryStore: ScoringObservation[] = [];
@@ -12,7 +12,8 @@ const MEMORY_STORE_MAX = 500;
  */
 export async function storeObservation(obs: ScoringObservation): Promise<void> {
   try {
-    const { sql, isDatabaseAvailable } = await import('../../config/database.js');
+    const { sql, isDatabaseAvailable } =
+      await import("../../config/database.js");
     if (!isDatabaseAvailable() || !sql) {
       storeInMemory(obs);
       return;
@@ -38,7 +39,10 @@ export async function storeObservation(obs: ScoringObservation): Promise<void> {
         actual_move = COALESCE(EXCLUDED.actual_move, scoring_observations.actual_move)
     `;
   } catch (error) {
-    console.error('[ObservationStore] DB store failed, using memory fallback:', error);
+    console.error(
+      "[ObservationStore] DB store failed, using memory fallback:",
+      error,
+    );
     storeInMemory(obs);
   }
 }
@@ -53,9 +57,10 @@ export async function updateObservationOutcome(
   actualMove: number,
 ): Promise<void> {
   try {
-    const { sql, isDatabaseAvailable } = await import('../../config/database.js');
+    const { sql, isDatabaseAvailable } =
+      await import("../../config/database.js");
     if (!isDatabaseAvailable() || !sql) {
-      const existing = memoryStore.find(o => o.id === id);
+      const existing = memoryStore.find((o) => o.id === id);
       if (existing) {
         existing.priceAfter = priceAfter;
         existing.priceAfterMinutes = priceAfterMinutes;
@@ -72,7 +77,7 @@ export async function updateObservationOutcome(
       WHERE id = ${id}
     `;
   } catch (error) {
-    console.error('[ObservationStore] Update outcome failed:', error);
+    console.error("[ObservationStore] Update outcome failed:", error);
   }
 }
 
@@ -95,12 +100,15 @@ export async function getObservations(options: {
   } = options;
 
   try {
-    const { sql, isDatabaseAvailable } = await import('../../config/database.js');
+    const { sql, isDatabaseAvailable } =
+      await import("../../config/database.js");
     if (!isDatabaseAvailable() || !sql) {
       return getFromMemory(options);
     }
 
-    const cutoff = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
+    const cutoff = new Date(
+      Date.now() - hoursBack * 60 * 60 * 1000,
+    ).toISOString();
 
     let rows: any[];
     if (instrument) {
@@ -126,7 +134,7 @@ export async function getObservations(options: {
 
     return rows.map(mapRowToObservation);
   } catch (error) {
-    console.error('[ObservationStore] Fetch failed:', error);
+    console.error("[ObservationStore] Fetch failed:", error);
     return getFromMemory(options);
   }
 }
@@ -136,10 +144,12 @@ export async function getObservations(options: {
  */
 export async function countObservations(): Promise<number> {
   try {
-    const { sql, isDatabaseAvailable } = await import('../../config/database.js');
+    const { sql, isDatabaseAvailable } =
+      await import("../../config/database.js");
     if (!isDatabaseAvailable() || !sql) return memoryStore.length;
 
-    const result = await sql`SELECT COUNT(*) as count FROM scoring_observations`;
+    const result =
+      await sql`SELECT COUNT(*) as count FROM scoring_observations`;
     return Number(result[0]?.count ?? 0);
   } catch {
     return memoryStore.length;
@@ -149,7 +159,7 @@ export async function countObservations(): Promise<number> {
 // ── Internal helpers ─────────────────────────────────────────────────────────
 
 function storeInMemory(obs: ScoringObservation): void {
-  const idx = memoryStore.findIndex(o => o.id === obs.id);
+  const idx = memoryStore.findIndex((o) => o.id === obs.id);
   if (idx >= 0) {
     memoryStore[idx] = { ...memoryStore[idx], ...obs };
   } else {
@@ -167,12 +177,15 @@ function getFromMemory(options: {
   limit?: number;
   withOutcomesOnly?: boolean;
 }): ScoringObservation[] {
-  const cutoff = new Date(Date.now() - (options.hoursBack ?? 168) * 60 * 60 * 1000);
+  const cutoff = new Date(
+    Date.now() - (options.hoursBack ?? 168) * 60 * 60 * 1000,
+  );
   return memoryStore
-    .filter(o => {
+    .filter((o) => {
       if (new Date(o.observedAt) < cutoff) return false;
       if (o.ivScore < (options.minIVScore ?? 0)) return false;
-      if (options.instrument && o.instrument !== options.instrument) return false;
+      if (options.instrument && o.instrument !== options.instrument)
+        return false;
       if (options.withOutcomesOnly && o.actualMove == null) return false;
       return true;
     })
@@ -189,9 +202,13 @@ function mapRowToObservation(row: any): ScoringObservation {
     instrument: row.instrument,
     priceAtObservation: Number(row.price_at_observation),
     priceAfter: row.price_after != null ? Number(row.price_after) : undefined,
-    priceAfterMinutes: row.price_after_minutes != null ? Number(row.price_after_minutes) : undefined,
+    priceAfterMinutes:
+      row.price_after_minutes != null
+        ? Number(row.price_after_minutes)
+        : undefined,
     actualMove: row.actual_move != null ? Number(row.actual_move) : undefined,
-    predictedMove: row.predicted_move != null ? Number(row.predicted_move) : undefined,
+    predictedMove:
+      row.predicted_move != null ? Number(row.predicted_move) : undefined,
     publishedAt: row.published_at,
     observedAt: row.observed_at,
     session: row.session,

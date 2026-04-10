@@ -1,7 +1,7 @@
 // [claude-code 2026-03-22] Track 3: Multi-select agent filter dropdown for Consilium
-import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
-import { AGENT_MAP, type BoardroomAgent } from './AgentBadge';
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, Check } from "lucide-react";
+import { AGENT_MAP, type BoardroomAgent } from "./AgentBadge";
 
 interface AgentFilterDropdownProps {
   agents: BoardroomAgent[];
@@ -12,19 +12,24 @@ interface AgentFilterDropdownProps {
 /** Extract hex color from the Tailwind accentClass string (e.g. 'text-[#c79f4a]' → '#c79f4a') */
 function extractHex(accentClass: string): string {
   const match = accentClass.match(/#[0-9a-fA-F]{6}/);
-  return match ? match[0] : '#6b6040';
+  return match ? match[0] : "#6b6040";
 }
 
 function getButtonLabel(selected: BoardroomAgent[]): string {
-  if (selected.length === 0) return 'All Agents';
-  if (selected.length === 1) return AGENT_MAP[selected[0]]?.label ?? selected[0];
+  if (selected.length === 0) return "All Agents";
+  if (selected.length === 1)
+    return AGENT_MAP[selected[0]]?.label ?? selected[0];
   if (selected.length === 2) {
-    return selected.map((a) => AGENT_MAP[a]?.label ?? a).join(', ');
+    return selected.map((a) => AGENT_MAP[a]?.label ?? a).join(", ");
   }
   return `${selected.length} agents`;
 }
 
-export function AgentFilterDropdown({ agents, selected, onChange }: AgentFilterDropdownProps) {
+export function AgentFilterDropdown({
+  agents,
+  selected,
+  onChange,
+}: AgentFilterDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -32,10 +37,11 @@ export function AgentFilterDropdown({ agents, selected, onChange }: AgentFilterD
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
   const toggle = (agent: BoardroomAgent) => {
@@ -58,12 +64,15 @@ export function AgentFilterDropdown({ agents, selected, onChange }: AgentFilterD
         onClick={() => setOpen((v) => !v)}
         className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors ${
           hasSelection
-            ? 'border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]'
-            : 'border-[var(--fintheon-accent)]/15 text-[var(--fintheon-text)]/50 hover:border-[var(--fintheon-accent)]/30 hover:text-[var(--fintheon-text)]/70'
+            ? "border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+            : "border-[var(--fintheon-accent)]/15 text-[var(--fintheon-text)]/50 hover:border-[var(--fintheon-accent)]/30 hover:text-[var(--fintheon-text)]/70"
         }`}
       >
         <span className="whitespace-nowrap">{getButtonLabel(selected)}</span>
-        <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          size={12}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {/* Dropdown panel */}
@@ -94,8 +103,8 @@ export function AgentFilterDropdown({ agents, selected, onChange }: AgentFilterD
                 onClick={() => toggle(agent)}
                 className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-xs transition-colors ${
                   active
-                    ? 'bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-text)]'
-                    : 'text-[var(--fintheon-text)]/50 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/80'
+                    ? "bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-text)]"
+                    : "text-[var(--fintheon-text)]/50 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/80"
                 }`}
               >
                 {/* Colored dot */}
@@ -106,9 +115,16 @@ export function AgentFilterDropdown({ agents, selected, onChange }: AgentFilterD
                 {/* Agent name */}
                 <span className="font-medium flex-1">{config.label}</span>
                 {/* Role label */}
-                <span className="text-[10px] text-[var(--fintheon-text)]/30">{config.role}</span>
+                <span className="text-[10px] text-[var(--fintheon-text)]/30">
+                  {config.role}
+                </span>
                 {/* Check indicator */}
-                {active && <Check size={12} className="text-[var(--fintheon-accent)] shrink-0" />}
+                {active && (
+                  <Check
+                    size={12}
+                    className="text-[var(--fintheon-accent)] shrink-0"
+                  />
+                )}
               </button>
             );
           })}

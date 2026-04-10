@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { useBackend } from '../../lib/backend';
-import type { DeskRecord, PeerRecord } from './types';
+import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
+import { useBackend } from "../../lib/backend";
+import type { DeskRecord, PeerRecord } from "./types";
 
 interface DeskPanelProps {
   peers: PeerRecord[];
@@ -14,9 +14,9 @@ export function DeskPanel({ peers, isAdmin, onUpdated }: DeskPanelProps) {
   const [desks, setDesks] = useState<DeskRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [sectorFocusInput, setSectorFocusInput] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [sectorFocusInput, setSectorFocusInput] = useState("");
   const [busyPeerId, setBusyPeerId] = useState<string | null>(null);
 
   const deskOptions = useMemo(
@@ -48,7 +48,7 @@ export function DeskPanel({ peers, isAdmin, onUpdated }: DeskPanelProps) {
     if (!trimmed) return;
 
     const sectorFocus = sectorFocusInput
-      .split(',')
+      .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
 
@@ -58,9 +58,9 @@ export function DeskPanel({ peers, isAdmin, onUpdated }: DeskPanelProps) {
       sectorFocus,
     });
 
-    setName('');
-    setDescription('');
-    setSectorFocusInput('');
+    setName("");
+    setDescription("");
+    setSectorFocusInput("");
     setShowCreate(false);
     await refresh();
     await onUpdated?.();
@@ -84,8 +84,12 @@ export function DeskPanel({ peers, isAdmin, onUpdated }: DeskPanelProps) {
     <section className="rounded-xl border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] p-3">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-[var(--fintheon-text)]">Desk Admin</h3>
-          <p className="text-[11px] text-zinc-400">Create desks and assign team members.</p>
+          <h3 className="text-sm font-semibold text-[var(--fintheon-text)]">
+            Desk Admin
+          </h3>
+          <p className="text-[11px] text-zinc-400">
+            Create desks and assign team members.
+          </p>
         </div>
         <button
           onClick={() => setShowCreate((value) => !value)}
@@ -135,15 +139,17 @@ export function DeskPanel({ peers, isAdmin, onUpdated }: DeskPanelProps) {
               className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)] px-2.5 py-2"
             >
               <div>
-                <p className="text-sm text-[var(--fintheon-text)]">{peer.deviceName}</p>
+                <p className="text-sm text-[var(--fintheon-text)]">
+                  {peer.deviceName}
+                </p>
                 <p className="text-[11px] text-zinc-500">
-                  Current desk: {peer.deskName || 'Unassigned'}
+                  Current desk: {peer.deskName || "Unassigned"}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <select
-                  value={peer.deskId ?? ''}
+                  value={peer.deskId ?? ""}
                   onChange={(e) => void handleAssign(peer.id, e.target.value)}
                   disabled={busyPeerId === peer.id}
                   className="rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] px-2 py-1 text-xs text-[var(--fintheon-text)]"
@@ -159,11 +165,12 @@ export function DeskPanel({ peers, isAdmin, onUpdated }: DeskPanelProps) {
             </div>
           ))}
           {peers.length === 0 && (
-            <p className="text-xs text-zinc-500">No team members available for assignment yet.</p>
+            <p className="text-xs text-zinc-500">
+              No team members available for assignment yet.
+            </p>
           )}
         </div>
       )}
     </section>
   );
 }
-

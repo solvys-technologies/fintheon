@@ -1,19 +1,22 @@
 /**
  * Boardroom Breaking News Trigger Handler
- * 
+ *
  * Listens for Herald sentinel alerts (Macro Level 3-4 events) and
  * spawns boardroom discussions when critical market-moving news hits.
- * 
+ *
  * This is an event-driven trigger that works alongside the scheduled
  * morning standup to ensure agents respond to breaking news in real-time.
  */
 
-import { appendToBoardroom, sendToIntervention } from './hermes-sessions.js';
-import type { BoardroomAgent, InterventionSeverity } from '../types/boardroom.js';
+import { appendToBoardroom, sendToIntervention } from "./hermes-sessions.js";
+import type {
+  BoardroomAgent,
+  InterventionSeverity,
+} from "../types/boardroom.js";
 
 /**
  * Macro Event Levels
- * 
+ *
  * Level 1: Routine economic data (minor impact)
  * Level 2: Notable data releases (moderate impact)
  * Level 3: Market-moving events (significant impact) - TRIGGERS BOARDROOM
@@ -25,21 +28,21 @@ export type MacroEventLevel = 1 | 2 | 3 | 4;
  * Categories of market-moving events that trigger boardroom discussion
  */
 export type MarketEventType =
-  | 'CPI'                    // Consumer Price Index
-  | 'NFP'                    // Non-Farm Payrolls
-  | 'FOMC'                   // Federal Open Market Committee / Fed decisions
-  | 'FED_RATE'               // Federal Reserve rate decisions
-  | 'VIX_SPIKE'              // VIX volatility surge
-  | 'VIX_CRUSH'              // VIX volatility collapse
-  | 'BLACK_SWAN'             // Unforeseen black swan events
-  | 'GEOPOLITICAL'           // Major geopolitical events
-  | 'EARNINGS_CRASH'         // Major earnings surprise / crash
-  | 'LIQUIDITY_CRISIS'       // Market liquidity events
-  | 'CURRENCY_CRISIS'        // FX market disruption
-  | 'COMMODITY_SHOCK'        // Energy / metals price shocks
-  | 'CREDIT_EVENT'           // Credit market disruption
-  | 'REGULATORY'             // Major regulatory announcements
-  | 'OTHER';                 // Other market-moving events
+  | "CPI" // Consumer Price Index
+  | "NFP" // Non-Farm Payrolls
+  | "FOMC" // Federal Open Market Committee / Fed decisions
+  | "FED_RATE" // Federal Reserve rate decisions
+  | "VIX_SPIKE" // VIX volatility surge
+  | "VIX_CRUSH" // VIX volatility collapse
+  | "BLACK_SWAN" // Unforeseen black swan events
+  | "GEOPOLITICAL" // Major geopolitical events
+  | "EARNINGS_CRASH" // Major earnings surprise / crash
+  | "LIQUIDITY_CRISIS" // Market liquidity events
+  | "CURRENCY_CRISIS" // FX market disruption
+  | "COMMODITY_SHOCK" // Energy / metals price shocks
+  | "CREDIT_EVENT" // Credit market disruption
+  | "REGULATORY" // Major regulatory announcements
+  | "OTHER"; // Other market-moving events
 
 /**
  * Herald Sentinel Alert structure
@@ -61,7 +64,7 @@ export interface HeraldSentinelAlert {
   /** Affected instruments/symbols */
   affectedInstruments?: string[];
   /** Expected impact direction */
-  impactDirection?: 'bullish' | 'bearish' | 'neutral' | 'mixed';
+  impactDirection?: "bullish" | "bearish" | "neutral" | "mixed";
   /** Impact magnitude (0-100) */
   impactMagnitude?: number;
   /** Source of the alert */
@@ -99,14 +102,14 @@ export const DEFAULT_NEWS_TRIGGER_CONFIG: NewsTriggerConfig = {
 
 /**
  * Check if an alert should trigger a boardroom discussion
- * 
+ *
  * @param alert - The herald sentinel alert to evaluate
  * @param config - Trigger configuration (optional, uses defaults)
  * @returns True if the alert should trigger boardroom discussion
  */
 export function shouldTriggerBoardroom(
   alert: HeraldSentinelAlert,
-  config: NewsTriggerConfig = DEFAULT_NEWS_TRIGGER_CONFIG
+  config: NewsTriggerConfig = DEFAULT_NEWS_TRIGGER_CONFIG,
 ): boolean {
   // Always trigger on Level 4 (black swan / crisis)
   if (alert.macroLevel === 4) {
@@ -117,14 +120,14 @@ export function shouldTriggerBoardroom(
   if (alert.macroLevel >= config.minMacroLevel) {
     // Check for market-moving event types
     const marketMovingTypes: MarketEventType[] = [
-      'CPI',
-      'NFP',
-      'FOMC',
-      'FED_RATE',
-      'BLACK_SWAN',
-      'LIQUIDITY_CRISIS',
-      'CURRENCY_CRISIS',
-      'CREDIT_EVENT',
+      "CPI",
+      "NFP",
+      "FOMC",
+      "FED_RATE",
+      "BLACK_SWAN",
+      "LIQUIDITY_CRISIS",
+      "CURRENCY_CRISIS",
+      "CREDIT_EVENT",
     ];
 
     if (marketMovingTypes.includes(alert.eventType)) {
@@ -132,23 +135,29 @@ export function shouldTriggerBoardroom(
     }
 
     // VIX special handling
-    if (alert.eventType === 'VIX_SPIKE' || alert.eventType === 'VIX_CRUSH') {
+    if (alert.eventType === "VIX_SPIKE" || alert.eventType === "VIX_CRUSH") {
       if (config.vixAlwaysTriggers) {
         return true;
       }
       // Check if VIX move exceeds threshold
-      if (alert.impactMagnitude && alert.impactMagnitude >= config.vixTriggerThreshold) {
+      if (
+        alert.impactMagnitude &&
+        alert.impactMagnitude >= config.vixTriggerThreshold
+      ) {
         return true;
       }
     }
 
     // Geopolitical events (if enabled)
-    if (config.enableGeopoliticalTriggers && alert.eventType === 'GEOPOLITICAL') {
+    if (
+      config.enableGeopoliticalTriggers &&
+      alert.eventType === "GEOPOLITICAL"
+    ) {
       return alert.macroLevel >= 3;
     }
 
     // Black swan events (if enabled)
-    if (config.enableBlackSwanTriggers && alert.eventType === 'BLACK_SWAN') {
+    if (config.enableBlackSwanTriggers && alert.eventType === "BLACK_SWAN") {
       return true;
     }
   }
@@ -158,64 +167,66 @@ export function shouldTriggerBoardroom(
 
 /**
  * Determine intervention severity based on alert
- * 
+ *
  * @param alert - The herald sentinel alert
  * @returns Severity level for the intervention
  */
-export function getSeverityFromAlert(alert: HeraldSentinelAlert): InterventionSeverity {
+export function getSeverityFromAlert(
+  alert: HeraldSentinelAlert,
+): InterventionSeverity {
   // Level 4 = Critical
   if (alert.macroLevel === 4) {
-    return 'critical';
+    return "critical";
   }
 
   // Level 3 with high impact = Critical
   if (alert.macroLevel === 3 && (alert.impactMagnitude ?? 0) >= 70) {
-    return 'critical';
+    return "critical";
   }
 
   // Level 3 = Warning
   if (alert.macroLevel === 3) {
-    return 'warning';
+    return "warning";
   }
 
   // Fallback
-  return 'warning';
+  return "warning";
 }
 
 /**
  * Format alert into boardroom message
- * 
+ *
  * @param alert - The herald sentinel alert
  * @returns Formatted message for boardroom posting
  */
 export function formatAlertForBoardroom(alert: HeraldSentinelAlert): string {
   const SEVERITY_EMOJI: Record<InterventionSeverity, string> = {
-    info: 'ℹ️',
-    warning: '⚠️',
-    critical: '🚨',
+    info: "ℹ️",
+    warning: "⚠️",
+    critical: "🚨",
   };
 
   const TYPE_EMOJI: Record<MarketEventType, string> = {
-    CPI: '📊',
-    NFP: '💼',
-    FOMC: '🏛️',
-    FED_RATE: '🏦',
-    VIX_SPIKE: '📈',
-    VIX_CRUSH: '📉',
-    BLACK_SWAN: '🦢',
-    GEOPOLITICAL: '🌍',
-    EARNINGS_CRASH: '💥',
-    LIQUIDITY_CRISIS: '💧',
-    CURRENCY_CRISIS: '💱',
-    COMMODITY_SHOCK: '🛢️',
-    CREDIT_EVENT: '💳',
-    REGULATORY: '⚖️',
-    OTHER: '📰',
+    CPI: "📊",
+    NFP: "💼",
+    FOMC: "🏛️",
+    FED_RATE: "🏦",
+    VIX_SPIKE: "📈",
+    VIX_CRUSH: "📉",
+    BLACK_SWAN: "🦢",
+    GEOPOLITICAL: "🌍",
+    EARNINGS_CRASH: "💥",
+    LIQUIDITY_CRISIS: "💧",
+    CURRENCY_CRISIS: "💱",
+    COMMODITY_SHOCK: "🛢️",
+    CREDIT_EVENT: "💳",
+    REGULATORY: "⚖️",
+    OTHER: "📰",
   };
 
   const severity = getSeverityFromAlert(alert);
   const emoji = SEVERITY_EMOJI[severity];
-  const typeEmoji = TYPE_EMOJI[alert.eventType] || '📰';
+  const typeEmoji = TYPE_EMOJI[alert.eventType] || "📰";
 
   let message = `${emoji}${typeEmoji} **[BREAKING NEWS ALERT]** — Macro Level ${alert.macroLevel}\n\n`;
   message += `**${alert.headline}**\n\n`;
@@ -225,17 +236,17 @@ export function formatAlertForBoardroom(alert: HeraldSentinelAlert): string {
   }
 
   if (alert.affectedInstruments && alert.affectedInstruments.length > 0) {
-    message += `*Affected:* ${alert.affectedInstruments.join(', ')}\n`;
+    message += `*Affected:* ${alert.affectedInstruments.join(", ")}\n`;
   }
 
   if (alert.impactDirection) {
     const dirEmoji: Record<string, string> = {
-      bullish: '🟢',
-      bearish: '🔴',
-      neutral: '🟡',
-      mixed: '🟠',
+      bullish: "🟢",
+      bearish: "🔴",
+      neutral: "🟡",
+      mixed: "🟠",
     };
-    message += `*Impact:* ${dirEmoji[alert.impactDirection] || '⚪'} ${alert.impactDirection.toUpperCase()}\n`;
+    message += `*Impact:* ${dirEmoji[alert.impactDirection] || "⚪"} ${alert.impactDirection.toUpperCase()}\n`;
   }
 
   if (alert.impactMagnitude) {
@@ -249,37 +260,41 @@ export function formatAlertForBoardroom(alert: HeraldSentinelAlert): string {
 
 /**
  * Trigger boardroom discussion for breaking news
- * 
+ *
  * This is the main entry point when a Herald sentinel alert is received.
  * It evaluates the alert, and if it meets the criteria, posts to the
  * boardroom to wake up agents for an emergency discussion.
- * 
+ *
  * @param alert - The herald sentinel alert
  * @param config - Trigger configuration (optional)
  * @returns Object indicating whether boardroom was triggered and why
  */
 export async function triggerBoardroomForNews(
   alert: HeraldSentinelAlert,
-  config: NewsTriggerConfig = DEFAULT_NEWS_TRIGGER_CONFIG
+  config: NewsTriggerConfig = DEFAULT_NEWS_TRIGGER_CONFIG,
 ): Promise<{ triggered: boolean; reason?: string; message?: string }> {
   // Check if this alert should trigger boardroom
   if (!shouldTriggerBoardroom(alert, config)) {
-    return { triggered: false, reason: 'Alert does not meet trigger criteria' };
+    return { triggered: false, reason: "Alert does not meet trigger criteria" };
   }
 
   // Format the alert message
   const message = formatAlertForBoardroom(alert);
 
   // Post to boardroom
-  await appendToBoardroom(message, 'assistant');
+  await appendToBoardroom(message, "assistant");
 
   // Also send to intervention channel to ensure Harper-Opus sees it immediately
   const interventionMessage = `🚨 BREAKING: ${alert.headline} (Macro Level ${alert.macroLevel})`;
-  await sendToIntervention(interventionMessage, 'pic-intervention');
+  await sendToIntervention(interventionMessage, "pic-intervention");
 
   // Log the trigger
-  console.log(`[BoardroomNewsTrigger] Triggered boardroom for: ${alert.headline}`);
-  console.log(`[BoardroomNewsTrigger] Alert ID: ${alert.id}, Type: ${alert.eventType}, Level: ${alert.macroLevel}`);
+  console.log(
+    `[BoardroomNewsTrigger] Triggered boardroom for: ${alert.headline}`,
+  );
+  console.log(
+    `[BoardroomNewsTrigger] Alert ID: ${alert.id}, Type: ${alert.eventType}, Level: ${alert.macroLevel}`,
+  );
 
   return {
     triggered: true,
@@ -290,19 +305,21 @@ export async function triggerBoardroomForNews(
 
 /**
  * Create a Herald sentinel alert from raw data
- * 
+ *
  * Helper function to construct properly formatted alerts
- * 
+ *
  * @param data - Raw alert data
  * @returns Formatted HeraldSentinelAlert
  */
-export function createHeraldAlert(data: Partial<HeraldSentinelAlert>): HeraldSentinelAlert {
+export function createHeraldAlert(
+  data: Partial<HeraldSentinelAlert>,
+): HeraldSentinelAlert {
   return {
     id: data.id ?? crypto.randomUUID(),
     timestamp: data.timestamp ?? new Date().toISOString(),
-    eventType: data.eventType ?? 'OTHER',
+    eventType: data.eventType ?? "OTHER",
     macroLevel: data.macroLevel ?? 2,
-    headline: data.headline ?? 'Unknown Event',
+    headline: data.headline ?? "Unknown Event",
     description: data.description,
     affectedInstruments: data.affectedInstruments,
     impactDirection: data.impactDirection,
@@ -314,34 +331,36 @@ export function createHeraldAlert(data: Partial<HeraldSentinelAlert>): HeraldSen
 
 /**
  * Filter alerts to market-moving only
- * 
+ *
  * This is a pre-filter that can be applied to incoming alerts
  * before they reach the trigger logic
- * 
+ *
  * @param alerts - Array of alerts to filter
  * @returns Filtered array containing only market-moving alerts
  */
-export function filterToMarketMoving(alerts: HeraldSentinelAlert[]): HeraldSentinelAlert[] {
+export function filterToMarketMoving(
+  alerts: HeraldSentinelAlert[],
+): HeraldSentinelAlert[] {
   const marketMovingTypes: MarketEventType[] = [
-    'CPI',
-    'NFP',
-    'FOMC',
-    'FED_RATE',
-    'VIX_SPIKE',
-    'VIX_CRUSH',
-    'BLACK_SWAN',
-    'GEOPOLITICAL',
-    'LIQUIDITY_CRISIS',
-    'CURRENCY_CRISIS',
-    'COMMODITY_SHOCK',
-    'CREDIT_EVENT',
+    "CPI",
+    "NFP",
+    "FOMC",
+    "FED_RATE",
+    "VIX_SPIKE",
+    "VIX_CRUSH",
+    "BLACK_SWAN",
+    "GEOPOLITICAL",
+    "LIQUIDITY_CRISIS",
+    "CURRENCY_CRISIS",
+    "COMMODITY_SHOCK",
+    "CREDIT_EVENT",
   ];
 
   return alerts.filter(
     (alert) =>
       alert.macroLevel >= 3 ||
       marketMovingTypes.includes(alert.eventType) ||
-      (alert.impactMagnitude ?? 0) >= 50
+      (alert.impactMagnitude ?? 0) >= 50,
   );
 }
 

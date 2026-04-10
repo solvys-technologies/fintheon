@@ -1,4 +1,5 @@
 # Rithmic Gateway — OpenClaw Handoff
+
 <!-- claude-code 2026-03-03 | Full architecture + autonomous mode guide for Harper/OpenClaw -->
 
 ## What This Is
@@ -26,6 +27,7 @@ uvicorn gateway:app --host 0.0.0.0 --port 3002
 ```
 
 **Verify connection:**
+
 ```bash
 curl http://localhost:3002/status
 # {"connected": true, "system_name": "Rithmic Paper Trading", ...}
@@ -35,13 +37,13 @@ curl http://localhost:3002/status
 
 ## Credentials Reference
 
-| Env Var | Example | Notes |
-|---------|---------|-------|
-| `RITHMIC_USER` | `pic_trader` | Rithmic username |
-| `RITHMIC_PASSWORD` | `...` | Rithmic password |
-| `RITHMIC_SYSTEM_NAME` | `Rithmic Paper Trading` | Or `TopstepX` for live |
-| `RITHMIC_URI` | `wss://rituz00100.rithmic.com:443/...` | From Rithmic onboarding |
-| `GATEWAY_PORT` | `3002` | Optional, default 3002 |
+| Env Var               | Example                                | Notes                   |
+| --------------------- | -------------------------------------- | ----------------------- |
+| `RITHMIC_USER`        | `pic_trader`                           | Rithmic username        |
+| `RITHMIC_PASSWORD`    | `...`                                  | Rithmic password        |
+| `RITHMIC_SYSTEM_NAME` | `Rithmic Paper Trading`                | Or `TopstepX` for live  |
+| `RITHMIC_URI`         | `wss://rituz00100.rithmic.com:443/...` | From Rithmic onboarding |
+| `GATEWAY_PORT`        | `3002`                                 | Optional, default 3002  |
 
 The Hono backend reads `RITHMIC_GATEWAY_URL` (default: `http://localhost:3002`).
 
@@ -50,7 +52,9 @@ The Hono backend reads `RITHMIC_GATEWAY_URL` (default: `http://localhost:3002`).
 ## HTTP API
 
 ### `GET /status`
+
 Returns connection state. Call before placing orders.
+
 ```json
 {
   "connected": true,
@@ -61,7 +65,9 @@ Returns connection state. Call before placing orders.
 ```
 
 ### `POST /order/place`
+
 Place a market or limit order.
+
 ```json
 {
   "symbol": "MNQ",
@@ -72,7 +78,9 @@ Place a market or limit order.
   "tag": "PULSE-AUTO-1709500000"
 }
 ```
+
 Response:
+
 ```json
 {
   "success": true,
@@ -83,6 +91,7 @@ Response:
 ```
 
 ### `POST /reconnect`
+
 Force a reconnect if the gateway loses its Rithmic connection.
 
 ---
@@ -144,7 +153,9 @@ Proposal created
 **Use when:** TP steps away, sets autonomous trading rules in advance.
 
 #### Autonomous Config (planned)
+
 Add to user settings or `.env`:
+
 ```
 AUTOPILOT_MODE=autonomous
 AUTOPILOT_MIN_CONFIDENCE=75     # 0–100, skip proposal review if above
@@ -173,15 +184,15 @@ Fintheon handles: debate, risk assessment, order placement, proposal history
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `rithmic-gateway/gateway.py` | FastAPI server — main gateway |
-| `rithmic-gateway/requirements.txt` | `async-rithmic`, `fastapi`, `uvicorn` |
-| `rithmic-gateway/.env.example` | Credential template |
-| `backend-hono/src/services/rithmic-service.ts` | Hono → gateway HTTP client |
-| `backend-hono/src/services/trading-service.ts` | `fireTestTrade()` broker routing |
+| File                                                      | Purpose                               |
+| --------------------------------------------------------- | ------------------------------------- |
+| `rithmic-gateway/gateway.py`                              | FastAPI server — main gateway         |
+| `rithmic-gateway/requirements.txt`                        | `async-rithmic`, `fastapi`, `uvicorn` |
+| `rithmic-gateway/.env.example`                            | Credential template                   |
+| `backend-hono/src/services/rithmic-service.ts`            | Hono → gateway HTTP client            |
+| `backend-hono/src/services/trading-service.ts`            | `fireTestTrade()` broker routing      |
 | `backend-hono/src/services/autopilot/proposal-service.ts` | `executeProposal()` → rithmic-service |
-| `docs/quantconnect/AUTOPILOT-IMPLEMENTATION-PHASE-1.md` | Phase 1 status tracker |
+| `docs/quantconnect/AUTOPILOT-IMPLEMENTATION-PHASE-1.md`   | Phase 1 status tracker                |
 
 ---
 

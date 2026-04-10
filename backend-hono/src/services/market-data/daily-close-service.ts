@@ -1,18 +1,18 @@
 // [claude-code 2026-03-28] Yahoo Finance daily close fetcher for market impact enrichment
 
-import { createLogger } from '../../lib/logger.js';
+import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger('DailyClose');
+const log = createLogger("DailyClose");
 
-const YAHOO_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
-const HEADERS = { 'User-Agent': 'Mozilla/5.0' };
+const YAHOO_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
+const HEADERS = { "User-Agent": "Mozilla/5.0" };
 
-const FUTURES_SYMBOLS = ['NQ=F', 'ES=F', 'YM=F'] as const;
-type FuturesKey = 'nq' | 'es' | 'ym';
+const FUTURES_SYMBOLS = ["NQ=F", "ES=F", "YM=F"] as const;
+type FuturesKey = "nq" | "es" | "ym";
 const SYMBOL_KEY_MAP: Record<string, FuturesKey> = {
-  'NQ=F': 'nq',
-  'ES=F': 'es',
-  'YM=F': 'ym',
+  "NQ=F": "nq",
+  "ES=F": "es",
+  "YM=F": "ym",
 };
 
 export interface DailyClose {
@@ -67,7 +67,8 @@ export async function fetchDailyClose(date: string): Promise<DailyCloseResult> {
       }
 
       const close = closes[0];
-      const prevClose = meta?.chartPreviousClose ?? meta?.previousClose ?? close;
+      const prevClose =
+        meta?.chartPreviousClose ?? meta?.previousClose ?? close;
       const change = close - prevClose;
       const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
 

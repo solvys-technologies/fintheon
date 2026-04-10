@@ -1,27 +1,32 @@
 // [claude-code 2026-03-14] Full-screen achievement overlay — TRIUMPHUS!
 
-import { useEffect, useState } from 'react';
-import { playSound } from '../../lib/pompa';
+import { useEffect, useState } from "react";
+import { playSound } from "../../lib/pompa";
 
 interface TriumphusOverlayProps {
   visible: boolean;
   onComplete?: () => void;
 }
 
-export default function TriumphusOverlay({ visible, onComplete }: TriumphusOverlayProps) {
-  const [phase, setPhase] = useState<'enter' | 'hold' | 'exit' | 'done'>('enter');
+export default function TriumphusOverlay({
+  visible,
+  onComplete,
+}: TriumphusOverlayProps) {
+  const [phase, setPhase] = useState<"enter" | "hold" | "exit" | "done">(
+    "enter",
+  );
 
   useEffect(() => {
     if (!visible) {
-      setPhase('enter');
+      setPhase("enter");
       return;
     }
-    playSound('colosseum-cheers');
+    playSound("colosseum-cheers");
 
-    const t1 = setTimeout(() => setPhase('hold'), 500);
-    const t2 = setTimeout(() => setPhase('exit'), 2500);
+    const t1 = setTimeout(() => setPhase("hold"), 500);
+    const t2 = setTimeout(() => setPhase("exit"), 2500);
     const t3 = setTimeout(() => {
-      setPhase('done');
+      setPhase("done");
       onComplete?.();
     }, 3000);
 
@@ -32,27 +37,34 @@ export default function TriumphusOverlay({ visible, onComplete }: TriumphusOverl
     };
   }, [visible, onComplete]);
 
-  if (!visible || phase === 'done') return null;
+  if (!visible || phase === "done") return null;
 
-  const opacity = phase === 'enter' ? 0 : phase === 'exit' ? 0 : 1;
+  const opacity = phase === "enter" ? 0 : phase === "exit" ? 0 : 1;
 
   return (
     <div
       style={{
-        position: 'fixed',
+        position: "fixed",
         inset: 0,
         zIndex: 9998,
-        pointerEvents: 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+        pointerEvents: "none",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
         opacity,
-        transition: phase === 'enter' ? 'opacity 0.5s ease-out' : 'opacity 0.5s ease-in',
+        transition:
+          phase === "enter" ? "opacity 0.5s ease-out" : "opacity 0.5s ease-in",
       }}
     >
       {/* Laurel wreath — SVG */}
-      <svg width="120" height="80" viewBox="0 0 120 80" fill="none" style={{ marginBottom: '1rem' }}>
+      <svg
+        width="120"
+        height="80"
+        viewBox="0 0 120 80"
+        fill="none"
+        style={{ marginBottom: "1rem" }}
+      >
         {/* Left branch */}
         <path
           d="M60 70 C50 60, 30 55, 20 40 C15 32, 18 20, 28 18 C38 16, 45 25, 48 35 C50 42, 52 50, 55 58"
@@ -85,13 +97,13 @@ export default function TriumphusOverlay({ visible, onComplete }: TriumphusOverl
       <h1
         style={{
           fontFamily: "'Cinzel', 'Georgia', serif",
-          fontSize: '1.75rem',
+          fontSize: "1.75rem",
           fontWeight: 700,
-          color: '#c79f4a',
-          letterSpacing: '0.22em',
-          textTransform: 'uppercase',
+          color: "#c79f4a",
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
           margin: 0,
-          textShadow: '0 2px 20px rgba(199, 159, 74, 0.4)',
+          textShadow: "0 2px 20px rgba(199, 159, 74, 0.4)",
         }}
       >
         TRIUMPHUS!

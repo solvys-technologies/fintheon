@@ -129,19 +129,19 @@ User clicks "Continue with Google"
 
 ## Files Changed (for reference)
 
-| File | What Changed |
-|------|-------------|
-| `backend-hono/src/services/supabase-auth.ts` | NEW — Supabase JWT verification |
-| `backend-hono/src/middleware/auth.ts` | Clerk → Supabase |
-| `backend-hono/src/services/health-service.ts` | `clerk` → `auth` |
-| `backend-hono/src/routes/diagnostics/index.ts` | `checkClerkAuth` → `checkSupabaseAuth` |
-| `App.tsx` | ClerkProvider → SupabaseAuthGate |
-| `contexts/AuthContext.tsx` | Clerk hooks → Supabase session |
-| `lib/supabase.ts` | Added auth helpers |
-| `lib/backend.ts` | Clerk getToken → Supabase getAccessToken |
-| `components/auth/SupabaseSignIn.tsx` | NEW — Google OAuth button |
-| `components/layout/MainLayout.tsx` | Clerk signOut → Supabase signOut |
-| `components/ChatInterface.tsx` | Clerk getToken → Supabase getAccessToken |
-| `mini-widget-entry.tsx` | ClerkProvider removed |
-| `package.json` | -@clerk/clerk-react, -@clerk/themes, +@supabase/supabase-js |
-| `backend-hono/package.json` | -@clerk/backend |
+| File                                           | What Changed                                                |
+| ---------------------------------------------- | ----------------------------------------------------------- |
+| `backend-hono/src/services/supabase-auth.ts`   | NEW — Supabase JWT verification                             |
+| `backend-hono/src/middleware/auth.ts`          | Clerk → Supabase                                            |
+| `backend-hono/src/services/health-service.ts`  | `clerk` → `auth`                                            |
+| `backend-hono/src/routes/diagnostics/index.ts` | `checkClerkAuth` → `checkSupabaseAuth`                      |
+| `App.tsx`                                      | ClerkProvider → SupabaseAuthGate                            |
+| `contexts/AuthContext.tsx`                     | Clerk hooks → Supabase session                              |
+| `lib/supabase.ts`                              | Added auth helpers                                          |
+| `lib/backend.ts`                               | Clerk getToken → Supabase getAccessToken                    |
+| `components/auth/SupabaseSignIn.tsx`           | NEW — Google OAuth button                                   |
+| `components/layout/MainLayout.tsx`             | Clerk signOut → Supabase signOut                            |
+| `components/ChatInterface.tsx`                 | Clerk getToken → Supabase getAccessToken                    |
+| `mini-widget-entry.tsx`                        | ClerkProvider removed                                       |
+| `package.json`                                 | -@clerk/clerk-react, -@clerk/themes, +@supabase/supabase-js |
+| `backend-hono/package.json`                    | -@clerk/backend                                             |

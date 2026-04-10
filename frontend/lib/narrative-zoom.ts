@@ -1,6 +1,6 @@
 // [claude-code 2026-03-16] Zoom level management and semantic zoom transitions for NarrativeCanvas
 
-import type { ZoomLevel } from './narrative-types';
+import type { ZoomLevel } from "./narrative-types";
 
 export interface ZoomConfig {
   level: ZoomLevel;
@@ -17,49 +17,49 @@ export interface ZoomConfig {
   /** Whether to show cross-narrative ropes */
   showRopes: boolean;
   /** Label granularity for time axis */
-  timeLabelGranularity: 'year' | 'quarter' | 'month' | 'week';
+  timeLabelGranularity: "year" | "quarter" | "month" | "week";
 }
 
 const ZOOM_CONFIGS: Record<ZoomLevel, ZoomConfig> = {
   year: {
-    level: 'year',
+    level: "year",
     dayWidth: 2,
     minScale: 0.3,
     maxScale: 1.5,
     showCatalystDots: false,
     showTimeDividers: false,
     showRopes: true,
-    timeLabelGranularity: 'year',
+    timeLabelGranularity: "year",
   },
   quarter: {
-    level: 'quarter',
+    level: "quarter",
     dayWidth: 5,
     minScale: 0.5,
     maxScale: 2,
     showCatalystDots: false,
     showTimeDividers: true,
-    timeLabelGranularity: 'quarter',
+    timeLabelGranularity: "quarter",
     showRopes: true,
   },
   month: {
-    level: 'month',
+    level: "month",
     dayWidth: 12,
     minScale: 0.6,
     maxScale: 3,
     showCatalystDots: true,
     showTimeDividers: true,
     showRopes: true,
-    timeLabelGranularity: 'month',
+    timeLabelGranularity: "month",
   },
   week: {
-    level: 'week',
+    level: "week",
     dayWidth: 120,
     minScale: 1,
     maxScale: 4,
     showCatalystDots: true,
     showTimeDividers: true,
     showRopes: true,
-    timeLabelGranularity: 'week',
+    timeLabelGranularity: "week",
   },
 };
 
@@ -68,7 +68,7 @@ export function getZoomConfig(level: ZoomLevel): ZoomConfig {
 }
 
 /** Ordered zoom levels from most zoomed-out to most zoomed-in */
-const ZOOM_ORDER: ZoomLevel[] = ['year', 'quarter', 'month', 'week'];
+const ZOOM_ORDER: ZoomLevel[] = ["year", "quarter", "month", "week"];
 
 export function canZoomIn(level: ZoomLevel): boolean {
   return ZOOM_ORDER.indexOf(level) < ZOOM_ORDER.length - 1;
@@ -90,9 +90,7 @@ export function zoomOut(level: ZoomLevel): ZoomLevel {
 
 /** Easing function for zoom transitions */
 export function easeInOutCubic(t: number): number {
-  return t < 0.5
-    ? 4 * t * t * t
-    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 export interface CameraState {
@@ -101,15 +99,19 @@ export interface CameraState {
   scale: number;
 }
 
-export type NarrativeSemanticView = 'narratives' | 'themes';
+export type NarrativeSemanticView = "narratives" | "themes";
 
 /** NarrativeForceCanvas semantic zoom: territory view when zoomed out, theme view when zoomed in */
 export function getSemanticZoom(zoom: number): NarrativeSemanticView {
-  return zoom >= 0.35 ? 'themes' : 'narratives';
+  return zoom >= 0.35 ? "themes" : "narratives";
 }
 
 /** Interpolate between two camera states with easeInOutCubic */
-export function interpolateCamera(from: CameraState, to: CameraState, t: number): CameraState {
+export function interpolateCamera(
+  from: CameraState,
+  to: CameraState,
+  t: number,
+): CameraState {
   const e = easeInOutCubic(Math.max(0, Math.min(1, t)));
   return {
     x: from.x + (to.x - from.x) * e,
@@ -119,7 +121,11 @@ export function interpolateCamera(from: CameraState, to: CameraState, t: number)
 }
 
 /** Convert screen coordinates to canvas world coordinates */
-export function screenToWorld(screenX: number, screenY: number, camera: CameraState): { x: number; y: number } {
+export function screenToWorld(
+  screenX: number,
+  screenY: number,
+  camera: CameraState,
+): { x: number; y: number } {
   return {
     x: (screenX - camera.x) / camera.scale,
     y: (screenY - camera.y) / camera.scale,
@@ -127,7 +133,11 @@ export function screenToWorld(screenX: number, screenY: number, camera: CameraSt
 }
 
 /** Convert world coordinates to screen coordinates */
-export function worldToScreen(worldX: number, worldY: number, camera: CameraState): { x: number; y: number } {
+export function worldToScreen(
+  worldX: number,
+  worldY: number,
+  camera: CameraState,
+): { x: number; y: number } {
   return {
     x: worldX * camera.scale + camera.x,
     y: worldY * camera.scale + camera.y,

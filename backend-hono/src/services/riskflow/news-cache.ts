@@ -4,8 +4,14 @@
  * Prevents duplicate X API calls and AI analysis
  */
 
-import { sql, isDatabaseAvailable } from '../../config/database.js';
-import type { FeedItem, MacroLevel, NewsSource, SentimentDirection, UrgencyLevel } from '../../types/riskflow.js';
+import { sql, isDatabaseAvailable } from "../../config/database.js";
+import type {
+  FeedItem,
+  MacroLevel,
+  NewsSource,
+  SentimentDirection,
+  UrgencyLevel,
+} from "../../types/riskflow.js";
 
 // In-memory fallback for dev mode
 let memoryCache: FeedItem[] = [];
@@ -41,7 +47,7 @@ export interface NewsFeedRow {
 export async function storeFeedItem(item: FeedItem): Promise<void> {
   if (!isDatabaseAvailable() || !sql) {
     // Memory fallback
-    const exists = memoryCache.some(i => i.id === item.id);
+    const exists = memoryCache.some((i) => i.id === item.id);
     if (!exists) {
       memoryCache.unshift(item);
       if (memoryCache.length > MEMORY_CACHE_MAX) {
@@ -91,7 +97,7 @@ export async function storeFeedItem(item: FeedItem): Promise<void> {
         econ_data = EXCLUDED.econ_data
     `;
   } catch (error) {
-    console.error('[NewsCache] Failed to store item:', item.id, error);
+    console.error("[NewsCache] Failed to store item:", item.id, error);
   }
 }
 
@@ -120,7 +126,7 @@ export async function getCachedFeed(options: {
     // Memory fallback
     const cutoff = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
     return memoryCache
-      .filter(item => {
+      .filter((item) => {
         const pubDate = new Date(item.publishedAt);
         const level = item.macroLevel ?? 1;
         return pubDate >= cutoff && level >= minMacroLevel;
@@ -129,8 +135,10 @@ export async function getCachedFeed(options: {
   }
 
   try {
-    const cutoffDate = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
-    
+    const cutoffDate = new Date(
+      Date.now() - hoursBack * 60 * 60 * 1000,
+    ).toISOString();
+
     const result = await sql`
       SELECT * FROM news_feed_items
       WHERE published_at >= ${cutoffDate}
@@ -144,7 +152,7 @@ export async function getCachedFeed(options: {
 
     return result.map(mapRowToFeedItem);
   } catch (error) {
-    console.error('[NewsCache] Failed to get cached feed:', error);
+    console.error("[NewsCache] Failed to get cached feed:", error);
     return [];
   }
 }
@@ -154,7 +162,7 @@ export async function getCachedFeed(options: {
  */
 export async function isCached(tweetId: string): Promise<boolean> {
   if (!isDatabaseAvailable() || !sql) {
-    return memoryCache.some(i => i.id === tweetId);
+    return memoryCache.some((i) => i.id === tweetId);
   }
 
   try {
@@ -170,17 +178,19 @@ export async function isCached(tweetId: string): Promise<boolean> {
 /**
  * Get tweet IDs that are already cached (for batch checking)
  */
-export async function getCachedTweetIds(tweetIds: string[]): Promise<Set<string>> {
+export async function getCachedTweetIds(
+  tweetIds: string[],
+): Promise<Set<string>> {
   if (!isDatabaseAvailable() || !sql) {
-    const cached = new Set(memoryCache.map(i => i.id));
-    return new Set(tweetIds.filter(id => cached.has(id)));
+    const cached = new Set(memoryCache.map((i) => i.id));
+    return new Set(tweetIds.filter((id) => cached.has(id)));
   }
 
   try {
     const result = await sql`
       SELECT tweet_id FROM news_feed_items WHERE tweet_id = ANY(${tweetIds})
     `;
-    return new Set(result.map(r => String(r.tweet_id)));
+    return new Set(result.map((r) => String(r.tweet_id)));
   } catch {
     return new Set();
   }
@@ -212,8 +222,12 @@ export async function getLastFetchTime(): Promise<Date | null> {
  * DISABLED — RiskFlow items are NEVER deleted. Retained permanently for calibration + narrative tracking.
  * @deprecated Do not call. Items are sacred. — TP directive 2026-03-28
  */
-export async function cleanupOldItems(_hoursOld: number = 720): Promise<number> {
-  console.warn('[NewsCache] cleanupOldItems called but DISABLED — items are never deleted');
+export async function cleanupOldItems(
+  _hoursOld: number = 720,
+): Promise<number> {
+  console.warn(
+    "[NewsCache] cleanupOldItems called but DISABLED — items are never deleted",
+  );
   return 0;
 }
 
@@ -229,16 +243,17 @@ function mapRowToFeedItem(row: NewsFeedRow): FeedItem {
     symbols: row.symbols ?? [],
     tags: row.tags ?? [],
     isBreaking: row.is_breaking,
-    urgency: (row.urgency as UrgencyLevel) ?? 'normal',
+    urgency: (row.urgency as UrgencyLevel) ?? "normal",
     sentiment: row.sentiment as SentimentDirection | undefined,
     ivScore: row.iv_score ?? undefined,
     macroLevel: row.macro_level as MacroLevel | undefined,
     publishedAt: row.published_at,
     analyzedAt: row.analyzed_at ?? undefined,
-    subScores: row.sub_scores as unknown as FeedItem['subScores'] ?? undefined,
-    riskType: (row.risk_type as FeedItem['riskType']) ?? null,
+    subScores:
+      (row.sub_scores as unknown as FeedItem["subScores"]) ?? undefined,
+    riskType: (row.risk_type as FeedItem["riskType"]) ?? null,
     agentNote: row.agent_note ?? null,
     agentNoteGeneratedAt: row.agent_note_generated_at ?? null,
-    econData: row.econ_data as FeedItem['econData'] ?? null,
+    econData: (row.econ_data as FeedItem["econData"]) ?? null,
   };
 }

@@ -1,27 +1,35 @@
-import { useState, useEffect } from 'react';
-import { FeedItem as FeedItemType, IVIndicator } from '../../types/feed';
-import { useRiskFlow } from '../../contexts/RiskFlowContext';
-import type { RiskFlowAlert } from '../../lib/riskflow-feed';
-import { FeedItem } from './FeedItem';
-import { MoveLeft, MoveRight, GripVertical, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { PanelPosition } from '../layout/DraggablePanel';
+import { useState, useEffect } from "react";
+import { FeedItem as FeedItemType, IVIndicator } from "../../types/feed";
+import { useRiskFlow } from "../../contexts/RiskFlowContext";
+import type { RiskFlowAlert } from "../../lib/riskflow-feed";
+import { FeedItem } from "./FeedItem";
+import {
+  MoveLeft,
+  MoveRight,
+  GripVertical,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { PanelPosition } from "../layout/DraggablePanel";
 
 // Track last seen alert ID to count unread (per session)
 let lastSeenAlertId: string | null = null;
 
 function alertToFeedItem(alert: RiskFlowAlert): FeedItemType {
-  const ivValue = alert.severity === 'high' ? 7 : alert.severity === 'medium' ? 5 : 3;
+  const ivValue =
+    alert.severity === "high" ? 7 : alert.severity === "medium" ? 5 : 3;
   const iv: IVIndicator = {
     value: ivValue,
-    type: 'Neutral',
-    classification: 'Neutral',
+    type: "Neutral",
+    classification: "Neutral",
   };
   return {
     id: alert.id,
     time: new Date(alert.publishedAt),
     text: alert.headline,
     source: alert.source,
-    type: 'news',
+    type: "news",
     iv,
   };
 }
@@ -37,9 +45,9 @@ interface MinimalFeedSectionProps {
 export function MinimalFeedSection({
   collapsed = false,
   onToggleCollapse,
-  position = 'right',
+  position = "right",
   onPositionChange,
-  onHide
+  onHide,
 }: MinimalFeedSectionProps) {
   const { alerts, markAllSeen } = useRiskFlow();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -76,10 +84,14 @@ export function MinimalFeedSection({
       <div className="h-full flex items-center justify-center p-4 relative bg-[var(--fintheon-surface)]">
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="text-xs text-[var(--fintheon-accent)]/60">RiskFlow</div>
+            <div className="text-xs text-[var(--fintheon-accent)]/60">
+              RiskFlow
+            </div>
             {unreadCount > 0 && (
               <div className="backdrop-blur-sm bg-[var(--fintheon-accent)]/20 border border-[var(--fintheon-accent)]/40 rounded px-1.5 py-0.5">
-                <span className="text-[10px] font-mono text-[var(--fintheon-accent)]">{unreadCount}</span>
+                <span className="text-[10px] font-mono text-[var(--fintheon-accent)]">
+                  {unreadCount}
+                </span>
               </div>
             )}
           </div>
@@ -101,28 +113,32 @@ export function MinimalFeedSection({
     <div className="h-full flex flex-col">
       <div className="h-12 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/20">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-[var(--fintheon-accent)]">RiskFlow</h2>
+          <h2 className="text-sm font-semibold text-[var(--fintheon-accent)]">
+            RiskFlow
+          </h2>
           {unreadCount > 0 && (
             <div className="backdrop-blur-sm bg-[var(--fintheon-accent)]/20 border border-[var(--fintheon-accent)]/40 rounded px-1.5 py-0.5">
-              <span className="text-[10px] font-mono text-[var(--fintheon-accent)]">{unreadCount}</span>
+              <span className="text-[10px] font-mono text-[var(--fintheon-accent)]">
+                {unreadCount}
+              </span>
             </div>
           )}
         </div>
         <div className="flex items-center gap-1">
           {onPositionChange && (
             <>
-              {position === 'right' && (
+              {position === "right" && (
                 <button
-                  onClick={() => onPositionChange('left')}
+                  onClick={() => onPositionChange("left")}
                   className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
                   title="Move Left"
                 >
                   <MoveLeft className="w-3.5 h-3.5" />
                 </button>
               )}
-              {position === 'left' && (
+              {position === "left" && (
                 <button
-                  onClick={() => onPositionChange('right')}
+                  onClick={() => onPositionChange("right")}
                   className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
                   title="Move Right"
                 >
@@ -130,7 +146,7 @@ export function MinimalFeedSection({
                 </button>
               )}
               <button
-                onClick={() => onPositionChange('floating')}
+                onClick={() => onPositionChange("floating")}
                 className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
                 title="Float"
               >
@@ -163,9 +179,7 @@ export function MinimalFeedSection({
             <p>No news items available</p>
           </div>
         ) : (
-          feedItems.map(item => (
-            <FeedItem key={item.id} item={item} />
-          ))
+          feedItems.map((item) => <FeedItem key={item.id} item={item} />)
         )}
       </div>
     </div>

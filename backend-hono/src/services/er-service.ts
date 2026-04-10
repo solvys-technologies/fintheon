@@ -1,6 +1,6 @@
-import { isPoolAvailable, query } from '../db/optimized.js';
+import { isPoolAvailable, query } from "../db/optimized.js";
 
-export type ERState = 'stable' | 'neutral' | 'tilt';
+export type ERState = "stable" | "neutral" | "tilt";
 
 export interface SaveERSessionInput {
   sessionId?: number;
@@ -45,7 +45,7 @@ interface MemorySnapshot {
   createdAt: string;
 }
 
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = process.env.NODE_ENV !== "production";
 
 const memorySessions: MemorySession[] = [];
 const memorySnapshots: MemorySnapshot[] = [];
@@ -53,27 +53,33 @@ let memorySessionId = 1;
 let memorySnapshotId = 1;
 
 function toNumber(value: unknown, fallback = 0): number {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim()) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
   }
   return fallback;
 }
 
-export async function saveSession(userId: string, input: SaveERSessionInput): Promise<{ sessionId: number; finalized: boolean }> {
+export async function saveSession(
+  userId: string,
+  input: SaveERSessionInput,
+): Promise<{ sessionId: number; finalized: boolean }> {
   const finalized = input.sessionDurationSeconds > 0;
   const maxTiltTime = input.maxTiltTime ? new Date(input.maxTiltTime) : null;
 
   if (!isPoolAvailable()) {
     if (!isDev) {
-      throw new Error('Database unavailable for ER session persistence');
+      throw new Error("Database unavailable for ER session persistence");
     }
 
     const now = new Date().toISOString();
 
     if (input.sessionId) {
-      const existing = memorySessions.find((session) => session.id === input.sessionId && session.userId === userId);
+      const existing = memorySessions.find(
+        (session) =>
+          session.id === input.sessionId && session.userId === userId,
+      );
       if (existing) {
         existing.finalScore = input.finalScore;
         existing.timeInTiltSeconds = input.timeInTiltSeconds;
@@ -89,7 +95,10 @@ export async function saveSession(userId: string, input: SaveERSessionInput): Pr
 
     const openSession = memorySessions
       .filter((session) => session.userId === userId && !session.isFinalized)
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )[0];
 
     if (openSession && finalized) {
       openSession.finalScore = input.finalScore;
@@ -150,7 +159,7 @@ export async function saveSession(userId: string, input: SaveERSessionInput): Pr
         input.maxTiltScore ?? null,
         maxTiltTime,
         finalized,
-      ]
+      ],
     );
 
     const updatedId = update.rows[0]?.id;
@@ -190,7 +199,7 @@ export async function saveSession(userId: string, input: SaveERSessionInput): Pr
         input.sessionDurationSeconds,
         input.maxTiltScore ?? null,
         maxTiltTime,
-      ]
+      ],
     );
 
     const finalizedId = finalizeOpen.rows[0]?.id;
@@ -222,7 +231,7 @@ export async function saveSession(userId: string, input: SaveERSessionInput): Pr
       input.maxTiltScore ?? null,
       maxTiltTime,
       finalized,
-    ]
+    ],
   );
 
   return {
@@ -231,7 +240,10 @@ export async function saveSession(userId: string, input: SaveERSessionInput): Pr
   };
 }
 
-export async function saveSnapshot(userId: string, input: SaveERSnapshotInput): Promise<{ snapshotId: number }> {
+export async function saveSnapshot(
+  userId: string,
+  input: SaveERSnapshotInput,
+): Promise<{ snapshotId: number }> {
   let audioLevels: Record<string, unknown> | null = null;
   if (input.audioLevels) {
     try {
@@ -244,7 +256,7 @@ export async function saveSnapshot(userId: string, input: SaveERSnapshotInput): 
 
   if (!isPoolAvailable()) {
     if (!isDev) {
-      throw new Error('Database unavailable for ER snapshot persistence');
+      throw new Error("Database unavailable for ER snapshot persistence");
     }
 
     const snapshotId = memorySnapshotId;
@@ -283,7 +295,7 @@ export async function saveSnapshot(userId: string, input: SaveERSnapshotInput): 
       input.state,
       audioLevels ? JSON.stringify(audioLevels) : null,
       keywords ? JSON.stringify(keywords) : null,
-    ]
+    ],
   );
 
   return { snapshotId: result.rows[0].id };
@@ -291,14 +303,17 @@ export async function saveSnapshot(userId: string, input: SaveERSnapshotInput): 
 
 export async function listSessions(
   userId: string,
-  options?: { limit?: number }
+  options?: { limit?: number },
 ): Promise<Array<Record<string, unknown>>> {
   const limit = Math.max(1, Math.min(100, Math.floor(options?.limit ?? 20)));
 
   if (!isPoolAvailable()) {
     return memorySessions
       .filter((session) => session.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
       .slice(0, limit)
       .map((session) => ({
         sessionId: session.id,
@@ -343,7 +358,7 @@ export async function listSessions(
     ORDER BY created_at DESC
     LIMIT $2
     `,
-    [userId, limit]
+    [userId, limit],
   );
 
   return result.rows.map((row) => ({
@@ -352,7 +367,8 @@ export async function listSessions(
     timeInTiltSeconds: toNumber(row.time_in_tilt_seconds),
     infractionCount: toNumber(row.infraction_count),
     sessionDurationSeconds: toNumber(row.session_duration_seconds),
-    maxTiltScore: row.max_tilt_score !== null ? toNumber(row.max_tilt_score) : null,
+    maxTiltScore:
+      row.max_tilt_score !== null ? toNumber(row.max_tilt_score) : null,
     maxTiltTime: row.max_tilt_time,
     isFinalized: Boolean(row.is_finalized),
     createdAt: row.created_at,
@@ -362,7 +378,7 @@ export async function listSessions(
 
 export async function evaluateOvertrading(
   userId: string,
-  options?: { windowMinutes?: number; threshold?: number }
+  options?: { windowMinutes?: number; threshold?: number },
 ): Promise<{
   isOvertrading: boolean;
   tradesInWindow: number;
@@ -371,5 +387,11 @@ export async function evaluateOvertrading(
   penalty: number;
   warning?: string;
 }> {
-  return { isOvertrading: false, tradesInWindow: 0, weightedTrades: 0, threshold: options?.threshold ?? 10, penalty: 0 };
+  return {
+    isOvertrading: false,
+    tradesInWindow: 0,
+    weightedTrades: 0,
+    threshold: options?.threshold ?? 10,
+    penalty: 0,
+  };
 }

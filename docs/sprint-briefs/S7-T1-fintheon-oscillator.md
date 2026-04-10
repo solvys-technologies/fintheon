@@ -9,6 +9,7 @@
 ## Context
 
 We're building a proprietary oscillator for TradingView that combines:
+
 - **MarkitTick LFA Engine** logic for raw volume delta with efficiency multiplier
 - **SMI Ergodic** double-smooth architecture for clean oscillator output
 - **LuxAlgo Oscillator Matrix** visual layout (proximity maps, confluence bars, signal dots)
@@ -75,6 +76,7 @@ indicator("Fintheon Oscillator [Priced In Research]"
 ```
 
 Constants:
+
 - `EPSILON = 1e-9`
 - `GRADIENT_STDEV_LEN = 50`
 - Solvys Gold hex: `ACCENT = #c79f4a`, `BG = #050402`, `TEXT = #f0ead6`
@@ -83,19 +85,19 @@ Constants:
 
 Group these exactly as listed:
 
-| Group | Inputs |
-|-------|--------|
-| **1. Instruments** | `secondary_symbol` input.string("ES1!", "Secondary Instrument"), `use_secondary` input.bool(true) |
-| **2. MTF Settings** | `htf_mode` input.string("Fixed TF" / "Multiple of chart TF"), `fixed_tf` input.timeframe("15"), `tf_multiplier` input.int(1), `mtf_smoothed` input.bool(true), `repainting` input.string("On" / "Off") |
-| **3. Core Oscillator** | `mfi_source` input.source(close), `mfi_length` input.int(13), `smi_long` input.int(13), `smi_short` input.int(5), `signal_length` input.int(5) |
-| **4. Efficiency** | `efficiency_length` input.int(3), `eff_min_cap` input.float(0.2), `eff_max_cap` input.float(2.0), `momentum_threshold` input.float(0.5) |
-| **5. ANTILAG** | `antilag_vol_surge` input.float(1.5), `antilag_price_velocity` input.float(0.3), `antilag_ema_fast` input.int(20), `antilag_ema_slow` input.int(100), `antilag_atr_proximity` input.float(0.3) |
-| **6. Proximity Maps** | `show_maps` input.bool(true), `zone_atr_distance` input.float(3.0), `map_pivot_lookback` input.int(7), `map_max_zones` input.int(30) |
-| **7. Dynamic Zones** | `dz_sample_length` input.int(50), `dz_pct_above` input.float(90), `dz_pct_below` input.float(90) |
-| **8. Signals** | `show_reversal_dots` input.bool(true), `show_strong_signals` input.bool(true), `show_divergences` input.bool(true), `show_price_divs` input.bool(true), `div_confirm_bars` input.int(5), `labels_text_mode` input.string("Off" / "Symbols Only" / "Full") |
-| **9. Visuals** | All `input.color` — accent `#c79f4a`, bull `#089981`, bear `#f23645`, osc_line `#c79f4a`, signal_line `color.gray`, histogram_bull `#089981`, histogram_bear `#f23645` |
-| **10. Dashboard** | `show_dashboard` input.bool(true) |
-| **11. Alerts** | Individual bool toggles per alert type |
+| Group                  | Inputs                                                                                                                                                                                                                                                    |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Instruments**     | `secondary_symbol` input.string("ES1!", "Secondary Instrument"), `use_secondary` input.bool(true)                                                                                                                                                         |
+| **2. MTF Settings**    | `htf_mode` input.string("Fixed TF" / "Multiple of chart TF"), `fixed_tf` input.timeframe("15"), `tf_multiplier` input.int(1), `mtf_smoothed` input.bool(true), `repainting` input.string("On" / "Off")                                                    |
+| **3. Core Oscillator** | `mfi_source` input.source(close), `mfi_length` input.int(13), `smi_long` input.int(13), `smi_short` input.int(5), `signal_length` input.int(5)                                                                                                            |
+| **4. Efficiency**      | `efficiency_length` input.int(3), `eff_min_cap` input.float(0.2), `eff_max_cap` input.float(2.0), `momentum_threshold` input.float(0.5)                                                                                                                   |
+| **5. ANTILAG**         | `antilag_vol_surge` input.float(1.5), `antilag_price_velocity` input.float(0.3), `antilag_ema_fast` input.int(20), `antilag_ema_slow` input.int(100), `antilag_atr_proximity` input.float(0.3)                                                            |
+| **6. Proximity Maps**  | `show_maps` input.bool(true), `zone_atr_distance` input.float(3.0), `map_pivot_lookback` input.int(7), `map_max_zones` input.int(30)                                                                                                                      |
+| **7. Dynamic Zones**   | `dz_sample_length` input.int(50), `dz_pct_above` input.float(90), `dz_pct_below` input.float(90)                                                                                                                                                          |
+| **8. Signals**         | `show_reversal_dots` input.bool(true), `show_strong_signals` input.bool(true), `show_divergences` input.bool(true), `show_price_divs` input.bool(true), `div_confirm_bars` input.int(5), `labels_text_mode` input.string("Off" / "Symbols Only" / "Full") |
+| **9. Visuals**         | All `input.color` — accent `#c79f4a`, bull `#089981`, bear `#f23645`, osc_line `#c79f4a`, signal_line `color.gray`, histogram_bull `#089981`, histogram_bear `#f23645`                                                                                    |
+| **10. Dashboard**      | `show_dashboard` input.bool(true)                                                                                                                                                                                                                         |
+| **11. Alerts**         | Individual bool toggles per alert type                                                                                                                                                                                                                    |
 
 ### Section 3: Type Definitions (~60 lines)
 
@@ -136,6 +138,7 @@ type DivergenceState
 ### Section 4: Core Calculations (~100 lines)
 
 **Step 1 — MarkitTick Delta Calculation:**
+
 ```pine
 // Efficiency multiplier (body size relative to volume)
 float typical_price = (high + low + close) / 3.0
@@ -159,10 +162,11 @@ engine.delta_current := engine.is_strong_up ? tv_base * engine.efficiency_mult :
 **Step 2 — SMI Ergodic Smoothing (inline, no library):**
 
 Implement double-EMA smoothing of the delta:
+
 ```pine
 // First smoothing: EMA of delta over smi_long period
 float smooth1 = ta.ema(engine.delta_current, smi_long)
-// Second smoothing: EMA of smooth1 over smi_short period  
+// Second smoothing: EMA of smooth1 over smi_short period
 float smooth2 = ta.ema(smooth1, smi_short)
 // Absolute delta for normalization
 float abs_smooth1 = ta.ema(math.abs(engine.delta_current), smi_long)
@@ -176,6 +180,7 @@ engine.histogram := engine.osc_value - engine.signal_value
 ```
 
 **Step 3 — Dynamic Zones:**
+
 ```pine
 float dz_above = ta.percentile_nearest_rank(engine.osc_value, dz_sample_length, dz_pct_above)
 float dz_below = ta.percentile_nearest_rank(engine.osc_value, dz_sample_length, 100 - dz_pct_below)
@@ -184,6 +189,7 @@ float dz_center = ta.percentile_nearest_rank(engine.osc_value, dz_sample_length,
 
 **Step 4 — HTF Data:**
 Use the same repainting-safe pattern from SME MFI:
+
 ```pine
 string requestedTf = htf_mode == "Fixed TF" ? fixed_tf : timeframe.from_seconds(timeframe.in_seconds() * tf_multiplier)
 int offset = repainting == "On" ? 0 : 1
@@ -297,6 +303,7 @@ Multi-pivot system (3 lookback levels: 5, 10, 20). Follow the MarkitTick pattern
 ### Section 8: Signal Generation (~50 lines)
 
 **High-frequency reversal dots:**
+
 ```pine
 // Small dots when oscillator crosses dynamic zone boundary
 bool osc_exits_top = ta.crossunder(engine.osc_value, dz_above)
@@ -306,6 +313,7 @@ plotshape(show_reversal_dots and osc_exits_btm ? dz_below : na, "Rev Dot Bull", 
 ```
 
 **Strong reversal labels** (ANTILAG + divergence + DZ extreme):
+
 ```pine
 bool strong_bull = antilag.fires and (div_bull or h_div_bull) and engine.osc_value < dz_below
 bool strong_bear = antilag.fires and (div_bear or h_div_bear) and engine.osc_value > dz_above
@@ -319,6 +327,7 @@ if show_strong_signals and strong_bear
 ### Section 9: Visualization (~100 lines)
 
 **Plots:**
+
 ```pine
 // Main oscillator + signal
 p_osc = plot(engine.osc_value, "Oscillator", color = osc_gradient_color, linewidth = 2)
@@ -345,6 +354,7 @@ bgcolor(antilag.fires ? color.new(ACCENT, math.round(100 - antilag.strength * 60
 ```
 
 **Gradient coloring for oscillator line:**
+
 ```pine
 float spread = engine.osc_value - engine.signal_value
 float stdev_range = ta.stdev(spread, GRADIENT_STDEV_LEN) * 2.0
@@ -355,14 +365,14 @@ color osc_gradient_color = spread > 0 ? color.from_gradient(spread, 0, stdev_ran
 
 Top-right table with Solvys Gold theme:
 
-| Row | Label | Value |
-|-----|-------|-------|
-| 0 | Mode | HTF timeframe display |
-| 1 | Oscillator | Current value + colored |
-| 2 | ANTILAG | "ACTIVE" (gold) / "—" (grey) |
-| 3 | Confluence | Score % with color |
-| 4 | Nearest Zone | Distance in ATR |
-| 5 | Secondary | Symbol + aligned/diverged |
+| Row | Label        | Value                        |
+| --- | ------------ | ---------------------------- |
+| 0   | Mode         | HTF timeframe display        |
+| 1   | Oscillator   | Current value + colored      |
+| 2   | ANTILAG      | "ACTIVE" (gold) / "—" (grey) |
+| 3   | Confluence   | Score % with color           |
+| 4   | Nearest Zone | Distance in ATR              |
+| 5   | Secondary    | Symbol + aligned/diverged    |
 
 ```pine
 if barstate.islast and show_dashboard

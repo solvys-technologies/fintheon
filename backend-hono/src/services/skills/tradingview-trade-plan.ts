@@ -5,29 +5,29 @@
  * Graceful degradation when Computer Use is unavailable.
  */
 
-import { getSessionManager } from '../claude-sdk/session-manager.js'
-import { getHealth } from '../claude-sdk/process-manager.js'
-import { sql, isDatabaseAvailable } from '../../config/database.js'
-import type { StoredProposal } from '../autopilot/proposal-service.js'
-import { createLogger } from '../../lib/logger.js'
+import { getSessionManager } from "../claude-sdk/session-manager.js";
+import { getHealth } from "../claude-sdk/process-manager.js";
+import { sql, isDatabaseAvailable } from "../../config/database.js";
+import type { StoredProposal } from "../autopilot/proposal-service.js";
+import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger('TradePlan')
+const log = createLogger("TradePlan");
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface TradePlan {
-  instrument: string
-  direction: 'long' | 'short'
-  entryPrice: number
-  stopLoss: number
-  takeProfitLevels: number[]     // up to 3 TP levels
-  riskRewardRatio: number
-  timeframe: string              // e.g., '4H', '1D', '15m'
-  keyLevels: Array<{ label: string; price: number }>
-  chartAnalysis: string          // Claude's written analysis
-  confidence: number             // 0-100
-  trendTemplate: 'ripper' | 'strong_trend' | 'weak_trend' | null
-  screenshotBase64?: string      // optional chart screenshot
+  instrument: string;
+  direction: "long" | "short";
+  entryPrice: number;
+  stopLoss: number;
+  takeProfitLevels: number[]; // up to 3 TP levels
+  riskRewardRatio: number;
+  timeframe: string; // e.g., '4H', '1D', '15m'
+  keyLevels: Array<{ label: string; price: number }>;
+  chartAnalysis: string; // Claude's written analysis
+  confidence: number; // 0-100
+  trendTemplate: "ripper" | "strong_trend" | "weak_trend" | null;
+  screenshotBase64?: string; // optional chart screenshot
 }
 
 // ── Computer Use Availability ──────────────────────────────────────────────
@@ -37,14 +37,14 @@ export interface TradePlan {
  * Requires ENABLE_COMPUTER_USE=true and a working Claude CLI.
  */
 export function isComputerUseAvailable(): boolean {
-  return process.env.ENABLE_COMPUTER_USE === 'true'
+  return process.env.ENABLE_COMPUTER_USE === "true";
 }
 
 /** Async check that also verifies CLI health */
 export async function isComputerUseReady(): Promise<boolean> {
-  if (!isComputerUseAvailable()) return false
-  const health = await getHealth()
-  return health.available
+  if (!isComputerUseAvailable()) return false;
+  const health = await getHealth();
+  return health.available;
 }
 
 // ── Trade Plan Generation ──────────────────────────────────────────────────
@@ -55,58 +55,63 @@ export async function isComputerUseReady(): Promise<boolean> {
  */
 export async function generateTradePlan(
   instrument: string,
-  direction: 'long' | 'short',
+  direction: "long" | "short",
   context?: string,
 ): Promise<TradePlan | null> {
   if (!isComputerUseAvailable()) {
-    log.info('Computer Use not enabled — skipping trade plan generation')
-    return null
+    log.info("Computer Use not enabled — skipping trade plan generation");
+    return null;
   }
 
-  const health = await getHealth()
+  const health = await getHealth();
   if (!health.available) {
-    log.warn('Claude CLI not available — skipping trade plan generation')
-    return null
+    log.warn("Claude CLI not available — skipping trade plan generation");
+    return null;
   }
 
-  const timeframe = inferTimeframe(instrument)
+  const timeframe = inferTimeframe(instrument);
 
-  const prompt = buildTradePlanPrompt(instrument, direction, timeframe, context)
+  const prompt = buildTradePlanPrompt(
+    instrument,
+    direction,
+    timeframe,
+    context,
+  );
 
   try {
-    const session = getSessionManager()
+    const session = getSessionManager();
     const raw = await session.sendPromptSync(prompt, {
-      model: 'claude-sonnet-4-5-20250514',
-      allowedTools: ['computer'],
+      model: "claude-sonnet-4-5-20250514",
+      allowedTools: ["computer"],
       maxTurns: 5,
       timeoutMs: 180_000, // 3 min — Computer Use is slow
-    })
+    });
 
-    const plan = parseTradePlanResponse(raw, instrument, direction, timeframe)
+    const plan = parseTradePlanResponse(raw, instrument, direction, timeframe);
     if (!plan) {
-      log.warn('Failed to parse trade plan from Claude response', {
+      log.warn("Failed to parse trade plan from Claude response", {
         instrument,
         responseLength: raw.length,
-      })
-      return null
+      });
+      return null;
     }
 
-    log.info('Trade plan generated', {
+    log.info("Trade plan generated", {
       instrument,
       direction,
       entry: plan.entryPrice,
       stop: plan.stopLoss,
       tpCount: plan.takeProfitLevels.length,
       confidence: plan.confidence,
-    })
+    });
 
-    return plan
+    return plan;
   } catch (err) {
-    log.warn('Trade plan generation failed (non-fatal)', {
+    log.warn("Trade plan generation failed (non-fatal)", {
       instrument,
       error: err instanceof Error ? err.message : String(err),
-    })
-    return null
+    });
+    return null;
   }
 }
 
@@ -121,8 +126,8 @@ export async function enrichProposalWithTradePlan(
   plan: TradePlan,
 ): Promise<StoredProposal | null> {
   if (!isDatabaseAvailable() || !sql) {
-    log.warn('Database not available — cannot enrich proposal')
-    return null
+    log.warn("Database not available — cannot enrich proposal");
+    return null;
   }
 
   try {
@@ -138,26 +143,29 @@ export async function enrichProposalWithTradePlan(
             tradePlanTimeframe: plan.timeframe,
             tradePlanKeyLevels: JSON.stringify(plan.keyLevels),
             tradePlanConfidence: String(plan.confidence),
-            tradePlanTrendTemplate: plan.trendTemplate ?? '',
+            tradePlanTrendTemplate: plan.trendTemplate ?? "",
           })}::jsonb,
           updated_at = NOW()
       WHERE id = ${proposalId}
       RETURNING *
-    `
+    `;
 
     if (result.length === 0) {
-      log.warn('Proposal not found for enrichment', { proposalId })
-      return null
+      log.warn("Proposal not found for enrichment", { proposalId });
+      return null;
     }
 
-    log.info('Proposal enriched with trade plan', { proposalId, instrument: plan.instrument })
-    return mapRowToProposal(result[0])
+    log.info("Proposal enriched with trade plan", {
+      proposalId,
+      instrument: plan.instrument,
+    });
+    return mapRowToProposal(result[0]);
   } catch (err) {
-    log.error('Failed to enrich proposal', {
+    log.error("Failed to enrich proposal", {
       proposalId,
       error: err instanceof Error ? err.message : String(err),
-    })
-    return null
+    });
+    return null;
   }
 }
 
@@ -165,11 +173,13 @@ export async function enrichProposalWithTradePlan(
 
 function buildTradePlanPrompt(
   instrument: string,
-  direction: 'long' | 'short',
+  direction: "long" | "short",
   timeframe: string,
   context?: string,
 ): string {
-  const contextLine = context ? `\nAdditional context from the bulletin post: "${context.slice(0, 500)}"` : ''
+  const contextLine = context
+    ? `\nAdditional context from the bulletin post: "${context.slice(0, 500)}"`
+    : "";
 
   return `You are a professional technical analyst. Use Computer Use to open TradingView and analyze ${instrument}.
 
@@ -211,7 +221,7 @@ Important:
 - Include 1-3 take profit levels
 - Key levels should include the fib zones from the applied template
 - trendTemplate must match whichever saved template you applied on the chart
-- Confidence 0-100 reflects how strong the setup is`
+- Confidence 0-100 reflects how strong the setup is`;
 }
 
 // ── Response Parsing ───────────────────────────────────────────────────────
@@ -219,24 +229,24 @@ Important:
 function parseTradePlanResponse(
   raw: string,
   instrument: string,
-  direction: 'long' | 'short',
+  direction: "long" | "short",
   timeframe: string,
 ): TradePlan | null {
   try {
     // Try to extract JSON from the response
-    const jsonMatch = raw.match(/\{[\s\S]*"entryPrice"[\s\S]*\}/)
-    if (!jsonMatch) return null
+    const jsonMatch = raw.match(/\{[\s\S]*"entryPrice"[\s\S]*\}/);
+    if (!jsonMatch) return null;
 
-    const parsed = JSON.parse(jsonMatch[0])
+    const parsed = JSON.parse(jsonMatch[0]);
 
     // Validate required fields
     if (
-      typeof parsed.entryPrice !== 'number' ||
-      typeof parsed.stopLoss !== 'number' ||
+      typeof parsed.entryPrice !== "number" ||
+      typeof parsed.stopLoss !== "number" ||
       !Array.isArray(parsed.takeProfitLevels) ||
       parsed.takeProfitLevels.length === 0
     ) {
-      return null
+      return null;
     }
 
     return {
@@ -245,28 +255,43 @@ function parseTradePlanResponse(
       entryPrice: parsed.entryPrice,
       stopLoss: parsed.stopLoss,
       takeProfitLevels: parsed.takeProfitLevels.slice(0, 3).map(Number),
-      riskRewardRatio: typeof parsed.riskRewardRatio === 'number'
-        ? parsed.riskRewardRatio
-        : calculateRR(parsed.entryPrice, parsed.stopLoss, parsed.takeProfitLevels[0], direction),
+      riskRewardRatio:
+        typeof parsed.riskRewardRatio === "number"
+          ? parsed.riskRewardRatio
+          : calculateRR(
+              parsed.entryPrice,
+              parsed.stopLoss,
+              parsed.takeProfitLevels[0],
+              direction,
+            ),
       timeframe,
       keyLevels: Array.isArray(parsed.keyLevels)
-        ? parsed.keyLevels.filter((kl: unknown) =>
-            typeof kl === 'object' && kl !== null && 'label' in kl && 'price' in kl
+        ? parsed.keyLevels.filter(
+            (kl: unknown) =>
+              typeof kl === "object" &&
+              kl !== null &&
+              "label" in kl &&
+              "price" in kl,
           )
         : [],
-      chartAnalysis: typeof parsed.chartAnalysis === 'string' ? parsed.chartAnalysis : '',
-      confidence: typeof parsed.confidence === 'number'
-        ? Math.min(100, Math.max(0, parsed.confidence))
-        : 50,
-      trendTemplate: ['ripper', 'strong_trend', 'weak_trend'].includes(parsed.trendTemplate)
+      chartAnalysis:
+        typeof parsed.chartAnalysis === "string" ? parsed.chartAnalysis : "",
+      confidence:
+        typeof parsed.confidence === "number"
+          ? Math.min(100, Math.max(0, parsed.confidence))
+          : 50,
+      trendTemplate: ["ripper", "strong_trend", "weak_trend"].includes(
+        parsed.trendTemplate,
+      )
         ? parsed.trendTemplate
         : null,
-      screenshotBase64: typeof parsed.screenshotBase64 === 'string'
-        ? parsed.screenshotBase64
-        : undefined,
-    }
+      screenshotBase64:
+        typeof parsed.screenshotBase64 === "string"
+          ? parsed.screenshotBase64
+          : undefined,
+    };
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -276,17 +301,17 @@ function calculateRR(
   entry: number,
   stop: number,
   tp: number,
-  direction: 'long' | 'short',
+  direction: "long" | "short",
 ): number {
-  const risk = Math.abs(entry - stop)
-  if (risk === 0) return 0
-  const reward = direction === 'long' ? tp - entry : entry - tp
-  return Math.round((reward / risk) * 100) / 100
+  const risk = Math.abs(entry - stop);
+  if (risk === 0) return 0;
+  const reward = direction === "long" ? tp - entry : entry - tp;
+  return Math.round((reward / risk) * 100) / 100;
 }
 
 function inferTimeframe(_instrument: string): string {
   // Structure on 15m, entry on 5m — always 15m as the primary timeframe
-  return '15m'
+  return "15m";
 }
 
 function mapRowToProposal(row: Record<string, unknown>): StoredProposal {
@@ -295,7 +320,7 @@ function mapRowToProposal(row: Record<string, unknown>): StoredProposal {
     userId: String(row.user_id),
     strategyName: String(row.strategy_name),
     instrument: String(row.instrument),
-    direction: String(row.direction) as 'long' | 'short' | 'flat',
+    direction: String(row.direction) as "long" | "short" | "flat",
     entryPrice: row.entry_price as number | undefined,
     stopLoss: row.stop_loss as number | undefined,
     takeProfit: (row.take_profit as number[]) ?? [],
@@ -306,14 +331,16 @@ function mapRowToProposal(row: Record<string, unknown>): StoredProposal {
     analystInputs: (row.analyst_inputs as Record<string, string>) ?? {},
     timeframe: String(row.timeframe),
     setupType: String(row.setup_type),
-    status: String(row.status) as StoredProposal['status'],
+    status: String(row.status) as StoredProposal["status"],
     expiresAt: String(row.expires_at),
     acknowledgedAt: row.acknowledged_at as string | undefined,
     executedAt: row.executed_at as string | undefined,
-    executionResult: row.execution_result as Record<string, unknown> | undefined,
+    executionResult: row.execution_result as
+      | Record<string, unknown>
+      | undefined,
     riskAssessmentId: row.risk_assessment_id as string | undefined,
     debateId: row.debate_id as string | undefined,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
-  }
+  };
 }

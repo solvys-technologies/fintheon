@@ -1,7 +1,11 @@
 // [claude-code 2026-03-16] Bridges apiClient error bus → Toast notifications
-import { useEffect, useRef } from 'react';
-import { useToast } from '../contexts/ToastContext';
-import { onApiError, getFixDescription, type ApiErrorEvent } from '../lib/errorBus';
+import { useEffect, useRef } from "react";
+import { useToast } from "../contexts/ToastContext";
+import {
+  onApiError,
+  getFixDescription,
+  type ApiErrorEvent,
+} from "../lib/errorBus";
 
 /** Minimum ms between toasts for the same error code to prevent spam */
 const DEDUP_WINDOW_MS = 5000;
@@ -13,7 +17,7 @@ export function ApiErrorToastBridge() {
   useEffect(() => {
     return onApiError((err: ApiErrorEvent) => {
       // Deduplicate: skip if we showed the same code within the window
-      const key = err.code + (err.endpoint ?? '');
+      const key = err.code + (err.endpoint ?? "");
       const now = Date.now();
       const last = recent.current.get(key);
       if (last && now - last < DEDUP_WINDOW_MS) return;
@@ -28,10 +32,10 @@ export function ApiErrorToastBridge() {
 
       const fix = getFixDescription(err.code, err.status);
       const label = err.endpoint
-        ? `${err.message} (${err.endpoint.replace('/api/', '')})`
+        ? `${err.message} (${err.endpoint.replace("/api/", "")})`
         : err.message;
 
-      addToast(label, 'error', fix, 'api-error');
+      addToast(label, "error", fix, "api-error");
     });
   }, [addToast]);
 

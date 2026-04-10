@@ -1,8 +1,15 @@
 // [claude-code 2026-03-27] AI wiring — connects highlight/drill events to research endpoint and state
 
-import type { CatalystCard, ResearchBullet, NarrativeAction } from './narrative-types';
-import { drillDeeperInCard } from './narrative-research';
-import { createBranchCard, inferCrossLaneCategory } from './narrative-highlight';
+import type {
+  CatalystCard,
+  ResearchBullet,
+  NarrativeAction,
+} from "./narrative-types";
+import { drillDeeperInCard } from "./narrative-research";
+import {
+  createBranchCard,
+  inferCrossLaneCategory,
+} from "./narrative-highlight";
 
 /**
  * Handle "Drill deeper" input within a card.
@@ -18,10 +25,10 @@ export async function handleDrillDeeper(
     query,
     card.title,
     card.description,
-    card.category ?? 'macroeconomic',
+    card.category ?? "macroeconomic",
     card.sentiment,
   );
-  dispatch({ type: 'ADD_RESEARCH_BULLETS', cardId, bullets });
+  dispatch({ type: "ADD_RESEARCH_BULLETS", cardId, bullets });
 }
 
 /**
@@ -36,15 +43,19 @@ export async function handleHighlightBranch(
   // Infer if the highlight implies a different risk lane
   const crossLaneCategory = inferCrossLaneCategory(
     highlightedText,
-    parentCard.category ?? 'macroeconomic',
+    parentCard.category ?? "macroeconomic",
   );
 
   // Create the branch card spec
-  const childSpec = createBranchCard(parentCard, highlightedText, crossLaneCategory ?? undefined);
+  const childSpec = createBranchCard(
+    parentCard,
+    highlightedText,
+    crossLaneCategory ?? undefined,
+  );
 
   // Dispatch to create the child card + rope
   dispatch({
-    type: 'HIGHLIGHT_BRANCH',
+    type: "HIGHLIGHT_BRANCH",
     parentId: parentCard.id,
     highlightText: highlightedText,
     childCard: childSpec,
@@ -69,9 +80,9 @@ export async function autoResearchBranch(
     childCard.parentHighlight,
     parentCard.title,
     parentCard.description,
-    childCard.category ?? parentCard.category ?? 'macroeconomic',
+    childCard.category ?? parentCard.category ?? "macroeconomic",
     parentCard.sentiment,
   );
 
-  dispatch({ type: 'ADD_RESEARCH_BULLETS', cardId: childCard.id, bullets });
+  dispatch({ type: "ADD_RESEARCH_BULLETS", cardId: childCard.id, bullets });
 }

@@ -2,13 +2,13 @@
 // Computes 5 core metrics from observation data, generates a report, and recommends parameter adjustments.
 // Scope: NEWS ANALYSIS QUALITY only — not trading performance.
 
-import { getObservations } from './observation-store.js';
-import { generateFitnessReport, evaluateObservation } from './fitness.js';
-import type { ScoringObservation, FitnessReport } from './types.js';
-import { getSupabaseClient } from '../../config/supabase.js';
-import { createLogger } from '../../lib/logger.js';
+import { getObservations } from "./observation-store.js";
+import { generateFitnessReport, evaluateObservation } from "./fitness.js";
+import type { ScoringObservation, FitnessReport } from "./types.js";
+import { getSupabaseClient } from "../../config/supabase.js";
+import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger('REFLECT');
+const log = createLogger("REFLECT");
 
 // ── REFLECT Report Types ────────────────────────────────────────────────────
 
@@ -27,7 +27,7 @@ export interface ReflectMetrics {
 
 export interface ReflectFinding {
   metric: keyof ReflectMetrics;
-  severity: 'info' | 'warning' | 'critical';
+  severity: "info" | "warning" | "critical";
   message: string;
   currentValue: number;
   threshold: number;
@@ -108,7 +108,12 @@ export async function runReflect(daysBack: number = 7): Promise<ReflectReport> {
   const adjustments = generateAdjustments(metrics, findings);
 
   // Build human-readable summary
-  const summary = buildSummary(metrics, findings, allObs.length, withOutcomes.length);
+  const summary = buildSummary(
+    metrics,
+    findings,
+    allObs.length,
+    withOutcomes.length,
+  );
 
   const report: ReflectReport = {
     generatedAt: new Date().toISOString(),
@@ -124,7 +129,9 @@ export async function runReflect(daysBack: number = 7): Promise<ReflectReport> {
   // Persist report to Supabase
   await persistReport(report);
 
-  log.info(`REFLECT complete: ${findings.length} findings, ${adjustments.length} adjustments`);
+  log.info(
+    `REFLECT complete: ${findings.length} findings, ${adjustments.length} adjustments`,
+  );
   return report;
 }
 
@@ -134,25 +141,30 @@ function computeMetrics(
   fitnessReport: FitnessReport,
 ): ReflectMetrics {
   // Direction accuracy and score calibration come from fitness report
-  const directionAccuracy = fitnessReport.evaluatedObservations > 0
-    ? fitnessReport.directionAccuracy
-    : 50; // Default to coin flip if no data
+  const directionAccuracy =
+    fitnessReport.evaluatedObservations > 0
+      ? fitnessReport.directionAccuracy
+      : 50; // Default to coin flip if no data
 
-  const scoreCalibration = fitnessReport.evaluatedObservations > 0
-    ? fitnessReport.meanScoreAccuracy
-    : 0.5;
+  const scoreCalibration =
+    fitnessReport.evaluatedObservations > 0
+      ? fitnessReport.meanScoreAccuracy
+      : 0.5;
 
-  const scoringBias = fitnessReport.evaluatedObservations > 0
-    ? fitnessReport.meanBias
-    : 0;
+  const scoringBias =
+    fitnessReport.evaluatedObservations > 0 ? fitnessReport.meanBias : 0;
 
   // Macro level accuracy: check if high macro level items had larger actual moves
   const macroLevelAccuracy = computeMacroLevelAccuracy(withOutcomes);
 
   // Tag coverage: % of all observations that have at least one subj: tag
-  const tagCoverage = allObs.length > 0
-    ? (allObs.filter(o => o.tags?.some(t => t.startsWith('subj:'))).length / allObs.length) * 100
-    : 0;
+  const tagCoverage =
+    allObs.length > 0
+      ? (allObs.filter((o) => o.tags?.some((t) => t.startsWith("subj:")))
+          .length /
+          allObs.length) *
+        100
+      : 0;
 
   return {
     directionAccuracy: Number(directionAccuracy.toFixed(1)),
@@ -171,13 +183,15 @@ function computeMacroLevelAccuracy(withOutcomes: ScoringObservation[]): number {
   if (withOutcomes.length < 5) return 50; // Not enough data
 
   // Group by IV score bucket (proxy for macro level since we don't have macroLevel on observations)
-  const high = withOutcomes.filter(o => o.ivScore >= 7);
-  const low = withOutcomes.filter(o => o.ivScore <= 3);
+  const high = withOutcomes.filter((o) => o.ivScore >= 7);
+  const low = withOutcomes.filter((o) => o.ivScore <= 3);
 
   if (high.length === 0 || low.length === 0) return 50;
 
-  const highAvgMove = high.reduce((s, o) => s + Math.abs(o.actualMove ?? 0), 0) / high.length;
-  const lowAvgMove = low.reduce((s, o) => s + Math.abs(o.actualMove ?? 0), 0) / low.length;
+  const highAvgMove =
+    high.reduce((s, o) => s + Math.abs(o.actualMove ?? 0), 0) / high.length;
+  const lowAvgMove =
+    low.reduce((s, o) => s + Math.abs(o.actualMove ?? 0), 0) / low.length;
 
   // If high-IV items moved more than low-IV items, macro levels are calibrated
   if (highAvgMove > lowAvgMove * 1.5) return 80; // Good calibration
@@ -191,137 +205,151 @@ function generateFindings(metrics: ReflectMetrics): ReflectFinding[] {
   // Direction accuracy
   if (metrics.directionAccuracy < THRESHOLDS.directionAccuracy.critical) {
     findings.push({
-      metric: 'directionAccuracy',
-      severity: 'critical',
+      metric: "directionAccuracy",
+      severity: "critical",
       message: `Direction accuracy is ${metrics.directionAccuracy}% — worse than a coin flip`,
       currentValue: metrics.directionAccuracy,
       threshold: THRESHOLDS.directionAccuracy.critical,
-      recommendation: 'Tighten radar thresholds and increase minimum IV score for scoring',
+      recommendation:
+        "Tighten radar thresholds and increase minimum IV score for scoring",
     });
   } else if (metrics.directionAccuracy < THRESHOLDS.directionAccuracy.warning) {
     findings.push({
-      metric: 'directionAccuracy',
-      severity: 'warning',
+      metric: "directionAccuracy",
+      severity: "warning",
       message: `Direction accuracy is ${metrics.directionAccuracy}% — below target`,
       currentValue: metrics.directionAccuracy,
       threshold: THRESHOLDS.directionAccuracy.warning,
-      recommendation: 'Review event type weights — some categories may be miscalibrated',
+      recommendation:
+        "Review event type weights — some categories may be miscalibrated",
     });
   }
 
   // Score calibration
   if (metrics.scoreCalibration < THRESHOLDS.scoreCalibration.critical) {
     findings.push({
-      metric: 'scoreCalibration',
-      severity: 'critical',
+      metric: "scoreCalibration",
+      severity: "critical",
       message: `Score calibration is ${(metrics.scoreCalibration * 100).toFixed(0)}% — IV scores don't match actual impact`,
       currentValue: metrics.scoreCalibration,
       threshold: THRESHOLDS.scoreCalibration.critical,
-      recommendation: 'Recalibrate IV scoring weights — event weight and VIX multiplier may be off',
+      recommendation:
+        "Recalibrate IV scoring weights — event weight and VIX multiplier may be off",
     });
   } else if (metrics.scoreCalibration < THRESHOLDS.scoreCalibration.warning) {
     findings.push({
-      metric: 'scoreCalibration',
-      severity: 'warning',
+      metric: "scoreCalibration",
+      severity: "warning",
       message: `Score calibration is ${(metrics.scoreCalibration * 100).toFixed(0)}% — room for improvement`,
       currentValue: metrics.scoreCalibration,
       threshold: THRESHOLDS.scoreCalibration.warning,
-      recommendation: 'Fine-tune event weight multipliers for underperforming event types',
+      recommendation:
+        "Fine-tune event weight multipliers for underperforming event types",
     });
   }
 
   // Scoring bias
   const absBias = Math.abs(metrics.scoringBias);
   if (absBias > THRESHOLDS.scoringBias.critical) {
-    const direction = metrics.scoringBias > 0 ? 'overpredicting' : 'underpredicting';
+    const direction =
+      metrics.scoringBias > 0 ? "overpredicting" : "underpredicting";
     findings.push({
-      metric: 'scoringBias',
-      severity: 'critical',
+      metric: "scoringBias",
+      severity: "critical",
       message: `Systematic ${direction} bias of ${absBias.toFixed(1)} points`,
       currentValue: metrics.scoringBias,
       threshold: THRESHOLDS.scoringBias.critical,
-      recommendation: metrics.scoringBias > 0
-        ? 'Reduce event weight multipliers across the board'
-        : 'Increase event weight multipliers — we are underestimating impact',
+      recommendation:
+        metrics.scoringBias > 0
+          ? "Reduce event weight multipliers across the board"
+          : "Increase event weight multipliers — we are underestimating impact",
     });
   } else if (absBias > THRESHOLDS.scoringBias.warning) {
     findings.push({
-      metric: 'scoringBias',
-      severity: 'warning',
-      message: `Scoring bias of ${metrics.scoringBias > 0 ? '+' : ''}${metrics.scoringBias.toFixed(1)} points`,
+      metric: "scoringBias",
+      severity: "warning",
+      message: `Scoring bias of ${metrics.scoringBias > 0 ? "+" : ""}${metrics.scoringBias.toFixed(1)} points`,
       currentValue: metrics.scoringBias,
       threshold: THRESHOLDS.scoringBias.warning,
-      recommendation: 'Monitor — bias is elevated but not critical',
+      recommendation: "Monitor — bias is elevated but not critical",
     });
   }
 
   // Macro level accuracy
   if (metrics.macroLevelAccuracy < THRESHOLDS.macroLevelAccuracy.critical) {
     findings.push({
-      metric: 'macroLevelAccuracy',
-      severity: 'critical',
+      metric: "macroLevelAccuracy",
+      severity: "critical",
       message: `Macro level accuracy is ${metrics.macroLevelAccuracy}% — urgency levels are miscalibrated`,
       currentValue: metrics.macroLevelAccuracy,
       threshold: THRESHOLDS.macroLevelAccuracy.critical,
-      recommendation: 'Review POI boost logic and event weight thresholds for macro level assignment',
+      recommendation:
+        "Review POI boost logic and event weight thresholds for macro level assignment",
     });
-  } else if (metrics.macroLevelAccuracy < THRESHOLDS.macroLevelAccuracy.warning) {
+  } else if (
+    metrics.macroLevelAccuracy < THRESHOLDS.macroLevelAccuracy.warning
+  ) {
     findings.push({
-      metric: 'macroLevelAccuracy',
-      severity: 'warning',
+      metric: "macroLevelAccuracy",
+      severity: "warning",
       message: `Macro level accuracy is ${metrics.macroLevelAccuracy}% — some urgency levels are off`,
       currentValue: metrics.macroLevelAccuracy,
       threshold: THRESHOLDS.macroLevelAccuracy.warning,
-      recommendation: 'Check which event types are being over/under-prioritized',
+      recommendation:
+        "Check which event types are being over/under-prioritized",
     });
   }
 
   // Tag coverage
   if (metrics.tagCoverage < THRESHOLDS.tagCoverage.critical) {
     findings.push({
-      metric: 'tagCoverage',
-      severity: 'critical',
+      metric: "tagCoverage",
+      severity: "critical",
       message: `Only ${metrics.tagCoverage}% of items have subject tags — MiroShark routing is blind`,
       currentValue: metrics.tagCoverage,
       threshold: THRESHOLDS.tagCoverage.critical,
-      recommendation: 'Expand headline-tagger keyword patterns — too many items fall through',
+      recommendation:
+        "Expand headline-tagger keyword patterns — too many items fall through",
     });
   } else if (metrics.tagCoverage < THRESHOLDS.tagCoverage.warning) {
     findings.push({
-      metric: 'tagCoverage',
-      severity: 'warning',
+      metric: "tagCoverage",
+      severity: "warning",
       message: `${metrics.tagCoverage}% tag coverage — some headlines aren't being routed`,
       currentValue: metrics.tagCoverage,
       threshold: THRESHOLDS.tagCoverage.warning,
-      recommendation: 'Review untagged headlines for missing keyword patterns',
+      recommendation: "Review untagged headlines for missing keyword patterns",
     });
   }
 
   // If everything is healthy, say so
   if (findings.length === 0) {
     findings.push({
-      metric: 'directionAccuracy',
-      severity: 'info',
-      message: 'All metrics within healthy ranges',
+      metric: "directionAccuracy",
+      severity: "info",
+      message: "All metrics within healthy ranges",
       currentValue: metrics.directionAccuracy,
       threshold: THRESHOLDS.directionAccuracy.warning,
-      recommendation: 'No adjustments needed — maintain current parameters',
+      recommendation: "No adjustments needed — maintain current parameters",
     });
   }
 
   return findings;
 }
 
-function generateAdjustments(metrics: ReflectMetrics, findings: ReflectFinding[]): ReflectAdjustment[] {
+function generateAdjustments(
+  metrics: ReflectMetrics,
+  findings: ReflectFinding[],
+): ReflectAdjustment[] {
   const adjustments: ReflectAdjustment[] = [];
-  const criticalFindings = findings.filter(f => f.severity === 'critical');
+  const criticalFindings = findings.filter((f) => f.severity === "critical");
 
   // Only auto-adjust on critical findings to avoid thrashing
   for (const finding of criticalFindings) {
     switch (finding.metric) {
-      case 'directionAccuracy':
+      case "directionAccuracy":
         adjustments.push({
-          parameter: 'minIVScoreForScoring',
+          parameter: "minIVScoreForScoring",
           currentValue: 1,
           recommendedValue: 2,
           reason: `Direction accuracy ${metrics.directionAccuracy}% — raise minimum IV threshold to filter noise`,
@@ -329,10 +357,10 @@ function generateAdjustments(metrics: ReflectMetrics, findings: ReflectFinding[]
         });
         break;
 
-      case 'scoringBias':
+      case "scoringBias":
         if (metrics.scoringBias > 0) {
           adjustments.push({
-            parameter: 'eventWeightMultiplier',
+            parameter: "eventWeightMultiplier",
             currentValue: 1.0,
             recommendedValue: 0.85,
             reason: `Overpredicting by ${metrics.scoringBias.toFixed(1)}pts — reduce event weight multiplier`,
@@ -340,7 +368,7 @@ function generateAdjustments(metrics: ReflectMetrics, findings: ReflectFinding[]
           });
         } else {
           adjustments.push({
-            parameter: 'eventWeightMultiplier',
+            parameter: "eventWeightMultiplier",
             currentValue: 1.0,
             recommendedValue: 1.15,
             reason: `Underpredicting by ${Math.abs(metrics.scoringBias).toFixed(1)}pts — increase event weight multiplier`,
@@ -349,9 +377,9 @@ function generateAdjustments(metrics: ReflectMetrics, findings: ReflectFinding[]
         }
         break;
 
-      case 'tagCoverage':
+      case "tagCoverage":
         adjustments.push({
-          parameter: 'tagPatternExpansion',
+          parameter: "tagPatternExpansion",
           currentValue: metrics.tagCoverage,
           recommendedValue: 70,
           reason: `Tag coverage ${metrics.tagCoverage}% — expand headline-tagger patterns`,
@@ -370,19 +398,19 @@ function buildSummary(
   totalObs: number,
   withOutcomes: number,
 ): string {
-  const critical = findings.filter(f => f.severity === 'critical').length;
-  const warnings = findings.filter(f => f.severity === 'warning').length;
+  const critical = findings.filter((f) => f.severity === "critical").length;
+  const warnings = findings.filter((f) => f.severity === "warning").length;
 
   let summary = `REFLECT analyzed ${totalObs} observations (${withOutcomes} with outcomes). `;
 
   if (critical > 0) {
-    summary += `${critical} critical issue${critical > 1 ? 's' : ''} found. `;
+    summary += `${critical} critical issue${critical > 1 ? "s" : ""} found. `;
   }
   if (warnings > 0) {
-    summary += `${warnings} warning${warnings > 1 ? 's' : ''}. `;
+    summary += `${warnings} warning${warnings > 1 ? "s" : ""}. `;
   }
   if (critical === 0 && warnings === 0) {
-    summary += 'All metrics healthy. ';
+    summary += "All metrics healthy. ";
   }
 
   summary += `Direction accuracy: ${metrics.directionAccuracy}%. `;
@@ -390,7 +418,7 @@ function buildSummary(
   summary += `Tag coverage: ${metrics.tagCoverage}%. `;
 
   if (Math.abs(metrics.scoringBias) > 2) {
-    summary += `Bias: ${metrics.scoringBias > 0 ? 'overpredicting' : 'underpredicting'} by ${Math.abs(metrics.scoringBias).toFixed(1)} pts. `;
+    summary += `Bias: ${metrics.scoringBias > 0 ? "overpredicting" : "underpredicting"} by ${Math.abs(metrics.scoringBias).toFixed(1)} pts. `;
   }
 
   return summary.trim();
@@ -401,11 +429,11 @@ function buildSummary(
 async function persistReport(report: ReflectReport): Promise<void> {
   const sb = getSupabaseClient();
   if (!sb) {
-    log.warn('Supabase not configured — REFLECT report not persisted');
+    log.warn("Supabase not configured — REFLECT report not persisted");
     return;
   }
 
-  const { error } = await sb.from('reflect_reports').insert({
+  const { error } = await sb.from("reflect_reports").insert({
     generated_at: report.generatedAt,
     observation_count: report.observationCount,
     with_outcomes: report.withOutcomes,
@@ -417,7 +445,9 @@ async function persistReport(report: ReflectReport): Promise<void> {
 
   if (error) {
     // Table may not exist yet — log but don't crash
-    log.warn('REFLECT report persist failed (table may not exist):', { error: error.message });
+    log.warn("REFLECT report persist failed (table may not exist):", {
+      error: error.message,
+    });
   }
 }
 
@@ -429,9 +459,9 @@ export async function getLatestReflectReport(): Promise<ReflectReport | null> {
   if (!sb) return null;
 
   const { data, error } = await sb
-    .from('reflect_reports')
-    .select('*')
-    .order('generated_at', { ascending: false })
+    .from("reflect_reports")
+    .select("*")
+    .order("generated_at", { ascending: false })
     .limit(1);
 
   if (error || !data?.length) return null;
@@ -443,7 +473,18 @@ export async function getLatestReflectReport(): Promise<ReflectReport | null> {
     withOutcomes: row.with_outcomes,
     metrics: row.metrics,
     findings: row.findings,
-    fitnessReport: { totalObservations: 0, evaluatedObservations: 0, directionAccuracy: 0, meanMagnitudeError: 0, meanMagnitudeErrorPct: 0, meanScoreAccuracy: 0, meanBias: 0, byEventType: {}, bySession: {}, generatedAt: row.generated_at },
+    fitnessReport: {
+      totalObservations: 0,
+      evaluatedObservations: 0,
+      directionAccuracy: 0,
+      meanMagnitudeError: 0,
+      meanMagnitudeErrorPct: 0,
+      meanScoreAccuracy: 0,
+      meanBias: 0,
+      byEventType: {},
+      bySession: {},
+      generatedAt: row.generated_at,
+    },
     adjustments: row.adjustments,
     summary: row.summary,
   };

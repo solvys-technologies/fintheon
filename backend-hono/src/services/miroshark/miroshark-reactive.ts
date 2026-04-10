@@ -2,12 +2,12 @@
 // Maps RiskFlow items to MiroShark risk categories and adjusts running analysis scores in real-time.
 
 export type MiroSharkRiskCategory =
-  | 'geopolitical'
-  | 'political'
-  | 'monetary-policy'
-  | 'earnings-corporate'
-  | 'market-structure'
-  | 'black-swan';
+  | "geopolitical"
+  | "political"
+  | "monetary-policy"
+  | "earnings-corporate"
+  | "market-structure"
+  | "black-swan";
 
 export interface RunningAnalysisState {
   baselineRunId: string | null;
@@ -20,37 +20,37 @@ export interface RunningAnalysisState {
 }
 
 const ALL_CATEGORIES: MiroSharkRiskCategory[] = [
-  'geopolitical',
-  'political',
-  'monetary-policy',
-  'earnings-corporate',
-  'market-structure',
-  'black-swan',
+  "geopolitical",
+  "political",
+  "monetary-policy",
+  "earnings-corporate",
+  "market-structure",
+  "black-swan",
 ];
 
 const CATEGORY_MAP: Record<string, MiroSharkRiskCategory> = {
-  fed: 'monetary-policy',
-  fomc: 'monetary-policy',
-  rate: 'monetary-policy',
-  cpi: 'monetary-policy',
-  inflation: 'monetary-policy',
-  treasury: 'monetary-policy',
-  earnings: 'earnings-corporate',
-  revenue: 'earnings-corporate',
-  guidance: 'earnings-corporate',
-  war: 'geopolitical',
-  sanctions: 'geopolitical',
-  tariff: 'geopolitical',
-  nato: 'geopolitical',
-  election: 'political',
-  congress: 'political',
-  legislation: 'political',
-  liquidity: 'market-structure',
-  vix: 'market-structure',
-  margin: 'market-structure',
-  pandemic: 'black-swan',
-  earthquake: 'black-swan',
-  default: 'black-swan',
+  fed: "monetary-policy",
+  fomc: "monetary-policy",
+  rate: "monetary-policy",
+  cpi: "monetary-policy",
+  inflation: "monetary-policy",
+  treasury: "monetary-policy",
+  earnings: "earnings-corporate",
+  revenue: "earnings-corporate",
+  guidance: "earnings-corporate",
+  war: "geopolitical",
+  sanctions: "geopolitical",
+  tariff: "geopolitical",
+  nato: "geopolitical",
+  election: "political",
+  congress: "political",
+  legislation: "political",
+  liquidity: "market-structure",
+  vix: "market-structure",
+  margin: "market-structure",
+  pandemic: "black-swan",
+  earthquake: "black-swan",
+  default: "black-swan",
 };
 
 function clamp(min: number, max: number, value: number): number {
@@ -77,7 +77,7 @@ export function mapRiskFlowToCategory(
   for (const [keyword, category] of Object.entries(CATEGORY_MAP)) {
     if (lowerHeadline.includes(keyword)) return category;
   }
-  return 'market-structure';
+  return "market-structure";
 }
 
 /**
@@ -100,9 +100,13 @@ export function adjustScoresForRiskFlow(
   const oldScore = currentState.categoryScores[category];
   const newCategoryScore = clamp(0, 10, oldScore + impactDelta);
 
-  const updatedScores = { ...currentState.categoryScores, [category]: newCategoryScore };
+  const updatedScores = {
+    ...currentState.categoryScores,
+    [category]: newCategoryScore,
+  };
   const compositeIV =
-    ALL_CATEGORIES.reduce((sum, cat) => sum + updatedScores[cat], 0) / ALL_CATEGORIES.length;
+    ALL_CATEGORIES.reduce((sum, cat) => sum + updatedScores[cat], 0) /
+    ALL_CATEGORIES.length;
 
   return {
     baselineRunId: currentState.baselineRunId,
@@ -124,11 +128,17 @@ export function shouldTriggerReactiveAdjustment(macroLevel: number): boolean {
 let _runningState: RunningAnalysisState | null = null;
 
 /** Return the cached composite IV from running state, or 0 if none. */
-export function getRunningAnalysisScore(): number { return _runningState?.compositeIV ?? 0; }
+export function getRunningAnalysisScore(): number {
+  return _runningState?.compositeIV ?? 0;
+}
 
-export function getRunningState(): RunningAnalysisState | null { return _runningState; }
+export function getRunningState(): RunningAnalysisState | null {
+  return _runningState;
+}
 
-export function setRunningState(state: RunningAnalysisState): void { _runningState = state; }
+export function setRunningState(state: RunningAnalysisState): void {
+  _runningState = state;
+}
 
 /** Initialize fresh running state from a full MiroShark debate result. */
 export function resetRunningState(

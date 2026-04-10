@@ -13,27 +13,35 @@ import type {
   HyperliquidOrderRequest,
   HyperliquidOrderResponse,
   HyperliquidPosition,
-} from '../../types/hyperliquid.js';
-import { signAction, generateNonce, getWalletAddress, getVaultAddress } from './auth.js';
+} from "../../types/hyperliquid.js";
+import {
+  signAction,
+  generateNonce,
+  getWalletAddress,
+  getVaultAddress,
+} from "./auth.js";
 
-const MAINNET_URL = 'https://api.hyperliquid.xyz';
-const TESTNET_URL = 'https://api.hyperliquid-testnet.xyz';
+const MAINNET_URL = "https://api.hyperliquid.xyz";
+const TESTNET_URL = "https://api.hyperliquid-testnet.xyz";
 
 function getBaseUrl(): string {
-  return process.env.HYPERLIQUID_TESTNET === 'true' ? TESTNET_URL : MAINNET_URL;
+  return process.env.HYPERLIQUID_TESTNET === "true" ? TESTNET_URL : MAINNET_URL;
 }
 
 // ─── Info Endpoints (no auth) ────────────────────────────────────────────
 
-async function infoRequest<T>(type: string, payload: Record<string, unknown> = {}): Promise<T> {
+async function infoRequest<T>(
+  type: string,
+  payload: Record<string, unknown> = {},
+): Promise<T> {
   const res = await fetch(`${getBaseUrl()}/info`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type, ...payload }),
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
+    const text = await res.text().catch(() => "");
     throw new Error(`Hyperliquid /info error ${res.status}: ${text}`);
   }
 
@@ -41,22 +49,30 @@ async function infoRequest<T>(type: string, payload: Record<string, unknown> = {
 }
 
 export async function getMeta(): Promise<HyperliquidMeta> {
-  return infoRequest<HyperliquidMeta>('meta');
+  return infoRequest<HyperliquidMeta>("meta");
 }
 
-export async function getAccountState(walletAddress: string): Promise<HyperliquidAccountInfo> {
-  return infoRequest<HyperliquidAccountInfo>('clearinghouseState', { user: walletAddress });
+export async function getAccountState(
+  walletAddress: string,
+): Promise<HyperliquidAccountInfo> {
+  return infoRequest<HyperliquidAccountInfo>("clearinghouseState", {
+    user: walletAddress,
+  });
 }
 
-export async function getOpenOrders(walletAddress: string): Promise<HyperliquidOrder[]> {
-  return infoRequest<HyperliquidOrder[]>('openOrders', { user: walletAddress });
+export async function getOpenOrders(
+  walletAddress: string,
+): Promise<HyperliquidOrder[]> {
+  return infoRequest<HyperliquidOrder[]>("openOrders", { user: walletAddress });
 }
 
-export async function getPositions(walletAddress: string): Promise<HyperliquidPosition[]> {
+export async function getPositions(
+  walletAddress: string,
+): Promise<HyperliquidPosition[]> {
   const state = await getAccountState(walletAddress);
   return state.assetPositions
-    .map(ap => ap.position)
-    .filter(p => parseFloat(p.szi) !== 0);
+    .map((ap) => ap.position)
+    .filter((p) => parseFloat(p.szi) !== 0);
 }
 
 // ─── Exchange Endpoints (EIP-712 signed) ─────────────────────────────────
@@ -76,13 +92,13 @@ async function exchangeRequest<T>(action: Record<string, unknown>): Promise<T> {
   }
 
   const res = await fetch(`${getBaseUrl()}/exchange`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
+    const text = await res.text().catch(() => "");
     throw new Error(`Hyperliquid /exchange error ${res.status}: ${text}`);
   }
 
@@ -93,7 +109,9 @@ async function exchangeRequest<T>(action: Record<string, unknown>): Promise<T> {
  * Place an order on Hyperliquid.
  * For market orders, set limit_px to a slippage price and order_type to { limit: { tif: 'Ioc' } }.
  */
-export async function placeOrder(params: HyperliquidOrderRequest): Promise<HyperliquidOrderResponse> {
+export async function placeOrder(
+  params: HyperliquidOrderRequest,
+): Promise<HyperliquidOrderResponse> {
   const orderWire = {
     a: getAssetIndex(params.coin),
     b: params.is_buy,
@@ -105,18 +123,21 @@ export async function placeOrder(params: HyperliquidOrderRequest): Promise<Hyper
   };
 
   return exchangeRequest<HyperliquidOrderResponse>({
-    type: 'order',
+    type: "order",
     orders: [orderWire],
-    grouping: 'na',
+    grouping: "na",
   });
 }
 
 /**
  * Cancel an order by oid.
  */
-export async function cancelOrder(coin: string, oid: number): Promise<HyperliquidOrderResponse> {
+export async function cancelOrder(
+  coin: string,
+  oid: number,
+): Promise<HyperliquidOrderResponse> {
   return exchangeRequest<HyperliquidOrderResponse>({
-    type: 'cancel',
+    type: "cancel",
     cancels: [{ a: getAssetIndex(coin), o: oid }],
   });
 }
@@ -124,13 +145,18 @@ export async function cancelOrder(coin: string, oid: number): Promise<Hyperliqui
 /**
  * Close a position by placing a market-close (reduce-only IOC) order.
  */
-export async function closePosition(coin: string): Promise<HyperliquidOrderResponse> {
+export async function closePosition(
+  coin: string,
+): Promise<HyperliquidOrderResponse> {
   const wallet = getWalletAddress();
   const positions = await getPositions(wallet);
-  const pos = positions.find(p => p.coin === coin);
+  const pos = positions.find((p) => p.coin === coin);
 
   if (!pos || parseFloat(pos.szi) === 0) {
-    return { status: 'ok', response: { type: 'cancel', data: { statuses: [] } } };
+    return {
+      status: "ok",
+      response: { type: "cancel", data: { statuses: [] } },
+    };
   }
 
   const size = Math.abs(parseFloat(pos.szi));
@@ -138,7 +164,7 @@ export async function closePosition(coin: string): Promise<HyperliquidOrderRespo
 
   // Use a wide slippage price for market-like execution
   const meta = await getMeta();
-  const asset = meta.universe.find(a => a.name === coin);
+  const asset = meta.universe.find((a) => a.name === coin);
   const slippagePx = isBuy ? 999_999 : 0.01;
 
   return placeOrder({
@@ -146,7 +172,7 @@ export async function closePosition(coin: string): Promise<HyperliquidOrderRespo
     is_buy: isBuy,
     sz: roundToDecimals(size, asset?.szDecimals ?? 3),
     limit_px: slippagePx,
-    order_type: { limit: { tif: 'Ioc' } },
+    order_type: { limit: { tif: "Ioc" } },
     reduce_only: true,
   });
 }

@@ -12,11 +12,16 @@
  * or rendered in the artifacts pane.
  */
 
-import type { CatalystCard, CatalystSentiment, CatalystSeverity, NarrativeCategory } from './narrative-types';
+import type {
+  CatalystCard,
+  CatalystSentiment,
+  CatalystSeverity,
+  NarrativeCategory,
+} from "./narrative-types";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export type ArtifactType = 'catalyst' | 'trade-proposal' | 'narrative-item';
+export type ArtifactType = "catalyst" | "trade-proposal" | "narrative-item";
 
 export interface ParsedArtifact {
   type: ArtifactType;
@@ -32,7 +37,7 @@ export interface CatalystArtifact {
   severity?: CatalystSeverity;
   category?: NarrativeCategory;
   tags?: string[];
-  directionBias?: 'bullish' | 'bearish' | 'neutral';
+  directionBias?: "bullish" | "bearish" | "neutral";
   narrative?: string;
 }
 
@@ -59,7 +64,10 @@ export function parseArtifacts(responseText: string): ParsedArtifact[] {
       artifacts.push({ type, data, raw });
     } catch {
       // Malformed JSON — skip
-      console.warn('[ArtifactParser] Failed to parse artifact JSON:', raw.slice(0, 100));
+      console.warn(
+        "[ArtifactParser] Failed to parse artifact JSON:",
+        raw.slice(0, 100),
+      );
     }
   }
 
@@ -70,27 +78,34 @@ export function parseArtifacts(responseText: string): ParsedArtifact[] {
  * Convert a parsed artifact into a NarrativeContext-compatible catalyst card payload.
  * Returns the Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'> shape.
  */
-export function toCatalystPayload(artifact: ParsedArtifact): Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'> | null {
-  if (artifact.type !== 'catalyst' && artifact.type !== 'narrative-item') return null;
+export function toCatalystPayload(
+  artifact: ParsedArtifact,
+): Omit<CatalystCard, "id" | "createdAt" | "updatedAt"> | null {
+  if (artifact.type !== "catalyst" && artifact.type !== "narrative-item")
+    return null;
 
   const d = artifact.data as unknown as CatalystArtifact;
 
   return {
-    title: d.title || 'Untitled Catalyst',
-    description: d.description || '',
-    date: d.date || new Date().toISOString().split('T')[0],
-    sentiment: d.sentiment || (d.directionBias === 'bearish' ? 'bearish' : 'bullish'),
-    severity: d.severity || 'medium',
-    source: 'agent',
+    title: d.title || "Untitled Catalyst",
+    description: d.description || "",
+    date: d.date || new Date().toISOString().split("T")[0],
+    sentiment:
+      d.sentiment || (d.directionBias === "bearish" ? "bearish" : "bullish"),
+    severity: d.severity || "medium",
+    source: "agent",
     narrativeIds: [],
     isGhost: false,
     templateType: null,
     position: null,
     tags: d.tags || [],
     category: d.category,
-    directionBias: d.directionBias || 'neutral',
-    status: 'active',
-    dateRange: { start: d.date || new Date().toISOString().split('T')[0], end: null },
+    directionBias: d.directionBias || "neutral",
+    status: "active",
+    dateRange: {
+      start: d.date || new Date().toISOString().split("T")[0],
+      end: null,
+    },
     drillDepth: 0,
     narrative: d.narrative,
   };
@@ -100,5 +115,5 @@ export function toCatalystPayload(artifact: ParsedArtifact): Omit<CatalystCard, 
  * Strip artifact blocks from response text, returning clean display text.
  */
 export function stripArtifactBlocks(responseText: string): string {
-  return responseText.replace(ARTIFACT_REGEX, '').trim();
+  return responseText.replace(ARTIFACT_REGEX, "").trim();
 }

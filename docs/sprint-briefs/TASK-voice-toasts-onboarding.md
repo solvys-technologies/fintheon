@@ -1,14 +1,17 @@
 # Task Brief: LiveKit Voice + Toast Overhaul + Onboarding Scripts
+
 **Date:** 2026-04-01
 **Scope:** Wire real group voice calls, restyle toasts to iOS26 Liquid Glass, fix toast placement, update install/update scripts for multi-user onboarding
 **Estimated files:** 12
 
 ## Context
+
 Three interconnected improvements shipping together: (1) Group voice calls need real audio via LiveKit Cloud — currently stub tokens with no WebRTC. (2) Toast notifications need placement audit (system=bottom-left, trading=top-right), Liquid Glass styling, and an "update available" system toast. (3) Install/update scripts need to handle Claude CLI + Twitter CLI + browser auth + peer registration for every new user, with `fintheon update` picking up new onboarding phases.
 
 ---
 
 ## Files to Read First
+
 - `backend-hono/src/services/peers/voice-room.ts` — Stub token implementation. Has `LIVEKIT_API_KEY/SECRET/URL` env detection.
 - `frontend/components/peers/VoiceWidget.tsx` — Dockable voice UI. Join/leave/mute buttons, REST polling for participants.
 - `frontend/components/ui/Toast.tsx` — Current toast rendering. All gold-tinted, `translateX(-16px)` animation for all positions.
@@ -23,6 +26,7 @@ Three interconnected improvements shipping together: (1) Group voice calls need 
 ## Part 1: LiveKit Cloud Voice
 
 ### 1a. Create LiveKit Account + Add Credentials
+
 - Sign up at https://cloud.livekit.io (free tier)
 - Create project "Fintheon"
 - Add to `backend-hono/.env.example` with signup URL:
@@ -35,6 +39,7 @@ Three interconnected improvements shipping together: (1) Group voice calls need 
 - Add actual credentials to `backend-hono/.env`
 
 ### 1b. Backend: Real JWT Tokens
+
 - **Path:** `backend-hono/src/services/peers/voice-room.ts` — Modify
 - Install: `cd backend-hono && bun add livekit-server-sdk`
 - Replace `buildParticipantToken()` with real `AccessToken` from livekit-server-sdk
@@ -42,6 +47,7 @@ Three interconnected improvements shipping together: (1) Group voice calls need 
 - **Max lines:** 120
 
 ### 1c. Frontend: LiveKit React SDK
+
 - **Path:** `frontend/components/peers/VoiceWidget.tsx` — Modify
 - Install: `cd frontend && bun add @livekit/components-react livekit-client`
 - On "Join": fetch token from `/api/peers/voice/join`, connect to LiveKit room
@@ -53,6 +59,7 @@ Three interconnected improvements shipping together: (1) Group voice calls need 
 - **Max lines:** 280
 
 ### 1d. Audio Renderer
+
 - **Path:** `frontend/components/peers/VoiceAudioRenderer.tsx` — Create
 - Renders `<AudioTrack>` for each remote participant (plays through system default output)
 - No visible UI — just audio elements
@@ -63,13 +70,16 @@ Three interconnected improvements shipping together: (1) Group voice calls need 
 ## Part 2: Toast Overhaul
 
 ### 2a. Placement Audit
+
 Grep every `addToast()` call in the frontend codebase. Enforce:
+
 - **Top-right:** RiskFlow alerts, proposals, VIX spikes, trade executions, IV changes, market events, news alerts
 - **Bottom-left:** Backend status, connection state, service health, peer online/offline, build/update notifications, errors
 
 Every `addToast()` call must pass the correct `position` parameter. If it doesn't pass one, add it.
 
 ### 2b. iOS26 Liquid Glass Restyle
+
 - **Path:** `frontend/components/ui/Toast.tsx` — Modify
 - Decrease opacity of ALL toast cards to look like iOS26 Liquid Glass:
   - Background: `rgba(var(--fintheon-bg-rgb), 0.45)` with heavy `backdrop-blur-2xl`
@@ -82,6 +92,7 @@ Every `addToast()` call must pass the correct `position` parameter. If it doesn'
 - **Max lines:** 120
 
 ### 2c. Update Available Toast
+
 - **Path:** `frontend/components/ui/Toast.tsx` + `frontend/contexts/ToastContext.tsx` — Modify
 - New notification type: `'update-available'`
 - When the frontend detects a version mismatch (compare `window.__FINTHEON_VERSION__` with `/api/version` response), show:
@@ -91,6 +102,7 @@ Every `addToast()` call must pass the correct `position` parameter. If it doesn'
   - Variant: `info`
 
 ### 2d. Version Check
+
 - **Path:** `frontend/lib/version-check.ts` — Create
 - On app load, fetch `/api/version` and compare with embedded build version
 - If mismatch, trigger the update-available toast
@@ -102,6 +114,7 @@ Every `addToast()` call must pass the correct `position` parameter. If it doesn'
 ## Part 3: Install/Update Scripts
 
 ### 3a. Enhanced Setup Script
+
 - **Path:** `scripts/fintheon-setup.sh` — Modify
 - Ensure these phases run in order with clear progress:
   1. System prerequisites (git, brew, node, bun, python, uv) — EXISTING
@@ -124,6 +137,7 @@ Every `addToast()` call must pass the correct `position` parameter. If it doesn'
 - Each phase that completes should write a marker file to `~/.fintheon/setup-phases-done.json` so `fintheon update` knows which phases to re-run
 
 ### 3b. Update Script
+
 - **Path:** `scripts/fintheon-update.sh` — Modify (or create if missing)
 - `fintheon update` should:
   1. `git pull origin <branch> --rebase`
@@ -137,6 +151,7 @@ Every `addToast()` call must pass the correct `position` parameter. If it doesn'
 - **Max lines:** 150
 
 ### 3c. Peer Bootstrap
+
 - **Path:** `scripts/peer-bootstrap.sh` — Verify/fix
 - Must work standalone (`fintheon peers`) and as part of setup
 - Checks Claude CLI + Twitter CLI availability
@@ -147,6 +162,7 @@ Every `addToast()` call must pass the correct `position` parameter. If it doesn'
 ---
 
 ## Key Rules
+
 - System default audio — NO device selector for LiveKit. `autoSubscribe` handles it.
 - Toast placement is a HARD rule: trading=top-right, system=bottom-left. No exceptions.
 - Liquid Glass: low opacity (0.45 bg), heavy blur, SLIGHT theme tint. NOT opaque cards.
@@ -156,6 +172,7 @@ Every `addToast()` call must pass the correct `position` parameter. If it doesn'
 - All new env vars documented in `.env.example` with signup URLs.
 
 ## DO NOT
+
 - Add an audio device selector or settings panel for voice
 - Change the VoiceWidget dockable/floating behavior — only wire audio inside it
 - Modify RiskFlow, NarrativeFlow, scoring, or feed pipeline code
@@ -163,6 +180,7 @@ Every `addToast()` call must pass the correct `position` parameter. If it doesn'
 - Create scoring-carousel.ts or twitter-rotation.ts (separate task)
 
 ## Verification
+
 ```bash
 cd backend-hono && bun run build
 npx vite build
@@ -172,6 +190,7 @@ npx vite build
 ```
 
 ## Changelog Entry
+
 ```typescript
 {
   date: '2026-04-01T...',

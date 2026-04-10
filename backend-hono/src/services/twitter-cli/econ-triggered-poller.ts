@@ -4,30 +4,46 @@
 // [claude-code 2026-03-16] Smart polling: event-window-only (T-5min to T+15min)
 // [claude-code 2026-03-23] Wired rate limiter for Twitter CLI calls
 
-import { searchTweets, fetchUserTimeline, isTwitterCliInstalled, isRateLimited, getRateLimitCooldownMs } from './twitter-cli-service.js';
-import { createRateLimiter } from '../rate-limiter.js';
-import { getPollingConfig } from '../riskflow/polling-config.js';
+import {
+  searchTweets,
+  fetchUserTimeline,
+  isTwitterCliInstalled,
+  isRateLimited,
+  getRateLimitCooldownMs,
+} from "./twitter-cli-service.js";
+import { createRateLimiter } from "../rate-limiter.js";
+import { getPollingConfig } from "../riskflow/polling-config.js";
 
 // Rate limiter: prevent CLI subprocess spam (12 timelines/min for 11 accounts + headroom, 4 searches/min)
 const twitterLimiter = createRateLimiter({
   defaultRule: { limit: 16, windowMs: 60_000 },
   buckets: {
-    'twitter-timeline': { limit: 12, windowMs: 60_000 },
-    'twitter-search': { limit: 4, windowMs: 60_000 },
+    "twitter-timeline": { limit: 12, windowMs: 60_000 },
+    "twitter-search": { limit: 4, windowMs: 60_000 },
   },
   baseBackoffMs: 500,
   maxBackoffMs: 20_000,
-  logger: (msg, data) => console.log(`[TwitterRateLimiter] ${msg}`, JSON.stringify(data ?? {})),
+  logger: (msg, data) =>
+    console.log(`[TwitterRateLimiter] ${msg}`, JSON.stringify(data ?? {})),
 });
-import { filterByTier, extractFJEmojiFromText, fjTierFromEmoji, type FJClassification } from './fj-emoji-filter.js';
-import { fetchEconCalendar, updateEventActual, writeEconPrint } from '../econ-calendar-service.js';
-import { writeConsiliumMessage } from '../supabase-service.js';
-import { injectEconPrintToFeed } from '../riskflow/econ-bridge.js';
-import { storeFeedItems } from '../riskflow/news-cache.js';
-import { getMatchedKeywords } from '../headline-parser.js';
-import { assignMacroLevel } from '../../utils/assign-macro-level.js';
-import type { EconEvent } from '../econ-calendar-service.js';
-import type { FeedItem, NewsSource, RiskType } from '../../types/riskflow.js';
+import {
+  filterByTier,
+  extractFJEmojiFromText,
+  fjTierFromEmoji,
+  type FJClassification,
+} from "./fj-emoji-filter.js";
+import {
+  fetchEconCalendar,
+  updateEventActual,
+  writeEconPrint,
+} from "../econ-calendar-service.js";
+import { writeConsiliumMessage } from "../supabase-service.js";
+import { injectEconPrintToFeed } from "../riskflow/econ-bridge.js";
+import { storeFeedItems } from "../riskflow/news-cache.js";
+import { getMatchedKeywords } from "../headline-parser.js";
+import { assignMacroLevel } from "../../utils/assign-macro-level.js";
+import type { EconEvent } from "../econ-calendar-service.js";
+import type { FeedItem, NewsSource, RiskType } from "../../types/riskflow.js";
 
 // In-memory dedup — don't re-post same item to Supabase across polls
 const postedIds = new Set<string>();
@@ -40,52 +56,56 @@ export function shouldPushToConsilium(macroLevel: number | undefined): boolean {
 /** Push Critical/High FeedItems to Supabase consilium_messages (fire-and-forget, deduplicated) */
 async function pushToSupabase(items: FeedItem[]): Promise<void> {
   const newItems = items.filter(
-    (item) => shouldPushToConsilium(item.macroLevel) && !postedIds.has(item.id)
+    (item) => shouldPushToConsilium(item.macroLevel) && !postedIds.has(item.id),
   );
   if (newItems.length === 0) return;
 
   for (const item of newItems) {
     postedIds.add(item.id);
-    const tier = item.macroLevel === 4 ? 'Critical' : 'High';
+    const tier = item.macroLevel === 4 ? "Critical" : "High";
 
     writeConsiliumMessage({
-      agent_name: 'EconTwitterPoller',
-      agent_role: 'econ-monitor',
+      agent_name: "EconTwitterPoller",
+      agent_role: "econ-monitor",
       content: `[${tier}] ${item.headline}`,
       message_type: `RiskFlow-${tier}`,
       metadata: { source: item.source, tweetId: item.id },
-    }).catch((err) => console.warn('[EconTwitterPoller] Supabase push failed:', err));
+    }).catch((err) =>
+      console.warn("[EconTwitterPoller] Supabase push failed:", err),
+    );
   }
 
-  console.log(`[EconTwitterPoller] Pushed ${newItems.length} items to Supabase consilium`);
+  console.log(
+    `[EconTwitterPoller] Pushed ${newItems.length} items to Supabase consilium`,
+  );
 }
 
-const PRE_EVENT_MINUTES = 5;      // Start polling 5 min before print
-const POST_EVENT_MINUTES = 15;    // Stop 15 min after print
+const PRE_EVENT_MINUTES = 5; // Start polling 5 min before print
+const POST_EVENT_MINUTES = 15; // Stop 15 min after print
 const BURST_INTERVAL_MS = 5_000; // 5s burst polling during releases
 const BURST_DURATION_MS = 30_000; // 30s burst window after release time
 
 // FinancialJuice is the primary source of truth for econ print actuals.
-const FJ_ACCOUNTS = ['financialjuice'] as const;
+const FJ_ACCOUNTS = ["financialjuice"] as const;
 
 // Trusted macro/econ accounts — always polled alongside FJ
-const TRUSTED_ACCOUNTS = ['NickTimiraos'] as const;
+const TRUSTED_ACCOUNTS = ["NickTimiraos"] as const;
 
 // Breaking news / market-moving wire accounts — continuous polling
-const WIRE_ACCOUNTS = ['DeItaone'] as const;
+const WIRE_ACCOUNTS = ["DeItaone"] as const;
 
 // OSINT / geopolitical intelligence accounts — continuous polling
-const OSINT_ACCOUNTS = ['OSINTDefender'] as const;
+const OSINT_ACCOUNTS = ["OSINTDefender"] as const;
 
 // Geopolitical + policy accounts — polled for real-time geopolitical + fiscal commentary
 const GEOPOLITICAL_ACCOUNTS = [
-  'SecBessent25',
-  'realDonaldTrump',
-  'ABORNEOFFICIAL',
-  'TheSpectatorIndex',
-  'SchizoIntel',
-  'MenchOSINT',
-  'ClashReport',
+  "SecBessent25",
+  "realDonaldTrump",
+  "ABORNEOFFICIAL",
+  "TheSpectatorIndex",
+  "SchizoIntel",
+  "MenchOSINT",
+  "ClashReport",
 ] as const;
 
 // All accounts that should be polled continuously (not gated by econ events)
@@ -101,7 +121,7 @@ const ALL_CONTINUOUS_ACCOUNTS = [
 // Priority accounts polled EVERY cycle. Others rotate in batches of 3.
 const PRIORITY_ACCOUNTS: readonly string[] = [...FJ_ACCOUNTS, ...WIRE_ACCOUNTS]; // financialjuice, DeItaone
 const ROTATING_ACCOUNTS: readonly string[] = ALL_CONTINUOUS_ACCOUNTS.filter(
-  a => !PRIORITY_ACCOUNTS.includes(a)
+  (a) => !PRIORITY_ACCOUNTS.includes(a),
 );
 let rotationIndex = 0;
 const ROTATION_BATCH_SIZE = 3;
@@ -110,20 +130,23 @@ const ROTATION_BATCH_SIZE = 3;
 function getAccountsForCycle(): string[] {
   const batch: string[] = [...PRIORITY_ACCOUNTS];
   for (let i = 0; i < ROTATION_BATCH_SIZE; i++) {
-    batch.push(ROTATING_ACCOUNTS[(rotationIndex + i) % ROTATING_ACCOUNTS.length]);
+    batch.push(
+      ROTATING_ACCOUNTS[(rotationIndex + i) % ROTATING_ACCOUNTS.length],
+    );
   }
-  rotationIndex = (rotationIndex + ROTATION_BATCH_SIZE) % ROTATING_ACCOUNTS.length;
+  rotationIndex =
+    (rotationIndex + ROTATION_BATCH_SIZE) % ROTATING_ACCOUNTS.length;
   return [...new Set(batch)]; // dedupe
 }
 
 // Geopolitical search terms — burst-polled when conflict escalation detected
 const GEOPOLITICAL_SEARCH_TERMS = [
-  'Iran IRGC strike',
-  'Israel Iran missile',
-  'Houthi Red Sea attack',
-  'Hezbollah escalation',
-  'Trump tariff announce',
-  'Bessent treasury',
+  "Iran IRGC strike",
+  "Israel Iran missile",
+  "Houthi Red Sea attack",
+  "Hezbollah escalation",
+  "Trump tariff announce",
+  "Bessent treasury",
 ] as const;
 
 // Max tweets per search / timeline call
@@ -178,7 +201,10 @@ function extractActualFromText(text: string): ExtractedActual | null {
   let actualStr: string | undefined;
   for (const pattern of ACTUAL_PATTERNS) {
     const match = text.match(pattern);
-    if (match?.[1]) { actualStr = match[1]; break; }
+    if (match?.[1]) {
+      actualStr = match[1];
+      break;
+    }
   }
   if (!actualStr) return null;
 
@@ -188,13 +214,19 @@ function extractActualFromText(text: string): ExtractedActual | null {
   let forecast: number | undefined;
   for (const pattern of FORECAST_PATTERNS) {
     const match = text.match(pattern);
-    if (match?.[1]) { forecast = parseFloat(match[1]); break; }
+    if (match?.[1]) {
+      forecast = parseFloat(match[1]);
+      break;
+    }
   }
 
   let previous: number | undefined;
   for (const pattern of PREVIOUS_PATTERNS) {
     const match = text.match(pattern);
-    if (match?.[1]) { previous = parseFloat(match[1]); break; }
+    if (match?.[1]) {
+      previous = parseFloat(match[1]);
+      break;
+    }
   }
 
   return { actual, forecast, previous };
@@ -206,7 +238,7 @@ function extractActualFromText(text: string): ExtractedActual | null {
  */
 function matchTweetToEvent(
   tweetText: string,
-  events: EconEvent[]
+  events: EconEvent[],
 ): EconEvent | null {
   const upper = tweetText.toUpperCase();
   let bestMatch: EconEvent | null = null;
@@ -221,15 +253,15 @@ function matchTweetToEvent(
       if (upper.includes(kw)) score++;
     }
     // Bonus for exact abbreviation matches
-    if (eventUpper.includes('CPI') && upper.includes('CPI')) score += 3;
-    if (eventUpper.includes('PPI') && upper.includes('PPI')) score += 3;
-    if (eventUpper.includes('NFP') && upper.includes('NFP')) score += 3;
-    if (eventUpper.includes('GDP') && upper.includes('GDP')) score += 3;
-    if (eventUpper.includes('PCE') && upper.includes('PCE')) score += 3;
-    if (eventUpper.includes('FOMC') && upper.includes('FOMC')) score += 3;
-    if (eventUpper.includes('RETAIL') && upper.includes('RETAIL')) score += 2;
-    if (eventUpper.includes('CLAIMS') && upper.includes('CLAIMS')) score += 2;
-    if (eventUpper.includes('PMI') && upper.includes('PMI')) score += 2;
+    if (eventUpper.includes("CPI") && upper.includes("CPI")) score += 3;
+    if (eventUpper.includes("PPI") && upper.includes("PPI")) score += 3;
+    if (eventUpper.includes("NFP") && upper.includes("NFP")) score += 3;
+    if (eventUpper.includes("GDP") && upper.includes("GDP")) score += 3;
+    if (eventUpper.includes("PCE") && upper.includes("PCE")) score += 3;
+    if (eventUpper.includes("FOMC") && upper.includes("FOMC")) score += 3;
+    if (eventUpper.includes("RETAIL") && upper.includes("RETAIL")) score += 2;
+    if (eventUpper.includes("CLAIMS") && upper.includes("CLAIMS")) score += 2;
+    if (eventUpper.includes("PMI") && upper.includes("PMI")) score += 2;
 
     if (score > bestScore) {
       bestScore = score;
@@ -247,15 +279,20 @@ function matchTweetToEvent(
  * 3. Write a new Econ Print to the prints DB
  */
 async function processActualsFromTweets(
-  tweets: Array<{ id: string; text: string; author: string; publishedAt: string }>,
-  activeEvents: EconEvent[]
+  tweets: Array<{
+    id: string;
+    text: string;
+    author: string;
+    publishedAt: string;
+  }>,
+  activeEvents: EconEvent[],
 ): Promise<void> {
   if (activeEvents.length === 0) return;
 
   // Only process FJ tweets (they're the source of truth for actuals)
   const fjTweets = tweets.filter((t) => {
     const lower = t.author.toLowerCase();
-    return lower === 'financialjuice';
+    return lower === "financialjuice";
   });
 
   for (const tweet of fjTweets) {
@@ -269,18 +306,27 @@ async function processActualsFromTweets(
     if (actualWrittenIds.has(event.id)) continue;
     actualWrittenIds.add(event.id);
 
-    console.log(`[EconTwitterPoller] ACTUAL DETECTED: "${event.name}" = ${extracted.actual} (from @${tweet.author})`);
+    console.log(
+      `[EconTwitterPoller] ACTUAL DETECTED: "${event.name}" = ${extracted.actual} (from @${tweet.author})`,
+    );
 
     // 1. Update the Econ Calendar event row with the actual string
     updateEventActual(event.id, String(extracted.actual)).catch((err) =>
-      console.warn(`[EconTwitterPoller] Failed to update event actual for ${event.name}:`, err)
+      console.warn(
+        `[EconTwitterPoller] Failed to update event actual for ${event.name}:`,
+        err,
+      ),
     );
 
     // 2. Write to the Econ Prints DB
     const today = new Date().toISOString().slice(0, 10);
     const printDate = event.date ?? today;
-    const printForecast = extracted.forecast ?? (event.forecast ? parseFloat(event.forecast) : undefined);
-    const printPrevious = extracted.previous ?? (event.previous ? parseFloat(event.previous) : undefined);
+    const printForecast =
+      extracted.forecast ??
+      (event.forecast ? parseFloat(event.forecast) : undefined);
+    const printPrevious =
+      extracted.previous ??
+      (event.previous ? parseFloat(event.previous) : undefined);
     writeEconPrint({
       eventName: event.name,
       date: printDate,
@@ -288,7 +334,10 @@ async function processActualsFromTweets(
       forecast: printForecast,
       previous: printPrevious,
     }).catch((err) =>
-      console.warn(`[EconTwitterPoller] Failed to write econ print for ${event.name}:`, err)
+      console.warn(
+        `[EconTwitterPoller] Failed to write econ print for ${event.name}:`,
+        err,
+      ),
     );
 
     // 3. Inject into RiskFlow feed for IV scoring engine
@@ -299,7 +348,10 @@ async function processActualsFromTweets(
       previous: printPrevious,
       date: printDate,
     }).catch((err) =>
-      console.warn(`[EconTwitterPoller] Failed to inject to RiskFlow for ${event.name}:`, err)
+      console.warn(
+        `[EconTwitterPoller] Failed to inject to RiskFlow for ${event.name}:`,
+        err,
+      ),
     );
   }
 }
@@ -314,22 +366,30 @@ function buildEventQueries(eventNames: string[]): string[] {
   const queries: string[] = [];
   for (const name of eventNames) {
     const upper = name.toUpperCase();
-    if (upper.includes('CPI') || upper.includes('INFLATION')) {
-      queries.push('CPI actual forecast inflation');
-    } else if (upper.includes('NFP') || upper.includes('PAYROLL') || upper.includes('JOBS')) {
-      queries.push('NFP payrolls jobs report actual');
-    } else if (upper.includes('FOMC') || upper.includes('FED') || upper.includes('INTEREST RATE')) {
-      queries.push('FOMC Fed rate decision actual');
-    } else if (upper.includes('GDP')) {
-      queries.push('GDP actual forecast growth');
-    } else if (upper.includes('PPI')) {
-      queries.push('PPI producer prices actual');
-    } else if (upper.includes('RETAIL')) {
-      queries.push('retail sales actual');
-    } else if (upper.includes('PMI')) {
-      queries.push('PMI actual manufacturing');
-    } else if (upper.includes('JOBLESS') || upper.includes('CLAIMS')) {
-      queries.push('jobless claims weekly actual');
+    if (upper.includes("CPI") || upper.includes("INFLATION")) {
+      queries.push("CPI actual forecast inflation");
+    } else if (
+      upper.includes("NFP") ||
+      upper.includes("PAYROLL") ||
+      upper.includes("JOBS")
+    ) {
+      queries.push("NFP payrolls jobs report actual");
+    } else if (
+      upper.includes("FOMC") ||
+      upper.includes("FED") ||
+      upper.includes("INTEREST RATE")
+    ) {
+      queries.push("FOMC Fed rate decision actual");
+    } else if (upper.includes("GDP")) {
+      queries.push("GDP actual forecast growth");
+    } else if (upper.includes("PPI")) {
+      queries.push("PPI producer prices actual");
+    } else if (upper.includes("RETAIL")) {
+      queries.push("retail sales actual");
+    } else if (upper.includes("PMI")) {
+      queries.push("PMI actual manufacturing");
+    } else if (upper.includes("JOBLESS") || upper.includes("CLAIMS")) {
+      queries.push("jobless claims weekly actual");
     } else {
       queries.push(name.slice(0, 30));
     }
@@ -393,17 +453,25 @@ function tweetToFeedItem(
 ): FeedItem {
   const authorLower = tweet.author.toLowerCase();
   const source: NewsSource =
-    authorLower === 'financialjuice' ? 'FinancialJuice' :
-    authorLower === 'osintdefender' ? 'OSINTSources' :
-    authorLower === 'deitaone' ? 'DeItaOne' :
-    'TwitterCli';
+    authorLower === "financialjuice"
+      ? "FinancialJuice"
+      : authorLower === "osintdefender"
+        ? "OSINTSources"
+        : authorLower === "deitaone"
+          ? "DeItaOne"
+          : "TwitterCli";
 
   const keywordMatches = getMatchedKeywords(tweet.text);
   const riskType = inferRiskTypeFromTweet(tweet.text);
   const fjEmojiTier = fjTierFromEmoji(extractFJEmojiFromText(tweet.text));
-  const normalizedIvFromTier: Record<1 | 2 | 3 | 4, number> = { 1: 0, 2: 40, 3: 70, 4: 90 };
+  const normalizedIvFromTier: Record<1 | 2 | 3 | 4, number> = {
+    1: 0,
+    2: 40,
+    3: 70,
+    4: 90,
+  };
   const urgencySignals =
-    (fjClassification.urgency !== 'normal' ? 1 : 0) +
+    (fjClassification.urgency !== "normal" ? 1 : 0) +
     (fjClassification.macroLevel >= 3 ? 1 : 0) +
     (keywordMatches.length > 0 ? 1 : 0);
   const macroLevel = assignMacroLevel({
@@ -420,7 +488,7 @@ function tweetToFeedItem(
     headline: tweet.text,
     symbols: extractSymbolsFromText(tweet.text),
     tags: extractTagsFromText(tweet.text),
-    isBreaking: fjClassification.urgency === 'immediate',
+    isBreaking: fjClassification.urgency === "immediate",
     urgency: fjClassification.urgency,
     macroLevel,
     publishedAt: tweet.publishedAt,
@@ -429,45 +497,91 @@ function tweetToFeedItem(
 
 function inferRiskTypeFromTweet(text: string): RiskType {
   const lower = text.toLowerCase();
-  if (/(fed|fomc|cpi|ppi|gdp|nfp|pce|inflation|jobless|retail sales|housing starts|consumer confidence|treasury)/.test(lower)) {
-    return 'Macro';
+  if (
+    /(fed|fomc|cpi|ppi|gdp|nfp|pce|inflation|jobless|retail sales|housing starts|consumer confidence|treasury)/.test(
+      lower,
+    )
+  ) {
+    return "Macro";
   }
-  if (/(war|tariff|sanction|military|conflict|opec|nato|invasion|missile|nuclear|strait of hormuz|proxy attack)/.test(lower)) {
-    return 'Geopolitical';
+  if (
+    /(war|tariff|sanction|military|conflict|opec|nato|invasion|missile|nuclear|strait of hormuz|proxy attack)/.test(
+      lower,
+    )
+  ) {
+    return "Geopolitical";
   }
-  if (/(earnings|eps|revenue|guidance|beat|miss|quarterly|aapl|nvda|msft|amzn|goog|meta|tsla)/.test(lower)) {
-    return 'Earnings';
+  if (
+    /(earnings|eps|revenue|guidance|beat|miss|quarterly|aapl|nvda|msft|amzn|goog|meta|tsla)/.test(
+      lower,
+    )
+  ) {
+    return "Earnings";
   }
-  if (/(resistance|support|breakout|volume|rsi|macd|moving average|trend)/.test(lower)) {
-    return 'Technical';
+  if (
+    /(resistance|support|breakout|volume|rsi|macd|moving average|trend)/.test(
+      lower,
+    )
+  ) {
+    return "Technical";
   }
-  if (/(credit spread|high yield|leverage|default|downgrade|junk bond)/.test(lower)) {
-    return 'Credit';
+  if (
+    /(credit spread|high yield|leverage|default|downgrade|junk bond)/.test(
+      lower,
+    )
+  ) {
+    return "Credit";
   }
-  if (/(repo|funding|liquidity|bank run|cash crunch|reserve|circuit breaker|flash crash)/.test(lower)) {
-    return 'Liquidity';
+  if (
+    /(repo|funding|liquidity|bank run|cash crunch|reserve|circuit breaker|flash crash)/.test(
+      lower,
+    )
+  ) {
+    return "Liquidity";
   }
-  return 'Commentary';
+  return "Commentary";
 }
 
 function extractSymbolsFromText(text: string): string[] {
-  const cashtags = text.match(/\$[A-Z]{1,5}\b/g)?.map((s) => s.replace('$', '')) ?? [];
-  const known = ['SPY', 'QQQ', 'ES', 'NQ', 'TLT', 'DXY', 'VIX', 'CL', 'GC', 'BTC'];
-  const inferred = known.filter((t) => new RegExp(`\\b${t}\\b`).test(text.toUpperCase()));
+  const cashtags =
+    text.match(/\$[A-Z]{1,5}\b/g)?.map((s) => s.replace("$", "")) ?? [];
+  const known = [
+    "SPY",
+    "QQQ",
+    "ES",
+    "NQ",
+    "TLT",
+    "DXY",
+    "VIX",
+    "CL",
+    "GC",
+    "BTC",
+  ];
+  const inferred = known.filter((t) =>
+    new RegExp(`\\b${t}\\b`).test(text.toUpperCase()),
+  );
   return [...new Set([...cashtags, ...inferred])];
 }
 
 function extractTagsFromText(text: string): string[] {
   const tags: string[] = [];
   const upper = text.toUpperCase();
-  if (upper.includes('CPI') || upper.includes('INFLATION')) tags.push('CPI', 'INFLATION');
-  if (upper.includes('NFP') || upper.includes('PAYROLL')) tags.push('NFP', 'JOBS');
-  if (upper.includes('FOMC') || upper.includes('FED') || upper.includes('POWELL')) tags.push('FED', 'FOMC');
-  if (upper.includes('GDP')) tags.push('GDP');
-  if (upper.includes('PPI')) tags.push('PPI');
-  if (upper.includes('PMI')) tags.push('PMI');
-  if (upper.includes('RETAIL SALES')) tags.push('RETAIL');
-  if (upper.includes('JOBLESS') || upper.includes('CLAIMS')) tags.push('JOBLESS');
+  if (upper.includes("CPI") || upper.includes("INFLATION"))
+    tags.push("CPI", "INFLATION");
+  if (upper.includes("NFP") || upper.includes("PAYROLL"))
+    tags.push("NFP", "JOBS");
+  if (
+    upper.includes("FOMC") ||
+    upper.includes("FED") ||
+    upper.includes("POWELL")
+  )
+    tags.push("FED", "FOMC");
+  if (upper.includes("GDP")) tags.push("GDP");
+  if (upper.includes("PPI")) tags.push("PPI");
+  if (upper.includes("PMI")) tags.push("PMI");
+  if (upper.includes("RETAIL SALES")) tags.push("RETAIL");
+  if (upper.includes("JOBLESS") || upper.includes("CLAIMS"))
+    tags.push("JOBLESS");
   return tags;
 }
 
@@ -481,12 +595,14 @@ function extractTagsFromText(text: string): string[] {
 export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
   const installed = await isTwitterCliInstalled();
   if (!installed) {
-    console.debug('[EconTwitterPoller] twitter-cli not installed, skipping');
+    console.debug("[EconTwitterPoller] twitter-cli not installed, skipping");
     return [];
   }
 
   if (isRateLimited()) {
-    console.warn(`[EconTwitterPoller] Rate limited — cooldown ${Math.round(getRateLimitCooldownMs() / 1000)}s remaining, skipping cycle`);
+    console.warn(
+      `[EconTwitterPoller] Rate limited — cooldown ${Math.round(getRateLimitCooldownMs() / 1000)}s remaining, skipping cycle`,
+    );
     return [];
   }
 
@@ -499,10 +615,14 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
   try {
     const events = await fetchEconCalendar({ from: today, to: today });
     const highImportance = events.filter((e) => (e.importance ?? 1) >= 2);
-    activeEvents = highImportance.filter((e) => isInEventWindow(e.date, e.time));
+    activeEvents = highImportance.filter((e) =>
+      isInEventWindow(e.date, e.time),
+    );
     activeEventNames = activeEvents.map((e) => e.name);
     if (activeEvents.length > 0) {
-      console.log(`[EconTwitterPoller] ${activeEvents.length} events in window (T-5min to T+15min): ${activeEventNames.join(', ')}`);
+      console.log(
+        `[EconTwitterPoller] ${activeEvents.length} events in window (T-5min to T+15min): ${activeEventNames.join(", ")}`,
+      );
     }
 
     // Schedule burst polling for upcoming events (within next 2 min)
@@ -513,27 +633,41 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
       }
     }
   } catch (err) {
-    console.warn('[EconTwitterPoller] Failed to fetch econ calendar:', err);
+    console.warn("[EconTwitterPoller] Failed to fetch econ calendar:", err);
   }
 
   // ── 2. Poll accounts using rotation (priority always, others in batches of 3) ──
   const cycleAccounts = getAccountsForCycle();
-  const allTweetPromises: Promise<Array<{ id: string; text: string; author: string; publishedAt: string }>>[] = [];
+  const allTweetPromises: Promise<
+    Array<{ id: string; text: string; author: string; publishedAt: string }>
+  >[] = [];
 
   for (const account of cycleAccounts) {
-    allTweetPromises.push(twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }));
+    allTweetPromises.push(
+      twitterLimiter.schedule(
+        () => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }),
+        { bucket: "twitter-timeline" },
+      ),
+    );
   }
 
   // ── 3. Event-triggered search queries (only when econ events are in window) ──
   if (activeEvents.length > 0) {
     const searchQueries = buildEventQueries(activeEventNames);
     for (const query of searchQueries) {
-      allTweetPromises.push(twitterLimiter.schedule(() => searchTweets(query, { limit: SEARCH_LIMIT, filter: 'latest' }), { bucket: 'twitter-search' }));
+      allTweetPromises.push(
+        twitterLimiter.schedule(
+          () => searchTweets(query, { limit: SEARCH_LIMIT, filter: "latest" }),
+          { bucket: "twitter-search" },
+        ),
+      );
     }
   }
 
   const tweetBatches = await Promise.allSettled(allTweetPromises);
-  const allTweets = tweetBatches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+  const allTweets = tweetBatches.flatMap((r) =>
+    r.status === "fulfilled" ? r.value : [],
+  );
 
   // 4. Dedupe by tweet id
   const seenIds = new Set<string>();
@@ -546,23 +680,27 @@ export async function pollTwitterForEconNews(): Promise<FeedItem[]> {
   // 5. Extract actuals from FJ tweets when events are active (fire-and-forget)
   if (activeEvents.length > 0) {
     processActualsFromTweets(uniqueTweets, activeEvents).catch((err) =>
-      console.warn('[EconTwitterPoller] Actual extraction error:', err)
+      console.warn("[EconTwitterPoller] Actual extraction error:", err),
     );
   }
 
   // 6. Apply FJ emoji tier filter (medium+) — works for all accounts via keyword fallback
-  const classified = filterByTier(uniqueTweets, 'medium');
+  const classified = filterByTier(uniqueTweets, "medium");
 
   // 7. Convert to FeedItem[]
   const feedItems: FeedItem[] = classified.map((t) =>
-    tweetToFeedItem(t, t.fjClassification)
+    tweetToFeedItem(t, t.fjClassification),
   );
 
   if (feedItems.length > 0) {
-    console.log(`[EconTwitterPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw across ${cycleAccounts.length} accounts: ${cycleAccounts.join(', ')})`);
+    console.log(
+      `[EconTwitterPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw across ${cycleAccounts.length} accounts: ${cycleAccounts.join(", ")})`,
+    );
     pushToSupabase(feedItems).catch(() => {});
   } else if (uniqueTweets.length > 0) {
-    console.debug(`[EconTwitterPoller] ${uniqueTweets.length} raw tweets fetched, 0 passed medium+ filter`);
+    console.debug(
+      `[EconTwitterPoller] ${uniqueTweets.length} raw tweets fetched, 0 passed medium+ filter`,
+    );
   }
 
   return feedItems;
@@ -583,7 +721,9 @@ function scheduleBurst(event: EconEvent): void {
   if (msUntil === null) return;
 
   const startBurst = () => {
-    console.log(`[EconTwitterPoller] BURST MODE: 5s polling for "${event.name}" (30s window)`);
+    console.log(
+      `[EconTwitterPoller] BURST MODE: 5s polling for "${event.name}" (30s window)`,
+    );
 
     let elapsed = 0;
     const burstInterval = setInterval(async () => {
@@ -591,16 +731,25 @@ function scheduleBurst(event: EconEvent): void {
       if (elapsed > BURST_DURATION_MS) {
         clearInterval(burstInterval);
         activeBursts.delete(burstKey);
-        console.log(`[EconTwitterPoller] BURST END: "${event.name}" — returning to scheduled polling`);
+        console.log(
+          `[EconTwitterPoller] BURST END: "${event.name}" — returning to scheduled polling`,
+        );
         return;
       }
 
       try {
         // Rapid-fire: fetch only FinancialJuice (fastest source for actual values)
         const batches = await Promise.allSettled(
-          FJ_ACCOUNTS.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: 10 }), { bucket: 'twitter-timeline' }))
+          FJ_ACCOUNTS.map((account) =>
+            twitterLimiter.schedule(
+              () => fetchUserTimeline(account, { limit: 10 }),
+              { bucket: "twitter-timeline" },
+            ),
+          ),
         );
-        const tweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+        const tweets = batches.flatMap((r) =>
+          r.status === "fulfilled" ? r.value : [],
+        );
 
         // Dedupe
         const seenIds = new Set<string>();
@@ -614,21 +763,26 @@ function scheduleBurst(event: EconEvent): void {
         await processActualsFromTweets(unique, [event]);
 
         // Also convert to feed items for the UI
-        const classified = filterByTier(unique, 'medium');
+        const classified = filterByTier(unique, "medium");
         const feedItems = classified.map((t) =>
-          tweetToFeedItem(t, t.fjClassification)
+          tweetToFeedItem(t, t.fjClassification),
         );
 
         if (feedItems.length > 0) {
           // Update warm cache with burst items so feed-service picks them up
-          const newItems = feedItems.filter((f) => !warmCache.some((w) => w.id === f.id));
+          const newItems = feedItems.filter(
+            (f) => !warmCache.some((w) => w.id === f.id),
+          );
           if (newItems.length > 0) {
             warmCache = [...newItems, ...warmCache].slice(0, 50);
             pushToSupabase(newItems).catch(() => {});
           }
         }
       } catch (err) {
-        console.warn(`[EconTwitterPoller] Burst poll error for ${event.name}:`, err);
+        console.warn(
+          `[EconTwitterPoller] Burst poll error for ${event.name}:`,
+          err,
+        );
       }
     }, BURST_INTERVAL_MS);
 
@@ -642,7 +796,9 @@ function scheduleBurst(event: EconEvent): void {
     }
   } else {
     // Schedule burst to start at release time
-    console.log(`[EconTwitterPoller] Burst scheduled for "${event.name}" in ${Math.round(msUntil / 1000)}s`);
+    console.log(
+      `[EconTwitterPoller] Burst scheduled for "${event.name}" in ${Math.round(msUntil / 1000)}s`,
+    );
     setTimeout(startBurst, msUntil);
   }
 }
@@ -656,15 +812,24 @@ async function initFetchHighPriorityPosts(): Promise<void> {
   if (!installed) return;
 
   try {
-    console.log('[EconTwitterPoller] Init fetch: pulling last 30 Medium+ posts from all continuous accounts...');
+    console.log(
+      "[EconTwitterPoller] Init fetch: pulling last 30 Medium+ posts from all continuous accounts...",
+    );
 
     const allAccounts = [...ALL_CONTINUOUS_ACCOUNTS];
     const batches = await Promise.allSettled(
-      allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: 50 }), { bucket: 'twitter-timeline' }))
+      allAccounts.map((account) =>
+        twitterLimiter.schedule(
+          () => fetchUserTimeline(account, { limit: 50 }),
+          { bucket: "twitter-timeline" },
+        ),
+      ),
     );
-    const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+    const allTweets = batches.flatMap((r) =>
+      r.status === "fulfilled" ? r.value : [],
+    );
 
-    const mediumPlus = filterByTier(allTweets, 'medium');
+    const mediumPlus = filterByTier(allTweets, "medium");
 
     const seenIds = new Set<string>();
     const top30 = mediumPlus
@@ -673,21 +838,27 @@ async function initFetchHighPriorityPosts(): Promise<void> {
         seenIds.add(t.id);
         return true;
       })
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+      )
       .slice(0, 30);
 
-    warmCache = top30.map((t) =>
-      tweetToFeedItem(t, t.fjClassification)
-    );
+    warmCache = top30.map((t) => tweetToFeedItem(t, t.fjClassification));
 
-    console.log(`[EconTwitterPoller] Init warm cache: ${warmCache.length} Medium+ posts seeded`);
+    console.log(
+      `[EconTwitterPoller] Init warm cache: ${warmCache.length} Medium+ posts seeded`,
+    );
     // Write to local DB cache so feed-service/feed-poller can serve them immediately
     await storeFeedItems(warmCache).catch((err) =>
-      console.warn('[EconTwitterPoller] Failed to store warm cache in news_feed_cache:', err)
+      console.warn(
+        "[EconTwitterPoller] Failed to store warm cache in news_feed_cache:",
+        err,
+      ),
     );
     await pushToSupabase(warmCache);
   } catch (err) {
-    console.warn('[EconTwitterPoller] Init fetch failed:', err);
+    console.warn("[EconTwitterPoller] Init fetch failed:", err);
   }
 }
 
@@ -712,22 +883,33 @@ export function getTwitterRateLimiterStatus() {
 export async function manualRefreshTweets(): Promise<FeedItem[]> {
   const installed = await isTwitterCliInstalled();
   if (!installed) {
-    console.debug('[ManualRefresh] twitter-cli not installed, skipping');
+    console.debug("[ManualRefresh] twitter-cli not installed, skipping");
     return [];
   }
 
   if (isRateLimited()) {
-    console.warn(`[ManualRefresh] Rate limited — cooldown ${Math.round(getRateLimitCooldownMs() / 1000)}s remaining`);
+    console.warn(
+      `[ManualRefresh] Rate limited — cooldown ${Math.round(getRateLimitCooldownMs() / 1000)}s remaining`,
+    );
     return [];
   }
 
   const cycleAccounts = getAccountsForCycle();
-  console.log(`[ManualRefresh] Fetching ${cycleAccounts.length} accounts (rotation): ${cycleAccounts.join(', ')}`);
+  console.log(
+    `[ManualRefresh] Fetching ${cycleAccounts.length} accounts (rotation): ${cycleAccounts.join(", ")}`,
+  );
 
   const batches = await Promise.allSettled(
-    cycleAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
+    cycleAccounts.map((account) =>
+      twitterLimiter.schedule(
+        () => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }),
+        { bucket: "twitter-timeline" },
+      ),
+    ),
   );
-  const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+  const allTweets = batches.flatMap((r) =>
+    r.status === "fulfilled" ? r.value : [],
+  );
 
   // Dedupe
   const seenIds = new Set<string>();
@@ -738,29 +920,33 @@ export async function manualRefreshTweets(): Promise<FeedItem[]> {
   });
 
   if (uniqueTweets.length === 0) {
-    console.log('[ManualRefresh] No tweets fetched');
+    console.log("[ManualRefresh] No tweets fetched");
     return [];
   }
 
   // Apply FJ emoji tier filter (medium+)
-  const classified = filterByTier(uniqueTweets, 'medium');
+  const classified = filterByTier(uniqueTweets, "medium");
   const feedItems: FeedItem[] = classified.map((t) =>
-    tweetToFeedItem(t, t.fjClassification)
+    tweetToFeedItem(t, t.fjClassification),
   );
 
   if (feedItems.length > 0) {
-    console.log(`[ManualRefresh] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw) — storing to DB`);
+    console.log(
+      `[ManualRefresh] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw) — storing to DB`,
+    );
     await storeFeedItems(feedItems).catch((err) =>
-      console.warn('[ManualRefresh] Failed to store items:', err)
+      console.warn("[ManualRefresh] Failed to store items:", err),
     );
     await pushToSupabase(feedItems).catch(() => {});
     // Update warm cache
-    const newItems = feedItems.filter((f) => !warmCache.some((w) => w.id === f.id));
+    const newItems = feedItems.filter(
+      (f) => !warmCache.some((w) => w.id === f.id),
+    );
     if (newItems.length > 0) {
       warmCache = [...newItems, ...warmCache].slice(0, 50);
     }
   } else {
-    console.log('[ManualRefresh] 0 items passed filter');
+    console.log("[ManualRefresh] 0 items passed filter");
   }
 
   return feedItems;
@@ -777,7 +963,7 @@ let nightPollerInterval: ReturnType<typeof setInterval> | null = null;
  */
 function isNightWindowEST(): boolean {
   const nowEST = new Date(
-    new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+    new Date().toLocaleString("en-US", { timeZone: "America/New_York" }),
   );
   const hour = nowEST.getHours();
   // 7PM (19) through midnight (23), or midnight (0) through 7AM (6)
@@ -790,23 +976,32 @@ function isNightWindowEST(): boolean {
  */
 async function nightPoll(): Promise<void> {
   if (!isNightWindowEST()) {
-    console.debug('[NightPoller] Outside 7PM-7AM EST window, skipping');
+    console.debug("[NightPoller] Outside 7PM-7AM EST window, skipping");
     return;
   }
 
   const installed = await isTwitterCliInstalled();
   if (!installed) {
-    console.debug('[NightPoller] twitter-cli not installed, skipping');
+    console.debug("[NightPoller] twitter-cli not installed, skipping");
     return;
   }
 
-  console.log('[NightPoller] Hourly night poll running (7PM-7AM EST, rate-limited)');
+  console.log(
+    "[NightPoller] Hourly night poll running (7PM-7AM EST, rate-limited)",
+  );
 
   const allAccounts = [...ALL_CONTINUOUS_ACCOUNTS];
   const batches = await Promise.allSettled(
-    allAccounts.map((account) => twitterLimiter.schedule(() => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }), { bucket: 'twitter-timeline' }))
+    allAccounts.map((account) =>
+      twitterLimiter.schedule(
+        () => fetchUserTimeline(account, { limit: TIMELINE_LIMIT }),
+        { bucket: "twitter-timeline" },
+      ),
+    ),
   );
-  const allTweets = batches.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+  const allTweets = batches.flatMap((r) =>
+    r.status === "fulfilled" ? r.value : [],
+  );
 
   // Dedupe
   const seenIds = new Set<string>();
@@ -817,39 +1012,45 @@ async function nightPoll(): Promise<void> {
   });
 
   if (uniqueTweets.length === 0) {
-    console.log('[NightPoller] No tweets fetched');
+    console.log("[NightPoller] No tweets fetched");
     return;
   }
 
   // Apply FJ emoji tier filter (medium+)
-  const classified = filterByTier(uniqueTweets, 'medium');
+  const classified = filterByTier(uniqueTweets, "medium");
   const feedItems: FeedItem[] = classified.map((t) =>
-    tweetToFeedItem(t, t.fjClassification)
+    tweetToFeedItem(t, t.fjClassification),
   );
 
   if (feedItems.length > 0) {
-    console.log(`[NightPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw) — storing to DB`);
+    console.log(
+      `[NightPoller] ${feedItems.length} items passed filter (from ${uniqueTweets.length} raw) — storing to DB`,
+    );
     await storeFeedItems(feedItems).catch((err) =>
-      console.warn('[NightPoller] Failed to store items:', err)
+      console.warn("[NightPoller] Failed to store items:", err),
     );
     await pushToSupabase(feedItems).catch(() => {});
     // Update warm cache so feed-service can serve them
-    const newItems = feedItems.filter((f) => !warmCache.some((w) => w.id === f.id));
+    const newItems = feedItems.filter(
+      (f) => !warmCache.some((w) => w.id === f.id),
+    );
     if (newItems.length > 0) {
       warmCache = [...newItems, ...warmCache].slice(0, 50);
     }
   } else {
-    console.log('[NightPoller] 0 items passed filter');
+    console.log("[NightPoller] 0 items passed filter");
   }
 }
 
 function startNightPoller(): void {
   if (nightPollerInterval) return;
-  console.log('[NightPoller] Starting (hourly, 7PM-7AM EST)');
+  console.log("[NightPoller] Starting (hourly, 7PM-7AM EST)");
   // Run immediately on boot if in window
-  nightPoll().catch((err) => console.warn('[NightPoller] Initial poll error:', err));
+  nightPoll().catch((err) =>
+    console.warn("[NightPoller] Initial poll error:", err),
+  );
   nightPollerInterval = setInterval(() => {
-    nightPoll().catch((err) => console.warn('[NightPoller] Poll error:', err));
+    nightPoll().catch((err) => console.warn("[NightPoller] Poll error:", err));
   }, NIGHT_POLL_INTERVAL_MS);
 }
 
@@ -857,7 +1058,7 @@ function stopNightPoller(): void {
   if (nightPollerInterval) {
     clearInterval(nightPollerInterval);
     nightPollerInterval = null;
-    console.log('[NightPoller] Stopped');
+    console.log("[NightPoller] Stopped");
   }
 }
 
@@ -869,9 +1070,13 @@ let pollerRunning = false;
 export function startEconTwitterPoller(): void {
   if (pollerRunning) return;
   pollerRunning = true;
-  console.log('[EconTwitterPoller] Starting with dynamic interval (hot=60s, rotation=180s)');
+  console.log(
+    "[EconTwitterPoller] Starting with dynamic interval (hot=60s, rotation=180s)",
+  );
 
-  initFetchHighPriorityPosts().catch((err) => console.warn('[EconTwitterPoller] Init fetch error:', err));
+  initFetchHighPriorityPosts().catch((err) =>
+    console.warn("[EconTwitterPoller] Init fetch error:", err),
+  );
 
   const scheduledPoll = async (): Promise<void> => {
     if (!pollerRunning) return;
@@ -879,11 +1084,13 @@ export function startEconTwitterPoller(): void {
     try {
       await pollTwitterForEconNews();
     } catch (err) {
-      console.warn('[EconTwitterPoller] Poll error:', err);
+      console.warn("[EconTwitterPoller] Poll error:", err);
     }
 
     const { interval, isHotHours } = getPollingConfig();
-    console.debug(`[EconTwitterPoller] Next poll in ${interval / 1000}s (hotHours=${isHotHours})`);
+    console.debug(
+      `[EconTwitterPoller] Next poll in ${interval / 1000}s (hotHours=${isHotHours})`,
+    );
     pollerTimeout = setTimeout(scheduledPoll, interval);
   };
 
@@ -906,5 +1113,5 @@ export function stopEconTwitterPoller(): void {
   }
   // Stop night poller
   stopNightPoller();
-  console.log('[EconTwitterPoller] Stopped (all intervals cleared)');
+  console.log("[EconTwitterPoller] Stopped (all intervals cleared)");
 }

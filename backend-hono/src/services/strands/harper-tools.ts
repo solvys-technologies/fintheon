@@ -1,41 +1,48 @@
 // [claude-code 2026-04-04] Harper CAO tools — ported from Vercel AI SDK to Strands
-import { tool } from '@strands-agents/sdk'
-import { z } from 'zod'
-import { spawn } from 'node:child_process'
-import { readFile, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
-import { homedir } from 'node:os'
-import { createLogger } from '../../lib/logger.js'
-import { isToolApproved, requestApproval } from '../tool-approval-store.js'
+import { tool } from "@strands-agents/sdk";
+import { z } from "zod";
+import { spawn } from "node:child_process";
+import { readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { homedir } from "node:os";
+import { createLogger } from "../../lib/logger.js";
+import { isToolApproved, requestApproval } from "../tool-approval-store.js";
 
-const log = createLogger('HarperTools')
+const log = createLogger("HarperTools");
 
-const PROJECT_ROOT = resolve(new URL('.', import.meta.url).pathname, '../../..')
-const HOME = homedir()
+const PROJECT_ROOT = resolve(
+  new URL(".", import.meta.url).pathname,
+  "../../..",
+);
+const HOME = homedir();
 
 /** Read-only tools that skip the approval gate */
-const AUTO_APPROVED_TOOLS = new Set(['read_file', 'read_mcp_config', 'get_fintheon_paths'])
+const AUTO_APPROVED_TOOLS = new Set([
+  "read_file",
+  "read_mcp_config",
+  "get_fintheon_paths",
+]);
 
 /** Ensure tool results are never empty — VProxy/OpenAI rejects empty content */
 function ensureNonEmpty(result: unknown): string {
-  const s = typeof result === 'string' ? result : JSON.stringify(result ?? '')
-  return s.trim().length > 0 ? s : '(no output)'
+  const s = typeof result === "string" ? result : JSON.stringify(result ?? "");
+  return s.trim().length > 0 ? s : "(no output)";
 }
 
 /** Key file paths Harper and the user should know about */
 export const FINTHEON_PATHS = {
   projectRoot: PROJECT_ROOT,
-  frontend: resolve(PROJECT_ROOT, 'frontend'),
-  backend: resolve(PROJECT_ROOT, 'backend-hono'),
-  electron: resolve(PROJECT_ROOT, 'electron'),
-  claudeConfig: resolve(HOME, '.claude'),
-  claudeSettings: resolve(HOME, '.claude', 'settings.json'),
-  mcpConfig: resolve(PROJECT_ROOT, '.mcp.json'),
-  mcpConfigVscode: resolve(PROJECT_ROOT, '.vscode', 'mcp.json'),
-  toolPermissions: resolve(HOME, '.fintheon', 'tool-permissions.json'),
-  hermesLogs: resolve(HOME, '.hermes', 'logs'),
-  fintheonData: resolve(HOME, '.fintheon'),
-}
+  frontend: resolve(PROJECT_ROOT, "frontend"),
+  backend: resolve(PROJECT_ROOT, "backend-hono"),
+  electron: resolve(PROJECT_ROOT, "electron"),
+  claudeConfig: resolve(HOME, ".claude"),
+  claudeSettings: resolve(HOME, ".claude", "settings.json"),
+  mcpConfig: resolve(PROJECT_ROOT, ".mcp.json"),
+  mcpConfigVscode: resolve(PROJECT_ROOT, ".vscode", "mcp.json"),
+  toolPermissions: resolve(HOME, ".fintheon", "tool-permissions.json"),
+  hermesLogs: resolve(HOME, ".hermes", "logs"),
+  fintheonData: resolve(HOME, ".fintheon"),
+};
 
 // ── Shell runner ────────────────────────────────────────────────────────────
 
@@ -44,33 +51,41 @@ function runShell(
   timeoutMs = 30_000,
 ): Promise<{ stdout: string; stderr: string; exitCode: number | null }> {
   return new Promise((res) => {
-    const chunks: string[] = []
-    const errChunks: string[] = []
+    const chunks: string[] = [];
+    const errChunks: string[] = [];
     const child = spawn(command, {
       shell: true,
       cwd: PROJECT_ROOT,
       env: process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
-    child.stdout?.setEncoding('utf8')
-    child.stderr?.setEncoding('utf8')
-    child.stdout?.on('data', (d: string) => chunks.push(d))
-    child.stderr?.on('data', (d: string) => errChunks.push(d))
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    child.stdout?.setEncoding("utf8");
+    child.stderr?.setEncoding("utf8");
+    child.stdout?.on("data", (d: string) => chunks.push(d));
+    child.stderr?.on("data", (d: string) => errChunks.push(d));
 
     const timer = setTimeout(() => {
-      child.kill('SIGTERM')
-      res({ stdout: chunks.join(''), stderr: errChunks.join('') + '\n[timed out]', exitCode: null })
-    }, timeoutMs)
+      child.kill("SIGTERM");
+      res({
+        stdout: chunks.join(""),
+        stderr: errChunks.join("") + "\n[timed out]",
+        exitCode: null,
+      });
+    }, timeoutMs);
 
-    child.on('exit', (code) => {
-      clearTimeout(timer)
-      res({ stdout: chunks.join(''), stderr: errChunks.join(''), exitCode: code })
-    })
-    child.on('error', (err) => {
-      clearTimeout(timer)
-      res({ stdout: '', stderr: err.message, exitCode: null })
-    })
-  })
+    child.on("exit", (code) => {
+      clearTimeout(timer);
+      res({
+        stdout: chunks.join(""),
+        stderr: errChunks.join(""),
+        exitCode: code,
+      });
+    });
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      res({ stdout: "", stderr: err.message, exitCode: null });
+    });
+  });
 }
 
 // ── Approval gate ───────────────────────────────────────────────────────────
@@ -82,14 +97,19 @@ async function withApprovalGate<T>(
   description: string,
   executeFn: () => Promise<T>,
 ): Promise<T | string> {
-  if (AUTO_APPROVED_TOOLS.has(toolName)) return executeFn()
-  if (isToolApproved(toolName)) return executeFn()
+  if (AUTO_APPROVED_TOOLS.has(toolName)) return executeFn();
+  if (isToolApproved(toolName)) return executeFn();
 
-  const decision = await requestApproval(requestId, toolName, toolInput, description)
-  if (decision === 'denied') {
-    return `[Permission denied] User denied ${toolName}. Do not retry this tool.`
+  const decision = await requestApproval(
+    requestId,
+    toolName,
+    toolInput,
+    description,
+  );
+  if (decision === "denied") {
+    return `[Permission denied] User denied ${toolName}. Do not retry this tool.`;
   }
-  return executeFn()
+  return executeFn();
 }
 
 // ── Tool factory ────────────────────────────────────────────────────────────
@@ -98,152 +118,190 @@ async function withApprovalGate<T>(
 export function createHarperTools(requestId: string) {
   return [
     tool({
-      name: 'run_command',
+      name: "run_command",
       description:
-        'Run a shell command on the local machine. The working directory is the Fintheon project root. Use this to inspect files, grep code, check logs, run scripts, query the database, build the project, or execute any CLI tool.',
+        "Run a shell command on the local machine. The working directory is the Fintheon project root. Use this to inspect files, grep code, check logs, run scripts, query the database, build the project, or execute any CLI tool.",
       inputSchema: z.object({
-        command: z.string().describe('The shell command to execute (bash)'),
+        command: z.string().describe("The shell command to execute (bash)"),
       }),
       callback: async (input: { command: string }) => {
-        log.info('Harper tool: run_command', { command: input.command.slice(0, 120) })
+        log.info("Harper tool: run_command", {
+          command: input.command.slice(0, 120),
+        });
         const result = await withApprovalGate(
           requestId,
-          'run_command',
+          "run_command",
           { command: input.command },
           `Run shell command: ${input.command.slice(0, 200)}`,
           async () => {
-            const r = await runShell(input.command)
-            return (r.stdout + (r.stderr ? `\n[stderr] ${r.stderr}` : '')).slice(0, 12_000)
+            const r = await runShell(input.command);
+            return (
+              r.stdout + (r.stderr ? `\n[stderr] ${r.stderr}` : "")
+            ).slice(0, 12_000);
           },
-        )
-        return ensureNonEmpty(result)
+        );
+        return ensureNonEmpty(result);
       },
     }),
 
     tool({
-      name: 'read_file',
-      description: 'Read the contents of a file from the Fintheon codebase or system. Returns the full text content.',
+      name: "read_file",
+      description:
+        "Read the contents of a file from the Fintheon codebase or system. Returns the full text content.",
       inputSchema: z.object({
-        path: z.string().describe('Absolute path or path relative to the Fintheon project root'),
+        path: z
+          .string()
+          .describe(
+            "Absolute path or path relative to the Fintheon project root",
+          ),
       }),
       callback: async (input: { path: string }) => {
-        const abs = input.path.startsWith('/') ? input.path : resolve(PROJECT_ROOT, input.path)
-        log.info('Harper tool: read_file', { path: abs })
-        const result = await withApprovalGate(requestId, 'read_file', { path: abs }, `Read file: ${abs}`, async () => {
-          try {
-            const content = await readFile(abs, 'utf8')
-            return content.slice(0, 20_000) + (content.length > 20_000 ? '\n[truncated]' : '')
-          } catch (err) {
-            return `Error: ${err instanceof Error ? err.message : String(err)}`
-          }
-        })
-        return ensureNonEmpty(result)
+        const abs = input.path.startsWith("/")
+          ? input.path
+          : resolve(PROJECT_ROOT, input.path);
+        log.info("Harper tool: read_file", { path: abs });
+        const result = await withApprovalGate(
+          requestId,
+          "read_file",
+          { path: abs },
+          `Read file: ${abs}`,
+          async () => {
+            try {
+              const content = await readFile(abs, "utf8");
+              return (
+                content.slice(0, 20_000) +
+                (content.length > 20_000 ? "\n[truncated]" : "")
+              );
+            } catch (err) {
+              return `Error: ${err instanceof Error ? err.message : String(err)}`;
+            }
+          },
+        );
+        return ensureNonEmpty(result);
       },
     }),
 
     tool({
-      name: 'write_file',
-      description: 'Write content to a file. Use this to create or update files in the Fintheon codebase.',
+      name: "write_file",
+      description:
+        "Write content to a file. Use this to create or update files in the Fintheon codebase.",
       inputSchema: z.object({
-        path: z.string().describe('Absolute path or path relative to the Fintheon project root'),
-        content: z.string().describe('The content to write'),
+        path: z
+          .string()
+          .describe(
+            "Absolute path or path relative to the Fintheon project root",
+          ),
+        content: z.string().describe("The content to write"),
       }),
       callback: async (input: { path: string; content: string }) => {
-        const abs = input.path.startsWith('/') ? input.path : resolve(PROJECT_ROOT, input.path)
-        log.info('Harper tool: write_file', { path: abs, contentLen: input.content.length })
+        const abs = input.path.startsWith("/")
+          ? input.path
+          : resolve(PROJECT_ROOT, input.path);
+        log.info("Harper tool: write_file", {
+          path: abs,
+          contentLen: input.content.length,
+        });
         const result = await withApprovalGate(
           requestId,
-          'write_file',
+          "write_file",
           { path: abs, contentLength: input.content.length },
           `Write file: ${abs} (${input.content.length} chars)`,
           async () => {
             try {
-              await writeFile(abs, input.content, 'utf8')
-              return `Successfully wrote ${input.content.length} chars to ${abs}`
+              await writeFile(abs, input.content, "utf8");
+              return `Successfully wrote ${input.content.length} chars to ${abs}`;
             } catch (err) {
-              return `Error: ${err instanceof Error ? err.message : String(err)}`
+              return `Error: ${err instanceof Error ? err.message : String(err)}`;
             }
           },
-        )
-        return ensureNonEmpty(result)
+        );
+        return ensureNonEmpty(result);
       },
     }),
 
     tool({
-      name: 'web_fetch',
+      name: "web_fetch",
       description:
-        'Fetch a URL and return the text content. Use this to browse the internet, read documentation, check APIs, or research topics.',
+        "Fetch a URL and return the text content. Use this to browse the internet, read documentation, check APIs, or research topics.",
       inputSchema: z.object({
-        url: z.string().describe('The URL to fetch'),
-        maxChars: z.number().optional().describe('Max characters to return (default 15000)'),
+        url: z.string().describe("The URL to fetch"),
+        maxChars: z
+          .number()
+          .optional()
+          .describe("Max characters to return (default 15000)"),
       }),
       callback: async (input: { url: string; maxChars?: number }) => {
-        const limit = input.maxChars ?? 15_000
-        log.info('Harper tool: web_fetch', { url: input.url })
+        const limit = input.maxChars ?? 15_000;
+        log.info("Harper tool: web_fetch", { url: input.url });
         const result = await withApprovalGate(
           requestId,
-          'web_fetch',
+          "web_fetch",
           { url: input.url },
           `Fetch URL: ${input.url}`,
           async () => {
             try {
               const resp = await fetch(input.url, {
-                headers: { 'User-Agent': 'Fintheon/Harper-Opus (research agent)' },
+                headers: {
+                  "User-Agent": "Fintheon/Harper-Opus (research agent)",
+                },
                 signal: AbortSignal.timeout(15_000),
-              })
-              if (!resp.ok) return `HTTP ${resp.status}: ${resp.statusText}`
-              const text = await resp.text()
-              return text.slice(0, limit) + (text.length > limit ? '\n[truncated]' : '')
+              });
+              if (!resp.ok) return `HTTP ${resp.status}: ${resp.statusText}`;
+              const text = await resp.text();
+              return (
+                text.slice(0, limit) +
+                (text.length > limit ? "\n[truncated]" : "")
+              );
             } catch (err) {
-              return `Fetch error: ${err instanceof Error ? err.message : String(err)}`
+              return `Fetch error: ${err instanceof Error ? err.message : String(err)}`;
             }
           },
-        )
-        return ensureNonEmpty(result)
+        );
+        return ensureNonEmpty(result);
       },
     }),
 
     tool({
-      name: 'read_mcp_config',
+      name: "read_mcp_config",
       description:
-        'Read the MCP (Model Context Protocol) server configuration from the local machine. Returns configs from ~/.claude/settings.json, .mcp.json, and .vscode/mcp.json.',
+        "Read the MCP (Model Context Protocol) server configuration from the local machine. Returns configs from ~/.claude/settings.json, .mcp.json, and .vscode/mcp.json.",
       inputSchema: z.object({}),
       callback: async () => {
-        log.info('Harper tool: read_mcp_config')
+        log.info("Harper tool: read_mcp_config");
         const result = await withApprovalGate(
           requestId,
-          'read_mcp_config',
+          "read_mcp_config",
           {},
-          'Read MCP server configuration files',
+          "Read MCP server configuration files",
           async () => {
-            const results: Record<string, string> = {}
+            const results: Record<string, string> = {};
             const paths = [
-              { key: 'claude_settings', path: FINTHEON_PATHS.claudeSettings },
-              { key: 'project_mcp', path: FINTHEON_PATHS.mcpConfig },
-              { key: 'vscode_mcp', path: FINTHEON_PATHS.mcpConfigVscode },
-            ]
+              { key: "claude_settings", path: FINTHEON_PATHS.claudeSettings },
+              { key: "project_mcp", path: FINTHEON_PATHS.mcpConfig },
+              { key: "vscode_mcp", path: FINTHEON_PATHS.mcpConfigVscode },
+            ];
             for (const { key, path } of paths) {
               try {
-                results[key] = await readFile(path, 'utf8')
+                results[key] = await readFile(path, "utf8");
               } catch {
-                results[key] = '(not found)'
+                results[key] = "(not found)";
               }
             }
-            return JSON.stringify(results, null, 2).slice(0, 20_000)
+            return JSON.stringify(results, null, 2).slice(0, 20_000);
           },
-        )
-        return ensureNonEmpty(result)
+        );
+        return ensureNonEmpty(result);
       },
     }),
 
     tool({
-      name: 'get_fintheon_paths',
+      name: "get_fintheon_paths",
       description:
-        'Returns the key file paths for the Fintheon installation on this device. Use this to know where config, logs, data, and source files live.',
+        "Returns the key file paths for the Fintheon installation on this device. Use this to know where config, logs, data, and source files live.",
       inputSchema: z.object({}),
       callback: async () => {
-        return JSON.stringify(FINTHEON_PATHS, null, 2)
+        return JSON.stringify(FINTHEON_PATHS, null, 2);
       },
     }),
-  ]
+  ];
 }

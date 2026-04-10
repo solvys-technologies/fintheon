@@ -1,13 +1,16 @@
-import { AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
-import { Button } from '../ui/Button';
+import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { Button } from "../ui/Button";
 
 interface StopMonitoringModalProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export function StopMonitoringModal({ onConfirm, onCancel }: StopMonitoringModalProps) {
+export function StopMonitoringModal({
+  onConfirm,
+  onCancel,
+}: StopMonitoringModalProps) {
   const [isClosing, setIsClosing] = useState(false);
 
   const handleConfirm = () => {
@@ -21,16 +24,22 @@ export function StopMonitoringModal({ onConfirm, onCancel }: StopMonitoringModal
   };
 
   return (
-    <div className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 ${isClosing ? 'animate-fade-out-backdrop' : 'animate-fade-in-backdrop'}`}>
-      <div className={`bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg p-6 max-w-md mx-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+    <div
+      className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
+    >
+      <div
+        className={`bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg p-6 max-w-md mx-4 ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
+      >
         <div className="flex items-center gap-3 mb-4">
           <AlertTriangle className="w-6 h-6 text-[var(--fintheon-accent)]" />
-          <h3 className="text-lg font-semibold text-[var(--fintheon-accent)]">Stop Monitoring?</h3>
+          <h3 className="text-lg font-semibold text-[var(--fintheon-accent)]">
+            Stop Monitoring?
+          </h3>
         </div>
-        
+
         <p className="text-sm text-gray-300 mb-6">
-          Stopping your PsychAssist session early may result in incomplete emotional analysis. 
-          Are you sure you want to end monitoring?
+          Stopping your PsychAssist session early may result in incomplete
+          emotional analysis. Are you sure you want to end monitoring?
         </p>
 
         <div className="flex gap-3">

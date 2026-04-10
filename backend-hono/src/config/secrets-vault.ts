@@ -3,10 +3,10 @@
 // Only DATABASE_URL needed locally (embedded in setup script) — vault pulls everything else.
 // Uses direct Postgres (pg Pool) so SUPABASE_SERVICE_ROLE_KEY is NOT required to bootstrap.
 
-import pg from 'pg';
-import { createLogger } from '../lib/logger.js';
+import pg from "pg";
+import { createLogger } from "../lib/logger.js";
 
-const log = createLogger('SecretsVault');
+const log = createLogger("SecretsVault");
 
 /**
  * Load all server secrets from Supabase via direct Postgres and inject into process.env.
@@ -20,24 +20,28 @@ export async function loadSecretsFromVault(): Promise<number> {
   const dbUrl = process.env.DATABASE_URL;
 
   if (!dbUrl) {
-    log.warn('DATABASE_URL not set — vault disabled, using local env only');
+    log.warn("DATABASE_URL not set — vault disabled, using local env only");
     return 0;
   }
 
   const pool = new pg.Pool({
     connectionString: dbUrl,
-    ssl: dbUrl.includes('supabase.com') ? { rejectUnauthorized: false } : undefined,
+    ssl: dbUrl.includes("supabase.com")
+      ? { rejectUnauthorized: false }
+      : undefined,
     connectionTimeoutMillis: 5_000,
     max: 1,
   });
 
   try {
-    const { rows } = await pool.query<{ key: string; value: string; is_sensitive: boolean }>(
-      'SELECT key, value, is_sensitive FROM server_secrets',
-    );
+    const { rows } = await pool.query<{
+      key: string;
+      value: string;
+      is_sensitive: boolean;
+    }>("SELECT key, value, is_sensitive FROM server_secrets");
 
     if (!rows || rows.length === 0) {
-      log.warn('Secrets vault is empty — no secrets loaded');
+      log.warn("Secrets vault is empty — no secrets loaded");
       return 0;
     }
 
@@ -53,13 +57,17 @@ export async function loadSecretsFromVault(): Promise<number> {
       loaded++;
     }
 
-    const sensitiveCount = rows.filter(r => r.is_sensitive).length;
-    log.info(`Vault loaded: ${loaded} injected, ${skipped} skipped (local override), ${sensitiveCount} sensitive`);
+    const sensitiveCount = rows.filter((r) => r.is_sensitive).length;
+    log.info(
+      `Vault loaded: ${loaded} injected, ${skipped} skipped (local override), ${sensitiveCount} sensitive`,
+    );
 
     return loaded;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    log.error('Failed to read secrets vault — falling back to local env', { error: msg });
+    log.error("Failed to read secrets vault — falling back to local env", {
+      error: msg,
+    });
     return 0;
   } finally {
     await pool.end().catch(() => {});

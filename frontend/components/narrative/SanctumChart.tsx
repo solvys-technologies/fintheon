@@ -1,33 +1,36 @@
 // [claude-code 2026-03-28] S9-T3: Removed IV risk bars canvas — TradingView + projection overlay only
 // [claude-code 2026-03-24] Chart overhaul — TradingView iframe embed
 // [claude-code 2026-03-25] Price projection canvas overlay — MiroShark expected move path + confidence band
-import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
-import type { MiroSharkTimePoint, MiroSharkScenario } from '../../types/miroshark';
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
+import type {
+  MiroSharkTimePoint,
+  MiroSharkScenario,
+} from "../../types/miroshark";
 
 /** Map user-facing futures symbols to TradingView widget-compatible symbols. */
 const SYMBOL_MAP: Record<string, string> = {
-  '/MNQ': 'NASDAQ:QQQ',
-  '/NQ':  'NASDAQ:QQQ',
-  '/ES':  'SP:SPX',
-  '/MES': 'SP:SPX',
-  '/GC':  'COMEX:GC1!',
-  '/MGC': 'COMEX:GC1!',
-  '/YM':  'DJ:DJI',
-  '/RTY': 'RUSSELL:RUT',
-  '/CL':  'NYMEX:CL1!',
-  'MNQ':  'NASDAQ:QQQ',
-  'NQ':   'NASDAQ:QQQ',
-  'ES':   'SP:SPX',
-  'MES':  'SP:SPX',
-  'YM':   'DJ:DJI',
-  'RTY':  'RUSSELL:RUT',
+  "/MNQ": "NASDAQ:QQQ",
+  "/NQ": "NASDAQ:QQQ",
+  "/ES": "SP:SPX",
+  "/MES": "SP:SPX",
+  "/GC": "COMEX:GC1!",
+  "/MGC": "COMEX:GC1!",
+  "/YM": "DJ:DJI",
+  "/RTY": "RUSSELL:RUT",
+  "/CL": "NYMEX:CL1!",
+  MNQ: "NASDAQ:QQQ",
+  NQ: "NASDAQ:QQQ",
+  ES: "SP:SPX",
+  MES: "SP:SPX",
+  YM: "DJ:DJI",
+  RTY: "RUSSELL:RUT",
 };
 
 function mapSymbol(sym: string): string {
-  return SYMBOL_MAP[sym] ?? SYMBOL_MAP[`/${sym}`] ?? 'NASDAQ:QQQ';
+  return SYMBOL_MAP[sym] ?? SYMBOL_MAP[`/${sym}`] ?? "NASDAQ:QQQ";
 }
 
-const COMPARE_SYMBOLS = ['COMEX:GC1!', 'SP:SPX', 'NASDAQ:QQQ'];
+const COMPARE_SYMBOLS = ["COMEX:GC1!", "SP:SPX", "NASDAQ:QQQ"];
 
 interface SanctumChartProps {
   timeSeries: MiroSharkTimePoint[];
@@ -39,7 +42,11 @@ interface SanctumChartProps {
   scenarios?: MiroSharkScenario[];
 }
 
-function getThemeColor(c: HTMLCanvasElement, varName: string, fallback: string): string {
+function getThemeColor(
+  c: HTMLCanvasElement,
+  varName: string,
+  fallback: string,
+): string {
   const val = getComputedStyle(c).getPropertyValue(varName).trim();
   return val || fallback;
 }
@@ -53,17 +60,24 @@ function generateProjectionPath(
   confidence: number,
   regimeShift: number,
   scenarios: MiroSharkScenario[],
-): { points: { x: number; y: number }[]; bandWidth: number; direction: 'up' | 'down' | 'flat' } {
+): {
+  points: { x: number; y: number }[];
+  bandWidth: number;
+  direction: "up" | "down" | "flat";
+} {
   // Direction: high IV + low confidence = bearish bias; low IV = bullish bias
-  const avgScenarioScore = scenarios.length > 0
-    ? scenarios.reduce((s, sc) => s + sc.projectedScore * sc.probability, 0) / Math.max(1, scenarios.reduce((s, sc) => s + sc.probability, 0))
-    : compositeIV;
+  const avgScenarioScore =
+    scenarios.length > 0
+      ? scenarios.reduce((s, sc) => s + sc.projectedScore * sc.probability, 0) /
+        Math.max(
+          1,
+          scenarios.reduce((s, sc) => s + sc.probability, 0),
+        )
+      : compositeIV;
 
   // Bearish if composite IV is high (risk elevated), bullish if low
-  const direction: 'up' | 'down' | 'flat' =
-    avgScenarioScore >= 6.5 ? 'down' :
-    avgScenarioScore <= 3.5 ? 'up' :
-    'flat';
+  const direction: "up" | "down" | "flat" =
+    avgScenarioScore >= 6.5 ? "down" : avgScenarioScore <= 3.5 ? "up" : "flat";
 
   // Magnitude: scaled by IV level (higher IV = bigger expected move)
   const magnitude = (compositeIV / 10) * 0.3; // 0 to 0.3 of chart height
@@ -81,9 +95,9 @@ function generateProjectionPath(
 
     // Base direction
     let yOffset: number;
-    if (direction === 'up') {
+    if (direction === "up") {
       yOffset = -easeT * magnitude;
-    } else if (direction === 'down') {
+    } else if (direction === "down") {
       yOffset = easeT * magnitude;
     } else {
       // Flat with slight oscillation
@@ -112,16 +126,21 @@ function drawProjectionOverlay(
   lowColor: string,
   severeColor: string,
 ) {
-  const { points, bandWidth, direction } = generateProjectionPath(compositeIV, confidence, regimeShift, scenarios);
+  const { points, bandWidth, direction } = generateProjectionPath(
+    compositeIV,
+    confidence,
+    regimeShift,
+    scenarios,
+  );
 
   // Projection zone: right 30% of the chart area
-  const projStart = w * 0.70;
+  const projStart = w * 0.7;
   const projWidth = w * 0.28;
   const chartTop = h * 0.08;
   const chartHeight = h * 0.84;
 
   // Map normalized points to canvas coordinates
-  const canvasPoints = points.map(p => ({
+  const canvasPoints = points.map((p) => ({
     x: projStart + p.x * projWidth,
     y: chartTop + p.y * chartHeight,
   }));
@@ -144,11 +163,21 @@ function drawProjectionOverlay(
   ctx.closePath();
 
   // Gradient fill for band
-  const bandGrad = ctx.createLinearGradient(projStart, 0, projStart + projWidth, 0);
-  const bandColor = direction === 'down' ? severeColor : direction === 'up' ? lowColor : accentColor;
-  bandGrad.addColorStop(0, bandColor + '08');
-  bandGrad.addColorStop(0.5, bandColor + '15');
-  bandGrad.addColorStop(1, bandColor + '08');
+  const bandGrad = ctx.createLinearGradient(
+    projStart,
+    0,
+    projStart + projWidth,
+    0,
+  );
+  const bandColor =
+    direction === "down"
+      ? severeColor
+      : direction === "up"
+        ? lowColor
+        : accentColor;
+  bandGrad.addColorStop(0, bandColor + "08");
+  bandGrad.addColorStop(0.5, bandColor + "15");
+  bandGrad.addColorStop(1, bandColor + "08");
   ctx.fillStyle = bandGrad;
   ctx.fill();
 
@@ -192,23 +221,35 @@ function drawProjectionOverlay(
 
   // ── Label at endpoint ──
   ctx.globalAlpha = 0.7;
-  ctx.font = '10px sans-serif';
+  ctx.font = "10px sans-serif";
   ctx.fillStyle = accentColor;
-  ctx.textAlign = 'left';
-  const label = direction === 'up' ? 'BULLISH' : direction === 'down' ? 'BEARISH' : 'NEUTRAL';
+  ctx.textAlign = "left";
+  const label =
+    direction === "up"
+      ? "BULLISH"
+      : direction === "down"
+        ? "BEARISH"
+        : "NEUTRAL";
   ctx.fillText(label, last.x + 12, last.y + 3);
 
   // IV + confidence sub-label
-  ctx.font = '9px sans-serif';
+  ctx.font = "9px sans-serif";
   ctx.globalAlpha = 0.4;
-  ctx.fillText(`IV ${compositeIV.toFixed(1)} · ${Math.round(confidence * 100)}% conf`, last.x + 12, last.y + 15);
+  ctx.fillText(
+    `IV ${compositeIV.toFixed(1)} · ${Math.round(confidence * 100)}% conf`,
+    last.x + 12,
+    last.y + 15,
+  );
 
   ctx.restore();
 }
 
 export function SanctumChart({
-  selectedSymbol = 'QQQ',
-  compositeIV, confidence, regimeShiftProbability, scenarios,
+  selectedSymbol = "QQQ",
+  compositeIV,
+  confidence,
+  regimeShiftProbability,
+  scenarios,
 }: SanctumChartProps) {
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const tvContainerRef = useRef<HTMLDivElement>(null);
@@ -219,28 +260,28 @@ export function SanctumChart({
   const tvEmbedUrl = useMemo(() => {
     const studies: string[] = [
       // 20 EMA overlay
-      'MAExp@tv-basicstudies|0|20',
+      "MAExp@tv-basicstudies|0|20",
       // Compare symbols
-      ...COMPARE_SYMBOLS
-        .filter(s => s !== tvSymbol)
-        .map(s => `Compare@tv-basicstudies|0|${s}`),
+      ...COMPARE_SYMBOLS.filter((s) => s !== tvSymbol).map(
+        (s) => `Compare@tv-basicstudies|0|${s}`,
+      ),
     ];
     const params = new URLSearchParams({
       symbol: tvSymbol,
-      interval: '240',
-      theme: 'dark',
-      style: '1',  // 1 = candlestick (was 3 = area)
-      locale: 'en',
-      timezone: 'America/New_York',
-      toolbar_bg: '000000',
-      enable_publishing: '0',
-      hide_side_toolbar: '0',
-      allow_symbol_change: '1',
-      save_image: '0',
-      hide_volume: '1',
-      withdateranges: '1',
+      interval: "240",
+      theme: "dark",
+      style: "1", // 1 = candlestick (was 3 = area)
+      locale: "en",
+      timezone: "America/New_York",
+      toolbar_bg: "000000",
+      enable_publishing: "0",
+      hide_side_toolbar: "0",
+      allow_symbol_change: "1",
+      save_image: "0",
+      hide_volume: "1",
+      withdateranges: "1",
     });
-    params.set('studies', JSON.stringify(studies));
+    params.set("studies", JSON.stringify(studies));
     return `https://s.tradingview.com/widgetembed/?${params.toString()}`;
   }, [tvSymbol]);
 
@@ -248,7 +289,8 @@ export function SanctumChart({
   const drawOverlay = useCallback(() => {
     const canvas = overlayRef.current;
     const container = tvContainerRef.current;
-    if (!canvas || !container || compositeIV == null || confidence == null) return;
+    if (!canvas || !container || compositeIV == null || confidence == null)
+      return;
 
     const rect = container.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -259,21 +301,26 @@ export function SanctumChart({
     canvas.style.width = `${rect.width}px`;
     canvas.style.height = `${rect.height}px`;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, rect.width, rect.height);
 
-    const accentColor = getThemeColor(canvas, '--fintheon-accent', '#c79f4a');
-    const lowColor = getThemeColor(canvas, '--fintheon-low', '#34D399');
-    const severeColor = getThemeColor(canvas, '--fintheon-severe', '#EF4444');
+    const accentColor = getThemeColor(canvas, "--fintheon-accent", "#c79f4a");
+    const lowColor = getThemeColor(canvas, "--fintheon-low", "#34D399");
+    const severeColor = getThemeColor(canvas, "--fintheon-severe", "#EF4444");
 
     drawProjectionOverlay(
-      ctx, rect.width, rect.height,
-      compositeIV, confidence,
+      ctx,
+      rect.width,
+      rect.height,
+      compositeIV,
+      confidence,
       regimeShiftProbability ?? 0,
       scenarios ?? [],
-      accentColor, lowColor, severeColor,
+      accentColor,
+      lowColor,
+      severeColor,
     );
   }, [compositeIV, confidence, regimeShiftProbability, scenarios]);
 
@@ -286,11 +333,12 @@ export function SanctumChart({
   useEffect(() => {
     const c = tvContainerRef.current;
     if (!c) return;
-    const obs = new ResizeObserver(() => { if (tvLoaded) drawOverlay(); });
+    const obs = new ResizeObserver(() => {
+      if (tvLoaded) drawOverlay();
+    });
     obs.observe(c);
     return () => obs.disconnect();
   }, [tvLoaded, drawOverlay]);
-
 
   const hasProjection = compositeIV != null && confidence != null && tvLoaded;
 
@@ -319,7 +367,6 @@ export function SanctumChart({
           />
         )}
       </div>
-
     </div>
   );
 }

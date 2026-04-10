@@ -1,11 +1,11 @@
 // [claude-code 2026-03-20] S3-FIX:T4 — Walkthrough overhaul: contextual floating cards, 11 steps
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Sparkles } from 'lucide-react';
-import { useToast } from '../../contexts/ToastContext';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { X, Sparkles } from "lucide-react";
+import { useToast } from "../../contexts/ToastContext";
 
-const TOUR_STORAGE_KEY = 'fintheon:tour-completed';
-const LAST_VERSION_KEY = 'fintheon:last-seen-version';
-const CURRENT_VERSION = '8.20.3';
+const TOUR_STORAGE_KEY = "fintheon:tour-completed";
+const LAST_VERSION_KEY = "fintheon:last-seen-version";
+const CURRENT_VERSION = "8.20.3";
 
 /* ------------------------------------------------------------------ */
 /*  Step definitions                                                   */
@@ -16,96 +16,102 @@ interface TourStep {
   description: string;
   nav: string | null;
   selector: string;
-  position: 'top' | 'bottom' | 'left' | 'right';
+  position: "top" | "bottom" | "left" | "right";
 }
 
 const TOUR_STEPS: TourStep[] = [
   {
-    title: 'Dashboard',
-    description: 'Your command center. KPIs, calendar, and RiskFlow at a glance.',
-    nav: 'dashboard',
+    title: "Dashboard",
+    description:
+      "Your command center. KPIs, calendar, and RiskFlow at a glance.",
+    nav: "dashboard",
     selector: 'button[data-tour-target="dashboard"]',
-    position: 'right',
+    position: "right",
   },
   {
-    title: 'Consilium',
-    description: 'Where your AI agents debate, analyze, and surface proposals.',
-    nav: 'analysis',
+    title: "Consilium",
+    description: "Where your AI agents debate, analyze, and surface proposals.",
+    nav: "analysis",
     selector: 'button[data-tour-target="analysis"]',
-    position: 'right',
+    position: "right",
   },
   {
-    title: 'Chat',
-    description: 'Talk directly to Hermes. Ask questions, run reports, get briefs.',
-    nav: 'analysis',
+    title: "Chat",
+    description:
+      "Talk directly to Hermes. Ask questions, run reports, get briefs.",
+    nav: "analysis",
     selector: 'button[data-tour-target="analysis"]',
-    position: 'right',
+    position: "right",
   },
   {
-    title: 'Boardroom',
-    description: 'The agent discussion room. Watch Oracle, Feucht, and Herald deliberate.',
-    nav: 'analysis',
+    title: "Boardroom",
+    description:
+      "The agent discussion room. Watch Oracle, Feucht, and Herald deliberate.",
+    nav: "analysis",
     selector: 'button[data-tour-target="analysis"]',
-    position: 'right',
+    position: "right",
   },
   {
-    title: 'Predictions',
-    description: 'MiroShark prediction engine. IV forecasts and risk visualization.',
-    nav: 'proposals',
+    title: "Predictions",
+    description:
+      "MiroShark prediction engine. IV forecasts and risk visualization.",
+    nav: "proposals",
     selector: 'button[data-tour-target="proposals"]',
-    position: 'right',
+    position: "right",
   },
   {
-    title: 'Proposals',
-    description: 'Active trade proposals from the agents. Chart them on TopStepX.',
-    nav: 'proposals',
+    title: "Proposals",
+    description:
+      "Active trade proposals from the agents. Chart them on TopStepX.",
+    nav: "proposals",
     selector: 'button[data-tour-target="proposals"]',
-    position: 'right',
+    position: "right",
   },
   {
-    title: 'Narratives',
-    description: 'Map market narratives. Drag catalysts, draw connections.',
-    nav: 'narrative',
+    title: "Narratives",
+    description: "Map market narratives. Drag catalysts, draw connections.",
+    nav: "narrative",
     selector: 'button[data-tour-target="narrative"]',
-    position: 'right',
+    position: "right",
   },
   {
-    title: 'Apparatus',
-    description: 'Agent intelligence. See what your agents know and when they work.',
-    nav: 'apparatus',
+    title: "Apparatus",
+    description:
+      "Agent intelligence. See what your agents know and when they work.",
+    nav: "apparatus",
     selector: 'button[data-tour-target="apparatus"]',
-    position: 'right',
+    position: "right",
   },
   {
-    title: 'Strategium',
-    description: 'Mission Control: ER, account tracking, regime detection.',
-    nav: 'dashboard',
+    title: "Strategium",
+    description: "Mission Control: ER, account tracking, regime detection.",
+    nav: "dashboard",
     selector: '[data-tour-target="strategium"]',
-    position: 'left',
+    position: "left",
   },
   {
-    title: 'RiskFlow',
-    description: 'Real-time market feed. News, prints, and trade ideas.',
-    nav: 'riskflow',
+    title: "RiskFlow",
+    description: "Real-time market feed. News, prints, and trade ideas.",
+    nav: "riskflow",
     selector: 'button[data-tour-target="riskflow"]',
-    position: 'right',
+    position: "right",
   },
   {
-    title: 'Toolbar',
-    description: 'VIX, IV scoring, platform controls, and layout options.',
+    title: "Toolbar",
+    description: "VIX, IV scoring, platform controls, and layout options.",
     nav: null,
     selector: '[data-tour-target="toolbar"]',
-    position: 'bottom',
+    position: "bottom",
   },
 ];
 
 const WHATS_NEW_ITEMS = [
-  'Contextual walkthrough tour with 11-step guided overview',
-  'Consilium — AI agents debate trades and surface proposals',
-  'Apparatus — agent memory, reasoning, and schedule visibility',
-  'Narrative Map canvas with MiroShark integration',
-  'Blindspots interview — personalized trader profile setup',
-  'Setup wizard for backend dependency checks',
+  "Contextual walkthrough tour with 11-step guided overview",
+  "Consilium — AI agents debate trades and surface proposals",
+  "Apparatus — agent memory, reasoning, and schedule visibility",
+  "Narrative Map canvas with MiroShark integration",
+  "Blindspots interview — personalized trader profile setup",
+  "Setup wizard for backend dependency checks",
 ];
 
 /* ------------------------------------------------------------------ */
@@ -146,19 +152,19 @@ function TourCard({
 
   if (targetRect) {
     switch (step.position) {
-      case 'right':
+      case "right":
         left = targetRect.right + CARD_GAP;
         top = targetRect.top + targetRect.height / 2 - cardHeight / 2;
         break;
-      case 'left':
+      case "left":
         left = targetRect.left - CARD_WIDTH - CARD_GAP;
         top = targetRect.top + targetRect.height / 2 - cardHeight / 2;
         break;
-      case 'bottom':
+      case "bottom":
         left = targetRect.left + targetRect.width / 2 - CARD_WIDTH / 2;
         top = targetRect.bottom + CARD_GAP;
         break;
-      case 'top':
+      case "top":
         left = targetRect.left + targetRect.width / 2 - CARD_WIDTH / 2;
         top = targetRect.top - cardHeight - CARD_GAP;
         break;
@@ -166,8 +172,14 @@ function TourCard({
   }
 
   // Clamp to viewport
-  left = Math.max(VP_MARGIN, Math.min(left, window.innerWidth - CARD_WIDTH - VP_MARGIN));
-  top = Math.max(VP_MARGIN, Math.min(top, window.innerHeight - cardHeight - VP_MARGIN));
+  left = Math.max(
+    VP_MARGIN,
+    Math.min(left, window.innerWidth - CARD_WIDTH - VP_MARGIN),
+  );
+  top = Math.max(
+    VP_MARGIN,
+    Math.min(top, window.innerHeight - cardHeight - VP_MARGIN),
+  );
 
   const isLast = stepIndex === totalSteps - 1;
 
@@ -179,34 +191,38 @@ function TourCard({
         top,
         left,
         width: CARD_WIDTH,
-        transition: 'top 300ms ease-out, left 300ms ease-out',
+        transition: "top 300ms ease-out, left 300ms ease-out",
       }}
       onClick={(e) => e.stopPropagation()}
     >
       <div
         className="rounded-xl overflow-hidden"
         style={{
-          background: '#0a0a00',
-          border: '1px solid rgba(199, 159, 74, 0.3)',
-          boxShadow: '0 0 40px rgba(199, 159, 74, 0.06), 0 8px 32px rgba(0,0,0,0.5)',
+          background: "#0a0a00",
+          border: "1px solid rgba(199, 159, 74, 0.3)",
+          boxShadow:
+            "0 0 40px rgba(199, 159, 74, 0.06), 0 8px 32px rgba(0,0,0,0.5)",
         }}
       >
         {/* Header with icon */}
         <div className="px-5 pt-4 pb-1 flex items-center gap-2.5">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(199, 159, 74, 0.12)' }}
+            style={{ background: "rgba(199, 159, 74, 0.12)" }}
           >
-            <Sparkles className="w-4 h-4" style={{ color: '#c79f4a' }} />
+            <Sparkles className="w-4 h-4" style={{ color: "#c79f4a" }} />
           </div>
-          <h3 className="text-base font-bold" style={{ color: '#c79f4a' }}>
+          <h3 className="text-base font-bold" style={{ color: "#c79f4a" }}>
             {step.title}
           </h3>
         </div>
 
         {/* Description */}
         <div className="px-5 py-3">
-          <p className="text-sm leading-relaxed" style={{ color: 'rgba(240, 234, 214, 0.8)' }}>
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: "rgba(240, 234, 214, 0.8)" }}
+          >
             {step.description}
           </p>
         </div>
@@ -214,9 +230,12 @@ function TourCard({
         {/* Footer: step counter + nav */}
         <div
           className="px-5 py-3 flex items-center justify-between"
-          style={{ borderTop: '1px solid rgba(199, 159, 74, 0.1)' }}
+          style={{ borderTop: "1px solid rgba(199, 159, 74, 0.1)" }}
         >
-          <span className="text-xs" style={{ color: 'rgba(240, 234, 214, 0.4)' }}>
+          <span
+            className="text-xs"
+            style={{ color: "rgba(240, 234, 214, 0.4)" }}
+          >
             {stepIndex + 1} of {totalSteps}
           </span>
           <div className="flex items-center gap-2">
@@ -224,7 +243,7 @@ function TourCard({
               <button
                 onClick={onPrev}
                 className="px-3 py-1.5 text-xs rounded transition-colors hover:text-[#f0ead6]"
-                style={{ color: 'rgba(240, 234, 214, 0.6)' }}
+                style={{ color: "rgba(240, 234, 214, 0.6)" }}
               >
                 Previous
               </button>
@@ -232,9 +251,9 @@ function TourCard({
             <button
               onClick={onNext}
               className="px-4 py-1.5 text-xs font-medium rounded transition-all hover:brightness-110"
-              style={{ background: '#c79f4a', color: '#050402' }}
+              style={{ background: "#c79f4a", color: "#050402" }}
             >
-              {isLast ? 'Get Started' : 'Next'}
+              {isLast ? "Get Started" : "Next"}
             </button>
           </div>
         </div>
@@ -244,9 +263,13 @@ function TourCard({
           <button
             onClick={onSkip}
             className="text-[11px] transition-colors"
-            style={{ color: 'rgba(240, 234, 214, 0.3)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(240, 234, 214, 0.6)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(240, 234, 214, 0.3)'; }}
+            style={{ color: "rgba(240, 234, 214, 0.3)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "rgba(240, 234, 214, 0.6)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "rgba(240, 234, 214, 0.3)";
+            }}
           >
             Skip tour
           </button>
@@ -260,7 +283,11 @@ function TourCard({
 /*  Tour orchestrator                                                  */
 /* ------------------------------------------------------------------ */
 
-export function FirstTimeTour({ onNavigate }: { onNavigate?: (tab: string) => void }) {
+export function FirstTimeTour({
+  onNavigate,
+}: {
+  onNavigate?: (tab: string) => void;
+}) {
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -302,21 +329,25 @@ export function FirstTimeTour({ onNavigate }: { onNavigate?: (tab: string) => vo
   useEffect(() => {
     if (!active) return;
     const handle = () => {
-      const el = document.querySelector(TOUR_STEPS[step]?.selector ?? '');
+      const el = document.querySelector(TOUR_STEPS[step]?.selector ?? "");
       if (el) setTargetRect(el.getBoundingClientRect());
     };
-    window.addEventListener('resize', handle);
-    return () => window.removeEventListener('resize', handle);
+    window.addEventListener("resize", handle);
+    return () => window.removeEventListener("resize", handle);
   }, [active, step]);
 
   const completeTour = useCallback(() => {
     setOpacity(0);
     setTimeout(() => {
-      localStorage.setItem(TOUR_STORAGE_KEY, 'true');
+      localStorage.setItem(TOUR_STORAGE_KEY, "true");
       localStorage.setItem(LAST_VERSION_KEY, CURRENT_VERSION);
       setActive(false);
-      onNavigate?.('dashboard');
-      addToast('Welcome to Fintheon', 'success', 'Your tour is complete. Explore at your own pace.');
+      onNavigate?.("dashboard");
+      addToast(
+        "Welcome to Fintheon",
+        "success",
+        "Your tour is complete. Explore at your own pace.",
+      );
     }, 300);
   }, [addToast, onNavigate]);
 
@@ -337,9 +368,9 @@ export function FirstTimeTour({ onNavigate }: { onNavigate?: (tab: string) => vo
       <div
         className="fixed inset-0 z-[9998]"
         style={{
-          background: 'rgba(0, 0, 0, 0.4)',
+          background: "rgba(0, 0, 0, 0.4)",
           opacity,
-          transition: 'opacity 300ms ease-out',
+          transition: "opacity 300ms ease-out",
         }}
         onClick={completeTour}
       />
@@ -420,8 +451,12 @@ export function WhatsNewButton() {
           <div className="px-4 py-3 space-y-2">
             {WHATS_NEW_ITEMS.map((item, i) => (
               <div key={i} className="flex items-start gap-2">
-                <span className="text-[var(--fintheon-accent)] text-xs mt-0.5">-</span>
-                <span className="text-xs text-gray-400 leading-relaxed">{item}</span>
+                <span className="text-[var(--fintheon-accent)] text-xs mt-0.5">
+                  -
+                </span>
+                <span className="text-xs text-gray-400 leading-relaxed">
+                  {item}
+                </span>
               </div>
             ))}
           </div>

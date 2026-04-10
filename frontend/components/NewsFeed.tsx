@@ -14,11 +14,11 @@ export default function NewsFeed() {
   const [isLoading, setIsLoading] = useState(false);
   const prevSymbolRef = useRef<string | null>(null);
 
-  const availableSymbols = ['MNQ', 'ES', 'NQ', 'YM', 'RTY', 'Polymarket'];
+  const availableSymbols = ["MNQ", "ES", "NQ", "YM", "RTY", "Polymarket"];
 
   // Extract base symbol from contract name (e.g., "/MNQ" -> "MNQ")
   const getBaseSymbol = (symbol: string) => {
-    return symbol.replace(/^\//, '').replace(/[A-Z]\d{2}$/, '');
+    return symbol.replace(/^\//, "").replace(/[A-Z]\d{2}$/, "");
   };
 
   // Auto-fetch on startup and when instrument changes
@@ -26,7 +26,10 @@ export default function NewsFeed() {
     const currentSymbol = getBaseSymbol(selectedSymbol.symbol);
 
     // Check if symbol changed (clear and re-fetch)
-    if (prevSymbolRef.current !== null && prevSymbolRef.current !== currentSymbol) {
+    if (
+      prevSymbolRef.current !== null &&
+      prevSymbolRef.current !== currentSymbol
+    ) {
       setRiskflow([]); // Clear existing items on instrument change
     }
 
@@ -59,14 +62,14 @@ export default function NewsFeed() {
       });
       setRiskflow(data.items);
     } catch (error: any) {
-      console.warn('Failed to load RiskFlow:', error);
+      console.warn("Failed to load RiskFlow:", error);
       if (error.code === "not_found" || error.code === "unauthenticated") {
         try {
           await backend.riskflow.seed();
           const newData = await backend.riskflow.list({ limit: 15 });
           setRiskflow(newData.items);
         } catch (seedError) {
-          console.warn('Failed to seed RiskFlow:', seedError);
+          console.warn("Failed to seed RiskFlow:", seedError);
         }
       }
     } finally {
@@ -97,7 +100,7 @@ export default function NewsFeed() {
   };
 
   const formatDate = (date: Date | string) => {
-    const d = typeof date === 'string' ? new Date(date) : date;
+    const d = typeof date === "string" ? new Date(date) : date;
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -111,23 +114,26 @@ export default function NewsFeed() {
     }
   };
 
-  const filteredRiskFlow = selectedSymbols.length > 0
-    ? riskflow.filter(item =>
-      selectedSymbols.some(symbol => {
-        if (symbol === 'Polymarket') {
-          return item.source === 'Polymarket';
-        }
-        return item.title.toLowerCase().includes(symbol.toLowerCase()) ||
-          item.content?.toLowerCase().includes(symbol.toLowerCase())
-      })
-    )
-    : riskflow;
+  const filteredRiskFlow =
+    selectedSymbols.length > 0
+      ? riskflow.filter((item) =>
+          selectedSymbols.some((symbol) => {
+            if (symbol === "Polymarket") {
+              return item.source === "Polymarket";
+            }
+            return (
+              item.title.toLowerCase().includes(symbol.toLowerCase()) ||
+              item.content?.toLowerCase().includes(symbol.toLowerCase())
+            );
+          }),
+        )
+      : riskflow;
 
   const toggleSymbol = (symbol: string) => {
-    setSelectedSymbols(prev =>
+    setSelectedSymbols((prev) =>
       prev.includes(symbol)
-        ? prev.filter(s => s !== symbol)
-        : [...prev, symbol]
+        ? prev.filter((s) => s !== symbol)
+        : [...prev, symbol],
     );
   };
 
@@ -136,11 +142,15 @@ export default function NewsFeed() {
       <div className="border-b border-zinc-900 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-gray-400 mr-2">Filter by Symbol:</span>
-            {availableSymbols.map(symbol => (
+            <span className="text-xs text-gray-400 mr-2">
+              Filter by Symbol:
+            </span>
+            {availableSymbols.map((symbol) => (
               <Button
                 key={symbol}
-                variant={selectedSymbols.includes(symbol) ? 'primary' : 'secondary'}
+                variant={
+                  selectedSymbols.includes(symbol) ? "primary" : "secondary"
+                }
                 onClick={() => toggleSymbol(symbol)}
                 className="text-xs px-3 py-1"
               >
@@ -158,7 +168,7 @@ export default function NewsFeed() {
               className="bg-[var(--fintheon-surface)] border border-zinc-900 rounded-lg p-4 hover:border-zinc-800 transition-colors"
             >
               <div className="flex items-start gap-3">
-                {getImpactIcon(item.impact || 'low')}
+                {getImpactIcon(item.impact || "low")}
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3 mb-2">
@@ -172,24 +182,34 @@ export default function NewsFeed() {
                         {item.title}
                       </a>
                     ) : (
-                      <h3 className="text-sm font-medium text-white leading-tight">{item.title}</h3>
+                      <h3 className="text-sm font-medium text-white leading-tight">
+                        {item.title}
+                      </h3>
                     )}
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                        (item.ivScore || 0) >= 7 ? 'text-red-400 bg-red-500/10' :
-                        (item.ivScore || 0) >= 4 ? 'text-yellow-400 bg-yellow-500/10' :
-                        'text-emerald-400 bg-emerald-500/10'
-                      }`}>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          (item.ivScore || 0) >= 7
+                            ? "text-red-400 bg-red-500/10"
+                            : (item.ivScore || 0) >= 4
+                              ? "text-yellow-400 bg-yellow-500/10"
+                              : "text-emerald-400 bg-emerald-500/10"
+                        }`}
+                      >
                         IV {(item.ivScore || 0).toFixed(1)}
                       </span>
-                      <span className={`text-[9px] px-2 py-0.5 rounded uppercase tracking-wider whitespace-nowrap ${getImpactColor(item.impact || 'low')}`}>
-                        {item.impact || 'low'}
+                      <span
+                        className={`text-[9px] px-2 py-0.5 rounded uppercase tracking-wider whitespace-nowrap ${getImpactColor(item.impact || "low")}`}
+                      >
+                        {item.impact || "low"}
                       </span>
                     </div>
                   </div>
 
                   {item.content && (
-                    <p className="text-xs text-zinc-400 mb-3 line-clamp-2">{item.content}</p>
+                    <p className="text-xs text-zinc-400 mb-3 line-clamp-2">
+                      {item.content}
+                    </p>
                   )}
 
                   <div className="flex items-center gap-3 text-[9px] text-zinc-600 mt-2">
@@ -199,7 +219,9 @@ export default function NewsFeed() {
                     {item.category && (
                       <>
                         <span>•</span>
-                        <span className="text-[var(--fintheon-accent)]/60">{item.category}</span>
+                        <span className="text-[var(--fintheon-accent)]/60">
+                          {item.category}
+                        </span>
                       </>
                     )}
                     <span>•</span>

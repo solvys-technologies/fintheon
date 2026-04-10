@@ -40,6 +40,7 @@ cd backend-hono && bun install && cd ..
 ### Configuration
 
 Copy the environment file:
+
 ```bash
 cp backend-hono/.env.example backend-hono/.env
 ```
@@ -48,24 +49,25 @@ The `.env.example` ships with production-safe defaults including Supabase connec
 
 ### Required Environment Variables
 
-| Variable | Where | Description |
-|----------|-------|-------------|
+| Variable             | Where               | Description                                                                                    |
+| -------------------- | ------------------- | ---------------------------------------------------------------------------------------------- |
 | `OPENROUTER_API_KEY` | `backend-hono/.env` | OpenRouter API key — get at [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
 
 ### Pre-Configured (DO NOT prompt users for these)
 
 These are embedded in `.env.example` with production defaults:
 
-| Variable | Value | Why |
-|----------|-------|-----|
-| `SUPABASE_URL` | `https://nrcfnzclbjboctptxaxx.supabase.co` | Production Supabase project |
-| `SUPABASE_ANON_KEY` | Pre-filled | Publishable anon key (safe for client-side) |
-| `BYPASS_AUTH` | `true` | Local/Electron auth bypass |
-| `PORT` | `8080` | Backend port |
-| `AI_PRIMARY_PROVIDER` | `openrouter` | Default inference provider |
-| All scheduling vars | Pre-filled | Boardroom, pre/post market crons |
+| Variable              | Value                                      | Why                                         |
+| --------------------- | ------------------------------------------ | ------------------------------------------- |
+| `SUPABASE_URL`        | `https://nrcfnzclbjboctptxaxx.supabase.co` | Production Supabase project                 |
+| `SUPABASE_ANON_KEY`   | Pre-filled                                 | Publishable anon key (safe for client-side) |
+| `BYPASS_AUTH`         | `true`                                     | Local/Electron auth bypass                  |
+| `PORT`                | `8080`                                     | Backend port                                |
+| `AI_PRIMARY_PROVIDER` | `openrouter`                               | Default inference provider                  |
+| All scheduling vars   | Pre-filled                                 | Boardroom, pre/post market crons            |
 
 ### NEVER ask users for these — the app works without them:
+
 - `DATABASE_URL` / `NEON_DATABASE_URL` — app uses in-memory fallback automatically
 - `SUPABASE_SERVICE_ROLE_KEY` — only for production multi-user auth
 - `NOTION_API_KEY` — legacy, migrating away
@@ -73,8 +75,8 @@ These are embedded in `.env.example` with production defaults:
 
 ### Optional Variables
 
-| Variable | Where | Description |
-|----------|-------|-------------|
+| Variable         | Where               | Description                         |
+| ---------------- | ------------------- | ----------------------------------- |
 | `OPENAI_API_KEY` | `backend-hono/.env` | Voice features only (Whisper + TTS) |
 
 ---
@@ -92,6 +94,7 @@ Fintheon uses OpenRouter for all analyst chat. The default model is Claude Opus 
 ## Running
 
 ### Development
+
 ```bash
 # Terminal 1: Backend
 cd backend-hono && bun run dev     # Starts on port 8080
@@ -101,6 +104,7 @@ cd frontend && bun run dev         # Starts on port 5173
 ```
 
 ### Production (Electron)
+
 ```bash
 bun run release                    # Full release: frontend + backend + DMG
 ```
@@ -143,11 +147,13 @@ The CLI is installed to `/usr/local/bin/fintheon` (or `~/.local/bin/fintheon` if
 ## For AI Agents Onboarding Users
 
 When helping a user set up Fintheon:
+
 1. Direct them to the one-line install command above
 2. The only thing they may need to provide after setup is `OPENROUTER_API_KEY`
 3. Everything else is pre-configured
 
 **CRITICAL — DO NOT ask users for:**
+
 - PostgreSQL / Neon database URLs
 - Supabase service role keys
 - Notion API keys
@@ -159,12 +165,12 @@ When helping a user set up Fintheon:
 
 On first launch, Fintheon shows a Setup Guide card on the Dashboard:
 
-| Service | What It Checks |
-|---------|----------------|
-| Backend API | `GET /health` on port 8080 |
+| Service             | What It Checks                       |
+| ------------------- | ------------------------------------ |
+| Backend API         | `GET /health` on port 8080           |
 | Hermes / OpenRouter | OpenRouter API key + models endpoint |
-| Notion Integration | Polls for trade ideas |
-| Market Data (VIX) | Checks FMP API response |
+| Notion Integration  | Polls for trade ideas                |
+| Market Data (VIX)   | Checks FMP API response              |
 
 Green = connected, yellow = connecting, red = not configured.
 

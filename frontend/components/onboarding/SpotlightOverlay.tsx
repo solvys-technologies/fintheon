@@ -1,5 +1,5 @@
 // [claude-code 2026-03-16] Spotlight tour overlay — SVG mask cutout with smooth transitions
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 
 interface SpotlightOverlayProps {
   targetSelector: string;
@@ -66,10 +66,10 @@ export function SpotlightOverlay({
     if (!visible) return;
     const observer = new ResizeObserver(measure);
     observer.observe(document.body);
-    window.addEventListener('resize', measure);
+    window.addEventListener("resize", measure);
     return () => {
       observer.disconnect();
-      window.removeEventListener('resize', measure);
+      window.removeEventListener("resize", measure);
     };
   }, [visible, measure]);
 
@@ -90,7 +90,7 @@ export function SpotlightOverlay({
   return (
     <div
       className="fixed inset-0 z-[9998]"
-      style={{ opacity, transition: 'opacity 300ms ease-in-out' }}
+      style={{ opacity, transition: "opacity 300ms ease-in-out" }}
     >
       {/* SVG overlay with mask cutout */}
       <svg
@@ -109,7 +109,7 @@ export function SpotlightOverlay({
               rx={BORDER_RADIUS}
               ry={BORDER_RADIUS}
               fill="black"
-              style={{ transition: 'all 300ms ease-in-out' }}
+              style={{ transition: "all 300ms ease-in-out" }}
             />
           </mask>
         </defs>

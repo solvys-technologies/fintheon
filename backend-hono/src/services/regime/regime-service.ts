@@ -1,13 +1,20 @@
 // [claude-code 2026-03-26] S2-T2: Regime state management — get/set/history with in-memory cache
-import type { MarketRegime, RegimeState, RegimeMultiplierProfile } from '../../types/regime.js';
-import { MARKET_REGIMES, DEFAULT_REGIME_MULTIPLIERS } from '../../types/regime.js';
+import type {
+  MarketRegime,
+  RegimeState,
+  RegimeMultiplierProfile,
+} from "../../types/regime.js";
+import {
+  MARKET_REGIMES,
+  DEFAULT_REGIME_MULTIPLIERS,
+} from "../../types/regime.js";
 import {
   writeRegimeState,
   readActiveRegime,
   deactivateCurrentRegime,
   readRegimeHistory as dbReadHistory,
   type MarketRegimeRecord,
-} from '../supabase-service.js';
+} from "../supabase-service.js";
 
 // ── In-memory cache (60s TTL) ──────────────────────────────────
 
@@ -17,9 +24,9 @@ const CACHE_TTL_MS = 60_000;
 
 function toRegimeState(row: MarketRegimeRecord): RegimeState {
   return {
-    id: row.id ?? '',
+    id: row.id ?? "",
     regime: row.regime_type as MarketRegime,
-    detectedBy: row.detected_by as RegimeState['detectedBy'],
+    detectedBy: row.detected_by as RegimeState["detectedBy"],
     confidence: Number(row.confidence ?? 0),
     notes: row.notes ?? undefined,
     active: row.active ?? false,
@@ -44,11 +51,11 @@ export async function getCurrentRegime(): Promise<RegimeState> {
 
   // No active regime — default to CONSOLIDATION
   const defaultState: RegimeState = {
-    id: 'default',
-    regime: 'CONSOLIDATION',
-    detectedBy: 'manual',
+    id: "default",
+    regime: "CONSOLIDATION",
+    detectedBy: "manual",
     confidence: 0,
-    notes: 'Default — no regime set',
+    notes: "Default — no regime set",
     active: true,
     createdAt: new Date().toISOString(),
   };
@@ -59,9 +66,9 @@ export async function getCurrentRegime(): Promise<RegimeState> {
 
 export async function setRegime(
   regime: MarketRegime,
-  detectedBy: RegimeState['detectedBy'],
+  detectedBy: RegimeState["detectedBy"],
   confidence: number,
-  notes?: string
+  notes?: string,
 ): Promise<RegimeState> {
   // Deactivate previous
   await deactivateCurrentRegime();
@@ -88,7 +95,7 @@ export async function setRegime(
 
   // Fallback if DB write failed — return in-memory only
   return {
-    id: 'mem-' + Date.now(),
+    id: "mem-" + Date.now(),
     regime,
     detectedBy,
     confidence,
@@ -103,6 +110,8 @@ export async function getRegimeHistory(limit = 20): Promise<RegimeState[]> {
   return rows.map(toRegimeState);
 }
 
-export function getRegimeMultipliers(regime: MarketRegime): RegimeMultiplierProfile {
+export function getRegimeMultipliers(
+  regime: MarketRegime,
+): RegimeMultiplierProfile {
   return DEFAULT_REGIME_MULTIPLIERS[regime];
 }

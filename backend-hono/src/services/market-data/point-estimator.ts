@@ -1,7 +1,11 @@
 // [claude-code 2026-03-11] Point estimator — translates blended IV score to implied point moves
 // Uses Rule of 16 + instrument betas from iv-scoring-v2.
 
-import { calculateImpliedPoints, getInstrumentConfig, type ImpliedPoints } from '../iv-scoring-v2.js';
+import {
+  calculateImpliedPoints,
+  getInstrumentConfig,
+  type ImpliedPoints,
+} from "../iv-scoring-v2.js";
 
 export interface PointEstimate {
   /** The blended IV score this estimate is based on */
@@ -15,7 +19,7 @@ export interface PointEstimate {
   /** Dollar risk per contract at this level */
   scaledDollarRisk: number;
   /** Urgency label */
-  urgency: 'low' | 'moderate' | 'elevated' | 'high' | 'extreme';
+  urgency: "low" | "moderate" | "elevated" | "high" | "extreme";
 }
 
 export interface AggregateEventSignal {
@@ -27,22 +31,24 @@ export interface EstimatePointsOptions {
   uncapNarrativePressure?: boolean;
 }
 
-export function shouldUncapNarrativePressure(event: AggregateEventSignal): boolean {
+export function shouldUncapNarrativePressure(
+  event: AggregateEventSignal,
+): boolean {
   return (
     event.macroLevel === 4 &&
-    (event.riskType === 'Macro' || event.riskType === 'Geopolitical')
+    (event.riskType === "Macro" || event.riskType === "Geopolitical")
   );
 }
 
 /**
  * Map IV score (0-10) to urgency label
  */
-function scoreToUrgency(score: number): PointEstimate['urgency'] {
-  if (score <= 2) return 'low';
-  if (score <= 4) return 'moderate';
-  if (score <= 6) return 'elevated';
-  if (score <= 8) return 'high';
-  return 'extreme';
+function scoreToUrgency(score: number): PointEstimate["urgency"] {
+  if (score <= 2) return "low";
+  if (score <= 4) return "moderate";
+  if (score <= 6) return "elevated";
+  if (score <= 8) return "high";
+  return "extreme";
 }
 
 /**
@@ -53,7 +59,7 @@ function scoreToUrgency(score: number): PointEstimate['urgency'] {
 export function estimatePoints(
   ivScore: number,
   vixLevel: number,
-  instrument: string = '/ES',
+  instrument: string = "/ES",
   currentPrice?: number,
   narrativePressure: number = 0,
   options?: EstimatePointsOptions,
@@ -64,9 +70,17 @@ export function estimatePoints(
   const implied = calculateImpliedPoints(vixLevel, price, instrument);
 
   // Cap based on narrative pressure (% of daily range a single event can claim)
-  const CAP_BY_NARRATIVE: Record<number, number> = { 0: 0.25, 1: 0.30, 2: 0.35, 3: 0.45 };
-  const NARRATIVE_PRESSURE_CAP = CAP_BY_NARRATIVE[Math.min(3, Math.max(0, narrativePressure))] ?? 0.25;
-  const effectiveCap = options?.uncapNarrativePressure ? Infinity : NARRATIVE_PRESSURE_CAP;
+  const CAP_BY_NARRATIVE: Record<number, number> = {
+    0: 0.25,
+    1: 0.3,
+    2: 0.35,
+    3: 0.45,
+  };
+  const NARRATIVE_PRESSURE_CAP =
+    CAP_BY_NARRATIVE[Math.min(3, Math.max(0, narrativePressure))] ?? 0.25;
+  const effectiveCap = options?.uncapNarrativePressure
+    ? Infinity
+    : NARRATIVE_PRESSURE_CAP;
   const maxPoints = implied.adjustedPoints * effectiveCap;
 
   // Scale: the IV score represents what fraction of daily implied move is "active"
@@ -82,7 +96,9 @@ export function estimatePoints(
       scaledPoints = onePercentFloor;
     }
   }
-  const scaledTicks = Math.round((scaledPoints / (implied.adjustedPoints || 1)) * implied.adjustedTicks);
+  const scaledTicks = Math.round(
+    (scaledPoints / (implied.adjustedPoints || 1)) * implied.adjustedTicks,
+  );
   const tickValue = config?.tickValue ?? 1;
   const scaledDollarRisk = Number((scaledTicks * tickValue).toFixed(2));
 
@@ -107,7 +123,7 @@ export function estimatePoints(
 export function estimateAggregatePoints(
   ivScore: number,
   vixLevel: number,
-  instrument: string = '/ES',
+  instrument: string = "/ES",
   activeEvents: AggregateEventSignal[] = [],
   currentPrice?: number,
 ): number {
@@ -120,7 +136,7 @@ export function estimateAggregatePoints(
   const hasCriticalEvent = activeEvents.some(
     (event) =>
       event.macroLevel === 4 ||
-      event.riskType?.toLowerCase() === 'geopolitical',
+      event.riskType?.toLowerCase() === "geopolitical",
   );
 
   if (hasCriticalEvent) {

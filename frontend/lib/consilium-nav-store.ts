@@ -1,7 +1,7 @@
 // [claude-code 2026-04-04] Zustand store for cross-component ConsiliumHub tab navigation
-import { create } from 'zustand';
+import { create } from "zustand";
 
-type ConsiliumTab = 'sanctum' | 'chat' | 'boardroom' | 'apparatus';
+type ConsiliumTab = "sanctum" | "chat" | "boardroom" | "apparatus";
 
 interface ConsiliumNavStore {
   /** Pending tab request from outside ConsiliumHub (e.g. ChatPanel sidebar icons) */

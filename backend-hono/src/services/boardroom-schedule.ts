@@ -1,6 +1,6 @@
 // [claude-code 2026-02-26] Boardroom meeting schedule derived from cron configuration.
 
-import { CronExpressionParser } from 'cron-parser';
+import { CronExpressionParser } from "cron-parser";
 
 export type BoardroomMeetingSchedule = {
   nowIso: string;
@@ -8,7 +8,7 @@ export type BoardroomMeetingSchedule = {
   nextMeetingIso: string;
   meetingWindowMinutes: number;
   live: boolean;
-  source: 'cron' | 'fallback';
+  source: "cron" | "fallback";
 };
 
 function computeFallback(now: Date): BoardroomMeetingSchedule {
@@ -23,10 +23,18 @@ function computeFallback(now: Date): BoardroomMeetingSchedule {
   candidate.setSeconds(0, 0);
   candidate.setHours(hour, 0, 0, 0);
 
-  const last = candidate.getTime() <= now.getTime() ? candidate : new Date(candidate.getTime() - 24 * 60 * 60 * 1000);
-  const next = candidate.getTime() > now.getTime() ? candidate : new Date(candidate.getTime() + 24 * 60 * 60 * 1000);
+  const last =
+    candidate.getTime() <= now.getTime()
+      ? candidate
+      : new Date(candidate.getTime() - 24 * 60 * 60 * 1000);
+  const next =
+    candidate.getTime() > now.getTime()
+      ? candidate
+      : new Date(candidate.getTime() + 24 * 60 * 60 * 1000);
 
-  const live = now.getTime() >= last.getTime() && now.getTime() < last.getTime() + meetingWindowMinutes * 60 * 1000;
+  const live =
+    now.getTime() >= last.getTime() &&
+    now.getTime() < last.getTime() + meetingWindowMinutes * 60 * 1000;
 
   return {
     nowIso: now.toISOString(),
@@ -34,11 +42,13 @@ function computeFallback(now: Date): BoardroomMeetingSchedule {
     nextMeetingIso: next.toISOString(),
     meetingWindowMinutes,
     live,
-    source: 'fallback',
+    source: "fallback",
   };
 }
 
-export function getBoardroomMeetingSchedule(now = new Date()): BoardroomMeetingSchedule {
+export function getBoardroomMeetingSchedule(
+  now = new Date(),
+): BoardroomMeetingSchedule {
   const cron = process.env.HERMES_BOARDROOM_CRON?.trim();
   const tz = process.env.HERMES_BOARDROOM_TZ?.trim();
   const meetingWindowMinutesRaw = process.env.BOARDROOM_MEETING_WINDOW_MINUTES;
@@ -61,7 +71,9 @@ export function getBoardroomMeetingSchedule(now = new Date()): BoardroomMeetingS
     const intervalPrev = CronExpressionParser.parse(cron, options);
     const last = intervalPrev.prev().toDate();
 
-    const live = now.getTime() >= last.getTime() && now.getTime() < last.getTime() + meetingWindowMinutes * 60 * 1000;
+    const live =
+      now.getTime() >= last.getTime() &&
+      now.getTime() < last.getTime() + meetingWindowMinutes * 60 * 1000;
 
     return {
       nowIso: now.toISOString(),
@@ -69,11 +81,13 @@ export function getBoardroomMeetingSchedule(now = new Date()): BoardroomMeetingS
       nextMeetingIso: next.toISOString(),
       meetingWindowMinutes,
       live,
-      source: 'cron',
+      source: "cron",
     };
   } catch (error) {
-    console.error('[BoardroomSchedule] Failed to parse cron, using fallback:', error);
+    console.error(
+      "[BoardroomSchedule] Failed to parse cron, using fallback:",
+      error,
+    );
     return computeFallback(now);
   }
 }
-

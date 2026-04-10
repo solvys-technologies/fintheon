@@ -1,12 +1,12 @@
 // [claude-code 2026-04-05] Bottom-right update toast — Install Now / Later CTAs, auto-downloads in background
-import { useEffect, useState, useCallback } from 'react';
-import { Download, X, Loader2, RotateCw } from 'lucide-react';
-import type { UpdateInfo, UpdateProgress } from '../types/electron';
+import { useEffect, useState, useCallback } from "react";
+import { Download, X, Loader2, RotateCw } from "lucide-react";
+import type { UpdateInfo, UpdateProgress } from "../types/electron";
 
-type UpdateState = 'idle' | 'downloading' | 'ready';
+type UpdateState = "idle" | "downloading" | "ready";
 
 export function UpdateBanner() {
-  const [state, setState] = useState<UpdateState>('idle');
+  const [state, setState] = useState<UpdateState>("idle");
   const [info, setInfo] = useState<UpdateInfo | null>(null);
   const [progress, setProgress] = useState<UpdateProgress | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -18,7 +18,7 @@ export function UpdateBanner() {
 
     el.onUpdateAvailable((updateInfo) => {
       setInfo(updateInfo);
-      setState('downloading');
+      setState("downloading");
       setDismissed(false);
     });
 
@@ -27,7 +27,7 @@ export function UpdateBanner() {
     });
 
     el.onUpdateDownloaded(() => {
-      setState('ready');
+      setState("ready");
     });
 
     return () => {
@@ -39,7 +39,7 @@ export function UpdateBanner() {
 
   // Enter animation
   useEffect(() => {
-    if (state !== 'idle' && !dismissed) {
+    if (state !== "idle" && !dismissed) {
       const raf = requestAnimationFrame(() => setEntered(true));
       return () => cancelAnimationFrame(raf);
     }
@@ -55,46 +55,51 @@ export function UpdateBanner() {
     setTimeout(() => setDismissed(true), 300);
   }, []);
 
-  if (state === 'idle' || dismissed) return null;
+  if (state === "idle" || dismissed) return null;
 
   const isVisible = entered;
-  const isReady = state === 'ready';
+  const isReady = state === "ready";
 
   return (
     <div
       className="fixed z-[150] transition-all duration-300 ease-out"
       style={{
-        bottom: '24px',
-        right: '24px',
+        bottom: "24px",
+        right: "24px",
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateY(0)' : 'translateY(16px)',
-        width: '320px',
-        borderRadius: '12px',
-        border: `1px solid ${isReady ? 'var(--fintheon-accent)' : 'rgba(199,159,74,0.3)'}`,
-        backgroundColor: 'var(--fintheon-surface)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-        overflow: 'hidden',
-        pointerEvents: isVisible ? 'auto' : 'none',
+        transform: isVisible ? "translateY(0)" : "translateY(16px)",
+        width: "320px",
+        borderRadius: "12px",
+        border: `1px solid ${isReady ? "var(--fintheon-accent)" : "rgba(199,159,74,0.3)"}`,
+        backgroundColor: "var(--fintheon-surface)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
+        overflow: "hidden",
+        pointerEvents: isVisible ? "auto" : "none",
       }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between"
-        style={{ padding: '12px 14px 0' }}
+        style={{ padding: "12px 14px 0" }}
       >
-        <div className="flex items-center" style={{ gap: '8px' }}>
+        <div className="flex items-center" style={{ gap: "8px" }}>
           {isReady ? (
-            <RotateCw size={14} style={{ color: 'var(--fintheon-accent)' }} />
+            <RotateCw size={14} style={{ color: "var(--fintheon-accent)" }} />
           ) : (
-            <Download size={14} style={{ color: 'var(--fintheon-accent)', opacity: 0.6 }} />
+            <Download
+              size={14}
+              style={{ color: "var(--fintheon-accent)", opacity: 0.6 }}
+            />
           )}
           <span
             className="text-[13px] font-semibold"
-            style={{ color: 'var(--fintheon-text)' }}
+            style={{ color: "var(--fintheon-text)" }}
           >
-            {isReady ? 'Update ready' : 'New update available'}
+            {isReady ? "Update ready" : "New update available"}
             {info?.version && (
-              <span style={{ color: 'var(--fintheon-accent)', marginLeft: '4px' }}>
+              <span
+                style={{ color: "var(--fintheon-accent)", marginLeft: "4px" }}
+              >
                 v{info.version}
               </span>
             )}
@@ -103,65 +108,65 @@ export function UpdateBanner() {
         <button
           onClick={handleLater}
           className="flex items-center justify-center rounded text-gray-500 hover:text-white transition-colors"
-          style={{ width: '22px', height: '22px' }}
+          style={{ width: "22px", height: "22px" }}
         >
           <X size={12} />
         </button>
       </div>
 
       {/* Body */}
-      <div style={{ padding: '8px 14px 12px' }}>
+      <div style={{ padding: "8px 14px 12px" }}>
         <p
           className="text-[11px] leading-relaxed"
-          style={{ color: 'rgba(156,163,175,0.8)', marginBottom: '8px' }}
+          style={{ color: "rgba(156,163,175,0.8)", marginBottom: "8px" }}
         >
           {isReady
-            ? 'Ready to install. A quick restart will apply the update.'
-            : `Downloading in the background${progress ? ` — ${progress.percent}%` : '...'}`}
+            ? "Ready to install. A quick restart will apply the update."
+            : `Downloading in the background${progress ? ` — ${progress.percent}%` : "..."}`}
         </p>
 
         {/* Progress bar — only during download */}
-        {state === 'downloading' && (
+        {state === "downloading" && (
           <div
             style={{
-              height: '3px',
-              borderRadius: '2px',
-              backgroundColor: 'rgba(199,159,74,0.15)',
-              marginBottom: '10px',
-              overflow: 'hidden',
+              height: "3px",
+              borderRadius: "2px",
+              backgroundColor: "rgba(199,159,74,0.15)",
+              marginBottom: "10px",
+              overflow: "hidden",
             }}
           >
             <div
               style={{
-                height: '100%',
+                height: "100%",
                 width: `${progress?.percent ?? 0}%`,
-                borderRadius: '2px',
-                backgroundColor: 'var(--fintheon-accent)',
-                transition: 'width 300ms ease',
+                borderRadius: "2px",
+                backgroundColor: "var(--fintheon-accent)",
+                transition: "width 300ms ease",
               }}
             />
           </div>
         )}
 
         {/* Actions — Later + Install Now */}
-        <div className="flex items-center justify-end" style={{ gap: '8px' }}>
+        <div className="flex items-center justify-end" style={{ gap: "8px" }}>
           <button
             onClick={handleLater}
             className="text-[11px] transition-colors"
             style={{
-              padding: '5px 12px',
-              borderRadius: '6px',
-              color: 'rgba(156,163,175,0.7)',
-              backgroundColor: 'transparent',
-              border: '1px solid rgba(156,163,175,0.15)',
+              padding: "5px 12px",
+              borderRadius: "6px",
+              color: "rgba(156,163,175,0.7)",
+              backgroundColor: "transparent",
+              border: "1px solid rgba(156,163,175,0.15)",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'rgba(156,163,175,1)';
-              e.currentTarget.style.borderColor = 'rgba(156,163,175,0.3)';
+              e.currentTarget.style.color = "rgba(156,163,175,1)";
+              e.currentTarget.style.borderColor = "rgba(156,163,175,0.3)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'rgba(156,163,175,0.7)';
-              e.currentTarget.style.borderColor = 'rgba(156,163,175,0.15)';
+              e.currentTarget.style.color = "rgba(156,163,175,0.7)";
+              e.currentTarget.style.borderColor = "rgba(156,163,175,0.15)";
             }}
           >
             Later
@@ -172,23 +177,27 @@ export function UpdateBanner() {
             disabled={!isReady}
             className="text-[11px] font-semibold transition-all flex items-center"
             style={{
-              padding: '5px 14px',
-              borderRadius: '6px',
-              gap: '5px',
-              color: isReady ? '#050402' : 'rgba(156,163,175,0.5)',
-              backgroundColor: isReady ? 'var(--fintheon-accent)' : 'rgba(199,159,74,0.15)',
-              cursor: isReady ? 'pointer' : 'default',
+              padding: "5px 14px",
+              borderRadius: "6px",
+              gap: "5px",
+              color: isReady ? "#050402" : "rgba(156,163,175,0.5)",
+              backgroundColor: isReady
+                ? "var(--fintheon-accent)"
+                : "rgba(199,159,74,0.15)",
+              cursor: isReady ? "pointer" : "default",
             }}
             onMouseEnter={(e) => {
-              if (isReady) e.currentTarget.style.filter = 'brightness(1.1)';
+              if (isReady) e.currentTarget.style.filter = "brightness(1.1)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.filter = 'none';
+              e.currentTarget.style.filter = "none";
             }}
           >
-            {state === 'downloading' && <Loader2 size={11} className="animate-spin" />}
-            {state === 'downloading' && 'Downloading...'}
-            {isReady && 'Install Now'}
+            {state === "downloading" && (
+              <Loader2 size={11} className="animate-spin" />
+            )}
+            {state === "downloading" && "Downloading..."}
+            {isReady && "Install Now"}
           </button>
         </div>
       </div>

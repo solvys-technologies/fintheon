@@ -1,6 +1,6 @@
 // [claude-code 2026-03-24] Supabase OAuth callback relay for Electron
 // Handles both PKCE (?code=xxx) and implicit (#access_token=xxx) flows
-import { Hono } from 'hono';
+import { Hono } from "hono";
 
 // In-memory store for pending auth data (single-user local app)
 let pendingAuth: { data: Record<string, string>; ts: number } | null = null;
@@ -11,9 +11,9 @@ export function createAuthCallbackRoute() {
   // GET /callback — Supabase redirects here after Google OAuth
   // Code may arrive as ?code=xxx (PKCE) or #access_token=xxx (implicit)
   // Hash fragments never reach the server, so the page uses JS to handle both
-  app.get('/callback', (c) => {
+  app.get("/callback", (c) => {
     const url = new URL(c.req.url);
-    const serverCode = url.searchParams.get('code') || '';
+    const serverCode = url.searchParams.get("code") || "";
 
     // If we got the code server-side (PKCE), store it immediately
     if (serverCode) {
@@ -95,19 +95,21 @@ export function createAuthCallbackRoute() {
   });
 
   // POST /store — relay page POSTs tokens here for frontend polling
-  app.post('/store', async (c) => {
+  app.post("/store", async (c) => {
     try {
-      const body = await c.req.json() as Record<string, string>;
+      const body = (await c.req.json()) as Record<string, string>;
       if (body.access_token) {
         pendingAuth = { data: body, ts: Date.now() };
         return c.json({ ok: true });
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return c.json({ ok: false }, 400);
   });
 
   // GET /pending — frontend polls this to get auth data
-  app.get('/pending', (c) => {
+  app.get("/pending", (c) => {
     if (pendingAuth && Date.now() - pendingAuth.ts < 120_000) {
       const data = pendingAuth.data;
       pendingAuth = null; // consume once

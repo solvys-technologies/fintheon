@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono } from "hono";
 import {
   handleGetBoardroomMessages,
   handleGetInterventionMessages,
@@ -20,42 +20,42 @@ import {
   handleGetThoughtById,
   handleGetAgentThoughts,
   handleShowFullAnalysis,
-} from './handlers.js';
+} from "./handlers.js";
 
 export function createBoardroomRoutes(): Hono {
   const router = new Hono();
 
   // Existing routes
-  router.get('/messages', handleGetBoardroomMessages);
-  router.get('/intervention/messages', handleGetInterventionMessages);
-  router.post('/intervention/send', handleSendInterventionMessage);
-  router.post('/mention/send', handleSendMentionMessage);
-  router.get('/status', handleGetBoardroomStatus);
-  router.get('/meeting-schedule', handleGetBoardroomMeetingSchedule);
-  router.post('/intervention/trigger', handleTriggerIntervention);
-  router.post('/trade-idea', handlePostTradeIdea);
+  router.get("/messages", handleGetBoardroomMessages);
+  router.get("/intervention/messages", handleGetInterventionMessages);
+  router.post("/intervention/send", handleSendInterventionMessage);
+  router.post("/mention/send", handleSendMentionMessage);
+  router.get("/status", handleGetBoardroomStatus);
+  router.get("/meeting-schedule", handleGetBoardroomMeetingSchedule);
+  router.post("/intervention/trigger", handleTriggerIntervention);
+  router.post("/trade-idea", handlePostTradeIdea);
 
   // Standup triggers (manual or cron-invoked)
-  router.post('/standup/:task', handleTriggerStandup);
+  router.post("/standup/:task", handleTriggerStandup);
 
   // Breaking news + Herald sentinel
-  router.post('/trigger/breaking-news', handleBreakingNewsTrigger);
-  router.post('/herald-alert', handleHeraldAlert);
+  router.post("/trigger/breaking-news", handleBreakingNewsTrigger);
+  router.post("/herald-alert", handleHeraldAlert);
 
   // Scheduler status
-  router.get('/scheduler/status', handleGetSchedulerStatus);
+  router.get("/scheduler/status", handleGetSchedulerStatus);
 
   // Thought Bank (agent deep analysis storage)
-  router.get('/thoughts', handleGetThoughts);
-  router.get('/thoughts/agent/:agent', handleGetAgentThoughts);
-  router.get('/thoughts/:id', handleGetThoughtById);
-  router.post('/thoughts/:messageId/full', handleShowFullAnalysis);
+  router.get("/thoughts", handleGetThoughts);
+  router.get("/thoughts/agent/:agent", handleGetAgentThoughts);
+  router.get("/thoughts/:id", handleGetThoughtById);
+  router.post("/thoughts/:messageId/full", handleShowFullAnalysis);
 
   // Consilium Intelligence Layer
-  router.get('/developments', handleGetDevelopments);
-  router.get('/scorecards', handleGetScorecards);
-  router.get('/predictions', handleGetPredictions);
-  router.post('/predictions/:id/resolve', handleResolvePrediction);
+  router.get("/developments", handleGetDevelopments);
+  router.get("/scorecards", handleGetScorecards);
+  router.get("/predictions", handleGetPredictions);
+  router.post("/predictions/:id/resolve", handleResolvePrediction);
 
   return router;
 }

@@ -1,21 +1,38 @@
 // [claude-code 2026-03-16] Hermes Command Center: agent status, settings, chat, activity log
-import { useState, useCallback, useEffect } from 'react';
-import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
-import { Cpu, RefreshCw, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
-import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
-import { useGateway } from '../../contexts/GatewayContext';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useHermesRuntime } from '../chat/useHermesRuntime';
-import { FintheonThread } from '../chat/FintheonThread';
-import { FintheonComposer } from '../chat/FintheonComposer';
-import { HermesAgentCards } from './HermesAgentCards';
-import { HermesActivityLog, useActivityLog } from './HermesActivityLog';
+import { useState, useCallback, useEffect } from "react";
+import {
+  AssistantRuntimeProvider,
+  useThread,
+  useThreadRuntime,
+} from "@assistant-ui/react";
+import {
+  Cpu,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
+import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
+import { useGateway } from "../../contexts/GatewayContext";
+import { useSettings } from "../../contexts/SettingsContext";
+import { useHermesRuntime } from "../chat/useHermesRuntime";
+import { FintheonThread } from "../chat/FintheonThread";
+import { FintheonComposer } from "../chat/FintheonComposer";
+import { HermesAgentCards } from "./HermesAgentCards";
+import { HermesActivityLog, useActivityLog } from "./HermesActivityLog";
 
 /* ------------------------------------------------------------------ */
 /*  Section header                                                      */
 /* ------------------------------------------------------------------ */
 
-function SectionHeader({ title, icon }: { title: string; icon?: React.ReactNode }) {
+function SectionHeader({
+  title,
+  icon,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+}) {
   return (
     <div className="flex items-center gap-2 mb-3">
       {icon}
@@ -35,26 +52,38 @@ function HermesSettings() {
   const { status, lastHealthCheck, reconnect, gatewayUrl } = useGateway();
   const { gatewayPort } = useSettings();
   const [showKey, setShowKey] = useState(false);
-  const [testResult, setTestResult] = useState<'success' | 'fail' | null>(null);
+  const [testResult, setTestResult] = useState<"success" | "fail" | null>(null);
 
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
-  const maskedKey = apiKey ? apiKey.slice(0, 8) + '...' + apiKey.slice(-4) : '(not set)';
+  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || "";
+  const maskedKey = apiKey
+    ? apiKey.slice(0, 8) + "..." + apiKey.slice(-4)
+    : "(not set)";
 
   const handleTestKey = useCallback(async () => {
     setTestResult(null);
     try {
-      const res = await fetch('https://openrouter.ai/api/v1/models', {
+      const res = await fetch("https://openrouter.ai/api/v1/models", {
         headers: { Authorization: `Bearer ${apiKey}` },
         signal: AbortSignal.timeout(5000),
       });
-      setTestResult(res.ok ? 'success' : 'fail');
+      setTestResult(res.ok ? "success" : "fail");
     } catch {
-      setTestResult('fail');
+      setTestResult("fail");
     }
   }, [apiKey]);
 
-  const statusColor = status === 'connected' ? 'text-emerald-400' : status === 'connecting' ? 'text-yellow-400' : 'text-red-400';
-  const statusLabel = status === 'connected' ? 'Connected' : status === 'connecting' ? 'Connecting...' : 'Disconnected';
+  const statusColor =
+    status === "connected"
+      ? "text-emerald-400"
+      : status === "connecting"
+        ? "text-yellow-400"
+        : "text-red-400";
+  const statusLabel =
+    status === "connected"
+      ? "Connected"
+      : status === "connecting"
+        ? "Connecting..."
+        : "Disconnected";
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -63,14 +92,20 @@ function HermesSettings() {
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-zinc-400">Gateway Status</span>
           <div className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${status === 'connected' ? 'bg-emerald-500' : status === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className={`text-[11px] font-medium ${statusColor}`}>{statusLabel}</span>
+            <span
+              className={`w-2 h-2 rounded-full ${status === "connected" ? "bg-emerald-500" : status === "connecting" ? "bg-yellow-500 animate-pulse" : "bg-red-500"}`}
+            />
+            <span className={`text-[11px] font-medium ${statusColor}`}>
+              {statusLabel}
+            </span>
           </div>
         </div>
         <div className="text-[10px] text-zinc-600 font-mono">{gatewayUrl}</div>
         <div className="text-[10px] text-zinc-600">Port: {gatewayPort}</div>
         {lastHealthCheck && (
-          <div className="text-[10px] text-zinc-600">Last check: {new Date(lastHealthCheck).toLocaleTimeString()}</div>
+          <div className="text-[10px] text-zinc-600">
+            Last check: {new Date(lastHealthCheck).toLocaleTimeString()}
+          </div>
         )}
         <button
           onClick={reconnect}
@@ -84,12 +119,19 @@ function HermesSettings() {
       <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg p-4 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-zinc-400">OpenRouter API Key</span>
-          <button onClick={() => setShowKey(!showKey)} className="text-zinc-500 hover:text-zinc-300 transition-colors">
-            {showKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+          <button
+            onClick={() => setShowKey(!showKey)}
+            className="text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            {showKey ? (
+              <EyeOff className="w-3.5 h-3.5" />
+            ) : (
+              <Eye className="w-3.5 h-3.5" />
+            )}
           </button>
         </div>
         <div className="text-[11px] text-zinc-300 font-mono">
-          {showKey ? (apiKey || '(not set)') : maskedKey}
+          {showKey ? apiKey || "(not set)" : maskedKey}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -99,11 +141,18 @@ function HermesSettings() {
           >
             Test Key
           </button>
-          {testResult === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-          {testResult === 'fail' && <XCircle className="w-3.5 h-3.5 text-red-400" />}
+          {testResult === "success" && (
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          )}
+          {testResult === "fail" && (
+            <XCircle className="w-3.5 h-3.5 text-red-400" />
+          )}
         </div>
         <div className="text-[10px] text-zinc-600 mt-1">
-          Default Model: <span className="text-zinc-400 font-mono">anthropic/claude-opus-4-6</span>
+          Default Model:{" "}
+          <span className="text-zinc-400 font-mono">
+            anthropic/claude-opus-4-6
+          </span>
         </div>
       </div>
     </div>
@@ -135,7 +184,7 @@ function HermesChatInner({
 
   const handleSend = useCallback(
     (msg: string) => {
-      runtime.append({ role: 'user', content: [{ type: 'text', text: msg }] });
+      runtime.append({ role: "user", content: [{ type: "text", text: msg }] });
       onMessageSent(msg);
     },
     [runtime, onMessageSent],
@@ -175,14 +224,14 @@ export function HermesCommandCenter() {
   const { entries, logActivity } = useActivityLog();
 
   const { runtime, lastError, lastRequestId } = useHermesRuntime(
-    activeAgent?.id ?? 'default',
+    activeAgent?.id ?? "default",
     thinkHarder,
-    'hermes-command',
+    "hermes-command",
   );
 
   const handleMessageSent = useCallback(
     (text: string) => {
-      logActivity(activeAgent?.name ?? 'Unknown', 'chat', text);
+      logActivity(activeAgent?.name ?? "Unknown", "chat", text);
     },
     [activeAgent, logActivity],
   );
@@ -216,7 +265,7 @@ export function HermesCommandCenter() {
           {/* Agent selector */}
           <div className="mb-2">
             <select
-              value={activeAgent?.id ?? ''}
+              value={activeAgent?.id ?? ""}
               onChange={(e) => {
                 const found = agents.find((a) => a.id === e.target.value);
                 if (found) setActiveAgent(found);

@@ -8,7 +8,7 @@
  * Agent detection routes to: Harper, Oracle, Feucht, Consul, Herald.
  */
 
-import type { Context } from 'hono'
+import type { Context } from "hono";
 import {
   createHarperAgent,
   createOracleAgent,
@@ -18,55 +18,69 @@ import {
   strandsToUIStream,
   uiStreamToSSEResponse,
   isStrandsAvailable,
-} from '../../../services/strands/index.js'
-import * as conversationStore from '../../../services/ai/conversation-store.js'
-import type { ChatRequest } from '../../../types/ai-chat.js'
-import type { HermesAgentRole } from '../../../services/hermes-service.js'
-import { detectAgent, type ContentPart } from '../../../services/hermes-handler.js'
-import { getAgentSystemPrompt, extractSkillTag, buildFeedContext } from '../../../services/ai/agent-instructions/index.js'
-import { extractSkillFromMessage, isSkillEnabled, getSkillDisabledReason } from '../../../config/feature-flags.js'
-import { createRequestCognition } from '../../../services/cognition-emitter.js'
-import { takeScreenshot, isPlaywrightReady } from '../../../services/screenshot-service.js'
+} from "../../../services/strands/index.js";
+import * as conversationStore from "../../../services/ai/conversation-store.js";
+import type { ChatRequest } from "../../../types/ai-chat.js";
+import type { HermesAgentRole } from "../../../services/hermes-service.js";
+import {
+  detectAgent,
+  type ContentPart,
+} from "../../../services/hermes-handler.js";
+import {
+  getAgentSystemPrompt,
+  extractSkillTag,
+  buildFeedContext,
+} from "../../../services/ai/agent-instructions/index.js";
+import {
+  extractSkillFromMessage,
+  isSkillEnabled,
+  getSkillDisabledReason,
+} from "../../../config/feature-flags.js";
+import { createRequestCognition } from "../../../services/cognition-emitter.js";
+import {
+  takeScreenshot,
+  isPlaywrightReady,
+} from "../../../services/screenshot-service.js";
 
 // File attachment content part types
 type FileContentPart =
-  | { type: 'text'; text: string }
-  | { type: 'image_url'; image_url: { url: string } }
-  | { type: 'file'; file: { name: string; mimeType: string; data: string } }
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } }
+  | { type: "file"; file: { name: string; mimeType: string; data: string } };
 
 function toAgentLabel(agent: HermesAgentRole | string): string {
   switch (agent) {
-    case 'harper-cao':
-      return 'Harper-Opus / CAO'
-    case 'pma-merged':
-      return 'Oracle (All-Seer)'
-    case 'futures-desk':
-      return 'Feucht (Futures & Risk)'
-    case 'fundamentals-desk':
-      return 'Consul (Fundamentals)'
-    case 'herald':
-      return 'Herald (News & Sentiment)'
+    case "harper-cao":
+      return "Harper-Opus / CAO";
+    case "pma-merged":
+      return "Oracle (All-Seer)";
+    case "futures-desk":
+      return "Feucht (Futures & Risk)";
+    case "fundamentals-desk":
+      return "Consul (Fundamentals)";
+    case "herald":
+      return "Herald (News & Sentiment)";
     default:
-      return 'PIC Analyst'
+      return "PIC Analyst";
   }
 }
 
 /** Create the appropriate Strands agent for the detected role */
 function createAgentForRole(role: HermesAgentRole | string, requestId: string) {
   switch (role) {
-    case 'harper-cao':
-      return createHarperAgent(requestId)
-    case 'pma-merged':
-      return createOracleAgent()
-    case 'futures-desk':
-      return createFeuchtAgent()
-    case 'fundamentals-desk':
-      return createConsulAgent()
-    case 'herald':
-      return createHeraldAgent()
+    case "harper-cao":
+      return createHarperAgent(requestId);
+    case "pma-merged":
+      return createOracleAgent();
+    case "futures-desk":
+      return createFeuchtAgent();
+    case "fundamentals-desk":
+      return createConsulAgent();
+    case "herald":
+      return createHeraldAgent();
     default:
       // Default to Oracle for unmatched roles
-      return createOracleAgent()
+      return createOracleAgent();
   }
 }
 
@@ -75,200 +89,260 @@ function createAgentForRole(role: HermesAgentRole | string, requestId: string) {
  * Strands Agent Processing - Routes through P.I.C. agent network via VProxy
  */
 export async function handleChat(c: Context) {
-  const startTime = Date.now()
-  const requestId = `chat-${Date.now()}-${Math.random().toString(36).substring(7)}`
-  const userId = c.get('userId') as string | undefined
+  const startTime = Date.now();
+  const requestId = `chat-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  const userId = c.get("userId") as string | undefined;
 
   // Create scoped cognition emitter — frontend subscribes via /api/ai/cognition/stream?requestId=
-  const cognition = createRequestCognition(requestId, startTime)
+  const cognition = createRequestCognition(requestId, startTime);
 
-  console.log(`[Hermes][${requestId}] Request started (strands mode)`)
+  console.log(`[Hermes][${requestId}] Request started (strands mode)`);
 
   // Expose requestId so frontend can open cognition SSE stream
-  c.header('X-Request-Id', requestId)
+  c.header("X-Request-Id", requestId);
 
   if (!userId) {
-    console.warn(`[Hermes][${requestId}] Unauthorized - no userId`)
-    return c.json({ error: 'Unauthorized' }, 401)
+    console.warn(`[Hermes][${requestId}] Unauthorized - no userId`);
+    return c.json({ error: "Unauthorized" }, 401);
   }
 
   try {
-    const body = await c.req.json<ChatRequest & { messages?: { role: string; content: string }[] }>().catch((err) => {
-      console.error(`[Hermes][${requestId}] Failed to parse request body:`, err)
-      return null
-    })
+    const body = await c.req
+      .json<ChatRequest & { messages?: { role: string; content: string }[] }>()
+      .catch((err) => {
+        console.error(
+          `[Hermes][${requestId}] Failed to parse request body:`,
+          err,
+        );
+        return null;
+      });
 
     // Support both 'message' (string) and 'messages' (array from Vercel AI SDK)
     // Content can be string or multimodal array [{type:'text',text:''},{type:'image_url',image_url:{url:''}}]
-    let message = body?.message?.trim() ?? ''
-    let multimodalContent: ContentPart[] | undefined
+    let message = body?.message?.trim() ?? "";
+    let multimodalContent: ContentPart[] | undefined;
     if (!message && body?.messages?.length) {
-      const lastUserMsg = [...body.messages].reverse().find(m => m.role === 'user')
-      const rawContent = lastUserMsg?.content
-      if (typeof rawContent === 'string') {
-        message = rawContent.trim()
+      const lastUserMsg = [...body.messages]
+        .reverse()
+        .find((m) => m.role === "user");
+      const rawContent = lastUserMsg?.content;
+      if (typeof rawContent === "string") {
+        message = rawContent.trim();
       } else if (Array.isArray(rawContent)) {
         // Multimodal content array — supports text, images, and file attachments
-        const textParts: string[] = []
-        const fileParts: string[] = []
-        const imageParts: ContentPart[] = []
+        const textParts: string[] = [];
+        const fileParts: string[] = [];
+        const imageParts: ContentPart[] = [];
 
         for (const part of rawContent as FileContentPart[]) {
-          if (part.type === 'text') {
-            textParts.push(part.text)
-          } else if (part.type === 'image_url') {
-            imageParts.push(part as ContentPart)
-          } else if (part.type === 'file' && part.file) {
-            const { name, mimeType, data } = part.file
-            if (mimeType.startsWith('image/')) {
+          if (part.type === "text") {
+            textParts.push(part.text);
+          } else if (part.type === "image_url") {
+            imageParts.push(part as ContentPart);
+          } else if (part.type === "file" && part.file) {
+            const { name, mimeType, data } = part.file;
+            if (mimeType.startsWith("image/")) {
               // Images → base64 vision input
-              imageParts.push({ type: 'image_url', image_url: { url: `data:${mimeType};base64,${data}` } })
+              imageParts.push({
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${data}` },
+              });
             } else if (
-              mimeType.startsWith('text/') ||
-              mimeType === 'application/json' ||
-              mimeType === 'application/javascript' ||
-              mimeType === 'application/typescript' ||
-              mimeType === 'application/xml'
+              mimeType.startsWith("text/") ||
+              mimeType === "application/json" ||
+              mimeType === "application/javascript" ||
+              mimeType === "application/typescript" ||
+              mimeType === "application/xml"
             ) {
               // Text/code → inline context
-              const decoded = Buffer.from(data, 'base64').toString('utf-8')
-              fileParts.push(`--- File: ${name} ---\n${decoded}\n--- End: ${name} ---`)
-            } else if (mimeType === 'application/pdf') {
+              const decoded = Buffer.from(data, "base64").toString("utf-8");
+              fileParts.push(
+                `--- File: ${name} ---\n${decoded}\n--- End: ${name} ---`,
+              );
+            } else if (mimeType === "application/pdf") {
               // PDFs → extract text (base64 decode, best-effort UTF-8)
-              const decoded = Buffer.from(data, 'base64').toString('utf-8')
-              const cleaned = decoded.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s{3,}/g, '\n')
-              fileParts.push(`--- PDF: ${name} ---\n${cleaned.slice(0, 50_000)}\n--- End: ${name} ---`)
+              const decoded = Buffer.from(data, "base64").toString("utf-8");
+              const cleaned = decoded
+                .replace(/[^\x20-\x7E\n\r\t]/g, " ")
+                .replace(/\s{3,}/g, "\n");
+              fileParts.push(
+                `--- PDF: ${name} ---\n${cleaned.slice(0, 50_000)}\n--- End: ${name} ---`,
+              );
             }
           }
         }
 
-        message = textParts.join('').trim()
+        message = textParts.join("").trim();
         if (fileParts.length > 0) {
-          message = `${fileParts.join('\n\n')}\n\n${message}`
+          message = `${fileParts.join("\n\n")}\n\n${message}`;
         }
         if (imageParts.length > 0) {
           multimodalContent = [
             ...imageParts,
-            { type: 'text' as const, text: message },
-          ]
+            { type: "text" as const, text: message },
+          ];
         }
       }
     }
 
     if (!message) {
-      console.warn(`[Hermes][${requestId}] Empty message`)
-      return c.json({ error: 'Message is required' }, 400)
+      console.warn(`[Hermes][${requestId}] Empty message`);
+      return c.json({ error: "Message is required" }, 400);
     }
 
     // Enforce skill permissions
-    const detectedSkill = extractSkillFromMessage(message)
+    const detectedSkill = extractSkillFromMessage(message);
     if (detectedSkill && !isSkillEnabled(detectedSkill)) {
-      const reason = getSkillDisabledReason(detectedSkill) || 'This skill is currently disabled.'
-      console.warn(`[Hermes][${requestId}] Blocked disabled skill: ${detectedSkill}`)
-      cognition.step('skill-check', `Skill blocked: ${detectedSkill}`, reason)
-      cognition.done()
-      return c.json({ error: 'Skill unavailable', reason }, 403)
+      const reason =
+        getSkillDisabledReason(detectedSkill) ||
+        "This skill is currently disabled.";
+      console.warn(
+        `[Hermes][${requestId}] Blocked disabled skill: ${detectedSkill}`,
+      );
+      cognition.step("skill-check", `Skill blocked: ${detectedSkill}`, reason);
+      cognition.done();
+      return c.json({ error: "Skill unavailable", reason }, 403);
     }
     if (detectedSkill) {
-      cognition.step('skill-check', `Skill active: ${detectedSkill}`)
+      cognition.step("skill-check", `Skill active: ${detectedSkill}`);
     }
 
     // Auto-screenshot for QUICKFINTHEON when no image parts present
-    if (detectedSkill === 'QUICKFINTHEON' && !multimodalContent?.some(p => p.type === 'image_url')) {
+    if (
+      detectedSkill === "QUICKFINTHEON" &&
+      !multimodalContent?.some((p) => p.type === "image_url")
+    ) {
       try {
         if (await isPlaywrightReady()) {
-          cognition.step('tool-dispatch', 'Playwright screenshot', 'Auto-capturing dashboard for QuickFintheon')
-          const shot = await takeScreenshot()
-          const imgPart: ContentPart = { type: 'image_url', image_url: { url: `data:image/png;base64,${shot.base64}` } }
+          cognition.step(
+            "tool-dispatch",
+            "Playwright screenshot",
+            "Auto-capturing dashboard for QuickFintheon",
+          );
+          const shot = await takeScreenshot();
+          const imgPart: ContentPart = {
+            type: "image_url",
+            image_url: { url: `data:image/png;base64,${shot.base64}` },
+          };
           if (multimodalContent) {
-            multimodalContent.push(imgPart)
+            multimodalContent.push(imgPart);
           } else {
             multimodalContent = [
-              { type: 'text' as const, text: message },
+              { type: "text" as const, text: message },
               imgPart,
-            ]
+            ];
           }
-          console.log(`[Hermes][${requestId}] QuickFintheon auto-screenshot captured`)
+          console.log(
+            `[Hermes][${requestId}] QuickFintheon auto-screenshot captured`,
+          );
         }
       } catch (err) {
-        console.warn(`[Hermes][${requestId}] QuickFintheon auto-screenshot failed, proceeding without:`, err)
+        console.warn(
+          `[Hermes][${requestId}] QuickFintheon auto-screenshot failed, proceeding without:`,
+          err,
+        );
       }
     }
 
-    console.log(`[Hermes][${requestId}] Message: "${message.substring(0, 50)}..." (${message.length} chars)`)
+    console.log(
+      `[Hermes][${requestId}] Message: "${message.substring(0, 50)}..." (${message.length} chars)`,
+    );
 
-    const { conversationId, thinkHarder } = body ?? {} as any
+    const { conversationId, thinkHarder } = body ?? ({} as any);
 
     // Get or create conversation
     let conversation = conversationId
       ? await conversationStore.getConversation(conversationId, userId)
-      : null
+      : null;
 
     if (conversationId && !conversation) {
-      console.log(`[Hermes][${requestId}] Conversation ${conversationId} not found, creating new`)
-      conversation = null
+      console.log(
+        `[Hermes][${requestId}] Conversation ${conversationId} not found, creating new`,
+      );
+      conversation = null;
     }
 
     if (!conversation) {
-      const title = conversationStore.generateTitle(message)
-      conversation = await conversationStore.createConversation(userId, { title })
-      console.log(`[Hermes][${requestId}] Created conversation: ${conversation.id}`)
+      const title = conversationStore.generateTitle(message);
+      conversation = await conversationStore.createConversation(userId, {
+        title,
+      });
+      console.log(
+        `[Hermes][${requestId}] Created conversation: ${conversation.id}`,
+      );
     } else {
-      console.log(`[Hermes][${requestId}] Using existing conversation: ${conversation.id}`)
+      console.log(
+        `[Hermes][${requestId}] Using existing conversation: ${conversation.id}`,
+      );
     }
 
     // Store user message
     await conversationStore.addMessage(conversation.id, {
       conversationId: conversation.id,
-      role: 'user',
+      role: "user",
       content: message,
-    })
-    console.log(`[Hermes][${requestId}] User message saved`)
+    });
+    console.log(`[Hermes][${requestId}] User message saved`);
 
     // Get conversation history
-    const history = await conversationStore.getRecentContext(conversation.id)
-    console.log(`[Hermes][${requestId}] History: ${history.length} messages`)
-    cognition.step('context-build', `Context assembled`, `${history.length} messages in history`)
+    const history = await conversationStore.getRecentContext(conversation.id);
+    console.log(`[Hermes][${requestId}] History: ${history.length} messages`);
+    cognition.step(
+      "context-build",
+      `Context assembled`,
+      `${history.length} messages in history`,
+    );
 
     // Detect which P.I.C. agent should handle this
-    const agentInfo = detectAgent(message)
-    console.log(`[Hermes][${requestId}] Routed to agent: ${agentInfo.agent} (intent: ${agentInfo.intent}, confidence: ${agentInfo.confidence})`)
+    const agentInfo = detectAgent(message);
+    console.log(
+      `[Hermes][${requestId}] Routed to agent: ${agentInfo.agent} (intent: ${agentInfo.intent}, confidence: ${agentInfo.confidence})`,
+    );
     cognition.step(
-      'agent-route',
+      "agent-route",
       `Routed → ${toAgentLabel(agentInfo.agent)}`,
-      `intent: ${agentInfo.intent}, confidence: ${Math.round(agentInfo.confidence * 100)}%`
-    )
+      `intent: ${agentInfo.intent}, confidence: ${Math.round(agentInfo.confidence * 100)}%`,
+    );
 
     // Create the appropriate Strands agent
-    const agent = createAgentForRole(agentInfo.agent, requestId)
+    const agent = createAgentForRole(agentInfo.agent, requestId);
 
     // Build the full prompt with history context
-    let prompt = message
+    let prompt = message;
     if (history.length > 0) {
       const historyBlock = history
         .slice(-10)
         .map((m) => `[${m.role}]: ${m.content}`)
-        .join('\n')
-      prompt = `[Conversation history]\n${historyBlock}\n\n[Current message]\n${message}`
+        .join("\n");
+      prompt = `[Conversation history]\n${historyBlock}\n\n[Current message]\n${message}`;
     }
 
     // Append file/image context if multimodal
     if (multimodalContent?.length) {
-      const imageCount = multimodalContent.filter(p => p.type === 'image_url').length
+      const imageCount = multimodalContent.filter(
+        (p) => p.type === "image_url",
+      ).length;
       if (imageCount > 0) {
-        prompt += `\n\n[${imageCount} image(s) attached — analyze visually]`
+        prompt += `\n\n[${imageCount} image(s) attached — analyze visually]`;
       }
     }
 
     // Inject live RiskFlow headlines so agents can reference real-time data
-    const feedContext = await buildFeedContext()
+    const feedContext = await buildFeedContext();
     if (feedContext) {
-      prompt = `${feedContext}\n\n${prompt}`
+      prompt = `${feedContext}\n\n${prompt}`;
     }
 
-    cognition.step('gateway-call', `Streaming from ${toAgentLabel(agentInfo.agent)}`, 'Strands agent via VProxy')
+    cognition.step(
+      "gateway-call",
+      `Streaming from ${toAgentLabel(agentInfo.agent)}`,
+      "Strands agent via VProxy",
+    );
 
-    const agentModel = agentInfo.agent === 'harper-cao' ? 'harper-opus' : `strands-${agentInfo.agent}`
+    const agentModel =
+      agentInfo.agent === "harper-cao"
+        ? "harper-opus"
+        : `strands-${agentInfo.agent}`;
 
     const stream = strandsToUIStream(agent, prompt, {
       messageId: `assistant-${Date.now()}`,
@@ -277,50 +351,70 @@ export async function handleChat(c: Context) {
         if (text) {
           await conversationStore.addMessage(conversation.id, {
             conversationId: conversation.id,
-            role: 'assistant',
+            role: "assistant",
             content: text,
             model: agentModel,
-          })
+          });
         }
 
-        const duration = Date.now() - startTime
-        console.log(`[Hermes][${requestId}] Complete (${duration}ms, ${text.length} chars)`)
-        cognition.step('response-ready', 'Response complete', `${text.length} chars in ${duration}ms`)
-        cognition.done()
+        const duration = Date.now() - startTime;
+        console.log(
+          `[Hermes][${requestId}] Complete (${duration}ms, ${text.length} chars)`,
+        );
+        cognition.step(
+          "response-ready",
+          "Response complete",
+          `${text.length} chars in ${duration}ms`,
+        );
+        cognition.done();
       },
-    })
+    });
 
     return uiStreamToSSEResponse(stream, {
-      'X-Conversation-Id': conversation.id,
-      'X-Request-Id': requestId,
-      'X-Hermes-Agent': agentModel,
-      'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Request-Id, X-Hermes-Agent',
-    })
+      "X-Conversation-Id": conversation.id,
+      "X-Request-Id": requestId,
+      "X-Hermes-Agent": agentModel,
+      "Access-Control-Allow-Origin": c.req.header("Origin") || "*",
+      "Access-Control-Allow-Credentials": "true",
+      "Access-Control-Expose-Headers":
+        "X-Conversation-Id, X-Request-Id, X-Hermes-Agent",
+    });
   } catch (error) {
-    const duration = Date.now() - startTime
-    console.error(`[Hermes][${requestId}] Fatal error after ${duration}ms:`, error)
-    cognition.step('error', 'Fatal error', error instanceof Error ? error.message : String(error))
-    cognition.done()
+    const duration = Date.now() - startTime;
+    console.error(
+      `[Hermes][${requestId}] Fatal error after ${duration}ms:`,
+      error,
+    );
+    cognition.step(
+      "error",
+      "Fatal error",
+      error instanceof Error ? error.message : String(error),
+    );
+    cognition.done();
 
     // Clean error messages — no raw fallback info
-    let errorMessage = 'Connected but error — try again in a moment.'
+    let errorMessage = "Connected but error — try again in a moment.";
     if (error instanceof Error) {
-      if (error.name === 'AbortError' || error.message.includes('timeout')) {
-        errorMessage = 'Request timed out. Please try again.'
-      } else if (error.message.includes('API key') || error.message.includes('authentication')) {
-        errorMessage = 'Connected but error — check model configuration.'
-      } else if (error.message.includes('rate limit')) {
-        errorMessage = 'Rate limit exceeded. Please wait a moment.'
+      if (error.name === "AbortError" || error.message.includes("timeout")) {
+        errorMessage = "Request timed out. Please try again.";
+      } else if (
+        error.message.includes("API key") ||
+        error.message.includes("authentication")
+      ) {
+        errorMessage = "Connected but error — check model configuration.";
+      } else if (error.message.includes("rate limit")) {
+        errorMessage = "Rate limit exceeded. Please wait a moment.";
       }
     }
 
-    return c.json({
-      error: errorMessage,
-      requestId,
-      duration: `${duration}ms`,
-    }, 500)
+    return c.json(
+      {
+        error: errorMessage,
+        requestId,
+        duration: `${duration}ms`,
+      },
+      500,
+    );
   }
 }
 
@@ -329,5 +423,5 @@ export async function handleChat(c: Context) {
  */
 export async function handleChatStream(c: Context) {
   // Redirect to main handler - it's now streaming
-  return handleChat(c)
+  return handleChat(c);
 }

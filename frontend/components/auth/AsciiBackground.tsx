@@ -1,8 +1,8 @@
 // [claude-code 2026-03-24] Dither hero background shaped like the Fintheon logo (concentric rings + diagonal)
-import React, { useMemo } from 'react';
+import React, { useMemo } from "react";
 
 // Dither chars by visual weight (light → heavy)
-const D = [' ', ' ', '·', '.', '∙', ':', '░', '▒', '▓', '█'];
+const D = [" ", " ", "·", ".", "∙", ":", "░", "▒", "▓", "█"];
 
 // Seeded PRNG for deterministic noise
 function rng(seed: number) {
@@ -31,9 +31,9 @@ function generateLogoField(): string {
   // Ring radii (in character units, accounting for ~2:1 char aspect ratio)
   const ASPECT = 2.1; // monospace chars are taller than wide
   const rings = [
-    { r: 8, width: 1.8 },   // inner ring (tight)
-    { r: 15, width: 2.0 },  // middle ring
-    { r: 23, width: 2.2 },  // outer ring
+    { r: 8, width: 1.8 }, // inner ring (tight)
+    { r: 15, width: 2.0 }, // middle ring
+    { r: 23, width: 2.2 }, // outer ring
   ];
 
   // Center dot radius
@@ -48,7 +48,7 @@ function generateLogoField(): string {
     const row: string[] = [];
     for (let c = 0; c < COLS; c++) {
       // Normalized distance from logo center (corrected for char aspect ratio)
-      const dx = (c - cx);
+      const dx = c - cx;
       const dy = (r - cy) * ASPECT;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
@@ -86,7 +86,8 @@ function generateLogoField(): string {
 
       // Add noise to the density for dither feel
       const noise = rand() * 0.35;
-      const finalDensity = density + (density > 0.1 ? noise * 0.4 : noise * 0.05);
+      const finalDensity =
+        density + (density > 0.1 ? noise * 0.4 : noise * 0.05);
 
       // Very faint ambient noise everywhere (atmosphere)
       const ambient = rand() > 0.92 ? 0.08 : 0;
@@ -99,7 +100,7 @@ function generateLogoField(): string {
     grid.push(row);
   }
 
-  return grid.map(row => row.join('')).join('\n');
+  return grid.map((row) => row.join("")).join("\n");
 }
 
 export const AsciiBackground: React.FC = () => {
@@ -114,11 +115,11 @@ export const AsciiBackground: React.FC = () => {
         className="whitespace-pre text-[#c79f4a]/[0.07] leading-[1.15]"
         style={{
           fontFamily: "'JetBrains Mono', 'Courier New', monospace",
-          fontSize: '10px',
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
+          fontSize: "10px",
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
         }}
       >
         {art}

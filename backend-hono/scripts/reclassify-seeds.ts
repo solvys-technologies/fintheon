@@ -2,53 +2,141 @@
 // [claude-code 2026-03-28] S7-T2: Reclassify seed events into the 10 real narrative threads
 // Run: bun run backend-hono/scripts/reclassify-seeds.ts
 
-import { readFileSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync, writeFileSync } from "fs";
+import { resolve } from "path";
 
 // ── Narrative thread definitions (from migration 027) ───────────────
 const THREADS: Record<string, string[]> = {
-  'middle-east-conflict': [
-    'iran', 'israel', 'houthi', 'hezbollah', 'middle east', 'gaza',
-    'lebanon', 'syria', 'yemen', 'red sea', 'strait of hormuz', 'idf',
-    'netanyahu', 'khamenei',
+  "middle-east-conflict": [
+    "iran",
+    "israel",
+    "houthi",
+    "hezbollah",
+    "middle east",
+    "gaza",
+    "lebanon",
+    "syria",
+    "yemen",
+    "red sea",
+    "strait of hormuz",
+    "idf",
+    "netanyahu",
+    "khamenei",
   ],
-  'liquidity-credit-contraction': [
-    'liquidity', 'credit', 'blue owl', 'lending', 'tightening', 'spread',
-    'high yield', 'junk bond', 'default', 'bankruptcy', 'delinquency',
+  "liquidity-credit-contraction": [
+    "liquidity",
+    "credit",
+    "blue owl",
+    "lending",
+    "tightening",
+    "spread",
+    "high yield",
+    "junk bond",
+    "default",
+    "bankruptcy",
+    "delinquency",
   ],
-  'ai-singularity': [
-    'ai ', 'artificial intelligence', 'anthropic', 'openai', 'nvidia',
-    'gpu', 'semiconductor', 'chip', 'claude', 'gpt', 'model release',
-    'agi', 'deepseek',
+  "ai-singularity": [
+    "ai ",
+    "artificial intelligence",
+    "anthropic",
+    "openai",
+    "nvidia",
+    "gpu",
+    "semiconductor",
+    "chip",
+    "claude",
+    "gpt",
+    "model release",
+    "agi",
+    "deepseek",
   ],
-  'usd-jpy-carry-trade': [
-    'yen', 'jpy', 'boj', 'bank of japan', 'carry trade', 'ueda',
-    'usdjpy', 'japan', 'yen flash', 'yen carry',
+  "usd-jpy-carry-trade": [
+    "yen",
+    "jpy",
+    "boj",
+    "bank of japan",
+    "carry trade",
+    "ueda",
+    "usdjpy",
+    "japan",
+    "yen flash",
+    "yen carry",
   ],
-  'trade-war': [
-    'tariff', 'trade war', 'liberation day', 'reciprocal', 'import tax',
-    'customs', 'trade barrier', 'retaliation',
+  "trade-war": [
+    "tariff",
+    "trade war",
+    "liberation day",
+    "reciprocal",
+    "import tax",
+    "customs",
+    "trade barrier",
+    "retaliation",
   ],
-  'us-china-relations': [
-    'china', 'beijing', 'xi jinping', 'cnh', 'yuan', 'pboc',
-    'delegation', 'huawei', 'tiktok', 'chip ban', 'entity list', 'smic',
+  "us-china-relations": [
+    "china",
+    "beijing",
+    "xi jinping",
+    "cnh",
+    "yuan",
+    "pboc",
+    "delegation",
+    "huawei",
+    "tiktok",
+    "chip ban",
+    "entity list",
+    "smic",
   ],
-  'rate-cut-cycle': [
-    'rate cut', 'traders price in', 'cuts priced', 'basis points',
-    'recession', 'fed cut', 'powell', 'fomc', 'dovish', 'soft landing',
-    'hard landing', 'warsh',
+  "rate-cut-cycle": [
+    "rate cut",
+    "traders price in",
+    "cuts priced",
+    "basis points",
+    "recession",
+    "fed cut",
+    "powell",
+    "fomc",
+    "dovish",
+    "soft landing",
+    "hard landing",
+    "warsh",
   ],
-  'trump-presidency': [
-    'trump', 'white house', 'executive order', 'maga', 'bessent',
-    'lutnick', 'vance', 'doge', 'musk', 'cabinet',
+  "trump-presidency": [
+    "trump",
+    "white house",
+    "executive order",
+    "maga",
+    "bessent",
+    "lutnick",
+    "vance",
+    "doge",
+    "musk",
+    "cabinet",
   ],
-  'price-stability': [
-    'cpi', 'ppi', 'pce', 'inflation', 'deflation', 'disinflation',
-    'price stability', 'consumer price', 'producer price', 'core inflation',
+  "price-stability": [
+    "cpi",
+    "ppi",
+    "pce",
+    "inflation",
+    "deflation",
+    "disinflation",
+    "price stability",
+    "consumer price",
+    "producer price",
+    "core inflation",
   ],
-  'maximum-employment': [
-    'nfp', 'jobs', 'unemployment', 'payroll', 'jobless claims', 'labor',
-    'employment', 'hiring', 'layoff', 'quits rate', 'jolts',
+  "maximum-employment": [
+    "nfp",
+    "jobs",
+    "unemployment",
+    "payroll",
+    "jobless claims",
+    "labor",
+    "employment",
+    "hiring",
+    "layoff",
+    "quits rate",
+    "jolts",
   ],
 };
 
@@ -62,11 +150,9 @@ interface SeedEvent {
 }
 
 function scoreEvent(event: SeedEvent): { slug: string; score: number }[] {
-  const text = [
-    event.title,
-    event.description,
-    ...(event.tags ?? []),
-  ].join(' ').toLowerCase();
+  const text = [event.title, event.description, ...(event.tags ?? [])]
+    .join(" ")
+    .toLowerCase();
 
   const scores: { slug: string; score: number }[] = [];
 
@@ -85,8 +171,11 @@ function scoreEvent(event: SeedEvent): { slug: string; score: number }[] {
 }
 
 // ── Main ────────────────────────────────────────────────────────────
-const seedPath = resolve(import.meta.dir, '../../frontend/data/narrative-seed-events.json');
-const raw = readFileSync(seedPath, 'utf-8');
+const seedPath = resolve(
+  import.meta.dir,
+  "../../frontend/data/narrative-seed-events.json",
+);
+const raw = readFileSync(seedPath, "utf-8");
 const events: SeedEvent[] = JSON.parse(raw);
 
 let classified = 0;
@@ -99,8 +188,11 @@ for (const event of events) {
     console.warn(`⚠ No match: ${event.id} — "${event.title}"`);
     unmatched++;
     // Keep existing narrative if present, otherwise default to rate-cut-cycle
-    if (!event.narrative) event.narrative = 'rate-cut-cycle';
-    if (!event.narrativeThreads || (event.narrativeThreads as string[]).length === 0) {
+    if (!event.narrative) event.narrative = "rate-cut-cycle";
+    if (
+      !event.narrativeThreads ||
+      (event.narrativeThreads as string[]).length === 0
+    ) {
       event.narrativeThreads = [event.narrative as string];
     }
     continue;
@@ -112,15 +204,15 @@ for (const event of events) {
   // Secondary threads: top 3 that score above 30% of the best
   const threshold = scores[0].score * 0.3;
   event.narrativeThreads = scores
-    .filter(s => s.score >= threshold)
+    .filter((s) => s.score >= threshold)
     .slice(0, 3)
-    .map(s => s.slug);
+    .map((s) => s.slug);
 
   classified++;
 }
 
 // Write back
-writeFileSync(seedPath, JSON.stringify(events, null, 2) + '\n');
+writeFileSync(seedPath, JSON.stringify(events, null, 2) + "\n");
 
 console.log(`\n✓ Reclassified ${classified}/${events.length} events`);
 if (unmatched > 0) console.log(`⚠ ${unmatched} events had no keyword match`);
@@ -128,10 +220,10 @@ if (unmatched > 0) console.log(`⚠ ${unmatched} events had no keyword match`);
 // Distribution summary
 const dist: Record<string, number> = {};
 for (const e of events) {
-  const n = (e.narrative as string) ?? 'unknown';
+  const n = (e.narrative as string) ?? "unknown";
   dist[n] = (dist[n] ?? 0) + 1;
 }
-console.log('\nDistribution:');
+console.log("\nDistribution:");
 for (const [slug, count] of Object.entries(dist).sort((a, b) => b[1] - a[1])) {
   console.log(`  ${slug}: ${count}`);
 }

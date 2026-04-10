@@ -5,25 +5,43 @@
  * Type definitions for RiskFlow news feed
  */
 
-export type NewsSource = 'FinancialJuice' | 'OSINTSources' | 'EconomicCalendar' | 'TrendSpider' | 'Barchart' | 'Polymarket' | 'Kalshi' | 'TwitterCli' | 'DeItaOne' | 'Custom' | 'Hermes';
-export type UrgencyLevel = 'immediate' | 'high' | 'normal';
-export type SentimentDirection = 'bullish' | 'bearish' | 'neutral';
-export type RiskType = 'Macro' | 'Geopolitical' | 'Earnings' | 'Technical' | 'Credit' | 'Liquidity' | 'Commentary';
+export type NewsSource =
+  | "FinancialJuice"
+  | "OSINTSources"
+  | "EconomicCalendar"
+  | "TrendSpider"
+  | "Barchart"
+  | "Polymarket"
+  | "Kalshi"
+  | "TwitterCli"
+  | "DeItaOne"
+  | "Custom"
+  | "Hermes";
+export type UrgencyLevel = "immediate" | "high" | "normal";
+export type SentimentDirection = "bullish" | "bearish" | "neutral";
+export type RiskType =
+  | "Macro"
+  | "Geopolitical"
+  | "Earnings"
+  | "Technical"
+  | "Credit"
+  | "Liquidity"
+  | "Commentary";
 
 export type MacroLevel = 1 | 2 | 3 | 4;
 
 /** Per-item scoring breakdown showing how each factor contributed */
 export interface SubScoreBreakdown {
-  eventWeight: number;      // 0-10, from calibration table or EVENT_WEIGHTS fallback
-  timing: number;           // 0-3, session + time window effect
-  deviation: number;        // 0-3, actual vs forecast
-  momentum: number;         // 0-2, breaking + urgency + reaction
-  vixContext: number;       // 0-10, continuous VIX curve score
-  vixMultiplier: number;    // the multiplier applied (e.g. 1.15)
-  regimeMultiplier?: number;     // regime × sentiment scaling
-  regimeName?: string;           // current market regime label
+  eventWeight: number; // 0-10, from calibration table or EVENT_WEIGHTS fallback
+  timing: number; // 0-3, session + time window effect
+  deviation: number; // 0-3, actual vs forecast
+  momentum: number; // 0-2, breaking + urgency + reaction
+  vixContext: number; // 0-10, continuous VIX curve score
+  vixMultiplier: number; // the multiplier applied (e.g. 1.15)
+  regimeMultiplier?: number; // regime × sentiment scaling
+  regimeName?: string; // current market regime label
   commentatorMultiplier?: number; // speaker tier scaling
-  speaker?: string | null;       // extracted speaker name
+  speaker?: string | null; // extracted speaker name
 }
 
 export interface FeedItem {
@@ -57,13 +75,13 @@ export interface FeedItem {
     actual?: number | null;
     forecast?: number | null;
     previous?: number | null;
-    beatMiss?: 'beat' | 'miss' | 'inline' | null;
+    beatMiss?: "beat" | "miss" | "inline" | null;
     surprisePercent?: number | null;
   } | null;
   /** Point estimation from IV score × VIX */
   priceBrainScore?: {
-    sentiment: 'Bullish' | 'Bearish' | 'Neutral';
-    classification: 'Cyclical' | 'Counter-cyclical' | 'Neutral';
+    sentiment: "Bullish" | "Bearish" | "Neutral";
+    classification: "Cyclical" | "Counter-cyclical" | "Neutral";
     impliedPoints: number | null;
     instrument: string | null;
   };
@@ -71,7 +89,7 @@ export interface FeedItem {
   promotedAt?: string | null;
   narrativeThreads?: string[];
   category?: string | null;
-  status?: 'active' | 'monitoring' | 'resolved' | null;
+  status?: "active" | "monitoring" | "resolved" | null;
   /** Daily close market impact (populated ~24h after event) */
   marketImpact?: {
     nq?: { points: number; percent: number } | null;
@@ -124,7 +142,7 @@ export interface WatchlistResponse {
 export interface ProposalFeedData {
   id: string;
   ticker: string;
-  direction: 'long' | 'short';
+  direction: "long" | "short";
   entry: number;
   stopLoss: number;
   takeProfit: number[];
@@ -132,7 +150,7 @@ export interface ProposalFeedData {
   confidence?: number;
   rationale?: string;
   screenshotUrl?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'executed' | 'expired';
+  status: "pending" | "approved" | "rejected" | "executed" | "expired";
 }
 
 export interface ProposalFeedItem extends FeedItem {

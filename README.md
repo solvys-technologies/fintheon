@@ -47,18 +47,18 @@ Pulls latest, rebuilds, restarts. Zero manual steps.
 
 ## CLI
 
-| Command | What it does |
-|---------|--------------|
-| `fintheon install` | First-time setup |
-| `fintheon update` | Pull latest + rebuild |
-| `fintheon start` | Start backend + launch app |
-| `fintheon stop` | Stop everything |
-| `fintheon restart` | Stop + start |
-| `fintheon logs` | Tail backend logs |
-| `fintheon status` | Check if running |
-| `fintheon oauth` | Connect Anthropic subscription |
-| `fintheon peers` | Twitter round-robin onboarding |
-| `fintheon version` | Show current version |
+| Command            | What it does                   |
+| ------------------ | ------------------------------ |
+| `fintheon install` | First-time setup               |
+| `fintheon update`  | Pull latest + rebuild          |
+| `fintheon start`   | Start backend + launch app     |
+| `fintheon stop`    | Stop everything                |
+| `fintheon restart` | Stop + start                   |
+| `fintheon logs`    | Tail backend logs              |
+| `fintheon status`  | Check if running               |
+| `fintheon oauth`   | Connect Anthropic subscription |
+| `fintheon peers`   | Twitter round-robin onboarding |
+| `fintheon version` | Show current version           |
 
 ---
 

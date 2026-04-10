@@ -1,9 +1,9 @@
 // [claude-code 2026-03-10] Message layout primitives — MessageRoot, MessageAvatar, MessageContent
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
-import { cn } from '../../lib/utils';
+import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
+import { cn } from "../../lib/utils";
 
 /* ─── MessageRoot ─── */
-type MessageRole = 'user' | 'assistant' | 'system';
+type MessageRole = "user" | "assistant" | "system";
 
 interface MessageRootProps extends HTMLAttributes<HTMLDivElement> {
   role?: MessageRole;
@@ -11,13 +11,13 @@ interface MessageRootProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export const MessageRoot = forwardRef<HTMLDivElement, MessageRootProps>(
-  ({ role = 'assistant', className, children, ...props }, ref) => (
+  ({ role = "assistant", className, children, ...props }, ref) => (
     <div
       ref={ref}
       data-role={role}
       className={cn(
-        'flex gap-3',
-        role === 'user' ? 'flex-row-reverse' : 'flex-row',
+        "flex gap-3",
+        role === "user" ? "flex-row-reverse" : "flex-row",
         className,
       )}
       {...props}
@@ -26,7 +26,7 @@ export const MessageRoot = forwardRef<HTMLDivElement, MessageRootProps>(
     </div>
   ),
 );
-MessageRoot.displayName = 'MessageRoot';
+MessageRoot.displayName = "MessageRoot";
 
 /* ─── MessageAvatar ─── */
 interface MessageAvatarProps {
@@ -36,16 +36,21 @@ interface MessageAvatarProps {
   className?: string;
 }
 
-export function MessageAvatar({ src, alt = 'Avatar', fallback, className }: MessageAvatarProps) {
+export function MessageAvatar({
+  src,
+  alt = "Avatar",
+  fallback,
+  className,
+}: MessageAvatarProps) {
   return (
     <div
       className={cn(
-        'flex-shrink-0 w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-bold',
+        "flex-shrink-0 w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-bold",
         className,
       )}
       style={{
-        background: src ? undefined : 'var(--fintheon-accent)',
-        color: src ? undefined : 'var(--fintheon-bg)',
+        background: src ? undefined : "var(--fintheon-accent)",
+        color: src ? undefined : "var(--fintheon-bg)",
       }}
     >
       {src ? (
@@ -66,15 +71,12 @@ export const MessageContent = forwardRef<HTMLDivElement, MessageContentProps>(
   ({ className, children, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(
-        'flex-1 min-w-0 rounded-lg px-3 py-2 text-sm',
-        className,
-      )}
-      style={{ color: 'var(--fintheon-text)' }}
+      className={cn("flex-1 min-w-0 rounded-lg px-3 py-2 text-sm", className)}
+      style={{ color: "var(--fintheon-text)" }}
       {...props}
     >
       {children}
     </div>
   ),
 );
-MessageContent.displayName = 'MessageContent';
+MessageContent.displayName = "MessageContent";

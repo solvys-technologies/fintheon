@@ -1,6 +1,6 @@
 // [claude-code 2026-03-27] S2-T1: Calibration system types — weight overrides, annotations, observations
 
-import type { MarketRegime } from './regime.js';
+import type { MarketRegime } from "./regime.js";
 
 export interface CalibrationEntry {
   id: string;
@@ -22,13 +22,13 @@ export interface RefinementAnnotation {
 }
 
 export type FlawTag =
-  | 'overscored'
-  | 'underscored'
-  | 'wrong_type'
-  | 'wrong_sentiment'
-  | 'missing_context'
-  | 'commentator_misweight'
-  | 'regime_mismatch';
+  | "overscored"
+  | "underscored"
+  | "wrong_type"
+  | "wrong_sentiment"
+  | "missing_context"
+  | "commentator_misweight"
+  | "regime_mismatch";
 
 export interface CalibrationObservation {
   id: string;
@@ -41,6 +41,6 @@ export interface CalibrationObservation {
   vixAtTime?: number;
   observedAt?: string;
   notes?: string;
-  source: 'manual' | 'backfill' | 'live_correlation';
+  source: "manual" | "backfill" | "live_correlation";
   createdAt: string;
 }

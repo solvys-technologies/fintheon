@@ -8,70 +8,70 @@ export interface SpeakerExtraction {
 }
 
 const INSTITUTION_MAP: Record<string, string> = {
-  fed: 'Federal Reserve',
-  fomc: 'Federal Reserve',
-  ecb: 'European Central Bank',
-  boj: 'Bank of Japan',
-  boe: 'Bank of England',
+  fed: "Federal Reserve",
+  fomc: "Federal Reserve",
+  ecb: "European Central Bank",
+  boj: "Bank of Japan",
+  boe: "Bank of England",
   pboc: "People's Bank of China",
-  treasury: 'US Treasury',
-  rba: 'Reserve Bank of Australia',
-  rbnz: 'Reserve Bank of New Zealand',
-  boc: 'Bank of Canada',
-  snb: 'Swiss National Bank',
+  treasury: "US Treasury",
+  rba: "Reserve Bank of Australia",
+  rbnz: "Reserve Bank of New Zealand",
+  boc: "Bank of Canada",
+  snb: "Swiss National Bank",
 };
 
 // Known officials grouped by institution — used for isOfficial detection and institution reverse-lookup.
 // The actual tier weighting comes from the registry (Supabase), not from this map.
 const KNOWN_OFFICIALS: Record<string, string> = {
   // Federal Reserve
-  powell: 'Federal Reserve',
-  waller: 'Federal Reserve',
-  bowman: 'Federal Reserve',
-  barkin: 'Federal Reserve',
-  bostic: 'Federal Reserve',
-  daly: 'Federal Reserve',
-  williams: 'Federal Reserve',
-  goolsbee: 'Federal Reserve',
-  kashkari: 'Federal Reserve',
-  harker: 'Federal Reserve',
-  mester: 'Federal Reserve',
-  logan: 'Federal Reserve',
-  collins: 'Federal Reserve',
-  jefferson: 'Federal Reserve',
-  cook: 'Federal Reserve',
-  kugler: 'Federal Reserve',
+  powell: "Federal Reserve",
+  waller: "Federal Reserve",
+  bowman: "Federal Reserve",
+  barkin: "Federal Reserve",
+  bostic: "Federal Reserve",
+  daly: "Federal Reserve",
+  williams: "Federal Reserve",
+  goolsbee: "Federal Reserve",
+  kashkari: "Federal Reserve",
+  harker: "Federal Reserve",
+  mester: "Federal Reserve",
+  logan: "Federal Reserve",
+  collins: "Federal Reserve",
+  jefferson: "Federal Reserve",
+  cook: "Federal Reserve",
+  kugler: "Federal Reserve",
   // US Treasury
-  bessent: 'US Treasury',
-  lutnick: 'US Treasury',
+  bessent: "US Treasury",
+  lutnick: "US Treasury",
   // Political
-  trump: 'White House',
+  trump: "White House",
   // ECB
-  lagarde: 'European Central Bank',
-  schnabel: 'European Central Bank',
-  lane: 'European Central Bank',
-  panetta: 'European Central Bank',
-  villeroy: 'European Central Bank',
+  lagarde: "European Central Bank",
+  schnabel: "European Central Bank",
+  lane: "European Central Bank",
+  panetta: "European Central Bank",
+  villeroy: "European Central Bank",
   // BOJ
-  ueda: 'Bank of Japan',
+  ueda: "Bank of Japan",
   // BOE
-  bailey: 'Bank of England',
+  bailey: "Bank of England",
   // Media (Fed whisperer)
-  timiraos: 'WSJ',
+  timiraos: "WSJ",
 };
 
 const TITLE_PREFIXES = [
-  'fed chair',
-  'fed governor',
-  'fed vice chair',
-  'treasury secretary',
-  'treasury sec',
-  'president',
-  'vice president',
-  'potus',
-  'ecb president',
-  'boj governor',
-  'boe governor',
+  "fed chair",
+  "fed governor",
+  "fed vice chair",
+  "treasury secretary",
+  "treasury sec",
+  "president",
+  "vice president",
+  "potus",
+  "ecb president",
+  "boj governor",
+  "boe governor",
 ];
 
 const NULL_EXTRACTION: SpeakerExtraction = {
@@ -90,7 +90,7 @@ export function extractSpeaker(headline: string): SpeakerExtraction {
 
   // Pattern 1: "Fed's LASTNAME:" or "ECB's LASTNAME:"
   const possessiveMatch = text.match(
-    /\b(fed|ecb|boj|boe|pboc|treasury|rba|boc|snb|rbnz)'?s\s+([A-Z][a-z]+)/i
+    /\b(fed|ecb|boj|boe|pboc|treasury|rba|boc|snb|rbnz)'?s\s+([A-Z][a-z]+)/i,
   );
   if (possessiveMatch) {
     const inst = possessiveMatch[1].toLowerCase();
@@ -105,7 +105,7 @@ export function extractSpeaker(headline: string): SpeakerExtraction {
 
   // Pattern 2: "TITLE LASTNAME says/said/warns/signals/confirms..."
   for (const prefix of TITLE_PREFIXES) {
-    const re = new RegExp(`\\b${prefix}\\s+([A-Z][a-z]+)`, 'i');
+    const re = new RegExp(`\\b${prefix}\\s+([A-Z][a-z]+)`, "i");
     const m = text.match(re);
     if (m) {
       const name = m[1];
@@ -121,7 +121,7 @@ export function extractSpeaker(headline: string): SpeakerExtraction {
 
   // Pattern 3: "LASTNAME (Fed/ECB/BOJ) says..."
   const parenMatch = text.match(
-    /\b([A-Z][a-z]+)\s+\((Fed|ECB|BOJ|BOE|PBOC|Treasury|RBA|BOC|SNB|RBNZ)\)/i
+    /\b([A-Z][a-z]+)\s+\((Fed|ECB|BOJ|BOE|PBOC|Treasury|RBA|BOC|SNB|RBNZ)\)/i,
   );
   if (parenMatch) {
     const name = parenMatch[1];
@@ -153,10 +153,10 @@ export function extractSpeaker(headline: string): SpeakerExtraction {
         confidence: 0.85,
       };
     }
-    if (fullNameLower === 'nick timiraos' || fullNameLower === 'timiraos') {
+    if (fullNameLower === "nick timiraos" || fullNameLower === "timiraos") {
       return {
-        speaker: 'Timiraos',
-        institution: 'WSJ',
+        speaker: "Timiraos",
+        institution: "WSJ",
         isOfficial: true,
         confidence: 0.85,
       };
@@ -174,7 +174,7 @@ export function extractSpeaker(headline: string): SpeakerExtraction {
   // Pattern 5: Headline contains a known official name anywhere (lower confidence)
   const lowerText = text.toLowerCase();
   for (const [name, inst] of Object.entries(KNOWN_OFFICIALS)) {
-    if (new RegExp(`\\b${name}\\b`, 'i').test(lowerText)) {
+    if (new RegExp(`\\b${name}\\b`, "i").test(lowerText)) {
       return {
         speaker: name.charAt(0).toUpperCase() + name.slice(1),
         institution: inst,
@@ -191,11 +191,11 @@ function resolveInstitution(name: string, titlePrefix: string): string {
   const lowerName = name.toLowerCase();
   if (KNOWN_OFFICIALS[lowerName]) return KNOWN_OFFICIALS[lowerName];
   const lp = titlePrefix.toLowerCase();
-  if (lp.includes('fed')) return 'Federal Reserve';
-  if (lp.includes('treasury')) return 'US Treasury';
-  if (lp.includes('ecb')) return 'European Central Bank';
-  if (lp.includes('boj')) return 'Bank of Japan';
-  if (lp.includes('boe')) return 'Bank of England';
-  if (lp.includes('potus') || lp.includes('president')) return 'White House';
-  return '';
+  if (lp.includes("fed")) return "Federal Reserve";
+  if (lp.includes("treasury")) return "US Treasury";
+  if (lp.includes("ecb")) return "European Central Bank";
+  if (lp.includes("boj")) return "Bank of Japan";
+  if (lp.includes("boe")) return "Bank of England";
+  if (lp.includes("potus") || lp.includes("president")) return "White House";
+  return "";
 }

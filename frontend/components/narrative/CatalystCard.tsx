@@ -1,30 +1,30 @@
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
 // [claude-code 2026-03-16] Added tag pills and inline tag-add button
-import { useState, useCallback, useRef } from 'react';
-import type { CatalystCard as CatalystCardType } from '../../lib/narrative-types';
+import { useState, useCallback, useRef } from "react";
+import type { CatalystCard as CatalystCardType } from "../../lib/narrative-types";
 
 const SENTIMENT_COLORS: Record<string, string> = {
-  bullish: 'var(--fintheon-bullish)',
-  bearish: 'var(--fintheon-bearish)',
+  bullish: "var(--fintheon-bullish)",
+  bearish: "var(--fintheon-bearish)",
 };
 
 const SENTIMENT_BG: Record<string, string> = {
-  bullish: 'color-mix(in srgb, var(--fintheon-bullish) 15%, transparent)',
-  bearish: 'color-mix(in srgb, var(--fintheon-bearish) 15%, transparent)',
+  bullish: "color-mix(in srgb, var(--fintheon-bullish) 15%, transparent)",
+  bearish: "color-mix(in srgb, var(--fintheon-bearish) 15%, transparent)",
 };
 
 const SEVERITY_LABELS: Record<string, { label: string; color: string }> = {
-  high: { label: 'HIGH', color: 'var(--fintheon-bearish)' },
-  medium: { label: 'MED', color: 'var(--fintheon-accent)' },
-  low: { label: 'LOW', color: 'var(--fintheon-muted)' },
+  high: { label: "HIGH", color: "var(--fintheon-bearish)" },
+  medium: { label: "MED", color: "var(--fintheon-accent)" },
+  low: { label: "LOW", color: "var(--fintheon-muted)" },
 };
 
 const SOURCE_LABELS: Record<string, string> = {
-  rss: 'RSS',
-  user: 'USR',
-  agent: 'AGT',
-  riskflow: 'RFL',
-  brief: 'MDB',
+  rss: "RSS",
+  user: "USR",
+  agent: "AGT",
+  riskflow: "RFL",
+  brief: "MDB",
 };
 
 interface CatalystCardProps {
@@ -49,7 +49,7 @@ export default function CatalystCard({
   cardRef,
 }: CatalystCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [tagInput, setTagInput] = useState('');
+  const [tagInput, setTagInput] = useState("");
   const [showTagInput, setShowTagInput] = useState(false);
   const tagInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,16 +57,19 @@ export default function CatalystCard({
     onSelect(catalyst.id);
   }, [onSelect, catalyst.id]);
 
-  const handleDragStart = useCallback((e: React.DragEvent) => {
-    onDragStart?.(e, catalyst.id);
-  }, [onDragStart, catalyst.id]);
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      onDragStart?.(e, catalyst.id);
+    },
+    [onDragStart, catalyst.id],
+  );
 
   const sentimentColor = SENTIMENT_COLORS[catalyst.sentiment];
   const severity = SEVERITY_LABELS[catalyst.severity];
 
   const borderColor = selected
     ? sentimentColor
-    : `color-mix(in srgb, var(--fintheon-border) ${isHovered ? '50%' : '30%'}, transparent)`;
+    : `color-mix(in srgb, var(--fintheon-border) ${isHovered ? "50%" : "30%"}, transparent)`;
 
   return (
     <div
@@ -78,29 +81,32 @@ export default function CatalystCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={[
-        'rounded-xl cursor-pointer select-none transition-all duration-200',
-        compact ? 'px-2 py-1.5' : 'px-3 py-2.5',
-        compact ? 'w-[120px]' : 'w-[160px]',
-        selected ? 'catalyst-card-pulse' : '',
-      ].filter(Boolean).join(' ')}
+        "rounded-xl cursor-pointer select-none transition-all duration-200",
+        compact ? "px-2 py-1.5" : "px-3 py-2.5",
+        compact ? "w-[120px]" : "w-[160px]",
+        selected ? "catalyst-card-pulse" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={{
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 80%, transparent)',
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        backgroundColor:
+          "color-mix(in srgb, var(--fintheon-surface) 80%, transparent)",
         border: `1px solid ${borderColor}`,
         boxShadow: selected
           ? `0 4px 24px rgba(0,0,0,0.3), 0 0 12px color-mix(in srgb, ${sentimentColor} 25%, transparent)`
-          : '0 4px 16px rgba(0,0,0,0.3)',
-        transform: isHovered && !selected ? 'scale(1.02)' : 'scale(1)',
-        minHeight: compact ? 'auto' : '80px',
+          : "0 4px 16px rgba(0,0,0,0.3)",
+        transform: isHovered && !selected ? "scale(1.02)" : "scale(1)",
+        minHeight: compact ? "auto" : "80px",
       }}
     >
       {/* Title */}
       <p
         className="font-semibold leading-tight truncate"
         style={{
-          fontSize: compact ? '10px' : '11px',
-          color: 'var(--fintheon-text)',
+          fontSize: compact ? "10px" : "11px",
+          color: "var(--fintheon-text)",
         }}
       >
         {catalyst.title}
@@ -111,9 +117,12 @@ export default function CatalystCard({
           {/* Date */}
           <p
             className="mt-1 truncate"
-            style={{ fontSize: '9px', color: 'var(--fintheon-muted)' }}
+            style={{ fontSize: "9px", color: "var(--fintheon-muted)" }}
           >
-            {new Date(catalyst.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {new Date(catalyst.date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })}
           </p>
 
           {/* Badges row */}
@@ -122,7 +131,7 @@ export default function CatalystCard({
             <span
               className="rounded-full px-1.5 py-0.5 font-medium uppercase"
               style={{
-                fontSize: '8px',
+                fontSize: "8px",
                 color: sentimentColor,
                 backgroundColor: SENTIMENT_BG[catalyst.sentiment],
               }}
@@ -134,7 +143,7 @@ export default function CatalystCard({
             <span
               className="rounded-full px-1.5 py-0.5 font-medium"
               style={{
-                fontSize: '8px',
+                fontSize: "8px",
                 color: severity.color,
                 backgroundColor: `color-mix(in srgb, ${severity.color} 15%, transparent)`,
               }}
@@ -146,41 +155,47 @@ export default function CatalystCard({
             <span
               className="rounded px-1 py-0.5 font-mono"
               style={{
-                fontSize: '7px',
-                color: 'var(--fintheon-muted)',
-                backgroundColor: 'color-mix(in srgb, var(--fintheon-muted) 10%, transparent)',
+                fontSize: "7px",
+                color: "var(--fintheon-muted)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--fintheon-muted) 10%, transparent)",
               }}
             >
               {SOURCE_LABELS[catalyst.source] || catalyst.source}
             </span>
 
             {/* S9-T2: Direction bias + market impact indicators */}
-            {catalyst.directionBias && catalyst.directionBias !== 'neutral' && (
+            {catalyst.directionBias && catalyst.directionBias !== "neutral" && (
               <span
                 className="rounded-full px-1.5 py-0.5 font-mono font-bold"
                 style={{
-                  fontSize: '8px',
-                  color: catalyst.directionBias === 'bullish' ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)',
+                  fontSize: "8px",
+                  color:
+                    catalyst.directionBias === "bullish"
+                      ? "var(--fintheon-bullish)"
+                      : "var(--fintheon-bearish)",
                 }}
               >
-                {catalyst.directionBias === 'bullish' ? '+' : '-'}
+                {catalyst.directionBias === "bullish" ? "+" : "-"}
                 {catalyst.marketImpact?.es?.points
                   ? ` +${Math.abs(catalyst.marketImpact.es.points).toFixed(0)} pts`
-                  : ''}
+                  : ""}
               </span>
             )}
           </div>
 
           {/* Tag pills */}
           <div className="flex flex-wrap items-center gap-1 mt-1">
-            {catalyst.tags?.map(tag => (
+            {catalyst.tags?.map((tag) => (
               <span
                 key={tag}
                 className="text-[8px] px-1.5 py-0.5 rounded-full border"
                 style={{
-                  color: 'var(--fintheon-accent)',
-                  backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 15%, transparent)',
-                  borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)',
+                  color: "var(--fintheon-accent)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--fintheon-accent) 15%, transparent)",
+                  borderColor:
+                    "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
                 }}
               >
                 {tag}
@@ -195,8 +210,9 @@ export default function CatalystCard({
                 }}
                 className="text-[8px] w-4 h-4 flex items-center justify-center rounded-full border transition-colors"
                 style={{
-                  color: 'var(--fintheon-muted)',
-                  borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)',
+                  color: "var(--fintheon-muted)",
+                  borderColor:
+                    "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
                 }}
                 title="Add tag"
               >
@@ -211,21 +227,25 @@ export default function CatalystCard({
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => {
                   e.stopPropagation();
-                  if (e.key === 'Enter' && tagInput.trim()) {
+                  if (e.key === "Enter" && tagInput.trim()) {
                     onTagAdd?.(catalyst.id, tagInput.trim());
-                    setTagInput('');
+                    setTagInput("");
                     setShowTagInput(false);
                   }
-                  if (e.key === 'Escape') {
-                    setTagInput('');
+                  if (e.key === "Escape") {
+                    setTagInput("");
                     setShowTagInput(false);
                   }
                 }}
-                onBlur={() => { setTagInput(''); setShowTagInput(false); }}
+                onBlur={() => {
+                  setTagInput("");
+                  setShowTagInput(false);
+                }}
                 className="text-[8px] w-14 px-1 py-0.5 rounded border bg-transparent outline-none"
                 style={{
-                  color: 'var(--fintheon-text)',
-                  borderColor: 'color-mix(in srgb, var(--fintheon-accent) 30%, transparent)',
+                  color: "var(--fintheon-text)",
+                  borderColor:
+                    "color-mix(in srgb, var(--fintheon-accent) 30%, transparent)",
                 }}
                 placeholder="tag..."
               />

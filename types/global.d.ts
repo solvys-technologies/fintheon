@@ -1,7 +1,7 @@
-export {}
+export {};
 
 declare global {
   interface Window {
-    Sentry?: typeof import('@sentry/react')
+    Sentry?: typeof import("@sentry/react");
   }
 }

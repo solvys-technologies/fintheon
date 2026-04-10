@@ -13,20 +13,26 @@ import type {
   BridgeExecuteResponse,
   BridgePositionResponse,
   BridgeAccountResponse,
-} from '../types/execution-bridge.js';
+} from "../types/execution-bridge.js";
 
-const BRIDGE_URL = process.env.BRIDGE_URL ?? 'http://localhost:8001';
+const BRIDGE_URL = process.env.BRIDGE_URL ?? "http://localhost:8001";
 
 // ── Generic fetch helper (mirrors rithmic-service.ts gatewayFetch) ──
 
-async function bridgeFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
+async function bridgeFetch<T>(
+  path: string,
+  opts: RequestInit = {},
+): Promise<T> {
   const res = await fetch(`${BRIDGE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
     ...opts,
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as Record<string, unknown>;
+    const body = (await res.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >;
     throw new Error((body.detail as string) ?? `Bridge error: ${res.status}`);
   }
 
@@ -36,12 +42,14 @@ async function bridgeFetch<T>(path: string, opts: RequestInit = {}): Promise<T> 
 // ── Public API (same shape as rithmic-service + hyperliquid-service) ──
 
 export function hasCredentials(_userId: string): boolean {
-  return Boolean(process.env.BRIDGE_URL ?? 'http://localhost:8001');
+  return Boolean(process.env.BRIDGE_URL ?? "http://localhost:8001");
 }
 
-export async function getConnectionStatus(_userId: string): Promise<{ connected: boolean; message: string }> {
+export async function getConnectionStatus(
+  _userId: string,
+): Promise<{ connected: boolean; message: string }> {
   try {
-    const status = await bridgeFetch<BridgeHealthResponse>('/health');
+    const status = await bridgeFetch<BridgeHealthResponse>("/health");
     return {
       connected: status.connected,
       message: status.message,
@@ -49,7 +57,7 @@ export async function getConnectionStatus(_userId: string): Promise<{ connected:
   } catch {
     return {
       connected: false,
-      message: 'Execution bridge unreachable — start execution-bridge/main.py',
+      message: "Execution bridge unreachable — start execution-bridge/main.py",
     };
   }
 }
@@ -58,7 +66,7 @@ export async function executeOrder(
   _userId: string,
   params: {
     symbol: string;
-    direction: 'long' | 'short';
+    direction: "long" | "short";
     quantity: number;
     entryPrice?: number;
     stopLoss?: number;
@@ -67,12 +75,12 @@ export async function executeOrder(
   },
 ): Promise<{ success: boolean; orderId?: string; error?: string }> {
   try {
-    const result = await bridgeFetch<BridgeExecuteResponse>('/execute', {
-      method: 'POST',
+    const result = await bridgeFetch<BridgeExecuteResponse>("/execute", {
+      method: "POST",
       body: JSON.stringify({
-        model: (params.model as string) ?? '40_40_club',
+        model: (params.model as string) ?? "40_40_club",
         direction: params.direction,
-        symbol: params.symbol.replace(/^\//, ''),
+        symbol: params.symbol.replace(/^\//, ""),
         confluence_score: (params.confluenceScore as number) ?? 0,
         position_size: params.quantity,
         entry_price: params.entryPrice ?? null,
@@ -81,7 +89,7 @@ export async function executeOrder(
       } satisfies Partial<BridgeExecuteRequest>),
     });
 
-    if (result.status === 'error' || result.status === 'rejected') {
+    if (result.status === "error" || result.status === "rejected") {
       return { success: false, error: result.message };
     }
 
@@ -90,24 +98,37 @@ export async function executeOrder(
       orderId: result.order_id,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Bridge execution error';
+    const message =
+      err instanceof Error ? err.message : "Bridge execution error";
     return { success: false, error: message };
   }
 }
 
-export async function getPositions(_userId: string): Promise<BridgePositionResponse> {
-  return bridgeFetch<BridgePositionResponse>('/position');
+export async function getPositions(
+  _userId: string,
+): Promise<BridgePositionResponse> {
+  return bridgeFetch<BridgePositionResponse>("/position");
 }
 
-export async function getAccount(_userId: string): Promise<BridgeAccountResponse> {
-  return bridgeFetch<BridgeAccountResponse>('/account');
+export async function getAccount(
+  _userId: string,
+): Promise<BridgeAccountResponse> {
+  return bridgeFetch<BridgeAccountResponse>("/account");
 }
 
-export async function cancelOrder(_userId: string, orderId: string): Promise<{ success: boolean; error?: string }> {
+export async function cancelOrder(
+  _userId: string,
+  orderId: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
-    await bridgeFetch<{ success: boolean }>(`/cancel/${orderId}`, { method: 'POST' });
+    await bridgeFetch<{ success: boolean }>(`/cancel/${orderId}`, {
+      method: "POST",
+    });
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Cancel failed' };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Cancel failed",
+    };
   }
 }

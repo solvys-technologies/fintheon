@@ -57,6 +57,7 @@ clip you at $1,420 on a volatile fill. Clear the threshold cleanly.
 ## IPEC Framework
 
 Simplified wave structure for any timeframe:
+
 1. **Impulse** — Initial thrust, high conviction directional move
 2. **Push** — Continuation with momentum, confirms the impulse
 3. **Exhaustion** — Momentum fades, volume drops, price grinds
@@ -64,6 +65,7 @@ Simplified wave structure for any timeframe:
 
 IPEC is fractal — visible on 1000-tick, 5m, 15m, 1h charts.
 The phase tells you what to do:
+
 - Impulse/Push = ride it, trail stops
 - Exhaustion = tighten stops, prepare for reversal
 - Correction = look for next impulse entry
@@ -74,15 +76,15 @@ The phase tells you what to do:
 
 Impact order for intraday trading:
 
-| Rank | Print | Role in Chain | Tradeable? |
-|------|-------|---------------|------------|
-| 1 | PMI | What's coming off the docks. First signal. | Yes |
-| 2 | PPI/CPI | Prices they're paying / prices on the shelf | Yes — core pair |
-| 3 | NFP | Jobs data. Major volatility catalyst. | Yes |
-| 4 | PCE | Fed's preferred inflation gauge. Chain endpoint. | Yes |
-| 5 | GDP | Macro confirmation. Less tradeable intraday. | Sparingly |
-| 6 | FOMC | Not a print but regime-defining event. | Context only |
-| 7 | Jobless Claims / Retail Sales | Secondary | Only if ideal |
+| Rank | Print                         | Role in Chain                                    | Tradeable?      |
+| ---- | ----------------------------- | ------------------------------------------------ | --------------- |
+| 1    | PMI                           | What's coming off the docks. First signal.       | Yes             |
+| 2    | PPI/CPI                       | Prices they're paying / prices on the shelf      | Yes — core pair |
+| 3    | NFP                           | Jobs data. Major volatility catalyst.            | Yes             |
+| 4    | PCE                           | Fed's preferred inflation gauge. Chain endpoint. | Yes             |
+| 5    | GDP                           | Macro confirmation. Less tradeable intraday.     | Sparingly       |
+| 6    | FOMC                          | Not a print but regime-defining event.           | Context only    |
+| 7    | Jobless Claims / Retail Sales | Secondary                                        | Only if ideal   |
 
 The macro chain: PMI > PPI > CPI > PCE > GDP. Each print builds the
 narrative for the next. The chain tells the story between FOMC meetings.
@@ -92,6 +94,7 @@ narrative for the next. The chain tells the story between FOMC meetings.
 ## Hot vs. In-Line vs. Cold Assessment
 
 Based on probability of a market "temper tantrum". Cross-referenced:
+
 - What the Fed said they're watching for at cycle start
 - What prior prints in the chain showed
 - Whether consensus expectations were realistic
@@ -100,11 +103,11 @@ Based on probability of a market "temper tantrum". Cross-referenced:
 
 ## Trading Models
 
-| Model | Condition | Key Feature |
-|-------|-----------|-------------|
-| 40/40 Club | Moderate volatility, clear levels | 15-pt confluence scoring |
-| Flush | Overextended move, IPEC exhaustion | Contrarian entry at last line of defense |
-| Ripper | High-momentum, news-driven breakout | Ride the synchronicity, trail tight |
+| Model      | Condition                           | Key Feature                              |
+| ---------- | ----------------------------------- | ---------------------------------------- |
+| 40/40 Club | Moderate volatility, clear levels   | 15-pt confluence scoring                 |
+| Flush      | Overextended move, IPEC exhaustion  | Contrarian entry at last line of defense |
+| Ripper     | High-momentum, news-driven breakout | Ride the synchronicity, trail tight      |
 
 All models share: scale-in logic, 4-phase trailing stops, 100 EMA
 primary target, cycle levels (25-pt/50-pt based on ATR), PDPT hard cap.
@@ -130,6 +133,7 @@ primary target, cycle levels (25-pt/50-pt based on ATR), PDPT hard cap.
 ## Tape Reading
 
 Reading the 1000-tick chart for synchronicity between ES and NQ:
+
 - Institutional positioning bias during inefficient conditions
 - Sweep-and-bounce patterns at key Fibonacci levels
 - Correlation breaks between instruments

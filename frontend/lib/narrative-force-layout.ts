@@ -1,5 +1,5 @@
 // [claude-code 2026-03-28] S7: Force-directed layout config for NarrativeFlow mind map
-import type { NarrativeCategory } from './narrative-types';
+import type { NarrativeCategory } from "./narrative-types";
 export {
   NARRATIVE_THREADS,
   THREAD_MAP,
@@ -13,33 +13,36 @@ export {
   formatDateShort,
   deriveIvScore,
   deriveCyclicality,
-} from './narrative-territory-layout';
+} from "./narrative-territory-layout";
 
 // Category cluster positions — arranged in a circle for visual balance
-export const CATEGORY_CENTERS: Record<NarrativeCategory, { x: number; y: number }> = {
-  geopolitical:      { x: -400, y: -250 },
-  monetary:          { x: 400,  y: -250 },
-  macroeconomic:     { x: 0,    y: -350 },
-  'market-structure': { x: -400, y: 250 },
-  earnings:          { x: 400,  y: 250 },
-  'supply-chain':    { x: 0,    y: 350 },
-  'black-swan':      { x: 0,    y: 0 },
+export const CATEGORY_CENTERS: Record<
+  NarrativeCategory,
+  { x: number; y: number }
+> = {
+  geopolitical: { x: -400, y: -250 },
+  monetary: { x: 400, y: -250 },
+  macroeconomic: { x: 0, y: -350 },
+  "market-structure": { x: -400, y: 250 },
+  earnings: { x: 400, y: 250 },
+  "supply-chain": { x: 0, y: 350 },
+  "black-swan": { x: 0, y: 0 },
 };
 
 export const CATEGORY_COLORS: Record<NarrativeCategory, string> = {
-  geopolitical: '#F59E0B',
-  monetary: '#8B5CF6',
-  macroeconomic: '#3B82F6',
-  'market-structure': '#EC4899',
-  earnings: '#34D399',
-  'supply-chain': '#14B8A6',
-  'black-swan': '#EF4444',
+  geopolitical: "#F59E0B",
+  monetary: "#8B5CF6",
+  macroeconomic: "#3B82F6",
+  "market-structure": "#EC4899",
+  earnings: "#34D399",
+  "supply-chain": "#14B8A6",
+  "black-swan": "#EF4444",
 };
 
 // Severity → node radius
 export function severityRadius(severity: string): number {
-  if (severity === 'high') return 24;
-  if (severity === 'medium') return 18;
+  if (severity === "high") return 24;
+  if (severity === "medium") return 18;
   return 14;
 }
 
@@ -63,10 +66,10 @@ export const FORCE_CONFIG = {
 
 // Zoom thresholds for rendering modes
 export const ZOOM_THRESHOLDS = {
-  fullCard: 1.5,    // >= 1.5x: full card with description
-  miniCard: 0.7,    // >= 0.7x: mini card with title
-  bubble: 0.3,      // >= 0.3x: colored bubble with count
-  dot: 0,           // < 0.3x: severity dot only
+  fullCard: 1.5, // >= 1.5x: full card with description
+  miniCard: 0.7, // >= 0.7x: mini card with title
+  bubble: 0.3, // >= 0.3x: colored bubble with count
+  dot: 0, // < 0.3x: severity dot only
 };
 
 // Map date to x position (temporal axis)
@@ -83,7 +86,7 @@ const SIBLING_STACK_OFFSET = 60;
 
 export interface RingCard {
   id: string;
-  severity: 'high' | 'medium' | 'low';
+  severity: "high" | "medium" | "low";
   siblingIndex?: number;
   siblingCount?: number;
   siblingGroupId?: string;
@@ -122,7 +125,9 @@ export function computeConcentricPositions(
       }
     }
     for (const group of siblingGroups.values()) {
-      slots.push(group.sort((a, b) => (a.siblingIndex ?? 0) - (b.siblingIndex ?? 0)));
+      slots.push(
+        group.sort((a, b) => (a.siblingIndex ?? 0) - (b.siblingIndex ?? 0)),
+      );
     }
 
     const n = slots.length;

@@ -1,34 +1,36 @@
 # Handoff Prompt — Phase 1 Resume (QuantConnect + Autopilot)
+
 <!-- claude-code 2026-03-03 | Full rewrite — end-to-end Phase I + Phase II prep -->
 
 ## How to Use This File
 
 Start a new Claude Code session and say:
+
 > "Read `docs/quantconnect/HANDOFF-PROMPT-PHASE1-RESUME.md` and execute Phase I."
 
 ---
 
 ## Scope
 
-| Phase | Scope | Status |
-|-------|-------|--------|
-| **Phase I** | 40/40 Club QC algorithm + Autopilot execution loop wired end-to-end | **In progress** |
+| Phase        | Scope                                                                                  | Status           |
+| ------------ | -------------------------------------------------------------------------------------- | ---------------- |
+| **Phase I**  | 40/40 Club QC algorithm + Autopilot execution loop wired end-to-end                    | **In progress**  |
 | **Phase II** | Flush + Ripper QC algorithms + footprint chart data + catalyst severity classification | Prepped, pending |
 
 ---
 
 ## What Is Already Done
 
-| Work | Files | Status |
-|------|-------|--------|
-| `POST /api/trading/test-trade` endpoint | `backend-hono/src/routes/trading/handlers.ts`, `index.ts` | Done |
-| `fireTestTrade()` — Rithmic primary, ProjectX fallback | `backend-hono/src/services/trading-service.ts` | Done |
-| `placeOrder()` + `searchContracts()` | `backend-hono/src/services/projectx/client.ts` | Done |
-| Rithmic Gateway Python sidecar | `rithmic-gateway/gateway.py`, `requirements.txt`, `.env.example` | Done |
-| `rithmic-service.ts` — calls gateway HTTP API | `backend-hono/src/services/rithmic-service.ts` | Done |
-| Autopilot pipeline — generate / acknowledge / execute routes | `backend-hono/src/routes/autopilot/`, `proposal-service.ts` | Done |
-| QC MCP configured (Docker, cloud API) | `~/.claude.json`, `~/.cursor/mcp.json` | Done |
-| All strategy specs resolved (40/40 Club, Flush, Ripper, Antilag) | `docs/quantconnect/STRATEGY-*.md`, `ANTILAG-SPEC.md` | Done |
+| Work                                                             | Files                                                            | Status |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------- | ------ |
+| `POST /api/trading/test-trade` endpoint                          | `backend-hono/src/routes/trading/handlers.ts`, `index.ts`        | Done   |
+| `fireTestTrade()` — Rithmic primary, ProjectX fallback           | `backend-hono/src/services/trading-service.ts`                   | Done   |
+| `placeOrder()` + `searchContracts()`                             | `backend-hono/src/services/projectx/client.ts`                   | Done   |
+| Rithmic Gateway Python sidecar                                   | `rithmic-gateway/gateway.py`, `requirements.txt`, `.env.example` | Done   |
+| `rithmic-service.ts` — calls gateway HTTP API                    | `backend-hono/src/services/rithmic-service.ts`                   | Done   |
+| Autopilot pipeline — generate / acknowledge / execute routes     | `backend-hono/src/routes/autopilot/`, `proposal-service.ts`      | Done   |
+| QC MCP configured (Docker, cloud API)                            | `~/.claude.json`, `~/.cursor/mcp.json`                           | Done   |
+| All strategy specs resolved (40/40 Club, Flush, Ripper, Antilag) | `docs/quantconnect/STRATEGY-*.md`, `ANTILAG-SPEC.md`             | Done   |
 
 ---
 
@@ -65,6 +67,7 @@ If not connected → restart Claude Code with Docker Desktop running.
 Read `docs/quantconnect/STRATEGY-40-40-CLUB.md` and `docs/quantconnect/ANTILAG-SPEC.md` fully before writing any code.
 
 #### 3a. Create the QC Project via MCP
+
 ```
 Use qc-mcp tool: create_project name="FortyFortyClub" language="Python"
 ```
@@ -313,6 +316,7 @@ POST /api/autopilot/execute
 ```
 
 **Verify this loop works end-to-end:**
+
 1. Fire `POST /api/autopilot/generate` with test market context
 2. Approve via `POST /api/autopilot/acknowledge`
 3. Execute via `POST /api/autopilot/execute`
@@ -338,12 +342,14 @@ When `AUTOPILOT_MODE=autonomous`: after `generate`, if `proposal.confidence >= M
 ## Phase II — Prep (Specs Ready, Build Pending)
 
 ### Flush Algorithm
+
 - Spec: `docs/quantconnect/STRATEGY-FLUSH.md` — **fully resolved**
 - Key differences from 40/40: HTF Fib source (15-min/1H), levels rounded to nearest 25, time-of-day scan gates (soft-bounded), exhaustion pattern prerequisite (3-wick cluster)
 - Reuses: Antilag, scale-in, trailing stop, PDPT logic — all identical to 40/40
 - QC project name: `Flush`
 
 ### Ripper Algorithm
+
 - Spec: `docs/quantconnect/STRATEGY-RIPPER.md` — **mostly resolved, 4 open questions**
 - Key differences from Flush: fundamental catalyst required, HTF fib timeframe selected by event severity, price can be 75–100+ pts from fib, pre-staged news entry mode, volatility spike governor (ATR ≥30 → reduce to ≤5 contracts)
 - Spec: `docs/quantconnect/PRE-STAGED-NEWS-ENTRY.md` — pre-staged mode
@@ -352,12 +358,14 @@ When `AUTOPILOT_MODE=autonomous`: after `generate`, if `proposal.confidence >= M
 ### Phase II Open Questions (must resolve before building)
 
 **Ripper:**
+
 1. Fib invalidation logic — same as 40/40 or different for macro events?
 2. Anchored VWAP specification — catalyst-only anchors resolved? (same 48h rule?)
 3. Pulse/OpenClaw catalyst severity classification rules — how does the algo receive `event_severity`?
 4. DOM heuristic — confirmed skipped; footprint chart as V2 enhancement
 
 **Antilag:**
+
 1. Exact ATR multiplier for "near EMA extreme" — 0.3× confirmed or needs tuning from backtest?
 2. Volume threshold for SIZE confirmation — raw tick count vs relative?
 3. Minimum candle body size filter — doji filter implementation
@@ -412,6 +420,7 @@ To verify in Claude Code: type `/` → `MCP status` → should show `qc-mcp: con
 If not connected: ensure Docker Desktop is running, then restart Claude Code.
 
 Key MCP tools to use:
+
 - `create_project` — create FortyFortyClub, Flush, Ripper projects
 - `create_file` / `update_file` — write algorithm code
 - `create_compile` — check for syntax errors before backtest

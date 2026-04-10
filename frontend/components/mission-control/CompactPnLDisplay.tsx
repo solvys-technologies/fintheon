@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useBackend } from '../../lib/backend';
-import { useAuth } from '../../contexts/AuthContext';
-import type { ProjectXAccount } from '../../../types/api';
+import { useState, useEffect } from "react";
+import { useBackend } from "../../lib/backend";
+import { useAuth } from "../../contexts/AuthContext";
+import type { ProjectXAccount } from "../../../types/api";
 type BrokerAccount = ProjectXAccount & { provider?: string; isPaper?: boolean };
 
 interface CompactPnLDisplayProps {
@@ -12,11 +12,15 @@ interface CompactPnLDisplayProps {
  * Compact P&L display for floating widget
  * Shows current day P&L and optionally the active account
  */
-export function CompactPnLDisplay({ showAccount = true }: CompactPnLDisplayProps) {
+export function CompactPnLDisplay({
+  showAccount = true,
+}: CompactPnLDisplayProps) {
   const backend = useBackend();
   const { isAuthenticated } = useAuth();
   const [currentPnL, setCurrentPnL] = useState<number>(0);
-  const [selectedAccount, setSelectedAccount] = useState<BrokerAccount | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<BrokerAccount | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -43,8 +47,8 @@ export function CompactPnLDisplay({ showAccount = true }: CompactPnLDisplayProps
         }
         return true;
       } catch (err: any) {
-        console.warn('Failed to fetch account data:', err);
-        if (err?.status === 401 || err?.code === 'auth_skipped') {
+        console.warn("Failed to fetch account data:", err);
+        if (err?.status === 401 || err?.code === "auth_skipped") {
           return false;
         }
         return true;
@@ -68,8 +72,9 @@ export function CompactPnLDisplay({ showAccount = true }: CompactPnLDisplayProps
     };
   }, [backend, isAuthenticated, showAccount]);
 
-  const pnlCssColor = currentPnL >= 0 ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)';
-  const pnlSign = currentPnL >= 0 ? '+' : '';
+  const pnlCssColor =
+    currentPnL >= 0 ? "var(--fintheon-bullish)" : "var(--fintheon-bearish)";
+  const pnlSign = currentPnL >= 0 ? "+" : "";
 
   return (
     <div className="flex items-center gap-3">
@@ -89,7 +94,8 @@ export function CompactPnLDisplay({ showAccount = true }: CompactPnLDisplayProps
             {selectedAccount.accountName}
           </span>
           <span className="text-[8px] text-gray-500">
-            {selectedAccount.provider} • {selectedAccount.isPaper ? 'Paper' : 'Live'}
+            {selectedAccount.provider} •{" "}
+            {selectedAccount.isPaper ? "Paper" : "Live"}
           </span>
         </div>
       )}

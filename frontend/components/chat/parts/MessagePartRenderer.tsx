@@ -1,19 +1,22 @@
 // [claude-code 2026-03-06] Composite renderer dispatching each MessagePart to its typed renderer
-import type { MessagePart, ToolResultPart } from '../types';
-import { TextPartRenderer } from './TextPart';
-import { ReasoningPartRenderer } from './ReasoningPart';
-import { ToolCallPartRenderer } from './ToolCallPart';
+import type { MessagePart, ToolResultPart } from "../types";
+import { TextPartRenderer } from "./TextPart";
+import { ReasoningPartRenderer } from "./ReasoningPart";
+import { ToolCallPartRenderer } from "./ToolCallPart";
 
 interface MessagePartRendererProps {
   parts: MessagePart[];
   isStreaming?: boolean;
 }
 
-export function MessagePartRenderer({ parts, isStreaming }: MessagePartRendererProps) {
+export function MessagePartRenderer({
+  parts,
+  isStreaming,
+}: MessagePartRendererProps) {
   // Build lookup of tool-result parts keyed by toolInvocationId
   const resultMap = new Map<string, ToolResultPart>();
   for (const p of parts) {
-    if (p.type === 'tool-result') {
+    if (p.type === "tool-result") {
       resultMap.set(p.toolInvocationId, p);
     }
   }
@@ -21,7 +24,7 @@ export function MessagePartRenderer({ parts, isStreaming }: MessagePartRendererP
   // Find the index of the last text part (for streaming cursor)
   let lastTextIndex = -1;
   for (let i = parts.length - 1; i >= 0; i--) {
-    if (parts[i].type === 'text') {
+    if (parts[i].type === "text") {
       lastTextIndex = i;
       break;
     }
@@ -33,7 +36,7 @@ export function MessagePartRenderer({ parts, isStreaming }: MessagePartRendererP
         const key = `part-${i}-${part.type}`;
 
         switch (part.type) {
-          case 'text':
+          case "text":
             return (
               <TextPartRenderer
                 key={key}
@@ -41,10 +44,10 @@ export function MessagePartRenderer({ parts, isStreaming }: MessagePartRendererP
                 isStreaming={isStreaming && i === lastTextIndex}
               />
             );
-          case 'reasoning':
+          case "reasoning":
             // Reasoning is shown by FintheonThinkingIndicator — skip inline rendering
             return null;
-          case 'tool-invocation':
+          case "tool-invocation":
             return (
               <ToolCallPartRenderer
                 key={key}
@@ -52,7 +55,7 @@ export function MessagePartRenderer({ parts, isStreaming }: MessagePartRendererP
                 result={resultMap.get(part.id)}
               />
             );
-          case 'tool-result':
+          case "tool-result":
             // Handled by tool-invocation above
             return null;
           default:

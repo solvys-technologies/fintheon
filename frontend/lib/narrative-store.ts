@@ -4,8 +4,8 @@
 // [claude-code 2026-03-29] S9-T5-T1: Normalize catalyst tags/narrative fields on load for rope engine
 // [claude-code 2026-03-28] NarrativeFlow localStorage CRUD + useNarrativeStore hook
 // S5-T1: Added viewport + dateFilter state and SET_VIEWPORT / SET_DATE_FILTER actions
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { getMonday } from './narrative-time';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getMonday } from "./narrative-time";
 import type {
   NarrativeFlowState,
   NarrativeSnapshot,
@@ -15,16 +15,16 @@ import type {
   CatalystCard,
   CanvasViewport,
   Rope,
-} from './narrative-types';
-import { DEFAULT_VIEWPORT } from './narrative-types';
-import type { NarrativeThreadRow, NarrativeCardLink } from './services';
+} from "./narrative-types";
+import { DEFAULT_VIEWPORT } from "./narrative-types";
+import type { NarrativeThreadRow, NarrativeCardLink } from "./services";
 
-const STORAGE_KEY = 'fintheon:narrative:v1';
-const SNAPSHOT_KEY = 'fintheon:narrative-snapshot:v1';
-const AGENT_CONFIG_KEY = 'fintheon:narrative-agent:v1';
+const STORAGE_KEY = "fintheon:narrative:v1";
+const SNAPSHOT_KEY = "fintheon:narrative-snapshot:v1";
+const AGENT_CONFIG_KEY = "fintheon:narrative-agent:v1";
 
 export function generateId(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
   }
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -38,17 +38,17 @@ function defaultState(): NarrativeFlowState {
     ropes: [],
     confluenceNodes: [],
     conflicts: [],
-    zoomLevel: 'week',
+    zoomLevel: "week",
     currentWeekStart: getMonday(now).toISOString(),
     selectedCatalystId: null,
     selectedLaneId: null,
-    filterSentiment: 'all',
+    filterSentiment: "all",
     categoryFilter: new Set(),
     severitySort: null,
     heatmapEnabled: false,
     replayMode: false,
     replayPosition: 0,
-    agentProvider: { provider: 'manual', autoApprove: false },
+    agentProvider: { provider: "manual", autoApprove: false },
     viewport: { ...DEFAULT_VIEWPORT },
     dateFilter: null,
   };
@@ -82,7 +82,7 @@ export function saveNarrativeState(state: NarrativeFlowState): void {
 
 // ── Cloud persistence (Supabase app_state) ────────────────────────
 
-const CLOUD_KEY = 'narrative_layout';
+const CLOUD_KEY = "narrative_layout";
 const CLOUD_DEBOUNCE_MS = 2000;
 
 /** Persist layout-relevant state to Supabase via /api/profile/app-state. */
@@ -107,8 +107,11 @@ async function saveNarrativeToCloud(
     };
 
     await fetch(`${API_BASE}/api/profile/app-state`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ state: { [CLOUD_KEY]: payload } }),
     });
   } catch {
@@ -129,18 +132,21 @@ async function loadNarrativeFromCloud(
     });
     if (!res.ok) return null;
 
-    const data = await res.json() as Record<string, unknown>;
+    const data = (await res.json()) as Record<string, unknown>;
     const cloud = data?.[CLOUD_KEY] as Record<string, unknown> | undefined;
     if (!cloud) return null;
 
     return {
       ropes: (cloud.ropes as Rope[]) ?? [],
       viewport: (cloud.viewport as CanvasViewport) ?? DEFAULT_VIEWPORT,
-      zoomLevel: (cloud.zoomLevel as NarrativeFlowState['zoomLevel']) ?? 'week',
+      zoomLevel: (cloud.zoomLevel as NarrativeFlowState["zoomLevel"]) ?? "week",
       currentWeekStart: (cloud.currentWeekStart as string) ?? undefined,
-      filterSentiment: (cloud.filterSentiment as NarrativeFlowState['filterSentiment']) ?? 'all',
+      filterSentiment:
+        (cloud.filterSentiment as NarrativeFlowState["filterSentiment"]) ??
+        "all",
       heatmapEnabled: (cloud.heatmapEnabled as boolean) ?? false,
-      dateFilter: (cloud.dateFilter as NarrativeFlowState['dateFilter']) ?? null,
+      dateFilter:
+        (cloud.dateFilter as NarrativeFlowState["dateFilter"]) ?? null,
     };
   } catch {
     return null;
@@ -168,10 +174,10 @@ export function saveSnapshot(snapshot: NarrativeSnapshot): void {
 export function loadAgentConfig(): AgentProviderConfig {
   try {
     const raw = localStorage.getItem(AGENT_CONFIG_KEY);
-    if (!raw) return { provider: 'manual', autoApprove: false };
+    if (!raw) return { provider: "manual", autoApprove: false };
     return JSON.parse(raw);
   } catch {
-    return { provider: 'manual', autoApprove: false };
+    return { provider: "manual", autoApprove: false };
   }
 }
 
@@ -185,19 +191,19 @@ export function saveAgentConfig(config: AgentProviderConfig): void {
 
 // ── DB-backed lane + card-link sync ──────────────────────────────
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 function threadToLane(t: NarrativeThreadRow, idx: number): NarrativeLane {
   return {
     id: t.slug,
     title: t.title,
     instruments: [],
-    directionBias: 'neutral',
-    category: 'macroeconomic',
-    status: (t.status as NarrativeLane['status']) ?? 'active',
+    directionBias: "neutral",
+    category: "macroeconomic",
+    status: (t.status as NarrativeLane["status"]) ?? "active",
     dateRange: { start: new Date().toISOString().slice(0, 10), end: null },
     healthScore: 50,
-    color: t.color ?? '#c79f4a',
+    color: t.color ?? "#c79f4a",
     order: t.sort_order ?? idx,
     parentId: null,
     forkDate: null,
@@ -211,7 +217,7 @@ async function fetchDbThreads(): Promise<NarrativeLane[]> {
   try {
     const res = await fetch(`${API_BASE}/api/narrative/threads`);
     if (!res.ok) return [];
-    const { threads } = await res.json() as { threads: NarrativeThreadRow[] };
+    const { threads } = (await res.json()) as { threads: NarrativeThreadRow[] };
     return threads.map(threadToLane);
   } catch {
     return [];
@@ -222,7 +228,7 @@ async function fetchDbCardLinks(): Promise<NarrativeCardLink[]> {
   try {
     const res = await fetch(`${API_BASE}/api/narrative/card-links`);
     if (!res.ok) return [];
-    const { links } = await res.json() as { links: NarrativeCardLink[] };
+    const { links } = (await res.json()) as { links: NarrativeCardLink[] };
     return links;
   } catch {
     return [];
@@ -235,29 +241,39 @@ async function fetchDbCardLinks(): Promise<NarrativeCardLink[]> {
  */
 async function fetchDbCatalysts(since?: string): Promise<CatalystCard[]> {
   try {
-    const params = since ? `?since=${encodeURIComponent(since)}` : '';
+    const params = since ? `?since=${encodeURIComponent(since)}` : "";
     const res = await fetch(`${API_BASE}/api/narrative/catalysts${params}`);
     if (!res.ok) return [];
-    const { catalysts } = await res.json() as { catalysts: Array<Record<string, unknown>> };
+    const { catalysts } = (await res.json()) as {
+      catalysts: Array<Record<string, unknown>>;
+    };
     return catalysts.map((c: Record<string, unknown>) => ({
-      id: String(c.id ?? ''),
-      title: String(c.title ?? ''),
-      description: String(c.description ?? ''),
+      id: String(c.id ?? ""),
+      title: String(c.title ?? ""),
+      description: String(c.description ?? ""),
       date: String(c.date ?? new Date().toISOString()),
-      sentiment: (c.sentiment === 'bullish' ? 'bullish' : 'bearish') as CatalystCard['sentiment'],
-      severity: (['high', 'medium', 'low'].includes(c.severity as string) ? c.severity : 'medium') as CatalystCard['severity'],
-      source: 'riskflow' as const,
-      narrativeIds: Array.isArray(c.narrativeIds) ? c.narrativeIds as string[] : [],
-      narrativeThreads: Array.isArray(c.narrativeThreads) ? c.narrativeThreads as string[] : [],
+      sentiment: (c.sentiment === "bullish"
+        ? "bullish"
+        : "bearish") as CatalystCard["sentiment"],
+      severity: (["high", "medium", "low"].includes(c.severity as string)
+        ? c.severity
+        : "medium") as CatalystCard["severity"],
+      source: "riskflow" as const,
+      narrativeIds: Array.isArray(c.narrativeIds)
+        ? (c.narrativeIds as string[])
+        : [],
+      narrativeThreads: Array.isArray(c.narrativeThreads)
+        ? (c.narrativeThreads as string[])
+        : [],
       isGhost: false,
       templateType: null,
       position: null,
-      tags: Array.isArray(c.tags) ? c.tags as string[] : [],
-      category: (c.category ?? 'macroeconomic') as CatalystCard['category'],
-      riskflowItemId: String(c.riskflowItemId ?? c.id ?? ''),
-      marketImpact: c.marketImpact as CatalystCard['marketImpact'],
+      tags: Array.isArray(c.tags) ? (c.tags as string[]) : [],
+      category: (c.category ?? "macroeconomic") as CatalystCard["category"],
+      riskflowItemId: String(c.riskflowItemId ?? c.id ?? ""),
+      marketImpact: c.marketImpact as CatalystCard["marketImpact"],
       narrative: (c.narrative as string) ?? null,
-      status: (c.status ?? 'active') as CatalystCard['status'],
+      status: (c.status ?? "active") as CatalystCard["status"],
       drillDepth: 0,
       createdAt: String(c.createdAt ?? new Date().toISOString()),
       updatedAt: String(c.updatedAt ?? new Date().toISOString()),
@@ -269,11 +285,14 @@ async function fetchDbCatalysts(since?: string): Promise<CatalystCard[]> {
 
 /** Strip `backend-` or `rf-backend-` prefix to get raw tweet_id for DB matching */
 function stripIdPrefix(id: string): string {
-  return id.replace(/^(rf-)?backend-/, '');
+  return id.replace(/^(rf-)?backend-/, "");
 }
 
 /** Apply DB card-links to catalysts — sets narrativeThreads + narrative fields */
-function enrichCatalystsWithLinks(catalysts: CatalystCard[], links: NarrativeCardLink[]): CatalystCard[] {
+function enrichCatalystsWithLinks(
+  catalysts: CatalystCard[],
+  links: NarrativeCardLink[],
+): CatalystCard[] {
   if (links.length === 0) return catalysts;
   const linkMap = new Map<string, string[]>();
   for (const link of links) {
@@ -281,11 +300,12 @@ function enrichCatalystsWithLinks(catalysts: CatalystCard[], links: NarrativeCar
     arr.push(link.thread_slug);
     linkMap.set(link.card_id, arr);
   }
-  return catalysts.map(c => {
+  return catalysts.map((c) => {
     // DB stores raw tweet_id; catalysts may have backend- or rf-backend- prefix
     const rawId = stripIdPrefix(c.id);
-    const rawRfId = c.riskflowItemId ? stripIdPrefix(c.riskflowItemId) : '';
-    const threads = linkMap.get(c.id) ?? linkMap.get(rawId) ?? linkMap.get(rawRfId) ?? [];
+    const rawRfId = c.riskflowItemId ? stripIdPrefix(c.riskflowItemId) : "";
+    const threads =
+      linkMap.get(c.id) ?? linkMap.get(rawId) ?? linkMap.get(rawRfId) ?? [];
     if (threads.length === 0) return c;
     return {
       ...c,
@@ -307,21 +327,31 @@ function takeSnapshotFromState(state: NarrativeFlowState): NarrativeSnapshot {
   };
 }
 
-function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFlowState {
+function reduce(
+  state: NarrativeFlowState,
+  action: NarrativeAction,
+): NarrativeFlowState {
   const now = new Date().toISOString();
   switch (action.type) {
-    case 'ADD_LANE': {
-      const lane: NarrativeLane = { ...action.lane, id: generateId(), createdAt: now, updatedAt: now };
+    case "ADD_LANE": {
+      const lane: NarrativeLane = {
+        ...action.lane,
+        id: generateId(),
+        createdAt: now,
+        updatedAt: now,
+      };
       return { ...state, lanes: [...state.lanes, lane] };
     }
-    case 'UPDATE_LANE':
+    case "UPDATE_LANE":
       return {
         ...state,
-        lanes: state.lanes.map((l) => (l.id === action.id ? { ...l, ...action.updates, updatedAt: now } : l)),
+        lanes: state.lanes.map((l) =>
+          l.id === action.id ? { ...l, ...action.updates, updatedAt: now } : l,
+        ),
       };
-    case 'REMOVE_LANE':
+    case "REMOVE_LANE":
       return { ...state, lanes: state.lanes.filter((l) => l.id !== action.id) };
-    case 'REORDER_LANES': {
+    case "REORDER_LANES": {
       const ordered = action.ids
         .map((id, i) => {
           const lane = state.lanes.find((l) => l.id === id);
@@ -331,7 +361,7 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
       const remaining = state.lanes.filter((l) => !action.ids.includes(l.id));
       return { ...state, lanes: [...ordered, ...remaining] };
     }
-    case 'FORK_LANE': {
+    case "FORK_LANE": {
       const parent = state.lanes.find((l) => l.id === action.laneId);
       if (!parent) return state;
       const fork: NarrativeLane = {
@@ -346,22 +376,32 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
       };
       return { ...state, lanes: [...state.lanes, fork] };
     }
-    case 'ADD_CATALYST': {
-      const catalyst: CatalystCard = { ...action.catalyst, drillDepth: action.catalyst.drillDepth ?? 0, id: generateId(), createdAt: now, updatedAt: now };
+    case "ADD_CATALYST": {
+      const catalyst: CatalystCard = {
+        ...action.catalyst,
+        drillDepth: action.catalyst.drillDepth ?? 0,
+        id: generateId(),
+        createdAt: now,
+        updatedAt: now,
+      };
       return { ...state, catalysts: [...state.catalysts, catalyst] };
     }
-    case 'BULK_ADD_CATALYSTS': {
-      const existingIds = new Set(state.catalysts.map(c => c.id));
-      const newOnes = action.catalysts.filter(c => !existingIds.has(c.id));
+    case "BULK_ADD_CATALYSTS": {
+      const existingIds = new Set(state.catalysts.map((c) => c.id));
+      const newOnes = action.catalysts.filter((c) => !existingIds.has(c.id));
       return { ...state, catalysts: [...state.catalysts, ...newOnes] };
     }
-    case 'IMPORT_CATALYSTS': {
+    case "IMPORT_CATALYSTS": {
       const now2 = new Date().toISOString();
       const newCatalysts = action.catalysts
-        .filter(c => !state.catalysts.some(existing =>
-          existing.title === c.title && existing.date === c.date
-        ))
-        .map(c => ({
+        .filter(
+          (c) =>
+            !state.catalysts.some(
+              (existing) =>
+                existing.title === c.title && existing.date === c.date,
+            ),
+        )
+        .map((c) => ({
           ...c,
           id: generateId(),
           createdAt: now2,
@@ -369,57 +409,78 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
         }));
       return { ...state, catalysts: [...state.catalysts, ...newCatalysts] };
     }
-    case 'UPDATE_CATALYST':
+    case "UPDATE_CATALYST":
       return {
         ...state,
         catalysts: state.catalysts.map((c) =>
-          c.id === action.id ? { ...c, ...action.updates, updatedAt: now } : c
+          c.id === action.id ? { ...c, ...action.updates, updatedAt: now } : c,
         ),
       };
-    case 'REMOVE_CATALYST':
-      return { ...state, catalysts: state.catalysts.filter((c) => c.id !== action.id) };
-    case 'MOVE_CATALYST':
+    case "REMOVE_CATALYST":
+      return {
+        ...state,
+        catalysts: state.catalysts.filter((c) => c.id !== action.id),
+      };
+    case "MOVE_CATALYST":
       return {
         ...state,
         catalysts: state.catalysts.map((c) =>
-          c.id === action.id ? { ...c, date: action.date, position: action.position, updatedAt: now } : c
+          c.id === action.id
+            ? {
+                ...c,
+                date: action.date,
+                position: action.position,
+                updatedAt: now,
+              }
+            : c,
         ),
       };
-    case 'TAG_CATALYST':
+    case "TAG_CATALYST":
       return {
         ...state,
         catalysts: state.catalysts.map((c) =>
-          c.id === action.catalystId ? { ...c, tags: action.tags, updatedAt: now } : c
+          c.id === action.catalystId
+            ? { ...c, tags: action.tags, updatedAt: now }
+            : c,
         ),
       };
-    case 'ADD_ROPE': {
+    case "ADD_ROPE": {
       const rope = { ...action.rope, id: generateId(), createdAt: now };
       return { ...state, ropes: [...state.ropes, rope] };
     }
-    case 'REMOVE_ROPE':
+    case "REMOVE_ROPE":
       return { ...state, ropes: state.ropes.filter((r) => r.id !== action.id) };
-    case 'APPROVE_ROPE':
+    case "APPROVE_ROPE":
       return {
         ...state,
-        ropes: state.ropes.map((r) => (r.id === action.id ? { ...r, approved: true } : r)),
+        ropes: state.ropes.map((r) =>
+          r.id === action.id ? { ...r, approved: true } : r,
+        ),
       };
-    case 'ADD_CONFLUENCE': {
+    case "ADD_CONFLUENCE": {
       const node = { ...action.node, id: generateId() };
       return { ...state, confluenceNodes: [...state.confluenceNodes, node] };
     }
-    case 'REMOVE_CONFLUENCE':
-      return { ...state, confluenceNodes: state.confluenceNodes.filter((n) => n.id !== action.id) };
-    case 'ADD_CONFLICT': {
+    case "REMOVE_CONFLUENCE":
+      return {
+        ...state,
+        confluenceNodes: state.confluenceNodes.filter(
+          (n) => n.id !== action.id,
+        ),
+      };
+    case "ADD_CONFLICT": {
       const conflict = { ...action.conflict, id: generateId() };
       return { ...state, conflicts: [...state.conflicts, conflict] };
     }
-    case 'RESOLVE_CONFLICT':
+    case "RESOLVE_CONFLICT":
       return {
         ...state,
-        conflicts: state.conflicts.map((c) => (c.id === action.id ? { ...c, resolved: true } : c)),
+        conflicts: state.conflicts.map((c) =>
+          c.id === action.id ? { ...c, resolved: true } : c,
+        ),
       };
-    case 'HIGHLIGHT_BRANCH': {
-      const parent = state.catalysts.find(c => c.id === action.parentId);
+    case "HIGHLIGHT_BRANCH": {
+      const parent = state.catalysts.find((c) => c.id === action.parentId);
       if (!parent) return state;
       const childId = generateId();
       const child: CatalystCard = {
@@ -428,7 +489,7 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
         parentCardId: action.parentId,
         parentHighlight: action.highlightText,
         drillDepth: parent.drillDepth + 1,
-        source: 'research',
+        source: "research",
         createdAt: now,
         updatedAt: now,
       };
@@ -440,66 +501,84 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
       const rope: Rope = {
         id: generateId(),
         fromId: action.parentId,
-        fromType: 'catalyst',
+        fromType: "catalyst",
         toId: childId,
-        toType: 'catalyst',
-        polarity: 'reinforcing',
+        toType: "catalyst",
+        polarity: "reinforcing",
         weight: 1,
         approved: true,
         createdAt: now,
       };
       return {
         ...state,
-        catalysts: [...state.catalysts.map(c => c.id === action.parentId ? updatedParent : c), child],
+        catalysts: [
+          ...state.catalysts.map((c) =>
+            c.id === action.parentId ? updatedParent : c,
+          ),
+          child,
+        ],
         ropes: [...state.ropes, rope],
       };
     }
-    case 'ADD_RESEARCH_BULLETS': {
+    case "ADD_RESEARCH_BULLETS": {
       return {
         ...state,
-        catalysts: state.catalysts.map(c =>
-          c.id === action.cardId ? { ...c, researchBullets: action.bullets, updatedAt: now } : c
+        catalysts: state.catalysts.map((c) =>
+          c.id === action.cardId
+            ? { ...c, researchBullets: action.bullets, updatedAt: now }
+            : c,
         ),
       };
     }
-    case 'MOVE_CARD_TO_LANE': {
+    case "MOVE_CARD_TO_LANE": {
       return {
         ...state,
-        catalysts: state.catalysts.map(c =>
-          c.id === action.cardId ? { ...c, narrativeIds: [action.targetLaneId], updatedAt: now } : c
+        catalysts: state.catalysts.map((c) =>
+          c.id === action.cardId
+            ? { ...c, narrativeIds: [action.targetLaneId], updatedAt: now }
+            : c,
         ),
       };
     }
-    case 'SET_ZOOM':
+    case "SET_ZOOM":
       return { ...state, zoomLevel: action.level };
-    case 'SET_WEEK':
+    case "SET_WEEK":
       return { ...state, currentWeekStart: action.weekStart };
-    case 'SET_FILTER':
+    case "SET_FILTER":
       return { ...state, filterSentiment: action.sentiment };
-    case 'TOGGLE_HEATMAP':
+    case "TOGGLE_HEATMAP":
       return { ...state, heatmapEnabled: !state.heatmapEnabled };
-    case 'SET_REPLAY_MODE':
+    case "SET_REPLAY_MODE":
       return { ...state, replayMode: action.enabled };
-    case 'SET_REPLAY_POSITION':
+    case "SET_REPLAY_POSITION":
       return { ...state, replayPosition: action.position };
-    case 'SET_VIEWPORT':
+    case "SET_VIEWPORT":
       return { ...state, viewport: { ...state.viewport, ...action.viewport } };
-    case 'SET_DATE_FILTER':
+    case "SET_DATE_FILTER":
       return { ...state, dateFilter: action.filter };
-    case 'TAKE_SNAPSHOT':
+    case "TAKE_SNAPSHOT":
       return state; // handled outside reducer
-    case 'RESTORE_SNAPSHOT':
+    case "RESTORE_SNAPSHOT":
       return state; // handled outside reducer
     default:
       return state;
   }
 }
 
-const DESTRUCTIVE_ACTIONS = new Set(['REMOVE_LANE', 'REMOVE_CATALYST', 'REMOVE_ROPE', 'RESTORE_SNAPSHOT']);
+const DESTRUCTIVE_ACTIONS = new Set([
+  "REMOVE_LANE",
+  "REMOVE_CATALYST",
+  "REMOVE_ROPE",
+  "RESTORE_SNAPSHOT",
+]);
 
-export function useNarrativeStore(getAccessToken?: () => Promise<string | null>) {
+export function useNarrativeStore(
+  getAccessToken?: () => Promise<string | null>,
+) {
   const [state, setState] = useState<NarrativeFlowState>(loadNarrativeState);
-  const [snapshot, setSnapshot] = useState<NarrativeSnapshot | null>(loadSnapshot);
+  const [snapshot, setSnapshot] = useState<NarrativeSnapshot | null>(
+    loadSnapshot,
+  );
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cloudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dbLoadedRef = useRef(false);
@@ -535,7 +614,7 @@ export function useNarrativeStore(getAccessToken?: () => Promise<string | null>)
       const cloud = await loadNarrativeFromCloud(getTokenRef.current!);
       if (!cloud) return;
 
-      setState(prev => {
+      setState((prev) => {
         const next = { ...prev, ...cloud };
         // Write back to localStorage so offline has latest cloud state
         saveNarrativeState(next);
@@ -564,12 +643,14 @@ export function useNarrativeStore(getAccessToken?: () => Promise<string | null>)
         lastCatalystFetchRef.current = new Date().toISOString();
       }
 
-      setState(prev => {
+      setState((prev) => {
         // DB threads are the canonical lanes — replace any localStorage lanes
         const lanes = dbLanes.length > 0 ? dbLanes : prev.lanes;
         // Merge DB catalysts into local state (dedup by ID)
-        const existingIds = new Set(prev.catalysts.map(c => c.id));
-        const newDbCatalysts = dbCatalysts.filter(c => !existingIds.has(c.id));
+        const existingIds = new Set(prev.catalysts.map((c) => c.id));
+        const newDbCatalysts = dbCatalysts.filter(
+          (c) => !existingIds.has(c.id),
+        );
         const mergedCatalysts = [...prev.catalysts, ...newDbCatalysts];
         // Enrich all catalysts with DB card-links
         const catalysts = enrichCatalystsWithLinks(mergedCatalysts, dbLinks);
@@ -586,17 +667,19 @@ export function useNarrativeStore(getAccessToken?: () => Promise<string | null>)
     const CATALYST_POLL_MS = 60_000;
     const interval = setInterval(async () => {
       // Only poll when tab is visible
-      if (document.visibilityState !== 'visible') return;
+      if (document.visibilityState !== "visible") return;
 
       const newCatalysts = await fetchDbCatalysts(lastCatalystFetchRef.current);
       if (newCatalysts.length === 0) return;
 
       lastCatalystFetchRef.current = new Date().toISOString();
-      console.debug(`[NarrativeStore] Auto-populated ${newCatalysts.length} new catalysts from DB`);
+      console.debug(
+        `[NarrativeStore] Auto-populated ${newCatalysts.length} new catalysts from DB`,
+      );
 
-      setState(prev => {
-        const existingIds = new Set(prev.catalysts.map(c => c.id));
-        const fresh = newCatalysts.filter(c => !existingIds.has(c.id));
+      setState((prev) => {
+        const existingIds = new Set(prev.catalysts.map((c) => c.id));
+        const fresh = newCatalysts.filter((c) => !existingIds.has(c.id));
         if (fresh.length === 0) return prev;
         const next = { ...prev, catalysts: [...prev.catalysts, ...fresh] };
         scheduleSave(next);
@@ -617,14 +700,14 @@ export function useNarrativeStore(getAccessToken?: () => Promise<string | null>)
           saveSnapshot(snap);
         }
 
-        if (action.type === 'TAKE_SNAPSHOT') {
+        if (action.type === "TAKE_SNAPSHOT") {
           const snap = takeSnapshotFromState(prev);
           setSnapshot(snap);
           saveSnapshot(snap);
           return prev;
         }
 
-        if (action.type === 'RESTORE_SNAPSHOT') {
+        if (action.type === "RESTORE_SNAPSHOT") {
           const snap = loadSnapshot();
           if (!snap) return prev;
           const restored: NarrativeFlowState = {
@@ -644,7 +727,7 @@ export function useNarrativeStore(getAccessToken?: () => Promise<string | null>)
         return next;
       });
     },
-    [scheduleSave]
+    [scheduleSave],
   );
 
   return { state, snapshot, dispatch };

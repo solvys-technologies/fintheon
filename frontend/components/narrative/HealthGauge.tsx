@@ -1,5 +1,5 @@
 // [claude-code 2026-03-06] SVG arc gauge for narrative health score (0-100)
-import { useState } from 'react';
+import { useState } from "react";
 
 interface HealthGaugeProps {
   score: number;
@@ -13,7 +13,12 @@ export function HealthGauge({ score, size = 28 }: HealthGaugeProps) {
   const circumference = Math.PI * radius;
   const fillLength = (Math.max(0, Math.min(100, score)) / 100) * circumference;
 
-  const color = score >= 70 ? '#34D399' : score >= 40 ? 'var(--fintheon-accent)' : '#EF4444';
+  const color =
+    score >= 70
+      ? "#34D399"
+      : score >= 40
+        ? "var(--fintheon-accent)"
+        : "#EF4444";
 
   return (
     <div
@@ -40,13 +45,13 @@ export function HealthGauge({ score, size = 28 }: HealthGaugeProps) {
           strokeWidth={2}
           strokeLinecap="round"
           strokeDasharray={`${fillLength} ${circumference}`}
-          style={{ transition: 'stroke-dasharray 600ms ease' }}
+          style={{ transition: "stroke-dasharray 600ms ease" }}
         />
       </svg>
       {/* Score number */}
       <span
         className="absolute text-center font-mono font-bold"
-        style={{ fontSize: size * 0.28, color, top: '45%' }}
+        style={{ fontSize: size * 0.28, color, top: "45%" }}
       >
         {Math.round(score)}
       </span>
@@ -60,7 +65,13 @@ export function HealthGauge({ score, size = 28 }: HealthGaugeProps) {
   );
 }
 
-function describeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number): string {
+function describeArc(
+  cx: number,
+  cy: number,
+  r: number,
+  startAngle: number,
+  endAngle: number,
+): string {
   const startRad = (startAngle * Math.PI) / 180;
   const endRad = (endAngle * Math.PI) / 180;
   const x1 = cx + r * Math.cos(startRad);

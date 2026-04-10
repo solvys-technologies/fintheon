@@ -54,14 +54,15 @@ Authorization: Bearer YOUR_JWT_TOKEN
 
 The Gateway API employs rate limiting to ensure fair usage and system stability.
 
-| Endpoint(s) | Limit |
-|------------|-------|
-| `POST /api/History/retrieveBars` | 50 requests / 30 seconds |
-| All other endpoints | 200 requests / 60 seconds |
+| Endpoint(s)                      | Limit                     |
+| -------------------------------- | ------------------------- |
+| `POST /api/History/retrieveBars` | 50 requests / 30 seconds  |
+| All other endpoints              | 200 requests / 60 seconds |
 
 ### Handling Rate Limits
 
 If you exceed rate limits, the API returns **HTTP 429 Too Many Requests**. You should:
+
 1. Reduce request frequency
 2. Implement exponential backoff
 3. Retry after a short delay
@@ -101,6 +102,7 @@ If you exceed rate limits, the API returns **HTTP 429 Too Many Requests**. You s
 ```
 
 **Order Types:**
+
 - `1` = Limit
 - `2` = Market
 - `4` = Stop
@@ -202,7 +204,7 @@ curl -X 'POST' \
 
 ```typescript
 {
-  accountId: number;           // Required: The account ID
+  accountId: number; // Required: The account ID
 }
 ```
 
@@ -256,7 +258,7 @@ curl -X 'POST' \
 
 ```typescript
 {
-  accountId: number;           // Required: The account ID
+  accountId: number; // Required: The account ID
 }
 ```
 
@@ -269,7 +271,7 @@ curl -X 'POST' \
     accountId: number;
     contractId: string;
     creationTimestamp: string;
-    type: PositionType;        // 1 = Long, 2 = Short
+    type: PositionType; // 1 = Long, 2 = Short
     size: number;
     averagePrice: number;
   }>;
@@ -303,8 +305,8 @@ curl -X 'POST' \
 
 ```typescript
 {
-  accountId: number;           // Required: The account ID
-  contractId: string;          // Required: The contract ID to close
+  accountId: number; // Required: The account ID
+  contractId: string; // Required: The contract ID to close
 }
 ```
 
@@ -345,8 +347,8 @@ curl -X 'POST' \
 
 ```typescript
 {
-  searchText: string;          // Required: Contract name to search (e.g., "NQ")
-  live: boolean;                // Required: Search sim/live contracts
+  searchText: string; // Required: Contract name to search (e.g., "NQ")
+  live: boolean; // Required: Search sim/live contracts
 }
 ```
 
@@ -355,13 +357,13 @@ curl -X 'POST' \
 ```typescript
 {
   contracts: Array<{
-    id: string;                 // Contract ID (e.g., "CON.F.US.ENQ.U25")
-    name: string;               // Contract name (e.g., "NQU5")
-    description: string;        // Full description
-    tickSize: number;           // Minimum price increment
-    tickValue: number;          // Dollar value per tick
-    activeContract: boolean;    // Whether contract is currently active
-    symbolId: string;           // Symbol ID (e.g., "F.US.ENQ")
+    id: string; // Contract ID (e.g., "CON.F.US.ENQ.U25")
+    name: string; // Contract name (e.g., "NQU5")
+    description: string; // Full description
+    tickSize: number; // Minimum price increment
+    tickValue: number; // Dollar value per tick
+    activeContract: boolean; // Whether contract is currently active
+    symbolId: string; // Symbol ID (e.g., "F.US.ENQ")
   }>;
   success: boolean;
   errorCode: number;
@@ -394,7 +396,7 @@ curl -X 'POST' \
 
 ```typescript
 {
-  contractId: string;           // Required: The contract ID
+  contractId: string; // Required: The contract ID
 }
 ```
 
@@ -410,7 +412,7 @@ curl -X 'POST' \
     tickValue: number;
     activeContract: boolean;
     symbolId: string;
-  };
+  }
   success: boolean;
   errorCode: number;
   errorMessage: string | null;
@@ -441,7 +443,7 @@ curl -X 'POST' \
 
 ```typescript
 {
-  live: boolean;                // Required: true for live, false for sim
+  live: boolean; // Required: true for live, false for sim
 }
 ```
 
@@ -490,18 +492,19 @@ curl -X 'POST' \
 
 ```typescript
 {
-  contractId: string;          // Required: The contract ID
-  live: boolean;                // Required: Use sim or live data
-  startTime: string;            // Required: ISO 8601 datetime (e.g., "2024-12-01T00:00:00Z")
-  endTime: string;              // Required: ISO 8601 datetime
-  unit: number;                 // Required: Time unit (see below)
-  unitNumber: number;           // Required: Number of units per bar
-  limit: number;                // Required: Max bars to retrieve
-  includePartialBar: boolean;  // Required: Include current incomplete bar
+  contractId: string; // Required: The contract ID
+  live: boolean; // Required: Use sim or live data
+  startTime: string; // Required: ISO 8601 datetime (e.g., "2024-12-01T00:00:00Z")
+  endTime: string; // Required: ISO 8601 datetime
+  unit: number; // Required: Time unit (see below)
+  unitNumber: number; // Required: Number of units per bar
+  limit: number; // Required: Max bars to retrieve
+  includePartialBar: boolean; // Required: Include current incomplete bar
 }
 ```
 
 **Time Units:**
+
 - `1` = Second
 - `2` = Minute
 - `3` = Hour
@@ -514,12 +517,12 @@ curl -X 'POST' \
 ```typescript
 {
   bars: Array<{
-    t: string;                  // Timestamp (ISO 8601)
-    o: number;                  // Open price
-    h: number;                  // High price
-    l: number;                  // Low price
-    c: number;                  // Close price
-    v: number;                  // Volume
+    t: string; // Timestamp (ISO 8601)
+    o: number; // Open price
+    h: number; // High price
+    l: number; // Low price
+    c: number; // Close price
+    v: number; // Volume
   }>;
   success: boolean;
   errorCode: number;
@@ -555,12 +558,14 @@ curl -X 'POST' \
 The ProjectX Real-Time API uses **SignalR** (WebSocket) to provide real-time updates for accounts, orders, positions, balances, and market data.
 
 **SignalR Hubs:**
+
 - **User Hub** (`/hubs/user`): Account, order, position, and trade updates
 - **Market Hub** (`/hubs/market`): Market data (quotes, trades, depth of market)
 
 **What is SignalR?**
 
 SignalR is a Microsoft framework that simplifies real-time web communication. It:
+
 - Supports multiple transport protocols (WebSockets, SSE, Long Polling)
 - Handles connection management and message routing
 - Automatically selects the best transport mechanism
@@ -575,18 +580,21 @@ SignalR is a Microsoft framework that simplifies real-time web communication. It
 **Connection URL:** `https://rtc.topstepx.com/hubs/user?access_token=YOUR_JWT_TOKEN`
 
 **Subscribe Methods:**
+
 - `SubscribeAccounts()` - Subscribe to account updates
 - `SubscribeOrders(accountId)` - Subscribe to order updates for account
 - `SubscribePositions(accountId)` - Subscribe to position updates for account
 - `SubscribeTrades(accountId)` - Subscribe to trade updates for account
 
 **Unsubscribe Methods:**
+
 - `UnsubscribeAccounts()`
 - `UnsubscribeOrders(accountId)`
 - `UnsubscribePositions(accountId)`
 - `UnsubscribeTrades(accountId)`
 
 **Event Handlers:**
+
 - `GatewayUserAccount` - Account updates
 - `GatewayUserOrder` - Order updates
 - `GatewayUserPosition` - Position updates
@@ -595,60 +603,61 @@ SignalR is a Microsoft framework that simplifies real-time web communication. It
 **Example Implementation (JavaScript/TypeScript):**
 
 ```typescript
-import { HubConnectionBuilder, HttpTransportType } from '@microsoft/signalr';
+import { HubConnectionBuilder, HttpTransportType } from "@microsoft/signalr";
 
 function setupUserHub() {
-  const JWT_TOKEN = 'your_bearer_token';
+  const JWT_TOKEN = "your_bearer_token";
   const SELECTED_ACCOUNT_ID = 123;
   const userHubUrl = `https://rtc.topstepx.com/hubs/user?access_token=${JWT_TOKEN}`;
-  
+
   const connection = new HubConnectionBuilder()
     .withUrl(userHubUrl, {
       skipNegotiation: true,
       transport: HttpTransportType.WebSockets,
       accessTokenFactory: () => JWT_TOKEN,
-      timeout: 10000
+      timeout: 10000,
     })
     .withAutomaticReconnect()
     .build();
 
-  connection.start()
+  connection
+    .start()
     .then(() => {
       // Subscribe to updates
-      connection.invoke('SubscribeAccounts');
-      connection.invoke('SubscribeOrders', SELECTED_ACCOUNT_ID);
-      connection.invoke('SubscribePositions', SELECTED_ACCOUNT_ID);
-      connection.invoke('SubscribeTrades', SELECTED_ACCOUNT_ID);
+      connection.invoke("SubscribeAccounts");
+      connection.invoke("SubscribeOrders", SELECTED_ACCOUNT_ID);
+      connection.invoke("SubscribePositions", SELECTED_ACCOUNT_ID);
+      connection.invoke("SubscribeTrades", SELECTED_ACCOUNT_ID);
 
       // Handle events
-      connection.on('GatewayUserAccount', (data) => {
-        console.log('Account update:', data);
+      connection.on("GatewayUserAccount", (data) => {
+        console.log("Account update:", data);
       });
 
-      connection.on('GatewayUserOrder', (data) => {
-        console.log('Order update:', data);
+      connection.on("GatewayUserOrder", (data) => {
+        console.log("Order update:", data);
       });
 
-      connection.on('GatewayUserPosition', (data) => {
-        console.log('Position update:', data);
+      connection.on("GatewayUserPosition", (data) => {
+        console.log("Position update:", data);
       });
 
-      connection.on('GatewayUserTrade', (data) => {
-        console.log('Trade update:', data);
+      connection.on("GatewayUserTrade", (data) => {
+        console.log("Trade update:", data);
       });
 
       // Reconnect handler
       connection.onreconnected((connectionId) => {
-        console.log('Reconnected:', connectionId);
+        console.log("Reconnected:", connectionId);
         // Re-subscribe on reconnect
-        connection.invoke('SubscribeAccounts');
-        connection.invoke('SubscribeOrders', SELECTED_ACCOUNT_ID);
-        connection.invoke('SubscribePositions', SELECTED_ACCOUNT_ID);
-        connection.invoke('SubscribeTrades', SELECTED_ACCOUNT_ID);
+        connection.invoke("SubscribeAccounts");
+        connection.invoke("SubscribeOrders", SELECTED_ACCOUNT_ID);
+        connection.invoke("SubscribePositions", SELECTED_ACCOUNT_ID);
+        connection.invoke("SubscribeTrades", SELECTED_ACCOUNT_ID);
       });
     })
     .catch((err) => {
-      console.error('Connection error:', err);
+      console.error("Connection error:", err);
     });
 }
 ```
@@ -660,16 +669,19 @@ function setupUserHub() {
 **Connection URL:** `https://rtc.topstepx.com/hubs/market?access_token=YOUR_JWT_TOKEN`
 
 **Subscribe Methods:**
+
 - `SubscribeContractQuotes(contractId)` - Subscribe to quote updates
 - `SubscribeContractTrades(contractId)` - Subscribe to trade updates
 - `SubscribeContractMarketDepth(contractId)` - Subscribe to depth of market (DOM)
 
 **Unsubscribe Methods:**
+
 - `UnsubscribeContractQuotes(contractId)`
 - `UnsubscribeContractTrades(contractId)`
 - `UnsubscribeContractMarketDepth(contractId)`
 
 **Event Handlers:**
+
 - `GatewayQuote(contractId, data)` - Quote updates
 - `GatewayTrade(contractId, data)` - Market trade updates
 - `GatewayDepth(contractId, data)` - Depth of market updates
@@ -677,54 +689,55 @@ function setupUserHub() {
 **Example Implementation (JavaScript/TypeScript):**
 
 ```typescript
-import { HubConnectionBuilder, HttpTransportType } from '@microsoft/signalr';
+import { HubConnectionBuilder, HttpTransportType } from "@microsoft/signalr";
 
 function setupMarketHub() {
-  const JWT_TOKEN = 'your_bearer_token';
+  const JWT_TOKEN = "your_bearer_token";
   const marketHubUrl = `https://rtc.topstepx.com/hubs/market?access_token=${JWT_TOKEN}`;
-  const CONTRACT_ID = 'CON.F.US.RTY.H25';
+  const CONTRACT_ID = "CON.F.US.RTY.H25";
 
   const connection = new HubConnectionBuilder()
     .withUrl(marketHubUrl, {
       skipNegotiation: true,
       transport: HttpTransportType.WebSockets,
       accessTokenFactory: () => JWT_TOKEN,
-      timeout: 10000
+      timeout: 10000,
     })
     .withAutomaticReconnect()
     .build();
 
-  connection.start()
+  connection
+    .start()
     .then(() => {
       // Subscribe to market data
-      connection.invoke('SubscribeContractQuotes', CONTRACT_ID);
-      connection.invoke('SubscribeContractTrades', CONTRACT_ID);
-      connection.invoke('SubscribeContractMarketDepth', CONTRACT_ID);
+      connection.invoke("SubscribeContractQuotes", CONTRACT_ID);
+      connection.invoke("SubscribeContractTrades", CONTRACT_ID);
+      connection.invoke("SubscribeContractMarketDepth", CONTRACT_ID);
 
       // Handle events
-      connection.on('GatewayQuote', (contractId, data) => {
-        console.log('Quote update:', contractId, data);
+      connection.on("GatewayQuote", (contractId, data) => {
+        console.log("Quote update:", contractId, data);
       });
 
-      connection.on('GatewayTrade', (contractId, data) => {
-        console.log('Market trade:', contractId, data);
+      connection.on("GatewayTrade", (contractId, data) => {
+        console.log("Market trade:", contractId, data);
       });
 
-      connection.on('GatewayDepth', (contractId, data) => {
-        console.log('DOM update:', contractId, data);
+      connection.on("GatewayDepth", (contractId, data) => {
+        console.log("DOM update:", contractId, data);
       });
 
       // Reconnect handler
       connection.onreconnected((connectionId) => {
-        console.log('Reconnected:', connectionId);
+        console.log("Reconnected:", connectionId);
         // Re-subscribe on reconnect
-        connection.invoke('SubscribeContractQuotes', CONTRACT_ID);
-        connection.invoke('SubscribeContractTrades', CONTRACT_ID);
-        connection.invoke('SubscribeContractMarketDepth', CONTRACT_ID);
+        connection.invoke("SubscribeContractQuotes", CONTRACT_ID);
+        connection.invoke("SubscribeContractTrades", CONTRACT_ID);
+        connection.invoke("SubscribeContractMarketDepth", CONTRACT_ID);
       });
     })
     .catch((err) => {
-      console.error('Connection error:', err);
+      console.error("Connection error:", err);
     });
 }
 ```
@@ -741,12 +754,12 @@ Account balance and status updates.
 
 ```typescript
 {
-  id: number;                   // Account ID
-  name: string;                 // Account name
-  balance: number;              // Current balance
-  canTrade: boolean;            // Trading eligibility
-  isVisible: boolean;            // Visibility flag
-  simulated: boolean;           // Sim vs live account
+  id: number; // Account ID
+  name: string; // Account name
+  balance: number; // Current balance
+  canTrade: boolean; // Trading eligibility
+  isVisible: boolean; // Visibility flag
+  simulated: boolean; // Sim vs live account
 }
 ```
 
@@ -756,13 +769,13 @@ Position updates (open/closed positions).
 
 ```typescript
 {
-  id: number;                   // Position ID
-  accountId: number;            // Account ID
-  contractId: string;           // Contract ID
-  creationTimestamp: string;    // ISO 8601 timestamp
-  type: PositionType;           // 1 = Long, 2 = Short
-  size: number;                 // Position size
-  averagePrice: number;         // Average entry price
+  id: number; // Position ID
+  accountId: number; // Account ID
+  contractId: string; // Contract ID
+  creationTimestamp: string; // ISO 8601 timestamp
+  type: PositionType; // 1 = Long, 2 = Short
+  size: number; // Position size
+  averagePrice: number; // Average entry price
 }
 ```
 
@@ -772,21 +785,21 @@ Order status updates (open, filled, cancelled, etc.).
 
 ```typescript
 {
-  id: number;                   // Order ID
-  accountId: number;            // Account ID
-  contractId: string;           // Contract ID
-  symbolId: string;             // Symbol ID
-  creationTimestamp: string;    // ISO 8601 timestamp
-  updateTimestamp: string;      // ISO 8601 timestamp
-  status: OrderStatus;          // Order status (see Enums)
-  type: OrderType;              // Order type (see Enums)
-  side: OrderSide;              // 0 = Bid, 1 = Ask
-  size: number;                 // Order size
-  limitPrice: number | null;    // Limit price
-  stopPrice: number | null;     // Stop price
-  fillVolume: number;           // Filled volume
-  filledPrice: number | null;   // Fill price
-  customTag: string | null;     // Custom tag
+  id: number; // Order ID
+  accountId: number; // Account ID
+  contractId: string; // Contract ID
+  symbolId: string; // Symbol ID
+  creationTimestamp: string; // ISO 8601 timestamp
+  updateTimestamp: string; // ISO 8601 timestamp
+  status: OrderStatus; // Order status (see Enums)
+  type: OrderType; // Order type (see Enums)
+  side: OrderSide; // 0 = Bid, 1 = Ask
+  size: number; // Order size
+  limitPrice: number | null; // Limit price
+  stopPrice: number | null; // Stop price
+  fillVolume: number; // Filled volume
+  filledPrice: number | null; // Fill price
+  customTag: string | null; // Custom tag
 }
 ```
 
@@ -796,17 +809,17 @@ Trade execution updates.
 
 ```typescript
 {
-  id: number;                   // Trade ID
-  accountId: number;            // Account ID
-  contractId: string;           // Contract ID
-  creationTimestamp: string;    // ISO 8601 timestamp
-  price: number;                // Execution price
-  profitAndLoss: number;        // P&L for the trade
-  fees: number;                  // Trading fees
-  side: OrderSide;              // 0 = Bid, 1 = Ask
-  size: number;                 // Trade size
-  voided: boolean;              // Whether trade was voided
-  orderId: number;              // Associated order ID
+  id: number; // Trade ID
+  accountId: number; // Account ID
+  contractId: string; // Contract ID
+  creationTimestamp: string; // ISO 8601 timestamp
+  price: number; // Execution price
+  profitAndLoss: number; // P&L for the trade
+  fees: number; // Trading fees
+  side: OrderSide; // 0 = Bid, 1 = Ask
+  size: number; // Trade size
+  voided: boolean; // Whether trade was voided
+  orderId: number; // Associated order ID
 }
 ```
 
@@ -818,19 +831,19 @@ Market quote updates (bid/ask, last price, volume, etc.).
 
 ```typescript
 {
-  symbol: string;               // Symbol ID (e.g., "F.US.EP")
-  symbolName: string;           // Friendly name (currently unused)
-  lastPrice: number;            // Last traded price
-  bestBid: number;              // Current best bid
-  bestAsk: number;              // Current best ask
-  change: number;               // Price change since previous close
-  changePercent: number;        // Percent change
-  open: number;                  // Opening price
-  high: number;                  // Session high
-  low: number;                  // Session low
-  volume: number;                // Total volume
-  lastUpdated: string;          // ISO 8601 timestamp
-  timestamp: string;            // Quote timestamp
+  symbol: string; // Symbol ID (e.g., "F.US.EP")
+  symbolName: string; // Friendly name (currently unused)
+  lastPrice: number; // Last traded price
+  bestBid: number; // Current best bid
+  bestAsk: number; // Current best ask
+  change: number; // Price change since previous close
+  changePercent: number; // Percent change
+  open: number; // Opening price
+  high: number; // Session high
+  low: number; // Session low
+  volume: number; // Total volume
+  lastUpdated: string; // ISO 8601 timestamp
+  timestamp: string; // Quote timestamp
 }
 ```
 
@@ -840,11 +853,11 @@ Depth of Market (DOM) updates.
 
 ```typescript
 {
-  timestamp: string;            // ISO 8601 timestamp
-  type: DomType;                // DOM type (see Enums)
-  price: number;                // Price level
-  volume: number;                // Total volume at price level
-  currentVolume: number;        // Current volume at price level
+  timestamp: string; // ISO 8601 timestamp
+  type: DomType; // DOM type (see Enums)
+  price: number; // Price level
+  volume: number; // Total volume at price level
+  currentVolume: number; // Current volume at price level
 }
 ```
 
@@ -854,11 +867,11 @@ Market trade events (public trades, not user-specific).
 
 ```typescript
 {
-  symbolId: string;             // Symbol ID
-  price: number;                // Trade price
-  timestamp: string;            // ISO 8601 timestamp
-  type: TradeLogType;           // 0 = Buy, 1 = Sell
-  volume: number;               // Trade volume
+  symbolId: string; // Symbol ID
+  price: number; // Trade price
+  timestamp: string; // ISO 8601 timestamp
+  type: TradeLogType; // 0 = Buy, 1 = Sell
+  volume: number; // Trade volume
 }
 ```
 
@@ -877,7 +890,7 @@ enum OrderType {
   Stop = 4,
   TrailingStop = 5,
   JoinBid = 6,
-  JoinAsk = 7
+  JoinAsk = 7,
 }
 ```
 
@@ -885,8 +898,8 @@ enum OrderType {
 
 ```typescript
 enum OrderSide {
-  Bid = 0,  // Buy
-  Ask = 1   // Sell
+  Bid = 0, // Buy
+  Ask = 1, // Sell
 }
 ```
 
@@ -900,7 +913,7 @@ enum OrderStatus {
   Cancelled = 3,
   Expired = 4,
   Rejected = 5,
-  Pending = 6
+  Pending = 6,
 }
 ```
 
@@ -910,7 +923,7 @@ enum OrderStatus {
 enum PositionType {
   Undefined = 0,
   Long = 1,
-  Short = 2
+  Short = 2,
 }
 ```
 
@@ -919,7 +932,7 @@ enum PositionType {
 ```typescript
 enum TradeLogType {
   Buy = 0,
-  Sell = 1
+  Sell = 1,
 }
 ```
 
@@ -938,7 +951,7 @@ enum DomType {
   High = 8,
   NewBestBid = 9,
   NewBestAsk = 10,
-  Fill = 11
+  Fill = 11,
 }
 ```
 

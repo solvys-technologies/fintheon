@@ -3,6 +3,7 @@
 # /review-macroscope — Custom Cursor Command
 
 ## Purpose
+
 Review and triage comments posted by **Macroscope** on the current pull request before merging.
 
 ## Instructions
@@ -10,13 +11,16 @@ Review and triage comments posted by **Macroscope** on the current pull request 
 When invoked, perform the following:
 
 ### 1. Fetch Macroscope Comments
+
 Identify all comments on the PR authored by the Macroscope integration. These typically include:
+
 - Code quality observations
 - Potential bugs or anti-patterns
 - Performance concerns
 - Security flags
 
 ### 2. Categorize by Severity
+
 Group comments into:
 | Category | Action |
 |----------|--------|
@@ -26,17 +30,21 @@ Group comments into:
 | ⚪ **Info** | No action needed—context, explanations, acknowledgments |
 
 ### 3. Generate Action Checklist
+
 For each 🔴 Critical and 🟠 Warning item, produce:
 [File:Line] Brief description of issue
 └─ Suggested fix or approach
 
 ### 4. Summarize for Merge Decision
+
 Provide a clear recommendation:
+
 - **✅ SAFE TO MERGE** — No critical or warning items, or all have been addressed
 - **⚠️ MERGE WITH CAUTION** — Warnings present but acceptable risk
 - **🛑 DO NOT MERGE** — Critical issues remain unresolved
 
 ### 5. Output Format
+
 ## Macroscope PR Review Summary
 
 ### Stats
@@ -46,17 +54,13 @@ Provide a clear recommendation:
 
 ### Critical Issues (Must Fix)
 
-- [ ]  `src/api/auth.ts:42` — Missing null check on userID
-    
-    └─ Add defensive guard before accessing auth properties
-    
+- [ ] `src/api/auth.ts:42` — Missing null check on userID
+      └─ Add defensive guard before accessing auth properties
 
 ### Warnings (Should Address)
 
-- [ ]  `src/services/news.ts:118` — Unbounded array growth in memory
-    
-    └─ Implement pagination or cap array size
-    
+- [ ] `src/services/news.ts:118` — Unbounded array growth in memory
+      └─ Implement pagination or cap array size
 
 ### Suggestions (Optional)
 

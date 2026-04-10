@@ -106,6 +106,7 @@ lq_confluence_tol = input.float(0.5, "Confluence ATR Tolerance", group = grpHTFL
 ### Section 3: Existing PBSR Logic (~200 lines)
 
 Copy sections 2-9 from `PLAYBOOK-Strategy-Backtest.pine` verbatim:
+
 - Indicators (RSI, EMA, ATR)
 - Session windows
 - Pivot detection & liquidity zones

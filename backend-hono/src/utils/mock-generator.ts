@@ -20,7 +20,7 @@ export type MockPaginationOptions = {
   limit?: number;
 };
 
-const SYMBOLS = ['ES', 'NQ', 'CL', 'GC', 'YM', 'RTY', 'ZN', 'ZB'];
+const SYMBOLS = ["ES", "NQ", "CL", "GC", "YM", "RTY", "ZN", "ZB"];
 
 const pickSymbols = (seed: number) => {
   const primary = SYMBOLS[seed % SYMBOLS.length];
@@ -34,7 +34,7 @@ const buildItem = (index: number, baseTime: number): MockNewsArticle => {
   return {
     id: `mock-${timestamp.getTime()}-${index}`,
     title: `Mock headline ${index + 1}`,
-    summary: `Mock summary ${index + 1} for ${symbols.join('/')}`,
+    summary: `Mock summary ${index + 1} for ${symbols.join("/")}`,
     published_at: timestamp.toISOString(),
     symbols,
     is_breaking: index % 7 === 0,

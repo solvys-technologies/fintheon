@@ -1,17 +1,17 @@
 // [claude-code 2026-03-20] Terminal handlers: spawn shell commands + SSE stream output for browser terminal
-import { spawn, type ChildProcess } from 'node:child_process';
-import { EventEmitter } from 'node:events';
-import { randomUUID } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
-import type { Context } from 'hono';
-import { streamSSE } from 'hono/streaming';
-import { createLogger } from '../../lib/logger.js';
+import { spawn, type ChildProcess } from "node:child_process";
+import { EventEmitter } from "node:events";
+import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+import type { Context } from "hono";
+import { streamSSE } from "hono/streaming";
+import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger('terminal');
+const log = createLogger("terminal");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = resolve(__dirname, '../../..'); // backend-hono/ → project root
+const PROJECT_ROOT = resolve(__dirname, "../../.."); // backend-hono/ → project root
 
 const MAX_BUFFER = 200;
 const PROCESS_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
@@ -29,15 +29,15 @@ const processes = new Map<string, ProcessEntry>();
 function isLocalRequest(c: Context): boolean {
   // Allow terminal access from localhost in all environments.
   // This is a desktop Electron app — the backend always runs locally.
-  const host = c.req.header('host') || '';
-  return host.startsWith('localhost:') || host.startsWith('127.0.0.1:');
+  const host = c.req.header("host") || "";
+  return host.startsWith("localhost:") || host.startsWith("127.0.0.1:");
 }
 
 function pushEvent(entry: ProcessEntry, event: string, data: string) {
   const item = { event, data };
   entry.buffer.push(item);
   if (entry.buffer.length > MAX_BUFFER) entry.buffer.shift();
-  entry.emitter.emit('event', item);
+  entry.emitter.emit("event", item);
 }
 
 function cleanup(processId: string) {
@@ -45,7 +45,9 @@ function cleanup(processId: string) {
   if (!entry) return;
   clearTimeout(entry.timer);
   if (!entry.done) {
-    try { entry.child.kill('SIGTERM'); } catch {}
+    try {
+      entry.child.kill("SIGTERM");
+    } catch {}
   }
   entry.emitter.removeAllListeners();
   processes.delete(processId);
@@ -54,13 +56,15 @@ function cleanup(processId: string) {
 /** POST /api/terminal/run — spawn a shell command, return processId */
 export async function handleRun(c: Context) {
   if (!isLocalRequest(c)) {
-    return c.json({ error: 'Terminal endpoint is local-dev only' }, 403);
+    return c.json({ error: "Terminal endpoint is local-dev only" }, 403);
   }
 
-  const body = await c.req.json<{ command?: string }>().catch(() => ({ command: undefined }));
+  const body = await c.req
+    .json<{ command?: string }>()
+    .catch(() => ({ command: undefined }));
   const command = body.command?.trim();
   if (!command) {
-    return c.json({ error: 'command is required' }, 400);
+    return c.json({ error: "command is required" }, 400);
   }
 
   const processId = randomUUID();
@@ -71,11 +75,11 @@ export async function handleRun(c: Context) {
     shell: true,
     cwd: PROJECT_ROOT,
     env: process.env,
-    stdio: ['ignore', 'pipe', 'pipe'],
+    stdio: ["ignore", "pipe", "pipe"],
   });
 
-  child.stdout?.setEncoding('utf8');
-  child.stderr?.setEncoding('utf8');
+  child.stdout?.setEncoding("utf8");
+  child.stderr?.setEncoding("utf8");
 
   const entry: ProcessEntry = {
     child,
@@ -83,32 +87,36 @@ export async function handleRun(c: Context) {
     buffer: [],
     done: false,
     timer: setTimeout(() => {
-      log.info('Process timeout, killing', { processId });
+      log.info("Process timeout, killing", { processId });
       cleanup(processId);
     }, PROCESS_TIMEOUT_MS),
   };
 
   processes.set(processId, entry);
 
-  child.stdout?.on('data', (data: string) => {
-    pushEvent(entry, 'stdout', data);
+  child.stdout?.on("data", (data: string) => {
+    pushEvent(entry, "stdout", data);
   });
 
-  child.stderr?.on('data', (data: string) => {
-    pushEvent(entry, 'stderr', data);
+  child.stderr?.on("data", (data: string) => {
+    pushEvent(entry, "stderr", data);
   });
 
-  child.on('exit', (code, signal) => {
+  child.on("exit", (code, signal) => {
     entry.done = true;
-    pushEvent(entry, 'exit', JSON.stringify({ code: code ?? null, signal: signal ?? null }));
+    pushEvent(
+      entry,
+      "exit",
+      JSON.stringify({ code: code ?? null, signal: signal ?? null }),
+    );
     // Keep entry around briefly so SSE can drain the exit event
     setTimeout(() => cleanup(processId), 5000);
   });
 
-  child.on('error', (err) => {
-    pushEvent(entry, 'stderr', err.message);
+  child.on("error", (err) => {
+    pushEvent(entry, "stderr", err.message);
     entry.done = true;
-    pushEvent(entry, 'exit', JSON.stringify({ code: null, signal: null }));
+    pushEvent(entry, "exit", JSON.stringify({ code: null, signal: null }));
     setTimeout(() => cleanup(processId), 5000);
   });
 
@@ -118,13 +126,13 @@ export async function handleRun(c: Context) {
 /** GET /api/terminal/stream/:processId — SSE stream of stdout/stderr/exit */
 export async function handleStream(c: Context) {
   if (!isLocalRequest(c)) {
-    return c.json({ error: 'Terminal endpoint is local-dev only' }, 403);
+    return c.json({ error: "Terminal endpoint is local-dev only" }, 403);
   }
 
-  const processId = c.req.param('processId');
+  const processId = c.req.param("processId");
   const entry = processes.get(processId);
   if (!entry) {
-    return c.json({ error: 'Process not found' }, 404);
+    return c.json({ error: "Process not found" }, 404);
   }
 
   return streamSSE(c, async (stream) => {
@@ -148,14 +156,14 @@ export async function handleStream(c: Context) {
       }
     };
 
-    entry.emitter.on('event', onEvent);
+    entry.emitter.on("event", onEvent);
 
     // Block until process exits or client disconnects
     await new Promise<void>((resolve) => {
       const check = setInterval(() => {
         if (entry.done || closed) {
           clearInterval(check);
-          entry.emitter.off('event', onEvent);
+          entry.emitter.off("event", onEvent);
           resolve();
         }
       }, 200);
@@ -166,18 +174,18 @@ export async function handleStream(c: Context) {
 /** POST /api/terminal/kill/:processId — kill a running process */
 export async function handleKill(c: Context) {
   if (!isLocalRequest(c)) {
-    return c.json({ error: 'Terminal endpoint is local-dev only' }, 403);
+    return c.json({ error: "Terminal endpoint is local-dev only" }, 403);
   }
 
-  const processId = c.req.param('processId');
+  const processId = c.req.param("processId");
   const entry = processes.get(processId);
   if (!entry) {
-    return c.json({ error: 'Process not found' }, 404);
+    return c.json({ error: "Process not found" }, 404);
   }
 
   try {
-    entry.child.kill('SIGTERM');
-    log.info('Process killed', { processId });
+    entry.child.kill("SIGTERM");
+    log.info("Process killed", { processId });
   } catch {}
 
   return c.json({ ok: true });

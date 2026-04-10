@@ -1,13 +1,21 @@
 // [claude-code 2026-04-03] S14-T6: Extended presence payload with service status + user status
-import { createContext, useContext, useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from './AuthContext';
-import { useSettings } from './SettingsContext';
-import { useGateway } from './GatewayContext';
-import { useFintheonAgents } from './FintheonAgentContext';
-import { useSourceStatus } from '../hooks/useSourceStatus';
-import { useToast } from './ToastContext';
-import type { TeamMember, PresencePayload, UserStatus } from '../types/team';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type ReactNode,
+} from "react";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "./AuthContext";
+import { useSettings } from "./SettingsContext";
+import { useGateway } from "./GatewayContext";
+import { useFintheonAgents } from "./FintheonAgentContext";
+import { useSourceStatus } from "../hooks/useSourceStatus";
+import { useToast } from "./ToastContext";
+import type { TeamMember, PresencePayload, UserStatus } from "../types/team";
 
 interface TeamPresenceContextValue {
   teamMembers: TeamMember[];
@@ -35,59 +43,90 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
     if (sourceStatus.twitterRateLimited && !prevRateLimited.current) {
       addToast(
         `Twitter rate limited — cooling down ${sourceStatus.twitterCooldownSec}s`,
-        'info',
+        "info",
         undefined,
-        'connection-status',
+        "connection-status",
       );
     } else if (!sourceStatus.twitterRateLimited && prevRateLimited.current) {
-      addToast('Twitter polling resumed', 'success', undefined, 'connection-status');
+      addToast(
+        "Twitter polling resumed",
+        "success",
+        undefined,
+        "connection-status",
+      );
     }
     prevRateLimited.current = sourceStatus.twitterRateLimited;
-  }, [sourceStatus.twitterRateLimited, sourceStatus.twitterCooldownSec, addToast]);
+  }, [
+    sourceStatus.twitterRateLimited,
+    sourceStatus.twitterCooldownSec,
+    addToast,
+  ]);
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [userStatus, setUserStatusState] = useState<UserStatus>('online');
-  const channelRef = useRef<ReturnType<NonNullable<typeof supabase>['channel']> | null>(null);
+  const [userStatus, setUserStatusState] = useState<UserStatus>("online");
+  const channelRef = useRef<ReturnType<
+    NonNullable<typeof supabase>["channel"]
+  > | null>(null);
 
-  const caoName = agents.find((a) => a.id === 'harper-opus')?.name || 'Harper-Opus';
-  const caoOnline = hermesStatus === 'ok' || gatewayStatus === 'connected';
-  const displayName = traderName || 'Anonymous';
+  const caoName =
+    agents.find((a) => a.id === "harper-opus")?.name || "Harper-Opus";
+  const caoOnline = hermesStatus === "ok" || gatewayStatus === "connected";
+  const displayName = traderName || "Anonymous";
 
   const setUserStatus = useCallback((status: UserStatus) => {
     setUserStatusState(status);
   }, []);
 
-  const buildPayload = useCallback((): PresencePayload => ({
-    userId,
-    displayName,
-    caoName,
-    caoOnline,
-    twitterCliPolling: sourceStatus.twitterCli,
-    inCall: false, // T3/T4 will wire this
-    userStatus,
-    services: {
-      twitterCli: sourceStatus.twitterCli,
-      twitterRateLimited: sourceStatus.twitterRateLimited,
-      aiRuntime: caoOnline,
-      newsfeedPolling: {
-        active: sourceStatus.backendReachable && (sourceStatus.notion || sourceStatus.twitterCli || sourceStatus.xApi),
-        lastUpdate: sourceStatus.lastPollSuccess,
+  const buildPayload = useCallback(
+    (): PresencePayload => ({
+      userId,
+      displayName,
+      caoName,
+      caoOnline,
+      twitterCliPolling: sourceStatus.twitterCli,
+      inCall: false, // T3/T4 will wire this
+      userStatus,
+      services: {
+        twitterCli: sourceStatus.twitterCli,
+        twitterRateLimited: sourceStatus.twitterRateLimited,
+        aiRuntime: caoOnline,
+        newsfeedPolling: {
+          active:
+            sourceStatus.backendReachable &&
+            (sourceStatus.notion ||
+              sourceStatus.twitterCli ||
+              sourceStatus.xApi),
+          lastUpdate: sourceStatus.lastPollSuccess,
+        },
+        backendConnection: sourceStatus.backendReachable,
       },
-      backendConnection: sourceStatus.backendReachable,
-    },
-  }), [userId, displayName, caoName, caoOnline, sourceStatus.twitterCli, sourceStatus.twitterRateLimited, sourceStatus.notion, sourceStatus.xApi, sourceStatus.backendReachable, sourceStatus.lastPollSuccess, userStatus]);
+    }),
+    [
+      userId,
+      displayName,
+      caoName,
+      caoOnline,
+      sourceStatus.twitterCli,
+      sourceStatus.twitterRateLimited,
+      sourceStatus.notion,
+      sourceStatus.xApi,
+      sourceStatus.backendReachable,
+      sourceStatus.lastPollSuccess,
+      userStatus,
+    ],
+  );
 
   // Connect to Supabase Realtime Presence channel
   useEffect(() => {
     if (!supabase) return;
 
-    const channel = supabase.channel('team-presence', {
+    const channel = supabase.channel("team-presence", {
       config: { presence: { key: userId } },
     });
 
     channel
-      .on('presence', { event: 'sync' }, () => {
+      .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
         const members: TeamMember[] = [];
 
@@ -100,7 +139,10 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
             twitterCli: false,
             twitterRateLimited: false,
             aiRuntime: false,
-            newsfeedPolling: { active: false, lastUpdate: new Date().toISOString() },
+            newsfeedPolling: {
+              active: false,
+              lastUpdate: new Date().toISOString(),
+            },
             backendConnection: false,
           };
           members.push({
@@ -116,7 +158,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
               online: true,
               lastSeen: new Date().toISOString(),
               inCall: latest.inCall,
-              userStatus: latest.userStatus || 'online',
+              userStatus: latest.userStatus || "online",
               services: latest.services || defaultServices,
             },
           });
@@ -125,7 +167,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
         setTeamMembers(members);
       })
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
+        if (status === "SUBSCRIBED") {
           setIsConnected(true);
           await channel.track(buildPayload());
         }
@@ -150,7 +192,9 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
   }, [buildPayload, isConnected]);
 
   return (
-    <TeamPresenceContext.Provider value={{ teamMembers, isConnected, setUserStatus }}>
+    <TeamPresenceContext.Provider
+      value={{ teamMembers, isConnected, setUserStatus }}
+    >
       {children}
     </TeamPresenceContext.Provider>
   );

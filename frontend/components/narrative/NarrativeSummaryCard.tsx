@@ -1,9 +1,9 @@
 // [claude-code 2026-03-29] S9-T5-T1: Add React Flow handles so edges (ropes) can connect
 // [claude-code 2026-03-28] S8-T2: Collapsed summary card at bubble zoom level
 // Single click → expand/collapse inline preview. Double-click → handled by React Flow (auto-zoom).
-import { useState } from 'react';
-import type { NodeProps } from '@xyflow/react';
-import { Handle, Position } from '@xyflow/react';
+import { useState } from "react";
+import type { NodeProps } from "@xyflow/react";
+import { Handle, Position } from "@xyflow/react";
 
 export interface SummaryCardData {
   slug: string;
@@ -13,11 +13,15 @@ export interface SummaryCardData {
   topEvents: string[]; // top 3-5 event titles
 }
 
-export function NarrativeSummaryCard({ data }: NodeProps & { data: SummaryCardData }) {
+export function NarrativeSummaryCard({
+  data,
+}: NodeProps & { data: SummaryCardData }) {
   const { title, color, count, topEvents } = data;
   const [expanded, setExpanded] = useState(false);
 
-  const visibleEvents = expanded ? topEvents.slice(0, 5) : topEvents.slice(0, 3);
+  const visibleEvents = expanded
+    ? topEvents.slice(0, 5)
+    : topEvents.slice(0, 3);
 
   return (
     <div
@@ -30,11 +34,19 @@ export function NarrativeSummaryCard({ data }: NodeProps & { data: SummaryCardDa
       }}
       onClick={(e) => {
         e.stopPropagation();
-        setExpanded(prev => !prev);
+        setExpanded((prev) => !prev);
       }}
     >
-      <Handle type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1 }} />
-      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, width: 1, height: 1 }} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ opacity: 0, width: 1, height: 1 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ opacity: 0, width: 1, height: 1 }}
+      />
       <div className="px-3 py-2.5">
         <div className="flex items-center gap-2">
           <div
@@ -43,7 +55,7 @@ export function NarrativeSummaryCard({ data }: NodeProps & { data: SummaryCardDa
           />
           <span
             className="text-[12px] font-semibold leading-tight flex-1"
-            style={{ color, fontFamily: 'var(--font-heading)' }}
+            style={{ color, fontFamily: "var(--font-heading)" }}
           >
             {title}
           </span>
@@ -52,7 +64,7 @@ export function NarrativeSummaryCard({ data }: NodeProps & { data: SummaryCardDa
             style={{
               color: `${color}bb`,
               backgroundColor: `${color}12`,
-              fontFamily: 'var(--font-mono)',
+              fontFamily: "var(--font-mono)",
             }}
           >
             {count}
@@ -65,8 +77,8 @@ export function NarrativeSummaryCard({ data }: NodeProps & { data: SummaryCardDa
               key={i}
               className="text-[9px] leading-snug truncate"
               style={{
-                color: 'var(--fintheon-muted)',
-                fontFamily: 'var(--font-body)',
+                color: "var(--fintheon-muted)",
+                fontFamily: "var(--font-body)",
                 opacity: 0.7 + (1 - i / visibleEvents.length) * 0.3,
               }}
             >
@@ -76,7 +88,7 @@ export function NarrativeSummaryCard({ data }: NodeProps & { data: SummaryCardDa
           {!expanded && topEvents.length > 3 && (
             <p
               className="text-[8px]"
-              style={{ color: `${color}60`, fontFamily: 'var(--font-mono)' }}
+              style={{ color: `${color}60`, fontFamily: "var(--font-mono)" }}
             >
               +{topEvents.length - 3} more
             </p>

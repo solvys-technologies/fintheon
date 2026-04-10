@@ -9,6 +9,7 @@ The Autopilot system uses an AI-powered multi-agent pipeline to generate trading
 ## Strategy Catalog
 
 ### 1. MORNING_FLUSH
+
 - **Strategy ID**: `MORNING_FLUSH`
 - **Display Name**: Morning Flush
 - **Instruments**: NAS100
@@ -23,6 +24,7 @@ The Autopilot system uses an AI-powered multi-agent pipeline to generate trading
 - **Risk Controls**: Max trade duration 1hr 15min, stop loss at technical levels
 
 ### 2. LUNCH_FLUSH
+
 - **Strategy ID**: `LUNCH_FLUSH`
 - **Display Name**: Lunch Flush
 - **Instruments**: NAS100
@@ -37,6 +39,7 @@ The Autopilot system uses an AI-powered multi-agent pipeline to generate trading
 - **Risk Controls**: Entry on 20 MA (5-minute chart), standard risk management
 
 ### 3. POWER_HOUR_FLUSH
+
 - **Strategy ID**: `POWER_HOUR_FLUSH`
 - **Display Name**: Power Hour Flush
 - **Instruments**: NAS100
@@ -51,6 +54,7 @@ The Autopilot system uses an AI-powered multi-agent pipeline to generate trading
 - **Risk Controls**: Time-based exit before market close
 
 ### 4. VIX_FIX_22
+
 - **Strategy ID**: `VIX_FIX_22`
 - **Display Name**: 22 VIX Fix
 - **Instruments**: NAS100
@@ -66,6 +70,7 @@ The Autopilot system uses an AI-powered multi-agent pipeline to generate trading
 - **Risk Controls**: Price recovery exit logic, reduced position size in high volatility (ATR > 2x average)
 
 ### 5. FORTY_FORTY_CLUB
+
 - **Strategy ID**: `FORTY_FORTY_CLUB`
 - **Display Name**: 40/40 Club
 - **Instruments**: NAS100
@@ -81,6 +86,7 @@ The Autopilot system uses an AI-powered multi-agent pipeline to generate trading
 - **Risk Controls**: Stop loss 5pts outside range, target 40pts or 3RR (whichever closer)
 
 ### 6. MOMENTUM
+
 - **Strategy ID**: `MOMENTUM`
 - **Display Name**: Momentum
 - **Instruments**: NAS100
@@ -95,6 +101,7 @@ The Autopilot system uses an AI-powered multi-agent pipeline to generate trading
 - **Risk Controls**: Trailing stops, volume-based position sizing
 
 ### 7. CHARGED_RIPPERS
+
 - **Strategy ID**: `CHARGED_RIPPERS`
 - **Display Name**: Charged Rippers (Print Charged Ripper)
 - **Instruments**: NAS100
@@ -110,6 +117,7 @@ The Autopilot system uses an AI-powered multi-agent pipeline to generate trading
 - **Risk Controls**: Fib-based stops, antilag-validated entries only
 
 ### 8. MEAN_REVERSION
+
 - **Strategy ID**: `MEAN_REVERSION`
 - **Display Name**: Mean Reversion
 - **Instruments**: NAS100
@@ -125,11 +133,14 @@ The Autopilot system uses an AI-powered multi-agent pipeline to generate trading
 ## Shared Components
 
 ### Antilag Detection
+
 Several strategies require **antilag confirmation**:
+
 - **FORTY_FORTY_CLUB**: Required
 - **CHARGED_RIPPERS**: Required
 
 **Antilag Logic**:
+
 - Approximates tick surge using volume surge + price velocity on 5-minute bars
 - Volume surge: Volume > 1.5x average in recent bars
 - Price velocity: Price change > 0.3% in recent bars
@@ -137,7 +148,9 @@ Several strategies require **antilag confirmation**:
 - Price trajectory synchronization within 90 seconds
 
 ### Risk Management (Global)
+
 All strategies enforce:
+
 - **Max risk per trade**: 1% of account
 - **Min risk/reward**: 1.5:1 (base hits), 1:3+ (home runs)
 - **Max daily drawdown**: 3% of account
@@ -148,6 +161,7 @@ All strategies enforce:
 ## Strategy Priority
 
 When multiple strategies match conditions, priority order:
+
 1. FORTY_FORTY_CLUB (highest)
 2. MORNING_FLUSH
 3. VIX_FIX_22

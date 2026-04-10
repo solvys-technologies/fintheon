@@ -1,7 +1,7 @@
-import { Diff, TrendingDown, Minus } from 'lucide-react';
-import { FeedItem as FeedItemType } from '../../types/feed';
-import { decodeHtmlEntities } from '../../lib/html-entities';
-import { ProposalCard } from './ProposalCard';
+import { Diff, TrendingDown, Minus } from "lucide-react";
+import { FeedItem as FeedItemType } from "../../types/feed";
+import { decodeHtmlEntities } from "../../lib/html-entities";
+import { ProposalCard } from "./ProposalCard";
 
 interface FeedItemProps {
   item: FeedItemType;
@@ -9,21 +9,24 @@ interface FeedItemProps {
 
 export function FeedItem({ item }: FeedItemProps) {
   // [claude-code 2026-03-23] Browser Use Phase 2 — render proposal cards
-  if (item.type === 'proposal' && item.proposal) {
+  if (item.type === "proposal" && item.proposal) {
     return <ProposalCard proposal={item.proposal} timestamp={item.time} />;
   }
 
   // Safety check: ensure iv exists and value is a number
-  const ivValue = item?.iv?.value != null 
-    ? (typeof item.iv.value === 'number' ? item.iv.value : Number(item.iv.value) || 0)
-    : 0;
-  const ivType = item?.iv?.type || 'Neutral';
-  const ivClassification = item?.iv?.classification || 'Neutral';
+  const ivValue =
+    item?.iv?.value != null
+      ? typeof item.iv.value === "number"
+        ? item.iv.value
+        : Number(item.iv.value) || 0
+      : 0;
+  const ivType = item?.iv?.type || "Neutral";
+  const ivClassification = item?.iv?.classification || "Neutral";
 
   const ivColor = {
-    Bullish: 'text-emerald-400',
-    Bearish: 'text-red-500',
-    Neutral: 'text-gray-400',
+    Bullish: "text-emerald-400",
+    Bearish: "text-red-500",
+    Neutral: "text-gray-400",
   };
 
   const IVIcon = {
@@ -44,11 +47,11 @@ export function FeedItem({ item }: FeedItemProps) {
             <span className="text-xs text-gray-500">
               {item.time.toLocaleTimeString()}
             </span>
-            <span className="text-xs text-[var(--fintheon-accent)]">{item.source}</span>
-            {item.type === 'alert' && (
-              <span className="text-xs text-red-400">
-                ALERT
-              </span>
+            <span className="text-xs text-[var(--fintheon-accent)]">
+              {item.source}
+            </span>
+            {item.type === "alert" && (
+              <span className="text-xs text-red-400">ALERT</span>
             )}
           </div>
           <p className="text-sm text-gray-200">{displayText}</p>
@@ -58,7 +61,7 @@ export function FeedItem({ item }: FeedItemProps) {
           <div className={`flex items-center gap-1 ${ivColor[ivType]}`}>
             <Icon className="w-3 h-3" />
             <span className="text-xs font-semibold">
-              IV {ivValue > 0 ? '+' : ''}
+              IV {ivValue > 0 ? "+" : ""}
               {ivValue.toFixed(1)}
             </span>
           </div>

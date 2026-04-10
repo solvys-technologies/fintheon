@@ -5,50 +5,53 @@
  * Hono backend on Fly.io
  */
 
-import 'dotenv/config';
-import { loadSecretsFromVault } from './config/secrets-vault.js';
-import { validateEnv } from './boot/index.js';
+import "dotenv/config";
+import { loadSecretsFromVault } from "./config/secrets-vault.js";
+import { validateEnv } from "./boot/index.js";
 
 // Vault loads async (reads Supabase), then validateEnv checks the merged result.
 // Local .env values take precedence — vault only fills gaps.
 await loadSecretsFromVault().catch((err) => {
-  console.warn('[boot] Secrets vault unavailable, using local .env only:', err.message ?? err);
+  console.warn(
+    "[boot] Secrets vault unavailable, using local .env only:",
+    err.message ?? err,
+  );
 });
 validateEnv();
 
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
+import { Hono } from "hono";
+import { cors } from "hono/cors";
 // serve import removed — Bun auto-serves via default export
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 
-import { corsConfig } from './config/cors.js';
-import { getEnvConfig, isDev } from './config/env.js';
-import { registerRoutes } from './routes/index.js';
-import { createHealthService } from './services/health-service.js';
-import { AppError } from './errors/index.js';
-import { createLogger } from './lib/logger.js';
-import { bootServices } from './boot/services.js';
+import { corsConfig } from "./config/cors.js";
+import { getEnvConfig, isDev } from "./config/env.js";
+import { registerRoutes } from "./routes/index.js";
+import { createHealthService } from "./services/health-service.js";
+import { AppError } from "./errors/index.js";
+import { createLogger } from "./lib/logger.js";
+import { bootServices } from "./boot/services.js";
 
-const log = createLogger('API');
+const log = createLogger("API");
 const app = new Hono();
 const healthService = createHealthService();
 const config = getEnvConfig();
 
 // CORS middleware
-app.use('*', cors(corsConfig));
+app.use("*", cors(corsConfig));
 
 // Request ID middleware
-app.use('*', async (c, next) => {
-  const requestId = c.req.header('x-request-id') || crypto.randomUUID();
-  c.header('X-Request-Id', requestId);
+app.use("*", async (c, next) => {
+  const requestId = c.req.header("x-request-id") || crypto.randomUUID();
+  c.header("X-Request-Id", requestId);
   await next();
 });
 
 // Health check endpoint
-app.get('/health', async (c) => {
+app.get("/health", async (c) => {
   const health = await healthService.checkAll();
   const statusCode: ContentfulStatusCode =
-    health.status === 'ok' ? 200 : health.status === 'degraded' ? 207 : 503;
+    health.status === "ok" ? 200 : health.status === "degraded" ? 207 : 503;
   return c.json(health, statusCode);
 });
 
@@ -57,7 +60,7 @@ registerRoutes(app);
 
 // Global error handler
 app.onError((err, c) => {
-  const requestId = c.req.header('x-request-id') || 'unknown';
+  const requestId = c.req.header("x-request-id") || "unknown";
 
   if (err instanceof AppError) {
     log.error(err.message, {
@@ -70,11 +73,12 @@ app.onError((err, c) => {
     });
     return c.json(
       { error: err.message, code: err.code, context: err.context, requestId },
-      err.statusCode as ContentfulStatusCode
+      err.statusCode as ContentfulStatusCode,
     );
   }
 
-  const status = ((err as { status?: number }).status ?? 500) as ContentfulStatusCode;
+  const status = ((err as { status?: number }).status ??
+    500) as ContentfulStatusCode;
   log.error(err instanceof Error ? err.message : String(err), {
     requestId,
     status,
@@ -85,36 +89,36 @@ app.onError((err, c) => {
 
   return c.json(
     {
-      error: status >= 500 ? 'Internal server error' : err.message,
-      code: 'INTERNAL_ERROR',
+      error: status >= 500 ? "Internal server error" : err.message,
+      code: "INTERNAL_ERROR",
       requestId,
     },
-    status
+    status,
   );
 });
 
 // 404 handler
 app.notFound((c) => {
-  const requestId = c.req.header('x-request-id') || 'unknown';
-  return c.json({ error: 'Not found', code: 'NOT_FOUND', requestId }, 404);
+  const requestId = c.req.header("x-request-id") || "unknown";
+  return c.json({ error: "Not found", code: "NOT_FOUND", requestId }, 404);
 });
 
-log.info('Server starting', { port: config.PORT, env: config.NODE_ENV });
+log.info("Server starting", { port: config.PORT, env: config.NODE_ENV });
 
 // Boot background services
 bootServices();
 
 // Bun auto-serves via default export. Node needs @hono/node-server.
-if (typeof globalThis.Bun === 'undefined') {
-  import('@hono/node-server').then(({ serve }) => {
+if (typeof globalThis.Bun === "undefined") {
+  import("@hono/node-server").then(({ serve }) => {
     const server = serve({ fetch: app.fetch, port: config.PORT }) as any;
     // SSE streams (Harper chat, cognition) can run 10+ minutes during tool-call loops.
     // Disable ALL Node HTTP server timeouts to prevent mid-stream kills.
-    server.requestTimeout = 0;     // Node 18+ (default 300s)
-    server.headersTimeout = 0;     // Header receive timeout (default 60s)
-    server.timeout = 0;            // Legacy socket idle timeout (default 0 but some envs set it)
-    server.keepAliveTimeout = 0;   // Keep-alive idle timeout
-    log.info('Server listening (Node, no timeouts)', { port: config.PORT });
+    server.requestTimeout = 0; // Node 18+ (default 300s)
+    server.headersTimeout = 0; // Header receive timeout (default 60s)
+    server.timeout = 0; // Legacy socket idle timeout (default 0 but some envs set it)
+    server.keepAliveTimeout = 0; // Keep-alive idle timeout
+    log.info("Server listening (Node, no timeouts)", { port: config.PORT });
   });
 }
 

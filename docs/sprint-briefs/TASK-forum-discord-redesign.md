@@ -1,12 +1,15 @@
 # Task Brief: Forum — Discord-Style Redesign with Attachments
+
 **Date:** 2026-04-03
 **Scope:** Redesign the Bulletin Board (Forum) to look like Discord with message grouping, hover actions, and attachment support
 **Estimated files:** 3
 
 ## Context
+
 The Forum is the human version of the Boardroom (agent chat). Currently it's a basic bulletin board with textarea + post cards. It needs to look like Discord — messages flowing vertically, avatar + username header, grouped consecutive messages, reactions-style voting, and attachment support. The `PromptBox` component already supports image paste and attachments. The backend already supports `contentParts` for rich content.
 
 ## Files to Read First
+
 - `frontend/components/bulletin/BulletinFeed.tsx` — Current forum container (254 lines)
 - `frontend/components/bulletin/BulletinPost.tsx` — Current post card (89 lines)
 - `frontend/components/bulletin/VotingControls.tsx` — Current voting buttons (43 lines)
@@ -19,6 +22,7 @@ The Forum is the human version of the Boardroom (agent chat). Currently it's a b
 ## What to Build/Change
 
 ### 1. `frontend/components/bulletin/BulletinFeed.tsx` — Discord Channel Layout
+
 - **Action:** Rewrite
 - **Layout:** Full-height flex column like `AgentChattr`:
   - Top: thin header bar with desk filter dropdown + message count
@@ -42,7 +46,7 @@ The Forum is the human version of the Boardroom (agent chat). Currently it's a b
 - **Image/attachment handling:** When `onSend` receives `images` array (base64 strings from paste/upload), include them in `contentParts`:
   ```ts
   const contentParts = images?.length
-    ? images.map(img => ({ type: 'image' as const, data: img }))
+    ? images.map((img) => ({ type: "image" as const, data: img }))
     : undefined;
   await backend.bulletin.createPost({
     content: msg,
@@ -54,6 +58,7 @@ The Forum is the human version of the Boardroom (agent chat). Currently it's a b
 - **Max lines:** 280
 
 ### 2. `frontend/components/bulletin/BulletinPost.tsx` — Discord Message Row
+
 - **Action:** Rewrite
 - **Layout:** Discord-style message row:
   - Left: Avatar circle (32px) with author initials or agent icon
@@ -64,7 +69,7 @@ The Forum is the human version of the Boardroom (agent chat). Currently it's a b
   - Vote buttons (thumbs up/down or the existing check/x/up/down)
   - Delete button (Trash2 icon, only if `post.authorId === userId`)
   - Copy button
-- **Content rendering:** 
+- **Content rendering:**
   - Text with `whitespace-pre-wrap`
   - If `contentParts` contains images, render them as thumbnails below text
   - Promoted-to-proposal badge stays
@@ -73,6 +78,7 @@ The Forum is the human version of the Boardroom (agent chat). Currently it's a b
 - **Max lines:** 200
 
 ### 3. `frontend/components/bulletin/VotingControls.tsx` — Reaction Pills
+
 - **Action:** Modify
 - **Style change:** Transform from inline button row to Discord-style reaction pills:
   - Smaller: `text-[10px]`, `px-1.5 py-0.5`, `rounded-full`
@@ -82,6 +88,7 @@ The Forum is the human version of the Boardroom (agent chat). Currently it's a b
 - **Max lines:** 60
 
 ## Key Rules
+
 - Follow Fintheon design system: `--fintheon-bg`, `--fintheon-accent` (#D4AF37), `--fintheon-text`, `--fintheon-surface`
 - No gradients, no colored emojis
 - Use lucide-react icons only
@@ -92,6 +99,7 @@ The Forum is the human version of the Boardroom (agent chat). Currently it's a b
 - Message grouping logic: group if same `authorId` AND within 5 minutes of previous message
 
 ## DO NOT
+
 - Touch the backend (routes, store, types) — it already supports everything needed
 - Add new dependencies or libraries
 - Create new files — modify the 3 existing bulletin files only
@@ -100,10 +108,13 @@ The Forum is the human version of the Boardroom (agent chat). Currently it's a b
 - Add channels/sidebar — keep the single feed with desk filter dropdown
 
 ## Verification
+
 ```bash
 cd frontend && npx tsc --noEmit && npx vite build
 ```
+
 Then:
+
 1. Navigate to Boardroom > Forum
 2. Verify Discord-like message layout with avatars and grouped messages
 3. Post a message using the PromptBox at bottom
@@ -113,6 +124,7 @@ Then:
 7. Vote — verify reaction pills update
 
 ## Changelog Entry
+
 ```typescript
 {
   date: '2026-04-03T00:00:00',

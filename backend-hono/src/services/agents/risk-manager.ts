@@ -14,8 +14,8 @@
  *   - Consul: provides fundamental risk context via research debate (Stage 3)
  */
 
-import { invokeAgent } from '../strands/index.js'
-import { sql, isDatabaseAvailable } from '../../config/database.js'
+import { invokeAgent } from "../strands/index.js";
+import { sql, isDatabaseAvailable } from "../../config/database.js";
 import type {
   RiskAssessment,
   TradingProposal,
@@ -23,7 +23,7 @@ import type {
   RiskLevel,
   ProposalDecision,
   RiskAssessmentRow,
-} from '../../types/agents.js'
+} from "../../types/agents.js";
 
 // [claude-code 2026-03-22] Source of Truth fusion — reconciled risk rules
 const SYSTEM_PROMPT = `You are Feucht's Risk Manager module for Priced In Capital's intraday futures desk.
@@ -85,23 +85,23 @@ funded-account norms, flag as psychology issue.
 
 Be firm but constructive. Cite commandment numbers in rejections. Protect the trader.
 
-Respond with valid JSON only.`
+Respond with valid JSON only.`;
 
 export interface RiskManagerInput {
-  proposal: TradingProposal
-  psychology?: UserPsychology
-  currentPnL?: number
-  accountSize?: number
-  vixLevel?: number
-  existingPositions?: { symbol: string; size: number; pnl?: number }[]
+  proposal: TradingProposal;
+  psychology?: UserPsychology;
+  currentPnL?: number;
+  accountSize?: number;
+  vixLevel?: number;
+  existingPositions?: { symbol: string; size: number; pnl?: number }[];
   /** Current time in EST (HH:MM format) for circuit breaker checks */
-  timeEST?: string
+  timeEST?: string;
   /** Whether morning routine has been completed today */
-  morningRoutineDone?: boolean
+  morningRoutineDone?: boolean;
   /** Seconds since last major econ print (for blackout check) */
-  secondsSinceLastPrint?: number
+  secondsSinceLastPrint?: number;
   /** Number of consecutive losses this session */
-  consecutiveLosses?: number
+  consecutiveLosses?: number;
 }
 
 /**
@@ -109,44 +109,44 @@ export interface RiskManagerInput {
  */
 export async function assessProposal(
   userId: string,
-  input: RiskManagerInput
+  input: RiskManagerInput,
 ): Promise<RiskAssessment> {
-  const prompt = buildPrompt(input)
+  const prompt = buildPrompt(input);
 
   const { text } = await invokeAgent({
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: prompt,
     model: { temperature: 0.2, maxTokens: 1024 },
-  })
+  });
 
-  const parsed = parseJsonSafe<Partial<RiskAssessment>>(text)
+  const parsed = parseJsonSafe<Partial<RiskAssessment>>(text);
 
   const assessment: RiskAssessment = {
     id: crypto.randomUUID(),
     userId,
     proposalId: input.proposal.id,
     riskScore: parsed?.riskScore ?? 0.5,
-    decision: parsed?.decision ?? 'pending',
+    decision: parsed?.decision ?? "pending",
     issues: parsed?.issues ?? [],
     portfolioImpact: parsed?.portfolioImpact ?? {
       maxDrawdown: 0,
       positionConcentration: 0,
-      correlationRisk: 'low',
+      correlationRisk: "low",
     },
     blindSpotAlerts: parsed?.blindSpotAlerts ?? [],
     modificationSuggestions: parsed?.modificationSuggestions,
     rejectionReason: parsed?.rejectionReason,
-    summary: parsed?.summary ?? 'Assessment pending.',
+    summary: parsed?.summary ?? "Assessment pending.",
     createdAt: new Date().toISOString(),
-  }
+  };
 
   // Apply automatic rules
-  assessment.decision = applyAutomaticRules(input, assessment)
+  assessment.decision = applyAutomaticRules(input, assessment);
 
   // Save to database
-  await saveAssessment(assessment)
+  await saveAssessment(assessment);
 
-  return assessment
+  return assessment;
 }
 
 /**
@@ -154,222 +154,252 @@ export async function assessProposal(
  */
 function applyAutomaticRules(
   input: RiskManagerInput,
-  assessment: RiskAssessment
+  assessment: RiskAssessment,
 ): ProposalDecision {
-  const issues = assessment.issues
+  const issues = assessment.issues;
 
   // Flat direction is always safe
-  if (input.proposal.direction === 'flat') {
-    return 'approved'
+  if (input.proposal.direction === "flat") {
+    return "approved";
   }
 
   // HARD BLOCK: Commandment 14 — morning routine
   if (input.morningRoutineDone === false) {
-    assessment.rejectionReason = '[C14] Morning routine not completed. No trading until routine is verified.'
+    assessment.rejectionReason =
+      "[C14] Morning routine not completed. No trading until routine is verified.";
     assessment.issues.push({
-      category: 'commandment',
-      severity: 'extreme',
-      description: 'Commandment 14: The morning routine is non-negotiable.',
-      mitigation: 'Complete morning routine before submitting trades.',
-    })
-    return 'rejected'
+      category: "commandment",
+      severity: "extreme",
+      description: "Commandment 14: The morning routine is non-negotiable.",
+      mitigation: "Complete morning routine before submitting trades.",
+    });
+    return "rejected";
   }
 
   // HARD BLOCK: 11:30 AM EST circuit breaker
   if (input.timeEST) {
-    const [h, m] = input.timeEST.split(':').map(Number)
+    const [h, m] = input.timeEST.split(":").map(Number);
     if (h > 11 || (h === 11 && m >= 30)) {
-      assessment.rejectionReason = '11:30 AM EST circuit breaker — no new trades.'
+      assessment.rejectionReason =
+        "11:30 AM EST circuit breaker — no new trades.";
       assessment.issues.push({
-        category: 'timing',
-        severity: 'extreme',
-        description: 'Circuit breaker: 11:30 AM EST hard stop. No new trades after this time.',
-        mitigation: 'Trading session is over. Review and prepare for tomorrow.',
-      })
-      return 'rejected'
+        category: "timing",
+        severity: "extreme",
+        description:
+          "Circuit breaker: 11:30 AM EST hard stop. No new trades after this time.",
+        mitigation: "Trading session is over. Review and prepare for tomorrow.",
+      });
+      return "rejected";
     }
   }
 
   // HARD BLOCK: 120-second blackout after major econ prints
-  if (input.secondsSinceLastPrint !== undefined && input.secondsSinceLastPrint < 120) {
-    assessment.rejectionReason = `120-second blackout active (${120 - input.secondsSinceLastPrint}s remaining). The wick fills back in.`
+  if (
+    input.secondsSinceLastPrint !== undefined &&
+    input.secondsSinceLastPrint < 120
+  ) {
+    assessment.rejectionReason = `120-second blackout active (${120 - input.secondsSinceLastPrint}s remaining). The wick fills back in.`;
     assessment.issues.push({
-      category: 'timing',
-      severity: 'extreme',
-      description: 'News blackout: 120 seconds must pass after a major econ print. Initial spike is noise/algos/stop hunts.',
-      mitigation: 'Wait for the wick to fill back — the reclaim IS the trade.',
-    })
-    return 'rejected'
+      category: "timing",
+      severity: "extreme",
+      description:
+        "News blackout: 120 seconds must pass after a major econ print. Initial spike is noise/algos/stop hunts.",
+      mitigation: "Wait for the wick to fill back — the reclaim IS the trade.",
+    });
+    return "rejected";
   }
 
   // HARD BLOCK: Commandment 12 — no trade without stop-loss
   if (!input.proposal.stopLoss) {
-    assessment.rejectionReason = '[C12] Be right or be right out — stop-loss is non-negotiable.'
+    assessment.rejectionReason =
+      "[C12] Be right or be right out — stop-loss is non-negotiable.";
     assessment.issues.push({
-      category: 'commandment',
-      severity: 'extreme',
-      description: 'Commandment 12: Every trade must have a defined stop-loss.',
-      mitigation: 'Define a stop-loss level before entry.',
-    })
-    return 'rejected'
+      category: "commandment",
+      severity: "extreme",
+      description: "Commandment 12: Every trade must have a defined stop-loss.",
+      mitigation: "Define a stop-loss level before entry.",
+    });
+    return "rejected";
   }
 
   // HARD BLOCK: Commandment 3 — no shot in the dark
-  if (input.proposal.confidence !== undefined && input.proposal.confidence < 50) {
-    assessment.rejectionReason = '[C3] No shot in the dark trades — conviction too low.'
+  if (
+    input.proposal.confidence !== undefined &&
+    input.proposal.confidence < 50
+  ) {
+    assessment.rejectionReason =
+      "[C3] No shot in the dark trades — conviction too low.";
     assessment.issues.push({
-      category: 'commandment',
-      severity: 'extreme',
+      category: "commandment",
+      severity: "extreme",
       description: `Commandment 3: Confidence at ${input.proposal.confidence}% is below medium threshold.`,
-      mitigation: 'Build a stronger thesis or wait for a higher-conviction setup.',
-    })
-    return 'rejected'
+      mitigation:
+        "Build a stronger thesis or wait for a higher-conviction setup.",
+    });
+    return "rejected";
   }
 
   // HARD BLOCK: Commandment 7 — no doubling down on losers
   if (input.existingPositions?.length) {
     const sameSymbolLosing = input.existingPositions.find(
-      p => p.symbol === input.proposal.instrument && (p.pnl ?? 0) < 0
-    )
+      (p) => p.symbol === input.proposal.instrument && (p.pnl ?? 0) < 0,
+    );
     if (sameSymbolLosing) {
-      assessment.rejectionReason = '[C7] No doubling down on losers. Cut and reassess.'
+      assessment.rejectionReason =
+        "[C7] No doubling down on losers. Cut and reassess.";
       assessment.issues.push({
-        category: 'commandment',
-        severity: 'extreme',
+        category: "commandment",
+        severity: "extreme",
         description: `Commandment 7: Already holding a losing position in ${sameSymbolLosing.symbol}. Cannot add.`,
-        mitigation: 'Close the losing position first, then reassess from scratch.',
-      })
-      return 'rejected'
+        mitigation:
+          "Close the losing position first, then reassess from scratch.",
+      });
+      return "rejected";
     }
   }
 
   // Reject if risk score is too high
   if (assessment.riskScore > 0.8) {
-    assessment.rejectionReason = 'Risk score exceeds threshold (0.8)'
-    return 'rejected'
+    assessment.rejectionReason = "Risk score exceeds threshold (0.8)";
+    return "rejected";
   }
 
   // Reject if any extreme issues
-  const hasExtreme = issues.some(i => i.severity === 'extreme')
+  const hasExtreme = issues.some((i) => i.severity === "extreme");
   if (hasExtreme) {
-    assessment.rejectionReason = 'Extreme risk factor identified'
-    return 'rejected'
+    assessment.rejectionReason = "Extreme risk factor identified";
+    return "rejected";
   }
 
   // SOFT: Commandment 6 — anti-revenge after consecutive losses
   if (input.consecutiveLosses && input.consecutiveLosses >= 2) {
     assessment.issues.push({
-      category: 'psychology',
-      severity: 'high',
+      category: "psychology",
+      severity: "high",
       description: `Commandment 6: ${input.consecutiveLosses} consecutive losses. Revenge trading risk elevated.`,
-      mitigation: 'Consider switching instrument or direction. You never need to make back losses the same way.',
-    })
+      mitigation:
+        "Consider switching instrument or direction. You never need to make back losses the same way.",
+    });
   }
 
   // SOFT: R:R minimum 2:1 (Commandment 8)
-  if (input.proposal.riskRewardRatio !== undefined && input.proposal.riskRewardRatio < 2) {
+  if (
+    input.proposal.riskRewardRatio !== undefined &&
+    input.proposal.riskRewardRatio < 2
+  ) {
     assessment.issues.push({
-      category: 'risk_reward',
-      severity: 'high',
+      category: "risk_reward",
+      severity: "high",
       description: `Commandment 8: R:R at ${input.proposal.riskRewardRatio}:1 is below 2:1 minimum.`,
-      mitigation: 'Adjust entry, stop, or target to achieve at least 2:1 R:R.',
-    })
+      mitigation: "Adjust entry, stop, or target to achieve at least 2:1 R:R.",
+    });
   }
 
   // Suggest modifications if high severity issues
-  const hasHigh = issues.some(i => i.severity === 'high')
+  const hasHigh = issues.some((i) => i.severity === "high");
   if (hasHigh && assessment.modificationSuggestions?.length) {
-    return 'modified'
+    return "modified";
   }
 
   // VIX thresholds
   if (input.vixLevel && input.vixLevel > 35) {
     assessment.issues.push({
-      category: 'timing',
-      severity: 'high',
+      category: "timing",
+      severity: "high",
       description: `VIX at ${input.vixLevel} — extreme volatility`,
-      mitigation: 'Reduce position size by 50% or wait for VIX to settle.',
-    })
-    return 'modified'
+      mitigation: "Reduce position size by 50% or wait for VIX to settle.",
+    });
+    return "modified";
   }
   if (input.vixLevel && input.vixLevel > 30) {
     assessment.issues.push({
-      category: 'timing',
-      severity: 'medium',
+      category: "timing",
+      severity: "medium",
       description: `VIX at ${input.vixLevel} — elevated volatility`,
-      mitigation: 'Reduce position size by 50%.',
-    })
+      mitigation: "Reduce position size by 50%.",
+    });
   }
 
   // Daily PnL check
-  const accountSize = input.accountSize ?? 50000
-  const dailyPnLPercent = ((input.currentPnL ?? 0) / accountSize) * 100
+  const accountSize = input.accountSize ?? 50000;
+  const dailyPnLPercent = ((input.currentPnL ?? 0) / accountSize) * 100;
 
   if (dailyPnLPercent < -3) {
-    assessment.rejectionReason = 'Daily loss limit reached (-3%). Commandment 13: there is always another trade.'
+    assessment.rejectionReason =
+      "Daily loss limit reached (-3%). Commandment 13: there is always another trade.";
     assessment.issues.push({
-      category: 'psychology',
-      severity: 'extreme',
-      description: 'Daily loss limit reached. No new trades allowed.',
-      mitigation: 'Stop trading for the day. Review tomorrow.',
-    })
-    return 'rejected'
+      category: "psychology",
+      severity: "extreme",
+      description: "Daily loss limit reached. No new trades allowed.",
+      mitigation: "Stop trading for the day. Review tomorrow.",
+    });
+    return "rejected";
   }
 
   // Check for high issues without modification suggestions
   if (hasHigh) {
-    return 'modified'
+    return "modified";
   }
 
-  return 'approved'
+  return "approved";
 }
 
 /**
  * Build prompt for risk manager
  */
 function buildPrompt(input: RiskManagerInput): string {
-  const sections: string[] = ['Evaluate this trading proposal:']
+  const sections: string[] = ["Evaluate this trading proposal:"];
 
-  const { proposal } = input
-  sections.push(`\n=== PROPOSAL ===`)
-  sections.push(`Instrument: ${proposal.instrument}`)
-  sections.push(`Direction: ${proposal.direction}`)
-  sections.push(`Entry: ${proposal.entryPrice ?? 'N/A'}`)
-  sections.push(`Stop Loss: ${proposal.stopLoss ?? 'N/A'}`)
-  sections.push(`Take Profit: ${proposal.takeProfit?.join(', ') ?? 'N/A'}`)
-  sections.push(`Position Size: ${proposal.positionSize} contracts`)
-  sections.push(`Risk/Reward: ${proposal.riskRewardRatio}`)
-  sections.push(`Confidence: ${proposal.confidence}%`)
-  sections.push(`Rationale: ${proposal.rationale}`)
+  const { proposal } = input;
+  sections.push(`\n=== PROPOSAL ===`);
+  sections.push(`Instrument: ${proposal.instrument}`);
+  sections.push(`Direction: ${proposal.direction}`);
+  sections.push(`Entry: ${proposal.entryPrice ?? "N/A"}`);
+  sections.push(`Stop Loss: ${proposal.stopLoss ?? "N/A"}`);
+  sections.push(`Take Profit: ${proposal.takeProfit?.join(", ") ?? "N/A"}`);
+  sections.push(`Position Size: ${proposal.positionSize} contracts`);
+  sections.push(`Risk/Reward: ${proposal.riskRewardRatio}`);
+  sections.push(`Confidence: ${proposal.confidence}%`);
+  sections.push(`Rationale: ${proposal.rationale}`);
 
-  const accountSize = input.accountSize ?? 50000
-  sections.push(`\n=== ACCOUNT ===`)
-  sections.push(`Account Size: $${accountSize.toLocaleString()}`)
-  sections.push(`Current PnL: $${(input.currentPnL ?? 0).toLocaleString()} (${((input.currentPnL ?? 0) / accountSize * 100).toFixed(2)}%)`)
-  
+  const accountSize = input.accountSize ?? 50000;
+  sections.push(`\n=== ACCOUNT ===`);
+  sections.push(`Account Size: $${accountSize.toLocaleString()}`);
+  sections.push(
+    `Current PnL: $${(input.currentPnL ?? 0).toLocaleString()} (${(((input.currentPnL ?? 0) / accountSize) * 100).toFixed(2)}%)`,
+  );
+
   if (input.vixLevel) {
-    sections.push(`VIX Level: ${input.vixLevel}`)
+    sections.push(`VIX Level: ${input.vixLevel}`);
   }
 
   if (input.existingPositions?.length) {
-    sections.push(`\nExisting Positions:`)
-    input.existingPositions.forEach(p => sections.push(`- ${p.symbol}: ${p.size} contracts`))
+    sections.push(`\nExisting Positions:`);
+    input.existingPositions.forEach((p) =>
+      sections.push(`- ${p.symbol}: ${p.size} contracts`),
+    );
   }
 
   if (input.psychology) {
-    sections.push(`\n=== TRADER PSYCHOLOGY ===`)
-    sections.push(`Blind Spots: ${input.psychology.blindSpots.join(', ') || 'None identified'}`)
-    sections.push(`Goal: ${input.psychology.goal ?? 'Not set'}`)
+    sections.push(`\n=== TRADER PSYCHOLOGY ===`);
+    sections.push(
+      `Blind Spots: ${input.psychology.blindSpots.join(", ") || "None identified"}`,
+    );
+    sections.push(`Goal: ${input.psychology.goal ?? "Not set"}`);
     if (input.psychology.psychScores) {
-      sections.push(`FOMO tendency: ${input.psychology.psychScores.fomo}/10`)
-      sections.push(`Revenge trading risk: ${input.psychology.psychScores.revenge}/10`)
-      sections.push(`Overconfidence: ${input.psychology.psychScores.overconfidence}/10`)
+      sections.push(`FOMO tendency: ${input.psychology.psychScores.fomo}/10`);
+      sections.push(
+        `Revenge trading risk: ${input.psychology.psychScores.revenge}/10`,
+      );
+      sections.push(
+        `Overconfidence: ${input.psychology.psychScores.overconfidence}/10`,
+      );
     }
   }
 
-  sections.push('\nAssess the proposal and enforce risk rules.')
+  sections.push("\nAssess the proposal and enforce risk rules.");
 
-  return sections.join('\n')
+  return sections.join("\n");
 }
 
 /**
@@ -377,7 +407,7 @@ function buildPrompt(input: RiskManagerInput): string {
  */
 async function saveAssessment(assessment: RiskAssessment): Promise<void> {
   if (!isDatabaseAvailable() || !sql) {
-    return
+    return;
   }
 
   await sql`
@@ -401,30 +431,32 @@ async function saveAssessment(assessment: RiskAssessment): Promise<void> {
       ${assessment.modificationSuggestions ? JSON.stringify(assessment.modificationSuggestions) : null}::jsonb,
       ${null}
     )
-  `
+  `;
 }
 
 /**
  * Get user psychology profile
  */
-export async function getUserPsychology(userId: string): Promise<UserPsychology | null> {
+export async function getUserPsychology(
+  userId: string,
+): Promise<UserPsychology | null> {
   if (!isDatabaseAvailable() || !sql) {
-    return null
+    return null;
   }
 
   const result = await sql`
     SELECT * FROM user_psychology WHERE user_id = ${userId} LIMIT 1
-  `
+  `;
 
-  if (result.length === 0) return null
+  if (result.length === 0) return null;
 
-  const row = result[0]
+  const row = result[0];
   return {
     userId: String(row.user_id),
     blindSpots: (row.blind_spots as string[]) ?? [],
     goal: row.goal as string | undefined,
     orientationComplete: Boolean(row.orientation_complete),
-    psychScores: (row.psych_scores as UserPsychology['psychScores']) ?? {
+    psychScores: (row.psych_scores as UserPsychology["psychScores"]) ?? {
       fomo: 5,
       revenge: 5,
       overconfidence: 5,
@@ -432,7 +464,7 @@ export async function getUserPsychology(userId: string): Promise<UserPsychology 
     },
     lastAssessmentAt: row.last_assessment_at as string | undefined,
     agentNotes: (row.agent_notes as string[]) ?? [],
-  }
+  };
 }
 
 /**
@@ -440,9 +472,12 @@ export async function getUserPsychology(userId: string): Promise<UserPsychology 
  */
 function parseJsonSafe<T>(text: string): T | null {
   try {
-    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    return JSON.parse(cleaned) as T
+    const cleaned = text
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
+      .trim();
+    return JSON.parse(cleaned) as T;
   } catch {
-    return null
+    return null;
   }
 }

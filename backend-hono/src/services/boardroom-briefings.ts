@@ -1,9 +1,9 @@
 // [claude-code 2026-03-19] T1: Pre/post-market briefing scheduler
 
-import { CronExpressionParser } from 'cron-parser';
-import { handleHermesChat } from './hermes-handler.js';
-import { appendToBoardroom } from './hermes-sessions.js';
-import { getCurrentSnapshot } from './context-bank/context-bank-service.js';
+import { CronExpressionParser } from "cron-parser";
+import { handleHermesChat } from "./hermes-handler.js";
+import { appendToBoardroom } from "./hermes-sessions.js";
+import { getCurrentSnapshot } from "./context-bank/context-bank-service.js";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let lastPreMarketDate: string | null = null;
@@ -27,17 +27,26 @@ async function runPreMarketBriefing(): Promise<void> {
 
   const snapshot = getCurrentSnapshot();
   const context = snapshot
-    ? JSON.stringify({ vix: snapshot.vix, ivScores: Object.keys(snapshot.ivScores) })
-    : '{}';
+    ? JSON.stringify({
+        vix: snapshot.vix,
+        ivScores: Object.keys(snapshot.ivScores),
+      })
+    : "{}";
 
   const prompt = `[PRE-MARKET BRIEF] Generate a concise pre-market briefing. Include: overnight futures moves, key economic events today, open risk exposures, and critical levels to watch. Context: ${context}`;
 
   try {
-    const response = await handleHermesChat({ message: prompt, agentOverride: 'harper-cao' });
-    await appendToBoardroom(`[PRE-MARKET BRIEF]\n${response.content}`, 'assistant');
-    console.log('[Briefings] Pre-market briefing posted');
+    const response = await handleHermesChat({
+      message: prompt,
+      agentOverride: "harper-cao",
+    });
+    await appendToBoardroom(
+      `[PRE-MARKET BRIEF]\n${response.content}`,
+      "assistant",
+    );
+    console.log("[Briefings] Pre-market briefing posted");
   } catch (err) {
-    console.error('[Briefings] Pre-market briefing failed:', err);
+    console.error("[Briefings] Pre-market briefing failed:", err);
   }
 }
 
@@ -47,17 +56,26 @@ async function runPostMarketBriefing(): Promise<void> {
 
   const snapshot = getCurrentSnapshot();
   const context = snapshot
-    ? JSON.stringify({ vix: snapshot.vix, ivScores: Object.keys(snapshot.ivScores) })
-    : '{}';
+    ? JSON.stringify({
+        vix: snapshot.vix,
+        ivScores: Object.keys(snapshot.ivScores),
+      })
+    : "{}";
 
   const prompt = `[POST-MARKET BRIEF] Generate a concise post-market briefing. Include: session recap, P&L summary, key moves of the day, and overnight catalysts to watch. Context: ${context}`;
 
   try {
-    const response = await handleHermesChat({ message: prompt, agentOverride: 'harper-cao' });
-    await appendToBoardroom(`[POST-MARKET BRIEF]\n${response.content}`, 'assistant');
-    console.log('[Briefings] Post-market briefing posted');
+    const response = await handleHermesChat({
+      message: prompt,
+      agentOverride: "harper-cao",
+    });
+    await appendToBoardroom(
+      `[POST-MARKET BRIEF]\n${response.content}`,
+      "assistant",
+    );
+    console.log("[Briefings] Post-market briefing posted");
   } catch (err) {
-    console.error('[Briefings] Post-market briefing failed:', err);
+    console.error("[Briefings] Post-market briefing failed:", err);
   }
 }
 
@@ -66,8 +84,9 @@ async function checkAndRunBriefings(): Promise<void> {
     const now = new Date();
     const today = now.toISOString().slice(0, 10);
 
-    const preMarketCron = process.env.HERMES_PREMARKET_CRON ?? '0 7 * * 1-5';
-    const postMarketCron = process.env.HERMES_POSTMARKET_CRON ?? '30 16 * * 1-5';
+    const preMarketCron = process.env.HERMES_PREMARKET_CRON ?? "0 7 * * 1-5";
+    const postMarketCron =
+      process.env.HERMES_POSTMARKET_CRON ?? "30 16 * * 1-5";
 
     // Pre-market check
     if (lastPreMarketDate !== today && isInCronWindow(preMarketCron, now)) {
@@ -79,13 +98,13 @@ async function checkAndRunBriefings(): Promise<void> {
       await runPostMarketBriefing();
     }
   } catch (err) {
-    console.error('[Briefings] Check failed:', err);
+    console.error("[Briefings] Check failed:", err);
   }
 }
 
 export function startBriefingScheduler(): void {
   if (intervalId) return;
-  console.log('[Briefings] Starting briefing scheduler (60s interval)');
+  console.log("[Briefings] Starting briefing scheduler (60s interval)");
   intervalId = setInterval(checkAndRunBriefings, 60_000);
   // Run initial check immediately
   checkAndRunBriefings();
@@ -95,6 +114,6 @@ export function stopBriefingScheduler(): void {
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
-    console.log('[Briefings] Stopped');
+    console.log("[Briefings] Stopped");
   }
 }

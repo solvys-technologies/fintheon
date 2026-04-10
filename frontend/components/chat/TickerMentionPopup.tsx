@@ -1,28 +1,28 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { KNOWN_AGENTS } from '../../contexts/FintheonAgentContext';
+import { useState, useEffect, useRef, useMemo } from "react";
+import { KNOWN_AGENTS } from "../../contexts/FintheonAgentContext";
 
 /* ------------------------------------------------------------------ */
 /*  Ticker data                                                        */
 /* ------------------------------------------------------------------ */
 
 const TICKER_SYMBOLS = [
-  { symbol: 'MNQ', name: 'E-mini Micro Nasdaq' },
-  { symbol: 'ES', name: 'E-mini S&P 500' },
-  { symbol: 'NQ', name: 'E-mini Nasdaq-100' },
-  { symbol: 'YM', name: 'E-mini Dow Jones' },
-  { symbol: 'RTY', name: 'E-mini Russell 2000' },
-  { symbol: 'CL', name: 'Crude Oil' },
-  { symbol: 'GC', name: 'Gold' },
-  { symbol: 'SI', name: 'Silver' },
-  { symbol: 'ZB', name: '30-Year T-Bond' },
-  { symbol: 'VIX', name: 'Volatility Index' },
+  { symbol: "MNQ", name: "E-mini Micro Nasdaq" },
+  { symbol: "ES", name: "E-mini S&P 500" },
+  { symbol: "NQ", name: "E-mini Nasdaq-100" },
+  { symbol: "YM", name: "E-mini Dow Jones" },
+  { symbol: "RTY", name: "E-mini Russell 2000" },
+  { symbol: "CL", name: "Crude Oil" },
+  { symbol: "GC", name: "Gold" },
+  { symbol: "SI", name: "Silver" },
+  { symbol: "ZB", name: "30-Year T-Bond" },
+  { symbol: "VIX", name: "Volatility Index" },
 ];
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-type MentionType = 'agent' | 'ticker';
+type MentionType = "agent" | "ticker";
 
 interface MentionItem {
   type: MentionType;
@@ -33,7 +33,7 @@ interface MentionItem {
 
 interface TickerMentionPopupProps {
   query: string; // The search text after @ or $
-  triggerChar: '@' | '$';
+  triggerChar: "@" | "$";
   position: { top: number; left: number };
   onSelect: (item: MentionItem) => void;
   onClose: () => void;
@@ -43,43 +43,57 @@ interface TickerMentionPopupProps {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function TickerMentionPopup({ query, triggerChar, position, onSelect, onClose }: TickerMentionPopupProps) {
+export function TickerMentionPopup({
+  query,
+  triggerChar,
+  position,
+  onSelect,
+  onClose,
+}: TickerMentionPopupProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
   const items = useMemo((): MentionItem[] => {
     const q = query.toLowerCase();
-    if (triggerChar === '@') {
-      return KNOWN_AGENTS
-        .filter((name) => name.toLowerCase().includes(q))
-        .map((name) => ({ type: 'agent' as const, value: name, label: name }));
+    if (triggerChar === "@") {
+      return KNOWN_AGENTS.filter((name) => name.toLowerCase().includes(q)).map(
+        (name) => ({ type: "agent" as const, value: name, label: name }),
+      );
     }
-    return TICKER_SYMBOLS
-      .filter((t) => t.symbol.toLowerCase().includes(q) || t.name.toLowerCase().includes(q))
-      .map((t) => ({ type: 'ticker' as const, value: t.symbol, label: `$${t.symbol}`, sublabel: t.name }));
+    return TICKER_SYMBOLS.filter(
+      (t) =>
+        t.symbol.toLowerCase().includes(q) || t.name.toLowerCase().includes(q),
+    ).map((t) => ({
+      type: "ticker" as const,
+      value: t.symbol,
+      label: `$${t.symbol}`,
+      sublabel: t.name,
+    }));
   }, [query, triggerChar]);
 
   // Reset selection when items change
-  useEffect(() => { setSelectedIndex(0); }, [items]);
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [items]);
 
   // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
+      if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedIndex((prev) => Math.min(prev + 1, items.length - 1));
-      } else if (e.key === 'ArrowUp') {
+      } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex((prev) => Math.max(prev - 1, 0));
-      } else if (e.key === 'Enter' || e.key === 'Tab') {
+      } else if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
         if (items[selectedIndex]) onSelect(items[selectedIndex]);
-      } else if (e.key === 'Escape') {
+      } else if (e.key === "Escape") {
         onClose();
       }
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, [items, selectedIndex, onSelect, onClose]);
 
   if (items.length === 0) return null;
@@ -96,11 +110,19 @@ export function TickerMentionPopup({ query, triggerChar, position, onSelect, onC
           onClick={() => onSelect(item)}
           onMouseEnter={() => setSelectedIndex(idx)}
           className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${
-            idx === selectedIndex ? 'bg-[var(--fintheon-accent)]/10' : 'hover:bg-[var(--fintheon-accent)]/5'
+            idx === selectedIndex
+              ? "bg-[var(--fintheon-accent)]/10"
+              : "hover:bg-[var(--fintheon-accent)]/5"
           }`}
         >
-          <span className="text-[12px] font-medium text-white">{item.label}</span>
-          {item.sublabel && <span className="text-[10px] text-gray-500 truncate">{item.sublabel}</span>}
+          <span className="text-[12px] font-medium text-white">
+            {item.label}
+          </span>
+          {item.sublabel && (
+            <span className="text-[10px] text-gray-500 truncate">
+              {item.sublabel}
+            </span>
+          )}
         </button>
       ))}
     </div>

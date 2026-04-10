@@ -1,8 +1,8 @@
 // [claude-code 2026-03-24] Generic cloud state hook — read/write per-user state via backend
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const DEBOUNCE_MS = 1500;
 
 /**
@@ -48,14 +48,20 @@ export function useCloudState<T>(
     (async () => {
       try {
         const token = await getAccessToken();
-        if (!token || cancelled) { setIsLoading(false); return; }
+        if (!token || cancelled) {
+          setIsLoading(false);
+          return;
+        }
 
         const res = await fetch(`${API_BASE}/api/profile/app-state`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok || cancelled) { setIsLoading(false); return; }
+        if (!res.ok || cancelled) {
+          setIsLoading(false);
+          return;
+        }
 
-        const data = await res.json() as Record<string, unknown>;
+        const data = (await res.json()) as Record<string, unknown>;
         const cloudValue = data?.[key];
         if (cloudValue !== undefined && !cancelled) {
           setValueInternal(cloudValue as T);
@@ -68,50 +74,61 @@ export function useCloudState<T>(
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated, key, fallbackKey, getAccessToken]);
 
   // Debounced cloud persist
-  const persistToCloud = useCallback(async (newValue: T) => {
-    if (!isAuthenticated) return;
-    try {
-      const token = await getAccessToken();
-      if (!token) return;
-
-      // Merge into existing app_state
-      await fetch(`${API_BASE}/api/profile/app-state`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ state: { [key]: newValue } }),
-      });
-    } catch {
-      // Silent fail — localStorage is still the source of truth
-    }
-  }, [isAuthenticated, getAccessToken, key]);
-
-  const setValue = useCallback((valOrFn: T | ((prev: T) => T)) => {
-    setValueInternal(prev => {
-      const next = typeof valOrFn === 'function'
-        ? (valOrFn as (prev: T) => T)(prev)
-        : valOrFn;
-
-      // Always persist to localStorage immediately
+  const persistToCloud = useCallback(
+    async (newValue: T) => {
+      if (!isAuthenticated) return;
       try {
-        localStorage.setItem(fallbackKey, JSON.stringify(next));
-      } catch { /* ignore */ }
+        const token = await getAccessToken();
+        if (!token) return;
 
-      // Debounced cloud persist
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        persistToCloud(next);
-      }, DEBOUNCE_MS);
+        // Merge into existing app_state
+        await fetch(`${API_BASE}/api/profile/app-state`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ state: { [key]: newValue } }),
+        });
+      } catch {
+        // Silent fail — localStorage is still the source of truth
+      }
+    },
+    [isAuthenticated, getAccessToken, key],
+  );
 
-      return next;
-    });
-  }, [fallbackKey, persistToCloud]);
+  const setValue = useCallback(
+    (valOrFn: T | ((prev: T) => T)) => {
+      setValueInternal((prev) => {
+        const next =
+          typeof valOrFn === "function"
+            ? (valOrFn as (prev: T) => T)(prev)
+            : valOrFn;
+
+        // Always persist to localStorage immediately
+        try {
+          localStorage.setItem(fallbackKey, JSON.stringify(next));
+        } catch {
+          /* ignore */
+        }
+
+        // Debounced cloud persist
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+          persistToCloud(next);
+        }, DEBOUNCE_MS);
+
+        return next;
+      });
+    },
+    [fallbackKey, persistToCloud],
+  );
 
   // Cleanup debounce on unmount
   useEffect(() => {

@@ -1,6 +1,13 @@
 // [claude-code 2026-03-10] Added backend settings sync (source of truth when authenticated)
-import { createContext, useContext, useState, useRef, ReactNode, useEffect } from 'react';
-import type { HealingBowlSound } from '../utils/healingBowlSounds';
+import {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  ReactNode,
+  useEffect,
+} from "react";
+import type { HealingBowlSound } from "../utils/healingBowlSounds";
 
 export interface APIKeys {
   openai?: string;
@@ -52,7 +59,7 @@ interface DeveloperSettings {
   accountTrackerEnabled: boolean;
 }
 
-type AutoPilotMode = 'off' | 'semi' | 'autonomous';
+type AutoPilotMode = "off" | "semi" | "autonomous";
 
 interface AutoPilotSettings {
   mode: AutoPilotMode;
@@ -72,9 +79,17 @@ export interface ProposerIframeSource {
   builtin?: boolean;
 }
 
-export type PrimaryBroker = 'rithmic' | 'projectx' | 'mmt';
-export type DefaultLayout = 'combined' | 'tickers-only';
-export type DefaultPlatform = 'topstepx' | 'topstep-dashboard' | 'mmt' | 'kalshi' | 'research' | 'tradesea' | 'tradovate' | 'tradingview';
+export type PrimaryBroker = "rithmic" | "projectx" | "mmt";
+export type DefaultLayout = "combined" | "tickers-only";
+export type DefaultPlatform =
+  | "topstepx"
+  | "topstep-dashboard"
+  | "mmt"
+  | "kalshi"
+  | "research"
+  | "tradesea"
+  | "tradovate"
+  | "tradingview";
 
 interface SettingsContextType {
   apiKeys: APIKeys;
@@ -135,10 +150,12 @@ interface SettingsContextType {
   setProposerDefaultIframe: (id: string) => void;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+const SettingsContext = createContext<SettingsContextType | undefined>(
+  undefined,
+);
 
-const STORAGE_KEY = 'fintheon:settings';
-const BACKEND_SETTINGS_URL = '/api/settings';
+const STORAGE_KEY = "fintheon:settings";
+const BACKEND_SETTINGS_URL = "/api/settings";
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {
@@ -147,13 +164,13 @@ function loadFromStorage<T>(key: string, defaultValue: T): T {
       const parsed = JSON.parse(stored);
       return parsed[key] !== undefined ? parsed[key] : defaultValue;
     }
-  } catch { }
+  } catch {}
   return defaultValue;
 }
 
 async function fetchBackendSettings(): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch(BACKEND_SETTINGS_URL, { credentials: 'include' });
+    const res = await fetch(BACKEND_SETTINGS_URL, { credentials: "include" });
     if (!res.ok) return null;
     const data = await res.json();
     return data?.settings ?? null;
@@ -162,12 +179,14 @@ async function fetchBackendSettings(): Promise<Record<string, unknown> | null> {
   }
 }
 
-async function saveBackendSettings(settings: Record<string, unknown>): Promise<void> {
+async function saveBackendSettings(
+  settings: Record<string, unknown>,
+): Promise<void> {
   try {
     await fetch(BACKEND_SETTINGS_URL, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ settings }),
     });
   } catch {
@@ -177,10 +196,10 @@ async function saveBackendSettings(settings: Record<string, unknown>): Promise<v
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [apiKeys, setAPIKeys] = useState<APIKeys>(() =>
-    loadFromStorage('apiKeys', {})
+    loadFromStorage("apiKeys", {}),
   );
   const [tradingModels, setTradingModels] = useState<TradingModelToggles>(() =>
-    loadFromStorage('tradingModels', {
+    loadFromStorage("tradingModels", {
       momentumModel: true,
       meanReversionModel: false,
       fortyFortyClub: true,
@@ -188,122 +207,161 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       morningFlush: true,
       lunchPowerHourFlush: true,
       vixFixer: true,
-    })
+    }),
   );
   const [alertConfig, setAlertConfig] = useState<AlertConfig>(() =>
-    loadFromStorage('alertConfig', {
+    loadFromStorage("alertConfig", {
       priceAlerts: true,
       psychAlerts: true,
       newsAlerts: false,
       soundEnabled: true,
-      healingBowlSound: 'calm-1' as HealingBowlSound,
+      healingBowlSound: "calm-1" as HealingBowlSound,
       nametagEmoPulse: true,
       vixSpikeThreshold: 22,
-    })
+    }),
   );
   const [mockDataEnabled, setMockDataEnabled] = useState(() =>
-    loadFromStorage('mockDataEnabled', false)
+    loadFromStorage("mockDataEnabled", false),
   );
   const [selectedSymbol, setSelectedSymbol] = useState<TradingSymbol>(() =>
-    loadFromStorage('selectedSymbol', {
-      symbol: '/MNQ',
-      contractName: '/MNQZ25',
-    })
+    loadFromStorage("selectedSymbol", {
+      symbol: "/MNQ",
+      contractName: "/MNQZ25",
+    }),
   );
   const [riskSettings, setRiskSettings] = useState<RiskSettings>(() =>
-    loadFromStorage('riskSettings', {
+    loadFromStorage("riskSettings", {
       dailyProfitTarget: 1500,
       dailyLossLimit: 750,
       maxTrades: 5,
       overTradingDuration: 15,
-    })
+    }),
   );
-  const [developerSettings, setDeveloperSettings] = useState<DeveloperSettings>(() =>
-    loadFromStorage('developerSettings', {
-      showTestTradeButton: false,
-      showMockProposal: false,
-      showPlaceholderBriefings: false,
-      mirosharkSimulations: false,
-      agentAutoProposals: false,
-      accountTrackerEnabled: false,
-    })
+  const [developerSettings, setDeveloperSettings] = useState<DeveloperSettings>(
+    () =>
+      loadFromStorage("developerSettings", {
+        showTestTradeButton: false,
+        showMockProposal: false,
+        showPlaceholderBriefings: false,
+        mirosharkSimulations: false,
+        agentAutoProposals: false,
+        accountTrackerEnabled: false,
+      }),
   );
-  const [autoPilotSettings, setAutoPilotSettings] = useState<AutoPilotSettings>(() =>
-    loadFromStorage('autoPilotSettings', {
-      mode: 'off' as AutoPilotMode,
-      requireConfirmation: true,
-      maxDailyProposals: 5,
-    })
+  const [autoPilotSettings, setAutoPilotSettings] = useState<AutoPilotSettings>(
+    () =>
+      loadFromStorage("autoPilotSettings", {
+        mode: "off" as AutoPilotMode,
+        requireConfirmation: true,
+        maxDailyProposals: 5,
+      }),
   );
   const [primaryBroker, setPrimaryBroker] = useState<PrimaryBroker>(() =>
-    loadFromStorage('primaryBroker', 'rithmic' as PrimaryBroker)
+    loadFromStorage("primaryBroker", "rithmic" as PrimaryBroker),
   );
   const [iframeUrls, setIframeUrls] = useState<IframeUrls>(() =>
-    loadFromStorage('iframeUrls', {
-      boardroom: '',
-      research: 'https://www.notion.so/2db141b0da7d80efa647ee7f6d5153f5',
-    })
+    loadFromStorage("iframeUrls", {
+      boardroom: "",
+      research: "https://www.notion.so/2db141b0da7d80efa647ee7f6d5153f5",
+    }),
   );
   const [gatewayPort, setGatewayPort] = useState<number>(() =>
-    loadFromStorage('gatewayPort', 8080)
+    loadFromStorage("gatewayPort", 8080),
   );
   const [traderName, setTraderName] = useState<string>(() =>
-    loadFromStorage('traderName', '')
+    loadFromStorage("traderName", ""),
   );
   const [autoRefresh, setAutoRefresh] = useState<boolean>(() =>
-    loadFromStorage('autoRefresh', true)
+    loadFromStorage("autoRefresh", true),
   );
   const [interviewCompleted, setInterviewCompleted] = useState<boolean>(() =>
-    loadFromStorage('interviewCompleted', false)
+    loadFromStorage("interviewCompleted", false),
   );
   const [tradingGoals, setTradingGoals] = useState<string>(() =>
-    loadFromStorage('tradingGoals', '')
+    loadFromStorage("tradingGoals", ""),
   );
   const [instrumentsTraded, setInstrumentsTraded] = useState<string[]>(() =>
-    loadFromStorage('instrumentsTraded', [])
+    loadFromStorage("instrumentsTraded", []),
   );
   const [discordUsername, setDiscordUsername] = useState<string>(() =>
-    loadFromStorage('discordUsername', '')
+    loadFromStorage("discordUsername", ""),
   );
   const [tradingRoadblocks, setTradingRoadblocks] = useState<string[]>(() =>
-    loadFromStorage('tradingRoadblocks', [])
+    loadFromStorage("tradingRoadblocks", []),
   );
-  const [psychAssistAutoStart, setPsychAssistAutoStart] = useState<boolean>(() =>
-    loadFromStorage('psychAssistAutoStart', true)
+  const [psychAssistAutoStart, setPsychAssistAutoStart] = useState<boolean>(
+    () => loadFromStorage("psychAssistAutoStart", true),
   );
   const [hermesEnabled, setHermesEnabled] = useState<boolean>(() =>
-    loadFromStorage('hermesEnabled', true)
+    loadFromStorage("hermesEnabled", true),
   );
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() =>
-    loadFromStorage('voiceEnabled', true)
+    loadFromStorage("voiceEnabled", true),
   );
   const [defaultLayout, setDefaultLayout] = useState<DefaultLayout>(() =>
-    loadFromStorage('defaultLayout', 'combined' as DefaultLayout)
+    loadFromStorage("defaultLayout", "combined" as DefaultLayout),
   );
   const [defaultPlatform, setDefaultPlatform] = useState<DefaultPlatform>(() =>
-    loadFromStorage('defaultPlatform', 'topstepx' as DefaultPlatform)
+    loadFromStorage("defaultPlatform", "topstepx" as DefaultPlatform),
   );
-  const [bulletinVoteThreshold, setBulletinVoteThreshold] = useState<number>(() =>
-    loadFromStorage('bulletinVoteThreshold', 3)
+  const [bulletinVoteThreshold, setBulletinVoteThreshold] = useState<number>(
+    () => loadFromStorage("bulletinVoteThreshold", 3),
   );
 
   const BUILTIN_PROPOSER_SOURCES: ProposerIframeSource[] = [
-    { id: 'tradingview', label: 'TradingView', url: 'https://www.tradingview.com/chart', builtin: true },
-    { id: 'unusual-whales', label: 'Unusual Whales', url: 'https://unusualwhales.com/flow', builtin: true },
-    { id: 'kalshi', label: 'Kalshi Markets', url: 'https://kalshi.com/category/economics', builtin: true },
-    { id: 'topstep-dashboard', label: 'TopStep Dashboard', url: 'https://dashboard.topstep.com', builtin: true },
-    { id: 'tradesea', label: 'TradeSea', url: 'https://app.tradesea.ai/trade', builtin: true },
-    { id: 'tradovate', label: 'Tradovate', url: 'https://trader.tradovate.com', builtin: true },
+    {
+      id: "tradingview",
+      label: "TradingView",
+      url: "https://www.tradingview.com/chart",
+      builtin: true,
+    },
+    {
+      id: "unusual-whales",
+      label: "Unusual Whales",
+      url: "https://unusualwhales.com/flow",
+      builtin: true,
+    },
+    {
+      id: "kalshi",
+      label: "Kalshi Markets",
+      url: "https://kalshi.com/category/economics",
+      builtin: true,
+    },
+    {
+      id: "topstep-dashboard",
+      label: "TopStep Dashboard",
+      url: "https://dashboard.topstep.com",
+      builtin: true,
+    },
+    {
+      id: "tradesea",
+      label: "TradeSea",
+      url: "https://app.tradesea.ai/trade",
+      builtin: true,
+    },
+    {
+      id: "tradovate",
+      label: "Tradovate",
+      url: "https://trader.tradovate.com",
+      builtin: true,
+    },
   ];
 
-  const [proposerIframeSources, setProposerIframeSources] = useState<ProposerIframeSource[]>(() => {
-    const stored = loadFromStorage<ProposerIframeSource[]>('proposerIframeSources', []);
+  const [proposerIframeSources, setProposerIframeSources] = useState<
+    ProposerIframeSource[]
+  >(() => {
+    const stored = loadFromStorage<ProposerIframeSource[]>(
+      "proposerIframeSources",
+      [],
+    );
     // Merge: always include builtins, append custom entries from storage
-    const customEntries = stored.filter((s: ProposerIframeSource) => !s.builtin);
+    const customEntries = stored.filter(
+      (s: ProposerIframeSource) => !s.builtin,
+    );
     return [...BUILTIN_PROPOSER_SOURCES, ...customEntries];
   });
-  const [proposerDefaultIframe, setProposerDefaultIframe] = useState<string>(() =>
-    loadFromStorage('proposerDefaultIframe', 'tradingview')
+  const [proposerDefaultIframe, setProposerDefaultIframe] = useState<string>(
+    () => loadFromStorage("proposerDefaultIframe", "tradingview"),
   );
 
   // Track whether initial backend fetch has completed to avoid saving back stale data
@@ -312,36 +370,84 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // On mount: fetch from backend, merge with localStorage (backend is source of truth)
   useEffect(() => {
     fetchBackendSettings().then((remote) => {
-      if (remote && typeof remote === 'object') {
-        if (remote.apiKeys) setAPIKeys(prev => ({ ...prev, ...(remote.apiKeys as APIKeys) }));
-        if (remote.tradingModels) setTradingModels(prev => ({ ...prev, ...(remote.tradingModels as TradingModelToggles) }));
-        if (remote.alertConfig) setAlertConfig(prev => ({ ...prev, ...(remote.alertConfig as AlertConfig) }));
-        if (remote.mockDataEnabled !== undefined) setMockDataEnabled(remote.mockDataEnabled as boolean);
-        if (remote.selectedSymbol) setSelectedSymbol(prev => ({ ...prev, ...(remote.selectedSymbol as TradingSymbol) }));
-        if (remote.riskSettings) setRiskSettings(prev => ({ ...prev, ...(remote.riskSettings as RiskSettings) }));
-        if (remote.developerSettings) setDeveloperSettings(prev => ({ ...prev, ...(remote.developerSettings as DeveloperSettings) }));
-        if (remote.autoPilotSettings) setAutoPilotSettings(prev => ({ ...prev, ...(remote.autoPilotSettings as AutoPilotSettings) }));
-        if (remote.primaryBroker) setPrimaryBroker(remote.primaryBroker as PrimaryBroker);
-        if (remote.iframeUrls) setIframeUrls(prev => ({ ...prev, ...(remote.iframeUrls as IframeUrls) }));
+      if (remote && typeof remote === "object") {
+        if (remote.apiKeys)
+          setAPIKeys((prev) => ({ ...prev, ...(remote.apiKeys as APIKeys) }));
+        if (remote.tradingModels)
+          setTradingModels((prev) => ({
+            ...prev,
+            ...(remote.tradingModels as TradingModelToggles),
+          }));
+        if (remote.alertConfig)
+          setAlertConfig((prev) => ({
+            ...prev,
+            ...(remote.alertConfig as AlertConfig),
+          }));
+        if (remote.mockDataEnabled !== undefined)
+          setMockDataEnabled(remote.mockDataEnabled as boolean);
+        if (remote.selectedSymbol)
+          setSelectedSymbol((prev) => ({
+            ...prev,
+            ...(remote.selectedSymbol as TradingSymbol),
+          }));
+        if (remote.riskSettings)
+          setRiskSettings((prev) => ({
+            ...prev,
+            ...(remote.riskSettings as RiskSettings),
+          }));
+        if (remote.developerSettings)
+          setDeveloperSettings((prev) => ({
+            ...prev,
+            ...(remote.developerSettings as DeveloperSettings),
+          }));
+        if (remote.autoPilotSettings)
+          setAutoPilotSettings((prev) => ({
+            ...prev,
+            ...(remote.autoPilotSettings as AutoPilotSettings),
+          }));
+        if (remote.primaryBroker)
+          setPrimaryBroker(remote.primaryBroker as PrimaryBroker);
+        if (remote.iframeUrls)
+          setIframeUrls((prev) => ({
+            ...prev,
+            ...(remote.iframeUrls as IframeUrls),
+          }));
         if (remote.gatewayPort) setGatewayPort(remote.gatewayPort as number);
         if (remote.traderName) setTraderName(remote.traderName as string);
-        if (remote.autoRefresh !== undefined) setAutoRefresh(remote.autoRefresh as boolean);
-        if (remote.interviewCompleted !== undefined) setInterviewCompleted(remote.interviewCompleted as boolean);
+        if (remote.autoRefresh !== undefined)
+          setAutoRefresh(remote.autoRefresh as boolean);
+        if (remote.interviewCompleted !== undefined)
+          setInterviewCompleted(remote.interviewCompleted as boolean);
         if (remote.tradingGoals) setTradingGoals(remote.tradingGoals as string);
-        if (remote.instrumentsTraded) setInstrumentsTraded(remote.instrumentsTraded as string[]);
-        if (remote.discordUsername) setDiscordUsername(remote.discordUsername as string);
-        if (remote.tradingRoadblocks) setTradingRoadblocks(remote.tradingRoadblocks as string[]);
-        if (remote.hermesEnabled !== undefined) setHermesEnabled(remote.hermesEnabled as boolean);
-        if (remote.voiceEnabled !== undefined) setVoiceEnabled(remote.voiceEnabled as boolean);
-        if (remote.defaultLayout) setDefaultLayout(remote.defaultLayout as DefaultLayout);
-        if (remote.defaultPlatform) setDefaultPlatform(remote.defaultPlatform as DefaultPlatform);
-        if (remote.bulletinVoteThreshold !== undefined) setBulletinVoteThreshold(remote.bulletinVoteThreshold as number);
+        if (remote.instrumentsTraded)
+          setInstrumentsTraded(remote.instrumentsTraded as string[]);
+        if (remote.discordUsername)
+          setDiscordUsername(remote.discordUsername as string);
+        if (remote.tradingRoadblocks)
+          setTradingRoadblocks(remote.tradingRoadblocks as string[]);
+        if (remote.hermesEnabled !== undefined)
+          setHermesEnabled(remote.hermesEnabled as boolean);
+        if (remote.voiceEnabled !== undefined)
+          setVoiceEnabled(remote.voiceEnabled as boolean);
+        if (remote.defaultLayout)
+          setDefaultLayout(remote.defaultLayout as DefaultLayout);
+        if (remote.defaultPlatform)
+          setDefaultPlatform(remote.defaultPlatform as DefaultPlatform);
+        if (remote.bulletinVoteThreshold !== undefined)
+          setBulletinVoteThreshold(remote.bulletinVoteThreshold as number);
         if (remote.proposerIframeSources) {
-          const remoteSources = remote.proposerIframeSources as ProposerIframeSource[];
-          const customEntries = remoteSources.filter((s: ProposerIframeSource) => !s.builtin);
-          setProposerIframeSources([...BUILTIN_PROPOSER_SOURCES, ...customEntries]);
+          const remoteSources =
+            remote.proposerIframeSources as ProposerIframeSource[];
+          const customEntries = remoteSources.filter(
+            (s: ProposerIframeSource) => !s.builtin,
+          );
+          setProposerIframeSources([
+            ...BUILTIN_PROPOSER_SOURCES,
+            ...customEntries,
+          ]);
         }
-        if (remote.proposerDefaultIframe) setProposerDefaultIframe(remote.proposerDefaultIframe as string);
+        if (remote.proposerDefaultIframe)
+          setProposerDefaultIframe(remote.proposerDefaultIframe as string);
       }
       backendSynced.current = true;
     });
@@ -380,13 +486,40 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (error) {
-      console.warn('Failed to persist settings:', error);
+      console.warn("Failed to persist settings:", error);
     }
     // Only sync to backend after initial fetch completes
     if (backendSynced.current) {
       saveBackendSettings(settings);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName, autoRefresh, interviewCompleted, tradingGoals, instrumentsTraded, discordUsername, tradingRoadblocks, psychAssistAutoStart, hermesEnabled, voiceEnabled, defaultLayout, defaultPlatform, bulletinVoteThreshold, proposerIframeSources, proposerDefaultIframe]);
+  }, [
+    apiKeys,
+    tradingModels,
+    alertConfig,
+    mockDataEnabled,
+    selectedSymbol,
+    riskSettings,
+    developerSettings,
+    autoPilotSettings,
+    primaryBroker,
+    iframeUrls,
+    gatewayPort,
+    traderName,
+    autoRefresh,
+    interviewCompleted,
+    tradingGoals,
+    instrumentsTraded,
+    discordUsername,
+    tradingRoadblocks,
+    psychAssistAutoStart,
+    hermesEnabled,
+    voiceEnabled,
+    defaultLayout,
+    defaultPlatform,
+    bulletinVoteThreshold,
+    proposerIframeSources,
+    proposerDefaultIframe,
+  ]);
 
   return (
     <SettingsContext.Provider
@@ -453,7 +586,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 export function useSettings() {
   const context = useContext(SettingsContext);
   if (context === undefined) {
-    throw new Error('useSettings must be used within a SettingsProvider');
+    throw new Error("useSettings must be used within a SettingsProvider");
   }
   return context;
 }

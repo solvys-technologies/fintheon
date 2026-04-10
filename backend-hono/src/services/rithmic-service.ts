@@ -7,9 +7,9 @@
  * Env required in gateway: RITHMIC_USER, RITHMIC_PASSWORD, RITHMIC_SYSTEM_NAME, RITHMIC_URI
  */
 
-import type { RithmicConnectionStatus } from '../types/rithmic.js';
+import type { RithmicConnectionStatus } from "../types/rithmic.js";
 
-const GATEWAY_URL = process.env.RITHMIC_GATEWAY_URL ?? 'http://localhost:3002';
+const GATEWAY_URL = process.env.RITHMIC_GATEWAY_URL ?? "http://localhost:3002";
 
 interface GatewayStatus {
   connected: boolean;
@@ -25,15 +25,23 @@ interface GatewayOrderResponse {
   ts: number;
 }
 
-async function gatewayFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
+async function gatewayFetch<T>(
+  path: string,
+  opts: RequestInit = {},
+): Promise<T> {
   const res = await fetch(`${GATEWAY_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
     ...opts,
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as Record<string, unknown>;
-    throw new Error((body.detail as string) ?? `Rithmic gateway error: ${res.status}`);
+    const body = (await res.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >;
+    throw new Error(
+      (body.detail as string) ?? `Rithmic gateway error: ${res.status}`,
+    );
   }
 
   return res.json() as Promise<T>;
@@ -42,12 +50,14 @@ async function gatewayFetch<T>(path: string, opts: RequestInit = {}): Promise<T>
 export function hasCredentials(_userId: string): boolean {
   // Credentials live in the gateway's env, not here.
   // Consider the gateway "credentialed" if the env var points somewhere.
-  return Boolean(process.env.RITHMIC_GATEWAY_URL ?? 'http://localhost:3002');
+  return Boolean(process.env.RITHMIC_GATEWAY_URL ?? "http://localhost:3002");
 }
 
-export async function getConnectionStatus(_userId: string): Promise<RithmicConnectionStatus> {
+export async function getConnectionStatus(
+  _userId: string,
+): Promise<RithmicConnectionStatus> {
   try {
-    const status = await gatewayFetch<GatewayStatus>('/status');
+    const status = await gatewayFetch<GatewayStatus>("/status");
     return {
       connected: status.connected,
       message: status.message,
@@ -55,7 +65,7 @@ export async function getConnectionStatus(_userId: string): Promise<RithmicConne
   } catch {
     return {
       connected: false,
-      message: 'Rithmic gateway unreachable — start rithmic-gateway/gateway.py',
+      message: "Rithmic gateway unreachable — start rithmic-gateway/gateway.py",
     };
   }
 }
@@ -64,22 +74,22 @@ export async function executeOrder(
   _userId: string,
   params: {
     symbol: string;
-    direction: 'long' | 'short';
+    direction: "long" | "short";
     quantity: number;
     entryPrice?: number;
     stopLoss?: number;
     takeProfit?: number[];
     [key: string]: unknown;
-  }
+  },
 ): Promise<{ success: boolean; orderId?: string; error?: string }> {
   try {
-    const result = await gatewayFetch<GatewayOrderResponse>('/order/place', {
-      method: 'POST',
+    const result = await gatewayFetch<GatewayOrderResponse>("/order/place", {
+      method: "POST",
       body: JSON.stringify({
         symbol: params.symbol,
-        side: params.direction === 'long' ? 'buy' : 'sell',
+        side: params.direction === "long" ? "buy" : "sell",
         quantity: params.quantity,
-        order_type: 'market',
+        order_type: "market",
         tag: `FINTHEON-AUTO-${Date.now()}`,
       }),
     });
@@ -89,7 +99,8 @@ export async function executeOrder(
       orderId: result.order_id,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Rithmic gateway error';
+    const message =
+      err instanceof Error ? err.message : "Rithmic gateway error";
     return { success: false, error: message };
   }
 }

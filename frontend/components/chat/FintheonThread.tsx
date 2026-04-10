@@ -1,25 +1,41 @@
 // [claude-code 2026-03-28] S8-T7: Kill kanban borders on assistant messages, add agent name header
 // [claude-code 2026-03-11] T2b: Image part in user bubbles, T2c: CoT auto-open/close via useEffect
 // [claude-code 2026-03-10] Enhanced FintheonThread — hover actions, scroll-to-bottom, CoT, fade-in
-import { type FC, type RefObject, Component, type ReactNode, useState, useRef, useEffect, useCallback } from 'react';
-import { ThreadPrimitive, useMessage, useThread } from '@assistant-ui/react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { AlertCircle, Copy, Bookmark, ArrowDown, Check } from 'lucide-react';
-import { ChatGreeting } from './ChatGreeting';
-import { FintheonThinkingIndicator } from './FintheonThinkingIndicator';
-import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
-import { CognitionPanel } from './CognitionPanel';
-import { ToolApprovalCard } from './ToolApprovalCard';
-import { useToolApprovals } from './hooks/useToolApprovals';
+import {
+  type FC,
+  type RefObject,
+  Component,
+  type ReactNode,
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+} from "react";
+import { ThreadPrimitive, useMessage, useThread } from "@assistant-ui/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { AlertCircle, Copy, Bookmark, ArrowDown, Check } from "lucide-react";
+import { ChatGreeting } from "./ChatGreeting";
+import { FintheonThinkingIndicator } from "./FintheonThinkingIndicator";
+import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
+import { CognitionPanel } from "./CognitionPanel";
+import { ToolApprovalCard } from "./ToolApprovalCard";
+import { useToolApprovals } from "./hooks/useToolApprovals";
 
 /* ------------------------------------------------------------------ */
 /*  Message-level error boundary                                        */
 /* ------------------------------------------------------------------ */
-class MessageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+class MessageErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
   state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
-  componentDidCatch(error: Error) { console.error('[MessageErrorBoundary]', error.message); }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error) {
+    console.error("[MessageErrorBoundary]", error.message);
+  }
   render() {
     if (this.state.hasError) {
       return (
@@ -50,36 +66,57 @@ const MARKDOWN_COMPONENTS = {
     <li className="leading-relaxed">{children}</li>
   ),
   h1: ({ children }: { children?: React.ReactNode }) => (
-    <h1 className="text-base font-bold text-white mb-2 mt-3 first:mt-0">{children}</h1>
+    <h1 className="text-base font-bold text-white mb-2 mt-3 first:mt-0">
+      {children}
+    </h1>
   ),
   h2: ({ children }: { children?: React.ReactNode }) => (
-    <h2 className="text-sm font-semibold text-white mb-2 mt-3 first:mt-0">{children}</h2>
+    <h2 className="text-sm font-semibold text-white mb-2 mt-3 first:mt-0">
+      {children}
+    </h2>
   ),
   h3: ({ children }: { children?: React.ReactNode }) => (
-    <h3 className="text-sm font-semibold text-zinc-200 mb-1.5 mt-2 first:mt-0">{children}</h3>
+    <h3 className="text-sm font-semibold text-zinc-200 mb-1.5 mt-2 first:mt-0">
+      {children}
+    </h3>
   ),
-  code: ({ children, className }: { children?: React.ReactNode; className?: string }) => {
-    const isBlock = className?.includes('language-');
+  code: ({
+    children,
+    className,
+  }: {
+    children?: React.ReactNode;
+    className?: string;
+  }) => {
+    const isBlock = className?.includes("language-");
     return isBlock ? (
       <code className="block bg-zinc-900/80 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-zinc-300 overflow-x-auto my-2">
         {children}
       </code>
     ) : (
-      <code className="bg-zinc-800/80 rounded px-1 py-0.5 text-xs font-mono text-zinc-300">{children}</code>
+      <code className="bg-zinc-800/80 rounded px-1 py-0.5 text-xs font-mono text-zinc-300">
+        {children}
+      </code>
     );
   },
   pre: ({ children }: { children?: React.ReactNode }) => (
     <pre className="my-2 overflow-x-auto">{children}</pre>
   ),
   blockquote: ({ children }: { children?: React.ReactNode }) => (
-    <blockquote className="border-l border-[var(--fintheon-accent)]/20 pl-3 my-2 text-zinc-400 italic">{children}</blockquote>
+    <blockquote className="border-l border-[var(--fintheon-accent)]/20 pl-3 my-2 text-zinc-400 italic">
+      {children}
+    </blockquote>
   ),
   strong: ({ children }: { children?: React.ReactNode }) => (
     <strong className="font-semibold text-zinc-100">{children}</strong>
   ),
   hr: () => <hr className="border-white/10 my-3" />,
   a: ({ children, href }: { children?: React.ReactNode; href?: string }) => (
-    <a href={href} target="_blank" rel="noreferrer" className="text-[var(--fintheon-accent)] hover:text-[#C5A030] underline underline-offset-2">
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-[var(--fintheon-accent)] hover:text-[#C5A030] underline underline-offset-2"
+    >
       {children}
     </a>
   ),
@@ -90,10 +127,14 @@ const MARKDOWN_COMPONENTS = {
 /* ------------------------------------------------------------------ */
 
 function formatTimestamp(date: Date): string {
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
   const yy = String(date.getFullYear()).slice(-2);
-  const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const time = date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
   return `${mm}/${dd}/${yy} ${time}`;
 }
 
@@ -105,11 +146,14 @@ const FintheonTextPart: FC<{ text: string }> = ({ text }) => {
   // Bypass MarkdownTextPrimitive entirely — it reads from assistant-ui context
   // which can produce non-string values during streaming, crashing ReactMarkdown (#185).
   // Instead, use the `text` prop directly (always a string from MessagePrimitive.Parts).
-  const safeText = typeof text === 'string' ? text : String(text ?? '');
+  const safeText = typeof text === "string" ? text : String(text ?? "");
   if (!safeText) return null;
   return (
     <div className="text-sm text-zinc-300 max-w-none">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS as any}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={MARKDOWN_COMPONENTS as any}
+      >
         {safeText}
       </ReactMarkdown>
     </div>
@@ -125,8 +169,21 @@ const FintheonReasoningPart: FC<{ text: string }> = ({ text }) => {
   return (
     <details className="mb-2 group/reason">
       <summary className="text-[11px] text-zinc-500 cursor-pointer select-none hover:text-zinc-400 transition-colors flex items-center gap-1.5">
-        <svg width="10" height="10" viewBox="0 0 10 10" className="transition-transform group-open/reason:rotate-90" fill="currentColor">
-          <path d="M3 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          className="transition-transform group-open/reason:rotate-90"
+          fill="currentColor"
+        >
+          <path
+            d="M3 1l4 4-4 4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
         Thinking
       </summary>
@@ -141,7 +198,10 @@ const FintheonReasoningPart: FC<{ text: string }> = ({ text }) => {
 /*  Chain of Thought display — gold-bordered thinking panel             */
 /* ------------------------------------------------------------------ */
 
-const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ text, isStreaming }) => {
+const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({
+  text,
+  isStreaming,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -161,7 +221,16 @@ const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ te
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium text-[var(--fintheon-accent)]/80 hover:text-[var(--fintheon-accent)] transition-colors"
       >
-        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M8 1v3M8 12v3M1 8h3M12 8h3" />
           <path d="M3.5 3.5l2 2M10.5 10.5l2 2M3.5 12.5l2-2M10.5 5.5l2-2" />
           <circle cx="8" cy="8" r="2" />
@@ -171,11 +240,20 @@ const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ te
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse ml-1" />
         )}
         <svg
-          width="10" height="10" viewBox="0 0 10 10"
-          className={`ml-auto transition-transform ${isOpen ? 'rotate-90' : ''}`}
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          className={`ml-auto transition-transform ${isOpen ? "rotate-90" : ""}`}
           fill="currentColor"
         >
-          <path d="M3 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          <path
+            d="M3 1l4 4-4 4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
       {isOpen && (
@@ -191,11 +269,11 @@ const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ te
 /*  Hover action bar — Copy, Retry, Checkpoint                         */
 /* ------------------------------------------------------------------ */
 
-const ActionBar: FC<{ textContent: string; messageId?: string; onTakeNote?: (id: string, content: string) => void }> = ({
-  textContent,
-  messageId,
-  onTakeNote,
-}) => {
+const ActionBar: FC<{
+  textContent: string;
+  messageId?: string;
+  onTakeNote?: (id: string, content: string) => void;
+}> = ({ textContent, messageId, onTakeNote }) => {
   const [copied, setCopied] = useState(false);
   const [noted, setNoted] = useState(false);
 
@@ -224,7 +302,7 @@ const ActionBar: FC<{ textContent: string; messageId?: string; onTakeNote?: (id:
         title="Copy"
       >
         {copied ? <Check size={10} /> : <Copy size={10} />}
-        {copied ? 'Copied' : 'Copy'}
+        {copied ? "Copied" : "Copy"}
       </button>
       {onTakeNote && messageId && textContent && (
         <button
@@ -233,7 +311,7 @@ const ActionBar: FC<{ textContent: string; messageId?: string; onTakeNote?: (id:
           title="Take Note — save to Harper memory"
         >
           <Bookmark size={10} />
-          <span className="text-[9px]">{noted ? 'Noted' : 'Note'}</span>
+          <span className="text-[9px]">{noted ? "Noted" : "Note"}</span>
         </button>
       )}
     </div>
@@ -253,11 +331,11 @@ const FintheonUserMessage: FC = () => {
 
   // Extract text and images directly — bypass MessagePrimitive.Parts (#185)
   const userText = parts
-    .filter((p: any) => p.type === 'text' && typeof p.text === 'string')
+    .filter((p: any) => p.type === "text" && typeof p.text === "string")
     .map((p: any) => p.text)
-    .join('\n');
+    .join("\n");
   const images = parts
-    .filter((p: any) => p.type === 'image' && typeof p.image === 'string')
+    .filter((p: any) => p.type === "image" && typeof p.image === "string")
     .map((p: any) => p.image as string);
 
   return (
@@ -265,7 +343,9 @@ const FintheonUserMessage: FC = () => {
       <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
         <MessageErrorBoundary>
           {userText && (
-            <p className="text-sm text-white whitespace-pre-wrap break-words">{userText}</p>
+            <p className="text-sm text-white whitespace-pre-wrap break-words">
+              {userText}
+            </p>
           )}
           {images.map((src, i) => (
             <img
@@ -290,7 +370,9 @@ const FintheonUserMessage: FC = () => {
 /*  Assistant message                                                   */
 /* ------------------------------------------------------------------ */
 
-const FintheonAssistantMessage: FC<{ onTakeNote?: (id: string, content: string) => void }> = ({ onTakeNote }) => {
+const FintheonAssistantMessage: FC<{
+  onTakeNote?: (id: string, content: string) => void;
+}> = ({ onTakeNote }) => {
   const message = useMessage();
   const createdAt = (message as any).createdAt as Date | undefined;
   const id = (message as any).id as string | undefined;
@@ -299,21 +381,26 @@ const FintheonAssistantMessage: FC<{ onTakeNote?: (id: string, content: string) 
 
   // Try every known property: .parts (AI SDK v6), .content (assistant-ui), .text (plain string)
   const rawContent = msg.parts ?? msg.content;
-  const parts = Array.isArray(rawContent) ? rawContent :
-    typeof rawContent === 'string' ? [{ type: 'text', text: rawContent }] :
-    typeof msg.text === 'string' ? [{ type: 'text', text: msg.text }] : [];
+  const parts = Array.isArray(rawContent)
+    ? rawContent
+    : typeof rawContent === "string"
+      ? [{ type: "text", text: rawContent }]
+      : typeof msg.text === "string"
+        ? [{ type: "text", text: msg.text }]
+        : [];
 
   // Extract full text for checkpoint / copy
-  const currentText = parts
-    .filter((p: any) => p.type === 'text' && typeof p.text === 'string')
-    .map((p: any) => p.text)
-    .join('\n') ?? '';
+  const currentText =
+    parts
+      .filter((p: any) => p.type === "text" && typeof p.text === "string")
+      .map((p: any) => p.text)
+      .join("\n") ?? "";
 
   // Extract reasoning content for CoT display
   const currentReasoning = parts
-    .filter((p: any) => p.type === 'reasoning' && typeof p.text === 'string')
+    .filter((p: any) => p.type === "reasoning" && typeof p.text === "string")
     .map((p: any) => p.text)
-    .join('\n');
+    .join("\n");
 
   // Hold last known good content — prevents flicker when assistant-ui
   // reconciles the message (briefly empties content between stream end and finalization)
@@ -367,7 +454,9 @@ const FintheonAssistantMessage: FC<{ onTakeNote?: (id: string, content: string) 
 /*  Scroll-to-bottom button                                             */
 /* ------------------------------------------------------------------ */
 
-const ScrollToBottomButton: FC<{ containerRef: RefObject<HTMLElement | null> }> = ({ containerRef }) => {
+const ScrollToBottomButton: FC<{
+  containerRef: RefObject<HTMLElement | null>;
+}> = ({ containerRef }) => {
   const [showButton, setShowButton] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -379,7 +468,7 @@ const ScrollToBottomButton: FC<{ containerRef: RefObject<HTMLElement | null> }> 
       ([entry]) => {
         setShowButton(!entry.isIntersecting);
       },
-      { root: containerRef.current, threshold: 0.1 }
+      { root: containerRef.current, threshold: 0.1 },
     );
 
     observer.observe(sentinel);
@@ -389,7 +478,7 @@ const ScrollToBottomButton: FC<{ containerRef: RefObject<HTMLElement | null> }> 
   const scrollToBottom = useCallback(() => {
     containerRef.current?.scrollTo({
       top: containerRef.current.scrollHeight,
-      behavior: 'smooth',
+      behavior: "smooth",
     });
   }, [containerRef]);
 
@@ -404,11 +493,11 @@ const ScrollToBottomButton: FC<{ containerRef: RefObject<HTMLElement | null> }> 
           onClick={scrollToBottom}
           className="scroll-to-bottom-btn fixed z-30 flex items-center justify-center rounded-full border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] text-[var(--fintheon-accent)] shadow-lg hover:bg-[var(--fintheon-accent)]/10"
           style={{
-            width: '36px',
-            height: '36px',
-            bottom: '140px',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            width: "36px",
+            height: "36px",
+            bottom: "140px",
+            left: "50%",
+            transform: "translateX(-50%)",
           }}
           title="Scroll to bottom"
         >
@@ -440,27 +529,27 @@ export const AiLoader: FC = () => (
 
 function extractText(msg: any): string {
   const parts = msg.content ?? msg.parts ?? [];
-  if (!Array.isArray(parts)) return typeof parts === 'string' ? parts : '';
+  if (!Array.isArray(parts)) return typeof parts === "string" ? parts : "";
   return parts
-    .filter((p: any) => p.type === 'text' && typeof p.text === 'string')
+    .filter((p: any) => p.type === "text" && typeof p.text === "string")
     .map((p: any) => p.text)
-    .join('\n\n');
+    .join("\n\n");
 }
 
 function extractReasoning(msg: any): string {
   const parts = msg.content ?? msg.parts ?? [];
-  if (!Array.isArray(parts)) return '';
+  if (!Array.isArray(parts)) return "";
   return parts
-    .filter((p: any) => p.type === 'reasoning' && typeof p.text === 'string')
+    .filter((p: any) => p.type === "reasoning" && typeof p.text === "string")
     .map((p: any) => p.text)
-    .join('\n');
+    .join("\n");
 }
 
 function extractImages(msg: any): string[] {
   const parts = msg.content ?? msg.parts ?? [];
   if (!Array.isArray(parts)) return [];
   return parts
-    .filter((p: any) => p.type === 'image' && typeof p.image === 'string')
+    .filter((p: any) => p.type === "image" && typeof p.image === "string")
     .map((p: any) => p.image as string);
 }
 
@@ -470,16 +559,29 @@ const DirectUserMessage: FC<{ msg: any }> = ({ msg }) => {
   return (
     <div className="group/msg flex flex-col items-end animate-fade-slide-in">
       <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
-        {text && <p className="text-sm text-white whitespace-pre-wrap break-words">{text}</p>}
+        {text && (
+          <p className="text-sm text-white whitespace-pre-wrap break-words">
+            {text}
+          </p>
+        )}
         {images.map((src, i) => (
-          <img key={i} src={src} alt="Attached" className="mt-2 rounded-lg max-w-full max-h-64 object-contain border border-white/10" />
+          <img
+            key={i}
+            src={src}
+            alt="Attached"
+            className="mt-2 rounded-lg max-w-full max-h-64 object-contain border border-white/10"
+          />
         ))}
       </div>
     </div>
   );
 };
 
-const DirectAssistantMessage: FC<{ msg: any; agentName?: string; onTakeNote?: (id: string, content: string) => void }> = ({ msg, agentName, onTakeNote }) => {
+const DirectAssistantMessage: FC<{
+  msg: any;
+  agentName?: string;
+  onTakeNote?: (id: string, content: string) => void;
+}> = ({ msg, agentName, onTakeNote }) => {
   const textContent = extractText(msg);
   const reasoningContent = extractReasoning(msg);
 
@@ -525,7 +627,15 @@ interface FintheonThreadProps {
   compact?: boolean;
 }
 
-export function FintheonThread({ onSend, isLoading, agentName, onTakeNote, lastError, lastRequestId, compact }: FintheonThreadProps) {
+export function FintheonThread({
+  onSend,
+  isLoading,
+  agentName,
+  onTakeNote,
+  lastError,
+  lastRequestId,
+  compact,
+}: FintheonThreadProps) {
   const { activeAgent } = useFintheonAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
   const { approvals, sendDecision } = useToolApprovals(lastRequestId ?? null);
@@ -536,8 +646,13 @@ export function FintheonThread({ onSend, isLoading, agentName, onTakeNote, lastE
 
   return (
     <ThreadPrimitive.Root className="flex-1 flex flex-col min-h-0 relative">
-      <ThreadPrimitive.Viewport ref={viewportRef as any} className="flex-1 overflow-y-auto p-6 pb-8">
-        <div className={`${compact ? 'max-w-full' : 'max-w-3xl'} mx-auto space-y-4 mb-8`}>
+      <ThreadPrimitive.Viewport
+        ref={viewportRef as any}
+        className="flex-1 overflow-y-auto p-6 pb-8"
+      >
+        <div
+          className={`${compact ? "max-w-full" : "max-w-3xl"} mx-auto space-y-4 mb-8`}
+        >
           {/* Greeting screen — shown when thread is empty */}
           {!compact && messages.length === 0 && (
             <ChatGreeting onSend={onSend} isLoading={isLoading} />
@@ -545,18 +660,29 @@ export function FintheonThread({ onSend, isLoading, agentName, onTakeNote, lastE
           {/* Sidebar compact greeting */}
           {compact && messages.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <p className="text-sm text-[var(--fintheon-accent)]/60 font-medium">Ave, Trader.</p>
-              <p className="text-[11px] text-zinc-600 mt-1">Quick dispatch from the Forum.</p>
+              <p className="text-sm text-[var(--fintheon-accent)]/60 font-medium">
+                Ave, Trader.
+              </p>
+              <p className="text-[11px] text-zinc-600 mt-1">
+                Quick dispatch from the Forum.
+              </p>
             </div>
           )}
 
           {/* Message list — rendered directly from thread store */}
           {messages.map((msg: any) => {
-            if (msg.role === 'user') {
+            if (msg.role === "user") {
               return <DirectUserMessage key={msg.id} msg={msg} />;
             }
-            if (msg.role === 'assistant') {
-              return <DirectAssistantMessage key={msg.id} msg={msg} agentName={agentName ?? activeAgent?.name} onTakeNote={onTakeNote} />;
+            if (msg.role === "assistant") {
+              return (
+                <DirectAssistantMessage
+                  key={msg.id}
+                  msg={msg}
+                  agentName={agentName ?? activeAgent?.name}
+                  onTakeNote={onTakeNote}
+                />
+              );
             }
             return null;
           })}
@@ -581,8 +707,8 @@ export function FintheonThread({ onSend, isLoading, agentName, onTakeNote, lastE
             <ToolApprovalCard
               key={a.approvalId}
               approval={a}
-              onApprove={(id) => sendDecision(id, 'approved')}
-              onDeny={(id) => sendDecision(id, 'denied')}
+              onApprove={(id) => sendDecision(id, "approved")}
+              onDeny={(id) => sendDecision(id, "denied")}
             />
           ))}
 
@@ -591,7 +717,9 @@ export function FintheonThread({ onSend, isLoading, agentName, onTakeNote, lastE
             <div className="flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/8 px-4 py-3 animate-fade-slide-in">
               <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs text-red-300 leading-relaxed">{lastError}</p>
+                <p className="text-xs text-red-300 leading-relaxed">
+                  {lastError}
+                </p>
               </div>
             </div>
           )}

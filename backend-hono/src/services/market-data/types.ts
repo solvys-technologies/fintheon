@@ -1,6 +1,6 @@
 // [claude-code 2026-03-14] Market data unified type layer (Yahoo Finance + Unusual Whales)
 
-export type MarketDataProvider = 'yahoo-finance' | 'unusual-whales';
+export type MarketDataProvider = "yahoo-finance" | "unusual-whales";
 
 export interface StockQuote {
   symbol: string;
@@ -36,19 +36,29 @@ export interface GammaExposure {
 
 export interface OptionsWall {
   symbol: string;
-  putWalls: Array<{ strike: number; volume: number; oi: number; notional: number }>;
-  callWalls: Array<{ strike: number; volume: number; oi: number; notional: number }>;
+  putWalls: Array<{
+    strike: number;
+    volume: number;
+    oi: number;
+    notional: number;
+  }>;
+  callWalls: Array<{
+    strike: number;
+    volume: number;
+    oi: number;
+    notional: number;
+  }>;
   maxPain: number;
   timestamp: string;
 }
 
 export interface OptionsFlowItem {
-  type: 'call' | 'put';
+  type: "call" | "put";
   strike: number;
   expiry: string;
   premium: number;
   volume: number;
-  sentiment: 'bullish' | 'bearish' | 'neutral';
+  sentiment: "bullish" | "bearish" | "neutral";
   unusual: boolean;
 }
 

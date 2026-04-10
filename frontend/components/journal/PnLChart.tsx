@@ -1,5 +1,5 @@
 // [claude-code 2026-03-16] T4: SVG P&L line chart for journal dashboard — last 30 days cumulative
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
 interface PnLChartProps {
   /** Array of daily P&L values (oldest first) */
@@ -30,7 +30,13 @@ export function PnLChart({ data, width = 440, height = 200 }: PnLChartProps) {
 
   const { min, max, points, zeroY, gridLines } = useMemo(() => {
     if (!hasData) {
-      return { min: -100, max: 100, points: '', zeroY: chartH / 2, gridLines: [] as number[] };
+      return {
+        min: -100,
+        max: 100,
+        points: "",
+        zeroY: chartH / 2,
+        gridLines: [] as number[],
+      };
     }
     let lo = Math.min(0, ...cumulative);
     let hi = Math.max(0, ...cumulative);
@@ -40,7 +46,8 @@ export function PnLChart({ data, width = 440, height = 200 }: PnLChartProps) {
     hi += range * 0.1;
     const totalRange = hi - lo;
 
-    const toY = (v: number) => PAD.top + chartH - ((v - lo) / totalRange) * chartH;
+    const toY = (v: number) =>
+      PAD.top + chartH - ((v - lo) / totalRange) * chartH;
 
     const pts = cumulative
       .map((v, i) => {
@@ -48,7 +55,7 @@ export function PnLChart({ data, width = 440, height = 200 }: PnLChartProps) {
         const y = toY(v);
         return `${x},${y}`;
       })
-      .join(' ');
+      .join(" ");
 
     // Grid lines: ~4 evenly spaced
     const step = totalRange / 4;
@@ -72,8 +79,16 @@ export function PnLChart({ data, width = 440, height = 200 }: PnLChartProps) {
 
   return (
     <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 rounded-lg p-3">
-      <div className="text-[10px] text-[var(--fintheon-muted)] mb-1">P&amp;L ($) — Last 30 Days</div>
-      <svg width={width} height={height} className="w-full" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+      <div className="text-[10px] text-[var(--fintheon-muted)] mb-1">
+        P&amp;L ($) — Last 30 Days
+      </div>
+      <svg
+        width={width}
+        height={height}
+        className="w-full"
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet"
+      >
         {/* Grid lines */}
         {gridLines.map((v, i) => {
           const y = toY(v);

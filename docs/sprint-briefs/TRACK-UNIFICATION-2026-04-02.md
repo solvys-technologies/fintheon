@@ -1,21 +1,25 @@
 # Track Unification Review — 2026-04-02
 
 ## Scope Reviewed
+
 - Track A: analyzer timeout + scorer/poller timeout/circuit-breaker + central-scoring startup assertion.
 - Track B: UI polling-toggle removal + headline badge fallback + warm/stale feed cache behavior.
 
 ## Current Source-of-Truth Checks
+
 - Boot entrypoint is `backend-hono/src/index.ts`, which calls `bootServices()` from `backend-hono/src/boot/services.ts`.
 - `startCentralScorer()` is invoked from `backend-hono/src/boot/services.ts`.
 - Route `POST /api/riskflow/polling-toggle` remains registered in `backend-hono/src/routes/riskflow/index.ts`.
 
 ## Validation Snapshot (this workspace)
+
 - `frontend`: `bun run typecheck` ✅
 - `frontend`: `bun run build` ✅
 - `backend-hono`: `npm run typecheck` ✅
 - `backend-hono`: `bun run build` ✅
 
 ## Merge-Risk Findings (ordered by severity)
+
 1. High — cache overwrite regression risk  
    Files: `backend-hono/src/services/riskflow/feed-service.ts:160`, `backend-hono/src/services/riskflow/feed-poller.ts:186`  
    `updateFeedCache(enrichedItems)` overwrites in-memory cache with only the current poll’s new items. Since poller passes just the delta (`newItems`), feed history can collapse to a tiny subset until re-warm.
@@ -29,6 +33,7 @@
    This exceeds the stated “<300 lines” plan target.
 
 ## Unification Carry List (safe intent)
+
 - `backend-hono/src/services/analysis/grok-analyzer.ts`
   - Add `abortSignal: AbortSignal.timeout(TIMEOUT_MS)` to the AI headline call.
 - `backend-hono/src/services/riskflow/central-scorer.ts`
@@ -49,6 +54,7 @@
   - Render arrow + `pointRange ?? ivScore` fallback and add API typings.
 
 ## Unification Hold/Isolate List
+
 - Do not wholesale-merge all of `backend-hono/src/services/riskflow/feed-service.ts`.
 - Isolate only cache lifecycle hunks:
   - cache declaration/init
@@ -59,9 +65,9 @@
   - module-level warm call (`void warmCacheFromDB()`)
 
 ## Recommended Merge Order
+
 1. Apply Track A backend reliability changes (analyzer/scorer/poller/boot assertion).
 2. Apply Track B frontend changes (toggle removal + badge fallback + typing).
 3. Apply isolated cache lifecycle hunks from `feed-service.ts` with collision-safe manual merge.
 4. Run validation commands above.
 5. Runtime smoke: verify poll timeout path, 5-failure backoff behavior, and stale cache return during simulated fetch failure.
-

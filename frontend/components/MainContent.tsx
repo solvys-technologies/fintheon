@@ -10,15 +10,19 @@ interface MainContentProps {
   missionControlOpen: boolean;
 }
 
-export default function MainContent({ activeTab, onOpenMissionControl, missionControlOpen }: MainContentProps) {
+export default function MainContent({
+  activeTab,
+  onOpenMissionControl,
+  missionControlOpen,
+}: MainContentProps) {
   const [feedKey, setFeedKey] = useState(0);
   const [newsKey, setNewsKey] = useState(0);
 
   const handleClearFeed = () => {
     if (activeTab === "feed") {
-      setFeedKey(prev => prev + 1);
+      setFeedKey((prev) => prev + 1);
     } else if (activeTab === "news") {
-      setNewsKey(prev => prev + 1);
+      setNewsKey((prev) => prev + 1);
     }
   };
 
@@ -30,7 +34,7 @@ export default function MainContent({ activeTab, onOpenMissionControl, missionCo
           {activeTab === "chat" && "AI Analysis"}
           {activeTab === "news" && "Market News & Events"}
         </h2>
-        
+
         <div className="flex items-center gap-3">
           {(activeTab === "feed" || activeTab === "news") && (
             <button
@@ -41,7 +45,7 @@ export default function MainContent({ activeTab, onOpenMissionControl, missionCo
               <span>Clear Feed</span>
             </button>
           )}
-          
+
           {!missionControlOpen && (
             <button
               onClick={onOpenMissionControl}
@@ -53,7 +57,7 @@ export default function MainContent({ activeTab, onOpenMissionControl, missionCo
           )}
         </div>
       </div>
-      
+
       <div className="flex-1 overflow-hidden">
         {activeTab === "feed" && <SystemFeed key={feedKey} />}
         {activeTab === "chat" && <ChatInterface />}

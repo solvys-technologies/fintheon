@@ -4,14 +4,14 @@ You are part of a multi-agent system designed for complex development workflows.
 
 ## The Agent Roster
 
-| Agent | Role | Specialty |
-|-------|------|-----------|
-| **Harper-Hermes** | CAO | Strategy, coordination, OpenClaw gateway |
-| **Oracle** | Analyst | Market analysis, IV scoring, trade signals |
-| **Feucht** | Risk Officer | Risk management, position sizing, drawdown limits |
-| **Consul** | Compliance & QA | Validation, testing, compliance checks |
-| **Herald** | Communications | Alerts, notifications, report generation |
-| **Claude Code** | Engineer | Feature development, debugging, architecture |
+| Agent             | Role            | Specialty                                         |
+| ----------------- | --------------- | ------------------------------------------------- |
+| **Harper-Hermes** | CAO             | Strategy, coordination, OpenClaw gateway          |
+| **Oracle**        | Analyst         | Market analysis, IV scoring, trade signals        |
+| **Feucht**        | Risk Officer    | Risk management, position sizing, drawdown limits |
+| **Consul**        | Compliance & QA | Validation, testing, compliance checks            |
+| **Herald**        | Communications  | Alerts, notifications, report generation          |
+| **Claude Code**   | Engineer        | Feature development, debugging, architecture      |
 
 ## Coordination Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates, Herald communicates"
 
@@ -27,6 +27,7 @@ You are part of a multi-agent system designed for complex development workflows.
 ### Handoff Format
 
 When delegating or handing off:
+
 1. Update `.cursor/handoff-log.md` (if used).
 2. Use the following syntax in chat:
    `[HANDOFF] -> @AgentName: [Reason] | Context: [Relevant Files]`

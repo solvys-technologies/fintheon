@@ -1,12 +1,15 @@
 # Task Brief: Twitter CLI Round-Robin + Scoring Carousel
+
 **Date:** 2026-04-01
 **Scope:** Distribute Twitter polling and scoring responsibility across peers with time-based rotation and admin toggle
 **Estimated files:** 8
 
 ## Context
+
 Sprint 3 T1 was briefed but never built. The scoring-carousel and twitter-rotation services don't exist. Currently one device polls all Twitter feeds and scores all items. With multiple peers (2-3 Macs), polling and scoring should rotate in 15-minute windows so no single device gets rate-limited and work is distributed. Admin (TP) can toggle individual peer polling on/off from the Refinement tab.
 
 ## Files to Read First
+
 - `backend-hono/src/services/riskflow/central-scorer.ts` — Current scorer runs every 30s, batch of 20. Needs assignment check before scoring.
 - `backend-hono/src/services/twitter-cli/econ-triggered-poller.ts` — 60s polling with 5s burst on econ releases. `startEconTwitterPoller()`. Needs rotation check before executing.
 - `backend-hono/src/services/peers/peer-registry.ts` — `listPeers()`, `getPeer()`, `isMemoryMode()`, heartbeat status.
@@ -19,6 +22,7 @@ Sprint 3 T1 was briefed but never built. The scoring-carousel and twitter-rotati
 ## What to Build/Change
 
 ### 1. Twitter Rotation Service
+
 - **Path:** `backend-hono/src/services/peers/twitter-rotation.ts` — Create
 - Types: `TwitterPollSlot` (id, peerId, deskId, slotStart, slotEnd, status: 'claimed'|'active'|'completed')
 - `claimSlot(peerId)` — claim current 15-min window. Uses DB advisory lock (`FOR UPDATE SKIP LOCKED`) to prevent double-claims. Returns null if slot already taken.
@@ -32,6 +36,7 @@ Sprint 3 T1 was briefed but never built. The scoring-carousel and twitter-rotati
 - **Max lines:** 200
 
 ### 2. Scoring Carousel Service
+
 - **Path:** `backend-hono/src/services/peers/scoring-carousel.ts` — Create
 - Types: `ScoringAssignment` (id, peerId, sector, windowStart, windowEnd, status: 'active'|'completed'|'reassigned')
 - Sectors: `'macro' | 'equities' | 'crypto' | 'futures' | 'sentiment'`
@@ -45,6 +50,7 @@ Sprint 3 T1 was briefed but never built. The scoring-carousel and twitter-rotati
 - **Max lines:** 200
 
 ### 3. Scoring/Twitter Routes
+
 - **Path:** `backend-hono/src/routes/peers/scoring.ts` — Create
 - `GET /api/peers/scoring/assignments` — list current assignments
 - `GET /api/peers/scoring/my-assignment` — what am I assigned to
@@ -59,6 +65,7 @@ Sprint 3 T1 was briefed but never built. The scoring-carousel and twitter-rotati
 - **Max lines:** 60
 
 ### 4. Wire Into Existing Systems
+
 - **Path:** `backend-hono/src/services/riskflow/central-scorer.ts` — Modify
 - Before scoring an item, check `isMyTurnToScore(peerId, sector)`. If not my turn, skip.
 - Get `peerId` from boot registration (`process.env.PEER_BOOT_ID` or similar)
@@ -71,15 +78,17 @@ Sprint 3 T1 was briefed but never built. The scoring-carousel and twitter-rotati
 
 - **Path:** `backend-hono/src/boot/index.ts` — Modify
 - After peer heartbeat monitor starts, add:
+
   ```typescript
-  startScoringCoordinator()
-  startTwitterRotationCoordinator()
+  startScoringCoordinator();
+  startTwitterRotationCoordinator();
   ```
 
 - **Path:** `backend-hono/src/routes/peers/index.ts` — Modify
 - Mount scoring and twitter sub-routes
 
 ### 5. Frontend: Polling Toggle in Refinement Tab
+
 - **Path:** `frontend/components/refinement/PeerPollingToggle.tsx` — Create
 - Table of all peers: Name, Status, Desk, Polling Enabled (toggle switch)
 - Admin-only toggle switches
@@ -97,7 +106,9 @@ Sprint 3 T1 was briefed but never built. The scoring-carousel and twitter-rotati
 - Add PeerPollingToggle and ScoringCarousel as sections
 
 ### 6. Database Migration
+
 - **Path:** `supabase/migrations/20260401_scoring_twitter_rotation.sql` — Create
+
 ```sql
 CREATE TABLE IF NOT EXISTS scoring_assignments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -132,6 +143,7 @@ CREATE INDEX IF NOT EXISTS idx_twitter_poll_status ON twitter_poll_schedule(stat
 ```
 
 ## Key Rules
+
 - **Backward compatible:** If no peer registered (single-device mode), score and poll everything normally. Rotation only kicks in when multiple peers exist.
 - Round-robin: same feeds, take turns in 15-min windows for Twitter. 1-hour windows for scoring sectors.
 - `FOR UPDATE SKIP LOCKED` on slot claims to prevent double-polling.
@@ -140,6 +152,7 @@ CREATE INDEX IF NOT EXISTS idx_twitter_poll_status ON twitter_poll_schedule(stat
 - Solvys Gold palette for frontend components.
 
 ## DO NOT
+
 - Change what feeds are polled — only WHO polls WHEN
 - Modify the actual scoring logic or AI enrichment pipeline
 - Touch RiskFlow feed service, bulletin, documents, or editor
@@ -147,6 +160,7 @@ CREATE INDEX IF NOT EXISTS idx_twitter_poll_status ON twitter_poll_schedule(stat
 - Create voice, toast, or onboarding files (separate task)
 
 ## Verification
+
 ```bash
 cd backend-hono && bun run build
 npx vite build
@@ -156,6 +170,7 @@ npx vite build
 ```
 
 ## Changelog Entry
+
 ```typescript
 {
   date: '2026-04-01T...',

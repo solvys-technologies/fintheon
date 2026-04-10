@@ -3,22 +3,28 @@
 // [claude-code 2026-03-29] Catalysts sourced from DB via RiskFlowContext — seed JSON and localStorage import removed
 // [claude-code 2026-03-28] S7: Force-directed canvas, removed Sanctum overlay (now separate view)
 // [claude-code 2026-03-28] S5-T3: CatalystModal + auto-seed pipeline wired in
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useHarperOps } from '../../hooks/useHarperOps';
-import { Eye, EyeOff, ChevronDown, Calendar } from 'lucide-react';
-import { useNarrative } from '../../contexts/NarrativeContext';
-import NarrativeForceCanvas from './NarrativeForceCanvas';
-import { TimelineScrubber } from './TimelineScrubber';
-import { NarrativeSaveModal } from './NarrativeSaveModal';
-import { RiskFlowImportModal } from './RiskFlowImportModal';
-import { NarrativeTimelineModal } from './NarrativeManageModal';
-import { CatalystModal } from './CatalystModal';
-import { NarrativeHighlightProvider } from './NarrativeHighlightProvider';
-import { NarrativeFloatingToolbar, type CanvasTool } from './NarrativeFloatingToolbar';
-import { NarrativeCanvasChat } from './NarrativeCanvasChat';
-import { useRiskFlow } from '../../contexts/RiskFlowContext';
-import { loadSeedEvents, alertToCatalyst } from '../../lib/narrative-seed-loader';
-import type { CatalystCard } from '../../lib/narrative-types';
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useHarperOps } from "../../hooks/useHarperOps";
+import { Eye, EyeOff, ChevronDown, Calendar } from "lucide-react";
+import { useNarrative } from "../../contexts/NarrativeContext";
+import NarrativeForceCanvas from "./NarrativeForceCanvas";
+import { TimelineScrubber } from "./TimelineScrubber";
+import { NarrativeSaveModal } from "./NarrativeSaveModal";
+import { RiskFlowImportModal } from "./RiskFlowImportModal";
+import { NarrativeTimelineModal } from "./NarrativeManageModal";
+import { CatalystModal } from "./CatalystModal";
+import { NarrativeHighlightProvider } from "./NarrativeHighlightProvider";
+import {
+  NarrativeFloatingToolbar,
+  type CanvasTool,
+} from "./NarrativeFloatingToolbar";
+import { NarrativeCanvasChat } from "./NarrativeCanvasChat";
+import { useRiskFlow } from "../../contexts/RiskFlowContext";
+import {
+  loadSeedEvents,
+  alertToCatalyst,
+} from "../../lib/narrative-seed-loader";
+import type { CatalystCard } from "../../lib/narrative-types";
 
 export function NarrativeMap() {
   const { state, snapshot, dispatch } = useNarrative();
@@ -29,7 +35,10 @@ export function NarrativeMap() {
   useEffect(() => {
     const latest = harperFeed[0];
     if (!latest || latest.id === lastSynthesisRef.current) return;
-    if ((latest.metadata as Record<string, unknown>)?.taskType === 'narrative-synthesis') {
+    if (
+      (latest.metadata as Record<string, unknown>)?.taskType ===
+      "narrative-synthesis"
+    ) {
       lastSynthesisRef.current = latest.id;
       setGoldFlash(true);
       const t = setTimeout(() => setGoldFlash(false), 3000);
@@ -44,10 +53,13 @@ export function NarrativeMap() {
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [catalystModalOpen, setCatalystModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CatalystCard | null>(null);
-  const [canvasTool, setCanvasTool] = useState<CanvasTool>('select');
+  const [canvasTool, setCanvasTool] = useState<CanvasTool>("select");
   const [canvasScale, setCanvasScale] = useState(1.0);
-  const [timeframeFilter, setTimeframeFilter] = useState<string>('all');
-  const [zoomFns, setZoomFns] = useState<{ zoomTo: (level: number) => void; fitView: () => void } | null>(null);
+  const [timeframeFilter, setTimeframeFilter] = useState<string>("all");
+  const [zoomFns, setZoomFns] = useState<{
+    zoomTo: (level: number) => void;
+    fitView: () => void;
+  } | null>(null);
   const { alerts } = useRiskFlow();
   const seedLoadedRef = useRef(false);
 
@@ -57,7 +69,7 @@ export function NarrativeMap() {
     seedLoadedRef.current = true;
     const seedCards = loadSeedEvents();
     if (seedCards.length > 0) {
-      dispatch({ type: 'BULK_ADD_CATALYSTS', catalysts: seedCards });
+      dispatch({ type: "BULK_ADD_CATALYSTS", catalysts: seedCards });
     }
   }, [dispatch]);
 
@@ -65,14 +77,19 @@ export function NarrativeMap() {
   useEffect(() => {
     if (alerts.length === 0) return;
     const existingRfIds = new Set(
-      state.catalysts.filter(c => c.riskflowItemId).map(c => c.riskflowItemId!)
+      state.catalysts
+        .filter((c) => c.riskflowItemId)
+        .map((c) => c.riskflowItemId!),
     );
     const promoted = alerts
-      .filter(a => a.promotedAt || (a.narrativeThreads && a.narrativeThreads.length > 0))
-      .filter(a => !existingRfIds.has(a.id))
+      .filter(
+        (a) =>
+          a.promotedAt || (a.narrativeThreads && a.narrativeThreads.length > 0),
+      )
+      .filter((a) => !existingRfIds.has(a.id))
       .map(alertToCatalyst);
     if (promoted.length > 0) {
-      dispatch({ type: 'BULK_ADD_CATALYSTS', catalysts: promoted });
+      dispatch({ type: "BULK_ADD_CATALYSTS", catalysts: promoted });
     }
   }, [alerts, state.catalysts, dispatch]);
 
@@ -81,22 +98,25 @@ export function NarrativeMap() {
   }, []);
 
   const handleConfirmSave = useCallback(() => {
-    dispatch({ type: 'TAKE_SNAPSHOT' });
+    dispatch({ type: "TAKE_SNAPSHOT" });
     setSaveModalOpen(false);
   }, [dispatch]);
 
-  const handleImportCatalysts = useCallback((catalysts: any[]) => {
-    dispatch({ type: 'IMPORT_CATALYSTS', catalysts });
-  }, [dispatch]);
+  const handleImportCatalysts = useCallback(
+    (catalysts: any[]) => {
+      dispatch({ type: "IMPORT_CATALYSTS", catalysts });
+    },
+    [dispatch],
+  );
 
   const handleUndo = useCallback(() => {
     if (snapshot) {
-      dispatch({ type: 'RESTORE_SNAPSHOT' });
+      dispatch({ type: "RESTORE_SNAPSHOT" });
     }
   }, [snapshot, dispatch]);
 
   const handleToggleLane = useCallback((id: string) => {
-    setVisibleLaneIds(prev => {
+    setVisibleLaneIds((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -104,7 +124,7 @@ export function NarrativeMap() {
   }, []);
 
   const handleSelectAll = useCallback(() => {
-    setVisibleLaneIds(new Set(state.lanes.map(l => l.id)));
+    setVisibleLaneIds(new Set(state.lanes.map((l) => l.id)));
   }, [state.lanes]);
 
   const handleClearAll = useCallback(() => {
@@ -112,14 +132,14 @@ export function NarrativeMap() {
   }, []);
 
   const handleToggleTag = useCallback((tag: string) => {
-    setActiveTags(prev => {
+    setActiveTags((prev) => {
       const next = new Set(prev);
       next.has(tag) ? next.delete(tag) : next.add(tag);
       return next;
     });
   }, []);
 
-  const LAYOUT_KEY = 'fintheon:narrative-map-layout';
+  const LAYOUT_KEY = "fintheon:narrative-map-layout";
 
   const handleSaveLayout = useCallback(() => {
     const layout = {
@@ -140,7 +160,8 @@ export function NarrativeMap() {
       const raw = localStorage.getItem(LAYOUT_KEY);
       if (!raw) return;
       const layout = JSON.parse(raw);
-      if (layout.visibleLaneIds) setVisibleLaneIds(new Set(layout.visibleLaneIds));
+      if (layout.visibleLaneIds)
+        setVisibleLaneIds(new Set(layout.visibleLaneIds));
       if (layout.activeTags) setActiveTags(new Set(layout.activeTags));
       if (layout.canvasScale != null) setCanvasScale(layout.canvasScale);
     } catch {
@@ -159,113 +180,131 @@ export function NarrativeMap() {
 
   return (
     <NarrativeHighlightProvider>
-    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--fintheon-bg)' }}>
-      <div className="flex-1 min-h-0 relative overflow-hidden">
-        {/* Force-directed mind map canvas */}
-        <NarrativeForceCanvas
-          visibleLaneIds={visibleLaneIds}
-          activeTags={activeTags}
-          activeTool={canvasTool}
-          timeframeFilter={timeframeFilter}
-          onScaleChange={setCanvasScale}
-          onSelectCard={handleSelectCard}
-          onEditCard={handleEditCard}
-          onZoomFnsReady={setZoomFns}
-        />
-
-        {/* Harper watching overlay — bottom-left */}
-        {harperStatus?.loop?.alive && (
-          <div className="absolute bottom-3 left-3 z-40 pointer-events-none flex items-center gap-1.5 rounded-full border border-[var(--fintheon-accent)]/20 bg-[#050402]/80 backdrop-blur-sm px-2.5 py-1">
-            <span className={`h-1.5 w-1.5 rounded-full ${goldFlash ? 'bg-[#D4AF37]' : 'bg-emerald-400'} animate-pulse`} />
-            <span className="text-[10px] tracking-wider text-[#f0ead6]/40 font-mono">
-              {goldFlash ? 'FRESH SYNTHESIS' : 'HARPER WATCHING'}
-            </span>
-          </div>
-        )}
-
-        {/* Narrative filters — right-justified */}
-        <div className="absolute top-3 right-3 z-40 flex items-center gap-1.5">
-          <TimeframeFilterDropdown
-            selected={timeframeFilter}
-            onSelect={setTimeframeFilter}
-          />
-          <NarrativeFilterDropdown
+      <div
+        className="h-full flex flex-col"
+        style={{ backgroundColor: "var(--fintheon-bg)" }}
+      >
+        <div className="flex-1 min-h-0 relative overflow-hidden">
+          {/* Force-directed mind map canvas */}
+          <NarrativeForceCanvas
             visibleLaneIds={visibleLaneIds}
-            onToggleLane={handleToggleLane}
-            onSelectAll={handleSelectAll}
-            onClearAll={handleClearAll}
-            catalysts={state.catalysts}
+            activeTags={activeTags}
+            activeTool={canvasTool}
+            timeframeFilter={timeframeFilter}
+            onScaleChange={setCanvasScale}
+            onSelectCard={handleSelectCard}
+            onEditCard={handleEditCard}
+            onZoomFnsReady={setZoomFns}
+          />
+
+          {/* Harper watching overlay — bottom-left */}
+          {harperStatus?.loop?.alive && (
+            <div className="absolute bottom-3 left-3 z-40 pointer-events-none flex items-center gap-1.5 rounded-full border border-[var(--fintheon-accent)]/20 bg-[#050402]/80 backdrop-blur-sm px-2.5 py-1">
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${goldFlash ? "bg-[#D4AF37]" : "bg-emerald-400"} animate-pulse`}
+              />
+              <span className="text-[10px] tracking-wider text-[#f0ead6]/40 font-mono">
+                {goldFlash ? "FRESH SYNTHESIS" : "HARPER WATCHING"}
+              </span>
+            </div>
+          )}
+
+          {/* Narrative filters — right-justified */}
+          <div className="absolute top-3 right-3 z-40 flex items-center gap-1.5">
+            <TimeframeFilterDropdown
+              selected={timeframeFilter}
+              onSelect={setTimeframeFilter}
+            />
+            <NarrativeFilterDropdown
+              visibleLaneIds={visibleLaneIds}
+              onToggleLane={handleToggleLane}
+              onSelectAll={handleSelectAll}
+              onClearAll={handleClearAll}
+              catalysts={state.catalysts}
+            />
+          </div>
+
+          {/* Canvas command palette — ephemeral chat above toolbar */}
+          <NarrativeCanvasChat />
+
+          {/* Figma-style floating toolbar — bottom center */}
+          <NarrativeFloatingToolbar
+            activeTool={canvasTool}
+            onToolChange={setCanvasTool}
+            onAddCatalyst={() => {
+              setCatalystModalOpen(true);
+              setEditingCard(null);
+            }}
+            onImport={() => setImportModalOpen(true)}
+            onToggleSanctum={(_page?: number) => {
+              /* TODO: wire to Sanctum sub-view navigation — requires props from MainLayout */
+            }}
+            onToggleHeatmap={() => dispatch({ type: "TOGGLE_HEATMAP" })}
+            onToggleFilter={() => {
+              const next =
+                state.filterSentiment === "all"
+                  ? "bearish"
+                  : state.filterSentiment === "bearish"
+                    ? "bullish"
+                    : "all";
+              dispatch({ type: "SET_FILTER", sentiment: next });
+            }}
+            sanctumActive={false}
+            heatmapActive={state.heatmapEnabled}
+            filterActive={state.filterSentiment !== "all"}
+            scale={canvasScale}
+            onZoomTo={zoomFns?.zoomTo}
+            onFitView={zoomFns?.fitView}
           />
         </div>
 
-        {/* Canvas command palette — ephemeral chat above toolbar */}
-        <NarrativeCanvasChat />
+        <TimelineScrubber
+          state={state}
+          catalysts={state.catalysts}
+          dispatch={dispatch}
+        />
 
-        {/* Figma-style floating toolbar — bottom center */}
-        <NarrativeFloatingToolbar
-          activeTool={canvasTool}
-          onToolChange={setCanvasTool}
-          onAddCatalyst={() => { setCatalystModalOpen(true); setEditingCard(null); }}
-          onImport={() => setImportModalOpen(true)}
-          onToggleSanctum={(_page?: number) => {/* TODO: wire to Sanctum sub-view navigation — requires props from MainLayout */}}
-          onToggleHeatmap={() => dispatch({ type: 'TOGGLE_HEATMAP' })}
-          onToggleFilter={() => {
-            const next = state.filterSentiment === 'all' ? 'bearish' : state.filterSentiment === 'bearish' ? 'bullish' : 'all';
-            dispatch({ type: 'SET_FILTER', sentiment: next });
+        <NarrativeSaveModal
+          open={saveModalOpen}
+          onConfirm={handleConfirmSave}
+          onCancel={() => setSaveModalOpen(false)}
+        />
+
+        <RiskFlowImportModal
+          open={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          onImport={handleImportCatalysts}
+          lanes={state.lanes}
+        />
+
+        <NarrativeTimelineModal
+          open={manageModalOpen}
+          onClose={() => setManageModalOpen(false)}
+        />
+
+        <CatalystModal
+          open={catalystModalOpen}
+          onClose={() => {
+            setCatalystModalOpen(false);
+            setEditingCard(null);
           }}
-          sanctumActive={false}
-          heatmapActive={state.heatmapEnabled}
-          filterActive={state.filterSentiment !== 'all'}
-          scale={canvasScale}
-          onZoomTo={zoomFns?.zoomTo}
-          onFitView={zoomFns?.fitView}
+          editCard={editingCard}
         />
       </div>
-
-      <TimelineScrubber
-        state={state}
-        catalysts={state.catalysts}
-        dispatch={dispatch}
-      />
-
-      <NarrativeSaveModal
-        open={saveModalOpen}
-        onConfirm={handleConfirmSave}
-        onCancel={() => setSaveModalOpen(false)}
-      />
-
-      <RiskFlowImportModal
-        open={importModalOpen}
-        onClose={() => setImportModalOpen(false)}
-        onImport={handleImportCatalysts}
-        lanes={state.lanes}
-      />
-
-      <NarrativeTimelineModal
-        open={manageModalOpen}
-        onClose={() => setManageModalOpen(false)}
-      />
-
-      <CatalystModal
-        open={catalystModalOpen}
-        onClose={() => { setCatalystModalOpen(false); setEditingCard(null); }}
-        editCard={editingCard}
-      />
-    </div>
     </NarrativeHighlightProvider>
   );
 }
 
 // ── Timeframe Filter Dropdown ────────────────────────────────────
 const TIMEFRAME_OPTIONS = [
-  { value: '1d', label: '1D' },
-  { value: '1w', label: '1W' },
-  { value: '2w', label: '2W' },
-  { value: '1m', label: '1M' },
-  { value: '3m', label: '3M' },
-  { value: '6m', label: '6M' },
-  { value: '1y', label: '1Y' },
-  { value: 'all', label: 'All' },
+  { value: "1d", label: "1D" },
+  { value: "1w", label: "1W" },
+  { value: "2w", label: "2W" },
+  { value: "1m", label: "1M" },
+  { value: "3m", label: "3M" },
+  { value: "6m", label: "6M" },
+  { value: "1y", label: "1Y" },
+  { value: "all", label: "All" },
 ] as const;
 
 function TimeframeFilterDropdown({
@@ -281,50 +320,60 @@ function TimeframeFilterDropdown({
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const isFiltered = selected !== 'all';
-  const label = TIMEFRAME_OPTIONS.find(o => o.value === selected)?.label ?? 'All';
+  const isFiltered = selected !== "all";
+  const label =
+    TIMEFRAME_OPTIONS.find((o) => o.value === selected)?.label ?? "All";
 
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={() => setOpen((v) => !v)}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-xl transition-all text-[11px] uppercase tracking-wider ${
           isFiltered
-            ? 'bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]'
-            : 'bg-[var(--fintheon-bg)]/80 text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80'
+            ? "bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]"
+            : "bg-[var(--fintheon-bg)]/80 text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80"
         }`}
-        style={{ fontFamily: 'var(--font-heading)' }}
+        style={{ fontFamily: "var(--font-heading)" }}
       >
         <Calendar className="w-3.5 h-3.5" />
         {label}
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {open && (
         <div
           className="absolute top-full right-0 mt-1.5 w-36 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
-          style={{ borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' }}
+          style={{
+            borderColor:
+              "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+          }}
         >
           <div className="py-1">
-            {TIMEFRAME_OPTIONS.map(opt => (
+            {TIMEFRAME_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
-                onClick={() => { onSelect(opt.value); setOpen(false); }}
+                onClick={() => {
+                  onSelect(opt.value);
+                  setOpen(false);
+                }}
                 className={`w-full flex items-center justify-between px-4 py-2 text-left transition-all duration-150 ${
                   selected === opt.value
-                    ? 'bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]'
-                    : 'text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/3'
+                    ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
+                    : "text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/3"
                 }`}
               >
                 <span
                   className="text-[12px] font-medium"
-                  style={{ fontFamily: 'var(--font-heading)' }}
+                  style={{ fontFamily: "var(--font-heading)" }}
                 >
                   {opt.label}
                 </span>
@@ -340,26 +389,92 @@ function TimeframeFilterDropdown({
 // ── Narrative Visibility Filter Dropdown ──────────────────────────
 // [claude-code 2026-04-04] Unified color scheme: Yellow=monetary, Purple=structural, Teal=market/secular, Red=geopolitical
 const NARRATIVE_THREADS = [
-  { slug: 'middle-east-conflict', title: 'Middle Eastern Conflict', color: '#EF4444', shortTitle: 'Middle East' },
-  { slug: 'liquidity-credit-contraction', title: 'Liquidity & Credit', color: '#A855F7', shortTitle: 'Liquidity' },
-  { slug: 'ai-singularity', title: 'The Singularity', color: '#14B8A6', shortTitle: 'AI' },
-  { slug: 'usd-jpy-carry-trade', title: 'USD-JPY Carry Trade', color: '#A855F7', shortTitle: 'Carry Trade' },
-  { slug: 'trade-war', title: 'Trade War', color: '#EF4444', shortTitle: 'Trade War' },
-  { slug: 'us-china-relations', title: 'US-China Relations', color: '#A855F7', shortTitle: 'US-China' },
-  { slug: 'rate-cut-cycle', title: 'Rate Cut Cycle', color: '#EAB308', shortTitle: 'Rate Cuts' },
-  { slug: 'trump-presidency', title: 'Trump Presidency', color: '#EF4444', shortTitle: 'Trump' },
-  { slug: 'price-stability', title: 'Price Stability', color: '#EAB308', shortTitle: 'Inflation' },
-  { slug: 'maximum-employment', title: 'Max Employment', color: '#EAB308', shortTitle: 'Employment' },
+  {
+    slug: "middle-east-conflict",
+    title: "Middle Eastern Conflict",
+    color: "#EF4444",
+    shortTitle: "Middle East",
+  },
+  {
+    slug: "liquidity-credit-contraction",
+    title: "Liquidity & Credit",
+    color: "#A855F7",
+    shortTitle: "Liquidity",
+  },
+  {
+    slug: "ai-singularity",
+    title: "The Singularity",
+    color: "#14B8A6",
+    shortTitle: "AI",
+  },
+  {
+    slug: "usd-jpy-carry-trade",
+    title: "USD-JPY Carry Trade",
+    color: "#A855F7",
+    shortTitle: "Carry Trade",
+  },
+  {
+    slug: "trade-war",
+    title: "Trade War",
+    color: "#EF4444",
+    shortTitle: "Trade War",
+  },
+  {
+    slug: "us-china-relations",
+    title: "US-China Relations",
+    color: "#A855F7",
+    shortTitle: "US-China",
+  },
+  {
+    slug: "rate-cut-cycle",
+    title: "Rate Cut Cycle",
+    color: "#EAB308",
+    shortTitle: "Rate Cuts",
+  },
+  {
+    slug: "trump-presidency",
+    title: "Trump Presidency",
+    color: "#EF4444",
+    shortTitle: "Trump",
+  },
+  {
+    slug: "price-stability",
+    title: "Price Stability",
+    color: "#EAB308",
+    shortTitle: "Inflation",
+  },
+  {
+    slug: "maximum-employment",
+    title: "Max Employment",
+    color: "#EAB308",
+    shortTitle: "Employment",
+  },
 ] as const;
 
 const THEME_GROUPS: { name: string; color: string; slugs: string[] }[] = [
-  { name: 'Geopolitical', color: '#EF4444', slugs: ['middle-east-conflict', 'trade-war', 'trump-presidency'] },
-  { name: 'Structural', color: '#A855F7', slugs: ['liquidity-credit-contraction', 'usd-jpy-carry-trade', 'us-china-relations'] },
-  { name: 'Monetary Policy', color: '#EAB308', slugs: ['rate-cut-cycle', 'price-stability', 'maximum-employment'] },
-  { name: 'Market / Secular', color: '#14B8A6', slugs: ['ai-singularity'] },
+  {
+    name: "Geopolitical",
+    color: "#EF4444",
+    slugs: ["middle-east-conflict", "trade-war", "trump-presidency"],
+  },
+  {
+    name: "Structural",
+    color: "#A855F7",
+    slugs: [
+      "liquidity-credit-contraction",
+      "usd-jpy-carry-trade",
+      "us-china-relations",
+    ],
+  },
+  {
+    name: "Monetary Policy",
+    color: "#EAB308",
+    slugs: ["rate-cut-cycle", "price-stability", "maximum-employment"],
+  },
+  { name: "Market / Secular", color: "#14B8A6", slugs: ["ai-singularity"] },
 ];
 
-type ViewMode = 'narratives' | 'themes';
+type ViewMode = "narratives" | "themes";
 
 function NarrativeFilterDropdown({
   visibleLaneIds,
@@ -375,16 +490,17 @@ function NarrativeFilterDropdown({
   catalysts: CatalystCard[];
 }) {
   const [open, setOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('narratives');
+  const [viewMode, setViewMode] = useState<ViewMode>("narratives");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
   // Count catalysts per thread
@@ -395,14 +511,20 @@ function NarrativeFilterDropdown({
   }
 
   const showAll = visibleLaneIds.size === 0;
-  const hiddenCount = showAll ? 0 : NARRATIVE_THREADS.length - visibleLaneIds.size;
+  const hiddenCount = showAll
+    ? 0
+    : NARRATIVE_THREADS.length - visibleLaneIds.size;
 
   const handleToggleTheme = (slugs: string[]) => {
-    const allVisible = slugs.every(s => showAll || visibleLaneIds.has(s));
+    const allVisible = slugs.every((s) => showAll || visibleLaneIds.has(s));
     if (allVisible) {
       // If showing all, switch to explicit mode first then remove these
       if (showAll) {
-        const allSlugs = new Set(NARRATIVE_THREADS.map(t => t.slug).filter(s => !slugs.includes(s)));
+        const allSlugs = new Set(
+          NARRATIVE_THREADS.map((t) => t.slug).filter(
+            (s) => !slugs.includes(s),
+          ),
+        );
         // We need to set visible to everything except these slugs
         for (const s of allSlugs) onToggleLane(s);
         // This requires a batch — instead, toggle each slug off
@@ -426,35 +548,49 @@ function NarrativeFilterDropdown({
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={() => setOpen((v) => !v)}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-xl transition-all text-[11px] uppercase tracking-wider ${
           hiddenCount > 0
-            ? 'bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]'
-            : 'bg-[var(--fintheon-bg)]/80 text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80'
+            ? "bg-[var(--fintheon-accent)]/8 text-[var(--fintheon-accent)]"
+            : "bg-[var(--fintheon-bg)]/80 text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)]/80"
         }`}
-        style={{ fontFamily: 'var(--font-heading)' }}
+        style={{ fontFamily: "var(--font-heading)" }}
       >
-        {hiddenCount > 0 ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-        {hiddenCount > 0 ? `${hiddenCount} hidden` : viewMode === 'narratives' ? 'Narratives' : 'Themes'}
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+        {hiddenCount > 0 ? (
+          <EyeOff className="w-3.5 h-3.5" />
+        ) : (
+          <Eye className="w-3.5 h-3.5" />
+        )}
+        {hiddenCount > 0
+          ? `${hiddenCount} hidden`
+          : viewMode === "narratives"
+            ? "Narratives"
+            : "Themes"}
+        <ChevronDown
+          className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-1.5 w-72 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
-          style={{ borderColor: 'color-mix(in srgb, var(--fintheon-accent) 20%, transparent)' }}>
-
+        <div
+          className="absolute top-full right-0 mt-1.5 w-72 rounded-xl border bg-[var(--fintheon-bg)] shadow-2xl overflow-hidden"
+          style={{
+            borderColor:
+              "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+          }}
+        >
           {/* Narratives / Themes segmented toggle */}
           <div className="flex items-center gap-1 px-4 pt-3 pb-1.5">
-            {(['narratives', 'themes'] as const).map(mode => (
+            {(["narratives", "themes"] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}
                 className={`flex-1 text-center py-1 rounded text-[10px] uppercase tracking-wider transition-all ${
                   viewMode === mode
-                    ? 'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]'
-                    : 'text-[var(--fintheon-muted)]/40 hover:text-[var(--fintheon-muted)]/70'
+                    ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
+                    : "text-[var(--fintheon-muted)]/40 hover:text-[var(--fintheon-muted)]/70"
                 }`}
-                style={{ fontFamily: 'var(--font-heading)' }}
+                style={{ fontFamily: "var(--font-heading)" }}
               >
                 {mode}
               </button>
@@ -463,14 +599,19 @@ function NarrativeFilterDropdown({
 
           {/* Header with Select All / Clear All */}
           <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--fintheon-accent)]/10">
-            <span className="text-[10px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider" style={{ fontFamily: 'var(--font-heading)' }}>
-              Show / Hide {viewMode === 'narratives' ? 'Narratives' : 'Themes'}
+            <span
+              className="text-[10px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              Show / Hide {viewMode === "narratives" ? "Narratives" : "Themes"}
             </span>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => { onClearAll(); }}
+                onClick={() => {
+                  onClearAll();
+                }}
                 className="text-[9px] text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] transition-colors"
-                style={{ fontFamily: 'var(--font-mono)' }}
+                style={{ fontFamily: "var(--font-mono)" }}
               >
                 All
               </button>
@@ -478,7 +619,7 @@ function NarrativeFilterDropdown({
               <button
                 onClick={onSelectAll}
                 className="text-[9px] text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] transition-colors"
-                style={{ fontFamily: 'var(--font-mono)' }}
+                style={{ fontFamily: "var(--font-mono)" }}
               >
                 None
               </button>
@@ -487,101 +628,139 @@ function NarrativeFilterDropdown({
 
           {/* Toggles list */}
           <div className="py-1.5 max-h-80 overflow-y-auto">
-            {viewMode === 'narratives' ? (
-              NARRATIVE_THREADS.map(thread => {
-                const isVisible = showAll || visibleLaneIds.has(thread.slug);
-                const count = countByThread.get(thread.slug) ?? 0;
-                return (
-                  <button
-                    key={thread.slug}
-                    onClick={() => onToggleLane(thread.slug)}
-                    className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-all duration-150 ${
-                      isVisible
-                        ? 'hover:bg-[var(--fintheon-accent)]/3'
-                        : 'opacity-35 hover:opacity-60'
-                    }`}
-                  >
-                    <div className="relative">
-                      <div
-                        className="w-3 h-3 rounded-sm transition-opacity"
-                        style={{ backgroundColor: thread.color, opacity: isVisible ? 1 : 0.3 }}
-                      />
-                      {!isVisible && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-full h-px bg-[var(--fintheon-text)]/40 rotate-45" />
-                        </div>
-                      )}
-                    </div>
-                    <span
-                      className={`flex-1 text-[12px] font-medium transition-colors ${
-                        isVisible ? 'text-[var(--fintheon-text)]/80' : 'text-[var(--fintheon-muted)]/40'
+            {viewMode === "narratives"
+              ? NARRATIVE_THREADS.map((thread) => {
+                  const isVisible = showAll || visibleLaneIds.has(thread.slug);
+                  const count = countByThread.get(thread.slug) ?? 0;
+                  return (
+                    <button
+                      key={thread.slug}
+                      onClick={() => onToggleLane(thread.slug)}
+                      className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-all duration-150 ${
+                        isVisible
+                          ? "hover:bg-[var(--fintheon-accent)]/3"
+                          : "opacity-35 hover:opacity-60"
                       }`}
-                      style={{ fontFamily: 'var(--font-body)', color: isVisible ? thread.color : undefined }}
                     >
-                      {thread.title}
-                    </span>
-                    <span className="text-[10px] text-[var(--fintheon-muted)]/40" style={{ fontFamily: 'var(--font-mono)' }}>
-                      {count}
-                    </span>
-                    {isVisible
-                      ? <Eye className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/30" />
-                      : <EyeOff className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/20" />
-                    }
-                  </button>
-                );
-              })
-            ) : (
-              THEME_GROUPS.map(theme => {
-                const allVisible = theme.slugs.every(s => showAll || visibleLaneIds.has(s));
-                const someVisible = theme.slugs.some(s => showAll || visibleLaneIds.has(s));
-                const totalCount = theme.slugs.reduce((sum, s) => sum + (countByThread.get(s) ?? 0), 0);
-                return (
-                  <button
-                    key={theme.name}
-                    onClick={() => handleToggleTheme(theme.slugs)}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all duration-150 ${
-                      allVisible
-                        ? 'hover:bg-[var(--fintheon-accent)]/3'
-                        : someVisible
-                          ? 'opacity-60 hover:opacity-80'
-                          : 'opacity-35 hover:opacity-60'
-                    }`}
-                  >
-                    <div className="relative">
-                      <div
-                        className="w-3 h-3 rounded-sm transition-opacity"
-                        style={{ backgroundColor: theme.color, opacity: allVisible ? 1 : someVisible ? 0.6 : 0.3 }}
-                      />
-                      {!allVisible && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-full h-px bg-[var(--fintheon-text)]/40 rotate-45" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
+                      <div className="relative">
+                        <div
+                          className="w-3 h-3 rounded-sm transition-opacity"
+                          style={{
+                            backgroundColor: thread.color,
+                            opacity: isVisible ? 1 : 0.3,
+                          }}
+                        />
+                        {!isVisible && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-full h-px bg-[var(--fintheon-text)]/40 rotate-45" />
+                          </div>
+                        )}
+                      </div>
                       <span
-                        className={`text-[12px] font-medium transition-colors block ${
-                          allVisible ? 'text-[var(--fintheon-text)]/80' : 'text-[var(--fintheon-muted)]/40'
+                        className={`flex-1 text-[12px] font-medium transition-colors ${
+                          isVisible
+                            ? "text-[var(--fintheon-text)]/80"
+                            : "text-[var(--fintheon-muted)]/40"
                         }`}
-                        style={{ fontFamily: 'var(--font-body)', color: allVisible ? theme.color : undefined }}
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          color: isVisible ? thread.color : undefined,
+                        }}
                       >
-                        {theme.name}
+                        {thread.title}
                       </span>
-                      <span className="text-[9px] text-[var(--fintheon-muted)]/30 truncate block" style={{ fontFamily: 'var(--font-mono)' }}>
-                        {theme.slugs.map(s => NARRATIVE_THREADS.find(t => t.slug === s)?.shortTitle).join(', ')}
+                      <span
+                        className="text-[10px] text-[var(--fintheon-muted)]/40"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {count}
                       </span>
-                    </div>
-                    <span className="text-[10px] text-[var(--fintheon-muted)]/40" style={{ fontFamily: 'var(--font-mono)' }}>
-                      {totalCount}
-                    </span>
-                    {allVisible
-                      ? <Eye className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/30" />
-                      : <EyeOff className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/20" />
-                    }
-                  </button>
-                );
-              })
-            )}
+                      {isVisible ? (
+                        <Eye className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/30" />
+                      ) : (
+                        <EyeOff className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/20" />
+                      )}
+                    </button>
+                  );
+                })
+              : THEME_GROUPS.map((theme) => {
+                  const allVisible = theme.slugs.every(
+                    (s) => showAll || visibleLaneIds.has(s),
+                  );
+                  const someVisible = theme.slugs.some(
+                    (s) => showAll || visibleLaneIds.has(s),
+                  );
+                  const totalCount = theme.slugs.reduce(
+                    (sum, s) => sum + (countByThread.get(s) ?? 0),
+                    0,
+                  );
+                  return (
+                    <button
+                      key={theme.name}
+                      onClick={() => handleToggleTheme(theme.slugs)}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all duration-150 ${
+                        allVisible
+                          ? "hover:bg-[var(--fintheon-accent)]/3"
+                          : someVisible
+                            ? "opacity-60 hover:opacity-80"
+                            : "opacity-35 hover:opacity-60"
+                      }`}
+                    >
+                      <div className="relative">
+                        <div
+                          className="w-3 h-3 rounded-sm transition-opacity"
+                          style={{
+                            backgroundColor: theme.color,
+                            opacity: allVisible ? 1 : someVisible ? 0.6 : 0.3,
+                          }}
+                        />
+                        {!allVisible && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-full h-px bg-[var(--fintheon-text)]/40 rotate-45" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span
+                          className={`text-[12px] font-medium transition-colors block ${
+                            allVisible
+                              ? "text-[var(--fintheon-text)]/80"
+                              : "text-[var(--fintheon-muted)]/40"
+                          }`}
+                          style={{
+                            fontFamily: "var(--font-body)",
+                            color: allVisible ? theme.color : undefined,
+                          }}
+                        >
+                          {theme.name}
+                        </span>
+                        <span
+                          className="text-[9px] text-[var(--fintheon-muted)]/30 truncate block"
+                          style={{ fontFamily: "var(--font-mono)" }}
+                        >
+                          {theme.slugs
+                            .map(
+                              (s) =>
+                                NARRATIVE_THREADS.find((t) => t.slug === s)
+                                  ?.shortTitle,
+                            )
+                            .join(", ")}
+                        </span>
+                      </div>
+                      <span
+                        className="text-[10px] text-[var(--fintheon-muted)]/40"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {totalCount}
+                      </span>
+                      {allVisible ? (
+                        <Eye className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/30" />
+                      ) : (
+                        <EyeOff className="w-3.5 h-3.5 text-[var(--fintheon-muted)]/20" />
+                      )}
+                    </button>
+                  );
+                })}
           </div>
         </div>
       )}

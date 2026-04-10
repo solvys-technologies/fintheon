@@ -55,6 +55,7 @@ Three levels of analysis on every data print:
 
 Assessment based on the probability the market will throw a "temper
 tantrum" if the print comes in X or Y. Cross-referenced against:
+
 - What the Fed said they're watching for
 - What prior prints in the chain showed
 - Whether consensus expectations were realistic
@@ -63,13 +64,13 @@ tantrum" if the print comes in X or Y. Cross-referenced against:
 
 ## Mentors & Influences
 
-| Mentor | Key Concept | Application |
-|--------|-------------|-------------|
-| Howard Marks | Third-order thinking, "who doesn't know that?" | Narrative analysis, entry timing |
-| Dr. David Paul | "Good traders buy from good prices" | Entry quality, last-line-of-defense |
-| Warren Buffett | "Be greedy when others are fearful" | Contrarian entries, conviction sizing |
-| Michael Burry | "They are correlated" | Multi-instrument confluence |
-| Bullseye | Fibonacci, IPEC, anti-lag EMA, 1000-tick | Trading models, stop management |
+| Mentor         | Key Concept                                    | Application                           |
+| -------------- | ---------------------------------------------- | ------------------------------------- |
+| Howard Marks   | Third-order thinking, "who doesn't know that?" | Narrative analysis, entry timing      |
+| Dr. David Paul | "Good traders buy from good prices"            | Entry quality, last-line-of-defense   |
+| Warren Buffett | "Be greedy when others are fearful"            | Contrarian entries, conviction sizing |
+| Michael Burry  | "They are correlated"                          | Multi-instrument confluence           |
+| Bullseye       | Fibonacci, IPEC, anti-lag EMA, 1000-tick       | Trading models, stop management       |
 
 ---
 

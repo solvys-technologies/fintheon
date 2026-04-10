@@ -9,17 +9,27 @@ import {
   type BridgeExecuteResponse,
   type BridgePositionResponse,
   type BridgeAccountResponse,
-} from '../types/execution-bridge.js';
-import { sql, isDatabaseAvailable } from '../config/database.js';
-import { getSessionWindow } from './autopilot/autopilot-scheduler.js';
+} from "../types/execution-bridge.js";
+import { sql, isDatabaseAvailable } from "../config/database.js";
+import { getSessionWindow } from "./autopilot/autopilot-scheduler.js";
 
 // ── Error Types ──
 
-class DuplicateOrderError extends Error { code = 'DUPLICATE_ORDER' as const; }
-class PDPTBreachError extends Error { code = 'PDPT_BREACH' as const; }
-class HardStopError extends Error { code = 'HARD_STOP' as const; }
-class MaxPositionsError extends Error { code = 'MAX_POSITIONS' as const; }
-class RateLimitError extends Error { code = 'RATE_LIMIT' as const; }
+class DuplicateOrderError extends Error {
+  code = "DUPLICATE_ORDER" as const;
+}
+class PDPTBreachError extends Error {
+  code = "PDPT_BREACH" as const;
+}
+class HardStopError extends Error {
+  code = "HARD_STOP" as const;
+}
+class MaxPositionsError extends Error {
+  code = "MAX_POSITIONS" as const;
+}
+class RateLimitError extends Error {
+  code = "RATE_LIMIT" as const;
+}
 
 // ── Configuration (from env) ──
 
@@ -27,7 +37,7 @@ const RULES: ReconcilerRules = {
   maxOrdersPerMinute: Number(process.env.MAX_ORDERS_PER_MINUTE ?? 2),
   confirmationTimeoutSec: Number(process.env.CONFIRMATION_TIMEOUT_SEC ?? 8),
   duplicateWindowSec: Number(process.env.DUPLICATE_WINDOW_SEC ?? 30),
-  hardStopTime: process.env.HARD_STOP_TIME ?? '11:30',
+  hardStopTime: process.env.HARD_STOP_TIME ?? "11:30",
   maxConcurrentPositions: Number(process.env.MAX_CONCURRENT_POSITIONS ?? 1),
   pdptBufferUsd: 50,
   reconnectBackoffSec: [2, 4, 8, 16, 32],
@@ -37,7 +47,7 @@ const RULES: ReconcilerRules = {
 
 interface RecentOrder {
   symbol: string;
-  direction: 'long' | 'short';
+  direction: "long" | "short";
   sentAt: number;
 }
 
@@ -54,14 +64,15 @@ function pruneRecentOrders() {
 
 // ── Pre-flight Guards ──
 
-function duplicateGuard(symbol: string, direction: 'long' | 'short'): void {
+function duplicateGuard(symbol: string, direction: "long" | "short"): void {
   const cutoff = Date.now() - RULES.duplicateWindowSec * 1000;
   const dup = recentOrders.find(
-    (o) => o.symbol === symbol && o.direction === direction && o.sentAt > cutoff
+    (o) =>
+      o.symbol === symbol && o.direction === direction && o.sentAt > cutoff,
   );
   if (dup) {
     throw new DuplicateOrderError(
-      `Duplicate ${direction} ${symbol} within ${RULES.duplicateWindowSec}s window`
+      `Duplicate ${direction} ${symbol} within ${RULES.duplicateWindowSec}s window`,
     );
   }
 }
@@ -70,21 +81,23 @@ function pdptGuard(account: BridgeAccountResponse): void {
   const floor = 1500 + RULES.pdptBufferUsd;
   if (account.balance < floor) {
     throw new PDPTBreachError(
-      `Balance $${account.balance.toFixed(2)} below PDPT floor $${floor}`
+      `Balance $${account.balance.toFixed(2)} below PDPT floor $${floor}`,
     );
   }
 }
 
 function hardStopGuard(): void {
   const now = new Date();
-  const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const [stopH, stopM] = RULES.hardStopTime.split(':').map(Number);
+  const est = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/New_York" }),
+  );
+  const [stopH, stopM] = RULES.hardStopTime.split(":").map(Number);
   const currentMinutes = est.getHours() * 60 + est.getMinutes();
   const stopMinutes = stopH * 60 + stopM;
 
   if (currentMinutes >= stopMinutes) {
     throw new HardStopError(
-      `Past hard stop time ${RULES.hardStopTime} ET (current ${est.getHours()}:${String(est.getMinutes()).padStart(2, '0')})`
+      `Past hard stop time ${RULES.hardStopTime} ET (current ${est.getHours()}:${String(est.getMinutes()).padStart(2, "0")})`,
     );
   }
 }
@@ -92,7 +105,7 @@ function hardStopGuard(): void {
 function concurrentPositionGuard(positions: BridgePositionResponse): void {
   if (positions.positions.length >= RULES.maxConcurrentPositions) {
     throw new MaxPositionsError(
-      `${positions.positions.length} positions open (max ${RULES.maxConcurrentPositions})`
+      `${positions.positions.length} positions open (max ${RULES.maxConcurrentPositions})`,
     );
   }
 }
@@ -103,7 +116,7 @@ function rateLimitGuard(): void {
   const count = recentOrders.filter((o) => o.sentAt > oneMinuteAgo).length;
   if (count >= RULES.maxOrdersPerMinute) {
     throw new RateLimitError(
-      `${count} orders in last 60s (max ${RULES.maxOrdersPerMinute})`
+      `${count} orders in last 60s (max ${RULES.maxOrdersPerMinute})`,
     );
   }
 }
@@ -128,7 +141,9 @@ export async function executeWithReconciliation(
     retryCount: 0,
   };
 
-  const estNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const estNow = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/New_York" }),
+  );
 
   const tradeRun: TradeRun = {
     id: crypto.randomUUID(),
@@ -144,7 +159,7 @@ export async function executeWithReconciliation(
     exitPrice: null,
     pnl: null,
     hourOfDay: estNow.getHours(),
-    session: getSessionWindow() ?? 'unknown',
+    session: getSessionWindow() ?? "unknown",
     fibContext: request.hour_fib_context ?? null,
     signalMetadata: request.signal_metadata ?? null,
     reconcilerStatus: ReconcilerState.IDLE,
@@ -154,7 +169,10 @@ export async function executeWithReconciliation(
 
   // ── Run all 5 guards ──
   try {
-    const [account, positions] = await Promise.all([accountQuery(), positionQuery()]);
+    const [account, positions] = await Promise.all([
+      accountQuery(),
+      positionQuery(),
+    ]);
     duplicateGuard(request.symbol, request.direction);
     pdptGuard(account);
     hardStopGuard();
@@ -163,7 +181,7 @@ export async function executeWithReconciliation(
   } catch (err) {
     const guardError = err as Error & { code?: string };
     order.state = ReconcilerState.REJECTED;
-    order.lastError = `Guard: ${guardError.code ?? 'UNKNOWN'} — ${guardError.message}`;
+    order.lastError = `Guard: ${guardError.code ?? "UNKNOWN"} — ${guardError.message}`;
     tradeRun.reconcilerStatus = ReconcilerState.REJECTED;
     await logTradeRun(tradeRun);
     console.warn(`[Reconciler] Guard rejected: ${order.lastError}`);
@@ -173,7 +191,11 @@ export async function executeWithReconciliation(
   // ── Record order + send ──
   order.state = ReconcilerState.ORDER_SENT;
   activeOrders.set(orderId, order);
-  recentOrders.push({ symbol: request.symbol, direction: request.direction, sentAt: now });
+  recentOrders.push({
+    symbol: request.symbol,
+    direction: request.direction,
+    sentAt: now,
+  });
 
   let response: BridgeExecuteResponse;
   try {
@@ -191,18 +213,20 @@ export async function executeWithReconciliation(
   order.bridgeOrderId = response.order_id;
 
   // ── Handle response status ──
-  if (response.status === 'filled') {
+  if (response.status === "filled") {
     order.state = ReconcilerState.FILLED;
     order.confirmedAt = Date.now();
     tradeRun.fillPrice = response.fill_price;
     tradeRun.reconcilerStatus = ReconcilerState.FILLED;
     activeOrders.delete(orderId);
     await logTradeRun(tradeRun);
-    console.log(`[Reconciler] FILLED ${request.direction} ${request.symbol} @ ${response.fill_price}`);
+    console.log(
+      `[Reconciler] FILLED ${request.direction} ${request.symbol} @ ${response.fill_price}`,
+    );
     return { success: true, order, tradeRun };
   }
 
-  if (response.status === 'rejected' || response.status === 'error') {
+  if (response.status === "rejected" || response.status === "error") {
     order.state = ReconcilerState.REJECTED;
     order.lastError = response.message;
     tradeRun.reconcilerStatus = ReconcilerState.REJECTED;
@@ -215,7 +239,11 @@ export async function executeWithReconciliation(
   // ── Pending → confirmation timeout ──
   order.state = ReconcilerState.PENDING_CONFIRM;
 
-  const confirmed = await waitForConfirmation(order, positionQuery, RULES.confirmationTimeoutSec);
+  const confirmed = await waitForConfirmation(
+    order,
+    positionQuery,
+    RULES.confirmationTimeoutSec,
+  );
 
   tradeRun.reconcilerStatus = order.state;
   if (confirmed) tradeRun.fillPrice = response.fill_price;
@@ -235,30 +263,38 @@ async function waitForConfirmation(
   await new Promise((resolve) => setTimeout(resolve, timeoutSec * 1000));
 
   order.state = ReconcilerState.TIMEOUT;
-  console.warn(`[Reconciler] Confirmation timeout for ${order.id}, reconciling...`);
+  console.warn(
+    `[Reconciler] Confirmation timeout for ${order.id}, reconciling...`,
+  );
   order.state = ReconcilerState.RECONCILING;
 
   try {
     const positions = await positionQuery();
     const found = positions.positions.some(
-      (p) => p.symbol === order.symbol && p.direction === order.direction
+      (p) => p.symbol === order.symbol && p.direction === order.direction,
     );
 
     if (found) {
       order.state = ReconcilerState.CORRECTED;
       order.confirmedAt = Date.now();
-      console.log(`[Reconciler] CORRECTED — position exists for ${order.symbol}, confirm was lost`);
+      console.log(
+        `[Reconciler] CORRECTED — position exists for ${order.symbol}, confirm was lost`,
+      );
       return true;
     }
 
     order.state = ReconcilerState.ALERT;
-    order.lastError = 'Timeout: no position found after reconciliation';
-    console.error(`[Reconciler] ALERT — no position found for ${order.symbol} after timeout`);
+    order.lastError = "Timeout: no position found after reconciliation";
+    console.error(
+      `[Reconciler] ALERT — no position found for ${order.symbol} after timeout`,
+    );
     return false;
   } catch (err) {
     order.state = ReconcilerState.ALERT;
     order.lastError = `Reconciliation query failed: ${(err as Error).message}`;
-    console.error(`[Reconciler] ALERT — reconciliation query failed: ${order.lastError}`);
+    console.error(
+      `[Reconciler] ALERT — reconciliation query failed: ${order.lastError}`,
+    );
     return false;
   }
 }
@@ -270,7 +306,9 @@ async function logTradeRun(run: TradeRun): Promise<void> {
   if (recentTradeRuns.length > 50) recentTradeRuns.pop();
 
   if (!isDatabaseAvailable()) {
-    console.log(`[Reconciler] TradeRun logged (in-memory): ${run.id} ${run.reconcilerStatus}`);
+    console.log(
+      `[Reconciler] TradeRun logged (in-memory): ${run.id} ${run.reconcilerStatus}`,
+    );
     return;
   }
 
@@ -294,7 +332,9 @@ async function logTradeRun(run: TradeRun): Promise<void> {
       )
     `;
   } catch (err) {
-    console.error(`[Reconciler] Failed to log trade run to DB: ${(err as Error).message}`);
+    console.error(
+      `[Reconciler] Failed to log trade run to DB: ${(err as Error).message}`,
+    );
   }
 }
 

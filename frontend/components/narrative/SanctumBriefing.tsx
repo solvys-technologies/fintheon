@@ -1,6 +1,6 @@
 // [claude-code 2026-03-28] S4-T3: Enhanced briefing display — structured sections, severity indicators, accent borders
 // [claude-code 2026-03-23] MiroShark briefing panel — agent reasoning synthesis
-import type { MiroSharkBriefing } from '../../types/miroshark';
+import type { MiroSharkBriefing } from "../../types/miroshark";
 
 interface SanctumBriefingProps {
   briefing: MiroSharkBriefing | null;
@@ -8,7 +8,11 @@ interface SanctumBriefingProps {
   noBorder?: boolean;
 }
 
-export function SanctumBriefing({ briefing, isLoading, noBorder }: SanctumBriefingProps) {
+export function SanctumBriefing({
+  briefing,
+  isLoading,
+  noBorder,
+}: SanctumBriefingProps) {
   if (isLoading) {
     return (
       <div className="rounded border border-[var(--fintheon-border)]/10 bg-[var(--fintheon-surface)]/30 p-4">
@@ -25,8 +29,12 @@ export function SanctumBriefing({ briefing, isLoading, noBorder }: SanctumBriefi
   return (
     <div className="rounded bg-[var(--fintheon-surface)]/30 overflow-hidden">
       {/* Summary — lead paragraph */}
-      <div className={`px-5 py-4 rounded ${noBorder ? '' : 'border border-[var(--fintheon-accent)]/10'}`}>
-        <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">Analysis</span>
+      <div
+        className={`px-5 py-4 rounded ${noBorder ? "" : "border border-[var(--fintheon-accent)]/10"}`}
+      >
+        <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
+          Analysis
+        </span>
         <p className="text-[11px] text-[var(--fintheon-text)]/80 leading-relaxed">
           {briefing.summary}
         </p>
@@ -35,12 +43,18 @@ export function SanctumBriefing({ briefing, isLoading, noBorder }: SanctumBriefi
       {/* Key Findings */}
       {briefing.keyFindings.length > 0 && (
         <div className="px-5 py-3 border-t border-[var(--fintheon-border)]/10">
-          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-2">Key Findings</span>
+          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-2">
+            Key Findings
+          </span>
           <div className="flex flex-col gap-1.5">
             {briefing.keyFindings.map((finding, i) => (
               <div key={i} className="flex gap-2">
-                <span className="text-[10px] font-mono text-[var(--fintheon-accent)]/60 w-4 shrink-0">{i + 1}.</span>
-                <span className="text-[10px] text-[var(--fintheon-text)]/70 leading-relaxed">{finding}</span>
+                <span className="text-[10px] font-mono text-[var(--fintheon-accent)]/60 w-4 shrink-0">
+                  {i + 1}.
+                </span>
+                <span className="text-[10px] text-[var(--fintheon-text)]/70 leading-relaxed">
+                  {finding}
+                </span>
               </div>
             ))}
           </div>
@@ -50,17 +64,27 @@ export function SanctumBriefing({ briefing, isLoading, noBorder }: SanctumBriefi
       {/* Risk Alerts */}
       {briefing.riskAlerts.length > 0 && (
         <div className="px-5 py-3 border-t border-[var(--fintheon-border)]/10">
-          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-2">Risk Alerts</span>
+          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-2">
+            Risk Alerts
+          </span>
           <div className="flex flex-col gap-1.5">
             {briefing.riskAlerts.map((alert, i) => {
-              const isSevere = /elevated|extreme|critical|high.heat/i.test(alert);
+              const isSevere = /elevated|extreme|critical|high.heat/i.test(
+                alert,
+              );
               return (
                 <div
                   key={i}
                   className="flex items-start gap-2 pl-2 border border-red-500/15 rounded"
-                  style={{ borderLeftColor: isSevere ? 'var(--fintheon-severe)' : 'var(--fintheon-neutral-severe)' }}
+                  style={{
+                    borderLeftColor: isSevere
+                      ? "var(--fintheon-severe)"
+                      : "var(--fintheon-neutral-severe)",
+                  }}
                 >
-                  <span className="text-[10px] text-[var(--fintheon-text)]/70 leading-relaxed">{alert}</span>
+                  <span className="text-[10px] text-[var(--fintheon-text)]/70 leading-relaxed">
+                    {alert}
+                  </span>
                 </div>
               );
             })}
@@ -72,7 +96,9 @@ export function SanctumBriefing({ briefing, isLoading, noBorder }: SanctumBriefi
       {briefing.agentConsensus && (
         <div className="px-5 py-3 border-t border-[var(--fintheon-border)]/10">
           <div className="inline-block px-3 py-1.5 rounded bg-[var(--fintheon-accent)]/8">
-            <span className="text-[9px] text-[var(--fintheon-accent)]/70">{briefing.agentConsensus}</span>
+            <span className="text-[9px] text-[var(--fintheon-accent)]/70">
+              {briefing.agentConsensus}
+            </span>
           </div>
         </div>
       )}

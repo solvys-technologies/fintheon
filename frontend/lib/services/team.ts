@@ -7,7 +7,7 @@ import ApiClient from "../apiClient";
 export interface PeerUserRecord {
   id: string;
   displayName: string;
-  role: 'admin' | 'peer';
+  role: "admin" | "peer";
   avatarUrl?: string | null;
   settings?: Record<string, unknown>;
 }
@@ -21,7 +21,7 @@ export interface PeerRecordResponse {
   deskId?: string | null;
   deskName?: string | null;
   assignedAgents: string[];
-  status: 'online' | 'away' | 'offline';
+  status: "online" | "away" | "offline";
   heartbeatAt: string;
   hermesAvailable: boolean;
   createdAt: string;
@@ -54,18 +54,21 @@ export class PeersService {
     assignedAgents?: string[];
     hermesAvailable?: boolean;
   }): Promise<{ peer: PeerRecordResponse }> {
-    return this.client.post('/api/peers/register', data);
+    return this.client.post("/api/peers/register", data);
   }
 
   async heartbeat(data: {
     peerId: string;
-    payload?: { status?: 'online' | 'away' | 'offline'; metadata?: Record<string, unknown> };
+    payload?: {
+      status?: "online" | "away" | "offline";
+      metadata?: Record<string, unknown>;
+    };
   }): Promise<{ peer: PeerRecordResponse }> {
-    return this.client.post('/api/peers/heartbeat', data);
+    return this.client.post("/api/peers/heartbeat", data);
   }
 
   async list(): Promise<{ peers: PeerRecordResponse[]; total: number }> {
-    return this.client.get('/api/peers/list');
+    return this.client.get("/api/peers/list");
   }
 
   async get(id: string): Promise<{ peer: PeerRecordResponse }> {
@@ -81,17 +84,21 @@ export class PeersService {
     description?: string;
     sectorFocus?: string[];
   }): Promise<{ desk: DeskRecordResponse }> {
-    return this.client.post('/api/peers/desks', data);
+    return this.client.post("/api/peers/desks", data);
   }
 
   async listDesks(): Promise<{ desks: DeskRecordResponse[]; total: number }> {
-    return this.client.get('/api/peers/desks');
+    return this.client.get("/api/peers/desks");
   }
 
   async assignDesk(
     deskId: string,
     peerId: string,
-  ): Promise<{ assigned: boolean; deskId: string; peers: PeerRecordResponse[] }> {
+  ): Promise<{
+    assigned: boolean;
+    deskId: string;
+    peers: PeerRecordResponse[];
+  }> {
     return this.client.post(`/api/peers/desks/${deskId}/assign`, { peerId });
   }
 
@@ -99,18 +106,27 @@ export class PeersService {
     peerId?: string;
     roomId?: string;
     roomName?: string;
-  }): Promise<{ room: { id: string; name: string; createdAt: string; configured: boolean }; token: string; configured: boolean; url: string | null }> {
-    return this.client.post('/api/peers/voice/join', data);
+  }): Promise<{
+    room: { id: string; name: string; createdAt: string; configured: boolean };
+    token: string;
+    configured: boolean;
+    url: string | null;
+  }> {
+    return this.client.post("/api/peers/voice/join", data);
   }
 
   async leaveVoice(data: {
     peerId?: string;
     roomId: string;
   }): Promise<{ left: boolean }> {
-    return this.client.post('/api/peers/voice/leave', data);
+    return this.client.post("/api/peers/voice/leave", data);
   }
 
-  async listVoiceParticipants(roomId: string): Promise<VoiceParticipantsResponse> {
-    return this.client.get(`/api/peers/voice/participants?roomId=${encodeURIComponent(roomId)}`);
+  async listVoiceParticipants(
+    roomId: string,
+  ): Promise<VoiceParticipantsResponse> {
+    return this.client.get(
+      `/api/peers/voice/participants?roomId=${encodeURIComponent(roomId)}`,
+    );
   }
 }

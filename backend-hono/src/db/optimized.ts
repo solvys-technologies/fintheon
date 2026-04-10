@@ -1,4 +1,4 @@
-import { Pool, type PoolConfig, type QueryResult } from 'pg';
+import { Pool, type PoolConfig, type QueryResult } from "pg";
 
 export class DatabaseError extends Error {
   status: number;
@@ -9,7 +9,7 @@ export class DatabaseError extends Error {
     options: { status?: number; code?: string; cause?: unknown } = {},
   ) {
     super(message);
-    this.name = 'DatabaseError';
+    this.name = "DatabaseError";
     this.status = options.status ?? 503;
     this.code = options.code;
     (this as { cause?: unknown }).cause = options.cause;
@@ -55,7 +55,7 @@ class LruCache<K, V> {
   }
 }
 
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = process.env.NODE_ENV !== "production";
 
 const resolveConnectionString = (): string | null => {
   const neon = process.env.NEON_DATABASE_URL;
@@ -63,16 +63,16 @@ const resolveConnectionString = (): string | null => {
 
   const legacy = process.env.DATABASE_URL;
   if (legacy) {
-    console.warn('[db] DATABASE_URL detected. Prefer NEON_DATABASE_URL.');
+    console.warn("[db] DATABASE_URL detected. Prefer NEON_DATABASE_URL.");
     return legacy;
   }
 
   if (isDev) {
-    console.warn('[db] No database URL - using mock mode in development');
+    console.warn("[db] No database URL - using mock mode in development");
     return null;
   }
 
-  throw new Error('Missing NEON_DATABASE_URL or DATABASE_URL');
+  throw new Error("Missing NEON_DATABASE_URL or DATABASE_URL");
 };
 
 const connectionString = resolveConnectionString();
@@ -81,9 +81,15 @@ const buildPoolConfig = (): PoolConfig | null => {
   if (!connectionString) return null;
   return {
     connectionString,
-    max: Number.parseInt(process.env.DB_POOL_MAX ?? '10', 10),
-    idleTimeoutMillis: Number.parseInt(process.env.DB_IDLE_TIMEOUT_MS ?? '30000', 10),
-    connectionTimeoutMillis: Number.parseInt(process.env.DB_CONNECT_TIMEOUT_MS ?? '5000', 10),
+    max: Number.parseInt(process.env.DB_POOL_MAX ?? "10", 10),
+    idleTimeoutMillis: Number.parseInt(
+      process.env.DB_IDLE_TIMEOUT_MS ?? "30000",
+      10,
+    ),
+    connectionTimeoutMillis: Number.parseInt(
+      process.env.DB_CONNECT_TIMEOUT_MS ?? "5000",
+      10,
+    ),
   };
 };
 
@@ -91,9 +97,9 @@ const poolConfig = buildPoolConfig();
 const pool = poolConfig ? new Pool(poolConfig) : null;
 
 if (pool) {
-  pool.on('error', (error) => {
-    console.error('[db] pool error', {
-      name: error instanceof Error ? error.name : 'UnknownError',
+  pool.on("error", (error) => {
+    console.error("[db] pool error", {
+      name: error instanceof Error ? error.name : "UnknownError",
       message: error instanceof Error ? error.message : String(error),
     });
   });
@@ -101,29 +107,32 @@ if (pool) {
 
 const cache = new LruCache<string, QueryResult>(200, 60_000);
 
-const normalizeSql = (text: string) => text.replace(/\s+/g, ' ').trim().slice(0, 500);
+const normalizeSql = (text: string) =>
+  text.replace(/\s+/g, " ").trim().slice(0, 500);
 
 const getErrorCode = (error: unknown): string | undefined => {
-  if (!error || typeof error !== 'object') return undefined;
+  if (!error || typeof error !== "object") return undefined;
   const code = (error as { code?: unknown }).code;
-  return typeof code === 'string' ? code : undefined;
+  return typeof code === "string" ? code : undefined;
 };
 
 const isConnectionError = (error: unknown): boolean => {
   const code = getErrorCode(error);
   if (!code) return false;
-  return ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND'].includes(code);
+  return ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT", "ENOTFOUND"].includes(
+    code,
+  );
 };
 
 const wrapDbError = (
   error: unknown,
-  context: { label: string; text: string; params: readonly unknown[] }
+  context: { label: string; text: string; params: readonly unknown[] },
 ) => {
   const code = getErrorCode(error);
   const status = isConnectionError(error) ? 503 : 500;
   const message = error instanceof Error ? error.message : String(error);
 
-  console.error('[db] query failed', {
+  console.error("[db] query failed", {
     label: context.label,
     status,
     code,
@@ -132,11 +141,15 @@ const wrapDbError = (
     paramsCount: context.params.length,
   });
 
-  return new DatabaseError('Database query failed', { status, code, cause: error });
+  return new DatabaseError("Database query failed", {
+    status,
+    code,
+    cause: error,
+  });
 };
 
 const buildCacheKey = (text: string, params: readonly unknown[]) => {
-  const serializedParams = params.length ? JSON.stringify(params) : '';
+  const serializedParams = params.length ? JSON.stringify(params) : "";
   return `${text}::${serializedParams}`;
 };
 
@@ -150,7 +163,7 @@ export async function cachedQuery<T = unknown>(
   options: { cacheKey?: string; ttlMs?: number } = {},
 ): Promise<QueryResult<T>> {
   if (!pool) {
-    throw new DatabaseError('Database not configured', { status: 503 });
+    throw new DatabaseError("Database not configured", { status: 503 });
   }
 
   const key = options.cacheKey ?? buildCacheKey(text, params);
@@ -162,7 +175,7 @@ export async function cachedQuery<T = unknown>(
     cache.set(key, result as QueryResult, options.ttlMs);
     return result;
   } catch (error) {
-    throw wrapDbError(error, { label: 'cachedQuery', text, params });
+    throw wrapDbError(error, { label: "cachedQuery", text, params });
   }
 }
 
@@ -171,19 +184,19 @@ export async function query<T = unknown>(
   params: readonly unknown[] = [],
 ): Promise<QueryResult<T>> {
   if (!pool) {
-    throw new DatabaseError('Database not configured', { status: 503 });
+    throw new DatabaseError("Database not configured", { status: 503 });
   }
 
   try {
     return await pool.query<T>(text, params as unknown[]);
   } catch (error) {
-    throw wrapDbError(error, { label: 'query', text, params });
+    throw wrapDbError(error, { label: "query", text, params });
   }
 }
 
 export async function pingDb(): Promise<void> {
   if (!pool) {
-    throw new DatabaseError('Database not configured', { status: 503 });
+    throw new DatabaseError("Database not configured", { status: 503 });
   }
-  await query('SELECT 1');
+  await query("SELECT 1");
 }

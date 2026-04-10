@@ -39,15 +39,15 @@
     "default": 2
   },
   "vixCurve": [
-    { "vix": 10, "multiplier": 0.70 },
+    { "vix": 10, "multiplier": 0.7 },
     { "vix": 13, "multiplier": 0.78 },
     { "vix": 15, "multiplier": 0.85 },
-    { "vix": 18, "multiplier": 1.00 },
+    { "vix": 18, "multiplier": 1.0 },
     { "vix": 20, "multiplier": 1.08 },
     { "vix": 22, "multiplier": 1.15 },
     { "vix": 25, "multiplier": 1.25 },
-    { "vix": 30, "multiplier": 1.40 },
-    { "vix": 40, "multiplier": 1.50 }
+    { "vix": 30, "multiplier": 1.4 },
+    { "vix": 40, "multiplier": 1.5 }
   ],
   "sessions": [
     { "name": "Asian", "multiplier": 0.6, "start": 19, "end": 2 },
@@ -56,10 +56,22 @@
     { "name": "AfterHours", "multiplier": 0.7, "start": 16, "end": 19 }
   ],
   "vixMultipliers": [
-    { "max": 15, "multiplier": 0.8, "context": "Low fear, choppy PA around 20/100 EMA" },
+    {
+      "max": 15,
+      "multiplier": 0.8,
+      "context": "Low fear, choppy PA around 20/100 EMA"
+    },
     { "max": 20, "multiplier": 1.0, "context": "Neutral, base hits" },
-    { "max": 30, "multiplier": 1.2, "context": "Elevated, trendy PA respecting 20/50 EMA" },
-    { "max": 999999, "multiplier": 1.5, "context": "High fear, home run potential" }
+    {
+      "max": 30,
+      "multiplier": 1.2,
+      "context": "Elevated, trendy PA respecting 20/50 EMA"
+    },
+    {
+      "max": 999999,
+      "multiplier": 1.5,
+      "context": "High fear, home run potential"
+    }
   ],
   "decayHalfLives": {
     "fedDecision": 120,

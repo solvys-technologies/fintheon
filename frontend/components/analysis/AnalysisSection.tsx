@@ -1,4 +1,4 @@
-import ChatInterface from '../ChatInterface';
+import ChatInterface from "../ChatInterface";
 
 export function AnalysisSection() {
   return (

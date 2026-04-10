@@ -12,10 +12,14 @@ Sprint 8, Track 2. You are building the **core execution engine** — the DAG sc
 
 - `backend-hono/src/services/agent-bus/types.ts` — All shared types (T1 creates this)
 - `backend-hono/src/services/agent-bus/bus.ts` — AgentBus pub/sub (T1 creates this)
-- `backend-hono/src/services/strands/agent-factory.ts` — Current single-agent factory. You will extend this.
+- `backend-hono/src/services/strands/agent-factory.ts` — Read fully. Exports: `createAgent()`, `isStrandsAvailable()`, `HarperProvider` type (`'local' | 'nous' | 'orouter' | 'grok'`), `NOUS_MODELS`. **There are no `createOracleAgent()` etc. functions here** — those live in the `/agents/` subdirectory.
+- `backend-hono/src/services/strands/invoke-helper.ts` — One-shot agent invocation with provider fallback chain (local → nous → orouter). Useful for non-streaming background DAG tasks.
+- `backend-hono/src/services/strands/agents/oracle.ts` — Read this + all sibling files (feucht.ts, consul.ts, herald.ts, harper.ts). These are the individual agent creators you will call from `createAgentForTask()`.
+- `backend-hono/src/services/strands/agents/feucht.ts` — Feucht agent creator
+- `backend-hono/src/services/strands/agents/consul.ts` — Consul agent creator
+- `backend-hono/src/services/strands/agents/herald.ts` — Herald agent creator
+- `backend-hono/src/services/strands/agents/harper.ts` — Harper agent creator
 - `backend-hono/src/services/strands/stream-adapter.ts` — Current Strands → UIMessageStream adapter. You will extend this.
-- `backend-hono/src/services/strands/agents/oracle.ts` — Example agent creation (for understanding agent config shape)
-- `backend-hono/src/services/strands/agents/harper.ts` — Harper agent creation
 - `backend-hono/src/services/strands/provider.ts` — VProxy model creation
 - `backend-hono/src/services/harper-autonomous/loop-manager.ts` — Existing priority queue pattern (for inspiration, NOT to modify)
 - `backend-hono/src/services/chat-queue.ts` — Existing chat queue (for inspiration, NOT to modify)
@@ -27,6 +31,7 @@ Sprint 8, Track 2. You are building the **core execution engine** — the DAG sc
 The DAG execution engine. Resolves dependencies, dispatches waves, handles timeouts and failures.
 
 Core behavior:
+
 - `executeDag(dagDef: DAGDefinition)`: Main entry point
   1. Persist DAG + tasks to Supabase (agent_dags + agent_tasks tables)
   2. Compute waves: tasks with no deps = wave 0, tasks whose deps are all wave N = wave N+1
@@ -38,7 +43,7 @@ Core behavior:
 - `dispatchTask(task: TaskRecord, dagContext: DAGRecord)`: Per-task execution
   1. Update task status to 'running' in DB
   2. Resolve agent: call the appropriate agent creator (oracle, feucht, consul, herald, harper)
-  3. Stream agent: call `agent.stream(task.input.prompt)` 
+  3. Stream agent: call `agent.stream(task.input.prompt)`
   4. Collect output text + publish `dag.task.result` to bus
   5. Publish per-delta events to `surface.boardroom` (for live streaming panels)
   6. On completion: update task in DB with output + duration
@@ -82,6 +87,7 @@ function computeWaves(tasks: TaskDefinition[]): Map<number, TaskDefinition[]> { 
 Merges N concurrent Strands agent streams into a single SSE-encoded ReadableStream, with agent identity on each event.
 
 Core behavior:
+
 - `createMergedStream(agentStreams: AgentStream[])`: Returns a single `ReadableStream<Uint8Array>`
   1. Takes array of `{ agentId, stream: ReadableStream }` pairs
   2. Creates a merged ReadableStream that reads from all inputs concurrently
@@ -111,11 +117,13 @@ export function createMergedStream(agentStreams: AgentStream[]): ReadableStream<
 REST API for DAG status and control.
 
 Endpoints:
+
 - `GET /api/dag/:dagId` — Returns DAGRecord + all TaskRecords. Used by frontend to poll initial state.
 - `GET /api/dag/:dagId/stream` — SSE stream of DAG events (progress, agent deltas). Frontend subscribes here.
 - `POST /api/dag/:dagId/cancel` — Cancel a running DAG. Sets all pending/running tasks to cancelled.
 
 The SSE stream endpoint:
+
 1. Creates a ReadableStream
 2. Subscribes to `dag.status` and `surface.boardroom` bus events filtered by dagId
 3. Forwards events as SSE
@@ -123,8 +131,8 @@ The SSE stream endpoint:
 5. Closes when DAG completes or client disconnects
 
 ```typescript
-import { Hono } from 'hono';
-import { agentBus } from '../../services/agent-bus';
+import { Hono } from "hono";
+import { agentBus } from "../../services/agent-bus";
 // ...
 ```
 
@@ -132,17 +140,20 @@ import { agentBus } from '../../services/agent-bus';
 
 ### 4. `backend-hono/src/services/strands/agent-factory.ts`
 
-Add a new export `createAgentForTask(agentId, taskInput)` that:
-1. Takes a HermesAgentId + task input object
-2. Switches on agentId to call the right agent creator (createOracleAgent, createFeuchtAgent, etc.)
-3. Returns the Agent instance ready for streaming
-4. Used by dag-scheduler.ts to create agents for each task
+Add a new export `createAgentForTask(agentId: HermesAgentId): Agent` that:
 
-Keep the existing `createAgent()` and `isStrandsAvailable()` exports unchanged.
+1. Imports the individual agent creator functions from `./agents/oracle.js`, `./agents/feucht.js`, `./agents/consul.js`, `./agents/herald.js`, `./agents/harper.js`
+2. Switches on agentId and calls the appropriate creator — **read each agent file first** to understand the exact function signature (some may accept a `requestId` or `conversationManager` param)
+3. For DAG tasks, pass no `conversationManager` (one-shot, no history needed) and no `requestId` (use the dagId instead if required)
+4. Returns the Agent instance ready for `agent.stream(prompt)`
+5. Provider: always use `'local'` (VProxy) for DAG agents. The DAG only dispatches when the session is active, so VProxy is assumed healthy. Do NOT add the full fallback chain — DAGs failing fast is preferable to burning Nous/OpenRouter tokens silently.
+
+Keep the existing `createAgent()`, `isStrandsAvailable()`, `HarperProvider`, and `NOUS_MODELS` exports unchanged.
 
 ### 5. `backend-hono/src/services/strands/stream-adapter.ts`
 
 Add an optional `agentId` parameter to the UIEvent encoding:
+
 1. `strandsToUIStream(agent, input, options)` gets a new optional field: `options.agentId?: HermesAgentId`
 2. When agentId is present, each emitted event includes `agentId` in the JSON payload
 3. This is used by the multi-stream merger to label which agent produced each delta
@@ -156,11 +167,23 @@ Minimal change — add one optional field to the options interface and include i
    ```typescript
    // Create a simple 2-task DAG: Oracle (wave 0) → Harper synthesis (wave 1)
    const dag = await executeDag({
-     surface: 'boardroom',
-     input: { query: 'Test DAG' },
+     surface: "boardroom",
+     input: { query: "Test DAG" },
      tasks: [
-       { key: 'oracle-test', agentId: 'oracle', taskType: 'analysis', input: { prompt: 'What is the VIX?' }, depKeys: [] },
-       { key: 'harper-synth', agentId: 'harper', taskType: 'synthesis', input: { prompt: 'Summarize oracle findings' }, depKeys: ['oracle-test'] },
+       {
+         key: "oracle-test",
+         agentId: "oracle",
+         taskType: "analysis",
+         input: { prompt: "What is the VIX?" },
+         depKeys: [],
+       },
+       {
+         key: "harper-synth",
+         agentId: "harper",
+         taskType: "synthesis",
+         input: { prompt: "Summarize oracle findings" },
+         depKeys: ["oracle-test"],
+       },
      ],
    });
    // Verify: oracle runs first, harper runs after oracle completes

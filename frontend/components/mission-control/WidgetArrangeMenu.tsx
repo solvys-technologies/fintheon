@@ -1,7 +1,7 @@
 // [claude-code 2026-03-11] Track 4: Gear menu for reordering + toggling MC widget visibility
-import { useState, useRef, useEffect } from 'react';
-import { Settings, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
-import type { MissionWidgetId } from '../../lib/layoutOrderStorage';
+import { useState, useRef, useEffect } from "react";
+import { Settings, ChevronUp, ChevronDown, Eye, EyeOff } from "lucide-react";
+import type { MissionWidgetId } from "../../lib/layoutOrderStorage";
 
 interface WidgetEntry {
   id: MissionWidgetId;
@@ -15,7 +15,12 @@ interface WidgetArrangeMenuProps {
   onToggleVisibility: (id: MissionWidgetId) => void;
 }
 
-export function WidgetArrangeMenu({ widgets, visibility, onReorder, onToggleVisibility }: WidgetArrangeMenuProps) {
+export function WidgetArrangeMenu({
+  widgets,
+  visibility,
+  onReorder,
+  onToggleVisibility,
+}: WidgetArrangeMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -27,8 +32,8 @@ export function WidgetArrangeMenu({ widgets, visibility, onReorder, onToggleVisi
         setOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
   const moveUp = (idx: number) => {
@@ -86,7 +91,9 @@ export function WidgetArrangeMenu({ widgets, visibility, onReorder, onToggleVisi
                 </button>
 
                 {/* Label */}
-                <span className={`flex-1 text-[11px] truncate ${visible ? 'text-zinc-300' : 'text-zinc-600'}`}>
+                <span
+                  className={`flex-1 text-[11px] truncate ${visible ? "text-zinc-300" : "text-zinc-600"}`}
+                >
                   {w.label}
                 </span>
 
@@ -94,7 +101,7 @@ export function WidgetArrangeMenu({ widgets, visibility, onReorder, onToggleVisi
                 <button
                   onClick={() => onToggleVisibility(w.id)}
                   className="p-0.5 rounded hover:bg-[var(--fintheon-accent)]/10"
-                  title={visible ? 'Hide widget' : 'Show widget'}
+                  title={visible ? "Hide widget" : "Show widget"}
                 >
                   {visible ? (
                     <Eye className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />

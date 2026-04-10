@@ -1,4 +1,4 @@
-import { isElectron } from '../../lib/platform';
+import { isElectron } from "../../lib/platform";
 
 interface EmbeddedBrowserFrameProps {
   title: string;
@@ -6,7 +6,11 @@ interface EmbeddedBrowserFrameProps {
   className?: string;
 }
 
-export function EmbeddedBrowserFrame({ title, src, className = 'w-full h-full bg-white' }: EmbeddedBrowserFrameProps) {
+export function EmbeddedBrowserFrame({
+  title,
+  src,
+  className = "w-full h-full bg-white",
+}: EmbeddedBrowserFrameProps) {
   if (isElectron()) {
     return (
       <webview

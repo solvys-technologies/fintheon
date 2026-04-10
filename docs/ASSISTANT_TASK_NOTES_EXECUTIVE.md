@@ -23,4 +23,3 @@ See `docs/PULSE_EXECUTIVE_LOCAL.md`.
 ## Known non-blockers
 
 - Fintheon backend logs may show RiskFlow/X token warnings and notification DB schema warnings; unrelated to OpenClaw chat.
-

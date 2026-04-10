@@ -1,7 +1,11 @@
 // [claude-code 2026-04-01] S13-T3: Cross-agent analysis history with FTS
 
-import { sql, isDatabaseAvailable } from '../../config/database.js'
-import { mapRowToThought, type ThoughtBankRow, type AgentThought } from '../../types/thought-bank.js'
+import { sql, isDatabaseAvailable } from "../../config/database.js";
+import {
+  mapRowToThought,
+  type ThoughtBankRow,
+  type AgentThought,
+} from "../../types/thought-bank.js";
 
 // ---------------------------------------------------------------------------
 // Full-text search on agent_thought_bank
@@ -14,25 +18,25 @@ import { mapRowToThought, type ThoughtBankRow, type AgentThought } from '../../t
  */
 export async function searchAnalysisHistory(
   query: string,
-  opts?: { agent?: string; since?: string; limit?: number }
+  opts?: { agent?: string; since?: string; limit?: number },
 ): Promise<AgentThought[]> {
-  const limit = opts?.limit ?? 20
+  const limit = opts?.limit ?? 20;
 
   if (!isDatabaseAvailable()) {
     // In-memory: we don't have the thought bank memory store here,
     // return empty — FTS only works with DB
-    return []
+    return [];
   }
 
   // Sanitize query for tsquery — replace spaces with &, strip special chars
   const tsQuery = query
-    .replace(/[^\w\s/]/g, '')  // preserve / for futures symbols like /ES, /NQ
+    .replace(/[^\w\s/]/g, "") // preserve / for futures symbols like /ES, /NQ
     .trim()
     .split(/\s+/)
     .filter(Boolean)
-    .join(' & ')
+    .join(" & ");
 
-  if (!tsQuery) return []
+  if (!tsQuery) return [];
 
   const result = await sql`
     SELECT *,
@@ -43,13 +47,13 @@ export async function searchAnalysisHistory(
     FROM agent_thought_bank
     WHERE to_tsvector('english', COALESCE(content, ''))
       @@ to_tsquery('english', ${tsQuery})
-      AND (${opts?.agent ?? null}::text IS NULL OR agent = ${opts?.agent ?? ''})
-      AND (${opts?.since ?? null}::timestamptz IS NULL OR created_at >= ${opts?.since ?? '1970-01-01'}::timestamptz)
+      AND (${opts?.agent ?? null}::text IS NULL OR agent = ${opts?.agent ?? ""})
+      AND (${opts?.since ?? null}::timestamptz IS NULL OR created_at >= ${opts?.since ?? "1970-01-01"}::timestamptz)
     ORDER BY rank DESC, created_at DESC
     LIMIT ${limit}
-  `
+  `;
 
-  return result.map((r) => mapRowToThought(r as ThoughtBankRow))
+  return result.map((r) => mapRowToThought(r as ThoughtBankRow));
 }
 
 /**
@@ -57,17 +61,17 @@ export async function searchAnalysisHistory(
  */
 export async function getAgentAnalysisHistory(
   agentName: string,
-  limit = 20
+  limit = 20,
 ): Promise<AgentThought[]> {
-  if (!isDatabaseAvailable()) return []
+  if (!isDatabaseAvailable()) return [];
 
   const result = await sql`
     SELECT * FROM agent_thought_bank
     WHERE agent = ${agentName}
     ORDER BY created_at DESC
     LIMIT ${limit}
-  `
-  return result.map((r) => mapRowToThought(r as ThoughtBankRow))
+  `;
+  return result.map((r) => mapRowToThought(r as ThoughtBankRow));
 }
 
 /**
@@ -75,15 +79,15 @@ export async function getAgentAnalysisHistory(
  */
 export async function getAnalysisByInstrument(
   instrument: string,
-  limit = 20
+  limit = 20,
 ): Promise<AgentThought[]> {
-  if (!isDatabaseAvailable()) return []
+  if (!isDatabaseAvailable()) return [];
 
   const result = await sql`
     SELECT * FROM agent_thought_bank
     WHERE ${instrument} = ANY(instruments)
     ORDER BY created_at DESC
     LIMIT ${limit}
-  `
-  return result.map((r) => mapRowToThought(r as ThoughtBankRow))
+  `;
+  return result.map((r) => mapRowToThought(r as ThoughtBankRow));
 }

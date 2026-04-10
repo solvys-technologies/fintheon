@@ -1,15 +1,15 @@
 // [claude-code 2026-03-29] Boardroom overhaul: removed agent filter, rectangular timeframe bar, message count moved to status bar
 // [claude-code 2026-03-22] Track 3: Filter bar with agent dropdown (replaces chips)
-import { Search } from 'lucide-react';
+import { Search } from "lucide-react";
 
 interface ConsiliumFilterBarProps {
   search: string;
   onSearchChange: (search: string) => void;
-  dateRange: 'today' | '7d' | '30d' | 'all';
-  onDateRangeChange: (range: 'today' | '7d' | '30d' | 'all') => void;
+  dateRange: "today" | "7d" | "30d" | "all";
+  onDateRangeChange: (range: "today" | "7d" | "30d" | "all") => void;
 }
 
-const DATE_OPTIONS = ['today', '7d', '30d', 'all'] as const;
+const DATE_OPTIONS = ["today", "7d", "30d", "all"] as const;
 
 export function ConsiliumFilterBar({
   search,
@@ -21,7 +21,10 @@ export function ConsiliumFilterBar({
     <div className="flex items-center gap-3 border-b border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-bg)] px-4 py-2">
       {/* Search input */}
       <div className="relative flex-shrink-0">
-        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--fintheon-text)]/30" />
+        <Search
+          size={14}
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--fintheon-text)]/30"
+        />
         <input
           type="text"
           value={search}
@@ -42,11 +45,11 @@ export function ConsiliumFilterBar({
             onClick={() => onDateRangeChange(range)}
             className={`px-3 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
               dateRange === range
-                ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8'
-                : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]'
+                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+                : "text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]"
             }`}
           >
-            {range === 'today' ? 'Today' : range === 'all' ? 'All' : range}
+            {range === "today" ? "Today" : range === "all" ? "All" : range}
           </button>
         ))}
       </div>

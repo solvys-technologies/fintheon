@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 interface WaveformCanvasProps {
   analyser: AnalyserNode;
@@ -13,7 +13,7 @@ export function WaveformCanvas({ analyser, tiltMode }: WaveformCanvasProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
 
     const bufferLength = analyser.frequencyBinCount;
@@ -21,10 +21,10 @@ export function WaveformCanvas({ analyser, tiltMode }: WaveformCanvasProps) {
 
     const draw = () => {
       animationRef.current = requestAnimationFrame(draw);
-      
+
       analyser.getByteFrequencyData(dataArray);
 
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const barWidth = (canvas.width / bufferLength) * 2.5;
@@ -36,7 +36,12 @@ export function WaveformCanvas({ analyser, tiltMode }: WaveformCanvasProps) {
         if (tiltMode) {
           const chaos = Math.random() * 20 - 10;
           ctx.fillStyle = `rgba(239, 68, 68, ${0.5 + dataArray[i] / 510})`;
-          ctx.fillRect(x, canvas.height - barHeight + chaos, barWidth, barHeight);
+          ctx.fillRect(
+            x,
+            canvas.height - barHeight + chaos,
+            barWidth,
+            barHeight,
+          );
         } else {
           ctx.fillStyle = `rgba(255, 192, 56, ${0.5 + dataArray[i] / 510})`;
           ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
@@ -56,11 +61,6 @@ export function WaveformCanvas({ analyser, tiltMode }: WaveformCanvasProps) {
   }, [analyser, tiltMode]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={300}
-      height={96}
-      className="w-full h-full"
-    />
+    <canvas ref={canvasRef} width={300} height={96} className="w-full h-full" />
   );
 }

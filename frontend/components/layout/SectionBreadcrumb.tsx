@@ -1,18 +1,22 @@
-import { ChevronLeft, ChevronRight, ChevronRight as Separator } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronRight as Separator,
+} from "lucide-react";
 
 type NavTab = string;
 
 const TAB_META: Record<string, { label: string; parent?: string }> = {
-  dashboard: { label: 'Dashboard' },
-  feed: { label: 'Dashboard' }, // feed removed from sidebar; fallback for history
-  analysis: { label: 'Chat' },
-  riskflow: { label: 'RiskFlow' },
-  chatroom: { label: 'Board Room' },
-  econ: { label: 'Economic Calendar' },
-  narrative: { label: 'NarrativeMap' },
-  performance: { label: 'Performance' },
-  team: { label: 'Team' },
-  settings: { label: 'Settings' },
+  dashboard: { label: "Dashboard" },
+  feed: { label: "Dashboard" }, // feed removed from sidebar; fallback for history
+  analysis: { label: "Chat" },
+  riskflow: { label: "RiskFlow" },
+  chatroom: { label: "Board Room" },
+  econ: { label: "Economic Calendar" },
+  narrative: { label: "NarrativeMap" },
+  performance: { label: "Performance" },
+  team: { label: "Team" },
+  settings: { label: "Settings" },
 };
 
 interface SectionBreadcrumbProps {
@@ -56,9 +60,13 @@ export function SectionBreadcrumb({
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 ml-2">
-        <span className="text-[10px] tracking-[0.18em] uppercase text-gray-500">Fintheon</span>
+        <span className="text-[10px] tracking-[0.18em] uppercase text-gray-500">
+          Fintheon
+        </span>
         <Separator className="w-3 h-3 text-gray-600" />
-        <span className="text-[10px] tracking-[0.18em] uppercase text-gray-300">{meta.label}</span>
+        <span className="text-[10px] tracking-[0.18em] uppercase text-gray-300">
+          {meta.label}
+        </span>
       </div>
     </div>
   );

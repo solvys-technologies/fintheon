@@ -1,6 +1,6 @@
 // [claude-code 2026-03-27] Highlight mode context — manages text selection → branch interaction
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from "react";
 
 interface HighlightContextValue {
   highlightMode: boolean;
@@ -13,12 +13,19 @@ interface HighlightContextValue {
 
 const HighlightCtx = createContext<HighlightContextValue | null>(null);
 
-export function NarrativeHighlightProvider({ children }: { children: React.ReactNode }) {
+export function NarrativeHighlightProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [highlightMode, setHighlightMode] = useState(false);
-  const [activeHighlight, setActiveHighlight] = useState<{ cardId: string; text: string } | null>(null);
+  const [activeHighlight, setActiveHighlight] = useState<{
+    cardId: string;
+    text: string;
+  } | null>(null);
 
   const toggleHighlightMode = useCallback(() => {
-    setHighlightMode(prev => {
+    setHighlightMode((prev) => {
       if (prev) setActiveHighlight(null); // clear on deactivate
       return !prev;
     });
@@ -27,10 +34,16 @@ export function NarrativeHighlightProvider({ children }: { children: React.React
   const clearHighlight = useCallback(() => setActiveHighlight(null), []);
 
   return (
-    <HighlightCtx.Provider value={{
-      highlightMode, setHighlightMode, toggleHighlightMode,
-      activeHighlight, setActiveHighlight, clearHighlight,
-    }}>
+    <HighlightCtx.Provider
+      value={{
+        highlightMode,
+        setHighlightMode,
+        toggleHighlightMode,
+        activeHighlight,
+        setActiveHighlight,
+        clearHighlight,
+      }}
+    >
       {children}
     </HighlightCtx.Provider>
   );
@@ -38,6 +51,9 @@ export function NarrativeHighlightProvider({ children }: { children: React.React
 
 export function useHighlight(): HighlightContextValue {
   const ctx = useContext(HighlightCtx);
-  if (!ctx) throw new Error('useHighlight must be used within NarrativeHighlightProvider');
+  if (!ctx)
+    throw new Error(
+      "useHighlight must be used within NarrativeHighlightProvider",
+    );
   return ctx;
 }

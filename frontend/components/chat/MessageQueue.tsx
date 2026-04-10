@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Edit3, Check, ListOrdered } from 'lucide-react';
+import { useState } from "react";
+import { X, Edit3, Check, ListOrdered } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -23,7 +23,7 @@ interface MessageQueueProps {
 
 export function MessageQueue({ queue, onEdit, onRemove }: MessageQueueProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState('');
+  const [editText, setEditText] = useState("");
 
   if (queue.length === 0) return null;
 
@@ -40,7 +40,7 @@ export function MessageQueue({ queue, onEdit, onRemove }: MessageQueueProps) {
           <div
             key={msg.id}
             className="flex items-start gap-2 rounded-lg border border-[var(--fintheon-accent)]/10 bg-[#0b0b08] group"
-            style={{ padding: '8px 10px' }}
+            style={{ padding: "8px 10px" }}
           >
             {editingId === msg.id ? (
               <div className="flex-1 flex items-center gap-2">
@@ -50,16 +50,19 @@ export function MessageQueue({ queue, onEdit, onRemove }: MessageQueueProps) {
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       onEdit(msg.id, editText);
                       setEditingId(null);
                     }
-                    if (e.key === 'Escape') setEditingId(null);
+                    if (e.key === "Escape") setEditingId(null);
                   }}
                   className="flex-1 bg-transparent text-[12px] text-white border-b border-[var(--fintheon-accent)]/30 focus:outline-none pb-0.5"
                 />
                 <button
-                  onClick={() => { onEdit(msg.id, editText); setEditingId(null); }}
+                  onClick={() => {
+                    onEdit(msg.id, editText);
+                    setEditingId(null);
+                  }}
                   className="text-[var(--fintheon-accent)] hover:text-white transition-colors"
                 >
                   <Check size={13} />
@@ -67,10 +70,15 @@ export function MessageQueue({ queue, onEdit, onRemove }: MessageQueueProps) {
               </div>
             ) : (
               <>
-                <p className="flex-1 text-[12px] text-gray-300 truncate">{msg.text}</p>
+                <p className="flex-1 text-[12px] text-gray-300 truncate">
+                  {msg.text}
+                </p>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={() => { setEditingId(msg.id); setEditText(msg.text); }}
+                    onClick={() => {
+                      setEditingId(msg.id);
+                      setEditText(msg.text);
+                    }}
                     className="text-gray-500 hover:text-[var(--fintheon-accent)] transition-colors"
                     title="Edit"
                   >

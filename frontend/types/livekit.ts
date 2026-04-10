@@ -11,7 +11,12 @@ export interface LiveKitTokenResponse {
   url: string;
 }
 
-export type CallState = 'idle' | 'connecting' | 'connected' | 'disconnecting' | 'error';
+export type CallState =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "disconnecting"
+  | "error";
 
 export interface CallParticipant {
   identity: string;

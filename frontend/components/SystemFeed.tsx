@@ -4,14 +4,21 @@ import { useBackend } from "../lib/backend";
 interface SystemEvent {
   id: number;
   eventType: string;
-  severity: 'info' | 'warning' | 'error' | 'success';
+  severity: "info" | "warning" | "error" | "success";
   title: string;
   message: string;
   metadata?: any;
   createdAt: Date | string;
 }
-import { AlertCircle, CheckCircle, Info, XCircle, FileText, Trash2 } from "lucide-react";
-import { MDBReportModal } from './MDBReportModal';
+import {
+  AlertCircle,
+  CheckCircle,
+  Info,
+  XCircle,
+  FileText,
+  Trash2,
+} from "lucide-react";
+import { MDBReportModal } from "./MDBReportModal";
 
 export default function SystemFeed() {
   const backend = useBackend();
@@ -31,7 +38,7 @@ export default function SystemFeed() {
       const data = await backend.events.list();
       setEvents(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      console.warn('Failed to load events:', error);
+      console.warn("Failed to load events:", error);
     }
   };
 
@@ -49,7 +56,9 @@ export default function SystemFeed() {
       case "error":
         return <XCircle className="w-4 h-4 text-[#FF4040]" />;
       case "warning":
-        return <AlertCircle className="w-4 h-4 text-[var(--fintheon-accent)]" />;
+        return (
+          <AlertCircle className="w-4 h-4 text-[var(--fintheon-accent)]" />
+        );
       default:
         return <Info className="w-4 h-4 text-zinc-500" />;
     }
@@ -80,7 +89,9 @@ export default function SystemFeed() {
 
   return (
     <>
-      {showMDBModal && <MDBReportModal onClose={() => setShowMDBModal(false)} />}
+      {showMDBModal && (
+        <MDBReportModal onClose={() => setShowMDBModal(false)} />
+      )}
 
       <div className="h-full flex flex-col">
         {/* Header with CTAs */}
@@ -117,16 +128,24 @@ export default function SystemFeed() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2 mb-1">
-                      <h4 className="text-sm font-medium text-white">{event.title}</h4>
-                      <span className={`text-[9px] uppercase tracking-wider ${getTypeColor(event.eventType)}`}>
+                      <h4 className="text-sm font-medium text-white">
+                        {event.title}
+                      </h4>
+                      <span
+                        className={`text-[9px] uppercase tracking-wider ${getTypeColor(event.eventType)}`}
+                      >
                         {event.eventType}
                       </span>
                     </div>
 
-                    <p className="text-xs text-zinc-400 mb-2">{event.message}</p>
+                    <p className="text-xs text-zinc-400 mb-2">
+                      {event.message}
+                    </p>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] text-zinc-600 font-mono">{formatTime(event.createdAt)}</span>
+                      <span className="text-[9px] text-zinc-600 font-mono">
+                        {formatTime(event.createdAt)}
+                      </span>
                     </div>
                   </div>
                 </div>

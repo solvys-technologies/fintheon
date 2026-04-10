@@ -21,7 +21,7 @@ export interface AgentNode {
 export interface ActiveNarrative {
   thread: string;
   color: string;
-  stance: 'bullish' | 'bearish' | 'neutral' | 'watching';
+  stance: "bullish" | "bearish" | "neutral" | "watching";
   note: string;
 }
 
@@ -53,12 +53,18 @@ export interface MemoryVersion {
   timestamp: string;
 }
 
-export type MemorySource = 'twitter' | 'data' | 'miroshark' | 'trade' | 'boardroom' | 'manual';
+export type MemorySource =
+  | "twitter"
+  | "data"
+  | "miroshark"
+  | "trade"
+  | "boardroom"
+  | "manual";
 
 export interface AgentConnection {
   from: string;
   to: string;
-  type: 'context' | 'conflict';
+  type: "context" | "conflict";
   label: string;
   /** Shared context items or conflict description */
   detail: string;
@@ -76,7 +82,7 @@ export interface LiveActivity {
   elapsed: string;
 }
 
-export type CommandmentBlockLevel = 'hard' | 'soft' | 'guidance';
+export type CommandmentBlockLevel = "hard" | "soft" | "guidance";
 
 export interface Commandment {
   number: number;

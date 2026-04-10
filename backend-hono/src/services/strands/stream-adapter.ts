@@ -2,35 +2,35 @@
 // Encodes UIMessageStream events directly as SSE bytes in a single ReadableStream.
 // Avoids pipeThrough(TransformStream) which causes ERR_INCOMPLETE_CHUNKED_ENCODING in Bun.
 // SSE heartbeats every 8s keep the connection alive during long tool-call silences.
-import type { Agent } from '@strands-agents/sdk'
-import { createLogger } from '../../lib/logger.js'
+import type { Agent } from "@strands-agents/sdk";
+import { createLogger } from "../../lib/logger.js";
 
-const log = createLogger('StrandsStream')
+const log = createLogger("StrandsStream");
 
 /**
  * UIMessageStream event types expected by @assistant-ui/react
  */
 type UIEvent =
-  | { type: 'start'; messageId: string }
-  | { type: 'start-step' }
-  | { type: 'text-start'; id: string }
-  | { type: 'text-delta'; id: string; delta: string }
-  | { type: 'text-end'; id: string }
-  | { type: 'reasoning-start'; id: string }
-  | { type: 'reasoning-delta'; id: string; delta: string }
-  | { type: 'reasoning-end'; id: string }
-  | { type: 'finish-step' }
-  | { type: 'finish'; finishReason: string }
-  | { type: 'error'; errorText: string }
+  | { type: "start"; messageId: string }
+  | { type: "start-step" }
+  | { type: "text-start"; id: string }
+  | { type: "text-delta"; id: string; delta: string }
+  | { type: "text-end"; id: string }
+  | { type: "reasoning-start"; id: string }
+  | { type: "reasoning-delta"; id: string; delta: string }
+  | { type: "reasoning-end"; id: string }
+  | { type: "finish-step" }
+  | { type: "finish"; finishReason: string }
+  | { type: "error"; errorText: string };
 
-const encoder = new TextEncoder()
-const SSE_HEARTBEAT = encoder.encode(': heartbeat\n\n')
-const SSE_DONE = encoder.encode('data: [DONE]\n\n')
-const HEARTBEAT_INTERVAL_MS = 8_000
+const encoder = new TextEncoder();
+const SSE_HEARTBEAT = encoder.encode(": heartbeat\n\n");
+const SSE_DONE = encoder.encode("data: [DONE]\n\n");
+const HEARTBEAT_INTERVAL_MS = 8_000;
 
 /** Encode a UIEvent as an SSE `data:` line */
 function sseEncode(event: UIEvent): Uint8Array {
-  return encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
+  return encoder.encode(`data: ${JSON.stringify(event)}\n\n`);
 }
 
 /**
@@ -43,162 +43,185 @@ export function strandsToUIStream(
   input: string,
   options?: { messageId?: string; onFinish?: (text: string) => Promise<void> },
 ): ReadableStream<Uint8Array> {
-  const messageId = options?.messageId ?? `msg-${Date.now()}`
-  let cancelled = false
+  const messageId = options?.messageId ?? `msg-${Date.now()}`;
+  let cancelled = false;
 
   return new ReadableStream<Uint8Array>({
     start(controller) {
-      ;(async () => {
-        let fullText = ''
-        let stepCount = 0
-        let textStarted = false
-        let reasoningStarted = false
-        let reasoningEnded = false
-        let currentTextId = ''
-        let currentReasoningId = ''
-        let inToolPhase = false
+      (async () => {
+        let fullText = "";
+        let stepCount = 0;
+        let textStarted = false;
+        let reasoningStarted = false;
+        let reasoningEnded = false;
+        let currentTextId = "";
+        let currentReasoningId = "";
+        let inToolPhase = false;
 
         // Heartbeat timer — keeps Bun/Chrome from dropping the connection during tool-call silences
         const heartbeat = setInterval(() => {
           if (!cancelled) {
-            try { controller.enqueue(SSE_HEARTBEAT) } catch { /* stream already closed */ }
+            try {
+              controller.enqueue(SSE_HEARTBEAT);
+            } catch {
+              /* stream already closed */
+            }
           }
-        }, HEARTBEAT_INTERVAL_MS)
+        }, HEARTBEAT_INTERVAL_MS);
 
         function emit(event: UIEvent) {
-          controller.enqueue(sseEncode(event))
+          controller.enqueue(sseEncode(event));
         }
 
         function finish() {
-          clearInterval(heartbeat)
-          controller.enqueue(SSE_DONE)
-          controller.close()
+          clearInterval(heartbeat);
+          controller.enqueue(SSE_DONE);
+          controller.close();
         }
 
         /** Close the current text block if open */
         function closeText() {
           if (textStarted) {
-            emit({ type: 'text-end', id: currentTextId })
-            textStarted = false
+            emit({ type: "text-end", id: currentTextId });
+            textStarted = false;
           }
         }
 
         /** Close the current reasoning block if open */
         function closeReasoning() {
           if (reasoningStarted && !reasoningEnded) {
-            reasoningEnded = true
-            emit({ type: 'reasoning-end', id: currentReasoningId })
+            reasoningEnded = true;
+            emit({ type: "reasoning-end", id: currentReasoningId });
           }
         }
 
         /** Close the current step (text + reasoning + finish-step) */
         function closeStep() {
-          closeReasoning()
-          closeText()
+          closeReasoning();
+          closeText();
           if (stepCount > 0) {
-            emit({ type: 'finish-step' })
+            emit({ type: "finish-step" });
           }
         }
 
         /** Open a new step with fresh IDs */
         function openStep() {
-          stepCount++
-          currentTextId = `text-${Date.now()}-${stepCount}`
-          currentReasoningId = `reasoning-${Date.now()}-${stepCount}`
-          textStarted = false
-          reasoningStarted = false
-          reasoningEnded = false
-          emit({ type: 'start-step' })
+          stepCount++;
+          currentTextId = `text-${Date.now()}-${stepCount}`;
+          currentReasoningId = `reasoning-${Date.now()}-${stepCount}`;
+          textStarted = false;
+          reasoningStarted = false;
+          reasoningEnded = false;
+          emit({ type: "start-step" });
         }
 
         // Protocol framing
-        emit({ type: 'start', messageId })
-        openStep()
+        emit({ type: "start", messageId });
+        openStep();
 
         try {
           for await (const event of agent.stream(input)) {
-            if (cancelled) break
+            if (cancelled) break;
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const ev = event as any
+            const ev = event as any;
 
-            if (ev.type === 'modelStreamUpdateEvent' && ev.event) {
-              const inner = ev.event
+            if (ev.type === "modelStreamUpdateEvent" && ev.event) {
+              const inner = ev.event;
 
-              if (inner.type === 'modelContentBlockDeltaEvent' && inner.delta) {
-                const delta = inner.delta
+              if (inner.type === "modelContentBlockDeltaEvent" && inner.delta) {
+                const delta = inner.delta;
 
-                if (delta.type === 'textDelta' && delta.text) {
+                if (delta.type === "textDelta" && delta.text) {
                   // If returning from a tool phase, close old step and open new one
                   if (inToolPhase) {
-                    inToolPhase = false
-                    closeStep()
-                    openStep()
+                    inToolPhase = false;
+                    closeStep();
+                    openStep();
                   }
                   // Close reasoning before first text in this step
-                  closeReasoning()
+                  closeReasoning();
                   if (!textStarted) {
-                    textStarted = true
-                    emit({ type: 'text-start', id: currentTextId })
+                    textStarted = true;
+                    emit({ type: "text-start", id: currentTextId });
                   }
-                  fullText += delta.text
-                  emit({ type: 'text-delta', id: currentTextId, delta: delta.text })
-                } else if (delta.type === 'reasoningContentDelta' && delta.text) {
+                  fullText += delta.text;
+                  emit({
+                    type: "text-delta",
+                    id: currentTextId,
+                    delta: delta.text,
+                  });
+                } else if (
+                  delta.type === "reasoningContentDelta" &&
+                  delta.text
+                ) {
                   if (!reasoningStarted) {
-                    reasoningStarted = true
-                    emit({ type: 'reasoning-start', id: currentReasoningId })
+                    reasoningStarted = true;
+                    emit({ type: "reasoning-start", id: currentReasoningId });
                   }
-                  emit({ type: 'reasoning-delta', id: currentReasoningId, delta: delta.text })
+                  emit({
+                    type: "reasoning-delta",
+                    id: currentReasoningId,
+                    delta: delta.text,
+                  });
                 }
               }
-            } else if (ev.type === 'toolResultEvent') {
-              log.info('Tool result', { tool: ev.result?.toolName })
-              inToolPhase = true
+            } else if (ev.type === "toolResultEvent") {
+              log.info("Tool result", { tool: ev.result?.toolName });
+              inToolPhase = true;
             }
           }
         } catch (err) {
-          const errorText = err instanceof Error ? err.message : String(err)
-          log.error('Stream error', { error: errorText })
+          const errorText = err instanceof Error ? err.message : String(err);
+          log.error("Stream error", { error: errorText });
 
-          closeStep()
-          emit({ type: 'error', errorText })
-          emit({ type: 'finish-step' })
-          emit({ type: 'finish', finishReason: 'error' })
+          closeStep();
+          emit({ type: "error", errorText });
+          emit({ type: "finish-step" });
+          emit({ type: "finish", finishReason: "error" });
 
-          if (!cancelled) { finish() }
-          return
+          if (!cancelled) {
+            finish();
+          }
+          return;
         }
 
         // Clean close
-        closeStep()
-        emit({ type: 'finish', finishReason: 'stop' })
+        closeStep();
+        emit({ type: "finish", finishReason: "stop" });
 
         if (options?.onFinish) {
-          await options.onFinish(fullText)
+          await options.onFinish(fullText);
         }
 
-        if (!cancelled) { finish() }
-      })().catch((error) => {
-        log.error('Fatal stream error', { error: String(error) })
-        clearInterval(0) // safety — interval ref is in enclosing scope
-        try {
-          controller.enqueue(sseEncode({
-            type: 'error',
-            errorText: error instanceof Error ? error.message : String(error),
-          }))
-          controller.enqueue(sseEncode({ type: 'finish-step' }))
-          controller.enqueue(sseEncode({ type: 'finish', finishReason: 'error' }))
-          controller.enqueue(SSE_DONE)
-          controller.close()
-        } catch {
-          controller.error(error)
+        if (!cancelled) {
+          finish();
         }
-      })
+      })().catch((error) => {
+        log.error("Fatal stream error", { error: String(error) });
+        clearInterval(0); // safety — interval ref is in enclosing scope
+        try {
+          controller.enqueue(
+            sseEncode({
+              type: "error",
+              errorText: error instanceof Error ? error.message : String(error),
+            }),
+          );
+          controller.enqueue(sseEncode({ type: "finish-step" }));
+          controller.enqueue(
+            sseEncode({ type: "finish", finishReason: "error" }),
+          );
+          controller.enqueue(SSE_DONE);
+          controller.close();
+        } catch {
+          controller.error(error);
+        }
+      });
     },
     cancel() {
-      cancelled = true
+      cancelled = true;
     },
-  })
+  });
 }
 
 /**
@@ -212,12 +235,12 @@ export function uiStreamToSSEResponse(
   return new Response(stream, {
     status: 200,
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
-      'x-vercel-ai-ui-message-stream': 'v1',
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+      "x-vercel-ai-ui-message-stream": "v1",
       ...headers,
     },
-  })
+  });
 }

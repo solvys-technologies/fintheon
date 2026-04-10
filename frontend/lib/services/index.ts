@@ -5,34 +5,55 @@
  * Update the endpoint paths to match your Hono backend routes.
  */
 
-export * from './account';
-export * from './riskflow';
-export * from './ai';
-export * from './trading';
-export * from './voice';
-export * from './team';
-export * from './boardroom';
-export * from './narrative';
-export * from './data';
-export * from './journal';
-export * from './memory';
-export * from './editor';
+export * from "./account";
+export * from "./riskflow";
+export * from "./ai";
+export * from "./trading";
+export * from "./voice";
+export * from "./team";
+export * from "./boardroom";
+export * from "./narrative";
+export * from "./data";
+export * from "./journal";
+export * from "./memory";
+export * from "./editor";
 
 import ApiClient from "../apiClient";
-import { McpService } from '../mcp-service';
+import { McpService } from "../mcp-service";
 
-import { AccountService } from './account';
-import { RiskFlowService } from './riskflow';
-import { AIService, PsychService, AnalystService } from './ai';
-import { TradingService, ProjectXService, RithmicService, HyperliquidService, AutopilotService } from './trading';
-import { NotificationsService, ERService, VoiceService, EventsService } from './voice';
-import { PeersService } from './team';
-import { BoardroomService } from './boardroom';
-import { NarrativeService } from './narrative';
-import { EconCalendarService, NotionService, MarketDataService } from './data';
-import { JournalService, AgentPerformanceService, BlindspotsService } from './journal';
-import { ContextBankService, MiroSharkService, MemoryService, SkillsService, EditorSidebarService } from './memory';
-import { DocumentService, ResearchService, BulletinService } from './editor';
+import { AccountService } from "./account";
+import { RiskFlowService } from "./riskflow";
+import { AIService, PsychService, AnalystService } from "./ai";
+import {
+  TradingService,
+  ProjectXService,
+  RithmicService,
+  HyperliquidService,
+  AutopilotService,
+} from "./trading";
+import {
+  NotificationsService,
+  ERService,
+  VoiceService,
+  EventsService,
+} from "./voice";
+import { PeersService } from "./team";
+import { BoardroomService } from "./boardroom";
+import { NarrativeService } from "./narrative";
+import { EconCalendarService, NotionService, MarketDataService } from "./data";
+import {
+  JournalService,
+  AgentPerformanceService,
+  BlindspotsService,
+} from "./journal";
+import {
+  ContextBankService,
+  MiroSharkService,
+  MemoryService,
+  SkillsService,
+  EditorSidebarService,
+} from "./memory";
+import { DocumentService, ResearchService, BulletinService } from "./editor";
 
 // Main Backend Client Interface
 export interface BackendClient {

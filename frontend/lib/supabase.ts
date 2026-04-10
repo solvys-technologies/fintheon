@@ -1,12 +1,12 @@
 // [claude-code 2026-03-24] Supabase client + Google OAuth for Electron deep link flow
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 let supabase: SupabaseClient | null = null;
 
-if (supabaseUrl && supabaseAnonKey && !supabaseAnonKey.startsWith('<')) {
+if (supabaseUrl && supabaseAnonKey && !supabaseAnonKey.startsWith("<")) {
   supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
@@ -24,12 +24,15 @@ export { supabase };
  * (Electron) and receive the callback via fintheon:// deep link.
  */
 export async function signInWithGoogle() {
-  if (!supabase) throw new Error('Supabase not configured — check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+  if (!supabase)
+    throw new Error(
+      "Supabase not configured — check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY",
+    );
   // Redirect to backend callback page which will relay the auth code
   // back to the Electron app via fintheon:// deep link
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
+    provider: "google",
     options: {
       redirectTo: `${API_BASE}/api/auth/supabase/callback`,
       skipBrowserRedirect: true,

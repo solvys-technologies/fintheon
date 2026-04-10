@@ -4,11 +4,15 @@
  * Phase 6 - Day 20
  */
 
-import { invokeAgent } from '../strands/index.js'
-import { sql, isDatabaseAvailable } from '../../config/database.js'
-import type { AgentType, AgentReport, AgentReportRow } from '../../types/agents.js'
+import { invokeAgent } from "../strands/index.js";
+import { sql, isDatabaseAvailable } from "../../config/database.js";
+import type {
+  AgentType,
+  AgentReport,
+  AgentReportRow,
+} from "../../types/agents.js";
 
-const isDev = process.env.NODE_ENV !== 'production'
+const isDev = process.env.NODE_ENV !== "production";
 
 // Report cache TTL (5 minutes for most, 1 minute for market data)
 const CACHE_TTL_MS: Record<AgentType, number> = {
@@ -19,22 +23,25 @@ const CACHE_TTL_MS: Record<AgentType, number> = {
   bearish_researcher: 600_000,
   trader: 300_000,
   risk_manager: 300_000,
-}
+};
 
 // In-memory cache for dev mode
-const reportCache = new Map<string, { report: AgentReport; expiresAt: number }>()
+const reportCache = new Map<
+  string,
+  { report: AgentReport; expiresAt: number }
+>();
 
 export interface AgentContext {
-  userId: string
-  symbol?: string
-  additionalData?: Record<string, unknown>
+  userId: string;
+  symbol?: string;
+  additionalData?: Record<string, unknown>;
 }
 
 export interface AgentConfig<T = unknown> {
-  agentType: AgentType
-  taskType: string
-  systemPrompt: string
-  parseResponse: (text: string) => T
+  agentType: AgentType;
+  taskType: string;
+  systemPrompt: string;
+  parseResponse: (text: string) => T;
 }
 
 /**
@@ -43,24 +50,24 @@ export interface AgentConfig<T = unknown> {
 export async function runAgent<T>(
   config: AgentConfig<T>,
   context: AgentContext,
-  userPrompt: string
+  userPrompt: string,
 ): Promise<{ report: T; latencyMs: number; model: string }> {
-  const startTime = Date.now()
+  const startTime = Date.now();
 
   const { text } = await invokeAgent({
     systemPrompt: config.systemPrompt,
     userPrompt,
     model: { temperature: 0.3, maxTokens: 2048 },
-  })
+  });
 
-  const reportData = config.parseResponse(text)
-  const latencyMs = Date.now() - startTime
+  const reportData = config.parseResponse(text);
+  const latencyMs = Date.now() - startTime;
 
   return {
     report: reportData as T,
     latencyMs,
-    model: 'strands-vproxy',
-  }
+    model: "strands-vproxy",
+  };
 }
 
 /**
@@ -70,14 +77,18 @@ export async function saveAgentReport<T extends object>(
   userId: string,
   agentType: AgentType,
   reportData: T,
-  options: { confidenceScore?: number; model?: string; latencyMs?: number } = {}
+  options: {
+    confidenceScore?: number;
+    model?: string;
+    latencyMs?: number;
+  } = {},
 ): Promise<AgentReport> {
-  const now = new Date()
-  const expiresAt = new Date(now.getTime() + CACHE_TTL_MS[agentType])
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + CACHE_TTL_MS[agentType]);
 
   if (!isDatabaseAvailable() || !sql) {
     // In-memory fallback
-    const id = crypto.randomUUID()
+    const id = crypto.randomUUID();
     const report: AgentReport = {
       id,
       userId,
@@ -88,10 +99,10 @@ export async function saveAgentReport<T extends object>(
       latencyMs: options.latencyMs,
       createdAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
-    }
-    const cacheKey = `${userId}:${agentType}`
-    reportCache.set(cacheKey, { report, expiresAt: expiresAt.getTime() })
-    return report
+    };
+    const cacheKey = `${userId}:${agentType}`;
+    reportCache.set(cacheKey, { report, expiresAt: expiresAt.getTime() });
+    return report;
   }
 
   const result = await sql`
@@ -106,9 +117,9 @@ export async function saveAgentReport<T extends object>(
       ${expiresAt.toISOString()}
     )
     RETURNING *
-  `
+  `;
 
-  return mapRowToReport(result[0] as AgentReportRow)
+  return mapRowToReport(result[0] as AgentReportRow);
 }
 
 /**
@@ -116,18 +127,18 @@ export async function saveAgentReport<T extends object>(
  */
 export async function getLatestReport(
   userId: string,
-  agentType: AgentType
+  agentType: AgentType,
 ): Promise<AgentReport | null> {
-  const cacheKey = `${userId}:${agentType}`
-  
+  const cacheKey = `${userId}:${agentType}`;
+
   // Check memory cache
-  const cached = reportCache.get(cacheKey)
+  const cached = reportCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
-    return cached.report
+    return cached.report;
   }
 
   if (!isDatabaseAvailable() || !sql) {
-    return null
+    return null;
   }
 
   const result = await sql`
@@ -137,17 +148,17 @@ export async function getLatestReport(
       AND (expires_at IS NULL OR expires_at > NOW())
     ORDER BY created_at DESC
     LIMIT 1
-  `
+  `;
 
-  if (result.length === 0) return null
+  if (result.length === 0) return null;
 
-  const report = mapRowToReport(result[0] as AgentReportRow)
-  
+  const report = mapRowToReport(result[0] as AgentReportRow);
+
   // Update cache
-  const ttl = CACHE_TTL_MS[agentType]
-  reportCache.set(cacheKey, { report, expiresAt: Date.now() + ttl })
-  
-  return report
+  const ttl = CACHE_TTL_MS[agentType];
+  reportCache.set(cacheKey, { report, expiresAt: Date.now() + ttl });
+
+  return report;
 }
 
 /**
@@ -155,34 +166,41 @@ export async function getLatestReport(
  */
 export async function getReports(
   userId: string,
-  options: { agentType?: AgentType; limit?: number; since?: string } = {}
+  options: { agentType?: AgentType; limit?: number; since?: string } = {},
 ): Promise<AgentReport[]> {
-  const limit = options.limit ?? 10
+  const limit = options.limit ?? 10;
 
   if (!isDatabaseAvailable() || !sql) {
     // Return from memory cache
-    const reports: AgentReport[] = []
+    const reports: AgentReport[] = [];
     for (const [key, cached] of reportCache.entries()) {
       if (key.startsWith(`${userId}:`)) {
-        if (!options.agentType || cached.report.agentType === options.agentType) {
-          reports.push(cached.report)
+        if (
+          !options.agentType ||
+          cached.report.agentType === options.agentType
+        ) {
+          reports.push(cached.report);
         }
       }
     }
-    return reports.slice(0, limit)
+    return reports.slice(0, limit);
   }
 
-  const typeFilter = options.agentType ? sql`AND agent_type = ${options.agentType}` : sql``
-  const sinceFilter = options.since ? sql`AND created_at > ${options.since}` : sql``
+  const typeFilter = options.agentType
+    ? sql`AND agent_type = ${options.agentType}`
+    : sql``;
+  const sinceFilter = options.since
+    ? sql`AND created_at > ${options.since}`
+    : sql``;
 
   const result = await sql`
     SELECT * FROM agent_reports
     WHERE user_id = ${userId} ${typeFilter} ${sinceFilter}
     ORDER BY created_at DESC
     LIMIT ${limit}
-  `
+  `;
 
-  return result.map((row) => mapRowToReport(row as AgentReportRow))
+  return result.map((row) => mapRowToReport(row as AgentReportRow));
 }
 
 /**
@@ -191,15 +209,15 @@ export async function getReports(
 export function parseJsonResponse<T>(text: string): T {
   // Clean up markdown formatting
   const cleaned = text
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim()
+    .replace(/```json\n?/g, "")
+    .replace(/```\n?/g, "")
+    .trim();
 
   try {
-    return JSON.parse(cleaned) as T
+    return JSON.parse(cleaned) as T;
   } catch (error) {
-    console.error('[Agent] Failed to parse JSON response:', text.slice(0, 200))
-    throw new Error('Failed to parse agent response')
+    console.error("[Agent] Failed to parse JSON response:", text.slice(0, 200));
+    throw new Error("Failed to parse agent response");
   }
 }
 
@@ -217,14 +235,16 @@ function mapRowToReport(row: AgentReportRow): AgentReport {
     latencyMs: row.latency_ms ?? undefined,
     createdAt: row.created_at,
     expiresAt: row.expires_at ?? undefined,
-  }
+  };
 }
 
 /**
  * Calculate confidence score from report data
  */
-export function calculateConfidence(factors: { weight: number; value: number }[]): number {
-  const totalWeight = factors.reduce((sum, f) => sum + f.weight, 0)
-  const weightedSum = factors.reduce((sum, f) => sum + f.weight * f.value, 0)
-  return Math.min(1, Math.max(0, weightedSum / totalWeight))
+export function calculateConfidence(
+  factors: { weight: number; value: number }[],
+): number {
+  const totalWeight = factors.reduce((sum, f) => sum + f.weight, 0);
+  const weightedSum = factors.reduce((sum, f) => sum + f.weight * f.value, 0);
+  return Math.min(1, Math.max(0, weightedSum / totalWeight));
 }

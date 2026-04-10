@@ -5,7 +5,7 @@ import React, {
   useImperativeHandle,
   useRef,
   useState,
-} from 'react';
+} from "react";
 
 type TrailPoint = {
   x: number;
@@ -59,8 +59,8 @@ export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
       addTrailPoint(e.clientX, e.clientY);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [addTrailPoint]);
 
   const runSnap = useCallback(
@@ -88,7 +88,7 @@ export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
         window.setTimeout(() => setPulseBoost(false), 650);
       }
     },
-    [addTrailPoint]
+    [addTrailPoint],
   );
 
   useImperativeHandle(
@@ -103,11 +103,12 @@ export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
           targetY: y,
           startTime: performance.now(),
         };
-        if (snapAnimationRef.current) cancelAnimationFrame(snapAnimationRef.current);
+        if (snapAnimationRef.current)
+          cancelAnimationFrame(snapAnimationRef.current);
         snapAnimationRef.current = requestAnimationFrame(runSnap);
       },
     }),
-    [runSnap]
+    [runSnap],
   );
 
   // Animation loop for the "melting" effect
@@ -119,7 +120,7 @@ export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
           opacity: point.opacity - 0.02, // Fade out
           scale: point.scale + 0.015, // Expand slightly (melt)
         }))
-        .filter((point) => point.opacity > 0)
+        .filter((point) => point.opacity > 0),
     );
     trailAnimationRef.current = requestAnimationFrame(animateTrail);
   };
@@ -127,8 +128,10 @@ export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
   useEffect(() => {
     trailAnimationRef.current = requestAnimationFrame(animateTrail);
     return () => {
-      if (trailAnimationRef.current) cancelAnimationFrame(trailAnimationRef.current);
-      if (snapAnimationRef.current) cancelAnimationFrame(snapAnimationRef.current);
+      if (trailAnimationRef.current)
+        cancelAnimationFrame(trailAnimationRef.current);
+      if (snapAnimationRef.current)
+        cancelAnimationFrame(snapAnimationRef.current);
     };
   }, []);
 
@@ -146,11 +149,11 @@ export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
           style={{
             left: point.x,
             top: point.y,
-            width: '20px',
-            height: '20px',
+            width: "20px",
+            height: "20px",
             transform: `translate(-50%, -50%) scale(${point.scale})`,
             opacity: point.opacity,
-            filter: 'blur(2px)', // Soften the edges for "butter" effect
+            filter: "blur(2px)", // Soften the edges for "butter" effect
           }}
         />
       ))}
@@ -161,13 +164,13 @@ export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
         style={{
           left: position.x,
           top: position.y,
-          transform: 'translate(-50%, -50%)',
+          transform: "translate(-50%, -50%)",
         }}
       >
         {/* Inner Ring */}
         <div
           className={`absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-yellow-400 opacity-90 shadow-[0_0_12px_rgba(234,179,8,0.5)] ${
-            pulseBoost ? 'animate-ping' : 'animate-pulse'
+            pulseBoost ? "animate-ping" : "animate-pulse"
           }`}
         ></div>
 
@@ -177,11 +180,11 @@ export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
         {/* Center Dot */}
         <div
           className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-yellow-400"
-          style={{ boxShadow: '0 0 6px rgba(234,179,8,0.8)' }}
+          style={{ boxShadow: "0 0 6px rgba(234,179,8,0.8)" }}
         ></div>
       </div>
     </div>
   );
 });
 
-FluidCursor.displayName = 'FluidCursor';
+FluidCursor.displayName = "FluidCursor";

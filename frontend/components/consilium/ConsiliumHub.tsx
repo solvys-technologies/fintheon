@@ -2,104 +2,212 @@
 // [claude-code 2026-04-03] S14-T3: Consilium restructure — Boardroom + Apparatus as dropdowns
 // [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (Aquarium)
 // [claude-code 2026-03-28] S7: Sanctum dropdown (NarrativeFlow/Aquarium/Timeline) inside Consilium tab bar
-import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
-import { MessageSquare, Users, Clock, GitBranch, Cpu, PanelRightOpen, PanelRightClose, ChevronDown, Fish, Zap, Shield, Brain, BookOpen, Scroll, Plus } from 'lucide-react';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useConsiliumNav } from '../../lib/consilium-nav-store';
-import { AgentChattr } from './AgentChattr';
-import { Sanctum } from '../narrative/Sanctum';
-import { TimelinePanel } from '../narrative/TimelinePanel';
-import { ProposalWidget } from '../proposals/ProposalWidget';
-import { MiroSharkDebatePanel } from '../miroshark/MiroSharkDebatePanel';
-import { NarrativeMap } from '../narrative/NarrativeMap';
-import { NarrativeProvider, useNarrative } from '../../contexts/NarrativeContext';
-import { ApparatusFlowMap } from '../apparatus/ApparatusFlowMap';
-import { BulletinFeed } from '../bulletin/BulletinFeed';
-import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
-import { SharedMemoryPanel } from '../memory/SharedMemoryPanel';
-import { AiLoader } from '../chat/FintheonThread';
-import { useHarperOps } from '../../hooks/useHarperOps';
-import type { SanctumData, SanctumPreset, SimulationContext, RiskFlowCatalyst, SanctumNarrative } from '../../types/miroshark';
+import {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+  lazy,
+  Suspense,
+} from "react";
+import {
+  MessageSquare,
+  Users,
+  Clock,
+  GitBranch,
+  Cpu,
+  PanelRightOpen,
+  PanelRightClose,
+  ChevronDown,
+  Fish,
+  Zap,
+  Shield,
+  Brain,
+  BookOpen,
+  Scroll,
+  Plus,
+} from "lucide-react";
+import { useSettings } from "../../contexts/SettingsContext";
+import { useConsiliumNav } from "../../lib/consilium-nav-store";
+import { AgentChattr } from "./AgentChattr";
+import { Sanctum } from "../narrative/Sanctum";
+import { TimelinePanel } from "../narrative/TimelinePanel";
+import { ProposalWidget } from "../proposals/ProposalWidget";
+import { MiroSharkDebatePanel } from "../miroshark/MiroSharkDebatePanel";
+import { NarrativeMap } from "../narrative/NarrativeMap";
+import {
+  NarrativeProvider,
+  useNarrative,
+} from "../../contexts/NarrativeContext";
+import { ApparatusFlowMap } from "../apparatus/ApparatusFlowMap";
+import { BulletinFeed } from "../bulletin/BulletinFeed";
+import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
+import { SharedMemoryPanel } from "../memory/SharedMemoryPanel";
+import { AiLoader } from "../chat/FintheonThread";
+import { useHarperOps } from "../../hooks/useHarperOps";
+import type {
+  SanctumData,
+  SanctumPreset,
+  SimulationContext,
+  RiskFlowCatalyst,
+  SanctumNarrative,
+} from "../../types/miroshark";
 
-import { ChatSidebar } from '../chat/ChatSidebar';
-import { SessionsModal } from '../chat/SessionsModal';
-import { HarperActivityFeed } from './HarperActivityFeed';
-const ResearchBoard = lazy(() => import('../research/ResearchBoard'));
+import { ChatSidebar } from "../chat/ChatSidebar";
+import { SessionsModal } from "../chat/SessionsModal";
+import { HarperActivityFeed } from "./HarperActivityFeed";
+const ResearchBoard = lazy(() => import("../research/ResearchBoard"));
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 // Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
-type ConsiliumTab = 'sanctum' | 'chat' | 'boardroom' | 'apparatus';
-type SanctumSubView = 'narratives' | 'aquarium' | 'timeline';
-type BoardroomSubView = 'forum' | 'imperium' | 'agentic-chat' | 'research';
-type ApparatusSubView = 'desk' | 'fileroom';
+type ConsiliumTab = "sanctum" | "chat" | "boardroom" | "apparatus";
+type SanctumSubView = "narratives" | "aquarium" | "timeline";
+type BoardroomSubView = "forum" | "imperium" | "agentic-chat" | "research";
+type ApparatusSubView = "desk" | "fileroom";
 
 // Chat is the only direct button now
-const REGULAR_TABS: { id: ConsiliumTab; label: string; icon: typeof MessageSquare }[] = [
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
+const REGULAR_TABS: {
+  id: ConsiliumTab;
+  label: string;
+  icon: typeof MessageSquare;
+}[] = [{ id: "chat", label: "Chat", icon: MessageSquare }];
+
+const SANCTUM_SUB_VIEWS: {
+  id: SanctumSubView;
+  label: string;
+  subtitle?: string;
+  icon: typeof GitBranch;
+}[] = [
+  {
+    id: "timeline",
+    label: "Timeline",
+    subtitle: "Track the catalysts",
+    icon: Clock,
+  },
+  {
+    id: "narratives",
+    label: "NarrativeFlow",
+    subtitle: "Visualize the situation",
+    icon: GitBranch,
+  },
+  {
+    id: "aquarium",
+    label: "Aquarium",
+    subtitle: "The Shark Tank. Deliberate it.",
+    icon: Fish,
+  },
 ];
 
-const SANCTUM_SUB_VIEWS: { id: SanctumSubView; label: string; subtitle?: string; icon: typeof GitBranch }[] = [
-  { id: 'timeline', label: 'Timeline', subtitle: 'Track the catalysts', icon: Clock },
-  { id: 'narratives', label: 'NarrativeFlow', subtitle: 'Visualize the situation', icon: GitBranch },
-  { id: 'aquarium', label: 'Aquarium', subtitle: 'The Shark Tank. Deliberate it.', icon: Fish },
+const BOARDROOM_SUB_VIEWS: {
+  id: BoardroomSubView;
+  label: string;
+  subtitle?: string;
+  icon: typeof MessageSquare;
+}[] = [
+  {
+    id: "forum",
+    label: "Forum",
+    subtitle: "Team bulletin & chat",
+    icon: MessageSquare,
+  },
+  {
+    id: "imperium",
+    label: "Imperium",
+    subtitle: "Task command & assignment",
+    icon: Shield,
+  },
+  {
+    id: "agentic-chat",
+    label: "Agentic Chatroom",
+    subtitle: "Chat with Hermes & CAO",
+    icon: Cpu,
+  },
+  {
+    id: "research",
+    label: "Research",
+    subtitle: "Notion knowledge base",
+    icon: BookOpen,
+  },
 ];
 
-const BOARDROOM_SUB_VIEWS: { id: BoardroomSubView; label: string; subtitle?: string; icon: typeof MessageSquare }[] = [
-  { id: 'forum', label: 'Forum', subtitle: 'Team bulletin & chat', icon: MessageSquare },
-  { id: 'imperium', label: 'Imperium', subtitle: 'Task command & assignment', icon: Shield },
-  { id: 'agentic-chat', label: 'Agentic Chatroom', subtitle: 'Chat with Hermes & CAO', icon: Cpu },
-  { id: 'research', label: 'Research', subtitle: 'Notion knowledge base', icon: BookOpen },
-];
-
-const APPARATUS_SUB_VIEWS: { id: ApparatusSubView; label: string; subtitle?: string; icon: typeof Cpu }[] = [
-  { id: 'desk', label: 'Desk', subtitle: 'Agent dossiers & monitoring', icon: Users },
-  { id: 'fileroom', label: 'Fileroom', subtitle: 'AI-generated context bank', icon: Brain },
+const APPARATUS_SUB_VIEWS: {
+  id: ApparatusSubView;
+  label: string;
+  subtitle?: string;
+  icon: typeof Cpu;
+}[] = [
+  {
+    id: "desk",
+    label: "Desk",
+    subtitle: "Agent dossiers & monitoring",
+    icon: Users,
+  },
+  {
+    id: "fileroom",
+    label: "Fileroom",
+    subtitle: "AI-generated context bank",
+    icon: Brain,
+  },
 ];
 
 /** Bridge: reads NarrativeContext lanes → SanctumNarrative[] for Sanctum (Aquarium) */
-function SanctumWithNarratives(props: Omit<React.ComponentProps<typeof Sanctum>, 'narratives' | 'catalysts'>) {
+function SanctumWithNarratives(
+  props: Omit<React.ComponentProps<typeof Sanctum>, "narratives" | "catalysts">,
+) {
   const { state, healthScores } = useNarrative();
-  const narratives = useMemo<SanctumNarrative[]>(() =>
-    state.lanes.map(lane => ({
-      id: lane.id,
-      title: lane.title,
-      category: lane.category,
-      directionBias: lane.directionBias,
-      healthScore: healthScores[lane.id] ?? lane.healthScore,
-      instruments: lane.instruments,
-      status: lane.status,
-      dateRange: lane.dateRange,
-    })),
-    [state.lanes, healthScores]
+  const narratives = useMemo<SanctumNarrative[]>(
+    () =>
+      state.lanes.map((lane) => ({
+        id: lane.id,
+        title: lane.title,
+        category: lane.category,
+        directionBias: lane.directionBias,
+        healthScore: healthScores[lane.id] ?? lane.healthScore,
+        instruments: lane.instruments,
+        status: lane.status,
+        dateRange: lane.dateRange,
+      })),
+    [state.lanes, healthScores],
   );
-  const catalysts = useMemo(() =>
-    state.catalysts.map(c => ({
-      id: c.id,
-      title: c.title,
-      date: c.date,
-      sentiment: c.sentiment,
-      severity: c.severity,
-      category: c.category,
-      narrativeIds: c.narrativeIds,
-    })),
-    [state.catalysts]
+  const catalysts = useMemo(
+    () =>
+      state.catalysts.map((c) => ({
+        id: c.id,
+        title: c.title,
+        date: c.date,
+        sentiment: c.sentiment,
+        severity: c.severity,
+        category: c.category,
+        narrativeIds: c.narrativeIds,
+      })),
+    [state.catalysts],
   );
   return <Sanctum {...props} narratives={narratives} catalysts={catalysts} />;
 }
 
-function usePanelState(key: string, defaultValue: boolean): [boolean, () => void] {
+function usePanelState(
+  key: string,
+  defaultValue: boolean,
+): [boolean, () => void] {
   const [state, setState] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem(key);
       return stored !== null ? JSON.parse(stored) : defaultValue;
-    } catch { return defaultValue; }
+    } catch {
+      return defaultValue;
+    }
   });
 
   const toggle = useCallback(() => {
     setState((prev) => {
       const next = !prev;
-      try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* noop */ }
+      try {
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch {
+        /* noop */
+      }
       return next;
     });
   }, [key]);
@@ -108,30 +216,51 @@ function usePanelState(key: string, defaultValue: boolean): [boolean, () => void
 }
 
 export function ConsiliumHub() {
-  const { selectedSymbol, iframeUrls, proposerIframeSources, proposerDefaultIframe } = useSettings();
+  const {
+    selectedSymbol,
+    iframeUrls,
+    proposerIframeSources,
+    proposerDefaultIframe,
+  } = useSettings();
   const { status: harperStatus } = useHarperOps();
-  const [proposalsView, setProposalsView] = useState<'proposals' | 'iframe'>('proposals');
-  const [activeTab, setActiveTab] = useState<ConsiliumTab>('chat');
-  const [sanctumSubView, setSanctumSubView] = useState<SanctumSubView>('narratives');
-  const [boardroomSubView, setBoardroomSubView] = useState<BoardroomSubView>('forum');
-  const [apparatusSubView, setApparatusSubView] = useState<ApparatusSubView>('desk');
-  const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>('chat');
-  const [displayedSubView, setDisplayedSubView] = useState<SanctumSubView>('narratives');
-  const [displayedBoardroomSub, setDisplayedBoardroomSub] = useState<BoardroomSubView>('forum');
-  const [displayedApparatusSub, setDisplayedApparatusSub] = useState<ApparatusSubView>('desk');
+  const [proposalsView, setProposalsView] = useState<"proposals" | "iframe">(
+    "proposals",
+  );
+  const [activeTab, setActiveTab] = useState<ConsiliumTab>("chat");
+  const [sanctumSubView, setSanctumSubView] =
+    useState<SanctumSubView>("narratives");
+  const [boardroomSubView, setBoardroomSubView] =
+    useState<BoardroomSubView>("forum");
+  const [apparatusSubView, setApparatusSubView] =
+    useState<ApparatusSubView>("desk");
+  const [displayedTab, setDisplayedTab] = useState<ConsiliumTab>("chat");
+  const [displayedSubView, setDisplayedSubView] =
+    useState<SanctumSubView>("narratives");
+  const [displayedBoardroomSub, setDisplayedBoardroomSub] =
+    useState<BoardroomSubView>("forum");
+  const [displayedApparatusSub, setDisplayedApparatusSub] =
+    useState<ApparatusSubView>("desk");
   const [sanctumDropdownOpen, setSanctumDropdownOpen] = useState(false);
   const [boardroomDropdownOpen, setBoardroomDropdownOpen] = useState(false);
   const [apparatusDropdownOpen, setApparatusDropdownOpen] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [mirosharkData, setMirosharkData] = useState<SanctumData | null>(null);
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowCatalyst[]>([]);
-  const [macroContext, setMacroContext] = useState<SimulationContext | null>(null);
-  type ActivePanel = 'proposals' | 'debate' | null;
+  const [macroContext, setMacroContext] = useState<SimulationContext | null>(
+    null,
+  );
+  type ActivePanel = "proposals" | "debate" | null;
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
-  const showProposals = activePanel === 'proposals';
-  const showDebate = activePanel === 'debate';
-  const toggleProposals = useCallback(() => setActivePanel(prev => prev === 'proposals' ? null : 'proposals'), []);
-  const toggleDebate = useCallback(() => setActivePanel(prev => prev === 'debate' ? null : 'debate'), []);
+  const showProposals = activePanel === "proposals";
+  const showDebate = activePanel === "debate";
+  const toggleProposals = useCallback(
+    () => setActivePanel((prev) => (prev === "proposals" ? null : "proposals")),
+    [],
+  );
+  const toggleDebate = useCallback(
+    () => setActivePanel((prev) => (prev === "debate" ? null : "debate")),
+    [],
+  );
   const [showHarperFeed, setShowHarperFeed] = useState(true);
   const [showSessionsDropdown, setShowSessionsDropdown] = useState(false);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -142,101 +271,135 @@ export function ConsiliumHub() {
   const apparatusDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const anyOpen = sanctumDropdownOpen || boardroomDropdownOpen || apparatusDropdownOpen;
+    const anyOpen =
+      sanctumDropdownOpen || boardroomDropdownOpen || apparatusDropdownOpen;
     if (!anyOpen) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (sanctumDropdownOpen && sanctumDropdownRef.current && !sanctumDropdownRef.current.contains(target)) {
+      if (
+        sanctumDropdownOpen &&
+        sanctumDropdownRef.current &&
+        !sanctumDropdownRef.current.contains(target)
+      ) {
         setSanctumDropdownOpen(false);
       }
-      if (boardroomDropdownOpen && boardroomDropdownRef.current && !boardroomDropdownRef.current.contains(target)) {
+      if (
+        boardroomDropdownOpen &&
+        boardroomDropdownRef.current &&
+        !boardroomDropdownRef.current.contains(target)
+      ) {
         setBoardroomDropdownOpen(false);
       }
-      if (apparatusDropdownOpen && apparatusDropdownRef.current && !apparatusDropdownRef.current.contains(target)) {
+      if (
+        apparatusDropdownOpen &&
+        apparatusDropdownRef.current &&
+        !apparatusDropdownRef.current.contains(target)
+      ) {
         setApparatusDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [sanctumDropdownOpen, boardroomDropdownOpen, apparatusDropdownOpen]);
 
   // Consume pending tab requests from external navigation (e.g. ChatPanel sidebar icons)
   const { pendingTab, clearPending } = useConsiliumNav();
 
   // Tab transition: fade out (150ms) → swap content → fade in (200ms)
-  const handleTabChange = useCallback((tab: ConsiliumTab) => {
-    if (tab === activeTab && tab !== 'sanctum') return;
-    setTransitioning(true);
-    setActiveTab(tab);
-    if (transitionRef.current) clearTimeout(transitionRef.current);
-    transitionRef.current = setTimeout(() => {
-      setDisplayedTab(tab);
-      setTransitioning(false);
-    }, 150);
-  }, [activeTab]);
+  const handleTabChange = useCallback(
+    (tab: ConsiliumTab) => {
+      if (tab === activeTab && tab !== "sanctum") return;
+      setTransitioning(true);
+      setActiveTab(tab);
+      if (transitionRef.current) clearTimeout(transitionRef.current);
+      transitionRef.current = setTimeout(() => {
+        setDisplayedTab(tab);
+        setTransitioning(false);
+      }, 150);
+    },
+    [activeTab],
+  );
 
-  const handleSanctumSubChange = useCallback((sub: SanctumSubView) => {
-    setSanctumSubView(sub);
-    setSanctumDropdownOpen(false);
-    if (activeTab !== 'sanctum') {
-      setActiveTab('sanctum');
-    }
-    setTransitioning(true);
-    if (transitionRef.current) clearTimeout(transitionRef.current);
-    transitionRef.current = setTimeout(() => {
-      setDisplayedTab('sanctum');
-      setDisplayedSubView(sub);
-      setTransitioning(false);
-    }, 150);
-  }, [activeTab]);
+  const handleSanctumSubChange = useCallback(
+    (sub: SanctumSubView) => {
+      setSanctumSubView(sub);
+      setSanctumDropdownOpen(false);
+      if (activeTab !== "sanctum") {
+        setActiveTab("sanctum");
+      }
+      setTransitioning(true);
+      if (transitionRef.current) clearTimeout(transitionRef.current);
+      transitionRef.current = setTimeout(() => {
+        setDisplayedTab("sanctum");
+        setDisplayedSubView(sub);
+        setTransitioning(false);
+      }, 150);
+    },
+    [activeTab],
+  );
 
-  const handleBoardroomSubChange = useCallback((sub: BoardroomSubView) => {
-    setBoardroomSubView(sub);
-    setBoardroomDropdownOpen(false);
-    if (activeTab !== 'boardroom') {
-      setActiveTab('boardroom');
-    }
-    setTransitioning(true);
-    if (transitionRef.current) clearTimeout(transitionRef.current);
-    transitionRef.current = setTimeout(() => {
-      setDisplayedTab('boardroom');
-      setDisplayedBoardroomSub(sub);
-      setTransitioning(false);
-    }, 150);
-  }, [activeTab]);
+  const handleBoardroomSubChange = useCallback(
+    (sub: BoardroomSubView) => {
+      setBoardroomSubView(sub);
+      setBoardroomDropdownOpen(false);
+      if (activeTab !== "boardroom") {
+        setActiveTab("boardroom");
+      }
+      setTransitioning(true);
+      if (transitionRef.current) clearTimeout(transitionRef.current);
+      transitionRef.current = setTimeout(() => {
+        setDisplayedTab("boardroom");
+        setDisplayedBoardroomSub(sub);
+        setTransitioning(false);
+      }, 150);
+    },
+    [activeTab],
+  );
 
-  const handleApparatusSubChange = useCallback((sub: ApparatusSubView) => {
-    setApparatusSubView(sub);
-    setApparatusDropdownOpen(false);
-    if (activeTab !== 'apparatus') {
-      setActiveTab('apparatus');
-    }
-    setTransitioning(true);
-    if (transitionRef.current) clearTimeout(transitionRef.current);
-    transitionRef.current = setTimeout(() => {
-      setDisplayedTab('apparatus');
-      setDisplayedApparatusSub(sub);
-      setTransitioning(false);
-    }, 150);
-  }, [activeTab]);
+  const handleApparatusSubChange = useCallback(
+    (sub: ApparatusSubView) => {
+      setApparatusSubView(sub);
+      setApparatusDropdownOpen(false);
+      if (activeTab !== "apparatus") {
+        setActiveTab("apparatus");
+      }
+      setTransitioning(true);
+      if (transitionRef.current) clearTimeout(transitionRef.current);
+      transitionRef.current = setTimeout(() => {
+        setDisplayedTab("apparatus");
+        setDisplayedApparatusSub(sub);
+        setTransitioning(false);
+      }, 150);
+    },
+    [activeTab],
+  );
 
   // Consume pending tab from external navigation (ChatPanel sidebar icons)
   useEffect(() => {
     if (!pendingTab) return;
     clearPending();
-    if (pendingTab === 'chat') {
-      handleTabChange('chat');
-    } else if (pendingTab === 'boardroom') {
-      handleBoardroomSubChange('forum');
-    } else if (pendingTab === 'apparatus') {
-      handleApparatusSubChange('desk');
-    } else if (pendingTab === 'sanctum') {
-      handleSanctumSubChange('narratives');
+    if (pendingTab === "chat") {
+      handleTabChange("chat");
+    } else if (pendingTab === "boardroom") {
+      handleBoardroomSubChange("forum");
+    } else if (pendingTab === "apparatus") {
+      handleApparatusSubChange("desk");
+    } else if (pendingTab === "sanctum") {
+      handleSanctumSubChange("narratives");
     }
-  }, [pendingTab, clearPending, handleTabChange, handleBoardroomSubChange, handleApparatusSubChange, handleSanctumSubChange]);
+  }, [
+    pendingTab,
+    clearPending,
+    handleTabChange,
+    handleBoardroomSubChange,
+    handleApparatusSubChange,
+    handleSanctumSubChange,
+  ]);
 
   useEffect(() => {
-    return () => { if (transitionRef.current) clearTimeout(transitionRef.current); };
+    return () => {
+      if (transitionRef.current) clearTimeout(transitionRef.current);
+    };
   }, []);
 
   // Fetch market context on mount
@@ -249,11 +412,13 @@ export function ConsiliumHub() {
         if (ctx.riskflowHeadlines) setRiskflowItems(ctx.riskflowHeadlines);
       }
     } catch (err) {
-      console.error('[ConsiliumHub] Context fetch failed:', err);
+      console.error("[ConsiliumHub] Context fetch failed:", err);
     }
   }, []);
 
-  useEffect(() => { fetchContext(); }, [fetchContext]);
+  useEffect(() => {
+    fetchContext();
+  }, [fetchContext]);
 
   // Load persisted MiroShark report on mount
   useEffect(() => {
@@ -265,8 +430,8 @@ export function ConsiliumHub() {
         const report = await res.json();
         if (cancelled || !report) return;
         setMirosharkData({
-          simulationId: report.simulationId ?? '',
-          status: 'complete',
+          simulationId: report.simulationId ?? "",
+          status: "complete",
           compositeIV: report.compositeIV ?? 0,
           confidence: report.confidence ?? 0,
           regimeShiftProbability: report.regimeShiftProbability ?? 0,
@@ -278,80 +443,118 @@ export function ConsiliumHub() {
           contextSnapshot: report.contextSnapshot ?? null,
         });
       } catch (err) {
-        console.error('[ConsiliumHub] Failed to load persisted MiroShark report:', err);
+        console.error(
+          "[ConsiliumHub] Failed to load persisted MiroShark report:",
+          err,
+        );
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const applyReport = useCallback((report: Record<string, any>, simId?: string) => {
-    setMirosharkData({
-      simulationId: simId ?? report.simulationId ?? '',
-      status: 'complete',
-      compositeIV: report.compositeIV ?? report.nextSessionScore ?? 0,
-      confidence: report.confidence ?? 0,
-      regimeShiftProbability: report.regimeShiftProbability ?? 0,
-      categoryScores: report.categoryScores ?? [],
-      timeSeries: report.timeSeries ?? [],
-      generatedEvents: report.generatedEvents ?? [],
-      scenarios: report.scenarios ?? [],
-      briefing: report.briefing ?? null,
-      contextSnapshot: report.contextSnapshot ?? null,
-    });
-    fetchContext();
-  }, [fetchContext]);
-
-  const handleRunMiroShark = useCallback(async (preset?: SanctumPreset) => {
-    setMirosharkData(prev => prev
-      ? { ...prev, status: 'running' }
-      : { simulationId: '', status: 'running', compositeIV: 0, confidence: 0, regimeShiftProbability: 0, categoryScores: [], timeSeries: [], generatedEvents: [], scenarios: [] }
-    );
-
-    try {
-      // Step 1: try to load the latest persisted run
-      const latestRes = await fetch(`${API_BASE}/api/miroshark/latest`);
-      if (latestRes.ok) {
-        const report = await latestRes.json();
-        if (report && (report.compositeIV > 0 || report.nextSessionScore > 0)) {
-          applyReport(report);
-          return;
-        }
-      }
-
-      // Step 2: no existing run — kick off a new simulation
-      const simRes = await fetch(`${API_BASE}/api/miroshark/simulate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          preset: preset ?? 'full-brief',
-          narrativeState: { lanes: [], catalysts: [], ropes: [] },
-        }),
+  const applyReport = useCallback(
+    (report: Record<string, any>, simId?: string) => {
+      setMirosharkData({
+        simulationId: simId ?? report.simulationId ?? "",
+        status: "complete",
+        compositeIV: report.compositeIV ?? report.nextSessionScore ?? 0,
+        confidence: report.confidence ?? 0,
+        regimeShiftProbability: report.regimeShiftProbability ?? 0,
+        categoryScores: report.categoryScores ?? [],
+        timeSeries: report.timeSeries ?? [],
+        generatedEvents: report.generatedEvents ?? [],
+        scenarios: report.scenarios ?? [],
+        briefing: report.briefing ?? null,
+        contextSnapshot: report.contextSnapshot ?? null,
       });
+      fetchContext();
+    },
+    [fetchContext],
+  );
 
-      if (!simRes.ok) throw new Error(`Simulation failed: ${simRes.status}`);
-      const { simulationId } = await simRes.json();
-
-      const reportRes = await fetch(`${API_BASE}/api/miroshark/report/${simulationId}`);
-      if (!reportRes.ok) throw new Error(`Report fetch failed: ${reportRes.status}`);
-      const report = await reportRes.json();
-      applyReport(report, simulationId);
-    } catch (err) {
-      console.error('[MiroShark] Run failed:', err);
-      setMirosharkData(prev => prev
-        ? { ...prev, status: 'error', error: err instanceof Error ? err.message : 'Unknown error' }
-        : null
+  const handleRunMiroShark = useCallback(
+    async (preset?: SanctumPreset) => {
+      setMirosharkData((prev) =>
+        prev
+          ? { ...prev, status: "running" }
+          : {
+              simulationId: "",
+              status: "running",
+              compositeIV: 0,
+              confidence: 0,
+              regimeShiftProbability: 0,
+              categoryScores: [],
+              timeSeries: [],
+              generatedEvents: [],
+              scenarios: [],
+            },
       );
-    }
-  }, [applyReport]);
 
-  const activeSanctumSub = SANCTUM_SUB_VIEWS.find(v => v.id === sanctumSubView) ?? SANCTUM_SUB_VIEWS[0];
+      try {
+        // Step 1: try to load the latest persisted run
+        const latestRes = await fetch(`${API_BASE}/api/miroshark/latest`);
+        if (latestRes.ok) {
+          const report = await latestRes.json();
+          if (
+            report &&
+            (report.compositeIV > 0 || report.nextSessionScore > 0)
+          ) {
+            applyReport(report);
+            return;
+          }
+        }
+
+        // Step 2: no existing run — kick off a new simulation
+        const simRes = await fetch(`${API_BASE}/api/miroshark/simulate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            preset: preset ?? "full-brief",
+            narrativeState: { lanes: [], catalysts: [], ropes: [] },
+          }),
+        });
+
+        if (!simRes.ok) throw new Error(`Simulation failed: ${simRes.status}`);
+        const { simulationId } = await simRes.json();
+
+        const reportRes = await fetch(
+          `${API_BASE}/api/miroshark/report/${simulationId}`,
+        );
+        if (!reportRes.ok)
+          throw new Error(`Report fetch failed: ${reportRes.status}`);
+        const report = await reportRes.json();
+        applyReport(report, simulationId);
+      } catch (err) {
+        console.error("[MiroShark] Run failed:", err);
+        setMirosharkData((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "error",
+                error: err instanceof Error ? err.message : "Unknown error",
+              }
+            : null,
+        );
+      }
+    },
+    [applyReport],
+  );
+
+  const activeSanctumSub =
+    SANCTUM_SUB_VIEWS.find((v) => v.id === sanctumSubView) ??
+    SANCTUM_SUB_VIEWS[0];
   const SanctumIcon = activeSanctumSub.icon;
 
   return (
     <div className="flex h-full flex-col bg-[var(--fintheon-bg)]">
       {/* Tab bar: Sanctum dropdown + regular tabs + Proposals toggle */}
       <div className="flex items-center gap-0.5 px-4 pt-3 pb-1">
-        <h2 className="mr-3 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]" style={{ fontFamily: 'var(--font-heading, Roboto, sans-serif)' }}>
+        <h2
+          className="mr-3 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
+          style={{ fontFamily: "var(--font-heading, Roboto, sans-serif)" }}
+        >
           Consilium
         </h2>
 
@@ -362,10 +565,10 @@ export function ConsiliumHub() {
             onClick={() => handleTabChange(id)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTab === id
-                ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
-                : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
+                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
-            style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
+            style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
           >
             <Icon size={13} />
             {label}
@@ -375,170 +578,216 @@ export function ConsiliumHub() {
         {/* Sanctum tab with dropdown */}
         <div ref={sanctumDropdownRef} className="relative">
           <button
-            onClick={() => setSanctumDropdownOpen(v => !v)}
+            onClick={() => setSanctumDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeTab === 'sanctum'
-                ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
-                : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
+              activeTab === "sanctum"
+                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
-            style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
+            style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
           >
             <Zap size={13} />
             Sanctum
-            <ChevronDown size={10} className={`opacity-50 transition-transform ${sanctumDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              size={10}
+              className={`opacity-50 transition-transform ${sanctumDropdownOpen ? "rotate-180" : ""}`}
+            />
           </button>
 
           <div
             className="absolute top-full left-0 mt-1 z-50 min-w-[220px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
             style={{
               opacity: sanctumDropdownOpen ? 1 : 0,
-              transform: sanctumDropdownOpen ? 'translateY(0) scale(1)' : 'translateY(-4px) scale(0.97)',
-              pointerEvents: sanctumDropdownOpen ? 'auto' : 'none',
-              transition: 'opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)',
+              transform: sanctumDropdownOpen
+                ? "translateY(0) scale(1)"
+                : "translateY(-4px) scale(0.97)",
+              pointerEvents: sanctumDropdownOpen ? "auto" : "none",
+              transition:
+                "opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)",
             }}
           >
-            {SANCTUM_SUB_VIEWS.map(({ id, label, subtitle, icon: Icon }, idx) => (
-              <button
-                key={id}
-                onClick={() => handleSanctumSubChange(id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
-                  sanctumSubView === id && activeTab === 'sanctum'
-                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-                    : 'text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5'
-                }`}
-                style={{
-                  opacity: sanctumDropdownOpen ? 1 : 0,
-                  transform: sanctumDropdownOpen ? 'translateX(0)' : 'translateX(-6px)',
-                  transition: `opacity 200ms var(--ease-spring) ${idx * 40}ms, transform 200ms var(--ease-spring) ${idx * 40}ms`,
-                }}
-              >
-                <Icon size={13} className="shrink-0 mt-0.5" />
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">{label}</span>
-                  {subtitle && <span className="text-[10px] opacity-40 leading-tight">{subtitle}</span>}
-                </div>
-              </button>
-            ))}
+            {SANCTUM_SUB_VIEWS.map(
+              ({ id, label, subtitle, icon: Icon }, idx) => (
+                <button
+                  key={id}
+                  onClick={() => handleSanctumSubChange(id)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                    sanctumSubView === id && activeTab === "sanctum"
+                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                      : "text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5"
+                  }`}
+                  style={{
+                    opacity: sanctumDropdownOpen ? 1 : 0,
+                    transform: sanctumDropdownOpen
+                      ? "translateX(0)"
+                      : "translateX(-6px)",
+                    transition: `opacity 200ms var(--ease-spring) ${idx * 40}ms, transform 200ms var(--ease-spring) ${idx * 40}ms`,
+                  }}
+                >
+                  <Icon size={13} className="shrink-0 mt-0.5" />
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">{label}</span>
+                    {subtitle && (
+                      <span className="text-[10px] opacity-40 leading-tight">
+                        {subtitle}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ),
+            )}
           </div>
         </div>
 
         {/* Boardroom dropdown */}
         <div ref={boardroomDropdownRef} className="relative">
           <button
-            onClick={() => setBoardroomDropdownOpen(v => !v)}
+            onClick={() => setBoardroomDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeTab === 'boardroom'
-                ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
-                : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
+              activeTab === "boardroom"
+                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
-            style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
+            style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
           >
             <Users size={13} />
             Boardroom
             {harperStatus?.loop?.alive && (
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             )}
-            <ChevronDown size={10} className={`opacity-50 transition-transform ${boardroomDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              size={10}
+              className={`opacity-50 transition-transform ${boardroomDropdownOpen ? "rotate-180" : ""}`}
+            />
           </button>
 
           <div
             className="absolute top-full left-0 mt-1 z-50 min-w-[200px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
             style={{
               opacity: boardroomDropdownOpen ? 1 : 0,
-              transform: boardroomDropdownOpen ? 'translateY(0) scale(1)' : 'translateY(-4px) scale(0.97)',
-              pointerEvents: boardroomDropdownOpen ? 'auto' : 'none',
-              transition: 'opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)',
+              transform: boardroomDropdownOpen
+                ? "translateY(0) scale(1)"
+                : "translateY(-4px) scale(0.97)",
+              pointerEvents: boardroomDropdownOpen ? "auto" : "none",
+              transition:
+                "opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)",
             }}
           >
-            {BOARDROOM_SUB_VIEWS.map(({ id, label, subtitle, icon: Icon }, idx) => (
-              <button
-                key={id}
-                onClick={() => handleBoardroomSubChange(id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
-                  boardroomSubView === id && activeTab === 'boardroom'
-                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-                    : 'text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5'
-                }`}
-                style={{
-                  opacity: boardroomDropdownOpen ? 1 : 0,
-                  transform: boardroomDropdownOpen ? 'translateX(0)' : 'translateX(-6px)',
-                  transition: `opacity 200ms var(--ease-spring) ${idx * 40}ms, transform 200ms var(--ease-spring) ${idx * 40}ms`,
-                }}
-              >
-                <Icon size={13} className="shrink-0 mt-0.5" />
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">{label}</span>
-                  {subtitle && <span className="text-[10px] opacity-40 leading-tight">{subtitle}</span>}
-                </div>
-              </button>
-            ))}
+            {BOARDROOM_SUB_VIEWS.map(
+              ({ id, label, subtitle, icon: Icon }, idx) => (
+                <button
+                  key={id}
+                  onClick={() => handleBoardroomSubChange(id)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                    boardroomSubView === id && activeTab === "boardroom"
+                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                      : "text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5"
+                  }`}
+                  style={{
+                    opacity: boardroomDropdownOpen ? 1 : 0,
+                    transform: boardroomDropdownOpen
+                      ? "translateX(0)"
+                      : "translateX(-6px)",
+                    transition: `opacity 200ms var(--ease-spring) ${idx * 40}ms, transform 200ms var(--ease-spring) ${idx * 40}ms`,
+                  }}
+                >
+                  <Icon size={13} className="shrink-0 mt-0.5" />
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">{label}</span>
+                    {subtitle && (
+                      <span className="text-[10px] opacity-40 leading-tight">
+                        {subtitle}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ),
+            )}
           </div>
         </div>
 
         {/* Apparatus dropdown */}
         <div ref={apparatusDropdownRef} className="relative">
           <button
-            onClick={() => setApparatusDropdownOpen(v => !v)}
+            onClick={() => setApparatusDropdownOpen((v) => !v)}
             className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeTab === 'apparatus'
-                ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
-                : 'border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70'
+              activeTab === "apparatus"
+                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                : "border border-transparent text-[var(--fintheon-text)]/40 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)]/70"
             }`}
-            style={{ fontFamily: 'var(--font-body, Roboto, sans-serif)' }}
+            style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
           >
             <Cpu size={13} />
             Apparatus
-            <ChevronDown size={10} className={`opacity-50 transition-transform ${apparatusDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              size={10}
+              className={`opacity-50 transition-transform ${apparatusDropdownOpen ? "rotate-180" : ""}`}
+            />
           </button>
 
           <div
             className="absolute top-full left-0 mt-1 z-50 min-w-[210px] rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl overflow-hidden"
             style={{
               opacity: apparatusDropdownOpen ? 1 : 0,
-              transform: apparatusDropdownOpen ? 'translateY(0) scale(1)' : 'translateY(-4px) scale(0.97)',
-              pointerEvents: apparatusDropdownOpen ? 'auto' : 'none',
-              transition: 'opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)',
+              transform: apparatusDropdownOpen
+                ? "translateY(0) scale(1)"
+                : "translateY(-4px) scale(0.97)",
+              pointerEvents: apparatusDropdownOpen ? "auto" : "none",
+              transition:
+                "opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)",
             }}
           >
-            {APPARATUS_SUB_VIEWS.map(({ id, label, subtitle, icon: Icon }, idx) => (
-              <button
-                key={id}
-                onClick={() => handleApparatusSubChange(id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
-                  apparatusSubView === id && activeTab === 'apparatus'
-                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-                    : 'text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5'
-                }`}
-                style={{
-                  opacity: apparatusDropdownOpen ? 1 : 0,
-                  transform: apparatusDropdownOpen ? 'translateX(0)' : 'translateX(-6px)',
-                  transition: `opacity 200ms var(--ease-spring) ${idx * 40}ms, transform 200ms var(--ease-spring) ${idx * 40}ms`,
-                }}
-              >
-                <Icon size={13} className="shrink-0 mt-0.5" />
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">{label}</span>
-                  {subtitle && <span className="text-[10px] opacity-40 leading-tight">{subtitle}</span>}
-                </div>
-              </button>
-            ))}
+            {APPARATUS_SUB_VIEWS.map(
+              ({ id, label, subtitle, icon: Icon }, idx) => (
+                <button
+                  key={id}
+                  onClick={() => handleApparatusSubChange(id)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                    apparatusSubView === id && activeTab === "apparatus"
+                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                      : "text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/5"
+                  }`}
+                  style={{
+                    opacity: apparatusDropdownOpen ? 1 : 0,
+                    transform: apparatusDropdownOpen
+                      ? "translateX(0)"
+                      : "translateX(-6px)",
+                    transition: `opacity 200ms var(--ease-spring) ${idx * 40}ms, transform 200ms var(--ease-spring) ${idx * 40}ms`,
+                  }}
+                >
+                  <Icon size={13} className="shrink-0 mt-0.5" />
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">{label}</span>
+                    {subtitle && (
+                      <span className="text-[10px] opacity-40 leading-tight">
+                        {subtitle}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ),
+            )}
           </div>
         </div>
 
         <div className="flex-1" />
 
         {/* Right-justified chat tools — only when chat is active */}
-        {activeTab === 'chat' && (
+        {activeTab === "chat" && (
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => window.dispatchEvent(new Event('fintheon:chat-run-report'))}
+              onClick={() =>
+                window.dispatchEvent(new Event("fintheon:chat-run-report"))
+              }
               className="p-1.5 text-zinc-500 hover:text-[#c79f4a] transition-colors"
               title="Run Report"
             >
               <Scroll className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => window.dispatchEvent(new Event('fintheon:chat-new'))}
+              onClick={() =>
+                window.dispatchEvent(new Event("fintheon:chat-new"))
+              }
               className="p-1.5 text-zinc-500 hover:text-[#c79f4a] transition-colors"
               title="New Chat"
             >
@@ -546,7 +795,7 @@ export function ConsiliumHub() {
             </button>
             <div className="relative">
               <button
-                onClick={() => setShowSessionsDropdown(v => !v)}
+                onClick={() => setShowSessionsDropdown((v) => !v)}
                 className="p-1.5 text-zinc-500 hover:text-[#c79f4a] transition-colors"
                 title="History"
               >
@@ -556,11 +805,15 @@ export function ConsiliumHub() {
                 isOpen={showSessionsDropdown}
                 onClose={() => setShowSessionsDropdown(false)}
                 onSelectSession={(id) => {
-                  window.dispatchEvent(new CustomEvent('fintheon:chat-load-session', { detail: { id } }));
+                  window.dispatchEvent(
+                    new CustomEvent("fintheon:chat-load-session", {
+                      detail: { id },
+                    }),
+                  );
                   setShowSessionsDropdown(false);
                 }}
                 onNewSession={() => {
-                  window.dispatchEvent(new Event('fintheon:chat-new'));
+                  window.dispatchEvent(new Event("fintheon:chat-new"));
                   setShowSessionsDropdown(false);
                 }}
               />
@@ -568,32 +821,35 @@ export function ConsiliumHub() {
           </div>
         )}
 
-        {activeTab === 'sanctum' && (
+        {activeTab === "sanctum" && (
           <button
             onClick={toggleDebate}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
               showDebate
-                ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
-                : 'border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5'
+                ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
             }`}
-            title={showDebate ? 'Hide Debate' : 'Show Debate'}
+            title={showDebate ? "Hide Debate" : "Show Debate"}
           >
             <Shield size={14} />
             Debate
           </button>
         )}
 
-
         <button
           onClick={toggleProposals}
           className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
             showProposals
-              ? 'text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30'
-              : 'border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5'
+              ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+              : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
           }`}
-          title={showProposals ? 'Hide Proposals' : 'Show Proposals'}
+          title={showProposals ? "Hide Proposals" : "Show Proposals"}
         >
-          {showProposals ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+          {showProposals ? (
+            <PanelRightClose size={14} />
+          ) : (
+            <PanelRightOpen size={14} />
+          )}
           Proposals
         </button>
       </div>
@@ -604,15 +860,16 @@ export function ConsiliumHub() {
           className="flex-1 min-h-0 min-w-0 overflow-hidden"
           style={{
             opacity: transitioning ? 0 : 1,
-            transform: transitioning ? 'translateY(6px)' : 'translateY(0)',
-            transition: 'opacity 220ms var(--ease-spring), transform 220ms var(--ease-spring)',
+            transform: transitioning ? "translateY(6px)" : "translateY(0)",
+            transition:
+              "opacity 220ms var(--ease-spring), transform 220ms var(--ease-spring)",
           }}
         >
           {/* Sanctum sub-views — shared NarrativeProvider so seeds carry across views */}
-          {displayedTab === 'sanctum' && (
+          {displayedTab === "sanctum" && (
             <NarrativeProvider>
-              {displayedSubView === 'narratives' && <NarrativeMap />}
-              {displayedSubView === 'aquarium' && (
+              {displayedSubView === "narratives" && <NarrativeMap />}
+              {displayedSubView === "aquarium" && (
                 <SanctumWithNarratives
                   data={mirosharkData}
                   onRun={handleRunMiroShark}
@@ -621,27 +878,27 @@ export function ConsiliumHub() {
                   selectedSymbol={selectedSymbol.symbol}
                 />
               )}
-              {displayedSubView === 'timeline' && <TimelinePanel />}
+              {displayedSubView === "timeline" && <TimelinePanel />}
             </NarrativeProvider>
           )}
 
           {/* Chat */}
-          {displayedTab === 'chat' && (
+          {displayedTab === "chat" && (
             <div className="h-full w-full max-w-3xl mx-auto">
               <ChatSidebar />
             </div>
           )}
 
           {/* Boardroom sub-views */}
-          {displayedTab === 'boardroom' && (
+          {displayedTab === "boardroom" && (
             <>
-              {displayedBoardroomSub === 'forum' && <BulletinFeed />}
-              {displayedBoardroomSub === 'imperium' && (
+              {displayedBoardroomSub === "forum" && <BulletinFeed />}
+              {displayedBoardroomSub === "imperium" && (
                 <Suspense fallback={<AiLoader />}>
                   <ResearchBoard />
                 </Suspense>
               )}
-              {displayedBoardroomSub === 'agentic-chat' && (
+              {displayedBoardroomSub === "agentic-chat" && (
                 <div className="flex h-full">
                   <div className="flex-1 min-w-0">
                     <AgentChattr />
@@ -649,23 +906,34 @@ export function ConsiliumHub() {
                   {/* Harper Activity sidebar — matches Debate/Proposals collapsible pattern */}
                   <div
                     className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
-                      showHarperFeed ? 'w-80' : 'w-0 border-l-0'
+                      showHarperFeed ? "w-80" : "w-0 border-l-0"
                     }`}
-                    style={{ transition: 'width 280ms var(--ease-spring), border-width 280ms' }}
+                    style={{
+                      transition:
+                        "width 280ms var(--ease-spring), border-width 280ms",
+                    }}
                   >
                     <div
                       className="w-80 h-full overflow-hidden bg-[var(--fintheon-bg)]"
-                      style={{ opacity: showHarperFeed ? 1 : 0, transition: 'opacity 200ms ease 80ms' }}
+                      style={{
+                        opacity: showHarperFeed ? 1 : 0,
+                        transition: "opacity 200ms ease 80ms",
+                      }}
                     >
-                      <HarperActivityFeed onCollapse={() => setShowHarperFeed(false)} />
+                      <HarperActivityFeed
+                        onCollapse={() => setShowHarperFeed(false)}
+                      />
                     </div>
                   </div>
                 </div>
               )}
-              {displayedBoardroomSub === 'research' && (
+              {displayedBoardroomSub === "research" && (
                 <EmbeddedBrowserFrame
                   title="Research"
-                  src={iframeUrls.research || 'https://www.notion.so/2db141b0da7d80efa647ee7f6d5153f5'}
+                  src={
+                    iframeUrls.research ||
+                    "https://www.notion.so/2db141b0da7d80efa647ee7f6d5153f5"
+                  }
                   className="w-full h-full"
                 />
               )}
@@ -673,10 +941,12 @@ export function ConsiliumHub() {
           )}
 
           {/* Apparatus sub-views */}
-          {displayedTab === 'apparatus' && (
+          {displayedTab === "apparatus" && (
             <>
-              {displayedApparatusSub === 'desk' && <ApparatusFlowMap />}
-              {displayedApparatusSub === 'fileroom' && <SharedMemoryPanel mode="fileroom" />}
+              {displayedApparatusSub === "desk" && <ApparatusFlowMap />}
+              {displayedApparatusSub === "fileroom" && (
+                <SharedMemoryPanel mode="fileroom" />
+              )}
             </>
           )}
         </div>
@@ -684,65 +954,81 @@ export function ConsiliumHub() {
         {/* Collapsible Debate panel */}
         <div
           className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
-            showDebate ? 'w-80' : 'w-0 border-l-0'
+            showDebate ? "w-80" : "w-0 border-l-0"
           }`}
-          style={{ transition: 'width 280ms var(--ease-spring), border-width 280ms' }}
+          style={{
+            transition: "width 280ms var(--ease-spring), border-width 280ms",
+          }}
         >
           <div
             className="w-80 h-full overflow-hidden bg-[var(--fintheon-bg)]"
             style={{
               opacity: showDebate ? 1 : 0,
-              transition: 'opacity 200ms ease 80ms',
+              transition: "opacity 200ms ease 80ms",
             }}
           >
-            <MiroSharkDebatePanel simulationId={mirosharkData?.simulationId ?? null} />
+            <MiroSharkDebatePanel
+              simulationId={mirosharkData?.simulationId ?? null}
+            />
           </div>
         </div>
 
         {/* Collapsible Proposals + Scorecards right panel */}
         <div
           className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
-            showProposals ? 'w-80' : 'w-0 border-l-0'
+            showProposals ? "w-80" : "w-0 border-l-0"
           }`}
-          style={{ transition: 'width 280ms var(--ease-spring), border-width 280ms' }}
+          style={{
+            transition: "width 280ms var(--ease-spring), border-width 280ms",
+          }}
         >
           <div
             className="w-80 h-full flex flex-col bg-[var(--fintheon-bg)]"
             style={{
               opacity: showProposals ? 1 : 0,
-              transition: 'opacity 200ms ease 80ms',
+              transition: "opacity 200ms ease 80ms",
             }}
           >
             {/* View toggle: Proposals vs iFrame */}
             <div className="shrink-0 flex items-center border-b border-[var(--fintheon-accent)]/10 px-2 py-1.5 gap-1">
               <button
-                onClick={() => setProposalsView('proposals')}
+                onClick={() => setProposalsView("proposals")}
                 className={`px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-                  proposalsView === 'proposals'
-                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-                    : 'text-gray-500 hover:text-gray-300'
+                  proposalsView === "proposals"
+                    ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                    : "text-gray-500 hover:text-gray-300"
                 }`}
               >
                 Proposals
               </button>
               <button
-                onClick={() => setProposalsView('iframe')}
+                onClick={() => setProposalsView("iframe")}
                 className={`px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-                  proposalsView === 'iframe'
-                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
-                    : 'text-gray-500 hover:text-gray-300'
+                  proposalsView === "iframe"
+                    ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                    : "text-gray-500 hover:text-gray-300"
                 }`}
               >
-                {proposerIframeSources.find(s => s.id === proposerDefaultIframe)?.label || 'iFrame'}
+                {proposerIframeSources.find(
+                  (s) => s.id === proposerDefaultIframe,
+                )?.label || "iFrame"}
               </button>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto">
-              {proposalsView === 'proposals' ? (
+              {proposalsView === "proposals" ? (
                 <ProposalWidget />
               ) : (
                 <EmbeddedBrowserFrame
-                  title={proposerIframeSources.find(s => s.id === proposerDefaultIframe)?.label || 'Proposer'}
-                  src={proposerIframeSources.find(s => s.id === proposerDefaultIframe)?.url || 'https://www.tradingview.com/chart'}
+                  title={
+                    proposerIframeSources.find(
+                      (s) => s.id === proposerDefaultIframe,
+                    )?.label || "Proposer"
+                  }
+                  src={
+                    proposerIframeSources.find(
+                      (s) => s.id === proposerDefaultIframe,
+                    )?.url || "https://www.tradingview.com/chart"
+                  }
                   className="w-full h-full"
                 />
               )}

@@ -4,9 +4,9 @@
  */
 
 export type CliOutputEvent =
-  | { type: 'stdout'; data: string }
-  | { type: 'stderr'; data: string }
-  | { type: 'exit'; code: number | null; signal: string | null };
+  | { type: "stdout"; data: string }
+  | { type: "stderr"; data: string }
+  | { type: "exit"; code: number | null; signal: string | null };
 
 export interface UpdateInfo {
   version: string;
@@ -26,7 +26,7 @@ export interface StartupConfig {
 }
 
 export interface ElectronAPI {
-  platform: 'electron';
+  platform: "electron";
   isElectron: true;
   toggleMiniWidget: () => Promise<void>;
   setKeepWidgetOnClose: (value: boolean) => Promise<void>;
@@ -35,7 +35,9 @@ export interface ElectronAPI {
   minimizeWindow: () => void;
   maximizeWindow: () => void;
   closeWindow: () => void;
-  runShellCommand: (command: string) => Promise<{ ok: boolean; error?: string }>;
+  runShellCommand: (
+    command: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
   setCliOutputCallback: (cb: ((event: CliOutputEvent) => void) | null) => void;
 
   // Startup config
@@ -55,7 +57,9 @@ export interface ElectronAPI {
 
   // [claude-code 2026-03-23] Browser Use Phase 2 — CLI command bridge
   browserUse: {
-    runCommand: (args: string[]) => Promise<{ ok: boolean; data?: any; error?: string; stderr?: string }>;
+    runCommand: (
+      args: string[],
+    ) => Promise<{ ok: boolean; data?: any; error?: string; stderr?: string }>;
     getStatus: () => Promise<{ running: boolean; sessions?: string }>;
   };
 }

@@ -1,7 +1,7 @@
 // [claude-code 2026-03-23] Canonical types for autoresearch scoring, observation, and backtesting
 // All autoresearch modules import types from this file.
 
-import type { IVScoringConfig } from '../iv-scoring-v2.js';
+import type { IVScoringConfig } from "../iv-scoring-v2.js";
 
 /** A single scored observation attached to a news event */
 export interface ScoringObservation {
@@ -72,18 +72,24 @@ export interface FitnessReport {
   /** Mean bias: positive = overpredicting, negative = underpredicting */
   meanBias: number;
   /** Breakdown by event type */
-  byEventType: Record<string, {
-    count: number;
-    directionAccuracy: number;
-    meanMagnitudeError: number;
-    meanBias: number;
-  }>;
+  byEventType: Record<
+    string,
+    {
+      count: number;
+      directionAccuracy: number;
+      meanMagnitudeError: number;
+      meanBias: number;
+    }
+  >;
   /** Breakdown by session */
-  bySession: Record<string, {
-    count: number;
-    directionAccuracy: number;
-    meanMagnitudeError: number;
-  }>;
+  bySession: Record<
+    string,
+    {
+      count: number;
+      directionAccuracy: number;
+      meanMagnitudeError: number;
+    }
+  >;
   /** Timestamp of the report */
   generatedAt: string;
 }

@@ -20,13 +20,16 @@ let updateProgressCallback = null;
 let updateDownloadedCallback = null;
 
 ipcRenderer.on("update-available", (_event, info) => {
-  if (typeof updateAvailableCallback === "function") updateAvailableCallback(info);
+  if (typeof updateAvailableCallback === "function")
+    updateAvailableCallback(info);
 });
 ipcRenderer.on("update-download-progress", (_event, progress) => {
-  if (typeof updateProgressCallback === "function") updateProgressCallback(progress);
+  if (typeof updateProgressCallback === "function")
+    updateProgressCallback(progress);
 });
 ipcRenderer.on("update-downloaded", () => {
-  if (typeof updateDownloadedCallback === "function") updateDownloadedCallback();
+  if (typeof updateDownloadedCallback === "function")
+    updateDownloadedCallback();
 });
 
 contextBridge.exposeInMainWorld("electron", {
@@ -37,7 +40,8 @@ contextBridge.exposeInMainWorld("electron", {
       // no-op fallback for renderer calls
     }
   },
-  runShellCommand: (command) => ipcRenderer.invoke("run-shell-command", command),
+  runShellCommand: (command) =>
+    ipcRenderer.invoke("run-shell-command", command),
   setCliOutputCallback: (cb) => {
     cliOutputCallback = typeof cb === "function" ? cb : null;
   },

@@ -14,78 +14,82 @@
  *   - Cognition emitter: side-channel to push approval requests to frontend SSE
  */
 
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
-import { resolve } from 'node:path'
-import { homedir } from 'node:os'
-import { createLogger } from '../lib/logger.js'
-import { emitStep } from './cognition-emitter.js'
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { resolve } from "node:path";
+import { homedir } from "node:os";
+import { createLogger } from "../lib/logger.js";
+import { emitStep } from "./cognition-emitter.js";
 
-const log = createLogger('ToolApproval')
+const log = createLogger("ToolApproval");
 
 // ── Paths ─────────────────────────────────────────────────────────────────
 
-const FINTHEON_DIR = resolve(homedir(), '.fintheon')
-const PERMISSIONS_FILE = resolve(FINTHEON_DIR, 'tool-permissions.json')
+const FINTHEON_DIR = resolve(homedir(), ".fintheon");
+const PERMISSIONS_FILE = resolve(FINTHEON_DIR, "tool-permissions.json");
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
 export interface ToolPermission {
-  toolName: string
-  approvedAt: string      // ISO timestamp
-  approvedBy: string      // 'user' | agent name
+  toolName: string;
+  approvedAt: string; // ISO timestamp
+  approvedBy: string; // 'user' | agent name
 }
 
 export interface PendingApproval {
-  id: string
-  requestId: string       // Harper chat requestId (for cognition emitter)
-  toolName: string
-  toolInput: Record<string, unknown>
-  description: string     // Human-readable description of what the tool wants to do
-  createdAt: number
-  resolve: (decision: 'approved' | 'denied') => void
+  id: string;
+  requestId: string; // Harper chat requestId (for cognition emitter)
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  description: string; // Human-readable description of what the tool wants to do
+  createdAt: number;
+  resolve: (decision: "approved" | "denied") => void;
 }
 
-export type ApprovalDecision = 'approved' | 'denied'
+export type ApprovalDecision = "approved" | "denied";
 
 // ── State ─────────────────────────────────────────────────────────────────
 
-let permanentPermissions: Map<string, ToolPermission> = new Map()
-const pendingApprovals: Map<string, PendingApproval> = new Map()
+let permanentPermissions: Map<string, ToolPermission> = new Map();
+const pendingApprovals: Map<string, PendingApproval> = new Map();
 
 // ── Persistent Store ──────────────────────────────────────────────────────
 
 async function ensureDir(): Promise<void> {
-  try { await mkdir(FINTHEON_DIR, { recursive: true }) } catch { /* exists */ }
+  try {
+    await mkdir(FINTHEON_DIR, { recursive: true });
+  } catch {
+    /* exists */
+  }
 }
 
 async function loadPermissions(): Promise<void> {
   try {
-    const raw = await readFile(PERMISSIONS_FILE, 'utf8')
-    const data = JSON.parse(raw) as ToolPermission[]
-    permanentPermissions = new Map(data.map(p => [p.toolName, p]))
-    log.info(`Loaded ${permanentPermissions.size} permanent tool permissions`)
+    const raw = await readFile(PERMISSIONS_FILE, "utf8");
+    const data = JSON.parse(raw) as ToolPermission[];
+    permanentPermissions = new Map(data.map((p) => [p.toolName, p]));
+    log.info(`Loaded ${permanentPermissions.size} permanent tool permissions`);
   } catch {
-    permanentPermissions = new Map()
-    log.info('No existing tool permissions file — starting fresh')
+    permanentPermissions = new Map();
+    log.info("No existing tool permissions file — starting fresh");
   }
 }
 
 async function savePermissions(): Promise<void> {
-  await ensureDir()
-  const data = Array.from(permanentPermissions.values())
-  await writeFile(PERMISSIONS_FILE, JSON.stringify(data, null, 2), 'utf8')
+  await ensureDir();
+  const data = Array.from(permanentPermissions.values());
+  await writeFile(PERMISSIONS_FILE, JSON.stringify(data, null, 2), "utf8");
 }
 
 /** Initialize — load permissions from disk */
 export async function initToolApprovalStore(): Promise<void> {
-  await loadPermissions()
+  await loadPermissions();
 }
 
 // ── Permission Checks ─────────────────────────────────────────────────────
 
 /** Check if a tool has permanent approval */
 export function isToolApproved(toolName: string): boolean {
-  return permanentPermissions.has(toolName)
+  return permanentPermissions.has(toolName);
 }
 
 /** Grant permanent approval for a tool */
@@ -93,23 +97,23 @@ export async function grantPermission(toolName: string): Promise<void> {
   const permission: ToolPermission = {
     toolName,
     approvedAt: new Date().toISOString(),
-    approvedBy: 'user',
-  }
-  permanentPermissions.set(toolName, permission)
-  await savePermissions()
-  log.info(`Permanent permission granted: ${toolName}`)
+    approvedBy: "user",
+  };
+  permanentPermissions.set(toolName, permission);
+  await savePermissions();
+  log.info(`Permanent permission granted: ${toolName}`);
 }
 
 /** Revoke permission for a tool */
 export async function revokePermission(toolName: string): Promise<void> {
-  permanentPermissions.delete(toolName)
-  await savePermissions()
-  log.info(`Permission revoked: ${toolName}`)
+  permanentPermissions.delete(toolName);
+  await savePermissions();
+  log.info(`Permission revoked: ${toolName}`);
 }
 
 /** Get all permanent permissions */
 export function getAllPermissions(): ToolPermission[] {
-  return Array.from(permanentPermissions.values())
+  return Array.from(permanentPermissions.values());
 }
 
 // ── Pending Approvals ─────────────────────────────────────────────────────
@@ -120,7 +124,7 @@ export function getAllPermissions(): ToolPermission[] {
  * Emits a cognition event so the frontend can display the approval card.
  */
 /** How long to wait for user decision before auto-approving (ms) */
-const APPROVAL_TIMEOUT_MS = 30_000
+const APPROVAL_TIMEOUT_MS = 30_000;
 
 export function requestApproval(
   requestId: string,
@@ -128,15 +132,15 @@ export function requestApproval(
   toolInput: Record<string, unknown>,
   description: string,
 ): Promise<ApprovalDecision> {
-  const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   return new Promise<ApprovalDecision>((resolvePromise) => {
-    let settled = false
+    let settled = false;
     const settle = (decision: ApprovalDecision) => {
-      if (settled) return
-      settled = true
-      resolvePromise(decision)
-    }
+      if (settled) return;
+      settled = true;
+      resolvePromise(decision);
+    };
 
     const pending: PendingApproval = {
       id,
@@ -146,13 +150,13 @@ export function requestApproval(
       description,
       createdAt: Date.now(),
       resolve: settle,
-    }
+    };
 
-    pendingApprovals.set(id, pending)
+    pendingApprovals.set(id, pending);
 
     // Emit cognition event for frontend
     emitStep(requestId, {
-      kind: 'tool-approval-needed',
+      kind: "tool-approval-needed",
       label: `Permission required: ${toolName}`,
       detail: JSON.stringify({
         approvalId: id,
@@ -160,24 +164,29 @@ export function requestApproval(
         toolInput,
         description,
       }),
-    })
+    });
 
-    log.info(`Approval requested: ${toolName} (${id})`, { description })
+    log.info(`Approval requested: ${toolName} (${id})`, { description });
 
     // Auto-approve after timeout so the agentic loop never hangs indefinitely
     setTimeout(async () => {
-      if (settled) return
-      log.warn(`Approval timeout — auto-approving: ${toolName} (${id})`)
-      pendingApprovals.delete(id)
-      await grantPermission(toolName)
+      if (settled) return;
+      log.warn(`Approval timeout — auto-approving: ${toolName} (${id})`);
+      pendingApprovals.delete(id);
+      await grantPermission(toolName);
       emitStep(requestId, {
-        kind: 'tool-approval-resolved',
+        kind: "tool-approval-resolved",
         label: `${toolName}: approved (auto)`,
-        detail: JSON.stringify({ approvalId: id, toolName, decision: 'approved', auto: true }),
-      })
-      settle('approved')
-    }, APPROVAL_TIMEOUT_MS)
-  })
+        detail: JSON.stringify({
+          approvalId: id,
+          toolName,
+          decision: "approved",
+          auto: true,
+        }),
+      });
+      settle("approved");
+    }, APPROVAL_TIMEOUT_MS);
+  });
 }
 
 /** Resolve a pending approval */
@@ -185,38 +194,42 @@ export async function resolveApproval(
   approvalId: string,
   decision: ApprovalDecision,
 ): Promise<{ found: boolean; toolName?: string }> {
-  const pending = pendingApprovals.get(approvalId)
+  const pending = pendingApprovals.get(approvalId);
   if (!pending) {
-    log.warn(`Approval not found: ${approvalId}`)
-    return { found: false }
+    log.warn(`Approval not found: ${approvalId}`);
+    return { found: false };
   }
 
-  pendingApprovals.delete(approvalId)
+  pendingApprovals.delete(approvalId);
 
-  if (decision === 'approved') {
+  if (decision === "approved") {
     // Grant permanent permission
-    await grantPermission(pending.toolName)
+    await grantPermission(pending.toolName);
   }
 
   // Emit resolution cognition event
   emitStep(pending.requestId, {
-    kind: 'tool-approval-resolved',
+    kind: "tool-approval-resolved",
     label: `${pending.toolName}: ${decision}`,
     detail: JSON.stringify({
       approvalId,
       toolName: pending.toolName,
       decision,
     }),
-  })
+  });
 
   // Resolve the waiting promise
-  pending.resolve(decision)
+  pending.resolve(decision);
 
-  log.info(`Approval resolved: ${pending.toolName} → ${decision} (${approvalId})`)
-  return { found: true, toolName: pending.toolName }
+  log.info(
+    `Approval resolved: ${pending.toolName} → ${decision} (${approvalId})`,
+  );
+  return { found: true, toolName: pending.toolName };
 }
 
 /** Get all pending approvals (for debugging/status) */
-export function getPendingApprovals(): Omit<PendingApproval, 'resolve'>[] {
-  return Array.from(pendingApprovals.values()).map(({ resolve: _, ...rest }) => rest)
+export function getPendingApprovals(): Omit<PendingApproval, "resolve">[] {
+  return Array.from(pendingApprovals.values()).map(
+    ({ resolve: _, ...rest }) => rest,
+  );
 }

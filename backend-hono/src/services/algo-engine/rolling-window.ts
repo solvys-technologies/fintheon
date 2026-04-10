@@ -11,7 +11,7 @@ export class RollingWindow<T> {
   private count: number;
 
   constructor(capacity: number) {
-    if (capacity < 1) throw new Error('RollingWindow capacity must be >= 1');
+    if (capacity < 1) throw new Error("RollingWindow capacity must be >= 1");
     this.capacity = capacity;
     this.items = new Array<T>(capacity);
     this.count = 0;
@@ -32,7 +32,9 @@ export class RollingWindow<T> {
   /** Get item by index. 0 = most recent. */
   get(index: number): T {
     if (index < 0 || index >= this.count) {
-      throw new RangeError(`Index ${index} out of range [0, ${this.count - 1}]`);
+      throw new RangeError(
+        `Index ${index} out of range [0, ${this.count - 1}]`,
+      );
     }
     return this.items[index];
   }
@@ -44,7 +46,7 @@ export class RollingWindow<T> {
 
   /** The most recently added item. */
   get mostRecent(): T {
-    if (this.count === 0) throw new Error('RollingWindow is empty');
+    if (this.count === 0) throw new Error("RollingWindow is empty");
     return this.items[0];
   }
 

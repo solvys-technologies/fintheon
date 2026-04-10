@@ -1,13 +1,13 @@
 // [claude-code 2026-04-03] Discord-style forum redesign — PromptBox, message grouping, scroll container, hover actions
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, ChevronDown, Send } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { useBackend } from '../../lib/backend';
-import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
-import { BulletinPost, type BulletinPostData } from './BulletinPost';
-import type { VoteType } from './VotingControls';
-import { PromptBox } from '../ui/chatgpt-prompt-input';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Loader2, ChevronDown, Send } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useBackend } from "../../lib/backend";
+import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../../contexts/ToastContext";
+import { BulletinPost, type BulletinPostData } from "./BulletinPost";
+import type { VoteType } from "./VotingControls";
+import { PromptBox } from "../ui/chatgpt-prompt-input";
 
 interface DeskOption {
   id: string;
@@ -30,11 +30,13 @@ export function BulletinFeed() {
   const [userVotes, setUserVotes] = useState<Record<string, VoteType>>({});
   const [loading, setLoading] = useState(true);
   const [desks, setDesks] = useState<DeskOption[]>([]);
-  const [selectedDesk, setSelectedDesk] = useState<string>('');
+  const [selectedDesk, setSelectedDesk] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [expandedThread, setExpandedThread] = useState<string | null>(null);
-  const [threadReplies, setThreadReplies] = useState<Record<string, BulletinPostData[]>>({});
-  const [replyContent, setReplyContent] = useState('');
+  const [threadReplies, setThreadReplies] = useState<
+    Record<string, BulletinPostData[]>
+  >({});
+  const [replyContent, setReplyContent] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -58,7 +60,7 @@ export function BulletinFeed() {
       }
       setUserVotes(votes);
     } catch (err) {
-      console.error('[BulletinFeed] Failed to load posts:', err);
+      console.error("[BulletinFeed] Failed to load posts:", err);
     } finally {
       setLoading(false);
     }
@@ -75,9 +77,12 @@ export function BulletinFeed() {
 
   // Load desks
   useEffect(() => {
-    backend.peers.listDesks().then((res) => {
-      setDesks(res.desks.map((d: any) => ({ id: d.id, name: d.name })));
-    }).catch(() => {});
+    backend.peers
+      .listDesks()
+      .then((res) => {
+        setDesks(res.desks.map((d: any) => ({ id: d.id, name: d.name })));
+      })
+      .catch(() => {});
   }, [backend]);
 
   // Supabase Realtime subscription
@@ -86,22 +91,28 @@ export function BulletinFeed() {
     if (!sb) return;
 
     const channel = sb
-      .channel('bulletin-live')
+      .channel("bulletin-live")
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'peer_bulletin' },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "peer_bulletin" },
         (payload) => {
           if (
-            payload.eventType === 'UPDATE' &&
+            payload.eventType === "UPDATE" &&
             payload.new &&
             (payload.new as any).promoted_to_proposal === true &&
             payload.old &&
             (payload.old as any).promoted_to_proposal === false
           ) {
-            const content = (payload.new as any).content ?? '';
+            const content = (payload.new as any).content ?? "";
             const stockMatch = content.match(/\$([A-Z]{1,5})/);
-            const instrument = stockMatch?.[1] ?? 'Trade';
-            addToast(`New Proposal Available — ${instrument}`, 'success', 'View in Strategium', 'trade-alert', 'top-right');
+            const instrument = stockMatch?.[1] ?? "Trade";
+            addToast(
+              `New Proposal Available — ${instrument}`,
+              "success",
+              "View in Strategium",
+              "trade-alert",
+              "top-right",
+            );
           }
           void fetchPosts();
         },
@@ -118,7 +129,7 @@ export function BulletinFeed() {
     setSubmitting(true);
     try {
       const contentParts = images?.length
-        ? images.map((img) => ({ type: 'image' as const, data: img }))
+        ? images.map((img) => ({ type: "image" as const, data: img }))
         : undefined;
       await backend.bulletin.createPost({
         content: msg.trim(),
@@ -127,7 +138,7 @@ export function BulletinFeed() {
       });
       await fetchPosts();
     } catch (err) {
-      console.error('[BulletinFeed] Failed to create post:', err);
+      console.error("[BulletinFeed] Failed to create post:", err);
     } finally {
       setSubmitting(false);
     }
@@ -139,7 +150,7 @@ export function BulletinFeed() {
       setUserVotes((prev) => ({ ...prev, [bulletinId]: voteType }));
       await fetchPosts();
     } catch (err) {
-      console.error('[BulletinFeed] Vote failed:', err);
+      console.error("[BulletinFeed] Vote failed:", err);
     }
   };
 
@@ -153,7 +164,7 @@ export function BulletinFeed() {
       const result = await backend.bulletin.getPostReplies(parentId);
       setThreadReplies((prev) => ({ ...prev, [parentId]: result.replies }));
     } catch (err) {
-      console.error('[BulletinFeed] Failed to load replies:', err);
+      console.error("[BulletinFeed] Failed to load replies:", err);
     }
   };
 
@@ -162,7 +173,7 @@ export function BulletinFeed() {
       await backend.bulletin.deletePost(postId);
       await fetchPosts();
     } catch (err) {
-      console.error('[BulletinFeed] Delete failed:', err);
+      console.error("[BulletinFeed] Delete failed:", err);
     }
   };
 
@@ -173,12 +184,12 @@ export function BulletinFeed() {
         content: replyContent.trim(),
         parentId,
       });
-      setReplyContent('');
+      setReplyContent("");
       const result = await backend.bulletin.getPostReplies(parentId);
       setThreadReplies((prev) => ({ ...prev, [parentId]: result.replies }));
       await fetchPosts();
     } catch (err) {
-      console.error('[BulletinFeed] Reply failed:', err);
+      console.error("[BulletinFeed] Reply failed:", err);
     }
   };
 
@@ -186,7 +197,9 @@ export function BulletinFeed() {
     <div className="relative flex h-full flex-col">
       {/* Header bar */}
       <div className="flex items-center gap-3 px-4 py-2">
-        <span className="text-xs font-semibold text-[var(--fintheon-text)]">Forum</span>
+        <span className="text-xs font-semibold text-[var(--fintheon-text)]">
+          Forum
+        </span>
         {desks.length > 0 && (
           <div className="relative">
             <select
@@ -196,10 +209,15 @@ export function BulletinFeed() {
             >
               <option value="">All Desks</option>
               {desks.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
               ))}
             </select>
-            <ChevronDown size={10} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--fintheon-text)]/30" />
+            <ChevronDown
+              size={10}
+              className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--fintheon-text)]/30"
+            />
           </div>
         )}
         <div className="flex-1" />
@@ -216,7 +234,9 @@ export function BulletinFeed() {
           </div>
         ) : posts.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6">
-            <span className="text-sm text-[var(--fintheon-accent)]/40">No messages yet</span>
+            <span className="text-sm text-[var(--fintheon-accent)]/40">
+              No messages yet
+            </span>
             <span className="text-center text-xs text-[var(--fintheon-text)]/20">
               Be the first to share a trade idea.
             </span>
@@ -242,8 +262,11 @@ export function BulletinFeed() {
                 {expandedThread === post.id && (
                   <div className="ml-12 mr-4 mt-1 mb-2 rounded-lg border-l-2 border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/30 pl-4 py-2">
                     {(threadReplies[post.id] ?? []).map((reply, rIdx) => {
-                      const prevReply = rIdx > 0 ? threadReplies[post.id][rIdx - 1] : null;
-                      const isReplyGrouped = prevReply ? shouldGroup(prevReply, reply) : false;
+                      const prevReply =
+                        rIdx > 0 ? threadReplies[post.id][rIdx - 1] : null;
+                      const isReplyGrouped = prevReply
+                        ? shouldGroup(prevReply, reply)
+                        : false;
                       return (
                         <BulletinPost
                           key={reply.id}
@@ -263,7 +286,7 @@ export function BulletinFeed() {
                         placeholder="Reply to thread..."
                         className="flex-1 rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] px-3 py-1.5 text-xs text-[var(--fintheon-text)] placeholder-[var(--fintheon-text)]/20 outline-none transition-colors focus:border-[var(--fintheon-accent)]/40"
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') void submitReply(post.id);
+                          if (e.key === "Enter") void submitReply(post.id);
                         }}
                       />
                       <button

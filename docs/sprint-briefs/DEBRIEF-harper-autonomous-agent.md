@@ -1,4 +1,5 @@
 # Debrief: Harper Autonomous Agent
+
 **Date:** 2026-04-04
 **Session:** ~3 hours, deep-dive → architecture → implementation → activation
 **Agent:** Claude Code (Opus 4.6)
@@ -19,31 +20,31 @@ Harper runs as a **Claude Code CLI subprocess** (`claude --print --output-format
 
 **Files created:**
 
-| File | What it does |
-|------|-------------|
-| `backend-hono/src/services/harper-autonomous/HARPER-SOUL.md` | The mega-prompt. Identity, 14 Commandments, Chief profile, hardwired hooks, TradingView MCP tools, Consilium role. ~5K tokens static. |
-| `backend-hono/src/services/harper-autonomous/loop-manager.ts` | Core loop supervisor. Priority queue, crash recovery (3 failures → degraded mode), task execution via CLI spawn. |
-| `backend-hono/src/services/harper-autonomous/heartbeat.ts` | Cron scheduler. 5min during market hours (6AM-7PM ET weekdays), 15min off-hours, 30min weekends. Every 3rd heartbeat runs narrative synthesis, every 6th runs scoring QA. |
-| `backend-hono/src/services/harper-autonomous/context-builder.ts` | Builds the full prompt per turn: soul file + last 20 journal entries + codebase manifest + git diff + RiskFlow headlines + task payload. |
-| `backend-hono/src/services/harper-autonomous/journal-store.ts` | Supabase CRUD for `harper_journal`. Harper's persistent memory across sessions. FTS search, tag filtering, in-memory fallback. |
-| `backend-hono/src/services/harper-autonomous/ops-store.ts` | Supabase CRUD for `harper_ops_feed`. Action log visible in the Harper Ops panel. Approval system (pending/approved/denied). |
-| `backend-hono/src/services/harper-autonomous/index.ts` | Barrel export + `bootHarperAutonomous()` init function. Registers VIX spike trigger callback. Gated by `HARPER_AUTONOMOUS_ENABLED=true`. |
-| `backend-hono/src/services/harper-autonomous/CODEBASE-ANNOTATIONS.json` | 50-file manifest with purpose annotations. Injected into Harper's context so she knows what every key file does. |
-| `backend-hono/src/routes/harper-ops/index.ts` | 6 API endpoints: feed, status, journal, journal search, trigger, approve/deny. |
-| `backend-hono/migrations/20260404_harper_journal.sql` | Migration for both `harper_journal` and `harper_ops_feed` tables with indexes (type, created_at, tags GIN, FTS). |
-| `frontend/components/harper-ops/HarperOpsPanel.tsx` | Footer panel UI. Status bar (alive/offline, last heartbeat, queue depth), quick actions (trigger heartbeat, scoring QA, narrative), chronological feed with severity colors, approve/deny cards. |
-| `frontend/hooks/useHarperOps.ts` | Polling hook (10s). Fetches feed + status. Exports triggerHeartbeat, triggerTask, approve, deny, markSeen, unreadCount. |
+| File                                                                    | What it does                                                                                                                                                                                     |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `backend-hono/src/services/harper-autonomous/HARPER-SOUL.md`            | The mega-prompt. Identity, 14 Commandments, Chief profile, hardwired hooks, TradingView MCP tools, Consilium role. ~5K tokens static.                                                            |
+| `backend-hono/src/services/harper-autonomous/loop-manager.ts`           | Core loop supervisor. Priority queue, crash recovery (3 failures → degraded mode), task execution via CLI spawn.                                                                                 |
+| `backend-hono/src/services/harper-autonomous/heartbeat.ts`              | Cron scheduler. 5min during market hours (6AM-7PM ET weekdays), 15min off-hours, 30min weekends. Every 3rd heartbeat runs narrative synthesis, every 6th runs scoring QA.                        |
+| `backend-hono/src/services/harper-autonomous/context-builder.ts`        | Builds the full prompt per turn: soul file + last 20 journal entries + codebase manifest + git diff + RiskFlow headlines + task payload.                                                         |
+| `backend-hono/src/services/harper-autonomous/journal-store.ts`          | Supabase CRUD for `harper_journal`. Harper's persistent memory across sessions. FTS search, tag filtering, in-memory fallback.                                                                   |
+| `backend-hono/src/services/harper-autonomous/ops-store.ts`              | Supabase CRUD for `harper_ops_feed`. Action log visible in the Harper Ops panel. Approval system (pending/approved/denied).                                                                      |
+| `backend-hono/src/services/harper-autonomous/index.ts`                  | Barrel export + `bootHarperAutonomous()` init function. Registers VIX spike trigger callback. Gated by `HARPER_AUTONOMOUS_ENABLED=true`.                                                         |
+| `backend-hono/src/services/harper-autonomous/CODEBASE-ANNOTATIONS.json` | 50-file manifest with purpose annotations. Injected into Harper's context so she knows what every key file does.                                                                                 |
+| `backend-hono/src/routes/harper-ops/index.ts`                           | 6 API endpoints: feed, status, journal, journal search, trigger, approve/deny.                                                                                                                   |
+| `backend-hono/migrations/20260404_harper_journal.sql`                   | Migration for both `harper_journal` and `harper_ops_feed` tables with indexes (type, created_at, tags GIN, FTS).                                                                                 |
+| `frontend/components/harper-ops/HarperOpsPanel.tsx`                     | Footer panel UI. Status bar (alive/offline, last heartbeat, queue depth), quick actions (trigger heartbeat, scoring QA, narrative), chronological feed with severity colors, approve/deny cards. |
+| `frontend/hooks/useHarperOps.ts`                                        | Polling hook (10s). Fetches feed + status. Exports triggerHeartbeat, triggerTask, approve, deny, markSeen, unreadCount.                                                                          |
 
 **Files modified:**
 
-| File | What changed |
-|------|-------------|
-| `backend-hono/src/routes/index.ts` | Registered `/api/harper-ops` route |
-| `backend-hono/src/boot/services.ts` | Added `bootHarperAutonomous()` to startup sequence |
-| `backend-hono/src/services/riskflow/central-scorer.ts` | Level 4 items now trigger `enqueueTask({ type: 'level4-item' })` on Harper's loop |
-| `backend-hono/src/services/boardroom-store.ts` | Added `notifyHarperObserver()` hook — detects @Harper mentions in boardroom, enqueues consilium-intervention task |
-| `frontend/components/layout/FooterToolbar.tsx` | Added Harper Ops tab + Bot icon in footer toolbar strip |
-| `src/lib/changelog.ts` | Added changelog entry for this session |
+| File                                                   | What changed                                                                                                      |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `backend-hono/src/routes/index.ts`                     | Registered `/api/harper-ops` route                                                                                |
+| `backend-hono/src/boot/services.ts`                    | Added `bootHarperAutonomous()` to startup sequence                                                                |
+| `backend-hono/src/services/riskflow/central-scorer.ts` | Level 4 items now trigger `enqueueTask({ type: 'level4-item' })` on Harper's loop                                 |
+| `backend-hono/src/services/boardroom-store.ts`         | Added `notifyHarperObserver()` hook — detects @Harper mentions in boardroom, enqueues consilium-intervention task |
+| `frontend/components/layout/FooterToolbar.tsx`         | Added Harper Ops tab + Bot icon in footer toolbar strip                                                           |
+| `src/lib/changelog.ts`                                 | Added changelog entry for this session                                                                            |
 
 ### The Soul File — Harper's Cognitive Architecture
 
@@ -52,11 +53,11 @@ The soul file (`HARPER-SOUL.md`) is not just a system prompt — it's Harper's e
 - **Chief Profile** — TP's name, timezone, habits, blackout days, trading universe. Merged from `~/.hermes/memories/USER.md` and `MEMORY.md`.
 - **14 Commandments** — Full text with HARD BLOCK annotations (3, 7, 12, 14). Rules 8 & 12 override all else.
 - **Hardwired Hooks** — 14 behavioral triggers organized into 5 categories:
-  - *PreAnalysis*: context-check, regime-awareness, commandment-scan
-  - *PostAnalysis*: journal-write, ops-feed-write, self-critique
-  - *Event-driven*: level4-response, vix-spike-response, pipeline-stall-response, brief-review, consilium-observer
-  - *Heartbeat*: health check, narrative synthesis (15min), scoring QA (30min)
-  - *Productive thinking*: anti-hallucination, scope-discipline, learning-loop
+  - _PreAnalysis_: context-check, regime-awareness, commandment-scan
+  - _PostAnalysis_: journal-write, ops-feed-write, self-critique
+  - _Event-driven_: level4-response, vix-spike-response, pipeline-stall-response, brief-review, consilium-observer
+  - _Heartbeat_: health check, narrative synthesis (15min), scoring QA (30min)
+  - _Productive thinking_: anti-hallucination, scope-discipline, learning-loop
 - **TradingView MCP** — Full tool inventory (78 tools). Autonomous reads (chart state, Pine output, OHLCV, screenshots), auto-draw on proposals, Pine dev autonomy, Tech Flow Watchlist screener for ADB, 7-day path projection.
 - **Approval Tiers** — Maintenance tier (auto-execute: health checks, restarts, TV reads/draws, journal writes). Code tier (recommend only: file edits, git ops, config changes).
 - **Consilium Role** — Observer + escalator. Passive monitoring, breaks ties, synthesizes on request.
@@ -71,6 +72,7 @@ Two new Supabase tables (migration applied and live):
 ## What's Live Right Now
 
 As of 8:49 PM ET on 2026-04-04:
+
 - **Loop state**: `alive: true`, `state: running`
 - **Queue**: Processing Level 4 items (Trump/Iran/Powell headlines — POI boosted)
 - **VIX**: 23.9 (elevated regime — triggered regime_change event on boot)
@@ -92,18 +94,18 @@ A follow-up brief has been written at `docs/sprint-briefs/TASK-harper-consilium-
 
 ## Decisions Made (Locked In)
 
-| Decision | Answer | Rationale |
-|----------|--------|-----------|
-| Execution model | Claude Code CLI subprocess | $0 cost via Max subscription, full tool access, crash isolation |
-| Approval model | Maintenance auto-approve, code = recommend + wait | Prompt-level constraint in soul file, not code-level gate |
-| Communication | Triple: Ops panel + chat thread + toast | Footer icon next to Team |
-| Codebase awareness | Hybrid manifest + git diff | Static `CODEBASE-ANNOTATIONS.json` + `git diff --stat HEAD~5` per turn |
-| Memory | `harper_journal` Supabase table | Persistent inner monologue, injected as context per turn |
-| Analysis duties | All 4: Scoring QA, Narrative synthesis, Brief review, Regime commentary | Every heartbeat cycle covers at least one |
-| Heartbeat | 5min market hours, event-driven triggers | Level 4 items, VIX spikes, pipeline stalls |
-| TV MCP | Full autonomy: reads, draws, Pine dev, screener, path projection | All 78 tools available via `.mcp.json` |
-| Consilium role | Observer + escalator | Passive monitoring, breaks ties, synthesizes on request |
-| Chief profile source | `~/.hermes/memories/USER.md` + `MEMORY.md` | Merged into soul file |
+| Decision             | Answer                                                                  | Rationale                                                              |
+| -------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Execution model      | Claude Code CLI subprocess                                              | $0 cost via Max subscription, full tool access, crash isolation        |
+| Approval model       | Maintenance auto-approve, code = recommend + wait                       | Prompt-level constraint in soul file, not code-level gate              |
+| Communication        | Triple: Ops panel + chat thread + toast                                 | Footer icon next to Team                                               |
+| Codebase awareness   | Hybrid manifest + git diff                                              | Static `CODEBASE-ANNOTATIONS.json` + `git diff --stat HEAD~5` per turn |
+| Memory               | `harper_journal` Supabase table                                         | Persistent inner monologue, injected as context per turn               |
+| Analysis duties      | All 4: Scoring QA, Narrative synthesis, Brief review, Regime commentary | Every heartbeat cycle covers at least one                              |
+| Heartbeat            | 5min market hours, event-driven triggers                                | Level 4 items, VIX spikes, pipeline stalls                             |
+| TV MCP               | Full autonomy: reads, draws, Pine dev, screener, path projection        | All 78 tools available via `.mcp.json`                                 |
+| Consilium role       | Observer + escalator                                                    | Passive monitoring, breaks ties, synthesizes on request                |
+| Chief profile source | `~/.hermes/memories/USER.md` + `MEMORY.md`                              | Merged into soul file                                                  |
 
 ## Known Risks / Watch Items
 
@@ -157,4 +159,4 @@ Next Brief:     docs/sprint-briefs/TASK-harper-consilium-realtime.md
 
 ---
 
-*Harper is the first truly autonomous agent persona in Fintheon. She watches, she learns, she remembers. The battle is won through watching the things that occur off the chart.*
+_Harper is the first truly autonomous agent persona in Fintheon. She watches, she learns, she remembers. The battle is won through watching the things that occur off the chart._

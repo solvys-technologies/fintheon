@@ -1,5 +1,5 @@
 // [claude-code 2026-03-09] Feature flags hook for skill permissions
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from "react";
 
 interface FeatureFlag {
   enabled: boolean;
@@ -8,7 +8,7 @@ interface FeatureFlag {
 
 type FeatureFlags = Record<string, FeatureFlag>;
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 let cachedFlags: FeatureFlags | null = null;
 
@@ -39,7 +39,9 @@ export function useFeatureFlags() {
     const result: Record<string, { reason: string }> = {};
     for (const [id, flag] of Object.entries(flags)) {
       if (!flag.enabled) {
-        result[id] = { reason: flag.reason || 'This skill is currently disabled.' };
+        result[id] = {
+          reason: flag.reason || "This skill is currently disabled.",
+        };
       }
     }
     return result;

@@ -1,14 +1,17 @@
 # Task Brief: NarrativeFlow Layout Overhaul
+
 **Date:** 2026-04-03
 **Scope:** Convert territory nodes from squares to circles, improve zoom granularity, make expanded cards scrollable, add loading sequence, and implement real save/restore of positions.
 **Estimated files:** 4
 
 ## Context
+
 NarrativeMap renders 1082 catalysts across 10 narrative threads. The zoomed-out "narratives" view uses square territory nodes that are hard to read. The user wants circles instead, more granular zoom transitions, scrollable expanded card lists, a visible loading sequence when the force simulation runs, and persistent layout save that actually survives reloads.
 
 Currently: positions save to localStorage per-node on drag (works), but the initial force layout reruns every mount and scatters cards randomly. The territory squares are styled inline in TerritoryNode.tsx. Zoom has only 2 levels (narratives at <0.35, themes at >=0.35).
 
 ## Files to Read First
+
 - `frontend/components/narrative/NarrativeForceCanvas.tsx` — Main canvas, force simulation, position persistence, view switching (759 lines)
 - `frontend/components/narrative/TerritoryNode.tsx` — Zoomed-out territory shapes (currently square, 80 lines)
 - `frontend/components/narrative/AggregateCardNode.tsx` — Card groups with expand/collapse (305 lines)
@@ -18,6 +21,7 @@ Currently: positions save to localStorage per-node on drag (works), but the init
 ## What to Build/Change
 
 ### 1. TerritoryNode — Circles, Not Squares
+
 - **Path:** `frontend/components/narrative/TerritoryNode.tsx`
 - **Action:** Modify
 - **Spec:**
@@ -30,6 +34,7 @@ Currently: positions save to localStorage per-node on drag (works), but the init
 - **Max lines:** 100
 
 ### 2. TERRITORY_LAYOUT — Square Dimensions to Circle Radii
+
 - **Path:** `frontend/lib/narrative-territory-layout.ts`
 - **Action:** Modify
 - **Spec:**
@@ -43,6 +48,7 @@ Currently: positions save to localStorage per-node on drag (works), but the init
 - **Max lines:** 100
 
 ### 3. NarrativeForceCanvas — Loading Sequence + Save Button
+
 - **Path:** `frontend/components/narrative/NarrativeForceCanvas.tsx`
 - **Action:** Modify
 - **Spec:**
@@ -54,6 +60,7 @@ Currently: positions save to localStorage per-node on drag (works), but the init
 - **Max lines:** 300 (it's already 759 — focus changes on the simulation boot, save logic, and macro view only. Don't restructure the entire file.)
 
 ### 4. AggregateCardNode — Scrollable Expanded Cards
+
 - **Path:** `frontend/components/narrative/AggregateCardNode.tsx`
 - **Action:** Modify
 - **Spec:**
@@ -63,6 +70,7 @@ Currently: positions save to localStorage per-node on drag (works), but the init
 - **Max lines:** 300
 
 ## Key Rules
+
 - Territory LAYOUT type change (`w,h` → `r`) will break NarrativeForceCanvas `buildNarrativeView` which reads `territory.w` and `territory.h`. Update those references.
 - The `buildSimData` function uses `HUB_POSITIONS` for initial card scatter — this shouldn't need changes since hubs are still `{ x, y }`.
 - Don't touch NarrativeHubNode.tsx unless the theme view breaks from layout changes.
@@ -70,12 +78,14 @@ Currently: positions save to localStorage per-node on drag (works), but the init
 - Preserve the `onNodeDragStop` → `saveNodePosition` flow for per-node persistence.
 
 ## DO NOT
+
 - Restructure the entire NarrativeForceCanvas file — it's 759 lines and has working logic. Surgical changes only.
 - Touch NarrativeMap.tsx, NarrativeContext.tsx, or the NarrativeFloatingToolbar
 - Add new dependencies — everything needed is already in the project (ReactFlow, d3-force)
 - Break the existing theme view (hubs + cards) — it must still work at high zoom
 
 ## Verification
+
 ```bash
 npx vite build
 # Open app → Consilium → Sanctum → NarrativeMap
@@ -87,6 +97,7 @@ npx vite build
 ```
 
 ## Changelog Entry
+
 ```typescript
 {
   date: '2026-04-04T00:00:00',
@@ -102,7 +113,9 @@ npx vite build
 ```
 
 ## Post-Push Memory Update
+
 After committing and pushing, log any bugs or broken patterns you discovered to memory so future agents don't repeat them:
+
 1. Write to `/Users/tifos/.claude/projects/-Users-tifos-Documents-Codebases-fintheon/memory/feedback_<slug>.md`
 2. Add pointer to `MEMORY.md` under "Feedback & Process"
 3. Skip if no bugs were found.

@@ -1,5 +1,5 @@
 // [claude-code 2026-03-16] T4: KPI card with mini pie chart for journal dashboard
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 interface PieData {
   value: number;
@@ -62,14 +62,22 @@ function MiniPie({ value, max, color }: PieData & { color: string }) {
   );
 }
 
-export function KPICard({ label, value, subtitle, pieData, accentColor }: KPICardProps) {
-  const color = accentColor || 'var(--fintheon-text)';
+export function KPICard({
+  label,
+  value,
+  subtitle,
+  pieData,
+  accentColor,
+}: KPICardProps) {
+  const color = accentColor || "var(--fintheon-text)";
 
   return (
     <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 rounded-lg p-3 flex items-center justify-between gap-2 min-w-0">
       {/* Left: text */}
       <div className="min-w-0 flex-1">
-        <div className="text-[10px] text-[var(--fintheon-muted)] truncate">{label}</div>
+        <div className="text-[10px] text-[var(--fintheon-muted)] truncate">
+          {label}
+        </div>
         <div
           className="text-lg font-bold font-mono mt-0.5 truncate"
           style={{ color }}
@@ -77,7 +85,9 @@ export function KPICard({ label, value, subtitle, pieData, accentColor }: KPICar
           {value}
         </div>
         {subtitle && (
-          <div className="text-[9px] text-[var(--fintheon-muted)] truncate mt-0.5">{subtitle}</div>
+          <div className="text-[9px] text-[var(--fintheon-muted)] truncate mt-0.5">
+            {subtitle}
+          </div>
         )}
       </div>
 

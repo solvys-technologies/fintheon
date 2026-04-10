@@ -1,13 +1,30 @@
 // [claude-code 2026-03-28] S8-T3: Added constellation ropes between related commandments
-import { useState, useRef, useEffect } from 'react';
-import { Lock, AlertTriangle, Info, ChevronDown, ChevronRight } from 'lucide-react';
-import { COMMANDMENTS } from './commandments-data';
-import type { Commandment, CommandmentBlockLevel } from './types';
+import { useState, useRef, useEffect } from "react";
+import {
+  Lock,
+  AlertTriangle,
+  Info,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import { COMMANDMENTS } from "./commandments-data";
+import type { Commandment, CommandmentBlockLevel } from "./types";
 
-const BLOCK_ICON: Record<CommandmentBlockLevel, { icon: typeof Lock; color: string; label: string }> = {
-  hard: { icon: Lock, color: 'text-red-400', label: 'HARD' },
-  soft: { icon: AlertTriangle, color: 'text-[var(--fintheon-accent)]/60', label: 'SOFT' },
-  guidance: { icon: Info, color: 'text-[var(--fintheon-text)]/30', label: 'GUIDE' },
+const BLOCK_ICON: Record<
+  CommandmentBlockLevel,
+  { icon: typeof Lock; color: string; label: string }
+> = {
+  hard: { icon: Lock, color: "text-red-400", label: "HARD" },
+  soft: {
+    icon: AlertTriangle,
+    color: "text-[var(--fintheon-accent)]/60",
+    label: "SOFT",
+  },
+  guidance: {
+    icon: Info,
+    color: "text-[var(--fintheon-text)]/30",
+    label: "GUIDE",
+  },
 };
 
 function CommandmentItem({ cmd }: { cmd: Commandment }) {
@@ -18,11 +35,11 @@ function CommandmentItem({ cmd }: { cmd: Commandment }) {
   return (
     <div
       className={`rounded transition-colors ${
-        expanded ? 'bg-[var(--fintheon-accent)]/5' : ''
+        expanded ? "bg-[var(--fintheon-accent)]/5" : ""
       }`}
     >
       <button
-        onClick={() => setExpanded(prev => !prev)}
+        onClick={() => setExpanded((prev) => !prev)}
         className="w-full flex items-start gap-1.5 text-left py-1 px-1 rounded hover:bg-[var(--fintheon-accent)]/5"
       >
         <span className="text-[11px] font-bold text-[var(--fintheon-accent)]/50 shrink-0 w-5 text-right font-mono mt-px">
@@ -32,10 +49,17 @@ function CommandmentItem({ cmd }: { cmd: Commandment }) {
         <span className="text-[12px] text-[var(--fintheon-text)]/70 leading-relaxed font-mono flex-1">
           {cmd.text}
         </span>
-        {expanded
-          ? <ChevronDown size={8} className="text-[var(--fintheon-accent)]/30 shrink-0 mt-[3px]" />
-          : <ChevronRight size={8} className="text-[var(--fintheon-accent)]/20 shrink-0 mt-[3px]" />
-        }
+        {expanded ? (
+          <ChevronDown
+            size={8}
+            className="text-[var(--fintheon-accent)]/30 shrink-0 mt-[3px]"
+          />
+        ) : (
+          <ChevronRight
+            size={8}
+            className="text-[var(--fintheon-accent)]/20 shrink-0 mt-[3px]"
+          />
+        )}
       </button>
 
       {expanded && (
@@ -57,17 +81,22 @@ function CommandmentItem({ cmd }: { cmd: Commandment }) {
           )}
 
           <div className="flex flex-wrap gap-1">
-            <span className={`text-[8px] font-mono px-1 py-0.5 rounded border ${
-              cmd.blockLevel === 'hard'
-                ? 'border-red-500/30 text-red-400 bg-red-500/5'
-                : cmd.blockLevel === 'soft'
-                  ? 'border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]/50'
-                  : 'border-[var(--fintheon-text)]/10 text-[var(--fintheon-text)]/30'
-            }`}>
+            <span
+              className={`text-[8px] font-mono px-1 py-0.5 rounded border ${
+                cmd.blockLevel === "hard"
+                  ? "border-red-500/30 text-red-400 bg-red-500/5"
+                  : cmd.blockLevel === "soft"
+                    ? "border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]/50"
+                    : "border-[var(--fintheon-text)]/10 text-[var(--fintheon-text)]/30"
+              }`}
+            >
               {block.label} BLOCK
             </span>
-            {cmd.relatedCommandments.map(n => (
-              <span key={n} className="text-[8px] font-mono px-1 py-0.5 rounded border border-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]/30">
+            {cmd.relatedCommandments.map((n) => (
+              <span
+                key={n}
+                className="text-[8px] font-mono px-1 py-0.5 rounded border border-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]/30"
+              >
                 C{n}
               </span>
             ))}
@@ -77,8 +106,12 @@ function CommandmentItem({ cmd }: { cmd: Commandment }) {
             <div className="space-y-0.5 pt-0.5">
               {Object.entries(cmd.agentUsage).map(([agent, usage]) => (
                 <div key={agent} className="flex gap-1">
-                  <span className="text-[9px] text-[var(--fintheon-accent)]/40 font-mono shrink-0">{agent}:</span>
-                  <span className="text-[9px] text-[var(--fintheon-text)]/35">{usage}</span>
+                  <span className="text-[9px] text-[var(--fintheon-accent)]/40 font-mono shrink-0">
+                    {agent}:
+                  </span>
+                  <span className="text-[9px] text-[var(--fintheon-text)]/35">
+                    {usage}
+                  </span>
                 </div>
               ))}
             </div>
@@ -90,8 +123,14 @@ function CommandmentItem({ cmd }: { cmd: Commandment }) {
 }
 
 // ─── Constellation Ropes — SVG connections between related commandments ─────
-function ConstellationRopes({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) {
-  const [lines, setLines] = useState<{ x1: number; y1: number; x2: number; y2: number; key: string }[]>([]);
+function ConstellationRopes({
+  containerRef,
+}: {
+  containerRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const [lines, setLines] = useState<
+    { x1: number; y1: number; x2: number; y2: number; key: string }[]
+  >([]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -103,8 +142,13 @@ function ConstellationRopes({ containerRef }: { containerRef: React.RefObject<HT
       const seen = new Set<string>();
       for (const cmd of COMMANDMENTS) {
         for (const rel of cmd.relatedCommandments) {
-          const k = [Math.min(cmd.number, rel), Math.max(cmd.number, rel)].join('-');
-          if (!seen.has(k)) { seen.add(k); pairs.push({ from: cmd.number, to: rel }); }
+          const k = [Math.min(cmd.number, rel), Math.max(cmd.number, rel)].join(
+            "-",
+          );
+          if (!seen.has(k)) {
+            seen.add(k);
+            pairs.push({ from: cmd.number, to: rel });
+          }
         }
       }
 
@@ -133,7 +177,10 @@ function ConstellationRopes({ containerRef }: { containerRef: React.RefObject<HT
   if (lines.length === 0) return null;
 
   return (
-    <svg className="absolute inset-0 pointer-events-none overflow-visible" style={{ zIndex: 1 }}>
+    <svg
+      className="absolute inset-0 pointer-events-none overflow-visible"
+      style={{ zIndex: 1 }}
+    >
       {lines.map((l, i) => {
         const mx = l.x1 + (l.x2 - l.x1) * 0.5 + 12;
         const my = l.y1 + (l.y2 - l.y1) * 0.5;
@@ -155,7 +202,7 @@ function ConstellationRopes({ containerRef }: { containerRef: React.RefObject<HT
 }
 
 export function CommandmentsSidebar() {
-  const hardCount = COMMANDMENTS.filter(c => c.blockLevel === 'hard').length;
+  const hardCount = COMMANDMENTS.filter((c) => c.blockLevel === "hard").length;
   const listRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -172,9 +219,12 @@ export function CommandmentsSidebar() {
             {hardCount} hard
           </span>
         </div>
-        <div ref={listRef} className="relative border border-[var(--fintheon-accent)]/20 rounded-md bg-[var(--fintheon-surface)] p-2 space-y-0.5">
+        <div
+          ref={listRef}
+          className="relative border border-[var(--fintheon-accent)]/20 rounded-md bg-[var(--fintheon-surface)] p-2 space-y-0.5"
+        >
           <ConstellationRopes containerRef={listRef} />
-          {COMMANDMENTS.map(cmd => (
+          {COMMANDMENTS.map((cmd) => (
             <div key={cmd.number} data-cmd={cmd.number}>
               <CommandmentItem cmd={cmd} />
             </div>

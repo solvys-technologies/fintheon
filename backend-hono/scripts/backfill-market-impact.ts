@@ -1,13 +1,13 @@
 // [claude-code 2026-03-28] One-time backfill script for market impact data
 // Usage: cd backend-hono && npx tsx scripts/backfill-market-impact.ts
 
-import 'dotenv/config';
-import { runMarketImpactEnrichment } from '../src/services/cron/market-impact-enricher.js';
+import "dotenv/config";
+import { runMarketImpactEnrichment } from "../src/services/cron/market-impact-enricher.js";
 
 const BATCH_DELAY_MS = 2000;
 
 async function main() {
-  console.log('[Backfill] Starting market impact backfill...');
+  console.log("[Backfill] Starting market impact backfill...");
 
   let totalProcessed = 0;
   let totalEnriched = 0;
@@ -24,12 +24,12 @@ async function main() {
     totalErrors += result.errors;
 
     console.log(
-      `[Backfill] Batch ${batch}: ${result.enriched}/${result.processed} enriched, ${result.errors} errors`
+      `[Backfill] Batch ${batch}: ${result.enriched}/${result.processed} enriched, ${result.errors} errors`,
     );
 
     // If no items were processed, we're done
     if (result.processed === 0) {
-      console.log('[Backfill] No more items to process.');
+      console.log("[Backfill] No more items to process.");
       break;
     }
 
@@ -38,12 +38,12 @@ async function main() {
   }
 
   console.log(
-    `[Backfill] Complete: ${totalEnriched}/${totalProcessed} enriched across ${batch} batches, ${totalErrors} errors`
+    `[Backfill] Complete: ${totalEnriched}/${totalProcessed} enriched across ${batch} batches, ${totalErrors} errors`,
   );
   process.exit(0);
 }
 
 main().catch((err) => {
-  console.error('[Backfill] Fatal error:', err);
+  console.error("[Backfill] Fatal error:", err);
   process.exit(1);
 });

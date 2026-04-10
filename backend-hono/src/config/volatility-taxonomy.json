@@ -6,11 +6,23 @@
       "velocity": 5,
       "persistence": "weeks",
       "breadth": 5,
-      "transmissionChannels": ["rates", "credit", "fx", "commodities", "equities", "vol"],
+      "transmissionChannels": [
+        "rates",
+        "credit",
+        "fx",
+        "commodities",
+        "equities",
+        "vol"
+      ],
       "reflexivity": 1.0,
       "baseWeight": 10,
       "decayBaseMinutes": 2880,
-      "decayRegimeMultipliers": { "low": 1.0, "normal": 1.5, "elevated": 3.0, "crisis": 6.0 },
+      "decayRegimeMultipliers": {
+        "low": 1.0,
+        "normal": 1.5,
+        "elevated": 3.0,
+        "crisis": 6.0
+      },
       "description": "Unprecedented event — all markets, all channels, maximum reflexivity"
     },
     "datacenterHalt": {
@@ -21,7 +33,12 @@
       "reflexivity": 0.6,
       "baseWeight": 10,
       "decayBaseMinutes": 480,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.5, "crisis": 2.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.5,
+        "crisis": 2.0
+      },
       "description": "Exchange/datacenter outage — immediate but typically recovers"
     },
     "governmentShutdown": {
@@ -32,18 +49,35 @@
       "reflexivity": 0.4,
       "baseWeight": 10,
       "decayBaseMinutes": 1440,
-      "decayRegimeMultipliers": { "low": 0.7, "normal": 1.0, "elevated": 2.0, "crisis": 3.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.7,
+        "normal": 1.0,
+        "elevated": 2.0,
+        "crisis": 3.0
+      },
       "description": "Government shutdown — slow burn, affects rates and credit"
     },
     "majorCrisis": {
       "velocity": 5,
       "persistence": "weeks",
       "breadth": 5,
-      "transmissionChannels": ["rates", "credit", "fx", "commodities", "equities", "vol"],
+      "transmissionChannels": [
+        "rates",
+        "credit",
+        "fx",
+        "commodities",
+        "equities",
+        "vol"
+      ],
       "reflexivity": 0.9,
       "baseWeight": 10,
       "decayBaseMinutes": 2880,
-      "decayRegimeMultipliers": { "low": 1.0, "normal": 2.0, "elevated": 3.0, "crisis": 5.0 },
+      "decayRegimeMultipliers": {
+        "low": 1.0,
+        "normal": 2.0,
+        "elevated": 3.0,
+        "crisis": 5.0
+      },
       "description": "Major systemic crisis — full contagion potential"
     },
     "fedDecision": {
@@ -54,10 +88,20 @@
       "reflexivity": 0.3,
       "baseWeight": 8,
       "decayBaseMinutes": 120,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.3, "crisis": 1.8 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.3,
+        "crisis": 1.8
+      },
       "instrumentOverrides": {
-        "/ZB": 1.8, "/ZN": 1.6, "/6E": 1.3, "/6J": 1.2,
-        "/ES": 1.0, "/NQ": 1.1, "/GC": 0.8
+        "/ZB": 1.8,
+        "/ZN": 1.6,
+        "/6E": 1.3,
+        "/6J": 1.2,
+        "/ES": 1.0,
+        "/NQ": 1.1,
+        "/GC": 0.8
       },
       "description": "Fed rate decision — instant, all markets, bond/FX heavy"
     },
@@ -69,9 +113,18 @@
       "reflexivity": 0.3,
       "baseWeight": 8,
       "decayBaseMinutes": 120,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.3, "crisis": 1.8 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.3,
+        "crisis": 1.8
+      },
       "instrumentOverrides": {
-        "/ZB": 1.8, "/ZN": 1.6, "/6E": 1.3, "/ES": 1.0, "/NQ": 1.1
+        "/ZB": 1.8,
+        "/ZN": 1.6,
+        "/6E": 1.3,
+        "/ES": 1.0,
+        "/NQ": 1.1
       },
       "description": "FOMC statement/minutes — same profile as fedDecision"
     },
@@ -83,9 +136,18 @@
       "reflexivity": 0.2,
       "baseWeight": 8,
       "decayBaseMinutes": 120,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.3, "crisis": 1.8 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.3,
+        "crisis": 1.8
+      },
       "instrumentOverrides": {
-        "/ZB": 1.6, "/ZN": 1.4, "/6E": 1.2, "/ES": 1.0, "/NQ": 1.0
+        "/ZB": 1.6,
+        "/ZN": 1.4,
+        "/6E": 1.2,
+        "/ES": 1.0,
+        "/NQ": 1.0
       },
       "description": "Powell speech/presser — high velocity but less persistent than decision"
     },
@@ -97,10 +159,19 @@
       "reflexivity": 0.5,
       "baseWeight": 8,
       "decayBaseMinutes": 480,
-      "decayRegimeMultipliers": { "low": 0.7, "normal": 1.0, "elevated": 1.5, "crisis": 2.5 },
+      "decayRegimeMultipliers": {
+        "low": 0.7,
+        "normal": 1.0,
+        "elevated": 1.5,
+        "crisis": 2.5
+      },
       "instrumentOverrides": {
-        "/CL": 1.6, "/NG": 1.4, "/GC": 1.5, "/6E": 1.2,
-        "/ES": 1.0, "/NQ": 0.9
+        "/CL": 1.6,
+        "/NG": 1.4,
+        "/GC": 1.5,
+        "/6E": 1.2,
+        "/ES": 1.0,
+        "/NQ": 0.9
       },
       "description": "Geopolitical event — commodities and safe havens first"
     },
@@ -112,10 +183,20 @@
       "reflexivity": 0.5,
       "baseWeight": 8,
       "decayBaseMinutes": 480,
-      "decayRegimeMultipliers": { "low": 0.7, "normal": 1.0, "elevated": 1.5, "crisis": 2.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.7,
+        "normal": 1.0,
+        "elevated": 1.5,
+        "crisis": 2.0
+      },
       "instrumentOverrides": {
-        "/CL": 1.4, "/6E": 1.3, "/6J": 1.1, "/6B": 1.2,
-        "/ES": 1.0, "/NQ": 0.9, "/RTY": 1.2
+        "/CL": 1.4,
+        "/6E": 1.3,
+        "/6J": 1.1,
+        "/6B": 1.2,
+        "/ES": 1.0,
+        "/NQ": 0.9,
+        "/RTY": 1.2
       },
       "description": "Tariff announcement — FX and commodity heavy, small caps exposed"
     },
@@ -127,10 +208,20 @@
       "reflexivity": 0.5,
       "baseWeight": 8,
       "decayBaseMinutes": 480,
-      "decayRegimeMultipliers": { "low": 0.7, "normal": 1.0, "elevated": 1.5, "crisis": 2.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.7,
+        "normal": 1.0,
+        "elevated": 1.5,
+        "crisis": 2.0
+      },
       "instrumentOverrides": {
-        "/6E": 1.2, "/6J": 1.3, "/CL": 1.3, "/GC": 1.2,
-        "/NQ": 1.1, "/ES": 1.0, "/RTY": 1.3
+        "/6E": 1.2,
+        "/6J": 1.3,
+        "/CL": 1.3,
+        "/GC": 1.2,
+        "/NQ": 1.1,
+        "/ES": 1.0,
+        "/RTY": 1.3
       },
       "description": "China trade tensions — EM FX, commodities, tech supply chain"
     },
@@ -142,10 +233,19 @@
       "reflexivity": 0.6,
       "baseWeight": 8,
       "decayBaseMinutes": 480,
-      "decayRegimeMultipliers": { "low": 0.7, "normal": 1.0, "elevated": 2.0, "crisis": 3.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.7,
+        "normal": 1.0,
+        "elevated": 2.0,
+        "crisis": 3.0
+      },
       "instrumentOverrides": {
-        "/CL": 1.8, "/NG": 1.5, "/GC": 1.6, "/SI": 1.2,
-        "/ES": 1.0, "/NQ": 0.9
+        "/CL": 1.8,
+        "/NG": 1.5,
+        "/GC": 1.6,
+        "/SI": 1.2,
+        "/ES": 1.0,
+        "/NQ": 0.9
       },
       "description": "Armed conflict — energy and safe havens spike"
     },
@@ -157,10 +257,19 @@
       "reflexivity": 0.2,
       "baseWeight": 7,
       "decayBaseMinutes": 120,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.3, "crisis": 1.5 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.3,
+        "crisis": 1.5
+      },
       "instrumentOverrides": {
-        "/ZB": 1.5, "/ZN": 1.4, "/GC": 1.3, "/6E": 1.2,
-        "/ES": 1.0, "/NQ": 1.1
+        "/ZB": 1.5,
+        "/ZN": 1.4,
+        "/GC": 1.3,
+        "/6E": 1.2,
+        "/ES": 1.0,
+        "/NQ": 1.1
       },
       "description": "CPI print — rates-first, but all markets react"
     },
@@ -172,9 +281,18 @@
       "reflexivity": 0.2,
       "baseWeight": 7,
       "decayBaseMinutes": 120,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.3, "crisis": 1.5 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.3,
+        "crisis": 1.5
+      },
       "instrumentOverrides": {
-        "/ZB": 1.4, "/ZN": 1.3, "/6E": 1.1, "/ES": 1.0, "/NQ": 1.0
+        "/ZB": 1.4,
+        "/ZN": 1.3,
+        "/6E": 1.1,
+        "/ES": 1.0,
+        "/NQ": 1.0
       },
       "description": "PCE print — Fed's preferred inflation gauge"
     },
@@ -186,9 +304,18 @@
       "reflexivity": 0.3,
       "baseWeight": 7,
       "decayBaseMinutes": 120,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.3, "crisis": 1.5 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.3,
+        "crisis": 1.5
+      },
       "instrumentOverrides": {
-        "/ZB": 1.4, "/ZN": 1.3, "/6E": 1.2, "/ES": 1.0, "/NQ": 1.0
+        "/ZB": 1.4,
+        "/ZN": 1.3,
+        "/6E": 1.2,
+        "/ES": 1.0,
+        "/NQ": 1.0
       },
       "description": "Non-Farm Payrolls — labor market health, rate path implications"
     },
@@ -200,7 +327,12 @@
       "reflexivity": 0.1,
       "baseWeight": 7,
       "decayBaseMinutes": 90,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.2, "crisis": 1.3 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.2,
+        "crisis": 1.3
+      },
       "description": "JOLTS — labor market tightness, secondary to NFP"
     },
     "earningsHighImpact": {
@@ -211,9 +343,17 @@
       "reflexivity": 0.3,
       "baseWeight": 7,
       "decayBaseMinutes": 60,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.2, "crisis": 1.5 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.2,
+        "crisis": 1.5
+      },
       "instrumentOverrides": {
-        "/NQ": 1.5, "/MNQ": 1.5, "/ES": 1.0, "/RTY": 0.8
+        "/NQ": 1.5,
+        "/MNQ": 1.5,
+        "/ES": 1.0,
+        "/RTY": 0.8
       },
       "description": "Mag7 earnings — tech-heavy, NQ moves 1.5x"
     },
@@ -225,7 +365,12 @@
       "reflexivity": 0.1,
       "baseWeight": 6,
       "decayBaseMinutes": 90,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.2, "crisis": 1.5 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.2,
+        "crisis": 1.5
+      },
       "description": "GDP print — broad economic health"
     },
     "ismPrint": {
@@ -236,7 +381,12 @@
       "reflexivity": 0.1,
       "baseWeight": 6,
       "decayBaseMinutes": 60,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.2, "crisis": 1.3 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.2,
+        "crisis": 1.3
+      },
       "description": "ISM Manufacturing/Services — economic activity gauge"
     },
     "politicalCommentary": {
@@ -247,7 +397,12 @@
       "reflexivity": 0.4,
       "baseWeight": 6,
       "decayBaseMinutes": 90,
-      "decayRegimeMultipliers": { "low": 0.6, "normal": 1.0, "elevated": 1.5, "crisis": 2.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.6,
+        "normal": 1.0,
+        "elevated": 1.5,
+        "crisis": 2.0
+      },
       "description": "Trump/Lutnick/Bessent commentary — Volfefe risk, reflexive"
     },
     "earningsMidCap": {
@@ -258,7 +413,12 @@
       "reflexivity": 0.1,
       "baseWeight": 5,
       "decayBaseMinutes": 60,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.1, "crisis": 1.2 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.1,
+        "crisis": 1.2
+      },
       "description": "Mid-cap earnings — sector-specific, limited spillover"
     },
     "retailSales": {
@@ -269,7 +429,12 @@
       "reflexivity": 0.1,
       "baseWeight": 5,
       "decayBaseMinutes": 60,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.1, "crisis": 1.3 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.1,
+        "crisis": 1.3
+      },
       "description": "Retail sales data — consumer spending health"
     },
     "sectorNews": {
@@ -280,7 +445,12 @@
       "reflexivity": 0.1,
       "baseWeight": 3,
       "decayBaseMinutes": 30,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.1, "crisis": 1.2 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.1,
+        "crisis": 1.2
+      },
       "description": "Sector-specific news — limited breadth"
     },
     "merger": {
@@ -291,7 +461,12 @@
       "reflexivity": 0.1,
       "baseWeight": 3,
       "decayBaseMinutes": 30,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.0, "crisis": 1.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.0,
+        "crisis": 1.0
+      },
       "description": "M&A activity — single-name focused"
     },
     "other": {
@@ -302,7 +477,12 @@
       "reflexivity": 0.0,
       "baseWeight": 3,
       "decayBaseMinutes": 30,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.0, "crisis": 1.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.0,
+        "crisis": 1.0
+      },
       "description": "Uncategorized event"
     },
     "default": {
@@ -313,7 +493,12 @@
       "reflexivity": 0.0,
       "baseWeight": 3,
       "decayBaseMinutes": 30,
-      "decayRegimeMultipliers": { "low": 0.8, "normal": 1.0, "elevated": 1.0, "crisis": 1.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.8,
+        "normal": 1.0,
+        "elevated": 1.0,
+        "crisis": 1.0
+      },
       "description": "Default fallback"
     },
     "creditSpreadWidening": {
@@ -324,9 +509,18 @@
       "reflexivity": 0.8,
       "baseWeight": 8,
       "decayBaseMinutes": 1440,
-      "decayRegimeMultipliers": { "low": 0.5, "normal": 1.0, "elevated": 2.0, "crisis": 4.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.5,
+        "normal": 1.0,
+        "elevated": 2.0,
+        "crisis": 4.0
+      },
       "instrumentOverrides": {
-        "/ZB": 1.5, "/ZN": 1.3, "/ES": 1.2, "/NQ": 1.1, "/RTY": 1.4,
+        "/ZB": 1.5,
+        "/ZN": 1.3,
+        "/ES": 1.2,
+        "/NQ": 1.1,
+        "/RTY": 1.4,
         "/GC": 1.3
       },
       "description": "Credit spreads widening — slow burn, high reflexivity, broad contagion"
@@ -339,9 +533,18 @@
       "reflexivity": 0.3,
       "baseWeight": 7,
       "decayBaseMinutes": 1440,
-      "decayRegimeMultipliers": { "low": 0.5, "normal": 1.0, "elevated": 1.5, "crisis": 2.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.5,
+        "normal": 1.0,
+        "elevated": 1.5,
+        "crisis": 2.0
+      },
       "instrumentOverrides": {
-        "/ZB": 1.8, "/ZN": 1.6, "/ES": 1.0, "/NQ": 1.0, "/RTY": 1.3
+        "/ZB": 1.8,
+        "/ZN": 1.6,
+        "/ES": 1.0,
+        "/NQ": 1.0,
+        "/RTY": 1.3
       },
       "description": "Yield curve inversion/steepening — recession signal, slow to manifest"
     },
@@ -353,7 +556,12 @@
       "reflexivity": 0.9,
       "baseWeight": 9,
       "decayBaseMinutes": 720,
-      "decayRegimeMultipliers": { "low": 0.5, "normal": 1.0, "elevated": 2.5, "crisis": 5.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.5,
+        "normal": 1.0,
+        "elevated": 2.5,
+        "crisis": 5.0
+      },
       "description": "Liquidity/funding stress — fast, reflexive, total contagion potential"
     },
     "bankStress": {
@@ -364,9 +572,18 @@
       "reflexivity": 0.85,
       "baseWeight": 9,
       "decayBaseMinutes": 1440,
-      "decayRegimeMultipliers": { "low": 0.5, "normal": 1.0, "elevated": 2.5, "crisis": 5.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.5,
+        "normal": 1.0,
+        "elevated": 2.5,
+        "crisis": 5.0
+      },
       "instrumentOverrides": {
-        "/ES": 1.3, "/RTY": 1.5, "/NQ": 1.0, "/ZB": 1.4, "/GC": 1.3
+        "/ES": 1.3,
+        "/RTY": 1.5,
+        "/NQ": 1.0,
+        "/ZB": 1.4,
+        "/GC": 1.3
       },
       "description": "Banking sector stress — high reflexivity, run risk, broad contagion"
     },
@@ -378,7 +595,12 @@
       "reflexivity": 0.7,
       "baseWeight": 6,
       "decayBaseMinutes": 4320,
-      "decayRegimeMultipliers": { "low": 0.3, "normal": 1.0, "elevated": 2.0, "crisis": 4.0 },
+      "decayRegimeMultipliers": {
+        "low": 0.3,
+        "normal": 1.0,
+        "elevated": 2.0,
+        "crisis": 4.0
+      },
       "description": "Leverage/margin debt warnings — slowest burn, highest reflexivity risk when unwinding"
     }
   }

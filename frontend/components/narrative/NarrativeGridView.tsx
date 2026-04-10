@@ -1,6 +1,6 @@
 // [claude-code 2026-03-27] S4-T2: 2D grid layout — time columns (X) x risk category rows (Y)
-import { useRef, useMemo, useEffect, useCallback, useState } from 'react';
-import { useNarrative } from '../../contexts/NarrativeContext';
+import { useRef, useMemo, useEffect, useCallback, useState } from "react";
+import { useNarrative } from "../../contexts/NarrativeContext";
 import {
   RISK_LANES,
   RISK_LANE_LABELS,
@@ -9,23 +9,29 @@ import {
   LANE_ROW_GAP,
   getGridColumns,
   getColumnKeyForDate,
-} from '../../lib/narrative-grid-layout';
-import { aggregateCards } from '../../lib/narrative-aggregator';
-import { computeRopeConnections } from '../../lib/narrative-rope-engine';
-import { handleDrillDeeper, handleHighlightBranch } from '../../lib/narrative-ai-wiring';
-import NarrativeLaneRow from './NarrativeLaneRow';
-import NarrativeLaneHeader from './NarrativeLaneHeader';
-import { NarrativeConnectionOverlay } from './NarrativeConnectionOverlay';
-import NarrativeRopes from './NarrativeRopes';
-import { useHighlight } from './NarrativeHighlightProvider';
-import type { NarrativeCategory } from '../../lib/narrative-types';
+} from "../../lib/narrative-grid-layout";
+import { aggregateCards } from "../../lib/narrative-aggregator";
+import { computeRopeConnections } from "../../lib/narrative-rope-engine";
+import {
+  handleDrillDeeper,
+  handleHighlightBranch,
+} from "../../lib/narrative-ai-wiring";
+import NarrativeLaneRow from "./NarrativeLaneRow";
+import NarrativeLaneHeader from "./NarrativeLaneHeader";
+import { NarrativeConnectionOverlay } from "./NarrativeConnectionOverlay";
+import NarrativeRopes from "./NarrativeRopes";
+import { useHighlight } from "./NarrativeHighlightProvider";
+import type { NarrativeCategory } from "../../lib/narrative-types";
 
 interface NarrativeGridViewProps {
   visibleLaneIds: Set<string>;
   activeTags: Set<string>;
 }
 
-export default function NarrativeGridView({ visibleLaneIds, activeTags }: NarrativeGridViewProps) {
+export default function NarrativeGridView({
+  visibleLaneIds,
+  activeTags,
+}: NarrativeGridViewProps) {
   const { state, dispatch, catalystsForLane, activeLanes } = useNarrative();
   const { highlightMode } = useHighlight();
 
@@ -35,13 +41,19 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
   const gridContainerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const anchorDate = useMemo(() => new Date(state.currentWeekStart), [state.currentWeekStart]);
-  const columns = useMemo(() => getGridColumns(state.zoomLevel, anchorDate), [state.zoomLevel, anchorDate]);
+  const anchorDate = useMemo(
+    () => new Date(state.currentWeekStart),
+    [state.currentWeekStart],
+  );
+  const columns = useMemo(
+    () => getGridColumns(state.zoomLevel, anchorDate),
+    [state.zoomLevel, anchorDate],
+  );
 
   // Always show all risk category rows — filter by lane visibility if lanes exist
   const visibleLanes = useMemo(() => {
-    return RISK_LANES.filter(cat => {
-      const lane = activeLanes.find(l => l.category === cat);
+    return RISK_LANES.filter((cat) => {
+      const lane = activeLanes.find((l) => l.category === cat);
       // Show the row if: no lanes exist at all, OR the matching lane is visible
       if (activeLanes.length === 0) return true;
       return !lane || visibleLaneIds.has(lane.id);
@@ -50,28 +62,32 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
 
   // Map category -> lane for header rendering
   const laneByCategory = useMemo(() => {
-    const map = new Map<NarrativeCategory, typeof activeLanes[number]>();
+    const map = new Map<NarrativeCategory, (typeof activeLanes)[number]>();
     for (const l of activeLanes) map.set(l.category, l);
     return map;
   }, [activeLanes]);
 
   // Filter catalysts by active tags (if any)
-  const filterByTags = useCallback((catalysts: typeof state.catalysts) => {
-    if (activeTags.size === 0) return catalysts;
-    return catalysts.filter(c =>
-      c.tags && c.tags.some(t => activeTags.has(t)),
-    );
-  }, [activeTags]);
+  const filterByTags = useCallback(
+    (catalysts: typeof state.catalysts) => {
+      if (activeTags.size === 0) return catalysts;
+      return catalysts.filter(
+        (c) => c.tags && c.tags.some((t) => activeTags.has(t)),
+      );
+    },
+    [activeTags],
+  );
 
   // Total grid width for the scrollable area
-  const gridWidth = useMemo(() =>
-    columns.reduce((sum, col) => sum + col.width, 0),
-  [columns]);
+  const gridWidth = useMemo(
+    () => columns.reduce((sum, col) => sum + col.width, 0),
+    [columns],
+  );
 
   // Find column index for today to scroll to
   const todayColIdx = useMemo(() => {
     const todayKey = new Date().toISOString().slice(0, 10);
-    const idx = columns.findIndex(col => {
+    const idx = columns.findIndex((col) => {
       const d = new Date();
       return d >= col.startDate && d <= col.endDate;
     });
@@ -81,18 +97,34 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
   // Center current day/week on mount
   useEffect(() => {
     if (!scrollRef.current || columns.length === 0) return;
-    const scrollTarget = columns.slice(0, todayColIdx).reduce((sum, c) => sum + c.width, 0);
+    const scrollTarget = columns
+      .slice(0, todayColIdx)
+      .reduce((sum, c) => sum + c.width, 0);
     const containerWidth = scrollRef.current.clientWidth;
-    scrollRef.current.scrollLeft = Math.max(0, scrollTarget - containerWidth / 2 + columns[todayColIdx].width / 2);
+    scrollRef.current.scrollLeft = Math.max(
+      0,
+      scrollTarget - containerWidth / 2 + columns[todayColIdx].width / 2,
+    );
   }, [columns, todayColIdx]);
 
-  const handleSelectCard = useCallback((id: string) => {
-    dispatch({ type: 'UPDATE_CATALYST', id, updates: {} }); // triggers selection in context
-  }, [dispatch]);
+  const handleSelectCard = useCallback(
+    (id: string) => {
+      dispatch({ type: "UPDATE_CATALYST", id, updates: {} }); // triggers selection in context
+    },
+    [dispatch],
+  );
 
-  const handleDragCard = useCallback((cardId: string, targetDate: string) => {
-    dispatch({ type: 'MOVE_CATALYST', id: cardId, date: targetDate, position: null });
-  }, [dispatch]);
+  const handleDragCard = useCallback(
+    (cardId: string, targetDate: string) => {
+      dispatch({
+        type: "MOVE_CATALYST",
+        id: cardId,
+        date: targetDate,
+        position: null,
+      });
+    },
+    [dispatch],
+  );
 
   const handleSelectLane = useCallback((id: string) => {
     // no-op for now, lane selection via context
@@ -105,7 +137,12 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
   const scale = SCALE_STEPS[scaleIdx];
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
-  const panStartRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
+  const panStartRef = useRef<{
+    x: number;
+    y: number;
+    scrollLeft: number;
+    scrollTop: number;
+  } | null>(null);
   const zoomTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Text visibility based on zoom scale
@@ -116,22 +153,29 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
   // Spacebar hold = pan mode (grab cursor + drag)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !e.repeat && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+      if (
+        e.code === "Space" &&
+        !e.repeat &&
+        !(
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement
+        )
+      ) {
         e.preventDefault();
         setSpaceHeld(true);
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
+      if (e.code === "Space") {
         e.preventDefault();
         setSpaceHeld(false);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
     };
   }, []);
 
@@ -144,17 +188,20 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
       e.preventDefault();
       if (zoomTimeoutRef.current) return;
 
-      setScaleIdx(prev => {
-        const next = e.deltaY > 0
-          ? Math.min(prev + 1, SCALE_STEPS.length - 1)  // zoom out
-          : Math.max(prev - 1, 0);                       // zoom in
+      setScaleIdx((prev) => {
+        const next =
+          e.deltaY > 0
+            ? Math.min(prev + 1, SCALE_STEPS.length - 1) // zoom out
+            : Math.max(prev - 1, 0); // zoom in
         return next;
       });
-      zoomTimeoutRef.current = setTimeout(() => { zoomTimeoutRef.current = null; }, 200);
+      zoomTimeoutRef.current = setTimeout(() => {
+        zoomTimeoutRef.current = null;
+      }, 200);
     };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
   }, []);
 
   // Click-drag pan (spacebar held or middle mouse)
@@ -172,7 +219,7 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
           scrollLeft: scroller.scrollLeft,
           scrollTop: scroller.scrollTop,
         };
-        scroller.style.cursor = 'grabbing';
+        scroller.style.cursor = "grabbing";
         scroller.setPointerCapture(e.pointerId);
       }
     };
@@ -189,30 +236,36 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
       if (panStartRef.current) {
         panStartRef.current = null;
         setIsPanning(false);
-        scroller.style.cursor = '';
+        scroller.style.cursor = "";
         scroller.releasePointerCapture(e.pointerId);
       }
     };
 
-    scroller.addEventListener('pointerdown', handlePointerDown);
-    scroller.addEventListener('pointermove', handlePointerMove);
-    scroller.addEventListener('pointerup', handlePointerUp);
+    scroller.addEventListener("pointerdown", handlePointerDown);
+    scroller.addEventListener("pointermove", handlePointerMove);
+    scroller.addEventListener("pointerup", handlePointerUp);
     return () => {
-      scroller.removeEventListener('pointerdown', handlePointerDown);
-      scroller.removeEventListener('pointermove', handlePointerMove);
-      scroller.removeEventListener('pointerup', handlePointerUp);
+      scroller.removeEventListener("pointerdown", handlePointerDown);
+      scroller.removeEventListener("pointermove", handlePointerMove);
+      scroller.removeEventListener("pointerup", handlePointerUp);
     };
   }, [spaceHeld]);
 
-  const onDrillDeeper = useCallback((cardId: string, query: string) => {
-    const card = state.catalysts.find(c => c.id === cardId);
-    if (card) handleDrillDeeper(cardId, query, card, dispatch);
-  }, [state.catalysts, dispatch]);
+  const onDrillDeeper = useCallback(
+    (cardId: string, query: string) => {
+      const card = state.catalysts.find((c) => c.id === cardId);
+      if (card) handleDrillDeeper(cardId, query, card, dispatch);
+    },
+    [state.catalysts, dispatch],
+  );
 
-  const onHighlightBranch = useCallback((cardId: string, highlightedText: string) => {
-    const card = state.catalysts.find(c => c.id === cardId);
-    if (card) handleHighlightBranch(card, highlightedText, dispatch);
-  }, [state.catalysts, dispatch]);
+  const onHighlightBranch = useCallback(
+    (cardId: string, highlightedText: string) => {
+      const card = state.catalysts.find((c) => c.id === cardId);
+      if (card) handleHighlightBranch(card, highlightedText, dispatch);
+    },
+    [state.catalysts, dispatch],
+  );
 
   // ── Rope connections (tag-based) ──
   const ropeConnections = useMemo(
@@ -222,7 +275,10 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
 
   // Card positions for rope rendering (populated by NarrativeLaneRow card refs)
   const cardPositions = useMemo(() => {
-    const map = new Map<string, { x: number; y: number; width: number; height: number }>();
+    const map = new Map<
+      string,
+      { x: number; y: number; width: number; height: number }
+    >();
     for (const [id, el] of Object.entries(cardRefsMap.current)) {
       if (el) {
         const rect = el.getBoundingClientRect();
@@ -243,23 +299,45 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
 
   return (
-    <div ref={gridContainerRef} className="h-full flex flex-col overflow-hidden" style={{ cursor: spaceHeld ? 'grab' : undefined }}>
+    <div
+      ref={gridContainerRef}
+      className="h-full flex flex-col overflow-hidden"
+      style={{ cursor: spaceHeld ? "grab" : undefined }}
+    >
       {/* Column headers */}
-      <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid color-mix(in srgb, var(--fintheon-border) 20%, transparent)' }}>
+      <div
+        className="flex flex-shrink-0"
+        style={{
+          borderBottom:
+            "1px solid color-mix(in srgb, var(--fintheon-border) 20%, transparent)",
+        }}
+      >
         {/* Spacer for lane header column */}
-        <div style={{ width: `${LANE_HEADER_WIDTH}px`, minWidth: `${LANE_HEADER_WIDTH}px` }} className="flex-shrink-0" />
+        <div
+          style={{
+            width: `${LANE_HEADER_WIDTH}px`,
+            minWidth: `${LANE_HEADER_WIDTH}px`,
+          }}
+          className="flex-shrink-0"
+        />
 
         {/* Scrollable column headers */}
         <div className="flex-1 overflow-hidden">
-          <div className="flex" style={{ width: `${gridWidth}px` }} ref={(el) => {
-            // Sync header scroll with body scroll
-            if (!el || !scrollRef.current) return;
-            const body = scrollRef.current;
-            const syncScroll = () => { el.scrollLeft = body.scrollLeft; };
-            body.addEventListener('scroll', syncScroll);
-            return () => body.removeEventListener('scroll', syncScroll);
-          }}>
-            {columns.map(col => {
+          <div
+            className="flex"
+            style={{ width: `${gridWidth}px` }}
+            ref={(el) => {
+              // Sync header scroll with body scroll
+              if (!el || !scrollRef.current) return;
+              const body = scrollRef.current;
+              const syncScroll = () => {
+                el.scrollLeft = body.scrollLeft;
+              };
+              body.addEventListener("scroll", syncScroll);
+              return () => body.removeEventListener("scroll", syncScroll);
+            }}
+          >
+            {columns.map((col) => {
               const isToday = (() => {
                 const d = new Date();
                 return d >= col.startDate && d <= col.endDate;
@@ -270,16 +348,19 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
                   className="flex items-center justify-center py-1.5 flex-shrink-0"
                   style={{
                     width: `${col.width}px`,
-                    borderRight: '1px solid color-mix(in srgb, var(--fintheon-border) 10%, transparent)',
+                    borderRight:
+                      "1px solid color-mix(in srgb, var(--fintheon-border) 10%, transparent)",
                     backgroundColor: isToday
-                      ? 'color-mix(in srgb, var(--fintheon-accent) 5%, transparent)'
+                      ? "color-mix(in srgb, var(--fintheon-accent) 5%, transparent)"
                       : undefined,
                   }}
                 >
                   <span
                     className="text-[10px] font-mono"
                     style={{
-                      color: isToday ? 'var(--fintheon-accent)' : 'var(--fintheon-muted)',
+                      color: isToday
+                        ? "var(--fintheon-accent)"
+                        : "var(--fintheon-muted)",
                       fontWeight: isToday ? 600 : 400,
                     }}
                   >
@@ -299,7 +380,8 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
           className="flex-shrink-0 overflow-y-auto"
           style={{
             width: `${LANE_HEADER_WIDTH}px`,
-            borderRight: '1px solid color-mix(in srgb, var(--fintheon-border) 20%, transparent)',
+            borderRight:
+              "1px solid color-mix(in srgb, var(--fintheon-border) 20%, transparent)",
           }}
         >
           {visibleLanes.map((cat, idx) => {
@@ -311,9 +393,10 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
                 style={{
                   height: `${LANE_ROW_HEIGHT}px`,
                   marginBottom: `${LANE_ROW_GAP}px`,
-                  backgroundColor: idx % 2 === 0
-                    ? 'transparent'
-                    : 'color-mix(in srgb, var(--fintheon-surface) 40%, transparent)',
+                  backgroundColor:
+                    idx % 2 === 0
+                      ? "transparent"
+                      : "color-mix(in srgb, var(--fintheon-surface) 40%, transparent)",
                 }}
               >
                 {lane ? (
@@ -323,7 +406,10 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
                     onSelect={handleSelectLane}
                   />
                 ) : (
-                  <span className="text-[11px] font-medium" style={{ color: 'var(--fintheon-muted)' }}>
+                  <span
+                    className="text-[11px] font-medium"
+                    style={{ color: "var(--fintheon-muted)" }}
+                  >
                     {RISK_LANE_LABELS[cat]}
                   </span>
                 )}
@@ -333,17 +419,14 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
         </div>
 
         {/* Scrollable grid area with CSS transform zoom */}
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-auto"
-        >
+        <div ref={scrollRef} className="flex-1 overflow-auto">
           <div
             style={{
               width: `${gridWidth}px`,
               transform: `scale(${scale})`,
-              transformOrigin: '0 0',
-              transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              willChange: 'transform',
+              transformOrigin: "0 0",
+              transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              willChange: "transform",
             }}
           >
             {visibleLanes.map((cat, idx) => {
@@ -351,7 +434,7 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
 
               // Match catalysts by category field OR by lane membership
               const laneCatalysts = filterByTags(
-                state.catalysts.filter(c => {
+                state.catalysts.filter((c) => {
                   if (c.drillDepth !== 0) return false;
                   // Direct category match
                   if (c.category === cat) return true;
@@ -361,9 +444,10 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
                 }),
               );
 
-              const aggs = state.zoomLevel !== 'week'
-                ? aggregateCards(laneCatalysts, columns, cat, state.zoomLevel)
-                : undefined;
+              const aggs =
+                state.zoomLevel !== "week"
+                  ? aggregateCards(laneCatalysts, columns, cat, state.zoomLevel)
+                  : undefined;
 
               return (
                 <div key={cat} style={{ marginBottom: `${LANE_ROW_GAP}px` }}>
@@ -418,10 +502,14 @@ export default function NarrativeGridView({ visibleLaneIds, activeTags }: Narrat
           {Math.round(scale * 100)}%
         </span>
         {!showTitle && (
-          <span className="text-[8px] text-[var(--fintheon-muted)]/30 ml-1">dots only</span>
+          <span className="text-[8px] text-[var(--fintheon-muted)]/30 ml-1">
+            dots only
+          </span>
         )}
         {showTitle && !showDescription && (
-          <span className="text-[8px] text-[var(--fintheon-muted)]/30 ml-1">titles only</span>
+          <span className="text-[8px] text-[var(--fintheon-muted)]/30 ml-1">
+            titles only
+          </span>
         )}
       </div>
     </div>

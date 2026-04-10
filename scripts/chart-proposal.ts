@@ -1,50 +1,64 @@
 // [claude-code 2026-03-23] Browser Use Phase 2 — chart-proposal via browser-use CLI
-import { execFileSync } from 'child_process';
-import { isBlackoutPeriod } from './chart-blackout.js';
+import { execFileSync } from "child_process";
+import { isBlackoutPeriod } from "./chart-blackout.js";
 
 interface ChartProposalInput {
   ticker: string;
-  direction: 'long' | 'short';
+  direction: "long" | "short";
   entry: number;
   stopLoss: number;
   takeProfit: number;
 }
 
-const CDP_URL = 'http://localhost:9222';
+const CDP_URL = "http://localhost:9222";
 
 function runBrowserUse(args: string[]): string {
-  return execFileSync('browser-use', ['--cdp-url', CDP_URL, '--json', ...args], {
-    timeout: 30000,
-    encoding: 'utf-8',
-    env: { ...process.env },
-  });
+  return execFileSync(
+    "browser-use",
+    ["--cdp-url", CDP_URL, "--json", ...args],
+    {
+      timeout: 30000,
+      encoding: "utf-8",
+      env: { ...process.env },
+    },
+  );
 }
 
-function drawLevels(input: ChartProposalInput): { success: boolean; screenshotPath?: string; error?: string } {
+function drawLevels(input: ChartProposalInput): {
+  success: boolean;
+  screenshotPath?: string;
+  error?: string;
+} {
   // Get current page state
   let stateRaw: string;
   try {
-    stateRaw = runBrowserUse(['state']);
+    stateRaw = runBrowserUse(["state"]);
   } catch {
-    return { success: false, error: 'Failed to get browser state — is Fintheon running?' };
+    return {
+      success: false,
+      error: "Failed to get browser state — is Fintheon running?",
+    };
   }
 
   let state: { url?: string };
   try {
     state = JSON.parse(stateRaw);
   } catch {
-    state = { url: '' };
+    state = { url: "" };
   }
 
   // Check if we're on TopStep X — if not, navigate
-  const currentUrl = state.url || '';
-  if (!currentUrl.includes('topstepx.com')) {
+  const currentUrl = state.url || "";
+  if (!currentUrl.includes("topstepx.com")) {
     try {
-      runBrowserUse(['open', 'https://app.topstepx.com']);
+      runBrowserUse(["open", "https://app.topstepx.com"]);
       // Brief pause for page load
-      execFileSync('sleep', ['3']);
+      execFileSync("sleep", ["3"]);
     } catch (err: any) {
-      return { success: false, error: `Failed to navigate to TopStep X: ${err.message}` };
+      return {
+        success: false,
+        error: `Failed to navigate to TopStep X: ${err.message}`,
+      };
     }
   }
 
@@ -87,13 +101,13 @@ function drawLevels(input: ChartProposalInput): { success: boolean; screenshotPa
 
       return JSON.stringify({ ok: true });
     })()
-  `.replace(/\n/g, ' ');
+  `.replace(/\n/g, " ");
 
   try {
-    const evalResult = runBrowserUse(['eval', drawScript]);
+    const evalResult = runBrowserUse(["eval", drawScript]);
     const parsed = JSON.parse(evalResult);
     if (parsed.ok === false) {
-      return { success: false, error: parsed.error || 'Failed to draw levels' };
+      return { success: false, error: parsed.error || "Failed to draw levels" };
     }
   } catch (err: any) {
     return { success: false, error: `Eval failed: ${err.message}` };
@@ -103,12 +117,14 @@ function drawLevels(input: ChartProposalInput): { success: boolean; screenshotPa
   const timestamp = Date.now();
   const screenshotPath = `/tmp/proposal-chart-${input.ticker}-${timestamp}.png`;
   try {
-    runBrowserUse(['screenshot', screenshotPath]);
+    runBrowserUse(["screenshot", screenshotPath]);
   } catch {
     // Screenshot is non-critical — continue without it
   }
 
-  console.error(`[chart-proposal] Charted ${input.ticker} ${input.direction} — Entry: ${input.entry}, SL: ${input.stopLoss}, TP: ${input.takeProfit}`);
+  console.error(
+    `[chart-proposal] Charted ${input.ticker} ${input.direction} — Entry: ${input.entry}, SL: ${input.stopLoss}, TP: ${input.takeProfit}`,
+  );
   return { success: true, screenshotPath };
 }
 
@@ -116,14 +132,21 @@ function drawLevels(input: ChartProposalInput): { success: boolean; screenshotPa
 async function main() {
   const rawInput = process.argv[2];
   if (!rawInput) {
-    console.error('Usage: bun run scripts/chart-proposal.ts \'{"ticker":"MNQ","direction":"long","entry":19250,"stopLoss":19220,"takeProfit":19300}\'');
+    console.error(
+      'Usage: bun run scripts/chart-proposal.ts \'{"ticker":"MNQ","direction":"long","entry":19250,"stopLoss":19220,"takeProfit":19300}\'',
+    );
     process.exit(1);
   }
 
   const input = JSON.parse(rawInput) as ChartProposalInput;
 
   if (isBlackoutPeriod()) {
-    console.log(JSON.stringify({ success: false, error: 'Blackout period (8:30a-12p EST)' }));
+    console.log(
+      JSON.stringify({
+        success: false,
+        error: "Blackout period (8:30a-12p EST)",
+      }),
+    );
     process.exit(1);
   }
 

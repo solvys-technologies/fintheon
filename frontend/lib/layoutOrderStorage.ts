@@ -3,54 +3,75 @@
  * Sidebar and toolbar orders are independent; items cannot move between them.
  */
 
-const SIDEBAR_ORDER_KEY = 'fintheon:sidebar-nav-order';
-const TOOLBAR_ORDER_KEY = 'fintheon:toolbar-order';
-const MISSION_WIDGET_ORDER_KEY = 'fintheon:mission-widget-order:v4'; // v4: account above blindspots
-const MISSION_WIDGET_VISIBILITY_KEY = 'fintheon:mission-widget-visibility';
-const RIGHT_PANEL_ORDER_KEY = 'fintheon:right-panel-order';
+const SIDEBAR_ORDER_KEY = "fintheon:sidebar-nav-order";
+const TOOLBAR_ORDER_KEY = "fintheon:toolbar-order";
+const MISSION_WIDGET_ORDER_KEY = "fintheon:mission-widget-order:v4"; // v4: account above blindspots
+const MISSION_WIDGET_VISIBILITY_KEY = "fintheon:mission-widget-visibility";
+const RIGHT_PANEL_ORDER_KEY = "fintheon:right-panel-order";
 
-export type NavTabId = 'dashboard' | 'analysis' | 'riskflow' | 'feed' | 'econ' | 'narrative' | 'apparatus' | 'performance' | 'proposals' | 'settings';
+export type NavTabId =
+  | "dashboard"
+  | "analysis"
+  | "riskflow"
+  | "feed"
+  | "econ"
+  | "narrative"
+  | "apparatus"
+  | "performance"
+  | "proposals"
+  | "settings";
 
 export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
-  'dashboard',
-  'analysis',
-  'riskflow',
-  'econ',
-  'performance',
-  'settings',
+  "dashboard",
+  "analysis",
+  "riskflow",
+  "econ",
+  "performance",
+  "settings",
 ];
 
-export type ToolbarItemId = 'platform' | 'power' | 'layout' | 'chat' | 'voice' | 'heartbeat' | 'ivScore';
+export type ToolbarItemId =
+  | "platform"
+  | "power"
+  | "layout"
+  | "chat"
+  | "voice"
+  | "heartbeat"
+  | "ivScore";
 
 export const DEFAULT_TOOLBAR_ORDER: ToolbarItemId[] = [
-  'platform',
-  'power',
-  'layout',
-  'chat',
-  'voice',
-  'heartbeat',
-  'ivScore',
+  "platform",
+  "power",
+  "layout",
+  "chat",
+  "voice",
+  "heartbeat",
+  "ivScore",
 ];
 
-export type MissionWidgetId = 'er' | 'autopilot' | 'regime' | 'account' | 'blindspots' | 'calendar';
+export type MissionWidgetId =
+  | "er"
+  | "autopilot"
+  | "regime"
+  | "account"
+  | "blindspots"
+  | "calendar";
 
 export const DEFAULT_MISSION_WIDGET_ORDER: MissionWidgetId[] = [
-  'er',
-  'autopilot',
-  'regime',
-  'account',
-  'blindspots',
-  'calendar',
+  "er",
+  "autopilot",
+  "regime",
+  "account",
+  "blindspots",
+  "calendar",
 ];
 
 // 8e: Account above Blindspots — this is the canonical default order.
 // v4 localStorage key forces re-read so existing users pick up the swap.
 
-export type RightPanelId = 'mission';
+export type RightPanelId = "mission";
 
-export const DEFAULT_RIGHT_PANEL_ORDER: RightPanelId[] = [
-  'mission',
-];
+export const DEFAULT_RIGHT_PANEL_ORDER: RightPanelId[] = ["mission"];
 
 function loadOrder<T>(key: string, defaultOrder: T[]): T[] {
   try {
@@ -58,8 +79,12 @@ function loadOrder<T>(key: string, defaultOrder: T[]): T[] {
     if (!raw) return defaultOrder;
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return defaultOrder;
-    const ordered = parsed.filter((id: unknown) => defaultOrder.includes(id as T)) as T[];
-    const deduped = ordered.filter((id, index) => ordered.indexOf(id) === index);
+    const ordered = parsed.filter((id: unknown) =>
+      defaultOrder.includes(id as T),
+    ) as T[];
+    const deduped = ordered.filter(
+      (id, index) => ordered.indexOf(id) === index,
+    );
     const missing = defaultOrder.filter((id) => !deduped.includes(id));
     return [...deduped, ...missing];
   } catch {
@@ -101,7 +126,12 @@ export function setMissionWidgetOrder(order: MissionWidgetId[]): void {
 
 export function getMissionWidgetVisibility(): Record<MissionWidgetId, boolean> {
   const defaults: Record<MissionWidgetId, boolean> = {
-    er: true, autopilot: true, regime: true, account: true, blindspots: true, calendar: true,
+    er: true,
+    autopilot: true,
+    regime: true,
+    account: true,
+    blindspots: true,
+    calendar: true,
   };
   try {
     const raw = localStorage.getItem(MISSION_WIDGET_VISIBILITY_KEY);
@@ -113,7 +143,9 @@ export function getMissionWidgetVisibility(): Record<MissionWidgetId, boolean> {
   }
 }
 
-export function setMissionWidgetVisibility(vis: Record<MissionWidgetId, boolean>): void {
+export function setMissionWidgetVisibility(
+  vis: Record<MissionWidgetId, boolean>,
+): void {
   try {
     localStorage.setItem(MISSION_WIDGET_VISIBILITY_KEY, JSON.stringify(vis));
   } catch {

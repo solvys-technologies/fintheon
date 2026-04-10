@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const THINKING_PHRASES = [
-  'Surveying the arena...',
-  'Running risk models...',
-  'Reviewing the legion\'s positions...',
-  'Consulting the Consilium...',
-  'Analyzing macro data...',
-  'Checking volatility surface...',
-  'Evaluating sentiment...',
-  'Processing market signals...',
-  'Cross-referencing events...',
-  'Calculating exposure...',
-  'Mapping liquidity pockets...',
-  'Tracking implied vol drift...',
-  'Pricing catalyst risk...',
-  'Calibrating entry zones...',
-  'Stress-testing conviction...',
+  "Surveying the arena...",
+  "Running risk models...",
+  "Reviewing the legion's positions...",
+  "Consulting the Consilium...",
+  "Analyzing macro data...",
+  "Checking volatility surface...",
+  "Evaluating sentiment...",
+  "Processing market signals...",
+  "Cross-referencing events...",
+  "Calculating exposure...",
+  "Mapping liquidity pockets...",
+  "Tracking implied vol drift...",
+  "Pricing catalyst risk...",
+  "Calibrating entry zones...",
+  "Stress-testing conviction...",
 ];
 
 interface FintheonThinkingIndicatorProps {
@@ -25,7 +25,11 @@ interface FintheonThinkingIndicatorProps {
   agentName?: string;
 }
 
-export function FintheonThinkingIndicator({ isThinking, thinkingContent, agentName }: FintheonThinkingIndicatorProps) {
+export function FintheonThinkingIndicator({
+  isThinking,
+  thinkingContent,
+  agentName,
+}: FintheonThinkingIndicatorProps) {
   const [phrase, setPhrase] = useState(THINKING_PHRASES[0]);
   const [expanded, setExpanded] = useState(false);
 
@@ -54,8 +58,15 @@ export function FintheonThinkingIndicator({ isThinking, thinkingContent, agentNa
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-[12px] font-medium" style={{ color: 'var(--fintheon-accent)' }}>{phrase}</span>
-            {agentName && <span className="text-[10px] text-zinc-500">({agentName})</span>}
+            <span
+              className="text-[12px] font-medium"
+              style={{ color: "var(--fintheon-accent)" }}
+            >
+              {phrase}
+            </span>
+            {agentName && (
+              <span className="text-[10px] text-zinc-500">({agentName})</span>
+            )}
           </div>
 
           {thinkingContent && (
@@ -64,8 +75,12 @@ export function FintheonThinkingIndicator({ isThinking, thinkingContent, agentNa
                 onClick={() => setExpanded((v) => !v)}
                 className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
               >
-                {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                {expanded ? 'Hide thinking pane' : 'Show thinking pane'}
+                {expanded ? (
+                  <ChevronDown size={12} />
+                ) : (
+                  <ChevronRight size={12} />
+                )}
+                {expanded ? "Hide thinking pane" : "Show thinking pane"}
               </button>
               {expanded && (
                 <div className="mt-1.5 max-h-[180px] overflow-y-auto pl-2 text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap">

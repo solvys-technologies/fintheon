@@ -70,12 +70,18 @@ export function MDBReportModal({ onClose }: MDBReportModalProps) {
   }, []);
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm ${isClosing ? 'animate-fade-out-backdrop' : 'animate-fade-in-backdrop'}`}>
-      <div className={`bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.2)] w-full max-w-3xl max-h-[80vh] flex flex-col ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm ${isClosing ? "animate-fade-out-backdrop" : "animate-fade-in-backdrop"}`}
+    >
+      <div
+        className={`bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.2)] w-full max-w-3xl max-h-[80vh] flex flex-col ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-900">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold text-[var(--fintheon-accent)]">MDB Report</h2>
+            <h2 className="text-lg font-bold text-[var(--fintheon-accent)]">
+              MDB Report
+            </h2>
             <span className="text-xs text-zinc-500">Morning Daily Brief</span>
           </div>
           <button
@@ -91,11 +97,19 @@ export function MDBReportModal({ onClose }: MDBReportModalProps) {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               {/* Claude logo SVG */}
-              <svg className="w-12 h-12 text-[var(--fintheon-accent)] mb-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.7 9.7c-.4-.4-1-.4-1.4 0l-4.3 4.3-4.3-4.3c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4l5 5c.2.2.4.3.7.3.3 0 .5-.1.7-.3l5-5c.4-.4.4-1 0-1.4z"/>
+              <svg
+                className="w-12 h-12 text-[var(--fintheon-accent)] mb-4"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M17.7 9.7c-.4-.4-1-.4-1.4 0l-4.3 4.3-4.3-4.3c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4l5 5c.2.2.4.3.7.3.3 0 .5-.1.7-.3l5-5c.4-.4.4-1 0-1.4z" />
               </svg>
-              <p className="text-sm text-[var(--fintheon-accent)] font-medium mb-2">Claude is thinking</p>
-              <p className="text-sm text-zinc-500 italic animate-pulse">{thinkingText}</p>
+              <p className="text-sm text-[var(--fintheon-accent)] font-medium mb-2">
+                Claude is thinking
+              </p>
+              <p className="text-sm text-zinc-500 italic animate-pulse">
+                {thinkingText}
+              </p>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12">
@@ -112,7 +126,9 @@ export function MDBReportModal({ onClose }: MDBReportModalProps) {
           ) : (
             <div className="prose prose-invert prose-sm max-w-none">
               <div className="bg-[var(--fintheon-bg)] border border-zinc-900 rounded-lg p-4">
-                <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">{report}</p>
+                <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                  {report}
+                </p>
               </div>
             </div>
           )}

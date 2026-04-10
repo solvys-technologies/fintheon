@@ -1,11 +1,18 @@
 // [claude-code 2026-03-11] Track 7B: Upgraded ER context — VAD trigger, Whisper-on-demand (no browser Speech API), escalating interventions
-import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
-import { useBackend } from '../lib/backend';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+} from "react";
+import { useBackend } from "../lib/backend";
 
-export type ERState = 'steadfast' | 'poised' | 'tilted';
+export type ERState = "steadfast" | "poised" | "tilted";
 
 // Escalating intervention levels
-export type InterventionLevel = 'none' | 'visual' | 'voice' | 'lockout';
+export type InterventionLevel = "none" | "visual" | "voice" | "lockout";
 
 interface ERSnapshot {
   score: number;
@@ -71,7 +78,7 @@ const ERContext = createContext<ERContextValue | null>(null);
 export function useER() {
   const context = useContext(ERContext);
   if (!context) {
-    throw new Error('useER must be used within an ERProvider');
+    throw new Error("useER must be used within an ERProvider");
   }
   return context;
 }
@@ -93,10 +100,10 @@ const VAD_CHECK_INTERVAL_MS = 100; // how often to check audio levels
 const SENTIMENT_COOLDOWN_MS = 10_000; // don't send sentiment requests more than once per 10s
 
 function computeInterventionLevel(score: number): InterventionLevel {
-  if (score <= -5) return 'lockout';
-  if (score <= -3) return 'voice';
-  if (score <= -1) return 'visual';
-  return 'none';
+  if (score <= -5) return "lockout";
+  if (score <= -3) return "voice";
+  if (score <= -1) return "visual";
+  return "none";
 }
 
 export function ERProvider({ children }: ERProviderProps) {
@@ -107,14 +114,18 @@ export function ERProvider({ children }: ERProviderProps) {
   const [erScore, setErScore] = useState(0);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
-  const [overtradingStatus, setOvertradingStatus] = useState<OvertradingStatus | null>(null);
+  const [overtradingStatus, setOvertradingStatus] =
+    useState<OvertradingStatus | null>(null);
   const [recentInfraction, setRecentInfraction] = useState(false);
   const [lastInfractionAt, setLastInfractionAt] = useState<number | null>(null);
 
   // 7B: Intervention state
-  const [interventionLevel, setInterventionLevel] = useState<InterventionLevel>('none');
+  const [interventionLevel, setInterventionLevel] =
+    useState<InterventionLevel>("none");
   const [isLockedOut, setIsLockedOut] = useState(false);
-  const [lastSentiment, setLastSentiment] = useState<SentimentResult | null>(null);
+  const [lastSentiment, setLastSentiment] = useState<SentimentResult | null>(
+    null,
+  );
   const [vadActive, setVadActive] = useState(false);
 
   // Refs for non-reactive state
@@ -156,7 +167,8 @@ export function ERProvider({ children }: ERProviderProps) {
   const regressionTargetTimeRef = useRef<number | null>(null);
 
   // Computed state
-  const resonanceState: ERState = erScore > 0.5 ? 'steadfast' : erScore < -0.5 ? 'tilted' : 'poised';
+  const resonanceState: ERState =
+    erScore > 0.5 ? "steadfast" : erScore < -0.5 ? "tilted" : "poised";
 
   // Keep erScoreRef in sync
   useEffect(() => {
@@ -168,49 +180,57 @@ export function ERProvider({ children }: ERProviderProps) {
     const newLevel = computeInterventionLevel(erScore);
     setInterventionLevel(newLevel);
 
-    if (newLevel === 'lockout' && !isLockedOut) {
+    if (newLevel === "lockout" && !isLockedOut) {
       setIsLockedOut(true);
     }
   }, [erScore, isLockedOut]);
 
   // Voice intervention effect — trigger TTS when level reaches 'voice'
   useEffect(() => {
-    if (!isMonitoring || interventionLevel !== 'voice') return;
+    if (!isMonitoring || interventionLevel !== "voice") return;
 
     const now = Date.now();
-    if (now - lastVoiceInterventionRef.current < voiceInterventionCooldownMs) return;
+    if (now - lastVoiceInterventionRef.current < voiceInterventionCooldownMs)
+      return;
     lastVoiceInterventionRef.current = now;
 
     // Fire and forget — speak an intervention
-    backend.voice.speak({
-      text: `Your emotional resonance score has dropped to ${erScore.toFixed(1)}. I'm detecting signs of tilt. Take a breath. Step away from the screen for 60 seconds. Your edge is your discipline, not this next trade.`,
-      mode: 'infraction',
-      includeAudio: true,
-      agent: 'harper-cao',
-    }).then(res => {
-      if (res.audioBase64) {
-        try {
-          const audioBytes = Uint8Array.from(atob(res.audioBase64), c => c.charCodeAt(0));
-          const blob = new Blob([audioBytes], { type: res.audioMimeType || 'audio/mpeg' });
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audio.play().catch(() => {});
-          audio.onended = () => URL.revokeObjectURL(url);
-        } catch {
-          // Audio playback failed silently
+    backend.voice
+      .speak({
+        text: `Your emotional resonance score has dropped to ${erScore.toFixed(1)}. I'm detecting signs of tilt. Take a breath. Step away from the screen for 60 seconds. Your edge is your discipline, not this next trade.`,
+        mode: "infraction",
+        includeAudio: true,
+        agent: "harper-cao",
+      })
+      .then((res) => {
+        if (res.audioBase64) {
+          try {
+            const audioBytes = Uint8Array.from(atob(res.audioBase64), (c) =>
+              c.charCodeAt(0),
+            );
+            const blob = new Blob([audioBytes], {
+              type: res.audioMimeType || "audio/mpeg",
+            });
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.play().catch(() => {});
+            audio.onended = () => URL.revokeObjectURL(url);
+          } catch {
+            // Audio playback failed silently
+          }
         }
-      }
-    }).catch(err => {
-      console.debug('[ER] Voice intervention failed:', err);
-    });
+      })
+      .catch((err) => {
+        console.debug("[ER] Voice intervention failed:", err);
+      });
   }, [interventionLevel, isMonitoring, erScore, backend]);
 
   // Load persisted score on mount
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          const saved = localStorage.getItem('psychassist_current_score');
+        if (typeof window !== "undefined" && window.localStorage) {
+          const saved = localStorage.getItem("psychassist_current_score");
           if (saved) {
             const savedScore = parseFloat(saved);
             if (!isNaN(savedScore) && isFinite(savedScore)) {
@@ -218,7 +238,7 @@ export function ERProvider({ children }: ERProviderProps) {
             }
           }
 
-          const savedSessionId = localStorage.getItem('psychassist_session_id');
+          const savedSessionId = localStorage.getItem("psychassist_session_id");
           if (savedSessionId) {
             const parsed = parseInt(savedSessionId, 10);
             if (!isNaN(parsed)) {
@@ -226,7 +246,7 @@ export function ERProvider({ children }: ERProviderProps) {
             }
           }
 
-          const savedSnapshots = localStorage.getItem('psychassist_snapshots');
+          const savedSnapshots = localStorage.getItem("psychassist_snapshots");
           if (savedSnapshots) {
             try {
               snapshotsRef.current = JSON.parse(savedSnapshots);
@@ -246,64 +266,70 @@ export function ERProvider({ children }: ERProviderProps) {
   // Persist score changes
   const persistScore = useCallback((score: number) => {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('psychassist_current_score', score.toString());
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.setItem("psychassist_current_score", score.toString());
       }
     } catch {
       // Ignore localStorage errors
     }
   }, []);
 
-  const updateScore = useCallback((delta: number) => {
-    setErScore(prev => {
-      const newScore = Math.max(-10, Math.min(10, prev + delta));
-      persistScore(newScore);
-      return newScore;
-    });
-  }, [persistScore]);
+  const updateScore = useCallback(
+    (delta: number) => {
+      setErScore((prev) => {
+        const newScore = Math.max(-10, Math.min(10, prev + delta));
+        persistScore(newScore);
+        return newScore;
+      });
+    },
+    [persistScore],
+  );
 
-  const addInfraction = useCallback((keywords: string[]) => {
-    detectedKeywordsRef.current.push(...keywords);
-    detectedKeywordsRef.current = [...new Set(detectedKeywordsRef.current)];
-    infractionCountRef.current += 1;
-    const timestamp = Date.now();
-    setLastInfractionAt(timestamp);
-    setRecentInfraction(true);
+  const addInfraction = useCallback(
+    (keywords: string[]) => {
+      detectedKeywordsRef.current.push(...keywords);
+      detectedKeywordsRef.current = [...new Set(detectedKeywordsRef.current)];
+      infractionCountRef.current += 1;
+      const timestamp = Date.now();
+      setLastInfractionAt(timestamp);
+      setRecentInfraction(true);
 
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('psychassist:infraction', {
-          detail: { timestamp, keywords },
-        })
-      );
-    }
-
-    if (infractionHoldTimeoutRef.current) {
-      clearTimeout(infractionHoldTimeoutRef.current);
-    }
-    infractionHoldTimeoutRef.current = setTimeout(() => {
-      setRecentInfraction(false);
-    }, 8000);
-
-    setErScore(prev => {
-      const newScore = Math.max(-10, prev - 1.0);
-
-      if (newScore < maxTiltScoreRef.current) {
-        maxTiltScoreRef.current = newScore;
-        maxTiltTimeRef.current = new Date();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("psychassist:infraction", {
+            detail: { timestamp, keywords },
+          }),
+        );
       }
 
-      if (newScore < -0.5 && !isInTiltRef.current) {
-        isInTiltRef.current = true;
-        lastTiltStartRef.current = Date.now();
-        regressionStartTimeRef.current = null;
-        regressionTargetTimeRef.current = null;
+      if (infractionHoldTimeoutRef.current) {
+        clearTimeout(infractionHoldTimeoutRef.current);
       }
+      infractionHoldTimeoutRef.current = setTimeout(() => {
+        setRecentInfraction(false);
+      }, 8000);
 
-      persistScore(newScore);
-      return newScore;
-    });
-  }, [persistScore]);
+      setErScore((prev) => {
+        const newScore = Math.max(-10, prev - 1.0);
+
+        if (newScore < maxTiltScoreRef.current) {
+          maxTiltScoreRef.current = newScore;
+          maxTiltTimeRef.current = new Date();
+        }
+
+        if (newScore < -0.5 && !isInTiltRef.current) {
+          isInTiltRef.current = true;
+          lastTiltStartRef.current = Date.now();
+          regressionStartTimeRef.current = null;
+          regressionTargetTimeRef.current = null;
+        }
+
+        persistScore(newScore);
+        return newScore;
+      });
+    },
+    [persistScore],
+  );
 
   const clearRecentInfraction = useCallback(() => {
     setRecentInfraction(false);
@@ -314,151 +340,175 @@ export function ERProvider({ children }: ERProviderProps) {
   }, []);
 
   // ---- VAD + Whisper-on-demand ----
-  const startVAD = useCallback((analyserNode: AnalyserNode, stream: MediaStream) => {
-    const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+  const startVAD = useCallback(
+    (analyserNode: AnalyserNode, stream: MediaStream) => {
+      const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
 
-    const startRecording = () => {
-      if (mediaRecorderRef.current?.state === 'recording') return;
-      recordedChunksRef.current = [];
-      try {
-        const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) recordedChunksRef.current.push(e.data);
-        };
-        recorder.start(250); // collect chunks every 250ms
-        mediaRecorderRef.current = recorder;
-      } catch {
-        // MediaRecorder not supported for this mime, try default
+      const startRecording = () => {
+        if (mediaRecorderRef.current?.state === "recording") return;
+        recordedChunksRef.current = [];
         try {
-          const recorder = new MediaRecorder(stream);
+          const recorder = new MediaRecorder(stream, {
+            mimeType: "audio/webm;codecs=opus",
+          });
           recorder.ondataavailable = (e) => {
             if (e.data.size > 0) recordedChunksRef.current.push(e.data);
           };
-          recorder.start(250);
+          recorder.start(250); // collect chunks every 250ms
           mediaRecorderRef.current = recorder;
         } catch {
-          console.debug('[VAD] MediaRecorder not available');
-        }
-      }
-    };
-
-    const stopRecordingAndAnalyze = async () => {
-      const recorder = mediaRecorderRef.current;
-      if (!recorder || recorder.state !== 'recording') return;
-
-      return new Promise<void>((resolve) => {
-        recorder.onstop = async () => {
-          const chunks = recordedChunksRef.current;
-          recordedChunksRef.current = [];
-          mediaRecorderRef.current = null;
-
-          if (chunks.length === 0) { resolve(); return; }
-
-          const now = Date.now();
-          if (now - lastSentimentRequestRef.current < SENTIMENT_COOLDOWN_MS) {
-            resolve();
-            return;
-          }
-          lastSentimentRequestRef.current = now;
-
+          // MediaRecorder not supported for this mime, try default
           try {
-            const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-              const base64 = (reader.result as string).split(',')[1];
-              if (!base64) { resolve(); return; }
-
-              try {
-                const result = await backend.voice.analyzeSentiment({
-                  audioBase64: base64,
-                  mimeType: recorder.mimeType || 'audio/webm',
-                  context: `Current ER score: ${erScoreRef.current.toFixed(1)}, monitoring active`,
-                });
-
-                setLastSentiment(result);
-
-                // Apply sentiment to ER score
-                if (result.sentiment < -0.3 && result.confidence > 0.4) {
-                  const penalty = Math.abs(result.sentiment) * result.confidence;
-                  updateScore(-penalty);
-
-                  if (result.keywords.length > 0) {
-                    addInfraction(result.keywords);
-                  }
-                } else if (result.sentiment > 0.3 && result.confidence > 0.5) {
-                  // Positive speech slightly helps recovery
-                  updateScore(result.sentiment * 0.2);
-                }
-              } catch (err) {
-                console.debug('[VAD] Sentiment analysis failed:', err);
-              }
-              resolve();
+            const recorder = new MediaRecorder(stream);
+            recorder.ondataavailable = (e) => {
+              if (e.data.size > 0) recordedChunksRef.current.push(e.data);
             };
-            reader.readAsDataURL(blob);
+            recorder.start(250);
+            mediaRecorderRef.current = recorder;
           } catch {
-            resolve();
+            console.debug("[VAD] MediaRecorder not available");
           }
-        };
-        recorder.stop();
-      });
-    };
-
-    vadIntervalRef.current = setInterval(() => {
-      analyserNode.getByteFrequencyData(dataArray);
-      // Compute RMS energy
-      let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        const normalized = dataArray[i] / 255;
-        sum += normalized * normalized;
-      }
-      const rms = Math.sqrt(sum / dataArray.length);
-      const now = Date.now();
-
-      if (rms >= VAD_ENERGY_THRESHOLD) {
-        // Speech detected
-        silenceStartRef.current = null;
-        if (!isSpeakingRef.current) {
-          isSpeakingRef.current = true;
-          speechStartRef.current = now;
-          setVadActive(true);
-          startRecording();
         }
-      } else {
-        // Silence
-        if (isSpeakingRef.current) {
-          if (!silenceStartRef.current) {
-            silenceStartRef.current = now;
-          } else if (now - silenceStartRef.current >= VAD_SILENCE_DURATION_MS) {
-            // Speech ended
-            isSpeakingRef.current = false;
-            setVadActive(false);
-            const speechDuration = speechStartRef.current ? now - speechStartRef.current : 0;
-            speechStartRef.current = null;
-            silenceStartRef.current = null;
+      };
 
-            if (speechDuration >= VAD_MIN_SPEECH_MS) {
-              stopRecordingAndAnalyze();
-            } else {
-              // Too short — discard
-              if (mediaRecorderRef.current?.state === 'recording') {
-                mediaRecorderRef.current.stop();
-                mediaRecorderRef.current = null;
-                recordedChunksRef.current = [];
+      const stopRecordingAndAnalyze = async () => {
+        const recorder = mediaRecorderRef.current;
+        if (!recorder || recorder.state !== "recording") return;
+
+        return new Promise<void>((resolve) => {
+          recorder.onstop = async () => {
+            const chunks = recordedChunksRef.current;
+            recordedChunksRef.current = [];
+            mediaRecorderRef.current = null;
+
+            if (chunks.length === 0) {
+              resolve();
+              return;
+            }
+
+            const now = Date.now();
+            if (now - lastSentimentRequestRef.current < SENTIMENT_COOLDOWN_MS) {
+              resolve();
+              return;
+            }
+            lastSentimentRequestRef.current = now;
+
+            try {
+              const blob = new Blob(chunks, {
+                type: recorder.mimeType || "audio/webm",
+              });
+              const reader = new FileReader();
+              reader.onloadend = async () => {
+                const base64 = (reader.result as string).split(",")[1];
+                if (!base64) {
+                  resolve();
+                  return;
+                }
+
+                try {
+                  const result = await backend.voice.analyzeSentiment({
+                    audioBase64: base64,
+                    mimeType: recorder.mimeType || "audio/webm",
+                    context: `Current ER score: ${erScoreRef.current.toFixed(1)}, monitoring active`,
+                  });
+
+                  setLastSentiment(result);
+
+                  // Apply sentiment to ER score
+                  if (result.sentiment < -0.3 && result.confidence > 0.4) {
+                    const penalty =
+                      Math.abs(result.sentiment) * result.confidence;
+                    updateScore(-penalty);
+
+                    if (result.keywords.length > 0) {
+                      addInfraction(result.keywords);
+                    }
+                  } else if (
+                    result.sentiment > 0.3 &&
+                    result.confidence > 0.5
+                  ) {
+                    // Positive speech slightly helps recovery
+                    updateScore(result.sentiment * 0.2);
+                  }
+                } catch (err) {
+                  console.debug("[VAD] Sentiment analysis failed:", err);
+                }
+                resolve();
+              };
+              reader.readAsDataURL(blob);
+            } catch {
+              resolve();
+            }
+          };
+          recorder.stop();
+        });
+      };
+
+      vadIntervalRef.current = setInterval(() => {
+        analyserNode.getByteFrequencyData(dataArray);
+        // Compute RMS energy
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          const normalized = dataArray[i] / 255;
+          sum += normalized * normalized;
+        }
+        const rms = Math.sqrt(sum / dataArray.length);
+        const now = Date.now();
+
+        if (rms >= VAD_ENERGY_THRESHOLD) {
+          // Speech detected
+          silenceStartRef.current = null;
+          if (!isSpeakingRef.current) {
+            isSpeakingRef.current = true;
+            speechStartRef.current = now;
+            setVadActive(true);
+            startRecording();
+          }
+        } else {
+          // Silence
+          if (isSpeakingRef.current) {
+            if (!silenceStartRef.current) {
+              silenceStartRef.current = now;
+            } else if (
+              now - silenceStartRef.current >=
+              VAD_SILENCE_DURATION_MS
+            ) {
+              // Speech ended
+              isSpeakingRef.current = false;
+              setVadActive(false);
+              const speechDuration = speechStartRef.current
+                ? now - speechStartRef.current
+                : 0;
+              speechStartRef.current = null;
+              silenceStartRef.current = null;
+
+              if (speechDuration >= VAD_MIN_SPEECH_MS) {
+                stopRecordingAndAnalyze();
+              } else {
+                // Too short — discard
+                if (mediaRecorderRef.current?.state === "recording") {
+                  mediaRecorderRef.current.stop();
+                  mediaRecorderRef.current = null;
+                  recordedChunksRef.current = [];
+                }
               }
             }
           }
         }
-      }
-    }, VAD_CHECK_INTERVAL_MS);
-  }, [backend, updateScore, addInfraction]);
+      }, VAD_CHECK_INTERVAL_MS);
+    },
+    [backend, updateScore, addInfraction],
+  );
 
   const stopVAD = useCallback(() => {
     if (vadIntervalRef.current) {
       clearInterval(vadIntervalRef.current);
       vadIntervalRef.current = null;
     }
-    if (mediaRecorderRef.current?.state === 'recording') {
-      try { mediaRecorderRef.current.stop(); } catch {}
+    if (mediaRecorderRef.current?.state === "recording") {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {}
       mediaRecorderRef.current = null;
     }
     recordedChunksRef.current = [];
@@ -475,7 +525,7 @@ export function ERProvider({ children }: ERProviderProps) {
 
       const ctx = new AudioContext();
       // [claude-code 2026-03-14] Chromium/Electron starts AudioContext SUSPENDED — must resume
-      if (ctx.state === 'suspended') await ctx.resume();
+      if (ctx.state === "suspended") await ctx.resume();
       const analyserNode = ctx.createAnalyser();
       analyserNode.fftSize = 256;
 
@@ -516,16 +566,19 @@ export function ERProvider({ children }: ERProviderProps) {
         setSessionId(saveResult.sessionId);
 
         try {
-          if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem('psychassist_session_id', saveResult.sessionId.toString());
-            localStorage.setItem('psychassist_active', 'true');
-            localStorage.setItem('psychassist_snapshots', '[]');
+          if (typeof window !== "undefined" && window.localStorage) {
+            localStorage.setItem(
+              "psychassist_session_id",
+              saveResult.sessionId.toString(),
+            );
+            localStorage.setItem("psychassist_active", "true");
+            localStorage.setItem("psychassist_snapshots", "[]");
           }
         } catch {
           // Failed to persist session ID
         }
       } catch (err) {
-        console.error('Failed to create ER session:', err);
+        console.error("Failed to create ER session:", err);
       }
 
       // Start VAD (replaces browser Speech API)
@@ -533,7 +586,7 @@ export function ERProvider({ children }: ERProviderProps) {
 
       setIsMonitoring(true);
     } catch (err) {
-      console.error('Failed to start monitoring:', err);
+      console.error("Failed to start monitoring:", err);
       throw err;
     }
   }, [backend, persistScore, startVAD]);
@@ -544,7 +597,7 @@ export function ERProvider({ children }: ERProviderProps) {
 
     // Stop media stream
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
     }
 
@@ -575,10 +628,14 @@ export function ERProvider({ children }: ERProviderProps) {
     // Calculate final session metrics
     const sessionEndTime = Date.now();
     const sessionStartTime = sessionStartTimeRef.current || sessionEndTime;
-    const sessionDurationSeconds = Math.floor((sessionEndTime - sessionStartTime) / 1000);
+    const sessionDurationSeconds = Math.floor(
+      (sessionEndTime - sessionStartTime) / 1000,
+    );
 
     if (isInTiltRef.current && lastTiltStartRef.current) {
-      timeInTiltRef.current += Math.floor((sessionEndTime - lastTiltStartRef.current) / 1000);
+      timeInTiltRef.current += Math.floor(
+        (sessionEndTime - lastTiltStartRef.current) / 1000,
+      );
     }
 
     if (sessionId) {
@@ -588,17 +645,18 @@ export function ERProvider({ children }: ERProviderProps) {
           timeInTiltSeconds: timeInTiltRef.current,
           infractionCount: infractionCountRef.current,
           sessionDurationSeconds: sessionDurationSeconds,
-          maxTiltScore: maxTiltScoreRef.current !== 0 ? maxTiltScoreRef.current : undefined,
+          maxTiltScore:
+            maxTiltScoreRef.current !== 0 ? maxTiltScoreRef.current : undefined,
           maxTiltTime: maxTiltTimeRef.current || undefined,
         });
       } catch (err) {
-        console.error('Failed to save ER session:', err);
+        console.error("Failed to save ER session:", err);
       }
     }
 
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('psychassist_active', 'false');
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.setItem("psychassist_active", "false");
       }
     } catch {
       // Ignore errors
@@ -614,13 +672,15 @@ export function ERProvider({ children }: ERProviderProps) {
     if (!isMonitoring) return;
 
     scoreIntervalRef.current = setInterval(() => {
-      setErScore(prev => {
+      setErScore((prev) => {
         const now = Date.now();
 
         // Handle regression to neutral
         if (regressionStartTimeRef.current && regressionTargetTimeRef.current) {
           const elapsed = (now - regressionStartTimeRef.current) / 1000;
-          const totalRegressionTime = (regressionTargetTimeRef.current - regressionStartTimeRef.current) / 1000;
+          const totalRegressionTime =
+            (regressionTargetTimeRef.current - regressionStartTimeRef.current) /
+            1000;
 
           if (elapsed >= totalRegressionTime) {
             regressionStartTimeRef.current = null;
@@ -629,7 +689,8 @@ export function ERProvider({ children }: ERProviderProps) {
             return 0;
           } else {
             const progress = elapsed / totalRegressionTime;
-            const regressedScore = regressionStartScoreRef.current * (1 - progress);
+            const regressedScore =
+              regressionStartScoreRef.current * (1 - progress);
             persistScore(regressedScore);
             return regressedScore;
           }
@@ -649,7 +710,9 @@ export function ERProvider({ children }: ERProviderProps) {
           regressionTargetTimeRef.current = null;
         } else if (!isNowInTilt && wasInTilt) {
           if (lastTiltStartRef.current) {
-            timeInTiltRef.current += Math.floor((now - lastTiltStartRef.current) / 1000);
+            timeInTiltRef.current += Math.floor(
+              (now - lastTiltStartRef.current) / 1000,
+            );
           }
           isInTiltRef.current = false;
           lastTiltStartRef.current = null;
@@ -686,13 +749,15 @@ export function ERProvider({ children }: ERProviderProps) {
     if (!isMonitoring || !sessionId) return;
 
     snapshotIntervalRef.current = setInterval(async () => {
-      const currentState: ERState = erScore > 0.5 ? 'steadfast' : erScore < -0.5 ? 'tilted' : 'poised';
+      const currentState: ERState =
+        erScore > 0.5 ? "steadfast" : erScore < -0.5 ? "tilted" : "poised";
 
       let audioLevelsJson: string | undefined;
       if (analyser) {
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(dataArray);
-        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length / 255;
+        const avg =
+          dataArray.reduce((a, b) => a + b, 0) / dataArray.length / 255;
         const peak = Math.max(...Array.from(dataArray)) / 255;
         audioLevelsJson = JSON.stringify({ avg, peak });
       }
@@ -703,28 +768,39 @@ export function ERProvider({ children }: ERProviderProps) {
           score: erScore,
           state: currentState,
           audioLevels: audioLevelsJson,
-          keywords: detectedKeywordsRef.current.length > 0 ? detectedKeywordsRef.current : undefined,
+          keywords:
+            detectedKeywordsRef.current.length > 0
+              ? detectedKeywordsRef.current
+              : undefined,
         });
 
         const snapshot: ERSnapshot = {
           score: erScore,
           state: currentState,
           timestamp: new Date(),
-          audioLevels: audioLevelsJson ? JSON.parse(audioLevelsJson) : undefined,
-          keywords: detectedKeywordsRef.current.length > 0 ? [...detectedKeywordsRef.current] : undefined,
+          audioLevels: audioLevelsJson
+            ? JSON.parse(audioLevelsJson)
+            : undefined,
+          keywords:
+            detectedKeywordsRef.current.length > 0
+              ? [...detectedKeywordsRef.current]
+              : undefined,
         };
 
         snapshotsRef.current = [snapshot, ...snapshotsRef.current].slice(0, 20);
 
         try {
-          if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem('psychassist_snapshots', JSON.stringify(snapshotsRef.current.slice(0, 10)));
+          if (typeof window !== "undefined" && window.localStorage) {
+            localStorage.setItem(
+              "psychassist_snapshots",
+              JSON.stringify(snapshotsRef.current.slice(0, 10)),
+            );
           }
         } catch {
           // Ignore errors
         }
       } catch (err) {
-        console.error('Failed to save ER snapshot:', err);
+        console.error("Failed to save ER snapshot:", err);
       }
     }, 5000);
 
@@ -741,7 +817,10 @@ export function ERProvider({ children }: ERProviderProps) {
 
     const checkOvertrading = async () => {
       try {
-        const status = await backend.er.checkOvertrading({ windowMinutes: 15, threshold: 5 });
+        const status = await backend.er.checkOvertrading({
+          windowMinutes: 15,
+          threshold: 5,
+        });
         setOvertradingStatus({
           isOvertrading: status.isOvertrading,
           tradesInWindow: status.tradesInWindow,
@@ -752,7 +831,7 @@ export function ERProvider({ children }: ERProviderProps) {
           updateScore(-0.5);
         }
       } catch (err) {
-        console.error('Failed to check overtrading:', err);
+        console.error("Failed to check overtrading:", err);
       }
     };
 
@@ -767,14 +846,14 @@ export function ERProvider({ children }: ERProviderProps) {
   }, [isMonitoring, backend, updateScore]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     window.dispatchEvent(
-      new CustomEvent('psychassist:score', {
+      new CustomEvent("psychassist:score", {
         detail: {
           score: erScore,
           timestamp: Date.now(),
         },
-      })
+      }),
     );
   }, [erScore]);
 
@@ -818,9 +897,5 @@ export function ERProvider({ children }: ERProviderProps) {
     getRecentSnapshots,
   };
 
-  return (
-    <ERContext.Provider value={value}>
-      {children}
-    </ERContext.Provider>
-  );
+  return <ERContext.Provider value={value}>{children}</ERContext.Provider>;
 }

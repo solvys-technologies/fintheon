@@ -3,16 +3,20 @@
  * User watchlist management for RiskFlow
  */
 
-import type { Watchlist, WatchlistUpdateRequest, NewsSource } from '../../types/riskflow.js';
+import type {
+  Watchlist,
+  WatchlistUpdateRequest,
+  NewsSource,
+} from "../../types/riskflow.js";
 
 // In-memory watchlist store (per user)
 const watchlistStore = new Map<string, Watchlist>();
 
 // Default watchlist for new users
-const defaultWatchlist: Omit<Watchlist, 'userId' | 'updatedAt'> = {
-  symbols: ['ES', 'NQ', 'SPY', 'QQQ'],
-  tags: ['CPI', 'PPI', 'NFP', 'FOMC', 'FED'],
-  sources: ['FinancialJuice', 'OSINTSources', 'EconomicCalendar', 'Polymarket'],
+const defaultWatchlist: Omit<Watchlist, "userId" | "updatedAt"> = {
+  symbols: ["ES", "NQ", "SPY", "QQQ"],
+  tags: ["CPI", "PPI", "NFP", "FOMC", "FED"],
+  sources: ["FinancialJuice", "OSINTSources", "EconomicCalendar", "Polymarket"],
 };
 
 /**
@@ -38,7 +42,7 @@ export function getWatchlist(userId: string): Watchlist {
  */
 export function updateWatchlist(
   userId: string,
-  updates: WatchlistUpdateRequest
+  updates: WatchlistUpdateRequest,
 ): Watchlist {
   const current = getWatchlist(userId);
 
@@ -59,7 +63,9 @@ export function updateWatchlist(
  */
 export function addSymbols(userId: string, symbols: string[]): Watchlist {
   const current = getWatchlist(userId);
-  const uniqueSymbols = [...new Set([...current.symbols, ...symbols.map(s => s.toUpperCase())])];
+  const uniqueSymbols = [
+    ...new Set([...current.symbols, ...symbols.map((s) => s.toUpperCase())]),
+  ];
   return updateWatchlist(userId, { symbols: uniqueSymbols });
 }
 
@@ -68,8 +74,8 @@ export function addSymbols(userId: string, symbols: string[]): Watchlist {
  */
 export function removeSymbols(userId: string, symbols: string[]): Watchlist {
   const current = getWatchlist(userId);
-  const symbolSet = new Set(symbols.map(s => s.toUpperCase()));
-  const filtered = current.symbols.filter(s => !symbolSet.has(s));
+  const symbolSet = new Set(symbols.map((s) => s.toUpperCase()));
+  const filtered = current.symbols.filter((s) => !symbolSet.has(s));
   return updateWatchlist(userId, { symbols: filtered });
 }
 
@@ -82,7 +88,7 @@ export function removeSymbols(userId: string, symbols: string[]): Watchlist {
  */
 export function matchesWatchlist(
   watchlist: Watchlist,
-  item: { symbols: string[]; tags: string[]; source: NewsSource }
+  item: { symbols: string[]; tags: string[]; source: NewsSource },
 ): boolean {
   return watchlist.sources.includes(item.source);
 }

@@ -1,4 +1,4 @@
-import { GrokHeadlineRequest } from '../types/news-analysis.js'
+import { GrokHeadlineRequest } from "../types/news-analysis.js";
 
 const headlineSchema = `
 [
@@ -42,7 +42,7 @@ const headlineSchema = `
       "tradingImplication": "string"
     } | null
   }
-]`.trim()
+]`.trim();
 
 const hotPrintSchema = `
 {
@@ -56,27 +56,27 @@ const hotPrintSchema = `
   "direction": "above" | "below" | null,
   "isHot": boolean,
   "reason": "string"
-}`.trim()
+}`.trim();
 
 const formatItemsForPrompt = (items: GrokHeadlineRequest[]) =>
   items
     .map(
       (item, idx) =>
-        `[${idx + 1}] ID=${item.id}\nSOURCE=${item.source}\nHEADLINE=${item.headline}\nBODY=${item.body ?? ''}`
+        `[${idx + 1}] ID=${item.id}\nSOURCE=${item.source}\nHEADLINE=${item.headline}\nBODY=${item.body ?? ""}`,
     )
-    .join('\n\n')
+    .join("\n\n");
 
 export const buildHeadlineParsePrompt = (items: GrokHeadlineRequest[]) => {
-  const header = `You are a financial news parser. Given up to 10 headlines, extract structured data exactly in the JSON schema provided.`
+  const header = `You are a financial news parser. Given up to 10 headlines, extract structured data exactly in the JSON schema provided.`;
   const constraints = [
-    'Never invent IDs.',
-    'Return an array with the same order as inputs.',
-    'Use null when a field is missing.',
-    'Confidence must be between 0 and 1.',
-    'Magnitude numbers must be numeric without text units.'
+    "Never invent IDs.",
+    "Return an array with the same order as inputs.",
+    "Use null when a field is missing.",
+    "Confidence must be between 0 and 1.",
+    "Magnitude numbers must be numeric without text units.",
   ]
     .map((rule, i) => `${i + 1}. ${rule}`)
-    .join('\n')
+    .join("\n");
 
   return `${header}
 
@@ -87,17 +87,16 @@ Inputs:
 ${formatItemsForPrompt(items)}
 
 Respond with valid JSON matching this schema:
-${headlineSchema}`
-}
+${headlineSchema}`;
+};
 
 export const buildHotPrintPrompt = (text: string) => {
-  const instructions = `Determine if the text describes an economic data release (CPI, PPI, NFP, GDP, Retail Sales, etc.). Extract actual, forecast, previous values and units if present.`
+  const instructions = `Determine if the text describes an economic data release (CPI, PPI, NFP, GDP, Retail Sales, etc.). Extract actual, forecast, previous values and units if present.`;
   return `${instructions}
 
 Text:
 ${text}
 
 Return strict JSON matching:
-${hotPrintSchema}`
-}
-
+${hotPrintSchema}`;
+};

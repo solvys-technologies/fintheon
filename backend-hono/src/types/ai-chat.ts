@@ -4,125 +4,125 @@
  * Day 18 - Phase 5 Implementation
  */
 
-export type MessageRole = 'user' | 'assistant' | 'system'
+export type MessageRole = "user" | "assistant" | "system";
 
 export interface ChatMessage {
-  id: string
-  conversationId: string
-  role: MessageRole
-  content: string
-  model?: string
-  inputTokens?: number
-  outputTokens?: number
-  totalTokens?: number
-  costUsd?: number
-  metadata?: Record<string, unknown>
-  createdAt: string
+  id: string;
+  conversationId: string;
+  role: MessageRole;
+  content: string;
+  model?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  costUsd?: number;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
 }
 
 export interface Conversation {
-  id: string
-  userId: string
-  title: string
-  model?: string
-  threadId?: string
-  parentId?: string
-  metadata?: Record<string, unknown>
-  isArchived: boolean
-  staleAt?: string
-  createdAt: string
-  updatedAt: string
+  id: string;
+  userId: string;
+  title: string;
+  model?: string;
+  threadId?: string;
+  parentId?: string;
+  metadata?: Record<string, unknown>;
+  isArchived: boolean;
+  staleAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ConversationWithMessages extends Conversation {
-  messages: ChatMessage[]
+  messages: ChatMessage[];
 }
 
 export interface ChatRequest {
-  message: string
-  conversationId?: string
-  model?: string
-  taskType?: string
+  message: string;
+  conversationId?: string;
+  model?: string;
+  taskType?: string;
   /**
    * Force routing to a specific Hermes agent for this chat thread.
    * This is used by per-agent chat UIs to keep analyst threads consistent.
    */
-  agentOverride?: string
-  streamEnabled?: boolean
+  agentOverride?: string;
+  streamEnabled?: boolean;
 }
 
 export interface ChatResponse {
-  id: string
-  conversationId: string
-  role: 'assistant'
-  content: string
-  model: string
-  inputTokens?: number
-  outputTokens?: number
-  totalTokens?: number
-  costUsd?: number
-  createdAt: string
+  id: string;
+  conversationId: string;
+  role: "assistant";
+  content: string;
+  model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  costUsd?: number;
+  createdAt: string;
 }
 
 export interface ConversationListItem {
-  id: string
-  title: string
-  model?: string
-  messageCount: number
-  lastMessageAt: string
-  isArchived: boolean
-  createdAt: string
-  updatedAt: string
+  id: string;
+  title: string;
+  model?: string;
+  messageCount: number;
+  lastMessageAt: string;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ConversationListResponse {
-  conversations: ConversationListItem[]
-  total: number
-  hasMore: boolean
-  nextCursor?: string
+  conversations: ConversationListItem[];
+  total: number;
+  hasMore: boolean;
+  nextCursor?: string;
 }
 
 export interface CreateConversationRequest {
-  title?: string
-  model?: string
-  threadId?: string
-  parentId?: string
-  metadata?: Record<string, unknown>
+  title?: string;
+  model?: string;
+  threadId?: string;
+  parentId?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface UpdateConversationRequest {
-  title?: string
-  isArchived?: boolean
-  metadata?: Record<string, unknown>
+  title?: string;
+  isArchived?: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 // Database row types (snake_case)
 export interface ConversationRow {
-  id: string
-  user_id: string
-  title: string
-  model: string | null
-  thread_id: string | null
-  parent_id: string | null
-  metadata: Record<string, unknown> | null
-  is_archived: boolean
-  stale_at: string | null
-  created_at: string
-  updated_at: string
+  id: string;
+  user_id: string;
+  title: string;
+  model: string | null;
+  thread_id: string | null;
+  parent_id: string | null;
+  metadata: Record<string, unknown> | null;
+  is_archived: boolean;
+  stale_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface MessageRow {
-  id: string
-  conversation_id: string
-  role: string
-  content: string
-  model: string | null
-  input_tokens: number | null
-  output_tokens: number | null
-  total_tokens: number | null
-  cost_usd: number | null
-  metadata: Record<string, unknown> | null
-  created_at: string
+  id: string;
+  conversation_id: string;
+  role: string;
+  content: string;
+  model: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  cost_usd: number | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
 }
 
 // Conversion utilities
@@ -130,7 +130,7 @@ export function mapRowToConversation(row: ConversationRow): Conversation {
   return {
     id: row.id,
     userId: row.user_id,
-    title: row.title ?? 'Untitled',
+    title: row.title ?? "Untitled",
     model: row.model ?? undefined,
     threadId: row.thread_id ?? undefined,
     parentId: row.parent_id ?? undefined,
@@ -139,7 +139,7 @@ export function mapRowToConversation(row: ConversationRow): Conversation {
     staleAt: row.stale_at ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-  }
+  };
 }
 
 export function mapRowToMessage(row: MessageRow): ChatMessage {
@@ -155,5 +155,5 @@ export function mapRowToMessage(row: MessageRow): ChatMessage {
     costUsd: row.cost_usd ? Number(row.cost_usd) : undefined,
     metadata: row.metadata ?? undefined,
     createdAt: row.created_at,
-  }
+  };
 }

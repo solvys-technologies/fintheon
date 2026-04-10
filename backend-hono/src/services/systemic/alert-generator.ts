@@ -1,8 +1,12 @@
 // [claude-code 2026-03-11] Auto-generate RiskFlow items from systemic risk detection
 // Injects into news_feed_items table (same pattern as econ-bridge.ts)
 
-import type { SystemicRiskAlert, ActiveChainInstance, RhymeMatch } from '../../types/volatility-taxonomy.js'
-import { formatRhymeAlert } from './historical-rhyming.js'
+import type {
+  SystemicRiskAlert,
+  ActiveChainInstance,
+  RhymeMatch,
+} from "../../types/volatility-taxonomy.js";
+import { formatRhymeAlert } from "./historical-rhyming.js";
 
 // ── Alert Generation Rules ─────────────────────────────────────────────────────
 
@@ -10,25 +14,31 @@ import { formatRhymeAlert } from './historical-rhyming.js'
  * Generate alerts from active causal chains that have advanced.
  */
 export function generateChainAlerts(
-  advancedChains: ActiveChainInstance[]
+  advancedChains: ActiveChainInstance[],
 ): SystemicRiskAlert[] {
-  const alerts: SystemicRiskAlert[] = []
+  const alerts: SystemicRiskAlert[] = [];
 
   for (const chain of advancedChains) {
-    if (chain.exhausted) continue
+    if (chain.exhausted) continue;
 
-    const linkDepth = chain.currentLinkIndex + 1
-    const depthLabel = linkDepth === 1 ? '2nd-order' : linkDepth === 2 ? '3rd-order' : `${linkDepth + 1}th-order`
+    const linkDepth = chain.currentLinkIndex + 1;
+    const depthLabel =
+      linkDepth === 1
+        ? "2nd-order"
+        : linkDepth === 2
+          ? "3rd-order"
+          : `${linkDepth + 1}th-order`;
 
     // Severity escalates with chain depth
-    const severity = linkDepth >= 3 ? 'high' : linkDepth >= 2 ? 'medium' : 'low'
+    const severity =
+      linkDepth >= 3 ? "high" : linkDepth >= 2 ? "medium" : "low";
 
-    const nextEffect = chain.nextEffectWindow?.effectType ?? 'unknown'
-    const probability = Math.round(chain.cumulativeProbability * 100)
+    const nextEffect = chain.nextEffectWindow?.effectType ?? "unknown";
+    const probability = Math.round(chain.cumulativeProbability * 100);
 
     alerts.push({
-      type: 'causal-chain',
-      severity: severity as SystemicRiskAlert['severity'],
+      type: "causal-chain",
+      severity: severity as SystemicRiskAlert["severity"],
       headline: `CAUSAL CHAIN: ${chain.chainName} — ${depthLabel} effect window opening`,
       summary:
         `The "${chain.chainName}" chain (triggered by ${chain.triggerEventType} on ${new Date(chain.triggerTimestamp).toLocaleDateString()}) ` +
@@ -36,11 +46,11 @@ export function generateChainAlerts(
         `with ${probability}% cumulative probability. ` +
         `This is forward-looking risk — the market may not yet be pricing this in.`,
       affectedInstruments: [],
-      tags: ['systemic-risk', 'causal-chain', chain.chainId, nextEffect],
-    })
+      tags: ["systemic-risk", "causal-chain", chain.chainId, nextEffect],
+    });
   }
 
-  return alerts
+  return alerts;
 }
 
 /**
@@ -49,32 +59,33 @@ export function generateChainAlerts(
 export function generateRhymeAlerts(
   matches: RhymeMatch[],
   highThreshold: number = 0.6,
-  criticalThreshold: number = 0.8
+  criticalThreshold: number = 0.8,
 ): SystemicRiskAlert[] {
-  const alerts: SystemicRiskAlert[] = []
+  const alerts: SystemicRiskAlert[] = [];
 
   for (const match of matches) {
-    if (match.matchScore < highThreshold) continue
+    if (match.matchScore < highThreshold) continue;
 
-    const { headline, summary } = formatRhymeAlert(match)
-    const severity = match.matchScore >= criticalThreshold ? 'critical' : 'high'
+    const { headline, summary } = formatRhymeAlert(match);
+    const severity =
+      match.matchScore >= criticalThreshold ? "critical" : "high";
 
     alerts.push({
-      type: 'historical-rhyme',
+      type: "historical-rhyme",
       severity,
       headline,
       summary,
       historicalContext:
         `In ${match.crisisYear}, the ${match.crisisName} resulted in a ${Math.abs(match.maxDrawdown)}% drawdown ` +
         `with VIX peaking at ${match.peakVix}. ` +
-        `Key guidance: ${match.tradingGuidance.slice(0, 2).join('. ')}.`,
+        `Key guidance: ${match.tradingGuidance.slice(0, 2).join(". ")}.`,
       timeline: match.unfoldingTimeline,
       affectedInstruments: [],
-      tags: ['systemic-risk', 'historical-rhyme', match.crisisId],
-    })
+      tags: ["systemic-risk", "historical-rhyme", match.crisisId],
+    });
   }
 
-  return alerts
+  return alerts;
 }
 
 /**
@@ -83,24 +94,24 @@ export function generateRhymeAlerts(
 export function generateCreditAlerts(
   creditSignalCount: number,
   minSignals: number = 3,
-  recentCreditHeadlines: string[] = []
+  recentCreditHeadlines: string[] = [],
 ): SystemicRiskAlert[] {
-  if (creditSignalCount < minSignals) return []
+  if (creditSignalCount < minSignals) return [];
 
   return [
     {
-      type: 'credit-warning',
-      severity: creditSignalCount >= 5 ? 'critical' : 'high',
+      type: "credit-warning",
+      severity: creditSignalCount >= 5 ? "critical" : "high",
       headline: `CREDIT WARNING: ${creditSignalCount} credit deterioration signals in last 48 hours`,
       summary:
         `${creditSignalCount} credit-related signals detected in the last 48 hours — ` +
         `this level of credit stress activity rhymes with the early stages of past credit events. ` +
-        `Recent signals: ${recentCreditHeadlines.slice(0, 3).join('; ')}. ` +
+        `Recent signals: ${recentCreditHeadlines.slice(0, 3).join("; ")}. ` +
         `Watch for: HY OAS spread widening, bank CDS moves, and lending tightening.`,
-      affectedInstruments: ['/ES', '/NQ', '/RTY', '/ZB'],
-      tags: ['systemic-risk', 'credit-warning'],
+      affectedInstruments: ["/ES", "/NQ", "/RTY", "/ZB"],
+      tags: ["systemic-risk", "credit-warning"],
     },
-  ]
+  ];
 }
 
 /**
@@ -108,25 +119,25 @@ export function generateCreditAlerts(
  */
 export function generateContagionAlert(
   activeChannels: Set<string>,
-  minChannels: number = 3
+  minChannels: number = 3,
 ): SystemicRiskAlert[] {
-  if (activeChannels.size < minChannels) return []
+  if (activeChannels.size < minChannels) return [];
 
-  const channels = Array.from(activeChannels)
+  const channels = Array.from(activeChannels);
 
   return [
     {
-      type: 'contagion',
-      severity: activeChannels.size >= 4 ? 'critical' : 'high',
+      type: "contagion",
+      severity: activeChannels.size >= 4 ? "critical" : "high",
       headline: `CONTAGION ALERT: Risk spreading across ${activeChannels.size} transmission channels`,
       summary:
-        `Active risk signals detected across ${channels.join(', ')} channels simultaneously. ` +
+        `Active risk signals detected across ${channels.join(", ")} channels simultaneously. ` +
         `Cross-channel contagion amplifies volatility and reduces diversification benefits. ` +
         `All correlations trend toward 1 in contagion events.`,
-      affectedInstruments: ['/ES', '/NQ', '/GC', '/ZB', '/CL', '/6E'],
-      tags: ['systemic-risk', 'contagion', ...channels],
+      affectedInstruments: ["/ES", "/NQ", "/GC", "/ZB", "/CL", "/6E"],
+      tags: ["systemic-risk", "contagion", ...channels],
     },
-  ]
+  ];
 }
 
 // ── DB Injection ───────────────────────────────────────────────────────────────
@@ -135,10 +146,13 @@ export function generateContagionAlert(
  * Inject a systemic risk alert into the news_feed_items table.
  * Same pattern as econ-bridge.ts.
  */
-export async function injectSystemicAlert(alert: SystemicRiskAlert): Promise<void> {
+export async function injectSystemicAlert(
+  alert: SystemicRiskAlert,
+): Promise<void> {
   try {
-    const { sql, isDatabaseAvailable } = await import('../../config/database.js')
-    if (!isDatabaseAvailable() || !sql) return
+    const { sql, isDatabaseAvailable } =
+      await import("../../config/database.js");
+    if (!isDatabaseAvailable() || !sql) return;
 
     // Deduplicate: don't inject the same alert type+headline within 6 hours
     const existing = await sql`
@@ -146,22 +160,22 @@ export async function injectSystemicAlert(alert: SystemicRiskAlert): Promise<voi
       WHERE headline = ${alert.headline}
         AND published_at > NOW() - INTERVAL '6 hours'
       LIMIT 1
-    `
-    if (existing.length > 0) return
+    `;
+    if (existing.length > 0) return;
 
     const severityToMacroLevel: Record<string, number> = {
       low: 1,
       medium: 2,
       high: 3,
       critical: 4,
-    }
+    };
 
     const severityToIvScore: Record<string, number> = {
       low: 3,
       medium: 5,
       high: 7,
       critical: 9,
-    }
+    };
 
     await sql`
       INSERT INTO news_feed_items (
@@ -174,8 +188,8 @@ export async function injectSystemicAlert(alert: SystemicRiskAlert): Promise<voi
         'Custom',
         ${`systemic://${alert.type}`},
         ${new Date().toISOString()},
-        ${alert.severity === 'critical'},
-        ${alert.severity === 'critical' ? 'immediate' : alert.severity === 'high' ? 'high' : 'normal'},
+        ${alert.severity === "critical"},
+        ${alert.severity === "critical" ? "immediate" : alert.severity === "high" ? "high" : "normal"},
         'bearish',
         ${severityToIvScore[alert.severity] ?? 5},
         ${severityToMacroLevel[alert.severity] ?? 2},
@@ -183,10 +197,12 @@ export async function injectSystemicAlert(alert: SystemicRiskAlert): Promise<voi
         ${JSON.stringify(alert.tags)},
         ${alert.type}
       )
-    `
+    `;
 
-    console.log(`[SystemicAlert] Injected: ${alert.headline} (${alert.severity})`)
+    console.log(
+      `[SystemicAlert] Injected: ${alert.headline} (${alert.severity})`,
+    );
   } catch (err) {
-    console.error('[SystemicAlert] Failed to inject alert:', err)
+    console.error("[SystemicAlert] Failed to inject alert:", err);
   }
 }

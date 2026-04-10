@@ -1,6 +1,6 @@
 // [claude-code 2026-03-14] Voice sentiment via OpenRouter (Opus 4.6); no ANTHROPIC_API_KEY
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const SENTIMENT_MODEL = 'anthropic/claude-opus-4.6';
+const SENTIMENT_MODEL = "anthropic/claude-opus-4.6";
 
 export interface SentimentAnalysisInput {
   transcript: string;
@@ -13,48 +13,67 @@ export interface SentimentAnalysisResult {
   keywords: string[];
   tiltIndicators: string[];
   summary: string;
-  provider: 'openrouter' | 'fallback';
+  provider: "openrouter" | "fallback";
 }
 
 const TILT_KEYWORDS = [
-  'fuck', 'shit', 'damn', 'stupid', 'idiot', 'hate',
-  'rigged', 'unfair', 'revenge', 'double down', 'all in',
-  'cant believe', 'always happens', 'never works',
-  'should have', 'why did i', 'im done',
+  "fuck",
+  "shit",
+  "damn",
+  "stupid",
+  "idiot",
+  "hate",
+  "rigged",
+  "unfair",
+  "revenge",
+  "double down",
+  "all in",
+  "cant believe",
+  "always happens",
+  "never works",
+  "should have",
+  "why did i",
+  "im done",
 ];
 
 function fallbackSentiment(transcript: string): SentimentAnalysisResult {
   const lower = transcript.toLowerCase();
-  const foundKeywords = TILT_KEYWORDS.filter(kw => lower.includes(kw));
-  const negativityRatio = foundKeywords.length / Math.max(transcript.split(/\s+/).length, 1);
+  const foundKeywords = TILT_KEYWORDS.filter((kw) => lower.includes(kw));
+  const negativityRatio =
+    foundKeywords.length / Math.max(transcript.split(/\s+/).length, 1);
   const sentiment = Math.max(-1, -negativityRatio * 10);
 
   return {
     sentiment: foundKeywords.length > 0 ? sentiment : 0,
     confidence: 0.3,
     keywords: foundKeywords,
-    tiltIndicators: foundKeywords.length > 0 ? ['aggressive_language'] : [],
-    summary: foundKeywords.length > 0
-      ? `Detected ${foundKeywords.length} tilt indicator(s): ${foundKeywords.join(', ')}`
-      : 'No tilt indicators detected',
-    provider: 'fallback',
+    tiltIndicators: foundKeywords.length > 0 ? ["aggressive_language"] : [],
+    summary:
+      foundKeywords.length > 0
+        ? `Detected ${foundKeywords.length} tilt indicator(s): ${foundKeywords.join(", ")}`
+        : "No tilt indicators detected",
+    provider: "fallback",
   };
 }
 
-export async function analyzeSentiment(input: SentimentAnalysisInput): Promise<SentimentAnalysisResult> {
+export async function analyzeSentiment(
+  input: SentimentAnalysisInput,
+): Promise<SentimentAnalysisResult> {
   if (!input.transcript.trim()) {
     return {
       sentiment: 0,
       confidence: 0,
       keywords: [],
       tiltIndicators: [],
-      summary: 'Empty transcript',
-      provider: 'fallback',
+      summary: "Empty transcript",
+      provider: "fallback",
     };
   }
 
   if (!OPENROUTER_API_KEY) {
-    console.warn('[VoiceSentiment] No OPENROUTER_API_KEY, using fallback keyword detection');
+    console.warn(
+      "[VoiceSentiment] No OPENROUTER_API_KEY, using fallback keyword detection",
+    );
     return fallbackSentiment(input.transcript);
   }
 
@@ -82,35 +101,43 @@ Tilt indicators to watch for:
       ? `Context: ${input.context}\n\nTrader speech: "${input.transcript}"`
       : `Trader speech: "${input.transcript}"`;
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://fintheon-solvys.vercel.app',
-        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Fintheon-AI-Gateway',
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer":
+            process.env.OPENROUTER_APP_URL ??
+            "https://fintheon-solvys.vercel.app",
+          "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
+        },
+        body: JSON.stringify({
+          model: SENTIMENT_MODEL,
+          max_tokens: 300,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+        }),
       },
-      body: JSON.stringify({
-        model: SENTIMENT_MODEL,
-        max_tokens: 300,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage },
-        ],
-      }),
-    });
+    );
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error(`[VoiceSentiment] OpenRouter error (${response.status}):`, errText);
+      console.error(
+        `[VoiceSentiment] OpenRouter error (${response.status}):`,
+        errText,
+      );
       return fallbackSentiment(input.transcript);
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       choices?: { message?: { content?: string } }[];
     };
 
-    const text = data.choices?.[0]?.message?.content?.trim() ?? '';
+    const text = data.choices?.[0]?.message?.content?.trim() ?? "";
     const parsed = JSON.parse(text) as {
       sentiment: number;
       confidence: number;
@@ -123,12 +150,14 @@ Tilt indicators to watch for:
       sentiment: Math.max(-1, Math.min(1, parsed.sentiment)),
       confidence: Math.max(0, Math.min(1, parsed.confidence)),
       keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
-      tiltIndicators: Array.isArray(parsed.tiltIndicators) ? parsed.tiltIndicators : [],
-      summary: parsed.summary || 'Analysis complete',
-      provider: 'openrouter',
+      tiltIndicators: Array.isArray(parsed.tiltIndicators)
+        ? parsed.tiltIndicators
+        : [],
+      summary: parsed.summary || "Analysis complete",
+      provider: "openrouter",
     };
   } catch (err) {
-    console.error('[VoiceSentiment] Analysis failed, using fallback:', err);
+    console.error("[VoiceSentiment] Analysis failed, using fallback:", err);
     return fallbackSentiment(input.transcript);
   }
 }

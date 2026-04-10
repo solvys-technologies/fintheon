@@ -9,7 +9,12 @@ import {
   CircleDotDashed,
   CircleX,
 } from "lucide-react";
-import { motion, AnimatePresence, LayoutGroup, type Variants } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  LayoutGroup,
+  type Variants,
+} from "framer-motion";
 
 interface Subtask {
   id: string;
@@ -74,8 +79,7 @@ const initialTasks: Task[] = [
   {
     id: "2",
     title: "Design System Architecture",
-    description:
-      "Create the overall system architecture based on requirements",
+    description: "Create the overall system architecture based on requirements",
     status: "in-progress",
     priority: "high",
     level: 0,
@@ -84,8 +88,7 @@ const initialTasks: Task[] = [
       {
         id: "2.1",
         title: "Define component structure",
-        description:
-          "Map out all required components and their interactions",
+        description: "Map out all required components and their interactions",
         status: "pending",
         priority: "high",
         tools: ["architecture-planner", "diagramming-tool"],
@@ -102,8 +105,7 @@ const initialTasks: Task[] = [
       {
         id: "2.3",
         title: "Document API specifications",
-        description:
-          "Write detailed specifications for all APIs in the system",
+        description: "Write detailed specifications for all APIs in the system",
         status: "pending",
         priority: "high",
         tools: ["api-designer", "openapi-generator"],
@@ -122,8 +124,7 @@ const initialTasks: Task[] = [
       {
         id: "3.1",
         title: "Resource allocation",
-        description:
-          "Determine required resources and allocate them to tasks",
+        description: "Determine required resources and allocate them to tasks",
         status: "pending",
         priority: "medium",
         tools: ["project-manager", "resource-calculator"],
@@ -150,8 +151,7 @@ const initialTasks: Task[] = [
   {
     id: "4",
     title: "Development Environment Setup",
-    description:
-      "Set up all necessary tools and environments for development",
+    description: "Set up all necessary tools and environments for development",
     status: "in-progress",
     priority: "high",
     level: 0,
@@ -169,8 +169,7 @@ const initialTasks: Task[] = [
       {
         id: "4.2",
         title: "Configure CI/CD pipeline",
-        description:
-          "Set up continuous integration and deployment pipelines",
+        description: "Set up continuous integration and deployment pipelines",
         status: "pending",
         priority: "medium",
         tools: ["github-actions", "gitlab-ci", "jenkins-connector"],
@@ -178,8 +177,7 @@ const initialTasks: Task[] = [
       {
         id: "4.3",
         title: "Set up testing framework",
-        description:
-          "Configure automated testing frameworks for the project",
+        description: "Configure automated testing frameworks for the project",
         status: "pending",
         priority: "high",
         tools: ["test-runner", "shell"],
@@ -207,8 +205,7 @@ const initialTasks: Task[] = [
       {
         id: "5.2",
         title: "Perform unit testing",
-        description:
-          "Create and execute unit tests for implemented features",
+        description: "Create and execute unit tests for implemented features",
         status: "pending",
         priority: "medium",
         tools: ["test-runner", "code-coverage-analyzer"],
@@ -228,9 +225,13 @@ const initialTasks: Task[] = [
 function getStatusIcon(status: string) {
   switch (status) {
     case "completed":
-      return <CheckCircle2 className="w-4 h-4 text-[var(--fintheon-bullish)]" />;
+      return (
+        <CheckCircle2 className="w-4 h-4 text-[var(--fintheon-bullish)]" />
+      );
     case "in-progress":
-      return <CircleDotDashed className="w-4 h-4 text-[var(--fintheon-accent)]" />;
+      return (
+        <CircleDotDashed className="w-4 h-4 text-[var(--fintheon-accent)]" />
+      );
     case "pending":
       return <Circle className="w-4 h-4 text-zinc-500" />;
     case "need-help":
@@ -255,7 +256,9 @@ function getStatusBadge(status: string) {
       );
     case "in-progress":
       return (
-        <span className={`${base} bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]`}>
+        <span
+          className={`${base} bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]`}
+        >
           {status}
         </span>
       );
@@ -329,7 +332,7 @@ export default function Plan() {
     setExpandedTasks((prev) =>
       prev.includes(taskId)
         ? prev.filter((id) => id !== taskId)
-        : [...prev, taskId]
+        : [...prev, taskId],
     );
   };
 
@@ -353,13 +356,12 @@ export default function Plan() {
           const newStatus = statuses[currentIndex];
           const updatedSubtasks = task.subtasks.map((subtask) => ({
             ...subtask,
-            status:
-              newStatus === "completed" ? "completed" : subtask.status,
+            status: newStatus === "completed" ? "completed" : subtask.status,
           }));
           return { ...task, status: newStatus, subtasks: updatedSubtasks };
         }
         return task;
-      })
+      }),
     );
   };
 
@@ -378,7 +380,7 @@ export default function Plan() {
             return subtask;
           });
           const allSubtasksCompleted = updatedSubtasks.every(
-            (s) => s.status === "completed"
+            (s) => s.status === "completed",
           );
           return {
             ...task,
@@ -387,7 +389,7 @@ export default function Plan() {
           };
         }
         return task;
-      })
+      }),
     );
   };
 
@@ -468,9 +470,7 @@ export default function Plan() {
     },
   };
 
-  const completedCount = tasks.filter(
-    (t) => t.status === "completed"
-  ).length;
+  const completedCount = tasks.filter((t) => t.status === "completed").length;
   const totalCount = tasks.length;
   const progressPercent =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -511,7 +511,7 @@ export default function Plan() {
               {tasks.map((task) => {
                 const isExpanded = expandedTasks.includes(task.id);
                 const taskCompletedSubtasks = task.subtasks.filter(
-                  (s) => s.status === "completed"
+                  (s) => s.status === "completed",
                 ).length;
                 const taskTotalSubtasks = task.subtasks.length;
 
@@ -640,7 +640,7 @@ export default function Plan() {
                                     onClick={() =>
                                       toggleSubtaskExpansion(
                                         task.id,
-                                        subtask.id
+                                        subtask.id,
                                       )
                                     }
                                     whileHover={{
@@ -667,7 +667,7 @@ export default function Plan() {
                                         e.stopPropagation();
                                         toggleSubtaskStatus(
                                           task.id,
-                                          subtask.id
+                                          subtask.id,
                                         );
                                       }}
                                       variants={statusBadgeVariants}

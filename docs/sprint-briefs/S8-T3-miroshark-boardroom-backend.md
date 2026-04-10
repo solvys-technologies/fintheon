@@ -37,6 +37,7 @@ Phase 3 (Harper)   → Wave 2: Harper synthesis (reviews Wave 0 + Wave 1 outputs
 ```
 
 Core exports:
+
 - `createMiroSharkDAG(params: MiroSharkParams): DAGDefinition`
   1. Takes: lanes (NarrativeLane[]), catalysts (CatalystCard[]), user injection (optional)
   2. Creates Wave 0 tasks: one per analyst agent
@@ -74,6 +75,7 @@ Core exports:
   - If yes, adds a gov official task to Wave 0
 
 **Key preservation rules:**
+
 - Convergence detection formula MUST match existing implementation exactly
 - Contrarian trigger threshold MUST remain 0.85
 - Consensus scoring MUST use the same weighted formula
@@ -86,6 +88,7 @@ Core exports:
 Refactor to use the DAG template instead of manual phase execution.
 
 Changes:
+
 - Replace `runDeliberationPipeline(simId, report)` with a wrapper that:
   1. Calls `createMiroSharkDAG(params)` to build the DAG definition
   2. Calls `executeDag(dagDef)` from the scheduler
@@ -108,6 +111,7 @@ Changes:
 Replace polling with DAG dispatch + SSE subscription.
 
 Changes:
+
 - Add `POST /api/boardroom/dag` route:
   1. Receives: `{ message, conversationId, userId, agents?: HermesAgentId[] }`
   2. Creates DAG: calls `createMiroSharkDAG()` if multi-agent, or single-task DAG for single-agent
@@ -128,6 +132,7 @@ Changes:
 Add Boardroom mode detection.
 
 Changes:
+
 - In the `POST /api/harper/chat` handler, detect if the request is from Boardroom surface
 - If `surface === 'boardroom'` and message warrants multi-agent analysis:
   - Create DAG instead of single-agent response
@@ -142,11 +147,11 @@ Minimal change — add one conditional branch at the top of the handler.
 2. Verify MiroShark template produces valid DAG:
    ```typescript
    const dag = createMiroSharkDAG({
-     lanes: [{ id: '1', name: 'Macro', sentiment: 0.6 }],
-     catalysts: [{ id: 'c1', headline: 'Fed holds rates', severity: 3 }],
+     lanes: [{ id: "1", name: "Macro", sentiment: 0.6 }],
+     catalysts: [{ id: "c1", headline: "Fed holds rates", severity: 3 }],
    });
-   console.log(dag.tasks.length);  // Should be 5-6 (4 analysts + 1 deliberation wave + 1 synthesis)
-   console.log(dag.tasks.filter(t => t.depKeys.length === 0).length);  // Wave 0 count
+   console.log(dag.tasks.length); // Should be 5-6 (4 analysts + 1 deliberation wave + 1 synthesis)
+   console.log(dag.tasks.filter((t) => t.depKeys.length === 0).length); // Wave 0 count
    ```
 3. Verify convergence scoring matches original:
    ```typescript

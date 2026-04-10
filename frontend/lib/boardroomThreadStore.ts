@@ -6,7 +6,11 @@
  * replayed later in a read-only view.
  */
 
-import type { BoardroomMessage, InterventionMessage, BoardroomAgent } from './services';
+import type {
+  BoardroomMessage,
+  InterventionMessage,
+  BoardroomAgent,
+} from "./services";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -16,11 +20,11 @@ export interface BoardroomThread {
   id: string;
   title: string;
   participants: string[]; // agent names + 'You' for the human
-  createdAt: string;      // ISO
-  updatedAt: string;      // ISO
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
   messages: BoardroomMessage[];
   interventionMessages: InterventionMessage[];
-  meetingNotes: string;   // user-editable notes
+  meetingNotes: string; // user-editable notes
   messageCount: number;
 }
 
@@ -28,9 +32,9 @@ export interface BoardroomThread {
 /*  IndexedDB helpers                                                  */
 /* ------------------------------------------------------------------ */
 
-const DB_NAME = 'fintheon_boardroom_threads';
+const DB_NAME = "fintheon_boardroom_threads";
 const DB_VERSION = 1;
-const STORE_NAME = 'threads';
+const STORE_NAME = "threads";
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -38,9 +42,9 @@ function openDB(): Promise<IDBDatabase> {
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-        store.createIndex('createdAt', 'createdAt', { unique: false });
-        store.createIndex('updatedAt', 'updatedAt', { unique: false });
+        const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
+        store.createIndex("createdAt", "createdAt", { unique: false });
+        store.createIndex("updatedAt", "updatedAt", { unique: false });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -65,36 +69,45 @@ function reqToPromise<T>(req: IDBRequest<T>): Promise<T> {
 
 export async function getAllThreads(): Promise<BoardroomThread[]> {
   const db = await openDB();
-  const store = txStore(db, 'readonly');
-  const all = await reqToPromise(store.getAll()) as BoardroomThread[];
+  const store = txStore(db, "readonly");
+  const all = (await reqToPromise(store.getAll())) as BoardroomThread[];
   db.close();
   // Sort newest first
-  return all.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  return all.sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
 }
 
-export async function getThread(id: string): Promise<BoardroomThread | undefined> {
+export async function getThread(
+  id: string,
+): Promise<BoardroomThread | undefined> {
   const db = await openDB();
-  const store = txStore(db, 'readonly');
-  const result = await reqToPromise(store.get(id)) as BoardroomThread | undefined;
+  const store = txStore(db, "readonly");
+  const result = (await reqToPromise(store.get(id))) as
+    | BoardroomThread
+    | undefined;
   db.close();
   return result;
 }
 
 export async function saveThread(thread: BoardroomThread): Promise<void> {
   const db = await openDB();
-  const store = txStore(db, 'readwrite');
+  const store = txStore(db, "readwrite");
   await reqToPromise(store.put(thread));
   db.close();
 }
 
 export async function deleteThread(id: string): Promise<void> {
   const db = await openDB();
-  const store = txStore(db, 'readwrite');
+  const store = txStore(db, "readwrite");
   await reqToPromise(store.delete(id));
   db.close();
 }
 
-export async function updateMeetingNotes(id: string, notes: string): Promise<void> {
+export async function updateMeetingNotes(
+  id: string,
+  notes: string,
+): Promise<void> {
   const thread = await getThread(id);
   if (!thread) return;
   thread.meetingNotes = notes;
@@ -110,9 +123,9 @@ export async function updateMeetingNotes(id: string, notes: string): Promise<voi
  * Derive a title from the first meaningful message in the thread.
  */
 export function deriveTitle(messages: BoardroomMessage[]): string {
-  if (messages.length === 0) return 'Empty Session';
+  if (messages.length === 0) return "Empty Session";
   const first = messages[0];
-  const preview = first.content.slice(0, 60).replace(/\n/g, ' ');
+  const preview = first.content.slice(0, 60).replace(/\n/g, " ");
   return preview.length < first.content.length ? `${preview}…` : preview;
 }
 
@@ -125,10 +138,10 @@ export function extractParticipants(
 ): string[] {
   const set = new Set<string>();
   for (const m of messages) {
-    set.add(m.role === 'user' ? 'You' : m.agent);
+    set.add(m.role === "user" ? "You" : m.agent);
   }
   for (const m of interventions) {
-    set.add(m.sender === 'User' ? 'You' : m.sender);
+    set.add(m.sender === "User" ? "You" : m.sender);
   }
   return Array.from(set);
 }
@@ -149,7 +162,7 @@ export function createThread(
     updatedAt: now,
     messages: [...messages],
     interventionMessages: [...interventions],
-    meetingNotes: '',
+    meetingNotes: "",
     messageCount: messages.length,
   };
 }
@@ -167,7 +180,9 @@ export function mergeMessages(
   const newMessages = messages.filter((m) => !existingIds.has(m.id));
 
   const existingIntIds = new Set(thread.interventionMessages.map((m) => m.id));
-  const newInterventions = interventions.filter((m) => !existingIntIds.has(m.id));
+  const newInterventions = interventions.filter(
+    (m) => !existingIntIds.has(m.id),
+  );
 
   if (newMessages.length === 0 && newInterventions.length === 0) return thread;
 
@@ -181,8 +196,9 @@ export function mergeMessages(
     ),
     updatedAt: new Date().toISOString(),
     messageCount: thread.messages.length + newMessages.length,
-    title: thread.title === 'Empty Session'
-      ? deriveTitle([...thread.messages, ...newMessages])
-      : thread.title,
+    title:
+      thread.title === "Empty Session"
+        ? deriveTitle([...thread.messages, ...newMessages])
+        : thread.title,
   };
 }

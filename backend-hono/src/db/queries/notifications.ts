@@ -3,12 +3,16 @@
  * CRUD operations for user notifications
  */
 
-import { sql, isDatabaseAvailable } from '../../config/database.js';
-import type { Notification, NotificationType, NotificationPriority } from '../../types/notifications.js';
+import { sql, isDatabaseAvailable } from "../../config/database.js";
+import type {
+  Notification,
+  NotificationType,
+  NotificationPriority,
+} from "../../types/notifications.js";
 
 export async function getNotificationsByUserId(
   userId: string,
-  limit = 50
+  limit = 50,
 ): Promise<Notification[]> {
   if (!isDatabaseAvailable() || !sql) return [];
 
@@ -35,7 +39,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
 
 export async function markAsRead(
   userId: string,
-  notificationId: string
+  notificationId: string,
 ): Promise<Notification | null> {
   if (!isDatabaseAvailable() || !sql) return null;
 
@@ -67,10 +71,10 @@ function mapRowToNotification(row: Record<string, unknown>): Notification {
   return {
     id: String(row.id),
     userId: String(row.user_id),
-    type: (row.type as NotificationType) || 'system',
-    title: String(row.title || ''),
-    message: String(row.message || ''),
-    priority: (row.priority as NotificationPriority) || 'medium',
+    type: (row.type as NotificationType) || "system",
+    title: String(row.title || ""),
+    message: String(row.message || ""),
+    priority: (row.priority as NotificationPriority) || "medium",
     isRead: Boolean(row.read),
     metadata: row.metadata as Record<string, unknown> | undefined,
     createdAt: new Date(row.created_at as string),

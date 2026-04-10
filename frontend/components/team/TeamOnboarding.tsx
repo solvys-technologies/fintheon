@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
-import { X } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { useBackend } from '../../lib/backend';
-import { useAuth } from '../../contexts/AuthContext';
+import { useMemo, useState } from "react";
+import { X } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useBackend } from "../../lib/backend";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface TeamOnboardingProps {
   open: boolean;
@@ -11,35 +11,48 @@ interface TeamOnboardingProps {
 }
 
 const CAPABILITY_OPTIONS = [
-  { id: 'twitter-cli', label: 'Twitter CLI' },
-  { id: 'computer-use', label: 'Computer Use' },
-  { id: 'hermes', label: 'Hermes' },
+  { id: "twitter-cli", label: "Twitter CLI" },
+  { id: "computer-use", label: "Computer Use" },
+  { id: "hermes", label: "Hermes" },
 ] as const;
 
-export function TeamOnboarding({ open, onClose, onComplete }: TeamOnboardingProps) {
+export function TeamOnboarding({
+  open,
+  onClose,
+  onComplete,
+}: TeamOnboardingProps) {
   const backend = useBackend();
   const { isAuthenticated, user } = useAuth();
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [deviceName, setDeviceName] = useState(() => {
-    const fallback = typeof navigator !== 'undefined' ? navigator.platform : 'Fintheon Device';
+    const fallback =
+      typeof navigator !== "undefined" ? navigator.platform : "Fintheon Device";
     return `Fintheon ${fallback}`;
   });
-  const [capabilities, setCapabilities] = useState<string[]>(['twitter-cli']);
-  const [assignedDesk, setAssignedDesk] = useState<string>('Pending assignment');
+  const [capabilities, setCapabilities] = useState<string[]>(["twitter-cli"]);
+  const [assignedDesk, setAssignedDesk] =
+    useState<string>("Pending assignment");
 
-  const effectiveAuth = isAuthenticated || import.meta.env.VITE_BYPASS_AUTH === 'true';
-  const canAdvanceFromLogin = effectiveAuth || (email.trim().length > 0 && password.trim().length > 0);
-  const roleLabel = useMemo(() => (user?.role ?? 'peer').toLowerCase(), [user?.role]);
+  const effectiveAuth =
+    isAuthenticated || import.meta.env.VITE_BYPASS_AUTH === "true";
+  const canAdvanceFromLogin =
+    effectiveAuth || (email.trim().length > 0 && password.trim().length > 0);
+  const roleLabel = useMemo(
+    () => (user?.role ?? "peer").toLowerCase(),
+    [user?.role],
+  );
 
   if (!open) return null;
 
   function toggleCapability(capability: string) {
     setCapabilities((prev) =>
-      prev.includes(capability) ? prev.filter((item) => item !== capability) : [...prev, capability],
+      prev.includes(capability)
+        ? prev.filter((item) => item !== capability)
+        : [...prev, capability],
     );
   }
 
@@ -50,7 +63,7 @@ export function TeamOnboarding({ open, onClose, onComplete }: TeamOnboardingProp
     }
 
     if (!supabase) {
-      setError('Supabase is not configured in this frontend build.');
+      setError("Supabase is not configured in this frontend build.");
       return;
     }
 
@@ -76,16 +89,17 @@ export function TeamOnboarding({ open, onClose, onComplete }: TeamOnboardingProp
     setError(null);
     try {
       const result = await backend.peers.register({
-        deviceName: deviceName.trim() || 'Fintheon Device',
-        platform: typeof navigator !== 'undefined' ? navigator.platform : 'unknown',
+        deviceName: deviceName.trim() || "Fintheon Device",
+        platform:
+          typeof navigator !== "undefined" ? navigator.platform : "unknown",
         capabilities,
-        hermesAvailable: capabilities.includes('hermes'),
+        hermesAvailable: capabilities.includes("hermes"),
       });
-      setAssignedDesk(result.peer.deskName || 'Awaiting admin assignment');
+      setAssignedDesk(result.peer.deskName || "Awaiting admin assignment");
       setStep(4);
       onComplete?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setBusy(false);
     }
@@ -96,7 +110,9 @@ export function TeamOnboarding({ open, onClose, onComplete }: TeamOnboardingProp
       <div className="w-full max-w-xl rounded-2xl border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-surface)] p-4">
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className="text-base font-semibold text-[var(--fintheon-text)]">Team Onboarding</h2>
+            <h2 className="text-base font-semibold text-[var(--fintheon-text)]">
+              Team Onboarding
+            </h2>
             <p className="text-xs text-zinc-400">Step {step} of 4</p>
           </div>
           <button
@@ -109,12 +125,16 @@ export function TeamOnboarding({ open, onClose, onComplete }: TeamOnboardingProp
         </div>
 
         {error && (
-          <p className="mb-3 rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-xs text-red-300">{error}</p>
+          <p className="mb-3 rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-xs text-red-300">
+            {error}
+          </p>
         )}
 
         {step === 1 && (
           <div className="space-y-3">
-            <p className="text-sm text-zinc-300">Login with your Supabase account.</p>
+            <p className="text-sm text-zinc-300">
+              Login with your Supabase account.
+            </p>
             {!effectiveAuth && (
               <>
                 <input
@@ -137,7 +157,7 @@ export function TeamOnboarding({ open, onClose, onComplete }: TeamOnboardingProp
               disabled={!canAdvanceFromLogin || busy}
               className="rounded border border-[var(--fintheon-accent)]/35 px-3 py-1.5 text-sm font-medium text-[var(--fintheon-accent)] disabled:opacity-50"
             >
-              {busy ? 'Authenticating…' : effectiveAuth ? 'Continue' : 'Login'}
+              {busy ? "Authenticating…" : effectiveAuth ? "Continue" : "Login"}
             </button>
           </div>
         )}
@@ -163,7 +183,9 @@ export function TeamOnboarding({ open, onClose, onComplete }: TeamOnboardingProp
 
         {step === 3 && (
           <div className="space-y-3">
-            <p className="text-sm text-zinc-300">Select this device capabilities.</p>
+            <p className="text-sm text-zinc-300">
+              Select this device capabilities.
+            </p>
             <div className="grid gap-2">
               {CAPABILITY_OPTIONS.map((option) => (
                 <label
@@ -184,7 +206,7 @@ export function TeamOnboarding({ open, onClose, onComplete }: TeamOnboardingProp
               disabled={busy}
               className="rounded border border-[var(--fintheon-accent)]/35 px-3 py-1.5 text-sm font-medium text-[var(--fintheon-accent)] disabled:opacity-50"
             >
-              {busy ? 'Registering…' : 'Register Device'}
+              {busy ? "Registering…" : "Register Device"}
             </button>
           </div>
         )}
@@ -207,4 +229,3 @@ export function TeamOnboarding({ open, onClose, onComplete }: TeamOnboardingProp
     </div>
   );
 }
-

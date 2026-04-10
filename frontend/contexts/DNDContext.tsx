@@ -1,5 +1,13 @@
 // [claude-code 2026-03-20] S3:T10 — Do Not Disturb context: auto-suppress during trading, manual toggle, notification queue
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  type ReactNode,
+} from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -7,15 +15,15 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef, ty
 
 export interface QueuedNotification {
   id: string;
-  type: 'iv' | 'news' | 'tilt' | 'trade' | 'warning' | 'system';
+  type: "iv" | "news" | "tilt" | "trade" | "warning" | "system";
   title: string;
   message: string;
   timestamp: Date;
-  severity?: 'info' | 'warning' | 'success' | 'error';
+  severity?: "info" | "warning" | "success" | "error";
 }
 
 /** Critical alert types that break through DND */
-const CRITICAL_TYPES = new Set(['margin-call', 'system-error', 'backend-down']);
+const CRITICAL_TYPES = new Set(["margin-call", "system-error", "backend-down"]);
 
 interface DNDContextValue {
   /** Whether DND is currently active (auto or manual) */
@@ -44,12 +52,12 @@ interface DNDContextValue {
   isCritical: (tag: string) => boolean;
 }
 
-const DND_STORAGE_KEY = 'fintheon:dnd-manual';
+const DND_STORAGE_KEY = "fintheon:dnd-manual";
 const DND_QUEUE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function loadManualDnd(): boolean {
   try {
-    return localStorage.getItem(DND_STORAGE_KEY) === 'true';
+    return localStorage.getItem(DND_STORAGE_KEY) === "true";
   } catch {
     return false;
   }

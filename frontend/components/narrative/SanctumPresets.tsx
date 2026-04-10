@@ -1,6 +1,6 @@
 // [claude-code 2026-03-23] Sanctum preset selector toolbar
-import type { SanctumPreset } from '../../types/miroshark';
-import { AUDITORIUM_PRESETS } from '../../types/miroshark';
+import type { SanctumPreset } from "../../types/miroshark";
+import { AUDITORIUM_PRESETS } from "../../types/miroshark";
 
 interface SanctumPresetsProps {
   active: SanctumPreset;
@@ -16,10 +16,10 @@ export function SanctumPresets({ active, onChange }: SanctumPresetsProps) {
           onClick={() => onChange(id)}
           className={`px-3 py-1 text-[10px] tracking-wide transition-colors ${
             active === id
-              ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8'
-              : 'text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-accent)]/4'
+              ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
+              : "text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-accent)]/4"
           }`}
-          title={AUDITORIUM_PRESETS.find(p => p.id === id)?.description}
+          title={AUDITORIUM_PRESETS.find((p) => p.id === id)?.description}
         >
           {label}
         </button>

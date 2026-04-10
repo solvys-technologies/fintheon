@@ -1,20 +1,27 @@
 // [claude-code 2026-03-20] Diagnostics endpoint — service status, missing env vars, suggested fixes
 // [claude-code 2026-03-22] Add POST /hermes/restart for frontend-triggered Hermes re-initialization
 
-import { Hono } from 'hono';
-import { pingDb } from '../../db/optimized.js';
-import { supabaseAuthHealth } from '../../services/supabase-auth.js';
-import { isPollingActive } from '../../services/riskflow/feed-poller.js';
-import { getFeedHealth } from '../../services/riskflow/feed-service.js';
-import { isTwitterCliInstalled, isRateLimited, getRateLimitCooldownMs } from '../../services/twitter-cli/index.js';
-import { initHermesAgent } from '../../services/hermes-handler.js';
-import { createLogger } from '../../lib/logger.js';
-import { triggerReflect, isReflectRunning } from '../../services/autoresearch/reflect-scheduler.js';
-import { getLatestReflectReport } from '../../services/autoresearch/reflect-engine.js';
+import { Hono } from "hono";
+import { pingDb } from "../../db/optimized.js";
+import { supabaseAuthHealth } from "../../services/supabase-auth.js";
+import { isPollingActive } from "../../services/riskflow/feed-poller.js";
+import { getFeedHealth } from "../../services/riskflow/feed-service.js";
+import {
+  isTwitterCliInstalled,
+  isRateLimited,
+  getRateLimitCooldownMs,
+} from "../../services/twitter-cli/index.js";
+import { initHermesAgent } from "../../services/hermes-handler.js";
+import { createLogger } from "../../lib/logger.js";
+import {
+  triggerReflect,
+  isReflectRunning,
+} from "../../services/autoresearch/reflect-scheduler.js";
+import { getLatestReflectReport } from "../../services/autoresearch/reflect-engine.js";
 
-const log = createLogger('Diagnostics');
+const log = createLogger("Diagnostics");
 
-type ServiceStatus = 'ok' | 'error' | 'degraded' | 'unavailable';
+type ServiceStatus = "ok" | "error" | "degraded" | "unavailable";
 
 interface ServiceDiagnostic {
   name: string;
@@ -38,36 +45,40 @@ async function checkHermesAI(): Promise<ServiceDiagnostic> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return {
-      name: 'Hermes AI (OpenRouter)',
-      status: 'error',
-      detail: 'OPENROUTER_API_KEY not set',
-      fix: 'Add OPENROUTER_API_KEY to backend-hono/.env',
+      name: "Hermes AI (OpenRouter)",
+      status: "error",
+      detail: "OPENROUTER_API_KEY not set",
+      fix: "Add OPENROUTER_API_KEY to backend-hono/.env",
     };
   }
 
   try {
     const start = Date.now();
-    const res = await fetch('https://openrouter.ai/api/v1/models', {
+    const res = await fetch("https://openrouter.ai/api/v1/models", {
       headers: { Authorization: `Bearer ${apiKey}` },
       signal: AbortSignal.timeout(8000),
     });
     const latency = Date.now() - start;
 
     if (res.ok) {
-      return { name: 'Hermes AI (OpenRouter)', status: 'ok', detail: `${latency}ms response` };
+      return {
+        name: "Hermes AI (OpenRouter)",
+        status: "ok",
+        detail: `${latency}ms response`,
+      };
     }
     return {
-      name: 'Hermes AI (OpenRouter)',
-      status: 'degraded',
+      name: "Hermes AI (OpenRouter)",
+      status: "degraded",
       detail: `HTTP ${res.status} — ${latency}ms`,
-      fix: 'Check OpenRouter API key validity at openrouter.ai/settings/keys',
+      fix: "Check OpenRouter API key validity at openrouter.ai/settings/keys",
     };
   } catch (err) {
     return {
-      name: 'Hermes AI (OpenRouter)',
-      status: 'error',
+      name: "Hermes AI (OpenRouter)",
+      status: "error",
       detail: err instanceof Error ? err.message : String(err),
-      fix: 'Check network connectivity to openrouter.ai',
+      fix: "Check network connectivity to openrouter.ai",
     };
   }
 }
@@ -75,9 +86,9 @@ async function checkHermesAI(): Promise<ServiceDiagnostic> {
 async function checkDatabase(): Promise<ServiceDiagnostic> {
   if (!process.env.DATABASE_URL) {
     return {
-      name: 'Database',
-      status: 'unavailable',
-      detail: 'No DATABASE_URL — using cloud backend (fintheon.fly.dev)',
+      name: "Database",
+      status: "unavailable",
+      detail: "No DATABASE_URL — using cloud backend (fintheon.fly.dev)",
     };
   }
 
@@ -85,13 +96,17 @@ async function checkDatabase(): Promise<ServiceDiagnostic> {
     const start = Date.now();
     await pingDb();
     const latency = Date.now() - start;
-    return { name: 'Supabase', status: 'ok', detail: `Connected — ${latency}ms ping` };
+    return {
+      name: "Supabase",
+      status: "ok",
+      detail: `Connected — ${latency}ms ping`,
+    };
   } catch (err) {
     return {
-      name: 'Supabase',
-      status: 'error',
+      name: "Supabase",
+      status: "error",
       detail: err instanceof Error ? err.message : String(err),
-      fix: 'Check DATABASE_URL in backend-hono/.env — ensure Neon/Supabase is reachable',
+      fix: "Check DATABASE_URL in backend-hono/.env — ensure Neon/Supabase is reachable",
     };
   }
 }
@@ -99,10 +114,12 @@ async function checkDatabase(): Promise<ServiceDiagnostic> {
 function checkRiskFlowPoller(): ServiceDiagnostic {
   const running = isPollingActive();
   return {
-    name: 'RiskFlow Feed Poller',
-    status: running ? 'ok' : 'error',
-    detail: running ? 'Running — 15s poll interval' : 'Stopped',
-    fix: running ? undefined : 'Restart the backend server (bun run dev) to re-start the feed poller',
+    name: "RiskFlow Feed Poller",
+    status: running ? "ok" : "error",
+    detail: running ? "Running — 15s poll interval" : "Stopped",
+    fix: running
+      ? undefined
+      : "Restart the backend server (bun run dev) to re-start the feed poller",
   };
 }
 
@@ -111,27 +128,27 @@ async function checkTwitterCli(): Promise<ServiceDiagnostic> {
     const installed = await isTwitterCliInstalled();
     if (!installed) {
       return {
-        name: 'Twitter CLI',
-        status: 'unavailable',
-        detail: 'Not installed',
-        fix: 'Install twitter-cli: go install github.com/solvys/twitter-cli@latest',
+        name: "Twitter CLI",
+        status: "unavailable",
+        detail: "Not installed",
+        fix: "Install twitter-cli: go install github.com/solvys/twitter-cli@latest",
       };
     }
     if (isRateLimited()) {
       const cooldownSec = Math.round(getRateLimitCooldownMs() / 1000);
       return {
-        name: 'Twitter CLI',
-        status: 'degraded',
+        name: "Twitter CLI",
+        status: "degraded",
         detail: `Rate limited (429) — cooldown ${cooldownSec}s remaining`,
       };
     }
-    return { name: 'Twitter CLI', status: 'ok', detail: 'Installed' };
+    return { name: "Twitter CLI", status: "ok", detail: "Installed" };
   } catch {
     return {
-      name: 'Twitter CLI',
-      status: 'unavailable',
-      detail: 'Check failed',
-      fix: 'Install twitter-cli binary and ensure it is on PATH',
+      name: "Twitter CLI",
+      status: "unavailable",
+      detail: "Check failed",
+      fix: "Install twitter-cli binary and ensure it is on PATH",
     };
   }
 }
@@ -139,24 +156,32 @@ async function checkTwitterCli(): Promise<ServiceDiagnostic> {
 function checkSupabaseAuth(): ServiceDiagnostic {
   const health = supabaseAuthHealth();
   if (health.hasCredentials) {
-    return { name: 'Supabase Auth', status: 'ok', detail: 'Credentials configured' };
+    return {
+      name: "Supabase Auth",
+      status: "ok",
+      detail: "Credentials configured",
+    };
   }
   if (health.mockMode) {
-    return { name: 'Supabase Auth', status: 'degraded', detail: 'Dev mock mode (no SUPABASE_URL)' };
+    return {
+      name: "Supabase Auth",
+      status: "degraded",
+      detail: "Dev mock mode (no SUPABASE_URL)",
+    };
   }
   return {
-    name: 'Supabase Auth',
-    status: 'error',
-    detail: 'SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing in production',
-    fix: 'Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to backend-hono/.env',
+    name: "Supabase Auth",
+    status: "error",
+    detail: "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing in production",
+    fix: "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to backend-hono/.env",
   };
 }
 
 function checkTradingView(): ServiceDiagnostic {
   return {
-    name: 'TradingView',
-    status: 'ok',
-    detail: 'Frontend widget — check browser console for load errors',
+    name: "TradingView",
+    status: "ok",
+    detail: "Frontend widget — check browser console for load errors",
   };
 }
 
@@ -164,17 +189,15 @@ function checkTradingView(): ServiceDiagnostic {
 /*  Env var audit                                                       */
 /* ------------------------------------------------------------------ */
 
-const REQUIRED_ENV_VARS = [
-  'OPENROUTER_API_KEY',
-];
+const REQUIRED_ENV_VARS = ["OPENROUTER_API_KEY"];
 
 const RECOMMENDED_ENV_VARS = [
-  'DATABASE_URL',
-  'OPENAI_API_KEY',
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'EXA_API_KEY',
-  'FRED_API_KEY',
+  "DATABASE_URL",
+  "OPENAI_API_KEY",
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "EXA_API_KEY",
+  "FRED_API_KEY",
 ];
 
 function auditEnvVars(): string[] {
@@ -194,7 +217,7 @@ function auditEnvVars(): string[] {
 export function createDiagnosticsRoutes(): Hono {
   const router = new Hono();
 
-  router.get('/', async (c) => {
+  router.get("/", async (c) => {
     const start = Date.now();
 
     const services = await Promise.all([
@@ -208,9 +231,13 @@ export function createDiagnosticsRoutes(): Hono {
 
     const missingEnvVars = auditEnvVars();
 
-    const hasError = services.some((s) => s.status === 'error');
-    const hasDegraded = services.some((s) => s.status === 'degraded');
-    const overall: ServiceStatus = hasError ? 'error' : hasDegraded ? 'degraded' : 'ok';
+    const hasError = services.some((s) => s.status === "error");
+    const hasDegraded = services.some((s) => s.status === "degraded");
+    const overall: ServiceStatus = hasError
+      ? "error"
+      : hasDegraded
+        ? "degraded"
+        : "ok";
 
     const response: DiagnosticsResponse = {
       timestamp: new Date().toISOString(),
@@ -219,9 +246,10 @@ export function createDiagnosticsRoutes(): Hono {
       missingEnvVars,
     };
 
-    log.info('Diagnostics check', { overall, elapsed: Date.now() - start });
+    log.info("Diagnostics check", { overall, elapsed: Date.now() - start });
 
-    const statusCode = overall === 'ok' ? 200 : overall === 'degraded' ? 207 : 503;
+    const statusCode =
+      overall === "ok" ? 200 : overall === "degraded" ? 207 : 503;
     return c.json(response, statusCode);
   });
 
@@ -231,24 +259,30 @@ export function createDiagnosticsRoutes(): Hono {
 
   let lastRestartAt = 0;
 
-  router.post('/hermes/restart', async (c) => {
+  router.post("/hermes/restart", async (c) => {
     const now = Date.now();
     if (now - lastRestartAt < 30_000) {
-      return c.json({
-        success: false,
-        message: 'Rate limited — wait 30s between restart attempts',
-      }, 429);
+      return c.json(
+        {
+          success: false,
+          message: "Rate limited — wait 30s between restart attempts",
+        },
+        429,
+      );
     }
 
     lastRestartAt = now;
-    log.info('Hermes restart requested by frontend');
+    log.info("Hermes restart requested by frontend");
 
     try {
       await initHermesAgent();
-      return c.json({ success: true, message: 'Hermes re-initialization complete' });
+      return c.json({
+        success: true,
+        message: "Hermes re-initialization complete",
+      });
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
-      log.warn('Hermes restart failed', { error: detail });
+      log.warn("Hermes restart failed", { error: detail });
       return c.json({ success: false, message: detail }, 500);
     }
   });
@@ -257,43 +291,47 @@ export function createDiagnosticsRoutes(): Hono {
   /*  REFLECT — news analysis quality self-improvement                   */
   /* ------------------------------------------------------------------ */
 
-  router.get('/reflect/latest', async (c) => {
+  router.get("/reflect/latest", async (c) => {
     const report = await getLatestReflectReport();
     if (!report) {
-      return c.json({ error: 'No REFLECT report available yet' }, 404);
+      return c.json({ error: "No REFLECT report available yet" }, 404);
     }
     return c.json(report);
   });
 
-  router.post('/reflect/run', async (c) => {
+  router.post("/reflect/run", async (c) => {
     if (isReflectRunning()) {
-      return c.json({ error: 'REFLECT is already running' }, 429);
+      return c.json({ error: "REFLECT is already running" }, 429);
     }
 
-    const body = await c.req.json<{ daysBack?: number }>().catch(() => ({ daysBack: 7 }));
+    const body = await c.req
+      .json<{ daysBack?: number }>()
+      .catch(() => ({ daysBack: 7 }));
     const daysBack = body.daysBack ?? 7;
 
     log.info(`Manual REFLECT trigger — ${daysBack} days`);
 
     // Run async, return immediately
-    triggerReflect(daysBack).catch(err =>
-      log.error('Manual REFLECT failed:', { error: String(err) })
+    triggerReflect(daysBack).catch((err) =>
+      log.error("Manual REFLECT failed:", { error: String(err) }),
     );
 
-    return c.json({ status: 'started', daysBack });
+    return c.json({ status: "started", daysBack });
   });
 
   // [claude-code 2026-04-06] Debug: check unscored items count
-  router.get('/unscored-check', async (c) => {
+  router.get("/unscored-check", async (c) => {
     try {
-      const { readUnscoredItems } = await import('../../services/supabase-service.js');
-      const { isCentralScorerRunning, scoringCycle } = await import('../../services/riskflow/central-scorer.js');
+      const { readUnscoredItems } =
+        await import("../../services/supabase-service.js");
+      const { isCentralScorerRunning, scoringCycle } =
+        await import("../../services/riskflow/central-scorer.js");
       const items = await readUnscoredItems(5);
       return c.json({
         unscoredCount: items.length,
         scorerRunning: isCentralScorerRunning(),
-        sampleIds: items.map(i => i.tweet_id),
-        sampleHeadlines: items.map(i => (i.headline || '').slice(0, 60)),
+        sampleIds: items.map((i) => i.tweet_id),
+        sampleHeadlines: items.map((i) => (i.headline || "").slice(0, 60)),
       });
     } catch (err) {
       return c.json({ error: String(err) }, 500);
@@ -301,11 +339,13 @@ export function createDiagnosticsRoutes(): Hono {
   });
 
   // Force score unscored items NOW
-  router.post('/force-score', async (c) => {
+  router.post("/force-score", async (c) => {
     try {
-      const { scoringCycle } = await import('../../services/riskflow/central-scorer.js');
+      const { scoringCycle } =
+        await import("../../services/riskflow/central-scorer.js");
       await scoringCycle();
-      const { readUnscoredItems } = await import('../../services/supabase-service.js');
+      const { readUnscoredItems } =
+        await import("../../services/supabase-service.js");
       const remaining = await readUnscoredItems(1);
       return c.json({ success: true, remainingUnscored: remaining.length });
     } catch (err) {
@@ -314,13 +354,17 @@ export function createDiagnosticsRoutes(): Hono {
   });
 
   // [claude-code 2026-04-05] Feed health endpoint for Harper monitoring hook
-  router.get('/feed-health', (c) => {
+  router.get("/feed-health", (c) => {
     const health = getFeedHealth();
     const pollerRunning = isPollingActive();
-    const status = health.cacheSize === 0 ? 'empty'
-      : !pollerRunning ? 'poller_stopped'
-      : health.cacheAgeMs > 300_000 ? 'stale'
-      : 'healthy';
+    const status =
+      health.cacheSize === 0
+        ? "empty"
+        : !pollerRunning
+          ? "poller_stopped"
+          : health.cacheAgeMs > 300_000
+            ? "stale"
+            : "healthy";
     return c.json({ status, pollerRunning, ...health });
   });
 

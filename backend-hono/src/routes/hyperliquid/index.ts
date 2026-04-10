@@ -4,13 +4,17 @@
  * Route registration for /api/hyperliquid endpoints
  */
 
-import { Hono } from 'hono'
-import { handleGetStatus, handleGetPositions, handleGetAccountInfo } from './handlers.js'
+import { Hono } from "hono";
+import {
+  handleGetStatus,
+  handleGetPositions,
+  handleGetAccountInfo,
+} from "./handlers.js";
 
 export function createHyperliquidRoutes(): Hono {
-  const router = new Hono()
-  router.get('/status', handleGetStatus)
-  router.get('/positions', handleGetPositions)
-  router.get('/account', handleGetAccountInfo)
-  return router
+  const router = new Hono();
+  router.get("/status", handleGetStatus);
+  router.get("/positions", handleGetPositions);
+  router.get("/account", handleGetAccountInfo);
+  return router;
 }

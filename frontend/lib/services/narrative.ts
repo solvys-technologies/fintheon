@@ -6,10 +6,10 @@ import ApiClient from "../apiClient";
 
 export interface ScoredCandidate {
   sourceId: string;
-  sourceType: 'riskflow' | 'mdb-brief';
+  sourceType: "riskflow" | "mdb-brief";
   notabilityScore: number;
-  sentiment: 'bullish' | 'bearish';
-  severity: 'high' | 'medium' | 'low';
+  sentiment: "bullish" | "bearish";
+  severity: "high" | "medium" | "low";
   tickers: string[];
   themes: string[];
   suggestedTitle: string;
@@ -37,24 +37,38 @@ export class NarrativeService {
   constructor(private client: ApiClient) {}
 
   async getThreads(): Promise<{ threads: NarrativeThreadRow[] }> {
-    return this.client.get('/api/narrative/threads');
+    return this.client.get("/api/narrative/threads");
   }
 
-  async getCardLinks(cardIds?: string[]): Promise<{ links: NarrativeCardLink[] }> {
-    const params = cardIds?.length ? `?card_ids=${cardIds.join(',')}` : '';
+  async getCardLinks(
+    cardIds?: string[],
+  ): Promise<{ links: NarrativeCardLink[] }> {
+    const params = cardIds?.length ? `?card_ids=${cardIds.join(",")}` : "";
     return this.client.get(`/api/narrative/card-links${params}`);
   }
 
-  async scoreRiskflow(items: Array<{ id: string; headline: string; summary: string; source: string; severity: string; tags: string[]; publishedAt: string }>): Promise<{ scored: ScoredCandidate[]; provider: string }> {
-    return this.client.post('/api/narrative/score-riskflow', { items });
+  async scoreRiskflow(
+    items: Array<{
+      id: string;
+      headline: string;
+      summary: string;
+      source: string;
+      severity: string;
+      tags: string[];
+      publishedAt: string;
+    }>,
+  ): Promise<{ scored: ScoredCandidate[]; provider: string }> {
+    return this.client.post("/api/narrative/score-riskflow", { items });
   }
 
-  async scoreBrief(briefText: string): Promise<{ scored: ScoredCandidate[]; provider: string }> {
-    return this.client.post('/api/narrative/score-brief', { briefText });
+  async scoreBrief(
+    briefText: string,
+  ): Promise<{ scored: ScoredCandidate[]; provider: string }> {
+    return this.client.post("/api/narrative/score-brief", { briefText });
   }
 
   async getCatalysts(since?: string): Promise<{ catalysts: DbCatalyst[] }> {
-    const params = since ? `?since=${encodeURIComponent(since)}` : '';
+    const params = since ? `?since=${encodeURIComponent(since)}` : "";
     return this.client.get(`/api/narrative/catalysts${params}`);
   }
 }
@@ -65,9 +79,9 @@ export interface DbCatalyst {
   title: string;
   description: string;
   date: string;
-  sentiment: 'bullish' | 'bearish';
-  severity: 'high' | 'medium' | 'low';
-  source: 'riskflow';
+  sentiment: "bullish" | "bearish";
+  severity: "high" | "medium" | "low";
+  source: "riskflow";
   narrativeIds: string[];
   narrativeThreads: string[];
   isGhost: boolean;

@@ -1,6 +1,6 @@
 // [claude-code 2026-03-06] Diamond node where a catalyst affects multiple narrative lanes
-import type { ConfluenceNode as ConfluenceNodeType } from '../../lib/narrative-types';
-import type { Point } from '../../lib/narrative-catenary';
+import type { ConfluenceNode as ConfluenceNodeType } from "../../lib/narrative-types";
+import type { Point } from "../../lib/narrative-catenary";
 
 interface ConfluenceNodeProps {
   node: ConfluenceNodeType;
@@ -9,14 +9,16 @@ interface ConfluenceNodeProps {
   onClick: (id: string) => void;
 }
 
-export function ConfluenceNodeSVG({ node, position, selected, onClick }: ConfluenceNodeProps) {
+export function ConfluenceNodeSVG({
+  node,
+  position,
+  selected,
+  onClick,
+}: ConfluenceNodeProps) {
   const size = 12; // half-size of the diamond
 
   return (
-    <g
-      onClick={() => onClick(node.id)}
-      style={{ cursor: 'pointer' }}
-    >
+    <g onClick={() => onClick(node.id)} style={{ cursor: "pointer" }}>
       <rect
         x={position.x - size}
         y={position.y - size}
@@ -49,7 +51,7 @@ export function ConfluenceNodeSVG({ node, position, selected, onClick }: Conflue
           fill="var(--fintheon-accent)"
           fontSize={9}
           fontWeight={600}
-          style={{ pointerEvents: 'none' }}
+          style={{ pointerEvents: "none" }}
         >
           {node.narrativeIds.length}
         </text>

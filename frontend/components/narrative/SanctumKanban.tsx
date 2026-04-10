@@ -1,6 +1,10 @@
 // [claude-code 2026-03-23] Sanctum kanban — dashboard-grade timeline strips + live RiskFlow catalysts
-import type { MiroSharkRiskCategory, MiroSharkGeneratedEvent, RiskFlowCatalyst } from '../../types/miroshark';
-import { RISK_CATEGORY_LABELS, ivHeatColor } from '../../types/miroshark';
+import type {
+  MiroSharkRiskCategory,
+  MiroSharkGeneratedEvent,
+  RiskFlowCatalyst,
+} from "../../types/miroshark";
+import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/miroshark";
 
 interface CatalystInput {
   id: string;
@@ -20,21 +24,25 @@ interface SanctumKanbanProps {
 }
 
 const CATEGORIES: MiroSharkRiskCategory[] = [
-  'geopolitical', 'political', 'monetary-policy',
-  'earnings-corporate', 'market-structure', 'black-swan',
+  "geopolitical",
+  "political",
+  "monetary-policy",
+  "earnings-corporate",
+  "market-structure",
+  "black-swan",
 ];
 
 const CATEGORY_MAP: Record<string, MiroSharkRiskCategory> = {
-  geopolitical: 'geopolitical',
-  'supply-chain': 'geopolitical',
-  political: 'political',
-  monetary: 'monetary-policy',
-  macroeconomic: 'monetary-policy',
-  'monetary-policy': 'monetary-policy',
-  earnings: 'earnings-corporate',
-  'earnings-corporate': 'earnings-corporate',
-  'market-structure': 'market-structure',
-  'black-swan': 'black-swan',
+  geopolitical: "geopolitical",
+  "supply-chain": "geopolitical",
+  political: "political",
+  monetary: "monetary-policy",
+  macroeconomic: "monetary-policy",
+  "monetary-policy": "monetary-policy",
+  earnings: "earnings-corporate",
+  "earnings-corporate": "earnings-corporate",
+  "market-structure": "market-structure",
+  "black-swan": "black-swan",
 };
 
 interface KanbanCard {
@@ -53,28 +61,38 @@ function getImpactColor(score: number): string {
 }
 
 function severityToScore(sev: string): number {
-  if (sev === 'critical' || sev === 'high') return 8;
-  if (sev === 'medium') return 5;
+  if (sev === "critical" || sev === "high") return 8;
+  if (sev === "medium") return 5;
   return 3;
 }
 
 function inferCategory(title: string, summary?: string): MiroSharkRiskCategory {
-  const text = `${title} ${summary ?? ''}`.toLowerCase();
-  if (text.match(/tariff|sanction|war|nato|china|russia|israel/)) return 'geopolitical';
-  if (text.match(/fed|rate|inflation|cpi|pce|fomc|treasury/)) return 'monetary-policy';
-  if (text.match(/earnings|revenue|guidance|eps|profit/)) return 'earnings-corporate';
-  if (text.match(/election|congress|regulation|law|policy/)) return 'political';
-  if (text.match(/liquidity|margin|vix|volatil|squeeze/)) return 'market-structure';
-  if (text.match(/pandemic|crash|default|nuclear|catastroph/)) return 'black-swan';
-  return 'geopolitical';
+  const text = `${title} ${summary ?? ""}`.toLowerCase();
+  if (text.match(/tariff|sanction|war|nato|china|russia|israel/))
+    return "geopolitical";
+  if (text.match(/fed|rate|inflation|cpi|pce|fomc|treasury/))
+    return "monetary-policy";
+  if (text.match(/earnings|revenue|guidance|eps|profit/))
+    return "earnings-corporate";
+  if (text.match(/election|congress|regulation|law|policy/)) return "political";
+  if (text.match(/liquidity|margin|vix|volatil|squeeze/))
+    return "market-structure";
+  if (text.match(/pandemic|crash|default|nuclear|catastroph/))
+    return "black-swan";
+  return "geopolitical";
 }
 
-export function SanctumKanban({ catalysts, generatedEvents, riskflowItems, expanded }: SanctumKanbanProps) {
+export function SanctumKanban({
+  catalysts,
+  generatedEvents,
+  riskflowItems,
+  expanded,
+}: SanctumKanbanProps) {
   const lanes = new Map<MiroSharkRiskCategory, KanbanCard[]>();
   for (const cat of CATEGORIES) lanes.set(cat, []);
 
   for (const c of catalysts) {
-    const riskCat = CATEGORY_MAP[c.category ?? ''] ?? 'geopolitical';
+    const riskCat = CATEGORY_MAP[c.category ?? ""] ?? "geopolitical";
     const score = severityToScore(c.severity);
     lanes.get(riskCat)!.push({
       id: c.id,
@@ -87,8 +105,10 @@ export function SanctumKanban({ catalysts, generatedEvents, riskflowItems, expan
   }
 
   // Live RiskFlow headlines
-  for (const item of (riskflowItems ?? [])) {
-    const riskCat = CATEGORY_MAP[item.category ?? ''] ?? inferCategory(item.title, item.summary);
+  for (const item of riskflowItems ?? []) {
+    const riskCat =
+      CATEGORY_MAP[item.category ?? ""] ??
+      inferCategory(item.title, item.summary);
     const cards = lanes.get(riskCat);
     if (cards) {
       cards.push({
@@ -125,9 +145,10 @@ export function SanctumKanban({ catalysts, generatedEvents, riskflowItems, expan
 
   return (
     <div className="flex flex-col gap-3">
-      {CATEGORIES.map(cat => {
+      {CATEGORIES.map((cat) => {
         const cards = lanes.get(cat)!;
-        const maxIv = cards.length > 0 ? Math.max(...cards.map(c => c.impactScore)) : 5;
+        const maxIv =
+          cards.length > 0 ? Math.max(...cards.map((c) => c.impactScore)) : 5;
         const color = ivHeatColor(maxIv);
 
         return (
@@ -137,7 +158,10 @@ export function SanctumKanban({ catalysts, generatedEvents, riskflowItems, expan
           >
             {/* Lane header */}
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+              <div
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: color }}
+              />
               <span
                 className="text-[10px] font-mono font-bold uppercase tracking-wider"
                 style={{ color }}
@@ -145,7 +169,7 @@ export function SanctumKanban({ catalysts, generatedEvents, riskflowItems, expan
                 {RISK_CATEGORY_LABELS[cat]}
               </span>
               <span className="text-[9px] font-mono text-[var(--fintheon-muted)]/30">
-                {cards.length} event{cards.length !== 1 ? 's' : ''}
+                {cards.length} event{cards.length !== 1 ? "s" : ""}
               </span>
             </div>
 
@@ -155,12 +179,14 @@ export function SanctumKanban({ catalysts, generatedEvents, riskflowItems, expan
                 No upcoming events
               </span>
             ) : (
-              <div className={`flex gap-2 ${expanded ? 'flex-wrap' : 'overflow-x-auto scrollbar-thin'}`}>
-                {cards.map(card => (
+              <div
+                className={`flex gap-2 ${expanded ? "flex-wrap" : "overflow-x-auto scrollbar-thin"}`}
+              >
+                {cards.map((card) => (
                   <div
                     key={card.id}
                     className={`shrink-0 flex flex-col gap-1 rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-bg)]/60 ${
-                      expanded ? 'p-3 w-[220px]' : 'px-3 py-2 max-w-[200px]'
+                      expanded ? "p-3 w-[220px]" : "px-3 py-2 max-w-[200px]"
                     }`}
                   >
                     <div className="flex items-center gap-2">

@@ -1,10 +1,14 @@
-import { useState, useCallback } from 'react';
-import { MessageSquare, X, Maximize2 } from 'lucide-react';
-import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
-import { useFintheonAgents } from '../../contexts/FintheonAgentContext';
-import { useHermesRuntime } from './useHermesRuntime';
-import { FintheonThread } from './FintheonThread';
-import { FintheonComposer } from './FintheonComposer';
+import { useState, useCallback } from "react";
+import { MessageSquare, X, Maximize2 } from "lucide-react";
+import {
+  AssistantRuntimeProvider,
+  useThread,
+  useThreadRuntime,
+} from "@assistant-ui/react";
+import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
+import { useHermesRuntime } from "./useHermesRuntime";
+import { FintheonThread } from "./FintheonThread";
+import { FintheonComposer } from "./FintheonComposer";
 
 interface FintheonFloatingChatProps {
   visible: boolean;
@@ -34,34 +38,44 @@ function FloatingInner({
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
 
-  const handleSend = useCallback((msg: string) => {
-    runtime.append({ role: 'user', content: [{ type: 'text', text: msg }] });
-  }, [runtime]);
+  const handleSend = useCallback(
+    (msg: string) => {
+      runtime.append({ role: "user", content: [{ type: "text", text: msg }] });
+    },
+    [runtime],
+  );
 
   return (
     <div
       className="fixed z-[90] flex flex-col rounded-xl border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] shadow-2xl overflow-hidden"
-      style={{ bottom: '24px', right: '24px', width: '380px', height: '560px' }}
+      style={{ bottom: "24px", right: "24px", width: "380px", height: "560px" }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--fintheon-accent)]/10">
         <div className="flex items-center gap-2">
           <div
             className="flex items-center justify-center rounded-md bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] font-semibold"
-            style={{ width: '24px', height: '24px', fontSize: '12px' }}
+            style={{ width: "24px", height: "24px", fontSize: "12px" }}
           >
-            {activeAgent?.icon || 'H'}
+            {activeAgent?.icon || "H"}
           </div>
           <div>
-            <div className="text-[12px] font-semibold text-white">{activeAgent?.name || 'Harper'}</div>
-            <div className="text-[10px] text-gray-500">{activeAgent?.sector || 'Chief Analyst'}</div>
+            <div className="text-[12px] font-semibold text-white">
+              {activeAgent?.name || "Harper"}
+            </div>
+            <div className="text-[10px] text-gray-500">
+              {activeAgent?.sector || "Chief Analyst"}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => { onCollapse(); onExpandToAnalysis(); }}
+            onClick={() => {
+              onCollapse();
+              onExpandToAnalysis();
+            }}
             className="flex items-center justify-center rounded-md text-gray-500 hover:text-[var(--fintheon-accent)] transition-colors"
-            style={{ width: '28px', height: '28px' }}
+            style={{ width: "28px", height: "28px" }}
             title="Expand to Analysis"
           >
             <Maximize2 size={13} />
@@ -69,7 +83,7 @@ function FloatingInner({
           <button
             onClick={onCollapse}
             className="flex items-center justify-center rounded-md text-gray-500 hover:text-white transition-colors"
-            style={{ width: '28px', height: '28px' }}
+            style={{ width: "28px", height: "28px" }}
           >
             <X size={14} />
           </button>
@@ -101,15 +115,18 @@ function FloatingInner({
   );
 }
 
-export function FintheonFloatingChat({ visible, onExpandToAnalysis }: FintheonFloatingChatProps) {
+export function FintheonFloatingChat({
+  visible,
+  onExpandToAnalysis,
+}: FintheonFloatingChatProps) {
   const [expanded, setExpanded] = useState(false);
   const [thinkHarder, setThinkHarder] = useState(false);
   const { activeAgent } = useFintheonAgents();
 
   const { runtime, lastError, lastRequestId } = useHermesRuntime(
-    activeAgent?.id ?? 'default',
+    activeAgent?.id ?? "default",
     thinkHarder,
-    'floating'
+    "floating",
   );
 
   if (!visible) return null;
@@ -120,7 +137,7 @@ export function FintheonFloatingChat({ visible, onExpandToAnalysis }: FintheonFl
       <button
         onClick={() => setExpanded(true)}
         className="fixed z-[90] flex items-center justify-center rounded-full bg-[var(--fintheon-accent)] text-black hover:bg-[#C5A030] transition-all shadow-lg hover:shadow-xl"
-        style={{ bottom: '24px', right: '24px', width: '48px', height: '48px' }}
+        style={{ bottom: "24px", right: "24px", width: "48px", height: "48px" }}
         title="Open chat"
       >
         <MessageSquare size={20} />

@@ -3,24 +3,42 @@
 // [claude-code 2026-03-23] MiroShark simulation engine types
 
 export type MiroSharkRiskCategory =
-  | 'geopolitical'
-  | 'political'
-  | 'monetary-policy'
-  | 'earnings-corporate'
-  | 'market-structure'
-  | 'black-swan';
+  | "geopolitical"
+  | "political"
+  | "monetary-policy"
+  | "earnings-corporate"
+  | "market-structure"
+  | "black-swan";
 
 export interface MiroSharkAgent {
   id: string;
   persona: string;
-  role: 'macro-strategist' | 'sentiment-analyst' | 'geopolitical-analyst' | 'earnings-analyst' | 'risk-manager' | 'contrarian' | 'fundamentals' | 'sentiment'
-    | 'central-banker' | 'executive' | 'treasury-secretary' | 'foreign-policy' | 'commerce-secretary' | 'middle-east-envoy' | 'trade-rep' | 'trade-advisor'
-    | 'flow-analyst' | 'vol-analyst' | 'macro-analyst' | 'credit-analyst';
+  role:
+    | "macro-strategist"
+    | "sentiment-analyst"
+    | "geopolitical-analyst"
+    | "earnings-analyst"
+    | "risk-manager"
+    | "contrarian"
+    | "fundamentals"
+    | "sentiment"
+    | "central-banker"
+    | "executive"
+    | "treasury-secretary"
+    | "foreign-policy"
+    | "commerce-secretary"
+    | "middle-east-envoy"
+    | "trade-rep"
+    | "trade-advisor"
+    | "flow-analyst"
+    | "vol-analyst"
+    | "macro-analyst"
+    | "credit-analyst";
   narrativeCategories: string[];
 }
 
 /** Which layer produced a deliberation result */
-export type DebateLayer = 'market-analysts' | 'gov-officials';
+export type DebateLayer = "market-analysts" | "gov-officials";
 
 // ── Deliberation Pipeline Types ─────────────────────────────────────────────
 
@@ -40,7 +58,7 @@ export interface GovOfficialAssessment {
 export interface HermesDeliberation {
   agentId: string;
   name: string;
-  verdict: 'agree' | 'disagree' | 'nuance';
+  verdict: "agree" | "disagree" | "nuance";
   reasoning: string;
   confidence: number;
 }
@@ -62,7 +80,14 @@ export interface HarperOpusScoring {
   contrarianTriggered?: boolean;
 }
 
-export type DeliberationPhase = 'idle' | 'market-analysts' | 'gov-officials' | 'hermes-deliberation' | 'harper-scoring' | 'complete' | 'interrupted';
+export type DeliberationPhase =
+  | "idle"
+  | "market-analysts"
+  | "gov-officials"
+  | "hermes-deliberation"
+  | "harper-scoring"
+  | "complete"
+  | "interrupted";
 
 export interface DeliberationState {
   simulationId: string;
@@ -82,7 +107,7 @@ export interface DeliberationState {
 
 export interface MiroSharkEntity {
   id: string;
-  type: 'narrative' | 'event' | 'indicator';
+  type: "narrative" | "event" | "indicator";
   label: string;
   properties: Record<string, unknown>;
 }
@@ -90,7 +115,7 @@ export interface MiroSharkEntity {
 export interface MiroSharkRelationship {
   fromId: string;
   toId: string;
-  type: 'reinforces' | 'contradicts' | 'causes' | 'correlates';
+  type: "reinforces" | "contradicts" | "causes" | "correlates";
   weight: number;
 }
 
@@ -104,7 +129,7 @@ export interface MiroSharkSeed {
 
 export interface MiroSharkSimulation {
   id: string;
-  status: 'queued' | 'running' | 'complete' | 'error';
+  status: "queued" | "running" | "complete" | "error";
   progress: number;
   startedAt: string;
   completedAt?: string;
@@ -205,7 +230,7 @@ export interface MiroSharkPrediction {
   generatedEvents?: MiroSharkGeneratedEvent[];
   briefing?: MiroSharkBriefing;
   contextSnapshot?: SimulationContext;
-  source: 'miroshark';
+  source: "miroshark";
   generatedAt: string;
 }
 
@@ -217,7 +242,11 @@ export interface MiroSharkInjection {
 
 // --- Preset & Context Types ---
 
-export type SanctumPreset = 'full-brief' | 'chart-focus' | 'econ-watch' | 'risk-scan';
+export type SanctumPreset =
+  | "full-brief"
+  | "chart-focus"
+  | "econ-watch"
+  | "risk-scan";
 
 export interface RiskFlowHeadline {
   id: string;
@@ -244,7 +273,7 @@ export interface RiskFlowHeadline {
     actual?: number;
     forecast?: number;
     previous?: number;
-    beatMiss?: 'beat' | 'miss' | 'inline';
+    beatMiss?: "beat" | "miss" | "inline";
     surprisePercent?: number;
   } | null;
   risk_type?: string | null;
@@ -264,7 +293,7 @@ export interface EconPrintStat {
   forecast: number | null;
   previous: number | null;
   surprise: number | null;
-  direction: 'beat' | 'miss' | 'inline' | null;
+  direction: "beat" | "miss" | "inline" | null;
   ivScore: number | null;
   printedAt: string | null;
 }
@@ -323,7 +352,7 @@ export interface AggregatedRollingData {
   avgCompositeIV: number;
   avgConfidence: number;
   avgRegimeShift: number;
-  trendDirection: 'rising' | 'falling' | 'stable';
+  trendDirection: "rising" | "falling" | "stable";
   periodStart: string;
   periodEnd: string;
 }

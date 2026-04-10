@@ -43,4 +43,3 @@ This database is part of the existing PIC system for surfacing executive-facing 
 
 - Fintheon will use `VITE_NOTION_BOARDROOM_URL` to decide what to embed in the Board Room tab.
 - Default should be the **PIC Dashboard** URL above, but you can swap it to a dedicated “Boardroom Meeting” page when you finalize that page in Notion.
-

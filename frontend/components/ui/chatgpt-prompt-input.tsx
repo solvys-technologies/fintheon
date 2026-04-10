@@ -11,7 +11,7 @@ import {
   type ChangeEvent,
   type ClipboardEvent,
   type FC,
-} from 'react';
+} from "react";
 import {
   ArrowUp,
   Square,
@@ -23,11 +23,11 @@ import {
   Loader2,
   Clock,
   Newspaper,
-} from 'lucide-react';
-import { FintheonSlashPicker } from '../chat/FintheonSlashPicker';
-import { FintheonAttachPopup } from '../chat/FintheonAttachPopup';
-import { SkillBadge } from '../chat/SkillBadge';
-import { UsageRing } from '../chat/UsageRing';
+} from "lucide-react";
+import { FintheonSlashPicker } from "../chat/FintheonSlashPicker";
+import { FintheonAttachPopup } from "../chat/FintheonAttachPopup";
+import { SkillBadge } from "../chat/SkillBadge";
+import { UsageRing } from "../chat/UsageRing";
 
 /* ------------------------------------------------------------------ */
 /*  Think Harder SVG — Claude-style sparkle shape                     */
@@ -39,11 +39,13 @@ const ThinkHarderIcon: FC<{ active: boolean }> = ({ active }) => (
     height="14"
     viewBox="0 0 16 16"
     fill="none"
-    stroke={active ? 'var(--fintheon-accent)' : 'currentColor'}
+    stroke={active ? "var(--fintheon-accent)" : "currentColor"}
     strokeWidth="1.4"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className={active ? 'animate-[pulse-icon_1.5s_ease-in-out_infinite]' : 'opacity-50'}
+    className={
+      active ? "animate-[pulse-icon_1.5s_ease-in-out_infinite]" : "opacity-50"
+    }
   >
     {/* Sparkle / thinking shape */}
     <path d="M8 1v3M8 12v3M1 8h3M12 8h3" />
@@ -96,7 +98,7 @@ export function PromptBox({
   onSend,
   onStop,
   isProcessing = false,
-  placeholder = 'Message your analysts...',
+  placeholder = "Message your analysts...",
   thinkHarder,
   setThinkHarder,
   activeSkill,
@@ -104,7 +106,7 @@ export function PromptBox({
   showSkills,
   onToggleSkills,
   disabled = false,
-  draftKey = 'fintheon:draft-analysis',
+  draftKey = "fintheon:draft-analysis",
   compact = false,
   lastError,
   disabledSkills,
@@ -118,7 +120,7 @@ export function PromptBox({
   providerSlot,
   onRiskFlowPick,
 }: PromptBoxProps) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [vanishing, setVanishing] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
@@ -147,7 +149,7 @@ export function PromptBox({
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
+    el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, compact ? 100 : 160)}px`;
   }, [text, compact]);
 
@@ -167,11 +169,11 @@ export function PromptBox({
     setVanishing(true);
     setTimeout(() => {
       onSend(msg, images.length > 0 ? images : undefined);
-      setText('');
+      setText("");
       setImages([]);
       localStorage.removeItem(draftKey);
       if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = "auto";
       }
       setVanishing(false);
     }, 300);
@@ -181,7 +183,7 @@ export function PromptBox({
   const lastSpaceRef = useRef(0);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (isProcessing && onStop) {
         onStop();
@@ -190,7 +192,7 @@ export function PromptBox({
       }
       return;
     }
-    if (e.key === ' ' && isProcessing && onStop) {
+    if (e.key === " " && isProcessing && onStop) {
       const now = Date.now();
       if (now - lastSpaceRef.current < 400) {
         e.preventDefault();
@@ -206,13 +208,13 @@ export function PromptBox({
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      if (item.type.startsWith('image/')) {
+      if (item.type.startsWith("image/")) {
         e.preventDefault();
         const blob = item.getAsFile();
         if (blob) {
           const reader = new FileReader();
           reader.onload = () => {
-            if (typeof reader.result === 'string') {
+            if (typeof reader.result === "string") {
               setImages((prev) => [...prev, reader.result as string]);
             }
           };
@@ -230,13 +232,16 @@ export function PromptBox({
     setImages((prev) => [...prev, dataUrl]);
   }, []);
 
-  const handleSlashSelect = useCallback((skillId: string) => {
-    onSelectSkill(skillId);
-    setSlashQuery(null);
-    setText('');
-  }, [onSelectSkill]);
+  const handleSlashSelect = useCallback(
+    (skillId: string) => {
+      onSelectSkill(skillId);
+      setSlashQuery(null);
+      setText("");
+    },
+    [onSelectSkill],
+  );
 
-  const micListening = voiceState === 'listening';
+  const micListening = voiceState === "listening";
 
   /* RiskFlow drag-drop */
   const [dragOver, setDragOver] = useState(false);
@@ -244,17 +249,25 @@ export function PromptBox({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const json = e.dataTransfer.getData('application/x-riskflow');
+    const json = e.dataTransfer.getData("application/x-riskflow");
     if (!json) return;
     try {
-      const data = JSON.parse(json) as { headline?: string; summary?: string; ticker?: string; direction?: string };
+      const data = JSON.parse(json) as {
+        headline?: string;
+        summary?: string;
+        ticker?: string;
+        direction?: string;
+      };
       const parts: string[] = [];
       if (data.headline) parts.push(data.headline);
       if (data.ticker) parts.push(`Ticker: ${data.ticker}`);
       if (data.direction) parts.push(`Direction: ${data.direction}`);
-      if (data.summary && data.summary !== data.headline) parts.push(data.summary);
+      if (data.summary && data.summary !== data.headline)
+        parts.push(data.summary);
       if (parts.length > 0) {
-        setText((prev) => (prev ? `${prev}\n\n${parts.join('\n')}` : parts.join('\n')));
+        setText((prev) =>
+          prev ? `${prev}\n\n${parts.join("\n")}` : parts.join("\n"),
+        );
       }
     } catch {
       // Not valid riskflow data — ignore
@@ -262,9 +275,9 @@ export function PromptBox({
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('application/x-riskflow')) {
+    if (e.dataTransfer.types.includes("application/x-riskflow")) {
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
+      e.dataTransfer.dropEffect = "copy";
       setDragOver(true);
     }
   }, []);
@@ -273,7 +286,9 @@ export function PromptBox({
     setDragOver(false);
   }, []);
 
-  const visibleQueueJobs = (queueJobs ?? []).filter((j) => j.status !== 'done').slice(0, 2);
+  const visibleQueueJobs = (queueJobs ?? [])
+    .filter((j) => j.status !== "done")
+    .slice(0, 2);
 
   return (
     <div
@@ -286,7 +301,10 @@ export function PromptBox({
         {/* Active skill badge */}
         {activeSkill && (
           <div className="mb-2">
-            <SkillBadge skillId={activeSkill} onDismiss={() => onSelectSkill(null)} />
+            <SkillBadge
+              skillId={activeSkill}
+              onDismiss={() => onSelectSkill(null)}
+            />
           </div>
         )}
 
@@ -315,15 +333,21 @@ export function PromptBox({
           onAttachImage={handleAttachImage}
         />
 
-
         {/* Image preview strip */}
         {images.length > 0 && (
           <div className="flex gap-2 mb-2 px-2 overflow-x-auto">
             {images.map((src, idx) => (
-              <div key={idx} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[var(--fintheon-accent)]/20 cursor-pointer" onClick={() => setFullSizeImage(src)}>
+              <div
+                key={idx}
+                className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[var(--fintheon-accent)]/20 cursor-pointer"
+                onClick={() => setFullSizeImage(src)}
+              >
                 <img src={src} alt="" className="w-full h-full object-cover" />
                 <button
-                  onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeImage(idx);
+                  }}
                   className="absolute top-0.5 right-0.5 w-4 h-4 flex items-center justify-center rounded-full bg-black/70 text-white"
                 >
                   <X size={10} />
@@ -341,12 +365,19 @@ export function PromptBox({
                 key={job.jobId}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--fintheon-accent)]/20 bg-[#0d0c09]/80 text-[11px] text-zinc-400"
               >
-                {job.status === 'processing' ? (
-                  <Loader2 size={10} className="animate-spin text-[var(--fintheon-accent)]" />
+                {job.status === "processing" ? (
+                  <Loader2
+                    size={10}
+                    className="animate-spin text-[var(--fintheon-accent)]"
+                  />
                 ) : (
                   <Clock size={10} className="text-zinc-600" />
                 )}
-                <span>{job.status === 'processing' ? 'Running' : `Queue #${job.position}`}</span>
+                <span>
+                  {job.status === "processing"
+                    ? "Running"
+                    : `Queue #${job.position}`}
+                </span>
                 {onCancelJob && (
                   <button
                     onClick={() => onCancelJob(job.jobId)}
@@ -371,15 +402,18 @@ export function PromptBox({
         {/* Main input container */}
         <div
           className={[
-            'relative flex flex-col rounded-2xl border transition-all duration-200',
-            'backdrop-blur-xl',
+            "relative flex flex-col rounded-2xl border transition-all duration-200",
+            "backdrop-blur-xl",
             text
-              ? 'border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25 shadow-[0_0_24px_rgba(199,159,74,0.08)]'
-              : 'border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/35 shadow-[0_0_16px_rgba(199,159,74,0.04)]',
-            disabled ? 'opacity-50 pointer-events-none' : '',
-            vanishing ? 'animate-prompt-vanish' : '',
-          ].join(' ')}
-          style={{ background: 'linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))' }}
+              ? "border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25 shadow-[0_0_24px_rgba(199,159,74,0.08)]"
+              : "border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/35 shadow-[0_0_16px_rgba(199,159,74,0.04)]",
+            disabled ? "opacity-50 pointer-events-none" : "",
+            vanishing ? "animate-prompt-vanish" : "",
+          ].join(" ")}
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))",
+          }}
         >
           {/* Textarea */}
           <textarea
@@ -389,7 +423,11 @@ export function PromptBox({
               const val = e.target.value;
               setText(val);
               // Slash-command detection
-              if (val.startsWith('/') && !val.includes(' ') && !val.includes('\n')) {
+              if (
+                val.startsWith("/") &&
+                !val.includes(" ") &&
+                !val.includes("\n")
+              ) {
                 setSlashQuery(val.slice(1));
               } else {
                 setSlashQuery(null);
@@ -401,21 +439,24 @@ export function PromptBox({
             rows={1}
             className="resize-none bg-transparent text-[13px] text-white placeholder:text-zinc-500 focus:outline-none overflow-y-auto"
             style={{
-              padding: compact ? '10px 14px 6px' : '14px 16px 8px',
-              maxHeight: compact ? '100px' : '170px',
-              lineHeight: '1.5',
+              padding: compact ? "10px 14px 6px" : "14px 16px 8px",
+              maxHeight: compact ? "100px" : "170px",
+              lineHeight: "1.5",
             }}
           />
 
           {/* Bottom bar */}
-          <div className="flex items-center justify-between" style={{ padding: compact ? '6px 8px 8px' : '8px 10px 10px' }}>
+          <div
+            className="flex items-center justify-between"
+            style={{ padding: compact ? "6px 8px 8px" : "8px 10px 10px" }}
+          >
             {/* Left toolbar */}
             <div className="flex items-center gap-1">
               {/* Attach */}
               <button
                 onClick={() => setShowAttach((v) => !v)}
                 className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-                style={{ width: '32px', height: '32px' }}
+                style={{ width: "32px", height: "32px" }}
                 title="Attach"
               >
                 <Plus size={16} />
@@ -430,16 +471,20 @@ export function PromptBox({
                   onClick={onRiskFlowPick}
                   title="Import RiskFlow items"
                   className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-                  style={{ width: '32px', height: '32px' }}
+                  style={{ width: "32px", height: "32px" }}
                 >
                   <Newspaper size={14} />
                 </button>
               ) : (
                 <button
                   onClick={() => setThinkHarder(!thinkHarder)}
-                  title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
+                  title={
+                    thinkHarder
+                      ? "Extended thinking ON"
+                      : "Extended thinking OFF"
+                  }
                   className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
-                  style={{ width: '32px', height: '32px' }}
+                  style={{ width: "32px", height: "32px" }}
                 >
                   <ThinkHarderIcon active={thinkHarder} />
                 </button>
@@ -452,24 +497,24 @@ export function PromptBox({
               {personaSlot}
               <UsageRing />
               <button
-              onClick={isProcessing && onStop ? onStop : handleSend}
-              disabled={!text.trim() && images.length === 0 && !isProcessing}
-              className={`flex items-center justify-center rounded-full transition-all duration-300 ${
-                isProcessing
-                  ? 'bg-[var(--fintheon-accent)]/80 hover:bg-[var(--fintheon-accent)] text-black shadow-[0_0_12px_rgba(199,159,74,0.3)]'
-                  : text.trim()
-                    ? 'bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black shadow-[0_0_20px_rgba(199,159,74,0.4)] hover:shadow-[0_0_28px_rgba(199,159,74,0.55)]'
-                    : 'bg-[var(--fintheon-accent)] text-black disabled:opacity-30 disabled:hover:bg-[var(--fintheon-accent)] shadow-[0_4px_12px_rgba(199,159,74,0.15)]'
-              }`}
-              style={{ width: '34px', height: '34px' }}
-              title={isProcessing ? 'Stop' : 'Send'}
-            >
-              {isProcessing ? (
-                <Square size={12} fill="currentColor" />
-              ) : (
-                <ArrowUp size={16} strokeWidth={2.5} />
-              )}
-            </button>
+                onClick={isProcessing && onStop ? onStop : handleSend}
+                disabled={!text.trim() && images.length === 0 && !isProcessing}
+                className={`flex items-center justify-center rounded-full transition-all duration-300 ${
+                  isProcessing
+                    ? "bg-[var(--fintheon-accent)]/80 hover:bg-[var(--fintheon-accent)] text-black shadow-[0_0_12px_rgba(199,159,74,0.3)]"
+                    : text.trim()
+                      ? "bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black shadow-[0_0_20px_rgba(199,159,74,0.4)] hover:shadow-[0_0_28px_rgba(199,159,74,0.55)]"
+                      : "bg-[var(--fintheon-accent)] text-black disabled:opacity-30 disabled:hover:bg-[var(--fintheon-accent)] shadow-[0_4px_12px_rgba(199,159,74,0.15)]"
+                }`}
+                style={{ width: "34px", height: "34px" }}
+                title={isProcessing ? "Stop" : "Send"}
+              >
+                {isProcessing ? (
+                  <Square size={12} fill="currentColor" />
+                ) : (
+                  <ArrowUp size={16} strokeWidth={2.5} />
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -489,15 +534,22 @@ export function PromptBox({
       >
         {fullSizeImage && (
           <div className="relative">
-            <img src={fullSizeImage} alt="" className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl" />
+            <img
+              src={fullSizeImage}
+              alt=""
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl"
+            />
             <button
-              onClick={() => { dialogRef.current?.close(); setFullSizeImage(null); }}
+              onClick={() => {
+                dialogRef.current?.close();
+                setFullSizeImage(null);
+              }}
               className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
             >
               <X size={16} />
             </button>
             <button
-              onClick={() => window.open(fullSizeImage, '_blank')}
+              onClick={() => window.open(fullSizeImage, "_blank")}
               className="absolute top-2 right-12 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
               title="Open in new tab"
             >

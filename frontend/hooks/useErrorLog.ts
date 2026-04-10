@@ -1,7 +1,12 @@
 // [claude-code 2026-03-22] React hook for subscribing to the error log ring buffer
 
-import { useSyncExternalStore, useCallback } from 'react';
-import { getErrorLog, clearErrorLog, onErrorLogChange, type ErrorLogEntry } from '../lib/errorLog';
+import { useSyncExternalStore, useCallback } from "react";
+import {
+  getErrorLog,
+  clearErrorLog,
+  onErrorLogChange,
+  type ErrorLogEntry,
+} from "../lib/errorLog";
 
 export function useErrorLog(): {
   errors: ErrorLogEntry[];

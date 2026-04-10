@@ -8,13 +8,13 @@ This sprint introduces an **in-process message bus** (AgentBus) with **DAG-based
 
 ## Decisions (from interview)
 
-| Decision | Answer |
-|----------|--------|
-| DAG trigger scope | **Boardroom only.** Main Chat + Sidebar stay single-agent. |
-| MiroShark fate | **Becomes a DAG template.** Keep deliberation logic (convergence, contrarian, consensus scoring), execute on new scheduler. |
-| Boardroom UX | **Live per-agent panels.** Each agent streams in its own panel. Harper synthesis appears last. |
-| Cross-surface push | **Auto-push cards.** Agent discoveries during DAGs auto-create NarrativeFlow catalyst cards. |
-| Subtask routing | **Hermes agents always.** DAG subtasks dispatch to existing Strands agents (Oracle, Feucht, Consul, Herald, Harper). |
+| Decision           | Answer                                                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| DAG trigger scope  | **Boardroom only.** Main Chat + Sidebar stay single-agent.                                                                  |
+| MiroShark fate     | **Becomes a DAG template.** Keep deliberation logic (convergence, contrarian, consensus scoring), execute on new scheduler. |
+| Boardroom UX       | **Live per-agent panels.** Each agent streams in its own panel. Harper synthesis appears last.                              |
+| Cross-surface push | **Auto-push cards.** Agent discoveries during DAGs auto-create NarrativeFlow catalyst cards.                                |
+| Subtask routing    | **Hermes agents always.** DAG subtasks dispatch to existing Strands agents (Oracle, Feucht, Consul, Herald, Harper).        |
 
 ## Architecture
 
@@ -48,6 +48,7 @@ This sprint introduces an **in-process message bus** (AgentBus) with **DAG-based
 ## Data Model
 
 ### agent_dags table
+
 ```sql
 CREATE TABLE agent_dags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -64,6 +65,7 @@ CREATE TABLE agent_dags (
 ```
 
 ### agent_tasks table
+
 ```sql
 CREATE TABLE agent_tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -105,50 +107,62 @@ CREATE INDEX idx_agent_tasks_status ON agent_tasks(status) WHERE status IN ('pen
 ## Track Split (4 tracks)
 
 ### T1: Foundation — AgentBus + Types + DB Migration
+
 **Runs first. All other tracks depend on T1 types.**
 
 New files:
+
 - `backend-hono/src/services/agent-bus/bus.ts` — Central pub/sub engine
 - `backend-hono/src/services/agent-bus/types.ts` — All shared types (topics, messages, DAG, tasks)
 - `backend-hono/src/services/agent-bus/surface-router.ts` — Surface subscription manager (SSE client sets per surface)
 - `supabase/migrations/XXXX_agent_bus.sql` — agent_dags + agent_tasks tables
 
 Modified files:
+
 - None (pure foundation, no wiring yet)
 
 ### T2: DAG Scheduler + Multi-Stream Merger
+
 **Parallel after T1. Core execution engine.**
 
 New files:
+
 - `backend-hono/src/services/agent-bus/dag-scheduler.ts` — Dependency resolution, wave dispatch, timeout handling
 - `backend-hono/src/services/agent-bus/multi-stream-merger.ts` — N concurrent Strands streams → 1 SSE stream with agent labels
 - `backend-hono/src/routes/dag/index.ts` — DAG status/control API endpoints
 
 Modified files:
+
 - `backend-hono/src/services/strands/agent-factory.ts` — Add `createAgentsForDAG()` concurrent factory
 - `backend-hono/src/services/strands/stream-adapter.ts` — Add agent identity field to UIEvents
 
 ### T3: MiroShark DAG Template + Boardroom Backend
+
 **Parallel after T1. Codes against T2's DAG scheduler interface (from T1 types).**
 
 New files:
+
 - `backend-hono/src/services/agent-bus/templates/miroshark-template.ts` — 4-phase deliberation as a DAG definition
 
 Modified files:
+
 - `backend-hono/src/services/miroshark/miroshark-deliberation.ts` — Refactor to use DAG scheduler instead of manual phase loop
 - `backend-hono/src/routes/boardroom/index.ts` — Replace polling with SSE subscription + DAG dispatch
 - `backend-hono/src/routes/harper/index.ts` — Add Boardroom DAG creation path
 
 ### T4: Frontend — Boardroom Panels + Surface Subscriptions
+
 **Parallel after T1. Codes against SSE event shapes from T1 types.**
 
 New files:
+
 - `frontend/components/consilium/BoardroomAgentPanel.tsx` — Per-agent streaming panel
 - `frontend/components/consilium/DAGProgressBar.tsx` — Visual wave/task progress
 - `frontend/hooks/useBoardroomDAG.ts` — SSE subscription for DAG events + per-agent streams
 - `frontend/hooks/useAgentBusSSE.ts` — Generic SSE subscription hook for surface topics
 
 Modified files:
+
 - `frontend/components/consilium/AgentChattr.tsx` — Wire up live agent panels instead of 30s polling
 - `frontend/components/consilium/ConsiliumHub.tsx` — Integrate DAG progress bar
 - `frontend/contexts/NarrativeContext.tsx` — Subscribe to surface.narrative SSE for auto-push cards
@@ -166,14 +180,14 @@ T1 runs first. T2/T3/T4 run in parallel after T1 completes.
 
 ## Shared File Conflicts (Unification)
 
-| File | Tracks | Resolution |
-|------|--------|------------|
-| `agent-factory.ts` | T2 modifies | No conflict (only T2 touches it) |
-| `stream-adapter.ts` | T2 modifies | No conflict (only T2 touches it) |
+| File                        | Tracks       | Resolution                       |
+| --------------------------- | ------------ | -------------------------------- |
+| `agent-factory.ts`          | T2 modifies  | No conflict (only T2 touches it) |
+| `stream-adapter.ts`         | T2 modifies  | No conflict (only T2 touches it) |
 | `miroshark-deliberation.ts` | T3 refactors | No conflict (only T3 touches it) |
-| `boardroom/index.ts` | T3 modifies | No conflict (only T3 touches it) |
-| `AgentChattr.tsx` | T4 modifies | No conflict (only T4 touches it) |
-| `NarrativeContext.tsx` | T4 modifies | No conflict (only T4 touches it) |
+| `boardroom/index.ts`        | T3 modifies  | No conflict (only T3 touches it) |
+| `AgentChattr.tsx`           | T4 modifies  | No conflict (only T4 touches it) |
+| `NarrativeContext.tsx`      | T4 modifies  | No conflict (only T4 touches it) |
 
 No cross-track file conflicts. Clean split.
 

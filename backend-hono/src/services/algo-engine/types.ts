@@ -5,7 +5,7 @@ export interface Tick {
   timestamp: number;
   price: number;
   volume: number;
-  instrument: 'MNQ' | 'ES';
+  instrument: "MNQ" | "ES";
   bid: number;
   ask: number;
 }
@@ -27,8 +27,8 @@ export type TickBar = Bar;
 
 /** Active position state */
 export interface Position {
-  instrument: 'MNQ' | 'ES';
-  direction: 'long' | 'short';
+  instrument: "MNQ" | "ES";
+  direction: "long" | "short";
   entryPrice: number;
   contracts: number;
   stopPrice: number;
@@ -43,7 +43,11 @@ export interface Position {
  * 3. ema-defense — trail to butt of each new engulfing candle that respects EMA
  * 4. ema-100-trail — when ATR > 17 on 3-candle lookback, trail below 100 EMA
  */
-export type TrailingPhase = 'engulfing-anchor' | 'break-even' | 'ema-defense' | 'ema-100-trail';
+export type TrailingPhase =
+  | "engulfing-anchor"
+  | "break-even"
+  | "ema-defense"
+  | "ema-100-trail";
 
 /**
  * Fib zone — the area BETWEEN two adjacent fib levels.
@@ -54,7 +58,7 @@ export interface FibZone {
   lowLevel: number;
   highPrice: number;
   lowPrice: number;
-  classification: 'ripper' | 'strong' | 'weak';
+  classification: "ripper" | "strong" | "weak";
 }
 
 /**
@@ -63,18 +67,18 @@ export interface FibZone {
  */
 export interface AntilagSignal {
   timestamp: number;
-  instrument: 'MNQ' | 'ES';
+  instrument: "MNQ" | "ES";
   atrSpike: number;
   isEngulfing: boolean;
   barRange: number;
   averageRange: number;
   nearFibZone: boolean;
   nearEma: boolean;
-  direction: 'long' | 'short';
+  direction: "long" | "short";
 }
 
 /** Core strategy models — only these 3 are active */
-export type StrategyModel = '40-40-club' | 'flush' | 'ripper';
+export type StrategyModel = "40-40-club" | "flush" | "ripper";
 
 /** Trading session window definition */
 export interface SessionWindow {
@@ -87,10 +91,15 @@ export interface SessionWindow {
 }
 
 /** Market regime classification */
-export type RegimeType = 'TRENDING' | 'RANGE_BOUND' | 'BINARY_EVENT' | 'RISK_OFF' | 'UNKNOWN';
+export type RegimeType =
+  | "TRENDING"
+  | "RANGE_BOUND"
+  | "BINARY_EVENT"
+  | "RISK_OFF"
+  | "UNKNOWN";
 
 /** Day type determines profit target behavior */
-export type DayType = 'base-hit' | 'home-run';
+export type DayType = "base-hit" | "home-run";
 
 /**
  * 15-point confluence scoring system.

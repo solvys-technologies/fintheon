@@ -5,7 +5,7 @@ import type {
   MiroSharkEntity,
   MiroSharkRelationship,
   MiroSharkAgent,
-} from './miroshark-types.js';
+} from "./miroshark-types.js";
 
 interface NarrativeLaneInput {
   id: string;
@@ -41,7 +41,7 @@ interface EconPrintSnapshot {
   actual: number | null;
   forecast: number | null;
   surprise: number | null;
-  direction: 'beat' | 'miss' | 'inline' | null;
+  direction: "beat" | "miss" | "inline" | null;
   ivScore: number | null;
   printedAt: string | null;
 }
@@ -54,48 +54,92 @@ interface ContextSnapshot {
 }
 
 /** Map narrative categories to MiroShark agent roles */
-const CATEGORY_TO_AGENT_ROLE: Record<string, MiroSharkAgent['role']> = {
-  monetary: 'macro-strategist',
-  macroeconomic: 'macro-strategist',
-  'market-structure': 'sentiment-analyst',
-  geopolitical: 'geopolitical-analyst',
-  earnings: 'earnings-analyst',
-  'black-swan': 'risk-manager',
-  'supply-chain': 'geopolitical-analyst',
+const CATEGORY_TO_AGENT_ROLE: Record<string, MiroSharkAgent["role"]> = {
+  monetary: "macro-strategist",
+  macroeconomic: "macro-strategist",
+  "market-structure": "sentiment-analyst",
+  geopolitical: "geopolitical-analyst",
+  earnings: "earnings-analyst",
+  "black-swan": "risk-manager",
+  "supply-chain": "geopolitical-analyst",
 };
 
-const AGENT_PERSONAS: Record<MiroSharkAgent['role'], { persona: string }> = {
-  'macro-strategist': { persona: 'Senior macro strategist focused on monetary policy and economic cycles' },
-  'sentiment-analyst': { persona: 'Market microstructure specialist tracking positioning and flow' },
-  'geopolitical-analyst': { persona: 'Geopolitical risk analyst covering supply chains and trade policy' },
-  'earnings-analyst': { persona: 'Corporate earnings analyst tracking sector rotations' },
-  'risk-manager': { persona: 'Tail risk manager monitoring systemic threats and black swans' },
-  'contrarian': { persona: 'Contrarian agent challenging consensus theses' },
-  'fundamentals': { persona: 'Fundamental analyst evaluating corporate earnings and sector rotation' },
-  'sentiment': { persona: 'Sentiment analyst reading news flow and social signals' },
+const AGENT_PERSONAS: Record<MiroSharkAgent["role"], { persona: string }> = {
+  "macro-strategist": {
+    persona:
+      "Senior macro strategist focused on monetary policy and economic cycles",
+  },
+  "sentiment-analyst": {
+    persona: "Market microstructure specialist tracking positioning and flow",
+  },
+  "geopolitical-analyst": {
+    persona:
+      "Geopolitical risk analyst covering supply chains and trade policy",
+  },
+  "earnings-analyst": {
+    persona: "Corporate earnings analyst tracking sector rotations",
+  },
+  "risk-manager": {
+    persona: "Tail risk manager monitoring systemic threats and black swans",
+  },
+  contrarian: { persona: "Contrarian agent challenging consensus theses" },
+  fundamentals: {
+    persona:
+      "Fundamental analyst evaluating corporate earnings and sector rotation",
+  },
+  sentiment: {
+    persona: "Sentiment analyst reading news flow and social signals",
+  },
   // Gov official roles (used by MiroShark debate engine)
-  'central-banker': { persona: 'Federal Reserve Chair — data-dependent monetary policy' },
-  'executive': { persona: 'President — dealmaker, tariff leverage, market scorecard' },
-  'treasury-secretary': { persona: 'Treasury Secretary — fiscal discipline, bond market stability' },
-  'foreign-policy': { persona: 'Secretary of State — China hawk, human rights hardliner' },
-  'commerce-secretary': { persona: 'Commerce Secretary — trade enforcement, domestic manufacturing' },
-  'middle-east-envoy': { persona: 'Middle East Envoy — de-escalation, ceasefire broker' },
-  'trade-rep': { persona: 'US Trade Representative — tariff implementation, trade deals' },
-  'trade-advisor': { persona: 'Trade Advisor — protectionist, manufacturing onshoring' },
+  "central-banker": {
+    persona: "Federal Reserve Chair — data-dependent monetary policy",
+  },
+  executive: {
+    persona: "President — dealmaker, tariff leverage, market scorecard",
+  },
+  "treasury-secretary": {
+    persona: "Treasury Secretary — fiscal discipline, bond market stability",
+  },
+  "foreign-policy": {
+    persona: "Secretary of State — China hawk, human rights hardliner",
+  },
+  "commerce-secretary": {
+    persona: "Commerce Secretary — trade enforcement, domestic manufacturing",
+  },
+  "middle-east-envoy": {
+    persona: "Middle East Envoy — de-escalation, ceasefire broker",
+  },
+  "trade-rep": {
+    persona: "US Trade Representative — tariff implementation, trade deals",
+  },
+  "trade-advisor": {
+    persona: "Trade Advisor — protectionist, manufacturing onshoring",
+  },
   // Market analyst roles (used by analyst debate engine)
-  'flow-analyst': { persona: 'Flow trader — order flow, dark pools, GEX, dealer gamma' },
-  'vol-analyst': { persona: 'Vol desk — volatility surface, term structure, skew' },
-  'macro-analyst': { persona: 'Macro PM — cross-asset, regime detection, FRED' },
-  'credit-analyst': { persona: 'Credit analyst — HY/IG spreads, CDS, leveraged loans' },
+  "flow-analyst": {
+    persona: "Flow trader — order flow, dark pools, GEX, dealer gamma",
+  },
+  "vol-analyst": {
+    persona: "Vol desk — volatility surface, term structure, skew",
+  },
+  "macro-analyst": {
+    persona: "Macro PM — cross-asset, regime detection, FRED",
+  },
+  "credit-analyst": {
+    persona: "Credit analyst — HY/IG spreads, CDS, leveraged loans",
+  },
 };
 
-function buildEntities(lanes: NarrativeLaneInput[], catalysts: CatalystCardInput[]): MiroSharkEntity[] {
+function buildEntities(
+  lanes: NarrativeLaneInput[],
+  catalysts: CatalystCardInput[],
+): MiroSharkEntity[] {
   const entities: MiroSharkEntity[] = [];
 
   for (const lane of lanes) {
     entities.push({
       id: `narrative-${lane.id}`,
-      type: 'narrative',
+      type: "narrative",
       label: lane.title,
       properties: {
         category: lane.category,
@@ -111,7 +155,7 @@ function buildEntities(lanes: NarrativeLaneInput[], catalysts: CatalystCardInput
   for (const cat of catalysts) {
     entities.push({
       id: `event-${cat.id}`,
-      type: 'event',
+      type: "event",
       label: cat.title,
       properties: {
         description: cat.description,
@@ -127,27 +171,30 @@ function buildEntities(lanes: NarrativeLaneInput[], catalysts: CatalystCardInput
 }
 
 function buildRelationships(ropes: RopeInput[]): MiroSharkRelationship[] {
-  return ropes.map(rope => ({
+  return ropes.map((rope) => ({
     fromId: rope.fromId,
     toId: rope.toId,
-    type: rope.polarity === 'reinforcing' ? 'reinforces' as const : 'contradicts' as const,
+    type:
+      rope.polarity === "reinforcing"
+        ? ("reinforces" as const)
+        : ("contradicts" as const),
     weight: rope.weight,
   }));
 }
 
 function buildAgents(lanes: NarrativeLaneInput[]): MiroSharkAgent[] {
-  const roleSet = new Set<MiroSharkAgent['role']>();
-  const roleCats = new Map<MiroSharkAgent['role'], string[]>();
+  const roleSet = new Set<MiroSharkAgent["role"]>();
+  const roleCats = new Map<MiroSharkAgent["role"], string[]>();
 
   for (const lane of lanes) {
-    const role = CATEGORY_TO_AGENT_ROLE[lane.category] ?? 'macro-strategist';
+    const role = CATEGORY_TO_AGENT_ROLE[lane.category] ?? "macro-strategist";
     roleSet.add(role);
     const cats = roleCats.get(role) ?? [];
     cats.push(lane.category);
     roleCats.set(role, cats);
   }
 
-  return Array.from(roleSet).map(role => ({
+  return Array.from(roleSet).map((role) => ({
     id: `agent-${role}`,
     persona: AGENT_PERSONAS[role].persona,
     role,
@@ -163,19 +210,35 @@ export function convertNarrativeToSeed(
 ): MiroSharkSeed {
   const environmentalContext: Record<string, unknown> = {};
 
-  if (context?.vixLevel != null) environmentalContext.vixLevel = context.vixLevel;
+  if (context?.vixLevel != null)
+    environmentalContext.vixLevel = context.vixLevel;
   if (context?.gexNet != null) environmentalContext.gexNet = context.gexNet;
-  if (context?.macroIndicators) environmentalContext.macro = context.macroIndicators;
+  if (context?.macroIndicators)
+    environmentalContext.macro = context.macroIndicators;
   if (context?.econPrintHistory?.length) {
     // Aggregate beat/miss patterns for agent debate context
-    const beats = context.econPrintHistory.filter(p => p.direction === 'beat').length;
-    const misses = context.econPrintHistory.filter(p => p.direction === 'miss').length;
-    const avgSurprise = context.econPrintHistory
-      .filter(p => p.surprise != null)
-      .reduce((sum, p) => sum + Math.abs(p.surprise!), 0) / Math.max(1, context.econPrintHistory.filter(p => p.surprise != null).length);
-    const avgIV = context.econPrintHistory
-      .filter(p => p.ivScore != null)
-      .reduce((sum, p) => sum + p.ivScore!, 0) / Math.max(1, context.econPrintHistory.filter(p => p.ivScore != null).length);
+    const beats = context.econPrintHistory.filter(
+      (p) => p.direction === "beat",
+    ).length;
+    const misses = context.econPrintHistory.filter(
+      (p) => p.direction === "miss",
+    ).length;
+    const avgSurprise =
+      context.econPrintHistory
+        .filter((p) => p.surprise != null)
+        .reduce((sum, p) => sum + Math.abs(p.surprise!), 0) /
+      Math.max(
+        1,
+        context.econPrintHistory.filter((p) => p.surprise != null).length,
+      );
+    const avgIV =
+      context.econPrintHistory
+        .filter((p) => p.ivScore != null)
+        .reduce((sum, p) => sum + p.ivScore!, 0) /
+      Math.max(
+        1,
+        context.econPrintHistory.filter((p) => p.ivScore != null).length,
+      );
 
     environmentalContext.econPrintStats = {
       totalPrints: context.econPrintHistory.length,
@@ -184,8 +247,11 @@ export function convertNarrativeToSeed(
       inlines: context.econPrintHistory.length - beats - misses,
       avgAbsSurprise: Math.round(avgSurprise * 100) / 100,
       avgIVScore: Math.round(avgIV * 100) / 100,
-      beatRatio: Math.round((beats / Math.max(1, context.econPrintHistory.length)) * 100) / 100,
-      recentPrints: context.econPrintHistory.slice(0, 5).map(p => ({
+      beatRatio:
+        Math.round(
+          (beats / Math.max(1, context.econPrintHistory.length)) * 100,
+        ) / 100,
+      recentPrints: context.econPrintHistory.slice(0, 5).map((p) => ({
         event: p.eventName,
         direction: p.direction,
         surprise: p.surprise,

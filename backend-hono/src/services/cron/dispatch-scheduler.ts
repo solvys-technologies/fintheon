@@ -12,14 +12,14 @@
  *   4:30 PM Sunday — TOTT (Tale of the Tape / Weekly Tribune)
  */
 
-import cron from 'node-cron';
-import { generateBrief, wasBriefGeneratedToday } from '../brief-generator.js';
-import { appendToBoardroom } from '../hermes-sessions.js';
-import { runMarketImpactEnrichment } from './market-impact-enricher.js';
-import { createLogger } from '../../lib/logger.js';
-import type { BriefType } from '../supabase-service.js';
+import cron from "node-cron";
+import { generateBrief, wasBriefGeneratedToday } from "../brief-generator.js";
+import { appendToBoardroom } from "../hermes-sessions.js";
+import { runMarketImpactEnrichment } from "./market-impact-enricher.js";
+import { createLogger } from "../../lib/logger.js";
+import type { BriefType } from "../supabase-service.js";
 
-const log = createLogger('DispatchScheduler');
+const log = createLogger("DispatchScheduler");
 
 interface DispatchJob {
   id: string;
@@ -31,32 +31,32 @@ interface DispatchJob {
 
 const DISPATCH_JOBS: DispatchJob[] = [
   {
-    id: 'dispatch-mdb',
-    briefType: 'MDB',
-    cronExpression: '30 6 * * 1-5',
-    timezone: 'America/New_York',
-    description: 'Morning Daily Brief (6:30 AM ET, weekdays)',
+    id: "dispatch-mdb",
+    briefType: "MDB",
+    cronExpression: "30 6 * * 1-5",
+    timezone: "America/New_York",
+    description: "Morning Daily Brief (6:30 AM ET, weekdays)",
   },
   {
-    id: 'dispatch-adb',
-    briefType: 'ADB',
-    cronExpression: '45 10 * * 1-5',
-    timezone: 'America/New_York',
-    description: 'Afternoon Daily Brief (10:45 AM ET, weekdays)',
+    id: "dispatch-adb",
+    briefType: "ADB",
+    cronExpression: "45 10 * * 1-5",
+    timezone: "America/New_York",
+    description: "Afternoon Daily Brief (10:45 AM ET, weekdays)",
   },
   {
-    id: 'dispatch-pmdb',
-    briefType: 'PMDB',
-    cronExpression: '15 17 * * 1-5',
-    timezone: 'America/New_York',
-    description: 'Post-Market Daily Brief (5:15 PM ET, weekdays)',
+    id: "dispatch-pmdb",
+    briefType: "PMDB",
+    cronExpression: "15 17 * * 1-5",
+    timezone: "America/New_York",
+    description: "Post-Market Daily Brief (5:15 PM ET, weekdays)",
   },
   {
-    id: 'dispatch-wt',
-    briefType: 'WT',
-    cronExpression: '30 16 * * 0',
-    timezone: 'America/New_York',
-    description: 'Weekly Tribune (4:30 PM ET, Sunday)',
+    id: "dispatch-wt",
+    briefType: "WT",
+    cronExpression: "30 16 * * 0",
+    timezone: "America/New_York",
+    description: "Weekly Tribune (4:30 PM ET, Sunday)",
   },
 ];
 
@@ -82,7 +82,7 @@ async function runDispatch(job: DispatchJob): Promise<void> {
     // Post to boardroom for agent visibility
     try {
       const label = `[${job.briefType}]`;
-      await appendToBoardroom(`${label}\n${result.content}`, 'assistant');
+      await appendToBoardroom(`${label}\n${result.content}`, "assistant");
     } catch {
       // Non-fatal — brief is still stored in Supabase
     }
@@ -102,13 +102,15 @@ async function runDispatch(job: DispatchJob): Promise<void> {
  */
 export function startDispatchScheduler(): void {
   if (isRunning) {
-    log.info('Already running');
+    log.info("Already running");
     return;
   }
 
   // Check if dispatch scheduling is disabled via env
-  if (process.env.DISPATCH_SCHEDULER_ENABLED === 'false') {
-    log.info('Dispatch scheduler disabled via DISPATCH_SCHEDULER_ENABLED=false');
+  if (process.env.DISPATCH_SCHEDULER_ENABLED === "false") {
+    log.info(
+      "Dispatch scheduler disabled via DISPATCH_SCHEDULER_ENABLED=false",
+    );
     return;
   }
 
@@ -120,25 +122,31 @@ export function startDispatchScheduler(): void {
           log.error(`Dispatch cron error for ${job.id}:`, err);
         });
       },
-      { timezone: job.timezone }
+      { timezone: job.timezone },
     );
 
     scheduledJobs.push(cronJob);
-    log.info(`Registered: ${job.description} (${job.cronExpression} ${job.timezone})`);
+    log.info(
+      `Registered: ${job.description} (${job.cronExpression} ${job.timezone})`,
+    );
   }
 
   // Market impact enricher — 6 PM ET (22:00 UTC) weekdays
   const marketImpactJob = cron.schedule(
-    '0 18 * * 1-5',
+    "0 18 * * 1-5",
     () => {
       runMarketImpactEnrichment()
-        .then((r) => log.info(`Market impact: ${r.enriched}/${r.processed} enriched, ${r.errors} errors`))
-        .catch((err) => log.error('Market impact cron error:', err));
+        .then((r) =>
+          log.info(
+            `Market impact: ${r.enriched}/${r.processed} enriched, ${r.errors} errors`,
+          ),
+        )
+        .catch((err) => log.error("Market impact cron error:", err));
     },
-    { timezone: 'America/New_York' }
+    { timezone: "America/New_York" },
   );
   scheduledJobs.push(marketImpactJob);
-  log.info('Registered: Market Impact Enricher (6:00 PM ET, weekdays)');
+  log.info("Registered: Market Impact Enricher (6:00 PM ET, weekdays)");
 
   isRunning = true;
   log.info(`Started ${scheduledJobs.length} dispatch cron jobs`);
@@ -154,7 +162,7 @@ export function stopDispatchScheduler(): void {
   }
   scheduledJobs = [];
   isRunning = false;
-  log.info('Stopped all dispatch cron jobs');
+  log.info("Stopped all dispatch cron jobs");
 }
 
 /**
@@ -162,7 +170,7 @@ export function stopDispatchScheduler(): void {
  * This handles the common case where the local backend wasn't running at cron time.
  */
 export async function catchUpMissedBriefs(): Promise<void> {
-  if (process.env.DISPATCH_SCHEDULER_ENABLED === 'false') return;
+  if (process.env.DISPATCH_SCHEDULER_ENABLED === "false") return;
 
   const now = new Date();
   const day = now.getDay(); // 0=Sun
@@ -175,19 +183,21 @@ export async function catchUpMissedBriefs(): Promise<void> {
 
   for (const job of DISPATCH_JOBS) {
     // Parse cron day-of-week field (e.g. '1-5' or '0')
-    const cronParts = job.cronExpression.split(' ');
+    const cronParts = job.cronExpression.split(" ");
     const cronMin = parseInt(cronParts[0], 10);
     const cronHour = parseInt(cronParts[1], 10);
     const cronDow = cronParts[4]; // day-of-week field
 
     // Check if today matches the day-of-week
-    const dowMatch = cronDow === '*' || cronDow.split(',').some((seg) => {
-      if (seg.includes('-')) {
-        const [lo, hi] = seg.split('-').map(Number);
-        return day >= lo && day <= hi;
-      }
-      return parseInt(seg, 10) === day;
-    });
+    const dowMatch =
+      cronDow === "*" ||
+      cronDow.split(",").some((seg) => {
+        if (seg.includes("-")) {
+          const [lo, hi] = seg.split("-").map(Number);
+          return day >= lo && day <= hi;
+        }
+        return parseInt(seg, 10) === day;
+      });
     if (!dowMatch) continue;
 
     // Check if the scheduled time has already passed
@@ -198,11 +208,13 @@ export async function catchUpMissedBriefs(): Promise<void> {
   }
 
   if (dueJobs.length === 0) {
-    log.info('Catch-up: no missed briefs for today');
+    log.info("Catch-up: no missed briefs for today");
     return;
   }
 
-  log.info(`Catch-up: checking ${dueJobs.length} briefs that should exist by now`);
+  log.info(
+    `Catch-up: checking ${dueJobs.length} briefs that should exist by now`,
+  );
 
   for (const job of dueJobs) {
     try {
@@ -216,10 +228,17 @@ export async function catchUpMissedBriefs(): Promise<void> {
       const result = await generateBrief(job.briefType);
 
       try {
-        await appendToBoardroom(`[${job.briefType}]\n${result.content}`, 'assistant');
-      } catch { /* non-fatal */ }
+        await appendToBoardroom(
+          `[${job.briefType}]\n${result.content}`,
+          "assistant",
+        );
+      } catch {
+        /* non-fatal */
+      }
 
-      log.info(`Catch-up: ${job.briefType} generated`, { supabaseId: result.supabaseId });
+      log.info(`Catch-up: ${job.briefType} generated`, {
+        supabaseId: result.supabaseId,
+      });
     } catch (err) {
       log.error(`Catch-up: ${job.briefType} failed:`, err);
     }
@@ -239,7 +258,12 @@ export function isDispatchSchedulerActive(): boolean {
 export function getDispatchSchedulerStatus(): {
   active: boolean;
   jobCount: number;
-  jobs: Array<{ id: string; briefType: BriefType; description: string; cron: string }>;
+  jobs: Array<{
+    id: string;
+    briefType: BriefType;
+    description: string;
+    cron: string;
+  }>;
 } {
   return {
     active: isRunning,
