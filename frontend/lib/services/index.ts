@@ -132,5 +132,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     skills: new SkillsService(client),
     memory: new MemoryService(client),
     editorSidebar: new EditorSidebarService(client),
+    stickyBulletin: new StickyBulletinService(client),
   };
 }

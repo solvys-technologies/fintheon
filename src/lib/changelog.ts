@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-11T00:30:00",
+    agent: "claude-code",
+    summary:
+      "Sticky Bulletin — 4-section popover (Trade Idea alerts, Antilag time logging, Event of Week, Trading Notes) with liquid glass modal, auto-save, backend persistence, and aggregated antilag analytics",
+    files: [
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/lib/layoutOrderStorage.ts",
+      "frontend/lib/services/editor.ts",
+      "frontend/lib/services/index.ts",
+      "backend-hono/src/services/sticky-bulletin-store.ts",
+      "backend-hono/src/routes/sticky-bulletin/index.ts",
+      "backend-hono/src/routes/index.ts",
+    ],
+  },
+  {
     date: "2026-04-10T23:55:00",
     agent: "claude-code",
     summary:

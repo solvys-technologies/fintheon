@@ -30,8 +30,10 @@ import {
   Power,
   Bell,
   BellOff,
+  ClipboardList,
 } from "lucide-react";
 import { WhatsNewButton } from "../onboarding/FirstTimeTour";
+import { StickyBulletin } from "../StickyBulletin";
 import { TraderNametag } from "../TraderNametag";
 import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
@@ -119,6 +121,8 @@ export function TopHeader({
   const [toolbarOrder, setToolbarOrderState] = useState<ToolbarItemId[]>(() =>
     getToolbarOrder(),
   );
+  const [showBulletin, setShowBulletin] = useState(false);
+  const bulletinBtnRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const platformDropdownRef = useRef<HTMLDivElement>(null);
   const layoutPortalRef = useRef<HTMLDivElement>(null);
@@ -732,6 +736,29 @@ export function TopHeader({
                 <HeaderVoiceControl
                   compact={topStepXEnabled && layoutOption === "tickers-only"}
                 />,
+              );
+            }
+            if (id === "bulletin") {
+              return wrapper(
+                <>
+                  <button
+                    ref={bulletinBtnRef}
+                    onClick={() => setShowBulletin(!showBulletin)}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      showBulletin
+                        ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
+                        : "bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40"
+                    }`}
+                    title="Bulletin"
+                  >
+                    <ClipboardList className="w-3.5 h-3.5" />
+                  </button>
+                  <StickyBulletin
+                    open={showBulletin}
+                    onClose={() => setShowBulletin(false)}
+                    anchorRef={bulletinBtnRef}
+                  />
+                </>,
               );
             }
             if (id === "ivScore") {
