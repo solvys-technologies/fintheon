@@ -21,13 +21,19 @@ interface TeamPresenceContextValue {
   teamMembers: TeamMember[];
   isConnected: boolean;
   setUserStatus: (status: UserStatus) => void;
+  twitterFeedKilled: boolean;
+  toggleTwitterFeed: () => void;
 }
 
 const TeamPresenceContext = createContext<TeamPresenceContextValue>({
   teamMembers: [],
   isConnected: false,
   setUserStatus: () => {},
+  twitterFeedKilled: false,
+  toggleTwitterFeed: () => {},
 });
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export function TeamPresenceProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth();
@@ -65,6 +71,9 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [userStatus, setUserStatusState] = useState<UserStatus>("online");
+  const [twitterFeedKilled, setTwitterFeedKilled] = useState(
+    () => localStorage.getItem("fintheon:twitter-feed-killed") === "true",
+  );
   const channelRef = useRef<ReturnType<
     NonNullable<typeof supabase>["channel"]
   > | null>(null);
@@ -78,6 +87,19 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
     setUserStatusState(status);
   }, []);
 
+  const toggleTwitterFeed = useCallback(() => {
+    setTwitterFeedKilled((prev) => {
+      const next = !prev;
+      localStorage.setItem("fintheon:twitter-feed-killed", String(next));
+      fetch(`${API_BASE}/api/riskflow/user-polling-toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, killed: next }),
+      }).catch(() => {});
+      return next;
+    });
+  }, [userId]);
+
   const buildPayload = useCallback(
     (): PresencePayload => ({
       userId,
@@ -85,11 +107,13 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
       caoName,
       caoOnline,
       twitterCliPolling: sourceStatus.twitterCli,
+      twitterFeedKilled,
       inCall: false, // T3/T4 will wire this
       userStatus,
       services: {
-        twitterCli: sourceStatus.twitterCli,
+        twitterCli: twitterFeedKilled ? false : sourceStatus.twitterCli,
         twitterRateLimited: sourceStatus.twitterRateLimited,
+        twitterFeedKilled,
         aiRuntime: caoOnline,
         newsfeedPolling: {
           active:
@@ -114,6 +138,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
       sourceStatus.backendReachable,
       sourceStatus.lastPollSuccess,
       userStatus,
+      twitterFeedKilled,
     ],
   );
 
@@ -138,6 +163,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
           const defaultServices = {
             twitterCli: false,
             twitterRateLimited: false,
+            twitterFeedKilled: false,
             aiRuntime: false,
             newsfeedPolling: {
               active: false,
@@ -155,6 +181,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
               caoName: latest.caoName,
               caoOnline: latest.caoOnline,
               twitterCliPolling: latest.twitterCliPolling,
+              twitterFeedKilled: latest.twitterFeedKilled ?? false,
               online: true,
               lastSeen: new Date().toISOString(),
               inCall: latest.inCall,
@@ -193,7 +220,13 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
 
   return (
     <TeamPresenceContext.Provider
-      value={{ teamMembers, isConnected, setUserStatus }}
+      value={{
+        teamMembers,
+        isConnected,
+        setUserStatus,
+        twitterFeedKilled,
+        toggleTwitterFeed,
+      }}
     >
       {children}
     </TeamPresenceContext.Provider>

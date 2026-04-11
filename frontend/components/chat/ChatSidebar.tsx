@@ -136,6 +136,7 @@ function ChatSidebarInner({
     };
     const onLoadSession = (e: Event) => {
       const id = (e as CustomEvent).detail?.id;
+      console.debug("[ChatSidebar] load-session event received", { id });
       if (id) setConversationId(id);
     };
 

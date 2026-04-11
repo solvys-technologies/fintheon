@@ -68,7 +68,8 @@ function ServiceLight({
 
 export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
   const { presence } = member;
-  const { setUserStatus } = useTeamPresence();
+  const { setUserStatus, twitterFeedKilled, toggleTwitterFeed } =
+    useTeamPresence();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -176,7 +177,11 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
           label="Twitter"
           active={presence.services.twitterCli}
           warning={
-            presence.services.twitterRateLimited ? "Rate Limited" : undefined
+            presence.services.twitterFeedKilled
+              ? "Killed"
+              : presence.services.twitterRateLimited
+                ? "Rate Limited"
+                : undefined
           }
         />
         <ServiceLight label="AI" active={presence.services.aiRuntime} />
@@ -189,6 +194,21 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
           active={presence.services.backendConnection}
         />
       </div>
+
+      {/* Kill X Feed toggle — self only */}
+      {isSelf && (
+        <button
+          onClick={toggleTwitterFeed}
+          className="w-full mt-2 pt-1.5 border-t border-[var(--fintheon-accent)]/10 text-[9px] font-mono tracking-wider transition-colors"
+          style={{
+            color: twitterFeedKilled
+              ? "var(--fintheon-severe)"
+              : "var(--fintheon-muted)",
+          }}
+        >
+          {twitterFeedKilled ? "Resume X Feed" : "Kill X Feed"}
+        </button>
+      )}
     </div>
   );
 }

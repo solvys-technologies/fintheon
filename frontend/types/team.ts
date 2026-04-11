@@ -5,6 +5,7 @@ export type UserStatus = "online" | "away" | "busy" | "dnd" | "offline";
 export interface ServiceStatus {
   twitterCli: boolean;
   twitterRateLimited: boolean;
+  twitterFeedKilled: boolean;
   aiRuntime: boolean;
   newsfeedPolling: { active: boolean; lastUpdate: string };
   backendConnection: boolean;
@@ -16,6 +17,7 @@ export interface DeviceStatus {
   caoName: string;
   caoOnline: boolean;
   twitterCliPolling: boolean;
+  twitterFeedKilled: boolean;
   online: boolean;
   lastSeen: string;
   inCall: boolean;
@@ -36,6 +38,7 @@ export interface PresencePayload {
   caoName: string;
   caoOnline: boolean;
   twitterCliPolling: boolean;
+  twitterFeedKilled: boolean;
   inCall: boolean;
   userStatus: UserStatus;
   services: ServiceStatus;

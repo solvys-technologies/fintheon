@@ -159,6 +159,7 @@ export function useHermesChat(
     addToolOutput,
     addToolApprovalResponse,
   } = useChat({
+    id: conversationId ?? "new",
     transport: new DefaultChatTransport({
       api: chatEndpoint,
       fetch: fetchFn,
@@ -299,18 +300,30 @@ export function useHermesChat(
 
   // [claude-code 2026-04-10] Hydrate messages when conversationId changes (session switch or remount)
   useEffect(() => {
-    if (!conversationId || hydratedRef.current === conversationId) return;
+    console.debug("[useHermesChat] Hydration effect fired", {
+      conversationId,
+      hydrated: hydratedRef.current,
+    });
+    if (!conversationId || hydratedRef.current === conversationId) {
+      console.debug(
+        "[useHermesChat] Skipping hydration — already hydrated or no ID",
+      );
+      return;
+    }
 
     let cancelled = false;
 
     // Clear existing messages so the new session loads fresh
     setUseChatMessages([]);
+    // Reset hydrated ref so useChat with new id starts clean
+    hydratedRef.current = undefined;
 
     (async () => {
       try {
         const token = await getAccessToken();
         const headers: Record<string, string> = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;
+        console.debug("[useHermesChat] Fetching conversation", conversationId);
         const res = await fetch(
           `${API_BASE_URL}/api/ai/conversations/${conversationId}`,
           { headers },
@@ -326,14 +339,18 @@ export function useHermesChat(
         const msgs: UIMessage[] = (data.messages ?? [])
           .filter((m: any) => m.role === "user" || m.role === "assistant")
           .map(backendToUIMessage);
+        console.debug(
+          "[useHermesChat] Hydrated",
+          msgs.length,
+          "messages for",
+          conversationId,
+        );
         if (!cancelled) {
           setUseChatMessages(msgs);
-          // Only mark hydrated AFTER successful fetch
           hydratedRef.current = conversationId;
         }
       } catch (err) {
         console.error("[useHermesChat] Conversation hydration failed:", err);
-        // Don't mark as hydrated — allow retry on next click
       }
     })();
 

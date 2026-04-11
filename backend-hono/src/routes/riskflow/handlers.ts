@@ -1035,3 +1035,42 @@ export async function handlePollingStatus(c: Context) {
     effectivelyPolling: toggleEnabled && pollerRunning,
   });
 }
+
+// ── Per-user X CLI killswitch ─────────────────────────────────────────
+
+import {
+  setUserPollingState,
+  getActivePollingUsers,
+  areAllUsersKilled,
+} from "../../services/riskflow/user-polling-registry.js";
+
+/**
+ * POST /api/riskflow/user-polling-toggle
+ * Toggle per-user X CLI polling killswitch
+ */
+export async function handleUserPollingToggle(c: Context) {
+  try {
+    const body = await c.req.json<{ userId?: string; killed?: boolean }>();
+    if (!body.userId || typeof body.killed !== "boolean") {
+      return c.json(
+        { error: 'Missing "userId" string and "killed" boolean fields' },
+        400,
+      );
+    }
+    setUserPollingState(body.userId, body.killed);
+    return c.json({ ok: true, killed: body.killed });
+  } catch {
+    return c.json({ error: "Invalid request body" }, 400);
+  }
+}
+
+/**
+ * GET /api/riskflow/user-polling-status
+ * Per-user polling registry status
+ */
+export async function handleUserPollingStatus(c: Context) {
+  return c.json({
+    users: getActivePollingUsers(),
+    allKilled: areAllUsersKilled(),
+  });
+}
