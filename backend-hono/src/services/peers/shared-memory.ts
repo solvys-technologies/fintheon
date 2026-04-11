@@ -1,9 +1,31 @@
+// [claude-code 2026-04-10] Added dbFallbackActive flag — auto-switches to in-memory on table-not-found
 // [claude-code 2026-04-01] S13-T3: Team shared memory — DB + in-memory fallback
 
 import { sql, isDatabaseAvailable } from "../../config/database.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("SharedMemory");
+
+// When a DB query fails with table-not-found, skip DB for subsequent calls
+let dbFallbackActive = false;
+
+function shouldUseDb(): boolean {
+  if (dbFallbackActive) return false;
+  return isDatabaseAvailable();
+}
+
+function handleDbError(err: unknown): void {
+  const msg = String(err);
+  if (
+    msg.includes("relation") &&
+    (msg.includes("does not exist") || msg.includes("not found"))
+  ) {
+    log.warn(
+      "peer_shared_memory table not found — switching to in-memory fallback",
+    );
+    dbFallbackActive = true;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -65,6 +87,41 @@ const memoryStore = new Map<string, SharedMemoryEntry>();
 // CRUD
 // ---------------------------------------------------------------------------
 
+function setMemoryInMemory(
+  key: string,
+  value: Record<string, unknown>,
+  opts?: {
+    peerId?: string;
+    agentName?: string;
+    category?: string;
+    ttlHours?: number;
+  },
+): SharedMemoryEntry {
+  const category = opts?.category ?? "custom";
+  const ttlHours = opts?.ttlHours ?? null;
+  const existing = memoryStore.get(key);
+  const now = new Date().toISOString();
+  const entry: SharedMemoryEntry = {
+    id: existing?.id ?? crypto.randomUUID(),
+    key,
+    value,
+    peerId: opts?.peerId ?? null,
+    agentName: opts?.agentName ?? null,
+    category,
+    ttlHours,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+  memoryStore.set(key, entry);
+  if (memoryStore.size > MEMORY_CAP) {
+    const oldest = Array.from(memoryStore.entries()).sort((a, b) =>
+      a[1].updatedAt.localeCompare(b[1].updatedAt),
+    )[0];
+    if (oldest) memoryStore.delete(oldest[0]);
+  }
+  return entry;
+}
+
 export async function setSharedMemory(
   key: string,
   value: Record<string, unknown>,
@@ -75,67 +132,84 @@ export async function setSharedMemory(
     ttlHours?: number;
   },
 ): Promise<SharedMemoryEntry> {
+  if (!shouldUseDb()) {
+    return setMemoryInMemory(key, value, opts);
+  }
+
   const category = opts?.category ?? "custom";
   const ttlHours = opts?.ttlHours ?? null;
 
-  if (!isDatabaseAvailable()) {
-    const existing = memoryStore.get(key);
-    const now = new Date().toISOString();
-    const entry: SharedMemoryEntry = {
-      id: existing?.id ?? crypto.randomUUID(),
-      key,
-      value,
-      peerId: opts?.peerId ?? null,
-      agentName: opts?.agentName ?? null,
-      category,
-      ttlHours,
-      createdAt: existing?.createdAt ?? now,
-      updatedAt: now,
-    };
-    memoryStore.set(key, entry);
-    if (memoryStore.size > MEMORY_CAP) {
-      const oldest = Array.from(memoryStore.entries()).sort((a, b) =>
-        a[1].updatedAt.localeCompare(b[1].updatedAt),
-      )[0];
-      if (oldest) memoryStore.delete(oldest[0]);
-    }
-    return entry;
+  try {
+    const result = await sql`
+      INSERT INTO peer_shared_memory (key, value, peer_id, agent_name, category, ttl_hours)
+      VALUES (
+        ${key},
+        ${JSON.stringify(value)}::jsonb,
+        ${opts?.peerId ?? null},
+        ${opts?.agentName ?? null},
+        ${category},
+        ${ttlHours}
+      )
+      ON CONFLICT (key) DO UPDATE SET
+        value = ${JSON.stringify(value)}::jsonb,
+        peer_id = COALESCE(${opts?.peerId ?? null}, peer_shared_memory.peer_id),
+        agent_name = COALESCE(${opts?.agentName ?? null}, peer_shared_memory.agent_name),
+        category = ${category},
+        ttl_hours = ${ttlHours},
+        updated_at = NOW()
+      RETURNING *
+    `;
+    return mapRow(result[0] as SharedMemoryRow);
+  } catch (err) {
+    handleDbError(err);
+    log.warn("setSharedMemory DB failed, using in-memory", {
+      error: String(err),
+    });
+    return setMemoryInMemory(key, value, opts);
   }
-
-  const result = await sql`
-    INSERT INTO peer_shared_memory (key, value, peer_id, agent_name, category, ttl_hours)
-    VALUES (
-      ${key},
-      ${JSON.stringify(value)}::jsonb,
-      ${opts?.peerId ?? null},
-      ${opts?.agentName ?? null},
-      ${category},
-      ${ttlHours}
-    )
-    ON CONFLICT (key) DO UPDATE SET
-      value = ${JSON.stringify(value)}::jsonb,
-      peer_id = COALESCE(${opts?.peerId ?? null}, peer_shared_memory.peer_id),
-      agent_name = COALESCE(${opts?.agentName ?? null}, peer_shared_memory.agent_name),
-      category = ${category},
-      ttl_hours = ${ttlHours},
-      updated_at = NOW()
-    RETURNING *
-  `;
-  return mapRow(result[0] as SharedMemoryRow);
 }
 
 export async function getSharedMemory(
   key: string,
 ): Promise<SharedMemoryEntry | null> {
-  if (!isDatabaseAvailable()) {
+  if (!shouldUseDb()) {
     return memoryStore.get(key) ?? null;
   }
 
-  const result = await sql`
-    SELECT * FROM peer_shared_memory WHERE key = ${key} LIMIT 1
-  `;
-  if (result.length === 0) return null;
-  return mapRow(result[0] as SharedMemoryRow);
+  try {
+    const result = await sql`
+      SELECT * FROM peer_shared_memory WHERE key = ${key} LIMIT 1
+    `;
+    if (result.length === 0) return null;
+    return mapRow(result[0] as SharedMemoryRow);
+  } catch (err) {
+    handleDbError(err);
+    log.warn("getSharedMemory DB failed, using in-memory", {
+      error: String(err),
+    });
+    return memoryStore.get(key) ?? null;
+  }
+}
+
+function listMemoryInMemory(filter?: {
+  category?: string;
+  agentName?: string;
+  search?: string;
+}): SharedMemoryEntry[] {
+  let entries = Array.from(memoryStore.values());
+  if (filter?.category)
+    entries = entries.filter((e) => e.category === filter.category);
+  if (filter?.agentName)
+    entries = entries.filter((e) => e.agentName === filter.agentName);
+  if (filter?.search) {
+    const q = filter.search.toLowerCase();
+    entries = entries.filter(
+      (e) =>
+        e.key.toLowerCase().includes(q) ||
+        JSON.stringify(e.value).toLowerCase().includes(q),
+    );
+  }
+  return entries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export async function listSharedMemory(filter?: {
@@ -143,60 +217,63 @@ export async function listSharedMemory(filter?: {
   agentName?: string;
   search?: string;
 }): Promise<SharedMemoryEntry[]> {
-  if (!isDatabaseAvailable()) {
-    let entries = Array.from(memoryStore.values());
-    if (filter?.category)
-      entries = entries.filter((e) => e.category === filter.category);
-    if (filter?.agentName)
-      entries = entries.filter((e) => e.agentName === filter.agentName);
-    if (filter?.search) {
-      const q = filter.search.toLowerCase();
-      entries = entries.filter(
-        (e) =>
-          e.key.toLowerCase().includes(q) ||
-          JSON.stringify(e.value).toLowerCase().includes(q),
-      );
-    }
-    return entries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  if (!shouldUseDb()) {
+    return listMemoryInMemory(filter);
   }
 
-  // DB path — build with optional filters
-  if (filter?.search) {
-    const searchTerm = `%${filter.search}%`;
+  try {
+    // DB path — build with optional filters
+    if (filter?.search) {
+      const searchTerm = `%${filter.search}%`;
+      const result = await sql`
+        SELECT * FROM peer_shared_memory
+        WHERE (${filter.category ?? null}::text IS NULL OR category = ${filter.category ?? ""})
+          AND (${filter.agentName ?? null}::text IS NULL OR agent_name = ${filter.agentName ?? ""})
+          AND (key ILIKE ${searchTerm} OR value::text ILIKE ${searchTerm})
+        ORDER BY updated_at DESC
+        LIMIT 100
+      `;
+      return result.map((r) => mapRow(r as SharedMemoryRow));
+    }
+
     const result = await sql`
       SELECT * FROM peer_shared_memory
-      WHERE (${filter.category ?? null}::text IS NULL OR category = ${filter.category ?? ""})
-        AND (${filter.agentName ?? null}::text IS NULL OR agent_name = ${filter.agentName ?? ""})
-        AND (key ILIKE ${searchTerm} OR value::text ILIKE ${searchTerm})
+      WHERE (${filter?.category ?? null}::text IS NULL OR category = ${filter?.category ?? ""})
+        AND (${filter?.agentName ?? null}::text IS NULL OR agent_name = ${filter?.agentName ?? ""})
       ORDER BY updated_at DESC
       LIMIT 100
     `;
     return result.map((r) => mapRow(r as SharedMemoryRow));
+  } catch (err) {
+    handleDbError(err);
+    log.warn("listSharedMemory DB failed, using in-memory", {
+      error: String(err),
+    });
+    return listMemoryInMemory(filter);
   }
-
-  const result = await sql`
-    SELECT * FROM peer_shared_memory
-    WHERE (${filter?.category ?? null}::text IS NULL OR category = ${filter?.category ?? ""})
-      AND (${filter?.agentName ?? null}::text IS NULL OR agent_name = ${filter?.agentName ?? ""})
-    ORDER BY updated_at DESC
-    LIMIT 100
-  `;
-  return result.map((r) => mapRow(r as SharedMemoryRow));
 }
 
 export async function deleteSharedMemory(key: string): Promise<boolean> {
-  if (!isDatabaseAvailable()) {
+  if (!shouldUseDb()) {
     return memoryStore.delete(key);
   }
 
-  const result = await sql`
-    DELETE FROM peer_shared_memory WHERE key = ${key} RETURNING id
-  `;
-  return result.length > 0;
+  try {
+    const result = await sql`
+      DELETE FROM peer_shared_memory WHERE key = ${key} RETURNING id
+    `;
+    return result.length > 0;
+  } catch (err) {
+    handleDbError(err);
+    log.warn("deleteSharedMemory DB failed, using in-memory", {
+      error: String(err),
+    });
+    return memoryStore.delete(key);
+  }
 }
 
 export async function cleanupExpiredMemory(): Promise<number> {
-  if (!isDatabaseAvailable()) {
+  if (!shouldUseDb()) {
     let removed = 0;
     const now = Date.now();
     for (const [key, entry] of memoryStore.entries()) {

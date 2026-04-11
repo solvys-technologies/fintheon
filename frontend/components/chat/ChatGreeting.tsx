@@ -112,7 +112,7 @@ export function ChatGreeting({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-5 max-w-[580px] mx-auto w-full">
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-5 max-w-[780px] mx-auto w-full">
       {/* Agent name — large, centered */}
       <div className="flex flex-col items-center gap-2.5">
         <h2 className="text-[22px] font-semibold text-white tracking-tight">

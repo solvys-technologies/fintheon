@@ -21,14 +21,17 @@ export function TeamPanel() {
     >
       {/* Header */}
       <div className="flex items-center gap-2 mb-2 shrink-0">
-        <h3 className="text-[11px] font-semibold tracking-[0.14em] text-[var(--fintheon-accent)] uppercase font-mono">
+        <h3
+          className="text-[11px] font-semibold tracking-[0.14em] text-[var(--fintheon-accent)] uppercase font-mono"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
           Team
         </h3>
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]/60">
           {onlineCount} online
         </span>
         {!isConnected && (
-          <span className="text-[9px] text-zinc-600 font-mono italic">
+          <span className="text-[9px] text-[var(--fintheon-muted)] font-mono italic">
             connecting...
           </span>
         )}
@@ -43,12 +46,12 @@ export function TeamPanel() {
           ))}
         </div>
         {others.length === 0 && self && (
-          <div className="text-center text-[10px] text-zinc-600 font-mono py-4">
+          <div className="text-center text-[10px] text-[var(--fintheon-muted)] font-mono py-4">
             No other team members online
           </div>
         )}
         {teamMembers.length === 0 && (
-          <div className="text-center text-[10px] text-zinc-600 font-mono py-4">
+          <div className="text-center text-[10px] text-[var(--fintheon-muted)] font-mono py-4">
             {isConnected
               ? "No team members online"
               : "Connecting to presence..."}

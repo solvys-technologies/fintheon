@@ -497,7 +497,7 @@ export function FooterToolbar({
       >
         <div className="h-[280px] flex flex-col border-b border-[var(--fintheon-accent)]/10">
           {/* Panel tab bar */}
-          <div className="flex items-center gap-0 border-b border-[var(--fintheon-accent)]/10 bg-[#080806] shrink-0">
+          <div className="flex items-center gap-0 border-b border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-surface)] shrink-0">
             <button
               onClick={() => setActiveTab("terminal")}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
@@ -514,7 +514,7 @@ export function FooterToolbar({
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
                 activeTab === "changelog"
                   ? "border-[var(--fintheon-accent)] text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/5"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  : "border-transparent text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
               }`}
             >
               <FileText className="w-3 h-3" />
@@ -524,14 +524,14 @@ export function FooterToolbar({
               onClick={() => setActiveTab("errors")}
               className={`relative flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
                 activeTab === "errors"
-                  ? "border-red-400 text-red-400 bg-red-500/5"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  ? "border-[var(--fintheon-severe)] text-[var(--fintheon-severe)] bg-[var(--fintheon-severe)]/5"
+                  : "border-transparent text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
               }`}
             >
               <AlertTriangle className="w-3 h-3" />
               Errors
               {errorCount > 0 && (
-                <span className="ml-1 px-1 py-px text-[8px] font-mono rounded-full bg-red-500/20 text-red-400 leading-none">
+                <span className="ml-1 px-1 py-px text-[8px] font-mono rounded-full bg-[var(--fintheon-severe)]/20 text-[var(--fintheon-severe)] leading-none">
                   {errorCount}
                 </span>
               )}
@@ -541,7 +541,7 @@ export function FooterToolbar({
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
                 activeTab === "team"
                   ? "border-[var(--fintheon-accent)] text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/5"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  : "border-transparent text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
               }`}
             >
               <Users className="w-3 h-3" />
@@ -552,7 +552,7 @@ export function FooterToolbar({
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
                 activeTab === "harper-ops"
                   ? "border-[var(--fintheon-accent)] text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/5"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  : "border-transparent text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]"
               }`}
             >
               <Bot className="w-3 h-3" />
@@ -561,7 +561,10 @@ export function FooterToolbar({
           </div>
 
           {/* Panel content */}
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div
+            className="flex-1 overflow-y-auto min-h-0"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
             {activeTab === "terminal" && (
               <div className="h-full flex flex-col">
                 {/* Terminal output */}
@@ -644,10 +647,10 @@ export function FooterToolbar({
                     <span className="text-[var(--fintheon-accent)]/40 shrink-0 font-mono w-[88px]">
                       {entry.date.slice(0, 10)}
                     </span>
-                    <span className="text-zinc-400 shrink-0 font-mono w-[76px] text-[10px]">
+                    <span className="text-[var(--fintheon-muted)] shrink-0 font-mono w-[76px] text-[10px]">
                       {entry.agent}
                     </span>
-                    <span className="text-zinc-500 flex-1">
+                    <span className="text-[var(--fintheon-text)]/60 flex-1">
                       {entry.summary}
                     </span>
                   </div>

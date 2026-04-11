@@ -10,16 +10,28 @@ interface TeamMemberCardProps {
   isSelf?: boolean;
 }
 
-const STATUS_OPTIONS: { value: UserStatus; label: string; color: string }[] = [
-  { value: "online", label: "Online", color: "bg-emerald-400" },
-  { value: "away", label: "Away", color: "bg-amber-400" },
-  { value: "busy", label: "Busy", color: "bg-red-400" },
-  { value: "dnd", label: "Do Not Disturb", color: "bg-red-600" },
-  { value: "offline", label: "Offline", color: "bg-zinc-500" },
-];
+const STATUS_OPTIONS: { value: UserStatus; label: string; cssColor: string }[] =
+  [
+    { value: "online", label: "Online", cssColor: "var(--fintheon-low)" },
+    {
+      value: "away",
+      label: "Away",
+      cssColor: "var(--fintheon-neutral-severe)",
+    },
+    { value: "busy", label: "Busy", cssColor: "var(--fintheon-severe)" },
+    {
+      value: "dnd",
+      label: "Do Not Disturb",
+      cssColor: "var(--fintheon-severe)",
+    },
+    { value: "offline", label: "Offline", cssColor: "var(--fintheon-muted)" },
+  ];
 
-function statusDotColor(status: UserStatus): string {
-  return STATUS_OPTIONS.find((s) => s.value === status)?.color ?? "bg-zinc-500";
+function statusDotCssColor(status: UserStatus): string {
+  return (
+    STATUS_OPTIONS.find((s) => s.value === status)?.cssColor ??
+    "var(--fintheon-muted)"
+  );
 }
 
 function ServiceLight({
@@ -31,11 +43,11 @@ function ServiceLight({
   active: boolean;
   warning?: string;
 }) {
-  const color = warning
-    ? "bg-amber-400"
+  const bgColor = warning
+    ? "var(--fintheon-neutral-severe)"
     : active
-      ? "bg-emerald-400"
-      : "bg-red-400";
+      ? "var(--fintheon-low)"
+      : "var(--fintheon-severe)";
   const displayLabel = warning || label;
   const titleText = warning
     ? `${label}: ${warning}`
@@ -46,7 +58,8 @@ function ServiceLight({
       title={titleText}
     >
       <span
-        className={`inline-block w-1.5 h-1.5 rounded-full ${color} ${warning ? "animate-pulse" : ""}`}
+        className={`inline-block w-1.5 h-1.5 rounded-full ${warning ? "animate-pulse" : ""}`}
+        style={{ backgroundColor: bgColor }}
       />
       {displayLabel}
     </span>
@@ -80,7 +93,7 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
   }, [dropdownOpen]);
 
   return (
-    <div className="rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0b0b08] px-3 py-2.5 transition-colors hover:border-[var(--fintheon-accent)]/30">
+    <div className="rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)] px-3 py-2.5 transition-colors hover:border-[var(--fintheon-accent)]/30">
       {/* Top row: name tag + last seen */}
       <div className="flex items-center justify-between gap-2">
         <div
@@ -90,10 +103,16 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
           {/* Status dot */}
           <div className="relative shrink-0">
             <div
-              className={`w-2 h-2 rounded-full ${statusDotColor(presence.userStatus)}`}
+              className="w-2 h-2 rounded-full"
+              style={{
+                backgroundColor: statusDotCssColor(presence.userStatus),
+              }}
             />
             {presence.online && presence.userStatus === "online" && (
-              <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-400 animate-ping opacity-40" />
+              <div
+                className="absolute inset-0 w-2 h-2 rounded-full animate-ping opacity-40"
+                style={{ backgroundColor: "var(--fintheon-low)" }}
+              />
             )}
           </div>
 
@@ -124,10 +143,13 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
                   className={`w-full flex items-center gap-2 px-3 py-1.5 text-[10px] font-mono transition-colors hover:bg-[var(--fintheon-accent)]/10 ${
                     presence.userStatus === opt.value
                       ? "text-[var(--fintheon-accent)]"
-                      : "text-zinc-400"
+                      : "text-[var(--fintheon-muted)]"
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${opt.color}`} />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: opt.cssColor }}
+                  />
                   {opt.label}
                 </button>
               ))}
@@ -138,7 +160,7 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
         {/* Last seen + in-call */}
         <div className="flex items-center gap-2 shrink-0">
           {presence.inCall && (
-            <div className="flex items-center gap-1 text-[9px] text-emerald-400 font-mono">
+            <div className="flex items-center gap-1 text-[9px] text-[var(--fintheon-low)] font-mono">
               <Phone className="w-3 h-3" />
             </div>
           )}

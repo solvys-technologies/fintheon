@@ -502,9 +502,7 @@ export function FintheonThread({
         ref={viewportRef as any}
         className="flex-1 overflow-y-auto p-6 pb-8"
       >
-        <div
-          className={`${compact ? "max-w-full" : "max-w-3xl"} mx-auto space-y-4 mb-8`}
-        >
+        <div className="max-w-full mx-auto space-y-4 mb-8">
           {/* Greeting screen — shown when thread is empty */}
           {!compact && messages.length === 0 && (
             <ChatGreeting onSend={onSend} isLoading={isLoading} />
