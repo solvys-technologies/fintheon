@@ -13,7 +13,7 @@ export type AlertSource =
   | "economic-calendar"
   | "polymarket"
   | "kalshi-whale"
-  | "twitter-cli"
+  | "rettiwt"
   | "backend";
 
 export interface TradeIdeaDetail {

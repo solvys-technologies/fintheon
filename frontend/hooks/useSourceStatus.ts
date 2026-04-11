@@ -13,10 +13,6 @@ export interface SourceStatus {
   backendReachable: boolean;
   /** ISO timestamp of the last successful poll */
   lastPollSuccess: string;
-  // Deprecated compat — frontend components still referencing old names
-  twitterCli: boolean;
-  twitterRateLimited: boolean;
-  twitterCooldownSec: number;
 }
 
 const DEFAULT_STATUS: SourceStatus = {
@@ -29,9 +25,6 @@ const DEFAULT_STATUS: SourceStatus = {
   xApi: false,
   backendReachable: false,
   lastPollSuccess: new Date(0).toISOString(),
-  twitterCli: false,
-  twitterRateLimited: false,
-  twitterCooldownSec: 0,
 };
 const POLL_INTERVAL_MS = 30_000;
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -44,13 +37,9 @@ export function useSourceStatus(): SourceStatus {
     fetch(`${API_BASE}/api/riskflow/sources`)
       .then((r) => r.json())
       .then((data: Record<string, unknown>) => {
-        const rettiwt = Boolean(data.rettiwt ?? data.twitterCli ?? false);
-        const rateLimited = Boolean(
-          data.rettiwtRateLimited ?? data.twitterRateLimited ?? false,
-        );
-        const cooldownSec = Number(
-          data.rettiwtCooldownSec ?? data.twitterCooldownSec ?? 0,
-        );
+        const rettiwt = Boolean(data.rettiwt ?? false);
+        const rateLimited = Boolean(data.rettiwtRateLimited ?? false);
+        const cooldownSec = Number(data.rettiwtCooldownSec ?? 0);
         setStatus({
           notion: Boolean(data.notion),
           rettiwt,
@@ -61,10 +50,6 @@ export function useSourceStatus(): SourceStatus {
           xApi: Boolean(data.xApi),
           backendReachable: true,
           lastPollSuccess: new Date().toISOString(),
-          // Compat
-          twitterCli: rettiwt,
-          twitterRateLimited: rateLimited,
-          twitterCooldownSec: cooldownSec,
         });
       })
       .catch(() => setStatus((prev) => ({ ...prev, backendReachable: false })));

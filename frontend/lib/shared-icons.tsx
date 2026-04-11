@@ -69,6 +69,7 @@ export function SourceIcon({
 }) {
   const s = source.toLowerCase();
   if (
+    s === "rettiwt" ||
     s === "twitter-cli" ||
     s === "twittercli" ||
     s.includes("twitter") ||

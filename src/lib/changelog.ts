@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-11T14:00:00",
+    agent: "claude-code",
+    summary:
+      "Solvys audit: purged stale twitter-cli compat fields from useSourceStatus, RiskFlowContext, handlers, TeamOnboarding, riskflow-feed types. Extracted useStickyBulletin hook (1162→877+360). Removed deprecated twitterCli/twitterRateLimited/twitterCooldownSec from sources endpoint.",
+    files: [
+      "frontend/hooks/useSourceStatus.ts",
+      "frontend/hooks/useStickyBulletin.ts",
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "frontend/contexts/TeamPresenceContext.tsx",
+      "frontend/lib/riskflow-feed.ts",
+      "frontend/lib/shared-icons.tsx",
+      "frontend/components/team/TeamOnboarding.tsx",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+    ],
+  },
+  {
     date: "2026-04-11T12:00:00",
     agent: "claude-code",
     summary:

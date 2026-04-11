@@ -81,7 +81,7 @@ function mapBackendSource(source: string): RiskFlowAlert["source"] {
   if (s === "economiccalendar") return "economic-calendar";
   if (s === "polymarket") return "polymarket";
   if (s === "kalshi") return "kalshi-whale";
-  if (s === "twittercli") return "twitter-cli";
+  if (s === "twittercli" || s === "rettiwt") return "rettiwt";
   return "backend";
 }
 
@@ -196,7 +196,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     };
   }, [pollNotion]);
 
-  // Backend feed polling (twitter-cli, Kalshi, Economic Calendar)
+  // Backend feed polling (Rettiwt, Kalshi, Economic Calendar)
   // Uses loadedCountRef so polls fetch all items the user has scrolled through (not just first 50)
   const pollBackendFeed = useCallback(async () => {
     try {

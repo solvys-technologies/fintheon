@@ -11,7 +11,7 @@ interface TeamOnboardingProps {
 }
 
 const CAPABILITY_OPTIONS = [
-  { id: "twitter-cli", label: "Twitter CLI" },
+  { id: "rettiwt", label: "RiskFlow (Rettiwt)" },
   { id: "computer-use", label: "Computer Use" },
   { id: "hermes", label: "Hermes" },
 ] as const;
@@ -33,7 +33,7 @@ export function TeamOnboarding({
       typeof navigator !== "undefined" ? navigator.platform : "Fintheon Device";
     return `Fintheon ${fallback}`;
   });
-  const [capabilities, setCapabilities] = useState<string[]>(["twitter-cli"]);
+  const [capabilities, setCapabilities] = useState<string[]>(["rettiwt"]);
   const [assignedDesk, setAssignedDesk] =
     useState<string>("Pending assignment");
 

@@ -3,7 +3,7 @@
  * Request handlers for RiskFlow endpoints
  */
 
-// [claude-code 2026-03-31] Owner-gated X polling: only POLL_OWNER_ID can trigger twitter-cli fetch; all users get DB reads + rescore
+// [claude-code 2026-03-31] Owner-gated X polling: only POLL_OWNER_ID can trigger Rettiwt fetch; all users get DB reads + rescore
 // [claude-code 2026-03-31] Refresh now triggers Central Scorer immediately (fetch→score→deliver in one call)
 // [claude-code 2026-03-29] S9-T2b: Wire instrument-aware sentiment flipper into feed handler, fix spread ordering, fire-and-forget instrument_scores writes
 // [claude-code 2026-03-10] Added handleGetSources for RiskFlow connection status indicators
@@ -843,7 +843,7 @@ export async function handleRefresh(c: Context) {
   }
 
   // Only the owner can trigger X polling. Match by email (Google sign-in) or userId.
-  // All other users still get rescore + agent notes, just no fresh twitter-cli fetch.
+  // All other users still get rescore + agent notes, just no fresh Rettiwt fetch.
   const ownerEmail =
     process.env.POLL_OWNER_EMAIL || "pricedinresearch@gmail.com";
   const ownerId = process.env.POLL_OWNER_ID || "local-user";
@@ -996,10 +996,6 @@ export async function handleGetSources(c: Context) {
     rettiwtCooldownSec: cooldownSec,
     pollingOwner: getCurrentPollingOwner(),
     activePollers: getActivePollingUsers(),
-    // Deprecated compat fields — frontend reads these during migration
-    twitterCli: rettiwtUp,
-    twitterRateLimited: rateLimited,
-    twitterCooldownSec: cooldownSec,
     xApi: false,
   });
 }

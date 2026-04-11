@@ -1,10 +1,6 @@
-// [claude-code 2026-04-10] Sticky Bulletin — personal trade board with 4 sections:
-// 1. Catalyst Watch (watchlist phrase alerts wired to central-scorer)
-// 2. Times to Watch (antilag time logging + Hot Times + Quick Clock)
-// 3. Event of the Week (forecast/notes)
-// 4. Trading Notes (general notepad)
-// [claude-code 2026-04-11] v2: Inline Catalyst Watch, Hot Times dropdown, Quick Clock tap button
-import { useState, useEffect, useRef, useCallback } from "react";
+// [claude-code 2026-04-10] Sticky Bulletin — personal trade board with 4 sections
+// [claude-code 2026-04-11] v2: Inline Catalyst Watch, Hot Times dropdown, Quick Clock
+// [claude-code 2026-04-11] v3: Extracted hook to useStickyBulletin.ts
 import { createPortal } from "react-dom";
 import {
   ClipboardList,
@@ -19,13 +15,7 @@ import {
   ChevronUp,
   Zap,
 } from "lucide-react";
-import { useBackend } from "../lib/backend";
-import { useToast } from "../contexts/ToastContext";
-import { useSettings } from "../contexts/SettingsContext";
-import type { StickyBulletinData } from "../lib/services/editor";
-import type { WatchlistPhrase } from "../lib/services/riskflow";
-
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+import { useStickyBulletin, DAY_LABELS } from "../hooks/useStickyBulletin";
 
 interface StickyBulletinProps {
   open: boolean;
@@ -33,308 +23,29 @@ interface StickyBulletinProps {
   anchorRef: React.RefObject<HTMLButtonElement | null>;
 }
 
+const SECTIONS = [
+  { id: "idea" as const, icon: Crosshair, label: "Catalyst" },
+  { id: "antilag" as const, icon: Clock, label: "Antilag" },
+  { id: "event" as const, icon: CalendarDays, label: "Event" },
+  { id: "notes" as const, icon: StickyNote, label: "Notes" },
+];
+
 export function StickyBulletin({
   open,
   onClose,
   anchorRef,
 }: StickyBulletinProps) {
-  const backend = useBackend();
-  const { addToast } = useToast();
-  const { selectedSymbol } = useSettings();
+  const b = useStickyBulletin(open, anchorRef);
 
-  // Data state
-  const [tradingNotes, setTradingNotes] = useState("");
-  const [eventOfWeek, setEventOfWeek] = useState("");
-  const [antilagTimes, setAntilagTimes] = useState<
-    StickyBulletinData["antilagTimes"]
-  >([]);
-  const [loaded, setLoaded] = useState(false);
-
-  // Catalyst Watch state
-  const [phrases, setPhrases] = useState<WatchlistPhrase[]>([]);
-  const [phrasesLoaded, setPhrasesLoaded] = useState(false);
-  const [newPhrase, setNewPhrase] = useState("");
-  const [phraseMatchType, setPhraseMatchType] = useState<"contains" | "exact">(
-    "contains",
-  );
-  const [phraseRepeating, setPhraseRepeating] = useState(false);
-  const [phraseSubmitting, setPhraseSubmitting] = useState(false);
-  const [biasWarning, setBiasWarning] = useState("");
-
-  // Hot Times state
-  const [showHotTimes, setShowHotTimes] = useState(false);
-  const [hotTimesLoaded, setHotTimesLoaded] = useState(false);
-  const [hotTimesByDay, setHotTimesByDay] = useState(false);
-  const [hotTimes, setHotTimes] = useState<
-    Array<{
-      bucket: string;
-      dayOfWeek?: number;
-      count: number;
-      instruments: string[];
-    }>
-  >([]);
-
-  // Quick Clock state
-  const [showQuickClock, setShowQuickClock] = useState(true);
-  const [quickClockPulse, setQuickClockPulse] = useState(false);
-
-  // UI state
-  const [activeSection, setActiveSection] = useState<
-    "idea" | "antilag" | "event" | "notes"
-  >("notes");
-  const [editingNotes, setEditingNotes] = useState(false);
-  const [editingEvent, setEditingEvent] = useState(false);
-
-  // Antilag form
-  const [newAntilagTime, setNewAntilagTime] = useState("");
-  const [newAntilagDay, setNewAntilagDay] = useState(new Date().getDay());
-  const [newAntilagInstrument, setNewAntilagInstrument] = useState("ES");
-  const [newAntilagNotes, setNewAntilagNotes] = useState("");
-
-  // Debounce save refs
-  const notesSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const eventSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [popupPos, setPopupPos] = useState<{
-    top: number;
-    right: number;
-  } | null>(null);
-
-  // Position calculation
-  useEffect(() => {
-    if (!open || !anchorRef.current) {
-      setPopupPos(null);
-      return;
-    }
-    const rect = anchorRef.current.getBoundingClientRect();
-    const right = window.innerWidth - rect.right;
-    const top = rect.bottom + 8;
-    setPopupPos({ top, right: Math.max(right, 12) });
-  }, [open, anchorRef]);
-
-  // Load bulletin data on first open
-  useEffect(() => {
-    if (!open || loaded) return;
-    backend.stickyBulletin
-      .get()
-      .then((res) => {
-        setTradingNotes(res.data.tradingNotes);
-        setEventOfWeek(res.data.eventOfWeek);
-        setAntilagTimes(res.data.antilagTimes);
-        setLoaded(true);
-      })
-      .catch(() => setLoaded(true));
-  }, [open, loaded, backend.stickyBulletin]);
-
-  // Load phrases when Trade Idea section opens
-  useEffect(() => {
-    if (activeSection !== "idea" || phrasesLoaded) return;
-    backend.riskflow
-      .getPhrases()
-      .then((res) => {
-        setPhrases(res.phrases);
-        setPhrasesLoaded(true);
-      })
-      .catch(() => setPhrasesLoaded(true));
-  }, [activeSection, phrasesLoaded, backend.riskflow]);
-
-  // Load hot times when expanded
-  useEffect(() => {
-    if (!showHotTimes) return;
-    setHotTimesLoaded(false);
-    backend.stickyBulletin
-      .getHotTimes(hotTimesByDay)
-      .then((res) => {
-        setHotTimes(res.hotTimes);
-        setHotTimesLoaded(true);
-      })
-      .catch(() => setHotTimesLoaded(true));
-  }, [showHotTimes, hotTimesByDay, backend.stickyBulletin]);
-
-  // Click outside handler
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (panelRef.current?.contains(target)) return;
-      if (anchorRef.current?.contains(target)) return;
-      onClose();
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open, onClose, anchorRef]);
-
-  // Auto-save notes with debounce
-  const saveNotes = useCallback(
-    (val: string) => {
-      if (notesSaveTimer.current) clearTimeout(notesSaveTimer.current);
-      notesSaveTimer.current = setTimeout(() => {
-        backend.stickyBulletin.save({ tradingNotes: val }).catch(() => {});
-      }, 1200);
-    },
-    [backend.stickyBulletin],
-  );
-
-  const saveEvent = useCallback(
-    (val: string) => {
-      if (eventSaveTimer.current) clearTimeout(eventSaveTimer.current);
-      eventSaveTimer.current = setTimeout(() => {
-        backend.stickyBulletin.save({ eventOfWeek: val }).catch(() => {});
-      }, 1200);
-    },
-    [backend.stickyBulletin],
-  );
-
-  useEffect(() => {
-    return () => {
-      if (notesSaveTimer.current) clearTimeout(notesSaveTimer.current);
-      if (eventSaveTimer.current) clearTimeout(eventSaveTimer.current);
-    };
-  }, []);
-
-  const handleNotesChange = (val: string) => {
-    setTradingNotes(val);
-    saveNotes(val);
-  };
-
-  const handleEventChange = (val: string) => {
-    setEventOfWeek(val);
-    saveEvent(val);
-  };
-
-  // ─── Antilag handlers ───
-  const handleAddAntilag = async () => {
-    if (!newAntilagTime) {
-      addToast("Enter a time", "error");
-      return;
-    }
-    try {
-      await backend.stickyBulletin.addAntilagTime({
-        time: newAntilagTime,
-        dayOfWeek: newAntilagDay,
-        instrument: newAntilagInstrument,
-        notes: newAntilagNotes,
-      });
-      setAntilagTimes((prev) => [
-        {
-          time: newAntilagTime,
-          dayOfWeek: newAntilagDay,
-          instrument: newAntilagInstrument,
-          notes: newAntilagNotes,
-          createdAt: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
-      setNewAntilagTime("");
-      setNewAntilagNotes("");
-      addToast(
-        "Antilag time logged",
-        "success",
-        undefined,
-        undefined,
-        "top-right",
-      );
-    } catch {
-      addToast("Failed to save", "error");
-    }
-  };
-
-  // Quick Clock — one-tap antilag logging
-  const handleQuickClock = async () => {
-    const now = new Date();
-    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const dayOfWeek = now.getDay();
-    const instrument = selectedSymbol.symbol || "ES";
-
-    setQuickClockPulse(true);
-    setTimeout(() => setQuickClockPulse(false), 600);
-
-    try {
-      await backend.stickyBulletin.addAntilagTime({
-        time,
-        dayOfWeek,
-        instrument,
-        notes: "",
-      });
-      setAntilagTimes((prev) => [
-        {
-          time,
-          dayOfWeek,
-          instrument,
-          notes: "",
-          createdAt: now.toISOString(),
-        },
-        ...prev,
-      ]);
-      addToast(
-        `${time} ${DAY_LABELS[dayOfWeek]} ${instrument}`,
-        "success",
-        "Antilag clocked",
-        undefined,
-        "top-right",
-      );
-    } catch {
-      addToast("Failed to log", "error");
-    }
-  };
-
-  // ─── Catalyst Watch handlers ───
-  const handleAddPhrase = async () => {
-    if (!newPhrase.trim()) return;
-    setPhraseSubmitting(true);
-    setBiasWarning("");
-    try {
-      const res = await backend.riskflow.addPhrase({
-        phrase: newPhrase,
-        matchType: phraseMatchType,
-        repeating: phraseRepeating,
-      });
-      setPhrases((prev) => [res.phrase, ...prev]);
-      setNewPhrase("");
-      if (res.removedBias.length > 0) {
-        setBiasWarning(`Removed bias: ${res.removedBias.join(", ")}`);
-        setTimeout(() => setBiasWarning(""), 4000);
-      }
-      addToast(
-        `Watching: "${res.phrase.phrase}"`,
-        "success",
-        undefined,
-        undefined,
-        "top-right",
-      );
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to add";
-      addToast(msg, "error");
-    } finally {
-      setPhraseSubmitting(false);
-    }
-  };
-
-  const handleDeletePhrase = async (id: number) => {
-    try {
-      await backend.riskflow.deletePhrase(id);
-      setPhrases((prev) => prev.filter((p) => p.id !== id));
-    } catch {
-      addToast("Failed to remove", "error");
-    }
-  };
-
-  const sections = [
-    { id: "idea" as const, icon: Crosshair, label: "Catalyst" },
-    { id: "antilag" as const, icon: Clock, label: "Antilag" },
-    { id: "event" as const, icon: CalendarDays, label: "Event" },
-    { id: "notes" as const, icon: StickyNote, label: "Notes" },
-  ];
-
-  if (!open || !popupPos) return null;
+  if (!open || !b.popupPos) return null;
 
   return createPortal(
     <div
-      ref={panelRef}
+      ref={b.panelRef}
       style={{
         position: "fixed",
-        top: popupPos.top,
-        right: popupPos.right,
+        top: b.popupPos.top,
+        right: b.popupPos.right,
         zIndex: 9998,
       }}
       className="w-[360px] animate-in fade-in slide-in-from-top-2 duration-200"
@@ -389,12 +100,12 @@ export function StickyBulletin({
               "1px solid color-mix(in srgb, var(--fintheon-accent) 8%, transparent)",
           }}
         >
-          {sections.map((s) => {
-            const isActive = activeSection === s.id;
+          {SECTIONS.map((s) => {
+            const isActive = b.activeSection === s.id;
             return (
               <button
                 key={s.id}
-                onClick={() => setActiveSection(s.id)}
+                onClick={() => b.setActiveSection(s.id)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[10px] tracking-wide uppercase transition-all duration-200"
                 style={{
                   color: isActive
@@ -414,8 +125,8 @@ export function StickyBulletin({
 
         {/* Content area */}
         <div className="p-3 min-h-[200px] max-h-[420px] overflow-y-auto custom-scrollbar">
-          {/* ═══ Section 1: Catalyst Watch (inline) ═══ */}
-          {activeSection === "idea" && (
+          {/* ═══ Section 1: Catalyst Watch ═══ */}
+          {b.activeSection === "idea" && (
             <div className="space-y-3 animate-in fade-in duration-150">
               <p
                 className="text-[11px] leading-relaxed"
@@ -437,10 +148,10 @@ export function StickyBulletin({
               >
                 <input
                   type="text"
-                  value={newPhrase}
-                  onChange={(e) => setNewPhrase(e.target.value)}
+                  value={b.newPhrase}
+                  onChange={(e) => b.setNewPhrase(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAddPhrase();
+                    if (e.key === "Enter") b.handleAddPhrase();
                   }}
                   placeholder="e.g. FOMC rate decision, tariff, NVDA earnings..."
                   maxLength={120}
@@ -465,15 +176,15 @@ export function StickyBulletin({
                     {(["contains", "exact"] as const).map((t) => (
                       <button
                         key={t}
-                        onClick={() => setPhraseMatchType(t)}
+                        onClick={() => b.setPhraseMatchType(t)}
                         className="flex-1 py-1 text-[9px] uppercase tracking-wide transition-colors"
                         style={{
                           color:
-                            phraseMatchType === t
+                            b.phraseMatchType === t
                               ? "var(--fintheon-accent)"
                               : "var(--fintheon-muted)",
                           background:
-                            phraseMatchType === t
+                            b.phraseMatchType === t
                               ? "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)"
                               : "transparent",
                         }}
@@ -494,15 +205,15 @@ export function StickyBulletin({
                     {([false, true] as const).map((r) => (
                       <button
                         key={String(r)}
-                        onClick={() => setPhraseRepeating(r)}
+                        onClick={() => b.setPhraseRepeating(r)}
                         className="flex-1 py-1 text-[9px] uppercase tracking-wide transition-colors"
                         style={{
                           color:
-                            phraseRepeating === r
+                            b.phraseRepeating === r
                               ? "var(--fintheon-accent)"
                               : "var(--fintheon-muted)",
                           background:
-                            phraseRepeating === r
+                            b.phraseRepeating === r
                               ? "color-mix(in srgb, var(--fintheon-accent) 12%, transparent)"
                               : "transparent",
                         }}
@@ -514,8 +225,8 @@ export function StickyBulletin({
                 </div>
 
                 <button
-                  onClick={handleAddPhrase}
-                  disabled={phraseSubmitting || !newPhrase.trim()}
+                  onClick={b.handleAddPhrase}
+                  disabled={b.phraseSubmitting || !b.newPhrase.trim()}
                   className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-medium tracking-wide uppercase transition-all duration-200 disabled:opacity-40"
                   style={{
                     color: "var(--fintheon-accent)",
@@ -524,22 +235,22 @@ export function StickyBulletin({
                   }}
                 >
                   <Plus className="w-3 h-3" />
-                  {phraseSubmitting ? "Adding..." : "Add Catalyst Watch"}
+                  {b.phraseSubmitting ? "Adding..." : "Add Catalyst Watch"}
                 </button>
               </div>
 
               {/* Bias warning */}
-              {biasWarning && (
+              {b.biasWarning && (
                 <p
                   className="text-[10px] italic animate-in fade-in duration-200"
                   style={{ color: "var(--fintheon-bearish, #EF4444)" }}
                 >
-                  {biasWarning}
+                  {b.biasWarning}
                 </p>
               )}
 
               {/* Active phrases list */}
-              {phrases.length > 0 ? (
+              {b.phrases.length > 0 ? (
                 <div className="space-y-1">
                   <span
                     className="text-[9px] uppercase tracking-widest"
@@ -547,7 +258,7 @@ export function StickyBulletin({
                   >
                     Active watches
                   </span>
-                  {phrases.map((p) => (
+                  {b.phrases.map((p) => (
                     <div
                       key={p.id}
                       className="flex items-center gap-2 py-1.5 px-2 rounded-md group"
@@ -591,7 +302,7 @@ export function StickyBulletin({
                         {p.repeating ? "repeat" : "once"}
                       </span>
                       <button
-                        onClick={() => handleDeletePhrase(p.id)}
+                        onClick={() => b.handleDeletePhrase(p.id)}
                         className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-white/5 transition-all"
                         style={{ color: "var(--fintheon-muted)" }}
                       >
@@ -624,7 +335,7 @@ export function StickyBulletin({
           )}
 
           {/* ═══ Section 2: Antilag Times ═══ */}
-          {activeSection === "antilag" && (
+          {b.activeSection === "antilag" && (
             <div className="space-y-3 animate-in fade-in duration-150">
               <div className="flex items-center justify-between">
                 <p
@@ -635,32 +346,32 @@ export function StickyBulletin({
                   Autopilot.
                 </p>
                 <button
-                  onClick={() => setShowQuickClock(!showQuickClock)}
+                  onClick={() => b.setShowQuickClock(!b.showQuickClock)}
                   className="text-[8px] px-1.5 py-0.5 rounded transition-colors"
                   style={{
-                    color: showQuickClock
+                    color: b.showQuickClock
                       ? "var(--fintheon-accent)"
                       : "var(--fintheon-muted)",
-                    background: showQuickClock
+                    background: b.showQuickClock
                       ? "color-mix(in srgb, var(--fintheon-accent) 10%, transparent)"
                       : "transparent",
                   }}
                 >
-                  {showQuickClock ? "Hide" : "Show"} Quick
+                  {b.showQuickClock ? "Hide" : "Show"} Quick
                 </button>
               </div>
 
               {/* Quick Clock — one-tap */}
-              {showQuickClock && (
+              {b.showQuickClock && (
                 <button
-                  onClick={handleQuickClock}
+                  onClick={b.handleQuickClock}
                   className="w-full flex items-center justify-center gap-2.5 py-3 rounded-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]"
                   style={{
-                    background: quickClockPulse
+                    background: b.quickClockPulse
                       ? "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)"
                       : "color-mix(in srgb, var(--fintheon-accent) 8%, transparent)",
-                    border: `1px solid color-mix(in srgb, var(--fintheon-accent) ${quickClockPulse ? "40" : "20"}%, transparent)`,
-                    boxShadow: quickClockPulse
+                    border: `1px solid color-mix(in srgb, var(--fintheon-accent) ${b.quickClockPulse ? "40" : "20"}%, transparent)`,
+                    boxShadow: b.quickClockPulse
                       ? "0 0 12px color-mix(in srgb, var(--fintheon-accent) 15%, transparent)"
                       : "none",
                     transition: "all 0.3s ease",
@@ -670,7 +381,7 @@ export function StickyBulletin({
                     className="w-5 h-5"
                     style={{
                       color: "var(--fintheon-accent)",
-                      transform: quickClockPulse ? "scale(1.2)" : "scale(1)",
+                      transform: b.quickClockPulse ? "scale(1.2)" : "scale(1)",
                       transition: "transform 0.3s ease",
                     }}
                   />
@@ -685,7 +396,7 @@ export function StickyBulletin({
                       className="text-[9px]"
                       style={{ color: "var(--fintheon-muted)" }}
                     >
-                      {selectedSymbol.symbol || "ES"} ·{" "}
+                      {b.selectedSymbol.symbol || "ES"} ·{" "}
                       {DAY_LABELS[new Date().getDay()]} · auto-time
                     </span>
                   </div>
@@ -699,7 +410,7 @@ export function StickyBulletin({
               {/* Hot Times — collapsible */}
               <div>
                 <button
-                  onClick={() => setShowHotTimes(!showHotTimes)}
+                  onClick={() => b.setShowHotTimes(!b.showHotTimes)}
                   className="w-full flex items-center justify-between py-1.5 px-2 rounded-md transition-colors hover:bg-white/[0.02]"
                 >
                   <div className="flex items-center gap-1.5">
@@ -711,7 +422,7 @@ export function StickyBulletin({
                       Hot Times
                     </span>
                   </div>
-                  {showHotTimes ? (
+                  {b.showHotTimes ? (
                     <ChevronUp
                       className="w-3 h-3"
                       style={{ color: "var(--fintheon-muted)" }}
@@ -724,7 +435,7 @@ export function StickyBulletin({
                   )}
                 </button>
 
-                {showHotTimes && (
+                {b.showHotTimes && (
                   <div
                     className="mt-1 rounded-lg p-2.5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150"
                     style={{
@@ -743,29 +454,29 @@ export function StickyBulletin({
                         Top 3 fifteen-minute windows
                       </span>
                       <button
-                        onClick={() => setHotTimesByDay(!hotTimesByDay)}
+                        onClick={() => b.setHotTimesByDay(!b.hotTimesByDay)}
                         className="text-[8px] px-1.5 py-0.5 rounded transition-colors"
                         style={{
-                          color: hotTimesByDay
+                          color: b.hotTimesByDay
                             ? "#F97316"
                             : "var(--fintheon-muted)",
-                          background: hotTimesByDay
+                          background: b.hotTimesByDay
                             ? "color-mix(in srgb, #F97316 10%, transparent)"
                             : "transparent",
                         }}
                       >
-                        {hotTimesByDay ? "By Day" : "All Days"}
+                        {b.hotTimesByDay ? "By Day" : "All Days"}
                       </button>
                     </div>
 
-                    {!hotTimesLoaded ? (
+                    {!b.hotTimesLoaded ? (
                       <p
                         className="text-[10px] text-center py-2"
                         style={{ color: "var(--fintheon-muted)" }}
                       >
                         Loading...
                       </p>
-                    ) : hotTimes.length === 0 ? (
+                    ) : b.hotTimes.length === 0 ? (
                       <p
                         className="text-[10px] text-center py-2"
                         style={{ color: "var(--fintheon-muted)" }}
@@ -774,8 +485,8 @@ export function StickyBulletin({
                       </p>
                     ) : (
                       <div className="space-y-1">
-                        {hotTimes.map((ht, i) => {
-                          const maxCount = hotTimes[0]?.count || 1;
+                        {b.hotTimes.map((ht, i) => {
+                          const maxCount = b.hotTimes[0]?.count || 1;
                           const barWidth = Math.max(
                             15,
                             (ht.count / maxCount) * 100,
@@ -859,8 +570,8 @@ export function StickyBulletin({
                 <div className="flex gap-2">
                   <input
                     type="time"
-                    value={newAntilagTime}
-                    onChange={(e) => setNewAntilagTime(e.target.value)}
+                    value={b.newAntilagTime}
+                    onChange={(e) => b.setNewAntilagTime(e.target.value)}
                     className="flex-1 bg-transparent border rounded-md px-2 py-1.5 text-[11px] outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors"
                     style={{
                       borderColor:
@@ -869,9 +580,9 @@ export function StickyBulletin({
                     }}
                   />
                   <select
-                    value={newAntilagDay}
+                    value={b.newAntilagDay}
                     onChange={(e) =>
-                      setNewAntilagDay(parseInt(e.target.value, 10))
+                      b.setNewAntilagDay(parseInt(e.target.value, 10))
                     }
                     className="bg-transparent border rounded-md px-2 py-1.5 text-[11px] outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors"
                     style={{
@@ -889,8 +600,8 @@ export function StickyBulletin({
                 </div>
                 <div className="flex gap-2">
                   <select
-                    value={newAntilagInstrument}
-                    onChange={(e) => setNewAntilagInstrument(e.target.value)}
+                    value={b.newAntilagInstrument}
+                    onChange={(e) => b.setNewAntilagInstrument(e.target.value)}
                     className="bg-transparent border rounded-md px-2 py-1.5 text-[11px] outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors"
                     style={{
                       borderColor:
@@ -908,8 +619,8 @@ export function StickyBulletin({
                   </select>
                   <input
                     type="text"
-                    value={newAntilagNotes}
-                    onChange={(e) => setNewAntilagNotes(e.target.value)}
+                    value={b.newAntilagNotes}
+                    onChange={(e) => b.setNewAntilagNotes(e.target.value)}
                     placeholder="Notes (optional)"
                     className="flex-1 bg-transparent border rounded-md px-2 py-1.5 text-[11px] outline-none placeholder:text-gray-600 focus:border-[var(--fintheon-accent)]/40 transition-colors"
                     style={{
@@ -920,7 +631,7 @@ export function StickyBulletin({
                   />
                 </div>
                 <button
-                  onClick={handleAddAntilag}
+                  onClick={b.handleAddAntilag}
                   className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-medium tracking-wide uppercase transition-all duration-200"
                   style={{
                     color: "var(--fintheon-accent)",
@@ -934,7 +645,7 @@ export function StickyBulletin({
               </div>
 
               {/* Recent entries */}
-              {antilagTimes.length > 0 && (
+              {b.antilagTimes.length > 0 && (
                 <div className="space-y-1">
                   <span
                     className="text-[9px] uppercase tracking-widest"
@@ -942,7 +653,7 @@ export function StickyBulletin({
                   >
                     Recent observations
                   </span>
-                  {antilagTimes.slice(0, 6).map((entry, i) => (
+                  {b.antilagTimes.slice(0, 6).map((entry, i) => (
                     <div
                       key={i}
                       className="flex items-center gap-2 py-1.5 px-2 rounded-md"
@@ -995,7 +706,7 @@ export function StickyBulletin({
           )}
 
           {/* ═══ Section 3: Event of the Week ═══ */}
-          {activeSection === "event" && (
+          {b.activeSection === "event" && (
             <div className="space-y-3 animate-in fade-in duration-150">
               <div className="flex items-center justify-between">
                 <p
@@ -1004,9 +715,9 @@ export function StickyBulletin({
                 >
                   Your weekly forecast or key event to monitor.
                 </p>
-                {!editingEvent && eventOfWeek && (
+                {!b.editingEvent && b.eventOfWeek && (
                   <button
-                    onClick={() => setEditingEvent(true)}
+                    onClick={() => b.setEditingEvent(true)}
                     className="text-[9px] px-2 py-0.5 rounded transition-colors"
                     style={{
                       color: "var(--fintheon-accent)",
@@ -1019,13 +730,15 @@ export function StickyBulletin({
                 )}
               </div>
 
-              {editingEvent || !eventOfWeek ? (
+              {b.editingEvent || !b.eventOfWeek ? (
                 <div className="space-y-2">
                   <textarea
-                    value={eventOfWeek}
-                    onChange={(e) => handleEventChange(e.target.value)}
-                    onFocus={() => setEditingEvent(true)}
-                    onBlur={() => setTimeout(() => setEditingEvent(false), 300)}
+                    value={b.eventOfWeek}
+                    onChange={(e) => b.handleEventChange(e.target.value)}
+                    onFocus={() => b.setEditingEvent(true)}
+                    onBlur={() =>
+                      setTimeout(() => b.setEditingEvent(false), 300)
+                    }
                     placeholder="e.g. FOMC rate decision Wednesday 2pm — expecting hawkish hold, watching for dot plot shifts..."
                     rows={4}
                     className="w-full bg-transparent border rounded-lg px-3 py-2 text-[12px] leading-relaxed outline-none resize-none placeholder:text-gray-600 focus:border-[var(--fintheon-accent)]/30 transition-colors"
@@ -1048,7 +761,7 @@ export function StickyBulletin({
               ) : (
                 <div
                   className="rounded-lg p-3 cursor-pointer transition-all duration-200 hover:bg-white/[0.02]"
-                  onClick={() => setEditingEvent(true)}
+                  onClick={() => b.setEditingEvent(true)}
                   style={{
                     background:
                       "color-mix(in srgb, var(--fintheon-bg) 50%, transparent)",
@@ -1063,7 +776,7 @@ export function StickyBulletin({
                       fontFamily: "var(--font-body)",
                     }}
                   >
-                    {eventOfWeek}
+                    {b.eventOfWeek}
                   </p>
                 </div>
               )}
@@ -1071,7 +784,7 @@ export function StickyBulletin({
           )}
 
           {/* ═══ Section 4: Trading Notes ═══ */}
-          {activeSection === "notes" && (
+          {b.activeSection === "notes" && (
             <div className="space-y-3 animate-in fade-in duration-150">
               <div className="flex items-center justify-between">
                 <p
@@ -1080,9 +793,9 @@ export function StickyBulletin({
                 >
                   Personal trading notes. Always saved.
                 </p>
-                {!editingNotes && tradingNotes && (
+                {!b.editingNotes && b.tradingNotes && (
                   <button
-                    onClick={() => setEditingNotes(true)}
+                    onClick={() => b.setEditingNotes(true)}
                     className="text-[9px] px-2 py-0.5 rounded transition-colors"
                     style={{
                       color: "var(--fintheon-accent)",
@@ -1095,13 +808,15 @@ export function StickyBulletin({
                 )}
               </div>
 
-              {editingNotes || !tradingNotes ? (
+              {b.editingNotes || !b.tradingNotes ? (
                 <div className="space-y-2">
                   <textarea
-                    value={tradingNotes}
-                    onChange={(e) => handleNotesChange(e.target.value)}
-                    onFocus={() => setEditingNotes(true)}
-                    onBlur={() => setTimeout(() => setEditingNotes(false), 300)}
+                    value={b.tradingNotes}
+                    onChange={(e) => b.handleNotesChange(e.target.value)}
+                    onFocus={() => b.setEditingNotes(true)}
+                    onBlur={() =>
+                      setTimeout(() => b.setEditingNotes(false), 300)
+                    }
                     placeholder="Jot down observations, patterns, reminders..."
                     rows={6}
                     className="w-full bg-transparent border rounded-lg px-3 py-2 text-[12px] leading-relaxed outline-none resize-none placeholder:text-gray-600 focus:border-[var(--fintheon-accent)]/30 transition-colors"
@@ -1124,7 +839,7 @@ export function StickyBulletin({
               ) : (
                 <div
                   className="rounded-lg p-3 cursor-pointer transition-all duration-200 hover:bg-white/[0.02]"
-                  onClick={() => setEditingNotes(true)}
+                  onClick={() => b.setEditingNotes(true)}
                   style={{
                     background:
                       "color-mix(in srgb, var(--fintheon-bg) 50%, transparent)",
@@ -1139,7 +854,7 @@ export function StickyBulletin({
                       fontFamily: "var(--font-body)",
                     }}
                   >
-                    {tradingNotes}
+                    {b.tradingNotes}
                   </p>
                 </div>
               )}

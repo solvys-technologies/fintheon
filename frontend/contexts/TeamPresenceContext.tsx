@@ -177,14 +177,8 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
               displayName: latest.displayName,
               caoName: latest.caoName,
               caoOnline: latest.caoOnline,
-              riskflowPolling:
-                (latest as any).riskflowPolling ??
-                (latest as any).twitterCliPolling ??
-                false,
-              riskflowKilled:
-                (latest as any).riskflowKilled ??
-                (latest as any).twitterFeedKilled ??
-                false,
+              riskflowPolling: (latest as any).riskflowPolling ?? false,
+              riskflowKilled: (latest as any).riskflowKilled ?? false,
               online: true,
               lastSeen: new Date().toISOString(),
               inCall: latest.inCall,
