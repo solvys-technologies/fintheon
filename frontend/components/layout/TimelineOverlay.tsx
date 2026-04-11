@@ -348,6 +348,61 @@ export function TimelineOverlay({ open, onClose }: TimelineOverlayProps) {
           </button>
         </div>
 
+        {/* Severity + Time range toggle boxes */}
+        <div className="shrink-0 px-4 py-2 border-b border-[var(--fintheon-accent)]/5 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1">
+            {([4, 3, 2, 1] as const).map((level) => {
+              const active = macroFilter.has(level);
+              const color = MACRO_COLOR[level] ?? "#6B7280";
+              return (
+                <button
+                  key={level}
+                  onClick={() =>
+                    setMacroFilter((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(level)) next.delete(level);
+                      else next.add(level);
+                      return next;
+                    })
+                  }
+                  className={`flex items-center gap-1 px-2 py-1 rounded border text-[10px] uppercase tracking-wider transition-all duration-200 ${
+                    active
+                      ? "border-[var(--fintheon-accent)]/20 text-[var(--fintheon-text)]/80 bg-[var(--fintheon-accent)]/5"
+                      : "border-transparent text-[var(--fintheon-muted)]/25 hover:text-[var(--fintheon-muted)]/50"
+                  }`}
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{
+                      backgroundColor: active ? color : `${color}40`,
+                    }}
+                  />
+                  {MACRO_LABELS[level]}
+                </button>
+              );
+            })}
+          </div>
+          <div className="w-px h-4 bg-[var(--fintheon-accent)]/10" />
+          <div className="flex items-center gap-1">
+            <Clock className="w-3 h-3 text-[var(--fintheon-muted)]/30" />
+            {TIME_RANGES.map((tr) => (
+              <button
+                key={tr.key}
+                onClick={() => setTimeRange(tr.key)}
+                className={`px-2 py-1 rounded text-[10px] uppercase tracking-wider transition-all duration-200 ${
+                  timeRange === tr.key
+                    ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8 border border-[var(--fintheon-accent)]/20"
+                    : "text-[var(--fintheon-muted)]/25 hover:text-[var(--fintheon-muted)]/50 border border-transparent"
+                }`}
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                {tr.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Narrative dropdown — z-10 ensures it stacks above the overflow-y-auto items list below */}
         <div className="shrink-0 px-4 py-2 border-b border-[var(--fintheon-accent)]/5 relative z-10">
           <button

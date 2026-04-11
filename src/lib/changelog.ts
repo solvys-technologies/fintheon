@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-11T20:00:00",
+    agent: "claude-code",
+    summary:
+      "S14-T4: Timeline filters fix + time range. Added TIME_RANGES (1H/4H/1D/1W/ALL) with cutoff filtering to both TimelinePanel and TimelineOverlay. Added severity/macroLevel toggle boxes to TimelineOverlay (was missing entirely). Time range pills added to both views. All filters now applied in useMemo filter chains.",
+    files: [
+      "frontend/components/narrative/TimelinePanel.tsx",
+      "frontend/components/layout/TimelineOverlay.tsx",
+    ],
+  },
+  {
     date: "2026-04-11T19:00:00",
     agent: "claude-code",
     summary:

@@ -32,21 +32,23 @@ const DOSSIERS: Record<string, string> = {
 export function AgenticDesk() {
   const { agents, updateAgent } = useFintheonAgents();
   const { addToast } = useToast();
+  const { caoName: persistedCaoName, setCaoName: persistCaoName } =
+    useSettings();
 
-  const [caoName, setCaoName] = useState(() => {
-    const cao = agents.find((a) => a.id === "harper-opus");
-    return cao?.name ?? "Harper-Opus";
-  });
+  const [caoName, setCaoName] = useState(
+    () => persistedCaoName || "Harper-Opus",
+  );
   const [saved, setSaved] = useState(false);
 
   const handleSaveCaoName = useCallback(() => {
     const trimmed = caoName.trim();
     if (!trimmed) return;
     updateAgent("harper-opus", { name: trimmed });
+    persistCaoName(trimmed); // persist to backend + localStorage
     setSaved(true);
     addToast("CAO name updated", "success");
     setTimeout(() => setSaved(false), 2000);
-  }, [caoName, updateAgent, addToast]);
+  }, [caoName, updateAgent, persistCaoName, addToast]);
 
   const cao = agents.find((a) => a.id === "harper-opus");
   const subanalysts = agents.filter((a) =>

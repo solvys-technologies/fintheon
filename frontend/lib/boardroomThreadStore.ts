@@ -1,9 +1,13 @@
+// [claude-code 2026-04-11] S14-T2: Add Supabase write-through for thread persistence
 /**
- * Boardroom Thread Store — IndexedDB persistence for boardroom sessions.
+ * Boardroom Thread Store — IndexedDB + Supabase persistence for boardroom sessions.
  *
  * Each "thread" represents a single boardroom session (a contiguous set of
  * messages). Threads are saved as they arrive (auto-save) and can be
  * replayed later in a read-only view.
+ *
+ * IndexedDB is the fast local cache. Supabase is the durable remote store.
+ * Writes go to both (write-through). Reads prefer local, with remote sync on load.
  */
 
 import type {
@@ -11,6 +15,7 @@ import type {
   InterventionMessage,
   BoardroomAgent,
 } from "./services";
+import { supabase } from "./supabase";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -95,6 +100,9 @@ export async function saveThread(thread: BoardroomThread): Promise<void> {
   const store = txStore(db, "readwrite");
   await reqToPromise(store.put(thread));
   db.close();
+
+  // Write-through to Supabase (best-effort, don't block)
+  void persistToSupabase(thread);
 }
 
 export async function deleteThread(id: string): Promise<void> {
@@ -201,4 +209,107 @@ export function mergeMessages(
         ? deriveTitle([...thread.messages, ...newMessages])
         : thread.title,
   };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Supabase persistence (write-through + sync)                       */
+/* ------------------------------------------------------------------ */
+
+const TABLE = "boardroom_threads";
+
+/** Upsert a thread to Supabase (best-effort, never throws). */
+async function persistToSupabase(thread: BoardroomThread): Promise<void> {
+  if (!supabase) return;
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    const userId = session.session?.user?.id;
+    if (!userId) return;
+
+    await supabase.from(TABLE).upsert(
+      {
+        id: thread.id,
+        user_id: userId,
+        title: thread.title,
+        participants: thread.participants,
+        messages: thread.messages,
+        intervention_messages: thread.interventionMessages,
+        meeting_notes: thread.meetingNotes,
+        message_count: thread.messageCount,
+        created_at: thread.createdAt,
+        updated_at: thread.updatedAt,
+      },
+      { onConflict: "id" },
+    );
+  } catch (err) {
+    console.warn("[boardroomThreadStore] Supabase persist failed:", err);
+  }
+}
+
+/** Delete a thread from Supabase (best-effort). */
+async function deleteFromSupabase(id: string): Promise<void> {
+  if (!supabase) return;
+  try {
+    await supabase.from(TABLE).delete().eq("id", id);
+  } catch (err) {
+    console.warn("[boardroomThreadStore] Supabase delete failed:", err);
+  }
+}
+
+/**
+ * Sync threads from Supabase into IndexedDB.
+ * Merges remote threads that don't exist locally.
+ * Call once on app load to hydrate from remote.
+ */
+export async function syncFromSupabase(): Promise<void> {
+  if (!supabase) return;
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session?.user?.id) return;
+
+    const { data: rows, error } = await supabase
+      .from(TABLE)
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (error || !rows) return;
+
+    const localThreads = await getAllThreads();
+    const localIds = new Set(localThreads.map((t) => t.id));
+
+    for (const row of rows) {
+      const thread: BoardroomThread = {
+        id: row.id,
+        title: row.title,
+        participants: row.participants ?? [],
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        messages: row.messages ?? [],
+        interventionMessages: row.intervention_messages ?? [],
+        meetingNotes: row.meeting_notes ?? "",
+        messageCount: row.message_count ?? 0,
+      };
+
+      if (!localIds.has(thread.id)) {
+        // New remote thread — save locally
+        const db = await openDB();
+        const store = txStore(db, "readwrite");
+        await reqToPromise(store.put(thread));
+        db.close();
+      } else {
+        // Exists locally — keep whichever is newer
+        const local = localThreads.find((t) => t.id === thread.id)!;
+        if (
+          new Date(thread.updatedAt).getTime() >
+          new Date(local.updatedAt).getTime()
+        ) {
+          const db = await openDB();
+          const store = txStore(db, "readwrite");
+          await reqToPromise(store.put(thread));
+          db.close();
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[boardroomThreadStore] Supabase sync failed:", err);
+  }
 }

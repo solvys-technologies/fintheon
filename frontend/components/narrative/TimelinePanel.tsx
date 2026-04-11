@@ -343,6 +343,25 @@ export function TimelinePanel() {
             })}
           </div>
 
+          {/* Time range pills */}
+          <div className="flex items-center gap-1">
+            <Clock className="w-3 h-3 text-[var(--fintheon-muted)]/30 mr-0.5" />
+            {TIME_RANGES.map((tr) => (
+              <button
+                key={tr.key}
+                onClick={() => setTimeRange(tr.key)}
+                className={`px-2 py-1 rounded text-[10px] uppercase tracking-wider transition-all duration-200 ${
+                  timeRange === tr.key
+                    ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8 border border-[var(--fintheon-accent)]/20"
+                    : "text-[var(--fintheon-muted)]/30 hover:text-[var(--fintheon-muted)]/60 border border-transparent"
+                }`}
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                {tr.label}
+              </button>
+            ))}
+          </div>
+
           {/* Tag filter — wider dropdown with search */}
           <div className="relative" ref={tagDropdownRef}>
             <button

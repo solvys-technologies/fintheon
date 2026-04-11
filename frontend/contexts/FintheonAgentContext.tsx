@@ -1,10 +1,13 @@
+// [claude-code 2026-04-11] S14-T8: CAO name synced from SettingsContext on load
 import {
   createContext,
   useContext,
   useState,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
+import { useSettings } from "./SettingsContext";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -140,10 +143,29 @@ const FintheonAgentContext = createContext<FintheonAgentContextValue>({
 /* ------------------------------------------------------------------ */
 
 export function FintheonAgentProvider({ children }: { children: ReactNode }) {
+  const { caoName } = useSettings();
   const [agents, setAgents] = useState<FintheonAgent[]>(FINTHEON_AGENTS);
   const [activeAgent, setActiveAgent] = useState<FintheonAgent | null>(
     FINTHEON_AGENTS[0] || null,
   );
+
+  // Sync persisted CAO name into agent roster when settings load
+  useEffect(() => {
+    if (caoName && caoName !== "Harper-Opus") {
+      setAgents((prev) =>
+        prev.map((a) =>
+          a.id === "harper-opus"
+            ? { ...a, name: caoName, updated_at: now() }
+            : a,
+        ),
+      );
+      setActiveAgent((prev) =>
+        prev?.id === "harper-opus"
+          ? { ...prev, name: caoName, updated_at: now() }
+          : prev,
+      );
+    }
+  }, [caoName]);
 
   const updateAgent = useCallback(
     (id: string, updates: Partial<FintheonAgent>) => {

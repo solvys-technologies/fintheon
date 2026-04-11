@@ -416,6 +416,18 @@ export function PromptBox({
           </div>
         )}
 
+        {/* Headline picker popover (positioned above input) */}
+        {headlineAlerts && onHeadlineToggle && onHeadlineClear && (
+          <HeadlinePickerPopover
+            open={showHeadlinePicker}
+            onClose={() => setShowHeadlinePicker(false)}
+            alerts={headlineAlerts}
+            selected={headlineChips ?? []}
+            onToggle={onHeadlineToggle}
+            onClear={onHeadlineClear}
+          />
+        )}
+
         {/* Main input container */}
         <div
           className={[
@@ -435,6 +447,17 @@ export function PromptBox({
             transition: "all 1.3s ease",
           }}
         >
+          {/* Headline chips above textarea */}
+          {headlineChips && headlineChips.length > 0 && onHeadlineToggle && (
+            <HeadlineChips
+              chips={headlineChips}
+              onRemove={(id) => {
+                const chip = headlineChips.find((c) => c.id === id);
+                if (chip) onHeadlineToggle(chip);
+              }}
+            />
+          )}
+
           {/* Textarea */}
           <textarea
             ref={textareaRef}
@@ -455,6 +478,8 @@ export function PromptBox({
             }}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             placeholder={placeholder}
             rows={1}
             className="resize-none bg-transparent text-[13px] text-white placeholder:text-zinc-500 focus:outline-none overflow-y-auto"
@@ -485,8 +510,24 @@ export function PromptBox({
               {/* Tools (combined Skills + Connectors) */}
               {toolsSlot}
 
-              {/* Boardroom: newspaper RiskFlow picker | Others: pulsing icon toggle */}
-              {onRiskFlowPick ? (
+              {/* Headline picker (available on all surfaces with headlineAlerts) */}
+              {headlineAlerts && onHeadlineToggle && (
+                <button
+                  onClick={() => setShowHeadlinePicker((v) => !v)}
+                  title="Attach headlines"
+                  className={`flex items-center justify-center rounded-lg transition-all ${
+                    (headlineChips?.length ?? 0) > 0
+                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
+                      : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+                  }`}
+                  style={{ width: "32px", height: "32px" }}
+                >
+                  <Newspaper size={14} />
+                </button>
+              )}
+
+              {/* Boardroom legacy RiskFlow picker | Others: pulsing icon toggle */}
+              {onRiskFlowPick && !headlineAlerts ? (
                 <button
                   onClick={onRiskFlowPick}
                   title="Import RiskFlow items"
@@ -494,6 +535,19 @@ export function PromptBox({
                   style={{ width: "32px", height: "32px" }}
                 >
                   <Newspaper size={14} />
+                </button>
+              ) : !headlineAlerts ? (
+                <button
+                  onClick={() => setThinkHarder(!thinkHarder)}
+                  title={
+                    thinkHarder
+                      ? "Extended thinking ON"
+                      : "Extended thinking OFF"
+                  }
+                  className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
+                  style={{ width: "32px", height: "32px" }}
+                >
+                  <ThinkHarderIcon active={thinkHarder} />
                 </button>
               ) : (
                 <button
@@ -519,14 +573,18 @@ export function PromptBox({
               <button
                 onClick={isProcessing && onStop ? onStop : handleSend}
                 disabled={!text.trim() && images.length === 0 && !isProcessing}
-                className={`flex items-center justify-center rounded-full transition-all duration-300 ${
+                className={`flex items-center justify-center rounded-full ${
                   isProcessing
                     ? "bg-[var(--fintheon-accent)]/80 hover:bg-[var(--fintheon-accent)] text-black shadow-[0_0_12px_rgba(199,159,74,0.3)]"
-                    : text.trim()
+                    : text.trim() || focused
                       ? "bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black shadow-[0_0_20px_rgba(199,159,74,0.4)] hover:shadow-[0_0_28px_rgba(199,159,74,0.55)]"
-                      : "bg-[var(--fintheon-accent)] text-black disabled:opacity-30 disabled:hover:bg-[var(--fintheon-accent)] shadow-[0_4px_12px_rgba(199,159,74,0.15)]"
+                      : "bg-[var(--fintheon-accent)]/30 text-black/50 disabled:opacity-20"
                 }`}
-                style={{ width: "34px", height: "34px" }}
+                style={{
+                  width: "34px",
+                  height: "34px",
+                  transition: "all 1.3s ease",
+                }}
                 title={isProcessing ? "Stop" : "Send"}
               >
                 {isProcessing ? (
