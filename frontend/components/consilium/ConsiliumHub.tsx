@@ -578,7 +578,7 @@ export function ConsiliumHub() {
           </div>
         </div>
 
-        {/* Boardroom dropdown */}
+        {/* Imperium dropdown */}
         <div ref={boardroomDropdownRef} className="relative">
           <button
             onClick={() => setBoardroomDropdownOpen((v) => !v)}
@@ -590,7 +590,7 @@ export function ConsiliumHub() {
             style={{ fontFamily: "var(--font-body, Roboto, sans-serif)" }}
           >
             <Users size={13} />
-            Boardroom
+            Imperium
             {harperStatus?.loop?.alive && (
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             )}
@@ -618,6 +618,9 @@ export function ConsiliumHub() {
                 "opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)",
             }}
           >
+            <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-[var(--fintheon-accent)]/40 font-medium">
+              Wield the Consul
+            </div>
             {BOARDROOM_SUB_VIEWS.map(
               ({ id, label, subtitle, icon: Icon }, idx) => (
                 <button
@@ -834,19 +837,25 @@ export function ConsiliumHub() {
             </div>
           )}
 
-          {/* Boardroom sub-views */}
+          {/* Imperium sub-views */}
           {displayedTab === "boardroom" && (
             <>
               {displayedBoardroomSub === "forum" && <BulletinFeed />}
-              {displayedBoardroomSub === "imperium" && (
-                <Suspense fallback={<AiLoader />}>
-                  <ResearchBoard />
-                </Suspense>
-              )}
               {displayedBoardroomSub === "agentic-chat" && (
                 <div className="flex h-full">
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 relative">
                     <AgentChattr />
+                    {/* Re-expand Harper Activity toggle */}
+                    {!showHarperFeed && (
+                      <button
+                        onClick={() => setShowHarperFeed(true)}
+                        className="absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-medium text-[var(--fintheon-accent)]/50 border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-all"
+                        title="Show Harper Activity"
+                      >
+                        <PanelRightOpen size={12} />
+                        Activity
+                      </button>
+                    )}
                   </div>
                   {/* Harper Activity sidebar — matches Debate/Proposals collapsible pattern */}
                   <div

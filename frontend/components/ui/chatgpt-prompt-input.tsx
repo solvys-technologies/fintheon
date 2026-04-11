@@ -526,8 +526,8 @@ export function PromptBox({
                 </button>
               )}
 
-              {/* Boardroom legacy RiskFlow picker | Others: pulsing icon toggle */}
-              {onRiskFlowPick && !headlineAlerts ? (
+              {/* Boardroom legacy RiskFlow picker (only when new headline system not active) */}
+              {onRiskFlowPick && !headlineAlerts && (
                 <button
                   onClick={onRiskFlowPick}
                   title="Import RiskFlow items"
@@ -536,20 +536,10 @@ export function PromptBox({
                 >
                   <Newspaper size={14} />
                 </button>
-              ) : !headlineAlerts ? (
-                <button
-                  onClick={() => setThinkHarder(!thinkHarder)}
-                  title={
-                    thinkHarder
-                      ? "Extended thinking ON"
-                      : "Extended thinking OFF"
-                  }
-                  className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
-                  style={{ width: "32px", height: "32px" }}
-                >
-                  <ThinkHarderIcon active={thinkHarder} />
-                </button>
-              ) : (
+              )}
+
+              {/* Think Harder toggle (always shown unless boardroom legacy is active) */}
+              {!(onRiskFlowPick && !headlineAlerts) && (
                 <button
                   onClick={() => setThinkHarder(!thinkHarder)}
                   title={

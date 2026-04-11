@@ -62,15 +62,9 @@ export const BOARDROOM_SUB_VIEWS: {
 }[] = [
   {
     id: "forum",
-    label: "Forum",
+    label: "Agent Forum",
     subtitle: "Team bulletin & chat",
     icon: MessageSquare,
-  },
-  {
-    id: "imperium",
-    label: "Imperium",
-    subtitle: "Task command & assignment",
-    icon: Shield,
   },
   {
     id: "agentic-chat",

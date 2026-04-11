@@ -110,6 +110,9 @@ export async function deleteThread(id: string): Promise<void> {
   const store = txStore(db, "readwrite");
   await reqToPromise(store.delete(id));
   db.close();
+
+  // Sync deletion to Supabase (best-effort)
+  void deleteFromSupabase(id);
 }
 
 export async function updateMeetingNotes(

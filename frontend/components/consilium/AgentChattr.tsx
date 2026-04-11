@@ -1,3 +1,4 @@
+// [claude-code 2026-04-11] S14-T5: Replaced rfChips/rfPickerOpen with HeadlinePickerPopover
 // [claude-code 2026-04-10] S8-T4: Live DAG panels + SSE streaming — replace polling with DAG dispatch
 // [claude-code 2026-03-24] Boardroom UX overhaul — removed sidebar, inline copy, green WiFi pulse, status bar right-aligned
 // [claude-code 2026-03-22] Track 3: Boardroom with PromptBox replacing built-in textarea
@@ -15,9 +16,18 @@ import { AGENT_MAP, type BoardroomAgent } from "./AgentBadge";
 import { ConsiliumFilterBar } from "./ConsiliumFilterBar";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
+import {
+  formatHeadlineContext,
+  type HeadlineChip,
+} from "../chat/HeadlinePickerPopover";
 import { useBoardroomDAG } from "../../hooks/useBoardroomDAG";
 import { BoardroomAgentPanel } from "./BoardroomAgentPanel";
 import { DAGProgressBar } from "./DAGProgressBar";
+import {
+  saveThread,
+  createThread as createBoardroomThread,
+  syncFromSupabase,
+} from "../../lib/boardroomThreadStore";
 import type { HermesAgentId } from "../../../backend-hono/src/services/agent-bus/types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -211,11 +221,20 @@ export function AgentChattr() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [thinkHarder, setThinkHarder] = useState(false);
-  const [rfPickerOpen, setRfPickerOpen] = useState(false);
-  const [rfChips, setRfChips] = useState<{ id: string; headline: string }[]>(
-    [],
-  );
+  const [headlineChips, setHeadlineChips] = useState<HeadlineChip[]>([]);
   const { alerts: rfAlerts } = useRiskFlow();
+
+  const handleHeadlineToggle = useCallback((chip: HeadlineChip) => {
+    setHeadlineChips((prev) => {
+      const exists = prev.find((c) => c.id === chip.id);
+      if (exists) return prev.filter((c) => c.id !== chip.id);
+      return [...prev, chip];
+    });
+  }, []);
+
+  const handleHeadlineClear = useCallback(() => {
+    setHeadlineChips([]);
+  }, []);
 
   // DAG state — live multi-agent streaming
   const dag = useBoardroomDAG("", "");
@@ -277,12 +296,41 @@ export function AgentChattr() {
     }
   }, [filterSearch, filterDateRange]);
 
-  // When DAG reaches terminal state, refresh legacy transcript
+  // Sync boardroom threads from Supabase on mount
+  useEffect(() => {
+    void syncFromSupabase();
+  }, []);
+
+  // When DAG reaches terminal state, refresh legacy transcript + persist thread
   useEffect(() => {
     if (dag.status === "complete" || dag.status === "error") {
       fetchMessages();
+
+      // Persist the completed DAG as a boardroom thread
+      if (dag.dagId && Object.keys(dag.agentOutputs).length > 0) {
+        const HERMES_TO_BOARDROOM: Record<string, BoardroomAgent> = {
+          oracle: "Oracle",
+          feucht: "Feucht",
+          consul: "Consul",
+          herald: "Herald",
+          harper: "Harper-Opus",
+        };
+        const now = new Date().toISOString();
+        const threadMessages: BoardroomMessage[] = Object.entries(
+          dag.agentOutputs,
+        ).map(([agentId, output]) => ({
+          id: `${dag.dagId}-${agentId}`,
+          agent: HERMES_TO_BOARDROOM[agentId] ?? "Unknown",
+          emoji: "",
+          role: "assistant" as const,
+          content: output.text,
+          timestamp: now,
+        }));
+        const thread = createBoardroomThread(threadMessages, []);
+        void saveThread(thread);
+      }
     }
-  }, [dag.status, fetchMessages]);
+  }, [dag.status, dag.dagId, dag.agentOutputs, fetchMessages]);
 
   // Initial fetch + polling (pauses when tab not visible)
   useEffect(() => {
@@ -301,19 +349,16 @@ export function AgentChattr() {
 
   const sendMessage = async (msgText?: string) => {
     let text = (msgText ?? input).trim();
-    if (!text && rfChips.length === 0) return;
+    if (!text && headlineChips.length === 0) return;
     if (isSending || dagIsActive) return;
 
-    // Append RiskFlow context chips to message
-    if (rfChips.length > 0) {
-      const context = rfChips
-        .map((c) => `[RiskFlow: ${c.headline}]`)
-        .join("\n");
-      text = text ? `${text}\n\n${context}` : context;
+    // Append attached headline context
+    if (headlineChips.length > 0) {
+      text += formatHeadlineContext(headlineChips);
     }
 
     setInput("");
-    setRfChips([]);
+    setHeadlineChips([]);
 
     // When targeting All Agents: dispatch a live DAG
     // When targeting a single agent: fall back to legacy single-agent fetch
@@ -542,71 +587,6 @@ export function AgentChattr() {
         </div>
       )}
 
-      {/* RiskFlow context chips */}
-      {rfChips.length > 0 && (
-        <div className="flex flex-wrap gap-1 px-3 pb-1">
-          {rfChips.map((c) => (
-            <span
-              key={c.id}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]"
-            >
-              {c.headline.slice(0, 40)}
-              {c.headline.length > 40 ? "..." : ""}
-              <button
-                onClick={() =>
-                  setRfChips((prev) => prev.filter((p) => p.id !== c.id))
-                }
-                className="hover:text-red-400 transition-colors"
-              >
-                <X size={10} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* RiskFlow item picker dropdown */}
-      {rfPickerOpen && (
-        <div className="mx-2 mb-1 max-h-48 overflow-y-auto rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-xl">
-          <div className="px-3 py-1.5 border-b border-[var(--fintheon-accent)]/10 flex items-center justify-between">
-            <span className="text-[9px] text-[var(--fintheon-accent)]/50 uppercase tracking-wider">
-              Attach RiskFlow Items
-            </span>
-            <button
-              onClick={() => setRfPickerOpen(false)}
-              className="text-zinc-500 hover:text-[var(--fintheon-accent)]"
-            >
-              <X size={12} />
-            </button>
-          </div>
-          {rfAlerts.slice(0, 10).map((a) => (
-            <button
-              key={a.id}
-              onClick={() => {
-                if (!rfChips.find((c) => c.id === a.id)) {
-                  setRfChips((prev) => [
-                    ...prev,
-                    { id: a.id, headline: a.headline },
-                  ]);
-                }
-                setRfPickerOpen(false);
-              }}
-              className="w-full text-left px-3 py-1.5 text-[10px] text-[var(--fintheon-text)]/60 hover:bg-[var(--fintheon-accent)]/5 hover:text-[var(--fintheon-text)] transition-colors flex items-center gap-2"
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full shrink-0 ${a.severity === "high" || a.severity === "critical" ? "bg-red-400" : a.severity === "medium" ? "bg-[var(--fintheon-accent)]" : "bg-zinc-500"}`}
-              />
-              <span className="truncate">{a.headline}</span>
-            </button>
-          ))}
-          {rfAlerts.length === 0 && (
-            <div className="px-3 py-4 text-center text-[10px] text-zinc-600">
-              No RiskFlow items available
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Input area — disabled while DAG is running; cancel button shown instead */}
       <div className="px-2">
         {dagIsActive ? (
@@ -639,7 +619,10 @@ export function AgentChattr() {
             onSelectSkill={() => {}}
             showSkills={false}
             onToggleSkills={() => {}}
-            onRiskFlowPick={() => setRfPickerOpen((v) => !v)}
+            headlineAlerts={rfAlerts}
+            headlineChips={headlineChips}
+            onHeadlineToggle={handleHeadlineToggle}
+            onHeadlineClear={handleHeadlineClear}
           />
         )}
       </div>

@@ -67,16 +67,20 @@ interface AgentBadgeProps {
   agent: BoardroomAgent;
   size?: "sm" | "md";
   autonomous?: boolean;
+  /** Override display label (e.g. custom CAO name) */
+  displayName?: string;
 }
 
 export function AgentBadge({
   agent,
   size = "md",
   autonomous,
+  displayName,
 }: AgentBadgeProps) {
   const config = AGENT_MAP[agent] || AGENT_MAP["Unknown"];
   const Icon = config.icon;
   const iconSize = size === "sm" ? 12 : 16;
+  const label = displayName || config.label;
 
   return (
     <div className="flex items-center gap-2">
@@ -95,7 +99,7 @@ export function AgentBadge({
         <span
           className={`font-medium leading-tight ${config.accentClass} ${size === "sm" ? "text-xs" : "text-sm"}`}
         >
-          {config.label}
+          {label}
         </span>
         {size === "md" && (
           <span className="text-[10px] uppercase tracking-wider text-[#f0ead6]/40">

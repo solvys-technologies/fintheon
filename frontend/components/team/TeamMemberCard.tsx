@@ -194,19 +194,38 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
         />
       </div>
 
-      {/* RiskFlow toggle — self only */}
+      {/* RiskFlow killswitch — self only */}
       {isSelf && (
-        <button
-          onClick={toggleRiskFlow}
-          className="w-full mt-2 pt-1.5 border-t border-[var(--fintheon-accent)]/10 text-[9px] font-mono tracking-wider transition-colors"
-          style={{
-            color: riskflowKilled
-              ? "var(--fintheon-severe)"
-              : "var(--fintheon-muted)",
-          }}
-        >
-          {riskflowKilled ? "Resume RiskFlow" : "Kill RiskFlow"}
-        </button>
+        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--fintheon-accent)]/10">
+          <span
+            className="text-[9px] font-mono tracking-wider"
+            style={{
+              color: riskflowKilled
+                ? "var(--fintheon-severe)"
+                : "var(--fintheon-muted)",
+            }}
+          >
+            {riskflowKilled ? "Feed Polling Killed" : "Feed Polling Active"}
+          </span>
+          <button
+            onClick={toggleRiskFlow}
+            className="relative w-7 h-[14px] rounded-full transition-colors duration-300"
+            style={{
+              backgroundColor: riskflowKilled
+                ? "var(--fintheon-severe)"
+                : "var(--fintheon-low)",
+              opacity: 0.7,
+            }}
+            title={riskflowKilled ? "Resume RiskFlow" : "Kill RiskFlow"}
+          >
+            <span
+              className="absolute top-[2px] w-[10px] h-[10px] rounded-full bg-white transition-all duration-300"
+              style={{
+                left: riskflowKilled ? "2px" : "15px",
+              }}
+            />
+          </button>
+        </div>
       )}
     </div>
   );

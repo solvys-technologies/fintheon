@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-11T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S14-T5: Feed refresh consistency + headline attachment. Reduced backend cache re-sync from 120s to 30s (matches central scorer frequency). Built HeadlinePickerPopover — searchable multi-select popover for attaching feed headlines to chat messages. Wired into all 3 chat surfaces (sidebar, main Consilium, boardroom) via PromptBox. Replaced boardroom inline rfChips/rfPickerOpen with the unified component. Selected headlines inject as context into messages on send.",
+    files: [
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "frontend/components/chat/HeadlinePickerPopover.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/consilium/AgentChattr.tsx",
+    ],
+  },
+  {
+    date: "2026-04-11T21:00:00",
+    agent: "claude-code",
+    summary:
+      "S14-T2: Boardroom DAG streaming fix. Harper chat route now bridges DAG bus events into UIMessageStream in real-time instead of returning a static placeholder string. Added boardroom_threads Supabase table + migration for persistent thread storage. Wired boardroomThreadStore with Supabase write-through (save/delete/sync). AgentChattr now persists completed DAG sessions and syncs from Supabase on mount.",
+    files: [
+      "backend-hono/src/routes/harper/index.ts",
+      "frontend/lib/boardroomThreadStore.ts",
+      "frontend/components/consilium/AgentChattr.tsx",
+      "supabase/migrations/20260411_boardroom_threads.sql",
+    ],
+  },
+  {
     date: "2026-04-11T20:00:00",
     agent: "claude-code",
     summary:

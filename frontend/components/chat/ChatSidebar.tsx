@@ -2,7 +2,7 @@
 // [claude-code 2026-04-05] T2: Chat icons moved to Consilium bar — event-driven new chat, run report, load session
 // [claude-code 2026-03-28] S8-T7: Single-pane sidebar with agent-plan inline
 // S13-T1: Renamed to ChatSidebar, surfaceId=chat
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef, useMemo } from "react";
 import {
   AssistantRuntimeProvider,
   useThread,
@@ -19,7 +19,8 @@ import type { SidebarNotifyEvent } from "../../../backend-hono/src/services/agen
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-const HERMES_NAMES: Record<string, string> = {
+/** Default display names — harper entry overridden at runtime by CAO name from agent context */
+const HERMES_NAMES_DEFAULT: Record<string, string> = {
   oracle: "Oracle",
   feucht: "Feucht",
   consul: "Consul",
@@ -62,9 +63,15 @@ function ChatSidebarInner({
   clearConversationId: () => void;
   compact?: boolean;
 }) {
-  const { activeAgent } = useFintheonAgents();
+  const { activeAgent, agents } = useFintheonAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
+
+  // Build dynamic display names — CAO name comes from agent context
+  const hermesNames = useMemo(() => {
+    const cao = agents.find((a) => a.id === "harper-opus");
+    return { ...HERMES_NAMES_DEFAULT, harper: cao?.name ?? "Harper" };
+  }, [agents]);
 
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
@@ -90,7 +97,7 @@ function ChatSidebarInner({
     const newToast: SidebarToast = {
       id: toastId,
       agentId: sidebarEvent.agentId,
-      agentName: HERMES_NAMES[sidebarEvent.agentId] ?? sidebarEvent.agentId,
+      agentName: hermesNames[sidebarEvent.agentId] ?? sidebarEvent.agentId,
       summary: sidebarEvent.summary,
     };
 
@@ -102,7 +109,7 @@ function ChatSidebarInner({
       toastTimers.current.delete(toastId);
     }, 8000);
     toastTimers.current.set(toastId, timer);
-  }, [sidebarEvent, activeAgent?.id]);
+  }, [sidebarEvent, activeAgent?.id, hermesNames]);
 
   // Clean up timers on unmount
   useEffect(

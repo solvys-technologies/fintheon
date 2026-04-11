@@ -1,8 +1,10 @@
+// [claude-code 2026-04-11] S14-T8: Added CAO naming step (step 3) to onboarding flow
 import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useBackend } from "../../lib/backend";
 import { useAuth } from "../../contexts/AuthContext";
+import { useSettings } from "../../contexts/SettingsContext";
 
 interface TeamOnboardingProps {
   open: boolean;
@@ -23,11 +25,13 @@ export function TeamOnboarding({
 }: TeamOnboardingProps) {
   const backend = useBackend();
   const { isAuthenticated, user } = useAuth();
-  const [step, setStep] = useState(1);
+  const { setCaoName: persistCaoName } = useSettings();
+  const [step, setStep] = useState(2);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [caoNameInput, setCaoNameInput] = useState("Harper");
   const [deviceName, setDeviceName] = useState(() => {
     const fallback =
       typeof navigator !== "undefined" ? navigator.platform : "Fintheon Device";
@@ -96,7 +100,7 @@ export function TeamOnboarding({
         hermesAvailable: capabilities.includes("hermes"),
       });
       setAssignedDesk(result.peer.deskName || "Awaiting admin assignment");
-      setStep(4);
+      setStep(5);
       onComplete?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
@@ -106,14 +110,14 @@ export function TeamOnboarding({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-xl rounded-2xl border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-surface)] p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-xl rounded-2xl border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-surface)] p-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h2 className="text-base font-semibold text-[var(--fintheon-text)]">
               Team Onboarding
             </h2>
-            <p className="text-xs text-zinc-400">Step {step} of 4</p>
+            <p className="text-xs text-zinc-400">Step {step - 1} of 4</p>
           </div>
           <button
             onClick={onClose}
@@ -184,6 +188,35 @@ export function TeamOnboarding({
         {step === 3 && (
           <div className="space-y-3">
             <p className="text-sm text-zinc-300">
+              Name your Chief Agentic Officer.
+            </p>
+            <p className="text-xs text-zinc-500">
+              Your CAO is your primary AI analyst. You can rename it anytime in
+              Settings.
+            </p>
+            <input
+              value={caoNameInput}
+              onChange={(e) => setCaoNameInput(e.target.value)}
+              placeholder="e.g. Harper, Athena, Jarvis..."
+              className="w-full rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] px-3 py-2 text-sm text-[var(--fintheon-text)]"
+            />
+            <button
+              onClick={() => {
+                const trimmed = caoNameInput.trim();
+                if (trimmed) persistCaoName(trimmed);
+                setStep(4);
+              }}
+              disabled={!caoNameInput.trim()}
+              className="rounded border border-[var(--fintheon-accent)]/35 px-3 py-1.5 text-sm font-medium text-[var(--fintheon-accent)] disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-3">
+            <p className="text-sm text-zinc-300">
               Select this device capabilities.
             </p>
             <div className="grid gap-2">
@@ -211,7 +244,7 @@ export function TeamOnboarding({
           </div>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <div className="space-y-3">
             <p className="text-sm text-zinc-300">Registration complete.</p>
             <p className="rounded border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] px-3 py-2 text-sm text-[var(--fintheon-text)]">

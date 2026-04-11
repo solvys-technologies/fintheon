@@ -2,6 +2,7 @@
 // [claude-code 2026-03-11] T3b: MCP auto-activation when skill selected
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, always full PromptBox
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
+// [claude-code 2026-04-11] S14-T5: Headline attachment via HeadlinePickerPopover + context injection
 // [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
 import { useEffect, useState, useCallback } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
@@ -10,11 +11,16 @@ import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";
 import { useVoice } from "../../contexts/VoiceContext";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
+import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
 import { PersonaDropdown } from "./PersonaDropdown";
 import { ToolsDropdown } from "./ToolsDropdown";
 import { ProviderDropdown, useHarperProvider } from "./ProviderDropdown";
 import { API_BASE_URL } from "./constants";
+import {
+  formatHeadlineContext,
+  type HeadlineChip,
+} from "./HeadlinePickerPopover";
 
 /* ------------------------------------------------------------------ */
 /*  FintheonComposer                                                      */
@@ -50,8 +56,22 @@ export function FintheonComposer({
   >({});
   const voice = useVoice();
   const { activeAgent } = useFintheonAgents();
+  const { alerts } = useRiskFlow();
   const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
   const { provider, setProvider } = useHarperProvider();
+  const [headlineChips, setHeadlineChips] = useState<HeadlineChip[]>([]);
+
+  const handleHeadlineToggle = useCallback((chip: HeadlineChip) => {
+    setHeadlineChips((prev) => {
+      const exists = prev.find((c) => c.id === chip.id);
+      if (exists) return prev.filter((c) => c.id !== chip.id);
+      return [...prev, chip];
+    });
+  }, []);
+
+  const handleHeadlineClear = useCallback(() => {
+    setHeadlineChips([]);
+  }, []);
 
   // Fetch skills from backend — merge with prop-level disabled skills
   useEffect(() => {
@@ -85,6 +105,11 @@ export function FintheonComposer({
       if (activeSkill && SKILL_PREFIXES[activeSkill]) {
         finalText = SKILL_PREFIXES[activeSkill] + "\n\n" + msg;
       }
+      // Inject attached headline context
+      if (headlineChips.length > 0) {
+        finalText += formatHeadlineContext(headlineChips);
+        setHeadlineChips([]);
+      }
       const content: Array<{ type: string; text?: string; image?: string }> = [
         { type: "text", text: finalText },
       ];
@@ -117,7 +142,7 @@ export function FintheonComposer({
         console.error("[FintheonComposer] Failed to append message:", err);
       }
     },
-    [runtime, activeSkill, onSelectSkill],
+    [runtime, activeSkill, onSelectSkill, headlineChips],
   );
 
   const handleStop = useCallback(() => {
@@ -125,9 +150,14 @@ export function FintheonComposer({
   }, [runtime]);
 
   const providerEl = (
-    <ProviderDropdown provider={provider} onChange={setProvider} />
+    <ProviderDropdown
+      provider={provider}
+      onChange={setProvider}
+      compact={compact}
+    />
   );
-  const personaEl = <PersonaDropdown />;
+  // Sidebar (compact) routes through CAO only — no persona selector
+  const personaEl = compact ? undefined : <PersonaDropdown />;
 
   const toolsEl = (
     <ToolsDropdown
@@ -161,6 +191,10 @@ export function FintheonComposer({
       providerSlot={providerEl}
       personaSlot={personaEl}
       toolsSlot={toolsEl}
+      headlineAlerts={alerts}
+      headlineChips={headlineChips}
+      onHeadlineToggle={handleHeadlineToggle}
+      onHeadlineClear={handleHeadlineClear}
     />
   );
 }
