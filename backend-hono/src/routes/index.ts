@@ -51,6 +51,7 @@ import predictionsRoutes from "./predictions.js";
 import { createDocumentRoutes } from "./documents/index.js";
 import { createResearchRoutes } from "./research/index.js";
 import { createBulletinRoutes } from "./bulletin/index.js";
+import { createStickyBulletinRoutes } from "./sticky-bulletin/index.js";
 import { createSkillsRoutes } from "./skills/index.js";
 import { createMemoryRoutes } from "./memory/index.js";
 import { createEditorRoutes } from "./editor/index.js";
@@ -165,6 +166,8 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/documents/*", authMiddleware, requireAuth);
   app.use("/api/bulletin", authMiddleware, requireAuth);
   app.use("/api/bulletin/*", authMiddleware, requireAuth);
+  app.use("/api/sticky-bulletin", authMiddleware, requireAuth);
+  app.use("/api/sticky-bulletin/*", authMiddleware, requireAuth);
   // Journal — public (local Electron app, no user auth needed)
 
   // Phase 1: Account routes
@@ -220,6 +223,9 @@ export function registerRoutes(app: Hono): void {
 
   // Bulletin board — peer trade ideas + voting (S12-T1)
   app.route("/api/bulletin", createBulletinRoutes());
+
+  // Sticky bulletin — personal trade notes, antilag times, event of week
+  app.route("/api/sticky-bulletin", createStickyBulletinRoutes());
 
   // Skills — Claude Computer Use trade plan generation (S13-T2)
   app.use("/api/skills", authMiddleware, requireAuth);

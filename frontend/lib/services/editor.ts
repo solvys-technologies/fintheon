@@ -183,3 +183,52 @@ export class BulletinService {
     return this.client.get(`/api/bulletin/${bulletinId}/votes`);
   }
 }
+
+// Sticky Bulletin types
+export interface StickyBulletinData {
+  tradingNotes: string;
+  eventOfWeek: string;
+  antilagTimes: Array<{
+    time: string;
+    dayOfWeek: number;
+    instrument: string;
+    notes: string;
+    createdAt: string;
+  }>;
+  updatedAt: string;
+}
+
+export interface AntilagAggregate {
+  time: string;
+  dayOfWeek: number;
+  count: number;
+  instruments: string[];
+}
+
+export class StickyBulletinService {
+  constructor(private client: ApiClient) {}
+
+  async get(): Promise<{ data: StickyBulletinData }> {
+    return this.client.get("/api/sticky-bulletin");
+  }
+
+  async save(data: {
+    tradingNotes?: string;
+    eventOfWeek?: string;
+  }): Promise<{ ok: boolean }> {
+    return this.client.put("/api/sticky-bulletin", data);
+  }
+
+  async addAntilagTime(entry: {
+    time: string;
+    dayOfWeek: number;
+    instrument: string;
+    notes: string;
+  }): Promise<{ ok: boolean }> {
+    return this.client.post("/api/sticky-bulletin/antilag", entry);
+  }
+
+  async getAntilagAggregates(): Promise<{ aggregates: AntilagAggregate[] }> {
+    return this.client.get("/api/sticky-bulletin/antilag/aggregates");
+  }
+}

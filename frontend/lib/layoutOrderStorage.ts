@@ -37,6 +37,7 @@ export type ToolbarItemId =
   | "chat"
   | "voice"
   | "heartbeat"
+  | "bulletin"
   | "ivScore";
 
 export const DEFAULT_TOOLBAR_ORDER: ToolbarItemId[] = [
@@ -46,6 +47,7 @@ export const DEFAULT_TOOLBAR_ORDER: ToolbarItemId[] = [
   "chat",
   "voice",
   "heartbeat",
+  "bulletin",
   "ivScore",
 ];
 

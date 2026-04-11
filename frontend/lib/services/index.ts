@@ -53,7 +53,12 @@ import {
   SkillsService,
   EditorSidebarService,
 } from "./memory";
-import { DocumentService, ResearchService, BulletinService } from "./editor";
+import {
+  DocumentService,
+  ResearchService,
+  BulletinService,
+  StickyBulletinService,
+} from "./editor";
 
 // Main Backend Client Interface
 export interface BackendClient {
@@ -89,6 +94,7 @@ export interface BackendClient {
   skills: SkillsService;
   memory: MemoryService;
   editorSidebar: EditorSidebarService;
+  stickyBulletin: StickyBulletinService;
 }
 
 // Create backend client from API client
