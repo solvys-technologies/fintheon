@@ -148,7 +148,7 @@ function ChatSidebarInner({
   }, [clearConversationId, handleSend, isRunning, setConversationId]);
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.07),transparent_38%),#070704]">
+    <div className="relative flex h-full flex-col overflow-hidden bg-[#070704]">
       {/* Cross-agent notification toasts */}
       {toasts.length > 0 && (
         <div className="absolute left-2 right-2 top-2 z-50 flex flex-col gap-1.5 pointer-events-none">

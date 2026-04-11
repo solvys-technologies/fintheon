@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-10T21:00:00",
+    agent: "claude-code",
+    summary:
+      "S8 post-sprint review: fix bus wildcard pattern (dag.* now works), unified agent colors to Solvys Gold, removed gradient from ChatSidebar, fix chat history loading (hydratedRef set after fetch, errors logged instead of swallowed)",
+    files: [
+      "backend-hono/src/services/agent-bus/bus.ts",
+      "frontend/components/consilium/AgentChattr.tsx",
+      "frontend/components/chat/ChatSidebar.tsx",
+      "frontend/components/chat/hooks/useHermesChat.ts",
+    ],
+  },
+  {
     date: "2026-04-10T19:00:00",
     agent: "claude-code",
     summary:

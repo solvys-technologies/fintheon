@@ -297,12 +297,11 @@ export function useHermesChat(
     },
   });
 
-  // [claude-code 2026-04-05] Hydrate messages when conversationId changes (session switch or remount)
+  // [claude-code 2026-04-10] Hydrate messages when conversationId changes (session switch or remount)
   useEffect(() => {
     if (!conversationId || hydratedRef.current === conversationId) return;
 
     let cancelled = false;
-    hydratedRef.current = conversationId;
 
     // Clear existing messages so the new session loads fresh
     setUseChatMessages([]);
@@ -316,16 +315,25 @@ export function useHermesChat(
           `${API_BASE_URL}/api/ai/conversations/${conversationId}`,
           { headers },
         );
-        if (!res.ok || cancelled) return;
+        if (cancelled) return;
+        if (!res.ok) {
+          console.error(
+            `[useHermesChat] Failed to load conversation ${conversationId}: HTTP ${res.status}`,
+          );
+          return;
+        }
         const data = await res.json();
         const msgs: UIMessage[] = (data.messages ?? [])
           .filter((m: any) => m.role === "user" || m.role === "assistant")
           .map(backendToUIMessage);
-        if (!cancelled && msgs.length > 0) {
+        if (!cancelled) {
           setUseChatMessages(msgs);
+          // Only mark hydrated AFTER successful fetch
+          hydratedRef.current = conversationId;
         }
-      } catch {
-        // Backend unreachable — start with fresh thread, no error shown
+      } catch (err) {
+        console.error("[useHermesChat] Conversation hydration failed:", err);
+        // Don't mark as hydrated — allow retry on next click
       }
     })();
 

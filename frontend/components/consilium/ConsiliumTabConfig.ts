@@ -1,0 +1,107 @@
+// [claude-code 2026-04-10] Extracted from ConsiliumHub.tsx
+import {
+  MessageSquare,
+  Clock,
+  GitBranch,
+  Cpu,
+  Users,
+  Fish,
+  Shield,
+  Brain,
+  BookOpen,
+} from "lucide-react";
+
+// Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
+export type ConsiliumTab = "sanctum" | "chat" | "boardroom" | "apparatus";
+export type SanctumSubView = "narratives" | "aquarium" | "timeline";
+export type BoardroomSubView =
+  | "forum"
+  | "imperium"
+  | "agentic-chat"
+  | "research";
+export type ApparatusSubView = "desk" | "fileroom";
+
+// Chat is the only direct button now
+export const REGULAR_TABS: {
+  id: ConsiliumTab;
+  label: string;
+  icon: typeof MessageSquare;
+}[] = [{ id: "chat", label: "Chat", icon: MessageSquare }];
+
+export const SANCTUM_SUB_VIEWS: {
+  id: SanctumSubView;
+  label: string;
+  subtitle?: string;
+  icon: typeof GitBranch;
+}[] = [
+  {
+    id: "timeline",
+    label: "Timeline",
+    subtitle: "Track the catalysts",
+    icon: Clock,
+  },
+  {
+    id: "narratives",
+    label: "NarrativeFlow",
+    subtitle: "Visualize the situation",
+    icon: GitBranch,
+  },
+  {
+    id: "aquarium",
+    label: "Aquarium",
+    subtitle: "The Shark Tank. Deliberate it.",
+    icon: Fish,
+  },
+];
+
+export const BOARDROOM_SUB_VIEWS: {
+  id: BoardroomSubView;
+  label: string;
+  subtitle?: string;
+  icon: typeof MessageSquare;
+}[] = [
+  {
+    id: "forum",
+    label: "Forum",
+    subtitle: "Team bulletin & chat",
+    icon: MessageSquare,
+  },
+  {
+    id: "imperium",
+    label: "Imperium",
+    subtitle: "Task command & assignment",
+    icon: Shield,
+  },
+  {
+    id: "agentic-chat",
+    label: "Agentic Chatroom",
+    subtitle: "Chat with Hermes & CAO",
+    icon: Cpu,
+  },
+  {
+    id: "research",
+    label: "Research",
+    subtitle: "Notion knowledge base",
+    icon: BookOpen,
+  },
+];
+
+export const APPARATUS_SUB_VIEWS: {
+  id: ApparatusSubView;
+  label: string;
+  subtitle?: string;
+  icon: typeof Cpu;
+}[] = [
+  {
+    id: "desk",
+    label: "Desk",
+    subtitle: "Agent dossiers & monitoring",
+    icon: Users,
+  },
+  {
+    id: "fileroom",
+    label: "Fileroom",
+    subtitle: "AI-generated context bank",
+    icon: Brain,
+  },
+];

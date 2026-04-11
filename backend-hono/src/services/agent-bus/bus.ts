@@ -30,10 +30,11 @@ class AgentBus {
     };
     this.messageCount++;
     this.emitter.emit(topic, full);
-    // Also emit to wildcard subscribers (e.g., 'dag.*' listens to all dag topics)
-    const prefix = topic.split(".").slice(0, -1).join(".");
-    if (prefix) {
-      this.emitter.emit(`${prefix}.*`, full);
+    // Emit to wildcard subscribers at every prefix level
+    // e.g., 'dag.task.dispatch' → emits to 'dag.task.*' AND 'dag.*'
+    const parts = topic.split(".");
+    for (let i = 1; i < parts.length; i++) {
+      this.emitter.emit(`${parts.slice(0, i).join(".")}.*`, full);
     }
   }
 

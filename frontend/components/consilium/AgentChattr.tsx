@@ -55,15 +55,15 @@ function WifiBars() {
   return (
     <div className="flex items-end gap-[2px] h-3">
       <div
-        className="w-[2px] rounded-full bg-emerald-400 animate-[wifi-pulse_1.2s_ease-in-out_infinite]"
+        className="w-[2px] rounded-full bg-[#c79f4a] animate-[wifi-pulse_1.2s_ease-in-out_infinite]"
         style={{ height: 4 }}
       />
       <div
-        className="w-[2px] rounded-full bg-emerald-400 animate-[wifi-pulse_1.2s_ease-in-out_0.2s_infinite]"
+        className="w-[2px] rounded-full bg-[#c79f4a] animate-[wifi-pulse_1.2s_ease-in-out_0.2s_infinite]"
         style={{ height: 7 }}
       />
       <div
-        className="w-[2px] rounded-full bg-emerald-400 animate-[wifi-pulse_1.2s_ease-in-out_0.4s_infinite]"
+        className="w-[2px] rounded-full bg-[#c79f4a] animate-[wifi-pulse_1.2s_ease-in-out_0.4s_infinite]"
         style={{ height: 10 }}
       />
       <style>{`
@@ -76,23 +76,8 @@ function WifiBars() {
   );
 }
 
-function getAgentColor(agent: BoardroomAgent): string {
-  const info = AGENT_MAP[agent];
-  if (!info) return "#52525b";
-  switch (info.accentClass) {
-    case "gold":
-      return "var(--fintheon-accent)";
-    case "blue":
-      return "#60a5fa";
-    case "red":
-      return "#ef4444";
-    case "emerald":
-      return "#10b981";
-    case "purple":
-      return "#a78bfa";
-    default:
-      return "#52525b";
-  }
+function getAgentColor(_agent: BoardroomAgent): string {
+  return "var(--fintheon-accent)";
 }
 
 function AgentDropdown({
@@ -417,7 +402,7 @@ export function AgentChattr() {
             <WifiOff size={12} className="text-red-500/60" />
           )}
           <span
-            className={`text-[10px] ${isOnline ? "text-emerald-400/70" : "text-[var(--fintheon-text)]/30"}`}
+            className={`text-[10px] ${isOnline ? "text-[#c79f4a]/70" : "text-[var(--fintheon-text)]/30"}`}
           >
             {isOnline ? "Connected" : "Offline"}
           </span>

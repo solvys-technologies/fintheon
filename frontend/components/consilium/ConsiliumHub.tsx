@@ -12,19 +12,14 @@ import {
   Suspense,
 } from "react";
 import {
-  MessageSquare,
   Users,
   Clock,
-  GitBranch,
   Cpu,
   PanelRightOpen,
   PanelRightClose,
   ChevronDown,
-  Fish,
   Zap,
   Shield,
-  Brain,
-  BookOpen,
   Scroll,
   Plus,
 } from "lucide-react";
@@ -57,100 +52,22 @@ import type {
 import { ChatSidebar } from "../chat/ChatSidebar";
 import { SessionsModal } from "../chat/SessionsModal";
 import { HarperActivityFeed } from "./HarperActivityFeed";
+import {
+  REGULAR_TABS,
+  SANCTUM_SUB_VIEWS,
+  BOARDROOM_SUB_VIEWS,
+  APPARATUS_SUB_VIEWS,
+} from "./ConsiliumTabConfig";
+import type {
+  ConsiliumTab,
+  SanctumSubView,
+  BoardroomSubView,
+  ApparatusSubView,
+} from "./ConsiliumTabConfig";
+import { usePanelState } from "./usePanelState";
 const ResearchBoard = lazy(() => import("../research/ResearchBoard"));
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
-
-// Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
-type ConsiliumTab = "sanctum" | "chat" | "boardroom" | "apparatus";
-type SanctumSubView = "narratives" | "aquarium" | "timeline";
-type BoardroomSubView = "forum" | "imperium" | "agentic-chat" | "research";
-type ApparatusSubView = "desk" | "fileroom";
-
-// Chat is the only direct button now
-const REGULAR_TABS: {
-  id: ConsiliumTab;
-  label: string;
-  icon: typeof MessageSquare;
-}[] = [{ id: "chat", label: "Chat", icon: MessageSquare }];
-
-const SANCTUM_SUB_VIEWS: {
-  id: SanctumSubView;
-  label: string;
-  subtitle?: string;
-  icon: typeof GitBranch;
-}[] = [
-  {
-    id: "timeline",
-    label: "Timeline",
-    subtitle: "Track the catalysts",
-    icon: Clock,
-  },
-  {
-    id: "narratives",
-    label: "NarrativeFlow",
-    subtitle: "Visualize the situation",
-    icon: GitBranch,
-  },
-  {
-    id: "aquarium",
-    label: "Aquarium",
-    subtitle: "The Shark Tank. Deliberate it.",
-    icon: Fish,
-  },
-];
-
-const BOARDROOM_SUB_VIEWS: {
-  id: BoardroomSubView;
-  label: string;
-  subtitle?: string;
-  icon: typeof MessageSquare;
-}[] = [
-  {
-    id: "forum",
-    label: "Forum",
-    subtitle: "Team bulletin & chat",
-    icon: MessageSquare,
-  },
-  {
-    id: "imperium",
-    label: "Imperium",
-    subtitle: "Task command & assignment",
-    icon: Shield,
-  },
-  {
-    id: "agentic-chat",
-    label: "Agentic Chatroom",
-    subtitle: "Chat with Hermes & CAO",
-    icon: Cpu,
-  },
-  {
-    id: "research",
-    label: "Research",
-    subtitle: "Notion knowledge base",
-    icon: BookOpen,
-  },
-];
-
-const APPARATUS_SUB_VIEWS: {
-  id: ApparatusSubView;
-  label: string;
-  subtitle?: string;
-  icon: typeof Cpu;
-}[] = [
-  {
-    id: "desk",
-    label: "Desk",
-    subtitle: "Agent dossiers & monitoring",
-    icon: Users,
-  },
-  {
-    id: "fileroom",
-    label: "Fileroom",
-    subtitle: "AI-generated context bank",
-    icon: Brain,
-  },
-];
 
 /** Bridge: reads NarrativeContext lanes → SanctumNarrative[] for Sanctum (Aquarium) */
 function SanctumWithNarratives(
@@ -185,34 +102,6 @@ function SanctumWithNarratives(
     [state.catalysts],
   );
   return <Sanctum {...props} narratives={narratives} catalysts={catalysts} />;
-}
-
-function usePanelState(
-  key: string,
-  defaultValue: boolean,
-): [boolean, () => void] {
-  const [state, setState] = useState<boolean>(() => {
-    try {
-      const stored = localStorage.getItem(key);
-      return stored !== null ? JSON.parse(stored) : defaultValue;
-    } catch {
-      return defaultValue;
-    }
-  });
-
-  const toggle = useCallback(() => {
-    setState((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(key, JSON.stringify(next));
-      } catch {
-        /* noop */
-      }
-      return next;
-    });
-  }, [key]);
-
-  return [state, toggle];
 }
 
 export function ConsiliumHub() {
