@@ -48,7 +48,7 @@ import { MissionControlContent } from "./MissionControlContent";
 import { ChatPanel } from "./ChatPanel";
 import { YouTubeMiniplayer } from "./YouTubeMiniplayer";
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
-// TeamOnboarding removed — exposes Supabase login to end users, security risk
+// TeamOnboarding re-wired into TeamPanel behind auth gate (2026-04-11)
 import { EPOCH_VERSION } from "../../lib/epoch-version";
 import {
   VoiceWidget,

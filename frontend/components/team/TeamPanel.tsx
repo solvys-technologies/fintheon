@@ -1,11 +1,16 @@
 // [claude-code 2026-04-03] S14-T6: Team status panel — clean status card grid
+// [claude-code 2026-04-11] Re-wired TeamOnboarding behind auth gate
+import { useState } from "react";
+import { UserPlus } from "lucide-react";
 import { useTeamPresence } from "../../contexts/TeamPresenceContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { TeamMemberCard } from "./TeamMemberCard";
+import { TeamOnboarding } from "./TeamOnboarding";
 
 export function TeamPanel() {
   const { teamMembers, isConnected } = useTeamPresence();
-  const { userId } = useAuth();
+  const { userId, isAuthenticated } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const self = teamMembers.find((m) => m.userId === userId);
   const others = teamMembers
@@ -35,6 +40,15 @@ export function TeamPanel() {
             connecting...
           </span>
         )}
+        {isAuthenticated && (
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="ml-auto p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors"
+            title="Add team member / register device"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />
+          </button>
+        )}
       </div>
 
       {/* Status card grid */}
@@ -58,6 +72,12 @@ export function TeamPanel() {
           </div>
         )}
       </div>
+      {showOnboarding && (
+        <TeamOnboarding
+          open={showOnboarding}
+          onClose={() => setShowOnboarding(false)}
+        />
+      )}
     </div>
   );
 }
