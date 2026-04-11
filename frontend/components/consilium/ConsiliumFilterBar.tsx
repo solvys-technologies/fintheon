@@ -34,25 +34,7 @@ export function ConsiliumFilterBar({
         />
       </div>
 
-      {/* Spacer — push timeframe to right */}
       <div className="flex-1" />
-
-      {/* Date range — rectangular bar, right-justified */}
-      <div className="flex items-center rounded-lg border border-[var(--fintheon-border)]/15 overflow-hidden">
-        {DATE_OPTIONS.map((range) => (
-          <button
-            key={range}
-            onClick={() => onDateRangeChange(range)}
-            className={`px-3 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
-              dateRange === range
-                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
-                : "text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]"
-            }`}
-          >
-            {range === "today" ? "Today" : range === "all" ? "All" : range}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

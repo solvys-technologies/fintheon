@@ -78,7 +78,7 @@ export interface AnimatedAiInputProps {
 
 export const AnimatedAiInput: FC<AnimatedAiInputProps> = ({
   onSend,
-  placeholder = "Message Harper-Opus...",
+  placeholder = "Message Harper...",
   disabled = false,
   agents = [],
   activeAgentId,

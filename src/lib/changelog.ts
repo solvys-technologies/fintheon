@@ -9,6 +9,44 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-11T23:59:00",
+    agent: "claude-code",
+    summary:
+      "S14-T9: Consilium Chat + Sidebar + Imperium UI Polish. Boardroom→Imperium rename with 'Wield the Consul' subheader, stripped old Imperium sub-view. Harper-Opus→Harper everywhere (defaults, placeholders, greeting, persona). Input bar transparent when idle, 1.3s glow on focus, send button illumination. Removed 'Local' text from provider pill (icon-only), removed persona selector from sidebar (CAO-only route). Removed 'What needs orchestrating today?' subtitle and 'Claude Opus 4.6' model badge from ChatGreeting. Harper Activity re-expand toggle, RiskFlow collapse/expand on Dashboard. Team card killswitch pill toggle. Onboarding starts at device naming (removed Supabase step). Removed timeframe toggle from ConsiliumFilterBar. Smooth transitions on onboarding modal.",
+    files: [
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/consilium/ConsiliumTabConfig.ts",
+      "frontend/components/consilium/ConsiliumFilterBar.tsx",
+      "frontend/components/chat/ChatGreeting.tsx",
+      "frontend/components/chat/PersonaDropdown.tsx",
+      "frontend/components/chat/ProviderDropdown.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/team/TeamMemberCard.tsx",
+      "frontend/components/team/TeamOnboarding.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/contexts/FintheonAgentContext.tsx",
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/contexts/TeamPresenceContext.tsx",
+    ],
+  },
+  {
+    date: "2026-04-11T23:30:00",
+    agent: "claude-code",
+    summary:
+      "S14-T8: CAO Memory System + Naming. Per-user CAO naming (persisted to user_settings, synced across FintheonAgentContext). Added CAO naming step to TeamOnboarding (5-step flow). Dynamic CAO name replaces hardcoded Harper in AgentBadge, ChatSidebar toasts, ChatGreeting. Auto-flush: every 10th message extracts trade ideas/analysis/levels to peer_shared_memory. Verbal flush: 'remember this'/'save this' triggers immediate save with CAO confirmation. Firm vs personal memory scoping via category prefix.",
+    files: [
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/contexts/FintheonAgentContext.tsx",
+      "frontend/components/settings/AgenticDesk.tsx",
+      "frontend/components/team/TeamOnboarding.tsx",
+      "frontend/components/consilium/AgentBadge.tsx",
+      "frontend/components/chat/ChatSidebar.tsx",
+      "backend-hono/src/services/cao-memory-flush.ts",
+      "backend-hono/src/routes/ai/handlers/chat.ts",
+    ],
+  },
+  {
     date: "2026-04-11T22:00:00",
     agent: "claude-code",
     summary:

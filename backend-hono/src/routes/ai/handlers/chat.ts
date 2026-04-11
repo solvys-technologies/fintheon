@@ -1,3 +1,4 @@
+// [claude-code 2026-04-11] S14-T8: CAO memory flush — auto-flush every 10 msgs, verbal flush detection
 // [claude-code 2026-04-05] Strands Phase 8: Full cutover — all inference paths replaced by Strands agents
 /**
  * AI Chat Handler
@@ -41,6 +42,13 @@ import {
   takeScreenshot,
   isPlaywrightReady,
 } from "../../../services/screenshot-service.js";
+import {
+  trackMessage,
+  shouldAutoFlush,
+  autoFlushMemory,
+  detectVerbalFlush,
+  verbalFlushMemory,
+} from "../../../services/cao-memory-flush.js";
 
 // File attachment content part types
 type FileContentPart =
@@ -282,7 +290,21 @@ export async function handleChat(c: Context) {
       role: "user",
       content: message,
     });
+    trackMessage(conversation.id);
     console.log(`[Hermes][${requestId}] User message saved`);
+
+    // Verbal flush: detect "remember this" / "save this" etc.
+    const isVerbalFlush = detectVerbalFlush(message);
+    if (isVerbalFlush && userId) {
+      verbalFlushMemory(conversation.id, userId, message).catch((err) =>
+        console.warn(`[CAOMemory][${requestId}] Verbal flush failed:`, err),
+      );
+      cognition.step(
+        "tool-dispatch",
+        "Saved to memory",
+        "Verbal flush triggered",
+      );
+    }
 
     // Get conversation history
     const history = await conversationStore.getRecentContext(conversation.id);
@@ -327,6 +349,11 @@ export async function handleChat(c: Context) {
       }
     }
 
+    // Verbal flush: tell agent to confirm the save in its response
+    if (isVerbalFlush) {
+      prompt += `\n\n[SYSTEM: The user asked you to remember something. It has been saved to memory. Briefly acknowledge this at the start of your response with "Saved to memory." then continue normally.]`;
+    }
+
     // Inject live RiskFlow headlines so agents can reference real-time data
     const feedContext = await buildFeedContext();
     if (feedContext) {
@@ -355,6 +382,14 @@ export async function handleChat(c: Context) {
             content: text,
             model: agentModel,
           });
+          trackMessage(conversation.id);
+        }
+
+        // Auto-flush: every 10 messages, extract insights to shared memory
+        if (shouldAutoFlush(conversation.id) && userId) {
+          autoFlushMemory(conversation.id, userId).catch((err) =>
+            console.warn(`[CAOMemory][${requestId}] Auto-flush failed:`, err),
+          );
         }
 
         const duration = Date.now() - startTime;

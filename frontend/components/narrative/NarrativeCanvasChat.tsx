@@ -239,7 +239,7 @@ export function NarrativeCanvasChat({
           onBlur={() => {
             if (!input.trim()) setExpanded(false);
           }}
-          placeholder="Message Harper-Opus..."
+          placeholder="Message Harper..."
           className="flex-1 text-[11px] bg-transparent outline-none min-w-0"
           style={{
             color: "var(--fintheon-text)",

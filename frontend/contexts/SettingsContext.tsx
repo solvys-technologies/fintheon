@@ -367,7 +367,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     () => loadFromStorage("proposerDefaultIframe", "tradingview"),
   );
   const [caoName, setCaoName] = useState<string>(() =>
-    loadFromStorage("caoName", "Harper-Opus"),
+    loadFromStorage("caoName", "Harper"),
   );
 
   // Track whether initial backend fetch has completed to avoid saving back stale data

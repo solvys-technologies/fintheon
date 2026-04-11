@@ -35,9 +35,7 @@ export function AgenticDesk() {
   const { caoName: persistedCaoName, setCaoName: persistCaoName } =
     useSettings();
 
-  const [caoName, setCaoName] = useState(
-    () => persistedCaoName || "Harper-Opus",
-  );
+  const [caoName, setCaoName] = useState(() => persistedCaoName || "Harper");
   const [saved, setSaved] = useState(false);
 
   const handleSaveCaoName = useCallback(() => {

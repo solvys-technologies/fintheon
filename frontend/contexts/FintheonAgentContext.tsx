@@ -39,14 +39,14 @@ const now = () => new Date().toISOString();
 export const FINTHEON_AGENTS: FintheonAgent[] = [
   {
     id: "harper-opus",
-    name: "Harper-Opus",
+    name: "Harper",
     nickname: null,
     sector: "CAO",
     description: "Chief Analyst Officer — executive strategy and oversight",
     status: "working",
     model: "anthropic/claude-opus-4-6",
     icon: "H",
-    greeting: "Harper-Opus online. What needs my attention?",
+    greeting: "Harper online. What needs my attention?",
     instructions_doc_id: null,
     created_at: now(),
     updated_at: now(),
@@ -151,7 +151,7 @@ export function FintheonAgentProvider({ children }: { children: ReactNode }) {
 
   // Sync persisted CAO name into agent roster when settings load
   useEffect(() => {
-    if (caoName && caoName !== "Harper-Opus") {
+    if (caoName && caoName !== "Harper") {
       setAgents((prev) =>
         prev.map((a) =>
           a.id === "harper-opus"

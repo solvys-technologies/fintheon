@@ -73,8 +73,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
     NonNullable<typeof supabase>["channel"]
   > | null>(null);
 
-  const caoName =
-    agents.find((a) => a.id === "harper-opus")?.name || "Harper-Opus";
+  const caoName = agents.find((a) => a.id === "harper-opus")?.name || "Harper";
   const caoOnline = hermesStatus === "ok" || gatewayStatus === "connected";
   const displayName = traderName || "Anonymous";
 

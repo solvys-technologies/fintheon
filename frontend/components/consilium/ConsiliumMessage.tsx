@@ -40,8 +40,8 @@ function formatTimestamp(iso: string): string {
 // ─── @Mention Parsing ──────────────────────────────────────────────
 
 const MENTION_TO_AGENT: Record<string, BoardroomAgent> = {
-  "harper-opus": "Harper-Opus",
-  harper: "Harper-Opus",
+  "harper-opus": "Harper",
+  harper: "Harper",
   oracle: "Oracle",
   feucht: "Feucht",
   consul: "Consul",
