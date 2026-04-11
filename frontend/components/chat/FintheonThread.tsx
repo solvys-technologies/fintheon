@@ -192,7 +192,7 @@ const FintheonUserMessage: FC = () => {
 
   return (
     <div className="group/msg flex flex-col items-end animate-fade-slide-in">
-      <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
+      <div className="max-w-[95%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
         <MessageErrorBoundary>
           {userText && (
             <p className="text-sm text-white whitespace-pre-wrap break-words">
@@ -272,12 +272,12 @@ const FintheonAssistantMessage: FC<{
     <div className="group/msg flex flex-col items-start animate-fade-slide-in">
       {/* Chain of Thought — gold-bordered, above message */}
       {hasReasoningContent && (
-        <div className="max-w-[82%] mb-1">
+        <div className="max-w-[95%] mb-1">
           <ChainOfThought text={reasoningContent} />
         </div>
       )}
 
-      <div className="max-w-[82%] px-1 transition-colors">
+      <div className="max-w-[95%] px-1 transition-colors">
         <MessageErrorBoundary>
           {/* Render directly from extracted parts — bypass MessagePrimitive.Parts
               which crashes (#185) due to assistant-ui context/smooth-streaming internals */}
@@ -410,7 +410,7 @@ const DirectUserMessage: FC<{ msg: any }> = ({ msg }) => {
   const images = extractImages(msg);
   return (
     <div className="group/msg flex flex-col items-end animate-fade-slide-in">
-      <div className="max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
+      <div className="max-w-[95%] rounded-2xl p-4 backdrop-blur-md border transition-colors fintheon-user-bubble">
         {text && (
           <p className="text-sm text-white whitespace-pre-wrap break-words">
             {text}
@@ -448,11 +448,11 @@ const DirectAssistantMessage: FC<{
         </span>
       )}
       {reasoningContent && (
-        <div className="max-w-[82%] mb-1">
+        <div className="max-w-[95%] mb-1">
           <ChainOfThought text={reasoningContent} />
         </div>
       )}
-      <div className="max-w-[82%] px-1 transition-colors">
+      <div className="max-w-[95%] px-1 transition-colors">
         {textContent && <FintheonTextPart text={textContent} />}
       </div>
       <MessageActions
