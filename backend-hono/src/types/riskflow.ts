@@ -70,6 +70,8 @@ export interface FeedItem {
   agentNote?: string | null;
   /** Timestamp when agentNote was generated */
   agentNoteGeneratedAt?: string | null;
+  /** YouTube video URL — populated when source URL is a YouTube link (e.g. Fed speech) */
+  video_url?: string | null;
   /** Structured economic data for econ prints */
   econData?: {
     actual?: number | null;

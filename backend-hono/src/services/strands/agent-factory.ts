@@ -1,3 +1,4 @@
+// [claude-code 2026-04-10] S8-T2: added createAgentForTask() for DAG dispatch (always local/VProxy)
 // [claude-code 2026-04-08] Nous provider tries arcee trinity-large first, then qwen3.6-plus
 // [claude-code 2026-04-07] Strands agent factory — VProxy, OpenRouter, or Nous Direct provider selection
 import { Agent, tool, type ConversationManager } from "@strands-agents/sdk";
@@ -8,6 +9,9 @@ import {
   type VProxyModelOptions,
 } from "./provider.js";
 import { createLogger } from "../../lib/logger.js";
+import type { HermesAgentId } from "../agent-bus/types.js";
+import { BASE_PROMPTS } from "../ai/agent-instructions/base-prompts.js";
+import { getAgentSystemPrompt } from "../ai/agent-instructions/index.js";
 
 const log = createLogger("StrandsFactory");
 
@@ -139,6 +143,74 @@ export function createAgent(options: CreateAgentOptions): Agent {
 export async function isStrandsAvailable(): Promise<boolean> {
   const health = await checkVProxyHealth();
   return health.available;
+}
+
+/**
+ * Create a one-shot agent for a DAG task.
+ * Always uses VProxy (local) — DAGs run during active sessions and should fail fast.
+ * No conversationManager, no tools (one-shot synthesis/analysis only).
+ */
+export function createAgentForTask(
+  agentId: HermesAgentId,
+  _dagId?: string,
+): Agent {
+  switch (agentId) {
+    case "oracle":
+      return createAgent({
+        name: "oracle",
+        description:
+          "Prediction markets, S&P, Crypto, macro analysis — sees across all domains",
+        systemPrompt: BASE_PROMPTS["pma-merged"],
+        model: { temperature: 0.3, maxTokens: 4096 },
+        provider: "local",
+      });
+
+    case "feucht":
+      return createAgent({
+        name: "feucht",
+        description:
+          "Futures & risk — /NQ, /MNQ, /ES via TopStepX, drawdown limits, proposal validation",
+        systemPrompt: BASE_PROMPTS["futures-desk"],
+        model: { temperature: 0.25, maxTokens: 4096 },
+        provider: "local",
+      });
+
+    case "consul":
+      return createAgent({
+        name: "consul",
+        description:
+          "Fundamentals desk — top 10 S&P/NDX mega-caps, earnings, guidance, fair value",
+        systemPrompt: BASE_PROMPTS["fundamentals-desk"],
+        model: { temperature: 0.3, maxTokens: 4096 },
+        provider: "local",
+      });
+
+    case "herald":
+      return createAgent({
+        name: "herald",
+        description:
+          "News & sentiment — headlines, social signals, AAII survey, breaking news",
+        systemPrompt: BASE_PROMPTS["herald"],
+        model: { temperature: 0.3, maxTokens: 4096 },
+        provider: "local",
+      });
+
+    case "harper":
+      // Harper in a DAG is a synthesis/coordinator agent — no tools, no memory, local only
+      return createAgent({
+        name: "harper-dag",
+        description:
+          "DAG synthesis — consolidates multi-agent findings into a unified outlook",
+        systemPrompt: getAgentSystemPrompt("harper-cao", {}),
+        model: { model: "claude-opus-4-6", temperature: 0.3, maxTokens: 8192 },
+        provider: "local",
+      });
+
+    default: {
+      const exhaustive: never = agentId;
+      throw new Error(`createAgentForTask: unknown agentId "${exhaustive}"`);
+    }
+  }
 }
 
 export { tool } from "@strands-agents/sdk";

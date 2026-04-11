@@ -263,7 +263,20 @@ export function ConsiliumHub() {
   );
   const [showHarperFeed, setShowHarperFeed] = useState(true);
   const [showSessionsDropdown, setShowSessionsDropdown] = useState(false);
+  const [boardroomDagRunning, setBoardroomDagRunning] = useState(false);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Listen for DAG running events dispatched from AgentChattr
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setBoardroomDagRunning(
+        (e as CustomEvent<{ running: boolean }>).detail.running,
+      );
+    };
+    window.addEventListener("fintheon:boardroom-dag-running", handler);
+    return () =>
+      window.removeEventListener("fintheon:boardroom-dag-running", handler);
+  }, []);
 
   // Close dropdowns on outside click
   const sanctumDropdownRef = useRef<HTMLDivElement>(null);
@@ -654,6 +667,12 @@ export function ConsiliumHub() {
             Boardroom
             {harperStatus?.loop?.alive && (
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            )}
+            {boardroomDagRunning && (
+              <span
+                className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse"
+                title="DAG deliberation in progress"
+              />
             )}
             <ChevronDown
               size={10}

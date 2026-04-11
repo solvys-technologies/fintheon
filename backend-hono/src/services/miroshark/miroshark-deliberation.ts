@@ -1,8 +1,10 @@
+// [claude-code 2026-04-10] S8-T3: Deliberation refactored to DAG execution via dag-scheduler
 // [claude-code 2026-04-03] Deliberation v2 — 4-phase pipeline with anti-groupthink + consensus scoring
-// Phase 1: Market analysts (always) → Phase 1.5: Gov officials (conditional) → Phase 2: Hermes → Phase 3: Harper
-// Fixes: full reasoning passthrough (no more lossy one-line summaries), convergence detection, devil's advocate
+// Phase 1→Wave 0: Market analysts (parallel DAG tasks)
+// Phase 1.5→Wave 0: Gov officials (optional task, geopolitical lanes)
+// Phase 2→Wave 1: Hermes deliberation tasks (parallel)
+// Phase 3→Wave 2: Harper synthesis task
 
-import { invokeAgent } from "../strands/index.js";
 import type { HermesAgentRole } from "../hermes-service.js";
 import type {
   MiroSharkReport,
@@ -15,6 +17,16 @@ import type {
   DeliberationPhase,
 } from "./miroshark-types.js";
 import { MARKET_ANALYSTS } from "./miroshark-client.js";
+import {
+  createMiroSharkDAG,
+  postProcessDeliberation,
+  type CollectedTaskOutput,
+  type NarrativeLane,
+  type CatalystCard,
+} from "../agent-bus/templates/miroshark-template.js";
+import { executeDag } from "../agent-bus/dag-scheduler.js";
+import { agentBus } from "../agent-bus/bus.js";
+import type { DAGProgressEvent, HermesAgentId } from "../agent-bus/types.js";
 
 // ── In-memory deliberation tracking ─────────────────────────────────────────
 
@@ -40,8 +52,7 @@ function updatePhase(
 }
 
 // ── Phase 1: Extract FULL analyst assessments from report ───────────────────
-// Critical fix: the old extractGovAssessments() threw away reasoning, category
-// scores, scenarios, and generated events. Now we pass through everything.
+// Preserved for backward compatibility — used by external routes.
 
 export function extractAnalystAssessments(
   report: MiroSharkReport,
@@ -49,7 +60,6 @@ export function extractAnalystAssessments(
 ): MarketAnalystAssessment[] {
   return report.agentVotes.map((vote) => {
     const analyst = MARKET_ANALYSTS.find((a) => a.id === vote.agentId);
-    // Find the full response for this agent (if available from the report)
     const fullResponse = agentResponses?.find(
       (r) => r.agentId === vote.agentId,
     );
@@ -60,7 +70,6 @@ export function extractAnalystAssessments(
       title: analyst?.title ?? vote.agentId,
       role: analyst?.role ?? "analyst",
       subjects: analyst?.subjects ?? [],
-      // FULL reasoning — not a one-line summary
       assessment:
         fullResponse?.reasoning ??
         `Position: ${vote.position}, Confidence: ${(vote.confidence * 100).toFixed(0)}%`,
@@ -74,15 +83,13 @@ export function extractAnalystAssessments(
         fullResponse?.projectedIVScore ?? report.nextSessionProjection,
       regimeShiftProbability:
         fullResponse?.regimeShiftProbability ?? report.regimeShiftProbability,
-      // Per-agent category scores — NOT the composite
       categoryScores: fullResponse?.categoryScores ?? report.categoryScores,
-      headlineCount: 0, // Will be populated when we have headline routing data
+      headlineCount: 0,
     };
   });
 }
 
 function extractKeyConcern(response: MiroSharkAgentResponse): string {
-  // Find the highest-scoring category as the key concern
   const sorted = [...response.categoryScores].sort(
     (a, b) => b.ivScore - a.ivScore,
   );
@@ -130,373 +137,46 @@ export function extractGovAssessments(
   }));
 }
 
-// ── Anti-Groupthink: Convergence Detection ──────────────────────────────────
+// ── Convert MiroSharkReport → MiroSharkParams ────────────────────────────────
 
-interface ConvergenceResult {
-  convergence: number; // 0-1, where 1 = perfect agreement (bad)
-  shouldTriggerContrarian: boolean;
-  lowestConfidenceAgent: string | null;
-  healthyDisagreementCount: number;
-}
-
-function detectConvergence(
-  assessments: MarketAnalystAssessment[],
-): ConvergenceResult {
-  if (assessments.length < 2) {
-    return {
-      convergence: 0,
-      shouldTriggerContrarian: false,
-      lowestConfidenceAgent: null,
-      healthyDisagreementCount: 0,
-    };
-  }
-
-  const ivScores = assessments.map((a) => a.projectedIVScore);
-  const mean = ivScores.reduce((s, v) => s + v, 0) / ivScores.length;
-  const variance =
-    ivScores.reduce((s, v) => s + (v - mean) ** 2, 0) / ivScores.length;
-  const stddev = Math.sqrt(variance);
-
-  // Convergence = 1 - (normalized stddev). High convergence = groupthink risk.
-  const convergence =
-    mean > 0 ? Math.max(0, Math.min(1, 1 - stddev / mean)) : 0;
-
-  // Count analysts whose IV diverges by > 1.5 from mean (healthy disagreement)
-  const healthyDisagreementCount = ivScores.filter(
-    (v) => Math.abs(v - mean) > 1.5,
-  ).length;
-
-  // Find lowest confidence analyst for contrarian re-run
-  let lowestConf = Infinity;
-  let lowestAgent: string | null = null;
-  for (const a of assessments) {
-    if (a.confidence < lowestConf) {
-      lowestConf = a.confidence;
-      lowestAgent = a.agentId;
-    }
-  }
-
-  return {
-    convergence,
-    shouldTriggerContrarian: convergence > 0.85,
-    lowestConfidenceAgent: lowestAgent,
-    healthyDisagreementCount,
-  };
-}
-
-// ── Consensus Scoring ───────────────────────────────────────────────────────
-
-function computeConsensusScore(
-  analystAssessments: MarketAnalystAssessment[],
-  hermesResults: HermesDeliberation[],
-  convergence: ConvergenceResult,
-  contrarianTriggered: boolean,
-): number {
-  let score = 0;
-
-  // Base: weighted average of analyst confidences (0-50 pts)
-  if (analystAssessments.length > 0) {
-    const avgConf =
-      analystAssessments.reduce((s, a) => s + a.confidence, 0) /
-      analystAssessments.length;
-    score += avgConf * 50;
-  }
-
-  // Agreement bonus/penalty from Hermes (±25 pts)
-  if (hermesResults.length > 0) {
-    const agreeCount = hermesResults.filter(
-      (h) => h.verdict === "agree",
-    ).length;
-    const disagreeCount = hermesResults.filter(
-      (h) => h.verdict === "disagree",
-    ).length;
-    const agreeRatio = agreeCount / hermesResults.length;
-    const disagreeRatio = disagreeCount / hermesResults.length;
-
-    score += agreeRatio * 25; // Agreement bonus
-    score -= disagreeRatio * 20; // Disagreement penalty
-  }
-
-  // Convergence penalty: groupthink lowers score, not raises it
-  if (convergence.convergence > 0.9) {
-    score -= 10;
-  }
-
-  // Contrarian bonus: devil's advocate changed things = +5
-  if (contrarianTriggered) {
-    score += 5;
-  }
-
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-// ── Phase 2: Hermes Deliberation (upgraded prompt) ──────────────────────────
-
-const HERMES_DELIBERATION_AGENTS: HermesAgentRole[] = [
-  "pma-merged", // Oracle
-  "futures-desk", // Feucht
-  "fundamentals-desk", // Consul
-  "herald", // Herald
-];
-
-async function runHermesDeliberation(
-  analystAssessments: MarketAnalystAssessment[],
-  govAssessments: GovOfficialAssessment[] | null,
+function reportToParams(
   report: MiroSharkReport,
-  convergenceResult: ConvergenceResult,
   userInjection?: string,
-): Promise<HermesDeliberation[]> {
-  // Build FULL analyst summary — not one-line position summaries
-  const analystSummary = analystAssessments
-    .map((a) => {
-      const topCategories = [...a.categoryScores]
-        .sort((x, y) => y.ivScore - x.ivScore)
-        .slice(0, 3)
-        .map((c) => `${c.category}: ${c.ivScore.toFixed(1)}`)
-        .join(", ");
+): {
+  lanes: NarrativeLane[];
+  catalysts: CatalystCard[];
+  userInjection?: string;
+} {
+  const lanes: NarrativeLane[] = report.categoryScores.map((cs) => ({
+    id: cs.category,
+    name: cs.category
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase()),
+    sentiment: Math.max(0, Math.min(1, cs.ivScore / 10)),
+    category: cs.category,
+  }));
 
-      return `**${a.name} (${a.title})** [subjects: ${a.subjects.join(", ")}]
-  IV: ${a.projectedIVScore.toFixed(1)} | Confidence: ${(a.confidence * 100).toFixed(0)}% | Regime: ${(a.regimeShiftProbability * 100).toFixed(0)}%
-  Key Concern: ${a.keyConcern}
-  Top Categories: ${topCategories}
-  Reasoning: ${a.assessment}`;
-    })
-    .join("\n\n");
+  const catalysts: CatalystCard[] = report.generatedEvents.map((e) => ({
+    id: e.id,
+    headline: e.title,
+    severity: e.impactScore,
+    body: e.description,
+  }));
 
-  const govSection = govAssessments
-    ? `\n## Phase 1.5: Gov Official Assessments (geopolitical layer)\n${govAssessments.map((a) => `${a.name}: ${a.assessment}. Concern: ${a.keyConcern}. Action: ${a.recommendedAction}.`).join("\n")}`
-    : "\n## Phase 1.5: Gov Officials — SKIPPED (no geopolitical content detected)";
-
-  const majorityPosition = getMajorityPosition(report);
-
-  const deliberationPrompt = `You are evaluating the combined output of a MiroShark market analysis.
-
-## Phase 1: Market Analyst Assessments
-${analystSummary}
-${govSection}
-
-## Composite Results
-- Composite IV: ${report.nextSessionProjection.toFixed(1)}
-- Regime Shift Probability: ${(report.regimeShiftProbability * 100).toFixed(0)}%
-- Confidence: ${(report.confidence * 100).toFixed(0)}%
-- Majority Position: ${majorityPosition}
-- Analyst Convergence: ${(convergenceResult.convergence * 100).toFixed(0)}% ${convergenceResult.convergence > 0.85 ? "⚠️ HIGH — possible groupthink" : "✓ healthy diversity"}
-- Healthy Disagreements: ${convergenceResult.healthyDisagreementCount} analysts diverge significantly
-
-${userInjection ? `## User Injection\n${userInjection}\n` : ""}
-## Your Task
-Evaluate whether you AGREE, DISAGREE, or see NUANCE in the analysts' combined assessment.
-Consider: Are they missing something? Is the consensus too strong or too weak? What would change your mind?
-
-Respond with valid JSON:
-{
-  "verdict": "agree" | "disagree" | "nuance",
-  "reasoning": "<2-3 sentences explaining your position>",
-  "confidence": <0-1>
-}
-
-Return ONLY the JSON object, no markdown fences.`;
-
-  const results = await Promise.allSettled(
-    HERMES_DELIBERATION_AGENTS.map(async (agentRole) => {
-      const { text } = await invokeAgent({
-        systemPrompt: `You are ${getHermesDisplayName(agentRole)}, a P.I.C. Hermes agent. Evaluate the MiroShark market analysis from your perspective as a ${getHermesRole(agentRole)}.`,
-        userPrompt: deliberationPrompt,
-        model: { temperature: 0.3, maxTokens: 512 },
-      });
-
-      const parsed = parseJsonSafe<{
-        verdict: string;
-        reasoning: string;
-        confidence: number;
-      }>(text);
-      if (!parsed) {
-        return {
-          agentId: agentRole,
-          name: getHermesDisplayName(agentRole),
-          verdict: "nuance" as const,
-          reasoning: "Unable to parse deliberation response.",
-          confidence: 0.3,
-        };
-      }
-
-      return {
-        agentId: agentRole,
-        name: getHermesDisplayName(agentRole),
-        verdict: (parsed.verdict === "agree" || parsed.verdict === "disagree"
-          ? parsed.verdict
-          : "nuance") as "agree" | "disagree" | "nuance",
-        reasoning: parsed.reasoning ?? "",
-        confidence: Math.max(0, Math.min(1, parsed.confidence ?? 0.5)),
-      };
-    }),
-  );
-
-  const fulfilled: HermesDeliberation[] = [];
-  for (const r of results) {
-    if (r.status === "fulfilled") fulfilled.push(r.value);
-  }
-  return fulfilled;
-}
-
-function getHermesDisplayName(role: HermesAgentRole): string {
-  const names: Record<string, string> = {
-    "pma-merged": "Oracle",
-    "futures-desk": "Feucht",
-    "fundamentals-desk": "Consul",
-    herald: "Herald",
-  };
-  return names[role] ?? role;
-}
-
-function getHermesRole(role: HermesAgentRole): string {
-  const roles: Record<string, string> = {
-    "pma-merged": "prediction market analyst and macro oracle",
-    "futures-desk": "futures execution specialist",
-    "fundamentals-desk": "fundamental equity analyst",
-    herald: "news sentiment and social signal analyst",
-  };
-  return roles[role] ?? "analyst";
-}
-
-function getMajorityPosition(report: MiroSharkReport): string {
-  const votes = report.agentVotes;
-  const highVol = votes.filter((v) => v.position === "high-vol").length;
-  const lowVol = votes.filter((v) => v.position === "low-vol").length;
-  if (highVol > votes.length / 2) return "high-vol";
-  if (lowVol > votes.length / 2) return "low-vol";
-  return "mixed";
-}
-
-// ── Phase 3: Harper-Opus Scoring (upgraded with consensus score) ────────────
-
-async function runHarperScoring(
-  report: MiroSharkReport,
-  analystAssessments: MarketAnalystAssessment[],
-  govAssessments: GovOfficialAssessment[] | null,
-  hermesResults: HermesDeliberation[],
-  convergenceResult: ConvergenceResult,
-  contrarianTriggered: boolean,
-  userInjection?: string,
-): Promise<HarperOpusScoring> {
-  const hermesAgree = hermesResults.filter((h) => h.verdict === "agree").length;
-  const hermesDisagree = hermesResults.filter(
-    (h) => h.verdict === "disagree",
-  ).length;
-  const isContested =
-    hermesDisagree >= 2 || hermesAgree < hermesResults.length / 2;
-
-  // Build rich analyst summary for Harper
-  const analystSection = analystAssessments
-    .map(
-      (a) =>
-        `**${a.name} (${a.title})**: IV ${a.projectedIVScore.toFixed(1)}, Concern: ${a.keyConcern}\n  Reasoning: ${a.assessment}`,
-    )
-    .join("\n");
-
-  const govSection = govAssessments
-    ? `\n## Gov Officials (geopolitical layer)\n${govAssessments.map((a) => `${a.name}: ${a.keyConcern} → ${a.recommendedAction}`).join("\n")}`
-    : "";
-
-  const scoringPrompt = `You are Harper-Opus, the Chief Agentic Officer scoring a MiroShark deliberation.
-
-## Phase 1: Market Analyst Assessments
-${analystSection}
-
-Convergence: ${(convergenceResult.convergence * 100).toFixed(0)}%${convergenceResult.shouldTriggerContrarian ? " ⚠️ GROUPTHINK RISK — devil's advocate was triggered" : ""}
-Healthy Disagreements: ${convergenceResult.healthyDisagreementCount} analysts
-${govSection}
-
-## Phase 2: Hermes Deliberation
-${hermesResults.map((h) => `${h.name}: ${h.verdict.toUpperCase()} — ${h.reasoning} (confidence: ${(h.confidence * 100).toFixed(0)}%)`).join("\n")}
-Consensus: ${isContested ? "CONTESTED — Hermes agents disagree with majority" : "ALIGNED — Hermes agents largely agree"}
-
-${userInjection ? `## User Injection\n${userInjection}\n` : ""}
-## Category Scores
-${report.categoryScores.map((c) => `${c.category}: ${c.ivScore.toFixed(1)} (conf ${(c.confidence * 100).toFixed(0)}%)`).join("\n")}
-
-## Your Task
-Score the combined output. Decide which theses to surface and which to downgrade.
-
-Respond with valid JSON:
-{
-  "compositeIV": <adjusted 0-10>,
-  "regimeShiftProbability": <adjusted 0-1>,
-  "categoryScores": [{ "category": "<cat>", "ivScore": <0-10>, "confidence": <0-1>, "delta": <change> }],
-  "surfacedTheses": ["<thesis worth trading on>"],
-  "downgradedTheses": ["<thesis to ignore>"],
-  "contestedTheses": ["<thesis where agents disagree>"],
-  "actionabilityScore": <0-10, how tradeable>,
-  "finalBriefing": "<3-5 sentence executive summary for the trading desk>"
-}
-
-Return ONLY JSON, no markdown.`;
-
-  const { text } = await invokeAgent({
-    systemPrompt:
-      "You are Harper-Opus, the Chief Agentic Officer of Priced In Capital. You make the final call on which market theses to surface, which to downgrade, and how to score the combined intelligence from market analysts and Hermes agents. Be decisive. Think like a PM running a book.",
-    userPrompt: scoringPrompt,
-    model: { temperature: 0.3, maxTokens: 1024 },
-  });
-
-  const parsed = parseJsonSafe<HarperOpusScoring>(text);
-
-  const consensusScore = computeConsensusScore(
-    analystAssessments,
-    hermesResults,
-    convergenceResult,
-    contrarianTriggered,
-  );
-
-  if (!parsed) {
-    return {
-      compositeIV: report.nextSessionProjection,
-      regimeShiftProbability: report.regimeShiftProbability,
-      categoryScores: report.categoryScores,
-      surfacedTheses: report.scenarios.slice(0, 2).map((s) => s.label),
-      downgradedTheses: [],
-      contestedTheses: isContested
-        ? ["Overall thesis is contested by Hermes agents"]
-        : [],
-      actionabilityScore: report.confidence * 10,
-      finalBriefing:
-        "Harper-Opus scoring failed to parse. Falling back to raw analyst results.",
-      consensusScore,
-      healthyDisagreementCount: convergenceResult.healthyDisagreementCount,
-      contrarianTriggered,
-    };
+  // Include top scenarios as additional context catalysts
+  for (const s of report.scenarios.slice(0, 3)) {
+    catalysts.push({
+      id: `scenario-${s.label.replace(/\s+/g, "-").toLowerCase()}`,
+      headline: s.label,
+      severity: Math.round(s.probability * s.projectedIVScore),
+      body: s.description,
+    });
   }
 
-  return {
-    compositeIV: Math.max(
-      0,
-      Math.min(10, parsed.compositeIV ?? report.nextSessionProjection),
-    ),
-    regimeShiftProbability: Math.max(
-      0,
-      Math.min(
-        1,
-        parsed.regimeShiftProbability ?? report.regimeShiftProbability,
-      ),
-    ),
-    categoryScores: parsed.categoryScores?.length
-      ? parsed.categoryScores
-      : report.categoryScores,
-    surfacedTheses: parsed.surfacedTheses ?? [],
-    downgradedTheses: parsed.downgradedTheses ?? [],
-    contestedTheses: parsed.contestedTheses ?? [],
-    actionabilityScore: Math.max(
-      0,
-      Math.min(10, parsed.actionabilityScore ?? 5),
-    ),
-    finalBriefing: parsed.finalBriefing ?? "",
-    consensusScore,
-    healthyDisagreementCount: convergenceResult.healthyDisagreementCount,
-    contrarianTriggered,
-  };
+  return { lanes, catalysts, userInjection };
 }
 
-// ── Full Deliberation Pipeline (v2 — 4 phases) ─────────────────────────────
+// ── Full Deliberation Pipeline (DAG-based) ───────────────────────────────────
 
 export async function runDeliberationPipeline(
   simId: string,
@@ -510,79 +190,97 @@ export async function runDeliberationPipeline(
   activeDeliberations.set(simId, state);
 
   try {
-    // Phase 1: Extract market analyst assessments (full reasoning, not one-liners)
-    const analystAssessments = extractAnalystAssessments(report);
-
-    // Anti-groupthink: detect convergence among analysts
-    const convergence = detectConvergence(analystAssessments);
-    let contrarianTriggered = false;
-
-    if (
-      convergence.shouldTriggerContrarian &&
-      convergence.lowestConfidenceAgent
-    ) {
-      console.log(
-        `[MiroShark Deliberation] Convergence ${(convergence.convergence * 100).toFixed(0)}% — triggering devil's advocate on ${convergence.lowestConfidenceAgent}`,
-      );
-      contrarianTriggered = true;
-      // Mark the lowest-confidence analyst as the contrarian
-      const contrarian = analystAssessments.find(
-        (a) => a.agentId === convergence.lowestConfidenceAgent,
-      );
-      if (contrarian) {
-        contrarian.assessment = `[CONTRARIAN] ${contrarian.assessment} — NOTE: high analyst convergence detected, this assessment may underweight tail risks.`;
-      }
-    }
-
-    // Phase 1.5: Gov official assessments (conditional — only if geopolitical content)
-    let govAssessments: GovOfficialAssessment[] | null = null;
-    const govReport = report.govOfficialReport;
-    if (govReport) {
-      updatePhase(simId, "gov-officials", {
-        analystResults: analystAssessments,
-      });
-      govAssessments = extractGovAssessments(govReport);
-      updatePhase(simId, "hermes-deliberation", {
-        mirosharkResults: govAssessments,
-      });
-    } else {
-      updatePhase(simId, "hermes-deliberation", {
-        analystResults: analystAssessments,
-        govOfficialsSkipped: true,
-      });
-    }
-
-    // Check for user interrupt before Phase 2
+    // Build DAG params from the MiroShark report
     const currentState = activeDeliberations.get(simId)!;
-    if (currentState.phase === "interrupted") return currentState;
+    const params = reportToParams(report, currentState.userInjection);
 
-    // Phase 2: Hermes deliberation (with FULL analyst reasoning, not one-line summaries)
-    const hermesResults = await runHermesDeliberation(
-      analystAssessments,
-      govAssessments,
-      report,
-      convergence,
-      currentState.userInjection,
+    const dagDef = createMiroSharkDAG({
+      ...params,
+      // No conversationId/userId at this layer — this is the simulation pipeline
+    });
+
+    // Collect task outputs via bus subscriptions (must be set up before executeDag)
+    const taskWaveMap = new Map<string, number>(); // taskId → wave
+    const taskResultMap = new Map<
+      string,
+      { agentId: HermesAgentId; text: string }
+    >(); // taskId → result
+
+    const unsubDispatch = agentBus.subscribe<{
+      taskId: string;
+      agentId: HermesAgentId;
+      wave: number;
+    }>("dag.task.dispatch", (msg) => {
+      const wave = (msg.payload as { wave: number }).wave;
+      if (typeof wave === "number") {
+        taskWaveMap.set(msg.taskId!, wave);
+      }
+    });
+
+    const unsubResult = agentBus.subscribe<{
+      taskId: string;
+      agentId: HermesAgentId;
+      output: string;
+      durationMs: number;
+    }>("dag.task.result", (msg) => {
+      taskResultMap.set(msg.taskId!, {
+        agentId: msg.agentId!,
+        text: (msg.payload as { output: string }).output ?? "",
+      });
+    });
+
+    // Track phase transitions via dag-status events
+    const unsubStatus = agentBus.subscribe<DAGProgressEvent>(
+      "dag.status",
+      (msg) => {
+        if (!activeDeliberations.has(simId)) return;
+        const ev = msg.payload;
+        if (ev.type === "dag-wave") {
+          const wavePhases: Record<number, DeliberationPhase> = {
+            0: "market-analysts",
+            1: "hermes-deliberation",
+            2: "harper-scoring",
+          };
+          const phase = wavePhases[ev.wave];
+          if (phase) updatePhase(simId, phase);
+        }
+      },
     );
-    updatePhase(simId, "harper-scoring", { hermesResults });
 
-    // Check for user interrupt before Phase 3
-    const stateAfterHermes = activeDeliberations.get(simId)!;
-    if (stateAfterHermes.phase === "interrupted") return stateAfterHermes;
+    try {
+      const dagRecord = await executeDag(dagDef);
 
-    // Phase 3: Harper-Opus scoring (with consensus score and convergence data)
-    const harperScoring = await runHarperScoring(
-      report,
-      analystAssessments,
-      govAssessments,
-      hermesResults,
-      convergence,
-      contrarianTriggered,
-      stateAfterHermes.userInjection,
-    );
-    updatePhase(simId, "complete", { harperScoring });
+      // Build CollectedTaskOutput from captured events
+      const collectedOutputs: CollectedTaskOutput[] = [];
+      for (const [taskId, result] of taskResultMap) {
+        const wave = taskWaveMap.get(taskId);
+        if (wave !== undefined) {
+          collectedOutputs.push({
+            agentId: result.agentId,
+            wave,
+            text: result.text,
+          });
+        }
+      }
 
-    return activeDeliberations.get(simId)!;
+      // Post-process: convergence, consensus scoring, Harper synthesis extraction
+      const result = postProcessDeliberation(
+        dagRecord,
+        collectedOutputs,
+        simId,
+        currentState.userInjection,
+      );
+
+      // Persist result to activeDeliberations map (backward compat with polling)
+      Object.assign(activeDeliberations.get(simId)!, result);
+      updatePhase(simId, "complete", result);
+
+      return activeDeliberations.get(simId)!;
+    } finally {
+      unsubDispatch();
+      unsubResult();
+      unsubStatus();
+    }
   } catch (err) {
     const msg =
       err instanceof Error ? err.message : "Deliberation pipeline failed";
@@ -592,26 +290,43 @@ export async function runDeliberationPipeline(
   }
 }
 
-/** Inject a user take into an active deliberation (pauses before next phase) */
+/** Inject a user take into an active deliberation.
+ *
+ * If Wave 1 (hermes-deliberation) has not yet started: sets the injection so
+ * the pending wave 1 tasks can include it via prompt context.
+ * If Wave 1 is already running: publishes to bus for synthesis to pick up,
+ * and logs it (agents cannot be mid-stream modified).
+ */
 export function injectUserTake(simId: string, take: string): boolean {
   const state = activeDeliberations.get(simId);
   if (!state || state.phase === "complete" || state.phase === "idle")
     return false;
 
   state.userInjection = take;
+
+  // If deliberation is mid-stream, publish so downstream synthesis can note it
+  if (
+    state.phase === "hermes-deliberation" ||
+    state.phase === "harper-scoring"
+  ) {
+    console.log(
+      `[MiroShark Deliberation] User injection mid-stream (${state.phase}) — logged for synthesis: ${take.slice(0, 80)}`,
+    );
+    agentBus.publish("dag.status", {
+      dagId: simId,
+      payload: {
+        type: "dag-wave",
+        dagId: simId,
+        wave: -1, // sentinel: user injection mid-run
+        tasks: [],
+        userInjection: take,
+      } as DAGProgressEvent & { userInjection: string },
+    });
+  }
+
   return true;
 }
 
-// ── Utilities ───────────────────────────────────────────────────────────────
-
-function parseJsonSafe<T>(text: string): T | null {
-  try {
-    const cleaned = text
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
-    return JSON.parse(cleaned) as T;
-  } catch {
-    return null;
-  }
-}
+// ── Re-export types for backward compatibility ───────────────────────────────
+// Other modules import these type names from this file
+export type { HermesAgentRole };

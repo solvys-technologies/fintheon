@@ -9,6 +9,48 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-10T19:00:00",
+    agent: "claude-code",
+    summary:
+      "S8-T3: MiroShark converted to DAG template preserving convergence/contrarian/consensus logic, boardroom routes upgraded from polling to SSE+DAG dispatch, Harper boardroom mode detection",
+    files: [
+      "backend-hono/src/services/agent-bus/templates/miroshark-template.ts",
+      "backend-hono/src/services/miroshark/miroshark-deliberation.ts",
+      "backend-hono/src/routes/boardroom/index.ts",
+      "backend-hono/src/routes/harper/index.ts",
+    ],
+  },
+  {
+    date: "2026-04-10T18:00:00",
+    agent: "claude-code",
+    summary:
+      "S8-T4: Boardroom live agent panels (2x2 grid), DAG progress bar, SSE subscription hooks, NarrativeFlow auto-push catalyst cards, Sidebar cross-agent notification toasts",
+    files: [
+      "frontend/hooks/useAgentBusSSE.ts",
+      "frontend/hooks/useBoardroomDAG.ts",
+      "frontend/components/consilium/BoardroomAgentPanel.tsx",
+      "frontend/components/consilium/DAGProgressBar.tsx",
+      "frontend/components/consilium/AgentChattr.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/contexts/NarrativeContext.tsx",
+      "frontend/components/chat/ChatSidebar.tsx",
+    ],
+  },
+  {
+    date: "2026-04-10T12:00:00",
+    agent: "claude-code",
+    summary:
+      "S8-T2: DAG scheduler with wave-based dependency resolution, multi-stream merger for concurrent agent output, DAG API routes (GET/stream/cancel), extended agent-factory with createAgentForTask() (always local/VProxy), extended stream-adapter with agentId stamping",
+    files: [
+      "backend-hono/src/services/agent-bus/dag-scheduler.ts",
+      "backend-hono/src/services/agent-bus/multi-stream-merger.ts",
+      "backend-hono/src/routes/dag/index.ts",
+      "backend-hono/src/services/strands/agent-factory.ts",
+      "backend-hono/src/services/strands/stream-adapter.ts",
+      "backend-hono/src/routes/index.ts",
+    ],
+  },
+  {
     date: "2026-04-10T00:00:00",
     agent: "claude-code",
     summary:

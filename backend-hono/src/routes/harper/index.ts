@@ -23,6 +23,13 @@ import {
   getPendingApprovals,
   type ApprovalDecision,
 } from "../../services/tool-approval-store.js";
+import { agentBus } from "../../services/agent-bus/bus.js";
+import { executeDag } from "../../services/agent-bus/dag-scheduler.js";
+import { createMiroSharkDAG } from "../../services/agent-bus/templates/miroshark-template.js";
+import type {
+  DAGProgressEvent,
+  BusMessage,
+} from "../../services/agent-bus/types.js";
 
 export function createHarperRoutes() {
   const app = new Hono();
@@ -59,6 +66,9 @@ export function createHarperRoutes() {
         riskFlowContext?: string;
         activeConnectors?: string[];
         provider?: "local" | "nous" | "orouter";
+        /** Explicit boardroom surface flag — triggers multi-agent DAG dispatch */
+        surface?: string;
+        boardroom?: boolean;
         userContext?: {
           traderName?: string;
           selectedSymbol?: { symbol: string; name: string };
@@ -71,6 +81,81 @@ export function createHarperRoutes() {
       const message = body.message?.trim();
       if (!message) {
         return c.json({ error: "Message is required" }, 400);
+      }
+
+      // ── Boardroom mode: dispatch to multi-agent DAG instead of single chat ──
+      const isBoardroomMode =
+        body.surface === "boardroom" ||
+        body.boardroom === true ||
+        body.activeConnectors?.includes("boardroom");
+
+      if (isBoardroomMode) {
+        const userId = (c.get("userId" as never) as string) || "anonymous";
+        const dagDef = createMiroSharkDAG({
+          lanes: [
+            {
+              id: "boardroom-query",
+              name: message.slice(0, 60),
+              sentiment: 0.5,
+            },
+          ],
+          catalysts: [],
+          userInjection: message,
+          conversationId: body.conversationId,
+          userId,
+        });
+
+        // Capture dagId before firing
+        const dagIdPromise = new Promise<string>((resolve) => {
+          const unsub = agentBus.subscribe<DAGProgressEvent>(
+            "dag.status",
+            (msg: BusMessage<DAGProgressEvent>) => {
+              if (msg.payload.type === "dag-start") {
+                unsub();
+                resolve(msg.dagId);
+              }
+            },
+          );
+        });
+
+        void executeDag(dagDef).catch((err: unknown) => {
+          console.error("[Harper Boardroom DAG] error:", err);
+        });
+
+        const dagId = await dagIdPromise;
+
+        // Return UIMessageStream-framed SSE so the frontend's DefaultChatTransport
+        // can handle it, with X-DAG-Id header for the boardroom SSE subscription.
+        const enc = new TextEncoder();
+        const msgId = `harper-dag-${Date.now()}`;
+        const dagStream = new ReadableStream<Uint8Array>({
+          start(ctrl) {
+            const sse = (ev: object) =>
+              enc.encode(`data: ${JSON.stringify(ev)}\n\n`);
+            ctrl.enqueue(sse({ type: "start", messageId: msgId }));
+            ctrl.enqueue(sse({ type: "start-step" }));
+            ctrl.enqueue(sse({ type: "text-start", id: "txt-1" }));
+            ctrl.enqueue(
+              sse({
+                type: "text-delta",
+                id: "txt-1",
+                delta: `Boardroom DAG dispatched. Subscribe to /api/boardroom/dag/${dagId}/stream for real-time agent results.`,
+              }),
+            );
+            ctrl.enqueue(sse({ type: "text-end", id: "txt-1" }));
+            ctrl.enqueue(sse({ type: "finish-step" }));
+            ctrl.enqueue(sse({ type: "finish", finishReason: "stop" }));
+            ctrl.enqueue(enc.encode("data: [DONE]\n\n"));
+            ctrl.close();
+          },
+        });
+
+        return uiStreamToSSEResponse(dagStream, {
+          "Access-Control-Allow-Origin": c.req.header("Origin") || "*",
+          "X-Request-Id": requestId,
+          "X-DAG-Id": dagId,
+          "X-Conversation-Id": body.conversationId ?? "",
+        });
       }
 
       // Get or create conversation

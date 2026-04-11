@@ -55,6 +55,7 @@ import { createSkillsRoutes } from "./skills/index.js";
 import { createMemoryRoutes } from "./memory/index.js";
 import { createEditorRoutes } from "./editor/index.js";
 import { createMcpRoutes } from "./mcp/index.js";
+import { createDagRoutes } from "./dag/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -93,6 +94,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/context-bank", createContextBankRoutes());
   // MiroShark multi-agent simulation — feature-flagged via MIROSHARK_ENABLED
   app.route("/api/miroshark", createMirosharkRoutes());
+  // DAG scheduler — status, SSE stream, cancel (S8-T2)
+  app.route("/api/dag", createDagRoutes());
   // Proposal charting — Playwright automation for TopStepX (public, local only)
   app.route("/api/proposals", createProposalRoutes());
   // Trade ideas — merged proposals + Supabase trade ideas (public)

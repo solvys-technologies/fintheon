@@ -1,12 +1,24 @@
+// [claude-code 2026-04-10] S8-T4: Live DAG panels + SSE streaming — replace polling with DAG dispatch
 // [claude-code 2026-03-24] Boardroom UX overhaul — removed sidebar, inline copy, green WiFi pulse, status bar right-aligned
 // [claude-code 2026-03-22] Track 3: Boardroom with PromptBox replacing built-in textarea
 import { useState, useEffect, useRef, useCallback } from "react";
-import { RefreshCw, WifiOff, ChevronDown, X, Search } from "lucide-react";
+import {
+  RefreshCw,
+  WifiOff,
+  ChevronDown,
+  X,
+  Search,
+  Square,
+} from "lucide-react";
 import { ConsiliumMessage, type BoardroomMessage } from "./ConsiliumMessage";
 import { AGENT_MAP, type BoardroomAgent } from "./AgentBadge";
 import { ConsiliumFilterBar } from "./ConsiliumFilterBar";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
+import { useBoardroomDAG } from "../../hooks/useBoardroomDAG";
+import { BoardroomAgentPanel } from "./BoardroomAgentPanel";
+import { DAGProgressBar } from "./DAGProgressBar";
+import type { HermesAgentId } from "../../../backend-hono/src/services/agent-bus/types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_INTERVAL = 30_000;
@@ -18,6 +30,15 @@ const MENTIONABLE_AGENTS: BoardroomAgent[] = [
   "Consul",
   "Herald",
 ];
+
+/** Map BoardroomAgent UI names → HermesAgentId for DAG filtering */
+const BOARDROOM_TO_HERMES: Partial<Record<BoardroomAgent, HermesAgentId>> = {
+  "Harper-Opus": "harper",
+  Oracle: "oracle",
+  Feucht: "feucht",
+  Consul: "consul",
+  Herald: "herald",
+};
 
 // Map boardroom agent names to persona-style metadata
 const PERSONA_META: Record<BoardroomAgent, { label: string }> = {
@@ -211,6 +232,11 @@ export function AgentChattr() {
   );
   const { alerts: rfAlerts } = useRiskFlow();
 
+  // DAG state — live multi-agent streaming
+  const dag = useBoardroomDAG("", "");
+  const dagIsActive = dag.status === "dispatching" || dag.status === "running";
+  const dagIsDone = dag.status === "complete" || dag.status === "error";
+
   // Filter state
   const [filterSearch, setFilterSearch] = useState("");
   const [filterDateRange, setFilterDateRange] = useState<
@@ -266,6 +292,13 @@ export function AgentChattr() {
     }
   }, [filterSearch, filterDateRange]);
 
+  // When DAG reaches terminal state, refresh legacy transcript
+  useEffect(() => {
+    if (dag.status === "complete" || dag.status === "error") {
+      fetchMessages();
+    }
+  }, [dag.status, fetchMessages]);
+
   // Initial fetch + polling (pauses when tab not visible)
   useEffect(() => {
     if (!isVisible) return;
@@ -284,7 +317,7 @@ export function AgentChattr() {
   const sendMessage = async (msgText?: string) => {
     let text = (msgText ?? input).trim();
     if (!text && rfChips.length === 0) return;
-    if (isSending) return;
+    if (isSending || dagIsActive) return;
 
     // Append RiskFlow context chips to message
     if (rfChips.length > 0) {
@@ -294,6 +327,19 @@ export function AgentChattr() {
       text = text ? `${text}\n\n${context}` : context;
     }
 
+    setInput("");
+    setRfChips([]);
+
+    // When targeting All Agents: dispatch a live DAG
+    // When targeting a single agent: fall back to legacy single-agent fetch
+    if (!selectedAgent) {
+      setSelectedAgent(null);
+      dag.reset();
+      await dag.dispatch(text);
+      return;
+    }
+
+    // Legacy single-agent path
     setIsSending(true);
     try {
       await fetch(`${API_BASE}/api/boardroom/mention/send`, {
@@ -301,13 +347,11 @@ export function AgentChattr() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
-          agent: selectedAgent ?? "@everyone",
+          agent: selectedAgent,
           thinkHarder,
         }),
       });
-      setInput("");
       setSelectedAgent(null);
-      setRfChips([]);
       await fetchMessages();
     } catch (err) {
       console.error("[Consilium] Failed to send:", err);
@@ -397,27 +441,121 @@ export function AgentChattr() {
         </div>
       </div>
 
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto py-2">
-        {isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-xs text-[var(--fintheon-text)]/30">
-              Loading transcript...
-            </span>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 px-6">
-            <span className="text-sm text-[var(--fintheon-accent)]/40">
-              No messages yet
-            </span>
-            <span className="text-center text-xs text-[var(--fintheon-text)]/20">
-              The Consilium awaits. Send a message to begin deliberation.
-            </span>
-          </div>
-        ) : (
-          messages.map((msg) => <ConsiliumMessage key={msg.id} message={msg} />)
-        )}
-      </div>
+      {/* DAG live panels — shown while DAG is active or just completed */}
+      {dagIsActive || dagIsDone ? (
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-3 py-2">
+          {/* Progress bar */}
+          <DAGProgressBar
+            currentWave={dag.progress.currentWave}
+            totalWaves={dag.progress.totalWaves}
+            tasks={dag.progress.tasks}
+            dagStatus={dag.status}
+          />
+
+          {/* Agent panels grid — 2×2 for analysis agents, Harper full-width below */}
+          {(() => {
+            const analysisAgentIds = [
+              "oracle",
+              "feucht",
+              "consul",
+              "herald",
+            ] as HermesAgentId[];
+            const filterHermesId = selectedAgent
+              ? BOARDROOM_TO_HERMES[selectedAgent]
+              : null;
+
+            const visibleAnalysis = filterHermesId
+              ? analysisAgentIds.filter((id) => id === filterHermesId)
+              : analysisAgentIds;
+
+            const showHarper = !filterHermesId || filterHermesId === "harper";
+
+            return (
+              <>
+                <div
+                  className={`grid gap-2 ${
+                    visibleAnalysis.length === 1
+                      ? "grid-cols-1"
+                      : visibleAnalysis.length === 2
+                        ? "grid-cols-2"
+                        : "grid-cols-2"
+                  }`}
+                >
+                  {visibleAnalysis.map((id) => {
+                    const out = dag.agentOutputs[id] ?? {
+                      agentId: id,
+                      text: "",
+                      status: "pending",
+                    };
+                    return (
+                      <BoardroomAgentPanel
+                        key={id}
+                        agentId={id}
+                        text={out.text}
+                        status={out.status}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Harper synthesis — full width */}
+                {showHarper &&
+                  (() => {
+                    const harperOut = dag.agentOutputs["harper"] ?? {
+                      agentId: "harper" as HermesAgentId,
+                      text: "",
+                      status: "pending" as const,
+                    };
+                    return (
+                      <BoardroomAgentPanel
+                        agentId="harper"
+                        text={harperOut.text}
+                        status={harperOut.status}
+                        fullWidth
+                      />
+                    );
+                  })()}
+              </>
+            );
+          })()}
+
+          {/* Back to transcript button when DAG is done */}
+          {dagIsDone && (
+            <div className="flex justify-center pt-1">
+              <button
+                onClick={() => dag.reset()}
+                className="flex items-center gap-1.5 rounded-full border border-[var(--fintheon-accent)]/20 px-3 py-1.5 text-[10px] text-[var(--fintheon-text)]/40 transition-colors hover:border-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]"
+              >
+                Back to transcript
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Legacy message transcript */
+        <div ref={scrollRef} className="flex-1 overflow-y-auto py-2">
+          {isLoading ? (
+            <div className="flex h-full items-center justify-center">
+              <span className="text-xs text-[var(--fintheon-text)]/30">
+                Loading transcript...
+              </span>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-2 px-6">
+              <span className="text-sm text-[var(--fintheon-accent)]/40">
+                No messages yet
+              </span>
+              <span className="text-center text-xs text-[var(--fintheon-text)]/20">
+                The Consilium awaits. Send a message to begin deliberation.
+              </span>
+            </div>
+          ) : (
+            messages.map((msg) => (
+              <ConsiliumMessage key={msg.id} message={msg} />
+            ))
+          )}
+        </div>
+      )}
 
       {/* RiskFlow context chips */}
       {rfChips.length > 0 && (
@@ -484,25 +622,41 @@ export function AgentChattr() {
         </div>
       )}
 
-      {/* Input area — universal PromptBox */}
+      {/* Input area — disabled while DAG is running; cancel button shown instead */}
       <div className="px-2">
-        <PromptBox
-          compact
-          onSend={(msg) => sendMessage(msg)}
-          isProcessing={isSending}
-          placeholder={
-            selectedAgent
-              ? `Message @${AGENT_MAP[selectedAgent]?.label}...`
-              : "Address the Consilium..."
-          }
-          thinkHarder={thinkHarder}
-          setThinkHarder={setThinkHarder}
-          activeSkill={null}
-          onSelectSkill={() => {}}
-          showSkills={false}
-          onToggleSkills={() => {}}
-          onRiskFlowPick={() => setRfPickerOpen((v) => !v)}
-        />
+        {dagIsActive ? (
+          <div className="flex items-center justify-between rounded-xl border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] px-3 py-2">
+            <span className="text-[11px] text-[var(--fintheon-text)]/30 italic">
+              Deliberation in progress...
+            </span>
+            <button
+              onClick={() => dag.cancel()}
+              className="flex items-center gap-1 rounded px-2 py-1 text-[10px] text-red-400/50 transition-colors hover:bg-red-900/20 hover:text-red-400"
+              title="Cancel DAG"
+            >
+              <Square size={10} />
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <PromptBox
+            compact
+            onSend={(msg) => sendMessage(msg)}
+            isProcessing={isSending}
+            placeholder={
+              selectedAgent
+                ? `Message @${AGENT_MAP[selectedAgent]?.label}...`
+                : "Address the Consilium..."
+            }
+            thinkHarder={thinkHarder}
+            setThinkHarder={setThinkHarder}
+            activeSkill={null}
+            onSelectSkill={() => {}}
+            showSkills={false}
+            onToggleSkills={() => {}}
+            onRiskFlowPick={() => setRfPickerOpen((v) => !v)}
+          />
+        )}
       </div>
     </div>
   );

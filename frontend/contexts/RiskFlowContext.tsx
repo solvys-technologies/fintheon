@@ -233,6 +233,11 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         riskType: (item.riskType as RiskFlowAlert["riskType"]) ?? null,
         agentNote: item.agentNote ?? null,
         agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
+        videoUrl:
+          item.video_url ??
+          (item.url && /youtube\.com|youtu\.be/.test(item.url)
+            ? item.url
+            : null),
         econData: item.econData ?? null,
         promotedAt: (item as any).promotedAt ?? null,
         narrativeThreads: (item as any).narrativeThreads ?? [],
@@ -294,6 +299,11 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         riskType: (item.riskType as RiskFlowAlert["riskType"]) ?? null,
         agentNote: item.agentNote ?? null,
         agentNoteGeneratedAt: item.agentNoteGeneratedAt ?? null,
+        videoUrl:
+          item.video_url ??
+          (item.url && /youtube\.com|youtu\.be/.test(item.url)
+            ? item.url
+            : null),
         econData: item.econData ?? null,
         promotedAt: (item as any).promotedAt ?? null,
         narrativeThreads: (item as any).narrativeThreads ?? [],

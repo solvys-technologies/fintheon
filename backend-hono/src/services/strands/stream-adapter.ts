@@ -4,6 +4,7 @@
 // SSE heartbeats every 8s keep the connection alive during long tool-call silences.
 import type { Agent } from "@strands-agents/sdk";
 import { createLogger } from "../../lib/logger.js";
+import type { HermesAgentId } from "../agent-bus/types.js";
 
 const log = createLogger("StrandsStream");
 
@@ -41,9 +42,15 @@ function sseEncode(event: UIEvent): Uint8Array {
 export function strandsToUIStream(
   agent: Agent,
   input: string,
-  options?: { messageId?: string; onFinish?: (text: string) => Promise<void> },
+  options?: {
+    messageId?: string;
+    onFinish?: (text: string) => Promise<void>;
+    /** When set, each SSE event payload includes `agentId` for multi-stream merger labelling */
+    agentId?: HermesAgentId;
+  },
 ): ReadableStream<Uint8Array> {
   const messageId = options?.messageId ?? `msg-${Date.now()}`;
+  const agentId = options?.agentId;
   let cancelled = false;
 
   return new ReadableStream<Uint8Array>({
@@ -70,7 +77,11 @@ export function strandsToUIStream(
         }, HEARTBEAT_INTERVAL_MS);
 
         function emit(event: UIEvent) {
-          controller.enqueue(sseEncode(event));
+          // When agentId is set, stamp it onto the payload for multi-stream merger labelling
+          const payload = agentId ? { ...event, agentId } : event;
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(payload)}\n\n`),
+          );
         }
 
         function finish() {

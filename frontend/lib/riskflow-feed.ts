@@ -85,6 +85,8 @@ export interface RiskFlowAlert {
   agentNote?: string | null;
   /** Timestamp when agentNote was generated */
   agentNoteGeneratedAt?: string | null;
+  /** YouTube video URL — set when the source URL is a YouTube link (e.g. Fed speech) */
+  videoUrl?: string | null;
   /** Headline IV score (0-10 scale) */
   ivScore?: number | null;
   /** Structured economic data for econ prints */

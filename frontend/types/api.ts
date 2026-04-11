@@ -86,6 +86,7 @@ export interface RiskFlowItem {
   riskType?: string | null;
   agentNote?: string | null;
   agentNoteGeneratedAt?: string | null;
+  video_url?: string | null;
   econData?: {
     actual?: number | null;
     forecast?: number | null;
