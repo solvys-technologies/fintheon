@@ -9,10 +9,9 @@ import type { IVScoreResponse } from "../../types/market-data";
 import { TopHeader } from "./TopHeader";
 import { NavSidebar } from "./NavSidebar";
 import { MinimalTapeWidget } from "../feed/MinimalTapeWidget";
-import { TradingBrowser, type TradingPlatform } from "../TradingBrowser";
+import { TradingBrowser } from "../TradingBrowser";
 import { TimelineOverlay, TimelineToggleButton } from "./TimelineOverlay";
 import { FloatingWidget } from "./FloatingWidget";
-import { PanelPosition } from "./DraggablePanel";
 import { useBackend } from "../../lib/backend";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -64,6 +63,9 @@ import {
   setMissionWidgetVisibility,
   type MissionWidgetId,
 } from "../../lib/layoutOrderStorage";
+import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
+import { useLayoutState } from "../../hooks/useLayoutState";
+import { useBrowserTransition } from "../../hooks/useBrowserTransition";
 
 type NavTab =
   | "feed"
@@ -113,45 +115,57 @@ function MainLayoutInner() {
   const isStone = theme.name === "solvys-stone";
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
   const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
-  const [layoutEditMode, setLayoutEditMode] = useState(false);
+
+  const {
+    topStepXEnabled,
+    browserTransitioning,
+    browserVisible,
+    selectedPlatform,
+    setSelectedPlatform,
+    secondaryPlatform,
+    setSecondaryPlatform,
+    splitBrowserView,
+    setSplitBrowserView,
+    handleBrowserToggle,
+    handleBrowserEnable,
+  } = useBrowserTransition({ defaultPlatform });
+
+  const {
+    layoutEditMode,
+    setLayoutEditMode,
+    missionControlCollapsed,
+    setMissionControlCollapsed,
+    tapeCollapsed,
+    setTapeCollapsed,
+    combinedPanelCollapsed,
+    setCombinedPanelCollapsed,
+    combinedTapeCollapsed,
+    setCombinedTapeCollapsed,
+    layoutOption,
+    setLayoutOption,
+    missionControlPosition,
+    setMissionControlPosition,
+    tapePosition,
+    setTapePosition,
+    riskFlowCollapsed,
+    setRiskFlowCollapsed,
+    sidebarOverlayVisible,
+    setSidebarOverlayVisible,
+  } = useLayoutState({
+    topStepXEnabled,
+    defaultLayout,
+    setAutoDnd,
+    flushQueue,
+  });
+
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showRefinement, setShowRefinement] = useState(false);
   const [timelineOverlayOpen, setTimelineOverlayOpen] = useState(false);
   const refinementEnabled =
     typeof window !== "undefined" &&
     localStorage.getItem("fintheon-refinement-enabled") === "true";
-  const [missionControlCollapsed, setMissionControlCollapsedRaw] =
-    useState(false);
-  // 4c: Link Strategium ↔ RiskFlow collapse — always in sync
-  const setMissionControlCollapsed = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      setMissionControlCollapsedRaw((prev) => {
-        const next = typeof v === "function" ? v(prev) : v;
-        setRiskFlowCollapsed(next);
-        return next;
-      });
-    },
-    [],
-  );
-  const [tapeCollapsed, setTapeCollapsed] = useState(false);
-  const [combinedPanelCollapsed, setCombinedPanelCollapsed] = useState(false);
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [prevTab, setPrevTab] = useState<NavTab | null>(null);
-  const [topStepXEnabled, setTopStepXEnabled] = useState(false);
-  const [browserTransitioning, setBrowserTransitioning] = useState(false);
-  const [browserVisible, setBrowserVisible] = useState(false);
-  const [selectedPlatform, setSelectedPlatform] =
-    useState<TradingPlatform>(defaultPlatform);
-  const [secondaryPlatform, setSecondaryPlatform] =
-    useState<TradingPlatform>("research");
-  const [splitBrowserView, setSplitBrowserView] = useState(false);
-  const [layoutOption, setLayoutOption] = useState<LayoutOption>(defaultLayout);
-  const [prevLayoutOption, setPrevLayoutOption] = useState<LayoutOption | null>(
-    null,
-  );
-  const [missionControlPosition, setMissionControlPosition] =
-    useState<PanelPosition>("right");
-  const [tapePosition, setTapePosition] = useState<PanelPosition>("right");
   const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
   const [ivLoading, setIvLoading] = useState(true);
   const [showMissionControlNotification, setShowMissionControlNotification] =
@@ -161,7 +175,6 @@ function MainLayoutInner() {
   const [combinedPanelPnl, setCombinedPanelPnl] = useState(0);
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] =
     useState(false);
-  const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showVoiceWidget, setShowVoiceWidget] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -172,7 +185,6 @@ function MainLayoutInner() {
       return false;
     }
   });
-  const [sidebarOverlayVisible, setSidebarOverlayVisible] = useState(false);
   const [missionWidgetOrder, setMissionWidgetOrderState] = useState<
     MissionWidgetId[]
   >(() =>
@@ -263,100 +275,13 @@ function MainLayoutInner() {
   const backend = useBackend();
   const { isAuthenticated } = useAuth();
   const { alerts: riskFlowAlerts, removeAlert } = useRiskFlow();
-  const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
-
-  /* ---- Keyboard shortcuts ---- */
-  useEffect(() => {
-    const TAB_MAP: Record<string, NavTab> = {
-      "1": "dashboard",
-      "2": "analysis",
-      "3": "riskflow",
-      "4": "econ",
-      "5": "performance",
-      "6": "settings",
-    };
-
-    const handler = (e: KeyboardEvent) => {
-      // Cmd+Shift+Y -> YouTube miniplayer
-      if (
-        (e.metaKey || e.ctrlKey) &&
-        e.shiftKey &&
-        (e.key === "y" || e.key === "Y")
-      ) {
-        e.preventDefault();
-        setShowYouTubeMiniplayer((v) => {
-          const next = !v;
-          try {
-            localStorage.setItem("fintheon:yt-miniplayer-open", String(next));
-          } catch {
-            /* ignore */
-          }
-          return next;
-        });
-        return;
-      }
-      // Cmd+K -> Search
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setShowSearchModal((v) => !v);
-        return;
-      }
-      // Ctrl+Shift+D -> Toggle DND
-      if (
-        (e.metaKey || e.ctrlKey) &&
-        e.shiftKey &&
-        (e.key === "d" || e.key === "D")
-      ) {
-        e.preventDefault();
-        toggleManualDnd();
-        return;
-      }
-      // Cmd+Shift+1-5 -> Tab navigation
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && TAB_MAP[e.key]) {
-        e.preventDefault();
-        navigateTab(TAB_MAP[e.key]);
-        return;
-      }
-      // Esc -> Close modals
-      if (e.key === "Escape") {
-        setShowSearchModal(false);
-        setNotificationCenterOpen(false);
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Auto-DND: activate when trading mode is on, flush queue when it turns off
-  useEffect(() => {
-    setAutoDnd(topStepXEnabled);
-    if (!topStepXEnabled) {
-      // Trading mode just turned off — flush queued notifications as stacked toasts (max 5)
-      flushQueue();
-    }
-  }, [topStepXEnabled, setAutoDnd, flushQueue]);
-
-  // Reset layout when TopStepX is toggled
-  useEffect(() => {
-    if (topStepXEnabled) {
-      setMissionControlPosition("right");
-      setTapePosition("right");
-      setLayoutOption("combined");
-    } else {
-      setMissionControlPosition("right");
-      setTapePosition("right");
-      setMissionControlCollapsed(false);
-      setTapeCollapsed(false);
-    }
-  }, [topStepXEnabled]);
-
-  useEffect(() => {
-    if (layoutOption === "combined" && prevLayoutOption !== layoutOption) {
-      setCombinedPanelCollapsed(false);
-    }
-    setPrevLayoutOption(layoutOption);
-  }, [layoutOption, prevLayoutOption]);
+  useKeyboardShortcuts({
+    navigateTab,
+    setShowSearchModal,
+    setShowYouTubeMiniplayer,
+    setNotificationCenterOpen,
+    toggleManualDnd,
+  });
 
   // Fetch blended IV score from backend for floating widget
   useEffect(() => {
@@ -412,37 +337,6 @@ function MainLayoutInner() {
     0,
     Math.min(1, (combinedPanelErScore + 10) / 20),
   );
-
-  // Smooth browser open/close transition
-  const handleBrowserToggle = useCallback(() => {
-    if (browserTransitioning) return;
-    setBrowserTransitioning(true);
-    if (topStepXEnabled) {
-      // Closing: fade out browser, then swap
-      setBrowserVisible(false);
-      setTimeout(() => {
-        setTopStepXEnabled(false);
-        setBrowserTransitioning(false);
-      }, 300);
-    } else {
-      // Opening: swap immediately, then fade in
-      setTopStepXEnabled(true);
-      setBrowserVisible(true);
-      setTimeout(() => {
-        setBrowserTransitioning(false);
-      }, 400);
-    }
-  }, [topStepXEnabled, browserTransitioning]);
-
-  const handleBrowserEnable = useCallback(() => {
-    if (topStepXEnabled || browserTransitioning) return;
-    setBrowserTransitioning(true);
-    setTopStepXEnabled(true);
-    setBrowserVisible(true);
-    setTimeout(() => {
-      setBrowserTransitioning(false);
-    }, 400);
-  }, [topStepXEnabled, browserTransitioning]);
 
   const handleTabChange = (tab: NavTab) => {
     if (tab === activeTab || tabTransitioning) return;

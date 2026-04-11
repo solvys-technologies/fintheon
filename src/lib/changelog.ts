@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-10T23:45:00",
+    agent: "claude-code",
+    summary:
+      "S9-T3: Extract useKeyboardShortcuts, useLayoutState, useBrowserTransition from MainLayout (981→875 lines)",
+    files: [
+      "frontend/hooks/useKeyboardShortcuts.ts",
+      "frontend/hooks/useLayoutState.ts",
+      "frontend/hooks/useBrowserTransition.ts",
+      "frontend/components/layout/MainLayout.tsx",
+    ],
+  },
+  {
     date: "2026-04-10T23:30:00",
     agent: "claude-code",
     summary:
