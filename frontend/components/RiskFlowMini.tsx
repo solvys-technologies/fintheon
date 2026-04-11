@@ -29,11 +29,16 @@ import type { RiskFlowAlert, TradeIdeaDetail } from "../lib/riskflow-feed";
 import { inferDirection } from "../lib/riskflow-feed";
 import TradeIdeaModal from "./TradeIdeaModal";
 import { useSourceStatus } from "../hooks/useSourceStatus";
+import {
+  useRiskFlowFilters,
+  type SeverityFilter,
+  type SourceFilter,
+} from "../hooks/useRiskFlowFilters";
 import { useBackend } from "../lib/backend";
 
 import { SEVERITY_CONFIG } from "../lib/severity-config";
 import { ivHeatColor } from "../types/miroshark";
-import { SourceIcon } from "../lib/shared-icons";
+import { SourceIcon, NotionLogo } from "../lib/shared-icons";
 
 // ── Cyclical Badge ───────────────────────────────────────────────────────────
 
@@ -569,9 +574,6 @@ function FilterDropdown<T extends string>({
 
 // ── Panel ──────────────────────────────────────────────────────────────────────
 
-type PriorityFilter = "all" | "high" | "medium";
-type SourceFilter = "all" | "notion" | "twitter";
-
 export default function RiskFlowMini({
   collapsed,
   onToggleCollapsed,
@@ -602,9 +604,15 @@ export default function RiskFlowMini({
     hasMore,
   } = useRiskFlow();
   const backend = useBackend();
-  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
-  const [showProposals, setShowProposals] = useState(false);
+  const {
+    severityFilter,
+    setSeverityFilter,
+    sourceFilter,
+    setSourceFilter,
+    showProposals,
+    setShowProposals,
+    filterAlerts,
+  } = useRiskFlowFilters();
   const [expandedInternal, setExpandedInternal] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(
     null,
@@ -685,31 +693,7 @@ export default function RiskFlowMini({
     (a) => a.source === "notion-trade-idea",
   ).length;
 
-  const filtered = (() => {
-    let base = alerts;
-    if (showProposals)
-      return base.filter((a) => a.source === "notion-trade-idea");
-    if (priorityFilter === "high")
-      base = base.filter(
-        (a) => a.severity === "high" || a.severity === "critical",
-      );
-    else if (priorityFilter === "medium")
-      base = base.filter((a) => a.severity === "medium");
-    if (sourceFilter === "notion")
-      base = base.filter(
-        (a) =>
-          a.source === "notion-trade-idea" ||
-          (a.source as string).toLowerCase().includes("notion"),
-      );
-    else if (sourceFilter === "twitter")
-      base = base.filter(
-        (a) =>
-          (a.source as string).toLowerCase().includes("twitter") ||
-          (a.source as string) === "TwitterCli" ||
-          (a.source as string) === "FinancialJuice",
-      );
-    return base;
-  })();
+  const filtered = filterAlerts(alerts);
 
   const collapsedPreviewItems = alerts.slice(0, 2);
 
@@ -787,8 +771,8 @@ export default function RiskFlowMini({
           {/* Inline filters — same row as header */}
           {expanded && (
             <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-              <FilterDropdown<PriorityFilter>
-                value={showProposals ? "all" : priorityFilter}
+              <FilterDropdown<SeverityFilter>
+                value={showProposals ? "all" : severityFilter}
                 options={[
                   { value: "all", label: `Priority: All` },
                   { value: "high", label: `High (${highCount})` },
@@ -796,7 +780,7 @@ export default function RiskFlowMini({
                 ]}
                 onChange={(v) => {
                   setShowProposals(false);
-                  setPriorityFilter(v);
+                  setSeverityFilter(v);
                 }}
               />
               <FilterDropdown<SourceFilter>

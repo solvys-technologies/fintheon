@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-10T23:55:00",
+    agent: "claude-code",
+    summary:
+      "S9-T2: AlertCardBase shared card component, RiskFlowDetailCard + ExpandableTapeItem unified, filter hook extracted from RiskFlowMini",
+    files: [
+      "frontend/components/feed/AlertCardBase.tsx",
+      "frontend/hooks/useRiskFlowFilters.ts",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "frontend/components/executive/ExpandableTapeItem.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+    ],
+  },
+  {
     date: "2026-04-10T23:45:00",
     agent: "claude-code",
     summary:

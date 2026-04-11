@@ -1,75 +1,11 @@
-// [claude-code 2026-03-05] Expandable tape item for ExecutiveDashboard — shows full RiskFlow detail on click
-// [claude-code 2026-03-11] Replace text source label with SVG icons (X/Notion)
-// [claude-code 2026-03-27] S3: Plain text DetailFooter, expanded border-l-4 + ring highlight
-// [claude-code 2026-03-26] T3: Smooth expand transitions, agent notes, risk type, sub-scores, beat/miss
+// [claude-code 2026-04-10] S9-T2: Refactored to use AlertCardBase — tape variant
 import { useState, useCallback } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  ChevronRight,
-  ExternalLink,
-  Diff,
-  TrendingDown,
-} from "lucide-react";
-import { SEVERITY_CONFIG } from "../../lib/severity-config";
-import { ivHeatColor } from "../../types/miroshark";
+import { ChevronRight, ExternalLink, Diff, TrendingDown } from "lucide-react";
 import type { RiskFlowAlert, TradeIdeaDetail } from "../../lib/riskflow-feed";
 import { useBackend } from "../../lib/backend";
 import { DetailFooter } from "../feed/DetailFooter";
+import { AlertCardBase } from "../feed/AlertCardBase";
 import { SourceIcon } from "../../lib/shared-icons";
-import { timeAgo } from "../../lib/time-utils";
-
-/** Infer Bullish/Bearish from alert data or headline keywords */
-function inferDirection(alert: RiskFlowAlert): "Bullish" | "Bearish" {
-  if (alert.direction === "Bullish" || alert.direction === "Bearish")
-    return alert.direction;
-  if (alert.tradeIdea)
-    return alert.tradeIdea.direction === "long" ? "Bullish" : "Bearish";
-  const lower = (alert.headline + " " + (alert.summary ?? "")).toLowerCase();
-  const bullish = [
-    "surge",
-    "rally",
-    "rise",
-    "gain",
-    "jump",
-    "soar",
-    "bull",
-    "record high",
-    "beat",
-    "above",
-    "upgrade",
-    "boom",
-    "positive",
-    "strong",
-    "up ",
-  ];
-  const bearish = [
-    "drop",
-    "fall",
-    "crash",
-    "plunge",
-    "decline",
-    "sink",
-    "bear",
-    "miss",
-    "below",
-    "downgrade",
-    "slump",
-    "negative",
-    "fear",
-    "risk",
-    "warn",
-    "cut",
-    "sell",
-    "weak",
-    "down ",
-  ];
-  let b = 0,
-    s = 0;
-  for (const kw of bullish) if (lower.includes(kw)) b++;
-  for (const kw of bearish) if (lower.includes(kw)) s++;
-  return b >= s ? "Bullish" : "Bearish";
-}
 
 interface ExpandableTapeItemProps {
   alert: RiskFlowAlert;
@@ -93,18 +29,6 @@ export function ExpandableTapeItem({
   const [expanded, setExpanded] = useState(false);
   const backend = useBackend();
   const isTradeIdea = alert.source === "notion-trade-idea" && !!alert.tradeIdea;
-  const sev = SEVERITY_CONFIG[alert.severity];
-  // T1 will add these fields
-  const riskType = (alert as any).riskType as string | null | undefined;
-  const subScores = (alert as any).subScores as
-    | { eventWeight: number; momentum: number; vixContext: number }
-    | null
-    | undefined;
-  const agentNote = (alert as any).agentNote as string | null | undefined;
-  const econData = (alert as any).econData as
-    | { beatMiss?: string | null; surprisePercent?: number | null }
-    | null
-    | undefined;
 
   const handleGenerateNote = useCallback(async () => {
     const rawId = alert.id.replace(/^backend-/, "");
@@ -115,121 +39,51 @@ export function ExpandableTapeItem({
     }
   }, [alert.id, backend]);
 
-  return (
-    <div
-      className={`transition-all duration-300 ${expanded ? "border border-[var(--fintheon-accent)]/20 rounded" : "border border-[var(--fintheon-border)]/10 rounded"} ${
-        expanded
-          ? "bg-[#0b0b08]"
-          : isTradeIdea
-            ? "bg-[#0b0b08]"
-            : isVivid
-              ? "bg-[#0b0b08] border-l-[var(--fintheon-accent)]/40"
-              : "bg-[#080806]"
-      }`}
-      style={
-        expanded
-          ? ({
-              "--tw-ring-color":
-                "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-            } as React.CSSProperties)
-          : isVivid || isTradeIdea
-            ? undefined
-            : {
-                opacity,
-                borderLeftColor: `color-mix(in srgb, var(--fintheon-accent) ${Math.round(borderOpacity * 100)}%, transparent)`,
-              }
-      }
-    >
-      {/* Collapsed row */}
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-start gap-3 px-3 py-3 text-left hover:bg-white/[0.02] transition-colors"
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            {isTradeIdea ? (
-              <span className="inline-flex items-center justify-center w-4 h-4 border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10 flex-shrink-0">
-                {alert.tradeIdea!.direction === "long" ? (
-                  <Diff className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
-                ) : (
-                  <TrendingDown className="w-2.5 h-2.5 text-zinc-400" />
-                )}
-              </span>
-            ) : (
-              <>
-                {alert.severity === "high" && (
-                  <span className="text-[9px] tracking-[0.18em] uppercase text-red-400 font-semibold">
-                    Breaking
-                  </span>
-                )}
-                {alert.severity === "medium" && (
-                  <span
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text}`}
-                  >
-                    {sev.label}
-                  </span>
-                )}
-              </>
-            )}
-            <span
-              className={`text-xs font-semibold truncate ${isVivid || isTradeIdea ? "text-white" : "text-gray-400"}`}
-            >
-              {alert.headline}
-            </span>
-          </div>
-          {!expanded && alert.summary && alert.summary !== alert.headline && (
-            <div
-              className={`mt-0.5 text-[11px] line-clamp-1 ${isVivid ? "text-gray-400" : "text-gray-500"}`}
-            >
-              {alert.summary}
-            </div>
-          )}
-        </div>
-        <div className="shrink-0 flex items-center gap-1.5">
-          {(() => {
-            const dir = inferDirection(alert);
-            return (
-              <span
-                className="text-[9px] font-semibold"
-                style={{
-                  color:
-                    dir === "Bullish"
-                      ? "var(--fintheon-bullish)"
-                      : "var(--fintheon-bearish)",
-                }}
-              >
-                {dir === "Bullish" ? "▲" : "▼"}
-              </span>
-            );
-          })()}
-          {(alert as any).ivScore != null && (
-            <span
-              className="text-[9px] font-mono font-bold tabular-nums"
-              style={{ color: ivHeatColor(Number((alert as any).ivScore)) }}
-            >
-              IV {Number((alert as any).ivScore).toFixed(1)}
-            </span>
-          )}
-          <span
-            className={`text-[10px] ${isVivid ? "text-gray-500" : "text-gray-600"}`}
-          >
-            {timeAgo(alert.publishedAt)}
-          </span>
-          {expanded ? (
-            <ChevronUp className="w-3 h-3 text-zinc-600" />
-          ) : (
-            <ChevronDown className="w-3 h-3 text-zinc-600" />
-          )}
-        </div>
-      </button>
+  // Tape-specific outer container styling
+  const tapeClassName = `transition-all duration-300 ${
+    expanded
+      ? "border border-[var(--fintheon-accent)]/20 rounded bg-[#0b0b08]"
+      : isTradeIdea
+        ? "border border-[var(--fintheon-border)]/10 rounded bg-[#0b0b08]"
+        : isVivid
+          ? "border border-[var(--fintheon-border)]/10 rounded bg-[#0b0b08] border-l-[var(--fintheon-accent)]/40"
+          : "border border-[var(--fintheon-border)]/10 rounded bg-[#080806]"
+  }`;
 
-      {/* Expanded detail — smooth CSS grid transition */}
-      <div
-        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-        style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
-      >
-        <div className="overflow-hidden">
+  const tapeStyle: React.CSSProperties = expanded
+    ? ({
+        "--tw-ring-color":
+          "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+      } as React.CSSProperties)
+    : !(isVivid || isTradeIdea)
+      ? {
+          opacity,
+          borderLeftColor: `color-mix(in srgb, var(--fintheon-accent) ${Math.round(borderOpacity * 100)}%, transparent)`,
+        }
+      : {};
+
+  return (
+    <AlertCardBase
+      alert={alert}
+      variant="tape"
+      seen={seen}
+      expanded={expanded}
+      onToggle={() => setExpanded(!expanded)}
+      className={tapeClassName}
+      style={tapeStyle}
+      headerActions={
+        isTradeIdea ? (
+          <span className="inline-flex items-center justify-center w-4 h-4 border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10 flex-shrink-0">
+            {alert.tradeIdea!.direction === "long" ? (
+              <Diff className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
+            ) : (
+              <TrendingDown className="w-2.5 h-2.5 text-zinc-400" />
+            )}
+          </span>
+        ) : undefined
+      }
+      expandedContent={
+        <>
           <div className="px-4 pb-3 border-t border-zinc-800/40">
             {/* Summary */}
             {alert.summary && (
@@ -307,51 +161,49 @@ export function ExpandableTapeItem({
 
             {/* Regular alert detail */}
             {!isTradeIdea && (
-              <>
-                <div className="mt-2 flex items-center gap-3">
-                  <SourceIcon
-                    source={alert.source}
-                    className="w-3 h-3 text-zinc-500 flex-shrink-0"
-                  />
-                  {riskType && (
-                    <span className="text-[9px] font-medium tracking-wider uppercase px-1.5 py-0.5 border border-zinc-700 text-zinc-400">
-                      {riskType}
-                    </span>
-                  )}
-                  {alert.tags.length > 0 && (
-                    <div className="flex gap-1">
-                      {alert.tags.slice(0, 3).map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800/50 text-zinc-500"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {alert.url && (
-                    <a
-                      href={alert.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-auto text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1"
-                    >
-                      <ExternalLink className="w-2.5 h-2.5" />
-                      Source
-                    </a>
-                  )}
-                </div>
-              </>
+              <div className="mt-2 flex items-center gap-3">
+                <SourceIcon
+                  source={alert.source}
+                  className="w-3 h-3 text-zinc-500 flex-shrink-0"
+                />
+                {alert.riskType && (
+                  <span className="text-[9px] font-medium tracking-wider uppercase px-1.5 py-0.5 border border-zinc-700 text-zinc-400">
+                    {alert.riskType}
+                  </span>
+                )}
+                {alert.tags.length > 0 && (
+                  <div className="flex gap-1">
+                    {alert.tags.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800/50 text-zinc-500"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {alert.url && (
+                  <a
+                    href={alert.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-auto text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1"
+                  >
+                    <ExternalLink className="w-2.5 h-2.5" />
+                    Source
+                  </a>
+                )}
+              </div>
             )}
 
             {/* Agent Note — shared for both trade ideas and regular alerts */}
-            {agentNote ? (
+            {alert.agentNote ? (
               <div className="mt-2 px-3 py-2 bg-zinc-900/60 border border-zinc-800/50 text-[11px] text-zinc-300 leading-relaxed">
                 <span className="text-[9px] text-zinc-600 uppercase tracking-wider block mb-1">
                   Agent Note
                 </span>
-                {agentNote}
+                {alert.agentNote}
               </div>
             ) : (
               <button
@@ -386,8 +238,8 @@ export function ExpandableTapeItem({
 
           {/* S3: Plain text detail footer — IV, deviation, beat/miss, sub-scores, speaker, regime */}
           <DetailFooter alert={alert} />
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }
