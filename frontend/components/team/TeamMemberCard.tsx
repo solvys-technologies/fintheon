@@ -68,8 +68,7 @@ function ServiceLight({
 
 export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
   const { presence } = member;
-  const { setUserStatus, twitterFeedKilled, toggleTwitterFeed } =
-    useTeamPresence();
+  const { setUserStatus, riskflowKilled, toggleRiskFlow } = useTeamPresence();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -174,12 +173,12 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
       {/* Service status lights */}
       <div className="flex items-center gap-3 mt-2">
         <ServiceLight
-          label="Twitter"
-          active={presence.services.twitterCli}
+          label="RiskFlow"
+          active={presence.services.rettiwt}
           warning={
-            presence.services.twitterFeedKilled
+            presence.services.riskflowKilled
               ? "Killed"
-              : presence.services.twitterRateLimited
+              : presence.services.rettiwtRateLimited
                 ? "Rate Limited"
                 : undefined
           }
@@ -195,18 +194,18 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
         />
       </div>
 
-      {/* Kill X Feed toggle — self only */}
+      {/* RiskFlow toggle — self only */}
       {isSelf && (
         <button
-          onClick={toggleTwitterFeed}
+          onClick={toggleRiskFlow}
           className="w-full mt-2 pt-1.5 border-t border-[var(--fintheon-accent)]/10 text-[9px] font-mono tracking-wider transition-colors"
           style={{
-            color: twitterFeedKilled
+            color: riskflowKilled
               ? "var(--fintheon-severe)"
               : "var(--fintheon-muted)",
           }}
         >
-          {twitterFeedKilled ? "Resume X Feed" : "Kill X Feed"}
+          {riskflowKilled ? "Resume RiskFlow" : "Kill RiskFlow"}
         </button>
       )}
     </div>

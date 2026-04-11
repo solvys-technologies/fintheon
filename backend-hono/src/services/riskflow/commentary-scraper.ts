@@ -15,10 +15,7 @@ import {
   isRettiwtAvailable,
   type RettiwtSearchResult,
 } from "../rettiwt-service.js";
-import {
-  fetchBookmarks,
-  isTwitterCliInstalled,
-} from "../twitter-cli/twitter-cli-service.js";
+// [claude-code 2026-04-11] Removed twitter-cli bookmark imports — Rettiwt doesn't support bookmark fetching
 import { createLogger } from "../../lib/logger.js";
 import { getPollingConfig } from "./polling-config.js";
 
@@ -294,63 +291,6 @@ function rettiwtToRawItem(
   };
 }
 
-// ─── Bookmark Polling ──────────────────────────────────────────
-// Fetches bookmarks from the authenticated X account, matches each
-// against active Narrative keyword sets, and ingests only matches.
-
-async function pollBookmarks(): Promise<number> {
-  const hasTwitter = await isTwitterCliInstalled();
-  if (!hasTwitter) {
-    log.info("Twitter CLI not available — skipping bookmark poll");
-    return 0;
-  }
-
-  const tweets = await fetchBookmarks({ limit: 30 });
-  if (tweets.length === 0) {
-    log.info("Bookmarks: 0 tweets fetched");
-    return 0;
-  }
-
-  const items: RawRiskFlowItem[] = [];
-
-  for (const tweet of tweets) {
-    const id = `bkmk-${tweet.id}`;
-    if (submittedIds.has(id)) continue;
-
-    const text = `${tweet.text}`;
-    const narrative = matchesNarrative(text);
-    if (!narrative) continue;
-
-    items.push({
-      tweet_id: id,
-      source: "TwitterCli",
-      headline: tweet.text.slice(0, 280),
-      body: tweet.text.length > 280 ? tweet.text.slice(280, 800) : undefined,
-      url: `https://x.com/${tweet.author}/status/${tweet.id}`,
-      symbols: extractSymbols(text),
-      tags: [...extractTags(text), `narrative:${narrative}`],
-      is_breaking: /\b(breaking|urgent|alert)\b/i.test(text),
-      urgency: /\b(breaking|urgent)\b/i.test(text) ? "immediate" : "normal",
-      published_at: tweet.publishedAt,
-      submitted_by: `commentary-scraper:Bookmarks`,
-    });
-  }
-
-  if (items.length === 0) {
-    log.info(
-      `Bookmarks: ${tweets.length} fetched, 0 matched active narratives`,
-    );
-    return 0;
-  }
-
-  const written = await writeRawItems(items);
-  for (const item of items) submittedIds.add(item.tweet_id);
-  log.info(
-    `Bookmarks: ${written} catalysts ingested from ${tweets.length} bookmarks`,
-  );
-  return written;
-}
-
 // ─── Main Poll Cycle ────────────────────────────────────────────
 
 export async function pollCommentary(): Promise<void> {
@@ -429,14 +369,6 @@ export async function pollCommentary(): Promise<void> {
     );
   }
 
-  // Phase 2: Bookmark polling (narrative-keyword gated)
-  try {
-    const bookmarkCount = await pollBookmarks();
-    totalNew += bookmarkCount;
-  } catch (err) {
-    log.warn("Bookmark poll failed", { error: String(err) });
-  }
-
   log.info(`Catalyst scrape complete: ${totalNew} new catalysts total`);
 }
 
@@ -445,12 +377,12 @@ export async function pollCommentary(): Promise<void> {
 export function startCommentaryScraper(): void {
   if (!isRettiwtAvailable() && !isExaAvailable()) {
     log.warn(
-      "Neither RETTIWT_AUTH_TOKEN nor EXA_API_KEY set — catalyst scrape limited to bookmarks only",
+      "Neither RETTIWT_AUTH_TOKEN nor EXA_API_KEY set — catalyst scrape disabled",
     );
   }
 
   if (scraperTimeout) return;
-  log.info("Commentary scraper starting (Rettiwt/Exa + Bookmark polling)");
+  log.info("Commentary scraper starting (Rettiwt primary, Exa fallback)");
 
   const scheduledPoll = async (): Promise<void> => {
     try {

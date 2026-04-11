@@ -1,4 +1,4 @@
-// [claude-code 2026-04-03] S14-T6: Extended presence payload with service status + user status
+// [claude-code 2026-04-11] Renamed twitter → rettiwt/riskflow for X CLI removal + round-robin
 import {
   createContext,
   useContext,
@@ -21,16 +21,16 @@ interface TeamPresenceContextValue {
   teamMembers: TeamMember[];
   isConnected: boolean;
   setUserStatus: (status: UserStatus) => void;
-  twitterFeedKilled: boolean;
-  toggleTwitterFeed: () => void;
+  riskflowKilled: boolean;
+  toggleRiskFlow: () => void;
 }
 
 const TeamPresenceContext = createContext<TeamPresenceContextValue>({
   teamMembers: [],
   isConnected: false,
   setUserStatus: () => {},
-  twitterFeedKilled: false,
-  toggleTwitterFeed: () => {},
+  riskflowKilled: false,
+  toggleRiskFlow: () => {},
 });
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -44,35 +44,35 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
   const { addToast } = useToast();
   const prevRateLimited = useRef(false);
 
-  // [claude-code 2026-04-06] One-liner toast when Twitter 429 kicks in or recovers
+  // Toast when Rettiwt 429 kicks in or recovers
   useEffect(() => {
-    if (sourceStatus.twitterRateLimited && !prevRateLimited.current) {
+    if (sourceStatus.rettiwtRateLimited && !prevRateLimited.current) {
       addToast(
-        `Twitter rate limited — cooling down ${sourceStatus.twitterCooldownSec}s`,
+        `Rettiwt rate limited — cooling down ${sourceStatus.rettiwtCooldownSec}s`,
         "info",
         undefined,
         "connection-status",
       );
-    } else if (!sourceStatus.twitterRateLimited && prevRateLimited.current) {
+    } else if (!sourceStatus.rettiwtRateLimited && prevRateLimited.current) {
       addToast(
-        "Twitter polling resumed",
+        "Rettiwt polling resumed",
         "success",
         undefined,
         "connection-status",
       );
     }
-    prevRateLimited.current = sourceStatus.twitterRateLimited;
+    prevRateLimited.current = sourceStatus.rettiwtRateLimited;
   }, [
-    sourceStatus.twitterRateLimited,
-    sourceStatus.twitterCooldownSec,
+    sourceStatus.rettiwtRateLimited,
+    sourceStatus.rettiwtCooldownSec,
     addToast,
   ]);
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [userStatus, setUserStatusState] = useState<UserStatus>("online");
-  const [twitterFeedKilled, setTwitterFeedKilled] = useState(
-    () => localStorage.getItem("fintheon:twitter-feed-killed") === "true",
+  const [riskflowKilled, setRiskflowKilled] = useState(
+    () => localStorage.getItem("fintheon:riskflow-killed") === "true",
   );
   const channelRef = useRef<ReturnType<
     NonNullable<typeof supabase>["channel"]
@@ -87,10 +87,10 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
     setUserStatusState(status);
   }, []);
 
-  const toggleTwitterFeed = useCallback(() => {
-    setTwitterFeedKilled((prev) => {
+  const toggleRiskFlow = useCallback(() => {
+    setRiskflowKilled((prev) => {
       const next = !prev;
-      localStorage.setItem("fintheon:twitter-feed-killed", String(next));
+      localStorage.setItem("fintheon:riskflow-killed", String(next));
       fetch(`${API_BASE}/api/riskflow/user-polling-toggle`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,21 +106,19 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
       displayName,
       caoName,
       caoOnline,
-      twitterCliPolling: sourceStatus.twitterCli,
-      twitterFeedKilled,
-      inCall: false, // T3/T4 will wire this
+      riskflowPolling: riskflowKilled ? false : sourceStatus.rettiwt,
+      riskflowKilled,
+      inCall: false,
       userStatus,
       services: {
-        twitterCli: twitterFeedKilled ? false : sourceStatus.twitterCli,
-        twitterRateLimited: sourceStatus.twitterRateLimited,
-        twitterFeedKilled,
+        rettiwt: riskflowKilled ? false : sourceStatus.rettiwt,
+        rettiwtRateLimited: sourceStatus.rettiwtRateLimited,
+        riskflowKilled,
         aiRuntime: caoOnline,
         newsfeedPolling: {
           active:
             sourceStatus.backendReachable &&
-            (sourceStatus.notion ||
-              sourceStatus.twitterCli ||
-              sourceStatus.xApi),
+            (sourceStatus.notion || sourceStatus.rettiwt || sourceStatus.xApi),
           lastUpdate: sourceStatus.lastPollSuccess,
         },
         backendConnection: sourceStatus.backendReachable,
@@ -131,14 +129,14 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
       displayName,
       caoName,
       caoOnline,
-      sourceStatus.twitterCli,
-      sourceStatus.twitterRateLimited,
+      sourceStatus.rettiwt,
+      sourceStatus.rettiwtRateLimited,
       sourceStatus.notion,
       sourceStatus.xApi,
       sourceStatus.backendReachable,
       sourceStatus.lastPollSuccess,
       userStatus,
-      twitterFeedKilled,
+      riskflowKilled,
     ],
   );
 
@@ -156,14 +154,13 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
         const members: TeamMember[] = [];
 
         for (const [key, presences] of Object.entries(state)) {
-          // Take the latest presence entry for each user
           const latest = (presences as unknown as PresencePayload[])[0];
           if (!latest) continue;
 
           const defaultServices = {
-            twitterCli: false,
-            twitterRateLimited: false,
-            twitterFeedKilled: false,
+            rettiwt: false,
+            rettiwtRateLimited: false,
+            riskflowKilled: false,
             aiRuntime: false,
             newsfeedPolling: {
               active: false,
@@ -180,8 +177,14 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
               displayName: latest.displayName,
               caoName: latest.caoName,
               caoOnline: latest.caoOnline,
-              twitterCliPolling: latest.twitterCliPolling,
-              twitterFeedKilled: latest.twitterFeedKilled ?? false,
+              riskflowPolling:
+                (latest as any).riskflowPolling ??
+                (latest as any).twitterCliPolling ??
+                false,
+              riskflowKilled:
+                (latest as any).riskflowKilled ??
+                (latest as any).twitterFeedKilled ??
+                false,
               online: true,
               lastSeen: new Date().toISOString(),
               inCall: latest.inCall,
@@ -224,8 +227,8 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
         teamMembers,
         isConnected,
         setUserStatus,
-        twitterFeedKilled,
-        toggleTwitterFeed,
+        riskflowKilled,
+        toggleRiskFlow,
       }}
     >
       {children}

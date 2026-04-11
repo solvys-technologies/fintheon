@@ -31,7 +31,7 @@ export function UserCard({ member, isSelf }: UserCardProps) {
           {isSelf && (
             <span className="text-[9px] text-zinc-500 font-mono">(You)</span>
           )}
-          {presence.twitterCliPolling && (
+          {presence.riskflowPolling && (
             <span className="text-[9px] text-[var(--fintheon-accent)]/60 font-mono italic">
               (polling)
             </span>

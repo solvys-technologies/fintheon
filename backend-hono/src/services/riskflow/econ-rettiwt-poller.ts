@@ -33,8 +33,19 @@ import {
   pushToSupabase,
   filterByTier,
 } from "./rettiwt-poller-transform.js";
+import type { RettiwtSearchResult } from "../rettiwt-service.js";
 import type { FeedItem } from "../../types/riskflow.js";
 import type { EconEvent } from "../econ-calendar-service.js";
+
+/** Normalize RettiwtSearchResult (publishedDate) → tweet shape (publishedAt) */
+function toTweet(r: RettiwtSearchResult) {
+  return {
+    id: r.id,
+    text: r.text,
+    author: r.author,
+    publishedAt: r.publishedDate,
+  };
+}
 
 // Rate limiter: prevent API spam (tuned for Rettiwt limits)
 const rettiwtLimiter = createRateLimiter({
@@ -101,7 +112,7 @@ async function initFetchHighPriorityPosts(): Promise<void> {
       ),
     );
     const allTweets = batches.flatMap((r) =>
-      r.status === "fulfilled" ? r.value : [],
+      r.status === "fulfilled" ? r.value.map(toTweet) : [],
     );
 
     const { feedItems } = processTweetBatch(allTweets);
@@ -163,7 +174,7 @@ function scheduleBurst(event: EconEvent): void {
           ),
         );
         const tweets = batches.flatMap((r) =>
-          r.status === "fulfilled" ? r.value : [],
+          r.status === "fulfilled" ? r.value.map(toTweet) : [],
         );
 
         const { feedItems, uniqueTweets } = processTweetBatch(tweets);
@@ -259,19 +270,8 @@ export async function pollForEconNews(): Promise<FeedItem[]> {
   }
 
   const tweetBatches = await Promise.allSettled(allTweetPromises);
-  // Normalize: RettiwtSearchResult has publishedDate, we need publishedAt
   const allTweets = tweetBatches.flatMap((r) =>
-    r.status === "fulfilled"
-      ? r.value.map((t) => ({
-          id: t.id,
-          text: t.text,
-          author: t.author,
-          publishedAt:
-            (t as any).publishedDate ??
-            (t as any).publishedAt ??
-            new Date().toISOString(),
-        }))
-      : [],
+    r.status === "fulfilled" ? r.value.map(toTweet) : [],
   );
 
   // 4. Extract actuals from FJ tweets when events are active
@@ -322,17 +322,7 @@ export async function manualRefresh(): Promise<FeedItem[]> {
       ),
     );
     const allTweets = batches.flatMap((r) =>
-      r.status === "fulfilled"
-        ? r.value.map((t) => ({
-            id: t.id,
-            text: t.text,
-            author: t.author,
-            publishedAt:
-              (t as any).publishedDate ??
-              (t as any).publishedAt ??
-              new Date().toISOString(),
-          }))
-        : [],
+      r.status === "fulfilled" ? r.value.map(toTweet) : [],
     );
 
     const { feedItems: rettiwtItems } = processTweetBatch(allTweets);
@@ -409,17 +399,7 @@ async function nightPoll(): Promise<void> {
     ),
   );
   const allTweets = batches.flatMap((r) =>
-    r.status === "fulfilled"
-      ? r.value.map((t) => ({
-          id: t.id,
-          text: t.text,
-          author: t.author,
-          publishedAt:
-            (t as any).publishedDate ??
-            (t as any).publishedAt ??
-            new Date().toISOString(),
-        }))
-      : [],
+    r.status === "fulfilled" ? r.value.map(toTweet) : [],
   );
 
   const { feedItems } = processTweetBatch(allTweets);

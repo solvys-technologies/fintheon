@@ -1,11 +1,11 @@
-// [claude-code 2026-04-03] S14-T6: Extended with service status lights + status dropdown + staleness util
+// [claude-code 2026-04-11] Renamed twitter fields → rettiwt/riskflow for X CLI removal
 
 export type UserStatus = "online" | "away" | "busy" | "dnd" | "offline";
 
 export interface ServiceStatus {
-  twitterCli: boolean;
-  twitterRateLimited: boolean;
-  twitterFeedKilled: boolean;
+  rettiwt: boolean;
+  rettiwtRateLimited: boolean;
+  riskflowKilled: boolean;
   aiRuntime: boolean;
   newsfeedPolling: { active: boolean; lastUpdate: string };
   backendConnection: boolean;
@@ -16,8 +16,8 @@ export interface DeviceStatus {
   displayName: string;
   caoName: string;
   caoOnline: boolean;
-  twitterCliPolling: boolean;
-  twitterFeedKilled: boolean;
+  riskflowPolling: boolean;
+  riskflowKilled: boolean;
   online: boolean;
   lastSeen: string;
   inCall: boolean;
@@ -37,8 +37,8 @@ export interface PresencePayload {
   displayName: string;
   caoName: string;
   caoOnline: boolean;
-  twitterCliPolling: boolean;
-  twitterFeedKilled: boolean;
+  riskflowPolling: boolean;
+  riskflowKilled: boolean;
   inCall: boolean;
   userStatus: UserStatus;
   services: ServiceStatus;

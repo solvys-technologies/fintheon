@@ -19,7 +19,7 @@ import {
   markRettiwtPollSuccess,
   markRettiwtPollEmpty,
 } from "./econ-rettiwt-poller.js";
-import { isRettiwtAvailable } from "../rettiwt-service.js";
+import { isRettiwtAvailable, rettiwtSearch } from "../rettiwt-service.js";
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
 import { isSupabaseConfigured } from "../../config/supabase.js";
 import { getPollingConfig } from "./polling-config.js";
@@ -409,26 +409,26 @@ async function pollForNewItems(): Promise<void> {
       return;
     }
 
-    // ── Scrape fallback when Twitter is rate-limited ──
-    if (isRateLimited()) {
+    // ── Scrape fallback when Rettiwt is rate-limited ──
+    if (isRettiwtRateLimited()) {
       await runScrapeFallback();
       consecutivePollingFailures = 0;
       return;
     }
 
-    // Check twitter-cli availability with explicit logging
-    const twitterAvailable = await isTwitterCliInstalled();
-    if (!twitterAvailable) {
+    // Check Rettiwt availability
+    const rettiwtUp = isRettiwtAvailable();
+    if (!rettiwtUp) {
       log.warn(
-        "twitter-cli NOT available — feed will only contain economic calendar items. Check ~/.local/bin/twitter",
+        "Rettiwt NOT available — feed will only contain economic calendar items. Check RETTIWT_AUTH_TOKEN",
       );
     }
 
-    // Gather items from twitter-cli + economic feed
-    const [twitterCliItems, econItems] = await Promise.all([
-      twitterAvailable
-        ? pollTwitterForEconNews().catch((err) => {
-            log.error("twitter-cli poll failed:", { error: String(err) });
+    // Gather items from Rettiwt + economic feed
+    const [rettiwtItems, econItems] = await Promise.all([
+      rettiwtUp
+        ? pollForEconNews().catch((err) => {
+            log.error("Rettiwt poll failed:", { error: String(err) });
             return [] as FeedItem[];
           })
         : Promise.resolve([] as FeedItem[]),
@@ -438,25 +438,24 @@ async function pollForNewItems(): Promise<void> {
       }),
     ]);
 
-    // Track Twitter empty polls — triggers Exa fallback after consecutive empties
-    if (twitterAvailable && twitterCliItems.length === 0) {
-      markPollEmpty();
-      // If now considered rate limited after this empty poll, run scrape fallback
-      if (isRateLimited()) {
+    // Track empty polls — triggers scrape fallback after consecutive empties
+    if (rettiwtUp && rettiwtItems.length === 0) {
+      markRettiwtPollEmpty();
+      if (isRettiwtRateLimited()) {
         log.info(
-          "Twitter returning empty — running scrape fallback for headlines",
+          "Rettiwt returning empty — running scrape fallback for headlines",
         );
         await runScrapeFallback();
       }
-    } else if (twitterCliItems.length > 0) {
-      markPollSuccess();
+    } else if (rettiwtItems.length > 0) {
+      markRettiwtPollSuccess();
     }
 
-    const rawItems: FeedItem[] = [...econItems, ...twitterCliItems];
+    const rawItems: FeedItem[] = [...econItems, ...rettiwtItems];
 
     if (rawItems.length === 0) {
       log.info(
-        `Poll cycle: 0 items from all sources (twitter-cli: ${twitterAvailable ? "available" : "unavailable"}, econ: checked)`,
+        `Poll cycle: 0 items from all sources (rettiwt: ${rettiwtUp ? "available" : "unavailable"}, econ: checked)`,
       );
       consecutivePollingFailures = 0;
       return;
@@ -588,13 +587,13 @@ export async function forcePoll(): Promise<void> {
 
   isPolling = true;
   try {
-    // Manual refresh path (outside normal scheduled cadence)
-    const [twitterCliItems, econItems] = await Promise.all([
-      manualRefreshTweets().catch(() => []),
+    // Manual refresh path — Rettiwt + Agent-Reach + economic feed
+    const [rettiwtItems, econItems] = await Promise.all([
+      manualRefresh().catch(() => []),
       fetchEconomicFeed().catch(() => []),
     ]);
 
-    const rawItems: FeedItem[] = [...econItems, ...twitterCliItems];
+    const rawItems: FeedItem[] = [...econItems, ...rettiwtItems];
     if (rawItems.length === 0) return;
 
     const itemIds = rawItems.map((i) => i.id);

@@ -9,6 +9,37 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-11T12:00:00",
+    agent: "claude-code",
+    summary:
+      "Stripped X CLI entirely — replaced with Rettiwt-API + Agent-Reach. Ported 1117-line econ-triggered-poller into 4 segmented modules. Added round-robin polling ownership (kill RiskFlow → next teammate takes over). Fixed /api/memory/shared 500, theme/font sensitivity for Team Cards + footer panels. Deprecated Exa as dead-letter fallback.",
+    files: [
+      "backend-hono/src/services/riskflow/econ-rettiwt-poller.ts",
+      "backend-hono/src/services/riskflow/rettiwt-poller-accounts.ts",
+      "backend-hono/src/services/riskflow/rettiwt-poller-econ.ts",
+      "backend-hono/src/services/riskflow/rettiwt-poller-transform.ts",
+      "backend-hono/src/services/riskflow/user-polling-registry.ts",
+      "backend-hono/src/services/riskflow/fj-emoji-filter.ts",
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "backend-hono/src/services/riskflow/commentary-scraper.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/routes/memory/index.ts",
+      "backend-hono/src/services/peers/shared-memory.ts",
+      "backend-hono/src/boot/services.ts",
+      "frontend/types/team.ts",
+      "frontend/hooks/useSourceStatus.ts",
+      "frontend/contexts/TeamPresenceContext.tsx",
+      "frontend/components/team/TeamMemberCard.tsx",
+      "frontend/components/team/TeamPanel.tsx",
+      "frontend/components/team/UserCard.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+    ],
+  },
+  {
     date: "2026-04-11T02:00:00",
     agent: "claude-code",
     summary:

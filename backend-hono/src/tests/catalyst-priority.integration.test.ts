@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { assignMacroLevel } from "../utils/assign-macro-level.js";
-import { shouldPushToConsilium } from "../services/twitter-cli/econ-triggered-poller.js";
+import { shouldPushToConsilium } from "../services/riskflow/rettiwt-poller-transform.js";
 import { shouldTriggerReactiveAdjustment } from "../services/miroshark/miroshark-reactive.js";
 import {
   addClient,

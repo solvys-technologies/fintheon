@@ -25,7 +25,7 @@ import type {
 } from "../../types/riskflow.js";
 import { isSupabaseConfigured } from "../../config/supabase.js";
 import { writeInstrumentScores } from "../../services/supabase-service.js";
-import { isTwitterCliInstalled } from "../../services/twitter-cli/index.js";
+import { isRettiwtAvailable } from "../../services/rettiwt-service.js";
 import {
   forcePoll,
   setPollingToggle,
@@ -861,13 +861,13 @@ export async function handleRefresh(c: Context) {
       polled = true;
     }
 
-    // 1b. If Twitter is rate-limited (or not owner), run Exa wire fallback
-    const { isRateLimited } =
-      await import("../../services/twitter-cli/index.js");
-    const { runExaFallback } =
+    // 1b. If Rettiwt is rate-limited (or not owner), run scrape fallback
+    const { isRettiwtRateLimited: isRateLimited } =
+      await import("../../services/riskflow/econ-rettiwt-poller.js");
+    const { runScrapeFallback } =
       await import("../../services/riskflow/feed-poller.js");
     if (isRateLimited() || !polled) {
-      await runExaFallback();
+      await runScrapeFallback();
       exaFallbackRan = true;
     }
 
@@ -977,24 +977,30 @@ export async function handleRescore(c: Context) {
 
 /** GET /api/riskflow/sources — connection status for data source indicators */
 export async function handleGetSources(c: Context) {
-  const { isRateLimited, getRateLimitCooldownMs } =
-    await import("../../services/twitter-cli/index.js");
-  const [twitterCli] = await Promise.all([
-    isTwitterCliInstalled().catch(() => false),
-  ]);
+  const { isRettiwtRateLimited, getRettiwtCooldownMs } =
+    await import("../../services/riskflow/econ-rettiwt-poller.js");
+  const { getCurrentPollingOwner, getActivePollingUsers } =
+    await import("../../services/riskflow/user-polling-registry.js");
+
   const supabaseUp = isSupabaseConfigured();
-  const rateLimited = isRateLimited();
+  const rettiwtUp = isRettiwtAvailable();
+  const rateLimited = isRettiwtRateLimited();
+  const cooldownSec = rateLimited
+    ? Math.round(getRettiwtCooldownMs() / 1000)
+    : 0;
+
   return c.json({
-    notion: supabaseUp, // Now backed by Supabase instead of Notion poller
-    // [claude-code 2026-04-06] twitterCli = binary installed, NOT rate limit state.
-    // Rate limit is a separate field (twitterRateLimited). Merging them made both
-    // Twitter AND Feed status lights red during normal 429 cooldowns.
-    twitterCli: twitterCli,
+    notion: supabaseUp,
+    rettiwt: rettiwtUp,
+    rettiwtRateLimited: rateLimited,
+    rettiwtCooldownSec: cooldownSec,
+    pollingOwner: getCurrentPollingOwner(),
+    activePollers: getActivePollingUsers(),
+    // Deprecated compat fields — frontend reads these during migration
+    twitterCli: rettiwtUp,
     twitterRateLimited: rateLimited,
-    twitterCooldownSec: rateLimited
-      ? Math.round(getRateLimitCooldownMs() / 1000)
-      : 0,
-    xApi: false, // Deprecated — replaced by twitter-cli
+    twitterCooldownSec: cooldownSec,
+    xApi: false,
   });
 }
 

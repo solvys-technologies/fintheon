@@ -1,26 +1,37 @@
-// [claude-code 2026-03-11] Source status hook — polls /api/riskflow/sources every 30s
+// [claude-code 2026-04-11] Renamed twitterCli → rettiwt, added pollingOwner + activePollers
 import { useEffect, useState, useRef, useCallback } from "react";
 
 export interface SourceStatus {
   notion: boolean;
-  twitterCli: boolean;
-  twitterRateLimited: boolean;
-  twitterCooldownSec: number;
+  rettiwt: boolean;
+  rettiwtRateLimited: boolean;
+  rettiwtCooldownSec: number;
+  pollingOwner: string | null;
+  activePollers: string[];
   xApi: boolean;
   /** Whether the last poll to the backend succeeded */
   backendReachable: boolean;
   /** ISO timestamp of the last successful poll */
   lastPollSuccess: string;
+  // Deprecated compat — frontend components still referencing old names
+  twitterCli: boolean;
+  twitterRateLimited: boolean;
+  twitterCooldownSec: number;
 }
 
 const DEFAULT_STATUS: SourceStatus = {
   notion: false,
-  twitterCli: false,
-  twitterRateLimited: false,
-  twitterCooldownSec: 0,
+  rettiwt: false,
+  rettiwtRateLimited: false,
+  rettiwtCooldownSec: 0,
+  pollingOwner: null,
+  activePollers: [],
   xApi: false,
   backendReachable: false,
   lastPollSuccess: new Date(0).toISOString(),
+  twitterCli: false,
+  twitterRateLimited: false,
+  twitterCooldownSec: 0,
 };
 const POLL_INTERVAL_MS = 30_000;
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -32,22 +43,30 @@ export function useSourceStatus(): SourceStatus {
   const poll = useCallback(() => {
     fetch(`${API_BASE}/api/riskflow/sources`)
       .then((r) => r.json())
-      .then(
-        (data: {
-          notion: boolean;
-          twitterCli: boolean;
-          twitterRateLimited?: boolean;
-          twitterCooldownSec?: number;
-          xApi: boolean;
-        }) =>
-          setStatus({
-            ...data,
-            twitterRateLimited: data.twitterRateLimited ?? false,
-            twitterCooldownSec: data.twitterCooldownSec ?? 0,
-            backendReachable: true,
-            lastPollSuccess: new Date().toISOString(),
-          }),
-      )
+      .then((data: Record<string, unknown>) => {
+        const rettiwt = Boolean(data.rettiwt ?? data.twitterCli ?? false);
+        const rateLimited = Boolean(
+          data.rettiwtRateLimited ?? data.twitterRateLimited ?? false,
+        );
+        const cooldownSec = Number(
+          data.rettiwtCooldownSec ?? data.twitterCooldownSec ?? 0,
+        );
+        setStatus({
+          notion: Boolean(data.notion),
+          rettiwt,
+          rettiwtRateLimited: rateLimited,
+          rettiwtCooldownSec: cooldownSec,
+          pollingOwner: (data.pollingOwner as string) ?? null,
+          activePollers: (data.activePollers as string[]) ?? [],
+          xApi: Boolean(data.xApi),
+          backendReachable: true,
+          lastPollSuccess: new Date().toISOString(),
+          // Compat
+          twitterCli: rettiwt,
+          twitterRateLimited: rateLimited,
+          twitterCooldownSec: cooldownSec,
+        });
+      })
       .catch(() => setStatus((prev) => ({ ...prev, backendReachable: false })));
   }, []);
 

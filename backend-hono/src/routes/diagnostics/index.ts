@@ -6,11 +6,11 @@ import { pingDb } from "../../db/optimized.js";
 import { supabaseAuthHealth } from "../../services/supabase-auth.js";
 import { isPollingActive } from "../../services/riskflow/feed-poller.js";
 import { getFeedHealth } from "../../services/riskflow/feed-service.js";
+import { isRettiwtAvailable } from "../../services/rettiwt-service.js";
 import {
-  isTwitterCliInstalled,
-  isRateLimited,
-  getRateLimitCooldownMs,
-} from "../../services/twitter-cli/index.js";
+  isRettiwtRateLimited,
+  getRettiwtCooldownMs,
+} from "../../services/riskflow/econ-rettiwt-poller.js";
 import { initHermesAgent } from "../../services/hermes-handler.js";
 import { createLogger } from "../../lib/logger.js";
 import {
@@ -123,34 +123,28 @@ function checkRiskFlowPoller(): ServiceDiagnostic {
   };
 }
 
-async function checkTwitterCli(): Promise<ServiceDiagnostic> {
-  try {
-    const installed = await isTwitterCliInstalled();
-    if (!installed) {
-      return {
-        name: "Twitter CLI",
-        status: "unavailable",
-        detail: "Not installed",
-        fix: "Install twitter-cli: go install github.com/solvys/twitter-cli@latest",
-      };
-    }
-    if (isRateLimited()) {
-      const cooldownSec = Math.round(getRateLimitCooldownMs() / 1000);
-      return {
-        name: "Twitter CLI",
-        status: "degraded",
-        detail: `Rate limited (429) — cooldown ${cooldownSec}s remaining`,
-      };
-    }
-    return { name: "Twitter CLI", status: "ok", detail: "Installed" };
-  } catch {
+function checkRettiwt(): ServiceDiagnostic {
+  if (!isRettiwtAvailable()) {
     return {
-      name: "Twitter CLI",
+      name: "Rettiwt (X/Twitter)",
       status: "unavailable",
-      detail: "Check failed",
-      fix: "Install twitter-cli binary and ensure it is on PATH",
+      detail: "RETTIWT_AUTH_TOKEN not set",
+      fix: "Add RETTIWT_AUTH_TOKEN to backend-hono/.env",
     };
   }
+  if (isRettiwtRateLimited()) {
+    const cooldownSec = Math.round(getRettiwtCooldownMs() / 1000);
+    return {
+      name: "Rettiwt (X/Twitter)",
+      status: "degraded",
+      detail: `Rate limited — cooldown ${cooldownSec}s remaining`,
+    };
+  }
+  return {
+    name: "Rettiwt (X/Twitter)",
+    status: "ok",
+    detail: "Token configured",
+  };
 }
 
 function checkSupabaseAuth(): ServiceDiagnostic {
@@ -224,7 +218,7 @@ export function createDiagnosticsRoutes(): Hono {
       checkHermesAI(),
       checkDatabase(),
       Promise.resolve(checkRiskFlowPoller()),
-      checkTwitterCli(),
+      Promise.resolve(checkRettiwt()),
       Promise.resolve(checkSupabaseAuth()),
       Promise.resolve(checkTradingView()),
     ]);

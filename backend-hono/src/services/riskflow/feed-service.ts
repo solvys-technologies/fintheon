@@ -39,11 +39,8 @@ import { getMatchedKeywords } from "../headline-parser.js";
 import * as newsCache from "./news-cache.js";
 import { fetchEconomicFeed } from "./economic-feed.js";
 import type { NewsSource as AnalysisNewsSource } from "../../types/news-analysis.js";
-import {
-  isTwitterCliInstalled,
-  pollTwitterForEconNews,
-  getWarmCacheItems,
-} from "../twitter-cli/index.js";
+import { pollForEconNews, getWarmCacheItems } from "./econ-rettiwt-poller.js";
+import { isRettiwtAvailable } from "../rettiwt-service.js";
 import {
   estimatePoints,
   shouldUncapNarrativePressure,
@@ -647,23 +644,23 @@ function isForeignEconPrint(headline: string): boolean {
  */
 async function fetchFreshFeed(): Promise<FeedItem[]> {
   try {
-    const [econItems, twitterCliItems] = await Promise.all([
+    const [econItems, rettiwtItems] = await Promise.all([
       fetchEconomicFeed(),
-      isTwitterCliInstalled()
-        .then((ok) => (ok ? pollTwitterForEconNews() : []))
-        .catch(() => []),
+      isRettiwtAvailable()
+        ? pollForEconNews().catch(() => [] as FeedItem[])
+        : Promise.resolve([] as FeedItem[]),
     ]);
 
     // Include warm-cached Critical/High posts seeded at startup
     const warmItems = getWarmCacheItems();
 
     // Merge and dedupe by id
-    const merged = [...econItems, ...twitterCliItems, ...warmItems].filter(
+    const merged = [...econItems, ...rettiwtItems, ...warmItems].filter(
       (item, idx, arr) => idx === arr.findIndex((i) => i.id === item.id),
     );
 
     log.info(
-      ` fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${twitterCliItems.length} twcli)`,
+      ` fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${rettiwtItems.length} rettiwt)`,
     );
 
     // S3: Write raw items to raw_riskflow_items for central scorer pipeline

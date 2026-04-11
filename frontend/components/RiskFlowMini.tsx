@@ -726,7 +726,7 @@ export default function RiskFlowMini({
                 </span>
               )}
               <div className="flex items-center gap-2 ml-1">
-                <StatusDot active={sourceStatus.twitterCli} label="X" />
+                <StatusDot active={sourceStatus.rettiwt} label="X" />
               </div>
             </div>
             <div className="flex items-center gap-1">
