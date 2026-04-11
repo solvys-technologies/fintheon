@@ -11,6 +11,7 @@
 import type { Context } from "hono";
 import * as feedService from "../../services/riskflow/feed-service.js";
 import * as watchlistService from "../../services/riskflow/watchlist-service.js";
+import * as watchlistPhrasesService from "../../services/riskflow/watchlist-phrases-service.js";
 import {
   addClient,
   removeClient,
@@ -1073,4 +1074,62 @@ export async function handleUserPollingStatus(c: Context) {
     users: getActivePollingUsers(),
     allKilled: areAllUsersKilled(),
   });
+}
+
+/**
+ * GET /api/riskflow/phrases
+ * Get user's active catalyst watch phrases
+ */
+export async function handleGetPhrases(c: Context) {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const phrases = await watchlistPhrasesService.getUserPhrases(userId);
+  return c.json({ phrases });
+}
+
+/**
+ * POST /api/riskflow/phrases
+ * Add a new catalyst watch phrase (bias words auto-stripped)
+ */
+export async function handleAddPhrase(c: Context) {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  try {
+    const body = await c.req.json<{
+      phrase: string;
+      matchType?: "contains" | "exact";
+      repeating?: boolean;
+    }>();
+
+    if (!body.phrase?.trim()) {
+      return c.json({ error: "Phrase is required" }, 400);
+    }
+
+    const result = await watchlistPhrasesService.addPhrase(userId, body);
+    return c.json({
+      phrase: result.phrase,
+      removedBias: result.removedBias,
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Failed to add phrase";
+    return c.json({ error: msg }, 400);
+  }
+}
+
+/**
+ * DELETE /api/riskflow/phrases/:id
+ * Deactivate a catalyst watch phrase
+ */
+export async function handleDeletePhrase(c: Context) {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const id = parseInt(c.req.param("id"), 10);
+  if (isNaN(id)) return c.json({ error: "Invalid phrase ID" }, 400);
+
+  const deleted = await watchlistPhrasesService.deletePhrase(userId, id);
+  if (!deleted) return c.json({ error: "Not found" }, 404);
+  return c.json({ ok: true });
 }

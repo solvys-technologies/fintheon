@@ -59,10 +59,7 @@ import {
 import { isSupabaseConfigured } from "../../config/supabase.js";
 import { scoredToFeedItem } from "./central-scorer.js";
 import { assignMacroLevel } from "../../utils/assign-macro-level.js";
-import {
-  extractFJEmojiFromText,
-  fjTierFromEmoji,
-} from "../twitter-cli/fj-emoji-filter.js";
+import { extractFJEmojiFromText, fjTierFromEmoji } from "./fj-emoji-filter.js";
 
 const log = createLogger("RiskFlow");
 // [claude-code 2026-04-01] Bumped from 100 → 500. All scored items should be accessible.

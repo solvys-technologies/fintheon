@@ -24,6 +24,9 @@ import {
   handlePollingStatus,
   handleUserPollingToggle,
   handleUserPollingStatus,
+  handleGetPhrases,
+  handleAddPhrase,
+  handleDeletePhrase,
 } from "./handlers.js";
 
 export function createRiskFlowRoutes(): Hono {
@@ -85,6 +88,11 @@ export function createRiskFlowRoutes(): Hono {
 
   // GET /api/riskflow/user-polling-status - Per-user polling registry status
   router.get("/user-polling-status", handleUserPollingStatus);
+
+  // Catalyst Watch — watchlist phrase CRUD
+  router.get("/phrases", handleGetPhrases);
+  router.post("/phrases", handleAddPhrase);
+  router.delete("/phrases/:id", handleDeletePhrase);
 
   return router;
 }

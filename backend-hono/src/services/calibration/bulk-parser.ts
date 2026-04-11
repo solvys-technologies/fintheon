@@ -1,8 +1,8 @@
 // [claude-code 2026-03-27] S2-T4: Bulk text parser — parses raw FJ post dumps into structured items
 import { parseHeadline } from "../headline-parser.js";
-import { classifyFJHeadline } from "../twitter-cli/fj-emoji-filter.js";
+import { classifyFJHeadline } from "../riskflow/fj-emoji-filter.js";
 import type { ParsedHeadline } from "../../types/news-analysis.js";
-import type { FJClassification } from "../twitter-cli/fj-emoji-filter.js";
+import type { FJClassification } from "../riskflow/fj-emoji-filter.js";
 import type { CalibrationObservation } from "../../types/calibration.js";
 import type { MarketRegime } from "../../types/regime.js";
 

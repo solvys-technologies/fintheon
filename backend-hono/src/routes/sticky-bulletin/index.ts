@@ -6,6 +6,7 @@ import {
   saveUserBulletin,
   addAntilagTime,
   getAntilagAggregates,
+  getHotTimes,
 } from "../../services/sticky-bulletin-store.js";
 
 function getUserId(c: Context): string | null {
@@ -64,6 +65,13 @@ export function createStickyBulletinRoutes(): Hono {
   app.get("/antilag/aggregates", async (c) => {
     const aggregates = await getAntilagAggregates();
     return c.json({ aggregates });
+  });
+
+  // GET /antilag/hot-times — top 3 fifteen-minute windows with most observations
+  app.get("/antilag/hot-times", async (c) => {
+    const byDay = c.req.query("byDay") === "true";
+    const hotTimes = await getHotTimes(byDay);
+    return c.json({ hotTimes });
   });
 
   return app;

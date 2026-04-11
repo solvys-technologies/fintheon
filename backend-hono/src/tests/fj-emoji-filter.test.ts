@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fjTierFromEmoji } from "../services/twitter-cli/fj-emoji-filter.js";
+import { fjTierFromEmoji } from "../services/riskflow/fj-emoji-filter.js";
 
 test("fjTierFromEmoji maps canonical tiers", () => {
   assert.equal(fjTierFromEmoji("🚨"), "tier1");

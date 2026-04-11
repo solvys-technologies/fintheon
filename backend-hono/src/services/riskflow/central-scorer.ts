@@ -31,6 +31,11 @@ import {
   setRunningState,
 } from "../miroshark/miroshark-reactive.js";
 import {
+  getAllActivePhrases,
+  phraseMatchesItem,
+  recordMatch,
+} from "./watchlist-phrases-service.js";
+import {
   generateNotesForCriticalItems,
   generateNotesForEconItems,
 } from "./agent-notes.js";
@@ -561,6 +566,38 @@ export async function scoringCycle(): Promise<void> {
 
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
+
+    // Catalyst Watch — match scored items against user watchlist phrases
+    try {
+      const activePhrases = await getAllActivePhrases();
+      if (activePhrases.length > 0) {
+        for (const item of enrichedItems) {
+          const headline = item.headline || "";
+          const tags = item.tags || [];
+          for (const phrase of activePhrases) {
+            if (phraseMatchesItem(phrase, headline, tags)) {
+              log.info(`[CatalystWatch] Phrase "${phrase.phrase}" matched: "${headline}"`);
+              recordMatch(phrase.id).catch(() => {});
+              // Push match to Consilium for visibility
+              writeConsiliumMessage({
+                agent_name: "CatalystWatch",
+                agent_role: "catalyst-alert",
+                content: `[Alert] "${phrase.phrase}" matched: ${headline}`,
+                message_type: "CatalystWatch-Alert",
+                metadata: {
+                  phraseId: phrase.id,
+                  userId: phrase.userId,
+                  source: item.source,
+                  itemId: item.id,
+                },
+              }).catch(() => {});
+            }
+          }
+        }
+      }
+    } catch (err) {
+      log.warn("[CatalystWatch] Phrase matching failed", { error: String(err) });
+    }
 
     // Push High/Critical items to Consilium so they appear in the agent chat
     for (const item of enrichedItems) {

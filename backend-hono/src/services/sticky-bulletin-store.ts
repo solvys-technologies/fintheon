@@ -190,6 +190,80 @@ export async function getAntilagAggregates(): Promise<
   }
 }
 
+/**
+ * Bucket a HH:mm time string into a 15-minute window label, e.g. "09:30 – 09:45"
+ */
+function bucketTime15(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const bucketStart = Math.floor(m / 15) * 15;
+  const bucketEnd = bucketStart + 15;
+  const endH = bucketEnd >= 60 ? h + 1 : h;
+  const endM = bucketEnd % 60;
+  return `${String(h).padStart(2, "0")}:${String(bucketStart).padStart(2, "0")} – ${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+}
+
+export interface HotTimeEntry {
+  bucket: string;
+  dayOfWeek?: number;
+  count: number;
+  instruments: string[];
+}
+
+/**
+ * Get top 3 hot 15-minute windows for antilag, optionally grouped by day-of-week
+ */
+export async function getHotTimes(byDay: boolean): Promise<HotTimeEntry[]> {
+  if (!isDatabaseAvailable() || !sql) return [];
+
+  try {
+    const rows = await sql`
+      SELECT time, day_of_week, instrument
+      FROM antilag_times
+    `;
+
+    // Bucket and aggregate in JS
+    const buckets = new Map<
+      string,
+      { count: number; instruments: Set<string> }
+    >();
+
+    for (const r of rows as any[]) {
+      const b = bucketTime15(r.time);
+      const key = byDay ? `${b}|${r.day_of_week}` : b;
+      const entry = buckets.get(key) ?? {
+        count: 0,
+        instruments: new Set<string>(),
+      };
+      entry.count++;
+      if (r.instrument) entry.instruments.add(r.instrument);
+      buckets.set(key, entry);
+    }
+
+    const sorted = [...buckets.entries()]
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 3);
+
+    return sorted.map(([key, val]) => {
+      if (byDay) {
+        const [bucket, dayStr] = key.split("|");
+        return {
+          bucket,
+          dayOfWeek: parseInt(dayStr, 10),
+          count: val.count,
+          instruments: [...val.instruments],
+        };
+      }
+      return {
+        bucket: key,
+        count: val.count,
+        instruments: [...val.instruments],
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 async function ensureTables(): Promise<void> {
   if (!sql) return;
   await sql`
