@@ -23,7 +23,6 @@ import {
   Check,
   XCircle,
   RefreshCw,
-  Sparkles,
   Loader2,
 } from "lucide-react";
 import type { RiskFlowAlert, TradeIdeaDetail } from "../lib/riskflow-feed";
@@ -216,7 +215,6 @@ function AgentNoteSection({
       }}
       className="mt-2 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
     >
-      <Sparkles className="w-3 h-3" />
       Generate Note +
     </button>
   );

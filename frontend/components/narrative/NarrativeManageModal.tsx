@@ -1,6 +1,6 @@
 // [claude-code 2026-03-16] NarrativeTimelineModal — scrollable vertical timeline with electric pulse
 import { useState, useCallback, useMemo } from "react";
-import { X, Plus, Sparkles } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 import type {
   CatalystCard,
@@ -232,9 +232,7 @@ export function NarrativeTimelineModal({
                       className="absolute top-1.5 right-1.5 p-1 rounded hover:bg-white/10 transition-colors"
                       title="AI generate description"
                       style={{ color: "var(--fintheon-accent)" }}
-                    >
-                      <Sparkles className="w-3 h-3" />
-                    </button>
+                    ></button>
                   </div>
 
                   {/* Tags */}

@@ -9,7 +9,6 @@ import {
   TrendingDown,
   ChevronDown,
   ChevronRight,
-  Sparkles,
   Trash2,
 } from "lucide-react";
 import { useRegimes } from "../../lib/regime-store";
@@ -418,7 +417,7 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
                 className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/10 transition-colors"
                 title="AI Generate a new regime via chat"
               >
-                <Sparkles className="w-3 h-3" /> AI Generate
+                AI Generate
               </button>
               <button
                 onClick={() => setShowAddForm((v) => !v)}

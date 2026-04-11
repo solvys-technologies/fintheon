@@ -1,6 +1,6 @@
 // [claude-code 2026-03-20] S3-FIX:T4 — Walkthrough overhaul: contextual floating cards, 11 steps
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Sparkles } from "lucide-react";
+import { X } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
 
 const TOUR_STORAGE_KEY = "fintheon:tour-completed";
@@ -209,9 +209,7 @@ function TourCard({
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
             style={{ background: "rgba(199, 159, 74, 0.12)" }}
-          >
-            <Sparkles className="w-4 h-4" style={{ color: "#c79f4a" }} />
-          </div>
+          ></div>
           <h3 className="text-base font-bold" style={{ color: "#c79f4a" }}>
             {step.title}
           </h3>
@@ -425,7 +423,6 @@ export function WhatsNewButton() {
         onClick={() => setShowPanel(!showPanel)}
         className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-accent)]/15 border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/25 transition-colors animate-pulse"
       >
-        <Sparkles className="w-3 h-3" />
         Welcome to the Pantheon
       </button>
 

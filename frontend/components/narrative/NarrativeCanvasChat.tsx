@@ -1,7 +1,7 @@
 // [claude-code 2026-03-28] S8-T2: Ephemeral command palette chat — expandable above toolbar
 // Same Claude CLI session as sidebar Chat. Responses auto-hide after 8s.
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Loader2, Send, X, Sparkles } from "lucide-react";
+import { Loader2, Send, X } from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -159,10 +159,6 @@ export function NarrativeCanvasChat({
             boxShadow: "0 -4px 24px rgba(0,0,0,0.3)",
           }}
         >
-          <Sparkles
-            className="w-3.5 h-3.5 shrink-0"
-            style={{ color: "var(--fintheon-accent)" }}
-          />
           <p
             className="flex-1 text-[11px] leading-relaxed"
             style={{

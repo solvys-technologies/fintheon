@@ -1,13 +1,7 @@
 // [claude-code 2026-03-30] S10: Briefing dropdown selector + countdown timer
 // [claude-code 2026-03-12] Made scrollable, removed line-clamp, renders markdown-style formatting
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  FileText,
-  RefreshCw,
-  Sparkles,
-  ChevronDown,
-  Clock,
-} from "lucide-react";
+import { FileText, RefreshCw, ChevronDown, Clock } from "lucide-react";
 import { useBackend } from "../../lib/backend";
 
 /** Simple markdown-ish renderer for brief text — bolds, bullets, headers */
@@ -300,11 +294,7 @@ export function BriefMiniWidget() {
             disabled={generating}
             className="p-0.5 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
             title="AI Generate brief"
-          >
-            <Sparkles
-              className={`w-2.5 h-2.5 ${generating ? "animate-pulse" : ""}`}
-            />
-          </button>
+          ></button>
           <button
             type="button"
             onClick={handleRefresh}
@@ -343,9 +333,6 @@ export function BriefMiniWidget() {
               disabled={generating}
               className="flex items-center gap-1 px-2 py-1 text-[9px] font-semibold text-[var(--fintheon-accent)] hover:text-[var(--fintheon-text)] transition-colors disabled:opacity-40"
             >
-              <Sparkles
-                className={`w-3 h-3 ${generating ? "animate-pulse" : ""}`}
-              />{" "}
               Generate Brief
             </button>
           </div>

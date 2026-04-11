@@ -10,7 +10,6 @@ import {
   ExternalLink,
   Diff,
   TrendingDown,
-  Sparkles,
 } from "lucide-react";
 import { SEVERITY_CONFIG } from "../../lib/severity-config";
 import { ivHeatColor } from "../../types/miroshark";
@@ -424,7 +423,6 @@ export function ExpandableTapeItem({
                 }}
                 className="mt-2 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
               >
-                <Sparkles className="w-3 h-3" />
                 Generate Note +
               </button>
             )}

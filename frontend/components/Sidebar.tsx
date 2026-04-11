@@ -1,4 +1,4 @@
-import { Activity, Sparkles, Newspaper } from "lucide-react";
+import { Activity, Bot, Newspaper } from "lucide-react";
 
 interface SidebarProps {
   activeTab: "feed" | "chat" | "news";
@@ -8,7 +8,7 @@ interface SidebarProps {
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const tabs = [
     { id: "feed" as const, icon: Activity, label: "System Feed" },
-    { id: "chat" as const, icon: Sparkles, label: "AI Analysis" },
+    { id: "chat" as const, icon: Bot, label: "AI Analysis" },
     { id: "news" as const, icon: Newspaper, label: "Market News & Events" },
   ];
 
