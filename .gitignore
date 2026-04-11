@@ -40,3 +40,4 @@ supabase/.temp/
 fintheon-debug-sprint/
 agentic-refactor-plan-v2/
 # halftone-heroes kept in repo for login screen backgrounds
+.vercel
