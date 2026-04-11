@@ -26,6 +26,9 @@ import { getPollingConfig } from "./polling-config.js";
 import { pollCommentary } from "./commentary-scraper.js";
 import { checkForScheduledEvents } from "./exa-scheduled-monitor.js";
 import { exaSearch, isExaAvailable } from "../exa-service.js";
+import { rettiwtSearch, isRettiwtAvailable } from "../rettiwt-service.js";
+import { scrapeMultiple } from "../agent-reach-service.js";
+import { areAllUsersKilled } from "./user-polling-registry.js";
 import type { FeedItem } from "../../types/riskflow.js";
 import { createLogger } from "../../lib/logger.js";
 
@@ -83,6 +86,7 @@ let manualToggleEnabled = true;
 
 /**
  * Backend polling is autonomous. Only the manual admin toggle can disable it.
+ * When all users kill their feed, polling switches to scrape-only mode.
  */
 function isPollingAllowed(): boolean {
   if (!manualToggleEnabled) {
@@ -90,6 +94,10 @@ function isPollingAllowed(): boolean {
     return false;
   }
   return true;
+}
+
+function shouldUseScrapeOnly(): boolean {
+  return areAllUsersKilled();
 }
 
 /** Set the manual polling toggle. When false, ALL X API calls stop. */
@@ -156,113 +164,216 @@ function hashForDedup(s: string): string {
   return Math.abs(h).toString(36);
 }
 
-export async function runExaFallback(): Promise<number> {
-  if (!isExaAvailable()) {
-    log.info("[ExaFallback] EXA_API_KEY not set — skipping");
-    return 0;
-  }
+export async function runScrapeFallback(): Promise<number> {
   if (!isSupabaseConfigured()) return 0;
 
-  log.info(
-    "[ExaFallback] Twitter rate-limited — running Exa wire search as fallback",
-  );
+  log.info("[ScrapeFallback] Running Rettiwt + Agent-Reach fallback pipeline");
   let totalWritten = 0;
 
-  for (const query of EXA_FALLBACK_QUERIES) {
-    try {
-      const results = await exaSearch(query, {
-        numResults: 8,
-        type: "auto",
-        useAutoprompt: true,
-        includeDomains: EXA_FALLBACK_DOMAINS,
-      });
+  // ── Step 1: Try Rettiwt search ──
+  if (isRettiwtAvailable()) {
+    for (const query of EXA_FALLBACK_QUERIES) {
+      try {
+        const results = await rettiwtSearch(query, { count: 8 });
+        const items: RawRiskFlowItem[] = [];
+        for (const r of results) {
+          const title = r.text?.trim().slice(0, 280);
+          if (!title || title.length < 15) continue;
 
-      const items: RawRiskFlowItem[] = [];
-      for (const r of results) {
-        const title = r.title?.trim();
-        if (!title || title.length < 15) continue;
-        if (/^(home|about|contact|subscribe|sign in|menu|cookie)/i.test(title))
-          continue;
-        // Filter junk: session prep pages, download/app ads, marketing noise
-        if (
-          /\b(download the app|session prep|pre-?session|sign up|create account|free trial|subscribe now|get started|install|app store|google play|newsletter|webinar|podcast|sponsored)\b/i.test(
-            title,
-          )
-        )
-          continue;
+          const id = `rt-fb-${hashForDedup(title.toLowerCase())}`;
+          if (exaFallbackSeenIds.has(id)) continue;
+          exaFallbackSeenIds.add(id);
 
-        const bucket =
-          r.publishedDate?.slice(0, 13) ??
-          new Date().toISOString().slice(0, 13);
-        const id = `exa-fb-${hashForDedup(`${title.toLowerCase()}|${bucket}`)}`;
-        if (exaFallbackSeenIds.has(id)) continue;
-        exaFallbackSeenIds.add(id);
+          const isMacro =
+            /\b(fed|fomc|cpi|ppi|gdp|nfp|pce|inflation|jobless|retail sales|rate)\b/i.test(
+              title,
+            );
+          const isGeo =
+            /\b(iran|israel|missile|strike|houthi|hezbollah|irgc|ceasefire|tariff|trade war)\b/i.test(
+              title,
+            );
+          const isBreaking = /\b(breaking|urgent|alert|flash)\b/i.test(title);
 
-        const fullText = `${title} ${r.text || ""}`;
-        const isMacro =
-          /\b(fed|fomc|cpi|ppi|gdp|nfp|pce|inflation|jobless|retail sales|rate)\b/i.test(
-            fullText,
-          );
-        const isGeo =
-          /\b(iran|israel|missile|strike|houthi|hezbollah|irgc|ceasefire|tariff|trade war)\b/i.test(
-            fullText,
-          );
-        const isBreaking = /\b(breaking|urgent|alert|flash)\b/i.test(fullText);
+          items.push({
+            tweet_id: id,
+            source: isMacro
+              ? "FinancialJuice"
+              : isGeo
+                ? "OSINTSources"
+                : "Custom",
+            headline: title,
+            body: r.text.length > 280 ? r.text.slice(280, 600) : undefined,
+            url: r.url || undefined,
+            symbols: [],
+            tags: [],
+            is_breaking: isBreaking,
+            urgency: isBreaking ? "immediate" : "normal",
+            published_at: r.publishedDate ?? new Date().toISOString(),
+            submitted_by: "feed-poller:rettiwt-fallback",
+          });
+        }
 
-        items.push({
-          tweet_id: id,
-          source: isMacro
-            ? "FinancialJuice"
-            : isGeo
-              ? "OSINTSources"
-              : "Custom",
-          headline: title,
-          body:
-            (r.text || "")
-              .replace(/\n+/g, " ")
-              .replace(/\s+/g, " ")
-              .trim()
-              .slice(0, 300) || undefined,
-          url: r.url || undefined,
-          symbols: [],
-          tags: [],
-          is_breaking: isBreaking,
-          urgency: isBreaking ? "immediate" : "normal",
-          published_at: r.publishedDate ?? new Date().toISOString(),
-          submitted_by: "feed-poller:exa-fallback",
-        });
+        if (items.length > 0) {
+          const written = await writeRawItems(items);
+          totalWritten += written;
+        }
+      } catch (err) {
+        log.warn(
+          `[ScrapeFallback] Rettiwt query failed: "${query.slice(0, 40)}"`,
+          { error: String(err) },
+        );
       }
+    }
+    log.info(
+      `[ScrapeFallback] Rettiwt phase done — ${totalWritten} items written`,
+    );
+  }
 
-      if (items.length > 0) {
-        const written = await writeRawItems(items);
-        totalWritten += written;
-      }
-    } catch (err) {
-      log.warn(`[ExaFallback] Query failed: "${query.slice(0, 40)}"`, {
-        error: String(err),
+  // ── Step 2: Try Agent-Reach scrape if Rettiwt yielded nothing ──
+  if (totalWritten === 0) {
+    const scrapeUrls = EXA_FALLBACK_DOMAINS.map((d) => `https://${d}`);
+    const articles = await scrapeMultiple(scrapeUrls);
+    const items: RawRiskFlowItem[] = [];
+    for (const a of articles) {
+      const title = a.title?.trim();
+      if (!title || title.length < 15) continue;
+      if (/^(home|about|contact|subscribe|sign in|menu|cookie)/i.test(title))
+        continue;
+
+      const id = `ar-fb-${hashForDedup(title.toLowerCase())}`;
+      if (exaFallbackSeenIds.has(id)) continue;
+      exaFallbackSeenIds.add(id);
+
+      const isBreaking = /\b(breaking|urgent|alert|flash)\b/i.test(
+        `${title} ${a.text}`,
+      );
+
+      items.push({
+        tweet_id: id,
+        source: "Custom",
+        headline: title,
+        body: a.text.slice(0, 300) || undefined,
+        url: a.url,
+        symbols: [],
+        tags: [],
+        is_breaking: isBreaking,
+        urgency: isBreaking ? "immediate" : "normal",
+        published_at: a.publishedDate ?? new Date().toISOString(),
+        submitted_by: "feed-poller:agent-reach-fallback",
       });
+    }
+
+    if (items.length > 0) {
+      const written = await writeRawItems(items);
+      totalWritten += written;
+      log.info(`[ScrapeFallback] Agent-Reach phase — ${written} items written`);
     }
   }
 
-  // Also run existing Exa scrapers (commentary + scheduled events)
+  // ── Step 3: Dead-letter Exa fallback ──
+  if (totalWritten === 0 && isExaAvailable()) {
+    log.info(
+      "[ScrapeFallback] Rettiwt+AgentReach empty — trying Exa dead-letter",
+    );
+    for (const query of EXA_FALLBACK_QUERIES) {
+      try {
+        const results = await exaSearch(query, {
+          numResults: 8,
+          type: "auto",
+          useAutoprompt: true,
+          includeDomains: EXA_FALLBACK_DOMAINS,
+        });
+
+        const items: RawRiskFlowItem[] = [];
+        for (const r of results) {
+          const title = r.title?.trim();
+          if (!title || title.length < 15) continue;
+          if (
+            /^(home|about|contact|subscribe|sign in|menu|cookie)/i.test(title)
+          )
+            continue;
+          if (
+            /\b(download the app|session prep|pre-?session|sign up|create account|free trial|subscribe now|get started|install|app store|google play|newsletter|webinar|podcast|sponsored)\b/i.test(
+              title,
+            )
+          )
+            continue;
+
+          const id = `exa-fb-${hashForDedup(title.toLowerCase())}`;
+          if (exaFallbackSeenIds.has(id)) continue;
+          exaFallbackSeenIds.add(id);
+
+          const fullText = `${title} ${r.text || ""}`;
+          const isMacro =
+            /\b(fed|fomc|cpi|ppi|gdp|nfp|pce|inflation|jobless|retail sales|rate)\b/i.test(
+              fullText,
+            );
+          const isGeo =
+            /\b(iran|israel|missile|strike|houthi|hezbollah|irgc|ceasefire|tariff|trade war)\b/i.test(
+              fullText,
+            );
+          const isBreaking = /\b(breaking|urgent|alert|flash)\b/i.test(
+            fullText,
+          );
+
+          items.push({
+            tweet_id: id,
+            source: isMacro
+              ? "FinancialJuice"
+              : isGeo
+                ? "OSINTSources"
+                : "Custom",
+            headline: title,
+            body:
+              (r.text || "")
+                .replace(/\n+/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+                .slice(0, 300) || undefined,
+            url: r.url || undefined,
+            symbols: [],
+            tags: [],
+            is_breaking: isBreaking,
+            urgency: isBreaking ? "immediate" : "normal",
+            published_at: r.publishedDate ?? new Date().toISOString(),
+            submitted_by: "feed-poller:exa-fallback",
+          });
+        }
+
+        if (items.length > 0) {
+          const written = await writeRawItems(items);
+          totalWritten += written;
+        }
+      } catch (err) {
+        log.warn(`[ScrapeFallback] Exa query failed: "${query.slice(0, 40)}"`, {
+          error: String(err),
+        });
+      }
+    }
+  }
+
+  // Also run commentary + scheduled event scrapers
   await Promise.all([
     pollCommentary().catch((err) =>
-      log.warn("[ExaFallback] Commentary scrape failed:", {
+      log.warn("[ScrapeFallback] Commentary scrape failed:", {
         error: String(err),
       }),
     ),
     checkForScheduledEvents().catch((err) =>
-      log.warn("[ExaFallback] Scheduled events failed:", {
+      log.warn("[ScrapeFallback] Scheduled events failed:", {
         error: String(err),
       }),
     ),
   ]);
 
   log.info(
-    `[ExaFallback] Done — ${totalWritten} new items written to raw_riskflow_items`,
+    `[ScrapeFallback] Done — ${totalWritten} new items written to raw_riskflow_items`,
   );
   return totalWritten;
 }
+
+/** @deprecated Use runScrapeFallback instead */
+export const runExaFallback = runScrapeFallback;
 
 /**
  * Poll for new feed items and process them
@@ -289,9 +400,19 @@ async function pollForNewItems(): Promise<void> {
   _pollsSinceLastLog++;
 
   try {
-    // ── Exa fallback when Twitter is rate-limited ──
+    // ── Scrape-only mode when all users killed their feeds ──
+    if (shouldUseScrapeOnly()) {
+      log.info(
+        "[FeedPoller] All users killed X feed — running scrape fallback only",
+      );
+      await runScrapeFallback();
+      consecutivePollingFailures = 0;
+      return;
+    }
+
+    // ── Scrape fallback when Twitter is rate-limited ──
     if (isRateLimited()) {
-      await runExaFallback();
+      await runScrapeFallback();
       consecutivePollingFailures = 0;
       return;
     }
@@ -321,12 +442,12 @@ async function pollForNewItems(): Promise<void> {
     // Track Twitter empty polls — triggers Exa fallback after consecutive empties
     if (twitterAvailable && twitterCliItems.length === 0) {
       markPollEmpty();
-      // If now considered rate limited after this empty poll, run Exa fallback
+      // If now considered rate limited after this empty poll, run scrape fallback
       if (isRateLimited()) {
         log.info(
-          "Twitter returning empty — running Exa fallback for headlines",
+          "Twitter returning empty — running scrape fallback for headlines",
         );
-        await runExaFallback();
+        await runScrapeFallback();
       }
     } else if (twitterCliItems.length > 0) {
       markPollSuccess();

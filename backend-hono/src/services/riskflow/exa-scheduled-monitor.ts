@@ -4,6 +4,8 @@ import {
   isExaAvailable,
   type ExaSearchResult,
 } from "../exa-service.js";
+import { rettiwtSearch, isRettiwtAvailable } from "../rettiwt-service.js";
+import { scrapeMultiple, type ScrapedArticle } from "../agent-reach-service.js";
 import { fetchEconCalendar } from "../econ-calendar-service.js";
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
 import { getPollingConfig } from "./polling-config.js";

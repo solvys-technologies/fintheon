@@ -80,5 +80,11 @@ export function createRiskFlowRoutes(): Hono {
   // GET /api/riskflow/polling-status - Current polling state for frontend toggle sync
   router.get("/polling-status", handlePollingStatus);
 
+  // POST /api/riskflow/user-polling-toggle - Per-user X CLI killswitch
+  router.post("/user-polling-toggle", handleUserPollingToggle);
+
+  // GET /api/riskflow/user-polling-status - Per-user polling registry status
+  router.get("/user-polling-status", handleUserPollingStatus);
+
   return router;
 }

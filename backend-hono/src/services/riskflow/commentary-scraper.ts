@@ -11,6 +11,11 @@ import {
   type ExaSearchResult,
 } from "../exa-service.js";
 import {
+  rettiwtSearch,
+  isRettiwtAvailable,
+  type RettiwtSearchResult,
+} from "../rettiwt-service.js";
+import {
   fetchBookmarks,
   isTwitterCliInstalled,
 } from "../twitter-cli/twitter-cli-service.js";
@@ -256,6 +261,39 @@ function exaToRawItem(
   };
 }
 
+// ─── Rettiwt Result → RawRiskFlowItem ─────────────────────────
+
+function rettiwtToRawItem(
+  result: RettiwtSearchResult,
+  group: SearchGroup,
+): RawRiskFlowItem | null {
+  const text = result.text?.trim();
+  if (!text || text.length < 15) return null;
+
+  const headline = text.slice(0, 280);
+  const normalizedTitle = headline
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const id = `rt-${group.idPrefix}-${hashString(normalizedTitle)}`;
+  if (submittedIds.has(id)) return null;
+
+  return {
+    tweet_id: id,
+    source: group.source,
+    headline,
+    body: text.length > 280 ? text.slice(280, 600) : undefined,
+    url: result.url || undefined,
+    symbols: extractSymbols(text),
+    tags: extractTags(text),
+    is_breaking: /\b(breaking|urgent|alert|flash)\b/i.test(text),
+    urgency: /\b(breaking|urgent)\b/i.test(text) ? "immediate" : "normal",
+    published_at: result.publishedDate ?? new Date().toISOString(),
+    submitted_by: `commentary-scraper:rettiwt-${group.name}`,
+  };
+}
+
 // ─── Bookmark Polling ──────────────────────────────────────────
 // Fetches bookmarks from the authenticated X account, matches each
 // against active Narrative keyword sets, and ingests only matches.
@@ -316,28 +354,25 @@ async function pollBookmarks(): Promise<number> {
 // ─── Main Poll Cycle ────────────────────────────────────────────
 
 export async function pollCommentary(): Promise<void> {
-  log.info("Starting Exa + Bookmark catalyst scrape cycle");
+  log.info("Starting Rettiwt/Exa + Bookmark catalyst scrape cycle");
   let totalNew = 0;
 
-  // Phase 1: Exa neural search
-  if (isExaAvailable()) {
+  // Phase 1: Rettiwt search (primary), Exa as fallback
+  if (isRettiwtAvailable()) {
     for (const group of SEARCH_GROUPS) {
       try {
-        const results = await exaSearch(group.query, {
-          numResults: group.numResults,
-          type: "neural",
-          useAutoprompt: true,
-          includeDomains: group.includeDomains,
+        const results = await rettiwtSearch(group.query, {
+          count: group.numResults,
         });
 
         if (results.length === 0) {
-          log.info(`${group.name}: 0 Exa results`);
+          log.info(`${group.name}: 0 Rettiwt results`);
           continue;
         }
 
         const items: RawRiskFlowItem[] = [];
         for (const result of results) {
-          const item = exaToRawItem(result, group);
+          const item = rettiwtToRawItem(result, group);
           if (item) items.push(item);
         }
 
@@ -350,13 +385,48 @@ export async function pollCommentary(): Promise<void> {
         for (const item of items) submittedIds.add(item.tweet_id);
         totalNew += written;
 
+        log.info(`${group.name}: ${written} catalysts ingested via Rettiwt`);
+      } catch (err) {
+        log.warn(`${group.name} Rettiwt scrape failed`, {
+          error: String(err),
+        });
+      }
+    }
+  } else if (isExaAvailable()) {
+    // Exa fallback when Rettiwt is not configured
+    log.info("RETTIWT_AUTH_TOKEN not set — falling back to Exa");
+    for (const group of SEARCH_GROUPS) {
+      try {
+        const results = await exaSearch(group.query, {
+          numResults: group.numResults,
+          type: "neural",
+          useAutoprompt: true,
+          includeDomains: group.includeDomains,
+        });
+
+        if (results.length === 0) continue;
+
+        const items: RawRiskFlowItem[] = [];
+        for (const result of results) {
+          const item = exaToRawItem(result, group);
+          if (item) items.push(item);
+        }
+
+        if (items.length === 0) continue;
+
+        const written = await writeRawItems(items);
+        for (const item of items) submittedIds.add(item.tweet_id);
+        totalNew += written;
+
         log.info(`${group.name}: ${written} catalysts ingested via Exa`);
       } catch (err) {
         log.warn(`${group.name} Exa scrape failed`, { error: String(err) });
       }
     }
   } else {
-    log.warn("EXA_API_KEY not set — Exa scrape skipped");
+    log.warn(
+      "Neither RETTIWT_AUTH_TOKEN nor EXA_API_KEY set — catalyst scrape skipped",
+    );
   }
 
   // Phase 2: Bookmark polling (narrative-keyword gated)
@@ -373,14 +443,14 @@ export async function pollCommentary(): Promise<void> {
 // ─── Boot ───────────────────────────────────────────────────────
 
 export function startCommentaryScraper(): void {
-  if (!isExaAvailable()) {
+  if (!isRettiwtAvailable() && !isExaAvailable()) {
     log.warn(
-      "EXA_API_KEY not set — Exa scrape disabled, bookmark polling may still work",
+      "Neither RETTIWT_AUTH_TOKEN nor EXA_API_KEY set — catalyst scrape limited to bookmarks only",
     );
   }
 
   if (scraperTimeout) return;
-  log.info("Commentary scraper starting (Exa + Bookmark polling)");
+  log.info("Commentary scraper starting (Rettiwt/Exa + Bookmark polling)");
 
   const scheduledPoll = async (): Promise<void> => {
     try {

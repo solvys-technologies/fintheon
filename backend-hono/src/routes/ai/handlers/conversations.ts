@@ -62,10 +62,17 @@ export async function handleGetConversation(c: Context) {
   }
 
   try {
-    const conversation = await conversationStore.getConversationWithMessages(
+    // Try authenticated userId first, fall back to "anonymous" for legacy conversations
+    let conversation = await conversationStore.getConversationWithMessages(
       conversationId,
       userId,
     );
+    if (!conversation && userId !== "anonymous") {
+      conversation = await conversationStore.getConversationWithMessages(
+        conversationId,
+        "anonymous",
+      );
+    }
 
     if (!conversation) {
       return c.json({ error: "Conversation not found" }, 404);
