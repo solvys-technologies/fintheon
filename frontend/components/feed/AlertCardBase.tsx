@@ -47,10 +47,7 @@ export function AlertCardBase({
       style={style}
     >
       {/* ── Collapsed: headline + source icon top-right ─────────────────────── */}
-      <div
-        className="block px-3 pt-2.5 pb-2 cursor-pointer"
-        onClick={onToggle}
-      >
+      <div className="block px-3 pt-2.5 pb-2 cursor-pointer" onClick={onToggle}>
         <div className="flex items-start gap-2">
           {headerActions}
           <div className="flex-1 min-w-0">
