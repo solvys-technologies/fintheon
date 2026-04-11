@@ -8,7 +8,7 @@ import { createLogger } from "../lib/logger.js";
 import { startFeedPoller } from "../services/riskflow/feed-poller.js";
 import { seedCacheFromDb } from "../services/riskflow/feed-service.js";
 import { startEconEnricher } from "../services/cron/econ-enricher.js";
-import { startEconTwitterPoller } from "../services/twitter-cli/index.js";
+import { startEconPoller } from "../services/riskflow/econ-rettiwt-poller.js";
 import { startExaScheduledMonitor } from "../services/riskflow/exa-scheduled-monitor.js";
 import { initClaudeSDK } from "../services/claude-sdk/process-manager.js";
 import { initToolApprovalStore } from "../services/tool-approval-store.js";
@@ -68,8 +68,7 @@ async function registerLocalPeerOnBoot(): Promise<void> {
 
   const hermesAvailable = isHermesAvailable();
   const capabilities = ["claude-cli"];
-  if (process.env.PEER_ENABLE_TWITTER !== "false")
-    capabilities.push("twitter-cli");
+  if (process.env.PEER_ENABLE_TWITTER !== "false") capabilities.push("rettiwt");
   if (hermesAvailable) capabilities.push("hermes");
 
   const peer = await registerPeer(userId, {
@@ -130,9 +129,9 @@ export async function bootServices(): Promise<void> {
   await seedCacheFromDb();
   log.info("FeedCache seeded from DB");
 
-  // Econ-triggered twitter-cli poller
-  startEconTwitterPoller();
-  log.info("EconTwitterPoller started");
+  // Econ-triggered Rettiwt poller (replaces twitter-cli)
+  startEconPoller();
+  log.info("EconRettiwtPoller started");
 
   // Exa scheduled-event monitor (supplementary discovery, not headline ingestion)
   startExaScheduledMonitor();

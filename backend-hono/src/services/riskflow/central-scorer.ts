@@ -576,7 +576,9 @@ export async function scoringCycle(): Promise<void> {
           const tags = item.tags || [];
           for (const phrase of activePhrases) {
             if (phraseMatchesItem(phrase, headline, tags)) {
-              log.info(`[CatalystWatch] Phrase "${phrase.phrase}" matched: "${headline}"`);
+              log.info(
+                `[CatalystWatch] Phrase "${phrase.phrase}" matched: "${headline}"`,
+              );
               recordMatch(phrase.id).catch(() => {});
               // Push match to Consilium for visibility
               writeConsiliumMessage({
@@ -596,7 +598,9 @@ export async function scoringCycle(): Promise<void> {
         }
       }
     } catch (err) {
-      log.warn("[CatalystWatch] Phrase matching failed", { error: String(err) });
+      log.warn("[CatalystWatch] Phrase matching failed", {
+        error: String(err),
+      });
     }
 
     // Push High/Critical items to Consilium so they appear in the agent chat

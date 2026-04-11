@@ -13,20 +13,19 @@ import { enrichFeedWithAnalysis, updateFeedCache } from "./feed-service.js";
 import { broadcastLevel4 } from "./sse-broadcaster.js";
 import { fetchEconomicFeed } from "./economic-feed.js";
 import {
-  isTwitterCliInstalled,
-  pollTwitterForEconNews,
-  manualRefreshTweets,
-  isRateLimited,
-  markPollSuccess,
-  markPollEmpty,
-} from "../twitter-cli/index.js";
+  pollForEconNews,
+  manualRefresh,
+  isRettiwtRateLimited,
+  markRettiwtPollSuccess,
+  markRettiwtPollEmpty,
+} from "./econ-rettiwt-poller.js";
+import { isRettiwtAvailable } from "../rettiwt-service.js";
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
 import { isSupabaseConfigured } from "../../config/supabase.js";
 import { getPollingConfig } from "./polling-config.js";
 import { pollCommentary } from "./commentary-scraper.js";
 import { checkForScheduledEvents } from "./exa-scheduled-monitor.js";
 import { exaSearch, isExaAvailable } from "../exa-service.js";
-import { rettiwtSearch, isRettiwtAvailable } from "../rettiwt-service.js";
 import { scrapeMultiple } from "../agent-reach-service.js";
 import { areAllUsersKilled } from "./user-polling-registry.js";
 import type { FeedItem } from "../../types/riskflow.js";

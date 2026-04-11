@@ -146,4 +146,34 @@ export class RiskFlowService {
       {},
     );
   }
+
+  // Catalyst Watch — watchlist phrase CRUD
+  async getPhrases(): Promise<{ phrases: WatchlistPhrase[] }> {
+    return this.client.get("/api/riskflow/phrases");
+  }
+
+  async addPhrase(data: {
+    phrase: string;
+    matchType?: "contains" | "exact";
+    repeating?: boolean;
+  }): Promise<{ phrase: WatchlistPhrase; removedBias: string[] }> {
+    return this.client.post("/api/riskflow/phrases", data);
+  }
+
+  async deletePhrase(id: number): Promise<{ ok: boolean }> {
+    return this.client.delete(`/api/riskflow/phrases/${id}`);
+  }
+}
+
+export interface WatchlistPhrase {
+  id: number;
+  userId: string;
+  phrase: string;
+  phraseLower: string;
+  isActive: boolean;
+  matchType: "contains" | "exact";
+  repeating: boolean;
+  matchCount: number;
+  lastMatchedAt: string | null;
+  createdAt: string;
 }

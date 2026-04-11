@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-11T02:00:00",
+    agent: "claude-code",
+    summary:
+      "Sticky Bulletin v2: Hot Times (top 3 fifteen-min antilag windows with day toggle), Quick Clock one-tap antilag logging, inline Catalyst Watch wired to central-scorer phrase matching pipeline, removed modal in favor of inline form, bias word auto-stripping",
+    files: [
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/lib/services/editor.ts",
+      "frontend/lib/services/riskflow.ts",
+      "backend-hono/src/services/sticky-bulletin-store.ts",
+      "backend-hono/src/services/riskflow/watchlist-phrases-service.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/routes/sticky-bulletin/index.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/routes/riskflow/index.ts",
+    ],
+  },
+  {
     date: "2026-04-11T01:00:00",
     agent: "claude-code",
     summary:

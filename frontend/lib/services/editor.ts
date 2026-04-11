@@ -231,4 +231,16 @@ export class StickyBulletinService {
   async getAntilagAggregates(): Promise<{ aggregates: AntilagAggregate[] }> {
     return this.client.get("/api/sticky-bulletin/antilag/aggregates");
   }
+
+  async getHotTimes(byDay?: boolean): Promise<{
+    hotTimes: Array<{
+      bucket: string;
+      dayOfWeek?: number;
+      count: number;
+      instruments: string[];
+    }>;
+  }> {
+    const qs = byDay ? "?byDay=true" : "";
+    return this.client.get(`/api/sticky-bulletin/antilag/hot-times${qs}`);
+  }
 }
