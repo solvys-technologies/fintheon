@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-10T23:30:00",
+    agent: "claude-code",
+    summary:
+      "S9-T4: Extract MessageActions, MessageErrorBoundary, ChainOfThought from FintheonThread (733→585 lines), delete deprecated MessageRenderer",
+    files: [
+      "frontend/components/chat/MessageActions.tsx",
+      "frontend/components/chat/MessageErrorBoundary.tsx",
+      "frontend/components/chat/ChainOfThought.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+      "frontend/components/chat/MessageRenderer.tsx (deleted)",
+    ],
+  },
+  {
     date: "2026-04-10T22:00:00",
     agent: "claude-code",
     summary:

@@ -1,11 +1,10 @@
+// [claude-code 2026-04-10] S9-T4: Extract MessageActions, MessageErrorBoundary, ChainOfThought
 // [claude-code 2026-03-28] S8-T7: Kill kanban borders on assistant messages, add agent name header
 // [claude-code 2026-03-11] T2b: Image part in user bubbles, T2c: CoT auto-open/close via useEffect
 // [claude-code 2026-03-10] Enhanced FintheonThread — hover actions, scroll-to-bottom, CoT, fade-in
 import {
   type FC,
   type RefObject,
-  Component,
-  type ReactNode,
   useState,
   useRef,
   useEffect,
@@ -14,39 +13,16 @@ import {
 import { ThreadPrimitive, useMessage, useThread } from "@assistant-ui/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AlertCircle, Copy, Bookmark, ArrowDown, Check } from "lucide-react";
+import { AlertCircle, ArrowDown } from "lucide-react";
 import { ChatGreeting } from "./ChatGreeting";
 import { FintheonThinkingIndicator } from "./FintheonThinkingIndicator";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { CognitionPanel } from "./CognitionPanel";
 import { ToolApprovalCard } from "./ToolApprovalCard";
 import { useToolApprovals } from "./hooks/useToolApprovals";
-
-/* ------------------------------------------------------------------ */
-/*  Message-level error boundary                                        */
-/* ------------------------------------------------------------------ */
-class MessageErrorBoundary extends Component<
-  { children: ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(error: Error) {
-    console.error("[MessageErrorBoundary]", error.message);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="text-xs text-red-400/60 italic px-2 py-1">
-          Failed to render message
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
+import { MessageErrorBoundary } from "./MessageErrorBoundary";
+import { MessageActions } from "./MessageActions";
+import { ChainOfThought } from "./ChainOfThought";
 
 /* ------------------------------------------------------------------ */
 /*  Markdown renderer                                                   */
@@ -195,130 +171,6 @@ const FintheonReasoningPart: FC<{ text: string }> = ({ text }) => {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Chain of Thought display — gold-bordered thinking panel             */
-/* ------------------------------------------------------------------ */
-
-const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({
-  text,
-  isStreaming,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (isStreaming) {
-      setIsOpen(true);
-    } else if (text) {
-      const timer = setTimeout(() => setIsOpen(false), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [isStreaming, text]);
-
-  if (!text) return null;
-
-  return (
-    <div className="mb-3 rounded-lg bg-[var(--fintheon-accent)]/5 overflow-hidden">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium text-[var(--fintheon-accent)]/80 hover:text-[var(--fintheon-accent)] transition-colors"
-      >
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M8 1v3M8 12v3M1 8h3M12 8h3" />
-          <path d="M3.5 3.5l2 2M10.5 10.5l2 2M3.5 12.5l2-2M10.5 5.5l2-2" />
-          <circle cx="8" cy="8" r="2" />
-        </svg>
-        <span>Chain of Thought</span>
-        {isStreaming && (
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse ml-1" />
-        )}
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          className={`ml-auto transition-transform ${isOpen ? "rotate-90" : ""}`}
-          fill="currentColor"
-        >
-          <path
-            d="M3 1l4 4-4 4"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-      {isOpen && (
-        <div className="px-3 pb-3 text-[11px] text-zinc-400 leading-relaxed whitespace-pre-wrap">
-          {text}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  Hover action bar — Copy, Retry, Checkpoint                         */
-/* ------------------------------------------------------------------ */
-
-const ActionBar: FC<{
-  textContent: string;
-  messageId?: string;
-  onTakeNote?: (id: string, content: string) => void;
-}> = ({ textContent, messageId, onTakeNote }) => {
-  const [copied, setCopied] = useState(false);
-  const [noted, setNoted] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(textContent);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API not available
-    }
-  }, [textContent]);
-
-  const handleNote = useCallback(() => {
-    if (!onTakeNote || !messageId || !textContent) return;
-    onTakeNote(messageId, textContent);
-    setNoted(true);
-    setTimeout(() => setNoted(false), 2000);
-  }, [onTakeNote, messageId, textContent]);
-
-  return (
-    <div className="flex items-center gap-1 mt-1 ml-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-      <button
-        onClick={handleCopy}
-        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-        title="Copy"
-      >
-        {copied ? <Check size={10} /> : <Copy size={10} />}
-        {copied ? "Copied" : "Copy"}
-      </button>
-      {onTakeNote && messageId && textContent && (
-        <button
-          onClick={handleNote}
-          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-          title="Take Note — save to Harper memory"
-        >
-          <Bookmark size={10} />
-          <span className="text-[9px]">{noted ? "Noted" : "Note"}</span>
-        </button>
-      )}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ */
 /*  User message                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -421,7 +273,7 @@ const FintheonAssistantMessage: FC<{
       {/* Chain of Thought — gold-bordered, above message */}
       {hasReasoningContent && (
         <div className="max-w-[82%] mb-1">
-          <ChainOfThoughtDisplay text={reasoningContent} />
+          <ChainOfThought text={reasoningContent} />
         </div>
       )}
 
@@ -441,7 +293,7 @@ const FintheonAssistantMessage: FC<{
           </span>
         )}
       </div>
-      <ActionBar
+      <MessageActions
         textContent={textContent}
         messageId={id}
         onTakeNote={onTakeNote}
@@ -597,13 +449,13 @@ const DirectAssistantMessage: FC<{
       )}
       {reasoningContent && (
         <div className="max-w-[82%] mb-1">
-          <ChainOfThoughtDisplay text={reasoningContent} />
+          <ChainOfThought text={reasoningContent} />
         </div>
       )}
       <div className="max-w-[82%] px-1 transition-colors">
         {textContent && <FintheonTextPart text={textContent} />}
       </div>
-      <ActionBar
+      <MessageActions
         textContent={textContent}
         messageId={msg.id}
         onTakeNote={onTakeNote}
