@@ -1,3 +1,4 @@
+// DEPRECATED: Prefer rettiwt-service.ts and agent-reach-service.ts. Kept as dead-letter fallback.
 // [claude-code 2026-03-09] Exa Search API client for deep-research flow
 // Graceful: never throws, returns empty results on failure
 

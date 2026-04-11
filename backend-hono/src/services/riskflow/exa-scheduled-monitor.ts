@@ -136,10 +136,25 @@ function toRawRiskFlowItem(result: ExaSearchResult): RawRiskFlowItem {
   };
 }
 
+const EVENT_CALENDAR_URLS = [
+  "https://www.federalreserve.gov/newsevents/calendar.htm",
+  "https://home.treasury.gov/news/press-releases",
+];
+
+function scrapedToExaResult(article: ScrapedArticle): ExaSearchResult {
+  return {
+    title: article.title,
+    url: article.url,
+    text: article.text,
+    publishedDate: article.publishedDate,
+  };
+}
+
 export async function checkForScheduledEvents(): Promise<void> {
-  if (!isExaAvailable()) {
-    log.info("[ExaMonitor] EXA_API_KEY not configured; monitor idle");
-    return;
+  if (!isRettiwtAvailable() && !isExaAvailable()) {
+    log.info(
+      "[ExaMonitor] Neither RETTIWT_AUTH_TOKEN nor EXA_API_KEY configured; trying Agent-Reach only",
+    );
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -155,30 +170,67 @@ export async function checkForScheduledEvents(): Promise<void> {
     normalizeText(event.name),
   );
 
-  const queryResults = await Promise.all(
-    SCHEDULED_EVENT_QUERIES.map((query) =>
-      exaSearch(query, {
-        type: "neural",
-        numResults: 5,
-        useAutoprompt: true,
-      }).catch((err) => {
-        log.warn("[ExaMonitor] Exa query failed", {
-          query,
-          error: String(err),
-        });
-        return [];
-      }),
-    ),
-  );
+  // Collect results from all sources into a unified ExaSearchResult format
+  let allResults: ExaSearchResult[] = [];
 
-  const flattened = queryResults.flat();
-  if (flattened.length === 0) {
-    log.info("[ExaMonitor] No Exa results for scheduled-event queries");
+  // ── Step 1: Rettiwt keyword search ──
+  if (isRettiwtAvailable()) {
+    const rettiwtResults = await Promise.all(
+      SCHEDULED_EVENT_QUERIES.map((query) =>
+        rettiwtSearch(query, { count: 5 }).catch((err) => {
+          log.warn("[ExaMonitor] Rettiwt query failed", {
+            query,
+            error: String(err),
+          });
+          return [];
+        }),
+      ),
+    );
+    for (const results of rettiwtResults) {
+      for (const r of results) {
+        allResults.push({
+          title: r.text.slice(0, 280),
+          url: r.url,
+          text: r.text,
+          publishedDate: r.publishedDate,
+        });
+      }
+    }
+  }
+
+  // ── Step 2: Agent-Reach scrape known calendar URLs ──
+  const scraped = await scrapeMultiple(EVENT_CALENDAR_URLS);
+  for (const article of scraped) {
+    allResults.push(scrapedToExaResult(article));
+  }
+
+  // ── Step 3: Exa as tertiary fallback ──
+  if (allResults.length === 0 && isExaAvailable()) {
+    const exaResults = await Promise.all(
+      SCHEDULED_EVENT_QUERIES.map((query) =>
+        exaSearch(query, {
+          type: "neural",
+          numResults: 5,
+          useAutoprompt: true,
+        }).catch((err) => {
+          log.warn("[ExaMonitor] Exa query failed", {
+            query,
+            error: String(err),
+          });
+          return [];
+        }),
+      ),
+    );
+    allResults = exaResults.flat();
+  }
+
+  if (allResults.length === 0) {
+    log.info("[ExaMonitor] No results for scheduled-event queries");
     return;
   }
 
   const dedupByTitle = new Map<string, ExaSearchResult>();
-  for (const result of flattened) {
+  for (const result of allResults) {
     if (!result.title || !result.url) continue;
     const key = `${normalizeText(result.title)}|${result.url.toLowerCase()}`;
     if (!dedupByTitle.has(key)) dedupByTitle.set(key, result);
@@ -209,7 +261,7 @@ export async function checkForScheduledEvents(): Promise<void> {
 
   const written = await writeRawItems(freshRows);
   log.info(
-    `[ExaMonitor] Ingested ${written} scheduled events from Exa (${freshRows.length} candidates)`,
+    `[ExaMonitor] Ingested ${written} scheduled events (${freshRows.length} candidates)`,
   );
 }
 

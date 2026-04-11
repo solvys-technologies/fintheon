@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-11T01:00:00",
+    agent: "claude-code",
+    summary:
+      "Per-user X CLI killswitch on Team Cards, theme/font sensitivity for Team Cards + footer panels (excl. Terminal/toolbar), replaced Exa fallback with Rettiwt-API + Agent-Reach, fixed /api/memory/shared 500",
+    files: [
+      "frontend/components/team/TeamMemberCard.tsx",
+      "frontend/components/team/TeamPanel.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/types/team.ts",
+      "frontend/contexts/TeamPresenceContext.tsx",
+      "backend-hono/src/services/riskflow/user-polling-registry.ts",
+      "backend-hono/src/services/rettiwt-service.ts",
+      "backend-hono/src/services/agent-reach-service.ts",
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+      "backend-hono/src/services/riskflow/commentary-scraper.ts",
+      "backend-hono/src/services/riskflow/exa-scheduled-monitor.ts",
+      "backend-hono/src/routes/memory/index.ts",
+      "backend-hono/src/services/peers/shared-memory.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/routes/riskflow/index.ts",
+    ],
+  },
+  {
     date: "2026-04-11T00:30:00",
     agent: "claude-code",
     summary:
