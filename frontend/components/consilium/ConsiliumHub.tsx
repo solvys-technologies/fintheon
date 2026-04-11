@@ -792,8 +792,8 @@ export function ConsiliumHub() {
 
           {/* Chat */}
           {displayedTab === "chat" && (
-            <div className="h-full w-full max-w-3xl mx-auto">
-              <ChatSidebar />
+            <div className="h-full w-full max-w-5xl mx-auto">
+              <ChatSidebar compact={false} />
             </div>
           )}
 

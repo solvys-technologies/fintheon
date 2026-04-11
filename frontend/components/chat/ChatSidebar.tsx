@@ -51,6 +51,7 @@ function ChatSidebarInner({
   conversationId,
   setConversationId,
   clearConversationId,
+  compact = true,
 }: {
   lastError: string | null;
   lastRequestId: string | null;
@@ -59,6 +60,7 @@ function ChatSidebarInner({
   conversationId: string | undefined;
   setConversationId: (id: string) => void;
   clearConversationId: () => void;
+  compact?: boolean;
 }) {
   const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
@@ -188,7 +190,7 @@ function ChatSidebarInner({
         agentName={activeAgent?.name}
         lastError={lastError}
         lastRequestId={lastRequestId}
-        compact
+        compact={compact}
       />
       {/* Agent plan / cognition inline in sidebar — shows task progress when streaming */}
       {lastRequestId && isRunning && (
@@ -209,7 +211,7 @@ function ChatSidebarInner({
   );
 }
 
-export function ChatSidebar() {
+export function ChatSidebar({ compact = true }: { compact?: boolean } = {}) {
   const { activeAgent } = useFintheonAgents();
   const [thinkHarder, setThinkHarder] = useState(false);
   const {
@@ -231,6 +233,7 @@ export function ChatSidebar() {
         conversationId={conversationId}
         setConversationId={setConversationId}
         clearConversationId={clearConversationId}
+        compact={compact}
       />
     </AssistantRuntimeProvider>
   );
