@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-11T19:00:00",
+    agent: "claude-code",
+    summary:
+      "S14-T6: Splash screen redesign — replaced temple doors with liquid glass loading screen. Shuffled halftone hero backgrounds, frosted glass window with fintheon-logo.png, Playfair Display status text. Wired into App.tsx AuthGate with sessionStorage cold-start detection. Shows on quit+relaunch, not on resume.",
+    files: ["frontend/components/SplashScreen.tsx", "frontend/App.tsx"],
+  },
+  {
+    date: "2026-04-11T18:00:00",
+    agent: "claude-code",
+    summary:
+      "S14-T10 Dead Code Cleanup: Deleted 6 orphan files (InterventionSidebar, MainContent, NotFoundPage, AgentChatroomView, useCloudState, SPQRStamp). Renamed all user-facing Twitter/Rettiwt labels to X across status messages, toasts, onboarding, apparatus bios, and memory cards. Cleaned stale twitter-cli comments in backend feed-service and feed-poller.",
+    files: [
+      "frontend/components/InterventionSidebar.tsx",
+      "frontend/components/MainContent.tsx",
+      "frontend/components/NotFoundPage.tsx",
+      "frontend/components/executive/AgentChatroomView.tsx",
+      "frontend/hooks/useCloudState.ts",
+      "frontend/components/ui/SPQRStamp.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "frontend/contexts/TeamPresenceContext.tsx",
+      "frontend/components/team/TeamOnboarding.tsx",
+      "frontend/components/apparatus/MemoryCard.tsx",
+      "frontend/components/apparatus/ApparatusMap.tsx",
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+    ],
+  },
+  {
     date: "2026-04-11T16:45:00",
     agent: "claude-code",
     summary:

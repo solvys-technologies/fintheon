@@ -28,6 +28,12 @@ import { FintheonSlashPicker } from "../chat/FintheonSlashPicker";
 import { FintheonAttachPopup } from "../chat/FintheonAttachPopup";
 import { SkillBadge } from "../chat/SkillBadge";
 import { UsageRing } from "../chat/UsageRing";
+import {
+  HeadlinePickerPopover,
+  HeadlineChips,
+  type HeadlineChip,
+} from "../chat/HeadlinePickerPopover";
+import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 
 /* ------------------------------------------------------------------ */
 /*  Think Harder SVG — Claude-style sparkle shape                     */
@@ -88,6 +94,11 @@ export interface PromptBoxProps {
   providerSlot?: React.ReactNode;
   // Boardroom: swap pulsing icon for newspaper RiskFlow picker
   onRiskFlowPick?: () => void;
+  // Headline attachment (multi-select from scored feed items)
+  headlineAlerts?: RiskFlowAlert[];
+  headlineChips?: HeadlineChip[];
+  onHeadlineToggle?: (chip: HeadlineChip) => void;
+  onHeadlineClear?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -119,13 +130,19 @@ export function PromptBox({
   toolsSlot,
   providerSlot,
   onRiskFlowPick,
+  headlineAlerts,
+  headlineChips,
+  onHeadlineToggle,
+  onHeadlineClear,
 }: PromptBoxProps) {
   const [text, setText] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [vanishing, setVanishing] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
+  const [showHeadlinePicker, setShowHeadlinePicker] = useState(false);
   const [slashQuery, setSlashQuery] = useState<string | null>(null);
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -292,7 +309,7 @@ export function PromptBox({
 
   return (
     <div
-      className="pt-4 pb-4 px-4 bg-[linear-gradient(180deg,transparent,var(--fintheon-bg))]"
+      className="pt-4 pb-4 px-4"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -402,17 +419,20 @@ export function PromptBox({
         {/* Main input container */}
         <div
           className={[
-            "relative flex flex-col rounded-2xl border transition-all duration-200",
+            "relative flex flex-col rounded-2xl border",
             "backdrop-blur-xl",
-            text
-              ? "border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25 shadow-[0_0_24px_rgba(199,159,74,0.08)]"
-              : "border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/35 shadow-[0_0_16px_rgba(199,159,74,0.04)]",
+            focused || text
+              ? "border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25 shadow-[0_0_24px_rgba(199,159,74,0.12)]"
+              : "border-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/25",
             disabled ? "opacity-50 pointer-events-none" : "",
             vanishing ? "animate-prompt-vanish" : "",
           ].join(" ")}
           style={{
             background:
-              "linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))",
+              focused || text
+                ? "linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))"
+                : "transparent",
+            transition: "all 1.3s ease",
           }}
         >
           {/* Textarea */}

@@ -222,6 +222,33 @@ function groupByDate(items: FeedItem[]): [string, FeedItem[]][] {
   return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
 }
 
+const TIME_RANGES = [
+  { key: "1h", label: "1H" },
+  { key: "4h", label: "4H" },
+  { key: "1d", label: "1D" },
+  { key: "1w", label: "1W" },
+  { key: "all", label: "ALL" },
+] as const;
+
+function getTimeRangeCutoff(range: string): Date | null {
+  if (range === "all") return null;
+  const now = new Date();
+  const ms: Record<string, number> = {
+    "1h": 3600000,
+    "4h": 14400000,
+    "1d": 86400000,
+    "1w": 604800000,
+  };
+  return new Date(now.getTime() - (ms[range] ?? 0));
+}
+
+const MACRO_LABELS: Record<number, string> = {
+  4: "Critical",
+  3: "High",
+  2: "Medium",
+  1: "Low",
+};
+
 interface TimelineOverlayProps {
   open: boolean;
   onClose: () => void;
@@ -233,6 +260,8 @@ export function TimelineOverlay({ open, onClose }: TimelineOverlayProps) {
   const [loading, setLoading] = useState(false);
   const [selectedThread, setSelectedThread] = useState<string>("all");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [timeRange, setTimeRange] = useState<string>("all");
+  const [macroFilter, setMacroFilter] = useState<Set<number>>(new Set([3, 4]));
 
   const activeThread =
     NARRATIVE_THREADS.find((t) => t.slug === selectedThread) ??
@@ -252,9 +281,16 @@ export function TimelineOverlay({ open, onClose }: TimelineOverlayProps) {
   }, [open, backend]);
 
   const filteredItems = useMemo(() => {
-    if (selectedThread === "all") return items;
-    return items.filter((item) => itemMatchesThread(item, selectedThread));
-  }, [items, selectedThread]);
+    const cutoff = getTimeRangeCutoff(timeRange);
+    return items.filter((item) => {
+      if (selectedThread !== "all" && !itemMatchesThread(item, selectedThread))
+        return false;
+      if (macroFilter.size > 0 && !macroFilter.has(item.macroLevel ?? 2))
+        return false;
+      if (cutoff && new Date(item.publishedAt) < cutoff) return false;
+      return true;
+    });
+  }, [items, selectedThread, macroFilter, timeRange]);
 
   const dateGroups = useMemo(() => groupByDate(filteredItems), [filteredItems]);
 

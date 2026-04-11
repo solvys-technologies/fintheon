@@ -9,9 +9,7 @@
 // [claude-code 2026-04-03] Chronological sort (publishedAt DESC), cold start bumped to 200 items
 // [claude-code 2026-03-24] Pass VIX data into calculateIVScore for continuous curve multiplier + sub-scores
 // [claude-code 2026-03-11] Integrated point estimator for commentary point ranges + VIX feed
-// [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
 // [claude-code 2026-03-12] Task 2A: Polymarket sentiment inference + failed enrichment fallback
-// [claude-code 2026-03-10] Integrated twitter-cli (FJ emoji-filtered) as secondary social feed source
 // [claude-code 2026-03-10] Default minMacroLevel lowered 3→2 (Medium+ threshold per Track 1 spec)
 import type {
   FeedItem,
@@ -641,7 +639,7 @@ function isForeignEconPrint(headline: string): boolean {
 }
 
 /**
- * Fetch fresh feed from twitter-cli + economic prints + Polymarket odds
+ * Fetch fresh feed from Rettiwt + economic prints + Polymarket odds
  */
 async function fetchFreshFeed(): Promise<FeedItem[]> {
   try {

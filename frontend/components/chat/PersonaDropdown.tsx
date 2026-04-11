@@ -7,6 +7,7 @@ import {
 } from "../../contexts/FintheonAgentContext";
 
 const PERSONA_META: Record<string, string> = {
+  harper: "CAO",
   "harper-opus": "CAO",
   oracle: "All-Seer",
   feucht: "Futures & Risk",

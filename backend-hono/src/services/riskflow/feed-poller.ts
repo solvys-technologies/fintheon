@@ -4,7 +4,7 @@
  * Runs independently of HTTP requests for real-time updates
  */
 // [claude-code 2026-04-02] Dynamic polling: hot hours 60s (8-11AM ET), rotation 180s (all other times, 24/7).
-// [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
+// [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via Rettiwt
 
 // [claude-code 2026-03-27] S3: Write raw items to raw_riskflow_items for central scorer pipeline
 // [claude-code 2026-04-02] Removed user autoRefresh gating — backend polling is autonomous.

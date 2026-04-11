@@ -9,6 +9,7 @@ import {
   Filter,
   Search,
   X,
+  Clock,
 } from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 import type {
@@ -65,6 +66,26 @@ const BANNED_TAGS = new Set([
   "clickbait",
 ]);
 
+const TIME_RANGES = [
+  { key: "1h", label: "1H" },
+  { key: "4h", label: "4H" },
+  { key: "1d", label: "1D" },
+  { key: "1w", label: "1W" },
+  { key: "all", label: "ALL" },
+] as const;
+
+function getTimeRangeCutoff(range: string): Date | null {
+  if (range === "all") return null;
+  const now = new Date();
+  const ms: Record<string, number> = {
+    "1h": 3600000,
+    "4h": 14400000,
+    "1d": 86400000,
+    "1w": 604800000,
+  };
+  return new Date(now.getTime() - (ms[range] ?? 0));
+}
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("en-US", {
@@ -107,6 +128,7 @@ export function TimelinePanel() {
   const [severityFilter, setSeverityFilter] = useState<Set<string>>(
     new Set(["high"]),
   );
+  const [timeRange, setTimeRange] = useState<string>("all");
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const purgedRef = useRef(false);
 
@@ -169,6 +191,7 @@ export function TimelinePanel() {
   // Cards grouped by narrative thread
   const cardsByThread = useMemo(() => {
     const map = new Map<string, CatalystCard[]>();
+    const cutoff = getTimeRangeCutoff(timeRange);
     for (const thread of NARRATIVE_THREADS) {
       const cards = cleanCatalysts.filter((c) => {
         const threads =
@@ -179,6 +202,11 @@ export function TimelinePanel() {
         // Severity filter (empty set = show all)
         if (severityFilter.size > 0 && !severityFilter.has(c.severity))
           return false;
+        // Time range filter
+        if (cutoff && c.date) {
+          const cardDate = new Date(c.date + "T23:59:59");
+          if (cardDate < cutoff) return false;
+        }
         return true;
       });
       map.set(
@@ -187,7 +215,7 @@ export function TimelinePanel() {
       );
     }
     return map;
-  }, [cleanCatalysts, activeTagFilter, severityFilter]);
+  }, [cleanCatalysts, activeTagFilter, severityFilter, timeRange]);
 
   // Total catalyst count across all threads (live)
   const totalCatalysts = cleanCatalysts.length;

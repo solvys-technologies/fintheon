@@ -101,14 +101,6 @@ export function ChatGreeting({
         <h2 className="text-[22px] font-semibold text-white tracking-tight">
           {agent.name}
         </h2>
-
-        {/* Model badge */}
-        <span className="text-[12px] font-medium text-[var(--fintheon-muted)]/50">
-          Claude Opus 4.6
-        </span>
-
-        {/* Subtitle */}
-        <p className="text-[13px] text-gray-500 mt-0.5">{getSubtitle()}</p>
       </div>
 
       {/* Large greeting — shimmer animation */}

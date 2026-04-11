@@ -67,13 +67,14 @@ function VoiceBorderPulse() {
 /**
  * Headless init hook — runs backend health check + cloud migration, then signals ready.
  * No UI — the SplashScreen overlay handles visuals.
+ * Only runs when `enabled` is true (i.e. authenticated).
  */
-function useAppInit(onReady: () => void) {
+function useAppInit(enabled: boolean, onReady: () => void) {
   const { getAccessToken } = useAuth();
   const hasRun = useRef(false);
 
   useEffect(() => {
-    if (hasRun.current) return;
+    if (!enabled || hasRun.current) return;
     hasRun.current = true;
 
     let cancelled = false;
@@ -122,29 +123,32 @@ function useAppInit(onReady: () => void) {
     return () => {
       cancelled = true;
     };
-  }, [getAccessToken, onReady]);
+  }, [enabled, getAccessToken, onReady]);
 }
 
-/** Auth-gated app shell — AuthShell → InitScreen → MainLayout (with fade-in) */
+/** Cold-start detection — sessionStorage clears on quit but persists during background */
+function isColdStart(): boolean {
+  try {
+    if (sessionStorage.getItem("fintheon:session-alive")) return false;
+    sessionStorage.setItem("fintheon:session-alive", "1");
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+/** Auth-gated app shell — AuthShell → SplashScreen overlay → MainLayout */
 function AuthGate() {
   const { isAuthenticated, isLoading, signIn } = useAuth();
   const [initComplete, setInitComplete] = useState(false);
-  const [appVisible, setAppVisible] = useState(false);
+  const [showSplash] = useState(() => isColdStart());
 
   const handleInitReady = useCallback(() => {
     setInitComplete(true);
-    // Stagger the fade-in slightly so the DOM renders first
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => setAppVisible(true));
-    });
   }, []);
 
-  const handleSkip = useCallback(() => {
-    setInitComplete(true);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => setAppVisible(true));
-    });
-  }, []);
+  // Run headless init once authenticated
+  useAppInit(isAuthenticated, handleInitReady);
 
   if (isLoading) {
     return (
@@ -165,15 +169,10 @@ function AuthGate() {
     return <AuthShell onSignIn={signIn} isLoading={isLoading} />;
   }
 
-  if (!initComplete) {
-    return <InitScreen onReady={handleInitReady} onSkip={handleSkip} />;
-  }
-
   return (
-    <div
-      className="transition-opacity duration-700 ease-out"
-      style={{ opacity: appVisible ? 1 : 0 }}
-    >
+    <div style={{ opacity: 1 }}>
+      {/* Liquid glass splash — cold start only, fades when init completes */}
+      {showSplash && <SplashScreen isReady={initComplete} />}
       <SettingsProvider>
         <ToastProvider>
           <GatewayProvider>

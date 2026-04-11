@@ -77,9 +77,6 @@ export function ProviderDropdown({
         title={`Provider: ${current.label} (${current.sub})`}
       >
         <Icon className="w-3 h-3 text-[var(--fintheon-accent)]/70" />
-        <span className="text-[10px] font-medium text-[var(--fintheon-text)]/60">
-          {current.label}
-        </span>
       </button>
 
       {open && (

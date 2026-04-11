@@ -27,6 +27,7 @@ import { agentBus } from "../../services/agent-bus/bus.js";
 import { executeDag } from "../../services/agent-bus/dag-scheduler.js";
 import { createMiroSharkDAG } from "../../services/agent-bus/templates/miroshark-template.js";
 import type {
+  AgentStreamEvent,
   DAGProgressEvent,
   BusMessage,
 } from "../../services/agent-bus/types.js";
@@ -124,29 +125,148 @@ export function createHarperRoutes() {
 
         const dagId = await dagIdPromise;
 
-        // Return UIMessageStream-framed SSE so the frontend's DefaultChatTransport
-        // can handle it, with X-DAG-Id header for the boardroom SSE subscription.
+        // Bridge DAG bus events into UIMessageStream so the chat shows real-time
+        // agent output instead of a static placeholder string.
         const enc = new TextEncoder();
         const msgId = `harper-dag-${Date.now()}`;
+        let streamClosed = false;
+        const AGENT_LABELS: Record<string, string> = {
+          oracle: "Oracle (All-Seer)",
+          feucht: "Feucht (Futures & Risk)",
+          consul: "Consul (Fundamentals)",
+          herald: "Herald (News & Sentiment)",
+          harper: "Harper (Synthesis)",
+        };
+
         const dagStream = new ReadableStream<Uint8Array>({
           start(ctrl) {
             const sse = (ev: object) =>
               enc.encode(`data: ${JSON.stringify(ev)}\n\n`);
+
+            function cleanup(): void {
+              streamClosed = true;
+              if (heartbeatHandle) {
+                clearInterval(heartbeatHandle);
+                heartbeatHandle = null;
+              }
+              unsubSurface();
+              unsubDag();
+            }
+
+            // Heartbeat every 8s to keep connection alive
+            let heartbeatHandle: ReturnType<typeof setInterval> | null =
+              setInterval(() => {
+                if (streamClosed) return;
+                try {
+                  ctrl.enqueue(enc.encode(": heartbeat\n\n"));
+                } catch {
+                  streamClosed = true;
+                }
+              }, 8_000);
+
+            // Track which agents have started (to emit headers)
+            const agentStarted = new Set<string>();
+            let textIdCounter = 0;
+            const nextTextId = () => `txt-${++textIdCounter}`;
+
+            // Emit UIMessageStream preamble
             ctrl.enqueue(sse({ type: "start", messageId: msgId }));
             ctrl.enqueue(sse({ type: "start-step" }));
-            ctrl.enqueue(sse({ type: "text-start", id: "txt-1" }));
-            ctrl.enqueue(
-              sse({
-                type: "text-delta",
-                id: "txt-1",
-                delta: `Boardroom DAG dispatched. Subscribe to /api/boardroom/dag/${dagId}/stream for real-time agent results.`,
-              }),
+            const mainTextId = nextTextId();
+            ctrl.enqueue(sse({ type: "text-start", id: mainTextId }));
+
+            // Subscribe to agent stream events — bridge deltas into UIMessageStream
+            const unsubSurface = agentBus.subscribe<AgentStreamEvent>(
+              "surface.boardroom",
+              (msg: BusMessage<AgentStreamEvent>) => {
+                if (msg.dagId !== dagId || streamClosed) return;
+                const ev = msg.payload;
+
+                if (
+                  ev.type === "agent-start" &&
+                  !agentStarted.has(ev.agentId)
+                ) {
+                  agentStarted.add(ev.agentId);
+                  const label = AGENT_LABELS[ev.agentId] ?? ev.agentId;
+                  ctrl.enqueue(
+                    sse({
+                      type: "text-delta",
+                      id: mainTextId,
+                      delta: `\n\n**${label}:**\n`,
+                    }),
+                  );
+                }
+
+                if (ev.type === "agent-delta" && typeof ev.data === "string") {
+                  ctrl.enqueue(
+                    sse({
+                      type: "text-delta",
+                      id: mainTextId,
+                      delta: ev.data,
+                    }),
+                  );
+                }
+
+                if (ev.type === "agent-error") {
+                  const errMsg =
+                    typeof ev.data === "string"
+                      ? ev.data
+                      : ((ev.data as Record<string, unknown>)?.error ??
+                        "error");
+                  ctrl.enqueue(
+                    sse({
+                      type: "text-delta",
+                      id: mainTextId,
+                      delta: `\n[${ev.agentId} error: ${errMsg}]\n`,
+                    }),
+                  );
+                }
+              },
             );
-            ctrl.enqueue(sse({ type: "text-end", id: "txt-1" }));
-            ctrl.enqueue(sse({ type: "finish-step" }));
-            ctrl.enqueue(sse({ type: "finish", finishReason: "stop" }));
-            ctrl.enqueue(enc.encode("data: [DONE]\n\n"));
-            ctrl.close();
+
+            // Subscribe to DAG lifecycle — close stream on terminal events
+            const unsubDag = agentBus.subscribe<DAGProgressEvent>(
+              "dag.status",
+              (msg: BusMessage<DAGProgressEvent>) => {
+                if (msg.dagId !== dagId || streamClosed) return;
+
+                if (
+                  msg.payload.type === "dag-complete" ||
+                  msg.payload.type === "dag-error"
+                ) {
+                  if (msg.payload.type === "dag-error") {
+                    ctrl.enqueue(
+                      sse({
+                        type: "text-delta",
+                        id: mainTextId,
+                        delta: "\n\n*Deliberation encountered an error.*",
+                      }),
+                    );
+                  }
+                  // Close UIMessageStream
+                  ctrl.enqueue(sse({ type: "text-end", id: mainTextId }));
+                  ctrl.enqueue(sse({ type: "finish-step" }));
+                  ctrl.enqueue(sse({ type: "finish", finishReason: "stop" }));
+                  ctrl.enqueue(enc.encode("data: [DONE]\n\n"));
+                  cleanup();
+                  try {
+                    ctrl.close();
+                  } catch {
+                    /* already closed */
+                  }
+                }
+              },
+            );
+
+            // Handle client disconnect
+            c.req.raw.signal?.addEventListener("abort", () => {
+              cleanup();
+              try {
+                ctrl.close();
+              } catch {
+                /* already closed */
+              }
+            });
           },
         });
 

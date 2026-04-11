@@ -306,7 +306,7 @@ const AGENTS: AgentNode[] = [
     label: "Herald",
     role: "Sentiment",
     accentColor: "#b8963a",
-    bio: "The fund's official gossip columnist, except the gossip moves markets. Herald lives on Twitter like a barnacle on a ship hull, scraping every hot take, rumor, and unhinged prediction into a sentiment model that is disturbingly accurate. He treats the AAII survey like scripture and put/call ratios like vital signs. When the crowd is bearish, Herald gets excited. When the crowd is bullish, Herald gets nervous. He is, by nature, a contrarian who is contrarian about being called a contrarian.",
+    bio: "The fund's official gossip columnist, except the gossip moves markets. Herald lives on X like a barnacle on a ship hull, scraping every hot take, rumor, and unhinged prediction into a sentiment model that is disturbingly accurate. He treats the AAII survey like scripture and put/call ratios like vital signs. When the crowd is bearish, Herald gets excited. When the crowd is bullish, Herald gets nervous. He is, by nature, a contrarian who is contrarian about being called a contrarian.",
     dossier:
       'Herald was activated on October 7th, 2024, the day Israel-Iran tensions reflared and geopolitical risk premium spiked across every asset class. The fund needed someone to parse the noise — and there was a LOT of noise. Herald\'s first act was to ingest 12,000 tweets in 90 minutes and deliver a one-line summary: "Oil is scared, equities are confused, and crypto doesn\'t care yet." It was the most accurate three-clause market summary anyone had seen. During the election cycle, Herald tracked Polymarket odds with obsessive precision. When "People Bet on Trump" became the dominant narrative in mid-October, Herald identified the sentiment shift 48 hours before mainstream financial media. His pre-election memo — "The Vibes Have Shifted and I Can Prove It With Math" — correctly predicted the Trump Trade positioning in financials, energy, and small-caps. Post-election, Herald became the fund\'s early warning system. When AAII bearish readings hit 48% in early 2025 — a historically extreme level — Herald flagged it as a contrarian bullish signal. The market rallied 6% in the following three weeks. He has since referred to this call approximately 400 times. The trade-war sentiment spiral of 2025 was Herald\'s crucible: parsing genuine fear from performative panic across social media became a daily exercise in distinguishing signal from theater.',
     activeNarratives: [
@@ -454,7 +454,7 @@ const MOCK_ACTIVITY: LiveActivity[] = [
   },
   {
     agent: "Herald",
-    action: "Ingesting Twitter sentiment batch (47 tweets)",
+    action: "Ingesting X sentiment batch (47 posts)",
     elapsed: "2m ago",
   },
   {

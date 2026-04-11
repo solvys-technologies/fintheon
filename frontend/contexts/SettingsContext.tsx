@@ -148,6 +148,9 @@ interface SettingsContextType {
   /** ID of the default proposer iFrame source */
   proposerDefaultIframe: string;
   setProposerDefaultIframe: (id: string) => void;
+  /** Custom CAO display name (default: "Harper-Opus") */
+  caoName: string;
+  setCaoName: (name: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -363,6 +366,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [proposerDefaultIframe, setProposerDefaultIframe] = useState<string>(
     () => loadFromStorage("proposerDefaultIframe", "tradingview"),
   );
+  const [caoName, setCaoName] = useState<string>(() =>
+    loadFromStorage("caoName", "Harper-Opus"),
+  );
 
   // Track whether initial backend fetch has completed to avoid saving back stale data
   const backendSynced = useRef(false);
@@ -448,6 +454,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         }
         if (remote.proposerDefaultIframe)
           setProposerDefaultIframe(remote.proposerDefaultIframe as string);
+        if (remote.caoName) setCaoName(remote.caoName as string);
       }
       backendSynced.current = true;
     });
@@ -482,6 +489,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       bulletinVoteThreshold,
       proposerIframeSources,
       proposerDefaultIframe,
+      caoName,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -519,6 +527,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     bulletinVoteThreshold,
     proposerIframeSources,
     proposerDefaultIframe,
+    caoName,
   ]);
 
   return (
@@ -576,6 +585,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setProposerIframeSources,
         proposerDefaultIframe,
         setProposerDefaultIframe,
+        caoName,
+        setCaoName,
       }}
     >
       {children}
