@@ -276,7 +276,7 @@ function MainLayoutInner() {
   const { isAuthenticated } = useAuth();
   const { alerts: riskFlowAlerts, removeAlert } = useRiskFlow();
   useKeyboardShortcuts({
-    navigateTab,
+    navigateTab: navigateTab as (tab: string) => void,
     setShowSearchModal,
     setShowYouTubeMiniplayer,
     setNotificationCenterOpen,
