@@ -101,7 +101,37 @@ function SanctumWithNarratives(
       })),
     [state.catalysts],
   );
-  return <Sanctum {...props} narratives={narratives} catalysts={catalysts} />;
+
+  // Wrap onRun to inject real narrative state from NarrativeContext
+  const { onRun, ...restProps } = props;
+  const wrappedOnRun = useCallback(
+    async (preset?: SanctumPreset) => {
+      return (
+        onRun as (
+          preset?: SanctumPreset,
+          narrativeState?: {
+            lanes: typeof state.lanes;
+            catalysts: typeof state.catalysts;
+            ropes: typeof state.ropes;
+          },
+        ) => Promise<void>
+      )(preset, {
+        lanes: state.lanes,
+        catalysts: state.catalysts,
+        ropes: state.ropes,
+      });
+    },
+    [onRun, state.lanes, state.catalysts, state.ropes],
+  );
+
+  return (
+    <Sanctum
+      {...restProps}
+      onRun={wrappedOnRun}
+      narratives={narratives}
+      catalysts={catalysts}
+    />
+  );
 }
 
 export function ConsiliumHub() {
@@ -377,7 +407,10 @@ export function ConsiliumHub() {
   );
 
   const handleRunMiroShark = useCallback(
-    async (preset?: SanctumPreset) => {
+    async (
+      preset?: SanctumPreset,
+      narrativeState?: { lanes: any[]; catalysts: any[]; ropes: any[] },
+    ) => {
       setMirosharkData((prev) =>
         prev
           ? { ...prev, status: "running" }
@@ -414,7 +447,11 @@ export function ConsiliumHub() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             preset: preset ?? "full-brief",
-            narrativeState: { lanes: [], catalysts: [], ropes: [] },
+            narrativeState: narrativeState ?? {
+              lanes: [],
+              catalysts: [],
+              ropes: [],
+            },
           }),
         });
 

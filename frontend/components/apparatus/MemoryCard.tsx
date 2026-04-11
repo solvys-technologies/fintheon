@@ -22,7 +22,7 @@ const SOURCE_ICONS: Record<MemorySource, typeof Twitter> = {
 };
 
 const SOURCE_LABELS: Record<MemorySource, string> = {
-  twitter: "Twitter",
+  twitter: "X",
   data: "Data",
   miroshark: "MiroShark",
   trade: "Trade",

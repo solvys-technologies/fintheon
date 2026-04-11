@@ -79,29 +79,12 @@ export function ChatGreeting({
   }
 
   const agent = activeAgent || {
-    name: "Harper-Opus",
+    name: "Harper",
     icon: "H",
     sector: "CAO",
     description: "Chief Analyst Officer — executive strategy and oversight",
   };
   const greeting = getGreeting();
-
-  const getSubtitle = () => {
-    switch (agent.name) {
-      case "Harper-Opus":
-        return "What needs orchestrating today?";
-      case "Oracle":
-        return "What patterns shall we divine?";
-      case "Feucht":
-        return "What exposure needs attention?";
-      case "Consul":
-        return "What shall we analyze?";
-      case "Herald":
-        return "What signals are you tracking?";
-      default:
-        return "What needs orchestrating today?";
-    }
-  };
 
   const handleChipClick = (chip: (typeof SUGGESTION_CHIPS)[number]) => {
     if (onSkillSend) {

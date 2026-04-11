@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-11T16:45:00",
+    agent: "claude-code",
+    summary:
+      "S14-T1 MiroShark Revival: Frontend now sends real NarrativeContext (lanes/catalysts/ropes) to simulate endpoint instead of empty arrays. Backend synthesizes lanes from RiskFlow headlines if frontend sends empty. Deliberation results now persist to Supabase (miroshark_deliberations table) and rehydrate after restart.",
+    files: [
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "backend-hono/src/services/miroshark/miroshark-service.ts",
+      "backend-hono/src/services/miroshark/miroshark-deliberation.ts",
+      "backend-hono/src/routes/miroshark/handlers.ts",
+      "supabase/migrations/20260411_miroshark_deliberations.sql",
+    ],
+  },
+  {
     date: "2026-04-11T14:00:00",
     agent: "claude-code",
     summary:

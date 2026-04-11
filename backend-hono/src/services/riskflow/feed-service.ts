@@ -4,7 +4,8 @@
  * Day 17 - Phase 5 Integration
  */
 
-// [claude-code 2026-04-04] Periodic DB re-sync (every 2min) so cache stays fresh when poller idles
+// [claude-code 2026-04-11] Cache re-sync reduced 120s→30s to match central scorer frequency
+// [claude-code 2026-04-04] Periodic DB re-sync so cache stays fresh when poller idles
 // [claude-code 2026-04-03] Chronological sort (publishedAt DESC), cold start bumped to 200 items
 // [claude-code 2026-03-24] Pass VIX data into calculateIVScore for continuous curve multiplier + sub-scores
 // [claude-code 2026-03-11] Integrated point estimator for commentary point ranges + VIX feed
@@ -143,7 +144,7 @@ function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
 // In-memory cache — seeded from scored DB on boot, then re-synced periodically from DB.
 let feedCache: FeedItem[] | null = null;
 let lastCacheRefreshMs = 0;
-const CACHE_REFRESH_INTERVAL_MS = 120_000; // Re-sync from DB every 2 minutes
+const CACHE_REFRESH_INTERVAL_MS = 30_000; // Re-sync from DB every 30s (matches central scorer frequency)
 
 function sortFeedItems(items: FeedItem[]): FeedItem[] {
   return [...items].sort(

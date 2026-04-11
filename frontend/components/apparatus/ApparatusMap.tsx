@@ -320,7 +320,7 @@ const AGENTS: AgentNode[] = [
         thread: "maximum-employment",
         color: "#A78BFA",
         stance: "watching",
-        note: "NFP whisper numbers diverging from consensus — monitoring Twitter chatter",
+        note: "NFP whisper numbers diverging from consensus — monitoring X chatter",
       },
       {
         thread: "trump-presidency",
@@ -338,7 +338,7 @@ const AGENTS: AgentNode[] = [
     memories: [
       {
         id: "he1",
-        fact: "Twitter sentiment tracker: NQ bearish skew 62% — put/call ratio elevated at 1.4",
+        fact: "X sentiment tracker: NQ bearish skew 62% — put/call ratio elevated at 1.4",
         source: "twitter",
         timestamp: "2026-03-20T10:00:00",
         confidence: 0.74,

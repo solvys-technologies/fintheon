@@ -32,6 +32,7 @@ import { generateBriefing } from "./miroshark-briefing.js";
 import {
   runDeliberationPipeline,
   getDeliberationState,
+  getDeliberationStateAsync,
   injectUserTake,
 } from "./miroshark-deliberation.js";
 import { getSupabaseClient } from "../../config/supabase.js";
@@ -118,6 +119,60 @@ export async function startPrediction(
         },
         econPrintHistory: context.econPrintHistory,
       };
+
+    // Fallback: if frontend sent empty lanes, synthesize from RiskFlow headlines
+    if (
+      narrativeState.lanes.length === 0 &&
+      context.riskflowHeadlines.length > 0
+    ) {
+      console.log(
+        `[MiroShark] Empty lanes from frontend — synthesizing from ${context.riskflowHeadlines.length} RiskFlow headlines`,
+      );
+      const threadGroups = new Map<string, typeof context.riskflowHeadlines>();
+      for (const h of context.riskflowHeadlines) {
+        const threads = h.narrative_threads ?? [];
+        const key =
+          threads.length > 0
+            ? threads[0]
+            : (h.category ?? h.risk_type ?? "general");
+        if (!threadGroups.has(key)) threadGroups.set(key, []);
+        threadGroups.get(key)!.push(h);
+      }
+      for (const [thread, items] of threadGroups) {
+        const avgIV =
+          items.reduce((s, i) => s + (i.iv_score ?? 5), 0) / items.length;
+        const dominant =
+          items.filter((i) => i.sentiment === "bearish").length >
+          items.length / 2
+            ? "short"
+            : items.filter((i) => i.sentiment === "bullish").length >
+                items.length / 2
+              ? "long"
+              : "neutral";
+        narrativeState.lanes.push({
+          id: `synth-${thread}`,
+          title: thread
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
+          instruments: [],
+          directionBias: dominant,
+          category: items[0].category ?? "geopolitical",
+          status: "active",
+          healthScore: Math.min(10, Math.max(0, avgIV)),
+          dateRange: {
+            start: items[items.length - 1].created_at.slice(0, 10),
+            end: null,
+          },
+        });
+      }
+    }
+
+    // Validate context snapshot has VIX + headlines before running
+    if (!context.vixLevel && context.riskflowHeadlines.length === 0) {
+      console.warn(
+        "[MiroShark] No VIX and no RiskFlow headlines — simulation will produce low-quality results",
+      );
+    }
 
     // Convert RiskFlow headlines into catalyst entities
     const enrichedCatalysts = [
@@ -592,5 +647,6 @@ function emptyAggregation(days: number): AggregatedRollingData {
 
 export {
   getDeliberationState,
+  getDeliberationStateAsync,
   injectUserTake,
 } from "./miroshark-deliberation.js";

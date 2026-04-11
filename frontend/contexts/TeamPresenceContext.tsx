@@ -48,18 +48,13 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (sourceStatus.rettiwtRateLimited && !prevRateLimited.current) {
       addToast(
-        `Rettiwt rate limited — cooling down ${sourceStatus.rettiwtCooldownSec}s`,
+        `X rate limited — cooling down ${sourceStatus.rettiwtCooldownSec}s`,
         "info",
         undefined,
         "connection-status",
       );
     } else if (!sourceStatus.rettiwtRateLimited && prevRateLimited.current) {
-      addToast(
-        "Rettiwt polling resumed",
-        "success",
-        undefined,
-        "connection-status",
-      );
+      addToast("X polling resumed", "success", undefined, "connection-status");
     }
     prevRateLimited.current = sourceStatus.rettiwtRateLimited;
   }, [

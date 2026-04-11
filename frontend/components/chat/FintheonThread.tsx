@@ -23,6 +23,13 @@ import { useToolApprovals } from "./hooks/useToolApprovals";
 import { MessageErrorBoundary } from "./MessageErrorBoundary";
 import { MessageActions } from "./MessageActions";
 import { ChainOfThought } from "./ChainOfThought";
+import {
+  parseArtifacts,
+  stripArtifactBlocks,
+  toCatalystPayload,
+} from "../../lib/artifact-parser";
+import { ArtifactCard } from "./ArtifactCard";
+import { useNarrative } from "../../contexts/NarrativeContext";
 
 /* ------------------------------------------------------------------ */
 /*  Markdown renderer                                                   */
@@ -124,14 +131,25 @@ const FintheonTextPart: FC<{ text: string }> = ({ text }) => {
   // Instead, use the `text` prop directly (always a string from MessagePrimitive.Parts).
   const safeText = typeof text === "string" ? text : String(text ?? "");
   if (!safeText) return null;
+
+  // Extract artifact blocks and render as inline cards
+  const artifacts = parseArtifacts(safeText);
+  const cleanText =
+    artifacts.length > 0 ? stripArtifactBlocks(safeText) : safeText;
+
   return (
     <div className="text-sm text-zinc-300 max-w-none">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={MARKDOWN_COMPONENTS as any}
-      >
-        {safeText}
-      </ReactMarkdown>
+      {cleanText && (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={MARKDOWN_COMPONENTS as any}
+        >
+          {cleanText}
+        </ReactMarkdown>
+      )}
+      {artifacts.map((artifact, i) => (
+        <ArtifactCard key={i} artifact={artifact} />
+      ))}
     </div>
   );
 };
@@ -264,6 +282,23 @@ const FintheonAssistantMessage: FC<{
   const textContent = currentText || lastTextRef.current;
   const reasoningContent = currentReasoning || lastReasoningRef.current;
   const hasReasoningContent = !!reasoningContent;
+
+  // Dispatch catalyst/narrative-item artifacts to NarrativeFlow (once per message)
+  const dispatchedRef = useRef(false);
+  const { dispatch: narrativeDispatch } = useNarrative();
+  useEffect(() => {
+    if (dispatchedRef.current || !textContent) return;
+    const artifacts = parseArtifacts(textContent);
+    const catalysts = artifacts
+      .map(toCatalystPayload)
+      .filter((c): c is NonNullable<typeof c> => c !== null);
+    if (catalysts.length > 0) {
+      dispatchedRef.current = true;
+      for (const catalyst of catalysts) {
+        narrativeDispatch({ type: "ADD_CATALYST", catalyst });
+      }
+    }
+  }, [textContent, narrativeDispatch]);
 
   // Don't render empty bubble while waiting for first stream tokens
   if (!textContent && !hasReasoningContent) return null;

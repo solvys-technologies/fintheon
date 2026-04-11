@@ -437,7 +437,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      setFetchStatus("Polling Twitter feeds...");
+      setFetchStatus("Polling X feeds...");
       await backend.riskflow.refresh().catch((err: unknown) => {
         console.warn("[RiskFlow] Manual refresh failed:", err);
         setFetchStatus("Backend refresh failed — fetching cached data");

@@ -27,6 +27,7 @@ import {
 import { executeDag } from "../agent-bus/dag-scheduler.js";
 import { agentBus } from "../agent-bus/bus.js";
 import type { DAGProgressEvent, HermesAgentId } from "../agent-bus/types.js";
+import { getSupabaseClient } from "../../config/supabase.js";
 
 // ── In-memory deliberation tracking ─────────────────────────────────────────
 
@@ -34,6 +35,41 @@ const activeDeliberations = new Map<string, DeliberationState>();
 
 export function getDeliberationState(simId: string): DeliberationState | null {
   return activeDeliberations.get(simId) ?? null;
+}
+
+/** Rehydrate deliberation from Supabase if not in memory (survives restart). */
+export async function getDeliberationStateAsync(
+  simId: string,
+): Promise<DeliberationState | null> {
+  const cached = activeDeliberations.get(simId);
+  if (cached) return cached;
+
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from("miroshark_deliberations")
+    .select("*")
+    .eq("simulation_id", simId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const state: DeliberationState = {
+    simulationId: data.simulation_id,
+    phase: data.phase as DeliberationPhase,
+    phaseStartedAt: data.created_at,
+    analystResults: data.analyst_results ?? undefined,
+    govOfficialsSkipped: data.gov_officials_skipped ?? undefined,
+    hermesResults: data.hermes_results ?? undefined,
+    harperScoring: data.harper_scoring ?? undefined,
+    userInjection: data.user_injection ?? undefined,
+    error: data.error ?? undefined,
+  };
+
+  // Re-cache so subsequent sync calls find it
+  activeDeliberations.set(simId, state);
+  return state;
 }
 
 function updatePhase(
@@ -275,6 +311,11 @@ export async function runDeliberationPipeline(
       Object.assign(activeDeliberations.get(simId)!, result);
       updatePhase(simId, "complete", result);
 
+      // Persist deliberation to Supabase (fire-and-forget)
+      persistDeliberation(activeDeliberations.get(simId)!).catch((err) => {
+        console.warn("[MiroShark Deliberation] Failed to persist:", err);
+      });
+
       return activeDeliberations.get(simId)!;
     } finally {
       unsubDispatch();
@@ -325,6 +366,35 @@ export function injectUserTake(simId: string, take: string): boolean {
   }
 
   return true;
+}
+
+// ── Supabase Persistence ────────────────────────────────────────────────────
+
+async function persistDeliberation(state: DeliberationState): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+
+  const { error } = await sb.from("miroshark_deliberations").upsert(
+    {
+      simulation_id: state.simulationId,
+      phase: state.phase,
+      analyst_results: state.analystResults ?? null,
+      gov_officials_skipped: state.govOfficialsSkipped ?? false,
+      hermes_results: state.hermesResults ?? null,
+      harper_scoring: state.harperScoring ?? null,
+      user_injection: state.userInjection ?? null,
+      error: state.error ?? null,
+    },
+    { onConflict: "simulation_id" },
+  );
+
+  if (error) {
+    console.warn("[MiroShark Deliberation] Persist failed:", error.message);
+  } else {
+    console.log(
+      `[MiroShark Deliberation] Persisted deliberation for ${state.simulationId}`,
+    );
+  }
 }
 
 // ── Re-export types for backward compatibility ───────────────────────────────

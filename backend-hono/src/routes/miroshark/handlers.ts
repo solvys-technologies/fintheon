@@ -14,6 +14,7 @@ import {
   getRollingWindowData,
   shouldAutoRun,
   getDeliberationState,
+  getDeliberationStateAsync,
   injectUserTake,
 } from "../../services/miroshark/miroshark-service.js";
 import {
@@ -231,7 +232,9 @@ export async function handleGetDeliberation(c: Context) {
   if (blocked) return blocked;
 
   const simId = c.req.param("id");
-  const state = getDeliberationState(simId);
+  // Try in-memory first, then rehydrate from Supabase (survives restart)
+  const state =
+    getDeliberationState(simId) ?? (await getDeliberationStateAsync(simId));
   if (!state) {
     return c.json({ error: "Deliberation not found" }, 404);
   }

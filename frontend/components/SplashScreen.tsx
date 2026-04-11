@@ -1,11 +1,15 @@
-// [claude-code 2026-03-14] Temple doors splash screen — Fintheon rebrand
-
-import { useState, useEffect } from "react";
+// [claude-code 2026-04-11] S14-T6: Liquid glass splash screen — replaces temple doors
+import { useState, useEffect, useMemo } from "react";
 
 interface SplashScreenProps {
   isReady: boolean;
-  pompaEnabled: boolean;
 }
+
+const HERO_BACKGROUNDS = [
+  "./halftone-heroes/hero-bg-1.png",
+  "./halftone-heroes/hero-bg-2.png",
+  "./halftone-heroes/hero-bg-3.png",
+];
 
 const STATUS_MESSAGES = [
   "Initializing Strategium...",
@@ -14,32 +18,34 @@ const STATUS_MESSAGES = [
   "The Tape is unwinding...",
 ];
 
-export default function SplashScreen({
-  isReady,
-  pompaEnabled,
-}: SplashScreenProps) {
+export default function SplashScreen({ isReady }: SplashScreenProps) {
   const [messageIndex, setMessageIndex] = useState(0);
-  const [doorsOpen, setDoorsOpen] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
   const [unmounted, setUnmounted] = useState(false);
+
+  const bg = useMemo(
+    () => HERO_BACKGROUNDS[Math.floor(Math.random() * HERO_BACKGROUNDS.length)],
+    [],
+  );
 
   // Cycle status messages
   useEffect(() => {
-    if (doorsOpen) return;
+    if (fadeOut) return;
     const interval = setInterval(() => {
       setMessageIndex((prev) => (prev + 1) % STATUS_MESSAGES.length);
     }, 1500);
     return () => clearInterval(interval);
-  }, [doorsOpen]);
+  }, [fadeOut]);
 
-  // When ready, open the doors
+  // When ready, fade out then unmount
   useEffect(() => {
     if (!isReady) return;
-    setDoorsOpen(true);
-    const timer = setTimeout(() => setUnmounted(true), 1400);
+    setFadeOut(true);
+    const timer = setTimeout(() => setUnmounted(true), 900);
     return () => clearTimeout(timer);
   }, [isReady]);
 
-  if (!pompaEnabled || unmounted) return null;
+  if (unmounted) return null;
 
   return (
     <div
@@ -47,93 +53,121 @@ export default function SplashScreen({
         position: "fixed",
         inset: 0,
         zIndex: 9999,
-        pointerEvents: doorsOpen ? "none" : "all",
+        opacity: fadeOut ? 0 : 1,
+        transition: "opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+        pointerEvents: fadeOut ? "none" : "all",
       }}
     >
-      {/* Left door */}
+      {/* Shuffled hero background */}
       <div
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "50vw",
-          height: "100vh",
-          backgroundColor: "#050402",
-          transition: "transform 1.2s ease-out",
-          transform: doorsOpen ? "translateX(-100%)" : "translateX(0)",
-          borderRight: "1px solid rgba(199, 159, 74, 0.15)",
+          inset: 0,
+          backgroundImage: `url(${bg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "brightness(0.3) saturate(0.6)",
         }}
       />
-      {/* Right door */}
+
+      {/* Dark vignette overlay */}
       <div
         style={{
           position: "absolute",
-          top: 0,
-          right: 0,
-          width: "50vw",
-          height: "100vh",
-          backgroundColor: "#050402",
-          transition: "transform 1.2s ease-out",
-          transform: doorsOpen ? "translateX(100%)" : "translateX(0)",
-          borderLeft: "1px solid rgba(199, 159, 74, 0.15)",
+          inset: 0,
+          background:
+            "radial-gradient(ellipse at center, transparent 20%, rgba(5,4,2,0.7) 70%, rgba(5,4,2,0.95) 100%)",
         }}
       />
-      {/* Center content */}
+
+      {/* Center: liquid glass window */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          zIndex: 1,
-          opacity: doorsOpen ? 0 : 1,
-          transition: "opacity 0.6s ease-out",
-          pointerEvents: "none",
         }}
       >
-        <h1
+        <div
           style={{
-            fontFamily: "'Cinzel', 'Georgia', serif",
-            fontSize: "3.5rem",
-            fontWeight: 700,
-            color: "#c79f4a",
-            letterSpacing: "0.22em",
-            margin: 0,
-            textTransform: "uppercase",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "20px",
+            width: "220px",
+            height: "220px",
+            borderRadius: "28px",
+            background: "rgba(0, 0, 0, 0.35)",
+            backdropFilter: "blur(40px) saturate(1.4)",
+            WebkitBackdropFilter: "blur(40px) saturate(1.4)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            boxShadow:
+              "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
           }}
         >
-          FINTHEON
-        </h1>
+          {/* Logo — no app name text */}
+          <img
+            src="./fintheon-logo.png"
+            alt=""
+            style={{
+              width: "80px",
+              height: "80px",
+              objectFit: "contain",
+              opacity: 0.9,
+              filter: "drop-shadow(0 0 12px rgba(199, 159, 74, 0.25))",
+            }}
+          />
+
+          {/* Subtle breathing indicator */}
+          <div
+            style={{
+              width: "32px",
+              height: "2px",
+              borderRadius: "1px",
+              backgroundColor: "rgba(199, 159, 74, 0.25)",
+              animation: "splashBreath 2.5s ease-in-out infinite",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Status text — below the glass window */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          justifyContent: "center",
+          paddingBottom: "calc(50vh - 150px)",
+        }}
+      >
         <p
           style={{
-            fontFamily: "'Cinzel', 'Georgia', serif",
-            fontSize: "0.85rem",
-            color: "rgba(199, 159, 74, 0.6)",
-            letterSpacing: "0.14em",
-            marginTop: "2rem",
-            textTransform: "uppercase",
-            minHeight: "1.4em",
+            fontFamily: "'Playfair Display', 'Georgia', serif",
+            fontStyle: "normal",
+            fontSize: "0.8rem",
+            fontWeight: 400,
+            color: "#c79f4a",
+            letterSpacing: "0.08em",
+            opacity: 0.7,
+            margin: 0,
+            minHeight: "1.2em",
+            transition: "opacity 0.3s ease",
           }}
         >
           {STATUS_MESSAGES[messageIndex]}
         </p>
-        {/* Subtle pulsing underline */}
-        <div
-          style={{
-            width: "60px",
-            height: "1px",
-            backgroundColor: "rgba(199, 159, 74, 0.3)",
-            marginTop: "1.5rem",
-            animation: "splashPulse 2s ease-in-out infinite",
-          }}
-        />
       </div>
+
       <style>{`
-        @keyframes splashPulse {
-          0%, 100% { opacity: 0.3; width: 60px; }
-          50% { opacity: 0.7; width: 100px; }
+        @keyframes splashBreath {
+          0%, 100% { opacity: 0.2; transform: scaleX(1); }
+          50% { opacity: 0.5; transform: scaleX(1.6); }
         }
       `}</style>
     </div>

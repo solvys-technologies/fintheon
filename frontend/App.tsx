@@ -17,6 +17,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { VoiceProvider, useVoice } from "./contexts/VoiceContext";
 import { ERProvider } from "./contexts/ERContext";
 import { MainLayout } from "./components/layout/MainLayout";
+import SplashScreen from "./components/SplashScreen";
 import { NotificationContainer } from "./components/NotificationToast";
 import { ToastContainer } from "./components/ui/Toast";
 import { PreMarketReminder } from "./components/PreMarketReminder";
@@ -63,28 +64,12 @@ function VoiceBorderPulse() {
   );
 }
 
-// [claude-code 2026-03-24] Init status messages for post-login loading screen
-const INIT_STEPS = [
-  "Restoring session",
-  "Connecting to backend",
-  "Syncing preferences",
-  "Loading workspace",
-] as const;
-
 /**
- * Post-login init screen — checks backend, runs migration, then fades into the app.
- * User can skip at any time (no warning popup).
+ * Headless init hook — runs backend health check + cloud migration, then signals ready.
+ * No UI — the SplashScreen overlay handles visuals.
  */
-function InitScreen({
-  onReady,
-  onSkip,
-}: {
-  onReady: () => void;
-  onSkip: () => void;
-}) {
+function useAppInit(onReady: () => void) {
   const { getAccessToken } = useAuth();
-  const [stepIdx, setStepIdx] = useState(0);
-  const [fadeOut, setFadeOut] = useState(false);
   const hasRun = useRef(false);
 
   useEffect(() => {
@@ -95,12 +80,11 @@ function InitScreen({
     const API = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
     (async () => {
-      // Step 0: Restoring session (already done by AuthContext, brief pause)
+      // Brief pause — session already restored by AuthContext
       await new Promise((r) => setTimeout(r, 400));
       if (cancelled) return;
 
-      // Step 1: Backend health check
-      setStepIdx(1);
+      // Backend health check
       for (let i = 0; i < 8; i++) {
         try {
           const res = await fetch(`${API}/health`, {
@@ -115,14 +99,12 @@ function InitScreen({
       }
       if (cancelled) return;
 
-      // Step 2: Cloud migration (if needed)
-      setStepIdx(2);
+      // Cloud migration (if needed)
       if (!isMigrationComplete()) {
         try {
           const token = await getAccessToken();
           if (token && !cancelled) {
-            const result = await migrateLocalStorageToCloud(token);
-            // migration complete
+            await migrateLocalStorageToCloud(token);
           }
         } catch (err) {
           console.warn("[Init] Migration skipped:", err);
@@ -130,70 +112,17 @@ function InitScreen({
       }
       if (cancelled) return;
 
-      // Step 3: Loading workspace
-      setStepIdx(3);
+      // Brief settle
       await new Promise((r) => setTimeout(r, 300));
       if (cancelled) return;
 
-      // Done — trigger fade-out then ready
-      setFadeOut(true);
-      setTimeout(() => {
-        if (!cancelled) onReady();
-      }, 600);
+      onReady();
     })();
 
     return () => {
       cancelled = true;
     };
   }, [getAccessToken, onReady]);
-
-  const fuseProgress = (stepIdx + 1) / INIT_STEPS.length;
-
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center bg-[#050402] transition-opacity duration-500"
-      style={{ opacity: fadeOut ? 0 : 1 }}
-    >
-      <div className="flex flex-col items-center gap-6">
-        <img
-          src="./logo.png"
-          alt="Fintheon"
-          className="h-20 w-20 object-contain opacity-80 drop-shadow-[0_0_18px_rgba(199,159,74,0.4)]"
-        />
-        {/* Status line */}
-        <p
-          className="text-sm tracking-[0.3em] text-[#f0ead6]/40 italic transition-all duration-300"
-          style={{ fontFamily: "'Cinzel', 'Georgia', serif" }}
-        >
-          Assembling the Kingdom....
-        </p>
-
-        {/* Fuse bar — fills left to right as steps complete */}
-        <div className="relative w-48 h-[2px] rounded-full bg-[#c79f4a]/10">
-          <div
-            className="absolute inset-y-0 left-0 rounded-full bg-[#c79f4a]/50 transition-all duration-700 ease-out"
-            style={{ width: `${fuseProgress * 100}%` }}
-          />
-          {/* Bright tip */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-[#c79f4a] transition-all duration-700 ease-out"
-            style={{
-              left: `calc(${fuseProgress * 100}% - 3px)`,
-              boxShadow: "0 0 6px rgba(199, 159, 74, 0.7)",
-            }}
-          />
-        </div>
-
-        {/* Skip link — quiet, no popup */}
-        <button
-          onClick={onSkip}
-          className="mt-4 text-[10px] tracking-[0.3em] text-[#f0ead6]/20 transition-colors duration-300 hover:text-[#f0ead6]/50"
-        >
-          SKIP
-        </button>
-      </div>
-    </div>
-  );
 }
 
 /** Auth-gated app shell — AuthShell → InitScreen → MainLayout (with fade-in) */

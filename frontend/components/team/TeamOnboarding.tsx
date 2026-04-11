@@ -11,7 +11,7 @@ interface TeamOnboardingProps {
 }
 
 const CAPABILITY_OPTIONS = [
-  { id: "rettiwt", label: "RiskFlow (Rettiwt)" },
+  { id: "rettiwt", label: "RiskFlow (X)" },
   { id: "computer-use", label: "Computer Use" },
   { id: "hermes", label: "Hermes" },
 ] as const;
