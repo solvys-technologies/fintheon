@@ -1,10 +1,16 @@
 // [claude-code 2026-03-09] Added: useMicPermission, useMicArbitration, error state with auto-recovery, cancel/interrupt support
 // [claude-code 2026-03-23] Replaced SpeechRecognition with getUserMedia + MediaRecorder + Whisper transcription.
 //   Added greeting on first enable, mic device selection, silence-based VAD.
+// [claude-code 2026-04-10] Extracted useMicPermission → useMicPermission.ts, useMicArbitration → useMicArbitration.ts
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBackend } from "../lib/backend";
 import { hermesConversationStorageKey } from "../lib/hermesAgentRouting";
-import type { VoiceRuntimeState, MicPermissionState } from "../types/voice";
+import type { VoiceRuntimeState } from "../types/voice";
+import { useMicPermission } from "./useMicPermission";
+import { useMicArbitration } from "./useMicArbitration";
+
+export { useMicPermission } from "./useMicPermission";
+export { useMicArbitration } from "./useMicArbitration";
 
 const VOICE_ENABLED_STORAGE_KEY = "fintheon:voice-assistant-enabled:v1";
 const HARPER_CONVERSATION_STORAGE_KEY = hermesConversationStorageKey("harper");
@@ -43,83 +49,6 @@ function safeLocalStorageSet(key: string, value: string): void {
   } catch {
     // ignore
   }
-}
-
-// ─── Mic Permission Hook ───────────────────────────────────────────────────────
-
-export function useMicPermission() {
-  const [permission, setPermission] = useState<MicPermissionState>("prompt");
-
-  useEffect(() => {
-    if (typeof navigator === "undefined" || !navigator.permissions) return;
-
-    navigator.permissions
-      .query({ name: "microphone" as PermissionName })
-      .then((status) => {
-        setPermission(status.state as MicPermissionState);
-        status.onchange = () => {
-          setPermission(status.state as MicPermissionState);
-        };
-      })
-      .catch(() => {
-        // Older browsers or permission API not available — remain 'prompt'
-      });
-  }, []);
-
-  return { permission };
-}
-
-// ─── Mic Arbitration ───────────────────────────────────────────────────────────
-
-interface MicHolder {
-  id: string;
-  priority: number;
-  release: () => void;
-}
-
-let currentMicHolder: MicHolder | null = null;
-
-export function useMicArbitration() {
-  const requestMic = useCallback(
-    (
-      id: string,
-      priority: number,
-    ): { acquired: boolean; release: () => void } => {
-      // If no one holds the mic, grant immediately
-      if (!currentMicHolder) {
-        const release = () => {
-          if (currentMicHolder?.id === id) {
-            currentMicHolder = null;
-          }
-        };
-        currentMicHolder = { id, priority, release };
-        return { acquired: true, release };
-      }
-
-      // If same consumer, just return
-      if (currentMicHolder.id === id) {
-        return { acquired: true, release: currentMicHolder.release };
-      }
-
-      // If requesting with higher priority, preempt
-      if (priority > currentMicHolder.priority) {
-        currentMicHolder.release();
-        const release = () => {
-          if (currentMicHolder?.id === id) {
-            currentMicHolder = null;
-          }
-        };
-        currentMicHolder = { id, priority, release };
-        return { acquired: true, release };
-      }
-
-      // Lower priority — denied
-      return { acquired: false, release: () => {} };
-    },
-    [],
-  );
-
-  return { requestMic, getCurrentHolder: () => currentMicHolder };
 }
 
 // ─── Audio Recording Engine ──────────────────────────────────────────────────
