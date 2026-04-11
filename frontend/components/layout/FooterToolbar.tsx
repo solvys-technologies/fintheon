@@ -25,7 +25,6 @@ import { ErrorLogPanel } from "../ui/ErrorLogPanel";
 import { StatusIndicator } from "../ui/StatusIndicator";
 import { TeamPanel } from "../team/TeamPanel";
 import { HarperOpsPanel } from "../harper-ops/HarperOpsPanel";
-import { useHarperOps } from "../../hooks/useHarperOps";
 import { Users, Bot } from "lucide-react";
 
 type PanelTab = "terminal" | "changelog" | "errors" | "team" | "harper-ops";

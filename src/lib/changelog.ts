@@ -9,6 +9,27 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-10T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S9-T1: Extract shared timeAgo + SVG logos into frontend/lib/, delete dead SubScoreBar.tsx, purge unused useHarperOps import from FooterToolbar, remove commented TeamOnboarding from MainLayout",
+    files: [
+      "frontend/lib/shared-icons.tsx",
+      "frontend/lib/time-utils.ts",
+      "frontend/components/feed/SubScoreBar.tsx (deleted)",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "frontend/components/executive/ExpandableTapeItem.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/layout/FloatingWidget.tsx",
+      "frontend/components/mission-control/RiskFlowMiniWidget.tsx",
+      "frontend/components/narrative/NarrativeMiniCard.tsx",
+      "frontend/components/NotificationCenter.tsx",
+      "frontend/types/team.ts",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+    ],
+  },
+  {
     date: "2026-04-10T21:00:00",
     agent: "claude-code",
     summary:

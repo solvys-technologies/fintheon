@@ -975,14 +975,6 @@ function MainLayoutInner() {
 
         {/* First-time user tour + interview + setup wizard */}
         <FirstTimeTour onNavigate={(tab) => navigateTab(tab as NavTab)} />
-
-        {/* Team onboarding — auto-shows on first run or version update */}
-        {/* TeamOnboarding permanently removed — security risk, exposes Supabase credentials
-      <TeamOnboarding
-        open={false}
-        onClose={() => {}}
-        onComplete={() => {}}
-      /> */}
       </div>
     </ScheduleProvider>
   );

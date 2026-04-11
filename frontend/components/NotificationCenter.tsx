@@ -51,15 +51,7 @@ function notificationIcon(type: QueuedNotification["type"]) {
   }
 }
 
-function timeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
+import { timeAgo } from "../lib/time-utils";
 
 interface NotificationCenterProps {
   open: boolean;
@@ -209,7 +201,7 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
                     className="text-[9px] mt-1"
                     style={{ color: "rgba(107,114,128,0.5)" }}
                   >
-                    {timeAgo(n.timestamp)}
+                    {timeAgo(n.timestamp.toISOString())}
                   </div>
                 </div>
                 <button

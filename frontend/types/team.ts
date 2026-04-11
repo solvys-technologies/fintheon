@@ -48,14 +48,4 @@ export function isStale(lastUpdate: string, thresholdMinutes: number): boolean {
 }
 
 /** Human-friendly relative time string. */
-export function timeAgo(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "just now";
-  const diffMs = Date.now() - date.getTime();
-  const diffMin = Math.max(0, Math.floor(diffMs / 60000));
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const hours = Math.floor(diffMin / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
+export { timeAgo } from "../lib/time-utils";
