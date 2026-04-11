@@ -1,3 +1,4 @@
+// [claude-code 2026-04-10] Split into Inflation/Jobs/Supply Chain sections, US-only filter
 // [claude-code 2026-03-28] S9-T3: 5s fetch timeout, error fallback with retry, history fetch timeout
 // [claude-code 2026-03-28] S8-T4: Risk sector cards — whole border + fuse + percentage (matching CategoryScoreCard)
 // [claude-code 2026-03-28] S5-T2: Added Market Impact (NQ/ES/YM day close) display to expanded econ cards
@@ -25,18 +26,29 @@ import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/miroshark";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-const ECON_TICKERS: EconCardData[] = [
-  { name: "Consumer Price Index", ticker: "CPI" },
-  { name: "Producer Price Index", ticker: "PPI" },
-  { name: "Gross Domestic Product", ticker: "GDP" },
-  { name: "Purchasing Mgrs Index", ticker: "PMI" },
-  { name: "Personal Consumption", ticker: "PCE" },
-  { name: "Fed Rate Decision", ticker: "FOMC" },
-  { name: "Rate Cut Expectations", ticker: "CUTS" },
-  { name: "New Home Sales", ticker: "NHS" },
-  { name: "Existing Home Sales", ticker: "EHS" },
-  { name: "Retail Sales", ticker: "RETA" },
+type SectionedEconCard = EconCardData & { section: string };
+
+const ECON_TICKERS: SectionedEconCard[] = [
+  // Inflation Data
+  { name: "Consumer Price Index", ticker: "CPI", section: "Inflation Data" },
+  { name: "Producer Price Index", ticker: "PPI", section: "Inflation Data" },
+  { name: "Personal Consumption", ticker: "PCE", section: "Inflation Data" },
+  // Jobs Data
+  { name: "Non-Farm Payrolls", ticker: "NFP", section: "Jobs Data" },
+  { name: "Unemployment Rate", ticker: "UNEMP", section: "Jobs Data" },
+  { name: "Initial Jobless Claims", ticker: "INIT", section: "Jobs Data" },
+  { name: "Job Openings (JOLTS)", ticker: "JOLTS", section: "Jobs Data" },
+  // Supply Chain
+  { name: "Gross Domestic Product", ticker: "GDP", section: "Supply Chain" },
+  { name: "Purchasing Mgrs Index", ticker: "PMI", section: "Supply Chain" },
+  { name: "Retail Sales", ticker: "RETA", section: "Supply Chain" },
+  { name: "New Home Sales", ticker: "NHS", section: "Supply Chain" },
+  { name: "Existing Home Sales", ticker: "EHS", section: "Supply Chain" },
+  { name: "Fed Rate Decision", ticker: "FOMC", section: "Supply Chain" },
+  { name: "Rate Cut Expectations", ticker: "CUTS", section: "Supply Chain" },
 ];
+
+const ECON_SECTIONS = ["Inflation Data", "Jobs Data", "Supply Chain"] as const;
 
 function categoryInterpretation(
   category: string,
@@ -660,7 +672,7 @@ export function SanctumEconIntel({
   context,
   categoryScores,
 }: SanctumEconIntelProps) {
-  const [cards, setCards] = useState<EconCardData[]>(ECON_TICKERS);
+  const [cards, setCards] = useState<SectionedEconCard[]>(ECON_TICKERS);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
@@ -690,9 +702,12 @@ export function SanctumEconIntel({
           setCards((prev) =>
             prev.map((card) => {
               const match = data.events.find(
-                (e: { aiTicker?: string; name?: string }) =>
-                  e.aiTicker === card.ticker ||
-                  e.name?.toLowerCase().includes(card.ticker.toLowerCase()),
+                (e: { aiTicker?: string; name?: string; country?: string }) =>
+                  (e.country === "US" ||
+                    e.country === "United States" ||
+                    !e.country) &&
+                  (e.aiTicker === card.ticker ||
+                    e.name?.toLowerCase().includes(card.ticker.toLowerCase())),
               );
               if (!match) return card;
               return {
@@ -903,23 +918,34 @@ export function SanctumEconIntel({
         </div>
       )}
 
-      {/* Economic Event Cards */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-        {cards.map((card) => (
-          <EconCard
-            key={card.ticker}
-            data={card}
-            expanded={expandedTicker === card.ticker}
-            onToggle={() =>
-              setExpandedTicker((prev) =>
-                prev === card.ticker ? null : card.ticker,
-              )
-            }
-            historyCache={historyCache}
-            onFetchHistory={fetchHistory}
-          />
-        ))}
-      </div>
+      {/* Economic Event Cards — grouped by section */}
+      {ECON_SECTIONS.map((sectionName, sectionIdx) => {
+        const sectionCards = cards.filter((c) => c.section === sectionName);
+        if (sectionCards.length === 0) return null;
+        return (
+          <div key={sectionName} className={sectionIdx > 0 ? "mt-4" : ""}>
+            <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
+              {sectionName}
+            </div>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+              {sectionCards.map((card) => (
+                <EconCard
+                  key={card.ticker}
+                  data={card}
+                  expanded={expandedTicker === card.ticker}
+                  onToggle={() =>
+                    setExpandedTicker((prev) =>
+                      prev === card.ticker ? null : card.ticker,
+                    )
+                  }
+                  historyCache={historyCache}
+                  onFetchHistory={fetchHistory}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
 
       {loading && (
         <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center mt-2">
