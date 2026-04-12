@@ -1,4 +1,4 @@
-// [claude-code 2026-03-10] Liquid Glass component system — GlassEffect, GlassDock, GlassButton, GlassFilter
+// [claude-code 2026-04-12] Liquid Glass v2 — depth, refraction highlights, theme-responsive via CSS vars
 import {
   forwardRef,
   type ButtonHTMLAttributes,
@@ -8,9 +8,7 @@ import {
 import { cn } from "../../lib/utils";
 
 /* ─── Shared glass style tokens ─── */
-const GLASS_BG = "rgba(255, 255, 255, 0.06)";
-const GLASS_BORDER = "rgba(212, 175, 55, 0.18)"; // fintheon-accent tint
-const GLASS_BLUR = 16;
+const GLASS_BLUR = 20;
 
 /* ─── GlassFilter (SVG blur primitive, mount once) ─── */
 export function GlassFilter({ id = "glass-blur" }: { id?: string }) {
@@ -25,7 +23,7 @@ export function GlassFilter({ id = "glass-blur" }: { id?: string }) {
   );
 }
 
-/* ─── GlassEffect (container with frosted overlay) ─── */
+/* ─── GlassEffect (container with frosted overlay + liquid depth) ─── */
 interface GlassEffectProps extends HTMLAttributes<HTMLDivElement> {
   blur?: number;
   tint?: string;
@@ -33,25 +31,16 @@ interface GlassEffectProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export const GlassEffect = forwardRef<HTMLDivElement, GlassEffectProps>(
-  (
-    {
-      blur = GLASS_BLUR,
-      tint = GLASS_BG,
-      className,
-      style,
-      children,
-      ...props
-    },
-    ref,
-  ) => (
+  ({ blur = GLASS_BLUR, tint, className, style, children, ...props }, ref) => (
     <div
       ref={ref}
       className={cn("relative rounded-xl border overflow-hidden", className)}
       style={{
-        background: tint,
-        borderColor: GLASS_BORDER,
-        backdropFilter: `blur(${blur}px)`,
-        WebkitBackdropFilter: `blur(${blur}px)`,
+        background: tint ?? "var(--fintheon-glass-bg)",
+        borderColor: "var(--fintheon-glass-border)",
+        backdropFilter: `blur(${blur}px) saturate(1.3)`,
+        WebkitBackdropFilter: `blur(${blur}px) saturate(1.3)`,
+        boxShadow: "var(--fintheon-glass-shadow)",
         ...style,
       }}
       {...props}
@@ -104,10 +93,19 @@ export const GlassButton = forwardRef<HTMLButtonElement, GlassButtonProps>(
           className,
         )}
         style={{
-          background: isAccent ? "var(--fintheon-accent)" : GLASS_BG,
-          borderColor: isAccent ? "var(--fintheon-accent)" : GLASS_BORDER,
-          backdropFilter: isAccent ? undefined : `blur(${GLASS_BLUR}px)`,
-          WebkitBackdropFilter: isAccent ? undefined : `blur(${GLASS_BLUR}px)`,
+          background: isAccent
+            ? "var(--fintheon-accent)"
+            : "var(--fintheon-glass-bg)",
+          borderColor: isAccent
+            ? "var(--fintheon-accent)"
+            : "var(--fintheon-glass-border)",
+          backdropFilter: isAccent
+            ? undefined
+            : `blur(${GLASS_BLUR}px) saturate(1.3)`,
+          WebkitBackdropFilter: isAccent
+            ? undefined
+            : `blur(${GLASS_BLUR}px) saturate(1.3)`,
+          boxShadow: isAccent ? undefined : "var(--fintheon-glass-shadow)",
           ...style,
         }}
         {...props}

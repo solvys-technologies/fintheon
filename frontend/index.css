@@ -41,6 +41,26 @@ html *::-webkit-scrollbar {
   --fintheon-surface: #0a0a00;
   --fintheon-border: #d4af37;
   --fintheon-muted: #6b7280;
+  /* Liquid glass surface — translucent with accent tint */
+  --fintheon-glass-bg: color-mix(
+    in srgb,
+    var(--fintheon-surface) 55%,
+    transparent
+  );
+  --fintheon-glass-border: color-mix(
+    in srgb,
+    var(--fintheon-accent) 16%,
+    transparent
+  );
+  --fintheon-glass-highlight: color-mix(
+    in srgb,
+    var(--fintheon-accent) 6%,
+    transparent
+  );
+  --fintheon-glass-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 color-mix(in srgb, white 6%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, white 2%, transparent);
   /* Severity colors — overridden by ThemeProvider */
   --fintheon-severe: #ef4444;
   --fintheon-neutral-severe: #f59e0b;

@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-12T23:30:00",
+    agent: "claude-code",
+    summary:
+      "Liquid glass v2: added --fintheon-glass-* CSS vars for unified translucent surfaces with depth/refraction highlights. Applied to TeamMemberCard, FintheonAttachPopup, Toast, NotificationToast. Attach popup now has tab fade transitions and a live RiskFlow headline picker (replacing 'Coming Soon' stub). Removed standalone Newspaper button from composer toolbar — headlines now accessed only through attach popup.",
+    files: [
+      "frontend/index.css",
+      "frontend/components/ui/liquid-glass.tsx",
+      "frontend/components/team/TeamMemberCard.tsx",
+      "frontend/components/chat/FintheonAttachPopup.tsx",
+      "frontend/components/ui/Toast.tsx",
+      "frontend/components/NotificationToast.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+    ],
+  },
+  {
     date: "2026-04-12T22:00:00",
     agent: "claude-code",
     summary:

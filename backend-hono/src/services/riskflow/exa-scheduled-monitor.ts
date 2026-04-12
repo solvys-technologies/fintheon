@@ -4,7 +4,7 @@ import {
   isExaAvailable,
   type ExaSearchResult,
 } from "../exa-service.js";
-import { rettiwtSearch, isRettiwtAvailable } from "../rettiwt-service.js";
+// rettiwtSearch removed — all X content comes from curated timelines only
 import { scrapeMultiple, type ScrapedArticle } from "../agent-reach-service.js";
 import { fetchEconCalendar } from "../econ-calendar-service.js";
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
@@ -152,9 +152,9 @@ function scrapedToExaResult(article: ScrapedArticle): ExaSearchResult {
 }
 
 export async function checkForScheduledEvents(): Promise<void> {
-  if (!isRettiwtAvailable() && !isExaAvailable()) {
+  if (!isExaAvailable()) {
     log.info(
-      "[ExaMonitor] Neither RETTIWT_AUTH_TOKEN nor EXA_API_KEY configured; trying Agent-Reach only",
+      "[ExaMonitor] EXA_API_KEY not configured; trying Agent-Reach only",
     );
   }
 
@@ -174,30 +174,9 @@ export async function checkForScheduledEvents(): Promise<void> {
   // Collect results from all sources into a unified ExaSearchResult format
   let allResults: ExaSearchResult[] = [];
 
-  // ── Step 1: Rettiwt keyword search ──
-  if (isRettiwtAvailable()) {
-    const rettiwtResults = await Promise.all(
-      SCHEDULED_EVENT_QUERIES.map((query) =>
-        rettiwtSearch(query, { count: 5 }).catch((err) => {
-          log.warn("[ExaMonitor] Rettiwt query failed", {
-            query,
-            error: String(err),
-          });
-          return [];
-        }),
-      ),
-    );
-    for (const results of rettiwtResults) {
-      for (const r of results) {
-        allResults.push({
-          title: r.text.slice(0, 280),
-          url: r.url,
-          text: r.text,
-          publishedDate: r.publishedDate,
-        });
-      }
-    }
-  }
+  // ── Step 1: Rettiwt keyword search REMOVED ──
+  // All X content comes from curated account timelines only.
+  // No open keyword searches.
 
   // ── Step 2: Agent-Reach scrape known calendar URLs ──
   const scraped = await scrapeMultiple(EVENT_CALENDAR_URLS);

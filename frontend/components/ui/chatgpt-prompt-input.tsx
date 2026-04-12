@@ -22,14 +22,15 @@ import {
   Maximize2,
   Loader2,
   Clock,
-  Newspaper,
 } from "lucide-react";
 import { FintheonSlashPicker } from "../chat/FintheonSlashPicker";
-import { FintheonAttachPopup } from "../chat/FintheonAttachPopup";
+import {
+  FintheonAttachPopup,
+  type HeadlineAttachment,
+} from "../chat/FintheonAttachPopup";
 import { SkillBadge } from "../chat/SkillBadge";
 import { UsageRing } from "../chat/UsageRing";
 import {
-  HeadlinePickerPopover,
   HeadlineChips,
   type HeadlineChip,
 } from "../chat/HeadlinePickerPopover";
@@ -139,7 +140,6 @@ export function PromptBox({
   const [images, setImages] = useState<string[]>([]);
   const [vanishing, setVanishing] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
-  const [showHeadlinePicker, setShowHeadlinePicker] = useState(false);
   const [slashQuery, setSlashQuery] = useState<string | null>(null);
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
@@ -348,6 +348,19 @@ export function PromptBox({
           open={showAttach}
           onClose={() => setShowAttach(false)}
           onAttachImage={handleAttachImage}
+          riskflowAlerts={headlineAlerts}
+          onAttachHeadlines={(items: HeadlineAttachment[]) => {
+            if (onHeadlineToggle) {
+              items.forEach((item) =>
+                onHeadlineToggle({
+                  id: item.id,
+                  headline: item.headline,
+                  severity: item.severity,
+                  direction: item.direction,
+                }),
+              );
+            }
+          }}
         />
 
         {/* Image preview strip */}
@@ -414,18 +427,6 @@ export function PromptBox({
           <div className="mb-2 rounded-xl border-2 border-dashed border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/5 px-4 py-3 text-center text-[12px] text-[var(--fintheon-accent)]/70">
             Drop RiskFlow alert here
           </div>
-        )}
-
-        {/* Headline picker popover (positioned above input) */}
-        {headlineAlerts && onHeadlineToggle && onHeadlineClear && (
-          <HeadlinePickerPopover
-            open={showHeadlinePicker}
-            onClose={() => setShowHeadlinePicker(false)}
-            alerts={headlineAlerts}
-            selected={headlineChips ?? []}
-            onToggle={onHeadlineToggle}
-            onClear={onHeadlineClear}
-          />
         )}
 
         {/* Main input container */}
@@ -512,49 +513,17 @@ export function PromptBox({
               {/* Tools (combined Skills + Connectors) */}
               {toolsSlot}
 
-              {/* Headline picker (available on all surfaces with headlineAlerts) */}
-              {headlineAlerts && onHeadlineToggle && (
-                <button
-                  onClick={() => setShowHeadlinePicker((v) => !v)}
-                  title="Attach headlines"
-                  className={`flex items-center justify-center rounded-lg transition-all ${
-                    (headlineChips?.length ?? 0) > 0
-                      ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
-                      : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-                  }`}
-                  style={{ width: "32px", height: "32px" }}
-                >
-                  <Newspaper size={14} />
-                </button>
-              )}
-
-              {/* Boardroom legacy RiskFlow picker (only when new headline system not active) */}
-              {onRiskFlowPick && !headlineAlerts && (
-                <button
-                  onClick={onRiskFlowPick}
-                  title="Import RiskFlow items"
-                  className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-                  style={{ width: "32px", height: "32px" }}
-                >
-                  <Newspaper size={14} />
-                </button>
-              )}
-
-              {/* Think Harder toggle (always shown unless boardroom legacy is active) */}
-              {!(onRiskFlowPick && !headlineAlerts) && (
-                <button
-                  onClick={() => setThinkHarder(!thinkHarder)}
-                  title={
-                    thinkHarder
-                      ? "Extended thinking ON"
-                      : "Extended thinking OFF"
-                  }
-                  className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
-                  style={{ width: "32px", height: "32px" }}
-                >
-                  <ThinkHarderIcon active={thinkHarder} />
-                </button>
-              )}
+              {/* Think Harder toggle */}
+              <button
+                onClick={() => setThinkHarder(!thinkHarder)}
+                title={
+                  thinkHarder ? "Extended thinking ON" : "Extended thinking OFF"
+                }
+                className="flex items-center justify-center rounded-lg transition-all text-zinc-500 hover:text-[var(--fintheon-accent)]"
+                style={{ width: "32px", height: "32px" }}
+              >
+                <ThinkHarderIcon active={thinkHarder} />
+              </button>
             </div>
 
             {/* Right: Persona + Usage + Send/Stop */}

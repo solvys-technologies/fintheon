@@ -253,11 +253,9 @@ function isNonFinancialAgencyNoise(text: string): boolean {
 // slips through because it doesn't trigger slur/profanity/political patterns.
 
 function lacksMarketRelevance(text: string): boolean {
-  // Short texts get more leniency (could be wire flash)
-  if (text.length < 60) return false;
   // If it has ANY market keyword, it's potentially relevant
   if (MARKET_KEYWORDS.test(text)) return false;
-  // No market keywords in 60+ char text = noise
+  // No market keywords = noise, regardless of length
   return true;
 }
 

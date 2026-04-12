@@ -2,12 +2,7 @@
 // Full port: account rotation, econ calendar integration, burst polling, warm cache, rate tracking
 
 import { createRateLimiter } from "../rate-limiter.js";
-import {
-  rettiwtUserTimeline,
-  rettiwtSearch,
-  isRettiwtAvailable,
-  hasAuthenticatedKeys,
-} from "../rettiwt-service.js";
+import { rettiwtUserTimeline, isRettiwtAvailable } from "../rettiwt-service.js";
 import { scrapeMultiple } from "../agent-reach-service.js";
 import { getPollingConfig } from "./polling-config.js";
 import { storeFeedItems } from "./news-cache.js";
@@ -15,12 +10,10 @@ import {
   getAccountsForCycle,
   FJ_ACCOUNTS,
   ALL_CONTINUOUS_ACCOUNTS,
-  SEARCH_LIMIT,
   TIMELINE_LIMIT,
 } from "./rettiwt-poller-accounts.js";
 import {
   fetchActiveEvents,
-  buildEventQueries,
   processActualsFromTweets,
   isInBurstWindow,
   msUntilRelease,
@@ -253,18 +246,8 @@ export async function pollForEconNews(): Promise<FeedItem[]> {
     );
   }
 
-  // 3. Event-triggered search queries (requires authenticated keys)
-  if (activeEvents.length > 0 && hasAuthenticatedKeys()) {
-    const searchQueries = buildEventQueries(activeEventNames);
-    for (const query of searchQueries) {
-      allTweetPromises.push(
-        rettiwtLimiter.schedule(
-          () => rettiwtSearch(query, { count: SEARCH_LIMIT }),
-          { bucket: "rettiwt-search" },
-        ),
-      );
-    }
-  }
+  // 3. Event-triggered search REMOVED — rettiwtSearch pulls random garbage
+  // All content now comes from curated account timelines only.
 
   const tweetBatches = await Promise.allSettled(allTweetPromises);
   const allTweets = tweetBatches.flatMap((r) =>

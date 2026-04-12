@@ -157,15 +157,14 @@ export function NotificationToast({
       }}
     >
       <div
-        className="backdrop-blur-xl overflow-hidden"
+        className="backdrop-blur-2xl overflow-hidden"
         style={{
           borderRadius: "8px",
-          border:
-            "1px solid color-mix(in srgb, var(--fintheon-accent) 25%, transparent)",
-          backgroundColor:
-            "color-mix(in srgb, var(--fintheon-bg) 88%, var(--fintheon-accent) 12%)",
-          boxShadow:
-            "0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 color-mix(in srgb, var(--fintheon-accent) 8%, transparent)",
+          border: "1px solid var(--fintheon-glass-border)",
+          backgroundColor: "var(--fintheon-glass-bg)",
+          backdropFilter: "blur(24px) saturate(1.4)",
+          WebkitBackdropFilter: "blur(24px) saturate(1.4)",
+          boxShadow: "var(--fintheon-glass-shadow)",
         }}
       >
         <div

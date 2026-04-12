@@ -93,7 +93,16 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
   }, [dropdownOpen]);
 
   return (
-    <div className="rounded-lg border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)] px-3 py-2.5 transition-colors hover:border-[var(--fintheon-accent)]/30">
+    <div
+      className="rounded-lg border px-3 py-2.5 transition-all duration-300 hover:border-[var(--fintheon-accent)]/30"
+      style={{
+        background: "var(--fintheon-glass-bg)",
+        borderColor: "var(--fintheon-glass-border)",
+        backdropFilter: "blur(20px) saturate(1.3)",
+        WebkitBackdropFilter: "blur(20px) saturate(1.3)",
+        boxShadow: "var(--fintheon-glass-shadow)",
+      }}
+    >
       {/* Top row: name tag + last seen */}
       <div className="flex items-center justify-between gap-2">
         <div
