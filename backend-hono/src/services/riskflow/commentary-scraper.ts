@@ -112,10 +112,12 @@ const SEARCH_GROUPS: SearchGroup[] = [
   },
 
   // ── Key Government / Central Bank Statements ──────────────────
+  // [claude-code 2026-04-12] Tightened query — removed bare "White House" which
+  // pulled in every political rant mentioning it. Now requires financial context.
   {
     name: "GOV-POI",
     query:
-      '"Federal Reserve" statement OR "Treasury Secretary Bessent" OR "White House" economic OR ECB rate OR "Bank of Japan" OR Netanyahu OR tariff announcement',
+      '"Federal Reserve" statement OR "Treasury Secretary Bessent" OR "White House" tariff OR "White House" sanctions OR "White House" executive order OR ECB rate OR "Bank of Japan" OR "trade representative" tariff',
     source: "OSINTSources",
     idPrefix: "exa-gov",
     numResults: 8,

@@ -426,6 +426,21 @@ async function enrichWithAnalysis(
       }
     }
 
+    // [claude-code 2026-04-12] Cap IV score at 7 for non-X primary sources.
+    // Wire feeds (FJ, DeItaOne, TwitterCli) can score higher because they're
+    // real-time breaking. Secondary sources (Exa scrapes, OSINT, calendars) are
+    // aggregated and unlikely to be true breaking-news events.
+    const X_PRIMARY_SOURCES: Set<string> = new Set([
+      "FinancialJuice",
+      "DeItaOne",
+      "TwitterCli",
+    ]);
+    const NON_X_IV_CAP = 7;
+    const cappedIvScore =
+      X_PRIMARY_SOURCES.has(item.source) || ivResult.score <= NON_X_IV_CAP
+        ? ivResult.score
+        : NON_X_IV_CAP;
+
     const enriched: FeedItem = {
       ...item,
       symbols:
@@ -436,7 +451,7 @@ async function enrichWithAnalysis(
       isBreaking: item.isBreaking || analyzed.parsed.isBreaking,
       urgency: getHigherUrgency(item.urgency, analyzed.parsed.urgency),
       sentiment: correctedSentiment as SentimentDirection,
-      ivScore: ivResult.score,
+      ivScore: cappedIvScore,
       subScores: ivResult.subScores,
       macroLevel: macroLevel as MacroLevel,
       riskType,

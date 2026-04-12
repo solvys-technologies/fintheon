@@ -101,6 +101,42 @@ const POLITICAL_SPAM_PATTERNS = [
   /\b(Biden|Kamala|AOC)\s+(regime|cartel|crime)\b/i,
 ];
 
+// ── Market relevance keywords (used by multiple filters below) ─────────────
+const MARKET_KEYWORDS =
+  /\b(tariff|trade\s+war|sanction|executive\s+order|bill\s+sign|deficit|spending|budget|tax|debt|rate|inflation|CPI|PPI|GDP|NFP|FOMC|Fed\b|Treasury|yield|bond|equity|stock|futures|oil|crude|gold|VIX|earnings|revenue|IPO|merger|acquisition|bankruptcy|default|downgrade|upgrade|PMI|jobless|unemployment|retail\s+sales|housing|consumer|manufacturing|import|export|supply\s+chain|semiconductor|chip|OPEC|barrel|EIA|DOE|refinery|pipeline|LNG|natgas|interest\s+rate|basis\s+point|hike|cut|hawkish|dovish|tightening|easing|QE|QT|balance\s+sheet|repo|liquidity|margin|leverage|short|long|hedge|derivative|swap|option|put|call|strike|expiry|settlement|clearing|regulation|SEC|CFTC|DOJ|antitrust|compliance|stimulus|infrastructure|appropriation|continuing\s+resolution|shutdown|ceiling|sequester|reconciliation|USMCA|NATO|AUKUS|BRICS|G7|G20|IMF|World\s+Bank|WTO|BIS|ceasefire|escalat|de-?escalat|retaliati|mobiliz|airstrike|missile|nuclear|military|deploy|naval|carrier|drone|IRGC|Houthi|Hezbollah|IDF|Pentagon|CENTCOM|strait|blockade|proxy|invasion|annex|occupation|incursion)\b/i;
+
+// ── Political opinion / rant detection ─────────────────────────────────────
+// Clean-language rants that slip through profanity and political spam filters.
+// These are opinion commentary, not wire news or market-moving statements.
+const POLITICAL_RANT_PATTERNS = [
+  // Emotional political language with no market content
+  /\b(demon|demonic|evil|satan|antichrist)\b.*\b(president|white house|government|power|seat)\b/i,
+  /\b(president|white house|government|power|seat)\b.*\b(demon|demonic|evil|satan|antichrist)\b/i,
+  // Calls for violence / regime change (non-geopolitical context)
+  /\bneed[s]?\s+(a\s+)?new\s+(form\s+of\s+)?government\b/i,
+  /\bfire\s+a\s+missile\s+at\b/i,
+  /\bend\s+this\s+once\s+and\s+for\s+all\b/i,
+  // "Nobody wants to see X back" / nostalgia rants
+  /\bnobody\s+(ever\s+)?wants?\s+to\s+see\b.*\bback\b/i,
+  // Alex Jones / InfoWars / conspiracy media
+  /\bAlex\s+Jones\b/i,
+  /\bInfoWar[s]?\b/i,
+  /\bJerome\s+Corsi\b/i,
+  /\bPrisonPlanet\b/i,
+  // "Hidden mirrors" / cryptic non-financial metaphors
+  /\bhidden\s+all\s+the\s+mirrors\b/i,
+  // Extinction / apocalypse + politics (not geopolitical)
+  /\b(extinction|end\s+of\s+(the\s+)?world|apocalypse|human\s+race)\b.*\b(white house|president|government|obama|trump)\b/i,
+  // Generic "world's problems will be solved" rant
+  /\bworld'?s\s+\d+%\s+problems?\s+will\s+be\s+solved\b/i,
+];
+
+function isPoliticalRant(text: string): boolean {
+  // Only fire if there are NO market keywords (legit geopolitical wire can sound dramatic)
+  if (MARKET_KEYWORDS.test(text)) return false;
+  return POLITICAL_RANT_PATTERNS.some((p) => p.test(text));
+}
+
 // ── Drunk / incoherent text ─────────────────────────────────────────────────
 function isDrunkText(text: string): boolean {
   let signals = 0;
@@ -194,9 +230,6 @@ function isNonFinancialAgencyNoise(text: string): boolean {
 // This catches the "White House UFC" / "Obama" / comedy podcast garbage that
 // slips through because it doesn't trigger slur/profanity/political patterns.
 
-const MARKET_KEYWORDS =
-  /\b(tariff|trade\s+war|sanction|executive\s+order|bill\s+sign|deficit|spending|budget|tax|debt|rate|inflation|CPI|PPI|GDP|NFP|FOMC|Fed\b|Treasury|yield|bond|equity|stock|futures|oil|crude|gold|VIX|earnings|revenue|IPO|merger|acquisition|bankruptcy|default|downgrade|upgrade|PMI|jobless|unemployment|retail\s+sales|housing|consumer|manufacturing|import|export|supply\s+chain|semiconductor|chip|OPEC|barrel|EIA|DOE|refinery|pipeline|LNG|natgas|interest\s+rate|basis\s+point|hike|cut|hawkish|dovish|tightening|easing|QE|QT|balance\s+sheet|repo|liquidity|margin|leverage|short|long|hedge|derivative|swap|option|put|call|strike|expiry|settlement|clearing|regulation|SEC|CFTC|DOJ|antitrust|compliance|stimulus|infrastructure|appropriation|continuing\s+resolution|shutdown|ceiling|sequester|reconciliation|USMCA|NATO|AUKUS|BRICS|G7|G20|IMF|World\s+Bank|WTO|BIS|ceasefire|escalat|de-?escalat|retaliati|mobiliz|airstrike|missile|nuclear|military|deploy|naval|carrier|drone|IRGC|Houthi|Hezbollah|IDF|Pentagon|CENTCOM|strait|blockade|proxy|invasion|annex|occupation|incursion)\b/i;
-
 function lacksMarketRelevance(text: string): boolean {
   // Short texts get more leniency (could be wire flash)
   if (text.length < 60) return false;
@@ -238,6 +271,11 @@ export function checkContentGuard(text: string): ContentGuardResult {
     if (pattern.test(text)) {
       return { blocked: true, reason: "political-spam" };
     }
+  }
+
+  // 3b. Political rants (clean-language opinion pieces, conspiracy media)
+  if (isPoliticalRant(text)) {
+    return { blocked: true, reason: "political-rant" };
   }
 
   // 4. @ mention or RT — not professional wire content

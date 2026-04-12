@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-12T18:30:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow quality hardening: (1) Non-financial govt agency filter (DEA, DEI, ICE, ATF, TSA, etc.) in content-guard. (2) Political rant/conspiracy media filter (Alex Jones, InfoWars, violence calls, opinion rants). (3) Tightened GOV-POI search query — removed bare 'White House' that pulled garbage commentary. (4) IV score cap at 7 for non-X primary sources. (5) Clickable URLs in RiskFlow headline/summary text.",
+    files: [
+      "backend-hono/src/services/riskflow/content-guard.ts",
+      "backend-hono/src/services/riskflow/commentary-scraper.ts",
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "frontend/lib/linkify.tsx",
+      "frontend/components/feed/AlertCardBase.tsx",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+    ],
+  },
+  {
     date: "2026-04-12T15:00:00",
     agent: "claude-code",
     summary:
