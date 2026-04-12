@@ -220,11 +220,31 @@ async function assembleSnapshot(version: number): Promise<ContextBankSnapshot> {
     fetchedAt: fredFetchedAt?.toISOString(),
   };
 
-  // Polymarket / Kalshi removed (integrations not set up)
-  const polymarket: PolymarketContext = {
-    markets: [],
-    fetchedAt: now.toISOString(),
-  };
+  // Polymarket — live data from public Gamma API (S15-T2)
+  let polymarket: PolymarketContext;
+  try {
+    const { createPolymarketService } =
+      await import("../polymarket-service.js");
+    const polyService = createPolymarketService();
+    const polyData = await polyService.getMarkets(undefined, 10);
+    polymarket = {
+      markets: polyData.markets.map((m) => ({
+        id: m.conditionId,
+        title: m.question,
+        probability: m.yesPrice,
+        outcome: "Yes",
+        closeTime: m.closeTime,
+        volume24h: m.volume,
+        liquidity: m.liquidity,
+        category: m.category,
+        slug: m.slug,
+      })),
+      fetchedAt: polyData.fetchedAt,
+    };
+  } catch (err) {
+    console.error("[ContextBank] Polymarket fetch failed:", err);
+    polymarket = { markets: [], fetchedAt: now.toISOString() };
+  }
   const kalshi: KalshiContext = {
     topMarkets: [],
     recentWhales: [],

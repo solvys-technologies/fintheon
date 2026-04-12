@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-12T15:00:00",
+    agent: "claude-code",
+    summary:
+      "S15-T2: Polymarket read-only service + context bank wiring. New /api/polymarket/* routes (markets, search, whale-alerts). Context bank now returns live Polymarket data instead of empty stub.",
+    files: [
+      "backend-hono/src/types/polymarket.ts",
+      "backend-hono/src/services/polymarket-service.ts",
+      "backend-hono/src/services/context-bank/context-bank-service.ts",
+      "backend-hono/src/types/context-bank.ts",
+      "backend-hono/src/routes/polymarket/index.ts",
+      "backend-hono/src/routes/index.ts",
+    ],
+  },
+  {
     date: "2026-04-12T14:30:00",
     agent: "claude-code",
     summary:

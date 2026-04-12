@@ -57,6 +57,7 @@ import { createMemoryRoutes } from "./memory/index.js";
 import { createEditorRoutes } from "./editor/index.js";
 import { createMcpRoutes } from "./mcp/index.js";
 import { createDagRoutes } from "./dag/index.js";
+import { createPolymarketRoutes } from "./polymarket/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -107,6 +108,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/calibration", createCalibrationRoutes());
   // Predictions — forward-looking instrument outlook from scored items + econ events
   app.route("/api/predictions", predictionsRoutes);
+  // Polymarket — read-only public market data, whale alerts, search (S15-T2)
+  app.route("/api/polymarket", createPolymarketRoutes());
   // Harper — Claude CLI chat via SDK bridge (public, local-only)
   app.route("/api/harper", createHarperRoutes());
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
