@@ -4,6 +4,7 @@
 import { invokeAgent } from "../strands/index.js";
 import { isSkillEnabled } from "../../config/feature-flags.js";
 import { getSupabaseClient } from "../../config/supabase.js";
+import { exaSearch, isExaAvailable } from "../exa-service.js";
 import type {
   MiroSharkSeed,
   MiroSharkReport,
@@ -115,26 +116,40 @@ async function fetchRecentHeadlinesForOfficial(
   // Search for headlines mentioning this official's search terms
   const { data, error } = await sb
     .from("scored_riskflow_items")
-    .select("title, summary, created_at")
+    .select("headline, body, created_at, macro_level, sentiment")
     .gte("created_at", cutoff)
     .order("created_at", { ascending: false })
     .limit(200);
 
-  if (error || !data?.length) return [];
+  if (error || !data?.length) {
+    // Fallback to Exa search when DB is empty
+    return fetchExaHeadlinesForAgent(agent.searchTerms, agent.name);
+  }
 
   // Filter headlines that mention any of the official's search terms
   const lowerTerms = agent.searchTerms.map((t) => t.toLowerCase());
   const matching = data.filter((row) => {
-    const text = `${row.title} ${row.summary ?? ""}`.toLowerCase();
+    const text = `${row.headline} ${row.body ?? ""}`.toLowerCase();
     return lowerTerms.some((term) => text.includes(term));
   });
 
-  return matching
+  const dbHeadlines = matching
     .slice(0, 10)
     .map(
       (row) =>
-        `[${row.created_at.slice(0, 10)}] ${row.title}${row.summary ? ` — ${row.summary.slice(0, 120)}` : ""}`,
+        `[${row.created_at.slice(0, 10)}] ${row.headline}${row.body ? ` — ${row.body.slice(0, 120)}` : ""}`,
     );
+
+  // If DB has fewer than 3 relevant headlines, supplement with Exa search
+  if (dbHeadlines.length < 3) {
+    const exaHeadlines = await fetchExaHeadlinesForAgent(
+      agent.searchTerms,
+      agent.name,
+    );
+    return [...dbHeadlines, ...exaHeadlines].slice(0, 12);
+  }
+
+  return dbHeadlines;
 }
 
 function buildAgentSystemPrompt(persona: string, headlines: string[]): string {
@@ -686,7 +701,10 @@ async function fetchHeadlinesForAnalyst(
     .order("created_at", { ascending: false })
     .limit(200);
 
-  if (error || !data?.length) return [];
+  if (error || !data?.length) {
+    // Fallback to Exa when DB is empty
+    return fetchExaHeadlinesForAgent(analyst.subjects, analyst.name);
+  }
 
   // Filter by subject tag overlap
   const analystSubjects = new Set(analyst.subjects);
@@ -711,7 +729,7 @@ async function fetchHeadlinesForAnalyst(
     .filter((r) => (r.macro_level ?? 0) >= 3) // Only high-impact cross-domain
     .slice(0, 3);
 
-  return [...primary, ...crossDomain].map((row) => {
+  const dbLines = [...primary, ...crossDomain].map((row) => {
     const level = row.macro_level ?? 1;
     const tier =
       level >= 4
@@ -724,6 +742,67 @@ async function fetchHeadlinesForAnalyst(
     const sent = row.sentiment ? ` (${row.sentiment})` : "";
     return `[${tier}] ${row.headline}${sent}`;
   });
+
+  // If DB has fewer than 5 relevant headlines, supplement with Exa search
+  if (dbLines.length < 5) {
+    const exaHeadlines = await fetchExaHeadlinesForAgent(
+      analyst.subjects,
+      analyst.name,
+    );
+    return [...dbLines, ...exaHeadlines].slice(0, 15);
+  }
+
+  return dbLines;
+}
+
+// ── Exa Search Fallback for Agent Context ─────────────────────────────────
+// When RiskFlow DB is sparse, agents use Exa to get real-time market intel.
+// This prevents groupthink from agents all having the same (or no) context.
+
+async function fetchExaHeadlinesForAgent(
+  searchTerms: string[],
+  agentName: string,
+): Promise<string[]> {
+  if (!isExaAvailable()) return [];
+
+  try {
+    const query = `${searchTerms.slice(0, 3).join(" OR ")} market impact 2026`;
+    const results = await exaSearch(query, {
+      numResults: 8,
+      type: "auto",
+      useAutoprompt: true,
+      includeDomains: [
+        "reuters.com",
+        "bloomberg.com",
+        "ft.com",
+        "cnbc.com",
+        "wsj.com",
+        "marketwatch.com",
+        "forexlive.com",
+        "zerohedge.com",
+      ],
+    });
+
+    const headlines = results
+      .filter((r) => r.title && r.title.length > 15)
+      .slice(0, 6)
+      .map(
+        (r) => `[EXA] ${r.title}${r.text ? ` — ${r.text.slice(0, 100)}` : ""}`,
+      );
+
+    if (headlines.length > 0) {
+      console.log(
+        `[MiroShark] Exa supplemented ${headlines.length} headlines for ${agentName}`,
+      );
+    }
+    return headlines;
+  } catch (err) {
+    console.warn(
+      `[MiroShark] Exa search failed for ${agentName}:`,
+      String(err),
+    );
+    return [];
+  }
 }
 
 function buildAnalystSystemPrompt(

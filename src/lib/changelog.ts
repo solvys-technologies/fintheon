@@ -12,7 +12,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-12T14:30:00",
     agent: "claude-code",
     summary:
-      "RiskFlow content guard: comprehensive pre-ingestion filter (slurs, profanity, MAGA, junk slang, drunk text, @mentions). MiroShark fix: Update button now runs fresh simulation (was re-loading cached report), auto-run on launch if stale (1/day minimum), Harper AI analysis in briefing. AskHarp fix: boardroom DAG no longer triggers by default — regular VProxy conversation unless explicitly requested. UI: Fluxer → Forum, sidebar chat 420px, chat bg unified.",
+      "RiskFlow content guard: comprehensive pre-ingestion filter wired into ALL 9 writeRawItems paths (commentary-scraper, exa-scheduled-monitor, feed-service, feed-poller x5, central-scorer safety net). MiroShark fix: Update button runs fresh simulation, auto-run on launch, Harper AI analysis. Gov official headline fetch fixed (title→headline). Exa search fallback for agents with sparse DB context. AskHarp: boardroom DAG opt-in only. UI: Forum rename, sidebar 420px, chat bg unified.",
     files: [
       "backend-hono/src/services/riskflow/content-guard.ts",
       "backend-hono/src/services/riskflow/feed-poller.ts",
