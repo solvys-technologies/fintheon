@@ -265,9 +265,26 @@ for i in {1..15}; do
   fi
 done
 
-# ── Step 10: Device Twitter check + round-robin onboarding ──────────────────
+# ── Step 10: Cleanup legacy Twitter CLI + peer onboarding ──────────────────
 
-step "10/11" "Verifying per-device Twitter CLI + round-robin onboarding..."
+step "10/11" "Cleaning up legacy Twitter CLI + peer sync..."
+
+# Remove Twitter CLI if installed (replaced by Rettiwt library — no CLI needed)
+if command -v twitter &>/dev/null; then
+  TWITTER_PATH="$(which twitter 2>/dev/null)"
+  rm -f "$TWITTER_PATH" 2>/dev/null || true
+  ok "Removed legacy Twitter CLI ($TWITTER_PATH)"
+fi
+# Remove twitter-cli config/data if present
+rm -rf "$HOME/.twitter-cli" 2>/dev/null || true
+rm -rf "$HOME/.config/twitter-cli" 2>/dev/null || true
+# Remove old RETTIWT_AUTH_TOKEN from .env (keys are now per-user in Supabase)
+if [[ -f "$BACKEND_ENV" ]]; then
+  sed -i '' '/^RETTIWT_AUTH_TOKEN=/d' "$BACKEND_ENV" 2>/dev/null || true
+fi
+ok "Legacy Twitter CLI artifacts cleaned"
+
+# Peer onboarding sync
 if [[ -f "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" ]]; then
   if bash "$FINTHEON_ROOT/scripts/peer-bootstrap.sh" --from-update; then
     ok "Peer onboarding sync complete"

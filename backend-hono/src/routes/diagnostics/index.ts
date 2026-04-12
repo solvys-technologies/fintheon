@@ -6,7 +6,10 @@ import { pingDb } from "../../db/optimized.js";
 import { supabaseAuthHealth } from "../../services/supabase-auth.js";
 import { isPollingActive } from "../../services/riskflow/feed-poller.js";
 import { getFeedHealth } from "../../services/riskflow/feed-service.js";
-import { isRettiwtAvailable } from "../../services/rettiwt-service.js";
+import {
+  isRettiwtAvailable,
+  getPoolStatus,
+} from "../../services/rettiwt-service.js";
 import {
   isRettiwtRateLimited,
   getRettiwtCooldownMs,
@@ -359,7 +362,12 @@ export function createDiagnosticsRoutes(): Hono {
           : health.cacheAgeMs > 300_000
             ? "stale"
             : "healthy";
-    return c.json({ status, pollerRunning, ...health });
+    return c.json({
+      status,
+      pollerRunning,
+      ...health,
+      rettiwtPool: getPoolStatus(),
+    });
   });
 
   return router;

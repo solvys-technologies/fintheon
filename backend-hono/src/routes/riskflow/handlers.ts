@@ -25,7 +25,7 @@ import type {
 } from "../../types/riskflow.js";
 import { isSupabaseConfigured } from "../../config/supabase.js";
 import { writeInstrumentScores } from "../../services/supabase-service.js";
-import { isRettiwtAvailable } from "../../services/rettiwt-service.js";
+// isRettiwtAvailable replaced by pool-based check in handleGetSources
 import {
   forcePoll,
   setPollingToggle,
@@ -981,9 +981,12 @@ export async function handleGetSources(c: Context) {
     await import("../../services/riskflow/econ-rettiwt-poller.js");
   const { getCurrentPollingOwner, getActivePollingUsers } =
     await import("../../services/riskflow/user-polling-registry.js");
+  const { getPoolStatus, hasAuthenticatedKeys } =
+    await import("../../services/rettiwt-service.js");
 
   const supabaseUp = isSupabaseConfigured();
-  const rettiwtUp = isRettiwtAvailable();
+  const pool = getPoolStatus();
+  const rettiwtUp = pool.availableKeys > 0;
   const rateLimited = isRettiwtRateLimited();
   const cooldownSec = rateLimited
     ? Math.round(getRettiwtCooldownMs() / 1000)
@@ -994,6 +997,7 @@ export async function handleGetSources(c: Context) {
     rettiwt: rettiwtUp,
     rettiwtRateLimited: rateLimited,
     rettiwtCooldownSec: cooldownSec,
+    rettiwtPool: pool,
     pollingOwner: getCurrentPollingOwner(),
     activePollers: getActivePollingUsers(),
     xApi: false,

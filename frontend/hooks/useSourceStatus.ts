@@ -1,11 +1,19 @@
 // [claude-code 2026-04-11] Renamed twitterCli → rettiwt, added pollingOwner + activePollers
 import { useEffect, useState, useRef, useCallback } from "react";
 
+export interface RettiwtPoolStatus {
+  totalKeys: number;
+  availableKeys: number;
+  cooldownKeys: number;
+  disabledKeys: number;
+}
+
 export interface SourceStatus {
   notion: boolean;
   rettiwt: boolean;
   rettiwtRateLimited: boolean;
   rettiwtCooldownSec: number;
+  rettiwtPool: RettiwtPoolStatus | null;
   pollingOwner: string | null;
   activePollers: string[];
   xApi: boolean;
@@ -20,6 +28,7 @@ const DEFAULT_STATUS: SourceStatus = {
   rettiwt: false,
   rettiwtRateLimited: false,
   rettiwtCooldownSec: 0,
+  rettiwtPool: null,
   pollingOwner: null,
   activePollers: [],
   xApi: false,
@@ -45,6 +54,7 @@ export function useSourceStatus(): SourceStatus {
           rettiwt,
           rettiwtRateLimited: rateLimited,
           rettiwtCooldownSec: cooldownSec,
+          rettiwtPool: (data.rettiwtPool as RettiwtPoolStatus) ?? null,
           pollingOwner: (data.pollingOwner as string) ?? null,
           activePollers: (data.activePollers as string[]) ?? [],
           xApi: Boolean(data.xApi),

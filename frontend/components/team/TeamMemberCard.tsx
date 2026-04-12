@@ -178,9 +178,11 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
           warning={
             presence.services.riskflowKilled
               ? "Killed"
-              : presence.services.rettiwtRateLimited
-                ? "Rate Limited"
-                : undefined
+              : presence.services.rettiwtNoKeys
+                ? "No Keys"
+                : presence.services.rettiwtRateLimited
+                  ? "Rate Limited"
+                  : undefined
           }
         />
         <ServiceLight label="AI" active={presence.services.aiRuntime} />

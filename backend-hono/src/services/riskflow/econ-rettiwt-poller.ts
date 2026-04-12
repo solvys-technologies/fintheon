@@ -6,6 +6,7 @@ import {
   rettiwtUserTimeline,
   rettiwtSearch,
   isRettiwtAvailable,
+  hasAuthenticatedKeys,
 } from "../rettiwt-service.js";
 import { scrapeMultiple } from "../agent-reach-service.js";
 import { getPollingConfig } from "./polling-config.js";
@@ -213,11 +214,7 @@ function scheduleBurst(event: EconEvent): void {
 // ── Main Poll Function ─────────────────────────────────────────────────────
 
 export async function pollForEconNews(): Promise<FeedItem[]> {
-  if (!isRettiwtAvailable()) {
-    console.debug("[EconRettiwtPoller] RETTIWT_AUTH_TOKEN not set, skipping");
-    return [];
-  }
-
+  // isRettiwtAvailable() is always true now (guest mode handles timelines)
   if (isRettiwtRateLimited()) {
     console.warn(
       `[EconRettiwtPoller] Rate limited — cooldown ${Math.round(getRettiwtCooldownMs() / 1000)}s remaining`,
@@ -241,7 +238,7 @@ export async function pollForEconNews(): Promise<FeedItem[]> {
     if (ms !== null && ms > 0 && ms <= 120_000) scheduleBurst(event);
   }
 
-  // 2. Poll accounts using rotation
+  // 2. Poll accounts using rotation (timelines work with guest auth)
   const cycleAccounts = getAccountsForCycle();
   const allTweetPromises: Promise<
     Array<{ id: string; text: string; author: string; publishedDate: string }>
@@ -256,8 +253,8 @@ export async function pollForEconNews(): Promise<FeedItem[]> {
     );
   }
 
-  // 3. Event-triggered search queries
-  if (activeEvents.length > 0) {
+  // 3. Event-triggered search queries (requires authenticated keys)
+  if (activeEvents.length > 0 && hasAuthenticatedKeys()) {
     const searchQueries = buildEventQueries(activeEventNames);
     for (const query of searchQueries) {
       allTweetPromises.push(

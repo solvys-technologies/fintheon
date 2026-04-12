@@ -46,6 +46,7 @@ import { startReflectScheduler } from "../services/autoresearch/reflect-schedule
 import { startMiroSharkDaily } from "../services/cron/miroshark-daily.js";
 import { startAquariumScheduler } from "../services/riskflow/aquarium-scheduler.js";
 import { bootHarperAutonomous } from "../services/harper-autonomous/index.js";
+import { initRettiwtPool } from "../services/rettiwt-service.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -128,6 +129,10 @@ export async function bootServices(): Promise<void> {
   // Feed cache seed (cold start: hydrate from scored_riskflow_items)
   await seedCacheFromDb();
   log.info("FeedCache seeded from DB");
+
+  // Rettiwt key pool (per-user API keys from Supabase + env fallback)
+  await initRettiwtPool();
+  log.info("Rettiwt key pool initialized");
 
   // Econ-triggered Rettiwt poller (replaces twitter-cli)
   startEconPoller();

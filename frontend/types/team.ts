@@ -5,6 +5,7 @@ export type UserStatus = "online" | "away" | "busy" | "dnd" | "offline";
 export interface ServiceStatus {
   rettiwt: boolean;
   rettiwtRateLimited: boolean;
+  rettiwtNoKeys: boolean;
   riskflowKilled: boolean;
   aiRuntime: boolean;
   newsfeedPolling: { active: boolean; lastUpdate: string };

@@ -107,6 +107,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
       services: {
         rettiwt: riskflowKilled ? false : sourceStatus.rettiwt,
         rettiwtRateLimited: sourceStatus.rettiwtRateLimited,
+        rettiwtNoKeys: sourceStatus.rettiwtPool?.totalKeys === 0,
         riskflowKilled,
         aiRuntime: caoOnline,
         newsfeedPolling: {
@@ -154,6 +155,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
           const defaultServices = {
             rettiwt: false,
             rettiwtRateLimited: false,
+            rettiwtNoKeys: true,
             riskflowKilled: false,
             aiRuntime: false,
             newsfeedPolling: {
