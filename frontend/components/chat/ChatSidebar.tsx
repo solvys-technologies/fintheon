@@ -68,7 +68,7 @@ function ChatSidebarInner({
   const isRunning = useThread((t) => t.isRunning);
 
   // Build dynamic display names — CAO name comes from agent context
-  const hermesNames = useMemo(() => {
+  const hermesNames: Record<string, string> = useMemo(() => {
     const cao = agents.find((a) => a.id === "harper-opus");
     return { ...HERMES_NAMES_DEFAULT, harper: cao?.name ?? "Harper" };
   }, [agents]);
