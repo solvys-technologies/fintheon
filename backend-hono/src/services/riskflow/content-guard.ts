@@ -59,6 +59,13 @@ const JUNK_LANGUAGE_PATTERNS = [
   /\b(cuck|soy\s*boy|snowflake|libtard|conservatard|demoncrat|republicunt)\b/i,
   /\b(rekt|wrecked|owned|pwned)\b/i,
   /\b(cringe|yikes|oof|sheesh)\b/i,
+  /\b(wtf|smh|smfh|omfg|jfc)\b/i,
+  /\bcomedy\b/i,
+  /\bblurb\b/i,
+  /\bno[\s-]no\b/i,
+  /\bunverified\b/i,
+  /\bdeepfake\b/i,
+  /\bTucker\s+Carlson\b/i,
 ];
 
 // ── Political spam / partisan noise ─────────────────────────────────────────
