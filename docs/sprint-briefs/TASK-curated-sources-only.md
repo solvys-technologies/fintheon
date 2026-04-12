@@ -40,6 +40,7 @@ Additionally: emdash `—` and sarcastic `"genius"` need to be added to the cont
 - **Path:** `backend-hono/migrations/028_source_accounts.sql`
 - **Action:** Create
 - **Spec:**
+
   ```sql
   CREATE TABLE IF NOT EXISTS riskflow_source_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -56,6 +57,7 @@ Additionally: emdash `—` and sarcastic `"genius"` need to be added to the cont
     - financialjuice (Wire), DeItaone (Wire), NickTimiraos (Macro), OSINTDefender (OSINT)
     - SecBessent25 (Geopolitical), realDonaldTrump (Geopolitical), ABORNEOFFICIAL (Geopolitical)
     - TheSpectatorIndex (Geopolitical), SchizoIntel (OSINT), MenchOSINT (OSINT), ClashReport (OSINT)
+
 - **Max lines:** 50
 
 ### 3. Source Account Type Definition

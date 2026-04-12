@@ -19,14 +19,14 @@ import {
   markRettiwtPollSuccess,
   markRettiwtPollEmpty,
 } from "./econ-rettiwt-poller.js";
-import { isRettiwtAvailable, rettiwtSearch } from "../rettiwt-service.js";
+import { isRettiwtAvailable, rettiwtUserTimeline } from "../rettiwt-service.js";
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
 import { isSupabaseConfigured } from "../../config/supabase.js";
 import { getPollingConfig } from "./polling-config.js";
 import { pollCommentary } from "./commentary-scraper.js";
 import { checkForScheduledEvents } from "./exa-scheduled-monitor.js";
-import { exaSearch, isExaAvailable } from "../exa-service.js";
 import { scrapeMultiple } from "../agent-reach-service.js";
+import { getAccountHandles } from "../source-accounts/source-accounts-service.js";
 import { areAllUsersKilled } from "./user-polling-registry.js";
 import type { FeedItem } from "../../types/riskflow.js";
 import { createLogger } from "../../lib/logger.js";
@@ -130,30 +130,10 @@ function maybeLogHealth(): void {
   _itemsSinceLastLog = 0;
 }
 
-// ── Exa Fallback (runs when Twitter CLI is 429'd) ───────────────────────────
-// Searches the same macro/geopolitical keywords via Exa neural search,
-// pulling from wire services that mirror what FJ/DeItaOne/OSINT cover.
+// ── Curated Timeline Fallback (runs when main poller is rate-limited) ──────
+// [claude-code 2026-04-12] Replaced open rettiwtSearch + Exa with curated timeline pulls
 
-const EXA_FALLBACK_DOMAINS = [
-  "financialjuice.com",
-  "zerohedge.com",
-  "reuters.com",
-  "bloomberg.com",
-  "macenews.com",
-  "citrini.com",
-  "cnbc.com",
-  "wsj.com",
-];
-
-const EXA_FALLBACK_QUERIES = [
-  "breaking market news Fed rate CPI NFP tariff today",
-  "Iran Israel military strike missile ceasefire Houthi",
-  "Trump tariff trade war Bessent Treasury",
-  "FOMC Powell rate cut inflation economic data",
-  "oil OPEC crude geopolitical supply disruption",
-];
-
-const exaFallbackSeenIds = new Set<string>();
+const fallbackSeenIds = new Set<string>();
 
 function hashForDedup(s: string): string {
   let h = 0;
@@ -167,40 +147,29 @@ function hashForDedup(s: string): string {
 export async function runScrapeFallback(): Promise<number> {
   if (!isSupabaseConfigured()) return 0;
 
-  log.info("[ScrapeFallback] Running Rettiwt + Agent-Reach fallback pipeline");
+  log.info("[ScrapeFallback] Running curated timeline + Agent-Reach fallback");
   let totalWritten = 0;
 
-  // ── Step 1: Try Rettiwt search ──
+  // ── Step 1: Pull curated account timelines ──
   if (isRettiwtAvailable()) {
-    for (const query of EXA_FALLBACK_QUERIES) {
+    const handles = await getAccountHandles();
+    for (const handle of handles) {
       try {
-        const results = await rettiwtSearch(query, { count: 8 });
+        const results = await rettiwtUserTimeline(handle, { count: 10 });
         const items: RawRiskFlowItem[] = [];
         for (const r of results) {
           const title = r.text?.trim().slice(0, 280);
           if (!title || title.length < 15) continue;
 
-          const id = `rt-fb-${hashForDedup(title.toLowerCase())}`;
-          if (exaFallbackSeenIds.has(id)) continue;
-          exaFallbackSeenIds.add(id);
+          const id = `fb-${handle}-${hashForDedup(title.toLowerCase())}`;
+          if (fallbackSeenIds.has(id)) continue;
+          fallbackSeenIds.add(id);
 
-          const isMacro =
-            /\b(fed|fomc|cpi|ppi|gdp|nfp|pce|inflation|jobless|retail sales|rate)\b/i.test(
-              title,
-            );
-          const isGeo =
-            /\b(iran|israel|missile|strike|houthi|hezbollah|irgc|ceasefire|tariff|trade war)\b/i.test(
-              title,
-            );
           const isBreaking = /\b(breaking|urgent|alert|flash)\b/i.test(title);
 
           items.push({
             tweet_id: id,
-            source: isMacro
-              ? "FinancialJuice"
-              : isGeo
-                ? "OSINTSources"
-                : "Custom",
+            source: "CuratedTimeline",
             headline: title,
             body: r.text.length > 280 ? r.text.slice(280, 600) : undefined,
             url: r.url || undefined,
@@ -209,34 +178,38 @@ export async function runScrapeFallback(): Promise<number> {
             is_breaking: isBreaking,
             urgency: isBreaking ? "immediate" : "normal",
             published_at: r.publishedDate ?? new Date().toISOString(),
-            submitted_by: "feed-poller:rettiwt-fallback",
+            submitted_by: `feed-poller:timeline-${handle}`,
           });
         }
 
-        const cleanScrapeItems = filterWithContentGuard(
+        const cleanItems = filterWithContentGuard(
           items,
           (i) => `${i.headline} ${i.body || ""}`,
         );
-        if (cleanScrapeItems.length > 0) {
-          const written = await writeRawItems(cleanScrapeItems);
+        if (cleanItems.length > 0) {
+          const written = await writeRawItems(cleanItems);
           totalWritten += written;
         }
       } catch (err) {
-        log.warn(
-          `[ScrapeFallback] Rettiwt query failed: "${query.slice(0, 40)}"`,
-          { error: String(err) },
-        );
+        log.warn(`[ScrapeFallback] @${handle} timeline failed`, {
+          error: String(err),
+        });
       }
     }
     log.info(
-      `[ScrapeFallback] Rettiwt phase done — ${totalWritten} items written`,
+      `[ScrapeFallback] Timeline phase done — ${totalWritten} items written`,
     );
   }
 
-  // ── Step 2: Try Agent-Reach scrape if Rettiwt yielded nothing ──
+  // ── Step 2: Agent-Reach scrape if timelines yielded nothing ──
   if (totalWritten === 0) {
-    const scrapeUrls = EXA_FALLBACK_DOMAINS.map((d) => `https://${d}`);
-    const articles = await scrapeMultiple(scrapeUrls);
+    const AGENT_REACH_DOMAINS = [
+      "https://financialjuice.com",
+      "https://zerohedge.com",
+      "https://reuters.com",
+      "https://bloomberg.com",
+    ];
+    const articles = await scrapeMultiple(AGENT_REACH_DOMAINS);
     const items: RawRiskFlowItem[] = [];
     for (const a of articles) {
       const title = a.title?.trim();
@@ -245,8 +218,8 @@ export async function runScrapeFallback(): Promise<number> {
         continue;
 
       const id = `ar-fb-${hashForDedup(title.toLowerCase())}`;
-      if (exaFallbackSeenIds.has(id)) continue;
-      exaFallbackSeenIds.add(id);
+      if (fallbackSeenIds.has(id)) continue;
+      fallbackSeenIds.add(id);
 
       const isBreaking = /\b(breaking|urgent|alert|flash)\b/i.test(
         `${title} ${a.text}`,
@@ -275,92 +248,6 @@ export async function runScrapeFallback(): Promise<number> {
       const written = await writeRawItems(cleanAgentItems);
       totalWritten += written;
       log.info(`[ScrapeFallback] Agent-Reach phase — ${written} items written`);
-    }
-  }
-
-  // ── Step 3: Dead-letter Exa fallback ──
-  if (totalWritten === 0 && isExaAvailable()) {
-    log.info(
-      "[ScrapeFallback] Rettiwt+AgentReach empty — trying Exa dead-letter",
-    );
-    for (const query of EXA_FALLBACK_QUERIES) {
-      try {
-        const results = await exaSearch(query, {
-          numResults: 8,
-          type: "auto",
-          useAutoprompt: true,
-          includeDomains: EXA_FALLBACK_DOMAINS,
-        });
-
-        const items: RawRiskFlowItem[] = [];
-        for (const r of results) {
-          const title = r.title?.trim();
-          if (!title || title.length < 15) continue;
-          if (
-            /^(home|about|contact|subscribe|sign in|menu|cookie)/i.test(title)
-          )
-            continue;
-          if (
-            /\b(download the app|session prep|pre-?session|sign up|create account|free trial|subscribe now|get started|install|app store|google play|newsletter|webinar|podcast|sponsored)\b/i.test(
-              title,
-            )
-          )
-            continue;
-
-          const id = `exa-fb-${hashForDedup(title.toLowerCase())}`;
-          if (exaFallbackSeenIds.has(id)) continue;
-          exaFallbackSeenIds.add(id);
-
-          const fullText = `${title} ${r.text || ""}`;
-          const isMacro =
-            /\b(fed|fomc|cpi|ppi|gdp|nfp|pce|inflation|jobless|retail sales|rate)\b/i.test(
-              fullText,
-            );
-          const isGeo =
-            /\b(iran|israel|missile|strike|houthi|hezbollah|irgc|ceasefire|tariff|trade war)\b/i.test(
-              fullText,
-            );
-          const isBreaking = /\b(breaking|urgent|alert|flash)\b/i.test(
-            fullText,
-          );
-
-          items.push({
-            tweet_id: id,
-            source: isMacro
-              ? "FinancialJuice"
-              : isGeo
-                ? "OSINTSources"
-                : "Custom",
-            headline: title,
-            body:
-              (r.text || "")
-                .replace(/\n+/g, " ")
-                .replace(/\s+/g, " ")
-                .trim()
-                .slice(0, 300) || undefined,
-            url: r.url || undefined,
-            symbols: [],
-            tags: [],
-            is_breaking: isBreaking,
-            urgency: isBreaking ? "immediate" : "normal",
-            published_at: r.publishedDate ?? new Date().toISOString(),
-            submitted_by: "feed-poller:exa-fallback",
-          });
-        }
-
-        const cleanExaItems = filterWithContentGuard(
-          items,
-          (i) => `${i.headline} ${i.body || ""}`,
-        );
-        if (cleanExaItems.length > 0) {
-          const written = await writeRawItems(cleanExaItems);
-          totalWritten += written;
-        }
-      } catch (err) {
-        log.warn(`[ScrapeFallback] Exa query failed: "${query.slice(0, 40)}"`, {
-          error: String(err),
-        });
-      }
     }
   }
 

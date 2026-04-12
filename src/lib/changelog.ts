@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-12T22:00:00",
+    agent: "claude-code",
+    summary:
+      "Curated sources lockdown: killed open rettiwtSearch + Exa in commentary-scraper and feed-poller fallback. All feed content now from curated X account timelines only. New riskflow_source_accounts table + CRUD API + SourceAccountsManager UI in Refinement Engine. Added emdash + genius filters to content guard. Purged 175+175 garbage commentary-scraper items from both tables.",
+    files: [
+      "backend-hono/src/services/riskflow/content-guard.ts",
+      "backend-hono/src/services/riskflow/commentary-scraper.ts",
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+      "backend-hono/src/services/riskflow/rettiwt-poller-accounts.ts",
+      "backend-hono/migrations/028_source_accounts.sql",
+      "backend-hono/src/types/source-account.ts",
+      "backend-hono/src/services/source-accounts/source-accounts-service.ts",
+      "backend-hono/src/routes/source-accounts/handlers.ts",
+      "backend-hono/src/routes/source-accounts/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/components/refinement/SourceAccountsManager.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+    ],
+  },
+  {
     date: "2026-04-12T18:30:00",
     agent: "claude-code",
     summary:

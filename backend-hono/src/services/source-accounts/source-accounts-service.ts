@@ -1,0 +1,140 @@
+// [claude-code 2026-04-12] Source accounts CRUD service — curated X accounts for timeline polling
+
+import { getSupabaseClient } from "../../config/supabase.js";
+import { createLogger } from "../../lib/logger.js";
+import {
+  DEFAULT_SOURCE_ACCOUNTS,
+  type SourceAccount,
+  type SourceAccountCategory,
+} from "../../types/source-account.js";
+
+const log = createLogger("SourceAccountsService");
+
+let cache: SourceAccount[] = [];
+let cacheLoadedAt = 0;
+const CACHE_TTL = 300_000; // 5 min
+
+function clearCache(): void {
+  cache = [];
+  cacheLoadedAt = 0;
+}
+
+export async function getAccounts(): Promise<SourceAccount[]> {
+  if (Date.now() - cacheLoadedAt < CACHE_TTL && cache.length > 0) {
+    return cache;
+  }
+
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+
+  const { data, error } = await sb
+    .from("riskflow_source_accounts")
+    .select("*")
+    .order("category")
+    .order("handle");
+
+  if (error) {
+    log.warn("Failed to read source accounts", { error: error.message });
+    return [];
+  }
+
+  // Seed defaults if table is empty
+  if (!data || data.length === 0) {
+    log.info("Source accounts table empty — seeding defaults");
+    for (const account of DEFAULT_SOURCE_ACCOUNTS) {
+      await sb.from("riskflow_source_accounts").upsert(
+        {
+          handle: account.handle,
+          display_name: account.display_name,
+          category: account.category,
+          active: account.active,
+        },
+        { onConflict: "handle" },
+      );
+    }
+    const { data: seeded } = await sb
+      .from("riskflow_source_accounts")
+      .select("*")
+      .order("category")
+      .order("handle");
+    cache = (seeded ?? []) as SourceAccount[];
+    cacheLoadedAt = Date.now();
+    return cache;
+  }
+
+  cache = data as SourceAccount[];
+  cacheLoadedAt = Date.now();
+  return cache;
+}
+
+export async function getActiveAccounts(): Promise<SourceAccount[]> {
+  const all = await getAccounts();
+  return all.filter((a) => a.active);
+}
+
+export async function getAccountHandles(): Promise<string[]> {
+  const active = await getActiveAccounts();
+  return active.map((a) => a.handle);
+}
+
+export async function addAccount(
+  handle: string,
+  displayName: string | null,
+  category: SourceAccountCategory,
+): Promise<SourceAccount | null> {
+  const sb = getSupabaseClient();
+  if (!sb) return null;
+
+  const { data, error } = await sb
+    .from("riskflow_source_accounts")
+    .insert({
+      handle: handle.replace(/^@/, ""),
+      display_name: displayName,
+      category,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    log.warn("Failed to add source account", { error: error.message });
+    return null;
+  }
+
+  clearCache();
+  return data as SourceAccount;
+}
+
+export async function updateAccount(
+  id: string,
+  fields: Partial<
+    Pick<SourceAccount, "handle" | "display_name" | "category" | "active">
+  >,
+): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from("riskflow_source_accounts")
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    log.warn("Failed to update source account", { error: error.message });
+  }
+  clearCache();
+}
+
+export async function removeAccount(id: string): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from("riskflow_source_accounts")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    log.warn("Failed to remove source account", { error: error.message });
+  }
+  clearCache();
+}

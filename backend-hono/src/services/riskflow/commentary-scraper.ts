@@ -1,22 +1,11 @@
-// [claude-code 2026-04-07] Fix: Hash on headline only (not publishedBucket) to prevent duplicate IDs
-// [claude-code 2026-04-04] Exa-powered catalyst scraper + Twitter bookmark poller
-// Exa: neural search for wire coverage, POI statements, OSINT, Mag7, liquidity
-// Bookmarks: keyword-matched against active Narrative threads → only signal, no noise
-// Feeds raw catalysts into raw_riskflow_items on a 30/60-min interval.
+// [claude-code 2026-04-12] Curated timeline scraper — replaced open rettiwtSearch + Exa with curated account timelines
+// Pulls from the same riskflow_source_accounts table as econ-rettiwt-poller, on a slower 30/60-min cadence.
+// All items pass through content guard before hitting raw_riskflow_items.
 
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
 import { filterWithContentGuard } from "./content-guard.js";
-import {
-  exaSearch,
-  isExaAvailable,
-  type ExaSearchResult,
-} from "../exa-service.js";
-import {
-  rettiwtSearch,
-  isRettiwtAvailable,
-  type RettiwtSearchResult,
-} from "../rettiwt-service.js";
-// [claude-code 2026-04-11] Removed twitter-cli bookmark imports — Rettiwt doesn't support bookmark fetching
+import { rettiwtUserTimeline, isRettiwtAvailable } from "../rettiwt-service.js";
+import { getActiveAccounts } from "../source-accounts/source-accounts-service.js";
 import { createLogger } from "../../lib/logger.js";
 import { getPollingConfig } from "./polling-config.js";
 
@@ -27,132 +16,6 @@ const OFF_PEAK_INTERVAL_MS = 60 * 60_000;
 
 const submittedIds = new Set<string>();
 let scraperTimeout: ReturnType<typeof setTimeout> | null = null;
-
-// ─── Narrative Keywords ────────────────────────────────────────
-// Bookmarked tweets must match at least one active Narrative thread
-// to be ingested as a Catalyst. This filters noise from signal.
-
-const NARRATIVE_KEYWORDS: Record<string, RegExp> = {
-  "middle-east-conflict":
-    /\b(iran|israel|irgc|houthi|hezbollah|hamas|gaza|lebanon|netanyahu|araghchi|khamenei|hormuz|strait|missile|ceasefire|idf)\b/i,
-  "liquidity-credit-contraction":
-    /\b(liquidity|credit (crunch|contraction|spread)|repo|reverse repo|TGA|treasury general|RRP|QT|quantitative tight|bank (run|stress|fail)|svb|deposit flight|btfp|credit (tight|crack)|private credit|redemption gate|withdrawal limit|fund gate)\b/i,
-  "ai-singularity":
-    /\b(nvidia|nvda|openai|anthropic|deepmind|google ai|microsoft ai|meta ai|apple intelligence|mag.?7|magnificent|artificial intelligence|AGI|GPU|H100|H200|blackwell|data center|AI capex|AI spend)\b/i,
-  "usd-jpy-carry-trade":
-    /\b(usd.?jpy|carry trade|yen|boj|bank of japan|japan rate|intervention|ueda)\b/i,
-  "trade-war":
-    /\b(tariff|trade war|import duty|reciprocal tariff|liberation day|customs|duties|retaliatory|section 301|trade deficit)\b/i,
-  "us-china-relations":
-    /\b(us.?china|china.*sanction|china.*tariff|taiwan|xi jinping|chip ban|export control|tiktok ban|fentanyl|rare earth|china.*retaliat)\b/i,
-  "rate-cut-cycle":
-    /\b(rate cut|fed cut|fomc|fed funds|powell|dot plot|terminal rate|neutral rate|easing cycle|pivot)\b/i,
-  "trump-presidency":
-    /\b(trump|executive order|white house|truth social|maga|bessent|doge|elon.*gov|vivek)\b/i,
-  "price-stability":
-    /\b(cpi|ppi|pce|inflation|deflation|disinflation|core price|shelter cost|sticky inflation|supercore)\b/i,
-  "maximum-employment":
-    /\b(nfp|payroll|unemployment|jobless claim|jolts|hiring|layoff|ADP|labor market|wage growth|quit rate)\b/i,
-};
-
-function matchesNarrative(text: string): string | null {
-  for (const [slug, regex] of Object.entries(NARRATIVE_KEYWORDS)) {
-    if (regex.test(text)) return slug;
-  }
-  return null;
-}
-
-// ─── Exa Search Groups ─────────────────────────────────────────
-
-interface SearchGroup {
-  name: string;
-  query: string;
-  source: string;
-  idPrefix: string;
-  numResults: number;
-  includeDomains?: string[];
-}
-
-const SEARCH_GROUPS: SearchGroup[] = [
-  // ── Financial Wire Coverage ───────────────────────────────────
-  {
-    name: "FJ-Wire",
-    query:
-      "breaking market news Fed rate decision economic data CPI NFP earnings guidance tariff",
-    source: "FinancialJuice",
-    idPrefix: "exa-fj",
-    numResults: 12,
-    includeDomains: [
-      "financialjuice.com",
-      "features.financialjuice.com",
-      "zerohedge.com",
-      "reuters.com",
-      "bloomberg.com",
-    ],
-  },
-
-  // ── Iranian Officials — Market-Moving Statements ──────────────
-  {
-    name: "Iran-POI",
-    query:
-      'Araghchi OR Khamenei OR Pezeshkian OR "Hossein Salami" OR "Kamal Kharrazi" OR Shamkhani OR IRGC OR "Iran foreign minister" OR "Iran UN mission" statement nuclear sanctions retaliation enrichment Hormuz',
-    source: "OSINTSources",
-    idPrefix: "exa-iran",
-    numResults: 10,
-  },
-
-  // ── Broader OSINT / Geopolitical ──────────────────────────────
-  {
-    name: "OSINT-Geopolitical",
-    query:
-      "breaking geopolitical military strike missile Iran Israel Houthi Hezbollah conflict ceasefire IRGC sanctions Yemen Lebanon",
-    source: "OSINTSources",
-    idPrefix: "exa-osint",
-    numResults: 10,
-  },
-
-  // ── Key Government / Central Bank Statements ──────────────────
-  // [claude-code 2026-04-12] Tightened query — removed bare "White House" which
-  // pulled in every political rant mentioning it. Now requires financial context.
-  {
-    name: "GOV-POI",
-    query:
-      '"Federal Reserve" statement OR "Treasury Secretary Bessent" OR "White House" tariff OR "White House" sanctions OR "White House" executive order OR ECB rate OR "Bank of Japan" OR "trade representative" tariff',
-    source: "OSINTSources",
-    idPrefix: "exa-gov",
-    numResults: 8,
-  },
-
-  // ── Mag7 / AI Singularity Signal ──────────────────────────────
-  {
-    name: "Mag7-AI",
-    query:
-      'NVIDIA earnings OR Apple AI OR Microsoft Azure AI OR Google Gemini OR Meta AI OR Amazon AWS AI OR Tesla autopilot OR "data center" capex OR GPU shortage OR AI spending',
-    source: "FinancialJuice",
-    idPrefix: "exa-mag7",
-    numResults: 8,
-  },
-
-  // ── Liquidity & Credit Stress ─────────────────────────────────
-  {
-    name: "Liquidity-Credit",
-    query:
-      "private credit redemption gate withdrawal limit OR liquidity crisis OR credit spread widening OR repo rate spike OR reverse repo OR TGA drawdown OR bank stress OR deposit flight OR Treasury auction OR quantitative tightening",
-    source: "FinancialJuice",
-    idPrefix: "exa-liq",
-    numResults: 8,
-  },
-
-  // ── Macro / Fed Watcher Coverage ──────────────────────────────
-  {
-    name: "Macro-Watchers",
-    query:
-      '"Nick Timiraos" OR "WSJ Fed" OR "FOMC minutes" OR "rate cut" OR "rate hold" OR "inflation outlook" OR "Powell press conference"',
-    source: "FinancialJuice",
-    idPrefix: "exa-macro",
-    numResults: 8,
-  },
-];
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -216,56 +79,17 @@ function extractTags(text: string): string[] {
   return [...new Set(tags)];
 }
 
-// ─── Exa Result → RawRiskFlowItem ──────────────────────────────
+// ─── Timeline Result → RawRiskFlowItem ───────────────────────────
 
-function exaToRawItem(
-  result: ExaSearchResult,
-  group: SearchGroup,
-): RawRiskFlowItem | null {
-  const title = result.title?.trim();
-  if (!title || title.length < 15 || title.length > 500) return null;
-  if (/^(home|about|contact|subscribe|sign in|log in|menu|cookie)/i.test(title))
-    return null;
-
-  // [claude-code 2026-04-07] FIX: Hash on headline ONLY — not publishedBucket.
-  // The old approach created different IDs for the same article when Exa returned
-  // slightly different publishedDate values across scrape cycles, causing duplicates.
-  const normalizedTitle = title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  const id = `${group.idPrefix}-${hashString(normalizedTitle)}`;
-  if (submittedIds.has(id)) return null;
-
-  const fullText = `${title} ${result.text}`;
-  const rawText = (result.text || "")
-    .replace(/\n+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  const sentences = rawText.split(/(?<=[.!?])\s+/).filter((s) => s.length > 20);
-  const summary = sentences.slice(0, 3).join(" ").slice(0, 300);
-
-  return {
-    tweet_id: id,
-    source: group.source,
-    headline: title,
-    body: summary || undefined,
-    url: result.url || undefined,
-    symbols: extractSymbols(fullText),
-    tags: extractTags(fullText),
-    is_breaking: /\b(breaking|urgent|alert|flash)\b/i.test(fullText),
-    urgency: /\b(breaking|urgent)\b/i.test(fullText) ? "immediate" : "normal",
-    published_at: result.publishedDate ?? new Date().toISOString(),
-    submitted_by: `commentary-scraper:${group.name}`,
-  };
-}
-
-// ─── Rettiwt Result → RawRiskFlowItem ─────────────────────────
-
-function rettiwtToRawItem(
-  result: RettiwtSearchResult,
-  group: SearchGroup,
+function timelineToRawItem(
+  result: {
+    id: string;
+    text: string;
+    author: string;
+    publishedDate: string;
+    url: string;
+  },
+  handle: string,
 ): RawRiskFlowItem | null {
   const text = result.text?.trim();
   if (!text || text.length < 15) return null;
@@ -276,12 +100,12 @@ function rettiwtToRawItem(
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  const id = `rt-${group.idPrefix}-${hashString(normalizedTitle)}`;
+  const id = `cs-${handle}-${hashString(normalizedTitle)}`;
   if (submittedIds.has(id)) return null;
 
   return {
     tweet_id: id,
-    source: group.source,
+    source: "CuratedTimeline",
     headline,
     body: text.length > 280 ? text.slice(280, 600) : undefined,
     url: result.url || undefined,
@@ -290,124 +114,89 @@ function rettiwtToRawItem(
     is_breaking: /\b(breaking|urgent|alert|flash)\b/i.test(text),
     urgency: /\b(breaking|urgent)\b/i.test(text) ? "immediate" : "normal",
     published_at: result.publishedDate ?? new Date().toISOString(),
-    submitted_by: `commentary-scraper:rettiwt-${group.name}`,
+    submitted_by: `commentary-scraper:${handle}`,
   };
 }
 
 // ─── Main Poll Cycle ────────────────────────────────────────────
 
 export async function pollCommentary(): Promise<void> {
-  log.info("Starting Rettiwt/Exa + Bookmark catalyst scrape cycle");
-  let totalNew = 0;
-
-  // Phase 1: Rettiwt search (primary), Exa as fallback
-  if (isRettiwtAvailable()) {
-    for (const group of SEARCH_GROUPS) {
-      try {
-        const results = await rettiwtSearch(group.query, {
-          count: group.numResults,
-        });
-
-        if (results.length === 0) {
-          log.info(`${group.name}: 0 Rettiwt results`);
-          continue;
-        }
-
-        const items: RawRiskFlowItem[] = [];
-        for (const result of results) {
-          const item = rettiwtToRawItem(result, group);
-          if (item) items.push(item);
-        }
-
-        if (items.length === 0) {
-          log.info(`${group.name}: 0 new catalysts after filtering`);
-          continue;
-        }
-
-        const cleanItems = filterWithContentGuard(
-          items,
-          (i) => `${i.headline} ${i.body || ""}`,
-        );
-        if (cleanItems.length === 0) continue;
-        const written = await writeRawItems(cleanItems);
-        for (const item of cleanItems) submittedIds.add(item.tweet_id);
-        totalNew += written;
-
-        log.info(`${group.name}: ${written} catalysts ingested via Rettiwt`);
-      } catch (err) {
-        log.warn(`${group.name} Rettiwt scrape failed`, {
-          error: String(err),
-        });
-      }
-    }
-  } else if (isExaAvailable()) {
-    // Exa fallback when Rettiwt is not configured
-    log.info("RETTIWT_AUTH_TOKEN not set — falling back to Exa");
-    for (const group of SEARCH_GROUPS) {
-      try {
-        const results = await exaSearch(group.query, {
-          numResults: group.numResults,
-          type: "neural",
-          useAutoprompt: true,
-          includeDomains: group.includeDomains,
-        });
-
-        if (results.length === 0) continue;
-
-        const items: RawRiskFlowItem[] = [];
-        for (const result of results) {
-          const item = exaToRawItem(result, group);
-          if (item) items.push(item);
-        }
-
-        if (items.length === 0) continue;
-
-        const cleanExaItems = filterWithContentGuard(
-          items,
-          (i) => `${i.headline} ${i.body || ""}`,
-        );
-        if (cleanExaItems.length === 0) continue;
-        const written = await writeRawItems(cleanExaItems);
-        for (const item of cleanExaItems) submittedIds.add(item.tweet_id);
-        totalNew += written;
-
-        log.info(`${group.name}: ${written} catalysts ingested via Exa`);
-      } catch (err) {
-        log.warn(`${group.name} Exa scrape failed`, { error: String(err) });
-      }
-    }
-  } else {
-    log.warn(
-      "Neither RETTIWT_AUTH_TOKEN nor EXA_API_KEY set — catalyst scrape skipped",
-    );
+  if (!isRettiwtAvailable()) {
+    log.warn("No Rettiwt keys available — commentary scrape skipped");
+    return;
   }
 
-  log.info(`Catalyst scrape complete: ${totalNew} new catalysts total`);
+  log.info("Starting curated timeline commentary scrape cycle");
+  let totalNew = 0;
+
+  const activeAccounts = await getActiveAccounts();
+  if (activeAccounts.length === 0) {
+    log.warn("No active source accounts — commentary scrape skipped");
+    return;
+  }
+
+  log.info(`Polling ${activeAccounts.length} curated accounts`);
+
+  for (const account of activeAccounts) {
+    try {
+      const results = await rettiwtUserTimeline(account.handle, { count: 20 });
+
+      if (results.length === 0) {
+        continue;
+      }
+
+      const items: RawRiskFlowItem[] = [];
+      for (const result of results) {
+        const item = timelineToRawItem(result, account.handle);
+        if (item) items.push(item);
+      }
+
+      if (items.length === 0) continue;
+
+      const cleanItems = filterWithContentGuard(
+        items,
+        (i) => `${i.headline} ${i.body || ""}`,
+      );
+      if (cleanItems.length === 0) continue;
+
+      const written = await writeRawItems(cleanItems);
+      for (const item of cleanItems) submittedIds.add(item.tweet_id);
+      totalNew += written;
+
+      log.info(
+        `@${account.handle}: ${written} catalysts ingested (${account.category})`,
+      );
+    } catch (err) {
+      log.warn(`@${account.handle} timeline scrape failed`, {
+        error: String(err),
+      });
+    }
+  }
+
+  log.info(`Commentary scrape complete: ${totalNew} new catalysts total`);
 }
 
 // ─── Boot ───────────────────────────────────────────────────────
 
 export function startCommentaryScraper(): void {
-  if (!isRettiwtAvailable() && !isExaAvailable()) {
-    log.warn(
-      "Neither RETTIWT_AUTH_TOKEN nor EXA_API_KEY set — catalyst scrape disabled",
-    );
+  if (!isRettiwtAvailable()) {
+    log.warn("No Rettiwt keys available — commentary scraper disabled");
   }
 
   if (scraperTimeout) return;
-  log.info("Commentary scraper starting (Rettiwt primary, Exa fallback)");
+  log.info("Commentary scraper starting (curated timelines only)");
 
   const scheduledPoll = async (): Promise<void> => {
     try {
       await pollCommentary();
     } catch (err) {
-      log.warn("Catalyst scrape cycle failed", { error: String(err) });
+      log.warn("Commentary scrape cycle failed", { error: String(err) });
     }
 
     const { isHotHours } = getPollingConfig();
     const interval = isHotHours ? HOT_INTERVAL_MS : OFF_PEAK_INTERVAL_MS;
     log.info(
-      `Next catalyst scrape in ${Math.round(interval / 60_000)}m (hotHours=${isHotHours})`,
+      `Next commentary scrape in ${Math.round(interval / 60_000)}m (hotHours=${isHotHours})`,
     );
     scraperTimeout = setTimeout(scheduledPoll, interval);
   };

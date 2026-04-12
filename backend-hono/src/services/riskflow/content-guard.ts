@@ -105,6 +105,28 @@ const POLITICAL_SPAM_PATTERNS = [
 const MARKET_KEYWORDS =
   /\b(tariff|trade\s+war|sanction|executive\s+order|bill\s+sign|deficit|spending|budget|tax|debt|rate|inflation|CPI|PPI|GDP|NFP|FOMC|Fed\b|Treasury|yield|bond|equity|stock|futures|oil|crude|gold|VIX|earnings|revenue|IPO|merger|acquisition|bankruptcy|default|downgrade|upgrade|PMI|jobless|unemployment|retail\s+sales|housing|consumer|manufacturing|import|export|supply\s+chain|semiconductor|chip|OPEC|barrel|EIA|DOE|refinery|pipeline|LNG|natgas|interest\s+rate|basis\s+point|hike|cut|hawkish|dovish|tightening|easing|QE|QT|balance\s+sheet|repo|liquidity|margin|leverage|short|long|hedge|derivative|swap|option|put|call|strike|expiry|settlement|clearing|regulation|SEC|CFTC|DOJ|antitrust|compliance|stimulus|infrastructure|appropriation|continuing\s+resolution|shutdown|ceiling|sequester|reconciliation|USMCA|NATO|AUKUS|BRICS|G7|G20|IMF|World\s+Bank|WTO|BIS|ceasefire|escalat|de-?escalat|retaliati|mobiliz|airstrike|missile|nuclear|military|deploy|naval|carrier|drone|IRGC|Houthi|Hezbollah|IDF|Pentagon|CENTCOM|strait|blockade|proxy|invasion|annex|occupation|incursion)\b/i;
 
+// ── Emdash rant detection ──────────────────────────────────────────────────
+// Opinion posts separated by emdashes (U+2014) are a common X rant pattern.
+// Block when no market keywords present — legit wire headlines don't use emdashes.
+function isEmdashRant(text: string): boolean {
+  const emdashCount = (text.match(/\u2014/g) || []).length;
+  if (emdashCount < 1) return false;
+  if (MARKET_KEYWORDS.test(text)) return false;
+  return true;
+}
+
+// ── Sarcastic "genius" detection ───────────────────────────────────────────
+// Catches sarcastic political posts like: "So now it's 'genius' to choke Hormuz"
+const POLITICAL_FIGURES =
+  /\b(Trump|Biden|Obama|Kamala|AOC|Pelosi|McConnell|DeSantis|Bessent|Rubio|Vance)\b/i;
+
+function isSarcasticGenius(text: string): boolean {
+  if (!/\b"?genius"?\b/i.test(text)) return false;
+  if (!POLITICAL_FIGURES.test(text)) return false;
+  if (MARKET_KEYWORDS.test(text)) return false;
+  return true;
+}
+
 // ── Political opinion / rant detection ─────────────────────────────────────
 // Clean-language rants that slip through profanity and political spam filters.
 // These are opinion commentary, not wire news or market-moving statements.
@@ -276,6 +298,16 @@ export function checkContentGuard(text: string): ContentGuardResult {
   // 3b. Political rants (clean-language opinion pieces, conspiracy media)
   if (isPoliticalRant(text)) {
     return { blocked: true, reason: "political-rant" };
+  }
+
+  // 3c. Emdash rants — opinion takes separated by emdashes, no market content
+  if (isEmdashRant(text)) {
+    return { blocked: true, reason: "emdash-rant" };
+  }
+
+  // 3d. Sarcastic "genius" + political figure, no market content
+  if (isSarcasticGenius(text)) {
+    return { blocked: true, reason: "sarcastic-genius" };
   }
 
   // 4. @ mention or RT — not professional wire content

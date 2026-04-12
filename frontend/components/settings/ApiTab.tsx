@@ -103,9 +103,8 @@ export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
           X Feed Authentication
         </h3>
         <p className="text-xs text-gray-500 mb-4">
-          Fintheon polls live headlines from X using the Rettiwt library. Each
-          user provides their own API key (encoded session cookie) to avoid
-          shared rate limits.
+          Fintheon polls live headlines from X. Each user provides their own API
+          key (encoded session cookie) to avoid shared rate limits.
         </p>
 
         {/* Instructions */}

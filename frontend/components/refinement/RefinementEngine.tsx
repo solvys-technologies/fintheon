@@ -4,10 +4,12 @@ import { RefreshCw, Wrench } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import type { CalibrationEntry } from "../../../backend-hono/src/types/calibration";
 import type { CommentatorEntry } from "../../../backend-hono/src/types/commentator";
+import type { SourceAccount } from "../../../backend-hono/src/types/source-account";
 import type { MarketRegime } from "../../types/regime";
 import { RegimeControl } from "./RegimeControl";
 import { QuickWeightEditor } from "./QuickWeightEditor";
 import { CommentatorManager } from "./CommentatorManager";
+import { SourceAccountsManager } from "./SourceAccountsManager";
 import { AnnotatableItem } from "./AnnotatableItem";
 
 const API_BASE = (
@@ -26,6 +28,7 @@ export function RefinementEngine() {
   const [regime, setRegime] = useState<RegimeState | null>(null);
   const [weights, setWeights] = useState<CalibrationEntry[]>([]);
   const [registry, setRegistry] = useState<CommentatorEntry[]>([]);
+  const [sourceAccounts, setSourceAccounts] = useState<SourceAccount[]>([]);
   const [isRescoring, setIsRescoring] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -73,6 +76,17 @@ export function RefinementEngine() {
     }
   }, []);
 
+  const fetchSourceAccounts = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/source-accounts`).then((r) =>
+        r.json(),
+      );
+      setSourceAccounts(res.accounts ?? []);
+    } catch (err) {
+      console.error("[RefinementEngine] Source accounts fetch failed:", err);
+    }
+  }, []);
+
   // Initial load
   useEffect(() => {
     const loadAll = async () => {
@@ -82,11 +96,18 @@ export function RefinementEngine() {
         fetchRegime(),
         fetchWeights(),
         fetchRegistry(),
+        fetchSourceAccounts(),
       ]);
       setLoading(false);
     };
     loadAll();
-  }, [fetchFeed, fetchRegime, fetchWeights, fetchRegistry]);
+  }, [
+    fetchFeed,
+    fetchRegime,
+    fetchWeights,
+    fetchRegistry,
+    fetchSourceAccounts,
+  ]);
 
   const handleRescore = async () => {
     setIsRescoring(true);
@@ -151,6 +172,13 @@ export function RefinementEngine() {
             <CommentatorManager
               registry={registry}
               onRegistryChanged={fetchRegistry}
+            />
+
+            <div className="border-t border-zinc-800" />
+
+            <SourceAccountsManager
+              accounts={sourceAccounts}
+              onAccountsChanged={fetchSourceAccounts}
             />
           </div>
 

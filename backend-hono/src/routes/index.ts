@@ -43,6 +43,7 @@ import { createProfileRoutes } from "./profile/index.js";
 import { createAuthCallbackRoute } from "./auth-callback.js";
 import { createAuthRoutes } from "./auth/index.js";
 import { createCommentatorRoutes } from "./commentator/index.js";
+import { createSourceAccountRoutes } from "./source-accounts/index.js";
 import { createCalibrationRoutes } from "./calibration/index.js";
 import { createHarperRoutes } from "./harper/index.js";
 import { createHarperOpsRoutes } from "./harper-ops/index.js";
@@ -104,6 +105,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/trade-ideas", createTradeIdeasRoutes());
   // Commentator registry — speaker tagging, tier management (public, admin CRUD)
   app.route("/api/commentator", createCommentatorRoutes());
+  // Source accounts — curated X account management for timeline polling (public, admin CRUD)
+  app.route("/api/source-accounts", createSourceAccountRoutes());
   // Calibration — scoring weight management, annotations, observations, bulk ingest (public, admin)
   app.route("/api/calibration", createCalibrationRoutes());
   // Predictions — forward-looking instrument outlook from scored items + econ events
