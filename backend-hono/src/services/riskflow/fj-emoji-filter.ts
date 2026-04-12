@@ -32,10 +32,9 @@ const EMOJI_TIERS: Array<{
   urgency: FJUrgency;
 }> = [
   { emoji: "🔴", tier: "critical", macroLevel: 4, urgency: "immediate" },
+  { emoji: "⭕", tier: "high", macroLevel: 3, urgency: "high" },
   { emoji: "⚠️", tier: "high", macroLevel: 3, urgency: "high" },
   { emoji: "🚨", tier: "high", macroLevel: 3, urgency: "high" },
-  { emoji: "🟡", tier: "medium", macroLevel: 2, urgency: "normal" },
-  { emoji: "🟠", tier: "medium", macroLevel: 2, urgency: "normal" },
 ];
 
 // ── Keyword fallback (X/Twitter feed — no emojis) ─────────────────────────────

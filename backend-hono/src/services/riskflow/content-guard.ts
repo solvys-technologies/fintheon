@@ -153,6 +153,26 @@ function isAtMentionOrRT(text: string): boolean {
   return false;
 }
 
+// ── Emoji filter ────────────────────────────────────────────────────────────
+// Only FJ severity emojis (🔴⚠️🚨🟡🟠🔵) are allowed. Any other emoji = noise.
+const FJ_ALLOWED_EMOJIS = new Set(["🔴", "⭕", "⚠️", "🚨"]);
+
+function hasNonFJEmojis(text: string): boolean {
+  const allEmojis =
+    text.match(
+      /[\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1F300}-\u{1F5FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu,
+    ) || [];
+  if (allEmojis.length === 0) return false;
+  // If ALL emojis are FJ severity indicators, allow
+  return allEmojis.some((e) => !FJ_ALLOWED_EMOJIS.has(e));
+}
+
+// ── "false" prefix ──────────────────────────────────────────────────────────
+// Items starting with "false" are fact-check / debunk content, not wire news.
+function startsWithFalse(text: string): boolean {
+  return /^\s*false\b/i.test(text);
+}
+
 // ── Market relevance gate ───────────────────────────────────────────────────
 // If a headline has ZERO financial/market keywords, it's noise.
 // This catches the "White House UFC" / "Obama" / comedy podcast garbage that
@@ -209,12 +229,22 @@ export function checkContentGuard(text: string): ContentGuardResult {
     return { blocked: true, reason: "at-mention-or-rt" };
   }
 
-  // 5. Market relevance — no financial keywords = noise
+  // 5. Non-FJ emojis — professional wire headlines don't have 😂🔥💀
+  if (hasNonFJEmojis(text)) {
+    return { blocked: true, reason: "non-fj-emoji" };
+  }
+
+  // 6. "false" prefix — fact-check/debunk, not wire news
+  if (startsWithFalse(text)) {
+    return { blocked: true, reason: "false-prefix" };
+  }
+
+  // 7. Market relevance — no financial keywords = noise
   if (lacksMarketRelevance(text)) {
     return { blocked: true, reason: "no-market-relevance" };
   }
 
-  // 6. Drunk / incoherent
+  // 8. Drunk / incoherent
   if (isDrunkText(text)) {
     return { blocked: true, reason: "incoherent" };
   }
