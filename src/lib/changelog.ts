@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-12T10:00:00",
+    agent: "claude-code",
+    summary:
+      "Fix Central Scorer stuck mutex: added staleness guard (90s force-reset), defensive logging on every tick, delayed initial cycle 5s for DB pool warmup, caught unhandled promise rejections on interval. Built RiskFlow catchup sequence: when user toggles RiskFlow back ON, handler runs scoringCycle() to process backlog, refreshes feed cache, triggers forcePoll(), returns scored count to frontend.",
+    files: [
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/services/riskflow/user-polling-registry.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-12T00:30:00",
     agent: "claude-code",
     summary:

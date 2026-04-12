@@ -3,6 +3,7 @@
  * Request handlers for RiskFlow endpoints
  */
 
+// [claude-code 2026-04-12] RiskFlow catchup sequence: when user resumes, score backlog + refresh cache + trigger poll
 // [claude-code 2026-03-31] Owner-gated X polling: only POLL_OWNER_ID can trigger Rettiwt fetch; all users get DB reads + rescore
 // [claude-code 2026-03-31] Refresh now triggers Central Scorer immediately (fetch→score→deliver in one call)
 // [claude-code 2026-03-29] S9-T2b: Wire instrument-aware sentiment flipper into feed handler, fix spread ordering, fire-and-forget instrument_scores writes
@@ -53,6 +54,8 @@ import {
 import { estimatePoints } from "../../services/market-data/point-estimator.js";
 import { generateNoteForItem } from "../../services/riskflow/agent-notes.js";
 import { getSupabaseClient } from "../../config/supabase.js";
+import { scoringCycle } from "../../services/riskflow/central-scorer.js";
+import { seedCacheFromDb } from "../../services/riskflow/feed-service.js";
 
 /**
  * Internal function to trigger feed pre-fetching
@@ -1053,7 +1056,9 @@ import {
 
 /**
  * POST /api/riskflow/user-polling-toggle
- * Toggle per-user X CLI polling killswitch
+ * Toggle per-user X CLI polling killswitch.
+ * [claude-code 2026-04-12] When resuming (killed=false), runs catchup sequence:
+ * score backlog → refresh feed cache → trigger poll → return recovery stats.
  */
 export async function handleUserPollingToggle(c: Context) {
   try {
@@ -1065,6 +1070,31 @@ export async function handleUserPollingToggle(c: Context) {
       );
     }
     setUserPollingState(body.userId, body.killed);
+
+    // If user is resuming (killed=false), run catchup sequence
+    if (!body.killed) {
+      let scoredCount = 0;
+      try {
+        // 1. Process any unscored backlog immediately
+        scoredCount = await scoringCycle();
+
+        // 2. Refresh the feed cache from DB so frontend gets fresh data
+        await seedCacheFromDb();
+
+        // 3. Trigger a poll to pull fresh items (fire-and-forget)
+        forcePoll().catch(() => {});
+      } catch (err) {
+        // Catchup is best-effort — don't fail the toggle
+        console.warn("[CatchupSequence] Error during resume catchup:", err);
+      }
+
+      return c.json({
+        ok: true,
+        killed: false,
+        catchup: { scored: scoredCount },
+      });
+    }
+
     return c.json({ ok: true, killed: body.killed });
   } catch {
     return c.json({ error: "Invalid request body" }, 400);

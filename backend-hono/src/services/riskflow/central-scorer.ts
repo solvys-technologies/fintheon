@@ -1,3 +1,4 @@
+// [claude-code 2026-04-12] Fix stuck scorer: staleness guard (90s force-reset), defensive tick logging, delayed initial cycle for DB pool warmup
 // [claude-code 2026-03-31] POI priority boost — Top 3 POI = Critical (macroLevel 4), Top 8 = High (macroLevel 3)
 // [claude-code 2026-03-26] Fix currentPrice: 0 → fetch real instrument price for autoresearch observations
 // [claude-code 2026-03-24] Added reactive MiroShark adjustment loop for high-impact items (macroLevel >= 3)
@@ -332,9 +333,11 @@ export function applyPOIBoost(item: FeedItem): string | null {
 const SCORING_INTERVAL = 30_000; // 30 seconds
 const BATCH_SIZE = 20;
 const ENABLE_CENTRAL_SCORING = process.env.ENABLE_CENTRAL_SCORING === "true";
+const SCORING_STALE_MS = 90_000; // Force-reset isScoring after 90s (hung query guard)
 
 let scoringTimer: ReturnType<typeof setInterval> | null = null;
 let isScoring = false;
+let scoringStartedAt = 0; // Timestamp when isScoring was set true
 
 /**
  * Convert a raw Supabase item into a FeedItem for the existing enrichment pipeline
@@ -396,18 +399,35 @@ function feedItemToScored(
  * Exported so the refresh handler can trigger immediate scoring
  * without waiting for the 30s interval.
  */
-export async function scoringCycle(): Promise<void> {
-  if (isScoring) return;
+export async function scoringCycle(): Promise<number> {
+  // [claude-code 2026-04-12] Staleness guard: if isScoring has been true for >90s, force-reset
+  // This prevents a hung DB query from permanently blocking all future scoring cycles.
+  if (isScoring) {
+    const elapsed = Date.now() - scoringStartedAt;
+    if (elapsed > SCORING_STALE_MS) {
+      log.warn(
+        `Scoring mutex stuck for ${Math.round(elapsed / 1000)}s — force-resetting`,
+      );
+      isScoring = false;
+    } else {
+      log.info(
+        `Scoring cycle skipped (already running for ${Math.round(elapsed / 1000)}s)`,
+      );
+      return 0;
+    }
+  }
   isScoring = true;
+  scoringStartedAt = Date.now();
 
   try {
+    log.info("Scoring cycle tick — fetching unscored items");
     const unscoredItems = await readUnscoredItems(BATCH_SIZE);
     if (unscoredItems.length === 0) {
       // Log periodically so stalled scoring is never invisible
       if (Date.now() % 300_000 < SCORING_INTERVAL) {
         log.info("Scoring cycle: 0 unscored items (pipeline healthy)");
       }
-      return;
+      return 0;
     }
 
     log.info(`Processing ${unscoredItems.length} unscored items`);
@@ -533,11 +553,14 @@ export async function scoringCycle(): Promise<void> {
     // [claude-code 2026-04-06] Drop Low/Medium (macroLevel 1-2) from web scrapes.
     // Only High (3) and Critical (4) from Exa/commentary are worth keeping.
     // Twitter CLI items keep all levels.
+    // [claude-code 2026-04-12] Dropped items MUST still be written to scored table
+    // so they stop appearing as "unscored" — otherwise same items block the queue forever.
     const WEB_SCRAPE_PREFIXES = [
       "exa-",
       "commentary-scraper:",
       "feed-poller:exa",
     ];
+    const droppedItems: FeedItem[] = [];
     const beforeCount = enrichedItems.length;
     enrichedItems = enrichedItems.filter((item) => {
       const ml = item.macroLevel ?? 1;
@@ -549,17 +572,19 @@ export async function scoringCycle(): Promise<void> {
       const isWebScrape = WEB_SCRAPE_PREFIXES.some((p) =>
         submittedBy.startsWith(p),
       );
+      if (isWebScrape) droppedItems.push(item);
       return !isWebScrape; // Keep non-web-scrape items at any level
     });
-    const dropped = beforeCount - enrichedItems.length;
-    if (dropped > 0) {
+    if (droppedItems.length > 0) {
       log.info(
-        ` Dropped ${dropped} Low/Medium web scrape items (kept ${enrichedItems.length})`,
+        ` Dropped ${droppedItems.length} Low/Medium web scrape items (kept ${enrichedItems.length})`,
       );
     }
 
     // Convert back to scored format and write to Supabase
-    const scoredItems = enrichedItems.map((item) => {
+    // Include dropped items so they're marked as scored and stop blocking the queue
+    const allProcessedItems = [...enrichedItems, ...droppedItems];
+    const scoredItems = allProcessedItems.map((item) => {
       const rawId = rawIdMap.get(item.id) || null;
       return feedItemToScored(item, rawId as any);
     });
@@ -658,10 +683,12 @@ export async function scoringCycle(): Promise<void> {
         log.warn("Auto-notes for econ items failed", { error: String(err) }),
       );
     }
+    return enrichedItems.length;
   } catch (err) {
     log.error(" Scoring cycle error:", {
       error: err instanceof Error ? err.message : String(err),
     });
+    return 0;
   } finally {
     isScoring = false;
   }
@@ -745,9 +772,23 @@ export function startCentralScorer(): void {
     ` Starting (interval: ${SCORING_INTERVAL / 1000}s, batch: ${BATCH_SIZE})`,
   );
 
-  // Run immediately, then on interval
-  scoringCycle();
-  scoringTimer = setInterval(scoringCycle, SCORING_INTERVAL);
+  // [claude-code 2026-04-12] Delay first cycle 5s so DB pool is warm before first query.
+  // Previous bug: immediate fire-and-forget scoringCycle() could hang on cold pool,
+  // leaving isScoring=true forever and blocking all interval ticks.
+  setTimeout(() => {
+    scoringCycle().catch((err) =>
+      log.error("Initial scoring cycle failed:", {
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
+  }, 5_000);
+  scoringTimer = setInterval(() => {
+    scoringCycle().catch((err) =>
+      log.error("Scoring interval cycle failed:", {
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
+  }, SCORING_INTERVAL);
 }
 
 /**
