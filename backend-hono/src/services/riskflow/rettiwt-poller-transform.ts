@@ -10,6 +10,7 @@ import { getMatchedKeywords } from "../headline-parser.js";
 import { assignMacroLevel } from "../../utils/assign-macro-level.js";
 import { writeConsiliumMessage } from "../supabase-service.js";
 import type { FeedItem, NewsSource, RiskType } from "../../types/riskflow.js";
+import { checkContentGuard } from "./content-guard.js";
 
 // In-memory dedup — don't re-post same item to Supabase across polls
 const postedIds = new Set<string>();
@@ -195,7 +196,12 @@ export function processTweetBatch(
     return true;
   });
 
-  const classified = filterByTier(uniqueTweets, "medium");
+  // Content guard — block slurs, MAGA spam, drunk text, @ mentions before scoring
+  const guardedTweets = uniqueTweets.filter(
+    (t) => !checkContentGuard(t.text).blocked,
+  );
+
+  const classified = filterByTier(guardedTweets, "medium");
   const feedItems = classified.map((t) =>
     tweetToFeedItem(t, t.fjClassification),
   );

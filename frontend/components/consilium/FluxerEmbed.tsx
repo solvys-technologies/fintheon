@@ -32,7 +32,7 @@ export function FluxerEmbed({ channelPath }: FluxerEmbedProps) {
       <div className="flex h-full w-full items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-[var(--fintheon-text)]/60 text-sm">
-            Fluxer not configured
+            Forum not configured
           </p>
           <p className="text-[var(--fintheon-text)]/30 text-xs max-w-xs">
             Set{" "}
@@ -70,7 +70,7 @@ export function FluxerEmbed({ channelPath }: FluxerEmbedProps) {
         ref={iframeRef}
         src={src}
         onLoad={handleLoad}
-        title="Fluxer Community"
+        title="Forum"
         className="h-full w-full border-0"
         style={{ opacity: loaded ? 1 : 0, transition: "opacity 200ms ease" }}
         allow="microphone; camera; display-capture"

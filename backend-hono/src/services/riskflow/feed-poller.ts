@@ -30,6 +30,7 @@ import { scrapeMultiple } from "../agent-reach-service.js";
 import { areAllUsersKilled } from "./user-polling-registry.js";
 import type { FeedItem } from "../../types/riskflow.js";
 import { createLogger } from "../../lib/logger.js";
+import { filterWithContentGuard } from "./content-guard.js";
 
 /** Convert a FeedItem to a RawRiskFlowItem for the raw_riskflow_items inbox */
 function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
@@ -212,8 +213,12 @@ export async function runScrapeFallback(): Promise<number> {
           });
         }
 
-        if (items.length > 0) {
-          const written = await writeRawItems(items);
+        const cleanScrapeItems = filterWithContentGuard(
+          items,
+          (i) => `${i.headline} ${i.body || ""}`,
+        );
+        if (cleanScrapeItems.length > 0) {
+          const written = await writeRawItems(cleanScrapeItems);
           totalWritten += written;
         }
       } catch (err) {
@@ -262,8 +267,12 @@ export async function runScrapeFallback(): Promise<number> {
       });
     }
 
-    if (items.length > 0) {
-      const written = await writeRawItems(items);
+    const cleanAgentItems = filterWithContentGuard(
+      items,
+      (i) => `${i.headline} ${i.body || ""}`,
+    );
+    if (cleanAgentItems.length > 0) {
+      const written = await writeRawItems(cleanAgentItems);
       totalWritten += written;
       log.info(`[ScrapeFallback] Agent-Reach phase — ${written} items written`);
     }
@@ -339,8 +348,12 @@ export async function runScrapeFallback(): Promise<number> {
           });
         }
 
-        if (items.length > 0) {
-          const written = await writeRawItems(items);
+        const cleanExaItems = filterWithContentGuard(
+          items,
+          (i) => `${i.headline} ${i.body || ""}`,
+        );
+        if (cleanExaItems.length > 0) {
+          const written = await writeRawItems(cleanExaItems);
           totalWritten += written;
         }
       } catch (err) {
@@ -476,16 +489,22 @@ async function pollForNewItems(): Promise<void> {
       ` Found ${newItems.length} new items (${cachedIds.size} already cached)`,
     );
 
+    // Content guard — block garbage before it touches the DB
+    const cleanItems = filterWithContentGuard(
+      newItems,
+      (item) => `${item.headline} ${item.body || ""}`,
+    );
+
     // S3: Write raw (unenriched) items to raw_riskflow_items for central scorer
-    if (isSupabaseConfigured()) {
-      const rawRows = newItems.map(feedItemToRaw);
+    if (isSupabaseConfigured() && cleanItems.length > 0) {
+      const rawRows = cleanItems.map(feedItemToRaw);
       const written = await writeRawItems(rawRows);
       log.info(` Wrote ${written} raw items to raw_riskflow_items`);
     }
 
     // Enrich with AI analysis (this calculates IV scores and macro levels)
     const enrichedItems = await withTimeout(
-      enrichFeedWithAnalysis(newItems),
+      enrichFeedWithAnalysis(cleanItems),
       30_000,
       "enrichFeedWithAnalysis",
     );

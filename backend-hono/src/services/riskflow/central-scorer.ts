@@ -41,6 +41,7 @@ import {
   generateNotesForEconItems,
 } from "./agent-notes.js";
 import { tagHeadlineSubjects } from "./headline-tagger.js";
+import { checkContentGuard } from "./content-guard.js";
 
 const log = createLogger("CentralScorer");
 
@@ -439,12 +440,44 @@ export async function scoringCycle(): Promise<number> {
       return rawToFeedItem(raw);
     });
 
+    // Content guard safety net — block anything that slipped through earlier gates
+    // Blocked items still get written to scored table (below) so they don't re-queue
+    const blockedIds = new Set<string>();
+    const guardedFeedItems = feedItems.filter((item) => {
+      const result = checkContentGuard(`${item.headline} ${item.body || ""}`);
+      if (result.blocked) {
+        blockedIds.add(item.id);
+        log.info(
+          `Content guard blocked in scorer: [${result.reason}] ${item.headline.slice(0, 80)}`,
+        );
+        return false;
+      }
+      return true;
+    });
+
+    // Write blocked items to scored table as macroLevel 0 so they stop re-queuing
+    if (blockedIds.size > 0) {
+      const blockedScored = feedItems
+        .filter((item) => blockedIds.has(item.id))
+        .map((item) => {
+          item.macroLevel = 0 as any;
+          item.sentiment = "neutral";
+          item.ivScore = 0;
+          const rawId = rawIdMap.get(item.id) || null;
+          return feedItemToScored(item, rawId as any);
+        });
+      await writeScoredItems(blockedScored).catch(() => {});
+      log.info(
+        `Wrote ${blockedScored.length} content-guard-blocked items as scored (macroLevel 0)`,
+      );
+    }
+
     // Run through the existing AI enrichment pipeline (Grok analyzer)
     // Graceful degradation: if AI enrichment fails entirely, proceed with
     // deterministic-only items so the feed is never empty.
     let enrichedItems: FeedItem[];
     try {
-      enrichedItems = await enrichFeedWithAnalysis(feedItems);
+      enrichedItems = await enrichFeedWithAnalysis(guardedFeedItems);
     } catch (enrichErr) {
       log.warn("AI enrichment failed, using deterministic scores only:", {
         error:

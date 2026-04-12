@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-12T14:30:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow content guard: pre-ingestion filter blocks MAGA spam, racial slurs, drunk/incoherent text, and @mention replies before items touch raw_riskflow_items. Wired into feed-poller (poll + 3 scrape fallback paths), rettiwt-poller-transform (processTweetBatch), and central-scorer (safety net that writes blocked items as scored macroLevel 0 to prevent re-queuing). UI: Fluxer → Forum rename, sidebar chat widened to 420px, chat backgrounds unified to --fintheon-bg.",
+    files: [
+      "backend-hono/src/services/riskflow/content-guard.ts",
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+      "backend-hono/src/services/riskflow/rettiwt-poller-transform.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "frontend/components/consilium/ConsiliumTabConfig.ts",
+      "frontend/components/consilium/FluxerEmbed.tsx",
+      "frontend/components/chat/ChatSidebar.tsx",
+      "frontend/components/layout/ChatPanel.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-12T10:00:00",
     agent: "claude-code",
     summary:

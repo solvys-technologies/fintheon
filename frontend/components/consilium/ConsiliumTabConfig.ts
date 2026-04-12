@@ -62,7 +62,7 @@ export const BOARDROOM_SUB_VIEWS: {
 }[] = [
   {
     id: "forum",
-    label: "Fluxer",
+    label: "Forum",
     subtitle: "Community hub & voice",
     icon: MessageSquare,
   },
