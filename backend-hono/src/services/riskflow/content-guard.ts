@@ -1,5 +1,5 @@
 // [claude-code 2026-04-12] Pre-ingestion content guard — blocks garbage before it hits raw_riskflow_items
-// Catches: slurs, profanity, political spam, junk slang, drunk/incoherent text, @ mention replies
+// Catches: slurs, profanity, political spam, non-financial govt agencies, junk slang, drunk/incoherent text, @ mention replies
 // This is a PROFESSIONAL trading platform. Zero tolerance for non-market content.
 
 import { createLogger } from "../../lib/logger.js";
@@ -173,6 +173,22 @@ function startsWithFalse(text: string): boolean {
   return /^\s*false\b/i.test(text);
 }
 
+// ── Non-financial government agencies ───────────────────────────────────────
+// These agencies generate noise headlines (drug busts, immigration raids, safety
+// recalls, weather alerts) that aren't market-moving unless paired with a real
+// financial keyword. Block if the headline is ABOUT the agency but has no
+// market relevance. Agencies that ARE market-relevant (SEC, CFTC, DOJ, Fed,
+// DOE/EIA, Pentagon) are in MARKET_KEYWORDS and will pass through.
+const NON_FINANCIAL_AGENCIES =
+  /\b(DEA|DEI|ICE\b(?!\s*(?:futures|crude|brent))|ATF|TSA|CBP|FEMA|CDC|HHS|VA\b(?!\s*(?:stock|shares|rating))|USPS|USCIS|Secret\s+Service|FBI\b(?!\s*(?:raid|seiz|probe|investigat|charg)\w*\s+(?:crypto|bank|fund|hedge|trader|fraud|insider|securities|exchange))|EPA\b(?!\s*(?:regulat|rule|compliance|emission|carbon|fine|penalt))|FDA\b(?!\s*(?:approv|reject|clear|fast\s*track|breakthrough|panel|advisory|recall|warning|drug|pharma|biotech|EUA)))\b/i;
+
+function isNonFinancialAgencyNoise(text: string): boolean {
+  if (!NON_FINANCIAL_AGENCIES.test(text)) return false;
+  // If it ALSO has market keywords, let it through (e.g. "FDA approves" or "EPA regulation")
+  if (MARKET_KEYWORDS.test(text)) return false;
+  return true;
+}
+
 // ── Market relevance gate ───────────────────────────────────────────────────
 // If a headline has ZERO financial/market keywords, it's noise.
 // This catches the "White House UFC" / "Obama" / comedy podcast garbage that
@@ -239,12 +255,17 @@ export function checkContentGuard(text: string): ContentGuardResult {
     return { blocked: true, reason: "false-prefix" };
   }
 
-  // 7. Market relevance — no financial keywords = noise
+  // 7. Non-financial government agencies (DEA, DEI, ICE, ATF, TSA, etc.)
+  if (isNonFinancialAgencyNoise(text)) {
+    return { blocked: true, reason: "non-financial-agency" };
+  }
+
+  // 8. Market relevance — no financial keywords = noise
   if (lacksMarketRelevance(text)) {
     return { blocked: true, reason: "no-market-relevance" };
   }
 
-  // 8. Drunk / incoherent
+  // 9. Drunk / incoherent
   if (isDrunkText(text)) {
     return { blocked: true, reason: "incoherent" };
   }
