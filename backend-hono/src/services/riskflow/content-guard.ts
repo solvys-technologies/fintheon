@@ -132,16 +132,35 @@ function isDrunkText(text: string): boolean {
   return signals >= 2;
 }
 
-// ── @ Mention detection ─────────────────────────────────────────────────────
-function isAtMentionNoise(text: string): boolean {
-  // Starts with @user — it's a reply, not a headline
-  if (/^@\w+/.test(text.trim())) return true;
-
-  // 3+ @ mentions — conversation thread, not news
-  const mentionCount = (text.match(/@\w+/g) || []).length;
-  if (mentionCount >= 3) return true;
-
+// ── @ Mention / RT detection ────────────────────────────────────────────────
+function isAtMentionOrRT(text: string): boolean {
+  const trimmed = text.trim();
+  // Starts with @user — reply
+  if (/^@\w+/.test(trimmed)) return true;
+  // Starts with RT — retweet
+  if (/^RT\s+@/i.test(trimmed)) return true;
+  // Any @ mention anywhere — not a professional wire headline
+  if (/@\w+/.test(trimmed)) return true;
+  // Any RT prefix
+  if (/^RT\b/i.test(trimmed)) return true;
   return false;
+}
+
+// ── Market relevance gate ───────────────────────────────────────────────────
+// If a headline has ZERO financial/market keywords, it's noise.
+// This catches the "White House UFC" / "Obama" / comedy podcast garbage that
+// slips through because it doesn't trigger slur/profanity/political patterns.
+
+const MARKET_KEYWORDS =
+  /\b(tariff|trade\s+war|sanction|executive\s+order|bill\s+sign|deficit|spending|budget|tax|debt|rate|inflation|CPI|PPI|GDP|NFP|FOMC|Fed\b|Treasury|yield|bond|equity|stock|futures|oil|crude|gold|VIX|earnings|revenue|IPO|merger|acquisition|bankruptcy|default|downgrade|upgrade|PMI|jobless|unemployment|retail\s+sales|housing|consumer|manufacturing|import|export|supply\s+chain|semiconductor|chip|OPEC|barrel|EIA|DOE|refinery|pipeline|LNG|natgas|interest\s+rate|basis\s+point|hike|cut|hawkish|dovish|tightening|easing|QE|QT|balance\s+sheet|repo|liquidity|margin|leverage|short|long|hedge|derivative|swap|option|put|call|strike|expiry|settlement|clearing|regulation|SEC|CFTC|DOJ|antitrust|compliance|stimulus|infrastructure|appropriation|continuing\s+resolution|shutdown|ceiling|sequester|reconciliation|USMCA|NATO|AUKUS|BRICS|G7|G20|IMF|World\s+Bank|WTO|BIS|ceasefire|escalat|de-?escalat|retaliati|mobiliz|airstrike|missile|nuclear|military|deploy|naval|carrier|drone|IRGC|Houthi|Hezbollah|IDF|Pentagon|CENTCOM|strait|blockade|proxy|invasion|annex|occupation|incursion)\b/i;
+
+function lacksMarketRelevance(text: string): boolean {
+  // Short texts get more leniency (could be wire flash)
+  if (text.length < 60) return false;
+  // If it has ANY market keyword, it's potentially relevant
+  if (MARKET_KEYWORDS.test(text)) return false;
+  // No market keywords in 60+ char text = noise
+  return true;
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
@@ -178,12 +197,17 @@ export function checkContentGuard(text: string): ContentGuardResult {
     }
   }
 
-  // 4. @ mention noise
-  if (isAtMentionNoise(text)) {
-    return { blocked: true, reason: "at-mention-noise" };
+  // 4. @ mention or RT — not professional wire content
+  if (isAtMentionOrRT(text)) {
+    return { blocked: true, reason: "at-mention-or-rt" };
   }
 
-  // 5. Drunk / incoherent
+  // 5. Market relevance — no financial keywords = noise
+  if (lacksMarketRelevance(text)) {
+    return { blocked: true, reason: "no-market-relevance" };
+  }
+
+  // 6. Drunk / incoherent
   if (isDrunkText(text)) {
     return { blocked: true, reason: "incoherent" };
   }
