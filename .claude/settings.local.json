@@ -29,7 +29,8 @@
       "mcp__browser__console_logs",
       "mcp__browser__playwright",
       "mcp__browser__network_requests",
-      "mcp__browser__close"
+      "mcp__browser__close",
+      "mcp__claude_ai_Supabase__apply_migration"
     ]
   }
 }
