@@ -72,7 +72,7 @@ case "$1" in
     cd "$FINTHEON_ROOT/backend-hono" || exit 1
     lsof -ti:8080 | xargs kill -9 2>/dev/null || true
     sleep 1
-    nohup node dist/index.js > /tmp/fintheon-backend.log 2>&1 &
+    nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
     BACKEND_PID=$!
     echo "  Backend PID: $BACKEND_PID"
 
