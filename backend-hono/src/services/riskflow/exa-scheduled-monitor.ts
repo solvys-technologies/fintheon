@@ -8,6 +8,7 @@ import { rettiwtSearch, isRettiwtAvailable } from "../rettiwt-service.js";
 import { scrapeMultiple, type ScrapedArticle } from "../agent-reach-service.js";
 import { fetchEconCalendar } from "../econ-calendar-service.js";
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
+import { filterWithContentGuard } from "./content-guard.js";
 import { getPollingConfig } from "./polling-config.js";
 
 const log = createLogger("ExaScheduledMonitor");
@@ -259,9 +260,17 @@ export async function checkForScheduledEvents(): Promise<void> {
     return;
   }
 
-  const written = await writeRawItems(freshRows);
+  const cleanRows = filterWithContentGuard(
+    freshRows,
+    (i) => `${i.headline} ${i.body || ""}`,
+  );
+  if (cleanRows.length === 0) {
+    log.info("[ExaMonitor] All scheduled events blocked by content guard");
+    return;
+  }
+  const written = await writeRawItems(cleanRows);
   log.info(
-    `[ExaMonitor] Ingested ${written} scheduled events (${freshRows.length} candidates)`,
+    `[ExaMonitor] Ingested ${written} scheduled events (${freshRows.length} candidates, ${freshRows.length - cleanRows.length} blocked)`,
   );
 }
 

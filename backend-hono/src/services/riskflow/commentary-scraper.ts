@@ -5,6 +5,7 @@
 // Feeds raw catalysts into raw_riskflow_items on a 30/60-min interval.
 
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
+import { filterWithContentGuard } from "./content-guard.js";
 import {
   exaSearch,
   isExaAvailable,
@@ -321,8 +322,13 @@ export async function pollCommentary(): Promise<void> {
           continue;
         }
 
-        const written = await writeRawItems(items);
-        for (const item of items) submittedIds.add(item.tweet_id);
+        const cleanItems = filterWithContentGuard(
+          items,
+          (i) => `${i.headline} ${i.body || ""}`,
+        );
+        if (cleanItems.length === 0) continue;
+        const written = await writeRawItems(cleanItems);
+        for (const item of cleanItems) submittedIds.add(item.tweet_id);
         totalNew += written;
 
         log.info(`${group.name}: ${written} catalysts ingested via Rettiwt`);
@@ -354,8 +360,13 @@ export async function pollCommentary(): Promise<void> {
 
         if (items.length === 0) continue;
 
-        const written = await writeRawItems(items);
-        for (const item of items) submittedIds.add(item.tweet_id);
+        const cleanExaItems = filterWithContentGuard(
+          items,
+          (i) => `${i.headline} ${i.body || ""}`,
+        );
+        if (cleanExaItems.length === 0) continue;
+        const written = await writeRawItems(cleanExaItems);
+        for (const item of cleanExaItems) submittedIds.add(item.tweet_id);
         totalNew += written;
 
         log.info(`${group.name}: ${written} catalysts ingested via Exa`);

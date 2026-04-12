@@ -625,16 +625,22 @@ export async function forcePoll(): Promise<void> {
       ` Manual refresh: ${newItems.length} new items (${cachedIds.size} already cached)`,
     );
 
+    // Content guard on manual refresh path
+    const cleanRefreshItems = filterWithContentGuard(
+      newItems,
+      (item) => `${item.headline} ${item.body || ""}`,
+    );
+
     // S3: Write raw items to raw_riskflow_items for central scorer
-    if (isSupabaseConfigured()) {
-      const rawRows = newItems.map(feedItemToRaw);
+    if (isSupabaseConfigured() && cleanRefreshItems.length > 0) {
+      const rawRows = cleanRefreshItems.map(feedItemToRaw);
       const written = await writeRawItems(rawRows);
       log.info(
         ` Manual refresh: wrote ${written} raw items to raw_riskflow_items`,
       );
     }
 
-    const enrichedItems = await enrichFeedWithAnalysis(newItems);
+    const enrichedItems = await enrichFeedWithAnalysis(cleanRefreshItems);
     await newsCache.storeFeedItems(enrichedItems);
     updateFeedCache(enrichedItems);
 

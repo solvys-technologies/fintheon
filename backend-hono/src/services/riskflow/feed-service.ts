@@ -53,6 +53,7 @@ import {
   type ScoredRiskFlowItem,
 } from "../supabase-service.js";
 import { isSupabaseConfigured } from "../../config/supabase.js";
+import { filterWithContentGuard } from "./content-guard.js";
 import { scoredToFeedItem } from "./central-scorer.js";
 import { assignMacroLevel } from "../../utils/assign-macro-level.js";
 import { extractFJEmojiFromText, fjTierFromEmoji } from "./fj-emoji-filter.js";
@@ -663,8 +664,12 @@ async function fetchFreshFeed(): Promise<FeedItem[]> {
     );
 
     // S3: Write raw items to raw_riskflow_items for central scorer pipeline
-    if (isSupabaseConfigured() && merged.length > 0) {
-      const rawRows = merged.map(feedItemToRaw);
+    const cleanMerged = filterWithContentGuard(
+      merged,
+      (i) => `${i.headline} ${i.body || ""}`,
+    );
+    if (isSupabaseConfigured() && cleanMerged.length > 0) {
+      const rawRows = cleanMerged.map(feedItemToRaw);
       writeRawItems(rawRows)
         .then((n) => {
           if (n > 0)
