@@ -36,7 +36,7 @@ import {
   useNarrative,
 } from "../../contexts/NarrativeContext";
 import { ApparatusFlowMap } from "../apparatus/ApparatusFlowMap";
-import { BulletinFeed } from "../bulletin/BulletinFeed";
+import { FluxerEmbed } from "./FluxerEmbed";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 import { SharedMemoryPanel } from "../memory/SharedMemoryPanel";
 import { AiLoader } from "../chat/FintheonThread";
@@ -840,7 +840,7 @@ export function ConsiliumHub() {
           {/* Imperium sub-views */}
           {displayedTab === "boardroom" && (
             <>
-              {displayedBoardroomSub === "forum" && <BulletinFeed />}
+              {displayedBoardroomSub === "forum" && <FluxerEmbed />}
               {displayedBoardroomSub === "agentic-chat" && (
                 <div className="flex h-full">
                   <div className="flex-1 min-w-0 relative">

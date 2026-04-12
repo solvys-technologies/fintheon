@@ -1,3 +1,4 @@
+// TODO: remove — replaced by Fluxer embed voice (2026-04-12). Still used by CallButton + CallControls.
 // S13-T3: LiveKit room hook for group voice calls
 import { useState, useRef, useCallback, useEffect } from "react";
 import {

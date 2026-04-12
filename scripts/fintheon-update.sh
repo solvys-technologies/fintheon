@@ -165,6 +165,25 @@ if [[ -d "$FINTHEON_ROOT/.claude/hooks" ]]; then
   ok "Claude Code hooks executable"
 fi
 
+# ── Step 6.6: Ensure MCP servers are cloned/updated ────────────────────────
+
+MCP_DIR="$HOME/Documents/Codebases"
+
+# financial-datasets MCP server (stock data, crypto, news)
+FD_MCP="$MCP_DIR/financial-datasets-mcp"
+if [[ -d "$FD_MCP/.git" ]]; then
+  git -C "$FD_MCP" pull --quiet 2>/dev/null || true
+  ok "financial-datasets MCP updated"
+else
+  git clone --quiet https://github.com/financial-datasets/mcp-server "$FD_MCP" 2>/dev/null || true
+  ok "financial-datasets MCP cloned"
+fi
+
+# Install uv if missing (needed for Python MCP servers)
+if ! command -v uv &>/dev/null; then
+  curl -LsSf https://astral.sh/uv/install.sh | sh 2>/dev/null || warn "uv install failed — Python MCP servers won't work"
+fi
+
 # ── Step 7: Rebuild backend ─────────────────────────────────────────────────
 
 step "7/11" "Building backend..."

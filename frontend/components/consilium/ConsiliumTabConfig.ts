@@ -62,8 +62,8 @@ export const BOARDROOM_SUB_VIEWS: {
 }[] = [
   {
     id: "forum",
-    label: "Agent Forum",
-    subtitle: "Team bulletin & chat",
+    label: "Fluxer",
+    subtitle: "Community hub & voice",
     icon: MessageSquare,
   },
   {

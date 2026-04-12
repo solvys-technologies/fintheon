@@ -10,6 +10,8 @@ Fluxer.app is an open-source Discord-like platform (text channels, voice/video v
 
 **Key insight:** Fluxer uses LiveKit internally for voice/video, so we're not losing audio quality — we're gaining a proper UI around it.
 
+**Theming:** Fluxer supports full CSS variable theming. We auto-apply a Solvys Gold theme so the embed matches Fintheon without user action — dark bg, gold accents, cream text.
+
 ## Files to Read First
 
 - `frontend/components/consilium/ConsiliumTabConfig.ts` — Tab/sub-view definitions; `BoardroomSubView` type includes `"forum"`
@@ -22,20 +24,32 @@ Fluxer.app is an open-source Discord-like platform (text channels, voice/video v
 
 ## What to Build/Change
 
-### 1. FluxerEmbed component
+### 1. Fluxer Theme Map
+
+- **Path:** `frontend/lib/fluxer-theme.ts`
+- **Action:** Create
+- **Spec:**
+  - Export a `FLUXER_SOLVYS_THEME` object mapping Fluxer CSS variable names to Solvys Gold values
+  - Export a `buildFluxerThemeCSS()` function that returns the full CSS string for injection
+  - Colors: BG `#050402`, secondary BG `#0a0905`, tertiary `#110f0a`, accent `#c79f4a`, text `#f0ead6`, muted text `#f0ead666`
+  - Map to Fluxer tokens: `--bg-primary`, `--bg-secondary`, `--text-primary`, `--brand-primary`, `--link-color`, `--button-primary-bg`, `--border-base`, etc.
+- **Max lines:** 60
+
+### 2. FluxerEmbed component
 
 - **Path:** `frontend/components/consilium/FluxerEmbed.tsx`
 - **Action:** Create
 - **Spec:**
   - Renders a full-height iframe pointing to the Fluxer community URL
   - Accept props: `channelPath?: string` (to deep-link into a specific channel like `/channels/forum` or `/channels/voice-lobby`)
-  - URL pattern: `https://app.fluxer.app/{communitySlug}/{channelPath}` (make community slug configurable via env var `VITE_FLUXER_COMMUNITY_URL`)
+  - URL pattern: `VITE_FLUXER_COMMUNITY_URL + channelPath` (env var is the full base URL)
   - Style: `w-full h-full border-0 bg-[var(--fintheon-bg)]`
+  - On iframe load, attempt to inject Solvys Gold theme via `postMessage({ type: 'fluxer-theme', css: buildFluxerThemeCSS() })`
   - Add a thin loading skeleton while iframe loads (listen to `onLoad`)
   - If `VITE_FLUXER_COMMUNITY_URL` is not set, show a centered "Fluxer not configured" placeholder with a link to fluxer.app
-- **Max lines:** 80
+- **Max lines:** 100
 
-### 2. Update ConsiliumTabConfig
+### 3. Update ConsiliumTabConfig
 
 - **Path:** `frontend/components/consilium/ConsiliumTabConfig.ts`
 - **Action:** Modify
@@ -47,7 +61,7 @@ Fluxer.app is an open-source Discord-like platform (text channels, voice/video v
     - `icon:` change from `MessageSquare` to `Radio` (from lucide-react) or keep `MessageSquare` — your call
   - Remove the separate voice-related entries if any exist in the config
 
-### 3. Update ConsiliumHub rendering
+### 4. Update ConsiliumHub rendering
 
 - **Path:** `frontend/components/consilium/ConsiliumHub.tsx`
 - **Action:** Modify
@@ -56,7 +70,7 @@ Fluxer.app is an open-source Discord-like platform (text channels, voice/video v
   - Import `FluxerEmbed` instead of `BulletinFeed`
   - Do NOT remove the BulletinFeed import if it's used elsewhere (it shouldn't be — verify with grep first)
 
-### 4. Remove VoiceWidget from MainLayout
+### 5. Remove VoiceWidget from MainLayout
 
 - **Path:** `frontend/components/layout/MainLayout.tsx`
 - **Action:** Modify
@@ -67,7 +81,7 @@ Fluxer.app is an open-source Discord-like platform (text channels, voice/video v
   - Keep imports of other layout components intact
   - Voice is now accessed through the Fluxer embed inside Consilium — no separate widget needed
 
-### 5. Add env var
+### 6. Add env var
 
 - **Path:** `.env.example` (and `frontend/.env` if it exists, or root `.env`)
 - **Action:** Modify
@@ -75,7 +89,7 @@ Fluxer.app is an open-source Discord-like platform (text channels, voice/video v
   - Add `VITE_FLUXER_COMMUNITY_URL=` with a comment: `# Full URL to your Fluxer community (e.g. https://app.fluxer.app/pricedin)`
   - Do NOT add a real URL — leave it blank for the worker to fill in after community creation
 
-### 6. Cleanup (soft — do NOT delete files)
+### 7. Cleanup (soft — do NOT delete files)
 
 - **Action:** Research only
 - **Spec:**
@@ -123,6 +137,7 @@ bun run build
   agent: 'claude-code',
   summary: 'Replaced Consilium forum (BulletinFeed) and LiveKit voice widget with Fluxer.app iframe embed. Forum sub-view now renders FluxerEmbed component. VoiceWidget removed from MainLayout header/floating. Old files preserved with TODO markers.',
   files: [
+    'frontend/lib/fluxer-theme.ts',
     'frontend/components/consilium/FluxerEmbed.tsx',
     'frontend/components/consilium/ConsiliumTabConfig.ts',
     'frontend/components/consilium/ConsiliumHub.tsx',

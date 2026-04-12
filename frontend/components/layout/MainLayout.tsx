@@ -49,12 +49,8 @@ import { ChatPanel } from "./ChatPanel";
 import { YouTubeMiniplayer } from "./YouTubeMiniplayer";
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
 // TeamOnboarding re-wired into TeamPanel behind auth gate (2026-04-11)
+// [claude-code 2026-04-12] VoiceWidget removed — voice now lives inside Fluxer embed in Consilium
 import { EPOCH_VERSION } from "../../lib/epoch-version";
-import {
-  VoiceWidget,
-  VoiceRoomHeaderButton,
-  type VoiceWidgetDockTarget,
-} from "../peers/VoiceWidget";
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -104,13 +100,8 @@ export function MainLayout() {
 
 // Main layout component - no authentication needed
 function MainLayoutInner() {
-  const {
-    iframeUrls,
-    defaultLayout,
-    defaultPlatform,
-    developerSettings,
-    voiceEnabled,
-  } = useSettings();
+  const { iframeUrls, defaultLayout, defaultPlatform, developerSettings } =
+    useSettings();
   const { theme } = useTheme();
   const isStone = theme.name === "solvys-stone";
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
@@ -176,7 +167,6 @@ function MainLayoutInner() {
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] =
     useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [showVoiceWidget, setShowVoiceWidget] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showYouTubeMiniplayer, setShowYouTubeMiniplayer] = useState(() => {
     try {
@@ -205,19 +195,6 @@ function MainLayoutInner() {
         return "floating";
       }
     });
-  const [voiceWidgetTarget, setVoiceWidgetTarget] =
-    useState<VoiceWidgetDockTarget>(() => {
-      try {
-        return (
-          (localStorage.getItem(
-            "fintheon:voice-widget-target:v1",
-          ) as VoiceWidgetDockTarget) || "floating"
-        );
-      } catch {
-        return "floating";
-      }
-    });
-
   useEffect(() => {
     try {
       localStorage.setItem("fintheon:psychassist-target:v1", psychAssistTarget);
@@ -225,17 +202,6 @@ function MainLayoutInner() {
       // ignore
     }
   }, [psychAssistTarget]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "fintheon:voice-widget-target:v1",
-        voiceWidgetTarget,
-      );
-    } catch {
-      // ignore
-    }
-  }, [voiceWidgetTarget]);
 
   useEffect(() => {
     setMissionWidgetOrderState((prev) =>
@@ -634,24 +600,6 @@ function MainLayoutInner() {
           onForward={goForward}
           hideBranding={topStepXEnabled && sidebarOverlayVisible}
           toolbarEditMode={layoutEditMode}
-          voiceRoomWidget={
-            voiceEnabled ? (
-              showVoiceWidget && voiceWidgetTarget === "header" ? (
-                <VoiceWidget
-                  target="header"
-                  onDockToHeader={() => setVoiceWidgetTarget("header")}
-                  onUndockToFloating={() => setVoiceWidgetTarget("floating")}
-                  onClose={() => setShowVoiceWidget(false)}
-                />
-              ) : (
-                <VoiceRoomHeaderButton
-                  onClick={() => setShowVoiceWidget((v) => !v)}
-                  participantCount={0}
-                  joined={showVoiceWidget}
-                />
-              )
-            ) : undefined
-          }
           psychAssistHeadingWidget={
             topStepXEnabled &&
             layoutOption === "tickers-only" &&
@@ -753,15 +701,6 @@ function MainLayoutInner() {
               ivLoading={ivLoading}
               layoutOption={layoutOption}
               onClose={() => {}}
-            />
-          )}
-
-          {showVoiceWidget && voiceWidgetTarget === "floating" && (
-            <VoiceWidget
-              target="floating"
-              onDockToHeader={() => setVoiceWidgetTarget("header")}
-              onUndockToFloating={() => setVoiceWidgetTarget("floating")}
-              onClose={() => setShowVoiceWidget(false)}
             />
           )}
 

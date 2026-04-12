@@ -1,3 +1,4 @@
+// TODO: remove — replaced by Fluxer embed voice (2026-04-12). Kept until Fluxer is confirmed stable.
 // [claude-code 2026-04-01] LiveKit Cloud voice — real WebRTC audio via @livekit/components-react
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
