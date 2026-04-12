@@ -93,6 +93,32 @@ export function SourceIcon({
       </span>
     );
   }
+  if (
+    s === "osintsources" ||
+    s === "osint" ||
+    s.includes("osint") ||
+    s === "curatedtimeline" ||
+    s === "curated"
+  ) {
+    return <XLogo className={className} />;
+  }
+  if (
+    s === "econcalendar" ||
+    s === "econ" ||
+    s.includes("economic") ||
+    s.includes("calendar")
+  ) {
+    return (
+      <span
+        className={`font-bold text-[8px] uppercase leading-none text-emerald-400 ${className}`}
+      >
+        EC
+      </span>
+    );
+  }
+  if (s === "custom" || s === "agentreach" || s.includes("agent")) {
+    return <XLogo className={className} />;
+  }
   return (
     <span
       className={`font-bold text-[8px] uppercase leading-none ${className}`}

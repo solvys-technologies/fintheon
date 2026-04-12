@@ -978,6 +978,44 @@ export async function handleRescore(c: Context) {
   }
 }
 
+/** POST /api/riskflow/:id/not-relevant — remove item + log for learning */
+export async function handleNotRelevant(c: Context) {
+  const tweetId = c.req.param("id");
+  if (!tweetId) return c.json({ error: "id is required" }, 400);
+
+  try {
+    const { getSupabaseClient } = await import("../../config/supabase.js");
+    const sb = getSupabaseClient();
+    if (!sb) return c.json({ error: "Database unavailable" }, 503);
+
+    // Fetch the item before deleting so we can log what was rejected
+    const { data: scored } = await sb
+      .from("scored_riskflow_items")
+      .select("headline, source, tags, submitted_by")
+      .eq("tweet_id", tweetId)
+      .single();
+
+    // Log dismissal for learning (append to content guard patterns over time)
+    if (scored?.headline) {
+      await sb.from("riskflow_dismissed_items").insert({
+        tweet_id: tweetId,
+        headline: scored.headline,
+        source: scored.source,
+        submitted_by: scored.submitted_by,
+        dismissed_at: new Date().toISOString(),
+      });
+    }
+
+    // Delete from both tables
+    await sb.from("scored_riskflow_items").delete().eq("tweet_id", tweetId);
+    await sb.from("raw_riskflow_items").delete().eq("tweet_id", tweetId);
+
+    return c.json({ ok: true, removed: tweetId });
+  } catch (err) {
+    return c.json({ error: String(err) }, 500);
+  }
+}
+
 /** GET /api/riskflow/sources — connection status for data source indicators */
 export async function handleGetSources(c: Context) {
   const { isRettiwtRateLimited, getRettiwtCooldownMs } =

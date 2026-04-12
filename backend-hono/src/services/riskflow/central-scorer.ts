@@ -42,8 +42,88 @@ import {
 } from "./agent-notes.js";
 import { tagHeadlineSubjects } from "./headline-tagger.js";
 import { checkContentGuard } from "./content-guard.js";
+import { getSupabaseClient } from "../../config/supabase.js";
 
 const log = createLogger("CentralScorer");
+
+// ── Dismissed Pattern Cache ─────────────────────────────────────────────────
+let dismissedHeadlines: string[] = [];
+let dismissedLoadedAt = 0;
+const DISMISSED_TTL = 5 * 60_000;
+
+async function loadDismissedPatterns(): Promise<string[]> {
+  if (
+    Date.now() - dismissedLoadedAt < DISMISSED_TTL &&
+    dismissedHeadlines.length > 0
+  ) {
+    return dismissedHeadlines;
+  }
+  const sb = getSupabaseClient();
+  if (!sb) return [];
+  const { data } = await sb
+    .from("riskflow_dismissed_items")
+    .select("headline")
+    .order("dismissed_at", { ascending: false })
+    .limit(500);
+  dismissedHeadlines = (data ?? []).map((r) =>
+    (r.headline as string)
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
+  );
+  dismissedLoadedAt = Date.now();
+  return dismissedHeadlines;
+}
+
+function isSimilarToDismissed(headline: string, dismissed: string[]): boolean {
+  const normalized = headline
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = normalized.split(" ").slice(0, 6).join(" ");
+  if (words.length < 10) return false;
+  return dismissed.some(
+    (d) =>
+      d.includes(words) || words.includes(d.split(" ").slice(0, 6).join(" ")),
+  );
+}
+
+// ── Narrative Keywords (shared with commentary-scraper) ─────────────────────
+const NARRATIVE_KEYWORDS: Record<string, RegExp> = {
+  "middle-east-conflict":
+    /\b(iran|israel|irgc|houthi|hezbollah|hamas|gaza|lebanon|netanyahu|araghchi|khamenei|hormuz|strait|missile|ceasefire|idf)\b/i,
+  "liquidity-credit":
+    /\b(liquidity|credit|repo|reverse repo|TGA|treasury general|QT|quantitative tight|bank run|bank stress|deposit flight|private credit|redemption)\b/i,
+  "ai-singularity":
+    /\b(nvidia|nvda|openai|anthropic|deepmind|google ai|microsoft ai|meta ai|mag.?7|magnificent|artificial intelligence|AGI|GPU|H100|data center|AI capex)\b/i,
+  "usd-jpy-carry":
+    /\b(usd.?jpy|carry trade|yen|boj|bank of japan|japan rate|ueda)\b/i,
+  "trade-war":
+    /\b(tariff|trade war|import duty|reciprocal tariff|customs|duties|retaliatory|section 301|trade deficit)\b/i,
+  "us-china":
+    /\b(us.?china|china.*sanction|china.*tariff|taiwan|xi jinping|chip ban|export control|rare earth|china.*retaliat)\b/i,
+  "rate-cycle":
+    /\b(rate cut|fed cut|fomc|fed funds|powell|dot plot|terminal rate|neutral rate|easing cycle|pivot)\b/i,
+  "trump-presidency":
+    /\b(trump|executive order|white house|bessent|doge|elon.*gov)\b/i,
+  "price-stability":
+    /\b(cpi|ppi|pce|inflation|deflation|disinflation|core price|shelter cost|sticky inflation|supercore)\b/i,
+  employment:
+    /\b(nfp|payroll|unemployment|jobless claim|jolts|hiring|layoff|ADP|labor market|wage growth)\b/i,
+  energy:
+    /\b(oil|crude|wti|brent|opec|barrel|EIA|refinery|pipeline|LNG|natgas|energy)\b/i,
+  earnings:
+    /\b(earnings|revenue|eps|guidance|beat|miss|outlook|forward guidance)\b/i,
+};
+
+function matchesAnyNarrative(text: string): boolean {
+  for (const regex of Object.values(NARRATIVE_KEYWORDS)) {
+    if (regex.test(text)) return true;
+  }
+  return false;
+}
 
 // ── Source Normalization ─────────────────────────────────────────────────────
 // S10-T1a: Normalize raw source labels to the 4 watchlist categories so items
@@ -469,6 +549,82 @@ export async function scoringCycle(): Promise<number> {
       await writeScoredItems(blockedScored).catch(() => {});
       log.info(
         `Wrote ${blockedScored.length} content-guard-blocked items as scored (macroLevel 0)`,
+      );
+    }
+
+    // ── Dismissed-pattern filter ──────────────────────────────────────────
+    // Check if any unscored items match previously dismissed headlines.
+    // If so, skip scoring and delete from raw — user already said "not relevant".
+    const dismissed = await loadDismissedPatterns().catch(() => []);
+    if (dismissed.length > 0) {
+      const dismissedMatchIds = new Set<string>();
+      for (const item of guardedFeedItems) {
+        if (isSimilarToDismissed(item.headline, dismissed)) {
+          dismissedMatchIds.add(item.id);
+          log.info(`Dismissed-pattern match: "${item.headline.slice(0, 60)}"`);
+        }
+      }
+      if (dismissedMatchIds.size > 0) {
+        // Write as scored (macroLevel 0) so they don't re-queue, then delete raw
+        const dismissedScored = guardedFeedItems
+          .filter((item) => dismissedMatchIds.has(item.id))
+          .map((item) => {
+            item.macroLevel = 0 as any;
+            item.sentiment = "neutral";
+            item.ivScore = 0;
+            const rawId = rawIdMap.get(item.id) || null;
+            return feedItemToScored(item, rawId as any);
+          });
+        await writeScoredItems(dismissedScored).catch(() => {});
+        // Remove from guardedFeedItems
+        const remaining = guardedFeedItems.filter(
+          (item) => !dismissedMatchIds.has(item.id),
+        );
+        guardedFeedItems.length = 0;
+        guardedFeedItems.push(...remaining);
+        log.info(
+          `Dismissed-pattern filter removed ${dismissedMatchIds.size} items`,
+        );
+      }
+    }
+
+    // ── Narrative gate ──────────────────────────────────────────────────
+    // Items with zero narrative keyword matches are noise — drop them.
+    const narrativeDropIds = new Set<string>();
+    for (const item of guardedFeedItems) {
+      const fullText = `${item.headline} ${item.body || ""} ${(item.tags || []).join(" ")}`;
+      if (!matchesAnyNarrative(fullText)) {
+        narrativeDropIds.add(item.id);
+        log.info(`Narrative gate dropped: "${item.headline.slice(0, 60)}"`);
+      }
+    }
+    if (narrativeDropIds.size > 0) {
+      const droppedScored = guardedFeedItems
+        .filter((item) => narrativeDropIds.has(item.id))
+        .map((item) => {
+          item.macroLevel = 0 as any;
+          item.sentiment = "neutral";
+          item.ivScore = 0;
+          const rawId = rawIdMap.get(item.id) || null;
+          return feedItemToScored(item, rawId as any);
+        });
+      await writeScoredItems(droppedScored).catch(() => {});
+      const remaining = guardedFeedItems.filter(
+        (item) => !narrativeDropIds.has(item.id),
+      );
+      guardedFeedItems.length = 0;
+      guardedFeedItems.push(...remaining);
+      log.info(
+        `Narrative gate removed ${narrativeDropIds.size} items (no active narrative match)`,
+      );
+    }
+
+    if (guardedFeedItems.length === 0) {
+      log.info(
+        "All items filtered by content guard / dismissed / narrative gate",
+      );
+      return (
+        blockedIds.size + (dismissed.length > 0 ? 0 : 0) + narrativeDropIds.size
       );
     }
 

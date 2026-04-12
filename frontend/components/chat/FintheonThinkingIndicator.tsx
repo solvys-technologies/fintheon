@@ -44,10 +44,15 @@ export function FintheonThinkingIndicator({
     return () => clearInterval(interval);
   }, [isThinking]);
 
-  if (!isThinking) return null;
-
   return (
-    <div className="w-full rounded-xl px-3 py-2.5 fintheon-thinking-container-borderless">
+    <div
+      className="w-full rounded-xl fintheon-thinking-container-borderless overflow-hidden transition-all duration-300 ease-in-out"
+      style={{
+        maxHeight: isThinking ? "200px" : "0px",
+        opacity: isThinking ? 1 : 0,
+        padding: isThinking ? "10px 12px" : "0px 12px",
+      }}
+    >
       <div className="flex items-start gap-3">
         {/* Radar pulse */}
         <div className="relative mt-0.5 h-6 w-6 flex-shrink-0">

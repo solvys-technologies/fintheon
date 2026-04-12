@@ -1,6 +1,6 @@
 // [claude-code 2026-04-12] S9-T2: Shared card anatomy for RiskFlow detail + tape variants
 // [claude-code 2026-04-12] Added linkifyText — URLs in headlines/summaries are now clickable
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, ThumbsDown } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { inferDirection } from "../../lib/riskflow-feed";
 import { SEVERITY_CONFIG } from "../../lib/severity-config";
@@ -19,6 +19,8 @@ interface AlertCardBaseProps {
   expandedContent?: React.ReactNode;
   /** Optional action buttons for the collapsed header row */
   headerActions?: React.ReactNode;
+  /** Thumbs-down callback — marks item as not relevant */
+  onNotRelevant?: (id: string) => void;
   /** Override outer container className (variant-specific borders, bg, opacity) */
   className?: string;
   /** Override outer container style */
@@ -31,6 +33,7 @@ export function AlertCardBase({
   onToggle,
   expandedContent,
   headerActions,
+  onNotRelevant,
   className,
   style,
 }: AlertCardBaseProps) {
@@ -122,6 +125,20 @@ export function AlertCardBase({
           <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium tracking-wider uppercase border border-zinc-700 text-zinc-400">
             {alert.riskType}
           </span>
+        )}
+
+        {/* Not relevant — thumbs down */}
+        {onNotRelevant && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onNotRelevant(alert.id);
+            }}
+            className="ml-2 hidden group-hover:inline-flex p-0.5 rounded text-zinc-600 hover:text-red-400 transition-colors"
+            title="Not relevant"
+          >
+            <ThumbsDown className="w-3 h-3" />
+          </button>
         )}
 
         {/* Expand chevron */}

@@ -73,6 +73,23 @@ export function RiskFlowMain() {
     }
   };
 
+  const handleNotRelevant = useCallback(
+    async (id: string) => {
+      removeAlert(id);
+      try {
+        const apiBase = (
+          import.meta.env.VITE_API_URL || "http://localhost:8080"
+        ).replace(/\/$/, "");
+        await fetch(`${apiBase}/api/riskflow/${id}/not-relevant`, {
+          method: "POST",
+        });
+      } catch (err) {
+        console.warn("[RiskFlow] Not-relevant failed:", err);
+      }
+    },
+    [removeAlert],
+  );
+
   const critCount = alerts.filter((a) => a.severity === "critical").length;
   const highCount = alerts.filter((a) => a.severity === "high").length;
   const medCount = alerts.filter((a) => a.severity === "medium").length;
@@ -214,6 +231,7 @@ export function RiskFlowMain() {
               alert={item}
               seen={isSeen(item.id)}
               onGenerateNote={handleGenerateNote}
+              onNotRelevant={handleNotRelevant}
             />
           ))
         )}

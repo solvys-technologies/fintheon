@@ -14,12 +14,14 @@ interface RiskFlowDetailCardProps {
   alert: RiskFlowAlert;
   seen?: boolean;
   onGenerateNote?: (itemId: string) => void;
+  onNotRelevant?: (id: string) => void;
 }
 
 export function RiskFlowDetailCard({
   alert,
   seen,
   onGenerateNote,
+  onNotRelevant,
 }: RiskFlowDetailCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { addToast } = useToast();
@@ -44,6 +46,7 @@ export function RiskFlowDetailCard({
       seen={seen}
       expanded={expanded}
       onToggle={() => setExpanded(!expanded)}
+      onNotRelevant={onNotRelevant}
       className={`${
         expanded
           ? "border-b border-[var(--fintheon-accent)]/30"
