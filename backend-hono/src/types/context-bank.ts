@@ -159,6 +159,10 @@ export interface PolymarketMarketSummary {
   probability: number;
   outcome: string;
   closeTime?: string;
+  volume24h?: number;
+  liquidity?: number;
+  category?: string;
+  slug?: string;
 }
 
 export interface KalshiContext {
