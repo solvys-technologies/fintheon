@@ -272,6 +272,8 @@ export interface MiroSharkBriefing {
   keyFindings: string[];
   riskAlerts: string[];
   agentConsensus: string;
+  /** Harper AI-generated narrative analysis */
+  harperAnalysis?: string;
   generatedAt: string;
 }
 

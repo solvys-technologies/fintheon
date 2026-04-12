@@ -87,10 +87,10 @@ export function createHarperRoutes() {
       }
 
       // ── Boardroom mode: dispatch to multi-agent DAG instead of single chat ──
+      // Only trigger DAG when explicitly requested (surface or flag), NOT from connector list.
+      // The connector list signals available tools, not desired routing.
       const isBoardroomMode =
-        body.surface === "boardroom" ||
-        body.boardroom === true ||
-        body.activeConnectors?.includes("boardroom");
+        body.surface === "boardroom" || body.boardroom === true;
 
       if (isBoardroomMode) {
         const userId = (c.get("userId" as never) as string) || "anonymous";

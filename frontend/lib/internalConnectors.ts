@@ -44,7 +44,7 @@ export const INTERNAL_CONNECTORS: McpServerConfig[] = [
     transport: "stdio",
     command: "",
     args: [],
-    enabled: true,
+    enabled: false,
     installed: true,
     requiresApiKey: false,
     hasApiKey: true,

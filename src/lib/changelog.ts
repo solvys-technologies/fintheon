@@ -12,7 +12,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-12T14:30:00",
     agent: "claude-code",
     summary:
-      "RiskFlow content guard: pre-ingestion filter blocks MAGA spam, racial slurs, drunk/incoherent text, and @mention replies before items touch raw_riskflow_items. Wired into feed-poller (poll + 3 scrape fallback paths), rettiwt-poller-transform (processTweetBatch), and central-scorer (safety net that writes blocked items as scored macroLevel 0 to prevent re-queuing). UI: Fluxer → Forum rename, sidebar chat widened to 420px, chat backgrounds unified to --fintheon-bg.",
+      "RiskFlow content guard: comprehensive pre-ingestion filter (slurs, profanity, MAGA, junk slang, drunk text, @mentions). MiroShark fix: Update button now runs fresh simulation (was re-loading cached report), auto-run on launch if stale (1/day minimum), Harper AI analysis in briefing. AskHarp fix: boardroom DAG no longer triggers by default — regular VProxy conversation unless explicitly requested. UI: Fluxer → Forum, sidebar chat 420px, chat bg unified.",
     files: [
       "backend-hono/src/services/riskflow/content-guard.ts",
       "backend-hono/src/services/riskflow/feed-poller.ts",

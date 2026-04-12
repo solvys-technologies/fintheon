@@ -1,3 +1,4 @@
+// [claude-code 2026-04-12] Fix: Update button now always runs fresh simulation. Auto-run on launch if stale. Harper AI analysis.
 // [claude-code 2026-04-03] Daily auto-run: 12h staleness threshold, cross-user dedup
 // [claude-code 2026-03-28] S8-T5: 3-phase deliberation pipeline integration
 // [claude-code 2026-03-24] Persistence refactor: getLatestReport(), full report JSONB in persistRun(), 30min staleness
@@ -36,6 +37,7 @@ import {
   injectUserTake,
 } from "./miroshark-deliberation.js";
 import { getSupabaseClient } from "../../config/supabase.js";
+import { invokeAgent } from "../strands/index.js";
 
 /** In-memory prediction cache (simId → prediction) */
 const predictionCache = new Map<string, MiroSharkPrediction>();
@@ -218,8 +220,14 @@ export async function startPrediction(
       report.govOfficialReport = govReport;
     }
 
-    // Generate briefing
+    // Generate deterministic briefing
     const briefing = generateBriefing(report, context);
+
+    // Harper AI analysis — deeper narrative breakdown (fire-and-forget, fills in async)
+    generateHarperAnalysis(report, context, briefing).catch((err) => {
+      console.warn("[MiroShark] Harper analysis failed (non-fatal):", err);
+    });
+
     report.briefing = briefing;
     report.contextSnapshot = context;
 
@@ -629,6 +637,96 @@ export async function shouldAutoRun(): Promise<{
     lastRunAt,
     staleness,
   };
+}
+
+// ── Harper AI Analysis ────────────────────────────────────────────────────
+// Generates a narrative market breakdown using Harper (AI), stored in briefing.harperAnalysis.
+// Mutates the briefing object in-place + updates the persisted run in Supabase.
+
+const HARPER_ANALYSIS_PROMPT = `You are Harper, the Chief Agentic Officer at Priced In Capital. Generate a concise market analysis breakdown (3-5 paragraphs) based on the data below. Write like a senior macro strategist addressing a trading desk — direct, no hedging, actionable. Cover:
+
+1. **Macro Regime** — Where are we in the cycle? What's the dominant driver?
+2. **Key Risks** — What could blow up? What's being underpriced?
+3. **Positioning** — How should a futures trader be positioned right now?
+4. **Catalyst Timeline** — What's coming in the next 24-72h that matters?
+
+Be specific. Reference the actual data points, scores, and scenarios provided. No generic commentary.`;
+
+async function generateHarperAnalysis(
+  report: MiroSharkReport,
+  context: SimulationContext,
+  briefing: MiroSharkBriefing,
+): Promise<void> {
+  const categoryBreakdown = report.categoryScores
+    .map(
+      (cs) =>
+        `${cs.category}: IV ${cs.ivScore.toFixed(1)}, confidence ${(cs.confidence * 100).toFixed(0)}%, delta ${cs.delta > 0 ? "+" : ""}${cs.delta.toFixed(1)}`,
+    )
+    .join("\n");
+
+  const scenarioBreakdown = report.scenarios
+    .map(
+      (s) =>
+        `"${s.label}" — ${(s.probability * 100).toFixed(0)}% prob, projected IV ${s.projectedIVScore.toFixed(1)}`,
+    )
+    .join("\n");
+
+  const topHeadlines = context.riskflowHeadlines
+    .slice(0, 10)
+    .map((h) => `[${h.risk_type ?? "General"}] ${h.title} (IV: ${h.iv_score})`)
+    .join("\n");
+
+  const userPrompt = `## Simulation Results
+Composite IV: ${report.nextSessionProjection.toFixed(1)}/10
+Regime Shift Probability: ${(report.regimeShiftProbability * 100).toFixed(0)}%
+Confidence: ${(report.confidence * 100).toFixed(0)}%
+VIX: ${context.vixLevel?.toFixed(1) ?? "N/A"}
+
+## Category Scores
+${categoryBreakdown}
+
+## Scenarios
+${scenarioBreakdown}
+
+## Top Headlines (72h)
+${topHeadlines || "No headlines available"}
+
+## Agent Votes
+${report.agentVotes.map((v) => `${v.agentId}: ${v.position} (conf ${(v.confidence * 100).toFixed(0)}%)`).join("\n")}
+
+## Deterministic Summary
+${briefing.summary}`;
+
+  const { text } = await invokeAgent({
+    systemPrompt: HARPER_ANALYSIS_PROMPT,
+    userPrompt,
+    model: { temperature: 0.4, maxTokens: 800 },
+  });
+
+  briefing.harperAnalysis = text.trim();
+
+  // Update persisted run in Supabase with the analysis
+  const sb = getSupabaseClient();
+  if (sb) {
+    await sb
+      .from("mirofish_runs")
+      .update({ briefing })
+      .eq("simulation_id", report.simulationId)
+      .then(({ error }) => {
+        if (error)
+          console.warn(
+            "[MiroShark] Failed to update harper analysis in DB:",
+            error.message,
+          );
+      });
+  }
+
+  // Also update the in-memory prediction cache
+  for (const [, pred] of predictionCache) {
+    if (pred.briefing && pred.simulationId === report.simulationId) {
+      pred.briefing.harperAnalysis = briefing.harperAnalysis;
+    }
+  }
 }
 
 function emptyAggregation(days: number): AggregatedRollingData {

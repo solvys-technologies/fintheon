@@ -92,6 +92,18 @@ export function SanctumBriefing({
         </div>
       )}
 
+      {/* Harper Analysis — AI-generated narrative breakdown */}
+      {briefing.harperAnalysis && (
+        <div className="px-5 py-4 border-t border-[var(--fintheon-border)]/10">
+          <span className="text-[8px] text-[var(--fintheon-accent)]/50 uppercase tracking-wider block mb-2">
+            Harper Analysis
+          </span>
+          <div className="text-[11px] text-[var(--fintheon-text)]/80 leading-relaxed whitespace-pre-line">
+            {briefing.harperAnalysis}
+          </div>
+        </div>
+      )}
+
       {/* Agent Consensus */}
       {briefing.agentConsensus && (
         <div className="px-5 py-3 border-t border-[var(--fintheon-border)]/10">

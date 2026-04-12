@@ -1,12 +1,67 @@
 // [claude-code 2026-04-12] Pre-ingestion content guard — blocks garbage before it hits raw_riskflow_items
-// Catches: political spam (MAGA), racial slurs, drunk/incoherent text, @ mention replies
+// Catches: slurs, profanity, political spam, junk slang, drunk/incoherent text, @ mention replies
+// This is a PROFESSIONAL trading platform. Zero tolerance for non-market content.
 
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("ContentGuard");
 
+// ── Racial / ethnic / homophobic slurs ──────────────────────────────────────
+// Hard block — zero tolerance. Includes leetspeak variants.
+const SLUR_PATTERNS = [
+  // N-word variants
+  /\bn[i1!][g9]{1,2}[ae3]r?s?\b/i,
+  /\bn[i1!][g9]{1,2}[ae3]?\b/i,
+  /\bn[i1!][g9]{1,2}[aeu3]h?\b/i,
+  // Anti-semitic
+  /\bk[i1!]ke[s]?\b/i,
+  // Anti-Hispanic
+  /\bsp[i1!]c[ks]?\b/i,
+  /\bwetback[s]?\b/i,
+  /\bbeaner[s]?\b/i,
+  // Anti-Asian
+  /\bch[i1!]nk[s]?\b/i,
+  /\bgook[s]?\b/i,
+  /\bch[i1!]ng\s*ch[o0]ng/i,
+  /\bslant[\s-]?eye/i,
+  // Anti-Arab / Middle Eastern
+  /\brag\s*head[s]?\b/i,
+  /\btowel\s*head[s]?\b/i,
+  /\bsand\s*n[i1!]gg/i,
+  /\bcamel\s*jockey/i,
+  // Anti-Black (other)
+  /\bcoon[s]?\b/i,
+  /\bdarkie[s]?\b/i,
+  /\bjigaboo/i,
+  /\bporch\s*monkey/i,
+  // General slurs
+  /\bfagg?[o0]t[s]?\b/i,
+  /\bdyke[s]?\b/i,
+  /\btrann[yi]/i,
+  /\bretard(ed|s)?\b/i,
+];
+
+// ── Profanity / junk language ───────────────────────────────────────────────
+// Hard block — this is a professional platform, not Twitter replies.
+// Only blocks when these appear as the DOMINANT content (not buried in a headline).
+const JUNK_LANGUAGE_PATTERNS = [
+  /\b(lol|lmao|lmfao|rofl|roflmao)\b/i,
+  /\b(simp|simping|simps)\b/i,
+  /\b(stfu|gtfo|foh|smfh)\b/i,
+  /\b(clown\s*world|honk\s*honk)\b/i,
+  /\b(cope|copium|seethe|mald|malding)\b/i,
+  /\b(ratio|ratioed|L\s+take|W\s+take)\b/i,
+  /\b(deez\s+nuts|ligma|sugma)\b/i,
+  /\b(bruh|bruhhh|bro\s+what|fam|no\s+cap|bussin|deadass|fr\s+fr|ong|ngl)\b/i,
+  /\b(sus|sussy|amogus)\b/i,
+  /\b(based\s+and|redpill|blackpill|whitepill)\b/i,
+  /\b(normie|chad|virgin|incel|beta\s*male|alpha\s*male|sigma)\b/i,
+  /\b(cuck|soy\s*boy|snowflake|libtard|conservatard|demoncrat|republicunt)\b/i,
+  /\b(rekt|wrecked|owned|pwned)\b/i,
+  /\b(cringe|yikes|oof|sheesh)\b/i,
+];
+
 // ── Political spam / partisan noise ─────────────────────────────────────────
-// These are NOT market-moving — they're partisan cheerleading or rage-bait.
 const POLITICAL_SPAM_PATTERNS = [
   /\bMAGA\b/,
   /\bMake\s+America\s+Great\b/i,
@@ -27,35 +82,23 @@ const POLITICAL_SPAM_PATTERNS = [
   /\bgreat\s+awakening\b/i,
   /\bplandemic\b/i,
   /\bsheeple\b/i,
-];
-
-// ── Racial / ethnic slurs ───────────────────────────────────────────────────
-// Hard block — zero tolerance. Case-insensitive word-boundary matches.
-const SLUR_PATTERNS = [
-  /\bn[i1]gg[ae3]r?s?\b/i,
-  /\bn[i1]gg[ae3]?\b/i,
-  /\bk[i1]ke[s]?\b/i,
-  /\bsp[i1]c[s]?\b/i,
-  /\bch[i1]nk[s]?\b/i,
-  /\bwetback[s]?\b/i,
-  /\bcoon[s]?\b/i,
-  /\bdarkie[s]?\b/i,
-  /\brag\s*head[s]?\b/i,
-  /\btowel\s*head[s]?\b/i,
-  /\bgook[s]?\b/i,
-  /\bbeaner[s]?\b/i,
-  /\bjigaboo\b/i,
-  /\bsand\s*n[i1]gg/i,
+  /\bfascist[s]?\b/i,
+  /\bcommie[s]?\b/i,
+  /\bmarxi[st]/i,
+  /\bwoke\s+(capitalism|agenda|ideology)\b/i,
+  /\banti[\s-]?woke\b/i,
+  /\bblue\s*anon\b/i,
+  /\bdemocRAT\b/,
+  /\bRepubliKKKan\b/i,
+  /\bTrump\s+derangement\b/i,
+  /\b(Biden|Kamala|AOC)\s+(regime|cartel|crime)\b/i,
 ];
 
 // ── Drunk / incoherent text ─────────────────────────────────────────────────
-// Heuristics for text that reads like someone hammered on Twitter at 2 AM.
-// We check multiple signals and require 2+ to flag.
-
 function isDrunkText(text: string): boolean {
   let signals = 0;
 
-  // Excessive caps ratio (>60% caps in a text with 20+ chars)
+  // Excessive caps ratio (>60% caps in text with 20+ alpha chars)
   const alphaChars = text.replace(/[^a-zA-Z]/g, "");
   if (alphaChars.length >= 20) {
     const capsRatio =
@@ -63,30 +106,22 @@ function isDrunkText(text: string): boolean {
     if (capsRatio > 0.6) signals++;
   }
 
-  // Repeated characters (3+ of same char in a row): "yesssss", "nooooo"
+  // Repeated characters (4+ of same char): "yesssss", "nooooo"
   if (/(.)\1{3,}/i.test(text)) signals++;
 
   // Excessive exclamation/question marks (3+)
   if (/[!?]{3,}/.test(text)) signals++;
 
-  // Internet slang / drunk abbreviations
-  if (
-    /\b(rdy|lmao|lmfao|bruh|fam|yall|ngl|frfr|ong|bussin|deadass|sus|copium)\b/i.test(
-      text,
-    )
-  )
-    signals++;
-
   // Very short text with no substance (under 30 chars, no financial keywords)
   if (
     text.length < 30 &&
-    !/\b(fed|cpi|ppi|gdp|nfp|fomc|tariff|rate|yield|treasury|earnings)\b/i.test(
+    !/\b(fed|cpi|ppi|gdp|nfp|fomc|tariff|rate|yield|treasury|earnings|vix|opec|sanctions?|missile|war)\b/i.test(
       text,
     )
   )
     signals++;
 
-  // Excessive emoji count (5+ non-FJ emojis)
+  // Excessive emoji count (5+)
   const emojiCount = (
     text.match(
       /[\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
@@ -98,14 +133,11 @@ function isDrunkText(text: string): boolean {
 }
 
 // ── @ Mention detection ─────────────────────────────────────────────────────
-// Tweets that START with @ are replies, not original news.
-// Tweets with 3+ @ mentions are conversations, not headlines.
-
 function isAtMentionNoise(text: string): boolean {
   // Starts with @user — it's a reply, not a headline
   if (/^@\w+/.test(text.trim())) return true;
 
-  // 3+ @ mentions — it's a conversation thread, not news
+  // 3+ @ mentions — conversation thread, not news
   const mentionCount = (text.match(/@\w+/g) || []).length;
   if (mentionCount >= 3) return true;
 
@@ -125,26 +157,33 @@ export interface ContentGuardResult {
  * Call this BEFORE writing to raw_riskflow_items.
  */
 export function checkContentGuard(text: string): ContentGuardResult {
-  // 1. Slurs — hardest block, check first
+  // 1. Slurs — hardest block
   for (const pattern of SLUR_PATTERNS) {
     if (pattern.test(text)) {
       return { blocked: true, reason: "slur" };
     }
   }
 
-  // 2. Political spam
+  // 2. Junk language / profanity
+  for (const pattern of JUNK_LANGUAGE_PATTERNS) {
+    if (pattern.test(text)) {
+      return { blocked: true, reason: "junk-language" };
+    }
+  }
+
+  // 3. Political spam
   for (const pattern of POLITICAL_SPAM_PATTERNS) {
     if (pattern.test(text)) {
       return { blocked: true, reason: "political-spam" };
     }
   }
 
-  // 3. @ mention noise
+  // 4. @ mention noise
   if (isAtMentionNoise(text)) {
     return { blocked: true, reason: "at-mention-noise" };
   }
 
-  // 4. Drunk / incoherent
+  // 5. Drunk / incoherent
   if (isDrunkText(text)) {
     return { blocked: true, reason: "incoherent" };
   }

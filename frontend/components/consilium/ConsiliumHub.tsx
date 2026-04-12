@@ -352,33 +352,77 @@ export function ConsiliumHub() {
     fetchContext();
   }, [fetchContext]);
 
-  // Load persisted MiroShark report on mount
+  // Load persisted MiroShark report on mount + auto-run if stale (not run today)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
+        // Load latest cached report for immediate display
         const res = await fetch(`${API_BASE}/api/miroshark/latest`);
-        if (!res.ok) return;
-        const report = await res.json();
-        if (cancelled || !report) return;
-        setMirosharkData({
-          simulationId: report.simulationId ?? "",
-          status: "complete",
-          compositeIV: report.compositeIV ?? 0,
-          confidence: report.confidence ?? 0,
-          regimeShiftProbability: report.regimeShiftProbability ?? 0,
-          categoryScores: report.categoryScores ?? [],
-          timeSeries: report.timeSeries ?? [],
-          generatedEvents: report.generatedEvents ?? [],
-          scenarios: report.scenarios ?? [],
-          briefing: report.briefing ?? null,
-          contextSnapshot: report.contextSnapshot ?? null,
-        });
-      } catch (err) {
-        console.error(
-          "[ConsiliumHub] Failed to load persisted MiroShark report:",
-          err,
+        if (res.ok) {
+          const report = await res.json();
+          if (!cancelled && report) {
+            setMirosharkData({
+              simulationId: report.simulationId ?? "",
+              status: "complete",
+              compositeIV: report.compositeIV ?? 0,
+              confidence: report.confidence ?? 0,
+              regimeShiftProbability: report.regimeShiftProbability ?? 0,
+              categoryScores: report.categoryScores ?? [],
+              timeSeries: report.timeSeries ?? [],
+              generatedEvents: report.generatedEvents ?? [],
+              scenarios: report.scenarios ?? [],
+              briefing: report.briefing ?? null,
+              contextSnapshot: report.contextSnapshot ?? null,
+            });
+          }
+        }
+
+        // Check if we need an auto-run (minimum 1/day)
+        if (cancelled) return;
+        const autoCheck = await fetch(
+          `${API_BASE}/api/miroshark/auto-run-check`,
         );
+        if (!autoCheck.ok) return;
+        const { shouldRun } = await autoCheck.json();
+        if (shouldRun && !cancelled) {
+          console.log(
+            "[ConsiliumHub] MiroShark stale — triggering daily auto-run",
+          );
+          // Run simulation in background — don't block the UI
+          const simRes = await fetch(`${API_BASE}/api/miroshark/simulate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              preset: "full-brief",
+              narrativeState: { lanes: [], catalysts: [], ropes: [] },
+            }),
+          });
+          if (simRes.ok && !cancelled) {
+            const { simulationId } = await simRes.json();
+            const reportRes = await fetch(
+              `${API_BASE}/api/miroshark/report/${simulationId}`,
+            );
+            if (reportRes.ok && !cancelled) {
+              const report = await reportRes.json();
+              setMirosharkData({
+                simulationId: simulationId,
+                status: "complete",
+                compositeIV: report.compositeIV ?? report.nextSessionScore ?? 0,
+                confidence: report.confidence ?? 0,
+                regimeShiftProbability: report.regimeShiftProbability ?? 0,
+                categoryScores: report.categoryScores ?? [],
+                timeSeries: report.timeSeries ?? [],
+                generatedEvents: report.generatedEvents ?? [],
+                scenarios: report.scenarios ?? [],
+                briefing: report.briefing ?? null,
+                contextSnapshot: report.contextSnapshot ?? null,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[ConsiliumHub] Failed to load/auto-run MiroShark:", err);
       }
     })();
     return () => {
@@ -428,20 +472,7 @@ export function ConsiliumHub() {
       );
 
       try {
-        // Step 1: try to load the latest persisted run
-        const latestRes = await fetch(`${API_BASE}/api/miroshark/latest`);
-        if (latestRes.ok) {
-          const report = await latestRes.json();
-          if (
-            report &&
-            (report.compositeIV > 0 || report.nextSessionScore > 0)
-          ) {
-            applyReport(report);
-            return;
-          }
-        }
-
-        // Step 2: no existing run — kick off a new simulation
+        // Always kick off a fresh simulation when the user clicks Update
         const simRes = await fetch(`${API_BASE}/api/miroshark/simulate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
