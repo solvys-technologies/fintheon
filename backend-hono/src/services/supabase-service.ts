@@ -118,6 +118,45 @@ export async function writeRawItems(items: RawRiskFlowItem[]): Promise<number> {
   return data?.length ?? 0;
 }
 
+// [claude-code 2026-04-12] Auto-delete raw_riskflow_items older than 7 days.
+// Raw items only exist as an inbox for the central scorer. Once scored, they're
+// redundant — scored_riskflow_items is the permanent record.
+export async function cleanupOldRawItems(maxAgeDays = 7): Promise<number> {
+  const cutoff = new Date(
+    Date.now() - maxAgeDays * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  if (isDatabaseAvailable() && dbSql) {
+    try {
+      const result = await dbSql`
+        DELETE FROM raw_riskflow_items
+        WHERE created_at < ${cutoff}
+      `;
+      return (result as any).count ?? result.length;
+    } catch (err) {
+      console.error(
+        "[Supabase] cleanupOldRawItems SQL error:",
+        (err as Error).message,
+      );
+      return 0;
+    }
+  }
+
+  const sb = getSupabaseClient();
+  if (!sb) return 0;
+
+  const { count, error } = await sb
+    .from("raw_riskflow_items")
+    .delete({ count: "exact" })
+    .lt("created_at", cutoff);
+
+  if (error) {
+    console.error("[Supabase] cleanupOldRawItems client error:", error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
 // [claude-code 2026-04-01] Permanent fix: use raw SQL (pg Pool) for unscored item detection.
 // Supabase JS client .not('in', subquery) silently returns empty — never use it.
 // The two-query JS fallback also fails when unscored items are scattered across thousands of rows.

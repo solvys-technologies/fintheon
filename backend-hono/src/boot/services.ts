@@ -47,6 +47,7 @@ import { startMiroSharkDaily } from "../services/cron/miroshark-daily.js";
 import { startAquariumScheduler } from "../services/riskflow/aquarium-scheduler.js";
 import { bootHarperAutonomous } from "../services/harper-autonomous/index.js";
 import { initRettiwtPool } from "../services/rettiwt-service.js";
+import { cleanupOldRawItems } from "../services/supabase-service.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -214,9 +215,39 @@ export async function bootServices(): Promise<void> {
   startMarketImpactEnricher();
   log.info("MarketImpactEnricher started");
 
-  // [claude-code 2026-03-27] Feed cleanup DISABLED — items accumulate for calibration DB
+  // [claude-code 2026-03-27] Feed cleanup DISABLED — scored items accumulate for calibration DB
   // cleanupOldItems() was purging items older than 30 days. Now we keep everything.
-  log.info("FeedCleanup DISABLED — items retained for historical calibration");
+  log.info(
+    "FeedCleanup DISABLED — scored items retained for historical calibration",
+  );
+
+  // [claude-code 2026-04-12] Raw items auto-delete (7d) — raw_riskflow_items is just an inbox
+  // for the central scorer. Once scored, they're redundant. Run on boot + every 6h.
+  cleanupOldRawItems(7)
+    .then((n) => {
+      if (n > 0)
+        log.info(`RawItemCleanup: deleted ${n} raw items older than 7d`);
+    })
+    .catch((err) =>
+      log.warn("RawItemCleanup boot run failed (non-fatal)", {
+        error: String(err),
+      }),
+    );
+  const rawCleanupTimer = setInterval(
+    () => {
+      cleanupOldRawItems(7)
+        .then((n) => {
+          if (n > 0)
+            log.info(`RawItemCleanup: deleted ${n} raw items older than 7d`);
+        })
+        .catch((err) =>
+          log.warn("RawItemCleanup failed (non-fatal)", { error: String(err) }),
+        );
+    },
+    6 * 60 * 60 * 1000,
+  ); // Every 6 hours
+  rawCleanupTimer.unref?.();
+  log.info("RawItemCleanup scheduled (7d TTL, 6h interval)");
 
   // Execution bridge health check (non-blocking)
   projectxService

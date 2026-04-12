@@ -12,11 +12,12 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-12T10:00:00",
     agent: "claude-code",
     summary:
-      "Fix Central Scorer stuck mutex: added staleness guard (90s force-reset), defensive logging on every tick, delayed initial cycle 5s for DB pool warmup, caught unhandled promise rejections on interval. Built RiskFlow catchup sequence: when user toggles RiskFlow back ON, handler runs scoringCycle() to process backlog, refreshes feed cache, triggers forcePoll(), returns scored count to frontend.",
+      "Fix Central Scorer stuck mutex: staleness guard (90s force-reset), defensive tick logging, delayed initial cycle 5s for DB pool warmup, caught unhandled rejections. Fixed dropped web-scrape items blocking queue forever (now written to scored table). Built RiskFlow catchup sequence on toggle resume. Added raw_riskflow_items 7d auto-delete (6h cron).",
     files: [
       "backend-hono/src/services/riskflow/central-scorer.ts",
       "backend-hono/src/routes/riskflow/handlers.ts",
-      "backend-hono/src/services/riskflow/user-polling-registry.ts",
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/boot/services.ts",
       "src/lib/changelog.ts",
     ],
   },
