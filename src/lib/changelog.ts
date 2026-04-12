@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-13T00:00:00",
+    agent: "claude-code",
+    summary:
+      "S15-T3: Aquarium Polymarket prediction cards, Kalshi/Polymarket divergence detector (15min), prediction accuracy tracking + resolution cron (1h). Divergence >10% flagged as Kalshi trade signal.",
+    files: [
+      "frontend/components/narrative/PolymarketPredictionCards.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "backend-hono/src/routes/predictions.ts",
+      "backend-hono/src/services/polymarket-kalshi-divergence.ts",
+      "backend-hono/src/services/polymarket-prediction-resolver.ts",
+      "backend-hono/src/routes/polymarket/index.ts",
+      "backend-hono/src/boot/services.ts",
+    ],
+  },
+  {
     date: "2026-04-12T23:30:00",
     agent: "claude-code",
     summary:

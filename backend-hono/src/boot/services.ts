@@ -45,6 +45,8 @@ import { startSharedMemoryCleanup } from "../services/peers/shared-memory.js";
 import { startReflectScheduler } from "../services/autoresearch/reflect-scheduler.js";
 import { startMiroSharkDaily } from "../services/cron/miroshark-daily.js";
 import { startAquariumScheduler } from "../services/riskflow/aquarium-scheduler.js";
+import { startDivergenceDetector } from "../services/polymarket-kalshi-divergence.js";
+import { startPredictionResolver } from "../services/polymarket-prediction-resolver.js";
 import { bootHarperAutonomous } from "../services/harper-autonomous/index.js";
 import { initRettiwtPool } from "../services/rettiwt-service.js";
 import { cleanupOldRawItems } from "../services/supabase-service.js";
@@ -277,6 +279,12 @@ export async function bootServices(): Promise<void> {
 
   // Aquarium AI scheduler (Oracle/Nous — 30min interval, first run 20s after boot)
   startAquariumScheduler();
+
+  // Polymarket/Kalshi divergence detector (15min interval, first run 30s after boot)
+  startDivergenceDetector();
+
+  // Prediction resolver (1h interval — resolves closed Polymarket predictions)
+  startPredictionResolver();
 
   // REFLECT scheduler (04:00 UTC daily — news analysis quality self-improvement)
   startReflectScheduler();
