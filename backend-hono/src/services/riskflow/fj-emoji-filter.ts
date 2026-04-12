@@ -155,6 +155,57 @@ function keywordClassify(text: string): FJClassification {
   };
 }
 
+// ── FJ Self-Promo / Joke Blacklist ───────────────────────────────────────────
+// The guy running the FJ X account can't help himself — ads, jokes, GIFs, and
+// hot takes get sprinkled between actual market-moving headlines. Filter them.
+
+const BLACKLIST_PATTERNS = [
+  /\bFinancialJuice\b/i, // self-promotion / platform mentions
+  /financialjuice\.com/i, // links to site
+  /\bdownload\b/i, // app promotion
+  /\btry\s+(it|our|the)\b/i, // "try our app" etc
+  /\bsubscribe\b/i,
+  /\bjoin\s+(us|our)\b/i,
+  /\bfree\s+trial\b/i,
+  /\bsign\s+up\b/i,
+  /\bpromo\s*code\b/i,
+  /\bdiscount\b/i,
+];
+
+const BLACKLIST_EMOJIS = [
+  "😂",
+  "🤣",
+  "😭",
+  "💀",
+  "😆",
+  "😅",
+  "🤡",
+  "😜",
+  "😝",
+  "🤪",
+  "😹",
+  "🤣",
+  "😀",
+  "😁",
+  "😄",
+  "🤭",
+  "🫠",
+];
+
+/**
+ * Check if a tweet is FJ self-promotion, joke, or ad content.
+ * Returns true if the tweet should be blacklisted.
+ */
+export function isFJBlacklisted(text: string, hasGif?: boolean): boolean {
+  // Platform promotion / ads
+  if (BLACKLIST_PATTERNS.some((p) => p.test(text))) return true;
+  // Laughing emojis = editorial jokes, not news
+  if (BLACKLIST_EMOJIS.some((e) => text.includes(e))) return true;
+  // GIF-attached posts are promo or reaction content
+  if (hasGif) return true;
+  return false;
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export const TIER_ORDER: Record<FJTier, number> = {
@@ -191,7 +242,19 @@ export function fjTierFromEmoji(
  * Classify a tweet by emoji tier first; fall back to keyword scoring.
  * Covers both Discord/Telegram (emoji) and X/Twitter (no emoji) formats.
  */
-export function classifyFJHeadline(text: string): FJClassification {
+export function classifyFJHeadline(
+  text: string,
+  hasGif?: boolean,
+): FJClassification {
+  // Blacklist check first — ads, jokes, promos never pass
+  if (isFJBlacklisted(text, hasGif)) {
+    return {
+      tier: "low",
+      macroLevel: 1,
+      urgency: "normal",
+      shouldInclude: false,
+    };
+  }
   for (const entry of EMOJI_TIERS) {
     if (text.includes(entry.emoji)) {
       return {

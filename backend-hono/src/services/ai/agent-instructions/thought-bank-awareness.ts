@@ -55,7 +55,7 @@ export async function buildThoughtBankPromptBlock(
       currentAgent as AgentName,
     )
       ? (currentAgent as AgentName)
-      : "Harper-Opus";
+      : "Harper";
 
     const thoughts = await buildThoughtBankContext(agentName, 3);
     let block = formatThoughtBankBlock(thoughts);

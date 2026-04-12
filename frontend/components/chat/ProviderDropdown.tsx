@@ -10,7 +10,7 @@ const PROVIDERS: {
   sub: string;
   icon: typeof Cpu;
 }[] = [
-  { id: "local", label: "Local", sub: "VProxy", icon: Cpu },
+  { id: "local", label: "VProxy", sub: "Local", icon: Cpu },
   { id: "nous", label: "Nous", sub: "Qwen3", icon: Server },
   { id: "orouter", label: "ORouter", sub: "Opus", icon: Cloud },
 ];

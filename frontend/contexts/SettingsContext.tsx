@@ -148,7 +148,7 @@ interface SettingsContextType {
   /** ID of the default proposer iFrame source */
   proposerDefaultIframe: string;
   setProposerDefaultIframe: (id: string) => void;
-  /** Custom CAO display name (default: "Harper-Opus") */
+  /** Custom CAO display name (default: "Harper") */
   caoName: string;
   setCaoName: (name: string) => void;
 }

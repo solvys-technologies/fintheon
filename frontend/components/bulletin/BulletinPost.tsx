@@ -61,7 +61,7 @@ function formatFullDate(input: string): string {
 
 function getInitials(authorAgent: string | null, authorId: string): string {
   if (authorAgent) {
-    if (authorAgent === "Harper-Opus") return "H";
+    if (authorAgent === "Harper") return "H";
     return authorAgent.charAt(0).toUpperCase();
   }
   return authorId.slice(0, 2).toUpperCase();

@@ -175,7 +175,7 @@ function ChatInterfaceInner({
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto px-4 py-4">
-                {/* Preview content renders here when Harper-Opus creates artifacts */}
+                {/* Preview content renders here when Harper creates artifacts */}
               </div>
             </div>
           </div>

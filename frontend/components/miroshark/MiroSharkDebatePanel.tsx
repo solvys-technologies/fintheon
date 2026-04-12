@@ -263,11 +263,11 @@ export function MiroSharkDebatePanel({
           </PhaseSection>
         )}
 
-        {/* Phase 3: Harper-Opus Scoring */}
+        {/* Phase 3: Harper Scoring */}
         {state?.harperScoring && (
           <PhaseSection
             index={3}
-            title="Harper-Opus Scoring"
+            title="Harper Scoring"
             icon={<CheckCircle2 className="w-3.5 h-3.5" />}
             isActive={phaseIndex === 3}
             isComplete={state.phase === "complete"}

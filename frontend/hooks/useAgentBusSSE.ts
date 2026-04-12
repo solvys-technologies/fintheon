@@ -8,6 +8,10 @@ interface UseAgentBusSSEOptions {
   enabled?: boolean;
   /** Reconnect on disconnect with exponential backoff (default: true) */
   reconnect?: boolean;
+  /** Named SSE event types to listen for (e.g. ["agent-delta", "dag-complete"]).
+   *  If provided, uses addEventListener per event name instead of onmessage.
+   *  Required when the server emits `event: <name>` fields. */
+  eventNames?: string[];
 }
 
 interface UseAgentBusSSEReturn<T> {
@@ -28,7 +32,12 @@ const BACKOFF_DELAYS_MS = [1000, 2000, 4000, 8000, 16000, 30000];
 export function useAgentBusSSE<T>(
   options: UseAgentBusSSEOptions,
 ): UseAgentBusSSEReturn<T> {
-  const { url, enabled = true, reconnect: autoReconnect = true } = options;
+  const {
+    url,
+    enabled = true,
+    reconnect: autoReconnect = true,
+    eventNames,
+  } = options;
 
   const [events, setEvents] = useState<T[]>([]);
   const [lastEvent, setLastEvent] = useState<T | null>(null);
@@ -60,8 +69,7 @@ export function useAgentBusSSE<T>(
         backoffIdx = 0;
       };
 
-      es.onmessage = (ev) => {
-        // Ignore SSE heartbeat/comment lines (empty data)
+      const handleEvent = (ev: MessageEvent) => {
         if (!ev.data?.trim()) return;
         try {
           const parsed = JSON.parse(ev.data) as T;
@@ -71,6 +79,15 @@ export function useAgentBusSSE<T>(
           // Non-JSON frame — ignore silently
         }
       };
+
+      if (eventNames?.length) {
+        // Named SSE events require addEventListener — onmessage only fires for unnamed events
+        for (const name of eventNames) {
+          es.addEventListener(name, handleEvent as EventListener);
+        }
+      } else {
+        es.onmessage = handleEvent;
+      }
 
       es.onerror = () => {
         setStatus("error");

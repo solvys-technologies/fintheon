@@ -67,7 +67,7 @@ export interface BoardroomDBMessage {
 
 /** Agent emoji lookup — matches hermes-sessions.ts AGENT_PATTERNS */
 const AGENT_EMOJIS: Record<BoardroomAgent, string> = {
-  "Harper-Opus": "🎩",
+  Harper: "🎩",
   Feucht: "⚡",
   Consul: "📜",
   Oracle: "📊",
@@ -101,7 +101,7 @@ export interface BoardroomMessageInput {
 /** Coerce a raw string to BoardroomAgent (DB stores as VARCHAR) */
 function toAgent(raw: string): BoardroomAgent {
   const valid: BoardroomAgent[] = [
-    "Harper-Opus",
+    "Harper",
     "Feucht",
     "Consul",
     "Oracle",

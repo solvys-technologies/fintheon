@@ -1,7 +1,7 @@
 // [claude-code 2026-03-28] S8-T7: Artifact parser — extracts structured JSON from Claude CLI responses
 /**
  * Artifact Parser
- * Extracts structured artifact blocks from Harper-Opus responses.
+ * Extracts structured artifact blocks from Harper responses.
  * Claude CLI outputs artifacts as fenced JSON blocks with a type marker:
  *
  *   ```artifact:catalyst

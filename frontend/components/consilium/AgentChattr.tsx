@@ -34,7 +34,7 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_INTERVAL = 30_000;
 
 const MENTIONABLE_AGENTS: BoardroomAgent[] = [
-  "Harper-Opus",
+  "Harper",
   "Oracle",
   "Feucht",
   "Consul",
@@ -43,7 +43,7 @@ const MENTIONABLE_AGENTS: BoardroomAgent[] = [
 
 /** Map BoardroomAgent UI names → HermesAgentId for DAG filtering */
 const BOARDROOM_TO_HERMES: Partial<Record<BoardroomAgent, HermesAgentId>> = {
-  "Harper-Opus": "harper",
+  Harper: "harper",
   Oracle: "oracle",
   Feucht: "feucht",
   Consul: "consul",
@@ -52,7 +52,7 @@ const BOARDROOM_TO_HERMES: Partial<Record<BoardroomAgent, HermesAgentId>> = {
 
 // Map boardroom agent names to persona-style metadata
 const PERSONA_META: Record<BoardroomAgent, { label: string }> = {
-  "Harper-Opus": { label: "CAO" },
+  Harper: { label: "CAO" },
   Oracle: { label: "All-Seer" },
   Feucht: { label: "Futures & Risk" },
   Consul: { label: "Fundamentals" },
@@ -313,7 +313,7 @@ export function AgentChattr() {
           feucht: "Feucht",
           consul: "Consul",
           herald: "Herald",
-          harper: "Harper-Opus",
+          harper: "Harper",
         };
         const now = new Date().toISOString();
         const threadMessages: BoardroomMessage[] = Object.entries(

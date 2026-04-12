@@ -202,10 +202,13 @@ export function TimelinePanel() {
         // Severity filter (empty set = show all)
         if (severityFilter.size > 0 && !severityFilter.has(c.severity))
           return false;
-        // Time range filter
-        if (cutoff && c.date) {
-          const cardDate = new Date(c.date + "T23:59:59");
-          if (cardDate < cutoff) return false;
+        // Time range filter — use createdAt (full ISO) for intraday precision
+        if (cutoff) {
+          const ts = c.createdAt || c.date;
+          if (ts) {
+            const cardDate = new Date(ts.includes("T") ? ts : ts + "T23:59:59");
+            if (cardDate < cutoff) return false;
+          }
         }
         return true;
       });

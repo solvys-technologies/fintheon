@@ -141,7 +141,7 @@ export function useHermesChat(
     [setConversationId],
   );
 
-  // Harper-Opus routes through dedicated /api/harper/chat for full Fintheon context injection
+  // Harper routes through dedicated /api/harper/chat for full Fintheon context injection
   const isHarperRoute = agentOverride === "harper-cao";
   const chatEndpoint = isHarperRoute
     ? `${API_BASE_URL}/api/harper/chat`
@@ -164,7 +164,7 @@ export function useHermesChat(
       api: chatEndpoint,
       fetch: fetchFn,
       prepareSendMessagesRequest: ({ messages }) => {
-        // Harper-Opus: extract last message + history for harper-handler format
+        // Harper: extract last message + history for harper-handler format
         if (isHarperRoute) {
           const lastUserMsg = [...messages]
             .reverse()
@@ -174,6 +174,12 @@ export function useHermesChat(
               ?.filter((p: any) => p.type === "text")
               .map((p: any) => p.text)
               .join("") || "";
+          // Extract base64 image data URIs from the current message
+          const images: string[] = (lastUserMsg?.parts ?? [])
+            .filter(
+              (p: any) => p.type === "image" && typeof p.image === "string",
+            )
+            .map((p: any) => p.image as string);
           const history = messages.slice(0, -1).map((m) => ({
             role: m.role as "user" | "assistant",
             content:
@@ -195,6 +201,7 @@ export function useHermesChat(
           return {
             body: {
               message: msgText,
+              ...(images.length > 0 && { images }),
               history,
               provider: harperProvider,
               ...(conversationIdRef.current && {

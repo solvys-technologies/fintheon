@@ -304,7 +304,7 @@ function generateMDBReport(): string {
 - **VIX**: Monitoring volatility levels
 
 ### Agent Check-In
-- **Harper-Opus/CAO**: Operational
+- **Harper/CAO**: Operational
 - **Oracle (All-Seer)**: Standing by
 - **Feucht (Futures & Risk)**: Ready for setups
 - **Consul (Fundamentals)**: Tracking mega-caps
@@ -483,7 +483,7 @@ function generateGeneralResponse(
   _message: string,
 ): string {
   const agentName = {
-    "harper-cao": "Harper-Opus (CAO)",
+    "harper-cao": "Harper (CAO)",
     "pma-merged": "Oracle (All-Seer)",
     "futures-desk": "Feucht (Futures & Risk)",
     "fundamentals-desk": "Consul (Fundamentals)",
@@ -515,7 +515,7 @@ export function isHermesAvailable(): boolean {
 
 /** Map HermesAgentRole to display name for thought bank queries */
 const BOARDROOM_AGENT_NAMES: Record<string, string> = {
-  "harper-cao": "Harper-Opus",
+  "harper-cao": "Harper",
   "futures-desk": "Feucht",
   "fundamentals-desk": "Consul",
   "pma-merged": "Oracle",
@@ -543,8 +543,7 @@ export async function handleHermesChat(
   const reflectContext =
     agentInfo.agent === "harper-cao" ? await buildReflectContext() : "";
   // Cross-agent thought bank awareness — what other agents are thinking
-  const agentDisplayName =
-    BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? "Harper-Opus";
+  const agentDisplayName = BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? "Harper";
   const thoughtBankBlock = await buildThoughtBankPromptBlock(agentDisplayName);
   const systemPrompt =
     basePrompt + feedContext + reflectContext + thoughtBankBlock;

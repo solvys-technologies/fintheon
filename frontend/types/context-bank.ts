@@ -6,12 +6,7 @@ export type DeskId =
   | "futures"
   | "pma-merged"
   | "news-sentiment";
-export type AgentName =
-  | "Harper-Opus"
-  | "Oracle"
-  | "Feucht"
-  | "Consul"
-  | "Herald";
+export type AgentName = "Harper" | "Oracle" | "Feucht" | "Consul" | "Herald";
 
 export interface ContextBankSnapshot {
   version: number;

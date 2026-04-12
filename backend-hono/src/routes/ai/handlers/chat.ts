@@ -59,7 +59,7 @@ type FileContentPart =
 function toAgentLabel(agent: HermesAgentRole | string): string {
   switch (agent) {
     case "harper-cao":
-      return "Harper-Opus / CAO";
+      return "Harper / CAO";
     case "pma-merged":
       return "Oracle (All-Seer)";
     case "futures-desk":

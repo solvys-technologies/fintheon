@@ -242,7 +242,7 @@ export function createHarperTools(requestId: string) {
             try {
               const resp = await fetch(input.url, {
                 headers: {
-                  "User-Agent": "Fintheon/Harper-Opus (research agent)",
+                  "User-Agent": "Fintheon/Harper (research agent)",
                 },
                 signal: AbortSignal.timeout(15_000),
               });

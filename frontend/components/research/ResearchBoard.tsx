@@ -14,7 +14,7 @@ const COLUMNS = [
   { key: "complete", label: "Complete", color: "#4ade80" },
 ] as const;
 
-const AGENTS = ["Harper-Opus", "Oracle", "Feucht", "Consul", "Herald"];
+const AGENTS = ["Harper", "Oracle", "Feucht", "Consul", "Herald"];
 
 interface TeamMemberOption {
   id: string;
@@ -224,7 +224,7 @@ export default function ResearchBoard() {
               <option value="">Agent persona...</option>
               {AGENTS.map((a) => (
                 <option key={a} value={a}>
-                  {a}
+                  {a === "Harper" ? "Harper" : a}
                 </option>
               ))}
             </select>

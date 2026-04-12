@@ -162,7 +162,7 @@ const AGENT_TOPICS: Record<string, { keywords: RegExp; description: string }> =
         /fundamental|valuation|earnings|revenue|pe|eps|mega.?cap|large.?cap|balance.?sheet|cashflow|dividend|guidance|margin/i,
       description: "Fundamentals and mega-caps desk",
     },
-    "Harper-Opus": {
+    Harper: {
       keywords:
         /strategy|plan|review|summary|overview|coordination|meeting|agenda/i,
       description: "CAO — executive strategy and oversight",

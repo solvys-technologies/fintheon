@@ -6,7 +6,7 @@ import ApiClient from "../apiClient";
 
 // Boardroom types (mirrors backend boardroom.ts)
 export type BoardroomAgent =
-  | "Harper-Opus"
+  | "Harper"
   | "Oracle"
   | "Feucht"
   | "Consul"

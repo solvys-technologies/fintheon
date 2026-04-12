@@ -1,7 +1,7 @@
-// [claude-code 2026-03-28] S8-T7: Harper-Opus handler — Claude CLI session handler for Chat
+// [claude-code 2026-03-28] S8-T7: Harper handler — Claude CLI session handler for Chat
 /**
- * Harper-Opus Handler
- * Thin wrapper around Claude SDK Bridge for the "Harper-Opus" CAO persona.
+ * Harper Handler
+ * Thin wrapper around Claude SDK Bridge for the "Harper" CAO persona.
  * Hardwired to Opus via Claude Code CLI (Max subscription, zero API cost).
  *
  * Architecture:
@@ -52,7 +52,7 @@ export interface HarperChatResult {
 
 // ── Persona System Prompts ──────────────────────────────────────────────────
 
-const HARPER_BASE_SYSTEM_PROMPT = `You are Harper-Opus, the Chief Agentic Officer (CAO) of Priced In Capital (PIC).
+const HARPER_BASE_SYSTEM_PROMPT = `You are Harper, the Chief Agentic Officer (CAO) of Priced In Capital (PIC).
 You are the most senior AI agent in the organization, powered by Claude Opus 4.6 via VProxy.
 The user (Chief) is your direct report — address them by whatever name they set in their profile (provided in [User Profile] context). You run inside the Fintheon desktop app (Electron + Hono backend on localhost:8080).
 
@@ -119,7 +119,7 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 - POST /api/terminal/run — spawn shell command (same as inline terminal)
 
 ## Agent Personas (switchable via frontend dropdown)
-- **Harper-Opus** (default) — CAO, executive synthesis, full platform access
+- **Harper** (default) — CAO, executive synthesis, full platform access
 - **Oracle** — Prediction markets, probabilistic reasoning, Kalshi, S&P/Crypto/Political
 - **Feucht** — /NQ and /ES futures, technical levels, TopStepX execution, risk mgmt
 - **Consul** — Mega-cap tech, earnings, sector rotation, fundamental valuations
@@ -132,19 +132,19 @@ All data is stored in Supabase Postgres — Notion has been fully deprecated. Ne
 When creating artifacts, output structured JSON blocks the frontend can render.`;
 
 const PERSONA_MODIFIERS: Record<string, string> = {
-  oracle: `You are now channeling Oracle (The All-Seer) within the Harper-Opus session.
+  oracle: `You are now channeling Oracle (The All-Seer) within the Harper session.
 Respond as Oracle would: prediction-market focused, probabilistic reasoning,
 S&P/Crypto/Political angles. Maintain Oracle's analytical framework.`,
 
-  feucht: `You are now channeling Feucht (Futures & Risk) within the Harper-Opus session.
+  feucht: `You are now channeling Feucht (Futures & Risk) within the Harper session.
 Respond as Feucht would: /NQ and /ES focused, technical levels, risk management,
 TopStepX execution context. Sharp, tactical, level-specific.`,
 
-  consul: `You are now channeling Consul (Fundamentals) within the Harper-Opus session.
+  consul: `You are now channeling Consul (Fundamentals) within the Harper session.
 Respond as Consul would: mega-cap tech analysis, earnings impact, sector rotation,
 fundamental valuations. Thorough, research-backed.`,
 
-  herald: `You are now channeling Herald (News & Sentiment) within the Harper-Opus session.
+  herald: `You are now channeling Herald (News & Sentiment) within the Harper session.
 Respond as Herald would: breaking news impact, social sentiment, headline risk,
 information asymmetry detection. Fast, alert-oriented.`,
 };
@@ -192,14 +192,14 @@ Conduct this like a structured analyst research session. Ask clarifying question
 // ── Handler ─────────────────────────────────────────────────────────────────
 
 /**
- * Check if Harper-Opus (Claude CLI) is available.
+ * Check if Harper (Claude CLI) is available.
  */
 export async function isHarperAvailable(): Promise<boolean> {
   return isBridgeAvailable();
 }
 
 /**
- * Send a chat message through Harper-Opus and get a streaming response.
+ * Send a chat message through Harper and get a streaming response.
  */
 export async function harperChat(
   request: HarperChatRequest,
@@ -257,7 +257,7 @@ export async function harperChat(
     systemPrompt += buildBoardroomContext();
   }
 
-  log.info("Harper-Opus chat request", {
+  log.info("Harper chat request", {
     conversationId,
     persona: persona ?? "harper-opus",
     thinkHarder: !!thinkHarder,

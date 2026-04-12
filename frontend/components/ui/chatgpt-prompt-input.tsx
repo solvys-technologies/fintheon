@@ -433,9 +433,11 @@ export function PromptBox({
           className={[
             "relative flex flex-col rounded-2xl border",
             "backdrop-blur-xl",
-            focused || text
-              ? "border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25 shadow-[0_0_24px_rgba(199,159,74,0.12)]"
-              : "border-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/25",
+            focused
+              ? "border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/30 shadow-[0_0_20px_rgba(199,159,74,0.18),0_0_40px_rgba(199,159,74,0.08)]"
+              : text
+                ? "border-[var(--fintheon-accent)]/40 ring-1 ring-[var(--fintheon-accent)]/15 shadow-[0_0_16px_rgba(199,159,74,0.08)]"
+                : "border-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/25",
             disabled ? "opacity-50 pointer-events-none" : "",
             vanishing ? "animate-prompt-vanish" : "",
           ].join(" ")}
@@ -444,7 +446,7 @@ export function PromptBox({
               focused || text
                 ? "linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))"
                 : "transparent",
-            transition: "all 1.3s ease",
+            transition: "all 0.4s ease",
           }}
         >
           {/* Headline chips above textarea */}

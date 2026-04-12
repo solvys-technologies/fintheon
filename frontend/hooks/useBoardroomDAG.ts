@@ -80,6 +80,16 @@ export function useBoardroomDAG(
       : "",
     enabled: sseEnabled,
     reconnect: true,
+    eventNames: [
+      "agent-start",
+      "agent-delta",
+      "agent-complete",
+      "agent-error",
+      "dag-start",
+      "dag-wave",
+      "dag-complete",
+      "dag-error",
+    ],
   });
 
   // Process incoming SSE events
@@ -236,7 +246,7 @@ export function useBoardroomDAG(
   const cancel = useCallback(async () => {
     if (!state.dagId) return;
     try {
-      await fetch(`${API_BASE}/api/dag/${state.dagId}/cancel`, {
+      await fetch(`${API_BASE}/api/boardroom/dag/${state.dagId}/cancel`, {
         method: "POST",
       });
     } catch {

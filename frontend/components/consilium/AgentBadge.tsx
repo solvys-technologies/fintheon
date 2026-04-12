@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 export type BoardroomAgent =
-  | "Harper-Opus"
+  | "Harper"
   | "Oracle"
   | "Feucht"
   | "Consul"
@@ -25,7 +25,7 @@ interface AgentConfig {
 }
 
 const AGENT_MAP: Record<BoardroomAgent, AgentConfig> = {
-  "Harper-Opus": {
+  Harper: {
     label: "Harper",
     role: "CAO",
     icon: Crown,
@@ -87,7 +87,7 @@ export function AgentBadge({
       <div
         className={`relative flex items-center justify-center rounded-full border border-[#c79f4a]/30 bg-[#0a0a00] ${size === "sm" ? "h-6 w-6" : "h-8 w-8"}`}
       >
-        {autonomous && agent === "Harper-Opus" && (
+        {autonomous && agent === "Harper" && (
           <Bot
             size={8}
             className="absolute -top-0.5 -right-0.5 text-emerald-400"
@@ -112,7 +112,7 @@ export function AgentBadge({
 }
 
 export const AGENT_ACCENT_HEX: Record<BoardroomAgent, string> = {
-  "Harper-Opus": "#D4AF37",
+  Harper: "#D4AF37",
   Oracle: "#D4AF37",
   Feucht: "#D4AF37",
   Consul: "#D4AF37",

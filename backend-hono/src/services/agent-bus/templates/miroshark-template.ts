@@ -244,7 +244,7 @@ function buildHarperPrompt(
 ): string {
   const ctx = buildNarrativeContext(lanes, catalysts);
 
-  return `You are Harper-Opus, Chief Agentic Officer of Priced In Capital.
+  return `You are Harper, Chief Agentic Officer of Priced In Capital.
 
 ${ctx}
 ${userInjection ? `\n## User Injection\n${userInjection}\n` : ""}

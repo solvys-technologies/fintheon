@@ -34,7 +34,7 @@ const AGENT_PATTERNS: Array<{
   agent: Exclude<BoardroomAgent, "Unknown">;
   emoji: string;
 }> = [
-  { regex: /harper[-\s]?hermes|harper/i, agent: "Harper-Opus", emoji: "🎩" },
+  { regex: /harper[-\s]?hermes|harper/i, agent: "Harper", emoji: "🎩" },
   { regex: /feucht/i, agent: "Feucht", emoji: "⚡" },
   { regex: /consul/i, agent: "Consul", emoji: "📜" },
   { regex: /oracle/i, agent: "Oracle", emoji: "📊" },
@@ -68,9 +68,9 @@ const inferSender = (
   content: string,
   role: string,
 ): InterventionMessage["sender"] => {
-  if (/harper/i.test(content)) return "Harper-Opus";
+  if (/harper/i.test(content)) return "Harper";
   if (role === "user") return "User";
-  if (role === "assistant") return "Harper-Opus";
+  if (role === "assistant") return "Harper";
   return "Unknown";
 };
 

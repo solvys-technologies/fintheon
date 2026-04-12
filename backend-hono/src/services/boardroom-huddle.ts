@@ -9,7 +9,7 @@ let lastHuddleTime = 0;
 const HUDDLE_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
 const AGENTS: Array<{ role: HermesAgentRole; name: string }> = [
-  { role: "harper-cao", name: "Harper-Opus" },
+  { role: "harper-cao", name: "Harper" },
   { role: "pma-merged", name: "Oracle" },
   { role: "futures-desk", name: "Feucht" },
   { role: "fundamentals-desk", name: "Consul" },
@@ -58,7 +58,7 @@ export async function triggerHuddle(event: FeedItem): Promise<void> {
       agentOverride: "harper-cao",
     });
     await appendToBoardroom(
-      `**Harper-Opus** (Huddle Summary):\n${harperResponse.content}`,
+      `**Harper** (Huddle Summary):\n${harperResponse.content}`,
       "assistant",
     );
   } catch (err) {

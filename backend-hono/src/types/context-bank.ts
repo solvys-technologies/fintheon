@@ -194,12 +194,7 @@ export type DeskId =
   | "futures"
   | "pma-merged"
   | "news-sentiment";
-export type AgentName =
-  | "Harper-Opus"
-  | "Oracle"
-  | "Feucht"
-  | "Consul"
-  | "Herald";
+export type AgentName = "Harper" | "Oracle" | "Feucht" | "Consul" | "Herald";
 
 export const VALID_DESKS: DeskId[] = [
   "fundamentals",
@@ -208,7 +203,7 @@ export const VALID_DESKS: DeskId[] = [
   "news-sentiment",
 ];
 export const VALID_AGENTS: AgentName[] = [
-  "Harper-Opus",
+  "Harper",
   "Oracle",
   "Feucht",
   "Consul",

@@ -9,7 +9,7 @@
  * analysis (stored in the Thought Bank) and posts a brief conversational take
  * to the boardroom.
  *
- * Agent roster: Harper-Opus (CAO), Feucht (Futures), Consul (Fundamentals), Oracle (Quant), Herald (Sentiment)
+ * Agent roster: Harper (CAO), Feucht (Futures), Consul (Fundamentals), Oracle (Quant), Herald (Sentiment)
  */
 
 import { appendToBoardroom } from "./hermes-sessions.js";
@@ -34,7 +34,7 @@ interface AgentStandupConfig {
 }
 
 const BOARDROOM_AGENTS: AgentStandupConfig[] = [
-  { role: "harper-cao", displayName: "Harper-Opus", emoji: "🎩" },
+  { role: "harper-cao", displayName: "Harper", emoji: "🎩" },
   { role: "futures-desk", displayName: "Feucht", emoji: "⚡" },
   { role: "fundamentals-desk", displayName: "Consul", emoji: "📜" },
   { role: "pma-merged", displayName: "Oracle", emoji: "📊" },
@@ -183,7 +183,7 @@ export async function spawnBoardroomStandup(
 
   // Harper opens the standup
   const harper = BOARDROOM_AGENTS[0];
-  const openingMessage = `🎩 **Harper-Opus** — _Opening ${task.replace(/-/g, " ")} at ${timestamp} ET_\n\nAll agents, report in.`;
+  const openingMessage = `🎩 **Harper** — _Opening ${task.replace(/-/g, " ")} at ${timestamp} ET_\n\nAll agents, report in.`;
   await appendToBoardroom(openingMessage, "assistant");
 
   // Spawn Harper first (as moderator)
@@ -389,7 +389,7 @@ export async function spawnBoardroomBroadcast(
   try {
     const { buildThoughtBankPromptBlock } =
       await import("./ai/agent-instructions/thought-bank-awareness.js");
-    thoughtContext = await buildThoughtBankPromptBlock("Harper-Opus");
+    thoughtContext = await buildThoughtBankPromptBlock("Harper");
   } catch {
     /* graceful degradation */
   }

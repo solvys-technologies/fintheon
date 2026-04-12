@@ -3,7 +3,7 @@
 /**
  * Hermes Service
  * Agentic backend layer for Priced In Capital (P.I.C.)
- * Orchestrates AI agents: Harper-Opus (CAO), Oracle (All-Seer), Feucht (Futures & Risk), Consul (Fundamentals), Herald (News)
+ * Orchestrates AI agents: Harper (CAO), Oracle (All-Seer), Feucht (Futures & Risk), Consul (Fundamentals), Herald (News)
  *
  * Architecture: HERMES AGENT → FINTHEON UI → H.E's (Human Executives)
  * Inference: OpenRouter (Nous subscription) + Claude Opus 4.6
@@ -99,7 +99,7 @@ const HERMES_AGENTS: Record<
 > = {
   "harper-cao": {
     role: "harper-cao",
-    displayName: "Harper-Opus / CAO",
+    displayName: "Harper / CAO",
     scope: "Macro oversight, approvals, trade consolidation",
     reportsTo: "human-executives",
   },
@@ -130,7 +130,7 @@ const HERMES_AGENTS: Record<
   },
 };
 
-// Harper-Opus stays on Claude Opus 4.6 (CLI bridge, $0 cost)
+// Harper stays on Claude Opus 4.6 (CLI bridge, $0 cost)
 // Oracle, Feucht, Consul, Herald use Grok 4.20 Fast via OpenRouter
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
   "harper-cao": "anthropic/claude-opus-4.6",

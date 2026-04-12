@@ -107,7 +107,7 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/calibration", createCalibrationRoutes());
   // Predictions — forward-looking instrument outlook from scored items + econ events
   app.route("/api/predictions", predictionsRoutes);
-  // Harper-Opus — Claude CLI chat via SDK bridge (public, local-only)
+  // Harper — Claude CLI chat via SDK bridge (public, local-only)
   app.route("/api/harper", createHarperRoutes());
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
   app.route("/api/harper-ops", createHarperOpsRoutes());

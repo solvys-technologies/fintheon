@@ -16,7 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const AGENT_EMOJIS: Record<string, string> = {
-  "Harper-Opus": "♛",
+  Harper: "♛",
   Oracle: "◎",
   Feucht: "⚡",
   Consul: "⚖",

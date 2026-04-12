@@ -87,7 +87,7 @@ export interface ThoughtBankContext {
 function toAgent(raw: string): AgentName {
   return VALID_AGENTS.includes(raw as AgentName)
     ? (raw as AgentName)
-    : "Harper-Opus";
+    : "Harper";
 }
 
 const VALID_CATEGORIES: ThoughtCategory[] = [

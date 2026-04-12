@@ -1,6 +1,6 @@
 // [claude-code 2026-04-05] Strands Phase 8: Harper routes — streamHarperChat() replaces old CLI bridge + createUIMessageStreamResponse
 /**
- * Harper-Opus Routes
+ * Harper Routes
  * POST /api/harper/chat — streaming SSE chat via Strands agent
  * GET  /api/harper/status — check if VProxy/Strands is available
  */
@@ -60,6 +60,8 @@ export function createHarperRoutes() {
     try {
       const body = await c.req.json<{
         message: string;
+        /** Base64 data-URI images attached to the message */
+        images?: string[];
         conversationId?: string;
         history?: Array<{ role: "user" | "assistant"; content: string }>;
         thinkHarder?: boolean;
@@ -339,7 +341,7 @@ export function createHarperRoutes() {
             : "VProxy Local";
       cognition.step(
         "agent-route",
-        `Harper-Opus (${providerLabel})`,
+        `Harper (${providerLabel})`,
         `Persona: ${body.persona ?? "harper-opus"}`,
       );
       cognition.step(
@@ -351,6 +353,7 @@ export function createHarperRoutes() {
       const response = streamHarperChat(
         {
           message,
+          images: body.images,
           conversationId: conversation.id,
           requestId,
           userId,
@@ -384,7 +387,7 @@ export function createHarperRoutes() {
       cognition.done();
       return c.json(
         {
-          error: "Harper-Opus request failed",
+          error: "Harper request failed",
           details: error instanceof Error ? error.message : String(error),
         },
         500,

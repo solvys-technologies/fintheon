@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-12T00:30:00",
+    agent: "claude-code",
+    summary:
+      "S14-T11: Review + Unify. Fixed critical SSE bug — useAgentBusSSE now uses addEventListener for named events (agent-delta, dag-complete etc) instead of onmessage which silently dropped all DAG stream output. Fixed DAG cancel endpoint URL mismatch (/api/dag/ → /api/boardroom/dag/). Enhanced input bar focus glow (dual-layer shadow, faster transition). Removed duplicate ProviderDropdown from ChatPanel sidebar. Renamed 'Local' to 'VProxy' in provider dropdown. Fixed TimelinePanel 1h/4h filter to use createdAt (full ISO) instead of day-granular date. Purged remaining user-visible 'Harper-Opus' display text (MiroShark panel, ResearchBoard dropdown). Added missing T3 and T7 changelog entries. Deleted dead FintheonChatInput.tsx.",
+    files: [
+      "frontend/hooks/useAgentBusSSE.ts",
+      "frontend/hooks/useBoardroomDAG.ts",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/components/layout/ChatPanel.tsx",
+      "frontend/components/chat/ProviderDropdown.tsx",
+      "frontend/components/narrative/TimelinePanel.tsx",
+      "frontend/components/miroshark/MiroSharkDebatePanel.tsx",
+      "frontend/components/research/ResearchBoard.tsx",
+      "frontend/lib/artifact-parser.ts",
+      "frontend/contexts/SettingsContext.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-11T23:59:00",
     agent: "claude-code",
     summary:
@@ -82,6 +101,17 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-11T19:30:00",
+    agent: "claude-code",
+    summary:
+      "S14-T7: Artifact Parser. Regex-based artifact block extraction from Harper chat responses (```artifact:type fences). TradeProposalCard renders bias badge, entry/stop/target grid, R:R, rationale. Catalyst artifacts auto-dispatch to NarrativeFlow via narrativeDispatch ADD_CATALYST. JSON.parse wrapped in try/catch with skip-on-failure.",
+    files: [
+      "frontend/lib/artifact-parser.ts",
+      "frontend/components/chat/ArtifactCard.tsx",
+      "frontend/components/chat/FintheonThread.tsx",
+    ],
+  },
+  {
     date: "2026-04-11T19:00:00",
     agent: "claude-code",
     summary:
@@ -107,6 +137,17 @@ export const changelog: ChangelogEntry[] = [
       "frontend/components/apparatus/ApparatusMap.tsx",
       "backend-hono/src/services/riskflow/feed-service.ts",
       "backend-hono/src/services/riskflow/feed-poller.ts",
+    ],
+  },
+  {
+    date: "2026-04-11T17:30:00",
+    agent: "claude-code",
+    summary:
+      "S14-T3: Feed Pipeline hardening. Agent Reach scraper fallback when Rettiwt rate limited (8 domains, basic HTML extraction). 3-step fallback chain: Rettiwt search → Agent Reach scrape → Exa neural search. Rate limit detection via consecutive empty poll counter with 5min cooldown. Commentary scraper + scheduled events run on every force refresh regardless of owner status.",
+    files: [
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+      "backend-hono/src/services/riskflow/agent-reach-service.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
     ],
   },
   {

@@ -2,7 +2,7 @@
 // Encodes UIMessageStream events directly as SSE bytes in a single ReadableStream.
 // Avoids pipeThrough(TransformStream) which causes ERR_INCOMPLETE_CHUNKED_ENCODING in Bun.
 // SSE heartbeats every 8s keep the connection alive during long tool-call silences.
-import type { Agent } from "@strands-agents/sdk";
+import type { Agent, ContentBlock } from "@strands-agents/sdk";
 import { createLogger } from "../../lib/logger.js";
 import type { HermesAgentId } from "../agent-bus/types.js";
 
@@ -41,7 +41,7 @@ function sseEncode(event: UIEvent): Uint8Array {
  */
 export function strandsToUIStream(
   agent: Agent,
-  input: string,
+  input: string | ContentBlock[],
   options?: {
     messageId?: string;
     onFinish?: (text: string) => Promise<void>;

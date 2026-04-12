@@ -1,8 +1,10 @@
-// [claude-code 2026-04-05] Harper-Opus agent — Strands-based CAO with tools + streaming + cognition telemetry
+// [claude-code 2026-04-05] Harper agent — Strands-based CAO with tools + streaming + cognition telemetry
 import { createAgent, type HarperProvider } from "../agent-factory.js";
 import { createHarperTools } from "../harper-tools.js";
 import { getAllSolvysTools } from "../skills/index.js";
 import { strandsToUIStream, uiStreamToSSEResponse } from "../stream-adapter.js";
+import { TextBlock, ImageBlock } from "@strands-agents/sdk";
+import type { ContentBlock } from "@strands-agents/sdk";
 import { withCognition } from "../telemetry.js";
 import { createConversationManager } from "../memory-store.js";
 import { getAgentSystemPrompt } from "../../ai/agent-instructions/index.js";
@@ -20,6 +22,8 @@ export interface UserContext {
 
 export interface HarperChatOptions {
   message: string;
+  /** Base64 data-URI images attached to the message (vision support) */
+  images?: string[];
   conversationId: string;
   requestId: string;
   userId?: string;
@@ -34,7 +38,7 @@ export interface HarperChatOptions {
 }
 
 /**
- * Create a Harper-Opus agent instance with tools bound to the request.
+ * Create a Harper agent instance with tools bound to the request.
  * Each chat request gets its own agent + tools for correct approval gating.
  * Optionally wired to DB-backed conversation memory.
  */
@@ -127,7 +131,29 @@ export function streamHarperChat(
     }
   }
 
-  const stream = strandsToUIStream(agent, prompt, {
+  // Build agent input — multipart ContentBlock[] when images are attached, plain string otherwise
+  let agentInput: string | ContentBlock[] = prompt;
+  if (options.images && options.images.length > 0) {
+    const blocks: ContentBlock[] = [new TextBlock(prompt)];
+    for (const dataUri of options.images) {
+      // Parse data URI: "data:image/png;base64,iVBOR..."
+      const match = dataUri.match(
+        /^data:image\/(png|jpeg|gif|webp);base64,(.+)$/,
+      );
+      if (match) {
+        const format = match[1] as "png" | "jpeg" | "gif" | "webp";
+        const bytes = Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0));
+        blocks.push(new ImageBlock({ format, source: { bytes } }));
+      }
+    }
+    agentInput = blocks;
+    log.info("Harper vision request", {
+      requestId,
+      imageCount: options.images.length,
+    });
+  }
+
+  const stream = strandsToUIStream(agent, agentInput, {
     messageId: `harper-${Date.now()}`,
     onFinish: async (text) => {
       cleanupCognition();
