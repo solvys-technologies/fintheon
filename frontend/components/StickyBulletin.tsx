@@ -1,6 +1,7 @@
 // [claude-code 2026-04-10] Sticky Bulletin — personal trade board with 4 sections
 // [claude-code 2026-04-11] v2: Inline Catalyst Watch, Hot Times dropdown, Quick Clock
 // [claude-code 2026-04-11] v3: Extracted hook to useStickyBulletin.ts
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   ClipboardList,
@@ -14,6 +15,7 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
+  GripVertical,
 } from "lucide-react";
 import { useStickyBulletin, DAY_LABELS } from "../hooks/useStickyBulletin";
 
@@ -36,18 +38,74 @@ export function StickyBulletin({
   anchorRef,
 }: StickyBulletinProps) {
   const b = useStickyBulletin(open, anchorRef);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const dragOffset = useRef({ x: 0, y: 0 });
+
+  // Reset drag position when popup reopens
+  useEffect(() => {
+    if (!open) setDragPos(null);
+  }, [open]);
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    const rect = (e.currentTarget as HTMLElement)
+      .closest("[data-bulletin-panel]")
+      ?.getBoundingClientRect();
+    if (rect) {
+      dragOffset.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMove = (e: MouseEvent) => {
+      setDragPos({
+        x: Math.max(
+          0,
+          Math.min(e.clientX - dragOffset.current.x, window.innerWidth - 360),
+        ),
+        y: Math.max(
+          0,
+          Math.min(e.clientY - dragOffset.current.y, window.innerHeight - 100),
+        ),
+      });
+    };
+    const onUp = () => setIsDragging(false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [isDragging]);
 
   if (!open || !b.popupPos) return null;
+
+  const posStyle = dragPos
+    ? {
+        position: "fixed" as const,
+        left: dragPos.x,
+        top: dragPos.y,
+        right: undefined,
+        zIndex: 9998,
+      }
+    : {
+        position: "fixed" as const,
+        top: b.popupPos.top,
+        right: b.popupPos.right,
+        zIndex: 9998,
+      };
 
   return createPortal(
     <div
       ref={b.panelRef}
-      style={{
-        position: "fixed",
-        top: b.popupPos.top,
-        right: b.popupPos.right,
-        zIndex: 9998,
-      }}
+      data-bulletin-panel
+      style={posStyle}
       className="w-[360px] animate-in fade-in slide-in-from-top-2 duration-200"
     >
       <div
@@ -72,6 +130,15 @@ export function StickyBulletin({
           }}
         >
           <div className="flex items-center gap-2">
+            <div
+              onMouseDown={handleDragStart}
+              className="cursor-grab active:cursor-grabbing touch-none"
+            >
+              <GripVertical
+                className="w-3.5 h-3.5"
+                style={{ color: "var(--fintheon-accent)", opacity: 0.4 }}
+              />
+            </div>
             <ClipboardList
               className="w-4 h-4"
               style={{ color: "var(--fintheon-accent)" }}
@@ -83,13 +150,35 @@ export function StickyBulletin({
               Bulletin
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-md hover:bg-white/5 transition-colors"
-            style={{ color: "var(--fintheon-muted)" }}
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {b.showQuickClock && (
+              <button
+                onClick={b.handleQuickClock}
+                className="p-1 rounded-md hover:bg-[var(--fintheon-accent)]/10 transition-all active:scale-90"
+                style={{
+                  color: b.quickClockPulse
+                    ? "var(--fintheon-accent)"
+                    : "var(--fintheon-muted)",
+                }}
+                title="Quick clock antilag"
+              >
+                <Zap
+                  className="w-3.5 h-3.5"
+                  style={{
+                    transform: b.quickClockPulse ? "scale(1.2)" : "scale(1)",
+                    transition: "transform 0.3s ease",
+                  }}
+                />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1 rounded-md hover:bg-white/5 transition-colors"
+              style={{ color: "var(--fintheon-muted)" }}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* Section tabs */}

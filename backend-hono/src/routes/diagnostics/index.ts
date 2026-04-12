@@ -129,7 +129,7 @@ function checkRiskFlowPoller(): ServiceDiagnostic {
 function checkRettiwt(): ServiceDiagnostic {
   if (!isRettiwtAvailable()) {
     return {
-      name: "Rettiwt (X/Twitter)",
+      name: "X Feed",
       status: "unavailable",
       detail: "RETTIWT_AUTH_TOKEN not set",
       fix: "Add RETTIWT_AUTH_TOKEN to backend-hono/.env",
@@ -138,13 +138,13 @@ function checkRettiwt(): ServiceDiagnostic {
   if (isRettiwtRateLimited()) {
     const cooldownSec = Math.round(getRettiwtCooldownMs() / 1000);
     return {
-      name: "Rettiwt (X/Twitter)",
+      name: "X Feed",
       status: "degraded",
       detail: `Rate limited — cooldown ${cooldownSec}s remaining`,
     };
   }
   return {
-    name: "Rettiwt (X/Twitter)",
+    name: "X Feed",
     status: "ok",
     detail: "Token configured",
   };
@@ -220,10 +220,8 @@ export function createDiagnosticsRoutes(): Hono {
     const services = await Promise.all([
       checkHermesAI(),
       checkDatabase(),
-      Promise.resolve(checkRiskFlowPoller()),
       Promise.resolve(checkRettiwt()),
       Promise.resolve(checkSupabaseAuth()),
-      Promise.resolve(checkTradingView()),
     ]);
 
     const missingEnvVars = auditEnvVars();

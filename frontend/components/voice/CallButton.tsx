@@ -29,7 +29,7 @@ export function CallButton() {
     <button
       onClick={handleClick}
       disabled={isConnecting || isDisabled}
-      className={`relative p-2 rounded-lg text-xs font-medium transition-colors ${
+      className={`relative p-1.5 rounded-lg text-xs font-medium transition-colors ${
         isConnected
           ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
           : isDisabled

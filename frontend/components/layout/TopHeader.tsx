@@ -31,6 +31,7 @@ import {
   Bell,
   BellOff,
   ClipboardList,
+  Zap,
 } from "lucide-react";
 import { WhatsNewButton } from "../onboarding/FirstTimeTour";
 import { StickyBulletin } from "../StickyBulletin";
@@ -136,6 +137,24 @@ export function TopHeader({
     left: number;
   } | null>(null);
   const { dndActive, toggleManualDnd, queueCount } = useDND();
+  const [quickClockPulse, setQuickClockPulse] = useState(false);
+  const handleQuickClock = useCallback(async () => {
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const dayOfWeek = now.getDay();
+    setQuickClockPulse(true);
+    setTimeout(() => setQuickClockPulse(false), 600);
+    try {
+      const apiBase = (
+        import.meta.env.VITE_API_URL || "http://localhost:8080"
+      ).replace(/\/$/, "");
+      await fetch(`${apiBase}/api/sticky-bulletin/antilag`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ time, dayOfWeek, instrument: "ES", notes: "" }),
+      });
+    } catch {}
+  }, []);
   useEffect(() => {
     setToolbarOrderState(getToolbarOrder());
   }, []);
@@ -513,6 +532,19 @@ export function TopHeader({
               )}
             </button>
           )}
+          <button
+            onClick={handleQuickClock}
+            className="p-1.5 rounded-lg transition-all text-gray-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 active:scale-90"
+            title="Quick clock antilag"
+            style={{
+              color: quickClockPulse ? "var(--fintheon-accent)" : undefined,
+              background: quickClockPulse
+                ? "color-mix(in srgb, var(--fintheon-accent) 15%, transparent)"
+                : undefined,
+            }}
+          >
+            <Zap className="w-3.5 h-3.5" />
+          </button>
           {voiceRoomWidget}
         </div>
       </div>
