@@ -214,4 +214,103 @@ app.get("/outlook", async (c) => {
   }
 });
 
+// ── Fuzzy matching: find Kalshi market with similar title to Polymarket question ──
+
+function findKalshiMatch(
+  polyQuestion: string,
+  kalshiMarkets: Array<{ ticker: string; title: string; lastPrice: number }>,
+): { ticker: string; title: string; lastPrice: number } | null {
+  if (kalshiMarkets.length === 0) return null;
+
+  const polyLower = polyQuestion.toLowerCase();
+  const keyTerms = polyLower
+    .replace(/will |the |be |by |in |to |of |a |an /g, "")
+    .split(/\s+/)
+    .filter((t) => t.length > 3);
+
+  let bestMatch: (typeof kalshiMarkets)[0] | null = null;
+  let bestScore = 0;
+
+  for (const km of kalshiMarkets) {
+    const kalshiLower = km.title.toLowerCase();
+    let score = 0;
+    for (const term of keyTerms) {
+      if (kalshiLower.includes(term)) score++;
+    }
+    if (score >= 3 && score > bestScore) {
+      bestScore = score;
+      bestMatch = km;
+    }
+  }
+
+  return bestMatch;
+}
+
+// GET /api/predictions/polymarket-outlook
+app.get("/polymarket-outlook", async (c) => {
+  try {
+    const { createPolymarketService } =
+      await import("../services/polymarket-service.js");
+    const polyService = createPolymarketService();
+
+    const polyData = await polyService.getMarkets(undefined, 8);
+
+    // Try to get Kalshi markets for divergence comparison
+    let kalshiMarkets: Array<{
+      ticker: string;
+      title: string;
+      lastPrice: number;
+    }> = [];
+    try {
+      const { createKalshiService } =
+        await import("../services/kalshi-service.js");
+      const kalshiService = createKalshiService();
+      const kalshiData = await kalshiService.getMarkets();
+      kalshiMarkets = kalshiData.markets;
+    } catch {
+      // Kalshi unavailable — skip divergence
+    }
+
+    const markets = polyData.markets.map((m) => {
+      const kalshiMatch = findKalshiMatch(m.question, kalshiMarkets);
+
+      return {
+        slug: m.slug,
+        question: m.question,
+        yesPrice: m.yesPrice,
+        volume: m.volume,
+        category: m.category,
+        closeTime: m.closeTime,
+        kalshiDivergence: kalshiMatch
+          ? {
+              kalshiPrice: kalshiMatch.lastPrice,
+              divergencePct: Math.abs(m.yesPrice - kalshiMatch.lastPrice) * 100,
+              direction:
+                m.yesPrice > kalshiMatch.lastPrice + 0.02
+                  ? ("poly_higher" as const)
+                  : m.yesPrice < kalshiMatch.lastPrice - 0.02
+                    ? ("poly_lower" as const)
+                    : ("aligned" as const),
+            }
+          : undefined,
+      };
+    });
+
+    return c.json({
+      markets,
+      fetchedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("[Predictions] polymarket outlook error:", err);
+    return c.json(
+      {
+        markets: [],
+        fetchedAt: new Date().toISOString(),
+        error: "Fetch failed",
+      },
+      500,
+    );
+  }
+});
+
 export default app;

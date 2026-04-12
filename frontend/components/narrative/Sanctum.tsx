@@ -29,6 +29,7 @@ import { SanctumNarratives } from "./SanctumNarratives";
 import { SanctumRiskAssessment } from "./SanctumRiskAssessment";
 import { AgentScorecard } from "../consilium/AgentScorecard";
 import { AquariumPredictionCards } from "./AquariumPredictionCards";
+import { PolymarketPredictionCards } from "./PolymarketPredictionCards";
 
 interface CatalystInput {
   id: string;
@@ -367,6 +368,16 @@ export function Sanctum({
                 {/* Prediction Cards — 5 instruments */}
                 <div className="flex justify-center">
                   <AquariumPredictionCards />
+                </div>
+
+                {/* Polymarket Prediction Markets */}
+                <div className="mt-1 pt-1 border-t border-[var(--fintheon-border)]/5">
+                  <div className="flex items-center gap-2 px-4 pb-1">
+                    <span className="text-[7px] uppercase tracking-wider text-[var(--fintheon-muted)]/30 font-semibold">
+                      Prediction Markets
+                    </span>
+                  </div>
+                  <PolymarketPredictionCards />
                 </div>
               </div>
 

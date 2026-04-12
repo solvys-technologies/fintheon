@@ -58,12 +58,12 @@ function normalizeMarket(raw: GammaRawMarket): PolymarketMarket {
 
 function normalizeTrade(raw: DataApiRawTrade): PolymarketTrade {
   return {
-    id: raw.id,
-    conditionId: raw.market,
-    side: raw.side === "SELL" ? "NO" : "YES",
-    size: parseFloat(raw.size),
-    price: parseFloat(raw.price),
-    createdAt: raw.created_at,
+    id: raw.transactionHash,
+    conditionId: raw.conditionId,
+    side: raw.outcome === "No" ? "NO" : "YES",
+    size: raw.size,
+    price: raw.price,
+    createdAt: new Date(raw.timestamp * 1000).toISOString(),
   };
 }
 

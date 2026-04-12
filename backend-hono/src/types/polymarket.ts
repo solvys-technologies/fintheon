@@ -38,13 +38,14 @@ export interface GammaRawMarket {
 // ── Raw trade shape (Data API) ──────────────────────────────────────────────
 
 export interface DataApiRawTrade {
-  id: string;
-  market: string; // conditionId
-  side: string; // "BUY" or "SELL" — mapped to YES/NO via asset_id
-  size: string; // numeric string (USDC)
-  price: string; // numeric string 0-1
-  created_at: string; // ISO timestamp
-  asset_id?: string;
+  transactionHash: string;
+  conditionId: string;
+  side: string; // "BUY" or "SELL"
+  size: number; // USDC (number, not string)
+  price: number; // 0-1 (number, not string)
+  timestamp: number; // Unix seconds
+  title?: string;
+  outcome?: string; // "Yes" or "No"
 }
 
 // ── Normalized domain types ─────────────────────────────────────────────────
