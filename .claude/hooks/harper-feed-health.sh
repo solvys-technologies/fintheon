@@ -1,8 +1,9 @@
 #!/bin/bash
 # Harper Feed Health Monitor
+# [claude-code 2026-04-12] Enhanced: checks scorer status + unscored backlog + item age staleness + Twitter 429
 # [claude-code 2026-04-06] Enhanced: checks item age staleness + Twitter 429 rate limit status
 # Runs on Stop event — checks RiskFlow feed health before session ends.
-# Alerts if the feed is empty, stale, poller stopped, or Twitter rate-limited.
+# Alerts if the feed is empty, stale, poller stopped, scorer stopped, backlog rotting, or Twitter rate-limited.
 
 BACKEND_URL="${FINTHEON_BACKEND_URL:-http://localhost:8080}"
 HEALTH_ENDPOINT="$BACKEND_URL/api/diagnostics/feed-health"
@@ -28,6 +29,10 @@ POLLER=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.std
 NEWEST=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('newestItemAge','none'))" 2>/dev/null || echo "none")
 CACHE_AGE_MS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cacheAgeMs',0))" 2>/dev/null || echo "0")
 
+# Parse scorer status + unscored backlog
+SCORER=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('scorerRunning',False))" 2>/dev/null || echo "False")
+UNSCORED=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('unscoredBacklog',0))" 2>/dev/null || echo "0")
+
 # Parse Twitter rate limit status from /sources
 TWITTER_RATE_LIMITED=$(echo "$SOURCES" | python3 -c "import sys,json; print(json.load(sys.stdin).get('twitterRateLimited',False))" 2>/dev/null || echo "False")
 TWITTER_COOLDOWN=$(echo "$SOURCES" | python3 -c "import sys,json; print(json.load(sys.stdin).get('twitterCooldownSec',0))" 2>/dev/null || echo "0")
@@ -47,7 +52,7 @@ except: print('0')
 fi
 
 # Log every check
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] status=$STATUS cache=$CACHE_SIZE poller=$POLLER newest=$NEWEST itemAge=${ITEM_AGE_HOURS}h cacheAge=${CACHE_AGE_MS}ms rateLimited=$TWITTER_RATE_LIMITED" >> "$LOG_FILE"
+echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] status=$STATUS cache=$CACHE_SIZE poller=$POLLER scorer=$SCORER unscored=$UNSCORED newest=$NEWEST itemAge=${ITEM_AGE_HOURS}h cacheAge=${CACHE_AGE_MS}ms rateLimited=$TWITTER_RATE_LIMITED" >> "$LOG_FILE"
 
 # Alert conditions — output to stderr so Claude sees the warning
 if [ "$STATUS" = "empty" ]; then
@@ -66,6 +71,27 @@ elif [ "$STATUS" = "poller_stopped" ]; then
   echo "Cache has $CACHE_SIZE items but no new data is being ingested." >&2
   echo "Action: Restart backend — launchctl unload/load io.solvys.fintheon-backend" >&2
   echo "================================" >&2
+elif [ "$STATUS" = "scorer_stopped" ]; then
+  echo "" >&2
+  echo "=== HARPER SCORER ALERT ===" >&2
+  echo "Central Scorer is NOT RUNNING. Raw items will accumulate unscored." >&2
+  echo "Cache: $CACHE_SIZE | Unscored backlog: $UNSCORED" >&2
+  echo "Action: Check ENABLE_CENTRAL_SCORING=true in backend-hono/.env" >&2
+  echo "  Then restart: launchctl unload/load io.solvys.fintheon-backend" >&2
+  echo "============================" >&2
+fi
+
+# Unscored backlog check — if >50 items rotting, scorer may be stuck or dropping everything
+if [ "$UNSCORED" -gt 50 ] 2>/dev/null; then
+  echo "" >&2
+  echo "=== HARPER SCORING BACKLOG ALERT ===" >&2
+  echo "$UNSCORED unscored items in raw_riskflow_items." >&2
+  echo "Scorer running: $SCORER | Poller: $POLLER" >&2
+  echo "If scorer is running but backlog isn't draining, check:" >&2
+  echo "  1. isScoring mutex stuck (staleness guard should auto-fix after 90s)" >&2
+  echo "  2. Web-scrape filter dropping items without writing to scored table" >&2
+  echo "  3. DB write errors: tail ~/.hermes/logs/fintheon-backend.log | grep 'Scoring'" >&2
+  echo "=====================================" >&2
 fi
 
 # Item age check — if newest item is >2 hours old, feed is effectively dead

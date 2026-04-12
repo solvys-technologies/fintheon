@@ -350,21 +350,56 @@ export function createDiagnosticsRoutes(): Hono {
     }
   });
 
-  // [claude-code 2026-04-05] Feed health endpoint for Harper monitoring hook
-  router.get("/feed-health", (c) => {
+  // [claude-code 2026-04-12] Feed health endpoint for Harper monitoring hook
+  // Extended with scorer status + unscored backlog count for pipeline visibility
+  router.get("/feed-health", async (c) => {
     const health = getFeedHealth();
     const pollerRunning = isPollingActive();
+
+    // Scorer status (lazy import to avoid circular deps)
+    let scorerRunning = false;
+    let unscoredCount = 0;
+    try {
+      const { isCentralScorerRunning } =
+        await import("../../services/riskflow/central-scorer.js");
+      const { readUnscoredItems } =
+        await import("../../services/supabase-service.js");
+      scorerRunning = isCentralScorerRunning();
+      const sample = await readUnscoredItems(1);
+      // Quick count: if sample returns 1, there's backlog. Exact count is expensive.
+      unscoredCount = sample.length > 0 ? sample.length : 0;
+      if (unscoredCount > 0) {
+        // Get a rough count via raw SQL for the hook
+        const { isDatabaseAvailable } =
+          await import("../../config/database.js");
+        const { sql: dbSql } = await import("../../config/database.js");
+        if (isDatabaseAvailable() && dbSql) {
+          const rows = await dbSql`
+            SELECT COUNT(*) AS cnt FROM raw_riskflow_items r
+            WHERE NOT EXISTS (SELECT 1 FROM scored_riskflow_items s WHERE s.tweet_id = r.tweet_id)
+          `;
+          unscoredCount = Number(rows[0]?.cnt ?? 0);
+        }
+      }
+    } catch {
+      // Non-fatal — scorer info is supplementary
+    }
+
     const status =
       health.cacheSize === 0
         ? "empty"
         : !pollerRunning
           ? "poller_stopped"
-          : health.cacheAgeMs > 300_000
-            ? "stale"
-            : "healthy";
+          : !scorerRunning
+            ? "scorer_stopped"
+            : health.cacheAgeMs > 300_000
+              ? "stale"
+              : "healthy";
     return c.json({
       status,
       pollerRunning,
+      scorerRunning,
+      unscoredBacklog: unscoredCount,
       ...health,
       rettiwtPool: getPoolStatus(),
     });
