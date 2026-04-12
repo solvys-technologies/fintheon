@@ -1,4 +1,5 @@
-// [claude-code 2026-04-10] S9-T2: Shared card anatomy for RiskFlow detail + tape variants
+// [claude-code 2026-04-12] S9-T2: Shared card anatomy for RiskFlow detail + tape variants
+// [claude-code 2026-04-12] Added linkifyText — URLs in headlines/summaries are now clickable
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { inferDirection } from "../../lib/riskflow-feed";
@@ -6,6 +7,7 @@ import { SEVERITY_CONFIG } from "../../lib/severity-config";
 import { ivHeatColor } from "../../types/miroshark";
 import { SourceIcon } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
+import { linkifyText } from "../../lib/linkify";
 
 interface AlertCardBaseProps {
   alert: RiskFlowAlert;
@@ -60,11 +62,11 @@ export function AlertCardBase({
                     : "text-zinc-300"
               } group-hover:text-white transition-colors`}
             >
-              {alert.headline}
+              {linkifyText(alert.headline)}
             </p>
             {alert.summary && alert.summary !== alert.headline && (
               <p className="text-[10px] text-zinc-600 line-clamp-1 mt-0.5">
-                {alert.summary}
+                {linkifyText(alert.summary)}
               </p>
             )}
           </div>

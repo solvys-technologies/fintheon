@@ -8,6 +8,7 @@ import { DetailFooter } from "./DetailFooter";
 import { AlertCardBase } from "./AlertCardBase";
 import { YouTubeLogo } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
+import { linkifyText } from "../../lib/linkify";
 
 interface RiskFlowDetailCardProps {
   alert: RiskFlowAlert;
@@ -152,7 +153,7 @@ export function RiskFlowDetailCard({
             {/* 3. Summary (if exists and differs from headline) */}
             {alert.summary && alert.summary !== alert.headline && (
               <p className="text-[11px] text-[var(--fintheon-text)]/70 leading-relaxed mb-3">
-                {alert.summary}
+                {linkifyText(alert.summary)}
               </p>
             )}
 
