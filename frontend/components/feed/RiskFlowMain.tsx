@@ -17,6 +17,7 @@ export function RiskFlowMain() {
     alerts,
     markAllSeen,
     isSeen,
+    removeAlert,
     refresh,
     refreshing,
     loadMore,
