@@ -296,7 +296,7 @@ export function useHermesChat(
         // Replace browser-level network errors with a friendlier message
         if (/failed to fetch|networkerror|load failed/i.test(msg)) {
           setLastError(
-            "Backend unavailable — start it with `cd backend-hono && bun run dev`",
+            "Backend unavailable — run `fintheon start` in Terminal",
           );
         } else {
           setLastError(msg);

@@ -187,10 +187,6 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
         />
         <ServiceLight label="AI" active={presence.services.aiRuntime} />
         <ServiceLight
-          label="Feed"
-          active={presence.services.newsfeedPolling.active && !newsfeedStale}
-        />
-        <ServiceLight
           label="Backend"
           active={presence.services.backendConnection}
         />

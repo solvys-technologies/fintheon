@@ -36,7 +36,7 @@ export function SetupWizard({ visible, onClose }: SetupWizardProps) {
       label: "Backend API",
       description: "Hono server on port 8080",
       status: "checking",
-      command: "cd backend-hono && bun install && bun run dev",
+      command: "fintheon start",
     },
     {
       label: "Hermes / OpenRouter",

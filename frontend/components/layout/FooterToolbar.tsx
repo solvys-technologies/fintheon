@@ -34,7 +34,7 @@ const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
   {
     slug: "start-backend",
     label: "Start backend",
-    command: "cd backend-hono && bun run dev",
+    command: "fintheon start backend",
   },
   { slug: "frontend", label: "Start frontend dev", command: "bunx vite" },
   {
@@ -285,7 +285,7 @@ export function FooterToolbar({
           ...prev,
           {
             type: "output",
-            text: `Backend unavailable — start it with \`cd backend-hono && bun run dev\``,
+            text: `Backend unavailable — start it with \`fintheon start\``,
           },
         ]);
       });

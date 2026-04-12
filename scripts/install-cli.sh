@@ -64,39 +64,61 @@ case "$1" in
     fi
     ;;
   start)
-    echo ""
-    echo "  Starting Fintheon..."
-    echo ""
-
-    # Start backend
-    cd "$FINTHEON_ROOT/backend-hono" || exit 1
-    lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-    sleep 1
-    nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
-    BACKEND_PID=$!
-    echo "  Backend PID: $BACKEND_PID"
-
-    # Wait for health
-    for i in {1..10}; do
-      if curl -s localhost:8080/health > /dev/null 2>&1; then
-        echo "  ✓ Backend is live"
-        break
-      fi
-      sleep 2
-    done
-
-    # Launch app
-    if [[ -d /Applications/Fintheon.app ]]; then
-      open /Applications/Fintheon.app
-      echo "  ✓ Fintheon launched"
+    if [[ "$2" == "backend" ]]; then
+      # Backend-only restart — no app relaunch
+      echo ""
+      echo "  Restarting backend..."
+      cd "$FINTHEON_ROOT/backend-hono" || exit 1
+      lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+      sleep 1
+      nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
+      BACKEND_PID=$!
+      for i in {1..10}; do
+        if curl -s localhost:8080/health > /dev/null 2>&1; then
+          echo "  ✓ Backend live (PID: $BACKEND_PID)"
+          break
+        fi
+        sleep 2
+        if [[ $i -eq 10 ]]; then
+          echo "  ⚠ Backend slow — check: tail -f /tmp/fintheon-backend.log"
+        fi
+      done
+      echo ""
     else
-      echo "  No app found — open http://localhost:5173 in your browser"
-      echo "  Or build the app: cd $FINTHEON_ROOT && npm run desktop:build"
-    fi
+      echo ""
+      echo "  Starting Fintheon..."
+      echo ""
 
-    echo ""
-    echo "  Logs: tail -f /tmp/fintheon-backend.log"
-    echo ""
+      # Start backend
+      cd "$FINTHEON_ROOT/backend-hono" || exit 1
+      lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+      sleep 1
+      nohup bun run src/index.ts > /tmp/fintheon-backend.log 2>&1 &
+      BACKEND_PID=$!
+      echo "  Backend PID: $BACKEND_PID"
+
+      # Wait for health
+      for i in {1..10}; do
+        if curl -s localhost:8080/health > /dev/null 2>&1; then
+          echo "  ✓ Backend is live"
+          break
+        fi
+        sleep 2
+      done
+
+      # Launch app
+      if [[ -d /Applications/Fintheon.app ]]; then
+        open /Applications/Fintheon.app
+        echo "  ✓ Fintheon launched"
+      else
+        echo "  No app found — open http://localhost:5173 in your browser"
+        echo "  Or build the app: cd $FINTHEON_ROOT && npm run desktop:build"
+      fi
+
+      echo ""
+      echo "  Logs: tail -f /tmp/fintheon-backend.log"
+      echo ""
+    fi
     ;;
   stop)
     echo ""
@@ -274,6 +296,7 @@ case "$1" in
     echo ""
     printf "  ${_G}update${_R}    ${_D}Pull latest, rebuild, restart${_R}\n"
     printf "  ${_G}start${_R}     ${_D}Start backend + launch app${_R}\n"
+    printf "  ${_G}start backend${_R}  ${_D}Restart backend only (no app relaunch)${_R}\n"
     printf "  ${_G}stop${_R}      ${_D}Stop everything${_R}\n"
     printf "  ${_G}status${_R}    ${_D}Check if services are running${_R}\n"
     printf "  ${_G}logs${_R}      ${_D}Tail backend logs${_R}\n"

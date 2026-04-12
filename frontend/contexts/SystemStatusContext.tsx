@@ -51,19 +51,15 @@ const POLL_INTERVAL_MS = 30_000;
 const KEY_MAP: Record<string, string> = {
   "Hermes AI (OpenRouter)": "ai",
   Supabase: "database",
-  "RiskFlow Feed Poller": "feed",
-  "Twitter CLI": "x-cli",
+  "X Feed": "x-feed",
   "Supabase Auth": "auth",
-  TradingView: "chart",
 };
 
 const SHORT_NAMES: Record<string, string> = {
   "Hermes AI (OpenRouter)": "AI",
   Supabase: "Database",
-  "RiskFlow Feed Poller": "Feed",
-  "Twitter CLI": "X",
+  "X Feed": "X",
   "Supabase Auth": "Auth",
-  TradingView: "Chart",
 };
 
 function normalizeStatus(s: string): StatusLevel {

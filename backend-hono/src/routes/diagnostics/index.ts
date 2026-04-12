@@ -122,7 +122,7 @@ function checkRiskFlowPoller(): ServiceDiagnostic {
     detail: running ? "Running — 15s poll interval" : "Stopped",
     fix: running
       ? undefined
-      : "Restart the backend server (bun run dev) to re-start the feed poller",
+      : "Run `fintheon start backend` to restart the feed poller",
   };
 }
 

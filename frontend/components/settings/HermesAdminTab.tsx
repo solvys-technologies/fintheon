@@ -76,7 +76,7 @@ export function HermesAdminTab() {
       addToast(
         "Failed to reach diagnostics endpoint",
         "error",
-        "Is the backend running? (cd backend-hono && bun run dev)",
+        "Is the backend running? Run: fintheon start",
       );
     } finally {
       setDiagLoading(false);
@@ -125,7 +125,7 @@ export function HermesAdminTab() {
       ``,
       `### Suggested Approach`,
       `1. Fix missing env vars in \`backend-hono/.env\``,
-      `2. Restart backend: \`cd backend-hono && bun run dev\``,
+      `2. Restart backend: \`fintheon start\``,
       `3. Re-run diagnostics to verify`,
     ].join("\n");
 
