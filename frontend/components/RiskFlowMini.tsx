@@ -24,6 +24,7 @@ import {
   XCircle,
   RefreshCw,
   Loader2,
+  ThumbsDown,
 } from "lucide-react";
 import type { RiskFlowAlert, TradeIdeaDetail } from "../lib/riskflow-feed";
 import { inferDirection } from "../lib/riskflow-feed";
@@ -331,6 +332,7 @@ function AlertRow({
   onToggleExpand,
   onGenerateNote,
   onNavigateToFeed,
+  onNotRelevant,
 }: {
   alert: RiskFlowAlert;
   onMarkSeen: (id: string) => void;
@@ -340,6 +342,7 @@ function AlertRow({
   onToggleExpand: () => void;
   onGenerateNote: (alertId: string) => void;
   onNavigateToFeed?: () => void;
+  onNotRelevant?: (id: string) => void;
 }) {
   const sev = SEVERITY_CONFIG[alert.severity];
   const isHigh = alert.severity === "high" || alert.severity === "critical";
@@ -505,19 +508,34 @@ function AlertRow({
                   )}
                 </div>
               )}
-              {onNavigateToFeed && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onNavigateToFeed();
-                  }}
-                  className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1 ml-2 shrink-0"
-                >
-                  View in RiskFlow
-                  <ChevronRight className="w-3 h-3" />
-                </button>
-              )}
+              <div className="flex items-center gap-1 ml-2 shrink-0">
+                {onNotRelevant && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNotRelevant(alert.id);
+                    }}
+                    title="Not relevant — remove and flag"
+                    className="p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                  >
+                    <ThumbsDown className="w-3 h-3" />
+                  </button>
+                )}
+                {onNavigateToFeed && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNavigateToFeed();
+                    }}
+                    className="text-[10px] text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors flex items-center gap-1"
+                  >
+                    View in RiskFlow
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -687,6 +705,23 @@ export default function RiskFlowMini({
       if (ok) removeAlert(alert.id);
     },
     [backend, removeAlert],
+  );
+
+  const handleNotRelevant = useCallback(
+    async (id: string) => {
+      removeAlert(id);
+      try {
+        const apiBase = (
+          import.meta.env.VITE_API_URL || "http://localhost:8080"
+        ).replace(/\/$/, "");
+        await fetch(`${apiBase}/api/riskflow/${id}/not-relevant`, {
+          method: "POST",
+        });
+      } catch (err) {
+        console.warn("[RiskFlowMini] Not-relevant failed:", err);
+      }
+    },
+    [removeAlert],
   );
 
   const ideaCount = alerts.filter(
@@ -881,6 +916,7 @@ export default function RiskFlowMini({
                     }
                     onGenerateNote={handleGenerateNote}
                     onNavigateToFeed={onNavigateToFeed}
+                    onNotRelevant={handleNotRelevant}
                   />
                 ),
               )

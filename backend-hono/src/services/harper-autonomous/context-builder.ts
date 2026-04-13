@@ -162,6 +162,7 @@ export interface HarperTask {
     | "brief-review"
     | "regime-memo"
     | "consilium-intervention"
+    | "feed-quality-feedback"
     | "manual";
   payload: Record<string, unknown>;
   priority: "low" | "normal" | "high" | "critical";
@@ -243,6 +244,21 @@ Look for patterns in recent scored items.
 4. If new narrative detected, recommend thread creation in Ops feed
 5. Write synthesis to journal`;
 
+    case "feed-quality-feedback":
+      return `## Feed Quality Feedback — User Dismissed Items
+Chief thumbs-downed items from the RiskFlow feed. These are garbage that slipped through the content guard.
+
+${JSON.stringify(task.payload, null, 2)}
+
+Run your feed-quality hook:
+1. Analyze the dismissed headlines — what pattern let them through?
+2. Query riskflow_dismissed_items for recent dismissals: SELECT headline, source, submitted_by, dismissed_at FROM riskflow_dismissed_items ORDER BY dismissed_at DESC LIMIT 20
+3. Identify common patterns: same source? same author? similar phrasing? ad/promo content?
+4. If a content guard rule would catch future instances, write the rule suggestion to Ops feed (severity: warning)
+5. If the items come from a source account that's consistently low-quality, flag it for removal
+6. Tag dismissed items in the DB: UPDATE riskflow_dismissed_items SET tags = array_append(tags, 'harper-reviewed') WHERE dismissed_at > now() - interval '1 hour' AND NOT ('harper-reviewed' = ANY(COALESCE(tags, '{}')))
+7. Write findings to journal`;
+
     case "consilium-intervention":
       return `## Consilium Intervention Required
 Agent disagreement or @Harper mention detected in Boardroom.
@@ -263,18 +279,53 @@ ${task.payload.message ?? JSON.stringify(task.payload)}`;
   }
 }
 
+// ── Dismissed Items Context ────────────────────────────────────────────────
+
+async function getDismissedItemsContext(): Promise<string> {
+  try {
+    const { getSupabaseClient } = await import("../../config/supabase.js");
+    const sb = getSupabaseClient();
+    if (!sb) return "(dismissed items unavailable)";
+
+    const { data } = await sb
+      .from("riskflow_dismissed_items")
+      .select("headline, source, submitted_by, dismissed_at, tags")
+      .order("dismissed_at", { ascending: false })
+      .limit(10);
+
+    if (!data?.length) return "(no recent dismissals)";
+
+    return data
+      .map((d: any) => {
+        const reviewed = d.tags?.includes("harper-reviewed")
+          ? " [reviewed]"
+          : " [pending]";
+        const time = new Date(d.dismissed_at).toLocaleTimeString("en-US", {
+          timeZone: "America/New_York",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        return `- ${time} ET${reviewed}: "${d.headline}" (${d.source ?? "unknown"}, by ${d.submitted_by ?? "user"})`;
+      })
+      .join("\n");
+  } catch {
+    return "(dismissed items unavailable)";
+  }
+}
+
 // ── Main Context Assembly ──────────────────────────────────────────────────
 
 export async function buildAutonomousContext(
   task: HarperTask,
 ): Promise<{ systemPrompt: string; taskPrompt: string }> {
-  const [soulFile, journalEntries, manifest, gitDiff, riskFlow] =
+  const [soulFile, journalEntries, manifest, gitDiff, riskFlow, dismissed] =
     await Promise.all([
       getSoulFile(),
       getRecentEntries(20),
       getCodebaseManifest(),
       Promise.resolve(getRecentGitChanges()),
       getRiskFlowContext(),
+      getDismissedItemsContext(),
     ]);
 
   const journalContext = formatJournalEntries(journalEntries);
@@ -296,7 +347,10 @@ ${gitDiff}
 ${journalContext}
 
 ## [INJECTED] Live RiskFlow Headlines
-${riskFlow}`;
+${riskFlow}
+
+## [INJECTED] Recent Dismissed Items (Feed Quality Feedback)
+${dismissed}`;
 
   return { systemPrompt, taskPrompt };
 }

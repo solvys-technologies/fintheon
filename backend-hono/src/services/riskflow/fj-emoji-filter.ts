@@ -160,6 +160,7 @@ function keywordClassify(text: string): FJClassification {
 
 const BLACKLIST_PATTERNS = [
   /\bFinancialJuice\b/i, // self-promotion / platform mentions
+  /FinancialJuice\s*\|/i, // "FinancialJuice |" ad prefix format
   /financialjuice\.com/i, // links to site
   /\bdownload\b/i, // app promotion
   /\btry\s+(it|our|the)\b/i, // "try our app" etc

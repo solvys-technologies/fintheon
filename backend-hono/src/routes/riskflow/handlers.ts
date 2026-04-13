@@ -1010,6 +1010,24 @@ export async function handleNotRelevant(c: Context) {
     await sb.from("scored_riskflow_items").delete().eq("tweet_id", tweetId);
     await sb.from("raw_riskflow_items").delete().eq("tweet_id", tweetId);
 
+    // Enqueue Harper feed-quality task so she reviews dismissed items on next heartbeat
+    try {
+      const { enqueueTask } =
+        await import("../../services/harper-autonomous/loop-manager.js");
+      enqueueTask({
+        type: "feed-quality-feedback",
+        payload: {
+          dismissedId: tweetId,
+          headline: scored?.headline ?? "(unknown)",
+          source: scored?.source ?? "unknown",
+          submittedBy: scored?.submitted_by ?? "unknown",
+        },
+        priority: "normal",
+      });
+    } catch {
+      // Harper loop may not be running — that's fine, she'll pick up dismissed items on next heartbeat
+    }
+
     return c.json({ ok: true, removed: tweetId });
   } catch (err) {
     return c.json({ error: String(err) }, 500);

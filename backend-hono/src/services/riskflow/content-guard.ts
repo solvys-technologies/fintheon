@@ -105,6 +105,10 @@ const POLITICAL_SPAM_PATTERNS = [
 const MARKET_KEYWORDS =
   /\b(tariff|trade\s+war|sanction|executive\s+order|bill\s+sign|deficit|spending|budget|tax|debt|rate|inflation|CPI|PPI|GDP|NFP|FOMC|Fed\b|Treasury|yield|bond|equity|stock|futures|oil|crude|gold|VIX|earnings|revenue|IPO|merger|acquisition|bankruptcy|default|downgrade|upgrade|PMI|jobless|unemployment|retail\s+sales|housing|consumer|manufacturing|import|export|supply\s+chain|semiconductor|chip|OPEC|barrel|EIA|DOE|refinery|pipeline|LNG|natgas|interest\s+rate|basis\s+point|hike|cut|hawkish|dovish|tightening|easing|QE|QT|balance\s+sheet|repo|liquidity|margin|leverage|short|long|hedge|derivative|swap|option|put|call|strike|expiry|settlement|clearing|regulation|SEC|CFTC|DOJ|antitrust|compliance|stimulus|infrastructure|appropriation|continuing\s+resolution|shutdown|ceiling|sequester|reconciliation|USMCA|NATO|AUKUS|BRICS|G7|G20|IMF|World\s+Bank|WTO|BIS|ceasefire|escalat|de-?escalat|retaliati|mobiliz|airstrike|missile|nuclear|military|deploy|naval|carrier|drone|IRGC|Houthi|Hezbollah|IDF|Pentagon|CENTCOM|strait|blockade|proxy|invasion|annex|occupation|incursion)\b/i;
 
+// ── Platform ad / promo prefixes ───────────────────────────────────────────
+// "FinancialJuice | ..." is their ad/promo format on X. Block at ingestion.
+const PLATFORM_AD_PATTERNS = [/FinancialJuice\s*\|/i, /financialjuice\.com/i];
+
 // ── Emdash rant detection ──────────────────────────────────────────────────
 // Opinion posts separated by emdashes (U+2014) are a common X rant pattern.
 // Block when no market keywords present — legit wire headlines don't use emdashes.
@@ -272,6 +276,13 @@ export interface ContentGuardResult {
  * Call this BEFORE writing to raw_riskflow_items.
  */
 export function checkContentGuard(text: string): ContentGuardResult {
+  // 0. Platform ads / promos — fast reject before anything else
+  for (const pattern of PLATFORM_AD_PATTERNS) {
+    if (pattern.test(text)) {
+      return { blocked: true, reason: "platform-ad" };
+    }
+  }
+
   // 1. Slurs — hardest block
   for (const pattern of SLUR_PATTERNS) {
     if (pattern.test(text)) {

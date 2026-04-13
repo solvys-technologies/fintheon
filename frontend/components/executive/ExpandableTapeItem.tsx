@@ -1,6 +1,12 @@
 // [claude-code 2026-04-10] S9-T2: Refactored to use AlertCardBase — tape variant
 import { useState, useCallback } from "react";
-import { ChevronRight, ExternalLink, Diff, TrendingDown } from "lucide-react";
+import {
+  ChevronRight,
+  ExternalLink,
+  Diff,
+  TrendingDown,
+  ThumbsDown,
+} from "lucide-react";
 import type { RiskFlowAlert, TradeIdeaDetail } from "../../lib/riskflow-feed";
 import { useBackend } from "../../lib/backend";
 import { DetailFooter } from "../feed/DetailFooter";
@@ -15,6 +21,7 @@ interface ExpandableTapeItemProps {
   seen: boolean;
   onOpenIdea: (idea: TradeIdeaDetail) => void;
   onNavigateToFeed?: () => void;
+  onNotRelevant?: (id: string) => void;
 }
 
 export function ExpandableTapeItem({
@@ -25,6 +32,7 @@ export function ExpandableTapeItem({
   seen,
   onOpenIdea,
   onNavigateToFeed,
+  onNotRelevant,
 }: ExpandableTapeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const backend = useBackend();
@@ -218,9 +226,22 @@ export function ExpandableTapeItem({
               </button>
             )}
 
-            {/* View in RiskFlow CTA */}
-            {onNavigateToFeed && (
-              <div className="mt-2 flex justify-end">
+            {/* Footer actions — thumbs down + View in RiskFlow */}
+            <div className="mt-2 flex items-center justify-end gap-1">
+              {onNotRelevant && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNotRelevant(alert.id);
+                  }}
+                  title="Not relevant — remove and flag"
+                  className="p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                >
+                  <ThumbsDown className="w-3 h-3" />
+                </button>
+              )}
+              {onNavigateToFeed && (
                 <button
                   type="button"
                   onClick={(e) => {
@@ -232,8 +253,8 @@ export function ExpandableTapeItem({
                   View in RiskFlow
                   <ChevronRight className="w-3 h-3" />
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* S3: Plain text detail footer — IV, deviation, beat/miss, sub-scores, speaker, regime */}

@@ -30,7 +30,11 @@
       "mcp__browser__playwright",
       "mcp__browser__network_requests",
       "mcp__browser__close",
-      "mcp__claude_ai_Supabase__apply_migration"
+      "mcp__claude_ai_Supabase__apply_migration",
+      "Bash(mkdir -p /Users/tifos/.openclaw/workspace/memory/fintheon-dev-context)",
+      "Bash(cp /Users/tifos/.claude/projects/-Users-tifos-Documents-Codebases-fintheon/memory/feedback_*.md /Users/tifos/.openclaw/workspace/memory/fintheon-dev-context/)",
+      "Bash(cp /Users/tifos/.claude/projects/-Users-tifos-Documents-Codebases-fintheon/memory/project_*.md /Users/tifos/.openclaw/workspace/memory/fintheon-dev-context/)",
+      "Bash(cp /Users/tifos/.claude/projects/-Users-tifos-Documents-Codebases-fintheon/memory/MEMORY.md /Users/tifos/.openclaw/workspace/memory/fintheon-dev-context/)"
     ]
   }
 }
