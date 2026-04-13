@@ -141,6 +141,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       description?: string,
       notificationType?: NotificationType,
       position?: ToastPosition,
+      cta?: { label: string; onClick: () => void },
     ): string => {
       // Skip if this notification type is blocked
       if (notificationType && blockedTypes.includes(notificationType)) {
@@ -155,6 +156,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         description,
         notificationType,
         position: position ?? "bottom-left",
+        cta,
       };
       setToasts((prev) => [...prev, toast]);
 
