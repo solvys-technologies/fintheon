@@ -3,7 +3,7 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { resolve, join } from "path";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { runCommand, isFintheonRunning, waitForHealth } from "./setup-utils";
 
 const ROOT = resolve(import.meta.dir, "..");
@@ -17,9 +17,7 @@ async function main() {
   // Step 1: Check current version (from package.json — matches release tags)
   let currentVersion = "unknown";
   try {
-    const pkg = JSON.parse(
-      require("fs").readFileSync(join(ROOT, "package.json"), "utf-8"),
-    );
+    const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
     currentVersion = pkg.version ?? "unknown";
   } catch {
     /* fallback */
@@ -164,9 +162,7 @@ async function main() {
   let newVersion = "unknown";
   try {
     // Re-read after pull — package.json may have been updated
-    const pkg = JSON.parse(
-      require("fs").readFileSync(join(ROOT, "package.json"), "utf-8"),
-    );
+    const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
     newVersion = pkg.version ?? "unknown";
   } catch {
     /* fallback */
