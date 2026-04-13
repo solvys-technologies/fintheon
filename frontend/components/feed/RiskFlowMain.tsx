@@ -84,7 +84,9 @@ export function RiskFlowMain() {
         const apiBase = (
           import.meta.env.VITE_API_URL || "http://localhost:8080"
         ).replace(/\/$/, "");
-        await fetch(`${apiBase}/api/riskflow/${id}/not-relevant`, {
+        // [claude-code 2026-04-13] Strip backend- prefix so DB lookup matches actual tweet_id
+        const rawId = id.replace(/^backend-/, "");
+        await fetch(`${apiBase}/api/riskflow/${rawId}/not-relevant`, {
           method: "POST",
         });
       } catch (err) {

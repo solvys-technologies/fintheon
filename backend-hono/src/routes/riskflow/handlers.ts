@@ -980,7 +980,8 @@ export async function handleRescore(c: Context) {
 
 /** POST /api/riskflow/:id/not-relevant — remove item + log for learning */
 export async function handleNotRelevant(c: Context) {
-  const tweetId = c.req.param("id");
+  // [claude-code 2026-04-13] Defensive: strip frontend "backend-" prefix if it leaks through
+  const tweetId = c.req.param("id")?.replace(/^backend-/, "") ?? "";
   if (!tweetId) return c.json({ error: "id is required" }, 400);
 
   try {
