@@ -134,7 +134,7 @@ export function AlertCardBase({
               e.stopPropagation();
               onNotRelevant(alert.id);
             }}
-            className="ml-2 hidden group-hover:inline-flex p-0.5 rounded text-zinc-600 hover:text-red-400 transition-colors"
+            className="ml-2 inline-flex p-0.5 rounded text-zinc-600 hover:text-red-400 transition-colors"
             title="Not relevant"
           >
             <ThumbsDown className="w-3 h-3" />

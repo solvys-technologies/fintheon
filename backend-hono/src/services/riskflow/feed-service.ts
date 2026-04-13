@@ -925,6 +925,20 @@ export async function getFeed(
         new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
     );
 
+    // Headline-level dedup — same headline from different pipeline paths (fb-, cs-, rt-)
+    // Keep the first occurrence (highest recency after sort) of each normalized headline
+    const seenHeadlines = new Map<string, number>();
+    items = items.filter((item) => {
+      const key = item.headline
+        .replace(/[\s\n]+/g, " ")
+        .trim()
+        .toLowerCase()
+        .slice(0, 120);
+      if (seenHeadlines.has(key)) return false;
+      seenHeadlines.set(key, 1);
+      return true;
+    });
+
     // Apply pagination (offset + limit)
     const limit = Math.min(filters?.limit ?? MAX_FEED_ITEMS, MAX_FEED_ITEMS);
     const offset = filters?.offset ?? 0;
