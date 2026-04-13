@@ -476,11 +476,11 @@ html *::-webkit-scrollbar {
 }
 
 .fintheon-thinking-container {
-  background-color: var(--fintheon-surface);
+  background-color: transparent;
 }
 
 .fintheon-thinking-container-borderless {
-  background-color: var(--fintheon-surface);
+  background-color: transparent;
 }
 
 .fintheon-thinking-ring {

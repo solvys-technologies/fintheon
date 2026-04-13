@@ -861,12 +861,13 @@ export function ConsiliumHub() {
             </NarrativeProvider>
           )}
 
-          {/* Chat */}
-          {displayedTab === "chat" && (
-            <div className="h-full w-full">
-              <ChatSidebar compact={false} />
-            </div>
-          )}
+          {/* Chat — always mounted so streams survive tab switches */}
+          <div
+            className="h-full w-full"
+            style={{ display: displayedTab === "chat" ? "block" : "none" }}
+          >
+            <ChatSidebar compact={false} />
+          </div>
 
           {/* Imperium sub-views */}
           {displayedTab === "boardroom" && (

@@ -1,7 +1,9 @@
-// [claude-code 2026-04-01] Version check — polls /api/version, fires update-available toast on mismatch
+// [claude-code 2026-04-13] Version check — polls /api/version/check (GitHub releases), not commits
+import pkgJson from "../../package.json";
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-const BUILD_VERSION = import.meta.env.VITE_APP_VERSION || "0.0.0";
+const BUILD_VERSION = pkgJson.version ?? "0.0.0";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let alreadyNotified = false;
@@ -13,12 +15,17 @@ interface VersionCheckCallbacks {
 async function checkOnce(cb: VersionCheckCallbacks) {
   if (alreadyNotified) return;
   try {
-    const res = await fetch(`${API_BASE}/api/version`);
+    const res = await fetch(`${API_BASE}/api/version/check`);
     if (!res.ok) return;
-    const { version } = (await res.json()) as { version: string };
-    if (version && version !== BUILD_VERSION) {
+    const data = (await res.json()) as {
+      current: string;
+      latest: string | null;
+      updateAvailable: boolean;
+    };
+    // Only fire when a newer GitHub RELEASE exists (not just any server version mismatch)
+    if (data.updateAvailable && data.latest) {
       alreadyNotified = true;
-      cb.onUpdateAvailable(version);
+      cb.onUpdateAvailable(data.latest.replace(/^v/, ""));
     }
   } catch {
     // Silently ignore — backend may be offline
@@ -38,3 +45,6 @@ export function stopVersionCheck() {
     intervalId = null;
   }
 }
+
+/** Exported for footer display */
+export { BUILD_VERSION };

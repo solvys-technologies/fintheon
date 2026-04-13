@@ -118,6 +118,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [seenIds, setSeenIds] = useState<Set<string>>(() =>
     loadStoredIds(SEEN_STORAGE_KEY),
   );
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [fetchStatus, setFetchStatus] = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
@@ -373,7 +374,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   ensureScoring(merged, selectedSymbol.symbol);
   // FIX 4: Downgrade non-financial BREAKING headlines
   downgradeNonFinancialBreaking(merged);
-  const visibleAlerts = merged;
+  const visibleAlerts = merged.filter((a) => !dismissedIds.has(a.id));
   const highCount = visibleAlerts.filter(
     (a) => a.severity === "high" || a.severity === "critical",
   ).length;
@@ -401,7 +402,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   }, [mergedIdsKey]);
 
   const removeAlert = useCallback((id: string) => {
-    setSeenIds((prev) => new Set(prev).add(id));
+    setDismissedIds((prev) => new Set(prev).add(id));
   }, []);
 
   const markSeen = useCallback((id: string) => {

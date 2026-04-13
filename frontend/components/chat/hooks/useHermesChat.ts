@@ -37,6 +37,8 @@ export function useHermesChat(
   // [claude-code 2026-03-10] Track requestId from X-Request-Id header for cognition stream
   const [lastRequestId, setLastRequestId] = useState<string | null>(null);
   const hydratedRef = useRef<string | undefined>(undefined);
+  // Abort controller ref — allows stop button to kill the active fetch
+  const abortRef = useRef<AbortController | null>(null);
   // [claude-code 2026-03-13] Ref to avoid stale closure in DefaultChatTransport's prepareSendMessagesRequest
   const thinkHarderRef = useRef(thinkHarder);
   useEffect(() => {
@@ -87,6 +89,7 @@ export function useHermesChat(
 
       // [claude-code 2026-04-05] No timeout for Harper — Strands tool loops can run 10+ minutes
       const controller = new AbortController();
+      abortRef.current = controller;
       const isHarper = agentOverride === "harper-cao";
       const timeoutMs = isHarper ? 0 : 120_000; // No timeout for Harper, 2min for others
       const timeoutId =
@@ -124,7 +127,8 @@ export function useHermesChat(
       } catch (error) {
         if (timeoutId) clearTimeout(timeoutId);
         if (error instanceof DOMException && error.name === "AbortError") {
-          setLastError("Request timed out — please try again.");
+          // User-initiated stop — don't show error
+          setIsStreaming(false);
           throw error;
         }
         if (
@@ -367,6 +371,14 @@ export function useHermesChat(
     };
   }, [conversationId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Hard stop: abort the fetch AND tell useChat to stop processing
+  const hardStop = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    stop();
+    setIsStreaming(false);
+  }, [stop]);
+
   return {
     messages: useChatMessages,
     sendMessage,
@@ -374,7 +386,7 @@ export function useHermesChat(
     setMessages: setUseChatMessages,
     isLoading: isStreaming || status === "streaming" || status === "submitted",
     setIsStreaming,
-    stop,
+    stop: hardStop,
     regenerate,
     resumeStream,
     addToolResult,

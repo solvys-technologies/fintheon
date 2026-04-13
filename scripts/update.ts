@@ -14,17 +14,21 @@ async function main() {
   console.log("");
   p.intro(pc.yellow("Fintheon Update"));
 
-  // Step 1: Check current version
-  const currentVersion = await runCommand(
-    "git",
-    ["describe", "--tags", "--always"],
-    { cwd: ROOT },
-  );
+  // Step 1: Check current version (from package.json — matches release tags)
+  let currentVersion = "unknown";
+  try {
+    const pkg = JSON.parse(
+      require("fs").readFileSync(join(ROOT, "package.json"), "utf-8"),
+    );
+    currentVersion = pkg.version ?? "unknown";
+  } catch {
+    /* fallback */
+  }
   const currentBranch = await runCommand("git", ["branch", "--show-current"], {
     cwd: ROOT,
   });
   p.log.info(
-    `Current: ${pc.dim(currentVersion.stdout.trim())} on ${pc.dim(currentBranch.stdout.trim())}`,
+    `Current: ${pc.yellow(`v${currentVersion}`)} on ${pc.dim(currentBranch.stdout.trim())}`,
   );
 
   // Step 2: Check for uncommitted changes
@@ -156,24 +160,24 @@ async function main() {
     );
   }
 
-  // Step 9: Show new version
-  const newVersion = await runCommand(
-    "git",
-    ["describe", "--tags", "--always"],
-    { cwd: ROOT },
-  );
-  const newLog = await runCommand("git", ["log", "--oneline", "-5"], {
-    cwd: ROOT,
-  });
+  // Step 9: Show new version (from package.json — matches release tags)
+  let newVersion = "unknown";
+  try {
+    // Re-read after pull — package.json may have been updated
+    const pkg = JSON.parse(
+      require("fs").readFileSync(join(ROOT, "package.json"), "utf-8"),
+    );
+    newVersion = pkg.version ?? "unknown";
+  } catch {
+    /* fallback */
+  }
 
   console.log("");
   p.log.success(pc.bold("Update Complete"));
   console.log("");
-  console.log(`  Version: ${pc.yellow(newVersion.stdout.trim())}`);
-  console.log(pc.dim("  Recent commits:"));
-  for (const line of newLog.stdout.trim().split("\n").slice(0, 5)) {
-    console.log(pc.dim(`    ${line}`));
-  }
+  console.log(
+    `  ${pc.dim("Was:")} ${pc.dim(`v${currentVersion}`)}  ${pc.dim("→")}  ${pc.dim("Now:")} ${pc.yellow(`v${newVersion}`)}`,
+  );
   console.log("");
 
   // Unstash if we stashed earlier

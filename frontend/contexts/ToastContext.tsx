@@ -57,6 +57,7 @@ interface ToastContextValue {
     description?: string,
     notificationType?: NotificationType,
     position?: ToastPosition,
+    cta?: { label: string; onClick: () => void },
   ) => string;
   dismissToast: (id: string) => void;
   /** Permanently block a notification type (Don't Show Again) */

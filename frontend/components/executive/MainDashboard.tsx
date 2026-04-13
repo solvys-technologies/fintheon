@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useBackend } from "../../lib/backend";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
+import { useToast } from "../../contexts/ToastContext";
 import { useSchedule } from "../../contexts/ScheduleContext";
 import type { ExecutiveKpi } from "./mockExecutiveData";
 import type { TradeIdeaDetail } from "../../lib/riskflow-feed";
@@ -186,7 +187,27 @@ export function MainDashboard({
   }, [backend]);
 
   // RiskFlow: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
-  const { alerts, markAllSeen, isSeen, refresh, refreshing } = useRiskFlow();
+  const { alerts, markAllSeen, isSeen, refresh, refreshing, removeAlert } =
+    useRiskFlow();
+  const { addToast } = useToast();
+
+  const handleNotRelevant = useCallback(
+    async (id: string) => {
+      removeAlert(id);
+      addToast("Feedback recorded", "success");
+      try {
+        const apiBase = (
+          import.meta.env.VITE_API_URL || "http://localhost:8080"
+        ).replace(/\/$/, "");
+        await fetch(`${apiBase}/api/riskflow/${id}/not-relevant`, {
+          method: "POST",
+        });
+      } catch {
+        /* silent */
+      }
+    },
+    [removeAlert, addToast],
+  );
 
   // [claude-code 2026-03-27] S3: Brief refresh also triggers appwide feed refresh
   const refreshBrief = useCallback(async () => {
@@ -497,6 +518,7 @@ export function MainDashboard({
                             ? () => onNavigateTab("riskflow")
                             : undefined
                         }
+                        onNotRelevant={handleNotRelevant}
                       />
                     );
                   })

@@ -10,6 +10,7 @@
 // [claude-code 2026-03-28] S8-T6: Infinite scroll + toggle, Loader2 for loading state
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useRiskFlow } from "../contexts/RiskFlowContext";
+import { useToast } from "../contexts/ToastContext";
 import {
   Zap,
   ExternalLink,
@@ -626,6 +627,7 @@ export default function RiskFlowMini({
     hasMore,
   } = useRiskFlow();
   const backend = useBackend();
+  const { addToast } = useToast();
   const {
     severityFilter,
     setSeverityFilter,
@@ -714,6 +716,7 @@ export default function RiskFlowMini({
   const handleNotRelevant = useCallback(
     async (id: string) => {
       removeAlert(id);
+      addToast("Feedback recorded", "success");
       try {
         const apiBase = (
           import.meta.env.VITE_API_URL || "http://localhost:8080"
@@ -725,7 +728,7 @@ export default function RiskFlowMini({
         console.warn("[RiskFlowMini] Not-relevant failed:", err);
       }
     },
-    [removeAlert],
+    [removeAlert, addToast],
   );
 
   const ideaCount = alerts.filter(

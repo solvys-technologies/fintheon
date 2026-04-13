@@ -988,20 +988,32 @@ export async function handleNotRelevant(c: Context) {
     const sb = getSupabaseClient();
     if (!sb) return c.json({ error: "Database unavailable" }, 503);
 
-    // Fetch the item before deleting so we can log what was rejected
+    // [claude-code 2026-04-13] Fixed: scored_riskflow_items has scored_by, not submitted_by.
+    // Fetch from scored table first, fall back to raw for submitted_by.
     const { data: scored } = await sb
       .from("scored_riskflow_items")
-      .select("headline, source, tags, submitted_by")
+      .select("headline, source, tags, scored_by")
       .eq("tweet_id", tweetId)
       .single();
 
+    // Also check raw table for submitted_by (original ingestion source)
+    const { data: raw } = await sb
+      .from("raw_riskflow_items")
+      .select("submitted_by, headline")
+      .eq("tweet_id", tweetId)
+      .single();
+
+    const headline = scored?.headline ?? raw?.headline ?? null;
+    const source = scored?.source ?? "unknown";
+    const submittedBy = raw?.submitted_by ?? scored?.scored_by ?? "unknown";
+
     // Log dismissal for learning (append to content guard patterns over time)
-    if (scored?.headline) {
+    if (headline) {
       await sb.from("riskflow_dismissed_items").insert({
         tweet_id: tweetId,
-        headline: scored.headline,
-        source: scored.source,
-        submitted_by: scored.submitted_by,
+        headline,
+        source,
+        submitted_by: submittedBy,
         dismissed_at: new Date().toISOString(),
       });
     }
@@ -1018,9 +1030,9 @@ export async function handleNotRelevant(c: Context) {
         type: "feed-quality-feedback",
         payload: {
           dismissedId: tweetId,
-          headline: scored?.headline ?? "(unknown)",
-          source: scored?.source ?? "unknown",
-          submittedBy: scored?.submitted_by ?? "unknown",
+          headline: headline ?? "(unknown)",
+          source,
+          submittedBy,
         },
         priority: "normal",
       });

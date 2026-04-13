@@ -200,8 +200,8 @@ function ChatSidebarInner({
         lastRequestId={lastRequestId}
         compact={compact}
       />
-      {/* Agent plan / cognition inline in sidebar — shows task progress when streaming */}
-      {lastRequestId && isRunning && (
+      {/* Agent cognition — only in compact/sidebar mode (FintheonThread handles it in full chat) */}
+      {compact && lastRequestId && isRunning && (
         <div className="px-3 pb-2">
           <CognitionPanel requestId={lastRequestId} isStreaming={isRunning} />
         </div>

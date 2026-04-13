@@ -7,6 +7,7 @@ import { Bell, BellOff, RefreshCw, Loader2 } from "lucide-react";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useSourceStatus } from "../../hooks/useSourceStatus";
 import { useBackend } from "../../lib/backend";
+import { useToast } from "../../contexts/ToastContext";
 import { RiskFlowDetailCard } from "./RiskFlowDetailCard";
 
 type PriorityFilter = "all" | "critical" | "high" | "medium" | "low";
@@ -28,6 +29,7 @@ export function RiskFlowMain() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sourceStatus = useSourceStatus();
   const backend = useBackend();
+  const { addToast } = useToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
@@ -77,6 +79,7 @@ export function RiskFlowMain() {
   const handleNotRelevant = useCallback(
     async (id: string) => {
       removeAlert(id);
+      addToast("Feedback recorded", "success");
       try {
         const apiBase = (
           import.meta.env.VITE_API_URL || "http://localhost:8080"
@@ -88,7 +91,7 @@ export function RiskFlowMain() {
         console.warn("[RiskFlow] Not-relevant failed:", err);
       }
     },
-    [removeAlert],
+    [removeAlert, addToast],
   );
 
   const critCount = alerts.filter((a) => a.severity === "critical").length;

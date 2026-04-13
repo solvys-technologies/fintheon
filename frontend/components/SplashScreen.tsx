@@ -108,20 +108,7 @@ export default function SplashScreen({ isReady }: SplashScreenProps) {
               "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
           }}
         >
-          {/* Logo — no app name text */}
-          <img
-            src="./fintheon-logo.png"
-            alt=""
-            style={{
-              width: "80px",
-              height: "80px",
-              objectFit: "contain",
-              opacity: 0.9,
-              filter: "drop-shadow(0 0 12px rgba(199, 159, 74, 0.25))",
-            }}
-          />
-
-          {/* Subtle breathing indicator */}
+          {/* Breathing indicator — clean, no logo */}
           <div
             style={{
               width: "32px",
