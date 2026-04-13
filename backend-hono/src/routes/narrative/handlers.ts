@@ -375,12 +375,14 @@ export async function getCatalysts(c: Context) {
     ).toISOString();
 
     // Fetch promoted scored items with their narrative thread links
+    // Only items with IV >= 5.0 qualify for NarrativeFlow
     let query = sb
       .from("scored_riskflow_items")
       .select(
-        "tweet_id, headline, body, symbols, tags, sentiment, macro_level, published_at, promoted_at, category, status, price_brain_score, risk_type, market_impact, agent_note",
+        "tweet_id, headline, body, symbols, tags, sentiment, iv_score, macro_level, published_at, promoted_at, category, status, price_brain_score, risk_type, market_impact, agent_note",
       )
       .not("promoted_at", "is", null)
+      .gte("iv_score", 5.0)
       .gte("published_at", lookback)
       .order("published_at", { ascending: false })
       .limit(200);

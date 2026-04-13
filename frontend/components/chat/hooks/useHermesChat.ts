@@ -337,9 +337,10 @@ export function useHermesChat(
         );
         if (cancelled) return;
         if (!res.ok) {
-          console.error(
-            `[useHermesChat] Failed to load conversation ${conversationId}: HTTP ${res.status}`,
+          console.warn(
+            `[useHermesChat] Conversation ${conversationId} not found (${res.status}) — starting fresh`,
           );
+          hydratedRef.current = conversationId;
           return;
         }
         const data = await res.json();
