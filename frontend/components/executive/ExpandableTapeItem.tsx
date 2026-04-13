@@ -236,9 +236,13 @@ export function ExpandableTapeItem({
                     onNotRelevant(alert.id);
                   }}
                   title="Not relevant — remove and flag"
-                  className="p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                  className="p-0.5 rounded text-zinc-600 hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100"
+                  style={{
+                    transition:
+                      "opacity 1.2s ease, color 0.2s ease, background-color 0.2s ease",
+                  }}
                 >
-                  <ThumbsDown className="w-3 h-3" />
+                  <ThumbsDown className="w-2.5 h-2.5" />
                 </button>
               )}
               {onNavigateToFeed && (
