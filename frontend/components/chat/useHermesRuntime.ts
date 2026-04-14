@@ -26,6 +26,9 @@ export function useHermesRuntime(
     ...chat,
     id: agentId,
     error: undefined as Error | undefined,
+    stop: async () => {
+      chat.stop();
+    },
   };
   const runtime = useAISDKRuntime(chatHelpers);
 
