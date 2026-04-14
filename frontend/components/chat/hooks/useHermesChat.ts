@@ -181,9 +181,13 @@ export function useHermesChat(
           // Extract base64 image data URIs from the current message
           const images: string[] = (lastUserMsg?.parts ?? [])
             .filter(
-              (p: any) => p.type === "image" && typeof p.image === "string",
+              (p: any) =>
+                (p.type === "image" && typeof p.image === "string") ||
+                (p.type === "file" &&
+                  typeof p.url === "string" &&
+                  p.mediaType?.startsWith("image/")),
             )
-            .map((p: any) => p.image as string);
+            .map((p: any) => (p.image ?? p.url) as string);
           const history = messages.slice(0, -1).map((m) => ({
             role: m.role as "user" | "assistant",
             content:
@@ -251,16 +255,21 @@ export function useHermesChat(
           body: {
             messages: messages.map((msg) => {
               const parts = msg.parts ?? [];
-              const hasImages = parts.some((p: any) => p.type === "image");
+              const isImagePart = (p: any) =>
+                (p.type === "image" && typeof p.image === "string") ||
+                (p.type === "file" &&
+                  typeof p.url === "string" &&
+                  p.mediaType?.startsWith("image/"));
+              const hasImages = parts.some(isImagePart);
               if (hasImages) {
                 const contentParts = parts
-                  .filter((p: any) => p.type === "text" || p.type === "image")
+                  .filter((p: any) => p.type === "text" || isImagePart(p))
                   .map((p: any) =>
                     p.type === "text"
                       ? { type: "text" as const, text: p.text }
                       : {
                           type: "image_url" as const,
-                          image_url: { url: p.image },
+                          image_url: { url: p.image ?? p.url },
                         },
                   );
                 return { role: msg.role, content: contentParts };

@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-14T12:00:00",
+    agent: "claude-code",
+    summary:
+      "Fix image vision in AskHarp chat: assistant-ui transforms image parts to {type:'file', url, mediaType} but extraction looked for {type:'image', image}. Fixed in Harper/Hermes send paths and UI render. Added click-to-expand lightbox for attached images.",
+    files: [
+      "frontend/components/chat/hooks/useHermesChat.ts",
+      "frontend/components/chat/FintheonThread.tsx",
+    ],
+  },
+  {
     date: "2026-04-13T00:00:00",
     agent: "claude-code",
     summary:

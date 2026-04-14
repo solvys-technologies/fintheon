@@ -9,6 +9,8 @@ import {
   useRef,
   useEffect,
   useCallback,
+  createContext,
+  useContext,
 } from "react";
 import { ThreadPrimitive, useMessage, useThread } from "@assistant-ui/react";
 import ReactMarkdown from "react-markdown";
@@ -189,6 +191,27 @@ const FintheonReasoningPart: FC<{ text: string }> = ({ text }) => {
 };
 
 /* ------------------------------------------------------------------ */
+/*  Image lightbox context                                              */
+/* ------------------------------------------------------------------ */
+
+const ImageLightboxCtx = createContext<(src: string) => void>(() => {});
+
+const ClickableImage: FC<{ src: string; className?: string }> = ({
+  src,
+  className,
+}) => {
+  const expand = useContext(ImageLightboxCtx);
+  return (
+    <img
+      src={src}
+      alt="Attached"
+      className={`cursor-pointer hover:opacity-80 transition-opacity ${className ?? ""}`}
+      onClick={() => expand(src)}
+    />
+  );
+};
+
+/* ------------------------------------------------------------------ */
 /*  User message                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -205,8 +228,14 @@ const FintheonUserMessage: FC = () => {
     .map((p: any) => p.text)
     .join("\n");
   const images = parts
-    .filter((p: any) => p.type === "image" && typeof p.image === "string")
-    .map((p: any) => p.image as string);
+    .filter(
+      (p: any) =>
+        (p.type === "image" && typeof p.image === "string") ||
+        (p.type === "file" &&
+          typeof p.url === "string" &&
+          p.mediaType?.startsWith("image/")),
+    )
+    .map((p: any) => (p.image ?? p.url) as string);
 
   return (
     <div className="group/msg flex flex-col items-end animate-fade-slide-in">
@@ -218,10 +247,9 @@ const FintheonUserMessage: FC = () => {
             </p>
           )}
           {images.map((src, i) => (
-            <img
+            <ClickableImage
               key={i}
               src={src}
-              alt="Attached"
               className="mt-2 rounded-lg max-w-full max-h-64 object-contain border border-white/10"
             />
           ))}
@@ -436,8 +464,14 @@ function extractImages(msg: any): string[] {
   const parts = msg.content ?? msg.parts ?? [];
   if (!Array.isArray(parts)) return [];
   return parts
-    .filter((p: any) => p.type === "image" && typeof p.image === "string")
-    .map((p: any) => p.image as string);
+    .filter(
+      (p: any) =>
+        (p.type === "image" && typeof p.image === "string") ||
+        (p.type === "file" &&
+          typeof p.url === "string" &&
+          p.mediaType?.startsWith("image/")),
+    )
+    .map((p: any) => (p.image ?? p.url) as string);
 }
 
 const DirectUserMessage: FC<{ msg: any }> = ({ msg }) => {
@@ -452,10 +486,9 @@ const DirectUserMessage: FC<{ msg: any }> = ({ msg }) => {
           </p>
         )}
         {images.map((src, i) => (
-          <img
+          <ClickableImage
             key={i}
             src={src}
-            alt="Attached"
             className="mt-2 rounded-lg max-w-full max-h-64 object-contain border border-white/10"
           />
         ))}
@@ -531,88 +564,110 @@ export function FintheonThread({
   // which caused flicker/disappearance due to assistant-ui reconciliation issues
   const messages = useThread((s) => s.messages);
 
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
   return (
-    <ThreadPrimitive.Root className="flex-1 flex flex-col min-h-0 relative">
-      <ThreadPrimitive.Viewport
-        ref={viewportRef as any}
-        className="flex-1 overflow-y-auto p-6 pb-8"
-      >
-        <div className="max-w-full mx-auto space-y-4 mb-8">
-          {/* Greeting screen — shown when thread is empty */}
-          {!compact && messages.length === 0 && (
-            <ChatGreeting onSend={onSend} isLoading={isLoading} />
-          )}
-          {/* Sidebar compact greeting */}
-          {compact && messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <p className="text-sm text-[var(--fintheon-accent)]/60 font-medium">
-                Ave, Trader.
-              </p>
-              <p className="text-[11px] text-zinc-600 mt-1">
-                Quick dispatch from the Forum.
-              </p>
-            </div>
-          )}
-
-          {/* Message list — rendered directly from thread store */}
-          {messages.map((msg: any) => {
-            if (msg.role === "user") {
-              return <DirectUserMessage key={msg.id} msg={msg} />;
-            }
-            if (msg.role === "assistant") {
-              return (
-                <DirectAssistantMessage
-                  key={msg.id}
-                  msg={msg}
-                  agentName={agentName ?? activeAgent?.name}
-                  onTakeNote={onTakeNote}
-                />
-              );
-            }
-            return null;
-          })}
-
-          {/* Thinking indicator — shown while streaming */}
-          <ThreadPrimitive.If running>
-            <div className="flex justify-start items-center">
-              <FintheonThinkingIndicator
-                isThinking
-                agentName={agentName ?? activeAgent?.name}
-              />
-            </div>
-          </ThreadPrimitive.If>
-
-          {/* Agent cognition panel — shows live pipeline steps */}
-          {lastRequestId && !compact && (
-            <CognitionPanel requestId={lastRequestId} isStreaming={isLoading} />
-          )}
-
-          {/* Tool approval cards — inline approve/deny for Harper tool calls */}
-          {approvals.map((a) => (
-            <ToolApprovalCard
-              key={a.approvalId}
-              approval={a}
-              onApprove={(id) => sendDecision(id, "approved")}
-              onDeny={(id) => sendDecision(id, "denied")}
-            />
-          ))}
-
-          {/* Error banner — visible in thread, not just input area */}
-          {lastError && !isLoading && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/8 px-4 py-3 animate-fade-slide-in">
-              <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs text-red-300 leading-relaxed">
-                  {lastError}
+    <ImageLightboxCtx.Provider value={setLightboxSrc}>
+      <ThreadPrimitive.Root className="flex-1 flex flex-col min-h-0 relative">
+        <ThreadPrimitive.Viewport
+          ref={viewportRef as any}
+          className="flex-1 overflow-y-auto p-6 pb-8"
+        >
+          <div className="max-w-full mx-auto space-y-4 mb-8">
+            {/* Greeting screen — shown when thread is empty */}
+            {!compact && messages.length === 0 && (
+              <ChatGreeting onSend={onSend} isLoading={isLoading} />
+            )}
+            {/* Sidebar compact greeting */}
+            {compact && messages.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <p className="text-sm text-[var(--fintheon-accent)]/60 font-medium">
+                  Ave, Trader.
+                </p>
+                <p className="text-[11px] text-zinc-600 mt-1">
+                  Quick dispatch from the Forum.
                 </p>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Scroll-to-bottom sentinel + button */}
-          <ScrollToBottomButton containerRef={viewportRef} />
+            {/* Message list — rendered directly from thread store */}
+            {messages.map((msg: any) => {
+              if (msg.role === "user") {
+                return <DirectUserMessage key={msg.id} msg={msg} />;
+              }
+              if (msg.role === "assistant") {
+                return (
+                  <DirectAssistantMessage
+                    key={msg.id}
+                    msg={msg}
+                    agentName={agentName ?? activeAgent?.name}
+                    onTakeNote={onTakeNote}
+                  />
+                );
+              }
+              return null;
+            })}
+
+            {/* Thinking indicator — shown while streaming */}
+            <ThreadPrimitive.If running>
+              <div className="flex justify-start items-center">
+                <FintheonThinkingIndicator
+                  isThinking
+                  agentName={agentName ?? activeAgent?.name}
+                />
+              </div>
+            </ThreadPrimitive.If>
+
+            {/* Agent cognition panel — shows live pipeline steps */}
+            {lastRequestId && !compact && (
+              <CognitionPanel
+                requestId={lastRequestId}
+                isStreaming={isLoading}
+              />
+            )}
+
+            {/* Tool approval cards — inline approve/deny for Harper tool calls */}
+            {approvals.map((a) => (
+              <ToolApprovalCard
+                key={a.approvalId}
+                approval={a}
+                onApprove={(id) => sendDecision(id, "approved")}
+                onDeny={(id) => sendDecision(id, "denied")}
+              />
+            ))}
+
+            {/* Error banner — visible in thread, not just input area */}
+            {lastError && !isLoading && (
+              <div className="flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/8 px-4 py-3 animate-fade-slide-in">
+                <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs text-red-300 leading-relaxed">
+                    {lastError}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Scroll-to-bottom sentinel + button */}
+            <ScrollToBottomButton containerRef={viewportRef} />
+          </div>
+        </ThreadPrimitive.Viewport>
+      </ThreadPrimitive.Root>
+
+      {/* Image lightbox overlay */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-zoom-out"
+          onClick={() => setLightboxSrc(null)}
+        >
+          <img
+            src={lightboxSrc}
+            alt="Expanded"
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
-      </ThreadPrimitive.Viewport>
-    </ThreadPrimitive.Root>
+      )}
+    </ImageLightboxCtx.Provider>
   );
 }
