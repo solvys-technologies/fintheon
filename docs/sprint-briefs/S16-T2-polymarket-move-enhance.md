@@ -1,8 +1,8 @@
-# Task Brief: S16-T2 — Move Polymarket to Page 2 + Visual Overhaul + Remove Theses
+# Task Brief: S16-T2 — Polymarket Card Visual Overhaul
 
 **Date:** 2026-04-15
-**Scope:** Remove Top Volatile Theses row, move PolymarketPredictionCards from Page 0 to Page 2 bottom, enhance cards with FUSE scores, severity borders, and expanded details.
-**Estimated files:** 4
+**Scope:** Enhance PolymarketPredictionCards with FUSE scores, severity borders, expanded details, price delta, and full-width grid layout for Page 2. Do NOT touch Sanctum.tsx — wiring handled by T6 unification.
+**Estimated files:** 2
 **Repo root:** `~/Documents/Codebases/fintheon`
 **Working directory:** `~/Documents/Codebases/fintheon`
 

@@ -1,4 +1,7 @@
-// [claude-code 2026-03-23] Source of Truth fusion — modular prompt composition + capability awareness injection
+// [claude-code 2026-04-15] S16-T1: Persona files, context bank memories, rich scored catalysts
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { homedir } from "node:os";
 import type { HermesAgentRole } from "../../hermes-service.js";
 import { BASE_PROMPTS } from "./base-prompts.js";
 import { SHARED_BELIEFS } from "./shared-beliefs.js";
@@ -8,11 +11,52 @@ import {
   DEEP_ANALYSIS_BLOCK,
 } from "./skill-instructions.js";
 import { getCommandmentGates } from "./commandment-gates.js";
+import { getSupabaseClient } from "../../config/supabase.js";
 
 /** Cache entry for compiled prompts */
 type CacheEntry = { prompt: string; expiresAt: number };
 const promptCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/** Persona file cache (same TTL pattern) */
+const personaCache = new Map<string, CacheEntry>();
+const PERSONA_DIR = join(
+  homedir(),
+  ".hermes",
+  "memories",
+  "harper-handoff",
+  "agent-personas",
+);
+
+const ROLE_TO_PERSONA_FILE: Record<string, string> = {
+  "harper-cao": "harper.md",
+  "pma-merged": "oracle.md",
+  "futures-desk": "feucht.md",
+  "fundamentals-desk": "horace.md",
+  herald: "herald.md",
+};
+
+async function loadPersonaFile(role: HermesAgentRole): Promise<string> {
+  const fileName = ROLE_TO_PERSONA_FILE[role];
+  if (!fileName) return "";
+
+  const cached = personaCache.get(role);
+  if (cached && cached.expiresAt > Date.now()) return cached.prompt;
+
+  try {
+    const content = await readFile(join(PERSONA_DIR, fileName), "utf-8");
+    personaCache.set(role, {
+      prompt: content,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    });
+    return content;
+  } catch {
+    console.warn(
+      `[AgentInstructions] Persona file not found for ${role}: ${fileName}`,
+    );
+    return "";
+  }
+}
 
 /**
  * Capability awareness block — tells agents what data and tools they have access to.
