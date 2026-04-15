@@ -149,6 +149,15 @@ export function FooterToolbar({
   } | null>(null);
 
   const { fetchStatus, refreshing } = useRiskFlow();
+
+  // Listen for update-installing event from VersionChecker
+  const [updateInstalling, setUpdateInstalling] = useState(false);
+  useEffect(() => {
+    const handler = () => setUpdateInstalling(true);
+    window.addEventListener("fintheon:update-installing", handler);
+    return () =>
+      window.removeEventListener("fintheon:update-installing", handler);
+  }, []);
   const isElectron =
     typeof window !== "undefined" && window.electron?.runShellCommand != null;
   const slashFilter = cliInput.startsWith("/")
@@ -885,6 +894,19 @@ export function FooterToolbar({
         )}
 
         {/* S14-T6: Peers toggle removed — team status is in footer Team tab */}
+
+        {/* Update installing status */}
+        {updateInstalling && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="h-1.5 w-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
+            <span className="text-[9px] tracking-[0.15em] uppercase text-[var(--fintheon-accent)]/70 font-medium">
+              Installing update...
+            </span>
+          </div>
+        )}
+        {updateInstalling && (
+          <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
+        )}
 
         {/* Fetch status — shows during refresh or polling */}
         {fetchStatus && (

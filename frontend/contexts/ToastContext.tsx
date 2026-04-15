@@ -161,8 +161,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       };
       setToasts((prev) => [...prev, toast]);
 
-      // Auto-dismiss (except 'updating' which stays until manually dismissed)
-      if (variant !== "updating") {
+      // Auto-dismiss (except 'updating' and toasts with CTAs which stay until manually dismissed)
+      if (variant !== "updating" && !cta) {
         const delay =
           variant === "error"
             ? 2500

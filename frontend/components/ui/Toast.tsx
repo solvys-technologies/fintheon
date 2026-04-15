@@ -131,6 +131,7 @@ function ToastItem({
                   onClick={(e) => {
                     e.stopPropagation();
                     toast.cta!.onClick();
+                    onDismiss(toast.id);
                   }}
                   className="mt-1 rounded px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors"
                   style={{

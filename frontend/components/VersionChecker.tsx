@@ -18,6 +18,10 @@ export function VersionChecker() {
           {
             label: "Install Now",
             onClick: () => {
+              // Signal footer to show update status
+              window.dispatchEvent(
+                new CustomEvent("fintheon:update-installing"),
+              );
               // Electron: trigger auto-updater install
               if (window.electron?.installUpdate) {
                 window.electron.installUpdate();
