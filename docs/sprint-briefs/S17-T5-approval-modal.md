@@ -1,10 +1,10 @@
-# Task Brief: S15-T5 — In-App Approval Modal + Cognition Stream
+# Task Brief: S17-T5 — In-App Approval Modal + Cognition Stream
 
 **Date:** 2026-04-15
 **Scope:** Replace iOS/system permission popups with in-app approval modals across all Fintheon interfaces. Desktop already has `ToolApprovalCard.tsx` + `useToolApprovals.ts`; unify and enhance with "Approve All" session memory. Mobile gets new matching components + cognition stream hook. Backend relay gets tool-decision forwarding.
 **Estimated files:** 5 (2 new mobile + 3 modified backend/desktop/mobile)
 **Phase:** 2 (After T0 completes; can run alongside T4)
-**Dependencies:** S15-T0 (Zustand store with approval state, relay requestId exposure, relay sendCommand)
+**Dependencies:** S17-T0 (Zustand store with approval state, relay requestId exposure, relay sendCommand)
 **Applies to:** Desktop frontend (update existing) + Mobile (new components) + Backend relay
 
 ## Project Memory (READ FIRST)
@@ -248,7 +248,7 @@ cd frontend && bun run build  # or npx vite build
 {
   date: '2026-04-15T00:00:00',
   agent: 'claude-code',
-  summary: 'S15-T5: In-app approval modals with Approve All session memory — unified desktop + mobile, cognition stream via relay, tool-decision forwarding',
+  summary: 'S17-T5: In-app approval modals with Approve All session memory — unified desktop + mobile, cognition stream via relay, tool-decision forwarding',
   files: ['mobile/hooks/useCognitionStream.ts', 'mobile/components/chat/ApprovalModal.tsx', 'frontend/components/chat/ToolApprovalCard.tsx', 'backend-hono/src/services/relay-connector.ts', 'backend-hono/src/services/relay-bridge.ts', 'mobile/stores/useChatStore.ts']
 }
 ```

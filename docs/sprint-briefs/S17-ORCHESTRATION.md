@@ -1,6 +1,6 @@
-# S15 — Chat UX Overhaul: Stop, Queue, Approvals, Tool Panes, Thinking
+# S17 — Chat UX Overhaul: Stop, Queue, Approvals, Tool Panes, Thinking
 
-**Sprint:** S15
+**Sprint:** S17
 **Date:** 2026-04-15
 **Owner:** TP (Chief)
 **Tracks:** 6 (T0-T5)
@@ -19,22 +19,22 @@ Bring Fintheon's chat experience to parity with Claude Code / Codex: functional 
 
 | Track  | Brief                                                                | Description                                                 | Est. Files |
 | ------ | -------------------------------------------------------------------- | ----------------------------------------------------------- | ---------- |
-| **T0** | [S15-T0-foundation-store-relay.md](S15-T0-foundation-store-relay.md) | Zustand chat store + relay requestId exposure + sendCommand | 4          |
+| **T0** | [S17-T0-foundation-store-relay.md](S17-T0-foundation-store-relay.md) | Zustand chat store + relay requestId exposure + sendCommand | 4          |
 
 ### Phase 1 — Independent Features (Parallel, after T0)
 
 | Track  | Brief                                                  | Description                                         | Est. Files |
 | ------ | ------------------------------------------------------ | --------------------------------------------------- | ---------- |
-| **T1** | [S15-T1-stop-button.md](S15-T1-stop-button.md)         | Stop request button (animated send/stop swap)       | 2          |
-| **T2** | [S15-T2-thinking-stream.md](S15-T2-thinking-stream.md) | Thinking indicator (pulsing dot + phrases + expand) | 3          |
-| **T3** | [S15-T3-tool-panes.md](S15-T3-tool-panes.md)           | Tool call streaming panes (collapsible peek cards)  | 4          |
+| **T1** | [S17-T1-stop-button.md](S17-T1-stop-button.md)         | Stop request button (animated send/stop swap)       | 2          |
+| **T2** | [S17-T2-thinking-stream.md](S17-T2-thinking-stream.md) | Thinking indicator (pulsing dot + phrases + expand) | 3          |
+| **T3** | [S17-T3-tool-panes.md](S17-T3-tool-panes.md)           | Tool call streaming panes (collapsible peek cards)  | 4          |
 
 ### Phase 2 — Complex Features (Parallel, after T0; T4 can start after T1)
 
 | Track  | Brief                                                | Description                                            | Est. Files |
 | ------ | ---------------------------------------------------- | ------------------------------------------------------ | ---------- |
-| **T4** | [S15-T4-queue-popover.md](S15-T4-queue-popover.md)   | Codex-style message queue (drag reorder, auto-drain)   | 4          |
-| **T5** | [S15-T5-approval-modal.md](S15-T5-approval-modal.md) | In-app approval modal + cognition stream + Approve All | 5          |
+| **T4** | [S17-T4-queue-popover.md](S17-T4-queue-popover.md)   | Codex-style message queue (drag reorder, auto-drain)   | 4          |
+| **T5** | [S17-T5-approval-modal.md](S17-T5-approval-modal.md) | In-app approval modal + cognition stream + Approve All | 5          |
 
 ---
 
@@ -136,7 +136,7 @@ cd mobile && bun run dev
 
 After all tracks complete and integration tests pass:
 
-1. Update `src/lib/changelog.ts` with S15 summary
+1. Update `src/lib/changelog.ts` with S17 summary
 2. Run `/solvys-ship` for commit + push + DMG rebuild
 3. Tag release with version bump
 4. Update MEMORY.md with any new feedback/patterns discovered

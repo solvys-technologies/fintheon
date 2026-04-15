@@ -1,4 +1,4 @@
-# Task Brief: S15-T0 — Foundation: Zustand Chat Store + Relay requestId Exposure
+# Task Brief: S17-T0 — Foundation: Zustand Chat Store + Relay requestId Exposure
 
 **Date:** 2026-04-15
 **Scope:** Extract all chat state into a shared Zustand store (consumed by both Main chat and AskHarp sidebar across desktop and mobile), and expose `requestId` from the relay bridge so all clients can subscribe to cognition events.

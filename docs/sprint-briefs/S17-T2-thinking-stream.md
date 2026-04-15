@@ -1,10 +1,10 @@
-# Task Brief: S15-T2 — Thinking/Reasoning Stream Indicator
+# Task Brief: S17-T2 — Thinking/Reasoning Stream Indicator
 
 **Date:** 2026-04-15
 **Scope:** Unified thinking indicator across all Fintheon chat interfaces — pulsing dot + rotating phrases with expandable reasoning content. Desktop already has `FintheonThinkingIndicator.tsx`; update it to match the new UX (remove "Agent Mind" label, make dot/phrase clickable to toggle). Mobile gets a new matching component.
 **Estimated files:** 3 (1 new mobile + 2 modified desktop/mobile)
 **Phase:** 1 (Parallel — can run alongside T1, T3 after T0 completes)
-**Dependencies:** S15-T0 (Zustand store with thinking state fields + extended SSE parser)
+**Dependencies:** S17-T0 (Zustand store with thinking state fields + extended SSE parser)
 **Applies to:** Desktop frontend (update existing) + Mobile (new component)
 
 ## Project Memory (READ FIRST)

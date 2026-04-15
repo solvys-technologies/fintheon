@@ -1,10 +1,10 @@
-# Task Brief: S15-T1 — Stop Request Button
+# Task Brief: S17-T1 — Stop Request Button
 
 **Date:** 2026-04-15
 **Scope:** Add a functional stop/cancel button to ALL chat input bars (desktop FintheonComposer + mobile ChatInput) that aborts the active SSE stream.
 **Estimated files:** 2 modified (desktop + mobile input components)
 **Phase:** 1 (Parallel — can run alongside T2, T3 after T0 completes)
-**Dependencies:** S15-T0 (Zustand store with `abort()` action)
+**Dependencies:** S17-T0 (Zustand store with `abort()` action)
 **Applies to:** Desktop frontend + Mobile — both chat interfaces
 
 ## Project Memory (READ FIRST)

@@ -1,10 +1,10 @@
-# Task Brief: S15-T3 — Tool Call Streaming Panes
+# Task Brief: S17-T3 — Tool Call Streaming Panes
 
 **Date:** 2026-04-15
 **Scope:** Unified tool call panes across all Fintheon chat interfaces — collapsible execution cards showing tool name, duration, and expandable input/output (Claude Code-style command peek). Desktop already has `ToolOutputsPeek.tsx` + `ToolOutputBubble.tsx`; ensure they match new collapsed-by-default UX. Mobile gets new matching components.
 **Estimated files:** 4 (2 new mobile + 2 modified)
 **Phase:** 1 (Parallel — can run alongside T1, T2 after T0 completes)
-**Dependencies:** S15-T0 (Zustand store with `activeToolCalls` array + step tracking in SSE parser)
+**Dependencies:** S17-T0 (Zustand store with `activeToolCalls` array + step tracking in SSE parser)
 **Applies to:** Desktop frontend (verify/update existing) + Mobile (new components)
 
 ## Project Memory (READ FIRST)

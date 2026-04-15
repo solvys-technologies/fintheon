@@ -1,10 +1,10 @@
-# Task Brief: S15-T4 — Message Queue Popover (Codex-Style)
+# Task Brief: S17-T4 — Message Queue Popover (Codex-Style)
 
 **Date:** 2026-04-15
 **Scope:** Codex-style message queue UI across all Fintheon chat interfaces — a top-border popover above the input bar showing queued messages with drag-to-reorder and remove. Desktop already has `MessageQueue.tsx` (edit/remove); update it to match new Codex-inspired drag UX. Mobile gets a new matching component.
 **Estimated files:** 4 (1 new mobile + 3 modified desktop/mobile/store)
 **Phase:** 2 (After T0 completes; can run alongside T5)
-**Dependencies:** S15-T0 (Zustand store with queue state + auto-drain), S15-T1 (stop button determines input bar state during loading)
+**Dependencies:** S17-T0 (Zustand store with queue state + auto-drain), S17-T1 (stop button determines input bar state during loading)
 **Applies to:** Desktop frontend (update existing MessageQueue.tsx) + Mobile (new QueuePopover.tsx)
 
 ## Project Memory (READ FIRST)
@@ -171,7 +171,7 @@ cd frontend && bun run build  # or npx vite build
 {
   date: '2026-04-15T00:00:00',
   agent: 'claude-code',
-  summary: 'S15-T4: Codex-style message queue — drag-to-reorder popover above input bar, auto-drain on response complete, unified desktop + mobile',
+  summary: 'S17-T4: Codex-style message queue — drag-to-reorder popover above input bar, auto-drain on response complete, unified desktop + mobile',
   files: ['mobile/components/chat/QueuePopover.tsx', 'frontend/components/chat/MessageQueue.tsx', 'mobile/components/chat/ChatInput.tsx', 'mobile/stores/useChatStore.ts', 'mobile/components/chat/ChatPage.tsx']
 }
 ```
