@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 
 type RelayState = "connected" | "reconnecting" | "offline";
 
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  "https://pulse-api-withered-dust-1394.fly.dev";
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 const DOT_COLORS: Record<RelayState, string> = {
   connected: "var(--success)",

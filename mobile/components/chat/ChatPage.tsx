@@ -10,9 +10,7 @@ import ChatInput from "./ChatInput";
 import ConnectionStatus, { type RelayState } from "./ConnectionStatus";
 import SessionList, { type ChatSession } from "./SessionList";
 
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  "https://pulse-api-withered-dust-1394.fly.dev";
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 interface ChatPageProps {
   visible: boolean;
