@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────
+   Nothing x Fintheon Design Tokens
+   OLED black (#000000) base, monochrome industrial, Solvys Gold accent
+   ────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Nothing Color System ── */
+  --black: #000000;
+  --surface: #0a0a0a;
+  --surface-raised: #141414;
+  --border: #1a1a1a;
+  --border-visible: #2a2a2a;
+  --text-disabled: #4a4a4a;
+  --text-secondary: #8a8a8a;
+  --text-primary: #e0e0e0;
+  --text-display: #ffffff;
+  --accent: #d4af37;
+  --accent-subtle: rgba(212, 175, 55, 0.12);
+  --success: #34d399;
+  --warning: #d4a843;
+  --error: #ef4444;
+  --interactive: #5b9bf6;
+
+  /* ── Typography Scale ── */
+  --display-xl: 2.5rem / 1.1 -0.03em;
+  --display-lg: 2rem / 1.15 -0.025em;
+  --display-md: 1.5rem / 1.2 -0.02em;
+  --heading-lg: 1.25rem / 1.3 -0.015em;
+  --heading-md: 1.125rem / 1.35 -0.01em;
+  --body-lg: 1rem / 1.5 0;
+  --body-md: 0.875rem / 1.5 0.005em;
+  --body-sm: 0.8125rem / 1.5 0.01em;
+  --label: 0.6875rem / 1.4 0.06em;
+
+  /* ── Font Families ── */
+  --font-display: "Doto", monospace;
+  --font-body: "Space Grotesk", sans-serif;
+  --font-data: "Space Mono", monospace;
+
+  /* ── Spacing Scale ── */
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
+
+  /* ── Motion ── */
+  --ease-nothing: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --duration-micro: 150ms;
+  --duration-transition: 300ms;
+
+  /* ── Fintheon Legacy Tokens (shared component compatibility) ── */
+  --fintheon-accent: #d4af37;
+  --fintheon-bg: #050402;
+  --fintheon-text: #f0ead6;
+  --fintheon-bullish: #34d399;
+  --fintheon-bearish: #ef4444;
+  --fintheon-surface: #0a0a00;
+  --fintheon-border: #d4af37;
+  --fintheon-muted: #6b7280;
+  --fintheon-glass-bg: color-mix(
+    in srgb,
+    var(--fintheon-surface) 55%,
+    transparent
+  );
+  --fintheon-glass-border: color-mix(
+    in srgb,
+    var(--fintheon-accent) 16%,
+    transparent
+  );
+  --fintheon-glass-highlight: color-mix(
+    in srgb,
+    var(--fintheon-accent) 6%,
+    transparent
+  );
+  --fintheon-glass-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 color-mix(in srgb, white 6%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, white 2%, transparent);
+  --fintheon-severe: #ef4444;
+  --fintheon-neutral-severe: #f59e0b;
+  --fintheon-neutral: #6b7280;
+  --fintheon-low-neutral: #3b82f6;
+  --fintheon-low: #34d399;
+}
+
+/* ── Global Base ── */
+body {
+  background: var(--black);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar Hiding (match frontend) ── */
+html *,
+html *::before,
+html *::after {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+html *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* ── Dot-Matrix Grid Utility ── */
+.dot-grid {
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ── Safe Area Padding (notch devices) ── */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

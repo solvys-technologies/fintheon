@@ -9,6 +9,96 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T23:45:00",
+    agent: "claude-code",
+    summary:
+      "T4: Home page with daily briefing card, QuickStats instrument row, MiniRegimeTracker with Doto countdown, native MiniSessionCalendar, shared BottomSheet/SurfaceCard/SegmentedBar components",
+    files: [
+      "mobile/components/home/HomePage.tsx",
+      "mobile/components/home/BriefingCard.tsx",
+      "mobile/components/home/QuickStatsRow.tsx",
+      "mobile/components/home/MiniRegimeTracker.tsx",
+      "mobile/components/home/MiniSessionCalendar.tsx",
+      "mobile/components/shared/SurfaceCard.tsx",
+      "mobile/components/shared/BottomSheet.tsx",
+      "mobile/components/shared/SegmentedBar.tsx",
+      "mobile/hooks/useBriefing.ts",
+      "mobile/hooks/useRegimeTracker.ts",
+      "mobile/hooks/useEconCalendar.ts",
+      "mobile/App.tsx",
+    ],
+  },
+  {
+    date: "2026-04-15T23:30:00",
+    agent: "claude-code",
+    summary:
+      "T5: Mobile RiskFlow with Nothing-style card feed, pill filter bar, infinite scroll, pull-to-refresh with segmented bar, swipe-to-dismiss, inline card expansion",
+    files: [
+      "mobile/contexts/RiskFlowContext.tsx",
+      "mobile/components/riskflow/RiskFlowPage.tsx",
+      "mobile/components/riskflow/RiskFlowFilterBar.tsx",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/riskflow/RiskFlowCardExpanded.tsx",
+      "mobile/components/shared/PullToRefresh.tsx",
+      "mobile/components/shared/SwipeAction.tsx",
+      "mobile/components/shared/SeverityBadge.tsx",
+      "mobile/components/shared/SurfaceCard.tsx",
+      "mobile/components/shared/SegmentedBar.tsx",
+      "mobile/hooks/useRiskFlowInfiniteScroll.ts",
+      "mobile/hooks/useRiskFlowFilters.ts",
+    ],
+  },
+  {
+    date: "2026-04-15T23:00:00",
+    agent: "claude-code",
+    summary:
+      "T3: Mobile shell with Nothing-style bottom tabs, expandable VIX toolbar (Doto font), StickyBulletin expander, hamburger menu with Harper refresh",
+    files: [
+      "mobile/components/layout/MobileShell.tsx",
+      "mobile/components/layout/BottomTabBar.tsx",
+      "mobile/components/layout/MobileToolbar.tsx",
+      "mobile/components/layout/ToolbarExpanded.tsx",
+      "mobile/components/layout/HamburgerMenu.tsx",
+      "mobile/components/shared/VixBadge.tsx",
+      "mobile/hooks/useVixTicker.ts",
+      "mobile/hooks/useSwipeGesture.ts",
+      "mobile/hooks/useStickyBulletin.ts",
+      "mobile/App.tsx",
+    ],
+  },
+  {
+    date: "2026-04-15T22:00:00",
+    agent: "claude-code",
+    summary:
+      "T2: Auth + session persistence + theme/settings/status contexts for Fintheon Mobile, imports all 10 color presets + 4 font themes from frontend, dual CSS var mapping (Fintheon + Nothing tokens)",
+    files: [
+      "mobile/contexts/AuthContext.tsx",
+      "mobile/contexts/ThemeContext.tsx",
+      "mobile/contexts/SettingsContext.tsx",
+      "mobile/contexts/ToastContext.tsx",
+      "mobile/lib/backend.ts",
+      "mobile/App.tsx",
+      "mobile/vite-env.d.ts",
+    ],
+  },
+  {
+    date: "2026-04-15T21:00:00",
+    agent: "claude-code",
+    summary:
+      "T1: Scaffold /mobile/ directory with Vite 6 + React 19 + Tailwind CSS 4, Nothing x Fintheon design tokens, PWA manifest, Vercel deployment config",
+    files: [
+      "mobile/package.json",
+      "mobile/tsconfig.json",
+      "mobile/vite.config.ts",
+      "mobile/vercel.json",
+      "mobile/index.html",
+      "mobile/main.tsx",
+      "mobile/App.tsx",
+      "mobile/index.css",
+      "mobile/manifest.json",
+    ],
+  },
+  {
     date: "2026-04-15T19:00:00",
     agent: "claude-code",
     summary:

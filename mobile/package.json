@@ -1,0 +1,35 @@
+{
+  "name": "fintheon-mobile",
+  "version": "1.0.0",
+  "type": "module",
+  "packageManager": "bun",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.100.0",
+    "@tailwindcss/vite": "^4.1.11",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.35.2",
+    "lucide-react": "^0.484.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.1.11",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@tailwindcss/oxide": "^4.1.11",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "lightningcss": "^1.29.2",
+    "typescript": "^5.8.3",
+    "vite": "^6.2.5"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  }
+}
