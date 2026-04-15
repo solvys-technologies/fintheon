@@ -17,7 +17,7 @@ interface TradingRegime {
   confidence: number;
   record: { bullishDays: number; bearishDays: number };
   daysObserved: number;
-  /** Valid values: continuation, reversal, convergence, consolidation, rotation, neutral */
+  /** Valid values: continuation, reversal, convergence, consolidation, rotation */
   bias: string;
   source?: string;
   instruments: string[];
@@ -99,7 +99,7 @@ const SEED_REGIMES: TradingRegime[] = [
     confidence: 70,
     record: { bullishDays: 30, bearishDays: 13 },
     daysObserved: 43,
-    bias: "neutral",
+    bias: "consolidation",
     instruments: ["/NQ", "/ES"],
   },
   {
@@ -114,7 +114,7 @@ const SEED_REGIMES: TradingRegime[] = [
     confidence: 68,
     record: { bullishDays: 27, bearishDays: 12 },
     daysObserved: 39,
-    bias: "neutral",
+    bias: "consolidation",
     instruments: ["/NQ", "/ES", "/MNQ"],
   },
   {
@@ -128,7 +128,7 @@ const SEED_REGIMES: TradingRegime[] = [
     confidence: 75,
     record: { bullishDays: 38, bearishDays: 12 },
     daysObserved: 50,
-    bias: "neutral",
+    bias: "consolidation",
     instruments: ["/NQ", "/ES", "/MNQ"],
   },
   {
@@ -143,7 +143,7 @@ const SEED_REGIMES: TradingRegime[] = [
     confidence: 80,
     record: { bullishDays: 8, bearishDays: 2 },
     daysObserved: 10,
-    bias: "neutral",
+    bias: "consolidation",
     instruments: ["/NQ", "/ES", "/MNQ"],
     notes: "Only on FOMC meeting dates",
   },
