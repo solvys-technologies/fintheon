@@ -1,6 +1,4 @@
 // [claude-code 2026-04-15] T7: Service worker for web push notifications
-/// <reference lib="webworker" />
-declare const self: ServiceWorkerGlobalScope;
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -12,13 +10,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  const { title, body, category, url, icon } = event.data.json() as {
-    title: string;
-    body: string;
-    category: string;
-    url?: string;
-    icon?: string;
-  };
+  const { title, body, category, url, icon } = event.data.json();
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
@@ -32,7 +24,7 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data?.url as string) || "/";
+  const url = event.notification.data?.url || "/";
   event.waitUntil(
     self.clients.matchAll({ type: "window" }).then((clients) => {
       for (const client of clients) {

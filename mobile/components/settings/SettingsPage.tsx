@@ -107,7 +107,7 @@ export function SettingsPage() {
     availableThemes,
     availableFonts,
   } = useTheme();
-  const { user, email, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const push = usePushNotifications();
   const [masterEnabled, setMasterEnabled] = useState(push.isSubscribed);
 
@@ -127,7 +127,10 @@ export function SettingsPage() {
     (key: "riskflow" | "dailyBrief" | "regimeActivations") => {
       const updated = { ...notifPrefs, [key]: !notifPrefs[key] };
       updateSettings({ notificationPrefs: updated });
-      if (push.isSubscribed) push.syncCategories(updated);
+      if (push.isSubscribed) {
+        const { severityThreshold: _, ...cats } = updated;
+        push.syncCategories(cats);
+      }
     },
     [notifPrefs, updateSettings, push],
   );
@@ -137,7 +140,10 @@ export function SettingsPage() {
       const value = SEVERITY_VALUES[idx];
       const updated = { ...notifPrefs, severityThreshold: value };
       updateSettings({ notificationPrefs: updated });
-      if (push.isSubscribed) push.syncCategories(updated, value);
+      if (push.isSubscribed) {
+        const { severityThreshold: _, ...cats } = updated;
+        push.syncCategories(cats, value);
+      }
     },
     [notifPrefs, updateSettings, push],
   );
@@ -360,7 +366,7 @@ export function SettingsPage() {
                     ? "1px solid var(--accent, #D4AF37)"
                     : "1px solid var(--border-visible)",
                 color: "var(--text-primary)",
-                fontFamily: f.heading,
+                fontFamily: f.fontHeading,
                 fontSize: 14,
                 cursor: "pointer",
                 borderRadius: 6,
@@ -384,7 +390,7 @@ export function SettingsPage() {
             marginBottom: 4,
           }}
         >
-          {email || "Not signed in"}
+          {user?.email || "Not signed in"}
         </div>
         <button
           onClick={signOut}

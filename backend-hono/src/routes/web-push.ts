@@ -1,18 +1,23 @@
 // [claude-code 2026-04-15] T7: Web push subscription management endpoints
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { sql, isDatabaseAvailable } from "../config/database.js";
 import { sendToUser } from "../services/web-push-sender.js";
 import { createLogger } from "../lib/logger.js";
 
 const log = createLogger("WebPush");
 
+function getUserId(c: Context): string | null {
+  const userId = c.get("userId") as string | undefined;
+  return userId && userId !== "anonymous" ? userId : null;
+}
+
 export function createWebPushRoutes(): Hono {
   const router = new Hono();
 
   // POST /subscribe — register push subscription
   router.post("/subscribe", async (c) => {
-    const userId = c.get("userId") as string | undefined;
-    if (!userId || userId === "anonymous") {
+    const userId = getUserId(c);
+    if (!userId) {
       return c.json({ error: "Auth required" }, 401);
     }
     if (!isDatabaseAvailable()) {
@@ -39,8 +44,8 @@ export function createWebPushRoutes(): Hono {
 
   // DELETE /unsubscribe — remove push subscription
   router.delete("/unsubscribe", async (c) => {
-    const userId = c.get("userId") as string | undefined;
-    if (!userId || userId === "anonymous") {
+    const userId = getUserId(c);
+    if (!userId) {
       return c.json({ error: "Auth required" }, 401);
     }
     const { endpoint } = await c.req.json<{ endpoint: string }>();
@@ -51,8 +56,8 @@ export function createWebPushRoutes(): Hono {
 
   // PATCH /preferences — update categories + severity threshold
   router.patch("/preferences", async (c) => {
-    const userId = c.get("userId") as string | undefined;
-    if (!userId || userId === "anonymous") {
+    const userId = getUserId(c);
+    if (!userId) {
       return c.json({ error: "Auth required" }, 401);
     }
     const { categories, severityThreshold } = await c.req.json<{
@@ -79,8 +84,8 @@ export function createWebPushRoutes(): Hono {
 
   // POST /test — send test notification
   router.post("/test", async (c) => {
-    const userId = c.get("userId") as string | undefined;
-    if (!userId || userId === "anonymous") {
+    const userId = getUserId(c);
+    if (!userId) {
       return c.json({ error: "Auth required" }, 401);
     }
     try {

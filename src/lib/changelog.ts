@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T18:00:00",
+    agent: "claude-code",
+    summary:
+      "T7: Web Push notifications — service worker, VAPID auth, multi-category toggles (RiskFlow/Brief/Regimes), backend subscription storage + sender, scorer push trigger, Nothing-style settings UI",
+    files: [
+      "mobile/public/sw.js",
+      "mobile/lib/push.ts",
+      "mobile/hooks/usePushNotifications.ts",
+      "mobile/components/settings/SettingsPage.tsx",
+      "supabase/migrations/20260415_web_push_subscriptions.sql",
+      "backend-hono/src/routes/web-push.ts",
+      "backend-hono/src/services/web-push-sender.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/routes/index.ts",
+    ],
+  },
+  {
     date: "2026-04-16T00:30:00",
     agent: "claude-code",
     summary:

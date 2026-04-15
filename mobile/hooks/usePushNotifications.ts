@@ -35,7 +35,8 @@ export function usePushNotifications() {
     try {
       const token = await getAccessToken();
       if (!token) return;
-      const ok = await subscribeToPush(token, settings.notificationPrefs);
+      const { severityThreshold: _, ...cats } = settings.notificationPrefs;
+      const ok = await subscribeToPush(token, cats);
       setIsSubscribed(ok);
       setPermissionStatus(getPermissionStatus());
     } finally {
