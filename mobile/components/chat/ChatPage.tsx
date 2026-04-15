@@ -189,7 +189,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
           justifyContent: "space-between",
           padding: "12px 16px",
           paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
-          borderBottom: "1px solid var(--border)",
+          borderBottom: "none",
         }}
       >
         <span
@@ -288,20 +288,11 @@ export default function ChatPage({ visible }: ChatPageProps) {
         ))}
       </div>
 
-      {/* Queue popover — sits above input bar */}
-      <QueuePopover
-        queue={queuedMessages}
-        onRemove={dequeue}
-        onReorder={reorderQueue}
-      />
-
       {/* Input */}
       <ChatInput
-        onSend={handleSend}
-        onStop={() => useChatStore.getState().abort()}
+        onSend={sendMessage}
         isLoading={isLoading}
         disabled={isOffline}
-        queueCount={queuedMessages.length}
       />
 
       {/* Session list bottom sheet */}
