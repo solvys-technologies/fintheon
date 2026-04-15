@@ -60,6 +60,7 @@ import { createMcpRoutes } from "./mcp/index.js";
 import { createDagRoutes } from "./dag/index.js";
 import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
+import { createWebPushRoutes } from "./web-push.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -186,6 +187,11 @@ export function registerRoutes(app: Hono): void {
 
   // Phase 2: Notification routes
   app.route("/api/notifications", createNotificationRoutes());
+
+  // Web push subscription management (T7)
+  app.use("/api/notifications/web-push", authMiddleware, requireAuth);
+  app.use("/api/notifications/web-push/*", authMiddleware, requireAuth);
+  app.route("/api/notifications/web-push", createWebPushRoutes());
 
   // Phase 2: Trading routes
   app.route("/api/trading", createTradingRoutes());

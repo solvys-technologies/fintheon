@@ -15,6 +15,16 @@ export default defineConfig({
     minify: process.env.NODE_ENV === "production",
     sourcemap: true,
     outDir: "dist",
+    rollupOptions: {
+      input: {
+        main: "index.html",
+        sw: "sw.ts",
+      },
+      output: {
+        entryFileNames: (chunk) =>
+          chunk.name === "sw" ? "sw.js" : "assets/[name]-[hash].js",
+      },
+    },
   },
   base: "/",
   server: {

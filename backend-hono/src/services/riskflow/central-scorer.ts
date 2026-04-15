@@ -781,6 +781,35 @@ export async function scoringCycle(): Promise<number> {
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
 
+    // ── Push notifications for high-severity items ──────────────────────────
+    // [claude-code 2026-04-15] T7: Fire web push for Critical/High items. Never blocks scoring.
+    try {
+      const highItems = enrichedItems.filter(
+        (i) => i.macroLevel && i.macroLevel >= 3,
+      );
+      if (highItems.length > 0) {
+        const { sendToAllUsers } = await import("../web-push-sender.js");
+        for (const item of highItems) {
+          const severity = item.macroLevel === 4 ? "critical" : "high";
+          sendToAllUsers(
+            {
+              title: `[RISKFLOW] ${item.headline || "Alert"}`,
+              body:
+                (item as any).summary || item.headline?.substring(0, 100) || "",
+              category: "riskflow",
+              url: "/riskflow",
+            },
+            severity,
+          ).catch(() => {});
+        }
+        log.info(
+          `Queued push notifications for ${highItems.length} high-severity items`,
+        );
+      }
+    } catch {
+      /* web-push not configured — skip silently */
+    }
+
     // ── Auto-purge zero-IV items older than 1 hour ─────────────────────────
     // [claude-code 2026-04-15] S16-T5: Zero-IV items are noise (content-guard blocked,
     // dismissed-pattern matches, narrative gate drops). Purge stale ones to keep the feed clean.
