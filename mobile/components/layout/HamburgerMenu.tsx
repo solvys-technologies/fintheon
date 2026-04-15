@@ -1,17 +1,29 @@
-// [claude-code 2026-04-15] T3: Bottom sheet hamburger menu — Harper refresh, session, sign out, about
+// [claude-code 2026-04-15] S18: Header menu — section nav + Harper refresh, session, sign out
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
-import { getMobileBackend } from "../../lib/backend";
 
 interface HamburgerMenuProps {
   open: boolean;
   onClose: () => void;
+  activeTab: number;
+  onNavigate: (index: number) => void;
 }
 
 type HarperStatus = "idle" | "checking" | "connected" | "offline";
 
-export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
+const NAV_ITEMS = [
+  { label: "DASH", index: 0 },
+  { label: "RISKFLOW", index: 1 },
+  { label: "SETTINGS", index: 3 },
+] as const;
+
+export function HamburgerMenu({
+  open,
+  onClose,
+  activeTab,
+  onNavigate,
+}: HamburgerMenuProps) {
   const { user, signOut, getAccessToken } = useAuth();
   const [harperStatus, setHarperStatus] = useState<HarperStatus>("idle");
 
@@ -37,6 +49,14 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
     onClose();
   }, [signOut, onClose]);
 
+  const handleNav = useCallback(
+    (index: number) => {
+      onNavigate(index);
+      onClose();
+    },
+    [onNavigate, onClose],
+  );
+
   const statusText: Record<HarperStatus, string> = {
     idle: "[REFRESH HARPER]",
     checking: "[CHECKING...]",
@@ -52,7 +72,7 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
   };
 
   const rowStyle: React.CSSProperties = {
-    height: 44,
+    height: 48,
     display: "flex",
     alignItems: "center",
     padding: "0 20px",
@@ -125,6 +145,28 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
               />
             </div>
 
+            {/* Navigation */}
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeTab === item.index;
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => handleNav(item.index)}
+                  style={rowStyle}
+                >
+                  <span
+                    style={{
+                      ...labelStyle,
+                      color: isActive ? "var(--accent)" : "var(--text-primary)",
+                    }}
+                  >
+                    [{item.label}]
+                  </span>
+                </button>
+              );
+            })}
+            <div className="fade-divider" style={{ margin: "4px 0" }} />
+
             {/* Refresh Harper */}
             <button
               onClick={handleRefreshHarper}
@@ -157,13 +199,6 @@ export function HamburgerMenu({ open, onClose }: HamburgerMenuProps) {
                 [SIGN OUT]
               </span>
             </button>
-
-            {/* About */}
-            <div style={{ ...rowStyle, borderBottom: "none" }}>
-              <span style={{ ...labelStyle, color: "var(--text-disabled)" }}>
-                [ABOUT] v1.0.0 · {new Date().toISOString().slice(0, 10)}
-              </span>
-            </div>
           </motion.div>
         </>
       )}

@@ -9,6 +9,86 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T00:45:00",
+    agent: "claude-code",
+    summary:
+      "fix: content-guard had two gaps killing legit FJ headlines — (1) FJ_ALLOWED_EMOJIS missing 🟠🟡🔵 so medium/low severity items blocked as 'non-fj-emoji', (2) MARKET_KEYWORDS missing all FX/currency terms (FX, forex, USD, JPY, yen, carry trade, Fin. Min., etc.) so headlines like '🔴Japan Fin. Min. Katayama: bold actions on FX' blocked as 'no-market-relevance'",
+    files: ["backend-hono/src/services/riskflow/content-guard.ts"],
+  },
+  {
+    date: "2026-04-15T23:30:00",
+    agent: "claude-code",
+    summary:
+      "S17-T5: In-app approval modals with Approve All session memory — unified desktop + mobile, cognition stream via relay, tool-decision forwarding",
+    files: [
+      "mobile/hooks/useCognitionStream.ts",
+      "mobile/components/chat/ApprovalModal.tsx",
+      "frontend/components/chat/ToolApprovalCard.tsx",
+      "frontend/components/chat/hooks/useToolApprovals.ts",
+      "backend-hono/src/services/relay-connector.ts",
+      "backend-hono/src/services/relay-bridge.ts",
+      "mobile/stores/useChatStore.ts",
+    ],
+  },
+  {
+    date: "2026-04-16T00:15:00",
+    agent: "claude-code",
+    summary:
+      "S17-T4: Codex-style message queue — drag-to-reorder popover above input bar, auto-drain on response complete, unified desktop + mobile",
+    files: [
+      "mobile/components/chat/QueuePopover.tsx",
+      "frontend/components/chat/MessageQueue.tsx",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/stores/useChatStore.ts",
+      "mobile/components/chat/ChatPage.tsx",
+    ],
+  },
+  {
+    date: "2026-04-15T23:45:00",
+    agent: "claude-code",
+    summary:
+      "S17-T3: Tool call streaming panes — collapsible tool execution cards with running/complete/error states, Claude Code-style peek UX",
+    files: [
+      "mobile/components/chat/ToolCallPane.tsx",
+      "mobile/components/chat/ToolCallGroup.tsx",
+      "mobile/components/chat/ChatMessage.tsx",
+      "mobile/stores/useChatStore.ts",
+    ],
+  },
+  {
+    date: "2026-04-15T23:30:00",
+    agent: "claude-code",
+    summary:
+      "S17-T2: Thinking/reasoning stream indicator — pulsing gold dot, rotating phrases, expandable reasoning content, 'thought for Xs' on completion",
+    files: [
+      "mobile/components/chat/ThinkingIndicator.tsx",
+      "mobile/components/chat/ChatMessage.tsx",
+    ],
+  },
+  {
+    date: "2026-04-15T23:00:00",
+    agent: "claude-code",
+    summary:
+      "S17-T1: Stop request button — animated send/stop icon swap using framer-motion AnimatePresence, aborts active SSE stream via store.abort()",
+    files: [
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+    ],
+  },
+  {
+    date: "2026-04-15T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S17-T0: Extract chat state to Zustand store (useChatStore), expose relay requestId via relay-meta SSE event + X-Request-Id header, extend ChatMessageData for thinking/tools, add relay sendCommand for tool decisions, refactor ChatPage to thin rendering shell (~120 lines from 307)",
+    files: [
+      "mobile/stores/useChatStore.ts",
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/ChatMessage.tsx",
+      "backend-hono/src/services/relay-bridge.ts",
+      "backend-hono/src/routes/relay.ts",
+    ],
+  },
+  {
     date: "2026-04-15T20:30:00",
     agent: "claude-code",
     summary:

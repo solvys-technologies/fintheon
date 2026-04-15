@@ -288,11 +288,20 @@ export default function ChatPage({ visible }: ChatPageProps) {
         ))}
       </div>
 
+      {/* Queue popover — sits above input bar */}
+      <QueuePopover
+        queue={queuedMessages}
+        onRemove={dequeue}
+        onReorder={reorderQueue}
+      />
+
       {/* Input */}
       <ChatInput
-        onSend={sendMessage}
+        onSend={handleSend}
+        onStop={() => useChatStore.getState().abort()}
         isLoading={isLoading}
         disabled={isOffline}
+        queueCount={queuedMessages.length}
       />
 
       {/* Session list bottom sheet */}

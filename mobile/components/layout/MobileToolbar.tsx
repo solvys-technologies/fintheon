@@ -41,7 +41,7 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
             fontFamily: "var(--font-body)",
             fontWeight: 500,
             fontSize: 18,
-            color: "var(--text-display)",
+            color: "var(--accent)",
             letterSpacing: "0.04em",
           }}
         >

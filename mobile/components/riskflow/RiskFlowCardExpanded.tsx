@@ -59,8 +59,8 @@ export function RiskFlowCardExpanded({ alert }: RiskFlowCardExpandedProps) {
       style={{ overflow: "hidden" }}
     >
       <div
-        className="px-4 pb-4 pt-2"
-        style={{ borderTop: "1px solid var(--border)" }}
+        className="px-4 pb-4 pt-2 fade-divider-top"
+        style={{ borderTop: "none" }}
       >
         {/* Content text */}
         {alert.content && (

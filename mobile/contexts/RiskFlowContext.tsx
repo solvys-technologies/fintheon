@@ -8,7 +8,8 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { useBackend } from "@frontend/lib/backend";
+import { useAuth } from "./AuthContext";
+import { getMobileBackend } from "../lib/backend";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 
 export interface MobileRiskFlowAlert {
@@ -70,7 +71,8 @@ const RiskFlowContext = createContext<RiskFlowContextValue | undefined>(
 const PAGE_SIZE = 20;
 
 export function MobileRiskFlowProvider({ children }: { children: ReactNode }) {
-  const backend = useBackend();
+  const { getAccessToken } = useAuth();
+  const backend = getMobileBackend(getAccessToken);
   const [alerts, setAlerts] = useState<MobileRiskFlowAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);

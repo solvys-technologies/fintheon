@@ -1,25 +1,28 @@
-// [claude-code 2026-04-15] T3: Root layout — toolbar + content area + bottom tab bar
+// [claude-code 2026-04-15] S18: Root layout — toolbar + content area + floating chat FAB (no bottom tab bar)
 import { useRef, useCallback, type ReactNode } from "react";
 import { useSwipeGesture } from "../../hooks/useSwipeGesture";
 import { useVixTicker } from "../../hooks/useVixTicker";
 import { MobileToolbar } from "./MobileToolbar";
-import { BottomTabBar } from "./BottomTabBar";
 import { HamburgerMenu } from "./HamburgerMenu";
+import { FloatingChatButton } from "./FloatingChatButton";
 import { useState } from "react";
 
 interface MobileShellProps {
   activeTab: number;
   onTabChange: (index: number) => void;
+  chatOpen: boolean;
+  onChatToggle: () => void;
   children: ReactNode;
 }
 
 const TOOLBAR_HEIGHT = 92; // 48px bar + 44px chevron
-const TAB_BAR_HEIGHT = 56;
 const TAB_COUNT = 4;
 
 export function MobileShell({
   activeTab,
   onTabChange,
+  chatOpen,
+  onChatToggle,
   children,
 }: MobileShellProps) {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -64,14 +67,19 @@ export function MobileShell({
           flex: 1,
           overflowY: "auto",
           paddingTop: `calc(env(safe-area-inset-top) + ${TOOLBAR_HEIGHT}px)`,
-          paddingBottom: `calc(env(safe-area-inset-bottom) + ${TAB_BAR_HEIGHT}px)`,
+          paddingBottom: `calc(env(safe-area-inset-bottom) + 24px)`,
         }}
       >
         {children}
       </main>
 
-      <BottomTabBar activeTab={activeTab} onTabChange={onTabChange} />
-      <HamburgerMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      {!chatOpen && <FloatingChatButton onTap={onChatToggle} />}
+      <HamburgerMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        activeTab={activeTab}
+        onNavigate={onTabChange}
+      />
     </div>
   );
 }

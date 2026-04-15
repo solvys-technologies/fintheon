@@ -58,15 +58,9 @@ function applyThemeToDOM(theme: ThemeConfig) {
     theme.lowNeutral ?? "#3B82F6",
   );
   root.style.setProperty("--fintheon-low", theme.low ?? "#34D399");
-  // Nothing tokens (mobile-only components)
+  // Only --accent crosses into Nothing tokens — all others stay immutable
   root.style.setProperty("--accent", theme.accent);
-  root.style.setProperty("--surface", theme.surface);
-  root.style.setProperty("--surface-alt", theme.bg);
-  root.style.setProperty("--text", theme.text);
-  root.style.setProperty("--text-muted", theme.muted);
-  root.style.setProperty("--border", theme.border);
-  root.style.setProperty("--bullish", theme.bullish);
-  root.style.setProperty("--bearish", theme.bearish);
+  root.style.setProperty("--accent-subtle", `${theme.accent}1f`);
 }
 
 function applyFontThemeToDOM(fontTheme: FontTheme) {

@@ -23,35 +23,46 @@ function Toggle({
     <button
       onClick={onToggle}
       disabled={disabled}
+      aria-checked={on}
+      role="switch"
       style={{
-        width: 48,
-        height: 28,
-        borderRadius: 14,
-        border: `1.5px solid ${on ? "var(--text-display)" : "var(--border-visible)"}`,
-        background: on ? "var(--text-display)" : "transparent",
-        position: "relative",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : 1,
-        transition: "background 0.15s, border-color 0.15s",
-        minHeight: 44,
         minWidth: 44,
+        minHeight: 44,
         display: "flex",
         alignItems: "center",
+        justifyContent: "center",
+        background: "transparent",
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
         padding: 0,
+        WebkitTapHighlightColor: "transparent",
       }}
     >
       <div
         style={{
-          width: 20,
-          height: 20,
-          borderRadius: 10,
-          background: on ? "var(--black, #000)" : "var(--text-secondary)",
-          position: "absolute",
-          top: 2.5,
-          left: on ? 23 : 3,
-          transition: "left 0.15s",
+          width: 48,
+          height: 28,
+          borderRadius: 14,
+          border: `1.5px solid ${on ? "var(--accent)" : "var(--border-visible)"}`,
+          background: on ? "var(--accent)" : "transparent",
+          position: "relative",
+          transition: "background 0.2s ease-out, border-color 0.2s ease-out",
         }}
-      />
+      >
+        <div
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: 10,
+            background: on ? "var(--black, #000)" : "var(--text-disabled)",
+            position: "absolute",
+            top: 2.5,
+            left: on ? 23 : 3,
+            transition: "left 0.2s ease-out, background 0.2s ease-out",
+          }}
+        />
+      </div>
     </button>
   );
 }

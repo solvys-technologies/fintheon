@@ -123,6 +123,31 @@ html *::-webkit-scrollbar {
   background-size: 16px 16px;
 }
 
+/* ── Fading Divider ── */
+.fade-divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--border-visible) 20%,
+    var(--border-visible) 80%,
+    transparent
+  );
+}
+.fade-divider-top::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--border-visible) 20%,
+    var(--border-visible) 80%,
+    transparent
+  );
+}
+
 /* ── Safe Area Padding (notch devices) ── */
 .safe-top {
   padding-top: env(safe-area-inset-top);

@@ -7,7 +7,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import { supabase, signOut as supabaseSignOut } from "@frontend/lib/supabase";
+import { supabase, signOut as supabaseSignOut } from "../lib/supabase";
 import type { Session, User } from "@supabase/supabase-js";
 
 export type UserTier = "free" | "fintheon" | "fintheon_plus" | "fintheon_pro";
