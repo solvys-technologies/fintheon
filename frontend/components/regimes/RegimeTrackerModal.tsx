@@ -1,6 +1,7 @@
 // [claude-code 2026-03-06] Full Regime Tracker modal — grouped by category, W-L tracking, add custom regimes
 // [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish, AI generate CTA, delete all regimes, 12H NY time, collapsed active regimes, labeled ORB record
 // [claude-code 2026-04-15] T2: Decomposed into subcomponents, liquid glass shell, 5 bias classifications, removed footer border
+// [claude-code 2026-04-15] T3: Glassmorphic AI generate overlay, thinking animation, mini-chat passthrough
 import { useState, useMemo } from "react";
 import { X, Plus, Clock, ChevronDown, ChevronRight } from "lucide-react";
 import { useRegimes } from "../../lib/regime-store";
@@ -10,8 +11,9 @@ import {
   getCurrentETTime,
 } from "../../lib/regime-time";
 import type { TradingRegime } from "../../lib/regimes";
-import { GlassEffect } from "../ui/liquid-glass";
+import { GlassEffect, GlassButton } from "../ui/liquid-glass";
 import { RegimeCard } from "./RegimeCard";
+import { RegimeThinkingOverlay } from "./RegimeThinkingOverlay";
 
 const CATEGORY_LABELS: Record<TradingRegime["category"], string> = {
   institutional: "Institutional",
@@ -170,6 +172,8 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
     new Set(),
   );
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showThinking, setShowThinking] = useState(false);
   const now = getCurrentETTime();
 
   const grouped = useMemo(() => {
@@ -192,8 +196,10 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
     });
   };
 
-  /** Open sidebar chat with Regimes skill attached */
+  /** AI Generate — show thinking overlay, dispatch to chat */
   const handleAIGenerate = () => {
+    setShowThinking(true);
+    setIsGenerating(true);
     window.dispatchEvent(
       new CustomEvent("fintheon:open-chat-skill", {
         detail: {
@@ -202,7 +208,8 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
         },
       }),
     );
-    onClose();
+    // Simulated generation time — overlay exits after 4s
+    setTimeout(() => setIsGenerating(false), 4000);
   };
 
   return (
@@ -215,7 +222,7 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
         <GlassEffect
           tint="rgba(5,4,2,0.88)"
           blur={16}
-          className="pointer-events-auto w-full max-w-2xl rounded-2xl shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh] overflow-hidden"
+          className="pointer-events-auto w-full max-w-2xl rounded-2xl shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh] overflow-hidden relative"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -227,13 +234,12 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <GlassButton
                 onClick={handleAIGenerate}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/10 transition-colors"
-                title="AI Generate a new regime via chat"
+                className="px-2 py-1 text-[10px] font-semibold"
               >
                 AI Generate
-              </button>
+              </GlassButton>
               <button
                 onClick={() => setShowAddForm((v) => !v)}
                 className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-zinc-400 border border-zinc-700/50 hover:bg-zinc-800/50 transition-colors"
@@ -249,17 +255,32 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
             </div>
           </div>
 
+          {/* Thinking overlay */}
+          <RegimeThinkingOverlay
+            isVisible={showThinking}
+            isGenerating={isGenerating}
+            onComplete={() => setShowThinking(false)}
+          />
+
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-            {showAddForm && (
-              <AddRegimeForm
-                onAdd={(r) => {
-                  addRegime(r);
-                  setShowAddForm(false);
-                }}
-                onCancel={() => setShowAddForm(false)}
-              />
-            )}
+            <div
+              className={
+                showThinking
+                  ? "opacity-30 transition-opacity duration-300"
+                  : "transition-opacity duration-300"
+              }
+            >
+              {showAddForm && (
+                <AddRegimeForm
+                  onAdd={(r) => {
+                    addRegime(r);
+                    setShowAddForm(false);
+                  }}
+                  onCancel={() => setShowAddForm(false)}
+                />
+              )}
+            </div>
 
             {CATEGORY_ORDER.map((cat) => {
               const items = grouped.get(cat) ?? [];
@@ -303,6 +324,7 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
                           onRecordBullish={() => recordBullish(r.id)}
                           onRecordBearish={() => recordBearish(r.id)}
                           onDelete={() => deleteRegime(r.id)}
+                          onExpandToSidebar={onClose}
                         />
                       ))}
                     </div>
@@ -325,6 +347,7 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
                             onRecordBullish={() => recordBullish(r.id)}
                             onRecordBearish={() => recordBearish(r.id)}
                             onDelete={() => deleteRegime(r.id)}
+                            onExpandToSidebar={onClose}
                           />
                         ))
                       )}

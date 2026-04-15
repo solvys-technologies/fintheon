@@ -1,9 +1,11 @@
 // [claude-code 2026-04-15] T2: RegimeCard — glass-wrapped regime card with decomposed subcomponents
+// [claude-code 2026-04-15] T3: Added RegimeMiniChat integration at card bottom
 import { Clock, Trash2, Diff, TrendingDown } from "lucide-react";
 import { GlassEffect } from "../ui/liquid-glass";
 import { BiasBadge } from "./BiasBadge";
 import { ConfidenceBar } from "./ConfidenceBar";
 import { OrbRecord } from "./OrbRecord";
+import { RegimeMiniChat } from "./RegimeMiniChat";
 import { formatTimeRange12H } from "../../lib/regime-time";
 import type { TradingRegime } from "../../lib/regimes";
 
@@ -14,6 +16,7 @@ interface RegimeCardProps {
   onRecordBullish: () => void;
   onRecordBearish: () => void;
   onDelete: () => void;
+  onExpandToSidebar?: () => void;
 }
 
 export function RegimeCard({
@@ -23,6 +26,7 @@ export function RegimeCard({
   onRecordBullish,
   onRecordBearish,
   onDelete,
+  onExpandToSidebar,
 }: RegimeCardProps) {
   return (
     <GlassEffect
@@ -126,6 +130,10 @@ export function RegimeCard({
             </button>
           </div>
         </div>
+
+        {/* Mini chat separator + input */}
+        <div className="h-px bg-[var(--fintheon-accent)]/5 my-2" />
+        <RegimeMiniChat regime={regime} onExpandToSidebar={onExpandToSidebar} />
       </div>
     </GlassEffect>
   );

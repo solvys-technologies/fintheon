@@ -1,6 +1,9 @@
+// [claude-code 2026-04-15] Deliberation UI overhaul — per-agent thinking phrases, JSON suppression, KPI extraction
 // [claude-code 2026-04-10] S8-T4: Per-agent live streaming panel for Boardroom DAG execution
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import type { HermesAgentId } from "../../../backend-hono/src/services/agent-bus/types";
+import { AGENT_THINKING_PHRASES } from "../../lib/agentThinkingPhrases";
+import { parseAgentText, type KPISignals } from "../../lib/agentStreamParser";
 
 // ── Agent display metadata ────────────────────────────────────────────────────
 
@@ -23,6 +26,8 @@ export interface BoardroomAgentPanelProps {
   status: "pending" | "streaming" | "complete" | "error";
   /** When true, panel takes full width (used for Harper synthesis) */
   fullWidth?: boolean;
+  /** Fires when JSON is extracted from agent stream, passing derived KPI signals */
+  onDataExtracted?: (agentId: HermesAgentId, signals: KPISignals) => void;
 }
 
 // ── Status indicator ──────────────────────────────────────────────────────────
@@ -83,11 +88,41 @@ export function BoardroomAgentPanel({
   text,
   status,
   fullWidth = false,
+  onDataExtracted,
 }: BoardroomAgentPanelProps) {
   const meta = AGENT_META[agentId];
   const scrollRef = useRef<HTMLDivElement>(null);
   const isActive = status === "streaming";
   const isDim = status === "pending";
+
+  // ── Per-agent thinking phrases ───────────────────────────────────────────
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const showThinking = isActive && text.length === 0;
+
+  useEffect(() => {
+    if (!showThinking) return;
+    setPhraseIdx(0);
+    const interval = setInterval(() => {
+      setPhraseIdx((i) => (i + 1) % AGENT_THINKING_PHRASES[agentId].length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [showThinking, agentId]);
+
+  const thinkingPhrase =
+    AGENT_THINKING_PHRASES[agentId]?.[phraseIdx] ?? "Processing...";
+
+  // ── JSON suppression + KPI extraction ────────────────────────────────────
+  const parsed = useMemo(() => parseAgentText(text), [text]);
+  const lastExtractedRef = useRef<string>("");
+
+  useEffect(() => {
+    if (parsed.extractedData.length === 0 || !onDataExtracted) return;
+    const key = JSON.stringify(parsed.kpiSignals);
+    if (key !== lastExtractedRef.current) {
+      lastExtractedRef.current = key;
+      onDataExtracted(agentId, parsed.kpiSignals);
+    }
+  }, [parsed, agentId, onDataExtracted]);
 
   // Auto-scroll to bottom as text streams in
   useEffect(() => {

@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T18:00:00",
+    agent: "claude-code",
+    summary:
+      "T3: Added hybrid mini-chat per regime card, glassmorphic AI generate overlay with thinking animation and glass-dissolve effect, new CSS keyframes",
+    files: [
+      "frontend/components/regimes/RegimeMiniChat.tsx",
+      "frontend/components/regimes/RegimeThinkingOverlay.tsx",
+      "frontend/components/regimes/RegimeCard.tsx",
+      "frontend/components/regimes/RegimeTrackerModal.tsx",
+      "frontend/styles/custom.css",
+    ],
+  },
+  {
     date: "2026-04-15T12:00:00",
     agent: "claude-code",
     summary:
