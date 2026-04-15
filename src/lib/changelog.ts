@@ -9,6 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T19:00:00",
+    agent: "claude-code",
+    summary:
+      "Deliberation UI overhaul — floating KPI overlay with fuse shimmer (Consensus/Direction/Risk Posture), per-agent thinking phrases in BoardroomAgentPanel, JSON suppression + natural language formatting from agent streams.",
+    files: [
+      "frontend/components/consilium/BoardroomAgentPanel.tsx",
+      "frontend/components/consilium/AgentChattr.tsx",
+      "frontend/components/consilium/DeliberationKPIOverlay.tsx",
+      "frontend/lib/agentStreamParser.ts",
+      "frontend/lib/agentThinkingPhrases.ts",
+      "frontend/index.css",
+    ],
+  },
+  {
+    date: "2026-04-15T09:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.15.1: Unified 3-track regime tracker redesign — synced backend bias values (neutral→consolidation), deployed to Vercel prod + GitHub release",
+    files: [
+      "backend-hono/src/routes/regimes/index.ts",
+      "docs/sprint-briefs/TASK-regime-t1-backend-data.md",
+      "docs/sprint-briefs/TASK-regime-t2-frontend-glass.md",
+      "docs/sprint-briefs/TASK-regime-t3-chat-gen-ux.md",
+    ],
+  },
+  {
     date: "2026-04-15T18:00:00",
     agent: "claude-code",
     summary:
