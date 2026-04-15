@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T12:00:00",
+    agent: "claude-code",
+    summary:
+      "T2: Decomposed RegimeTrackerModal into subcomponents (BiasBadge, ConfidenceBar, OrbRecord, RegimeCard), applied liquid glass cards, replaced fade bias with 5 heuristic classifications (continuation/reversal/convergence/consolidation/rotation), theme-sensitive ORB colors, removed footer border, v3 storage migration",
+    files: [
+      "frontend/components/regimes/RegimeTrackerModal.tsx",
+      "frontend/components/regimes/BiasBadge.tsx",
+      "frontend/components/regimes/ConfidenceBar.tsx",
+      "frontend/components/regimes/OrbRecord.tsx",
+      "frontend/components/regimes/RegimeCard.tsx",
+      "frontend/lib/regimes.ts",
+      "frontend/lib/regime-store.ts",
+    ],
+  },
+  {
     date: "2026-04-14T18:00:00",
     agent: "claude-code",
     summary:
