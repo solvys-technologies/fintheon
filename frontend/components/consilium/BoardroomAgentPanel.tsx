@@ -187,10 +187,15 @@ export function BoardroomAgentPanel({
       {/* Streaming text */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto transition-opacity duration-300"
         style={{ maxHeight: fullWidth ? 180 : 120 }}
       >
-        {text ? (
+        {showThinking ? (
+          /* Per-agent thinking phrase — rotates while waiting for first token */
+          <p className="text-[10px] text-[#c79f4a]/70 italic animate-pulse">
+            {thinkingPhrase}
+          </p>
+        ) : text ? (
           <p
             className={`whitespace-pre-wrap break-words text-[11px] leading-relaxed ${
               isActive
@@ -200,7 +205,7 @@ export function BoardroomAgentPanel({
                   : "text-[#f0ead6]/25"
             }`}
           >
-            {text}
+            {parsed.cleanText}
             {/* Blinking cursor while streaming */}
             {isActive && (
               <span
@@ -211,7 +216,7 @@ export function BoardroomAgentPanel({
           </p>
         ) : (
           <p className="text-[10px] text-[#f0ead6]/15 italic">
-            {status === "pending" ? "Awaiting wave..." : "Processing..."}
+            Awaiting wave...
           </p>
         )}
       </div>

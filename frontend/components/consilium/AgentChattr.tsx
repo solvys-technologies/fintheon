@@ -22,7 +22,9 @@ import {
 } from "../chat/HeadlinePickerPopover";
 import { useBoardroomDAG } from "../../hooks/useBoardroomDAG";
 import { BoardroomAgentPanel } from "./BoardroomAgentPanel";
+import { DeliberationKPIOverlay } from "./DeliberationKPIOverlay";
 import { DAGProgressBar } from "./DAGProgressBar";
+import type { KPISignals } from "../../lib/agentStreamParser";
 import {
   saveThread,
   createThread as createBoardroomThread,
@@ -240,6 +242,18 @@ export function AgentChattr() {
   const dag = useBoardroomDAG("", "");
   const dagIsActive = dag.status === "dispatching" || dag.status === "running";
   const dagIsDone = dag.status === "complete" || dag.status === "error";
+
+  // KPI signal aggregation from agent JSON extraction
+  const [kpiSignals, setKpiSignals] = useState<Record<string, KPISignals>>({});
+  const handleDataExtracted = useCallback(
+    (agentId: HermesAgentId, signals: KPISignals) => {
+      setKpiSignals((prev) => ({ ...prev, [agentId]: signals }));
+    },
+    [],
+  );
+  useEffect(() => {
+    if (dag.status === "idle") setKpiSignals({});
+  }, [dag.status]);
 
   // Filter state
   const [filterSearch, setFilterSearch] = useState("");
@@ -471,6 +485,14 @@ export function AgentChattr() {
         </div>
       </div>
 
+      {/* Floating KPI overlay during deliberation */}
+      {(dagIsActive || dagIsDone) && (
+        <DeliberationKPIOverlay
+          agentOutputs={dag.agentOutputs}
+          dagStatus={dag.status}
+        />
+      )}
+
       {/* DAG live panels — shown while DAG is active or just completed */}
       {dagIsActive || dagIsDone ? (
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-3 py-2">
@@ -523,6 +545,7 @@ export function AgentChattr() {
                         agentId={id}
                         text={out.text}
                         status={out.status}
+                        onDataExtracted={handleDataExtracted}
                       />
                     );
                   })}
@@ -542,6 +565,7 @@ export function AgentChattr() {
                         text={harperOut.text}
                         status={harperOut.status}
                         fullWidth
+                        onDataExtracted={handleDataExtracted}
                       />
                     );
                   })()}
