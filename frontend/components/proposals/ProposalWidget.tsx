@@ -14,12 +14,14 @@ import {
   ToggleLeft,
   ToggleRight,
   Trophy,
+  ShieldAlert,
 } from "lucide-react";
 import { useBackend } from "../../lib/backend";
 import { ModelGlossary } from "./ModelGlossary";
 import { AgentScorecard } from "../consilium/AgentScorecard";
+import { RiskSignalCards } from "../narrative/RiskSignalCards";
 
-type PanelView = "proposals" | "scorecards";
+type PanelView = "proposals" | "scorecards" | "risk-signals";
 type ExecutionMode = "human" | "agentic";
 
 interface ActiveProposal {
@@ -170,6 +172,17 @@ export function ProposalWidget() {
             <Trophy className="w-3 h-3" />
             Scorecards
           </button>
+          <button
+            onClick={() => setPanelView("risk-signals")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+              panelView === "risk-signals"
+                ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/30"
+                : "text-[var(--fintheon-text)]/30 border border-transparent hover:text-[var(--fintheon-text)]/50 hover:bg-[var(--fintheon-accent)]/5"
+            }`}
+          >
+            <ShieldAlert className="w-3 h-3" />
+            Signals
+          </button>
           <div className="flex-1" />
           {panelView === "proposals" && (
             <button
@@ -211,6 +224,13 @@ export function ProposalWidget() {
       {panelView === "scorecards" && (
         <div className="flex-1 overflow-y-auto">
           <AgentScorecard />
+        </div>
+      )}
+
+      {/* Risk Signals view (S16-T3) */}
+      {panelView === "risk-signals" && (
+        <div className="flex-1 overflow-y-auto px-4">
+          <RiskSignalCards compact />
         </div>
       )}
 

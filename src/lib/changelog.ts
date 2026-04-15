@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T12:00:00",
+    agent: "claude-code",
+    summary:
+      "S16-T3: Risk Signals — AI-refined expandable cards from bulletins + catalyst watches. Backend generator with 10min cache, Herald AI scoring. Frontend cards in Proposals pop-out panel with third toggle view.",
+    files: [
+      "backend-hono/src/services/riskflow/risk-signal-generator.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/routes/riskflow/index.ts",
+      "frontend/components/narrative/RiskSignalCards.tsx",
+      "frontend/components/proposals/ProposalWidget.tsx",
+    ],
+  },
+  {
     date: "2026-04-15T04:00:00",
     agent: "claude-code",
     summary:

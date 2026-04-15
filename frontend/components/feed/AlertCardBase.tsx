@@ -1,5 +1,7 @@
 // [claude-code 2026-04-12] S9-T2: Shared card anatomy for RiskFlow detail + tape variants
 // [claude-code 2026-04-12] Added linkifyText — URLs in headlines/summaries are now clickable
+// [claude-code 2026-04-15] S16-T5: Dismissal reason quick-select popover on thumbs-down
+import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp, ThumbsDown } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { inferDirection } from "../../lib/riskflow-feed";
@@ -8,6 +10,14 @@ import { ivHeatColor } from "../../types/miroshark";
 import { SourceIcon } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
 import { linkifyText } from "../../lib/linkify";
+
+const DISMISS_REASONS = [
+  { value: "redundant", label: "Redundant" },
+  { value: "irrelevant-topic", label: "Irrelevant Topic" },
+  { value: "stale", label: "Stale / Outdated" },
+  { value: "spam", label: "Spam / Noise" },
+  { value: "other", label: "Other" },
+] as const;
 
 interface AlertCardBaseProps {
   alert: RiskFlowAlert;
@@ -19,8 +29,8 @@ interface AlertCardBaseProps {
   expandedContent?: React.ReactNode;
   /** Optional action buttons for the collapsed header row */
   headerActions?: React.ReactNode;
-  /** Thumbs-down callback — marks item as not relevant */
-  onNotRelevant?: (id: string) => void;
+  /** Thumbs-down callback — marks item as not relevant, with optional reason */
+  onNotRelevant?: (id: string, reason?: string) => void;
   /** Override outer container className (variant-specific borders, bg, opacity) */
   className?: string;
   /** Override outer container style */
@@ -41,6 +51,20 @@ export function AlertCardBase({
   const isHigh = alert.severity === "high" || alert.severity === "critical";
   const dir = inferDirection(alert);
   const isBull = dir === "Bullish";
+  const [showReasonPicker, setShowReasonPicker] = useState(false);
+  const reasonRef = useRef<HTMLDivElement>(null);
+
+  // Close reason picker on outside click
+  useEffect(() => {
+    if (!showReasonPicker) return;
+    const handler = (e: MouseEvent) => {
+      if (reasonRef.current && !reasonRef.current.contains(e.target as Node)) {
+        setShowReasonPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showReasonPicker]);
 
   return (
     <div
@@ -127,19 +151,40 @@ export function AlertCardBase({
           </span>
         )}
 
-        {/* Not relevant — thumbs down */}
+        {/* Not relevant — thumbs down with reason picker */}
         {onNotRelevant && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onNotRelevant(alert.id);
-            }}
-            className="ml-2 inline-flex p-0.5 rounded text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100"
-            style={{ transition: "opacity 1.2s ease, color 0.2s ease" }}
-            title="Not relevant"
-          >
-            <ThumbsDown className="w-2.5 h-2.5" />
-          </button>
+          <div className="relative ml-2" ref={reasonRef}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowReasonPicker((v) => !v);
+              }}
+              className="inline-flex p-0.5 rounded text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100"
+              style={{ transition: "opacity 1.2s ease, color 0.2s ease" }}
+              title="Not relevant"
+            >
+              <ThumbsDown className="w-2.5 h-2.5" />
+            </button>
+            {showReasonPicker && (
+              <div
+                className="absolute right-0 bottom-full mb-1 z-50 min-w-[140px] py-1 bg-zinc-900 border border-zinc-700 rounded shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {DISMISS_REASONS.map((r) => (
+                  <button
+                    key={r.value}
+                    onClick={() => {
+                      setShowReasonPicker(false);
+                      onNotRelevant(alert.id, r.value);
+                    }}
+                    className="block w-full text-left px-3 py-1.5 text-[10px] text-zinc-300 hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)] transition-colors"
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Expand chevron */}

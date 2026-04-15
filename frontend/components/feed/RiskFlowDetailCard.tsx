@@ -14,7 +14,7 @@ interface RiskFlowDetailCardProps {
   alert: RiskFlowAlert;
   seen?: boolean;
   onGenerateNote?: (itemId: string) => void;
-  onNotRelevant?: (id: string) => void;
+  onNotRelevant?: (id: string, reason?: string) => void;
 }
 
 export function RiskFlowDetailCard({

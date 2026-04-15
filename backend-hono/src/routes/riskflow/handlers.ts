@@ -979,12 +979,22 @@ export async function handleRescore(c: Context) {
 }
 
 /** POST /api/riskflow/:id/not-relevant — remove item + log for learning */
+// [claude-code 2026-04-15] S16-T5: Accept optional reason field for dismissal feedback loop
 export async function handleNotRelevant(c: Context) {
   // [claude-code 2026-04-13] Defensive: strip frontend "backend-" prefix if it leaks through
   const tweetId = c.req.param("id")?.replace(/^backend-/, "") ?? "";
   if (!tweetId) return c.json({ error: "id is required" }, 400);
 
   try {
+    // Parse optional reason from request body
+    let reason: string | undefined;
+    try {
+      const body = await c.req.json();
+      reason = typeof body.reason === "string" ? body.reason : undefined;
+    } catch {
+      // No body or invalid JSON — reason stays undefined (backward compatible)
+    }
+
     const { getSupabaseClient } = await import("../../config/supabase.js");
     const sb = getSupabaseClient();
     if (!sb) return c.json({ error: "Database unavailable" }, 503);
@@ -1016,6 +1026,7 @@ export async function handleNotRelevant(c: Context) {
         source,
         submitted_by: submittedBy,
         dismissed_at: new Date().toISOString(),
+        ...(reason ? { reason } : {}),
       });
     }
 
@@ -1034,6 +1045,7 @@ export async function handleNotRelevant(c: Context) {
           headline: headline ?? "(unknown)",
           source,
           submittedBy,
+          reason: reason ?? null,
         },
         priority: "normal",
       });
@@ -1041,7 +1053,7 @@ export async function handleNotRelevant(c: Context) {
       // Harper loop may not be running — that's fine, she'll pick up dismissed items on next heartbeat
     }
 
-    return c.json({ ok: true, removed: tweetId });
+    return c.json({ ok: true, removed: tweetId, reason: reason ?? null });
   } catch (err) {
     return c.json({ error: String(err) }, 500);
   }

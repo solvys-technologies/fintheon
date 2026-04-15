@@ -11,7 +11,16 @@ import { useToast } from "../../contexts/ToastContext";
 import { RiskFlowDetailCard } from "./RiskFlowDetailCard";
 
 type PriorityFilter = "all" | "critical" | "high" | "medium" | "low";
-type SourceFilter = "all" | "notion" | "twitter";
+// [claude-code 2026-04-15] S16-T5: Expanded source filters for all pipeline sources
+type SourceFilter =
+  | "all"
+  | "twitter"
+  | "financial-juice"
+  | "deitaone"
+  | "osint"
+  | "econ-calendar"
+  | "polymarket-kalshi"
+  | "hermes";
 
 export function RiskFlowMain() {
   const {
@@ -76,8 +85,9 @@ export function RiskFlowMain() {
     }
   };
 
+  // [claude-code 2026-04-15] S16-T5: Accept optional reason for dismissal feedback
   const handleNotRelevant = useCallback(
-    async (id: string) => {
+    async (id: string, reason?: string) => {
       removeAlert(id);
       addToast("Feedback recorded", "success");
       try {
@@ -88,6 +98,8 @@ export function RiskFlowMain() {
         const rawId = id.replace(/^backend-/, "");
         await fetch(`${apiBase}/api/riskflow/${rawId}/not-relevant`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: reason ?? null }),
         });
       } catch (err) {
         console.warn("[RiskFlow] Not-relevant failed:", err);
@@ -116,19 +128,44 @@ export function RiskFlowMain() {
       base = base.filter((a) => a.severity === "medium");
     else if (priorityFilter === "low")
       base = base.filter((a) => a.severity === "low");
-    if (sourceFilter === "notion")
-      base = base.filter(
-        (a) =>
-          a.source === "notion-trade-idea" ||
-          (a.source as string).toLowerCase().includes("notion"),
-      );
-    else if (sourceFilter === "twitter")
+    // [claude-code 2026-04-15] S16-T5: Expanded source filter matching
+    if (sourceFilter === "twitter")
       base = base.filter(
         (a) =>
           (a.source as string) === "TwitterCli" ||
-          (a.source as string) === "FinancialJuice" ||
-          (a.source as string).toLowerCase().includes("twitter"),
+          (a.source as string) === "rettiwt" ||
+          (a.source as string) === "Rettiwt",
       );
+    else if (sourceFilter === "financial-juice")
+      base = base.filter(
+        (a) =>
+          (a.source as string) === "FinancialJuice" ||
+          (a.source as string) === "financial-juice",
+      );
+    else if (sourceFilter === "deitaone")
+      base = base.filter((a) => (a.source as string) === "DeItaOne");
+    else if (sourceFilter === "osint")
+      base = base.filter(
+        (a) =>
+          (a.source as string) === "OSINTSources" ||
+          (a.source as string) === "osint-sources",
+      );
+    else if (sourceFilter === "econ-calendar")
+      base = base.filter(
+        (a) =>
+          (a.source as string) === "EconomicCalendar" ||
+          (a.source as string) === "economic-calendar",
+      );
+    else if (sourceFilter === "polymarket-kalshi")
+      base = base.filter(
+        (a) =>
+          (a.source as string) === "Polymarket" ||
+          (a.source as string) === "polymarket" ||
+          (a.source as string) === "Kalshi" ||
+          (a.source as string) === "kalshi-whale",
+      );
+    else if (sourceFilter === "hermes")
+      base = base.filter((a) => (a.source as string) === "Hermes");
     return base;
   }, [alerts, priorityFilter, sourceFilter, showProposals]);
 
@@ -207,8 +244,14 @@ export function RiskFlowMain() {
           }}
           className="text-[10px] px-2 py-1 rounded bg-[var(--fintheon-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--fintheon-accent)]/40 cursor-pointer"
         >
-          <option value="all">Source: All</option>
-          <option value="twitter">X / FJ</option>
+          <option value="all">All Sources</option>
+          <option value="twitter">X (Twitter)</option>
+          <option value="financial-juice">Financial Juice</option>
+          <option value="deitaone">DeItaOne</option>
+          <option value="osint">OSINT</option>
+          <option value="econ-calendar">Econ Calendar</option>
+          <option value="polymarket-kalshi">Prediction Markets</option>
+          <option value="hermes">Hermes (Agent)</option>
         </select>
         <button
           onClick={() => setShowProposals((v) => !v)}
