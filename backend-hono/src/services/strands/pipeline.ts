@@ -44,11 +44,13 @@ export interface PipelineInput {
  * 3. Consul provides fundamental overlay + debate
  * 4. Feucht validates risk + generates proposal
  */
-export function createPICPipeline() {
-  const herald = createHeraldAgent();
-  const oracle = createOracleAgent();
-  const consul = createConsulAgent();
-  const feucht = createFeuchtAgent();
+export async function createPICPipeline() {
+  const [herald, oracle, consul, feucht] = await Promise.all([
+    createHeraldAgent(),
+    createOracleAgent(),
+    createConsulAgent(),
+    createFeuchtAgent(),
+  ]);
 
   const graph = new Graph({
     id: "pic-pipeline",
@@ -72,7 +74,7 @@ export async function runPICPipeline(input: PipelineInput) {
   const startTime = Date.now();
   log.info("PIC pipeline started", { thesis: input.thesis.slice(0, 100) });
 
-  const graph = createPICPipeline();
+  const graph = await createPICPipeline();
 
   const prompt = buildPipelinePrompt(input);
   const result = await graph.invoke(prompt);
@@ -95,7 +97,7 @@ export async function* streamPICPipeline(input: PipelineInput) {
     thesis: input.thesis.slice(0, 100),
   });
 
-  const graph = createPICPipeline();
+  const graph = await createPICPipeline();
   const prompt = buildPipelinePrompt(input);
 
   for await (const event of graph.stream(prompt)) {

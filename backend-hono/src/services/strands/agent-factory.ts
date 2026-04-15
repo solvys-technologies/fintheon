@@ -160,7 +160,7 @@ export async function createAgentForTask(
         name: "oracle",
         description:
           "Prediction markets, S&P, Crypto, macro analysis — sees across all domains",
-        systemPrompt: BASE_PROMPTS["pma-merged"],
+        systemPrompt: await getAgentSystemPrompt("pma-merged"),
         model: { temperature: 0.3, maxTokens: 4096 },
         provider: "local",
       });
@@ -170,7 +170,7 @@ export async function createAgentForTask(
         name: "feucht",
         description:
           "Futures & risk — /NQ, /MNQ, /ES via TopStepX, drawdown limits, proposal validation",
-        systemPrompt: BASE_PROMPTS["futures-desk"],
+        systemPrompt: await getAgentSystemPrompt("futures-desk"),
         model: { temperature: 0.25, maxTokens: 4096 },
         provider: "local",
       });
@@ -180,7 +180,7 @@ export async function createAgentForTask(
         name: "consul",
         description:
           "Fundamentals desk — top 10 S&P/NDX mega-caps, earnings, guidance, fair value",
-        systemPrompt: BASE_PROMPTS["fundamentals-desk"],
+        systemPrompt: await getAgentSystemPrompt("fundamentals-desk"),
         model: { temperature: 0.3, maxTokens: 4096 },
         provider: "local",
       });
@@ -190,7 +190,7 @@ export async function createAgentForTask(
         name: "herald",
         description:
           "News & sentiment — headlines, social signals, AAII survey, breaking news",
-        systemPrompt: BASE_PROMPTS["herald"],
+        systemPrompt: await getAgentSystemPrompt("herald"),
         model: { temperature: 0.3, maxTokens: 4096 },
         provider: "local",
       });

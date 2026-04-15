@@ -82,16 +82,16 @@ async function createAgentForRole(
     case "harper-cao":
       return await createHarperAgent(requestId);
     case "pma-merged":
-      return createOracleAgent();
+      return await createOracleAgent();
     case "futures-desk":
-      return createFeuchtAgent();
+      return await createFeuchtAgent();
     case "fundamentals-desk":
-      return createConsulAgent();
+      return await createConsulAgent();
     case "herald":
-      return createHeraldAgent();
+      return await createHeraldAgent();
     default:
       // Default to Oracle for unmatched roles
-      return createOracleAgent();
+      return await createOracleAgent();
   }
 }
 
