@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-14T18:00:00",
+    agent: "claude-code",
+    summary:
+      "T1: Added COT data service (CFTC weekly reports), ORB price service (Yahoo Finance), volume spike detection, and antilag confidence blending to regime tracker backend",
+    files: [
+      "backend-hono/src/services/market-data/cot-types.ts",
+      "backend-hono/src/services/market-data/cot-service.ts",
+      "backend-hono/src/services/market-data/orb-price-service.ts",
+      "backend-hono/src/services/market-data/volume-spike-service.ts",
+      "backend-hono/src/services/market-data/iv-scorer.ts",
+      "backend-hono/src/routes/market-data/index.ts",
+      "backend-hono/src/routes/market-data/handlers.ts",
+      "backend-hono/src/routes/regime/index.ts",
+      "backend-hono/src/routes/regime/handlers.ts",
+      "backend-hono/src/routes/regimes/index.ts",
+    ],
+  },
+  {
     date: "2026-04-15T17:00:00",
     agent: "claude-code",
     summary:
