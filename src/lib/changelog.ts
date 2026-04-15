@@ -9,6 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T04:00:00",
+    agent: "claude-code",
+    summary:
+      "S16-T1: Inject full persona files, context bank memories, and rich scored catalysts (30 items with IV/sentiment/tags) into every Hermes agent invocation. Made getAgentSystemPrompt async. Zero memory lapses.",
+    files: [
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+      "backend-hono/src/services/hermes-handler.ts",
+      "backend-hono/src/services/harper-handler.ts",
+      "backend-hono/src/services/strands/agent-factory.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/routes/ai/handlers/chat.ts",
+      "backend-hono/src/routes/harper/index.ts",
+      "backend-hono/src/services/agent-bus/dag-scheduler.ts",
+    ],
+  },
+  {
+    date: "2026-04-15T00:00:00",
+    agent: "claude-code",
+    summary:
+      "S16-T2: Enhance PolymarketPredictionCards — FUSE confidence score, severity borders, price-at-proposal vs current price delta, expanded card details, full-width grid layout, theme-linked colors.",
+    files: [
+      "frontend/components/narrative/PolymarketPredictionCards.tsx",
+      "backend-hono/src/routes/predictions.ts",
+    ],
+  },
+  {
     date: "2026-04-15T00:00:00",
     agent: "claude-code",
     summary:

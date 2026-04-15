@@ -1,3 +1,4 @@
+// [claude-code 2026-04-15] S16-T2: Add priceProposedAt + fuseConfidence to polymarket-outlook response
 // [claude-code 2026-04-10] Serve AI-generated Aquarium outlook (Oracle/Nous) when fresh, fall back to heuristic
 // [claude-code 2026-03-28] S7: Forward-looking performance prediction endpoint
 // Aggregates scored FJ items + scheduled econ events → per-instrument outlook

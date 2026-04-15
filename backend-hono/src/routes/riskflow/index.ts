@@ -28,6 +28,7 @@ import {
   handleAddPhrase,
   handleDeletePhrase,
   handleNotRelevant,
+  handleGetRiskSignals,
 } from "./handlers.js";
 
 export function createRiskFlowRoutes(): Hono {
@@ -97,6 +98,9 @@ export function createRiskFlowRoutes(): Hono {
   router.get("/phrases", handleGetPhrases);
   router.post("/phrases", handleAddPhrase);
   router.delete("/phrases/:id", handleDeletePhrase);
+
+  // Risk Signals — AI-refined cards (S16-T3)
+  router.get("/risk-signals", handleGetRiskSignals);
 
   return router;
 }

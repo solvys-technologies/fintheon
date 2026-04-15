@@ -781,6 +781,54 @@ export async function scoringCycle(): Promise<number> {
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
 
+    // ── Auto-purge zero-IV items older than 1 hour ─────────────────────────
+    // [claude-code 2026-04-15] S16-T5: Zero-IV items are noise (content-guard blocked,
+    // dismissed-pattern matches, narrative gate drops). Purge stale ones to keep the feed clean.
+    // Scoped: iv_score = 0 AND published_at < 1 hour ago. Never touches fresh or scored items.
+    try {
+      const sb = getSupabaseClient();
+      if (sb) {
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        const { count: purgedScored } = await sb
+          .from("scored_riskflow_items")
+          .delete({ count: "exact" })
+          .eq("iv_score", 0)
+          .lt("published_at", oneHourAgo);
+        if (purgedScored && purgedScored > 0) {
+          log.info(`Purged ${purgedScored} zero-IV scored items older than 1h`);
+        }
+      }
+    } catch (purgeErr) {
+      log.warn("Zero-IV purge failed (non-fatal):", {
+        error: purgeErr instanceof Error ? purgeErr.message : String(purgeErr),
+      });
+    }
+
+    // ── Low-priority batch tagging for Harper ────────────────────────────
+    // [claude-code 2026-04-15] S16-T5: Collect newly scored macroLevel 1 items and
+    // enqueue a single Harper task so she can review/delete/refine filters.
+    const lowPriorityIds = enrichedItems
+      .filter((item) => (item.macroLevel ?? 1) === 1)
+      .map((item) => item.id);
+    if (lowPriorityIds.length > 0) {
+      try {
+        const { enqueueTask, isAlive } =
+          await import("../harper-autonomous/index.js");
+        if (isAlive()) {
+          enqueueTask({
+            type: "batch-review-low-priority",
+            payload: { itemIds: lowPriorityIds, count: lowPriorityIds.length },
+            priority: "low",
+          });
+          log.info(
+            `Enqueued Harper batch-review for ${lowPriorityIds.length} low-priority items`,
+          );
+        }
+      } catch {
+        /* Harper autonomous not loaded */
+      }
+    }
+
     // Catalyst Watch — match scored items against user watchlist phrases
     try {
       const activePhrases = await getAllActivePhrases();
