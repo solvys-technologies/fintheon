@@ -17,6 +17,7 @@ interface TradingRegime {
   confidence: number;
   record: { bullishDays: number; bearishDays: number };
   daysObserved: number;
+  /** Valid values: continuation, reversal, convergence, consolidation, rotation, neutral */
   bias: string;
   source?: string;
   instruments: string[];
@@ -96,7 +97,7 @@ const SEED_REGIMES: TradingRegime[] = [
     timezone: "ET",
     daysActive: ["Mon", "Tue", "Wed", "Thu", "Fri"],
     confidence: 70,
-    record: { wins: 30, losses: 13 },
+    record: { bullishDays: 30, bearishDays: 13 },
     daysObserved: 43,
     bias: "neutral",
     instruments: ["/NQ", "/ES"],
@@ -111,7 +112,7 @@ const SEED_REGIMES: TradingRegime[] = [
     timezone: "ET",
     daysActive: ["Mon", "Tue", "Wed", "Thu", "Fri"],
     confidence: 68,
-    record: { wins: 27, losses: 12 },
+    record: { bullishDays: 27, bearishDays: 12 },
     daysObserved: 39,
     bias: "neutral",
     instruments: ["/NQ", "/ES", "/MNQ"],
@@ -125,7 +126,7 @@ const SEED_REGIMES: TradingRegime[] = [
     timezone: "ET",
     daysActive: ["Mon", "Tue", "Wed", "Thu", "Fri"],
     confidence: 75,
-    record: { wins: 38, losses: 12 },
+    record: { bullishDays: 38, bearishDays: 12 },
     daysObserved: 50,
     bias: "neutral",
     instruments: ["/NQ", "/ES", "/MNQ"],
@@ -140,7 +141,7 @@ const SEED_REGIMES: TradingRegime[] = [
     timezone: "ET",
     daysActive: ["Wed"],
     confidence: 80,
-    record: { wins: 8, losses: 2 },
+    record: { bullishDays: 8, bearishDays: 2 },
     daysObserved: 10,
     bias: "neutral",
     instruments: ["/NQ", "/ES", "/MNQ"],
@@ -156,9 +157,9 @@ const SEED_REGIMES: TradingRegime[] = [
     timezone: "ET",
     daysActive: ["Fri"],
     confidence: 71,
-    record: { wins: 7, losses: 3 },
+    record: { bullishDays: 7, bearishDays: 3 },
     daysObserved: 10,
-    bias: "fade",
+    bias: "reversal",
     instruments: ["/NQ", "/ES", "/MNQ"],
     notes: "First Friday of each month",
   },

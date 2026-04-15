@@ -107,3 +107,33 @@ Condensed record of completed sprint briefs. Full content preserved in git histo
 - T1: Foundation + renames / scoring carousel + Twitter CLI rotation
 - T2: Team presence + panel / Claude computer use + TradingView trade plan
 - T3: LiveKit group voice call integration / shared memory + agentic editor sidebar
+
+## S14 — Aquarium Revival + Pipeline + CAO
+
+- PLAN: Aquarium revival, pipeline hardening, CAO enhancements
+- T1: MiroShark revival
+- T2: Boardroom DAG streaming
+- T3: Feed pipeline hardening
+- T4: Timeline filters
+- T5: Feed refresh consistency
+- T6: Splashscreen redesign
+- T7: Artifact parser wiring
+- T8: CAO memory + naming
+- T9: Chat sidebar + Imperium polish
+- T10: Dead code cleanup
+- T11: Review + unify
+
+## S15 — Polymarket + Divergence Tracking
+
+- T1: Hermes Polymarket MCP integration
+- T2: Fintheon Polymarket service
+- T3: Aquarium divergence tracking
+
+## S16 — Agent Individuality + Risk Signals + VIX Cards
+
+- T1: Agent individuality (Harper/Hermes personality)
+- T2: Polymarket move + enhance
+- T3: Risk signal cards (AI-refined bulletins)
+- T4: VIX forecast cards (BlendedVIX + NextSessionForecast)
+- T5: RiskFlow sanitation (zero-IV purge, dismissal feedback)
+- T6: Sanctum unification (wire T2-T5 outputs into Sanctum)
