@@ -391,6 +391,174 @@ export function SettingsPage() {
         </div>
       </section>
 
+      {/* TRADER */}
+      <section>
+        <SectionHeader label="Trader" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div>
+            <div
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: 10,
+                color: "var(--text-secondary)",
+                marginBottom: 6,
+                letterSpacing: "0.05em",
+              }}
+            >
+              DISPLAY NAME
+            </div>
+            <input
+              type="text"
+              value={settings.traderName}
+              onChange={(e) => updateSettings({ traderName: e.target.value })}
+              placeholder="Your name"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                background: "var(--surface)",
+                border: "1px solid var(--border-visible)",
+                borderRadius: 6,
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-body)",
+                fontSize: 14,
+                outline: "none",
+                minHeight: 44,
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+          <div>
+            <div
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: 10,
+                color: "var(--text-secondary)",
+                marginBottom: 6,
+                letterSpacing: "0.05em",
+              }}
+            >
+              CAO NAME
+            </div>
+            <input
+              type="text"
+              value={settings.caoName}
+              onChange={(e) => updateSettings({ caoName: e.target.value })}
+              placeholder="Harper"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                background: "var(--surface)",
+                border: "1px solid var(--border-visible)",
+                borderRadius: 6,
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-body)",
+                fontSize: 14,
+                outline: "none",
+                minHeight: 44,
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+        </div>
+        <SettingRow label="Hermes AI">
+          <Toggle
+            on={settings.hermesEnabled}
+            onToggle={() =>
+              updateSettings({ hermesEnabled: !settings.hermesEnabled })
+            }
+          />
+        </SettingRow>
+        <SettingRow label="Alert Sounds">
+          <Toggle
+            on={settings.alertConfig.soundEnabled}
+            onToggle={() =>
+              updateSettings({
+                alertConfig: {
+                  ...settings.alertConfig,
+                  soundEnabled: !settings.alertConfig.soundEnabled,
+                },
+              })
+            }
+          />
+        </SettingRow>
+        <SettingRow label="Haptic Feedback">
+          <Toggle
+            on={settings.hapticEnabled}
+            onToggle={() =>
+              updateSettings({ hapticEnabled: !settings.hapticEnabled })
+            }
+          />
+        </SettingRow>
+
+        {/* Risk display (read-only from backend) */}
+        <div style={{ marginTop: 8 }}>
+          <div
+            style={{
+              fontFamily: "'Space Mono', monospace",
+              fontSize: 10,
+              color: "var(--text-secondary)",
+              marginBottom: 8,
+              letterSpacing: "0.05em",
+            }}
+          >
+            RISK LIMITS (SET ON DESKTOP)
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              padding: "10px 12px",
+              background: "var(--surface)",
+              borderRadius: 6,
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: 10,
+                  color: "var(--text-secondary)",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                TARGET
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 18,
+                  color: "var(--success)",
+                }}
+              >
+                ${settings.riskSettings.dailyProfitTarget.toLocaleString()}
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: 10,
+                  color: "var(--text-secondary)",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                LIMIT
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 18,
+                  color: "var(--error)",
+                }}
+              >
+                ${settings.riskSettings.dailyLossLimit.toLocaleString()}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ACCOUNT */}
       <section>
         <SectionHeader label="Account" />
