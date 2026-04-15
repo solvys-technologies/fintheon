@@ -350,7 +350,7 @@ export function createHarperRoutes() {
         "Strands agent, MCP tools available",
       );
 
-      const response = streamHarperChat(
+      const response = await streamHarperChat(
         {
           message,
           images: body.images,

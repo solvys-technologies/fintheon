@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T00:00:00",
+    agent: "claude-code",
+    summary:
+      "S16-T4: Blended VIX Score + Next Session Forecast as visible cards on Aquarium Page 0. Three-component IV breakdown, implied range, scenario table, systemic risk overlay. 60s polling.",
+    files: [
+      "frontend/components/narrative/BlendedVIXCard.tsx",
+      "frontend/components/narrative/NextSessionForecastCard.tsx",
+      "frontend/components/narrative/useIVScoreData.ts",
+    ],
+  },
+  {
     date: "2026-04-14T12:00:00",
     agent: "claude-code",
     summary:

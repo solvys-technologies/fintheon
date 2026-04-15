@@ -11,7 +11,7 @@ import {
   DEEP_ANALYSIS_BLOCK,
 } from "./skill-instructions.js";
 import { getCommandmentGates } from "./commandment-gates.js";
-import { getSupabaseClient } from "../../config/supabase.js";
+import { getSupabaseClient } from "../../../config/supabase.js";
 
 /** Cache entry for compiled prompts */
 type CacheEntry = { prompt: string; expiresAt: number };

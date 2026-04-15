@@ -330,7 +330,7 @@ export async function handleChat(c: Context) {
     );
 
     // Create the appropriate Strands agent
-    const agent = createAgentForRole(agentInfo.agent, requestId);
+    const agent = await createAgentForRole(agentInfo.agent, requestId);
 
     // Build the full prompt with history context
     let prompt = message;

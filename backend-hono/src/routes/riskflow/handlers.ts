@@ -1238,3 +1238,16 @@ export async function handleDeletePhrase(c: Context) {
   if (!deleted) return c.json({ error: "Not found" }, 404);
   return c.json({ ok: true });
 }
+
+// ── Risk Signals (S16-T3) ─────────────────────────────────────────────────────
+
+export async function handleGetRiskSignals(c: Context) {
+  const { getRiskSignals } =
+    await import("../../services/riskflow/risk-signal-generator.js");
+  const signals = await getRiskSignals();
+  return c.json({
+    signals,
+    generatedAt:
+      signals.length > 0 ? signals[0].generatedAt : new Date().toISOString(),
+  });
+}
