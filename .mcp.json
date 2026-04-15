@@ -13,10 +13,6 @@
         "EXA_API_KEY": "${EXA_API_KEY}"
       }
     },
-    "framer": {
-      "type": "url",
-      "url": "https://mcp.unframer.co/mcp?id=b1caf95b05d6180110aca64b500470d1405d8d7595ef94f5120a5791c2b70c41&secret=cMzos9tRvg64Rnnho3cXA3BH61EOlC6r"
-    },
     "notion": {
       "command": "npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],
