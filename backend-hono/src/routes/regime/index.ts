@@ -5,6 +5,7 @@ import {
   handleGetHistory,
   handleSetRegime,
   handleDetect,
+  handleConfidence,
 } from "./handlers.js";
 
 export function createMarketRegimeRoutes(): Hono {
@@ -14,6 +15,7 @@ export function createMarketRegimeRoutes(): Hono {
   app.get("/history", handleGetHistory);
   app.post("/set", handleSetRegime);
   app.post("/detect", handleDetect);
+  app.post("/confidence", handleConfidence);
 
   return app;
 }

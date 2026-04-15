@@ -9,6 +9,7 @@ import {
   handleContext,
   handleIVScore,
   handleIVScoreStream,
+  handleCOT,
 } from "./handlers.js";
 
 export function createMarketDataRoutes(): Hono {
@@ -21,5 +22,6 @@ export function createMarketDataRoutes(): Hono {
   router.get("/walls/:symbol", handleWalls);
   router.get("/flow/:symbol", handleFlow);
   router.get("/context/:symbol", handleContext); // full aggregated context
+  router.get("/cot/:instrument", handleCOT); // CFTC COT positioning
   return router;
 }

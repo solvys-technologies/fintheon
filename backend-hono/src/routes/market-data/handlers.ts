@@ -270,6 +270,20 @@ export async function handleIVScore(c: Context) {
   }
 }
 
+export async function handleCOT(c: Context) {
+  const instrument = c.req.param("instrument");
+  if (!instrument) return c.json({ error: "Instrument is required" }, 400);
+  try {
+    const { getCOTPositioning } =
+      await import("../../services/market-data/cot-service.js");
+    const data = await getCOTPositioning("/" + instrument);
+    return c.json(data);
+  } catch (err: any) {
+    console.error("[market-data] COT error:", err.message);
+    return c.json({ error: err.message ?? "Failed to fetch COT data" }, 500);
+  }
+}
+
 export async function handleIVScoreStream(c: Context) {
   const symbol = c.req.query("symbol") ?? c.req.query("instrument") ?? "/ES";
   const instrument = symbol.startsWith("/") ? symbol : `/${symbol}`;

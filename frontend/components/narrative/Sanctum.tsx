@@ -1,3 +1,4 @@
+// [claude-code 2026-04-15] S16-T6: Sanctum unification — remove Theses, move Polymarket to Page 2, add VIX + RiskSignal cards
 // [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
 // [claude-code 2026-03-28] S4-T3: KPI labels rewritten to trading lingo with interpretive sub-text
 // [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state
@@ -20,7 +21,6 @@ import type {
 } from "../../types/miroshark";
 import { AUDITORIUM_PAGES, ivHeatColor } from "../../types/miroshark";
 import { SanctumChart } from "./SanctumChart";
-import { SanctumTheses } from "./SanctumTheses";
 import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
 import { SanctumMacroStrip } from "./SanctumMacroStrip";
@@ -30,6 +30,10 @@ import { SanctumRiskAssessment } from "./SanctumRiskAssessment";
 import { AgentScorecard } from "../consilium/AgentScorecard";
 import { AquariumPredictionCards } from "./AquariumPredictionCards";
 import { PolymarketPredictionCards } from "./PolymarketPredictionCards";
+import { BlendedVIXCard } from "./BlendedVIXCard";
+import { NextSessionForecastCard } from "./NextSessionForecastCard";
+import { RiskSignalCards } from "./RiskSignalCards";
+import { useIVScoreData } from "./useIVScoreData";
 
 interface CatalystInput {
   id: string;
@@ -84,6 +88,8 @@ export function Sanctum({
   narratives,
   selectedSymbol = "/MNQ",
 }: SanctumProps) {
+  const { data: ivData, isLoading: ivLoading } = useIVScoreData();
+
   // Guardrailed 5-day rolling window — no user toggle
   const rollingDays = 5 as const;
   const [running, setRunning] = useState(false);
@@ -370,14 +376,13 @@ export function Sanctum({
                   <AquariumPredictionCards />
                 </div>
 
-                {/* Polymarket Prediction Markets */}
-                <div className="mt-1 pt-1 border-t border-[var(--fintheon-border)]/5">
-                  <div className="flex items-center gap-2 px-4 pb-1">
-                    <span className="text-[7px] uppercase tracking-wider text-[var(--fintheon-muted)]/30 font-semibold">
-                      Prediction Markets
-                    </span>
-                  </div>
-                  <PolymarketPredictionCards />
+                {/* Blended VIX + Next Session Forecast */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 px-4">
+                  <BlendedVIXCard data={ivData} isLoading={ivLoading} />
+                  <NextSessionForecastCard
+                    data={ivData}
+                    isLoading={ivLoading}
+                  />
                 </div>
               </div>
 
@@ -437,19 +442,7 @@ export function Sanctum({
 
               {data && data.compositeIV > 0 ? (
                 <div className="flex-1 flex flex-col gap-6">
-                  {/* Top Volatile Theses */}
-                  <div>
-                    <div className="text-[9px] text-[var(--fintheon-muted)]/40 mb-2 uppercase tracking-wider">
-                      Top Volatile Theses
-                    </div>
-                    <SanctumTheses
-                      scenarios={data.scenarios}
-                      categoryScores={data.categoryScores}
-                      expanded={preset === "risk-scan"}
-                    />
-                  </div>
-
-                  {/* ── Bottom 50/50: Active Narratives + Live Risk Signals ── */}
+                  {/* ── 50/50: Active Narratives + Live Risk Signals ── */}
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 min-h-[300px]">
                     {/* Left: Active Narratives */}
                     <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
@@ -487,6 +480,14 @@ export function Sanctum({
                     </div>
                   </div>
 
+                  {/* Prediction Markets & Polybot Trades — moved from Page 0 */}
+                  <div>
+                    <div className="text-[9px] text-[var(--fintheon-muted)]/40 mb-2 uppercase tracking-wider">
+                      Prediction Markets & Polybot Trades
+                    </div>
+                    <PolymarketPredictionCards />
+                  </div>
+
                   {/* ── Agent Scorecards ── */}
                   <div className="flex items-center gap-3 py-2">
                     <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
@@ -496,6 +497,16 @@ export function Sanctum({
                     <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
                   </div>
                   <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
+                    <div className="border-b border-[var(--fintheon-border)]/10">
+                      <div className="px-4 py-2">
+                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
+                          Risk Signals
+                        </span>
+                      </div>
+                      <div className="px-3 pb-3">
+                        <RiskSignalCards />
+                      </div>
+                    </div>
                     <div className="max-h-[350px] overflow-y-auto">
                       <AgentScorecard />
                     </div>

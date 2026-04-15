@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T17:00:00",
+    agent: "claude-code",
+    summary:
+      "S16-T6: Sanctum unification — remove Theses, move Polymarket to Page 2, add BlendedVIX + NextSessionForecast cards to Page 0, add RiskSignalCards to Agent Performance section.",
+    files: ["frontend/components/narrative/Sanctum.tsx"],
+  },
+  {
     date: "2026-04-15T16:00:00",
     agent: "claude-code",
     summary:

@@ -1,5 +1,6 @@
 // [claude-code 2026-03-06] Regime Tracker types and seed data for institutional/session/report trading windows
 // [claude-code 2026-03-12] Replaced W/L record with ORB bullish/bearish day tracking
+// [claude-code 2026-04-15] T2: 5 heuristic bias classifications, optional orbHistory/antilag/COT fields
 
 export interface TradingRegime {
   id: string;
@@ -12,10 +13,27 @@ export interface TradingRegime {
   confidence: number; // 0-100
   record: { bullishDays: number; bearishDays: number };
   daysObserved: number;
-  bias: "long" | "short" | "fade" | "neutral";
+  bias:
+    | "continuation"
+    | "reversal"
+    | "convergence"
+    | "consolidation"
+    | "rotation";
   source?: string;
   instruments: string[];
   notes?: string;
+  orbHistory?: Array<{
+    date: string;
+    openPrice: number;
+    price10Min: number;
+    direction: "bullish" | "bearish";
+    changeBps: number;
+  }>;
+  antilagConfidence?: number;
+  cotSignal?: {
+    direction: "bullish" | "bearish" | "neutral";
+    strength: number;
+  };
 }
 
 const ALL_WEEKDAYS: TradingRegime["daysActive"] = [
@@ -40,7 +58,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     confidence: 72,
     record: { bullishDays: 36, bearishDays: 14 },
     daysObserved: 50,
-    bias: "fade",
+    bias: "reversal",
     source: "Jane Street",
     instruments: ["/NQ", "/ES", "/MNQ"],
   },
@@ -56,7 +74,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     confidence: 65,
     record: { bullishDays: 28, bearishDays: 15 },
     daysObserved: 43,
-    bias: "fade",
+    bias: "reversal",
     source: "Goldman Sachs",
     instruments: ["/NQ", "/ES"],
   },
@@ -71,7 +89,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     confidence: 62,
     record: { bullishDays: 25, bearishDays: 15 },
     daysObserved: 40,
-    bias: "fade",
+    bias: "reversal",
     source: "JPMorgan",
     instruments: ["/NQ", "/ES"],
   },
@@ -86,7 +104,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     confidence: 60,
     record: { bullishDays: 22, bearishDays: 15 },
     daysObserved: 37,
-    bias: "fade",
+    bias: "reversal",
     source: "Citi/BOA",
     instruments: ["/NQ", "/ES"],
   },
@@ -104,7 +122,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     confidence: 70,
     record: { bullishDays: 30, bearishDays: 13 },
     daysObserved: 43,
-    bias: "neutral",
+    bias: "consolidation",
     instruments: ["/NQ", "/ES"],
   },
   {
@@ -119,7 +137,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     confidence: 68,
     record: { bullishDays: 27, bearishDays: 12 },
     daysObserved: 39,
-    bias: "neutral",
+    bias: "consolidation",
     instruments: ["/NQ", "/ES", "/MNQ"],
   },
   {
@@ -133,7 +151,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     confidence: 75,
     record: { bullishDays: 38, bearishDays: 12 },
     daysObserved: 50,
-    bias: "neutral",
+    bias: "consolidation",
     instruments: ["/NQ", "/ES", "/MNQ"],
   },
 
@@ -150,7 +168,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     confidence: 80,
     record: { bullishDays: 8, bearishDays: 2 },
     daysObserved: 10,
-    bias: "neutral",
+    bias: "consolidation",
     instruments: ["/NQ", "/ES", "/MNQ"],
     notes: "Only on scheduled FOMC meeting dates",
   },
@@ -166,7 +184,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     confidence: 71,
     record: { bullishDays: 7, bearishDays: 3 },
     daysObserved: 10,
-    bias: "fade",
+    bias: "reversal",
     instruments: ["/NQ", "/ES", "/MNQ"],
     notes: "First Friday of each month",
   },

@@ -231,5 +231,76 @@ export async function calculateBlendedIVScore(
   return result;
 }
 
+/**
+ * Antilag confidence blending — combines IV score, prediction, COT positioning,
+ * and volume spike into a single 0-100 regime confidence score.
+ * Weights: 35% IV, 25% prediction, 25% COT, 15% volume
+ */
+export async function calculateRegimeConfidence(params: {
+  instrument: string;
+  startTime: string;
+  endTime: string;
+}): Promise<{
+  antilagConfidence: number;
+  breakdown: { iv: number; prediction: number; cot: number; volume: number };
+}> {
+  const { instrument, startTime, endTime } = params;
+
+  let ivNorm = 0.5;
+  let predConf = 0.5;
+  let cotStrength = 0.5;
+  let volSignal = 0.5;
+
+  // IV score normalized to 0-1
+  try {
+    const ivScore = await calculateBlendedIVScore([], instrument);
+    ivNorm = ivScore.score / 10;
+  } catch (err) {
+    console.error("[RegimeConf] IV score failed:", err);
+  }
+
+  // Prediction confidence (already 0-1)
+  try {
+    const ivScore = await calculateBlendedIVScore([], instrument);
+    const pred = await generateIVPrediction(ivScore);
+    predConf = pred.confidence;
+  } catch (err) {
+    console.error("[RegimeConf] prediction failed:", err);
+  }
+
+  // COT signal strength (0-1)
+  try {
+    const { getCOTPositioning } = await import("./cot-service.js");
+    const cot = await getCOTPositioning(instrument);
+    cotStrength = cot.signalStrength;
+  } catch (err) {
+    console.error("[RegimeConf] COT failed:", err);
+  }
+
+  // Volume spike signal (0-1)
+  try {
+    const { getVolumeSpikeSignal } = await import("./volume-spike-service.js");
+    const vol = await getVolumeSpikeSignal(instrument, startTime, endTime);
+    volSignal = vol.signal;
+  } catch (err) {
+    console.error("[RegimeConf] volume spike failed:", err);
+  }
+
+  const antilagConfidence = Math.round(
+    (0.35 * ivNorm + 0.25 * predConf + 0.25 * cotStrength + 0.15 * volSignal) *
+      100,
+  );
+
+  return {
+    antilagConfidence,
+    breakdown: {
+      iv: Number(ivNorm.toFixed(3)),
+      prediction: Number(predConf.toFixed(3)),
+      cot: Number(cotStrength.toFixed(3)),
+      volume: Number(volSignal.toFixed(3)),
+    },
+  };
+}
+
 /** Re-export classifyEventType for handler use */
 export { classifyEventType };

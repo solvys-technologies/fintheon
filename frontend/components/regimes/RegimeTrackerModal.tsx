@@ -1,24 +1,17 @@
 // [claude-code 2026-03-06] Full Regime Tracker modal — grouped by category, W-L tracking, add custom regimes
 // [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish, AI generate CTA, delete all regimes, 12H NY time, collapsed active regimes, labeled ORB record
+// [claude-code 2026-04-15] T2: Decomposed into subcomponents, liquid glass shell, 5 bias classifications, removed footer border
 import { useState, useMemo } from "react";
-import {
-  X,
-  Plus,
-  Clock,
-  Diff,
-  TrendingDown,
-  ChevronDown,
-  ChevronRight,
-  Trash2,
-} from "lucide-react";
+import { X, Plus, Clock, ChevronDown, ChevronRight } from "lucide-react";
 import { useRegimes } from "../../lib/regime-store";
 import {
   isRegimeActive,
   getTimeRemaining,
   getCurrentETTime,
-  formatTimeRange12H,
 } from "../../lib/regime-time";
 import type { TradingRegime } from "../../lib/regimes";
+import { GlassEffect } from "../ui/liquid-glass";
+import { RegimeCard } from "./RegimeCard";
 
 const CATEGORY_LABELS: Record<TradingRegime["category"], string> = {
   institutional: "Institutional",
@@ -34,187 +27,6 @@ const CATEGORY_ORDER: TradingRegime["category"][] = [
   "custom",
 ];
 
-function BiasBadge({ bias }: { bias: TradingRegime["bias"] }) {
-  const config = {
-    long: { label: "Long", color: "text-emerald-400" },
-    short: { label: "Short", color: "text-red-400" },
-    fade: { label: "Fade", color: "text-orange-400" },
-    neutral: { label: "Neutral", color: "text-zinc-400" },
-  }[bias];
-
-  return (
-    <span
-      className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-semibold tracking-wider uppercase ${config.color}`}
-    >
-      {config.label}
-    </span>
-  );
-}
-
-function ConfidenceBar({ value }: { value: number }) {
-  const color =
-    value >= 70
-      ? "bg-emerald-500"
-      : value >= 50
-        ? "bg-yellow-500"
-        : "bg-red-500";
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-zinc-800 overflow-hidden">
-        <div
-          className={`h-full ${color} transition-all`}
-          style={{ width: `${value}%` }}
-        />
-      </div>
-      <span
-        className={`text-[10px] font-semibold ${value >= 70 ? "text-emerald-400" : value >= 50 ? "text-yellow-500" : "text-red-400"}`}
-      >
-        {value}%
-      </span>
-    </div>
-  );
-}
-
-/** ORB Direction record — shows bullish/bearish day count with label */
-function OrbRecord({ record }: { record: TradingRegime["record"] }) {
-  const total = record.bullishDays + record.bearishDays;
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-[8px] text-zinc-600 uppercase tracking-wider">
-        ORB
-      </span>
-      <span className="flex items-center gap-0.5 text-[10px]">
-        <Diff className="w-2.5 h-2.5 text-emerald-400" />
-        <span className="text-emerald-400 font-semibold">
-          {record.bullishDays}
-        </span>
-      </span>
-      <span className="text-zinc-700">/</span>
-      <span className="flex items-center gap-0.5 text-[10px]">
-        <span className="text-red-400 font-semibold">{record.bearishDays}</span>
-        <TrendingDown className="w-2.5 h-2.5 text-red-400" />
-      </span>
-      {total > 0 && (
-        <span className="text-[9px] text-zinc-600 ml-0.5">
-          ({Math.round((record.bullishDays / total) * 100)}%)
-        </span>
-      )}
-    </div>
-  );
-}
-
-function RegimeCard({
-  regime,
-  isActive,
-  timeInfo,
-  onRecordBullish,
-  onRecordBearish,
-  onDelete,
-}: {
-  regime: TradingRegime;
-  isActive: boolean;
-  timeInfo: string;
-  onRecordBullish: () => void;
-  onRecordBearish: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <div
-      className={`bg-[#0a0a06] border px-3 py-2.5 ${isActive ? "border-[var(--fintheon-accent)]/50 shadow-[0_0_12px_rgba(212,175,55,0.1)]" : "border-zinc-800/60"}`}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-1.5">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[var(--fintheon-text)] truncate">
-              {regime.name}
-            </span>
-            {isActive && (
-              <span className="shrink-0 inline-flex items-center gap-1 text-[8px] font-bold tracking-wider uppercase text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 px-1.5 py-0.5">
-                <span className="w-1 h-1 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
-                LIVE
-              </span>
-            )}
-          </div>
-          <p className="text-[10px] text-zinc-500 mt-0.5 line-clamp-2">
-            {regime.description}
-          </p>
-        </div>
-        <button
-          onClick={onDelete}
-          className="shrink-0 p-1 text-zinc-700 hover:text-red-400 transition-colors"
-          title="Delete regime"
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
-      </div>
-
-      {/* Meta row — 12H NY time */}
-      <div className="flex items-center gap-3 mb-2 flex-wrap">
-        <span className="text-[9px] text-zinc-500 flex items-center gap-1">
-          <Clock className="w-2.5 h-2.5" />
-          {formatTimeRange12H(regime.timeRange.start, regime.timeRange.end)}
-        </span>
-        <span className="text-[9px] text-zinc-600">
-          {regime.daysActive.join(", ")}
-        </span>
-        <BiasBadge bias={regime.bias} />
-        {regime.source && (
-          <span className="text-[9px] text-zinc-600 italic">
-            {regime.source}
-          </span>
-        )}
-      </div>
-
-      {/* Instruments */}
-      <div className="flex items-center gap-1 mb-2">
-        {regime.instruments.map((inst) => (
-          <span
-            key={inst}
-            className="text-[9px] bg-zinc-800/60 text-zinc-400 px-1.5 py-0.5"
-          >
-            {inst}
-          </span>
-        ))}
-      </div>
-
-      {/* Confidence bar */}
-      <div className="mb-2">
-        <ConfidenceBar value={regime.confidence} />
-      </div>
-
-      {/* Stats + actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <OrbRecord record={regime.record} />
-          <span className="text-[9px] text-zinc-600">
-            {regime.daysObserved}d observed
-          </span>
-          <span className="text-[9px] text-[var(--fintheon-accent)]/60">
-            {timeInfo}
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={onRecordBullish}
-            className="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
-            title="Record Bullish ORB Day"
-          >
-            <Diff className="w-2.5 h-2.5" />
-          </button>
-          <button
-            onClick={onRecordBearish}
-            className="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-            title="Record Bearish ORB Day"
-          >
-            <TrendingDown className="w-2.5 h-2.5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function AddRegimeForm({
   onAdd,
   onCancel,
@@ -226,7 +38,7 @@ function AddRegimeForm({
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
-  const [bias, setBias] = useState<TradingRegime["bias"]>("neutral");
+  const [bias, setBias] = useState<TradingRegime["bias"]>("consolidation");
   const [confidence, setConfidence] = useState(50);
   const [instruments, setInstruments] = useState("/NQ, /ES");
 
@@ -302,10 +114,11 @@ function AddRegimeForm({
             value={bias}
             onChange={(e) => setBias(e.target.value as TradingRegime["bias"])}
           >
-            <option value="neutral">Neutral</option>
-            <option value="long">Long</option>
-            <option value="short">Short</option>
-            <option value="fade">Fade</option>
+            <option value="continuation">Continuation</option>
+            <option value="reversal">Reversal</option>
+            <option value="convergence">Convergence</option>
+            <option value="consolidation">Consolidation</option>
+            <option value="rotation">Rotation</option>
           </select>
         </div>
         <div>
@@ -399,8 +212,10 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
         onClick={onClose}
       />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <div
-          className="pointer-events-auto w-full max-w-2xl bg-[var(--fintheon-bg)] rounded-xl shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh] overflow-hidden"
+        <GlassEffect
+          tint="rgba(5,4,2,0.88)"
+          blur={16}
+          className="pointer-events-auto w-full max-w-2xl rounded-2xl shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -520,17 +335,20 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
             })}
           </div>
 
-          {/* Footer */}
-          <div className="shrink-0 px-4 py-2 border-t border-zinc-800/60 flex items-center justify-between">
-            <span className="text-[9px] text-zinc-700 tracking-wider uppercase">
-              {regimes.length} regimes |{" "}
-              {regimes.filter((r) => isRegimeActive(r, now)).length} active
-            </span>
-            <span className="text-[9px] text-zinc-700">
-              All times New York (ET)
-            </span>
+          {/* Footer — no border, subtle separator */}
+          <div className="shrink-0">
+            <div className="h-px bg-[var(--fintheon-accent)]/5" />
+            <div className="px-4 py-2 flex items-center justify-between">
+              <span className="text-[9px] text-zinc-700 tracking-wider uppercase">
+                {regimes.length} regimes |{" "}
+                {regimes.filter((r) => isRegimeActive(r, now)).length} active
+              </span>
+              <span className="text-[9px] text-zinc-700">
+                All times New York (ET)
+              </span>
+            </div>
           </div>
-        </div>
+        </GlassEffect>
       </div>
     </>
   );

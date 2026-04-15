@@ -128,3 +128,4 @@
 [2026-04-15T04:44:03Z] status=healthy cache=500 poller=True scorer=True unscored=0 newest=2026-04-15T04:29:25.000Z itemAge=0.2h cacheAge=70644ms rateLimited=False
 [2026-04-15T04:46:19Z] status=healthy cache=500 poller=True scorer=True unscored=0 newest=2026-04-15T04:29:25.000Z itemAge=0.3h cacheAge=6349ms rateLimited=False
 [2026-04-15T04:49:13Z] status=healthy cache=500 poller=True scorer=True unscored=0 newest=2026-04-15T04:29:25.000Z itemAge=0.3h cacheAge=180424ms rateLimited=False
+[2026-04-15T12:14:15Z] status=stale cache=500 poller=True scorer=True unscored=0 newest=2026-04-15T09:48:47.000Z itemAge=2.4h cacheAge=8608821ms rateLimited=False

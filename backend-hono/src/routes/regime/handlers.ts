@@ -55,6 +55,35 @@ export async function handleSetRegime(c: Context) {
   return c.json({ ...state, multipliers });
 }
 
+// POST /api/regime/confidence — antilag confidence blending
+export async function handleConfidence(c: Context) {
+  const body = await c.req
+    .json<{ instrument: string; startTime: string; endTime: string }>()
+    .catch(() => null);
+  if (!body?.instrument || !body?.startTime || !body?.endTime) {
+    return c.json(
+      { error: "Missing required fields: instrument, startTime, endTime" },
+      400,
+    );
+  }
+  try {
+    const { calculateRegimeConfidence } =
+      await import("../../services/market-data/iv-scorer.js");
+    const result = await calculateRegimeConfidence({
+      instrument: body.instrument,
+      startTime: body.startTime,
+      endTime: body.endTime,
+    });
+    return c.json(result);
+  } catch (err: any) {
+    console.error("[regime] confidence error:", err.message);
+    return c.json(
+      { error: err.message ?? "Failed to calculate regime confidence" },
+      500,
+    );
+  }
+}
+
 // POST /api/regime/detect — triggers detection, returns signal (does NOT auto-apply)
 export async function handleDetect(c: Context) {
   const feedResponse = await getFeed("system", { limit: 50 });
