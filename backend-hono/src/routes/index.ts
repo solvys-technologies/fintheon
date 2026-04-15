@@ -59,6 +59,7 @@ import { createEditorRoutes } from "./editor/index.js";
 import { createMcpRoutes } from "./mcp/index.js";
 import { createDagRoutes } from "./dag/index.js";
 import { createPolymarketRoutes } from "./polymarket/index.js";
+import { createRelayRoutes } from "./relay.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -113,6 +114,10 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/predictions", predictionsRoutes);
   // Polymarket — read-only public market data, whale alerts, search (S15-T2)
   app.route("/api/polymarket", createPolymarketRoutes());
+  // Relay — mobile↔local backend WebSocket bridge (auth required for chat/health, WS upgrade handled separately)
+  app.use("/api/relay", authMiddleware);
+  app.use("/api/relay/*", authMiddleware);
+  app.route("/api/relay", createRelayRoutes());
   // Harper — Claude CLI chat via SDK bridge (public, local-only)
   app.route("/api/harper", createHarperRoutes());
   // Harper Ops — autonomous loop monitoring + control (public, local-only)

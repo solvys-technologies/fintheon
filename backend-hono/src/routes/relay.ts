@@ -8,8 +8,11 @@ import { createLogger } from "../lib/logger.js";
 
 const log = createLogger("Relay");
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AppEnv = { Variables: { userId: string; email: string; auth: any } };
+
 export function createRelayRoutes() {
-  const app = new Hono();
+  const app = new Hono<AppEnv>();
 
   /**
    * GET /api/relay/health — Connection status for authenticated user

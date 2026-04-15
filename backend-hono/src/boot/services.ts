@@ -50,6 +50,7 @@ import { startPredictionResolver } from "../services/polymarket-prediction-resol
 import { bootHarperAutonomous } from "../services/harper-autonomous/index.js";
 import { initRettiwtPool } from "../services/rettiwt-service.js";
 import { cleanupOldRawItems } from "../services/supabase-service.js";
+import { startRelayConnector } from "../services/relay-connector.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -295,6 +296,9 @@ export async function bootServices(): Promise<void> {
       error: String(err),
     }),
   );
+
+  // Relay connector — outbound WebSocket to Fly.io for mobile chat bridge (opt-in via RELAY_ENABLED)
+  startRelayConnector();
 
   log.info("All services initialized");
 }

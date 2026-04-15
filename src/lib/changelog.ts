@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T00:30:00",
+    agent: "claude-code",
+    summary:
+      "T6: Mobile Consilium chat with Harper via Fly.io WebSocket relay, connection status indicator, session list, relay bridge + connector backend services",
+    files: [
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/ChatMessage.tsx",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/chat/AgentBadge.tsx",
+      "mobile/components/chat/ConnectionStatus.tsx",
+      "mobile/components/chat/SessionList.tsx",
+      "backend-hono/src/routes/relay.ts",
+      "backend-hono/src/services/relay-bridge.ts",
+      "backend-hono/src/services/relay-connector.ts",
+      "backend-hono/src/boot/relay-ws.ts",
+    ],
+  },
+  {
     date: "2026-04-15T23:45:00",
     agent: "claude-code",
     summary:

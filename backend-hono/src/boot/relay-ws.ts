@@ -31,14 +31,14 @@ export function attachRelayWebSocket(server: Server): void {
 
     try {
       const user = await verifySupabaseToken(token);
-      if (!user?.id) {
+      if (!user?.sub) {
         socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
         socket.destroy();
         return;
       }
 
       wss.handleUpgrade(req, socket, head, (ws) => {
-        wss.emit("connection", ws, req, user.id);
+        wss.emit("connection", ws, req, user.sub);
       });
     } catch {
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
