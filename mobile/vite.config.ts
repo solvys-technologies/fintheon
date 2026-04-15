@@ -15,6 +15,15 @@ export default defineConfig({
     minify: process.env.NODE_ENV === "production",
     sourcemap: true,
     outDir: "dist",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor_react: ["react", "react-dom"],
+          vendor_motion: ["framer-motion"],
+          vendor_markdown: ["react-markdown"],
+        },
+      },
+    },
   },
   base: "/",
   server: {

@@ -9,6 +9,46 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T20:30:00",
+    agent: "claude-code",
+    summary:
+      "fix: Wire full system prompts to all Strands agents (Oracle, Feucht, Consul, Herald) — was using 3-line BASE_PROMPTS instead of getAgentSystemPrompt() with full persona profiles, beliefs, philosophy blocks. Only Harper had the full prompt. Fixes groupthink across DAG pipeline and direct chat routing.",
+    files: [
+      "backend-hono/src/services/strands/agent-factory.ts",
+      "backend-hono/src/services/strands/oracle.ts",
+      "backend-hono/src/services/strands/feucht.ts",
+      "backend-hono/src/services/strands/consul.ts",
+      "backend-hono/src/services/strands/herald.ts",
+      "backend-hono/src/services/strands/pipeline.ts",
+      "backend-hono/src/routes/chat.ts",
+    ],
+  },
+  {
+    date: "2026-04-15T20:00:00",
+    agent: "claude-code",
+    summary:
+      "T8: Nothing x /the-feels polish pass — page transitions (direction-aware slide + opacity crossfade), card stagger animations, VIX gold flash 400ms, mechanical toolbar/bottomsheet drag physics, dot-matrix motif on HomePage, SegmentedSpinner, lazy-loaded tabs, SW registration, Vite chunk splitting, accessibility audit (aria-labels/roles/status), touch target audit (>=44px), all loading states bracket-style",
+    files: [
+      "mobile/App.tsx",
+      "mobile/main.tsx",
+      "mobile/index.css",
+      "mobile/vite.config.ts",
+      "mobile/components/shared/SegmentedSpinner.tsx",
+      "mobile/components/shared/VixBadge.tsx",
+      "mobile/components/shared/BottomSheet.tsx",
+      "mobile/components/shared/PullToRefresh.tsx",
+      "mobile/components/layout/BottomTabBar.tsx",
+      "mobile/components/layout/MobileToolbar.tsx",
+      "mobile/components/layout/MobileShell.tsx",
+      "mobile/components/home/HomePage.tsx",
+      "mobile/components/riskflow/RiskFlowPage.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/chat/ConnectionStatus.tsx",
+      "mobile/components/settings/SettingsPage.tsx",
+    ],
+  },
+  {
     date: "2026-04-15T18:00:00",
     agent: "claude-code",
     summary:

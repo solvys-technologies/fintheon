@@ -9,12 +9,13 @@ export function VixBadge() {
   const prevValue = useRef(value);
 
   useEffect(() => {
-    if (value !== prevValue.current && value !== 0) {
+    if (value !== prevValue.current && prevValue.current !== 0 && value !== 0) {
       setFlash(true);
-      const t = setTimeout(() => setFlash(false), 300);
+      const t = setTimeout(() => setFlash(false), 400);
       prevValue.current = value;
       return () => clearTimeout(t);
     }
+    prevValue.current = value;
   }, [value]);
 
   const color =
@@ -30,6 +31,10 @@ export function VixBadge() {
 
   return (
     <div
+      role="status"
+      aria-label={
+        isStale || value === 0 ? "VIX unavailable" : `VIX ${value.toFixed(1)}`
+      }
       style={{
         position: "relative",
         display: "flex",
@@ -43,7 +48,7 @@ export function VixBadge() {
             initial={{ opacity: 0.6 }}
             animate={{ opacity: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
             style={{
               position: "absolute",
               inset: -4,

@@ -208,12 +208,17 @@ export default function ChatPage({ visible }: ChatPageProps) {
           <ConnectionStatus onStateChange={setRelayState} />
           <button
             onClick={() => setSessionListOpen(true)}
+            aria-label="Open session list"
             style={{
               background: "transparent",
               border: "none",
-              padding: 4,
+              padding: 10,
+              minWidth: 44,
+              minHeight: 44,
               cursor: "pointer",
               display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <List size={18} color="var(--text-secondary)" />

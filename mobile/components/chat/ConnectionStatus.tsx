@@ -56,7 +56,11 @@ export default function ConnectionStatus({
   }, [checkHealth]);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    <div
+      role="status"
+      aria-label={`Connection: ${LABELS[state]}`}
+      style={{ display: "flex", alignItems: "center", gap: 6 }}
+    >
       <div
         style={{
           width: 6,

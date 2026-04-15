@@ -19,7 +19,7 @@ export function BottomSheet({
 
   const handleDragEnd = useCallback(
     (_: unknown, info: PanInfo) => {
-      if (info.offset.y > 100) onClose();
+      if (Math.abs(info.velocity.y) > 300 || info.offset.y > 100) onClose();
     },
     [onClose],
   );
@@ -48,10 +48,10 @@ export function BottomSheet({
             ref={sheetRef}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            exit={{ y: "100%", opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             drag="y"
-            dragConstraints={{ top: 0 }}
+            dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.1}
             onDragEnd={handleDragEnd}
             style={{

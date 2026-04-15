@@ -22,6 +22,8 @@ interface BottomTabBarProps {
 export function BottomTabBar({ activeTab, onTabChange }: BottomTabBarProps) {
   return (
     <nav
+      role="tablist"
+      aria-label="Main navigation"
       style={{
         position: "fixed",
         bottom: 0,
@@ -42,6 +44,9 @@ export function BottomTabBar({ activeTab, onTabChange }: BottomTabBarProps) {
         return (
           <button
             key={tab.label}
+            role="tab"
+            aria-selected={active}
+            aria-label={tab.label}
             onClick={() => {
               if (i !== activeTab) {
                 navigator.vibrate?.(10);
@@ -93,7 +98,11 @@ export function BottomTabBar({ activeTab, onTabChange }: BottomTabBarProps) {
                   background: "var(--accent)",
                   borderRadius: 1,
                 }}
-                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                transition={{
+                  type: "tween",
+                  duration: 0.25,
+                  ease: [0.25, 0.1, 0.25, 1],
+                }}
               />
             )}
           </button>

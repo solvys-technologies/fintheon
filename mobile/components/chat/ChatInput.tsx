@@ -86,6 +86,7 @@ export default function ChatInput({
       <button
         onClick={handleSend}
         disabled={!canSend}
+        aria-label="Send message"
         style={{
           width: 44,
           height: 44,

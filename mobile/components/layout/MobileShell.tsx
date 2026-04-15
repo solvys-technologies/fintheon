@@ -13,7 +13,7 @@ interface MobileShellProps {
   children: ReactNode;
 }
 
-const TOOLBAR_HEIGHT = 76; // 48px bar + 28px chevron
+const TOOLBAR_HEIGHT = 92; // 48px bar + 44px chevron
 const TAB_BAR_HEIGHT = 56;
 const TAB_COUNT = 4;
 

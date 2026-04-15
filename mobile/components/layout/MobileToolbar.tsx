@@ -54,6 +54,7 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
         {/* Hamburger */}
         <button
           onClick={onHamburgerTap}
+          aria-label="Open menu"
           style={{
             background: "transparent",
             border: "none",
@@ -74,9 +75,10 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
       {/* Chevron toggle */}
       <button
         onClick={() => setExpanded((v) => !v)}
+        aria-label={expanded ? "Collapse toolbar" : "Expand toolbar"}
         style={{
           width: "100%",
-          height: 28,
+          height: 44,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -90,7 +92,7 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
       >
         <motion.div
           animate={{ rotate: expanded ? 180 : 0 }}
-          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <ChevronDown size={16} color="var(--text-disabled)" />
         </motion.div>
@@ -100,10 +102,13 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
       <AnimatePresence>
         {expanded && (
           <motion.div
-            initial={{ height: 0 }}
-            animate={{ height: "auto" }}
-            exit={{ height: 0 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{
+              height: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
+              opacity: { duration: 0.15, delay: 0.05, ease: "easeOut" },
+            }}
             style={{ overflow: "hidden" }}
           >
             <ToolbarExpanded />

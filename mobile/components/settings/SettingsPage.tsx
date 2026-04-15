@@ -314,8 +314,8 @@ export function SettingsPage() {
               onClick={() => setTheme(t)}
               title={t.label}
               style={{
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 borderRadius: 8,
                 background: t.bg,
                 border:

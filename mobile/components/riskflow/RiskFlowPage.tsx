@@ -2,6 +2,7 @@
 import { useMobileRiskFlow } from "../../contexts/RiskFlowContext";
 import { useRiskFlowInfiniteScroll } from "../../hooks/useRiskFlowInfiniteScroll";
 import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";
+import { motion } from "framer-motion";
 import { PullToRefresh } from "../shared/PullToRefresh";
 import { RiskFlowFilterBar } from "./RiskFlowFilterBar";
 import { RiskFlowCard } from "./RiskFlowCard";
@@ -79,12 +80,15 @@ export function RiskFlowPage() {
           </div>
         ) : (
           <div>
-            {filtered.map((alert) => (
-              <RiskFlowCard
+            {filtered.map((alert, i) => (
+              <motion.div
                 key={alert.id}
-                alert={alert}
-                onDismiss={removeAlert}
-              />
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, ease: "easeOut", delay: i * 0.05 }}
+              >
+                <RiskFlowCard alert={alert} onDismiss={removeAlert} />
+              </motion.div>
             ))}
           </div>
         )}

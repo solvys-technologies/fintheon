@@ -46,6 +46,7 @@ export function PullToRefresh({
     if (!pulling.current) return;
     pulling.current = false;
     if (pullDistance >= PULL_THRESHOLD && !refreshing) {
+      navigator.vibrate?.(15);
       setRefreshing(true);
       setPullDistance(PULL_THRESHOLD);
       try {
