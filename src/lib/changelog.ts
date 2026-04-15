@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-15T16:00:00",
+    agent: "claude-code",
+    summary:
+      "S16-T5: RiskFlow sanitation — auto-purge zero-IV items (>1h old), low-priority batch tagging for Harper review, dismissal reason feedback loop (reason popover + backend storage + Harper payload), expanded source filters (FJ/DeItaOne/OSINT/EconCal/PredMkts/Hermes), verified priority level mapping. Routines research documented.",
+    files: [
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "frontend/components/feed/RiskFlowMain.tsx",
+      "frontend/components/feed/AlertCardBase.tsx",
+      "frontend/components/feed/RiskFlowDetailCard.tsx",
+      "frontend/hooks/useRiskFlowFilters.ts",
+    ],
+  },
+  {
     date: "2026-04-15T12:00:00",
     agent: "claude-code",
     summary:

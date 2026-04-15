@@ -163,6 +163,7 @@ export interface HarperTask {
     | "regime-memo"
     | "consilium-intervention"
     | "feed-quality-feedback"
+    | "batch-review-low-priority"
     | "manual";
   payload: Record<string, unknown>;
   priority: "low" | "normal" | "high" | "critical";
@@ -269,6 +270,16 @@ Run your consilium-observer hook:
 2. Identify the core disagreement
 3. Present both views with confidence scores
 4. State your assessment or present trade-offs for Chief`;
+
+    case "batch-review-low-priority":
+      return `## Batch Review: Low-Priority Items
+${(task.payload.count as number) ?? 0} items scored as macroLevel 1 (Low) in this cycle.
+Item IDs: ${JSON.stringify(task.payload.itemIds ?? [])}
+
+Review these low-priority items. For each, decide:
+1. **Keep** — if it has latent value or could escalate
+2. **Delete** — if it's pure noise (log the pattern for content guard)
+3. **Refine** — suggest filter adjustments to catch similar items earlier`;
 
     case "manual":
       return `## Manual Task from Chief
