@@ -21,6 +21,8 @@ import {
   buildReflectContext,
 } from "./ai/agent-instructions/index.js";
 import { buildThoughtBankPromptBlock } from "./ai/agent-instructions/thought-bank-awareness.js";
+import { getContextForAgent } from "./agent-context-bank-service.js";
+import type { AgentMemoryEntry } from "./agent-context-bank-service.js";
 import { createLogger } from "../lib/logger.js";
 import { checkVProxyHealth, isVProxyEnabled } from "./strands/index.js";
 
@@ -513,6 +515,46 @@ export function isHermesAvailable(): boolean {
   return hermesAvailable;
 }
 
+/** Map HermesAgentRole to context bank agent ID */
+const ROLE_TO_CONTEXT_BANK_ID: Record<string, string> = {
+  "harper-cao": "harper-opus",
+  "pma-merged": "oracle",
+  "futures-desk": "feucht",
+  "fundamentals-desk": "consul",
+  herald: "herald",
+};
+
+const SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000000";
+
+/** Format AgentMemoryEntry[] into a prompt block grouped by memory_type */
+function formatMemoryBank(entries: AgentMemoryEntry[]): string {
+  if (entries.length === 0) return "";
+
+  const grouped: Record<string, string[]> = {};
+  for (const entry of entries) {
+    const type = entry.memory_type;
+    if (!grouped[type]) grouped[type] = [];
+    grouped[type].push(entry.content);
+  }
+
+  const typeLabels: Record<string, string> = {
+    soul: "Soul",
+    protocol: "Protocol",
+    observation: "Observations",
+    preference: "Preferences",
+    artifact: "Artifacts",
+  };
+
+  let block = "\n\n## Agent Memory Bank";
+  for (const [type, items] of Object.entries(grouped)) {
+    block += `\n### ${typeLabels[type] ?? type}`;
+    for (const content of items) {
+      block += `\n${content}`;
+    }
+  }
+  return block;
+}
+
 /** Map HermesAgentRole to display name for thought bank queries */
 const BOARDROOM_AGENT_NAMES: Record<string, string> = {
   "harper-cao": "Harper",
@@ -533,12 +575,20 @@ export async function handleHermesChat(
     : detectAgent(request.message);
 
   const skillTag = extractSkillTag(request.message);
-  const basePrompt = getAgentSystemPrompt(agentInfo.agent, {
+  const basePrompt = await getAgentSystemPrompt(agentInfo.agent, {
     skillTag,
     thinkHarder: request.thinkHarder,
   });
-  // Inject live RiskFlow headlines so agents can reference real-time data
+  // Inject live scored catalysts so agents can reference real-time data
   const feedContext = await buildFeedContext();
+  // Agent context bank — persistent memories from Supabase
+  const contextBankAgentId =
+    ROLE_TO_CONTEXT_BANK_ID[agentInfo.agent] ?? "harper-opus";
+  const memoryEntries = await getContextForAgent(
+    SYSTEM_USER_ID,
+    contextBankAgentId,
+  );
+  const memoryBank = formatMemoryBank(memoryEntries);
   // REFLECT context — news analysis quality report (only for Harper standups)
   const reflectContext =
     agentInfo.agent === "harper-cao" ? await buildReflectContext() : "";
@@ -546,7 +596,7 @@ export async function handleHermesChat(
   const agentDisplayName = BOARDROOM_AGENT_NAMES[agentInfo.agent] ?? "Harper";
   const thoughtBankBlock = await buildThoughtBankPromptBlock(agentDisplayName);
   const systemPrompt =
-    basePrompt + feedContext + reflectContext + thoughtBankBlock;
+    basePrompt + feedContext + memoryBank + reflectContext + thoughtBankBlock;
   const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: "system", content: systemPrompt },
   ];

@@ -74,10 +74,13 @@ function toAgentLabel(agent: HermesAgentRole | string): string {
 }
 
 /** Create the appropriate Strands agent for the detected role */
-function createAgentForRole(role: HermesAgentRole | string, requestId: string) {
+async function createAgentForRole(
+  role: HermesAgentRole | string,
+  requestId: string,
+) {
   switch (role) {
     case "harper-cao":
-      return createHarperAgent(requestId);
+      return await createHarperAgent(requestId);
     case "pma-merged":
       return createOracleAgent();
     case "futures-desk":

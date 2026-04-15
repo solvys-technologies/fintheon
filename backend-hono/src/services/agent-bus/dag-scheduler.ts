@@ -266,7 +266,7 @@ async function dispatchTask(
 
   try {
     const prompt = String(task.input.prompt ?? JSON.stringify(task.input));
-    const agent = createAgentForTask(task.agentId, dagId);
+    const agent = await createAgentForTask(task.agentId, dagId);
 
     let fullText = "";
     let timedOut = false;

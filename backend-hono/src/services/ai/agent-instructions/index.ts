@@ -101,7 +101,7 @@ When live data appears below (e.g., RiskFlow headlines), weave it into your anal
  *   8. Live RiskFlow feed context
  *   9. Cross-agent thought bank context (collective thought plane)
  */
-export function getAgentSystemPrompt(
+export async function getAgentSystemPrompt(
   role: HermesAgentRole,
   context?: {
     skillTag?: string | null;
@@ -115,7 +115,7 @@ export function getAgentSystemPrompt(
       currentPnL?: number;
     };
   },
-): string {
+): Promise<string> {
   // Cache key includes trading state hash for gate variations
   const gateHash = context?.tradingState
     ? `${context.tradingState.timeEST ?? ""}:${context.tradingState.morningRoutineDone ?? ""}:${context.tradingState.consecutiveLosses ?? 0}`
@@ -128,6 +128,12 @@ export function getAgentSystemPrompt(
 
   // 1. Base role description (graceful fallback to harper-cao)
   let prompt = BASE_PROMPTS[role] ?? BASE_PROMPTS["harper-cao"];
+
+  // 1.5. Full persona profile from ~/.hermes persona files
+  const persona = await loadPersonaFile(role);
+  if (persona) {
+    prompt += `\n\n## Full Persona Profile\n${persona}`;
+  }
 
   // 2. Shared beliefs — the neural web
   prompt += SHARED_BELIEFS;
@@ -176,23 +182,34 @@ export function extractSkillTag(message: string): string | null {
 
 /**
  * Build a live RiskFlow feed context block for agent chat prompts.
- * Returns recent headlines so agents can reference real-time data
- * when analyzing narratives, risk events, and econ prints.
+ * Queries scored_riskflow_items directly for rich catalyst data (IV scores, sentiment, tags, macro level).
  */
 export async function buildFeedContext(): Promise<string> {
   try {
-    const { getFeed } = await import("../../riskflow/feed-service.js");
-    const feed = await getFeed("system", { limit: 10 });
-    if (feed.items.length === 0) return "";
+    const sb = getSupabaseClient();
+    if (!sb) return "";
 
-    const headlines = feed.items
+    const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    const { data } = await sb
+      .from("scored_riskflow_items")
+      .select(
+        "headline, sentiment, iv_score, macro_level, tags, source, published_at",
+      )
+      .gte("published_at", cutoff)
+      .gte("iv_score", 2)
+      .order("iv_score", { ascending: false })
+      .limit(30);
+
+    if (!data || data.length === 0) return "";
+
+    const headlines = data
       .map(
         (item: any, i: number) =>
-          `${i + 1}. [${item.macroLevel >= 3 ? "HIGH" : item.macroLevel >= 2 ? "MED" : "LOW"}] ${item.headline} (${item.source}${item.sentiment ? ", " + item.sentiment : ""})`,
+          `${i + 1}. [IV ${item.iv_score ?? "?"} ${item.sentiment ?? "neutral"} ML${item.macro_level ?? "?"}${item.tags?.length ? " | " + item.tags.join(", ") : ""}] ${item.headline} (${item.source ?? "unknown"})`,
       )
       .join("\n");
 
-    return `\n\n## Live RiskFlow Headlines (recent)\n${headlines}\n\nReference these headlines when discussing current market conditions, narratives, or risk events.`;
+    return `\n\n## Live Scored Catalysts (last 12h, IV≥2)\n${headlines}\n\nReference these catalysts by name, IV score, and sentiment when discussing current market conditions.`;
   } catch {
     return "";
   }

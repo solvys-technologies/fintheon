@@ -150,10 +150,10 @@ export async function isStrandsAvailable(): Promise<boolean> {
  * Always uses VProxy (local) — DAGs run during active sessions and should fail fast.
  * No conversationManager, no tools (one-shot synthesis/analysis only).
  */
-export function createAgentForTask(
+export async function createAgentForTask(
   agentId: HermesAgentId,
   _dagId?: string,
-): Agent {
+): Promise<Agent> {
   switch (agentId) {
     case "oracle":
       return createAgent({
@@ -201,7 +201,7 @@ export function createAgentForTask(
         name: "harper-dag",
         description:
           "DAG synthesis — consolidates multi-agent findings into a unified outlook",
-        systemPrompt: getAgentSystemPrompt("harper-cao", {}),
+        systemPrompt: await getAgentSystemPrompt("harper-cao", {}),
         model: { model: "claude-opus-4-6", temperature: 0.3, maxTokens: 8192 },
         provider: "local",
       });

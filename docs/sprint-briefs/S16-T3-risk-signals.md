@@ -1,8 +1,8 @@
 # Task Brief: S16-T3 — Risk Signals Implementation
 
 **Date:** 2026-04-15
-**Scope:** Build AI-refined Risk Signal cards from bulletins + catalyst watches, displayed in Agent Performance section (Sanctum Page 2) and the Proposals pop-out panel (ConsiliumHub).
-**Estimated files:** 5
+**Scope:** Build AI-refined Risk Signal cards from bulletins + catalyst watches. Backend generator + frontend component + Proposals panel integration. Do NOT touch Sanctum.tsx — wiring handled by T6 unification.
+**Estimated files:** 4
 **Repo root:** `~/Documents/Codebases/fintheon`
 **Working directory:** `~/Documents/Codebases/fintheon`
 
@@ -12,7 +12,7 @@
 - Build frontend: `cd ~/Documents/Codebases/fintheon && bun run build`
 - Build backend: `cd ~/Documents/Codebases/fintheon/backend-hono && bun run build`
 - Backend is launchd-managed: restart with `launchctl unload/load ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist`
-- **This track depends on T2 committing first** (T2 modifies Sanctum.tsx Page 2 layout). Rebase on T2's commit before committing.
+- This track does NOT touch Sanctum.tsx — T6 unification handles all Sanctum wiring after all tracks land.
 
 ## Context
 
@@ -93,16 +93,7 @@ The Aquarium has no dedicated Risk Signal cards. "Live Risk Signals" on Page 2 c
   - Accept optional `compact` prop for panel rendering (smaller text, tighter spacing)
   - **Max lines:** 250
 
-### 4. Place in Agent Performance Section (Sanctum Page 2)
-
-- **Path:** `frontend/components/narrative/Sanctum.tsx`
-- **Action:** Modify
-- **Spec:**
-  - Add `<RiskSignalCards />` inside the Agent Performance section (around lines 490-502), before `<AgentScorecard />`
-  - Add a sub-header: "Risk Signals" in the same style as existing section headers
-  - Import `RiskSignalCards` at the top of the file
-
-### 5. Place in Proposals Panel
+### 4. Place in Proposals Panel (Sanctum.tsx placement handled by T6)
 
 - **Path:** `frontend/components/proposals/ProposalWidget.tsx`
 - **Action:** Modify
@@ -123,6 +114,7 @@ The Aquarium has no dedicated Risk Signal cards. "Live Risk Signals" on Page 2 c
 
 ## DO NOT
 
+- Touch `Sanctum.tsx` — T6 handles placing RiskSignalCards in Agent Performance section
 - Replace or remove the existing `SanctumRiskAssessment` component in the "Live Risk Signals" panel — that stays as-is
 - Modify the bulletin system or scoring system
 - Add new npm dependencies
@@ -138,8 +130,8 @@ curl -s http://localhost:8080/api/riskflow/risk-signals | head -c 500
 
 # Frontend
 cd ~/Documents/Codebases/fintheon && bun run build
-# Open Aquarium Page 2 → Agent Performance → verify Risk Signal cards
 # Open ConsiliumHub → Proposals panel → verify "Risk Signals" toggle + cards
+# Sanctum Page 2 placement verified in T6 unification
 ```
 
 ## Changelog Entry
@@ -153,7 +145,6 @@ cd ~/Documents/Codebases/fintheon && bun run build
     'backend-hono/src/services/riskflow/risk-signal-generator.ts',
     'backend-hono/src/routes/riskflow/handlers.ts',
     'frontend/components/narrative/RiskSignalCards.tsx',
-    'frontend/components/narrative/Sanctum.tsx',
     'frontend/components/proposals/ProposalWidget.tsx'
   ]
 }

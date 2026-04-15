@@ -10,7 +10,7 @@
 
 - Read `~/Documents/Codebases/fintheon/CLAUDE.md` for project rules (changelog protocol, no gradients/colored emojis, Solvys Gold palette).
 - Build: `cd ~/Documents/Codebases/fintheon && bun run build` (root Vite build, NOT tsc)
-- This track modifies Sanctum.tsx — other tracks (T3, T4, T5) also touch it. This track commits FIRST among Sanctum tracks.
+- This track does NOT touch Sanctum.tsx — T6 unification handles all Sanctum wiring after all tracks land.
 
 ## Context
 
@@ -27,32 +27,7 @@ Cards also need a visual upgrade: expanded state with price-at-proposal vs curre
 
 ## What to Build/Change
 
-### 1. Remove Top Volatile Theses from Page 2
-
-- **Path:** `frontend/components/narrative/Sanctum.tsx`
-- **Action:** Modify
-- **Spec:**
-  - Delete lines 440-450 (the `Top Volatile Theses` div wrapper + `<SanctumTheses>` render)
-  - Remove the `SanctumTheses` import if lint requires it
-  - Do NOT delete `SanctumTheses.tsx` or any backend endpoints serving `data.scenarios`
-  - Commit this change first before proceeding to the Polymarket move
-
-### 2. Move Polymarket from Page 0 to Page 2
-
-- **Path:** `frontend/components/narrative/Sanctum.tsx`
-- **Action:** Modify
-- **Spec:**
-  - **Remove** lines 373-381 (the Polymarket section from Page 0: the `mt-1 pt-1 border-t` div containing the "Prediction Markets" label and `<PolymarketPredictionCards />`)
-  - **Insert** on Page 2 after the 50/50 grid (Active Narratives + Live Risk Signals), before the Agent Performance separator (around line 488 after Theses removal)
-  - Add a section header matching Page 2's emerald-300 accent:
-    ```tsx
-    <div className="text-[9px] text-[var(--fintheon-muted)]/40 mb-2 uppercase tracking-wider">
-      Prediction Markets & Polybot Trades
-    </div>
-    ```
-  - Do NOT add anything in the space freed on Page 0 — Track 5 handles that
-
-### 3. Enhanced PolymarketPredictionCards
+### 1. Enhanced PolymarketPredictionCards
 
 - **Path:** `frontend/components/narrative/PolymarketPredictionCards.tsx`
 - **Action:** Modify
@@ -73,7 +48,7 @@ Cards also need a visual upgrade: expanded state with price-at-proposal vs curre
   - Cards should be full-width on Page 2 (not the narrow 220px horizontal scroll from Page 0). Use a responsive grid: `grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3`
   - **Max lines:** 250
 
-### 4. Backend — Add priceProposedAt and fuseConfidence
+### 2. Backend — Add priceProposedAt and fuseConfidence
 
 - **Path:** Check `backend-hono/src/routes/predictions.ts` and any polymarket service file
 - **Action:** Modify
@@ -92,9 +67,9 @@ Cards also need a visual upgrade: expanded state with price-at-proposal vs curre
 
 ## DO NOT
 
-- Add anything to the space freed on Page 0 (Track 5 handles that)
+- Touch `Sanctum.tsx` — T6 handles moving the component to Page 2
 - Delete `SanctumTheses.tsx` component file or its backend endpoints
-- Touch any files outside Sanctum.tsx, PolymarketPredictionCards.tsx, and the backend prediction route
+- Touch any files outside PolymarketPredictionCards.tsx and the backend prediction route
 - Add new npm dependencies
 - Change the Polymarket API endpoint or polling interval
 
@@ -102,10 +77,8 @@ Cards also need a visual upgrade: expanded state with price-at-proposal vs curre
 
 ```bash
 cd ~/Documents/Codebases/fintheon && bun run build
-# Open browser: Aquarium Page 0 — Polymarket cards should be GONE
-# Navigate to Page 2 — Polymarket cards in bottom section, Theses row gone
-# Click a card to expand — verify all enhanced fields render
-# Check mobile viewport (375px)
+# Component builds without errors — Sanctum wiring verified in T6
+# Verify PolymarketPredictionCards.tsx renders correctly (can test in isolation or wait for T6)
 ```
 
 ## Changelog Entry
@@ -114,9 +87,8 @@ cd ~/Documents/Codebases/fintheon && bun run build
 {
   date: '2026-04-15T00:00:00',
   agent: 'claude-code',
-  summary: 'S16-T2: Remove Top Volatile Theses from Page 2. Move PolymarketPredictionCards from Page 0 to Page 2 bottom. Add FUSE confidence score, severity borders, price-at-proposal vs current price delta, expanded card details. Theme-link all colors.',
+  summary: 'S16-T2: Enhance PolymarketPredictionCards — FUSE confidence score, severity borders, price-at-proposal vs current price delta, expanded card details, full-width grid layout, theme-linked colors.',
   files: [
-    'frontend/components/narrative/Sanctum.tsx',
     'frontend/components/narrative/PolymarketPredictionCards.tsx'
   ]
 }

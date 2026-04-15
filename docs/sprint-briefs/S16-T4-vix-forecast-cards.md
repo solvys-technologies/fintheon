@@ -1,8 +1,8 @@
 # Task Brief: S16-T4 — Blended VIX Score + Next Session Forecast Cards
 
 **Date:** 2026-04-15
-**Scope:** Surface IV score explainer popup data as visible side-by-side cards on Aquarium Page 0, in the space freed by Polymarket moving to Page 2.
-**Estimated files:** 4
+**Scope:** Create BlendedVIXCard and NextSessionForecastCard components. Do NOT touch Sanctum.tsx — wiring handled by T6 unification.
+**Estimated files:** 2
 **Repo root:** `~/Documents/Codebases/fintheon`
 **Working directory:** `~/Documents/Codebases/fintheon`
 
@@ -10,7 +10,7 @@
 
 - Read `~/Documents/Codebases/fintheon/CLAUDE.md` for project rules (changelog protocol, no gradients/colored emojis).
 - Build: `cd ~/Documents/Codebases/fintheon && bun run build`
-- **This track depends on T2 committing first** (T2 removes Polymarket from Page 0, freeing the insertion space). Rebase on T2's commit before committing.
+- This track does NOT touch Sanctum.tsx — T6 unification handles all Sanctum wiring after all tracks land.
 
 ## Context
 
@@ -65,25 +65,17 @@ The Aquarium's header toolbar has an IV score widget (`IVScoreCard.tsx`) that sh
   - Show "No forecast available" gracefully when `data.prediction` is null
   - **Max lines:** 200
 
-### 3. Data Fetch + Placement in Sanctum Page 0
+### 3. Data Fetch Hook
 
-- **Path:** `frontend/components/narrative/Sanctum.tsx`
-- **Action:** Modify
+- **Path:** `frontend/components/narrative/useIVScoreData.ts`
+- **Action:** Create
 - **Spec:**
-  - Import `BlendedVIXCard` and `NextSessionForecastCard`
-  - Import `IVScoreResponse` type from `../types/market-data` (or wherever it lives)
-  - Add a `useEffect` + `useState` fetch hook for `GET /api/market-data/iv-score?instrument=/ES` with:
-    - 60s polling interval (match VIX service cache TTL)
-    - Visibility-gated (only poll when Page 0 is visible)
-    - State: `ivData: IVScoreResponse | null`, `ivLoading: boolean`
-  - Insert after `AquariumPredictionCards` (line 370, or wherever it lands after T2's changes), in the space where Polymarket used to be:
-    ```tsx
-    <div className="grid grid-cols-2 gap-3 mt-2 px-4">
-      <BlendedVIXCard data={ivData} isLoading={ivLoading} />
-      <NextSessionForecastCard data={ivData} isLoading={ivLoading} />
-    </div>
-    ```
-  - On mobile (< md), stack to `grid-cols-1`
+  - Custom hook `useIVScoreData()` that fetches `GET /api/market-data/iv-score?instrument=/ES`
+  - 60s polling interval (match VIX service cache TTL)
+  - Returns `{ data: IVScoreResponse | null, isLoading: boolean }`
+  - Uses `API_BASE` pattern: `import.meta.env.VITE_API_URL || "http://localhost:8080"`
+  - T6 unification will call this hook from Sanctum.tsx and pass data to both cards
+  - **Max lines:** 50
 
 ## Key Rules
 
@@ -95,9 +87,8 @@ The Aquarium's header toolbar has an IV score widget (`IVScoreCard.tsx`) that sh
 
 ## DO NOT
 
+- Touch `Sanctum.tsx` — T6 handles placing these cards on Page 0
 - Modify IVScoreCard.tsx (the hover popup stays as-is)
-- Touch Page 1 or Page 2 of Sanctum
-- Add the Polymarket cards back to Page 0 (T2 moves them out)
 - Add new npm dependencies
 - Fetch from any endpoint other than `GET /api/market-data/iv-score`
 
@@ -105,12 +96,7 @@ The Aquarium's header toolbar has an IV score widget (`IVScoreCard.tsx`) that sh
 
 ```bash
 cd ~/Documents/Codebases/fintheon && bun run build
-# Open Aquarium Page 0
-# Verify two side-by-side cards below instrument forecasts
-# BlendedVIX: 3 component bars, blended total, environment label, implied range
-# Forecast: projected IV, confidence bar, regime shift prob, scenario table
-# Check mobile (375px) — should stack to single column
-# Verify 60s polling — values should update
+# Components build without errors — Sanctum wiring verified in T6
 ```
 
 ## Changelog Entry
@@ -123,7 +109,7 @@ cd ~/Documents/Codebases/fintheon && bun run build
   files: [
     'frontend/components/narrative/BlendedVIXCard.tsx',
     'frontend/components/narrative/NextSessionForecastCard.tsx',
-    'frontend/components/narrative/Sanctum.tsx'
+    'frontend/components/narrative/useIVScoreData.ts'
   ]
 }
 ```

@@ -274,17 +274,34 @@ app.get("/polymarket-outlook", async (c) => {
     const markets = polyData.markets.map((m) => {
       const kalshiMatch = findKalshiMatch(m.question, kalshiMarkets);
 
+      const divergencePct = kalshiMatch
+        ? Math.abs(m.yesPrice - kalshiMatch.lastPrice) * 100
+        : 0;
+
+      // FUSE confidence: base from distance of YES price from 0.50 (more extreme = higher)
+      // Boost +15 if Kalshi divergence > 10% (cross-platform signal)
+      const distanceFrom50 = Math.abs(m.yesPrice - 0.5);
+      let fuseConfidence = Math.round(distanceFrom50 * 200); // 0-100 scale
+      if (kalshiMatch && divergencePct > 10)
+        fuseConfidence = Math.min(100, fuseConfidence + 15);
+      fuseConfidence = Math.min(100, Math.max(0, fuseConfidence));
+
+      // Snapshot yesPrice as priceProposedAt (the price when first served)
+      const priceProposedAt = m.yesPrice;
+
       return {
         slug: m.slug,
         question: m.question,
         yesPrice: m.yesPrice,
+        priceProposedAt,
+        fuseConfidence,
         volume: m.volume,
         category: m.category,
         closeTime: m.closeTime,
         kalshiDivergence: kalshiMatch
           ? {
               kalshiPrice: kalshiMatch.lastPrice,
-              divergencePct: Math.abs(m.yesPrice - kalshiMatch.lastPrice) * 100,
+              divergencePct,
               direction:
                 m.yesPrice > kalshiMatch.lastPrice + 0.02
                   ? ("poly_higher" as const)

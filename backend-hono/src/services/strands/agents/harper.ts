@@ -42,7 +42,7 @@ export interface HarperChatOptions {
  * Each chat request gets its own agent + tools for correct approval gating.
  * Optionally wired to DB-backed conversation memory.
  */
-export function createHarperAgent(
+export async function createHarperAgent(
   requestId: string,
   opts?: {
     conversationId?: string;
@@ -52,7 +52,7 @@ export function createHarperAgent(
 ) {
   const coreTools = createHarperTools(requestId);
   const solvysTools = getAllSolvysTools();
-  const systemPrompt = getAgentSystemPrompt("harper-cao", {});
+  const systemPrompt = await getAgentSystemPrompt("harper-cao", {});
 
   const conversationManager =
     opts?.conversationId && opts?.userId
@@ -79,12 +79,12 @@ export function createHarperAgent(
  * Stream a Harper chat response as a UIMessageStream SSE Response.
  * Drop-in replacement for the old createUIMessageStreamResponse pattern.
  */
-export function streamHarperChat(
+export async function streamHarperChat(
   options: HarperChatOptions,
   responseHeaders?: Record<string, string>,
-): Response {
+): Promise<Response> {
   const { message, requestId, conversationId, userId } = options;
-  const agent = createHarperAgent(requestId, {
+  const agent = await createHarperAgent(requestId, {
     conversationId,
     userId,
     provider: options.provider,
