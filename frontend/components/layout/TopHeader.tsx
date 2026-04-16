@@ -276,7 +276,7 @@ export function TopHeader({
     {
       value: "research",
       label: "Research",
-      description: "Notion Research iFrame",
+      description: "Research iFrame",
     },
   ];
 

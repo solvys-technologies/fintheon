@@ -1,7 +1,6 @@
 ---
 name: solvys-inform
 description: Brief an AI agent on project context, recent changes, available tools, and how to work within the codebase. Use when onboarding a new agent instance, handing off between agents, or resuming after a long break.
-version: 0.1.0
 ---
 
 # Solvys Inform -- Agent Briefing Generator
@@ -49,8 +48,17 @@ git log --oneline main..HEAD  # If on a feature branch
 ### Environment
 
 - Build commands (from `package.json` scripts)
-- Deploy targets (Vercel, Workers, local DMG)
+- Deploy targets: backend (Fly.io `fintheon`), desktop frontend (Vercel), mobile PWA (Vercel)
 - Required environment variables (from `.env.example`)
+
+### Infrastructure State
+
+```bash
+# Backend health
+curl -s https://fintheon.fly.dev/api/diagnostics 2>/dev/null | head -c 200
+# Local backend
+curl -s http://localhost:8080/api/diagnostics 2>/dev/null | head -c 200
+```
 
 ## Phase 2 -- Briefing Assembly
 
@@ -75,6 +83,13 @@ Branch: {current branch} (main: {commits ahead/behind})
 ## Core Rules
 
 {Bullet list of non-obvious rules from CLAUDE.md or equivalent}
+
+- Never start a vite dev server -- verify via tsc + build only
+- Always rm -rf dist before vite build (stale bundle prevention)
+- Backend deploys to Fly.io app 'fintheon' -- never pulse-api-\*
+- Deploy must hit all 3 targets: backend, desktop, mobile
+- Always restart local backend after deploy
+- Always test live endpoints before reporting done
 
 ## Key Paths
 
@@ -111,14 +126,27 @@ Branch: {current branch} (main: {commits ahead/behind})
 ## Build and Deploy
 
 ```bash
-# Build
-{build command}
+# Type check
+npx tsc --noEmit --project frontend/tsconfig.json
 
-# Test
-{test command}
+# Build frontend
+rm -rf dist && npx vite build
 
-# Deploy
-{deploy command}
+# Build backend
+cd backend-hono && bun run build
+
+# Deploy backend
+cd backend-hono && fly deploy --yes
+
+# Deploy desktop
+cd frontend && vercel build --prod && vercel deploy --prebuilt --prod
+
+# Deploy mobile
+cd mobile && rm -rf dist && npx vite build && vercel build --prod && vercel deploy --prebuilt --prod
+
+# Restart local backend
+launchctl unload ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist 2>/dev/null
+launchctl load ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist
 ```
 ````
 
@@ -137,12 +165,15 @@ Branch: {current branch} (main: {commits ahead/behind})
 ## Phase 3 -- Delivery
 
 ### For Claude Code / Cursor / Codex agents:
+
 Output the briefing directly into the chat. The receiving agent can read it from the conversation context.
 
 ### For embedded app agents:
+
 If `$ARGUMENTS` specifies a file path, write the briefing to that path so the app can load it. Otherwise, output to chat and let the user decide where to save it.
 
 ### For handoff between PIC agents:
+
 Save to `~/.openclaw/workspace/memory/handoffs/{date}-{from}-{to}.md` if the OpenClaw workspace exists. Otherwise, output to chat.
 
 ## Rules
@@ -152,4 +183,5 @@ Save to `~/.openclaw/workspace/memory/handoffs/{date}-{from}-{to}.md` if the Ope
 - If the project has a changelog, reference the last 3 entries
 - If you cannot determine something, say "UNKNOWN -- check {where to look}" rather than guessing
 - Keep the briefing under 200 lines. Agents have limited context windows too.
+- Always include the "no dev server" and "clean rebuild" rules in Core Rules -- these have caused production issues when missed
 ```

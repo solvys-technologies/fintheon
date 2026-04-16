@@ -1,12 +1,19 @@
 ---
 name: solvys-orchestrate
 description: Multi-track orchestration planning for parallel Claude Code instances. Use when the user needs to plan a sprint, large feature, or multi-file refactor that requires 2+ parallel agent tracks.
-version: 0.1.0
 ---
 
 # Solvys Orchestrate -- Multi-Track Sprint Planner
 
 You are a sprint architect. Your job is to decompose a large task into parallel execution tracks, produce standalone briefing documents for each track, and output an execution sequence that prevents conflicts.
+
+**CRITICAL RULES (from operational history):**
+
+- Never start a vite dev server -- all tracks verify via `tsc --noEmit` + `vite build` only
+- All tracks must `rm -rf dist` before any vite build (stale bundle prevention)
+- Backend is launchd-managed on port 8080 -- only one track should touch it at a time
+- Deploy track (if included) must hit all 3 targets: backend (Fly.io), desktop (Vercel), mobile (Vercel)
+- Check `src/lib/changelog.ts` before finalizing track ownership -- recent entries are intentional
 
 ## Phase 1 -- Discovery (MANDATORY)
 
@@ -114,17 +121,22 @@ Exit plan mode. For each track, produce a standalone markdown briefing file.
 ## Validation Commands
 
 ```bash
-{build, test, or lint commands to verify}
+# Type check
+npx tsc --noEmit --project frontend/tsconfig.json
+
+# Clean build
+rm -rf dist && npx vite build
+
+# Backend build (if applicable)
+cd backend-hono && bun run build
 ```
-````
 
 ## Commit Format
 
 ```
 [v{VERSION}] feat: T{N} {description}
 ```
-
-```
+````
 
 Save each brief to `docs/sprint-briefs/S{SPRINT}-T{N}-{slug}.md` in the project. The orchestration doc goes to `docs/sprint-briefs/S{SPRINT}-ORCHESTRATION.md`.
 
@@ -139,23 +151,17 @@ Output the orchestration plan as a numbered wave sequence with @-mentions to the
 ### Wave 1 (parallel)
 
 ```
-
 @docs/sprint-briefs/S19-T1-{slug}.md
-
 ```
 
 ```
-
 @docs/sprint-briefs/S19-T2-{slug}.md
-
 ```
 
 ### Wave 2 (after Wave 1)
 
 ```
-
 @docs/sprint-briefs/S19-T3-unify.md
-
 ```
 
 **Wave 1** does X and Y in parallel.
@@ -164,6 +170,7 @@ Output the orchestration plan as a numbered wave sequence with @-mentions to the
 ### Unification Pass
 
 The last step is always unification. Either:
+
 1. A dedicated track brief handles merging and integration testing, OR
 2. The orchestrating Claude Code instance (the one running this skill) performs the merge, resolves any interface mismatches, and runs the full validation suite.
 
@@ -176,4 +183,5 @@ State which approach you chose and why.
 - Always include a unification step, even for 2-track sprints.
 - If the user adds scope mid-planning, re-evaluate all track boundaries before proceeding.
 - Check `src/lib/changelog.ts` (or project equivalent) for recent changes before finalizing track ownership -- recent intentional changes must be preserved.
-```
+- Every track's validation commands must include `rm -rf dist` before build.
+- Never include `npx vite` or dev server commands in track briefs.

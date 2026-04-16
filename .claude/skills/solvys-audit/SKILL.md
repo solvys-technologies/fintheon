@@ -1,12 +1,19 @@
 ---
 name: solvys-audit
 description: Single-agent audit, debug, and pre-flight checks. Use for pre-ship verification, debugging failures, security review, environment drift detection, and post-incident triage. Invoke with an error message to enter debug mode.
-version: 0.1.0
 ---
 
 # Solvys Audit -- Pre-flight, Debug, and Security Scan
 
 You are a systems auditor. Run every check methodically. Report findings as PASS / WARN / FAIL with evidence. Do not fix anything unless explicitly asked -- this skill is report-only by default.
+
+**CRITICAL RULES (from operational history):**
+
+- Never start a vite dev server -- verify via `tsc --noEmit` + `vite build` only
+- Backend is launchd-managed (`io.solvys.fintheon-backend`) on port 8080
+- Backend deploys to Fly.io app `fintheon` -- never `pulse-api-*`
+- All 3 targets must be checked: backend (Fly.io), desktop (Vercel), mobile (Vercel)
+- `rm -rf dist` before any vite build to avoid stale bundle false positives
 
 ## Mode Detection
 
@@ -35,7 +42,7 @@ Report version mismatches as WARN.
 
 ```bash
 # Find all env vars referenced in source
-grep -roh "process\.env\.[A-Z_]*" src/ --include="*.ts" 2>/dev/null | sed 's/process\.env\.//' | sort -u > /tmp/env-used.txt
+grep -roh "process\.env\.[A-Z_]*" src/ backend-hono/src/ frontend/ --include="*.ts" 2>/dev/null | sed 's/process\.env\.//' | sort -u > /tmp/env-used.txt
 
 # Find all documented in .env.example
 grep "^[A-Z_]" .env.example 2>/dev/null | cut -d= -f1 | sort -u > /tmp/env-documented.txt
@@ -50,26 +57,40 @@ comm -23 /tmp/env-used.txt /tmp/env-documented.txt
 
 ### 1c. Required CLI Tools
 
-Check for: `git`, `gh`, `bun`/`node`, `vercel` (if deploying), `electron-builder` (if building DMG).
+Check for: `git`, `gh`, `bun`/`node`, `fly` (for backend deploy), `vercel` (for frontend deploy), `electron-builder` (if building DMG).
 
 Report missing tools as FAIL with install instructions.
+
+### 1d. Deploy Infrastructure
+
+```bash
+# Verify Fly.io app exists and is correct
+fly status -a fintheon 2>/dev/null || echo "WARN: Cannot reach Fly.io app 'fintheon'"
+
+# Verify local backend is running
+curl -s http://localhost:8080/api/diagnostics || echo "WARN: Local backend not running"
+```
 
 ---
 
 ## Phase 2 -- Build Verification
 
 ```bash
-# TypeScript check
-npx tsc --noEmit
+# TypeScript check (frontend)
+npx tsc --noEmit --project frontend/tsconfig.json
 
-# Full build
-npx vite build
-# OR: bun run build (check package.json for the correct command)
+# Clean and build frontend
+rm -rf dist && npx vite build
+
+# Backend build
+cd backend-hono && bun run build && cd ..
 ```
 
 - PASS if build succeeds with no errors
 - WARN if build succeeds with warnings
 - FAIL if build fails -- include the first 20 lines of error output
+
+**Never start a dev server.** Build verification only.
 
 ---
 
@@ -77,7 +98,7 @@ npx vite build
 
 ### 3a. File Size Enforcement
 
-Scan all `.ts`, `.tsx`, `.css` files in `src/` and `frontend/`. Flag any file over 300 lines.
+Scan all `.ts`, `.tsx`, `.css` files in `src/`, `frontend/`, and `backend-hono/src/`. Flag any file over 300 lines.
 
 Format: `WARN: {path} -- {line_count} lines (limit: 300)`
 
@@ -97,6 +118,10 @@ If `src/lib/changelog.ts` exists, verify:
 
 - Most recent entry is within the last 24 hours (for active development)
 - Entry format matches expected schema
+
+### 3d. Install/Update Script Currency
+
+If install/update scripts exist, verify they reference the current `package.json` version. WARN if outdated.
 
 ---
 
@@ -143,19 +168,19 @@ WARN on moderate vulnerabilities, FAIL on high/critical.
 
 Search source files for:
 
-| Pattern                                    | Risk              | Severity                  |
-| ------------------------------------------ | ----------------- | ------------------------- |
-| `eval(`                                    | Code injection    | FAIL                      |
-| `dangerouslySetInnerHTML`                  | XSS               | WARN (check if sanitized) |
-| `innerHTML =`                              | XSS               | WARN                      |
-| `new Function(`                            | Code injection    | FAIL                      |
-| `child_process.exec(` with string concat   | Command injection | FAIL                      |
-| `fs.writeFileSync` with user input in path | Path traversal    | WARN                      |
-| `fetch(` with variable URL not validated   | SSRF              | WARN                      |
+| Pattern                                  | Risk              | Severity                  |
+| ---------------------------------------- | ----------------- | ------------------------- |
+| `eval(`                                  | Code injection    | FAIL                      |
+| `dangerouslySetInnerHTML`                | XSS               | WARN (check if sanitized) |
+| `innerHTML =`                            | XSS               | WARN                      |
+| `new Function(`                          | Code injection    | FAIL                      |
+| `child_process.exec(` with string concat | Command injection | FAIL                      |
+| `fs.writeFileSync` with user input       | Path traversal    | WARN                      |
+| `fetch(` with variable URL not validated | SSRF              | WARN                      |
 
 ### 5d. Auth Guard Verification
 
-If the project has route definitions, verify that protected routes have auth middleware/guards applied. Report unguarded routes as WARN.
+Verify that protected routes in `backend-hono/src/routes/` have Supabase JWT auth middleware applied. Report unguarded routes as WARN.
 
 ---
 
@@ -174,6 +199,7 @@ Determine the error category:
 | Environment | `ENOENT`, `ECONNREFUSED`, `env`, `undefined` for config values |
 | Dependency  | `Could not resolve`, version conflicts, peer dep warnings      |
 | State       | `null is not an object`, `Cannot read properties of undefined` |
+| Deploy      | `fly deploy`, `vercel`, HTTP errors from live endpoints        |
 
 ### Step 2: Isolate
 

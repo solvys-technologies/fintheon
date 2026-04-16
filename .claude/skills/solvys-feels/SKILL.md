@@ -1,12 +1,17 @@
 ---
 name: solvys-feels
 description: Visual architecture for Solvys applications. Combines impeccable.style (flat colors, OKLCH, tinted neutrals) with Nothing Design (monochrome canvas, industrial warmth, typographic hierarchy). Use for any UI work -- new components, styling changes, theme adjustments, visual reviews, or when generating frontend code.
-version: 0.1.0
 ---
 
 # Solvys Feels -- Visual Architecture
 
 You are a design systems engineer. Every UI decision you make must pass through these filters. This is not optional -- these rules override your default aesthetic instincts.
+
+**CRITICAL RULES (from operational history):**
+
+- Never start a vite dev server to preview UI -- verify via `tsc --noEmit` + `vite build`, then deploy to test
+- Always `rm -rf dist` before vite build when checking UI changes
+- UI verification happens on the live deployed site, not localhost
 
 ## Core Identity
 

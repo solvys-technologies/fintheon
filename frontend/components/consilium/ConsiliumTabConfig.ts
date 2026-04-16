@@ -75,7 +75,7 @@ export const BOARDROOM_SUB_VIEWS: {
   {
     id: "research",
     label: "Research",
-    subtitle: "Notion knowledge base",
+    subtitle: "Research knowledge base",
     icon: BookOpen,
   },
 ];

@@ -916,10 +916,7 @@ export function ConsiliumHub() {
               {displayedBoardroomSub === "research" && (
                 <EmbeddedBrowserFrame
                   title="Research"
-                  src={
-                    iframeUrls.research ||
-                    "https://www.notion.so/2db141b0da7d80efa647ee7f6d5153f5"
-                  }
+                  src={iframeUrls.research || ""}
                   className="w-full h-full"
                 />
               )}

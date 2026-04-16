@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T18:30:00",
+    agent: "claude-code",
+    summary:
+      "Notion severance: removed all Notion code paths from frontend and backend. NotionService → DataService, notion-trade-idea → trade-idea, removed 30s Notion polling from RiskFlowContext, deleted /api/notion redirect shim, Notion MCP entry, and all notionUrl fields. Supabase is sole source of truth.",
+    files: [
+      "frontend/lib/services/data.ts",
+      "frontend/lib/services/index.ts",
+      "frontend/lib/riskflow-feed.ts",
+      "frontend/lib/shared-icons.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "frontend/contexts/ScheduleContext.tsx",
+      "frontend/contexts/TeamPresenceContext.tsx",
+      "frontend/hooks/useSourceStatus.ts",
+      "frontend/hooks/useRiskFlowFilters.ts",
+      "frontend/components/RiskFlowMini.tsx",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/routes/mcp/index.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/services/econ-calendar-service.ts",
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+    ],
+  },
+  {
     date: "2026-04-16T16:00:00",
     agent: "claude-code",
     summary:

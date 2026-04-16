@@ -84,7 +84,7 @@ export function SetupWizard({ visible, onClose }: SetupWizardProps) {
       results[1].status = "fail";
     }
 
-    // 3. Supabase data layer (was Notion polling)
+    // 3. Supabase data layer
     try {
       const res = await fetch("http://localhost:8080/api/data/trade-ideas", {
         signal: AbortSignal.timeout(3000),
