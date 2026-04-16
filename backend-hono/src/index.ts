@@ -59,12 +59,14 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-// Health check endpoint
+// Health check endpoint (includes service registry data)
 app.get("/health", async (c) => {
   const health = await healthService.checkAll();
+  const { getStatus } = await import("./services/health-registry.js");
+  const registry = getStatus();
   const statusCode: ContentfulStatusCode =
     health.status === "ok" ? 200 : health.status === "degraded" ? 207 : 503;
-  return c.json(health, statusCode);
+  return c.json({ ...health, serviceRegistry: registry }, statusCode);
 });
 
 // Lifecycle endpoints — idle shutdown management

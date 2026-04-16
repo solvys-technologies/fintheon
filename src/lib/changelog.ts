@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S20-T9: Backend Streamlining. Two-phase boot (bootCritical + bootBackground via queueMicrotask). Split iv-scoring-v2.ts (1954 lines) into 9 modules under services/iv-scoring/. Split central-scorer.ts (1073 lines) into scorer-pipeline + scorer-tagging + scorer-watchlist. Created unified feature-flag-service.ts with single getFlag(). Created health-registry.ts for background service monitoring. Created base-poller abstraction for ingestion consolidation. Tuned intervals: Aquarium 30→60min, Agent Notes 3→5min, Shared Memory 30→60min. /health endpoint now includes service registry data.",
+    files: [
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/index.ts",
+      "backend-hono/src/services/iv-scoring/config.ts",
+      "backend-hono/src/services/iv-scoring/computation.ts",
+      "backend-hono/src/services/iv-scoring/instrument.ts",
+      "backend-hono/src/services/iv-scoring/systemic.ts",
+      "backend-hono/src/services/iv-scoring/taxonomy.ts",
+      "backend-hono/src/services/iv-scoring/ticker.ts",
+      "backend-hono/src/services/iv-scoring/sentiment.ts",
+      "backend-hono/src/services/iv-scoring/sentiment-data.ts",
+      "backend-hono/src/services/iv-scoring/index.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/services/riskflow/scorer-tagging.ts",
+      "backend-hono/src/services/riskflow/scorer-watchlist.ts",
+      "backend-hono/src/services/feature-flag-service.ts",
+      "backend-hono/src/services/health-registry.ts",
+      "backend-hono/src/services/ingestion/base-poller.ts",
+      "backend-hono/src/services/riskflow/aquarium-scheduler.ts",
+      "backend-hono/src/services/riskflow/agent-notes.ts",
+      "backend-hono/src/services/peers/shared-memory.ts",
+    ],
+  },
+  {
     date: "2026-04-17T00:15:00",
     agent: "claude-code",
     summary:
