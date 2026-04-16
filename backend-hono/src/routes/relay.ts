@@ -53,6 +53,7 @@ export function createRelayRoutes() {
       riskFlowContext?: string;
       thinkHarder?: boolean;
       persona?: string;
+      traderName?: string;
     }>();
 
     if (!body.message?.trim()) {

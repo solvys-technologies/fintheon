@@ -6,6 +6,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { List } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useSettings } from "../../contexts/SettingsContext";
 import { getMobileBackend } from "../../lib/backend";
 import ChatMessage, { type ChatMessageData } from "./ChatMessage";
 import ChatInput from "./ChatInput";
@@ -23,6 +24,7 @@ interface ChatPageProps {
 
 export default function ChatPage({ visible }: ChatPageProps) {
   const { getAccessToken } = useAuth();
+  const { settings } = useSettings();
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [relayState, setRelayState] = useState<RelayState>("reconnecting");
@@ -137,6 +139,9 @@ export default function ChatPage({ visible }: ChatPageProps) {
             ...(opts?.images?.length ? { images: opts.images } : {}),
             ...(opts?.riskFlowContext
               ? { riskFlowContext: opts.riskFlowContext }
+              : {}),
+            ...(settings.traderName
+              ? { traderName: settings.traderName }
               : {}),
           }),
           signal: controller.signal,

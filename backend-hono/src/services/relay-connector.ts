@@ -34,6 +34,7 @@ async function handleChatRequest(
     riskFlowContext?: string;
     thinkHarder?: boolean;
     persona?: string;
+    traderName?: string;
   },
 ): Promise<void> {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -72,6 +73,9 @@ async function handleChatRequest(
       thinkHarder: payload.thinkHarder,
       persona: payload.persona,
       relayOriginated: true,
+      userContext: payload.traderName
+        ? { traderName: payload.traderName }
+        : undefined,
     });
 
     if (!response.body) {
