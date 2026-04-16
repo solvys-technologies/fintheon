@@ -295,6 +295,17 @@ else
   warn "peer-bootstrap.sh not found — skipping peer onboarding sync"
 fi
 
+# ── Mobile bridge health check ──────────────────────────────────────────────
+info "Checking mobile bridge connection..."
+BRIDGE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 "https://fintheon.fly.dev/api/diagnostics" 2>/dev/null || echo "000")
+if [[ "$BRIDGE_STATUS" == "200" ]]; then
+  ok "Mobile bridge connected (fintheon.fly.dev)"
+elif [[ "$BRIDGE_STATUS" == "000" ]]; then
+  warn "Mobile bridge unreachable — mobile PWA will not have API access until backend is online"
+else
+  warn "Mobile bridge returned HTTP $BRIDGE_STATUS — mobile PWA may have degraded API access"
+fi
+
 # ── Restore stashed changes ─────────────────────────────────────────────────
 
 if [[ "$HAS_CHANGES" == "true" ]]; then

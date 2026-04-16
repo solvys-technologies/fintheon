@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+// [claude-code 2026-04-16] Add mobile bridge health check, desktop-only scope
 // [claude-code 2026-03-22] Fintheon CLI Update — pull latest, rebuild, restart
 import * as p from "@clack/prompts";
 import pc from "picocolors";
@@ -149,7 +150,29 @@ async function main() {
     p.log.warn(feBuild.stderr.slice(0, 200));
   }
 
-  // Step 8: Restart backend if it was running
+  // Step 8: Verify mobile instance bridge (API proxy → fintheon.fly.dev)
+  const bridgeSpinner = p.spinner();
+  bridgeSpinner.start("Checking mobile bridge connection");
+  try {
+    const bridgeRes = await fetch("https://fintheon.fly.dev/api/diagnostics", {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (bridgeRes.ok) {
+      bridgeSpinner.stop("Mobile bridge connected (fintheon.fly.dev)");
+    } else {
+      bridgeSpinner.stop("Mobile bridge returned non-OK");
+      p.log.warn(
+        `Backend responded with ${bridgeRes.status} — mobile PWA may have degraded API access`,
+      );
+    }
+  } catch {
+    bridgeSpinner.stop("Mobile bridge unreachable");
+    p.log.warn(
+      "Could not reach fintheon.fly.dev — mobile PWA will not have API access until backend is online",
+    );
+  }
+
+  // Step 9: Restart backend if it was running
   const wasRunning = await isFintheonRunning(8080);
   if (wasRunning) {
     p.log.info("Backend was running — it will pick up changes on next restart");
@@ -158,7 +181,7 @@ async function main() {
     );
   }
 
-  // Step 9: Show new version (from package.json — matches release tags)
+  // Step 10: Show new version (from package.json — matches release tags)
   let newVersion = "unknown";
   try {
     // Re-read after pull — package.json may have been updated
