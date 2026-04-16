@@ -338,6 +338,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
         ref={scrollRef}
         style={{
           flex: 1,
+          minHeight: 0,
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
@@ -351,20 +352,32 @@ export default function ChatPage({ visible }: ChatPageProps) {
             style={{
               flex: 1,
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 8,
             }}
           >
+            <span
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 20,
+                color: "var(--accent, #c79f4a)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              HARPER
+            </span>
             <span
               style={{
                 fontFamily: "var(--font-data)",
                 fontSize: 11,
                 color: "var(--text-disabled)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
+                letterSpacing: "0.06em",
               }}
             >
-              [MESSAGE HARPER]
+              Your CAO is standing by.
             </span>
           </div>
         )}
@@ -373,10 +386,23 @@ export default function ChatPage({ visible }: ChatPageProps) {
             style={{
               flex: 1,
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 8,
             }}
           >
+            <span
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 20,
+                color: "var(--accent, #c79f4a)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              HARPER
+            </span>
             <span
               style={{
                 fontFamily: "var(--font-data)",
@@ -386,7 +412,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
                 letterSpacing: "0.06em",
               }}
             >
-              [HARPER OFFLINE — START LOCAL INSTANCE]
+              [OFFLINE — START LOCAL INSTANCE]
             </span>
           </div>
         )}

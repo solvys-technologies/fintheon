@@ -1,8 +1,8 @@
-// [claude-code 2026-04-15] T3: VIX ticker with Zustand store + 30s polling
+// [claude-code 2026-04-16] Rewrite: direct fetch() bypassing ApiClient, same pattern as useIVScore
 import { create } from "zustand";
 import { useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { getMobileBackend } from "../lib/backend";
+
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 interface VixState {
   value: number;
@@ -23,21 +23,21 @@ export const useVixStore = create<VixState>((set) => ({
 }));
 
 export function useVixTicker() {
-  const { getAccessToken } = useAuth();
   const _set = useVixStore((s) => s._set);
 
   useEffect(() => {
-    const backend = getMobileBackend(getAccessToken);
     let mounted = true;
 
     const poll = async () => {
       try {
-        const data = await backend.marketData.getVix();
+        const res = await fetch(`${API_BASE}/api/market/vix`);
+        if (!res.ok) return;
+        const data = await res.json();
         if (!mounted) return;
         _set({
-          value: data.value,
-          change: data.change,
-          changePercent: data.changePercent,
+          value: data.level ?? data.value ?? 0,
+          change: data.change ?? 0,
+          changePercent: data.percentChange ?? data.changePercent ?? 0,
           isStale: false,
           lastUpdated: new Date(),
         });
@@ -49,7 +49,6 @@ export function useVixTicker() {
     poll();
     const id = setInterval(poll, 30_000);
 
-    // Mark stale after 90s without update
     const staleCheck = setInterval(() => {
       const { lastUpdated } = useVixStore.getState();
       if (lastUpdated && Date.now() - lastUpdated.getTime() > 90_000) {
@@ -62,7 +61,7 @@ export function useVixTicker() {
       clearInterval(id);
       clearInterval(staleCheck);
     };
-  }, [getAccessToken, _set]);
+  }, [_set]);
 
   return useVixStore();
 }

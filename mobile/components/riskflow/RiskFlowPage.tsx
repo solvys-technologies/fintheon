@@ -1,5 +1,4 @@
-// [claude-code 2026-04-16] Agent Reach button — deliberate fetch+score action, separate from pull-to-refresh
-// [claude-code 2026-04-15] RiskFlow page — zero-gap X-feed style, fade dividers, full-width filter strip
+// [claude-code 2026-04-16] RiskFlow page — Agent Reach removed, pull-to-refresh is the only manual refresh
 import { useMobileRiskFlow } from "../../contexts/RiskFlowContext";
 import { useRiskFlowInfiniteScroll } from "../../hooks/useRiskFlowInfiniteScroll";
 import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";
@@ -13,14 +12,12 @@ export function RiskFlowPage() {
     isLoading,
     loadingMore,
     hasMore,
-    isReaching,
     criticalCount,
     highCount,
     mediumCount,
     lowCount,
     loadMore,
     refresh,
-    agentReach,
     removeAlert,
   } = useMobileRiskFlow();
 
@@ -53,42 +50,6 @@ export function RiskFlowPage() {
   return (
     <div ref={scrollContainerRef} className="h-full overflow-y-auto">
       <PullToRefresh onRefresh={refresh} scrollRef={scrollContainerRef}>
-        {/* Agent Reach — fetch + score new items from sources */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            padding: "6px 12px",
-            borderBottom: "1px solid var(--border)",
-          }}
-        >
-          <button
-            type="button"
-            onClick={agentReach}
-            disabled={isReaching}
-            style={{
-              fontFamily: "var(--font-data)",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: isReaching
-                ? "var(--text-disabled)"
-                : "var(--accent, #c79f4a)",
-              background: "transparent",
-              border: `1px solid ${isReaching ? "var(--border)" : "var(--accent, #c79f4a)"}`,
-              borderRadius: 4,
-              padding: "4px 10px",
-              cursor: isReaching ? "default" : "pointer",
-              opacity: isReaching ? 0.5 : 1,
-              transition: "opacity 150ms, color 150ms, border-color 150ms",
-              WebkitTapHighlightColor: "transparent",
-            }}
-          >
-            {isReaching ? "[REACHING...]" : "[AGENT REACH]"}
-          </button>
-        </div>
-
         {/* Full-width segmented filter strip */}
         <RiskFlowFilterBar
           activeSeverity={activeSeverity}

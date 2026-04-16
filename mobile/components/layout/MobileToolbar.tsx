@@ -1,9 +1,11 @@
-// [claude-code 2026-04-16] Toolbar — nametag centered, disappears when menu open
+// [claude-code 2026-04-16] Toolbar — chevron opens BottomSheet bulletin overlay instead of inline expand
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ChevronDown, Menu } from "lucide-react";
 import { VixBadge } from "../shared/VixBadge";
+import { BottomSheet } from "../shared/BottomSheet";
 import { ToolbarExpanded } from "./ToolbarExpanded";
+import { HamburgerMenu } from "./HamburgerMenu";
 import { useSettings } from "../../contexts/SettingsContext";
 
 interface MobileToolbarProps {
@@ -15,7 +17,7 @@ export function MobileToolbar({
   onHamburgerTap,
   menuOpen,
 }: MobileToolbarProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const { settings } = useSettings();
   const traderName = settings.traderName || "";
 
@@ -39,7 +41,7 @@ export function MobileToolbar({
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 16px",
-          borderBottom: expanded ? "none" : "1px solid var(--border)",
+          borderBottom: "none",
         }}
       >
         {/* Wordmark + Trader Name */}
@@ -97,10 +99,10 @@ export function MobileToolbar({
         </button>
       </div>
 
-      {/* Chevron toggle */}
+      {/* Chevron toggle — opens bulletin BottomSheet */}
       <button
-        onClick={() => setExpanded((v) => !v)}
-        aria-label={expanded ? "Collapse toolbar" : "Expand toolbar"}
+        onClick={() => setSheetOpen(true)}
+        aria-label="Open bulletin"
         style={{
           width: "100%",
           height: 44,
@@ -116,30 +118,21 @@ export function MobileToolbar({
         }}
       >
         <motion.div
-          animate={{ rotate: expanded ? 180 : 0 }}
+          animate={{ rotate: sheetOpen ? 180 : 0 }}
           transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <ChevronDown size={16} color="var(--text-disabled)" />
         </motion.div>
       </button>
 
-      {/* Expanded content */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{
-              height: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
-              opacity: { duration: 0.15, delay: 0.05, ease: "easeOut" },
-            }}
-            style={{ overflow: "hidden" }}
-          >
-            <ToolbarExpanded />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Bulletin BottomSheet */}
+      <BottomSheet
+        isOpen={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title="BULLETIN"
+      >
+        <ToolbarExpanded />
+      </BottomSheet>
     </div>
   );
 }

@@ -59,16 +59,37 @@ export function VixBadge() {
           />
         )}
       </AnimatePresence>
-      <span
+      <div
         style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 24,
-          color,
-          lineHeight: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 2,
         }}
       >
-        {isStale || value === 0 ? "[--.-]" : value.toFixed(1)}
-      </span>
+        <span
+          style={{
+            fontFamily: "var(--font-data)",
+            fontSize: 10,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--text-secondary)",
+            lineHeight: 1,
+          }}
+        >
+          VIX
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 28,
+            color,
+            lineHeight: 1,
+          }}
+        >
+          {isStale || value === 0 ? "[--.-]" : value.toFixed(1)}
+        </span>
+      </div>
       {!isStale && value !== 0 && (
         <span
           style={{

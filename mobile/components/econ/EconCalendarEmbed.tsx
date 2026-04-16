@@ -11,7 +11,6 @@ const FILTER_MAP: Record<ImportanceFilter, string> = {
 
 const FILTER_LABELS: { label: string; value: ImportanceFilter }[] = [
   { label: "ALL", value: "all" },
-  { label: "MED+", value: "medium" },
   { label: "HIGH", value: "high" },
 ];
 

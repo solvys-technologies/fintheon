@@ -1,6 +1,6 @@
-// [claude-code 2026-04-16] T2: Camera/photo picker button for chat image attachments
+// [claude-code 2026-04-16] Attach button — Plus icon, no capture constraint so iOS shows full picker
 import { useRef, useCallback } from "react";
-import { Camera } from "lucide-react";
+import { Plus } from "lucide-react";
 
 interface ImageAttachButtonProps {
   onAdd: (dataUri: string) => void;
@@ -52,7 +52,6 @@ export function ImageAttachButton({
         ref={inputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handleChange}
         style={{ display: "none" }}
       />
@@ -71,7 +70,7 @@ export function ImageAttachButton({
           opacity: isDisabled ? 0.4 : 1,
         }}
       >
-        <Camera size={20} color="var(--text-secondary)" />
+        <Plus size={20} color="var(--text-secondary)" />
       </button>
     </>
   );
