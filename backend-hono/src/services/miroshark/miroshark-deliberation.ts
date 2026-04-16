@@ -27,6 +27,7 @@ import { executeDag } from "../agent-bus/dag-scheduler.js";
 import { agentBus } from "../agent-bus/bus.js";
 import type { DAGProgressEvent, HermesAgentId } from "../agent-bus/types.js";
 import { getSupabaseClient } from "../../config/supabase.js";
+import { captureDeliberation } from "../agent-memory/outcome-tracker.js";
 
 // ── In-memory deliberation tracking ─────────────────────────────────────────
 
@@ -295,6 +296,11 @@ export async function runDeliberationPipeline(
       // Persist deliberation to Supabase (fire-and-forget)
       persistDeliberation(activeDeliberations.get(simId)!).catch((err) => {
         console.warn("[MiroShark Deliberation] Failed to persist:", err);
+      });
+
+      // T4: Capture predictions for outcome tracking (fire-and-forget)
+      captureDeliberation(simId).catch((err) => {
+        console.warn("[MiroShark Deliberation] Outcome capture failed:", err);
       });
 
       return activeDeliberations.get(simId)!;

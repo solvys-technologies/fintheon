@@ -17,6 +17,8 @@ import type {
   MiroSharkRiskCategory,
 } from "../../miroshark/miroshark-types.js";
 import { fetchFilteredHeadlines } from "../../miroshark/miroshark-context.js";
+import { buildMemoryBlock } from "../../agent-memory/memory-injector.js";
+import type { AgentId } from "../../agent-memory/types.js";
 
 // ── Input types for the DAG template ────────────────────────────────────────
 
@@ -121,8 +123,12 @@ async function buildAnalystPrompt(
   const meta = ANALYST_META[agentKey];
   const headlines = await fetchFilteredHeadlines(meta.subjects, meta.name);
   const ctx = buildNarrativeContext(lanes, headlines);
+  const memoryBlock = await buildMemoryBlock(meta.agentId as AgentId).catch(
+    () => "",
+  );
 
   return `You are ${meta.name}, ${meta.title}. Your analytical focus: ${meta.subjects.join(", ")}.
+${memoryBlock}
 
 ${ctx}
 ${userInjection ? `\n## Additional Context from User\n${userInjection}\n` : ""}
@@ -210,8 +216,12 @@ async function buildDeliberationPrompt(
   const meta = ANALYST_META[agentKey];
   const headlines = await fetchFilteredHeadlines(meta.subjects, meta.name);
   const ctx = buildNarrativeContext(lanes, headlines);
+  const memoryBlock = await buildMemoryBlock(meta.agentId as AgentId).catch(
+    () => "",
+  );
 
   return `You are ${meta.name}, ${meta.title}. Your perspective: ${meta.subjects.join(", ")}.
+${memoryBlock}
 
 ${ctx}
 ${userInjection ? `\n## User Injection\n${userInjection}\n` : ""}
@@ -241,9 +251,10 @@ async function buildHarperPrompt(
   const uniqueSubjects = [...new Set(allSubjects)];
   const headlines = await fetchFilteredHeadlines(uniqueSubjects, "Harper");
   const ctx = buildNarrativeContext(lanes, headlines);
+  const memoryBlock = await buildMemoryBlock("harper").catch(() => "");
 
   return `You are Harper, Chief Agentic Officer of Priced In Capital.
-
+${memoryBlock}
 ${ctx}
 ${userInjection ? `\n## User Injection\n${userInjection}\n` : ""}
 ## Your Task
