@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T13:00:00",
+    agent: "claude-code",
+    summary:
+      "feat: T4 unification — merged T2 (agent UI) + T3 (conversation persistence) into mobile-agent-upgrade. Wired useConversations hook to ChatPage/SessionList for API-backed session loading, forwarded images+riskFlowContext through sendMessage to relay.",
+    files: [
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/SessionList.tsx",
+      "mobile/hooks/useConversations.ts",
+    ],
+  },
+  {
     date: "2026-04-16T12:00:00",
     agent: "claude-code",
     summary:
