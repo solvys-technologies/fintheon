@@ -10,12 +10,12 @@ Notion severance was completed across ~30 files: NotionService renamed to DataSe
 
 ## Scope — Included
 
-- [ ] Delete `SubAnalyst Context/` directory (after confirming T1 extracted all dossier content)
-- [ ] Grep entire codebase for remaining Notion references (URLs, service names, env vars)
-- [ ] Fix any straggler references found
-- [ ] Verify frontend type-check clean
-- [ ] Verify backend build clean
-- [ ] Verify desktop vite build clean
+- [x] Delete `SubAnalyst Context/` directory (after confirming T1 extracted all dossier content)
+- [x] Grep entire codebase for remaining Notion references (URLs, service names, env vars)
+- [x] Fix any straggler references found
+- [x] Verify frontend type-check clean
+- [x] Verify backend build clean
+- [x] Verify desktop vite build clean
 
 ## Scope — Excluded (DO NOT TOUCH)
 
