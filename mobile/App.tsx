@@ -1,5 +1,5 @@
 // [claude-code 2026-04-15] S18: Provider tree + header-menu nav + floating chat overlay
-import { useState, useRef, Suspense, lazy } from "react";
+import { useState, useRef, useEffect, Suspense, lazy } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";

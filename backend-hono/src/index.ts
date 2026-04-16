@@ -30,7 +30,7 @@ import { registerRoutes } from "./routes/index.js";
 import { createHealthService } from "./services/health-service.js";
 import { AppError } from "./errors/index.js";
 import { createLogger } from "./lib/logger.js";
-import { bootServices } from "./boot/services.js";
+import { bootCritical, bootBackground } from "./boot/services.js";
 import {
   markActivity,
   armIdleShutdown,
@@ -136,8 +136,16 @@ app.notFound((c) => {
 
 log.info("Server starting", { port: config.PORT, env: config.NODE_ENV });
 
-// Boot background services
-bootServices();
+// Two-phase boot: critical services before listen, background after
+bootCritical().then(() => {
+  log.info("Critical services ready — server accepting requests");
+  // Background services boot after listen via queueMicrotask
+  queueMicrotask(() => {
+    bootBackground().catch((err) =>
+      log.error("Background boot failed", { error: String(err) }),
+    );
+  });
+});
 
 // Bun auto-serves via default export. Node needs @hono/node-server.
 if (typeof globalThis.Bun === "undefined") {

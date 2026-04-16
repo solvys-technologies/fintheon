@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] S20-T9: Two-phase boot — bootCritical() before listen, bootBackground() after via queueMicrotask
 // [claude-code 2026-04-03] Added MiroShark daily cron (6:00 AM ET weekdays) to boot sequence
 // [claude-code 2026-03-29] Added catalyst promoter to boot sequence (graduates scored items → narrative catalysts)
 // [claude-code 2026-03-24] Added VIX polling, central scorer, IV ticker, VIX rescore to boot sequence
@@ -106,8 +107,13 @@ async function registerLocalPeerOnBoot(): Promise<void> {
   }
 }
 
-export async function bootServices(): Promise<void> {
-  log.info("Starting background services");
+/**
+ * Critical-path boot: runs BEFORE server.listen().
+ * Only services that must be ready before the first HTTP request.
+ */
+export async function bootCritical(): Promise<void> {
+  const t0 = Date.now();
+  log.info("Critical boot starting");
 
   // VIX background polling (60s interval — must start before rescore triggers)
   startVIXPolling();
@@ -128,13 +134,29 @@ export async function bootServices(): Promise<void> {
   startCentralScorer();
   log.info("CentralScorer started");
 
-  // RiskFlow Level 4 detection feed
-  startFeedPoller();
-  log.info("FeedPoller started");
-
   // Feed cache seed (cold start: hydrate from scored_riskflow_items)
   await seedCacheFromDb();
   log.info("FeedCache seeded from DB");
+
+  // IV score ticker (60s — computes blended IV score, persists to DB)
+  const instrument = process.env.PRIMARY_INSTRUMENT || "/ES";
+  startIVScoreTicker(instrument);
+  log.info(`IVScoreTicker started (${instrument})`);
+
+  log.info(`Critical boot complete in ${Date.now() - t0}ms`);
+}
+
+/**
+ * Background boot: runs AFTER server.listen() via queueMicrotask.
+ * Crons, scrapers, agents, heartbeat — everything non-critical.
+ */
+export async function bootBackground(): Promise<void> {
+  const t0 = Date.now();
+  log.info("Background boot starting");
+
+  // RiskFlow Level 4 detection feed
+  startFeedPoller();
+  log.info("FeedPoller started");
 
   // Rettiwt key pool (per-user API keys from Supabase + env fallback)
   await initRettiwtPool();
@@ -162,11 +184,6 @@ export async function bootServices(): Promise<void> {
       error: String(err),
     }),
   );
-
-  // IV score ticker (60s — computes blended IV score, persists to DB)
-  const instrument = process.env.PRIMARY_INSTRUMENT || "/ES";
-  startIVScoreTicker(instrument);
-  log.info(`IVScoreTicker started (${instrument})`);
 
   // VIX-triggered rescore (rescores last 4h of items on spike/velocity/regime change)
   initVIXRescore();
@@ -216,7 +233,7 @@ export async function bootServices(): Promise<void> {
       log.warn("Claude SDK init failed (non-fatal)", { error: String(err) }),
     );
 
-  // Agent notes cron (3min — generates Oracle tactical notes for high/critical items)
+  // Agent notes cron (5min — generates Oracle tactical notes for high/critical items)
   startAgentNotesCron();
   log.info("AgentNotesCron started");
 
@@ -280,14 +297,14 @@ export async function bootServices(): Promise<void> {
     `Computer Use: ${isComputerUseAvailable() ? "available" : "not configured (set ENABLE_COMPUTER_USE=true)"}`,
   );
 
-  // Shared memory cleanup cron (30min — expires entries past TTL)
+  // Shared memory cleanup cron (60min — expires entries past TTL)
   startSharedMemoryCleanup();
 
   // MiroShark daily auto-run (6:00 AM ET weekdays — once per day before MDB)
   startMiroSharkDaily();
   log.info("MiroSharkDaily cron scheduled");
 
-  // Aquarium AI scheduler (Oracle/Nous — 30min interval, first run 20s after boot)
+  // Aquarium AI scheduler (Oracle/Nous — 60min interval, first run 20s after boot)
   startAquariumScheduler();
 
   // Polymarket/Kalshi divergence detector (15min interval, first run 30s after boot)
@@ -312,5 +329,14 @@ export async function bootServices(): Promise<void> {
   // Relay connector — outbound WebSocket to Fly.io for mobile chat bridge (opt-in via RELAY_ENABLED)
   startRelayConnector();
 
-  log.info("All services initialized");
+  log.info(`Background boot complete in ${Date.now() - t0}ms`);
+}
+
+/**
+ * Legacy entry point — calls both phases sequentially.
+ * Kept for backward compatibility; prefer bootCritical() + bootBackground().
+ */
+export async function bootServices(): Promise<void> {
+  await bootCritical();
+  await bootBackground();
 }

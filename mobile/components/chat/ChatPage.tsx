@@ -15,6 +15,8 @@ import SessionList from "./SessionList";
 import { useConversations } from "../../hooks/useConversations";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { ToolCallCard } from "./ToolCallCard";
+import { ToolApprovalCard } from "./ToolApprovalCard";
+import { useToolApprovals } from "../../hooks/useToolApprovals";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -40,6 +42,14 @@ export default function ChatPage({ visible }: ChatPageProps) {
     name: string;
     input?: string;
   } | null>(null);
+  const {
+    approvals,
+    pendingApprovals,
+    addApproval,
+    resolveApproval,
+    resolveFromEvent,
+    clearApprovals,
+  } = useToolApprovals();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -208,6 +218,19 @@ export default function ChatPage({ visible }: ChatPageProps) {
                         ? JSON.stringify(event.input).slice(0, 120)
                         : undefined,
                 });
+              } else if (event.type === "tool-approval-needed") {
+                setActiveToolCall(null);
+                addApproval({
+                  approvalId: event.approvalId,
+                  toolName: event.toolName || event.name || "unknown",
+                  toolInput: event.toolInput || event.input,
+                  description: event.description,
+                });
+              } else if (event.type === "tool-approval-resolved") {
+                resolveFromEvent({
+                  approvalId: event.approvalId,
+                  decision: event.decision || event.status,
+                });
               }
             } catch {
               // Skip non-JSON lines (heartbeats, comments)
@@ -279,7 +302,8 @@ export default function ChatPage({ visible }: ChatPageProps) {
     setMessages([]);
     setConversationId(null);
     setSessionListOpen(false);
-  }, []);
+    clearApprovals();
+  }, [clearApprovals]);
 
   const isOffline = relayState === "offline";
 
@@ -441,6 +465,19 @@ export default function ChatPage({ visible }: ChatPageProps) {
             input={activeToolCall.input}
           />
         )}
+
+        {/* Tool approval cards */}
+        {approvals.map((approval) => (
+          <ToolApprovalCard
+            key={approval.id}
+            approvalId={approval.id}
+            toolName={approval.toolName}
+            description={approval.description}
+            toolInput={approval.toolInput}
+            status={approval.status}
+            onDecision={resolveApproval}
+          />
+        ))}
       </div>
 
       {/* Spacer for fixed input */}
