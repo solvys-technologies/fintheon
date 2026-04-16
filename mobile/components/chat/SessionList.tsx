@@ -1,6 +1,8 @@
+// [claude-code 2026-04-16] T4 unification: API-backed sessions via useConversations, load full conversation on select
 // [claude-code 2026-04-15] T6: Session list bottom sheet — chat session history, new session button
 
 import { motion, AnimatePresence } from "framer-motion";
+import type { ConversationSummary } from "../../hooks/useConversations";
 
 export interface ChatSession {
   id: string;
@@ -11,10 +13,12 @@ export interface ChatSession {
 interface SessionListProps {
   open: boolean;
   onClose: () => void;
-  sessions: ChatSession[];
+  sessions: ConversationSummary[];
+  isLoading?: boolean;
   activeSessionId: string | null;
   onSelect: (id: string) => void;
   onNewSession: () => void;
+  onRefresh?: () => void;
 }
 
 const formatDate = (iso: string) => {
@@ -30,9 +34,11 @@ export default function SessionList({
   open,
   onClose,
   sessions,
+  isLoading,
   activeSessionId,
   onSelect,
   onNewSession,
+  onRefresh,
 }: SessionListProps) {
   return (
     <AnimatePresence>
@@ -113,6 +119,27 @@ export default function SessionList({
 
             {/* Session rows */}
             <div style={{ flex: 1, overflowY: "auto" }}>
+              {isLoading && sessions.length === 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    padding: "20px 0",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: 11,
+                      color: "var(--text-disabled)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    [LOADING...]
+                  </span>
+                </div>
+              )}
               {sessions.map((s) => {
                 const isActive = s.id === activeSessionId;
                 return (
@@ -158,7 +185,7 @@ export default function SessionList({
                         marginLeft: 12,
                       }}
                     >
-                      {formatDate(s.timestamp)}
+                      {formatDate(s.updatedAt || s.createdAt)}
                     </span>
                   </button>
                 );

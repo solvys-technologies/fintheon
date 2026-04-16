@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] T4 unification: useConversations wired, sendMessage forwards images+riskFlowContext to relay
 // [claude-code 2026-04-16] T3/T6: Full-screen Harper chat — SSE streaming via relay, background recovery
 // Memory: feedback_keep_chat_mounted — use display:none not conditional render, streams survive navigation
 // Memory: feedback_uimessagestream_framing — start/finish events in SSE stream
@@ -9,7 +10,8 @@ import { getMobileBackend } from "../../lib/backend";
 import ChatMessage, { type ChatMessageData } from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import ConnectionStatus, { type RelayState } from "./ConnectionStatus";
-import SessionList, { type ChatSession } from "./SessionList";
+import SessionList from "./SessionList";
+import { useConversations } from "../../hooks/useConversations";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { ToolCallCard } from "./ToolCallCard";
 
@@ -25,9 +27,13 @@ export default function ChatPage({ visible }: ChatPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [relayState, setRelayState] = useState<RelayState>("reconnecting");
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionListOpen, setSessionListOpen] = useState(false);
+  const {
+    sessions,
+    isLoading: sessionsLoading,
+    loadSession,
+    refresh: refreshSessions,
+  } = useConversations();
   const [activeToolCall, setActiveToolCall] = useState<{
     name: string;
     input?: string;
@@ -87,7 +93,10 @@ export default function ChatPage({ visible }: ChatPageProps) {
   }, [recoverConversation]);
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (
+      text: string,
+      opts?: { images?: string[]; riskFlowContext?: string },
+    ) => {
       if (isLoading) return;
 
       const userMsg: ChatMessageData = {
@@ -125,6 +134,10 @@ export default function ChatPage({ visible }: ChatPageProps) {
           body: JSON.stringify({
             message: text,
             conversationId: conversationIdRef.current,
+            ...(opts?.images?.length ? { images: opts.images } : {}),
+            ...(opts?.riskFlowContext
+              ? { riskFlowContext: opts.riskFlowContext }
+              : {}),
           }),
           signal: controller.signal,
         });
@@ -238,19 +251,30 @@ export default function ChatPage({ visible }: ChatPageProps) {
     [isLoading, getAccessToken],
   );
 
+  const handleSelectSession = useCallback(
+    async (id: string) => {
+      const conv = await loadSession(id);
+      if (conv) {
+        setMessages(
+          conv.messages.map((m, i) => ({
+            id: m.id || `loaded-${i}`,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: m.createdAt,
+          })),
+        );
+        setConversationId(conv.id);
+      }
+      setSessionListOpen(false);
+    },
+    [loadSession],
+  );
+
   const handleNewSession = useCallback(() => {
-    const id = `session-${Date.now()}`;
-    const session: ChatSession = {
-      id,
-      title: `Session #${sessions.length + 1}`,
-      timestamp: new Date().toISOString(),
-    };
-    setSessions((prev) => [session, ...prev]);
-    setActiveSessionId(id);
     setMessages([]);
     setConversationId(null);
     setSessionListOpen(false);
-  }, [sessions.length]);
+  }, []);
 
   const isOffline = relayState === "offline";
 
@@ -401,12 +425,11 @@ export default function ChatPage({ visible }: ChatPageProps) {
         open={sessionListOpen}
         onClose={() => setSessionListOpen(false)}
         sessions={sessions}
-        activeSessionId={activeSessionId}
-        onSelect={(id) => {
-          setActiveSessionId(id);
-          setSessionListOpen(false);
-        }}
+        isLoading={sessionsLoading}
+        activeSessionId={conversationId}
+        onSelect={handleSelectSession}
         onNewSession={handleNewSession}
+        onRefresh={refreshSessions}
       />
     </div>
   );
