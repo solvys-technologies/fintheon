@@ -68,7 +68,7 @@ export const BOARDROOM_SUB_VIEWS: {
   },
   {
     id: "agentic-chat",
-    label: "Agentic Chatroom",
+    label: "Agentic Forum",
     subtitle: "Chat with Hermes & CAO",
     icon: Cpu,
   },
