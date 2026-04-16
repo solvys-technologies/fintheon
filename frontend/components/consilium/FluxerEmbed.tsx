@@ -1,5 +1,5 @@
 // [claude-code 2026-04-16] Fluxer embed — webview in Electron (bypasses X-Frame-Options), external link fallback in browser
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import { isElectron } from "../../lib/platform";
 import { buildFluxerThemeCSS } from "../../lib/fluxer-theme";
@@ -52,6 +52,16 @@ export function FluxerEmbed({ channelPath }: FluxerEmbedProps) {
     : FLUXER_URL;
 
   // Electron: webview bypasses X-Frame-Options / CSP frame-ancestors
+  const webviewRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const wv = webviewRef.current;
+    if (!wv) return;
+    const onReady = () => setLoaded(true);
+    wv.addEventListener("did-finish-load", onReady);
+    return () => wv.removeEventListener("did-finish-load", onReady);
+  }, []);
+
   if (isElectron()) {
     return (
       <div className="relative h-full w-full">
@@ -61,14 +71,13 @@ export function FluxerEmbed({ channelPath }: FluxerEmbedProps) {
           </div>
         )}
         <webview
+          ref={webviewRef as React.Ref<never>}
           src={src}
           className="h-full w-full"
           style={{ opacity: loaded ? 1 : 0, transition: "opacity 200ms ease" }}
           allowpopups
           partition="persist:fintheon"
           webpreferences="nativeWindowOpen=yes"
-          // @ts-expect-error webview events
-          onDidFinishLoad={() => setLoaded(true)}
         />
       </div>
     );
