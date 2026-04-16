@@ -269,7 +269,17 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                   {/* Blended calculation */}
                   <div className="pt-2 border-t border-zinc-800">
                     <div className="text-[9px] text-gray-500 leading-relaxed">
-                      Blended: ({data.vixComponent.toFixed(1)} × {(data.weights.vix ?? 0.7).toFixed(1)}) + ({data.headlineComponent.toFixed(1)} × {(data.weights.headlines ?? 0.2).toFixed(1)}) + ({data.mirosharkComponent.toFixed(1)} × {(data.weights.miroshark ?? 0.1).toFixed(1)}) = {data.score.toFixed(1)}{data.floor != null && data.floor > 0 ? `, floor ${data.floor.toFixed(1)}` : ""} → {data.score.toFixed(1)}
+                      {(() => {
+                        const wv = data.weights.vix ?? 0.7;
+                        const wh = data.weights.headlines ?? 0.2;
+                        const wm = data.weights.miroshark ?? 0.1;
+                        const blended =
+                          data.vixComponent * wv +
+                          data.headlineComponent * wh +
+                          data.mirosharkComponent * wm;
+                        const vixFloor = Math.max(0, data.vixComponent - 2);
+                        return `Blended: (${data.vixComponent.toFixed(1)} × ${wv.toFixed(1)}) + (${data.headlineComponent.toFixed(1)} × ${wh.toFixed(1)}) + (${data.mirosharkComponent.toFixed(1)} × ${wm.toFixed(1)}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)} → ${data.score.toFixed(1)}`;
+                      })()}
                     </div>
                     <div className="flex items-center justify-between mt-1.5">
                       <span className="text-[10px] text-gray-300 font-medium">
