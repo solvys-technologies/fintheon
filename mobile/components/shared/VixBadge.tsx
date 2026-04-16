@@ -1,9 +1,13 @@
-// [claude-code 2026-04-15] T3: Compact VIX badge — Doto font hero moment, gold flash on change
+// [claude-code 2026-04-16] VixBadge — compact (toolbar: label left, smaller) vs hero (label above, full size)
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useVixStore } from "../../hooks/useVixTicker";
 
-export function VixBadge() {
+interface VixBadgeProps {
+  variant?: "compact" | "hero";
+}
+
+export function VixBadge({ variant = "compact" }: VixBadgeProps) {
   const { value, changePercent, isStale } = useVixStore();
   const [flash, setFlash] = useState(false);
   const prevValue = useRef(value);
@@ -28,6 +32,7 @@ export function VixBadge() {
           : "var(--text-display)";
 
   const sign = changePercent >= 0 ? "+" : "";
+  const isHero = variant === "hero";
 
   return (
     <div
@@ -38,8 +43,9 @@ export function VixBadge() {
       style={{
         position: "relative",
         display: "flex",
+        flexDirection: isHero ? "column" : "row",
         alignItems: "center",
-        gap: 6,
+        gap: isHero ? 2 : 5,
       }}
     >
       <AnimatePresence>
@@ -59,42 +65,39 @@ export function VixBadge() {
           />
         )}
       </AnimatePresence>
-      <div
+
+      {/* Label */}
+      <span
         style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 2,
+          fontFamily: "var(--font-data)",
+          fontSize: isHero ? 10 : 9,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          color: "var(--text-secondary)",
+          lineHeight: 1,
         }}
       >
-        <span
-          style={{
-            fontFamily: "var(--font-data)",
-            fontSize: 10,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--text-secondary)",
-            lineHeight: 1,
-          }}
-        >
-          VIX
-        </span>
-        <span
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: 28,
-            color,
-            lineHeight: 1,
-          }}
-        >
-          {isStale || value === 0 ? "[--.-]" : value.toFixed(1)}
-        </span>
-      </div>
+        VIX
+      </span>
+
+      {/* Value */}
+      <span
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: isHero ? 28 : 18,
+          color,
+          lineHeight: 1,
+        }}
+      >
+        {isStale || value === 0 ? "[--.-]" : value.toFixed(1)}
+      </span>
+
+      {/* Change percent */}
       {!isStale && value !== 0 && (
         <span
           style={{
             fontFamily: "var(--font-data)",
-            fontSize: 11,
+            fontSize: isHero ? 11 : 9,
             color: "var(--text-secondary)",
             letterSpacing: "0.04em",
           }}

@@ -439,12 +439,23 @@ export default function ChatPage({ visible }: ChatPageProps) {
         )}
       </div>
 
-      {/* Input */}
-      <ChatInput
-        onSend={sendMessage}
-        isLoading={isLoading}
-        disabled={isOffline}
-      />
+      {/* Input — pinned to bottom */}
+      <div
+        style={{
+          position: "sticky",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: "var(--black, #000)",
+          zIndex: 10,
+        }}
+      >
+        <ChatInput
+          onSend={sendMessage}
+          isLoading={isLoading}
+          disabled={isOffline}
+        />
+      </div>
 
       {/* Session list bottom sheet */}
       <SessionList

@@ -27,6 +27,85 @@ function getScoreColor(score: number): string {
   return "var(--success)";
 }
 
+/** IV sub-score horizontal fuse bars */
+function IVSubScores({
+  vix,
+  headlines,
+  miroshark,
+}: {
+  vix: number;
+  headlines: number;
+  miroshark: number;
+}) {
+  const bars = [
+    { label: "VIX", value: vix },
+    { label: "HDLN", value: headlines },
+    { label: "SHARK", value: miroshark },
+  ];
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 12,
+        padding: "8px 0 4px",
+      }}
+    >
+      {bars.map(({ label, value }) => (
+        <div key={label} style={{ flex: 1 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: 3,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 8,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--text-secondary)",
+              }}
+            >
+              {label}
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 8,
+                color: getScoreColor(value),
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {value.toFixed(1)}
+            </span>
+          </div>
+          <div
+            style={{
+              height: 3,
+              borderRadius: 1,
+              background: "var(--border)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${Math.min(100, (value / 10) * 100)}%`,
+                background: getScoreColor(value),
+                borderRadius: 1,
+                transition: "width 0.4s ease-out",
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Shared page wrapper — enforces scroll-snap alignment */
 function SnapPage({
   children,
@@ -52,7 +131,12 @@ function SnapPage({
 }
 
 export function HomePage() {
-  const { score, scaledPoints, isLoading: ivLoading } = useIVScore();
+  const {
+    data: ivData,
+    score,
+    scaledPoints,
+    isLoading: ivLoading,
+  } = useIVScore();
 
   return (
     <div
@@ -148,7 +232,7 @@ export function HomePage() {
                   alignItems: "center",
                 }}
               >
-                <VixBadge />
+                <VixBadge variant="hero" />
               </div>
 
               {/* Right: Implied Points */}
@@ -198,6 +282,15 @@ export function HomePage() {
               </div>
             </div>
             <div className="fade-divider" />
+
+            {/* IV Sub-Score Fuses */}
+            {ivData && !ivLoading && (
+              <IVSubScores
+                vix={ivData.vixComponent ?? 0}
+                headlines={ivData.headlineComponent ?? 0}
+                miroshark={ivData.mirosharkComponent ?? 0}
+              />
+            )}
           </motion.div>
 
           {/* Briefing */}
