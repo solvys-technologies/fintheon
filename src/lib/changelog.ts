@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T23:55:00",
+    agent: "claude-code",
+    summary:
+      "S20-T6: Conversation Persistence — relay.ts creates conversation + saves user message before forwarding, relay-connector passes userId to harper agent, memory-store has idempotency guard (5s dedup window) on assistant message save, ChatPage refreshes sessions after stream, SessionList shows messageCount badge + uses lastMessageAt, useConversations adds archiveSession method, SessionsPanel uses BackendClient with auth instead of bare fetch, RLS migration for ai_conversations + ai_messages with user-scoped policies and service_role bypass.",
+    files: [
+      "backend-hono/src/routes/relay.ts",
+      "backend-hono/src/services/relay-connector.ts",
+      "backend-hono/src/services/strands/memory-store.ts",
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/SessionList.tsx",
+      "mobile/hooks/useConversations.ts",
+      "frontend/lib/services/ai.ts",
+      "frontend/components/chat/SessionsPanel.tsx",
+      "supabase/migrations/20260416_conversation_rls.sql",
+    ],
+  },
+  {
     date: "2026-04-16T23:30:00",
     agent: "claude-code",
     summary:

@@ -17,10 +17,8 @@ import {
   getDeliberationStateAsync,
   injectUserTake,
 } from "../../services/miroshark/miroshark-service.js";
-import {
-  getGovOfficials,
-  getMarketAnalysts,
-} from "../../services/miroshark/miroshark-client.js";
+import { getGovOfficials } from "../../services/miroshark/miroshark-client.js";
+import { ANALYST_META } from "../../services/agent-bus/templates/miroshark-template.js";
 import { assembleSimulationContext } from "../../services/miroshark/miroshark-context.js";
 import { isSkillEnabled } from "../../config/feature-flags.js";
 import type { SanctumPreset } from "../../services/miroshark/miroshark-types.js";

@@ -203,10 +203,10 @@ export async function startPrediction(
 
     seedCache.set(simId, seed);
 
-    // Primary: market analyst debate (5 personas with subject-filtered headlines)
-    const report = await runMarketAnalystDebate(seed);
+    // Primary: gov-official debate (8 personas with headline augmentation)
+    const report = await runDebate(seed);
     report.simulationId = simId;
-    report.debateLayer = "market-analysts";
+    report.debateLayer = "gov-officials";
 
     // Conditional: gov-official debate for geopolitical content
     const geoActive = await hasGeopoliticalContent();
@@ -325,9 +325,9 @@ export async function injectScenarioVariable(
       ],
     };
 
-    const report = await runMarketAnalystDebate(modifiedSeed);
+    const report = await runDebate(modifiedSeed);
     report.simulationId = simId;
-    report.debateLayer = "market-analysts";
+    report.debateLayer = "gov-officials";
 
     const prediction = reportToPrediction(simId, report);
     predictionCache.set(simId, prediction);
