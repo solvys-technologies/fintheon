@@ -93,33 +93,7 @@ export default function ChatInput({
         MESSAGE HARPER
       </span>
 
-      {/* Toolbar row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <ImageAttachButton
-          onAdd={(uri) => setImages((prev) => [...prev, uri])}
-          imageCount={images.length}
-          disabled={disabled}
-        />
-        <button
-          onClick={() => setHeadlinePickerOpen(true)}
-          disabled={disabled}
-          aria-label="Attach headlines"
-          style={{
-            background: "transparent",
-            border: "none",
-            padding: 6,
-            cursor: disabled ? "default" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            opacity: disabled ? 0.4 : 1,
-          }}
-        >
-          <Newspaper size={20} color="var(--text-secondary)" />
-        </button>
-      </div>
-
-      {/* Attachment previews */}
+      {/* Attachment previews (only when present) */}
       <ImagePreviewRow
         images={images}
         onRemove={(i) =>
@@ -133,68 +107,103 @@ export default function ChatInput({
         }
       />
 
-      {/* Input border box */}
+      {/* Input border box with inline toolbar */}
       <div
         style={{
           display: "flex",
-          alignItems: "flex-end",
-          gap: 10,
+          flexDirection: "column",
+          gap: 4,
           border: `1px solid ${focused ? "var(--text-primary)" : "var(--border-visible)"}`,
           borderRadius: 8,
           padding: "8px 10px",
           transition: "border-color 150ms ease-out",
         }}
       >
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            handleInput();
-          }}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          placeholder="Type here..."
-          disabled={disabled}
-          rows={1}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 10 }}>
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+              handleInput();
+            }}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder="Type here..."
+            disabled={disabled}
+            rows={1}
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              resize: "none",
+              fontFamily: "var(--font-body)",
+              fontSize: 14,
+              color: "var(--text-primary)",
+              lineHeight: 1.5,
+              maxHeight: 96,
+              overflow: "auto",
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!canSend}
+            aria-label="Send message"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              background: canSend ? "var(--accent)" : "var(--surface-raised)",
+              border: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: canSend ? "pointer" : "default",
+              flexShrink: 0,
+              transition: "background 150ms ease-out",
+            }}
+          >
+            <ArrowUp
+              size={18}
+              color={canSend ? "var(--black, #000)" : "var(--text-disabled)"}
+            />
+          </button>
+        </div>
+        {/* Toolbar inside input box */}
+        <div
           style={{
-            flex: 1,
-            background: "transparent",
-            border: "none",
-            outline: "none",
-            resize: "none",
-            fontFamily: "var(--font-body)",
-            fontSize: 14,
-            color: "var(--text-primary)",
-            lineHeight: 1.5,
-            maxHeight: 96,
-            overflow: "auto",
-          }}
-        />
-        <button
-          onClick={handleSend}
-          disabled={!canSend}
-          aria-label="Send message"
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: "50%",
-            background: canSend ? "var(--accent)" : "var(--surface-raised)",
-            border: "none",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            cursor: canSend ? "pointer" : "default",
-            flexShrink: 0,
-            transition: "background 150ms ease-out",
+            gap: 8,
+            borderTop: "1px solid var(--border)",
+            paddingTop: 6,
           }}
         >
-          <ArrowUp
-            size={20}
-            color={canSend ? "var(--black, #000)" : "var(--text-disabled)"}
+          <ImageAttachButton
+            onAdd={(uri) => setImages((prev) => [...prev, uri])}
+            imageCount={images.length}
+            disabled={disabled}
           />
-        </button>
+          <button
+            onClick={() => setHeadlinePickerOpen(true)}
+            disabled={disabled}
+            aria-label="Attach headlines"
+            style={{
+              background: "transparent",
+              border: "none",
+              padding: 4,
+              cursor: disabled ? "default" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: disabled ? 0.4 : 1,
+            }}
+          >
+            <Newspaper size={18} color="var(--text-secondary)" />
+          </button>
+        </div>
       </div>
 
       {/* Headline picker bottom sheet */}

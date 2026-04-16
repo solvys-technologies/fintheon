@@ -171,7 +171,14 @@ function AuthenticatedApp() {
               x: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
               opacity: { duration: 0.2, ease: "easeOut" },
             }}
-            style={{ width: "100%", height: "100%", flex: 1 }}
+            style={{
+              width: "100%",
+              height: "100%",
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+            }}
           >
             {renderPage()}
           </motion.div>
