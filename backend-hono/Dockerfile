@@ -17,7 +17,7 @@ COPY tsconfig.json ./
 RUN npm run build
 
 # Remove dev dependencies
-RUN npm prune --omit=dev
+RUN npm prune --omit=dev --legacy-peer-deps
 
 ENV NODE_ENV=production
 ENV PORT=8080
