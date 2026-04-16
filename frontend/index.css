@@ -1002,3 +1002,23 @@ html *::-webkit-scrollbar {
   --fintheon-bg: #08080a;
   --fintheon-surface: #0e0e12;
 }
+
+/* Nothing Design — flat surfaces, no glass, sharp geometry */
+.nothing-active {
+  --fintheon-glass-bg: var(--fintheon-surface);
+  --fintheon-glass-border: color-mix(
+    in srgb,
+    var(--fintheon-border) 30%,
+    transparent
+  );
+  --fintheon-glass-highlight: transparent;
+  --fintheon-glass-shadow: none;
+  --radius: 0.25rem;
+  --ease-spring: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-bounce: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.nothing-active code,
+.nothing-active pre,
+.nothing-active .font-mono {
+  font-family: "Space Mono", "JetBrains Mono", monospace;
+}

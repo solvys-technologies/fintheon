@@ -2,9 +2,15 @@
 import { SurfaceCard } from "../shared/SurfaceCard";
 import { useEconCalendar } from "../../hooks/useEconCalendar";
 
-const MAX_EVENTS = 8;
+const DEFAULT_MAX_EVENTS = 8;
 
-export function MiniSessionCalendar() {
+interface MiniSessionCalendarProps {
+  maxEvents?: number;
+}
+
+export function MiniSessionCalendar({
+  maxEvents = DEFAULT_MAX_EVENTS,
+}: MiniSessionCalendarProps) {
   const { events, isLoading } = useEconCalendar();
 
   if (isLoading) {
@@ -34,8 +40,8 @@ export function MiniSessionCalendar() {
     );
   }
 
-  const visible = events.slice(0, MAX_EVENTS);
-  const remaining = events.length - MAX_EVENTS;
+  const visible = events.slice(0, maxEvents);
+  const remaining = events.length - maxEvents;
 
   return (
     <SurfaceCard noPadding>

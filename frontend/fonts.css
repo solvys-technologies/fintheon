@@ -182,6 +182,40 @@
     U+20AC;
 }
 
+/* Doto — Nothing Design display/heading (variable font, 400-700) */
+@font-face {
+  font-family: "Doto";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/doto.woff2") format("woff2");
+}
+
+/* Space Grotesk — Nothing Design body (variable font, 400-700) */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/space-grotesk.woff2") format("woff2");
+}
+
+/* Space Mono — Nothing Design data/monospace */
+@font-face {
+  font-family: "Space Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/space-mono-regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Space Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/space-mono-bold.woff2") format("woff2");
+}
+
 /* Cormorant Garamond — Imperial body */
 @font-face {
   font-family: "Cormorant Garamond";

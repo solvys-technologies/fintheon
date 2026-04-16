@@ -1,12 +1,11 @@
-// [claude-code 2026-04-15] T5: RiskFlow card — severity-colored left border, tap to expand, swipe to dismiss
+// [claude-code 2026-04-15] RiskFlow card — vertical fuse bar left, headline center, IV score right, no Kanban borders
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import { timeAgo } from "@frontend/lib/time-utils";
-import { SurfaceCard } from "../shared/SurfaceCard";
-import { SeverityBadge } from "../shared/SeverityBadge";
 import { SwipeAction } from "../shared/SwipeAction";
+import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import { RiskFlowCardExpanded } from "./RiskFlowCardExpanded";
 
 interface RiskFlowCardProps {
@@ -46,56 +45,67 @@ function formatSource(source: string): string {
 export function RiskFlowCard({ alert, onDismiss }: RiskFlowCardProps) {
   const [expanded, setExpanded] = useState(false);
   const severityColor = SEVERITY_COLORS[alert.severity];
+  const ivScore = alert.ivScore ?? 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-    >
-      <SwipeAction onSwipeLeft={() => onDismiss(alert.id)}>
-        <SurfaceCard
-          accentBorder="left"
-          noPadding
+    <SwipeAction onSwipeLeft={() => onDismiss(alert.id)}>
+      <div
+        onClick={() => setExpanded((v) => !v)}
+        style={{
+          background: "var(--surface)",
+          cursor: "pointer",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        {/* Main card row: fuse | headline | IV score */}
+        <div
           style={{
-            borderLeftColor: severityColor,
-            borderRadius: 0,
-            marginBottom: 1,
+            display: "flex",
+            alignItems: "stretch",
+            padding: "10px 12px",
+            gap: 10,
+            minHeight: 56,
           }}
-          onClick={() => setExpanded((v) => !v)}
         >
-          <div className="px-4 py-3">
-            <div className="flex items-start justify-between gap-2">
-              {/* Title */}
-              <h3
-                className="flex-1"
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "14px",
-                  color: "var(--text-primary)",
-                  lineHeight: 1.4,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                  margin: 0,
-                }}
-              >
-                {alert.title}
-              </h3>
-              {/* Severity badge */}
-              <SeverityBadge severity={alert.severity} />
-            </div>
+          {/* Left: Vertical fuse bar */}
+          <VerticalFuseBar value={ivScore} color={severityColor} />
 
-            {/* Source + timestamp row */}
+          {/* Center: Headline + metadata */}
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              gap: 4,
+            }}
+          >
+            <h3
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 14,
+                color: "var(--text-primary)",
+                lineHeight: 1.4,
+                display: "-webkit-box",
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: "vertical" as const,
+                overflow: "hidden",
+                margin: 0,
+              }}
+            >
+              {alert.title}
+            </h3>
             <div
-              className="flex items-center gap-1 mt-1.5"
               style={{
                 fontFamily: "var(--font-data)",
-                fontSize: "11px",
+                fontSize: 11,
                 letterSpacing: "0.06em",
-                textTransform: "uppercase",
+                textTransform: "uppercase" as const,
                 color: "var(--text-secondary)",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
               }}
             >
               <span>{formatSource(alert.source)}</span>
@@ -112,12 +122,34 @@ export function RiskFlowCard({ alert, onDismiss }: RiskFlowCardProps) {
             </div>
           </div>
 
-          {/* Expanded content */}
-          <AnimatePresence>
-            {expanded && <RiskFlowCardExpanded alert={alert} />}
-          </AnimatePresence>
-        </SurfaceCard>
-      </SwipeAction>
-    </motion.div>
+          {/* Right: IV score number */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              flexShrink: 0,
+              width: 36,
+              justifyContent: "flex-end",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 11,
+                color: severityColor,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {ivScore.toFixed(1)}
+            </span>
+          </div>
+        </div>
+
+        {/* Expanded content */}
+        <AnimatePresence>
+          {expanded && <RiskFlowCardExpanded alert={alert} />}
+        </AnimatePresence>
+      </div>
+    </SwipeAction>
   );
 }

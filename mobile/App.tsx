@@ -23,6 +23,11 @@ const SettingsPage = lazy(() =>
     default: m.SettingsPage,
   })),
 );
+const EconCalendarPage = lazy(() =>
+  import("./components/econ/EconCalendarEmbed").then((m) => ({
+    default: m.EconCalendarEmbed,
+  })),
+);
 
 function LazyFallback() {
   return (
@@ -124,7 +129,19 @@ function AuthenticatedApp() {
             <RiskFlowPage />
           </Suspense>
         );
+      case 2:
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <ChatPage visible={true} />
+          </Suspense>
+        );
       case 3:
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <EconCalendarPage />
+          </Suspense>
+        );
+      case 4:
         return (
           <Suspense fallback={<LazyFallback />}>
             <SettingsPage />
@@ -161,12 +178,14 @@ function AuthenticatedApp() {
         </AnimatePresence>
       </MobileShell>
 
-      {/* Chat overlay — slides up from bottom, stays mounted */}
-      <Suspense fallback={<LazyFallback />}>
-        <ChatPage visible={chatOpen} />
-      </Suspense>
+      {/* Chat overlay — slides up from bottom, stays mounted (only when not on chat tab) */}
+      {activeTab !== 2 && (
+        <Suspense fallback={<LazyFallback />}>
+          <ChatPage visible={chatOpen} />
+        </Suspense>
+      )}
       <AnimatePresence>
-        {chatOpen && (
+        {chatOpen && activeTab !== 2 && (
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}

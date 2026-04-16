@@ -59,7 +59,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           {isUser ? (
             <p
               style={{
-                fontFamily: "'Space Grotesk', sans-serif",
+                fontFamily: "var(--font-body)",
                 fontSize: 14,
                 color: "var(--text-primary)",
                 margin: 0,
@@ -77,7 +77,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                   p: ({ children }) => (
                     <p
                       style={{
-                        fontFamily: "'Space Grotesk', sans-serif",
+                        fontFamily: "var(--font-body)",
                         fontSize: 14,
                         color: "var(--text-primary)",
                         margin: "0 0 8px 0",
@@ -101,7 +101,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                       >
                         <code
                           style={{
-                            fontFamily: "'Space Mono', monospace",
+                            fontFamily: "var(--font-data)",
                             fontSize: 12,
                             color: "var(--text-primary)",
                           }}
@@ -112,7 +112,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                     ) : (
                       <code
                         style={{
-                          fontFamily: "'Space Mono', monospace",
+                          fontFamily: "var(--font-data)",
                           fontSize: 12,
                           color: "var(--accent)",
                           background: "var(--surface-raised)",
@@ -151,7 +151,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         </div>
         <span
           style={{
-            fontFamily: "'Space Mono', monospace",
+            fontFamily: "var(--font-data)",
             fontSize: 10,
             color: "var(--text-disabled)",
             alignSelf: isUser ? "flex-end" : "flex-start",

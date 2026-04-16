@@ -9,6 +9,8 @@ import ChatMessage, { type ChatMessageData } from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import ConnectionStatus, { type RelayState } from "./ConnectionStatus";
 import SessionList, { type ChatSession } from "./SessionList";
+import { ThinkingIndicator } from "./ThinkingIndicator";
+import { ToolCallCard } from "./ToolCallCard";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -25,6 +27,10 @@ export default function ChatPage({ visible }: ChatPageProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionListOpen, setSessionListOpen] = useState(false);
+  const [activeToolCall, setActiveToolCall] = useState<{
+    name: string;
+    input?: string;
+  } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -123,6 +129,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
             try {
               const event = JSON.parse(payload);
               if (event.type === "text-delta" && event.delta) {
+                setActiveToolCall(null);
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantId
@@ -130,6 +137,19 @@ export default function ChatPage({ visible }: ChatPageProps) {
                       : m,
                   ),
                 );
+              } else if (
+                event.type === "tool_use" ||
+                event.type === "tool-use"
+              ) {
+                setActiveToolCall({
+                  name: event.name || event.tool || "unknown",
+                  input:
+                    typeof event.input === "string"
+                      ? event.input
+                      : event.input
+                        ? JSON.stringify(event.input).slice(0, 120)
+                        : undefined,
+                });
               }
             } catch {
               // Skip non-JSON lines (heartbeats, comments)
@@ -147,6 +167,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
         );
       } finally {
         setIsLoading(false);
+        setActiveToolCall(null);
         abortRef.current = null;
       }
     },
@@ -192,7 +213,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
       >
         <span
           style={{
-            fontFamily: "'Space Mono', monospace",
+            fontFamily: "var(--font-data)",
             fontSize: 14,
             color: "var(--text-display)",
             textTransform: "uppercase",
@@ -248,7 +269,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
           >
             <span
               style={{
-                fontFamily: "'Space Mono', monospace",
+                fontFamily: "var(--font-data)",
                 fontSize: 11,
                 color: "var(--text-disabled)",
                 textTransform: "uppercase",
@@ -270,7 +291,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
           >
             <span
               style={{
-                fontFamily: "'Space Mono', monospace",
+                fontFamily: "var(--font-data)",
                 fontSize: 11,
                 color: "var(--error)",
                 textTransform: "uppercase",
@@ -284,6 +305,24 @@ export default function ChatPage({ visible }: ChatPageProps) {
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
+
+        {/* Thinking indicator — shows during streaming when content is empty */}
+        <ThinkingIndicator
+          isThinking={
+            isLoading &&
+            messages.length > 0 &&
+            messages[messages.length - 1].role === "assistant" &&
+            messages[messages.length - 1].content === ""
+          }
+        />
+
+        {/* Active tool call card */}
+        {activeToolCall && (
+          <ToolCallCard
+            toolName={activeToolCall.name}
+            input={activeToolCall.input}
+          />
+        )}
       </div>
 
       {/* Input */}

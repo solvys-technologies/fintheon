@@ -1,4 +1,4 @@
-// [claude-code 2026-04-15] T5: Horizontal pill filter bar — severity chips, Space Mono ALL CAPS
+// [claude-code 2026-04-15] Full-width segmented filter strip — Nothing design, edge-to-edge, no pills
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 
 type SeverityFilter = "all" | AlertSeverity;
@@ -30,8 +30,11 @@ export function RiskFlowFilterBar({
 }: RiskFlowFilterBarProps) {
   return (
     <div
-      className="flex gap-2 px-4 py-3 overflow-x-auto"
-      style={{ WebkitOverflowScrolling: "touch" }}
+      style={{
+        display: "flex",
+        width: "100%",
+        borderBottom: "1px solid var(--border)",
+      }}
     >
       {CHIPS.map(({ label, value }) => {
         const isActive = activeSeverity === value;
@@ -42,32 +45,36 @@ export function RiskFlowFilterBar({
             type="button"
             onClick={() => onSeverityChange(value)}
             style={{
+              flex: 1,
               fontFamily: "var(--font-data)",
-              fontSize: "11px",
+              fontSize: 11,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
               color: isActive ? "var(--text-display)" : "var(--text-secondary)",
-              border: `1px solid ${isActive ? "var(--text-display)" : "var(--border-visible)"}`,
-              borderRadius: "999px",
-              padding: "6px 14px",
-              background: "transparent",
-              whiteSpace: "nowrap",
+              background: isActive ? "var(--surface-raised)" : "transparent",
+              border: "none",
+              borderBottom: isActive
+                ? "2px solid var(--text-display)"
+                : "2px solid transparent",
+              padding: "0 4px",
+              minHeight: 44,
               cursor: "pointer",
-              minHeight: "44px",
               display: "flex",
               alignItems: "center",
-              gap: "4px",
-              transition: "color 150ms, border-color 150ms",
+              justifyContent: "center",
+              gap: 4,
+              transition: "color 150ms, background 150ms, border-color 150ms",
+              WebkitTapHighlightColor: "transparent",
             }}
           >
             {label}
             {count > 0 && (
               <span
                 style={{
+                  fontSize: 10,
                   color: isActive
                     ? "var(--text-primary)"
                     : "var(--text-disabled)",
-                  fontSize: "10px",
                 }}
               >
                 {count}

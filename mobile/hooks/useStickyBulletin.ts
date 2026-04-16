@@ -33,8 +33,8 @@ export function useMobileStickyBulletin(): StickyBulletinState {
       setTradingNotes(res.data.tradingNotes || "");
       setEventOfWeek(res.data.eventOfWeek || "");
       setAntilagTimes(res.data.antilagTimes || []);
-    } catch {
-      // silent — stale data is acceptable
+    } catch (err) {
+      console.error("[StickyBulletin] fetch failed:", err);
     } finally {
       setIsLoading(false);
     }

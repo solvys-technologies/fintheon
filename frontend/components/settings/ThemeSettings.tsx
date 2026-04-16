@@ -1,3 +1,4 @@
+// [claude-code 2026-04-15] Special themes section — Nothing Design (Something Solvys/Monochrome)
 // [claude-code 2026-03-24] Theme settings — font style, color presets, custom color picker, severity colors, save custom themes
 import { useState } from "react";
 import { Check, Save, Plus } from "lucide-react";
@@ -43,12 +44,15 @@ export function ThemeSettings() {
     theme,
     setTheme,
     presets,
+    specialPresets,
     fontTheme,
     setFontTheme,
     fontThemes,
     pompaEnabled,
     setPompaEnabled,
   } = useTheme();
+
+  const isSpecialActive = theme.special === true;
   const [customDraft, setCustomDraft] = useState<Record<string, string>>({});
   const [customThemes, setCustomThemes] = useState<ThemeConfig[]>(() => {
     try {
@@ -113,8 +117,31 @@ export function ThemeSettings() {
           </div>
         </div>
 
+        {/* Font override notice for special themes */}
+        {isSpecialActive && (
+          <div
+            className="mb-3 px-3 py-2 rounded-md text-[11px]"
+            style={{
+              background: "rgba(199,159,74,0.08)",
+              border: "1px solid rgba(199,159,74,0.15)",
+              color: "var(--fintheon-accent)",
+              fontFamily: "'Space Mono', monospace",
+              letterSpacing: "0.04em",
+            }}
+          >
+            [OVERRIDDEN BY {theme.label?.toUpperCase()}]
+          </div>
+        )}
+
         {/* Font theme cards — each with its own inline sample */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div
+          className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+          style={
+            isSpecialActive
+              ? { opacity: 0.4, pointerEvents: "none" }
+              : undefined
+          }
+        >
           {Object.values(fontThemes).map((ft) => {
             const active = fontTheme.id === ft.id;
             return (
@@ -212,6 +239,114 @@ export function ThemeSettings() {
             {pompaEnabled ? "Pompa Active" : "Pompa Disabled"}
           </span>
         </button>
+      </section>
+
+      {/* Special — Nothing Design themes */}
+      <section>
+        <h3
+          className="text-sm font-semibold mb-1"
+          style={{ color: "var(--fintheon-accent)" }}
+        >
+          Special
+        </h3>
+        <p className="text-[11px] text-zinc-500 mb-3">
+          Nothing Design — industrial typography, flat surfaces, sharp geometry.
+          Overlays on top of color palettes.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {Object.values(specialPresets).map((preset) => {
+            const active = theme.name === preset.name;
+            return (
+              <button
+                key={preset.name}
+                onClick={() => {
+                  if (active) {
+                    // Deselect — return to default Solvys Gold
+                    setTheme(DEFAULT_THEME);
+                  } else {
+                    setTheme(preset);
+                  }
+                  setCustomDraft({});
+                }}
+                className="relative text-left p-3 rounded-lg border transition-all hover:scale-[1.01]"
+                style={{
+                  borderColor: active
+                    ? preset.accent
+                    : "rgba(255,255,255,0.08)",
+                  backgroundColor: active
+                    ? `${preset.accent}10`
+                    : "rgba(10,10,0,0.4)",
+                }}
+              >
+                {active && (
+                  <div
+                    className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: preset.accent }}
+                  >
+                    <Check size={12} className="text-black" />
+                  </div>
+                )}
+                {/* Color swatch strip */}
+                <div className="flex gap-0 rounded overflow-hidden mb-2 h-5">
+                  {[
+                    { color: preset.accent, label: "Accent" },
+                    { color: preset.bg, label: "BG" },
+                    { color: preset.bullish, label: "Bull" },
+                    { color: preset.bearish, label: "Bear" },
+                    { color: preset.text, label: "Text" },
+                  ].map((s, i) => (
+                    <div
+                      key={i}
+                      className="flex-1"
+                      style={{ backgroundColor: s.color }}
+                      title={`${s.label}: ${s.color}`}
+                    />
+                  ))}
+                </div>
+                {/* Label + font preview */}
+                <div
+                  className="text-[12px] font-medium text-white"
+                  style={
+                    preset.fontHeading
+                      ? { fontFamily: preset.fontHeading }
+                      : undefined
+                  }
+                >
+                  {preset.label}
+                </div>
+                <div
+                  className="text-[11px] text-zinc-500 mt-0.5"
+                  style={
+                    preset.fontBody
+                      ? { fontFamily: preset.fontBody }
+                      : undefined
+                  }
+                >
+                  Doto + Space Grotesk
+                </div>
+                {/* Inline font sample */}
+                <div
+                  className="mt-2 text-[14px] font-semibold leading-tight"
+                  style={{
+                    fontFamily: preset.fontHeading ?? "inherit",
+                    color: preset.accent,
+                  }}
+                >
+                  $1,234.56
+                </div>
+                <div
+                  className="text-[11px] mt-0.5"
+                  style={{
+                    fontFamily: preset.fontBody ?? "inherit",
+                    color: preset.text,
+                  }}
+                >
+                  AAPL +2.3%
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       {/* Color Presets */}

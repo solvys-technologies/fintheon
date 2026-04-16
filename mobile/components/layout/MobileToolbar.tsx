@@ -38,11 +38,12 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
         {/* Wordmark */}
         <span
           style={{
-            fontFamily: "var(--font-body)",
+            fontFamily: "var(--font-display)",
             fontWeight: 500,
             fontSize: 18,
             color: "var(--accent)",
             letterSpacing: "0.04em",
+            textTransform: "uppercase" as const,
           }}
         >
           Fintheon

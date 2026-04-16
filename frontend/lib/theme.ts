@@ -1,3 +1,4 @@
+// [claude-code 2026-04-15] Something themes — Nothing Design special presets
 // [claude-code 2026-03-16] Stone theme + narrative theme integration
 
 export interface ThemeConfig {
@@ -17,6 +18,14 @@ export interface ThemeConfig {
   neutral?: string;
   lowNeutral?: string;
   low?: string;
+  // Special themes — Nothing Design visual overrides
+  special?: boolean;
+  fontBody?: string;
+  fontHeading?: string;
+  fontMono?: string;
+  glassEnabled?: boolean;
+  borderRadius?: string;
+  easeDefault?: string;
 }
 
 export const THEME_PRESETS: Record<string, ThemeConfig> = {
@@ -135,6 +144,64 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
   },
 };
 
+// Special themes — Nothing Design visual mode presets
+// These apply Nothing's industrial typography + flat surfaces on top of color palettes
+export const SPECIAL_PRESETS: Record<string, ThemeConfig> = {
+  "something-solvys": {
+    name: "something-solvys",
+    label: "Something Solvys",
+    // Inherit all colors from Solvys Stone
+    accent: "#c79f4a",
+    bg: "#0d0c09",
+    text: "#c38f25",
+    bullish: "#d49616",
+    bearish: "#824d4d",
+    surface: "#151310",
+    border: "#c79f4a",
+    muted: "#6b6455",
+    severe: "#da0000",
+    neutralSevere: "#ac5318",
+    neutral: "#c79f4a",
+    lowNeutral: "#526089",
+    low: "#073c00",
+    // Nothing Design overrides
+    special: true,
+    fontBody: "'Space Grotesk', sans-serif",
+    fontHeading: "'Doto', monospace",
+    fontMono: "'Space Mono', monospace",
+    glassEnabled: false,
+    borderRadius: "0.25rem",
+    easeDefault: "cubic-bezier(0.25, 0.1, 0.25, 1)",
+  },
+  "something-monochrome": {
+    name: "something-monochrome",
+    label: "Something Monochrome",
+    // Pure monochrome — OLED black, white accent, no color
+    accent: "#e0e0e0",
+    bg: "#000000",
+    text: "#e0e0e0",
+    bullish: "#e0e0e0",
+    bearish: "#e0e0e0",
+    surface: "#0a0a0a",
+    border: "#1a1a1a",
+    muted: "#4a4a4a",
+    // Nothing Design overrides
+    special: true,
+    fontBody: "'Space Grotesk', sans-serif",
+    fontHeading: "'Doto', monospace",
+    fontMono: "'Space Mono', monospace",
+    glassEnabled: false,
+    borderRadius: "0.25rem",
+    easeDefault: "cubic-bezier(0.25, 0.1, 0.25, 1)",
+  },
+};
+
+// Merge all presets for lookup
+export const ALL_PRESETS: Record<string, ThemeConfig> = {
+  ...THEME_PRESETS,
+  ...SPECIAL_PRESETS,
+};
+
 const STORAGE_KEY = "fintheon:theme";
 const CUSTOM_STORAGE_KEY = "fintheon:theme-custom";
 
@@ -151,7 +218,7 @@ export function loadStoredTheme(): ThemeConfig {
       return DEFAULT_THEME;
     }
 
-    if (THEME_PRESETS[stored]) return THEME_PRESETS[stored];
+    if (ALL_PRESETS[stored]) return ALL_PRESETS[stored];
     return DEFAULT_THEME;
   } catch {
     return DEFAULT_THEME;
@@ -160,11 +227,12 @@ export function loadStoredTheme(): ThemeConfig {
 
 export function saveTheme(theme: ThemeConfig): void {
   try {
-    const presetKey = Object.keys(THEME_PRESETS).find(
+    const presetKey = Object.keys(ALL_PRESETS).find(
       (k) =>
-        THEME_PRESETS[k].accent === theme.accent &&
-        THEME_PRESETS[k].bg === theme.bg &&
-        THEME_PRESETS[k].text === theme.text,
+        ALL_PRESETS[k].accent === theme.accent &&
+        ALL_PRESETS[k].bg === theme.bg &&
+        ALL_PRESETS[k].text === theme.text &&
+        ALL_PRESETS[k].special === theme.special,
     );
 
     if (presetKey) {

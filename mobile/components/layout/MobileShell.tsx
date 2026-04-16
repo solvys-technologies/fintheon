@@ -16,7 +16,7 @@ interface MobileShellProps {
 }
 
 const TOOLBAR_HEIGHT = 92; // 48px bar + 44px chevron
-const TAB_COUNT = 4;
+const TAB_COUNT = 5;
 
 export function MobileShell({
   activeTab,
@@ -73,7 +73,9 @@ export function MobileShell({
         {children}
       </main>
 
-      {!chatOpen && <FloatingChatButton onTap={onChatToggle} />}
+      {!chatOpen && activeTab !== 2 && (
+        <FloatingChatButton onTap={onChatToggle} />
+      )}
       <HamburgerMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}

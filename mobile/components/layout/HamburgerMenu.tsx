@@ -15,7 +15,9 @@ type HarperStatus = "idle" | "checking" | "connected" | "offline";
 const NAV_ITEMS = [
   { label: "DASH", index: 0 },
   { label: "RISKFLOW", index: 1 },
-  { label: "SETTINGS", index: 3 },
+  { label: "CHAT", index: 2 },
+  { label: "ECON", index: 3 },
+  { label: "SETTINGS", index: 4 },
 ] as const;
 
 export function HamburgerMenu({
