@@ -9,6 +9,7 @@ import {
   Shield,
   Brain,
   BookOpen,
+  Moon,
 } from "lucide-react";
 
 // Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
@@ -77,6 +78,12 @@ export const BOARDROOM_SUB_VIEWS: {
     label: "Research",
     subtitle: "Research knowledge base",
     icon: BookOpen,
+  },
+  {
+    id: "imperium",
+    label: "Dream Room",
+    subtitle: "Agent subconscious — autonomous reflection",
+    icon: Moon,
   },
 ];
 

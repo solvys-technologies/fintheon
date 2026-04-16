@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T21:15:00",
+    agent: "claude-code",
+    summary:
+      "Imperium overhaul: Fixed Fluxer URL (app.fluxer.app→web.fluxer.app), converted FluxerEmbed to use Electron webview (bypasses X-Frame-Options DENY) with browser fallback to external link. Added FluxerCallWidget in header between nametag and antilag button — rolls out rightward to reveal audio controls (connect/mute/deafen/video) with floating video panel in Electron. Added Agent Dream Room (Imperium > Dream Room) — autonomous agent reflection channel inspired by Bitterbot Dream Engine, with backend endpoint and Supabase persistence.",
+    files: [
+      "frontend/components/consilium/FluxerEmbed.tsx",
+      "frontend/components/consilium/FluxerCallWidget.tsx",
+      "frontend/components/consilium/AgentDreamRoom.tsx",
+      "frontend/components/consilium/ConsiliumTabConfig.ts",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "backend-hono/src/routes/agent-bus/dreams.ts",
+      "backend-hono/src/routes/index.ts",
+      "supabase/migrations/20260416_agent_dreams.sql",
+    ],
+  },
+  {
     date: "2026-04-17T09:00:00",
     agent: "claude-code",
     summary:

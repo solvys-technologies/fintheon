@@ -36,6 +36,7 @@ import {
 import { WhatsNewButton } from "../onboarding/FirstTimeTour";
 import { StickyBulletin } from "../StickyBulletin";
 import { TraderNametag } from "../TraderNametag";
+import { FluxerCallWidget } from "../consilium/FluxerCallWidget";
 import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
@@ -510,6 +511,7 @@ export function TopHeader({
               disablePulse={!(alertConfig.nametagEmoPulse ?? true)}
             />
           )}
+          <FluxerCallWidget />
           {topStepXEnabled && (
             <button
               onClick={toggleManualDnd}
