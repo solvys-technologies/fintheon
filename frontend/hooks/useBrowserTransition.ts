@@ -1,5 +1,5 @@
 // [claude-code 2026-04-10] S9-T3: Extracted browser transition from MainLayout
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { TradingPlatform } from "../components/TradingBrowser";
 
 interface UseBrowserTransitionParams {
@@ -16,6 +16,19 @@ export function useBrowserTransition({
     useState<TradingPlatform>(defaultPlatform);
   const [secondaryPlatform, setSecondaryPlatform] =
     useState<TradingPlatform>("research");
+  const userPickedPlatform = useRef(false);
+
+  // Sync when settings default changes (unless user already picked manually)
+  useEffect(() => {
+    if (!userPickedPlatform.current) {
+      setSelectedPlatform(defaultPlatform);
+    }
+  }, [defaultPlatform]);
+
+  const setSelectedPlatformTracked = useCallback((p: TradingPlatform) => {
+    userPickedPlatform.current = true;
+    setSelectedPlatform(p);
+  }, []);
   const [splitBrowserView, setSplitBrowserView] = useState(false);
 
   // Smooth browser open/close transition
@@ -54,7 +67,7 @@ export function useBrowserTransition({
     browserTransitioning,
     browserVisible,
     selectedPlatform,
-    setSelectedPlatform,
+    setSelectedPlatform: setSelectedPlatformTracked,
     secondaryPlatform,
     setSecondaryPlatform,
     splitBrowserView,

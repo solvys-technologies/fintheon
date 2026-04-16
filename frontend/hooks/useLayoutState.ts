@@ -1,5 +1,5 @@
 // [claude-code 2026-04-10] S9-T3: Extracted layout state from MainLayout
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { PanelPosition } from "../components/layout/DraggablePanel";
 
 type LayoutOption = "tickers-only" | "combined";
@@ -35,10 +35,24 @@ export function useLayoutState({
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
   const [combinedPanelCollapsed, setCombinedPanelCollapsed] = useState(false);
   const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
-  const [layoutOption, setLayoutOption] = useState<LayoutOption>(defaultLayout);
+  const [layoutOption, setLayoutOptionRaw] =
+    useState<LayoutOption>(defaultLayout);
   const [prevLayoutOption, setPrevLayoutOption] = useState<LayoutOption | null>(
     null,
   );
+  const userPickedLayout = useRef(false);
+
+  // Sync when settings default changes (unless user already picked manually)
+  useEffect(() => {
+    if (!userPickedLayout.current) {
+      setLayoutOptionRaw(defaultLayout);
+    }
+  }, [defaultLayout]);
+
+  const setLayoutOption = useCallback((opt: LayoutOption) => {
+    userPickedLayout.current = true;
+    setLayoutOptionRaw(opt);
+  }, []);
   const [missionControlPosition, setMissionControlPosition] =
     useState<PanelPosition>("right");
   const [tapePosition, setTapePosition] = useState<PanelPosition>("right");
@@ -57,7 +71,7 @@ export function useLayoutState({
     if (topStepXEnabled) {
       setMissionControlPosition("right");
       setTapePosition("right");
-      setLayoutOption("combined");
+      setLayoutOptionRaw(defaultLayout);
     } else {
       setMissionControlPosition("right");
       setTapePosition("right");
