@@ -39,8 +39,8 @@ function IVSubScores({
 }) {
   const bars = [
     { label: "VIX", value: vix },
-    { label: "HDLN", value: headlines },
-    { label: "SHARK", value: miroshark },
+    { label: "HEADLINE", value: headlines },
+    { label: "AGENTIC DESK", value: miroshark },
   ];
 
   return (

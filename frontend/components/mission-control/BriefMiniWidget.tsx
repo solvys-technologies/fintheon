@@ -4,31 +4,60 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { FileText, RefreshCw, ChevronDown, Clock } from "lucide-react";
 import { useBackend } from "../../lib/backend";
 
-/** Simple markdown-ish renderer for brief text — bolds, bullets, headers */
+/** Markdown renderer for brief text — headers, bold labels, bullets, dividers */
 function BriefContent({ text }: { text: string }) {
   const lines = text.split("\n");
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       {lines.map((line, i) => {
         const trimmed = line.trim();
-        if (!trimmed) return <div key={i} className="h-1" />;
+        if (!trimmed) return <div key={i} className="h-1.5" />;
 
-        if (trimmed.startsWith("**") && trimmed.includes(":**")) {
-          const [header, ...rest] = trimmed.split(":**");
-          const headerText = header.replace(/\*\*/g, "");
-          const body = rest.join(":**").replace(/\*\*/g, "");
+        // --- dividers
+        if (/^-{3,}$/.test(trimmed)) {
+          return <hr key={i} className="border-zinc-800 my-1" />;
+        }
+
+        // ## Markdown headers
+        if (trimmed.startsWith("## ")) {
+          return (
+            <h3
+              key={i}
+              className="text-[10px] font-bold text-[var(--fintheon-accent)] tracking-wide uppercase mt-2 mb-0.5"
+            >
+              {trimmed.slice(3)}
+            </h3>
+          );
+        }
+        if (trimmed.startsWith("# ")) {
+          return (
+            <h2
+              key={i}
+              className="text-xs font-bold text-[var(--fintheon-text)] tracking-wide uppercase mt-2 mb-0.5"
+            >
+              {trimmed.slice(2)}
+            </h2>
+          );
+        }
+
+        // **Bold Label:** value  OR  **Bold Label** — value
+        const labelMatch = trimmed.match(/^\*\*(.+?)\*\*[:\s—–-]+(.*)$/);
+        if (labelMatch) {
           return (
             <div key={i}>
               <span className="text-[10px] font-bold text-[var(--fintheon-accent)]">
-                {headerText}:
+                {labelMatch[1]}:
               </span>
-              {body && (
-                <span className="text-[10px] text-zinc-400 ml-1">{body}</span>
+              {labelMatch[2] && (
+                <span className="text-[10px] text-zinc-400 ml-1">
+                  {renderInlineBold(labelMatch[2])}
+                </span>
               )}
             </div>
           );
         }
 
+        // Bullet points
         if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
           return (
             <div key={i} className="flex gap-1.5 pl-1">
@@ -42,6 +71,7 @@ function BriefContent({ text }: { text: string }) {
           );
         }
 
+        // Numbered lists
         if (/^\d+\.\s/.test(trimmed)) {
           const match = trimmed.match(/^(\d+)\.\s(.*)$/);
           if (match) {
@@ -58,6 +88,7 @@ function BriefContent({ text }: { text: string }) {
           }
         }
 
+        // Plain text
         return (
           <p key={i} className="text-[10px] leading-relaxed text-zinc-400">
             {renderInlineBold(trimmed)}
