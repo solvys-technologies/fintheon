@@ -1,6 +1,6 @@
+// [claude-code 2026-04-16] Lifecycle v2: token refresh on open, smart kill on close, idle shutdown for routine-started backends
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
 // [claude-code 2026-03-11] Auto-start backend on app init.
-
 // [claude-code 2026-03-16] Backend build fallback dialog, Discord OAuth popup support
 // [claude-code 2026-03-16] Auto-updater via electron-updater + IPC for renderer update modal
 // [claude-code 2026-03-20] Configurable backend autostart + launch-on-login toggles (stored in userData)
@@ -16,6 +16,9 @@ let mainWindow = null;
 let backendProcess = null;
 let pendingAuthUrl = null;
 let backendStopInFlight = null;
+
+// [claude-code 2026-04-16] Track whether WE spawned the backend or found it already running
+let backendOwnedByApp = false;
 
 /* ------------------------------------------------------------------ */
 /*  Startup config — persisted to userData/fintheon-startup.json       */
@@ -77,10 +80,13 @@ async function waitForBackendHealthy(timeoutMs = 15000) {
 }
 
 async function startBackend() {
-  // If backend is already running (via LaunchAgent or manually), skip spawn
+  // If backend is already running (via LaunchAgent, routine, or manually), skip spawn
   const alive = await isBackendAlive();
   if (alive) {
     console.log("[Electron] Backend already running on :8080 — skipping spawn");
+    backendOwnedByApp = false;
+    // Disarm any idle shutdown from a previous routine session
+    postToBackend("/api/lifecycle/disarm-idle-shutdown").catch(() => {});
     return { ok: true, detail: "already running" };
   }
 
@@ -132,8 +138,10 @@ async function startBackend() {
     console.log("[Electron] Backend exited with code", code);
     backendProcess = null;
     backendStopInFlight = null;
+    backendOwnedByApp = false;
   });
 
+  backendOwnedByApp = true;
   return { ok: true, detail: "spawned" };
 }
 
@@ -151,6 +159,7 @@ async function stopBackend() {
       settled = true;
       if (backendProcess === proc) backendProcess = null;
       backendStopInFlight = null;
+      backendOwnedByApp = false;
       resolve(result);
     };
 
@@ -190,6 +199,91 @@ async function stopBackend() {
   });
 
   return backendStopInFlight;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Backend HTTP helpers                                               */
+/* ------------------------------------------------------------------ */
+
+/** Fire-and-forget POST to backend */
+function postToBackend(path, body) {
+  const http = require("http");
+  const payload = body ? JSON.stringify(body) : "{}";
+  return new Promise((resolve) => {
+    const req = http.request(
+      {
+        hostname: "localhost",
+        port: 8080,
+        path,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(payload),
+        },
+        timeout: 5000,
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch {
+            resolve({ ok: true });
+          }
+        });
+      },
+    );
+    req.on("error", () => resolve({ ok: false }));
+    req.on("timeout", () => {
+      req.destroy();
+      resolve({ ok: false });
+    });
+    req.write(payload);
+    req.end();
+  });
+}
+
+/**
+ * Called after backend is healthy — refreshes Rettiwt tokens and disarms idle shutdown.
+ * [claude-code 2026-04-16]
+ */
+async function onBackendReady() {
+  // Refresh Rettiwt key pool (reset cooldowns, reload from DB)
+  const refreshResult = await postToBackend(
+    "/api/riskflow/rettiwt-refresh",
+  ).catch(() => null);
+  if (refreshResult) {
+    console.log(
+      `[Electron] Rettiwt pool refreshed: ${refreshResult.totalKeys ?? "?"} keys, ${refreshResult.resetCount ?? 0} cooldowns reset`,
+    );
+  }
+
+  // Disarm any idle shutdown timer from a prior routine session
+  await postToBackend("/api/lifecycle/disarm-idle-shutdown").catch(() => {});
+}
+
+/**
+ * Smart backend shutdown — kills if app-owned, arms idle timeout if routine-owned.
+ * [claude-code 2026-04-16]
+ */
+async function smartShutdownBackend() {
+  if (backendOwnedByApp) {
+    // We spawned it — kill it
+    console.log("[Electron] App-owned backend — stopping");
+    return stopBackend();
+  }
+
+  // Routine/external backend — don't kill, arm 1h idle shutdown
+  console.log(
+    "[Electron] External backend — arming 1h idle shutdown instead of killing",
+  );
+  await postToBackend("/api/lifecycle/arm-idle-shutdown", {
+    timeoutMs: 3600_000,
+  }).catch((err) => {
+    console.warn("[Electron] Failed to arm idle shutdown:", err?.message);
+  });
+  return { ok: true, detail: "idle shutdown armed" };
 }
 
 /* ------------------------------------------------------------------ */
@@ -367,6 +461,9 @@ app.whenReady().then(async () => {
       const healthy = await waitForBackendHealthy(15000);
       if (!healthy) {
         console.warn("[Electron] Backend did not become healthy within 15s");
+      } else {
+        // [claude-code 2026-04-16] Refresh tokens + disarm idle shutdown on app open
+        await onBackendReady();
       }
     }
   } else {
@@ -510,7 +607,8 @@ app.whenReady().then(async () => {
       if (cfg.backendAutostart) {
         const startResult = await startBackend();
         if (startResult.ok) {
-          await waitForBackendHealthy(15000);
+          const healthy = await waitForBackendHealthy(15000);
+          if (healthy) await onBackendReady();
         }
       }
       createWindow();
@@ -518,13 +616,14 @@ app.whenReady().then(async () => {
   });
 });
 
+// [claude-code 2026-04-16] Smart shutdown: kill if app-owned, arm idle timeout if routine-owned
 app.on("window-all-closed", () => {
-  void stopBackend();
+  void smartShutdownBackend();
   if (process.platform !== "darwin") app.quit();
 });
 
 app.on("before-quit", () => {
-  void stopBackend();
+  void smartShutdownBackend();
 });
 
 ipcMain.handle("toggle-mini-widget", () => {
@@ -551,9 +650,14 @@ ipcMain.handle("update-download", () => {
   return { ok: true };
 });
 
-ipcMain.handle("update-install", () => {
-  void stopBackend();
-  autoUpdater.quitAndInstall(false, true);
+// [claude-code 2026-04-16] Fix: await stopBackend() before quitAndInstall to prevent hang
+ipcMain.handle("update-install", async () => {
+  console.log("[Updater] Installing update — stopping backend first...");
+  await stopBackend();
+  console.log("[Updater] Backend stopped — calling quitAndInstall");
+  setImmediate(() => {
+    autoUpdater.quitAndInstall(false, true);
+  });
   return { ok: true };
 });
 
@@ -593,6 +697,7 @@ ipcMain.handle("start-backend", async () => {
   const startResult = await startBackend();
   if (!startResult.ok) return startResult;
   const healthy = await waitForBackendHealthy(15000);
+  if (healthy) await onBackendReady();
   return {
     ok: healthy,
     detail: healthy ? "healthy" : "started but not healthy yet",

@@ -102,5 +102,15 @@ export function createRiskFlowRoutes(): Hono {
   // Risk Signals — AI-refined cards (S16-T3)
   router.get("/risk-signals", handleGetRiskSignals);
 
+  // POST /api/riskflow/rettiwt-refresh — force-reload keys from DB + reset cooldowns
+  // [claude-code 2026-04-16] Called on app startup to ensure X feed polling is immediately healthy
+  router.post("/rettiwt-refresh", async (c) => {
+    const { forceRefreshPool, getPoolStatus } =
+      await import("../../services/rettiwt-service.js");
+    const result = await forceRefreshPool();
+    const status = getPoolStatus();
+    return c.json({ ...result, pool: status });
+  });
+
   return router;
 }

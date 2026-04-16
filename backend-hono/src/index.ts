@@ -31,6 +31,12 @@ import { createHealthService } from "./services/health-service.js";
 import { AppError } from "./errors/index.js";
 import { createLogger } from "./lib/logger.js";
 import { bootServices } from "./boot/services.js";
+import {
+  markActivity,
+  armIdleShutdown,
+  disarmIdleShutdown,
+  getLifecycleState,
+} from "./services/lifecycle.js";
 
 const log = createLogger("API");
 const app = new Hono();
@@ -39,6 +45,12 @@ const config = getEnvConfig();
 
 // CORS middleware
 app.use("*", cors(corsConfig));
+
+// Activity tracking middleware (for idle shutdown)
+app.use("*", async (c, next) => {
+  markActivity();
+  await next();
+});
 
 // Request ID middleware
 app.use("*", async (c, next) => {
@@ -53,6 +65,25 @@ app.get("/health", async (c) => {
   const statusCode: ContentfulStatusCode =
     health.status === "ok" ? 200 : health.status === "degraded" ? 207 : 503;
   return c.json(health, statusCode);
+});
+
+// Lifecycle endpoints — idle shutdown management
+// [claude-code 2026-04-16] Used by Electron to arm/disarm idle timeout on app close/open
+app.post("/api/lifecycle/arm-idle-shutdown", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const timeoutMs =
+    typeof body.timeoutMs === "number" ? body.timeoutMs : 3600_000; // default 1h
+  armIdleShutdown(timeoutMs);
+  return c.json({ armed: true, timeoutMs });
+});
+
+app.post("/api/lifecycle/disarm-idle-shutdown", async (c) => {
+  disarmIdleShutdown();
+  return c.json({ armed: false });
+});
+
+app.get("/api/lifecycle/status", (c) => {
+  return c.json(getLifecycleState());
 });
 
 // Register all API routes
