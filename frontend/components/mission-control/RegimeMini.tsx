@@ -12,12 +12,16 @@ import {
 import type { TradingRegime } from "../../lib/regimes";
 
 function BiasBadge({ bias }: { bias: TradingRegime["bias"] }) {
-  const config = {
+  const configs: Record<
+    string,
+    { label: string; color: string; icon: typeof Diff }
+  > = {
     long: { label: "LONG", color: "text-emerald-400", icon: Diff },
     short: { label: "SHORT", color: "text-red-400", icon: TrendingDown },
     fade: { label: "FADE", color: "text-orange-400", icon: RotateCcw },
     neutral: { label: "NTRL", color: "text-gray-400", icon: Activity },
-  }[bias];
+  };
+  const config = configs[bias] ?? configs.neutral;
 
   const Icon = config.icon;
   return (

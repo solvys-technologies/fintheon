@@ -12,12 +12,13 @@ import {
 import type { TradingRegime } from "../../lib/regimes";
 
 function BiasIcon({ bias }: { bias: TradingRegime["bias"] }) {
-  const config = {
+  const configs: Record<string, { color: string; Icon: typeof Diff }> = {
     long: { color: "text-emerald-400", Icon: Diff },
     short: { color: "text-red-400", Icon: TrendingDown },
     fade: { color: "text-orange-400", Icon: RotateCcw },
     neutral: { color: "text-zinc-400", Icon: Activity },
-  }[bias];
+  };
+  const config = configs[bias] ?? configs.neutral;
 
   return <config.Icon className={`w-3 h-3 ${config.color}`} />;
 }

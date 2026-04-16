@@ -143,9 +143,10 @@ export function useToolApprovals(requestId: string | null) {
   );
 
   /** Approve a tool for the rest of this session (not permanent) */
+  const sessionApproved = useRef(new Set<string>());
   const approveAllForSession = useCallback(
     async (approvalId: string, toolName: string) => {
-      sessionApprovedTools.add(toolName);
+      sessionApproved.current.add(toolName);
       await sendDecision(approvalId, "approved");
     },
     [sendDecision],
