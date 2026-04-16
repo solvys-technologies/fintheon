@@ -6,6 +6,7 @@ import type {
   DAGProgressEvent,
   AgentStreamEvent,
   BusMessage,
+  BusTopic,
 } from "../../services/agent-bus/types.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
@@ -18,58 +19,58 @@ const HEARTBEAT_INTERVAL_MS = 8_000;
 export function createDagRoutes(): Hono {
   const router = new Hono();
 
-  /**
-   * GET /api/dag/surface/sidebar
-   * SSE stream of sidebar notification events (agent findings, cross-agent alerts).
-   * [claude-code 2026-04-16] Added for ChatSidebar toast notifications
-   */
-  router.get("/surface/sidebar", (c) => {
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        let closed = false;
+  // Shared SSE factory for surface.* bus topics
+  function surfaceSSE(topic: string) {
+    return (c: ReturnType<Hono["ctx"]>) => {
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          let closed = false;
+          const heartbeat = setInterval(() => {
+            if (!closed) {
+              try {
+                controller.enqueue(encoder.encode(": heartbeat\n\n"));
+              } catch {
+                clearInterval(heartbeat);
+              }
+            }
+          }, HEARTBEAT_INTERVAL_MS);
 
-        const heartbeat = setInterval(() => {
-          if (!closed) {
-            try {
-              controller.enqueue(encoder.encode(": heartbeat\n\n"));
-            } catch {
+          const unsub = agentBus.subscribe(topic, (msg) => {
+            if (!closed) {
+              try {
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify(msg.payload)}\n\n`),
+                );
+              } catch {
+                /* closed */
+              }
+            }
+          });
+
+          c.req.raw.signal?.addEventListener("abort", () => {
+            if (!closed) {
+              closed = true;
               clearInterval(heartbeat);
+              unsub();
             }
-          }
-        }, HEARTBEAT_INTERVAL_MS);
+          });
+        },
+      });
+      return new Response(stream, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+          "X-Accel-Buffering": "no",
+        },
+      });
+    };
+  }
 
-        const unsub = agentBus.subscribe("surface.sidebar", (msg) => {
-          if (!closed) {
-            try {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(msg.payload)}\n\n`),
-              );
-            } catch {
-              // closed
-            }
-          }
-        });
-
-        c.req.raw.signal?.addEventListener("abort", () => {
-          if (!closed) {
-            closed = true;
-            clearInterval(heartbeat);
-            unsub();
-          }
-        });
-      },
-    });
-
-    return new Response(stream, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-        "X-Accel-Buffering": "no",
-      },
-    });
-  });
+  // SSE surface endpoints — frontend subscribes for live push events
+  router.get("/surface/sidebar", surfaceSSE("surface.sidebar") as never);
+  router.get("/surface/narrative", surfaceSSE("surface.narrative") as never);
 
   /**
    * GET /api/dag/:dagId
