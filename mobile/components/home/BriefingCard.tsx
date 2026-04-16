@@ -1,9 +1,9 @@
-// [claude-code 2026-04-15] T4: Daily briefing card — truncated brief with bottom sheet expand
+// [claude-code 2026-04-16] Daily briefing card — truncated brief with full-screen overlay expand
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { SurfaceCard } from "../shared/SurfaceCard";
-import { BottomSheet } from "../shared/BottomSheet";
+import { BriefingOverlay } from "./BriefingOverlay";
 import { useBriefing } from "../../hooks/useBriefing";
 
 export function BriefingCard() {
@@ -88,7 +88,7 @@ export function BriefingCard() {
         </button>
       </SurfaceCard>
 
-      <BottomSheet
+      <BriefingOverlay
         isOpen={sheetOpen}
         onClose={() => setSheetOpen(false)}
         title="DAILY BRIEF"
@@ -103,7 +103,7 @@ export function BriefingCard() {
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullText}</ReactMarkdown>
         </div>
-      </BottomSheet>
+      </BriefingOverlay>
     </>
   );
 }

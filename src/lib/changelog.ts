@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T16:00:00",
+    agent: "claude-code",
+    summary:
+      "fix: mobile briefing overlay renders behind Dash content due to stacking context trap. Replaced BottomSheet with full-screen BriefingOverlay using createPortal to escape z-index hierarchy. iOS pill bar swipe-to-dismiss.",
+    files: [
+      "mobile/components/home/BriefingOverlay.tsx",
+      "mobile/components/home/BriefingCard.tsx",
+    ],
+  },
+  {
     date: "2026-04-16T15:00:00",
     agent: "claude-code",
     summary:
