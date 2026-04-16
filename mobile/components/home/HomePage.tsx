@@ -254,7 +254,10 @@ export function HomePage() {
                     color: "var(--text-secondary)",
                   }}
                 >
-                  IMPLIED
+                  IMPLIED{" "}
+                  <span style={{ color: "var(--accent)", fontWeight: 600 }}>
+                    {ivData?.instrument?.replace("/", "") || ""}
+                  </span>
                 </span>
                 <span
                   style={{
