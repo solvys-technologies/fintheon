@@ -1,6 +1,6 @@
 // [claude-code 2026-04-15] T7: Push subscription management utilities
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_URL || "";
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {

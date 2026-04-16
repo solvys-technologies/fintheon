@@ -30,9 +30,7 @@ export function HamburgerMenu({
   const handleRefreshHarper = useCallback(async () => {
     setHarperStatus("checking");
     try {
-      const apiBase = (
-        import.meta.env.VITE_API_URL || "http://localhost:8080"
-      ).replace(/\/$/, "");
+      const apiBase = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
       const token = await getAccessToken();
       const res = await fetch(`${apiBase}/api/harper/health`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
