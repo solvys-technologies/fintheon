@@ -4,7 +4,6 @@ export type McpServerId =
   | "playwright"
   | "fmp"
   | "exa"
-  | "notion"
   | "unusual-whales"
   | "yahoo-finance"
   | "riskflow"
