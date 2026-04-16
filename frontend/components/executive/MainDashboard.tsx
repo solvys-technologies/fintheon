@@ -396,7 +396,7 @@ export function MainDashboard({
             </div>
 
             {/* Row 2: Core KPIs — single horizontal row, static */}
-            <div className="shrink-0 mb-5">
+            <div className="shrink-0 mb-5 mt-4">
               <KanbanTitle title="Core KPIs" tone="emerald" />
               {!kpisLoaded ? (
                 <div className="mt-2 text-xs text-zinc-500 px-1 py-3">

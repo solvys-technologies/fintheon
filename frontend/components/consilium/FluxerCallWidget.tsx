@@ -1,7 +1,7 @@
 // [claude-code 2026-04-16] Compact header call widget — rolls open to reveal Fluxer voice room controls
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  Headphones,
+  Phone,
   Mic,
   MicOff,
   Volume2,
@@ -77,7 +77,7 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
         ref={containerRef}
         className={`relative flex items-center ${className}`}
       >
-        {/* Trigger button — headphones icon */}
+        {/* Trigger button — phone icon */}
         <button
           onClick={() => setExpanded((v) => !v)}
           className={`relative p-1.5 rounded-lg transition-all ${
@@ -87,7 +87,7 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
           }`}
           title={connected ? "Voice connected" : "Voice room"}
         >
-          <Headphones className="w-3.5 h-3.5" />
+          <Phone className="w-3.5 h-3.5" />
           {connected && (
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
           )}
@@ -117,7 +117,7 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
               {connected ? (
                 <PhoneOff className="w-3 h-3" />
               ) : (
-                <Headphones className="w-3 h-3" />
+                <Phone className="w-3 h-3" />
               )}
             </button>
 

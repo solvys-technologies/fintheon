@@ -213,7 +213,9 @@ function getDateRangeSince(
   return undefined;
 }
 
-export function AgentChattr() {
+export function AgentChattr({
+  headerSlot,
+}: { headerSlot?: React.ReactNode } = {}) {
   const [messages, setMessages] = useState<BoardroomMessage[]>([]);
   const [input, setInput] = useState("");
   const [isOnline, setIsOnline] = useState(false);
@@ -466,23 +468,7 @@ export function AgentChattr() {
             {isOnline ? "Connected" : "Offline"}
           </span>
         </div>
-
-        {/* Date range — right side */}
-        <div className="flex items-center rounded-lg border border-[var(--fintheon-border)]/15 overflow-hidden">
-          {(["today", "7d", "30d", "all"] as const).map((range) => (
-            <button
-              key={range}
-              onClick={() => setFilterDateRange(range)}
-              className={`px-3 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
-                filterDateRange === range
-                  ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
-                  : "text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]"
-              }`}
-            >
-              {range === "today" ? "Today" : range === "all" ? "All" : range}
-            </button>
-          ))}
-        </div>
+        {headerSlot}
       </div>
 
       {/* Floating KPI overlay during deliberation */}

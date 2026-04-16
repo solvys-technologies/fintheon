@@ -876,19 +876,21 @@ export function ConsiliumHub() {
               {displayedBoardroomSub === "forum" && <FluxerEmbed />}
               {displayedBoardroomSub === "agentic-chat" && (
                 <div className="flex h-full">
-                  <div className="flex-1 min-w-0 relative">
-                    <AgentChattr />
-                    {/* Re-expand Harper Activity toggle */}
-                    {!showHarperFeed && (
-                      <button
-                        onClick={() => setShowHarperFeed(true)}
-                        className="absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-medium text-[var(--fintheon-accent)]/50 border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-all"
-                        title="Show Harper Activity"
-                      >
-                        <PanelRightOpen size={12} />
-                        Activity
-                      </button>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <AgentChattr
+                      headerSlot={
+                        !showHarperFeed ? (
+                          <button
+                            onClick={() => setShowHarperFeed(true)}
+                            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-medium text-[var(--fintheon-accent)]/50 border border-[var(--fintheon-accent)]/15 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-all"
+                            title="Show Harper Activity"
+                          >
+                            <PanelRightOpen size={12} />
+                            Activity
+                          </button>
+                        ) : undefined
+                      }
+                    />
                   </div>
                   {/* Harper Activity sidebar — matches Debate/Proposals collapsible pattern */}
                   <div
