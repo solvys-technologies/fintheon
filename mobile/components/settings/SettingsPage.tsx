@@ -407,25 +407,38 @@ export function SettingsPage() {
             >
               DISPLAY NAME
             </div>
-            <input
-              type="text"
-              value={settings.traderName}
-              onChange={(e) => updateSettings({ traderName: e.target.value })}
-              placeholder="Your name"
+            <div
               style={{
                 width: "100%",
                 padding: "10px 12px",
                 background: "var(--surface)",
-                border: "1px solid var(--border-visible)",
+                border: "1px solid var(--border)",
                 borderRadius: 6,
-                color: "var(--text-primary)",
+                color: settings.traderName
+                  ? "var(--text-primary)"
+                  : "var(--text-disabled)",
                 fontFamily: "var(--font-body)",
                 fontSize: 14,
-                outline: "none",
                 minHeight: 44,
                 boxSizing: "border-box",
+                display: "flex",
+                alignItems: "center",
+                opacity: 0.7,
               }}
-            />
+            >
+              {settings.traderName || "Set on desktop"}
+            </div>
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 10,
+                letterSpacing: "0.04em",
+                color: "var(--text-disabled)",
+                marginTop: 4,
+              }}
+            >
+              [READ-ONLY — SET VIA DESKTOP]
+            </span>
           </div>
           <div>
             <div

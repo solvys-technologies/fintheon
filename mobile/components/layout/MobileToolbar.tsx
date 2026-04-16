@@ -1,9 +1,11 @@
+// [claude-code 2026-04-16] Toolbar — auto-populate trader nametag (read-only from settings)
 // [claude-code 2026-04-15] T3: Fixed top toolbar — wordmark, VIX badge, hamburger, chevron expander
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Menu } from "lucide-react";
 import { VixBadge } from "../shared/VixBadge";
 import { ToolbarExpanded } from "./ToolbarExpanded";
+import { useSettings } from "../../contexts/SettingsContext";
 
 interface MobileToolbarProps {
   onHamburgerTap: () => void;
@@ -11,6 +13,8 @@ interface MobileToolbarProps {
 
 export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
   const [expanded, setExpanded] = useState(false);
+  const { settings } = useSettings();
+  const traderName = settings.traderName || "";
 
   return (
     <div
@@ -35,19 +39,36 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
           borderBottom: expanded ? "none" : "1px solid var(--border)",
         }}
       >
-        {/* Wordmark */}
-        <span
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 500,
-            fontSize: 18,
-            color: "var(--accent)",
-            letterSpacing: "0.04em",
-            textTransform: "uppercase" as const,
-          }}
-        >
-          Fintheon
-        </span>
+        {/* Wordmark + Trader Name */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 500,
+              fontSize: 18,
+              color: "var(--accent)",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase" as const,
+            }}
+          >
+            Fintheon
+          </span>
+          {traderName && (
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 10,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase" as const,
+                color: "var(--text-secondary)",
+                borderLeft: "1px solid var(--border-visible)",
+                paddingLeft: 8,
+              }}
+            >
+              {traderName}
+            </span>
+          )}
+        </div>
 
         {/* VIX center */}
         <VixBadge />

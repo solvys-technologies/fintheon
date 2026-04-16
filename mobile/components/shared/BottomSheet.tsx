@@ -59,7 +59,7 @@ export function BottomSheet({
               bottom: 0,
               left: 0,
               right: 0,
-              maxHeight: "85vh",
+              maxHeight: "92vh",
               background: "var(--surface)",
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
@@ -110,7 +110,8 @@ export function BottomSheet({
               style={{
                 flex: 1,
                 overflowY: "auto",
-                padding: "0 16px 16px",
+                padding: "0 16px calc(16px + env(safe-area-inset-bottom, 0px))",
+                WebkitOverflowScrolling: "touch",
               }}
             >
               {children}

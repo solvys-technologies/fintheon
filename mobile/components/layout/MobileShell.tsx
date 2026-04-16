@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] Fix scroll-lock: main uses height:100% so inner snap containers own the scroll
 // [claude-code 2026-04-15] S18: Root layout — toolbar + content area + floating chat FAB (no bottom tab bar)
 import { useRef, useCallback, type ReactNode } from "react";
 import { useSwipeGesture } from "../../hooks/useSwipeGesture";
@@ -65,9 +66,11 @@ export function MobileShell({
         ref={contentRef}
         style={{
           flex: 1,
-          overflowY: "auto",
+          overflow: "hidden",
           paddingTop: `calc(env(safe-area-inset-top) + ${TOOLBAR_HEIGHT}px)`,
           paddingBottom: `calc(env(safe-area-inset-bottom) + 24px)`,
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {children}
