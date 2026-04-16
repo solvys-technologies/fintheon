@@ -115,7 +115,7 @@ async function fetchRiskFlowHeadlines(
   const { data, error } = await sb
     .from("scored_riskflow_items")
     .select(
-      "id, tweet_id, title, summary, macro_level, sentiment, iv_score, category, created_at, sub_scores, econ_data, risk_type, agent_note, price_brain_score",
+      "id, tweet_id, headline, summary, macro_level, sentiment, iv_score, category, created_at, sub_scores, econ_data, risk_type, agent_note, price_brain_score",
     )
     .gte("created_at", cutoff)
     .gte("macro_level", 2)

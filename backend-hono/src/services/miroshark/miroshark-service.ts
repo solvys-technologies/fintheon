@@ -181,8 +181,8 @@ export async function startPrediction(
       ...narrativeState.catalysts,
       ...context.riskflowHeadlines.map((h) => ({
         id: h.id,
-        title: h.title,
-        description: h.summary || h.title,
+        title: h.headline,
+        description: h.summary || h.headline,
         date: h.created_at.slice(0, 10),
         sentiment: h.sentiment || "neutral",
         severity:
@@ -673,7 +673,9 @@ async function generateHarperAnalysis(
 
   const topHeadlines = context.riskflowHeadlines
     .slice(0, 10)
-    .map((h) => `[${h.risk_type ?? "General"}] ${h.title} (IV: ${h.iv_score})`)
+    .map(
+      (h) => `[${h.risk_type ?? "General"}] ${h.headline} (IV: ${h.iv_score})`,
+    )
     .join("\n");
 
   const userPrompt = `## Simulation Results
