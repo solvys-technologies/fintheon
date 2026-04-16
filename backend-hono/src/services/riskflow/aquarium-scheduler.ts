@@ -6,7 +6,7 @@ import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("AquariumScheduler");
 
-const RUN_INTERVAL_MS = 30 * 60 * 1000; // 30 min
+const RUN_INTERVAL_MS = 60 * 60 * 1000; // 60 min
 const CATCH_UP_DELAY_MS = 20_000; // wait 20s after boot before first run
 
 export interface AIInstrumentOutlook {

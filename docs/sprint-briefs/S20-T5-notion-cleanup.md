@@ -43,12 +43,12 @@ Notion severance was completed across ~30 files: NotionService renamed to DataSe
 
 ## Acceptance Criteria
 
-- [ ] `SubAnalyst Context/` directory does not exist
-- [ ] No active Notion service references in `backend-hono/src/` (comments/changelog OK)
-- [ ] No active Notion service references in `frontend/` (comments/changelog OK)
-- [ ] `cd backend-hono && bun run build` passes
-- [ ] `npx tsc --noEmit --project frontend/tsconfig.json` passes
-- [ ] `npx vite build` (desktop) passes
+- [x] `SubAnalyst Context/` directory does not exist
+- [x] No active Notion service references in `backend-hono/src/` (comments/changelog OK)
+- [x] No active Notion service references in `frontend/` (comments/changelog OK)
+- [x] `cd backend-hono && bun run build` passes
+- [x] `npx tsc --noEmit --project frontend/tsconfig.json` passes
+- [x] `npx vite build` (desktop) passes
 
 ## Validation Commands
 
