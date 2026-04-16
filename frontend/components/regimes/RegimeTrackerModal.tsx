@@ -290,9 +290,10 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
               </GlassButton>
               <button
                 onClick={() => setShowAddForm((v) => !v)}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-zinc-400 border border-zinc-700/50 hover:bg-zinc-800/50 transition-colors"
+                className="p-1.5 text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 rounded-md transition-all"
+                title="Add regime manually"
               >
-                <Plus className="w-3 h-3" /> Manual
+                <Plus className="w-4 h-4" />
               </button>
               <button
                 onClick={onClose}
