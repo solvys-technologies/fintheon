@@ -22,11 +22,19 @@ export function usePushNotifications() {
 
   useEffect(() => {
     setPermissionStatus(getPermissionStatus());
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.ready.then(async (reg) => {
-        const sub = await reg.pushManager.getSubscription();
-        setIsSubscribed(!!sub);
-      });
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+      navigator.serviceWorker.ready
+        .then(async (reg) => {
+          try {
+            const sub = await reg.pushManager.getSubscription();
+            setIsSubscribed(!!sub);
+          } catch {
+            // pushManager not available (iOS Safari, insecure context, etc.)
+          }
+        })
+        .catch(() => {
+          // Service worker not registered
+        });
     }
   }, []);
 
