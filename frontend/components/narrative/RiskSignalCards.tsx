@@ -1,4 +1,4 @@
-// [claude-code 2026-04-15] S16-T3: Risk Signal cards — AI-refined expandable cards from bulletins + catalyst watches
+// [claude-code 2026-04-16] S16-T3: Risk Signal cards — full-border severity coloring, solvys-feels polish
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, ChevronRight, Loader2, ShieldAlert } from "lucide-react";
 
@@ -147,7 +147,7 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <div ref={containerRef} className="flex flex-col gap-1.5 py-2">
+    <div ref={containerRef} className="flex flex-col gap-2 py-2">
       {signals.map((signal) => {
         const expanded = expandedId === signal.id;
         const borderColor = SEVERITY_BORDER[signal.severity];
@@ -158,12 +158,9 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
             key={signal.id}
             type="button"
             onClick={() => setExpandedId(expanded ? null : signal.id)}
-            className={`w-full text-left rounded-md border transition-colors ${padding}`}
+            className={`w-full text-left rounded-lg transition-colors ${padding}`}
             style={{
-              borderColor:
-                "color-mix(in srgb, var(--fintheon-border) 20%, transparent)",
-              borderLeftWidth: "2px",
-              borderLeftColor: borderColor,
+              border: `1px solid ${borderColor}`,
               backgroundColor:
                 "color-mix(in srgb, var(--fintheon-surface) 80%, transparent)",
             }}

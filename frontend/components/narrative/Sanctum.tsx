@@ -1,4 +1,4 @@
-// [claude-code 2026-04-15] S16-T6: Sanctum unification — remove Theses, move Polymarket to Page 2, add VIX + RiskSignal cards
+// [claude-code 2026-04-16] Sanctum — full-border severity on Risk Signals containers, solvys-feels polish
 // [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
 // [claude-code 2026-03-28] S4-T3: KPI labels rewritten to trading lingo with interpretive sub-text
 // [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state

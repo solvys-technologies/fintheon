@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T22:00:00",
+    agent: "claude-code",
+    summary:
+      "Replace Proposals with Risk Signals on mobile Dash page 4. Apply solvys-feels full-border severity coloring (no Kanban left-stripe) to Risk Signal cards in both mobile and desktop. Desktop RiskSignalCards and Sanctum containers updated with consistent severity border treatment.",
+    files: [
+      "mobile/components/home/RiskSignalCards.tsx",
+      "mobile/components/home/HomePage.tsx",
+      "frontend/components/narrative/RiskSignalCards.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+    ],
+  },
+  {
     date: "2026-04-16T21:15:00",
     agent: "claude-code",
     summary:

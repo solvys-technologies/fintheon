@@ -1,11 +1,11 @@
-// [claude-code 2026-04-16] T7: Dash — snap pages + NarrativeFlow catalysts + timeline
+// [claude-code 2026-04-16] T7: Dash — snap pages, Risk Signals replaces Proposals, NarrativeFlow catalysts + timeline
 import { lazy, Suspense } from "react";
 import { motion, type Variants } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { BriefingCard } from "./BriefingCard";
 import { AquariumSummary } from "./AquariumSummary";
 import { InstrumentOutlookCards } from "./InstrumentOutlookCards";
-import { AgentTradeCards } from "./AgentTradeCards";
+import { MobileRiskSignalCards } from "./RiskSignalCards";
 import { CatalystCards } from "./CatalystCards";
 import { TimelineView } from "./TimelineView";
 import { useIVScore } from "../../hooks/useIVScore";
@@ -351,18 +351,19 @@ export function HomePage() {
         </div>
       </SnapPage>
 
-      {/* Page 4: Agent Activity / Performance */}
+      {/* Page 4: Risk Signals */}
       <SnapPage>
         <div
           style={{
             flex: 1,
             paddingTop: 24,
             paddingBottom: 24,
+            overflowY: "auto",
             position: "relative",
             zIndex: 1,
           }}
         >
-          <AgentTradeCards />
+          <MobileRiskSignalCards />
         </div>
       </SnapPage>
 

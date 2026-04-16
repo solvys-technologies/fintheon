@@ -105,42 +105,55 @@ export function MiroSharkDebatePanel({
   const [injecting, setInjecting] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Poll deliberation state
+  // Fetch deliberation state — single check on mount, poll only if actively running
   useEffect(() => {
     if (!simulationId) {
       setState(null);
       return;
     }
 
-    let notFoundCount = 0;
-    const poll = async () => {
+    let cancelled = false;
+
+    const fetchOnce = async () => {
       try {
         const res = await fetch(
           `${API_BASE}/api/miroshark/deliberation/${simulationId}`,
         );
-        if (res.ok) {
-          notFoundCount = 0;
-          const data = await res.json();
-          setState(data);
-          if (data.phase === "complete" && pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-          }
-        } else if (res.status === 404) {
-          notFoundCount++;
-          // Stop polling after 3 consecutive 404s — deliberation doesn't exist
-          if (notFoundCount >= 3 && pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-          }
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setState(data);
+
+        // Only start polling if deliberation is actively in progress
+        const activePhases = [
+          "market-analysts",
+          "gov-officials",
+          "hermes-deliberation",
+          "harper-scoring",
+        ];
+        if (activePhases.includes(data.phase)) {
+          pollRef.current = setInterval(async () => {
+            try {
+              const r = await fetch(
+                `${API_BASE}/api/miroshark/deliberation/${simulationId}`,
+              );
+              if (!r.ok) return;
+              const d = await r.json();
+              setState(d);
+              if (d.phase === "complete" && pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+              }
+            } catch {}
+          }, 3000);
         }
       } catch {}
     };
 
-    poll();
-    pollRef.current = setInterval(poll, 3000);
+    fetchOnce();
 
     return () => {
+      cancelled = true;
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;
