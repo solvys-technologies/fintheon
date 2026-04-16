@@ -9,6 +9,56 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T12:00:00",
+    agent: "claude-code",
+    summary:
+      "fix: Mobile RiskFlow — pull-to-refresh now read-only (GET /api/riskflow/feed), added Agent Reach button for deliberate fetch+score via POST /api/riskflow/refresh. Separates passive headline reads from active polling on mobile.",
+    files: [
+      "mobile/contexts/RiskFlowContext.tsx",
+      "mobile/components/riskflow/RiskFlowPage.tsx",
+    ],
+  },
+  {
+    date: "2026-04-16T04:00:00",
+    agent: "claude-code",
+    summary:
+      "feat: T1 relay expansion — full payload forwarding (images, riskFlowContext, thinkHarder, persona), POST /api/relay/tool-decision endpoint, cognition event injection into SSE stream, noTimeout flag for relay-originated tool approvals",
+    files: [
+      "backend-hono/src/routes/relay.ts",
+      "backend-hono/src/services/relay-bridge.ts",
+      "backend-hono/src/services/relay-connector.ts",
+      "backend-hono/src/services/tool-approval-store.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/services/strands/harper-tools.ts",
+    ],
+  },
+  {
+    date: "2026-04-16T03:30:00",
+    agent: "claude-code",
+    summary:
+      "feat: T3 conversation persistence — useConversations hook + API-backed SessionList with search + background agent recovery via visibilitychange",
+    files: [
+      "mobile/hooks/useConversations.ts",
+      "mobile/components/chat/SessionList.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+    ],
+  },
+  {
+    date: "2026-04-16T03:00:00",
+    agent: "claude-code",
+    summary:
+      "feat: T2 mobile agent UI — image attachments (camera/photo picker, thumbnail preview), RiskFlow headline picker (bottom sheet, pill chips, formatHeadlineContext), inline tool approval cards (approve/deny with SSE events). ChatInput gets toolbar row + expanded onSend with images/riskFlowContext. ChatPage handles tool-approval-needed/resolved SSE events and POSTs decisions to relay.",
+    files: [
+      "mobile/components/chat/ImageAttachButton.tsx",
+      "mobile/components/chat/ImagePreviewRow.tsx",
+      "mobile/components/chat/HeadlineChips.tsx",
+      "mobile/components/chat/HeadlinePickerSheet.tsx",
+      "mobile/components/chat/ToolApprovalCard.tsx",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+    ],
+  },
+  {
     date: "2026-04-16T02:00:00",
     agent: "claude-code",
     summary:

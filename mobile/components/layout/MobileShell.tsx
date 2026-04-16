@@ -60,7 +60,10 @@ export function MobileShell({
         flexDirection: "column",
       }}
     >
-      <MobileToolbar onHamburgerTap={() => setMenuOpen(true)} />
+      <MobileToolbar
+        onHamburgerTap={() => setMenuOpen(true)}
+        menuOpen={menuOpen}
+      />
 
       <main
         ref={contentRef}

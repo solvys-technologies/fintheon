@@ -1,4 +1,4 @@
-// [claude-code 2026-04-15] T6: Relay bridge — WebSocket connection pool keyed by userId, heartbeat + forward
+// [claude-code 2026-04-16] T1: Relay bridge — generalized forward() payload + sendToLocal() for tool-decision
 
 import { createLogger } from "../lib/logger.js";
 
@@ -59,12 +59,26 @@ class RelayBridge {
   }
 
   /**
-   * Forward a chat message to the local backend via WebSocket.
+   * Send an arbitrary frame to the local backend's WebSocket connection.
+   * Used by the tool-decision endpoint to relay approval/denial back.
+   */
+  sendToLocal(
+    userId: string,
+    frame: { type: string; payload: unknown },
+  ): boolean {
+    const conn = this.connections.get(userId);
+    if (!conn) return false;
+    conn.ws.send(JSON.stringify(frame));
+    return true;
+  }
+
+  /**
+   * Forward a chat payload to the local backend via WebSocket.
    * Returns an async generator that yields SSE chunks from the local backend.
    */
   async *forward(
     userId: string,
-    message: { message: string; conversationId?: string | null },
+    payload: Record<string, unknown>,
   ): AsyncGenerator<string> {
     const conn = this.connections.get(userId);
     if (!conn) throw new Error("local_offline");
@@ -110,7 +124,7 @@ class RelayBridge {
       JSON.stringify({
         type: "chat",
         requestId,
-        payload: message,
+        payload,
       }),
     );
 
