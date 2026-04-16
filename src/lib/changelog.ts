@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T13:30:00",
+    agent: "claude-code",
+    summary:
+      "fix: IV Scoring Engine reconnected — rewired iv-score-ticker + handler fallback to read from scored_riskflow_items (live pipeline) instead of deprecated news_feed_items. Added MiroShark boot restore from latest Aquarium simulation so mirosharkComponent survives backend restarts. Fixed merge conflict in feed-health.log.",
+    files: [
+      "backend-hono/src/services/market-data/iv-score-ticker.ts",
+      "backend-hono/src/routes/market-data/handlers.ts",
+      "backend-hono/src/services/miroshark/miroshark-boot.ts",
+      "backend-hono/src/boot/services.ts",
+    ],
+  },
+  {
     date: "2026-04-16T13:00:00",
     agent: "claude-code",
     summary:

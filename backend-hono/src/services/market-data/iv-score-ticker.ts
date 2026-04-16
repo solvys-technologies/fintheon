@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] Rewired fetchEventsFromDB to read from scored_riskflow_items (live pipeline) instead of deprecated news_feed_items
 // [claude-code 2026-04-02] VIX-triggered retick + SSE listeners + aggregate point estimator wiring
 // [claude-code 2026-03-24] Updated weights to VIX/catalyst/MiroShark blend
 // [claude-code 2026-03-12] Task 2C: startIVScoreTicker reads PRIMARY_INSTRUMENT env var
@@ -181,8 +182,70 @@ export async function runScoringTick(
 /**
  * Fetch scored events from DB with the extended decay window.
  * Uses original published_at timestamps — decay is continuous from event creation.
+ *
+ * [claude-code 2026-04-16] Reads from scored_riskflow_items (live pipeline) instead of
+ * deprecated news_feed_items. The pipeline was rewired on 2026-03-27 — this was the
+ * last consumer of the old table, causing headline component to read stale/empty data.
  */
 async function fetchEventsFromDB(): Promise<{
+  events: StackedEvent[];
+  activeEvents: ActiveEventSignal[];
+}> {
+  try {
+    const { getSupabaseClient } = await import("../../config/supabase.js");
+    const sb = getSupabaseClient();
+    if (!sb) {
+      // Fallback: try direct SQL (legacy path)
+      return fetchEventsFromLegacyDB();
+    }
+
+    const cutoff = new Date(
+      Date.now() - EVENT_WINDOW_HOURS * 60 * 60 * 1000,
+    ).toISOString();
+
+    const { data: recentItems, error } = await sb
+      .from("scored_riskflow_items")
+      .select(
+        "headline, source, macro_level, risk_type, iv_score, published_at, is_breaking",
+      )
+      .gte("published_at", cutoff)
+      .gte("macro_level", 2)
+      .order("published_at", { ascending: false })
+      .limit(200);
+
+    if (error || !recentItems) {
+      console.error(
+        "[IVTicker] scored_riskflow_items query failed:",
+        error?.message,
+      );
+      return fetchEventsFromLegacyDB();
+    }
+
+    const events = recentItems.map((item: any) => {
+      const parsed = {
+        raw: item.headline,
+        eventType: null,
+        isBreaking: item.is_breaking,
+      };
+      return {
+        eventType: classifyEventType(parsed as any),
+        baseScore: item.iv_score || 3,
+        timestamp: new Date(item.published_at),
+      };
+    });
+    const activeEvents = recentItems.map((item: any) => ({
+      macroLevel:
+        typeof item.macro_level === "number" ? item.macro_level : undefined,
+      riskType: typeof item.risk_type === "string" ? item.risk_type : undefined,
+    }));
+    return { events, activeEvents };
+  } catch {
+    return fetchEventsFromLegacyDB();
+  }
+}
+
+/** Legacy fallback — reads from news_feed_items via direct SQL (deprecated) */
+async function fetchEventsFromLegacyDB(): Promise<{
   events: StackedEvent[];
   activeEvents: ActiveEventSignal[];
 }> {

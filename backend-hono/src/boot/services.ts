@@ -45,6 +45,7 @@ import { startSharedMemoryCleanup } from "../services/peers/shared-memory.js";
 import { startReflectScheduler } from "../services/autoresearch/reflect-scheduler.js";
 import { startMiroSharkDaily } from "../services/cron/miroshark-daily.js";
 import { startAquariumScheduler } from "../services/riskflow/aquarium-scheduler.js";
+import { restoreMiroSharkRunningState } from "../services/miroshark/miroshark-boot.js";
 import { startDivergenceDetector } from "../services/polymarket-kalshi-divergence.js";
 import { startPredictionResolver } from "../services/polymarket-prediction-resolver.js";
 import { bootHarperAutonomous } from "../services/harper-autonomous/index.js";
@@ -153,6 +154,13 @@ export async function bootServices(): Promise<void> {
   // Catalyst promoter (60s — graduates scored items into narrative catalysts with thread links)
   startCatalystPromoter();
   log.info("CatalystPromoter started");
+
+  // MiroShark running state restore (from latest Aquarium simulation — non-blocking)
+  restoreMiroSharkRunningState().catch((err) =>
+    log.warn("MiroShark running state restore failed (non-fatal)", {
+      error: String(err),
+    }),
+  );
 
   // IV score ticker (60s — computes blended IV score, persists to DB)
   const instrument = process.env.PRIMARY_INSTRUMENT || "/ES";
