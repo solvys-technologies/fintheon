@@ -111,7 +111,11 @@ bootServices();
 // Bun auto-serves via default export. Node needs @hono/node-server.
 if (typeof globalThis.Bun === "undefined") {
   import("@hono/node-server").then(async ({ serve }) => {
-    const server = serve({ fetch: app.fetch, port: config.PORT }) as any;
+    const server = serve({
+      fetch: app.fetch,
+      port: config.PORT,
+      hostname: "0.0.0.0",
+    }) as any;
     // SSE streams (Harper chat, cognition) can run 10+ minutes during tool-call loops.
     // Disable ALL Node HTTP server timeouts to prevent mid-stream kills.
     server.requestTimeout = 0; // Node 18+ (default 300s)
