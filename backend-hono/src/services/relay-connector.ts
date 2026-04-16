@@ -1,10 +1,12 @@
-// [claude-code 2026-04-15] T6: Outbound relay connector — local backend connects to Fly.io relay
+// [claude-code 2026-04-16] T1: Relay connector — full payload forwarding, tool-decision handling, cognition SSE injection
 // Only runs when RELAY_ENABLED=true (opt-in). Auto-reconnects with exponential backoff.
 // Listens for forwarded chat messages, routes to local Harper, streams response back.
 
 import WebSocket from "ws";
 import { createLogger } from "../lib/logger.js";
 import { streamHarperChat, isStrandsAvailable } from "./strands/index.js";
+import { resolveApproval } from "./tool-approval-store.js";
+import { onStep } from "./cognition-emitter.js";
 
 const log = createLogger("RelayConnector");
 
@@ -25,13 +27,33 @@ function getBackoff(): number {
 
 async function handleChatRequest(
   requestId: string,
-  payload: { message: string; conversationId?: string | null },
+  payload: {
+    message: string;
+    conversationId?: string | null;
+    images?: string[];
+    riskFlowContext?: string;
+    thinkHarder?: boolean;
+    persona?: string;
+  },
 ): Promise<void> {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
   const send = (type: string, data: string) => {
     ws?.send(JSON.stringify({ requestId, type, payload: data }));
   };
+
+  // Subscribe to cognition events and inject tool-approval frames into the SSE stream
+  const unsubCognition = onStep(requestId, (step) => {
+    if (
+      step.kind === "tool-approval-needed" ||
+      step.kind === "tool-approval-resolved"
+    ) {
+      send(
+        "chunk",
+        `data: ${JSON.stringify({ type: step.kind, ...JSON.parse(step.detail || "{}") })}\n\n`,
+      );
+    }
+  });
 
   try {
     if (!(await isStrandsAvailable())) {
@@ -45,6 +67,11 @@ async function handleChatRequest(
       message: payload.message,
       conversationId: payload.conversationId ?? `relay-${requestId}`,
       requestId,
+      images: payload.images,
+      riskFlowContext: payload.riskFlowContext,
+      thinkHarder: payload.thinkHarder,
+      persona: payload.persona,
+      relayOriginated: true,
     });
 
     if (!response.body) {
@@ -70,6 +97,8 @@ async function handleChatRequest(
     log.error("Chat relay handler failed", { requestId, error: msg });
     send("error", msg);
     send("done", "");
+  } finally {
+    unsubCognition();
   }
 }
 
@@ -101,6 +130,9 @@ function connect(): void {
       const frame = JSON.parse(data.toString());
       if (frame.type === "chat" && frame.requestId && frame.payload) {
         handleChatRequest(frame.requestId, frame.payload);
+      } else if (frame.type === "tool-decision" && frame.payload) {
+        const { approvalId, decision } = frame.payload;
+        resolveApproval(approvalId, decision);
       }
     } catch {
       // Non-JSON or unrecognized frame — ignore

@@ -103,6 +103,33 @@ export function createRelayRoutes() {
   });
 
   /**
+   * POST /api/relay/tool-decision — Mobile sends tool approval/denial back to local backend
+   */
+  app.post("/tool-decision", async (c) => {
+    const userId = c.get("userId") as string | undefined;
+    if (!userId || userId === "anonymous") {
+      return c.json({ error: "auth_required" }, 401);
+    }
+
+    const body = await c.req.json<{
+      approvalId: string;
+      decision: "approved" | "denied";
+    }>();
+
+    if (!body.approvalId || !["approved", "denied"].includes(body.decision)) {
+      return c.json({ error: "invalid_request" }, 400);
+    }
+
+    const sent = relayBridge.sendToLocal(userId, {
+      type: "tool-decision",
+      payload: body,
+    });
+
+    if (!sent) return c.json({ error: "local_offline" }, 503);
+    return c.json({ ok: true });
+  });
+
+  /**
    * GET /api/relay/connect — WebSocket upgrade endpoint (placeholder)
    * Actual WebSocket upgrade is handled by the ws server in boot/relay-ws.ts
    * This endpoint exists so Hono doesn't 404 on the path.

@@ -1,10 +1,11 @@
-// [claude-code 2026-04-15] T6: Full-screen Harper chat — SSE streaming via relay, keep mounted with display:none
+// [claude-code 2026-04-16] T3/T6: Full-screen Harper chat — SSE streaming via relay, background recovery
 // Memory: feedback_keep_chat_mounted — use display:none not conditional render, streams survive navigation
 // Memory: feedback_uimessagestream_framing — start/finish events in SSE stream
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { List } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { getMobileBackend } from "../../lib/backend";
 import ChatMessage, { type ChatMessageData } from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import ConnectionStatus, { type RelayState } from "./ConnectionStatus";
@@ -43,6 +44,47 @@ export default function ChatPage({ visible }: ChatPageProps) {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
+
+  // Recover conversation from API when app returns from background
+  // The server-side agent continues processing even if the client stream is interrupted
+  const recoverConversation = useCallback(async () => {
+    const convId = conversationIdRef.current;
+    if (!convId || !isLoading) return;
+
+    try {
+      const backend = getMobileBackend(getAccessToken);
+      const data = await backend.ai.getConversation(convId);
+      if (!data?.messages?.length) return;
+
+      const lastMsg = data.messages[data.messages.length - 1];
+      if (lastMsg.role !== "assistant" || !lastMsg.content) return;
+
+      // Server finished — replace local messages with completed conversation
+      setMessages(
+        data.messages.map((m: any) => ({
+          id: m.id,
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          timestamp: m.createdAt ?? m.created_at ?? "",
+        })),
+      );
+      setIsLoading(false);
+      setActiveToolCall(null);
+      // Abort the dangling client stream if still open
+      abortRef.current?.abort();
+      abortRef.current = null;
+    } catch {
+      // Recovery failed — stream may still be active, let it continue
+    }
+  }, [isLoading, getAccessToken]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") recoverConversation();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [recoverConversation]);
 
   const sendMessage = useCallback(
     async (text: string) => {

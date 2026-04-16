@@ -1,9 +1,17 @@
-// [claude-code 2026-04-16] Nothing-styled chat input — label, bordered textarea, auto-grow
+// [claude-code 2026-04-16] T2: Chat input with toolbar — image attach, headline picker, expanded onSend
 import { useState, useRef, useCallback, type KeyboardEvent } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Newspaper } from "lucide-react";
+import { ImageAttachButton } from "./ImageAttachButton";
+import { ImagePreviewRow } from "./ImagePreviewRow";
+import { HeadlineChips, formatHeadlineContext } from "./HeadlineChips";
+import type { HeadlineChip } from "./HeadlineChips";
+import { HeadlinePickerSheet } from "./HeadlinePickerSheet";
 
 interface ChatInputProps {
-  onSend: (text: string) => void;
+  onSend: (
+    text: string,
+    opts?: { images?: string[]; riskFlowContext?: string },
+  ) => void;
   isLoading: boolean;
   disabled?: boolean;
 }
@@ -15,17 +23,24 @@ export default function ChatInput({
 }: ChatInputProps) {
   const [text, setText] = useState("");
   const [focused, setFocused] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [headlineChips, setHeadlineChips] = useState<HeadlineChip[]>([]);
+  const [headlinePickerOpen, setHeadlinePickerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = useCallback(() => {
     const trimmed = text.trim();
     if (!trimmed || isLoading || disabled) return;
-    onSend(trimmed);
+    const opts: { images?: string[]; riskFlowContext?: string } = {};
+    if (images.length > 0) opts.images = images;
+    const ctx = formatHeadlineContext(headlineChips);
+    if (ctx) opts.riskFlowContext = ctx;
+    onSend(trimmed, Object.keys(opts).length > 0 ? opts : undefined);
     setText("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
-  }, [text, isLoading, disabled, onSend]);
+    setImages([]);
+    setHeadlineChips([]);
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+  }, [text, isLoading, disabled, onSend, images, headlineChips]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -42,6 +57,13 @@ export default function ChatInput({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+  }, []);
+
+  const handleToggleChip = useCallback((chip: HeadlineChip) => {
+    setHeadlineChips((prev) => {
+      const exists = prev.find((c) => c.id === chip.id);
+      return exists ? prev.filter((c) => c.id !== chip.id) : [...prev, chip];
+    });
   }, []);
 
   const canSend = text.trim().length > 0 && !isLoading && !disabled;
@@ -71,6 +93,47 @@ export default function ChatInput({
         MESSAGE HARPER
       </span>
 
+      {/* Toolbar row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <ImageAttachButton
+          onAdd={(uri) => setImages((prev) => [...prev, uri])}
+          imageCount={images.length}
+          disabled={disabled}
+        />
+        <button
+          onClick={() => setHeadlinePickerOpen(true)}
+          disabled={disabled}
+          aria-label="Attach headlines"
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 6,
+            cursor: disabled ? "default" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: disabled ? 0.4 : 1,
+          }}
+        >
+          <Newspaper size={20} color="var(--text-secondary)" />
+        </button>
+      </div>
+
+      {/* Attachment previews */}
+      <ImagePreviewRow
+        images={images}
+        onRemove={(i) =>
+          setImages((prev) => prev.filter((_, idx) => idx !== i))
+        }
+      />
+      <HeadlineChips
+        chips={headlineChips}
+        onRemove={(id) =>
+          setHeadlineChips((prev) => prev.filter((c) => c.id !== id))
+        }
+      />
+
+      {/* Input border box */}
       <div
         style={{
           display: "flex",
@@ -133,6 +196,15 @@ export default function ChatInput({
           />
         </button>
       </div>
+
+      {/* Headline picker bottom sheet */}
+      <HeadlinePickerSheet
+        open={headlinePickerOpen}
+        onClose={() => setHeadlinePickerOpen(false)}
+        selected={headlineChips}
+        onToggle={handleToggleChip}
+        onClear={() => setHeadlineChips([])}
+      />
     </div>
   );
 }
