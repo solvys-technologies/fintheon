@@ -24,7 +24,6 @@ import { resetRunningState } from "./miroshark-reactive.js";
 import {
   isMiroSharkEnabled,
   runDebate,
-  runMarketAnalystDebate,
   hasGeopoliticalContent,
 } from "./miroshark-client.js";
 import { convertNarrativeToSeed } from "./miroshark-seed.js";

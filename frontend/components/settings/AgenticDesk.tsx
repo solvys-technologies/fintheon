@@ -15,14 +15,15 @@ import { useSettings } from "../../contexts/SettingsContext";
 
 const DOSSIERS: Record<string, string> = {
   "harper-opus":
-    "Chief Analyst Officer — executive strategy, oversight, and final trade authorization",
+    "Chief Agentic Officer — executive strategy, oversight, and final trade authorization",
   oracle:
-    "All-Seer — prediction markets, macro reads, and cross-desk intelligence fusion",
+    "The All-Seeing Speculator — prediction markets, probabilistic reasoning, cross-domain intelligence",
   feucht:
-    "Futures & Risk — IV/volatility surface, risk parameters, and scheduled execution",
-  consul: "Fundamentals — mega-cap analysis, earnings, and sector rotation",
+    "The Tape Reader — futures execution, technical levels, price action, risk management",
+  consul:
+    "The Statistical Surgeon — mega-cap fundamentals, earnings, data-driven conviction",
   herald:
-    "News & Sentiment — breaking headlines, social signals, and sentiment scoring",
+    "The Contrarian Elder — news & sentiment intelligence, risk oversight, contrarian positioning",
 };
 
 /* ------------------------------------------------------------------ */

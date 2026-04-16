@@ -46,47 +46,48 @@ export function SessionsPanel({
   onSelectSession,
   onNewSession,
 }: SessionsPanelProps) {
+  const backend = useBackend();
   const [sessions, setSessions] = useState<SessionEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSessions = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/ai/conversations?limit=30`);
-      if (!res.ok) return;
-      const data = await res.json();
-      const convos: SessionEntry[] = (data.conversations ?? []).map(
-        (c: any) => ({
+      const data = await backend.ai.listConversations();
+      const convos: SessionEntry[] = (data ?? [])
+        .slice(0, 30)
+        .map((c: any) => ({
           id: c.id,
-          name: c.name || formatSessionDate(c.createdAt || c.created_at),
+          name:
+            c.name || c.title || formatSessionDate(c.createdAt || c.created_at),
           createdAt: c.createdAt || c.created_at,
           updatedAt: c.updatedAt || c.updated_at || c.createdAt || c.created_at,
           messageCount: c.messageCount ?? c.message_count ?? 0,
           preview: c.lastMessage || c.preview || "",
-        }),
-      );
+        }));
       setSessions(convos);
     } catch {
       // Backend not available
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [backend]);
 
   useEffect(() => {
     fetchSessions();
   }, [fetchSessions]);
 
-  const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await fetch(`${API_BASE_URL}/api/ai/conversations/${id}`, {
-        method: "DELETE",
-      });
-      setSessions((prev) => prev.filter((s) => s.id !== id));
-    } catch {
-      // Ignore
-    }
-  }, []);
+  const handleDelete = useCallback(
+    async (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await backend.ai.archiveConversation(id);
+        setSessions((prev) => prev.filter((s) => s.id !== id));
+      } catch {
+        // Ignore
+      }
+    },
+    [backend],
+  );
 
   // Group sessions by date
   const grouped = sessions.reduce<Record<string, SessionEntry[]>>((acc, s) => {

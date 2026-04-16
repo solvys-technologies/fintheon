@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T23:30:00",
+    agent: "claude-code",
+    summary:
+      "S20-T1: Agent Dossiers & Personality Injection — created 4 definitive dossier files (Oracle/Feucht/Consul/Herald) with identity, worldview, operational rules, and analytical framework. Thinned base-prompts.ts to one-liner role tags. Dossiers inject after persona files in system prompt composition pipeline. Deduped philosophy-blocks.ts to retain only neural-layer framing. Updated frontend ApparatusMap.tsx and AgenticDesk.tsx to match backend personality titles.",
+    files: [
+      "backend-hono/src/services/ai/agent-instructions/dossiers/oracle.ts",
+      "backend-hono/src/services/ai/agent-instructions/dossiers/feucht.ts",
+      "backend-hono/src/services/ai/agent-instructions/dossiers/consul.ts",
+      "backend-hono/src/services/ai/agent-instructions/dossiers/herald.ts",
+      "backend-hono/src/services/ai/agent-instructions/base-prompts.ts",
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+      "backend-hono/src/services/ai/agent-instructions/philosophy-blocks.ts",
+      "frontend/components/apparatus/ApparatusMap.tsx",
+      "frontend/components/settings/AgenticDesk.tsx",
+    ],
+  },
+  {
     date: "2026-04-16T17:45:00",
     agent: "claude-code",
     summary:
