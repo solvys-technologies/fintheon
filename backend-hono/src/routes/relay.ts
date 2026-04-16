@@ -1,4 +1,4 @@
-// [claude-code 2026-04-15] T6: Fly.io relay routes — WebSocket upgrade for local backend, SSE bridge for mobile
+// [claude-code 2026-04-16] T1: Relay expansion — full payload forwarding + tool-decision channel
 // The WebSocket server is initialized separately in boot (needs access to the raw HTTP server).
 // These Hono routes handle the HTTP endpoints only.
 
@@ -49,6 +49,10 @@ export function createRelayRoutes() {
     const body = await c.req.json<{
       message: string;
       conversationId?: string | null;
+      images?: string[];
+      riskFlowContext?: string;
+      thinkHarder?: boolean;
+      persona?: string;
     }>();
 
     if (!body.message?.trim()) {
@@ -74,10 +78,7 @@ export function createRelayRoutes() {
         };
 
         try {
-          for await (const chunk of relayBridge.forward(userId, {
-            message: body.message,
-            conversationId: body.conversationId,
-          })) {
+          for await (const chunk of relayBridge.forward(userId, body)) {
             send(chunk);
           }
           send("[DONE]");
