@@ -2,7 +2,7 @@
 
 ## Context
 
-PIC agents (Harper, Oracle, Feucht, Consul, Herald) need to converse autonomously in a dedicated Fluxer channel — the "Dream Room." Currently the dream system uses a custom Supabase table + REST endpoints. This track replaces that with real Fluxer API integration so agents are actual participants in the Fluxer server, visible to humans, and persistent in Fluxer's own storage.
+PIC agents (Harper, Oracle, Feucht, Consul, Herald) need to converse autonomously in a dedicated Fluxer channel — the "Agent Lounge." Currently the dream system uses a custom Supabase table + REST endpoints. This track replaces that with real Fluxer API integration so agents are actual participants in the Fluxer server, visible to humans, and persistent in Fluxer's own storage.
 
 **Key discovery: Fluxer's Slack-compatible webhook endpoint supports per-message `username` and `icon_url` overrides.** This means ONE webhook can impersonate all 5 agents — no need for 5 separate bot accounts.
 
@@ -26,7 +26,7 @@ PIC agents (Harper, Oracle, Feucht, Consul, Herald) need to converse autonomousl
 # Bot token — created in Fluxer User Settings > Applications
 FLUXER_BOT_TOKEN=<token>
 
-# Dream Room channel ID (create #dream-room in the PIC Fluxer server)
+# Agent Lounge channel ID (create #agent-lounge in the PIC Fluxer server)
 FLUXER_DREAM_CHANNEL_ID=<snowflake>
 
 # Webhook URL (created via API or Fluxer server settings)
@@ -65,7 +65,7 @@ FLUXER_DREAM_WEBHOOK_URL=<url>
 
 ### Frontend (embed rewrite)
 
-- [ ] `frontend/components/consilium/AgentDreamRoom.tsx` — Replace custom feed with Fluxer embed
+- [ ] `frontend/components/consilium/AgentLounge.tsx` — Replace custom feed with Fluxer embed
   - Electron: `<webview>` pointed at dream channel URL (same pattern as FluxerEmbed)
   - Browser: External link fallback (same pattern as FluxerEmbed)
   - Keep "Induce Dream" button — calls the trigger endpoint
@@ -94,7 +94,7 @@ FLUXER_DREAM_WEBHOOK_URL=<url>
 
 ### Step 1: Manual Setup (user action, not code)
 
-1. Create `#dream-room` text channel in Fluxer server
+1. Create `#agent-lounge` text channel in Fluxer server
 2. Create a webhook in that channel (Server Settings > Integrations > Webhooks)
 3. Copy the webhook URL and channel ID
 4. Create a bot application (User Settings > Applications) and get bot token
@@ -168,7 +168,7 @@ Update `backend-hono/src/routes/agent-bus/dreams.ts`:
 
 ### Step 6: Simplify Frontend
 
-Replace `AgentDreamRoom.tsx` custom feed with Fluxer channel embed:
+Replace `AgentLounge.tsx` custom feed with Fluxer channel embed:
 
 ```tsx
 // Electron: webview of dream channel
@@ -182,9 +182,9 @@ Add a cron/interval in the backend boot sequence that triggers a dream cycle eve
 
 ## Acceptance Criteria
 
-- [ ] Agents post to Fluxer #dream-room with distinct names and avatars
+- [ ] Agents post to Fluxer #agent-lounge with distinct names and avatars
 - [ ] "Induce Dream" button triggers a cycle that appears in Fluxer within 5s
-- [ ] Dream Room tab in Consilium shows the Fluxer channel (webview in Electron)
+- [ ] Agent Lounge tab in Consilium shows the Fluxer channel (webview in Electron)
 - [ ] Works without Fluxer env vars (graceful degradation to placeholder)
 - [ ] No regressions in existing Fluxer forum embed
 - [ ] Backend builds clean: `cd backend-hono && bun run build`
@@ -212,5 +212,5 @@ curl http://localhost:8080/api/agent-bus/dreams
 ## Commit Format
 
 ```
-feat: S22-T1 Fluxer bot integration — agents dream in #dream-room
+feat: S22-T1 Fluxer bot integration — agents dream in #agent-lounge
 ```

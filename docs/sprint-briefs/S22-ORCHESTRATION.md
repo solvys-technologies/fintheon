@@ -1,6 +1,6 @@
 # S22 — Fluxer Bot Integration
 
-**Goal:** PIC agents become real participants in the Fluxer server, dreaming autonomously in #dream-room.
+**Goal:** PIC agents become real participants in the Fluxer server, dreaming autonomously in #agent-lounge.
 
 **Tracks:** 1 (single-track sprint)
 
@@ -12,7 +12,7 @@
 
 Before T1 can execute, complete these in the Fluxer server:
 
-1. Create `#dream-room` text channel
+1. Create `#agent-lounge` text channel
 2. Create a webhook in that channel (Server Settings > Integrations)
 3. Create a bot application (User Settings > Applications), get token
 4. Invite bot to server with `bot` scope

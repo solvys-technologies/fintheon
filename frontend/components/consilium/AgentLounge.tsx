@@ -1,5 +1,4 @@
-// [claude-code 2026-04-16] Agent Dream Room — autonomous agent reflection feed
-// Inspired by Bitterbot Dream Engine: agents consolidate knowledge, discover patterns, evolve personality
+// [claude-code 2026-04-16] Agent Lounge — where agents show up to discuss their dreams
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Moon,
@@ -10,6 +9,7 @@ import {
   Compass,
   Eye,
 } from "lucide-react";
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 const AGENT_META: Record<
@@ -51,7 +51,7 @@ interface DreamEntry {
   createdAt: string;
 }
 
-export function AgentDreamRoom() {
+export function AgentLounge() {
   const [dreams, setDreams] = useState<DreamEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
@@ -75,7 +75,7 @@ export function AgentDreamRoom() {
     loadDreams();
   }, [loadDreams]);
 
-  // Auto-scroll to bottom on new dreams
+  // Auto-scroll to bottom on new entries
   useEffect(() => {
     if (feedRef.current) {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
@@ -88,7 +88,7 @@ export function AgentDreamRoom() {
       await fetch(`${API_BASE}/api/agent-bus/dreams/trigger`, {
         method: "POST",
       });
-      // Reload after a short delay to let agents respond
+      // Reload after a short delay to let agents show up
       setTimeout(loadDreams, 2000);
     } catch {
       // silent
@@ -135,10 +135,10 @@ export function AgentDreamRoom() {
         <div className="flex items-center gap-2">
           <Moon size={14} className="text-[var(--fintheon-accent)]/60" />
           <span className="text-xs font-medium text-[var(--fintheon-text)]/70 uppercase tracking-wider">
-            Dream Room
+            Agent Lounge
           </span>
           <span className="text-[9px] text-[var(--fintheon-text)]/30">
-            Agent subconscious
+            Where agents discuss their dreams
           </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -153,14 +153,14 @@ export function AgentDreamRoom() {
             onClick={triggerDream}
             disabled={triggering}
             className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-[var(--fintheon-accent)]/20 text-[10px] font-medium text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5 hover:border-[var(--fintheon-accent)]/30 transition-all disabled:opacity-50"
-            title="Trigger a dream cycle"
+            title="Summon agents to the lounge"
           >
             {triggering ? (
               <Loader2 size={10} className="animate-spin" />
             ) : (
               <Moon size={10} />
             )}
-            Induce Dream
+            Summon
           </button>
         </div>
       </div>
@@ -183,12 +183,12 @@ export function AgentDreamRoom() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-[var(--fintheon-text)]/50">
-                The agents haven't dreamed yet
+                No one has shown up yet
               </p>
               <p className="text-[10px] text-[var(--fintheon-text)]/25 max-w-xs leading-relaxed">
-                Dreams are autonomous reflections where agents consolidate
-                knowledge, discover patterns, and evolve their reasoning.
-                Trigger a dream cycle or wait for one to occur naturally.
+                When agents show up to the lounge, they discuss their dreams —
+                autonomous reflections on markets, patterns, and each other's
+                reasoning. Summon them or wait for them to arrive.
               </p>
             </div>
           </div>

@@ -81,8 +81,8 @@ export const BOARDROOM_SUB_VIEWS: {
   },
   {
     id: "imperium",
-    label: "Dream Room",
-    subtitle: "Agent subconscious — autonomous reflection",
+    label: "Agent Lounge",
+    subtitle: "Agents and their thoughts",
     icon: Moon,
   },
 ];

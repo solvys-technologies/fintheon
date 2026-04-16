@@ -37,7 +37,7 @@ import {
 } from "../../contexts/NarrativeContext";
 import { ApparatusFlowMap } from "../apparatus/ApparatusFlowMap";
 import { FluxerEmbed } from "./FluxerEmbed";
-import { AgentDreamRoom } from "./AgentDreamRoom";
+import { AgentLounge } from "./AgentLounge";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 import { SharedMemoryPanel } from "../memory/SharedMemoryPanel";
 import { AiLoader } from "../chat/FintheonThread";
@@ -921,7 +921,7 @@ export function ConsiliumHub() {
                   className="w-full h-full"
                 />
               )}
-              {displayedBoardroomSub === "imperium" && <AgentDreamRoom />}
+              {displayedBoardroomSub === "imperium" && <AgentLounge />}
             </>
           )}
 
