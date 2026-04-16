@@ -98,9 +98,11 @@ export function startVIXPolling(): void {
  * Extracts price from Yahoo's v8 chart API — no API key required.
  */
 async function fetchFromYahoo(): Promise<number | null> {
+  // Yahoo blocked intraday (1m) — fall back to daily (1d) which still works
+  // Yahoo blocked 1m interval — 2m still works and meta.regularMarketPrice is real-time
+  const url =
+    "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=2m";
   try {
-    const url =
-      "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m";
     const res = await fetch(url, {
       signal: AbortSignal.timeout(5000),
       headers: { "User-Agent": "Mozilla/5.0" },
@@ -109,9 +111,8 @@ async function fetchFromYahoo(): Promise<number | null> {
     const json = await res.json();
     const meta = json?.chart?.result?.[0]?.meta;
     const price = meta?.regularMarketPrice;
-    if (typeof price !== "number" || price <= 0)
-      throw new Error("Invalid Yahoo VIX price");
-    return price;
+    if (typeof price === "number" && price > 0) return price;
+    throw new Error("Invalid Yahoo VIX price");
   } catch (err) {
     console.warn(
       "[VIX] Yahoo fetch failed:",

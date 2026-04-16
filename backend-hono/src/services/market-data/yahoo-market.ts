@@ -7,16 +7,19 @@ const YAHOO_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
 const HEADERS = { "User-Agent": "Mozilla/5.0" };
 
 async function yahooFetch(symbol: string): Promise<any> {
-  const url = `${YAHOO_BASE}/${encodeURIComponent(symbol)}?range=1d&interval=1m`;
-  const res = await fetch(url, {
-    signal: AbortSignal.timeout(5000),
-    headers: HEADERS,
-  });
-  if (!res.ok) throw new Error(`Yahoo HTTP ${res.status}`);
-  const json = await res.json();
-  const result = json?.chart?.result?.[0];
-  if (!result) throw new Error(`No Yahoo data for ${symbol}`);
-  return result;
+  // Try intraday first, fall back to daily if Yahoo blocks 1m interval
+  for (const params of ["range=1d&interval=1m", "range=5d&interval=1d"]) {
+    const url = `${YAHOO_BASE}/${encodeURIComponent(symbol)}?${params}`;
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(5000),
+      headers: HEADERS,
+    });
+    if (!res.ok) continue;
+    const json = await res.json();
+    const result = json?.chart?.result?.[0];
+    if (result) return result;
+  }
+  throw new Error(`Yahoo: no data for ${symbol} (all intervals failed)`);
 }
 
 export async function getQuote(symbol: string): Promise<StockQuote> {
