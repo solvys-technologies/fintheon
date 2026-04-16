@@ -9,6 +9,35 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T17:45:00",
+    agent: "claude-code",
+    summary:
+      "S20-T8: Claude Code Routines — 8 cloud-based autonomous agents on Anthropic infrastructure. 3 MOVE routines (REFLECT, Prediction Resolver, Market Impact Enricher) fully migrated from backend with env flags to disable local schedulers. 5 AUGMENT routines (Dispatch Watchdog, Boardroom Synthesis, MiroShark Meta, Poly/Kalshi Divergence Analysis, Aquarium Deep Outlook) monitor/enrich existing backend jobs. Total 13 runs/day within 15-run budget.",
+    files: [
+      "backend-hono/src/services/autoresearch/reflect-scheduler.ts",
+      "backend-hono/src/services/polymarket-prediction-resolver.ts",
+      "backend-hono/src/services/cron/market-impact-enricher.ts",
+      "docs/routines.md",
+    ],
+  },
+  {
+    date: "2026-04-16T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S20-T3: Oracle scheduled research — prediction market scanning cycle. Scans Polymarket/Kalshi on 4h cron, cross-references with IV scoring + RiskFlow themes, detects arb opportunities (>15% mismatch), stores findings in oracle_research_findings table. Consumes existing divergence alerts as input (no duplication). GET /api/oracle/research endpoint for Harper/frontend. Gated by ORACLE_RESEARCH_ENABLED env var.",
+    files: [
+      "backend-hono/src/services/oracle-research/types.ts",
+      "backend-hono/src/services/oracle-research/scanner.ts",
+      "backend-hono/src/services/oracle-research/arb-detector.ts",
+      "backend-hono/src/services/oracle-research/index.ts",
+      "backend-hono/src/services/cron/oracle-research-scheduler.ts",
+      "backend-hono/src/routes/oracle.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/boot/services.ts",
+      "supabase/migrations/20260416_oracle_research.sql",
+    ],
+  },
+  {
     date: "2026-04-16T18:30:00",
     agent: "claude-code",
     summary:

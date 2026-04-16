@@ -249,9 +249,11 @@ export default function ChatPage({ visible }: ChatPageProps) {
         setIsLoading(false);
         setActiveToolCall(null);
         abortRef.current = null;
+        // Refresh session list so new/updated conversations appear
+        refreshSessions();
       }
     },
-    [isLoading, getAccessToken],
+    [isLoading, getAccessToken, refreshSessions],
   );
 
   const handleSelectSession = useCallback(

@@ -118,7 +118,7 @@ export function createBoardroomRoutes(): Hono {
               ],
             }
           : // Multi-agent: full MiroShark deliberation
-            createMiroSharkDAG({
+            await createMiroSharkDAG({
               lanes: [
                 {
                   id: "boardroom-query",
@@ -127,7 +127,6 @@ export function createBoardroomRoutes(): Hono {
                   category: detectLaneCategory(message),
                 },
               ],
-              catalysts: [],
               userInjection: message,
               conversationId,
               userId,

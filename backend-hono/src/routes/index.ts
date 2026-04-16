@@ -61,6 +61,7 @@ import { createDagRoutes } from "./dag/index.js";
 import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
 import { createWebPushRoutes } from "./web-push.js";
+import { createOracleRoutes } from "./oracle.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -110,6 +111,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/predictions", predictionsRoutes);
   // Polymarket — read-only public market data, whale alerts, search (S15-T2)
   app.route("/api/polymarket", createPolymarketRoutes());
+  // Oracle — scheduled research findings, manual trigger (S20-T3)
+  app.route("/api/oracle", createOracleRoutes());
   // Relay — mobile↔local backend WebSocket bridge (auth required for chat/health, WS upgrade handled separately)
   app.use("/api/relay", authMiddleware);
   app.use("/api/relay/*", authMiddleware);

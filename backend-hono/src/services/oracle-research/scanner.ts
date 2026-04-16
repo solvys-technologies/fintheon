@@ -85,8 +85,8 @@ async function scanPolymarket(): Promise<ScannedContract[]> {
       contractId: m.slug || m.conditionId,
       title: m.question,
       category: inferCategory(m.question),
-      yesPrice: m.outcomePrices?.[0] ?? 0,
-      volume24h: m.volume24hr ?? 0,
+      yesPrice: m.yesPrice,
+      volume24h: m.volume,
       priceChange24h: 0,
     }))
     .filter((c) => c.volume24h >= MIN_VOLUME_THRESHOLD || c.yesPrice > 0);
@@ -103,9 +103,9 @@ async function scanKalshi(): Promise<ScannedContract[]> {
       contractId: m.ticker,
       title: m.title,
       category: inferCategory(m.title),
-      yesPrice: m.yesPrice ?? 0,
-      volume24h: m.volume24hr ?? 0,
-      priceChange24h: Math.abs((m.yesPrice ?? 0) - (m.previousYesPrice ?? 0)),
+      yesPrice: m.lastPrice,
+      volume24h: m.volume24h,
+      priceChange24h: 0,
     }))
     .filter(
       (c) =>

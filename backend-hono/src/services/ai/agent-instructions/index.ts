@@ -1,4 +1,4 @@
-// [claude-code 2026-04-15] S16-T1: Persona files, context bank memories, rich scored catalysts
+// [claude-code 2026-04-16] S20-T1: Agent dossiers injected after base prompt
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -11,6 +11,10 @@ import {
   DEEP_ANALYSIS_BLOCK,
 } from "./skill-instructions.js";
 import { getCommandmentGates } from "./commandment-gates.js";
+import { DOSSIER_ORACLE } from "./dossiers/oracle.js";
+import { DOSSIER_FEUCHT } from "./dossiers/feucht.js";
+import { DOSSIER_CONSUL } from "./dossiers/consul.js";
+import { DOSSIER_HERALD } from "./dossiers/herald.js";
 import { getSupabaseClient } from "../../../config/supabase.js";
 
 /** Cache entry for compiled prompts */
@@ -34,6 +38,14 @@ const ROLE_TO_PERSONA_FILE: Record<string, string> = {
   "futures-desk": "feucht.md",
   "fundamentals-desk": "horace.md",
   herald: "herald.md",
+};
+
+/** Agent dossiers — authoritative personality + operational rules. Coexists with persona files; dossier wins on conflict. */
+const AGENT_DOSSIERS: Partial<Record<HermesAgentRole, string>> = {
+  "pma-merged": DOSSIER_ORACLE,
+  "futures-desk": DOSSIER_FEUCHT,
+  "fundamentals-desk": DOSSIER_CONSUL,
+  herald: DOSSIER_HERALD,
 };
 
 async function loadPersonaFile(role: HermesAgentRole): Promise<string> {
@@ -133,6 +145,12 @@ export async function getAgentSystemPrompt(
   const persona = await loadPersonaFile(role);
   if (persona) {
     prompt += `\n\n## Full Persona Profile\n${persona}`;
+  }
+
+  // 1.6. Agent dossier — authoritative identity, worldview, and operational rules
+  const dossier = AGENT_DOSSIERS[role];
+  if (dossier) {
+    prompt += dossier;
   }
 
   // 2. Shared beliefs — the neural web

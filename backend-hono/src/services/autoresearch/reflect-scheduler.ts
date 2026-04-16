@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] Added REFLECT_VIA_ROUTINE env flag — disables backend scheduler when Routine handles REFLECT
 // [claude-code 2026-04-03] REFLECT scheduler — runs nightly analysis of news scoring quality
 // Triggers at 04:00 UTC daily. Results available for Harper morning standup.
 
@@ -13,6 +14,13 @@ let isRunning = false;
  * Start the REFLECT scheduler. Runs at 04:00 UTC daily.
  */
 export function startReflectScheduler(): void {
+  if (process.env.REFLECT_VIA_ROUTINE === "true") {
+    log.info(
+      "REFLECT handled by Claude Code Routine (REFLECT_VIA_ROUTINE=true) — backend scheduler disabled",
+    );
+    return;
+  }
+
   if (process.env.ENABLE_REFLECT !== "true") {
     log.info("REFLECT disabled (set ENABLE_REFLECT=true to enable)");
     return;

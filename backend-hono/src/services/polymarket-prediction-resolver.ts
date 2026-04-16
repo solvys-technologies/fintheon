@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] Added PREDICTION_RESOLVER_VIA_ROUTINE env flag — disables backend resolver when Routine active
 // [claude-code 2026-04-12] S15-T3: Resolve Polymarket predictions when markets close
 
 import { createPolymarketService } from "./polymarket-service.js";
@@ -63,6 +64,13 @@ async function resolveClosedPredictions(): Promise<void> {
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
 export function startPredictionResolver(): void {
+  if (process.env.PREDICTION_RESOLVER_VIA_ROUTINE === "true") {
+    log.info(
+      "Prediction resolver handled by Claude Code Routine (PREDICTION_RESOLVER_VIA_ROUTINE=true) — backend resolver disabled",
+    );
+    return;
+  }
+
   log.info("Starting prediction resolver (1h interval)");
   setTimeout(() => resolveClosedPredictions(), 60_000);
   intervalId = setInterval(resolveClosedPredictions, RESOLVE_INTERVAL_MS);

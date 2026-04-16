@@ -617,9 +617,11 @@ function parseJsonSafe<T>(text: string): T | null {
   }
 }
 
-// ── Market Analyst Personas ───────────────────────────────────────────────────
-// [claude-code 2026-04-03] 5 market analyst personas with distinct analytical frameworks.
-// Each receives headlines filtered by subject tags (anti-groupthink routing).
+// ── Legacy Market Analyst code removed (S20-T2) ────────────────────────────
+// MARKET_ANALYSTS, fetchHeadlinesForAnalyst, fetchExaHeadlinesForAgent,
+// runMarketAnalystDebate, getMarketAnalysts — all killed.
+// Subject-filtered headline logic ported to miroshark-context.ts:fetchFilteredHeadlines()
+// Agent metadata lives in miroshark-template.ts:ANALYST_META
 
 export interface MarketAnalystAgent {
   id: string;

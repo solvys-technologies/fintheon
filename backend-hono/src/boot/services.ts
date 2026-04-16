@@ -52,6 +52,7 @@ import { bootHarperAutonomous } from "../services/harper-autonomous/index.js";
 import { initRettiwtPool } from "../services/rettiwt-service.js";
 import { cleanupOldRawItems } from "../services/supabase-service.js";
 import { startRelayConnector } from "../services/relay-connector.js";
+import { startOracleResearch } from "../services/cron/oracle-research-scheduler.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -304,6 +305,9 @@ export async function bootServices(): Promise<void> {
       error: String(err),
     }),
   );
+
+  // Oracle research scheduler (4h interval — prediction market scanning + arb detection, gated by ORACLE_RESEARCH_ENABLED)
+  startOracleResearch();
 
   // Relay connector — outbound WebSocket to Fly.io for mobile chat bridge (opt-in via RELAY_ENABLED)
   startRelayConnector();

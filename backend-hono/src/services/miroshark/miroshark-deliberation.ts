@@ -16,13 +16,12 @@ import type {
   DeliberationState,
   DeliberationPhase,
 } from "./miroshark-types.js";
-import { MARKET_ANALYSTS } from "./miroshark-client.js";
 import {
   createMiroSharkDAG,
   postProcessDeliberation,
+  ANALYST_META,
   type CollectedTaskOutput,
   type NarrativeLane,
-  type CatalystCard,
 } from "../agent-bus/templates/miroshark-template.js";
 import { executeDag } from "../agent-bus/dag-scheduler.js";
 import { agentBus } from "../agent-bus/bus.js";
@@ -95,7 +94,7 @@ export function extractAnalystAssessments(
   agentResponses?: MiroSharkAgentResponse[],
 ): MarketAnalystAssessment[] {
   return report.agentVotes.map((vote) => {
-    const analyst = MARKET_ANALYSTS.find((a) => a.id === vote.agentId);
+    const analyst = ANALYST_META[vote.agentId];
     const fullResponse = agentResponses?.find(
       (r) => r.agentId === vote.agentId,
     );
@@ -180,7 +179,6 @@ function reportToParams(
   userInjection?: string,
 ): {
   lanes: NarrativeLane[];
-  catalysts: CatalystCard[];
   userInjection?: string;
 } {
   const lanes: NarrativeLane[] = report.categoryScores.map((cs) => ({
@@ -192,24 +190,7 @@ function reportToParams(
     category: cs.category,
   }));
 
-  const catalysts: CatalystCard[] = report.generatedEvents.map((e) => ({
-    id: e.id,
-    headline: e.title,
-    severity: e.impactScore,
-    body: e.description,
-  }));
-
-  // Include top scenarios as additional context catalysts
-  for (const s of report.scenarios.slice(0, 3)) {
-    catalysts.push({
-      id: `scenario-${s.label.replace(/\s+/g, "-").toLowerCase()}`,
-      headline: s.label,
-      severity: Math.round(s.probability * s.projectedIVScore),
-      body: s.description,
-    });
-  }
-
-  return { lanes, catalysts, userInjection };
+  return { lanes, userInjection };
 }
 
 // ── Full Deliberation Pipeline (DAG-based) ───────────────────────────────────
@@ -230,7 +211,7 @@ export async function runDeliberationPipeline(
     const currentState = activeDeliberations.get(simId)!;
     const params = reportToParams(report, currentState.userInjection);
 
-    const dagDef = createMiroSharkDAG({
+    const dagDef = await createMiroSharkDAG({
       ...params,
       // No conversationId/userId at this layer — this is the simulation pipeline
     });

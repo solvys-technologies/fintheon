@@ -1,7 +1,7 @@
-// [claude-code 2026-03-30] Sessions panel — date-named conversation history, 6PM ET daily reset
+// [claude-code 2026-04-16] T6: Sessions panel — switched from bare fetch to BackendClient with auth headers
 import { useEffect, useState, useCallback } from "react";
 import { Calendar, MessageSquare, Trash2, Loader2 } from "lucide-react";
-import { API_BASE_URL } from "./constants";
+import { useBackend } from "../../lib/backend";
 
 interface SessionEntry {
   id: string;

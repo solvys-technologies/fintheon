@@ -1,14 +1,8 @@
+// [claude-code 2026-04-16] T6: Session list — removed dead ChatSession type, added messageCount badge
 // [claude-code 2026-04-16] T4 unification: API-backed sessions via useConversations, load full conversation on select
-// [claude-code 2026-04-15] T6: Session list bottom sheet — chat session history, new session button
 
 import { motion, AnimatePresence } from "framer-motion";
 import type { ConversationSummary } from "../../hooks/useConversations";
-
-export interface ChatSession {
-  id: string;
-  title: string;
-  timestamp: string;
-}
 
 interface SessionListProps {
   open: boolean;
@@ -178,14 +172,38 @@ export default function SessionList({
                     </span>
                     <span
                       style={{
-                        fontFamily: "'Space Mono', monospace",
-                        fontSize: 11,
-                        color: "var(--text-secondary)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
                         flexShrink: 0,
                         marginLeft: 12,
                       }}
                     >
-                      {formatDate(s.updatedAt || s.createdAt)}
+                      {s.messageCount > 0 && (
+                        <span
+                          style={{
+                            fontFamily: "'Space Mono', monospace",
+                            fontSize: 9,
+                            color: "var(--text-disabled)",
+                            background: "var(--border)",
+                            borderRadius: 4,
+                            padding: "1px 5px",
+                          }}
+                        >
+                          {s.messageCount}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          fontFamily: "'Space Mono', monospace",
+                          fontSize: 11,
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        {formatDate(
+                          s.lastMessageAt || s.updatedAt || s.createdAt,
+                        )}
+                      </span>
                     </span>
                   </button>
                 );

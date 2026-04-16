@@ -94,7 +94,7 @@ export function createHarperRoutes() {
 
       if (isBoardroomMode) {
         const userId = (c.get("userId" as never) as string) || "anonymous";
-        const dagDef = createMiroSharkDAG({
+        const dagDef = await createMiroSharkDAG({
           lanes: [
             {
               id: "boardroom-query",
@@ -102,7 +102,6 @@ export function createHarperRoutes() {
               sentiment: 0.5,
             },
           ],
-          catalysts: [],
           userInjection: message,
           conversationId: body.conversationId,
           userId,
