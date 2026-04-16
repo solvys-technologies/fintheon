@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T06:30:00",
+    agent: "claude-code",
+    summary:
+      "S20-T10: Integration + Validation + Deploy. Merged all 9 sprint tracks, verified builds (backend, desktop, mobile), validated legacy removal (MARKET_ANALYSTS, SubAnalyst Context, Notion services, agentic chatroom), confirmed agent dossiers compose into system prompts, agent memory and outcome tracker wired, differentiated context feeding active, scoring modules split from monoliths, health registry reporting, conversation persistence across platforms. Deployed to Fly.io, Vercel desktop, Vercel mobile.",
+    files: ["src/lib/changelog.ts"],
+  },
+  {
     date: "2026-04-16T22:00:00",
     agent: "claude-code",
     summary:
