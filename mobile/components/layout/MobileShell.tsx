@@ -7,8 +7,7 @@ import { useVixTicker } from "../../hooks/useVixTicker";
 import { MobileToolbar } from "./MobileToolbar";
 import { HamburgerMenu } from "./HamburgerMenu";
 import { FloatingChatButton } from "./FloatingChatButton";
-import { BottomSheet } from "../shared/BottomSheet";
-import { ToolbarExpanded } from "./ToolbarExpanded";
+import { MobileBulletin } from "../bulletin/MobileBulletin";
 
 interface MobileShellProps {
   activeTab: number;
@@ -116,14 +115,11 @@ export function MobileShell({
         </>
       )}
 
-      {/* Bulletin BottomSheet */}
-      <BottomSheet
+      {/* Bulletin widget */}
+      <MobileBulletin
         isOpen={bulletinOpen}
         onClose={() => setBulletinOpen(false)}
-        title="BULLETIN"
-      >
-        <ToolbarExpanded />
-      </BottomSheet>
+      />
 
       <HamburgerMenu
         open={menuOpen}

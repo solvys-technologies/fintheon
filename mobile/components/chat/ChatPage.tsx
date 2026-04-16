@@ -294,8 +294,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "12px 16px",
-          paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
+          padding: "4px 16px",
           borderBottom: "none",
         }}
       >
