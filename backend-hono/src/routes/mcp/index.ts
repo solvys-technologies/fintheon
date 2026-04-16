@@ -98,14 +98,7 @@ const KNOWN_SERVERS: Record<string, Partial<McpServerEntry>> = {
     requiresApiKey: true,
     apiKeyEnvVar: "EXA_API_KEY",
   },
-  notion: {
-    name: "Notion",
-    description: "Trade ideas, daily P&L, and meeting notes",
-    category: "productivity",
-    toolCount: 8,
-    requiresApiKey: true,
-    apiKeyEnvVar: "NOTION_API_KEY",
-  },
+
   framer: {
     name: "Framer",
     description: "Framer website builder and CMS",

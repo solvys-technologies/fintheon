@@ -40,7 +40,7 @@ import {
 import { PeersService } from "./team";
 import { BoardroomService } from "./boardroom";
 import { NarrativeService } from "./narrative";
-import { EconCalendarService, NotionService, MarketDataService } from "./data";
+import { EconCalendarService, DataService, MarketDataService } from "./data";
 import {
   JournalService,
   AgentPerformanceService,
@@ -77,7 +77,7 @@ export interface BackendClient {
   events: EventsService;
   boardroom: BoardroomService;
   narrative: NarrativeService;
-  notion: NotionService;
+  data: DataService;
   econCalendar: EconCalendarService;
   marketData: MarketDataService;
   mcp: McpService;
@@ -115,7 +115,7 @@ export function createBackendClient(client: ApiClient): BackendClient {
     events: new EventsService(client),
     boardroom: new BoardroomService(client),
     narrative: new NarrativeService(client),
-    notion: new NotionService(client),
+    data: new DataService(client),
     econCalendar: new EconCalendarService(client),
     marketData: new MarketDataService(client),
     mcp: new McpService(client),

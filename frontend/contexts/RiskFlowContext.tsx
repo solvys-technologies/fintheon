@@ -1,6 +1,6 @@
 // [claude-code 2026-03-31] Device-gated on-open fetch — visibility change triggers full refresh (throttled 5min)
 // [claude-code 2026-03-29] Fix infinite scroll: poll uses loadedCountRef so auto-refresh doesn't reset scroll progress
-// [claude-code 2026-03-14] Removed MarketWatch RSS polling — feed now Notion + backend only.
+// [claude-code 2026-04-16] Notion severance — backend feed is sole source
 // [claude-code 2026-03-14] XCLI: minMacroLevel=0 so all items show regardless of macro level.
 // [claude-code 2026-03-12] Instrument persistence: passes selectedSymbol to backend feed poll
 import React, {
@@ -17,9 +17,7 @@ import {
   downgradeNonFinancialBreaking,
 } from "../lib/riskflow-feed";
 import { useBackend } from "../lib/backend";
-import { decodeHtmlEntities } from "../lib/html-entities";
 import { useSettings } from "./SettingsContext";
-import type { NotionPollStatus } from "../lib/services";
 import type { RiskFlowItem } from "../types/api";
 
 // [claude-code 2026-03-16] T2: ensureScoring + downgradeNonFinancialBreaking on merged feed
@@ -29,7 +27,6 @@ interface RiskFlowContextValue {
   highCount: number;
   mediumCount: number;
   lowCount: number;
-  notionPollStatus: NotionPollStatus | null;
   clearAll: () => void;
   removeAlert: (id: string) => void;
   markSeen: (id: string) => void;
@@ -49,7 +46,6 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   highCount: 0,
   mediumCount: 0,
   lowCount: 0,
-  notionPollStatus: null,
   clearAll: () => {},
   removeAlert: () => {},
   markSeen: () => {},

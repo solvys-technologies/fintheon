@@ -1,4 +1,4 @@
-// [claude-code 2026-03-14] Economic feed for RiskFlow — FMP removed, uses Notion calendar only
+// [claude-code 2026-04-16] Economic feed for RiskFlow — uses Supabase econ calendar
 import { fetchEconCalendar } from "../econ-calendar-service.js";
 import { calculateIVScore } from "../analysis/iv-scorer.js";
 import type {
@@ -11,7 +11,7 @@ import type { HotPrint, ParsedHeadline } from "../../types/news-analysis.js";
 const ECON_SOURCE: NewsSource = "EconomicCalendar";
 
 /**
- * Fetch today's economic events from Notion calendar and map to feed items.
+ * Fetch today's economic events from Supabase calendar and map to feed items.
  * Only includes events that have actual values (released prints).
  */
 export async function fetchEconomicFeed(): Promise<FeedItem[]> {

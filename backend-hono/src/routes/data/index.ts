@@ -69,7 +69,6 @@ function tradeIdeaToFrontend(r: TradeIdeaRecord) {
     sourceAgent: r.analyst ?? undefined,
     hermesDescription:
       r.hermes_description ?? r.thesis?.slice(0, 300) ?? undefined,
-    notionUrl: "", // No Notion URL for Supabase records
     createdAt: r.created_at ?? new Date().toISOString(),
     updatedAt: r.updated_at ?? new Date().toISOString(),
   };
@@ -247,7 +246,6 @@ export function createDataRoutes(): Hono {
         content: result.content,
         briefType: result.briefType,
         generatedAt: result.generatedAt,
-        notionUrl: null,
         supabaseId: result.supabaseId,
         provider: result.provider,
       });

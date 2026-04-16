@@ -1077,7 +1077,7 @@ export async function handleGetSources(c: Context) {
     : 0;
 
   return c.json({
-    notion: supabaseUp,
+    supabase: supabaseUp,
     rettiwt: rettiwtUp,
     rettiwtRateLimited: rateLimited,
     rettiwtCooldownSec: cooldownSec,

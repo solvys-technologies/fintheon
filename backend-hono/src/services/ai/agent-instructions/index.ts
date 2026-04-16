@@ -76,7 +76,7 @@ You have access to the following live data sources and tools. Do NOT say "awaiti
 - **Economic Calendar**: \`curl -s http://localhost:8080/api/data/econ-events\`
 - **Daily Briefs**: \`curl -s http://localhost:8080/api/data/briefs/latest\`
 - **Supabase DB**: scored_riskflow_items, narrative_threads, econ_events tables — query via backend API endpoints
-- **Notion**: Trade ideas database, daily P&L logs, economic events calendar, and meeting notes.
+
 
 **External sources (USE ONLY AFTER checking internal data):**
 - **Exa Search**: Neural web search for financial research, news, analysis, and real-time information.

@@ -11,7 +11,7 @@ import {
 
 export interface TradeIdeaCard {
   id: string;
-  source: "proposal" | "notion" | "manual";
+  source: "proposal" | "supabase" | "manual";
   agent: string;
   direction: "long" | "short";
   instrument: string;
@@ -78,7 +78,7 @@ function supabaseToCard(r: TradeIdeaRecord): TradeIdeaCard | null {
 
   return {
     id: r.id ?? crypto.randomUUID(),
-    source: "notion", // Supabase inherited from Notion migration
+    source: "supabase",
     agent: r.analyst ?? "unknown",
     direction: rawDir as "long" | "short",
     instrument: r.ticker ?? r.title ?? "UNKNOWN",
