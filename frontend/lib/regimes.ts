@@ -2,14 +2,25 @@
 // [claude-code 2026-03-12] Replaced W/L record with ORB bullish/bearish day tracking
 // [claude-code 2026-04-15] T2: 5 heuristic bias classifications, optional orbHistory/antilag/COT fields
 
+// A single observation window — day + time range
+export interface TimeWindow {
+  day: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
+  start: string; // HH:MM
+  end: string; // HH:MM
+}
+
 export interface TradingRegime {
   id: string;
   name: string;
   description: string;
   category: "institutional" | "session" | "report" | "custom";
-  timeRange: { start: string; end: string }; // HH:MM in ET
+  timeRange: { start: string; end: string }; // HH:MM in ET — primary window
   timezone: "ET" | "UTC" | "GMT" | "JST";
   daysActive: ("Mon" | "Tue" | "Wed" | "Thu" | "Fri")[];
+  /** Schedule type: static (fixed recurring), dynamic (one-off windows), mixed (both) */
+  scheduleType?: "static" | "dynamic" | "mixed";
+  /** Additional time windows for multi-session regimes */
+  timeWindows?: TimeWindow[];
   confidence: number; // 0-100
   record: { bullishDays: number; bearishDays: number };
   daysObserved: number;
