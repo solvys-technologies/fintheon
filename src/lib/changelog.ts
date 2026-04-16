@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T23:30:00",
+    agent: "claude-code",
+    summary:
+      "Ensure all external repo deps (tradingview-mcp, financial-datasets-mcp, mobile workspace) are updated by both update scripts. Added tradingview-mcp clone/pull + npm install to fintheon-update.sh, added mobile workspace to both scripts, added MCP repo update step to update.ts.",
+    files: ["scripts/fintheon-update.sh", "scripts/update.ts"],
+  },
+  {
     date: "2026-04-16T22:00:00",
     agent: "claude-code",
     summary:

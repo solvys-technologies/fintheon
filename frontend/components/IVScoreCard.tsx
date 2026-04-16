@@ -205,20 +205,12 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                 onMouseEnter={handleShowTooltip}
                 onMouseLeave={handleHideTooltip}
               >
-                <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-2">
+                <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
                   Blended IV Score
                 </h4>
-                <p className="text-xs text-gray-400 mb-3">
-                  {Math.round((data.weights.vix ?? 0) * 100)}% VIX (
-                  {data.vix.level.toFixed(1)}) +{" "}
-                  {Math.round((data.weights.headlines ?? 0) * 100)}% catalyst
-                  heat ({data.eventCount} events) +{" "}
-                  {Math.round((data.weights.miroshark ?? 0) * 100)}% MiroShark
-                  flow.
-                </p>
 
-                {/* Component breakdown */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 mb-3 space-y-2">
+                {/* Component fuse bars */}
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 mb-3 space-y-2.5">
                   <h5 className="text-xs font-semibold text-gray-300 mb-1">
                     Components
                   </h5>
@@ -226,46 +218,67 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                     {
                       label: "VIX Component",
                       value: data.vixComponent,
-                      max: 10,
+                      detail: `VIX ${data.vix.level.toFixed(1)}`,
+                      weight: data.weights.vix ?? 0.7,
                     },
                     {
                       label: "Headline Component",
                       value: data.headlineComponent,
-                      max: 10,
+                      detail: `${data.eventCount} headline events`,
+                      weight: data.weights.headlines ?? 0.2,
                     },
                     {
                       label: "MiroShark Component",
                       value: data.mirosharkComponent,
-                      max: 10,
+                      detail: "MiroShark running analysis",
+                      weight: data.weights.miroshark ?? 0.1,
                     },
                   ].map((c) => (
-                    <div
-                      key={c.label}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-[10px] text-gray-400">
-                        {c.label}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-[var(--fintheon-accent)]"
-                            style={{ width: `${(c.value / c.max) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] text-gray-300 w-8 text-right">
+                    <div key={c.label}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-gray-400">
+                          {c.label}
+                        </span>
+                        <span className="text-[10px] text-gray-300 font-medium">
                           {c.value.toFixed(1)}
                         </span>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-[6px] bg-zinc-800 rounded-sm overflow-hidden flex gap-[1px]">
+                          {Array.from({ length: 10 }, (_, i) => (
+                            <div
+                              key={i}
+                              className="flex-1 rounded-[1px]"
+                              style={{
+                                background:
+                                  i < Math.round(c.value)
+                                    ? "var(--fintheon-accent)"
+                                    : "var(--fintheon-border, #1a1a1a)",
+                                transition: "background 150ms ease-out",
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-[9px] text-gray-600 mt-0.5">
+                        {c.detail} → component score {c.value.toFixed(1)}/10
+                      </div>
                     </div>
                   ))}
-                  <div className="pt-2 border-t border-zinc-800 flex items-center justify-between">
-                    <span className="text-[10px] text-gray-300 font-medium">
-                      Blended
-                    </span>
-                    <span className="text-xs font-bold text-[var(--fintheon-accent)]">
-                      {data.score.toFixed(1)}/10
-                    </span>
+
+                  {/* Blended calculation */}
+                  <div className="pt-2 border-t border-zinc-800">
+                    <div className="text-[9px] text-gray-500 leading-relaxed">
+                      Blended: ({data.vixComponent.toFixed(1)} × {(data.weights.vix ?? 0.7).toFixed(1)}) + ({data.headlineComponent.toFixed(1)} × {(data.weights.headlines ?? 0.2).toFixed(1)}) + ({data.mirosharkComponent.toFixed(1)} × {(data.weights.miroshark ?? 0.1).toFixed(1)}) = {data.score.toFixed(1)}{data.floor != null && data.floor > 0 ? `, floor ${data.floor.toFixed(1)}` : ""} → {data.score.toFixed(1)}
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="text-[10px] text-gray-300 font-medium">
+                        Blended
+                      </span>
+                      <span className="text-xs font-bold text-[var(--fintheon-accent)]">
+                        {data.score.toFixed(1)}/10
+                      </span>
+                    </div>
                   </div>
                 </div>
 

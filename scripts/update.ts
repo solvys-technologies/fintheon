@@ -99,6 +99,51 @@ async function main() {
     );
   }
 
+  // Step 4b: Update external MCP server repos
+  const mcpRepos = [
+    {
+      name: "financial-datasets-mcp",
+      dir: join(MCP_DIR, "financial-datasets-mcp"),
+      origin: "https://github.com/financial-datasets/mcp-server",
+      postInstall: null,
+    },
+    {
+      name: "tradingview-mcp",
+      dir: join(MCP_DIR, "tradingview-mcp"),
+      origin: "https://github.com/tradesdontlie/tradingview-mcp.git",
+      postInstall: "npm",
+    },
+  ];
+
+  for (const repo of mcpRepos) {
+    const ms = p.spinner();
+    if (existsSync(join(repo.dir, ".git"))) {
+      ms.start(`Updating ${repo.name}`);
+      const pull = await runCommand(
+        "git",
+        ["-C", repo.dir, "pull", "--quiet"],
+        {
+          cwd: ROOT,
+        },
+      );
+      if (repo.postInstall === "npm") {
+        await runCommand("npm", ["install", "--silent"], { cwd: repo.dir });
+      }
+      ms.stop(pull.ok ? `${repo.name} updated` : `${repo.name} pull failed`);
+    } else {
+      ms.start(`Cloning ${repo.name}`);
+      const clone = await runCommand(
+        "git",
+        ["clone", "--quiet", repo.origin, repo.dir],
+        { cwd: ROOT },
+      );
+      if (clone.ok && repo.postInstall === "npm") {
+        await runCommand("npm", ["install", "--silent"], { cwd: repo.dir });
+      }
+      ms.stop(clone.ok ? `${repo.name} cloned` : `${repo.name} clone failed`);
+    }
+  }
+
   // Step 5: Verify Anthropic OAuth via VProxy
   const oauthScript = join(ROOT, "scripts", "vproxy-anthropic-oauth.sh");
   const runOauth = await p.confirm({
