@@ -20,8 +20,9 @@ export function createDagRoutes(): Hono {
   const router = new Hono();
 
   // Shared SSE factory for surface.* bus topics
-  function surfaceSSE(topic: string) {
-    return (c: ReturnType<Hono["ctx"]>) => {
+  function surfaceSSE(topic: BusTopic) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (c: any) => {
       const stream = new ReadableStream<Uint8Array>({
         start(controller) {
           let closed = false;
