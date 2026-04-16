@@ -439,10 +439,13 @@ export default function ChatPage({ visible }: ChatPageProps) {
         )}
       </div>
 
-      {/* Input — pinned to bottom */}
+      {/* Spacer for fixed input */}
+      <div style={{ height: 100, flexShrink: 0 }} />
+
+      {/* Input — fixed to bottom of viewport */}
       <div
         style={{
-          position: "sticky",
+          position: "fixed",
           bottom: 0,
           left: 0,
           right: 0,

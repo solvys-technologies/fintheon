@@ -1,11 +1,6 @@
-// [claude-code 2026-04-16] Toolbar — chevron opens BottomSheet bulletin overlay instead of inline expand
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { ChevronDown, Menu } from "lucide-react";
+// [claude-code 2026-04-16] Toolbar — clean header only, bulletin moved to floating button
+import { Menu } from "lucide-react";
 import { VixBadge } from "../shared/VixBadge";
-import { BottomSheet } from "../shared/BottomSheet";
-import { ToolbarExpanded } from "./ToolbarExpanded";
-import { HamburgerMenu } from "./HamburgerMenu";
 import { useSettings } from "../../contexts/SettingsContext";
 
 interface MobileToolbarProps {
@@ -13,11 +8,7 @@ interface MobileToolbarProps {
   menuOpen: boolean;
 }
 
-export function MobileToolbar({
-  onHamburgerTap,
-  menuOpen,
-}: MobileToolbarProps) {
-  const [sheetOpen, setSheetOpen] = useState(false);
+export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
   const { settings } = useSettings();
   const traderName = settings.traderName || "";
 
@@ -41,7 +32,7 @@ export function MobileToolbar({
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 16px",
-          borderBottom: "none",
+          borderBottom: "1px solid var(--border)",
         }}
       >
         {/* Wordmark + Trader Name */}
@@ -76,7 +67,7 @@ export function MobileToolbar({
         </div>
 
         {/* VIX center */}
-        <VixBadge />
+        <VixBadge variant="compact" />
 
         {/* Hamburger */}
         <button
@@ -98,41 +89,6 @@ export function MobileToolbar({
           <Menu size={20} strokeWidth={1.5} color="var(--text-secondary)" />
         </button>
       </div>
-
-      {/* Chevron toggle — opens bulletin BottomSheet */}
-      <button
-        onClick={() => setSheetOpen(true)}
-        aria-label="Open bulletin"
-        style={{
-          width: "100%",
-          height: 44,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "transparent",
-          border: "none",
-          borderBottom: "1px solid var(--border)",
-          cursor: "pointer",
-          WebkitTapHighlightColor: "transparent",
-          padding: 0,
-        }}
-      >
-        <motion.div
-          animate={{ rotate: sheetOpen ? 180 : 0 }}
-          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-        >
-          <ChevronDown size={16} color="var(--text-disabled)" />
-        </motion.div>
-      </button>
-
-      {/* Bulletin BottomSheet */}
-      <BottomSheet
-        isOpen={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        title="BULLETIN"
-      >
-        <ToolbarExpanded />
-      </BottomSheet>
     </div>
   );
 }

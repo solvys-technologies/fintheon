@@ -24,8 +24,8 @@ const SettingsPage = lazy(() =>
   })),
 );
 const EconCalendarPage = lazy(() =>
-  import("./components/econ/EconCalendarEmbed").then((m) => ({
-    default: m.EconCalendarEmbed,
+  import("./components/econ/EconCalendarPage").then((m) => ({
+    default: m.EconCalendarPage,
   })),
 );
 
