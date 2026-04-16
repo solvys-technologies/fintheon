@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T00:15:00",
+    agent: "claude-code",
+    summary:
+      "S20-T2: Differentiated context feeding + legacy kill. Ported subject-tag filtering from miroshark-client into shared fetchFilteredHeadlines() in miroshark-context.ts. Rewrote buildAnalystPrompt/buildNarrativeContext/buildGovPrompt/buildDeliberationPrompt/buildHarperPrompt to be async and query DB with per-agent subject filtering (12 matched + 3 cross-domain). Made createMiroSharkDAG async. Removed legacy MARKET_ANALYSTS array (Alex Vane, Priya Nair, James Osei, Sophie Kwan, Marcus Webb), fetchHeadlinesForAnalyst, fetchExaHeadlinesForAgent, runMarketAnalystDebate, getMarketAnalysts from miroshark-client.ts. Updated miroshark-deliberation.ts to use ANALYST_META from template. Updated aquarium-scheduler fetchRecentHeadlines to filter by Oracle subjects. Renamed Agentic Chatroom to Agentic Forum in harper-handler.ts and HARPER-SOUL.md.",
+    files: [
+      "backend-hono/src/services/miroshark/miroshark-context.ts",
+      "backend-hono/src/services/agent-bus/templates/miroshark-template.ts",
+      "backend-hono/src/services/miroshark/miroshark-client.ts",
+      "backend-hono/src/services/miroshark/miroshark-deliberation.ts",
+      "backend-hono/src/services/miroshark/miroshark-service.ts",
+      "backend-hono/src/services/riskflow/aquarium-scheduler.ts",
+      "backend-hono/src/routes/miroshark/handlers.ts",
+      "backend-hono/src/routes/harper/index.ts",
+      "backend-hono/src/routes/boardroom/index.ts",
+      "backend-hono/src/services/harper-handler.ts",
+      "backend-hono/src/services/harper-autonomous/HARPER-SOUL.md",
+    ],
+  },
+  {
     date: "2026-04-16T23:55:00",
     agent: "claude-code",
     summary:

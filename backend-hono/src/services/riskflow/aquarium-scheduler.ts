@@ -32,6 +32,14 @@ export function getAIAquariumOutlook(): AIOutlookCache | null {
   return cachedOutlook;
 }
 
+// Oracle's subject domains — used to filter headlines for Aquarium outlook
+const ORACLE_SUBJECTS = new Set([
+  "macro",
+  "monetary-policy",
+  "prediction-markets",
+  "regime",
+]);
+
 async function fetchRecentHeadlines(): Promise<string> {
   try {
     const sb = getSupabaseClient();
@@ -44,11 +52,31 @@ async function fetchRecentHeadlines(): Promise<string> {
       .gte("published_at", cutoff)
       .gte("iv_score", 4)
       .order("iv_score", { ascending: false })
-      .limit(40);
+      .limit(100);
 
     if (!data || data.length === 0) return "(no high-impact items in last 12h)";
 
-    return data
+    // Filter by Oracle's subject tags + keep high-impact cross-domain
+    const oracleItems: typeof data = [];
+    const crossDomain: typeof data = [];
+
+    for (const item of data) {
+      const tags: string[] = item.tags || [];
+      const hasOracleSubject = tags.some(
+        (t) => t.startsWith("subj:") && ORACLE_SUBJECTS.has(t.slice(5)),
+      );
+      if (hasOracleSubject) {
+        oracleItems.push(item);
+      } else if ((item.macro_level ?? 0) >= 3) {
+        crossDomain.push(item);
+      }
+    }
+
+    const filtered = [...oracleItems.slice(0, 30), ...crossDomain.slice(0, 5)];
+
+    if (filtered.length === 0) return "(no high-impact items in last 12h)";
+
+    return filtered
       .map(
         (i) =>
           `[IV ${i.iv_score} ${i.sentiment ?? "neutral"} ML${i.macro_level ?? "?"}] ${i.headline}`,
