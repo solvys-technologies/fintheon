@@ -4,7 +4,7 @@ import { EmbeddedBrowserFrame } from "./layout/EmbeddedBrowserFrame";
 import { useSettings } from "../contexts/SettingsContext";
 import { useTheme } from "../contexts/ThemeContext";
 
-export type TradingPlatform =
+export type BuiltinPlatform =
   | "topstepx"
   | "topstep-dashboard"
   | "mmt"
@@ -14,6 +14,9 @@ export type TradingPlatform =
   | "tradovate"
   | "tradelocker"
   | "tradingview";
+
+// Accepts builtin keys + custom source IDs (prefixed "custom:")
+export type TradingPlatform = BuiltinPlatform | (string & {});
 
 export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
   topstepx: "TopStepX",
@@ -57,16 +60,24 @@ export function TradingBrowser({
   splitViewEnabled,
   allowSplitView,
 }: TradingBrowserProps) {
-  const { iframeUrls } = useSettings();
+  const { iframeUrls, proposerIframeSources } = useSettings();
   const { theme } = useTheme();
   const isStone = theme.name === "solvys-stone";
   const frameBg = isStone ? "bg-black" : "bg-white";
-  const platformUrls = {
+  const builtinUrls: Record<string, string> = {
     ...PLATFORM_URLS,
     research: iframeUrls.research || PLATFORM_URLS.research,
   };
-  const primaryUrl = platformUrls[primaryPlatform];
-  const secondaryUrl = platformUrls[secondaryPlatform];
+  // Resolve custom source URLs (IDs prefixed "custom:")
+  const resolveUrl = (platform: TradingPlatform): string => {
+    if (builtinUrls[platform]) return builtinUrls[platform];
+    const custom = proposerIframeSources.find(
+      (s) => `custom:${s.id}` === platform,
+    );
+    return custom?.url ?? "";
+  };
+  const primaryUrl = resolveUrl(primaryPlatform);
+  const secondaryUrl = resolveUrl(secondaryPlatform);
 
   return (
     <div

@@ -111,7 +111,8 @@ export function TopHeader({
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
-  const { selectedSymbol, traderName, alertConfig } = useSettings();
+  const { selectedSymbol, traderName, alertConfig, proposerIframeSources } =
+    useSettings();
   const { addToast } = useToast();
   const instanceName =
     import.meta.env.VITE_FINTHEON_INSTANCE_NAME || "Fintheon";
@@ -279,6 +280,11 @@ export function TopHeader({
       label: "Research",
       description: "Research iFrame",
     },
+    ...proposerIframeSources.map((s) => ({
+      value: `custom:${s.id}` as TradingPlatform,
+      label: s.label,
+      description: s.url,
+    })),
   ];
 
   const selectedPlatformLabel =
