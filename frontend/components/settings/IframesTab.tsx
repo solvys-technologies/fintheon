@@ -236,7 +236,7 @@ export function IframesTab({
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-gray-300 mb-2">
-              Boardroom URL
+              Forum URL (Full)
             </label>
             <input
               type="url"
@@ -244,7 +244,7 @@ export function IframesTab({
               onChange={(e) =>
                 setIframeUrls({ ...iframeUrls, boardroom: e.target.value })
               }
-              placeholder="https://your-boardroom-url"
+              placeholder="https://web.fluxer.app/channels/..."
               className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30 placeholder:text-zinc-600"
             />
             <div className="flex items-center justify-between mt-1">

@@ -3,8 +3,9 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import { isElectron } from "../../lib/platform";
 import { buildFluxerThemeCSS } from "../../lib/fluxer-theme";
+import { useSettings } from "../../contexts/SettingsContext";
 
-const FLUXER_URL = import.meta.env.VITE_FLUXER_COMMUNITY_URL as
+const FLUXER_ENV_URL = import.meta.env.VITE_FLUXER_COMMUNITY_URL as
   | string
   | undefined;
 
@@ -13,6 +14,9 @@ interface FluxerEmbedProps {
 }
 
 export function FluxerEmbed({ channelPath }: FluxerEmbedProps) {
+  const { iframeUrls } = useSettings();
+  // Settings "Boardroom URL" takes priority over env var
+  const FLUXER_URL = iframeUrls.boardroom || FLUXER_ENV_URL;
   const [loaded, setLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
