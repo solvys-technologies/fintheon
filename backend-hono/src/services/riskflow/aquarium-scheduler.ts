@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] S20-T2: Filter fetchRecentHeadlines by Oracle's subjects (macro/monetary-policy/prediction-markets/regime)
 // [claude-code 2026-04-10] Aquarium AI scheduler — Oracle (Nous) generates forward-looking outlook every 30min
 import { invokeAgent } from "../strands/invoke-helper.js";
 import { getSupabaseClient } from "../../config/supabase.js";

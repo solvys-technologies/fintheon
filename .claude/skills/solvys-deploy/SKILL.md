@@ -165,11 +165,23 @@ curl -s http://localhost:8080/api/diagnostics
 
 Skip this step ONLY if actively editing the local backend.
 
+### 3f. Feature Verification (Solvys Test)
+
+If a sprint brief exists for this deploy, run the full Solvys Test flow:
+
+1. Locate the relevant sprint brief in `docs/sprint-briefs/`
+2. Extract all new/modified endpoints and UI features
+3. **CLI tests** -- curl every new endpoint against localhost:8080 and fintheon.fly.dev, verify valid JSON responses with expected fields
+4. **Frontend tests** -- use Playwright (`playwright@1.58.2`) to verify UI features render and function on the deployed desktop and mobile URLs
+5. If any test fails, enter the fix cycle (Phase 4) for that specific failure
+
+This is equivalent to running `/solvys-test` inline. If no sprint brief exists, skip to Phase 4.
+
 ---
 
 ## Phase 4 -- Fix-and-Redeploy (Conditional)
 
-Activated only if Phase 3 fails.
+Activated only if Phase 3 (including 3f feature verification) fails.
 
 ### Attempt 1
 
@@ -231,6 +243,7 @@ After successful deployment and verification:
    Mobile:   {mobile_url}             [PASS]
    Release:  {github_release_url}
    Local:    localhost:8080            [PASS]
+   Features: {n}/{total} verified     [PASS/PARTIAL/SKIPPED]
    Duration: {total time}
    Retries:  {0/1/2}
    ```

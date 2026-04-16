@@ -274,5 +274,12 @@ export async function handleGetAnalysts(c: Context) {
   const blocked = checkEnabled(c);
   if (blocked) return blocked;
 
-  return c.json({ analysts: getMarketAnalysts() });
+  const analysts = Object.values(ANALYST_META).map((a) => ({
+    id: a.agentId,
+    name: a.name,
+    title: a.title,
+    role: a.role,
+    subjects: a.subjects,
+  }));
+  return c.json({ analysts });
 }
