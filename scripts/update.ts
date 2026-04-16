@@ -10,6 +10,8 @@ import { runCommand, isFintheonRunning, waitForHealth } from "./setup-utils";
 const ROOT = resolve(import.meta.dir, "..");
 const BACKEND_DIR = join(ROOT, "backend-hono");
 const FRONTEND_DIR = join(ROOT, "frontend");
+const MOBILE_DIR = join(ROOT, "mobile");
+const MCP_DIR = resolve(ROOT, "..", ""); // ~/Documents/Codebases
 
 async function main() {
   console.log("");
@@ -85,6 +87,7 @@ async function main() {
     { name: "root", dir: ROOT },
     { name: "frontend", dir: FRONTEND_DIR },
     { name: "backend-hono", dir: BACKEND_DIR },
+    { name: "mobile", dir: MOBILE_DIR },
   ];
 
   for (const ws of workspaces) {
