@@ -9,7 +9,7 @@ import {
 import { startFredPolling, stopFredPolling } from "./fred-service.js";
 import { restoreActiveChains, getChainState } from "./causal-chain-engine.js";
 import { fetchVIX } from "../vix-service.js";
-import { classifyEventType } from "../iv-scoring-v2.js";
+import { classifyEventType } from "../iv-scoring/index.js";
 
 const POLL_INTERVAL_MS = 120_000; // 2 minutes
 

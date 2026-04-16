@@ -32,8 +32,7 @@ export function useRiskFlowFilters(): UseRiskFlowFiltersReturn {
   const filterAlerts = useCallback(
     (alerts: RiskFlowAlert[]): RiskFlowAlert[] => {
       let base = alerts;
-      if (showProposals)
-        return base.filter((a) => a.source === "notion-trade-idea");
+      if (showProposals) return base.filter((a) => a.source === "trade-idea");
       if (severityFilter === "high")
         base = base.filter(
           (a) => a.severity === "high" || a.severity === "critical",

@@ -5,11 +5,11 @@ import { z } from "zod";
 export const solvysResearchTool = tool({
   name: "solvys_research",
   description:
-    "Conduct deep research on a topic using web search, Twitter/X, Notion docs, and browser. Synthesizes human testimony and experiments into actionable findings.",
+    "Conduct deep research on a topic using web search, Twitter/X, docs, and browser. Synthesizes human testimony and experiments into actionable findings.",
   inputSchema: z.object({
     query: z.string().describe("The research question or topic"),
     sources: z
-      .array(z.enum(["web", "twitter", "notion", "docs"]))
+      .array(z.enum(["web", "twitter", "docs"]))
       .optional()
       .describe("Which sources to search (defaults to all)"),
     maxResults: z
@@ -24,7 +24,7 @@ export const solvysResearchTool = tool({
   }) => {
     // This tool generates a research prompt — actual execution uses Harper's web_fetch
     // and MCP tools. The skill structures the research workflow.
-    const sources = input.sources ?? ["web", "twitter", "notion", "docs"];
+    const sources = input.sources ?? ["web", "twitter", "docs"];
     const maxResults = input.maxResults ?? 5;
 
     return [

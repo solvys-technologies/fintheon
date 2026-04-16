@@ -7,7 +7,7 @@ import { invokeAgent } from "../strands/index.js";
 
 const log = createLogger("AgentNotes");
 
-const CRON_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
+const CRON_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const BATCH_SIZE = 5; // max items per cron cycle (API cost guard)
 const LOOKBACK_HOURS = 4;
 

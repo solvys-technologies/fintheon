@@ -1,4 +1,4 @@
-// [claude-code 2026-03-05] Economic Calendar context — polls Notion econ events on 60s interval.
+// [claude-code 2026-04-16] Economic Calendar context — polls Supabase econ events on 60s interval.
 // [claude-code 2026-03-07] Session date snaps to next day after 9PM
 import React, {
   createContext,

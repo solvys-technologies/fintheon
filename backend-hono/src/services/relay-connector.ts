@@ -30,10 +30,12 @@ async function handleChatRequest(
   payload: {
     message: string;
     conversationId?: string | null;
+    userId?: string;
     images?: string[];
     riskFlowContext?: string;
     thinkHarder?: boolean;
     persona?: string;
+    traderName?: string;
   },
 ): Promise<void> {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -63,15 +65,20 @@ async function handleChatRequest(
     }
 
     // streamHarperChat returns a Response with SSE body
+    // conversationId is now resolved by relay.ts (real UUID), fallback to temp ID only as last resort
     const response = await streamHarperChat({
       message: payload.message,
       conversationId: payload.conversationId ?? `relay-${requestId}`,
       requestId,
+      userId: payload.userId,
       images: payload.images,
       riskFlowContext: payload.riskFlowContext,
       thinkHarder: payload.thinkHarder,
       persona: payload.persona,
       relayOriginated: true,
+      userContext: payload.traderName
+        ? { traderName: payload.traderName }
+        : undefined,
     });
 
     if (!response.body) {

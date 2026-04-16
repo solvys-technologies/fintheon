@@ -24,7 +24,6 @@ import { resetRunningState } from "./miroshark-reactive.js";
 import {
   isMiroSharkEnabled,
   runDebate,
-  runMarketAnalystDebate,
   hasGeopoliticalContent,
 } from "./miroshark-client.js";
 import { convertNarrativeToSeed } from "./miroshark-seed.js";
@@ -181,8 +180,8 @@ export async function startPrediction(
       ...narrativeState.catalysts,
       ...context.riskflowHeadlines.map((h) => ({
         id: h.id,
-        title: h.title,
-        description: h.summary || h.title,
+        title: h.headline,
+        description: h.summary || h.headline,
         date: h.created_at.slice(0, 10),
         sentiment: h.sentiment || "neutral",
         severity:
@@ -204,10 +203,10 @@ export async function startPrediction(
 
     seedCache.set(simId, seed);
 
-    // Primary: market analyst debate (5 personas with subject-filtered headlines)
-    const report = await runMarketAnalystDebate(seed);
+    // Primary: gov-official debate (8 personas with headline augmentation)
+    const report = await runDebate(seed);
     report.simulationId = simId;
-    report.debateLayer = "market-analysts";
+    report.debateLayer = "gov-officials";
 
     // Conditional: gov-official debate for geopolitical content
     const geoActive = await hasGeopoliticalContent();
@@ -326,9 +325,9 @@ export async function injectScenarioVariable(
       ],
     };
 
-    const report = await runMarketAnalystDebate(modifiedSeed);
+    const report = await runDebate(modifiedSeed);
     report.simulationId = simId;
-    report.debateLayer = "market-analysts";
+    report.debateLayer = "gov-officials";
 
     const prediction = reportToPrediction(simId, report);
     predictionCache.set(simId, prediction);
@@ -673,7 +672,9 @@ async function generateHarperAnalysis(
 
   const topHeadlines = context.riskflowHeadlines
     .slice(0, 10)
-    .map((h) => `[${h.risk_type ?? "General"}] ${h.title} (IV: ${h.iv_score})`)
+    .map(
+      (h) => `[${h.risk_type ?? "General"}] ${h.headline} (IV: ${h.iv_score})`,
+    )
     .join("\n");
 
   const userPrompt = `## Simulation Results

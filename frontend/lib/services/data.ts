@@ -1,5 +1,5 @@
 /**
- * EconCalendar, Notion, and MarketData Services
+ * EconCalendar, Data, and MarketData Services
  */
 
 import ApiClient from "../apiClient";
@@ -27,7 +27,6 @@ export interface EconEventItem {
   category?: string;
   definition?: string;
   aiTicker?: string;
-  notionUrl: string;
 }
 
 export interface EconPrintItem {
@@ -40,7 +39,6 @@ export interface EconPrintItem {
   surprise: number | null;
   direction: "beat" | "miss" | "inline" | null;
   goodBeta: boolean;
-  notionUrl: string;
 }
 
 export class EconCalendarService {
@@ -77,8 +75,8 @@ export class EconCalendarService {
   }
 }
 
-// Notion Service
-export interface NotionTradeIdeaItem {
+// Data Service (Supabase-backed)
+export interface TradeIdeaItem {
   id: string;
   title: string;
   ticker: string;
@@ -93,30 +91,22 @@ export interface NotionTradeIdeaItem {
   timeframe?: string;
   sourceAgent?: string;
   hermesDescription?: string;
-  notionUrl: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface NotionPerformanceResponse {
+export interface PerformanceResponse {
   kpis: Array<{ label: string; value: string; meta: string }>;
   count: number;
   fetchedAt: string;
 }
 
-export interface NotionPollStatus {
-  running: boolean;
-  lastPollAt: string | null;
-  pollCount: number;
-  tradeIdeaCount: number;
-}
-
-export class NotionService {
+export class DataService {
   constructor(private client: ApiClient) {}
 
-  async getTradeIdeas(): Promise<NotionTradeIdeaItem[]> {
+  async getTradeIdeas(): Promise<TradeIdeaItem[]> {
     try {
-      const res = await this.client.get<{ tradeIdeas: NotionTradeIdeaItem[] }>(
+      const res = await this.client.get<{ tradeIdeas: TradeIdeaItem[] }>(
         "/api/data/trade-ideas",
       );
       return res.tradeIdeas ?? [];
@@ -125,24 +115,14 @@ export class NotionService {
     }
   }
 
-  async getPerformance(): Promise<NotionPerformanceResponse> {
+  async getPerformance(): Promise<PerformanceResponse> {
     try {
-      return await this.client.get<NotionPerformanceResponse>(
+      return await this.client.get<PerformanceResponse>(
         "/api/data/performance",
       );
     } catch {
       return { kpis: [], count: 0, fetchedAt: new Date().toISOString() };
     }
-  }
-
-  /** @deprecated Notion poller removed — Supabase is now the source of truth */
-  async getPollStatus(): Promise<NotionPollStatus> {
-    return {
-      running: true,
-      lastPollAt: new Date().toISOString(),
-      pollCount: 0,
-      tradeIdeaCount: 0,
-    };
   }
 
   async getMdbBrief(): Promise<{
@@ -191,14 +171,12 @@ export class NotionService {
     content: string;
     briefType: string;
     generatedAt: string;
-    notionUrl?: string | null;
   }> {
     try {
       return await this.client.post<{
         content: string;
         briefType: string;
         generatedAt: string;
-        notionUrl?: string | null;
       }>("/api/data/brief/generate", {});
     } catch {
       return {

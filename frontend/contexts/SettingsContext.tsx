@@ -265,7 +265,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [iframeUrls, setIframeUrls] = useState<IframeUrls>(() =>
     loadFromStorage("iframeUrls", {
       boardroom: "",
-      research: "https://www.notion.so/2db141b0da7d80efa647ee7f6d5153f5",
+      research: "",
     }),
   );
   const [gatewayPort, setGatewayPort] = useState<number>(() =>

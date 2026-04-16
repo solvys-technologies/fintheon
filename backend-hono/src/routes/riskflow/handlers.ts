@@ -50,7 +50,7 @@ import {
   getInstrumentSentiment,
   INSTRUMENT_BETAS,
   type StackedEvent,
-} from "../../services/iv-scoring-v2.js";
+} from "../../services/iv-scoring/index.js";
 import { estimatePoints } from "../../services/market-data/point-estimator.js";
 import { generateNoteForItem } from "../../services/riskflow/agent-notes.js";
 import { getSupabaseClient } from "../../config/supabase.js";
@@ -1077,7 +1077,7 @@ export async function handleGetSources(c: Context) {
     : 0;
 
   return c.json({
-    notion: supabaseUp,
+    supabase: supabaseUp,
     rettiwt: rettiwtUp,
     rettiwtRateLimited: rateLimited,
     rettiwtCooldownSec: cooldownSec,

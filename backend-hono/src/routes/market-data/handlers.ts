@@ -20,7 +20,7 @@ import {
   subscribeToIVScoreUpdates,
   type IVScoreSnapshot,
 } from "../../services/market-data/iv-score-ticker.js";
-import type { StackedEvent } from "../../services/iv-scoring-v2.js";
+import type { StackedEvent } from "../../services/iv-scoring/index.js";
 
 interface AggregateEventSignal {
   macroLevel?: number;
@@ -204,33 +204,41 @@ export async function handleIVScore(c: Context) {
     }
 
     // Fallback: live computation with extended event window (7 days for V3 decay)
+    // [claude-code 2026-04-16] Rewired to scored_riskflow_items (live pipeline) from deprecated news_feed_items
     let events: StackedEvent[] = [];
     try {
-      const { sql, isDatabaseAvailable } =
-        await import("../../config/database.js");
-      if (isDatabaseAvailable() && sql) {
-        const recentItems = await sql`
-          SELECT headline, source, macro_level, risk_type, iv_score, published_at, is_breaking
-          FROM news_feed_items
-          WHERE published_at >= NOW() - INTERVAL '7 days'
-            AND macro_level >= 2
-          ORDER BY published_at DESC
-          LIMIT 200
-        `;
-        events = recentItems.map((item: any) => {
-          const parsed = {
-            raw: item.headline,
-            eventType: null,
-            isBreaking: item.is_breaking,
-          };
-          return {
-            eventType: classifyEventType(parsed as any),
-            baseScore: item.iv_score || 3,
-            timestamp: new Date(item.published_at),
-            macroLevel: item.macro_level ?? undefined,
-            riskType: item.risk_type ?? undefined,
-          };
-        });
+      const { getSupabaseClient } = await import("../../config/supabase.js");
+      const sb = getSupabaseClient();
+      if (sb) {
+        const cutoff = new Date(
+          Date.now() - 7 * 24 * 60 * 60 * 1000,
+        ).toISOString();
+        const { data: recentItems } = await sb
+          .from("scored_riskflow_items")
+          .select(
+            "headline, source, macro_level, risk_type, iv_score, published_at, is_breaking",
+          )
+          .gte("published_at", cutoff)
+          .gte("macro_level", 2)
+          .order("published_at", { ascending: false })
+          .limit(200);
+
+        if (recentItems) {
+          events = recentItems.map((item: any) => {
+            const parsed = {
+              raw: item.headline,
+              eventType: null,
+              isBreaking: item.is_breaking,
+            };
+            return {
+              eventType: classifyEventType(parsed as any),
+              baseScore: item.iv_score || 3,
+              timestamp: new Date(item.published_at),
+              macroLevel: item.macro_level ?? undefined,
+              riskType: item.risk_type ?? undefined,
+            };
+          });
+        }
       }
     } catch {
       // DB unavailable — proceed with VIX-only score

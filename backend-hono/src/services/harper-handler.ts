@@ -96,7 +96,7 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 ## Platform Sections
 - **Consilium** = Main workspace with tabs: Sanctum (narratives), Chat (you), Boardroom (team), Apparatus (tools)
 - **Sanctum** = NarrativeMap (force-directed canvas), Aquarium (MiroShark sim), Timeline
-- **Boardroom** = Forum (bulletin), Imperium (task command), Agentic Chatroom, Scriptorium (docs)
+- **Boardroom** = Forum (bulletin), Imperium (task command), Agentic Forum, Scriptorium (docs)
 - **Apparatus** = Desk (agent monitoring), Fileroom (context bank)
 - **Strategium** = Right panel: mission control widgets, RiskFlow feed, economic calendar
 - **RiskFlow** = Scored news feed with IV-weighted urgency, sentiment tags, regime multipliers

@@ -1,10 +1,15 @@
-// [claude-code 2026-04-16] T1: Relay expansion — full payload forwarding + tool-decision channel
+// [claude-code 2026-04-16] T6: Conversation persistence — store user message + create conversation before relay forward
 // The WebSocket server is initialized separately in boot (needs access to the raw HTTP server).
 // These Hono routes handle the HTTP endpoints only.
 
 import { Hono } from "hono";
 import { relayBridge } from "../services/relay-bridge.js";
 import { createLogger } from "../lib/logger.js";
+import {
+  createConversation,
+  addMessage,
+  generateTitle,
+} from "../services/ai/conversation-store.js";
 
 const log = createLogger("Relay");
 
@@ -53,6 +58,7 @@ export function createRelayRoutes() {
       riskFlowContext?: string;
       thinkHarder?: boolean;
       persona?: string;
+      traderName?: string;
     }>();
 
     if (!body.message?.trim()) {
@@ -62,13 +68,43 @@ export function createRelayRoutes() {
       );
     }
 
+    // Ensure conversation exists and persist user message before forwarding
+    let convId = body.conversationId || null;
+    try {
+      if (!convId) {
+        const conv = await createConversation(userId, {
+          title: generateTitle(body.message),
+        });
+        convId = conv.id;
+        log.info("Created conversation for relay chat", {
+          userId,
+          conversationId: convId,
+        });
+      }
+      await addMessage(convId, {
+        conversationId: convId,
+        role: "user",
+        content: body.message,
+      });
+    } catch (err) {
+      log.warn("Failed to persist user message", {
+        userId,
+        error: String(err),
+      });
+      // Continue — relay still works, just without persistence
+    }
+
     // Stream the relayed response as SSE
     const headers = new Headers({
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
       "X-Accel-Buffering": "no",
+      ...(convId ? { "X-Conversation-Id": convId } : {}),
     });
+
+    // Forward with resolved conversationId so local backend gets a real UUID
+    const relayPayload = { ...body, conversationId: convId, userId };
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -78,7 +114,7 @@ export function createRelayRoutes() {
         };
 
         try {
-          for await (const chunk of relayBridge.forward(userId, body)) {
+          for await (const chunk of relayBridge.forward(userId, relayPayload)) {
             send(chunk);
           }
           send("[DONE]");

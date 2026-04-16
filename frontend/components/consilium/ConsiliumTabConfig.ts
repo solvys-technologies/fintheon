@@ -68,14 +68,14 @@ export const BOARDROOM_SUB_VIEWS: {
   },
   {
     id: "agentic-chat",
-    label: "Agentic Chatroom",
+    label: "Agentic Forum",
     subtitle: "Chat with Hermes & CAO",
     icon: Cpu,
   },
   {
     id: "research",
     label: "Research",
-    subtitle: "Notion knowledge base",
+    subtitle: "Research knowledge base",
     icon: BookOpen,
   },
 ];

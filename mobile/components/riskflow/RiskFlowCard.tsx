@@ -1,6 +1,7 @@
-// [claude-code 2026-04-15] RiskFlow card — vertical fuse bar left, headline center, IV score right, no Kanban borders
+// [claude-code 2026-04-16] RiskFlow card — X-style: fuse bar left, source top-left, headline center, chevron+IV right
 import { useState } from "react";
-import { AnimatePresence } from "framer-motion";
+import { ChevronUp, ChevronDown, Minus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import { timeAgo } from "@frontend/lib/time-utils";
@@ -11,6 +12,7 @@ import { RiskFlowCardExpanded } from "./RiskFlowCardExpanded";
 interface RiskFlowCardProps {
   alert: MobileRiskFlowAlert;
   onDismiss: (id: string) => void;
+  index?: number;
 }
 
 const SEVERITY_COLORS: Record<AlertSeverity, string> = {
@@ -42,114 +44,153 @@ function formatSource(source: string): string {
   return map[source] || source.toUpperCase().slice(0, 6);
 }
 
-export function RiskFlowCard({ alert, onDismiss }: RiskFlowCardProps) {
+function DirectionChevron({
+  direction,
+  color,
+}: {
+  direction: string | null | undefined;
+  color: string;
+}) {
+  if (direction === "Bullish")
+    return <ChevronUp size={14} color="var(--fintheon-bullish)" />;
+  if (direction === "Bearish")
+    return <ChevronDown size={14} color="var(--fintheon-bearish)" />;
+  return <Minus size={12} color={color} />;
+}
+
+export function RiskFlowCard({
+  alert,
+  onDismiss,
+  index = 0,
+}: RiskFlowCardProps) {
   const [expanded, setExpanded] = useState(false);
   const severityColor = SEVERITY_COLORS[alert.severity];
   const ivScore = alert.ivScore ?? 0;
 
   return (
-    <SwipeAction onSwipeLeft={() => onDismiss(alert.id)}>
-      <div
-        onClick={() => setExpanded((v) => !v)}
-        style={{
-          background: "var(--surface)",
-          cursor: "pointer",
-          WebkitTapHighlightColor: "transparent",
-        }}
-      >
-        {/* Main card row: fuse | headline | IV score */}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, delay: index * 0.04, ease: "easeOut" }}
+    >
+      <SwipeAction onSwipeLeft={() => onDismiss(alert.id)}>
         <div
+          onClick={() => setExpanded((v) => !v)}
           style={{
-            display: "flex",
-            alignItems: "stretch",
-            padding: "10px 12px",
-            gap: 10,
-            minHeight: 56,
+            background: "var(--surface)",
+            cursor: "pointer",
+            WebkitTapHighlightColor: "transparent",
           }}
         >
-          {/* Left: Vertical fuse bar */}
-          <VerticalFuseBar value={ivScore} color={severityColor} />
-
-          {/* Center: Headline + metadata */}
           <div
             style={{
-              flex: 1,
-              minWidth: 0,
               display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              gap: 4,
+              alignItems: "stretch",
+              padding: "12px 14px",
+              gap: 10,
+              minHeight: 60,
             }}
           >
-            <h3
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 14,
-                color: "var(--text-primary)",
-                lineHeight: 1.4,
-                display: "-webkit-box",
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: "vertical" as const,
-                overflow: "hidden",
-                margin: 0,
-              }}
-            >
-              {alert.title}
-            </h3>
+            {/* Left: Vertical fuse bar */}
+            <VerticalFuseBar value={ivScore} color={severityColor} />
+
+            {/* Center: Source + Headline + Author */}
             <div
               style={{
-                fontFamily: "var(--font-data)",
-                fontSize: 11,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase" as const,
-                color: "var(--text-secondary)",
+                flex: 1,
+                minWidth: 0,
                 display: "flex",
-                alignItems: "center",
-                gap: 4,
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 3,
               }}
             >
-              <span>{formatSource(alert.source)}</span>
-              <span style={{ color: "var(--text-disabled)" }}>&bull;</span>
-              <span>{timeAgo(alert.publishedAt)}</span>
+              {/* Source + time */}
+              <div
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: 9,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--text-secondary)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <span>{formatSource(alert.source)}</span>
+                <span style={{ color: "var(--text-disabled)" }}>&middot;</span>
+                <span>{timeAgo(alert.publishedAt)}</span>
+              </div>
+
+              {/* Headline */}
+              <h3
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 14,
+                  color: "var(--text-primary)",
+                  lineHeight: 1.45,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical" as const,
+                  overflow: "hidden",
+                  margin: 0,
+                }}
+              >
+                {alert.title}
+              </h3>
+
+              {/* Author handle */}
               {alert.authorHandle && (
-                <>
-                  <span style={{ color: "var(--text-disabled)" }}>&bull;</span>
-                  <span style={{ color: "var(--text-disabled)" }}>
-                    @{alert.authorHandle}
-                  </span>
-                </>
+                <span
+                  style={{
+                    fontFamily: "var(--font-data)",
+                    fontSize: 10,
+                    color: "var(--text-disabled)",
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  @{alert.authorHandle}
+                </span>
               )}
+            </div>
+
+            {/* Right: Direction chevron + IV score, vertically centered */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                width: 32,
+                gap: 2,
+              }}
+            >
+              <DirectionChevron
+                direction={alert.direction}
+                color={severityColor}
+              />
+              <span
+                style={{
+                  fontFamily: "var(--font-data)",
+                  fontSize: 11,
+                  color: severityColor,
+                  fontVariantNumeric: "tabular-nums",
+                  lineHeight: 1,
+                }}
+              >
+                {ivScore.toFixed(1)}
+              </span>
             </div>
           </div>
 
-          {/* Right: IV score number */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              flexShrink: 0,
-              width: 36,
-              justifyContent: "flex-end",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "var(--font-data)",
-                fontSize: 11,
-                color: severityColor,
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {ivScore.toFixed(1)}
-            </span>
-          </div>
+          {/* Expanded content */}
+          <AnimatePresence>
+            {expanded && <RiskFlowCardExpanded alert={alert} />}
+          </AnimatePresence>
         </div>
-
-        {/* Expanded content */}
-        <AnimatePresence>
-          {expanded && <RiskFlowCardExpanded alert={alert} />}
-        </AnimatePresence>
-      </div>
-    </SwipeAction>
+      </SwipeAction>
+    </motion.div>
   );
 }

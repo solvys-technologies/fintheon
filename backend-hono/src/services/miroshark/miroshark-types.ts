@@ -250,7 +250,7 @@ export type SanctumPreset =
 
 export interface RiskFlowHeadline {
   id: string;
-  title: string;
+  headline: string;
   summary: string;
   macro_level: number;
   sentiment: string;

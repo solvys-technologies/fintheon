@@ -112,13 +112,10 @@ export function RiskFlowMain() {
   const highCount = alerts.filter((a) => a.severity === "high").length;
   const medCount = alerts.filter((a) => a.severity === "medium").length;
   const lowCount = alerts.filter((a) => a.severity === "low").length;
-  const proposalCount = alerts.filter(
-    (a) => a.source === "notion-trade-idea",
-  ).length;
+  const proposalCount = alerts.filter((a) => a.source === "trade-idea").length;
 
   const items = useMemo(() => {
-    if (showProposals)
-      return alerts.filter((a) => a.source === "notion-trade-idea");
+    if (showProposals) return alerts.filter((a) => a.source === "trade-idea");
     let base = [...alerts];
     if (priorityFilter === "critical")
       base = base.filter((a) => a.severity === "critical");

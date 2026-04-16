@@ -268,6 +268,35 @@ export async function rettiwtUserTimeline(
   }
 }
 
+/**
+ * Force-refresh the key pool: reload from DB, reset ALL cooldowns and failure counts.
+ * Called on app startup to ensure keys are fresh and not stuck in cooldown loops.
+ * [claude-code 2026-04-16]
+ */
+export async function forceRefreshPool(): Promise<{
+  totalKeys: number;
+  resetCount: number;
+}> {
+  // Reset cooldowns and failures on existing keys
+  let resetCount = 0;
+  for (const key of keyPool) {
+    if (key.cooldownUntil > 0 || key.failures > 0) {
+      key.cooldownUntil = 0;
+      key.failures = 0;
+      resetCount++;
+    }
+  }
+
+  // Force DB reload by clearing the debounce timer
+  lastKeyLoadMs = 0;
+  await loadKeysFromDB();
+
+  log.info(
+    `Force-refreshed Rettiwt pool: ${keyPool.length} keys, ${resetCount} cooldowns reset`,
+  );
+  return { totalKeys: keyPool.length, resetCount };
+}
+
 /** Get pool status for diagnostics */
 export function getPoolStatus(): {
   totalKeys: number;

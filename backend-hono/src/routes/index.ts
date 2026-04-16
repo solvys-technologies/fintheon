@@ -61,6 +61,7 @@ import { createDagRoutes } from "./dag/index.js";
 import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
 import { createWebPushRoutes } from "./web-push.js";
+import { createOracleRoutes } from "./oracle.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -77,12 +78,7 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/boardroom", createBoardroomRoutes());
   // Data routes — Supabase-backed (replaces Notion polling routes)
   app.route("/api/data", createDataRoutes());
-  // Legacy /api/notion/* aliases → redirect to /api/data/* for one sprint
-  app.all("/api/notion/*", (c) => {
-    const suffix = c.req.path.replace("/api/notion", "/api/data");
-    const query = c.req.url.includes("?") ? "?" + c.req.url.split("?")[1] : "";
-    return c.redirect(suffix + query, 301);
-  });
+
   // Regime tracker — public, returns active trading regimes (session-based time windows)
   app.route("/api/regimes", createRegimeRoutes());
   // Market regime engine — public, macro regime classification (CRUD + detect)
@@ -115,6 +111,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/predictions", predictionsRoutes);
   // Polymarket — read-only public market data, whale alerts, search (S15-T2)
   app.route("/api/polymarket", createPolymarketRoutes());
+  // Oracle — scheduled research findings, manual trigger (S20-T3)
+  app.route("/api/oracle", createOracleRoutes());
   // Relay — mobile↔local backend WebSocket bridge (auth required for chat/health, WS upgrade handled separately)
   app.use("/api/relay", authMiddleware);
   app.use("/api/relay/*", authMiddleware);

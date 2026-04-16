@@ -113,7 +113,9 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
         newsfeedPolling: {
           active:
             sourceStatus.backendReachable &&
-            (sourceStatus.notion || sourceStatus.rettiwt || sourceStatus.xApi),
+            (sourceStatus.supabase ||
+              sourceStatus.rettiwt ||
+              sourceStatus.xApi),
           lastUpdate: sourceStatus.lastPollSuccess,
         },
         backendConnection: sourceStatus.backendReachable,
@@ -126,7 +128,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
       caoOnline,
       sourceStatus.rettiwt,
       sourceStatus.rettiwtRateLimited,
-      sourceStatus.notion,
+      sourceStatus.supabase,
       sourceStatus.xApi,
       sourceStatus.backendReachable,
       sourceStatus.lastPollSuccess,

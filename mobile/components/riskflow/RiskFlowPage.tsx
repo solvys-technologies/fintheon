@@ -1,4 +1,4 @@
-// [claude-code 2026-04-15] RiskFlow page — zero-gap X-feed style, fade dividers, full-width filter strip
+// [claude-code 2026-04-16] RiskFlow page — Agent Reach removed, pull-to-refresh is the only manual refresh
 import { useMobileRiskFlow } from "../../contexts/RiskFlowContext";
 import { useRiskFlowInfiniteScroll } from "../../hooks/useRiskFlowInfiniteScroll";
 import { useRiskFlowFilters } from "../../hooks/useRiskFlowFilters";

@@ -1,5 +1,5 @@
 // [claude-code 2026-04-15] S18: Provider tree + header-menu nav + floating chat overlay
-import { useState, useRef, Suspense, lazy } from "react";
+import { useState, useRef, useEffect, Suspense, lazy } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -24,8 +24,8 @@ const SettingsPage = lazy(() =>
   })),
 );
 const EconCalendarPage = lazy(() =>
-  import("./components/econ/EconCalendarEmbed").then((m) => ({
-    default: m.EconCalendarEmbed,
+  import("./components/econ/EconCalendarPage").then((m) => ({
+    default: m.EconCalendarPage,
   })),
 );
 
@@ -117,6 +117,29 @@ function AuthenticatedApp() {
     setActiveTab(index);
   };
 
+  // Service worker notification tap routing
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type !== "notification-tap") return;
+      const { category } = event.data;
+
+      // Route to correct tab based on notification category
+      if (category === "riskflow") {
+        handleTabChange(1);
+      } else if (category === "chat" || category === "toolApprovals") {
+        handleTabChange(2);
+      } else if (category === "dailyBrief") {
+        handleTabChange(0);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener("message", handler);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", handler);
+  }, []);
+
   const direction = activeTab > prevTab.current ? 1 : -1;
 
   const renderPage = () => {
@@ -171,7 +194,14 @@ function AuthenticatedApp() {
               x: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
               opacity: { duration: 0.2, ease: "easeOut" },
             }}
-            style={{ width: "100%", height: "100%", flex: 1 }}
+            style={{
+              width: "100%",
+              height: "100%",
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+            }}
           >
             {renderPage()}
           </motion.div>

@@ -1,7 +1,7 @@
-// [claude-code 2026-04-15] T3: Mobile StickyBulletin data hook — fetch notes + antilag times
+// [claude-code 2026-04-16] Rewrite: direct fetch() bypassing ApiClient
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { getMobileBackend } from "../lib/backend";
+
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 interface AntilagEntry {
   time: string;
@@ -20,7 +20,6 @@ interface StickyBulletinState {
 }
 
 export function useMobileStickyBulletin(): StickyBulletinState {
-  const { getAccessToken } = useAuth();
   const [tradingNotes, setTradingNotes] = useState("");
   const [eventOfWeek, setEventOfWeek] = useState("");
   const [antilagTimes, setAntilagTimes] = useState<AntilagEntry[]>([]);
@@ -28,17 +27,19 @@ export function useMobileStickyBulletin(): StickyBulletinState {
 
   const fetchData = useCallback(async () => {
     try {
-      const backend = getMobileBackend(getAccessToken);
-      const res = await backend.stickyBulletin.get();
-      setTradingNotes(res.data.tradingNotes || "");
-      setEventOfWeek(res.data.eventOfWeek || "");
-      setAntilagTimes(res.data.antilagTimes || []);
+      const res = await fetch(`${API_BASE}/api/sticky-bulletin`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const d = json.data ?? json;
+      setTradingNotes(d.tradingNotes || "");
+      setEventOfWeek(d.eventOfWeek || "");
+      setAntilagTimes(d.antilagTimes || []);
     } catch (err) {
       console.error("[StickyBulletin] fetch failed:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [getAccessToken]);
+  }, []);
 
   useEffect(() => {
     fetchData();

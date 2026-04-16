@@ -28,7 +28,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     const load = async () => {
       try {
-        const data = await backend.notion.getSchedule();
+        const data = await backend.data.getSchedule();
         if (!cancelled) setItems(data as ExecutiveScheduleItem[]);
       } catch (err) {
         console.warn("[ScheduleContext] fetch failed:", err);

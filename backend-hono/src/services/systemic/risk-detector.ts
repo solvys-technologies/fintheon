@@ -25,7 +25,7 @@ import {
   generateContagionAlert,
   injectSystemicAlert,
 } from "./alert-generator.js";
-import { getVolatilityProfile } from "../iv-scoring-v2.js";
+import { getVolatilityProfile } from "../iv-scoring/index.js";
 
 // ── Headline Signal Tracking ───────────────────────────────────────────────────
 

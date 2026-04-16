@@ -1,20 +1,18 @@
-// [claude-code 2026-04-15] T6: Session list bottom sheet — chat session history, new session button
+// [claude-code 2026-04-16] T6: Session list — removed dead ChatSession type, added messageCount badge
+// [claude-code 2026-04-16] T4 unification: API-backed sessions via useConversations, load full conversation on select
 
 import { motion, AnimatePresence } from "framer-motion";
-
-export interface ChatSession {
-  id: string;
-  title: string;
-  timestamp: string;
-}
+import type { ConversationSummary } from "../../hooks/useConversations";
 
 interface SessionListProps {
   open: boolean;
   onClose: () => void;
-  sessions: ChatSession[];
+  sessions: ConversationSummary[];
+  isLoading?: boolean;
   activeSessionId: string | null;
   onSelect: (id: string) => void;
   onNewSession: () => void;
+  onRefresh?: () => void;
 }
 
 const formatDate = (iso: string) => {
@@ -30,9 +28,11 @@ export default function SessionList({
   open,
   onClose,
   sessions,
+  isLoading,
   activeSessionId,
   onSelect,
   onNewSession,
+  onRefresh,
 }: SessionListProps) {
   return (
     <AnimatePresence>
@@ -113,6 +113,27 @@ export default function SessionList({
 
             {/* Session rows */}
             <div style={{ flex: 1, overflowY: "auto" }}>
+              {isLoading && sessions.length === 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    padding: "20px 0",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: 11,
+                      color: "var(--text-disabled)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    [LOADING...]
+                  </span>
+                </div>
+              )}
               {sessions.map((s) => {
                 const isActive = s.id === activeSessionId;
                 return (
@@ -151,14 +172,38 @@ export default function SessionList({
                     </span>
                     <span
                       style={{
-                        fontFamily: "'Space Mono', monospace",
-                        fontSize: 11,
-                        color: "var(--text-secondary)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
                         flexShrink: 0,
                         marginLeft: 12,
                       }}
                     >
-                      {formatDate(s.timestamp)}
+                      {s.messageCount > 0 && (
+                        <span
+                          style={{
+                            fontFamily: "'Space Mono', monospace",
+                            fontSize: 9,
+                            color: "var(--text-disabled)",
+                            background: "var(--border)",
+                            borderRadius: 4,
+                            padding: "1px 5px",
+                          }}
+                        >
+                          {s.messageCount}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          fontFamily: "'Space Mono', monospace",
+                          fontSize: 11,
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        {formatDate(
+                          s.lastMessageAt || s.updatedAt || s.createdAt,
+                        )}
+                      </span>
                     </span>
                   </button>
                 );

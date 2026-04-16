@@ -29,6 +29,7 @@ export interface UseConversationsReturn {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   loadSession: (id: string) => Promise<ConversationDetail | null>;
+  archiveSession: (id: string) => Promise<boolean>;
   refresh: () => Promise<void>;
 }
 
@@ -90,6 +91,22 @@ export function useConversations(): UseConversationsReturn {
     [allSessions],
   );
 
+  const archiveSession = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        const backend = getMobileBackend(getAccessToken);
+        await backend.ai.archiveConversation(id);
+        // Remove from local state immediately
+        setAllSessions((prev) => prev.filter((s) => s.id !== id));
+        setSessions((prev) => prev.filter((s) => s.id !== id));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [getAccessToken],
+  );
+
   const loadSession = useCallback(
     async (id: string): Promise<ConversationDetail | null> => {
       try {
@@ -119,6 +136,7 @@ export function useConversations(): UseConversationsReturn {
     searchQuery,
     setSearchQuery: handleSearchQuery,
     loadSession,
+    archiveSession,
     refresh: fetchRecent,
   };
 }

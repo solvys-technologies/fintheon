@@ -244,10 +244,7 @@ export function IframesTab({
               onChange={(e) =>
                 setIframeUrls({ ...iframeUrls, boardroom: e.target.value })
               }
-              placeholder={
-                import.meta.env.VITE_NOTION_BOARDROOM_URL ||
-                "https://www.notion.so/your-boardroom-page"
-              }
+              placeholder="https://your-boardroom-url"
               className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30 placeholder:text-zinc-600"
             />
             <div className="flex items-center justify-between mt-1">
@@ -279,10 +276,7 @@ export function IframesTab({
               onChange={(e) =>
                 setIframeUrls({ ...iframeUrls, research: e.target.value })
               }
-              placeholder={
-                import.meta.env.VITE_NOTION_RESEARCH_URL ||
-                "https://www.notion.so/your-research-page"
-              }
+              placeholder="https://your-research-url"
               className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30 placeholder:text-zinc-600"
             />
             <div className="flex items-center justify-between mt-1">

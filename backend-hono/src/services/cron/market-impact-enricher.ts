@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] Added MARKET_IMPACT_VIA_ROUTINE env flag — disables backend enricher when Routine active
 // [claude-code 2026-03-28] Market impact enricher — nightly cron enriches HIGH/CRITICAL scored items with NQ/ES/YM daily close
 
 import { fetchDailyClose } from "../market-data/daily-close-service.js";
@@ -123,6 +124,13 @@ let enricherTimer: ReturnType<typeof setInterval> | null = null;
 const INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function startMarketImpactEnricher(): void {
+  if (process.env.MARKET_IMPACT_VIA_ROUTINE === "true") {
+    log.info(
+      "Market impact enricher handled by Claude Code Routine (MARKET_IMPACT_VIA_ROUTINE=true) — backend enricher disabled",
+    );
+    return;
+  }
+
   log.info("Starting market impact enricher (24h interval)");
 
   // Run once on boot

@@ -1,12 +1,20 @@
-// [claude-code 2026-04-16] Dash — scroll-lock snap pages with TradingView calendar embed
+// [claude-code 2026-04-16] T7: Dash — snap pages + NarrativeFlow catalysts + timeline
+import { lazy, Suspense } from "react";
 import { motion, type Variants } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { BriefingCard } from "./BriefingCard";
-import { EconCalendarEmbed } from "../econ/EconCalendarEmbed";
 import { AquariumSummary } from "./AquariumSummary";
 import { InstrumentOutlookCards } from "./InstrumentOutlookCards";
 import { AgentTradeCards } from "./AgentTradeCards";
+import { CatalystCards } from "./CatalystCards";
+import { TimelineView } from "./TimelineView";
 import { useIVScore } from "../../hooks/useIVScore";
+
+const EconCalendarEmbed = lazy(() =>
+  import("../econ/EconCalendarEmbed").then((m) => ({
+    default: m.EconCalendarEmbed,
+  })),
+);
 
 const container: Variants = {
   animate: { transition: { staggerChildren: 0.05 } },
@@ -25,6 +33,85 @@ function getScoreColor(score: number): string {
   if (score >= 6) return "var(--warning)";
   if (score >= 4) return "var(--accent)";
   return "var(--success)";
+}
+
+/** IV sub-score horizontal fuse bars */
+function IVSubScores({
+  vix,
+  headlines,
+  miroshark,
+}: {
+  vix: number;
+  headlines: number;
+  miroshark: number;
+}) {
+  const bars = [
+    { label: "VIX", value: vix },
+    { label: "HEADLINE", value: headlines },
+    { label: "AGENTIC DESK", value: miroshark },
+  ];
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 12,
+        padding: "8px 0 4px",
+      }}
+    >
+      {bars.map(({ label, value }) => (
+        <div key={label} style={{ flex: 1 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: 3,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 8,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--text-secondary)",
+              }}
+            >
+              {label}
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 8,
+                color: getScoreColor(value),
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {value.toFixed(1)}
+            </span>
+          </div>
+          <div
+            style={{
+              height: 3,
+              borderRadius: 1,
+              background: "var(--border)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${Math.min(100, (value / 10) * 100)}%`,
+                background: getScoreColor(value),
+                borderRadius: 1,
+                transition: "width 0.4s ease-out",
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 /** Shared page wrapper — enforces scroll-snap alignment */
@@ -52,7 +139,12 @@ function SnapPage({
 }
 
 export function HomePage() {
-  const { score, scaledPoints, isLoading: ivLoading } = useIVScore();
+  const {
+    data: ivData,
+    score,
+    scaledPoints,
+    isLoading: ivLoading,
+  } = useIVScore();
 
   return (
     <div
@@ -148,7 +240,7 @@ export function HomePage() {
                   alignItems: "center",
                 }}
               >
-                <VixBadge />
+                <VixBadge variant="hero" />
               </div>
 
               {/* Right: Implied Points */}
@@ -170,7 +262,10 @@ export function HomePage() {
                     color: "var(--text-secondary)",
                   }}
                 >
-                  IMPLIED
+                  IMPLIED{" "}
+                  <span style={{ color: "var(--accent)", fontWeight: 600 }}>
+                    {ivData?.instrument?.replace("/", "") || ""}
+                  </span>
                 </span>
                 <span
                   style={{
@@ -198,6 +293,15 @@ export function HomePage() {
               </div>
             </div>
             <div className="fade-divider" />
+
+            {/* IV Sub-Score Fuses */}
+            {ivData && !ivLoading && (
+              <IVSubScores
+                vix={ivData.vixComponent ?? 0}
+                headlines={ivData.headlineComponent ?? 0}
+                miroshark={ivData.mirosharkComponent ?? 0}
+              />
+            )}
           </motion.div>
 
           {/* Briefing */}
@@ -218,9 +322,11 @@ export function HomePage() {
             zIndex: 1,
           }}
         >
-          {/* TradingView Economic Calendar — fills available space */}
+          {/* TradingView Economic Calendar — lazy-loaded, fills available space */}
           <div style={{ flex: 1, minHeight: "50%" }}>
-            <EconCalendarEmbed />
+            <Suspense fallback={null}>
+              <EconCalendarEmbed />
+            </Suspense>
           </div>
           <div className="fade-divider" style={{ margin: "0 16px" }} />
           {/* Aquarium Analysis */}
@@ -251,12 +357,44 @@ export function HomePage() {
           style={{
             flex: 1,
             paddingTop: 24,
-            paddingBottom: 64,
+            paddingBottom: 24,
             position: "relative",
             zIndex: 1,
           }}
         >
           <AgentTradeCards />
+        </div>
+      </SnapPage>
+
+      {/* Page 5: NarrativeFlow Catalysts */}
+      <SnapPage>
+        <div
+          style={{
+            flex: 1,
+            paddingTop: 24,
+            paddingBottom: 24,
+            overflowY: "auto",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          <CatalystCards />
+        </div>
+      </SnapPage>
+
+      {/* Page 6: Timeline */}
+      <SnapPage>
+        <div
+          style={{
+            flex: 1,
+            paddingTop: 24,
+            paddingBottom: 64,
+            overflowY: "auto",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          <TimelineView />
         </div>
       </SnapPage>
     </div>

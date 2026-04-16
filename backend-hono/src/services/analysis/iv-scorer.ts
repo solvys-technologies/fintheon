@@ -15,7 +15,10 @@ import type {
 import type { SubScoreBreakdown } from "../../types/riskflow.js";
 import type { VIXData } from "../vix-service.js";
 import { hasLevel4Emoji, MAJOR_MACRO_PRINTS } from "../headline-parser.js";
-import { INSTRUMENT_BETAS, continuousVIXMultiplier } from "../iv-scoring-v2.js";
+import {
+  INSTRUMENT_BETAS,
+  continuousVIXMultiplier,
+} from "../iv-scoring/index.js";
 import {
   getCurrentRegime,
   getRegimeMultipliers,

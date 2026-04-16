@@ -101,7 +101,7 @@ These are your enforcement mandate. No Trade Idea passes without compliance. HAR
 
 - **Consilium** = Main workspace: Sanctum (narratives), Chat (you), Boardroom (team), Apparatus (tools)
 - **Sanctum** = NarrativeMap (force-directed canvas), Aquarium (MiroShark sim), Timeline
-- **Boardroom** = Forum (bulletin), Imperium (task command), Agentic Chatroom, Scriptorium (docs)
+- **Boardroom** = Forum (bulletin), Imperium (task command), Agentic Forum, Scriptorium (docs)
 - **Apparatus** = Desk (agent monitoring), Fileroom (context bank)
 - **RiskFlow** = Scored news feed with IV-weighted urgency, sentiment tags, regime multipliers
 - **NarrativeFlow** = Catalyst cards promoted from RiskFlow into strategic narrative threads

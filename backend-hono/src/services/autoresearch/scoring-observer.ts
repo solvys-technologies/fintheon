@@ -7,8 +7,8 @@ import {
   updateObservationOutcome,
 } from "./observation-store.js";
 import { resolveOutcome } from "./price-resolver.js";
-import { getCurrentSession } from "../iv-scoring-v2.js";
-import { calculateImpliedPoints } from "../iv-scoring-v2.js";
+import { getCurrentSession } from "../iv-scoring/index.js";
+import { calculateImpliedPoints } from "../iv-scoring/index.js";
 
 /** Default delay before checking outcome (minutes) */
 const DEFAULT_OUTCOME_DELAY = 30;

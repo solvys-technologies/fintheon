@@ -32,7 +32,7 @@ export const PLATFORM_URLS: Record<TradingPlatform, string> = {
   "topstep-dashboard": "https://dashboard.topstep.com",
   mmt: "https://app.mmt.gg",
   kalshi: "https://kalshi.com/category/economics",
-  research: import.meta.env.VITE_NOTION_RESEARCH_URL || "https://www.notion.so",
+  research: import.meta.env.VITE_RESEARCH_URL || "",
   tradesea: "https://app.tradesea.ai/trade",
   tradovate: "https://trader.tradovate.com",
   tradelocker: "https://app.tradelocker.com",

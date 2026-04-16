@@ -40,7 +40,7 @@ import { useBackend } from "../lib/backend";
 
 import { SEVERITY_CONFIG } from "../lib/severity-config";
 import { ivHeatColor } from "../types/miroshark";
-import { SourceIcon, NotionLogo } from "../lib/shared-icons";
+import { SourceIcon } from "../lib/shared-icons";
 
 // ── Cyclical Badge ───────────────────────────────────────────────────────────
 
@@ -214,7 +214,7 @@ function TradeIdeaRow({
             ) : isShort ? (
               <TrendingDown className="w-3 h-3 text-zinc-400" />
             ) : (
-              <NotionLogo className="w-3 h-3 text-[var(--fintheon-accent)]" />
+              <Diff className="w-3 h-3 text-[var(--fintheon-accent)]" />
             )}
           </span>
           <div className="flex-1 min-w-0">
@@ -227,7 +227,10 @@ function TradeIdeaRow({
               </p>
             )}
             <div className="flex items-center gap-2 mt-1">
-              <NotionLogo className="w-2.5 h-2.5 text-zinc-600" />
+              <SourceIcon
+                source={alert.source}
+                className="w-2.5 h-2.5 text-zinc-600"
+              />
               <span className="text-[10px] text-zinc-600">
                 {timeAgo(alert.publishedAt)}
               </span>
@@ -691,14 +694,13 @@ export default function RiskFlowMini({
     [backend],
   );
 
-  /** Extract Notion page ID from the alert ID (format: notion-ti-{pageId}) */
-  const getNotionPageId = (alertId: string) =>
-    alertId.replace("notion-ti-", "");
+  /** Extract trade idea page ID from the alert ID (format: ti-{pageId}) */
+  const getTradeIdeaPageId = (alertId: string) => alertId.replace("ti-", "");
 
   const handleApprove = useCallback(
     async (alert: RiskFlowAlert) => {
-      const pageId = getNotionPageId(alert.id);
-      const ok = await backend.notion.updateTradeIdeaStatus(pageId, "Approved");
+      const pageId = getTradeIdeaPageId(alert.id);
+      const ok = await backend.data.updateTradeIdeaStatus(pageId, "Approved");
       if (ok) removeAlert(alert.id);
     },
     [backend, removeAlert],
@@ -706,8 +708,8 @@ export default function RiskFlowMini({
 
   const handleDeny = useCallback(
     async (alert: RiskFlowAlert) => {
-      const pageId = getNotionPageId(alert.id);
-      const ok = await backend.notion.updateTradeIdeaStatus(pageId, "Denied");
+      const pageId = getTradeIdeaPageId(alert.id);
+      const ok = await backend.data.updateTradeIdeaStatus(pageId, "Denied");
       if (ok) removeAlert(alert.id);
     },
     [backend, removeAlert],
@@ -733,9 +735,7 @@ export default function RiskFlowMini({
     [removeAlert, addToast],
   );
 
-  const ideaCount = alerts.filter(
-    (a) => a.source === "notion-trade-idea",
-  ).length;
+  const ideaCount = alerts.filter((a) => a.source === "trade-idea").length;
 
   const filtered = filterAlerts(alerts);
 
@@ -896,7 +896,7 @@ export default function RiskFlowMini({
               </div>
             ) : (
               filtered.map((alert) =>
-                alert.source === "notion-trade-idea" && alert.tradeIdea ? (
+                alert.source === "trade-idea" && alert.tradeIdea ? (
                   <TradeIdeaRow
                     key={alert.id}
                     alert={alert}

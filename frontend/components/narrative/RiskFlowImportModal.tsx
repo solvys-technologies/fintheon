@@ -98,7 +98,7 @@ export function RiskFlowImportModal({
     setLoading(true);
     setError("");
     try {
-      const res = await baseBackend.notion.getMdbBrief();
+      const res = await baseBackend.data.getMdbBrief();
       const briefText = res.items
         .map((i) => `${i.title}: ${i.detail}`)
         .join("\n\n");

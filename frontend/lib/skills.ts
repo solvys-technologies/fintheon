@@ -39,7 +39,7 @@ export const SKILLS: readonly SkillDef[] = [
     color: "#F59E0B",
     description: "Risk validation against narratives, memos, and live news",
     keywords: ["validate", "risk", "check", "verify", "herald"],
-    mcpServers: ["exa", "notion"],
+    mcpServers: ["exa"],
   },
   {
     id: "report",
@@ -57,7 +57,7 @@ export const SKILLS: readonly SkillDef[] = [
     color: "#34D399",
     description: "Start a new narrative thread",
     keywords: ["track", "narrative", "thread", "thesis"],
-    mcpServers: ["notion"],
+    mcpServers: [],
   },
   {
     id: "psych_assist",

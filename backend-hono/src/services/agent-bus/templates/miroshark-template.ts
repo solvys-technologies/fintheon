@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] S20-T2: Differentiated context feeding — per-agent subject-filtered headlines
 // [claude-code 2026-04-10] S8-T3: MiroShark DAG template — 3-wave deliberation pipeline
 // Wave 0: 4 analyst tasks (parallel) → Wave 1: 4 deliberation tasks → Wave 2: Harper synthesis
 
@@ -15,6 +16,11 @@ import type {
   MiroSharkCategoryScore,
   MiroSharkRiskCategory,
 } from "../../miroshark/miroshark-types.js";
+import { fetchFilteredHeadlines } from "../../miroshark/miroshark-context.js";
+import { buildMemoryBlock } from "../../agent-memory/memory-injector.js";
+import type { AgentId } from "../../agent-memory/types.js";
+import { getLatestBrief } from "../../context-bank/context-bank-service.js";
+import { getSupabaseClient } from "../../../config/supabase.js";
 
 // ── Input types for the DAG template ────────────────────────────────────────
 
@@ -27,17 +33,8 @@ export interface NarrativeLane {
   category?: string;
 }
 
-export interface CatalystCard {
-  id: string;
-  headline: string;
-  /** 0-10 severity / impact score */
-  severity: number;
-  body?: string;
-}
-
 export interface MiroSharkParams {
   lanes: NarrativeLane[];
-  catalysts: CatalystCard[];
   userInjection?: string;
   conversationId?: string;
   userId?: string;
@@ -57,7 +54,7 @@ export type MiroSharkResult = DeliberationState;
 
 // ── Agent metadata ────────────────────────────────────────────────────────────
 
-const ANALYST_META: Record<
+export const ANALYST_META: Record<
   string,
   {
     agentId: HermesAgentId;
@@ -72,38 +69,87 @@ const ANALYST_META: Record<
     name: "Oracle",
     title: "Macro Oracle & Prediction Markets",
     role: "macro-strategist",
-    subjects: ["macro", "monetary-policy", "prediction-markets", "regime"],
+    // DB tags: subj:macro, subj:geopolitical (geopolitical = macro catalyst)
+    subjects: ["macro", "geopolitical"],
   },
   feucht: {
     agentId: "feucht",
     name: "Feucht",
     title: "Futures Execution Desk",
     role: "flow-analyst",
-    subjects: ["futures", "flow", "vol-surface", "positioning"],
+    // DB tags: subj:vol, subj:structure (vol-surface + market microstructure)
+    subjects: ["vol", "structure"],
   },
   consul: {
     agentId: "consul",
     name: "Consul",
     title: "Fundamentals & Credit Desk",
     role: "fundamentals",
-    subjects: ["earnings", "credit", "valuations", "fundamentals"],
+    // DB tags: subj:earnings, subj:credit
+    subjects: ["earnings", "credit"],
   },
   herald: {
     agentId: "herald",
     name: "Herald",
     title: "News Sentiment & Social Signals",
     role: "sentiment-analyst",
-    subjects: ["sentiment", "news-flow", "social", "market-structure"],
+    // DB tags: subj:sentiment, subj:geopolitical (breaking news = geopolitical overlap)
+    subjects: ["sentiment", "geopolitical"],
   },
 };
 
 const WAVE0_AGENTS: HermesAgentId[] = ["oracle", "feucht", "consul", "herald"];
 
+// ── Feucht-specific context: latest brief + highest IV conflicts ────────────
+// [claude-code 2026-04-16] Feucht responds from briefings + top market-moving conflicts
+
+async function buildFeuchtContext(): Promise<string> {
+  const parts: string[] = [];
+
+  // Latest brief from context bank (Harper's synthesis)
+  const brief = getLatestBrief();
+  if (brief) {
+    const summary = brief.topAlerts
+      .slice(0, 5)
+      .map((a) => `  - [${a.severity}] ${a.title}`)
+      .join("\n");
+    const exec = brief.executiveSummary
+      ? `\n  Executive: ${brief.executiveSummary.slice(0, 300)}`
+      : "";
+    parts.push(
+      `## Latest Harper Brief${exec}\n### Top Alerts\n${summary || "  (no alerts)"}`,
+    );
+  }
+
+  // Highest IV-scoring items in last 48h — the most market-moving conflicts
+  const sb = getSupabaseClient();
+  if (sb) {
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const { data } = await sb
+      .from("scored_riskflow_items")
+      .select("headline, iv_score, sentiment, macro_level, category")
+      .gte("created_at", cutoff)
+      .gte("iv_score", 5)
+      .order("iv_score", { ascending: false })
+      .limit(8);
+
+    if (data?.length) {
+      const lines = data.map(
+        (r: Record<string, unknown>) =>
+          `  - [IV ${r.iv_score}] ${r.headline} (${r.sentiment ?? "neutral"}, ${r.category ?? "unknown"})`,
+      );
+      parts.push(`## Highest IV Conflicts (48h)\n${lines.join("\n")}`);
+    }
+  }
+
+  return parts.length > 0 ? parts.join("\n\n") : "";
+}
+
 // ── Prompt builders ──────────────────────────────────────────────────────────
 
 function buildNarrativeContext(
   lanes: NarrativeLane[],
-  catalysts: CatalystCard[],
+  headlines: string[],
 ): string {
   const laneText = lanes
     .map(
@@ -112,26 +158,33 @@ function buildNarrativeContext(
     )
     .join("\n");
 
-  const catalystText = catalysts
-    .map(
-      (c) =>
-        `  - [severity ${c.severity}] ${c.headline}${c.body ? `: ${c.body}` : ""}`,
-    )
-    .join("\n");
+  const headlineText =
+    headlines.length > 0
+      ? headlines.join("\n")
+      : "  (no headlines routed to this desk)";
 
-  return `## Narrative Lanes\n${laneText || "  (none provided)"}\n\n## Market Catalysts\n${catalystText || "  (none provided)"}`;
+  return `## Narrative Lanes\n${laneText || "  (none provided)"}\n\n## Headlines Routed to Your Desk\n${headlineText}`;
 }
 
-function buildAnalystPrompt(
+async function buildAnalystPrompt(
   agentKey: string,
   lanes: NarrativeLane[],
-  catalysts: CatalystCard[],
   userInjection?: string,
-): string {
+): Promise<string> {
   const meta = ANALYST_META[agentKey];
-  const ctx = buildNarrativeContext(lanes, catalysts);
+  const headlines = await fetchFilteredHeadlines(meta.subjects, meta.name);
+  const ctx = buildNarrativeContext(lanes, headlines);
+  const memoryBlock = await buildMemoryBlock(meta.agentId as AgentId).catch(
+    () => "",
+  );
+
+  // Feucht gets enriched context: Harper's brief + highest IV conflicts
+  const feuchtBlock =
+    agentKey === "feucht" ? await buildFeuchtContext().catch(() => "") : "";
 
   return `You are ${meta.name}, ${meta.title}. Your analytical focus: ${meta.subjects.join(", ")}.
+${memoryBlock}
+${feuchtBlock}
 
 ${ctx}
 ${userInjection ? `\n## Additional Context from User\n${userInjection}\n` : ""}
@@ -159,16 +212,20 @@ Respond with ONLY valid JSON, no markdown fences:
     { "category": "market-structure", "ivScore": <0-10>, "confidence": <0-1>, "delta": <-5 to 5> },
     { "category": "black-swan", "ivScore": <0-10>, "confidence": <0-1>, "delta": <-5 to 5> }
   ],
-  "headlineCount": ${catalysts.length}
+  "headlineCount": ${headlines.length}
 }`;
 }
 
-function buildGovPrompt(
+async function buildGovPrompt(
   lanes: NarrativeLane[],
-  catalysts: CatalystCard[],
   userInjection?: string,
-): string {
-  const ctx = buildNarrativeContext(lanes, catalysts);
+): Promise<string> {
+  const govSubjects = ["geopolitical", "regulatory", "policy"];
+  const headlines = await fetchFilteredHeadlines(
+    govSubjects,
+    "Gov Policy Analyst",
+  );
+  const ctx = buildNarrativeContext(lanes, headlines);
   const geoPoliticalLanes = lanes
     .filter((l) => l.category === "geopolitical" || l.category === "political")
     .map((l) => l.name)
@@ -203,20 +260,24 @@ Respond with ONLY valid JSON:
     { "category": "market-structure", "ivScore": <0-10>, "confidence": <0-1>, "delta": <-5 to 5> },
     { "category": "black-swan", "ivScore": <0-10>, "confidence": <0-1>, "delta": <-5 to 5> }
   ],
-  "headlineCount": ${catalysts.length}
+  "headlineCount": ${headlines.length}
 }`;
 }
 
-function buildDeliberationPrompt(
+async function buildDeliberationPrompt(
   agentKey: string,
   lanes: NarrativeLane[],
-  catalysts: CatalystCard[],
   userInjection?: string,
-): string {
+): Promise<string> {
   const meta = ANALYST_META[agentKey];
-  const ctx = buildNarrativeContext(lanes, catalysts);
+  const headlines = await fetchFilteredHeadlines(meta.subjects, meta.name);
+  const ctx = buildNarrativeContext(lanes, headlines);
+  const memoryBlock = await buildMemoryBlock(meta.agentId as AgentId).catch(
+    () => "",
+  );
 
   return `You are ${meta.name}, ${meta.title}. Your perspective: ${meta.subjects.join(", ")}.
+${memoryBlock}
 
 ${ctx}
 ${userInjection ? `\n## User Injection\n${userInjection}\n` : ""}
@@ -237,15 +298,19 @@ Respond with ONLY valid JSON:
 }`;
 }
 
-function buildHarperPrompt(
+async function buildHarperPrompt(
   lanes: NarrativeLane[],
-  catalysts: CatalystCard[],
   userInjection?: string,
-): string {
-  const ctx = buildNarrativeContext(lanes, catalysts);
+): Promise<string> {
+  // Harper gets a broad view — fetch with all subjects combined
+  const allSubjects = Object.values(ANALYST_META).flatMap((m) => m.subjects);
+  const uniqueSubjects = [...new Set(allSubjects)];
+  const headlines = await fetchFilteredHeadlines(uniqueSubjects, "Harper");
+  const ctx = buildNarrativeContext(lanes, headlines);
+  const memoryBlock = await buildMemoryBlock("harper").catch(() => "");
 
   return `You are Harper, Chief Agentic Officer of Priced In Capital.
-
+${memoryBlock}
 ${ctx}
 ${userInjection ? `\n## User Injection\n${userInjection}\n` : ""}
 ## Your Task
@@ -282,21 +347,29 @@ export function shouldIncludeGovPhase(lanes: NarrativeLane[]): boolean {
 
 // ── createMiroSharkDAG ───────────────────────────────────────────────────────
 
-export function createMiroSharkDAG(params: MiroSharkParams): DAGDefinition {
-  const { lanes, catalysts, userInjection, conversationId, userId } = params;
+export async function createMiroSharkDAG(
+  params: MiroSharkParams,
+): Promise<DAGDefinition> {
+  const { lanes, userInjection, conversationId, userId } = params;
   const tasks: TaskDefinition[] = [];
 
-  // Wave 0: 4 market analyst tasks (parallel)
-  for (const agentId of WAVE0_AGENTS) {
+  // Wave 0: 4 market analyst tasks (parallel) — each gets subject-filtered headlines
+  const wave0Prompts = await Promise.all(
+    WAVE0_AGENTS.map((agentId) =>
+      buildAnalystPrompt(agentId, lanes, userInjection),
+    ),
+  );
+
+  for (let i = 0; i < WAVE0_AGENTS.length; i++) {
     tasks.push({
-      key: `${agentId}-analysis`,
-      agentId,
+      key: `${WAVE0_AGENTS[i]}-analysis`,
+      agentId: WAVE0_AGENTS[i],
       taskType: "analysis",
       depKeys: [],
       input: {
-        prompt: buildAnalystPrompt(agentId, lanes, catalysts, userInjection),
+        prompt: wave0Prompts[i],
         role: "analysis",
-        agentKey: agentId,
+        agentKey: WAVE0_AGENTS[i],
         wave: 0,
       },
     });
@@ -305,13 +378,14 @@ export function createMiroSharkDAG(params: MiroSharkParams): DAGDefinition {
   // Wave 0: Optional gov phase (geopolitical lanes detected)
   const includeGov = shouldIncludeGovPhase(lanes);
   if (includeGov) {
+    const govPrompt = await buildGovPrompt(lanes, userInjection);
     tasks.push({
       key: "gov-analysis",
       agentId: "oracle", // oracle handles geopolitical framing
       taskType: "analysis",
       depKeys: [],
       input: {
-        prompt: buildGovPrompt(lanes, catalysts, userInjection),
+        prompt: govPrompt,
         role: "gov-analysis",
         agentKey: "gov",
         wave: 0,
@@ -328,21 +402,22 @@ export function createMiroSharkDAG(params: MiroSharkParams): DAGDefinition {
     ...(includeGov ? ["gov-analysis"] : []),
   ];
 
-  for (const agentId of WAVE0_AGENTS) {
+  const wave1Prompts = await Promise.all(
+    WAVE0_AGENTS.map((agentId) =>
+      buildDeliberationPrompt(agentId, lanes, userInjection),
+    ),
+  );
+
+  for (let i = 0; i < WAVE0_AGENTS.length; i++) {
     tasks.push({
-      key: `${agentId}-deliberation`,
-      agentId,
+      key: `${WAVE0_AGENTS[i]}-deliberation`,
+      agentId: WAVE0_AGENTS[i],
       taskType: "deliberation",
       depKeys: wave0Keys,
       input: {
-        prompt: buildDeliberationPrompt(
-          agentId,
-          lanes,
-          catalysts,
-          userInjection,
-        ),
+        prompt: wave1Prompts[i],
         role: "deliberation",
-        agentKey: agentId,
+        agentKey: WAVE0_AGENTS[i],
         wave: 1,
       },
     });
@@ -350,6 +425,7 @@ export function createMiroSharkDAG(params: MiroSharkParams): DAGDefinition {
 
   // Wave 2: Harper synthesis — depends on ALL wave 0 + wave 1 tasks
   const wave1Keys = WAVE0_AGENTS.map((id) => `${id}-deliberation`);
+  const harperPrompt = await buildHarperPrompt(lanes, userInjection);
 
   tasks.push({
     key: "harper-synthesis",
@@ -357,7 +433,7 @@ export function createMiroSharkDAG(params: MiroSharkParams): DAGDefinition {
     taskType: "synthesis",
     depKeys: [...wave0Keys, ...wave1Keys],
     input: {
-      prompt: buildHarperPrompt(lanes, catalysts, userInjection),
+      prompt: harperPrompt,
       role: "synthesis",
       agentKey: "harper",
       wave: 2,
@@ -369,7 +445,7 @@ export function createMiroSharkDAG(params: MiroSharkParams): DAGDefinition {
     userId,
     surface: "boardroom",
     template: "miroshark-deliberation",
-    input: { lanes, catalysts, userInjection: userInjection ?? null },
+    input: { lanes, userInjection: userInjection ?? null },
     tasks,
   };
 }

@@ -24,6 +24,7 @@ import {
   generateBrief,
   BRIEF_LABELS,
 } from "../../services/brief-generator.js";
+import { startPrediction } from "../../services/miroshark/miroshark-service.js";
 
 // ── Helpers: transform DB records → frontend shapes ─────────────────────────
 
@@ -69,7 +70,6 @@ function tradeIdeaToFrontend(r: TradeIdeaRecord) {
     sourceAgent: r.analyst ?? undefined,
     hermesDescription:
       r.hermes_description ?? r.thesis?.slice(0, 300) ?? undefined,
-    notionUrl: "", // No Notion URL for Supabase records
     createdAt: r.created_at ?? new Date().toISOString(),
     updatedAt: r.updated_at ?? new Date().toISOString(),
   };
@@ -240,14 +240,25 @@ export function createDataRoutes(): Hono {
 
   // POST /api/data/brief/generate — AI brief generation + store in Supabase
   // Delegates to shared brief-generator service (also used by dispatch-scheduler crons)
+  // [claude-code 2026-04-16] Triggers MiroShark Aquarium run after successful brief publish
   app.post("/brief/generate", async (c) => {
     try {
       const result = await generateBrief();
+
+      // Fire-and-forget: trigger Aquarium deliberation after brief publish
+      // Empty lanes → MiroShark synthesizes from RiskFlow headlines
+      startPrediction(
+        { lanes: [], catalysts: [], ropes: [] },
+        undefined,
+        "full-brief",
+      ).catch((err) =>
+        console.warn("[Data] Post-brief Aquarium trigger failed:", err),
+      );
+
       return c.json({
         content: result.content,
         briefType: result.briefType,
         generatedAt: result.generatedAt,
-        notionUrl: null,
         supabaseId: result.supabaseId,
         provider: result.provider,
       });

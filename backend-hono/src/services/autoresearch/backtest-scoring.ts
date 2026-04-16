@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import type { BacktestConfig, ScoringWeights, FitnessReport } from "./types.js";
 import { getObservations } from "./observation-store.js";
 import { generateFitnessReport } from "./fitness.js";
-import { loadIVScoringConfig } from "../iv-scoring-v2.js";
+import { loadIVScoringConfig } from "../iv-scoring/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

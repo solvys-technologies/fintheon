@@ -184,7 +184,7 @@ export function generateBriefing(
       const bm = latest.econ_data?.beatMiss;
       if (bm === "beat" || bm === "miss") {
         riskAlerts.push(
-          `Latest print ${bm === "beat" ? "came in hot" : "disappointed"}: "${latest.title}" — ${latest.econ_data?.surprisePercent?.toFixed(1) ?? "?"}% surprise.`,
+          `Latest print ${bm === "beat" ? "came in hot" : "disappointed"}: "${latest.headline}" — ${latest.econ_data?.surprisePercent?.toFixed(1) ?? "?"}% surprise.`,
         );
       }
     }

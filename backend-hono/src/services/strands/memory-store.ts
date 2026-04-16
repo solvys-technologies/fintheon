@@ -9,11 +9,16 @@ import {
   TextBlock,
   type LocalAgent,
 } from "@strands-agents/sdk";
-import { getRecentContext, addMessage } from "../ai/conversation-store.js";
+import {
+  getRecentContext,
+  addMessage,
+  getMessages,
+} from "../ai/conversation-store.js";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger("StrandsMemory");
 const MAX_WINDOW = 40;
+const DEDUP_WINDOW_MS = 5_000; // 5s window for idempotency check
 
 /**
  * ConversationManager that bridges Strands agent memory with our DB-backed
@@ -68,7 +73,7 @@ class DbConversationManager extends ConversationManager {
       }
     });
 
-    // After invocation: save new assistant messages to DB
+    // After invocation: save new assistant messages to DB (with idempotency guard)
     agent.addHook(AfterInvocationEvent, async () => {
       try {
         // Find the last assistant message
@@ -84,6 +89,24 @@ class DbConversationManager extends ConversationManager {
           .join("");
 
         if (!text) return;
+
+        // Idempotency guard: check if this assistant message was already saved
+        // (e.g. by DbConversationManager dual-write or relay persistence)
+        const recent = await getMessages(this.conversationId, 3);
+        const now = Date.now();
+        const alreadySaved = recent.some(
+          (m) =>
+            m.role === "assistant" &&
+            now - new Date(m.createdAt).getTime() < DEDUP_WINDOW_MS &&
+            m.content.slice(0, 200) === text.slice(0, 200),
+        );
+
+        if (alreadySaved) {
+          log.info("Skipped duplicate assistant message", {
+            conversationId: this.conversationId,
+          });
+          return;
+        }
 
         await addMessage(this.conversationId, {
           conversationId: this.conversationId,

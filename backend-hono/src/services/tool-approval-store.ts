@@ -131,6 +131,7 @@ export function requestApproval(
   toolName: string,
   toolInput: Record<string, unknown>,
   description: string,
+  opts?: { noTimeout?: boolean },
 ): Promise<ApprovalDecision> {
   const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -169,23 +170,26 @@ export function requestApproval(
     log.info(`Approval requested: ${toolName} (${id})`, { description });
 
     // Auto-approve after timeout so the agentic loop never hangs indefinitely
-    setTimeout(async () => {
-      if (settled) return;
-      log.warn(`Approval timeout — auto-approving: ${toolName} (${id})`);
-      pendingApprovals.delete(id);
-      await grantPermission(toolName);
-      emitStep(requestId, {
-        kind: "tool-approval-resolved",
-        label: `${toolName}: approved (auto)`,
-        detail: JSON.stringify({
-          approvalId: id,
-          toolName,
-          decision: "approved",
-          auto: true,
-        }),
-      });
-      settle("approved");
-    }, APPROVAL_TIMEOUT_MS);
+    // Relay-originated requests block indefinitely — mobile user decides
+    if (!opts?.noTimeout) {
+      setTimeout(async () => {
+        if (settled) return;
+        log.warn(`Approval timeout — auto-approving: ${toolName} (${id})`);
+        pendingApprovals.delete(id);
+        await grantPermission(toolName);
+        emitStep(requestId, {
+          kind: "tool-approval-resolved",
+          label: `${toolName}: approved (auto)`,
+          detail: JSON.stringify({
+            approvalId: id,
+            toolName,
+            decision: "approved",
+            auto: true,
+          }),
+        });
+        settle("approved");
+      }, APPROVAL_TIMEOUT_MS);
+    }
   });
 }
 

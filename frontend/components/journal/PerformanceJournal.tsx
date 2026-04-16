@@ -22,7 +22,7 @@ import { SessionNotesPanel } from "./HumanPsychTab";
 import type {
   JournalEntryItem,
   JournalSummaryResponse,
-  NotionPerformanceResponse,
+  PerformanceResponse,
   BlindspotItem,
 } from "../../lib/services";
 
@@ -34,7 +34,7 @@ export function PerformanceJournal() {
   const [activeTab, setActiveTab] = useState<JournalTab>("human");
   const [entries, setEntries] = useState<JournalEntryItem[]>([]);
   const [summary, setSummary] = useState<JournalSummaryResponse | null>(null);
-  const [kpis, setKpis] = useState<NotionPerformanceResponse | null>(null);
+  const [kpis, setKpis] = useState<PerformanceResponse | null>(null);
   const [blindspots, setBlindspots] = useState<BlindspotItem[]>([]);
   const [blindspotSource, setBlindspotSource] = useState("");
   const [loading, setLoading] = useState(true);
@@ -48,7 +48,7 @@ export function PerformanceJournal() {
       const [entriesRes, summaryRes, kpisRes, blindRes] = await Promise.all([
         backend.journal.listEntries({ limit: 90 }),
         backend.journal.getSummary(30),
-        backend.notion.getPerformance(),
+        backend.data.getPerformance(),
         backend.blindspots.getBlindspots(),
       ]);
       setEntries(entriesRes.entries);

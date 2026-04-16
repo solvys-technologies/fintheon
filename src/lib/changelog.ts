@@ -9,6 +9,254 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T09:00:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow fuzzy dedup: token-overlap similarity (70% threshold) removes near-duplicate headlines from different sources. Fixed agent subject tags to match DB vocabulary (subj:macro, subj:geopolitical, subj:vol, subj:structure, subj:earnings, subj:credit, subj:sentiment) — each MiroShark agent now gets differentiated headline context instead of groupthink. Auto-trigger MiroShark Aquarium run after every Brief publish. Created 4 missing Supabase tables (miroshark_deliberations, agent_memory, deliberation_outcomes, oracle_research_findings).",
+    files: [
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "backend-hono/src/services/agent-bus/templates/miroshark-template.ts",
+      "backend-hono/src/routes/data/index.ts",
+    ],
+  },
+  {
+    date: "2026-04-17T06:30:00",
+    agent: "claude-code",
+    summary:
+      "S20-T10: Integration + Validation + Deploy. Merged all 9 sprint tracks, verified builds (backend, desktop, mobile), validated legacy removal (MARKET_ANALYSTS, SubAnalyst Context, Notion services, agentic chatroom), confirmed agent dossiers compose into system prompts, agent memory and outcome tracker wired, differentiated context feeding active, scoring modules split from monoliths, health registry reporting, conversation persistence across platforms. Deployed to Fly.io, Vercel desktop, Vercel mobile.",
+    files: ["src/lib/changelog.ts"],
+  },
+  {
+    date: "2026-04-16T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S20-T9: Backend Streamlining. Two-phase boot (bootCritical + bootBackground via queueMicrotask). Split iv-scoring-v2.ts (1954 lines) into 9 modules under services/iv-scoring/. Split central-scorer.ts (1073 lines) into scorer-pipeline + scorer-tagging + scorer-watchlist. Created unified feature-flag-service.ts with single getFlag(). Created health-registry.ts for background service monitoring. Created base-poller abstraction for ingestion consolidation. Tuned intervals: Aquarium 30→60min, Agent Notes 3→5min, Shared Memory 30→60min. /health endpoint now includes service registry data.",
+    files: [
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/index.ts",
+      "backend-hono/src/services/iv-scoring/config.ts",
+      "backend-hono/src/services/iv-scoring/computation.ts",
+      "backend-hono/src/services/iv-scoring/instrument.ts",
+      "backend-hono/src/services/iv-scoring/systemic.ts",
+      "backend-hono/src/services/iv-scoring/taxonomy.ts",
+      "backend-hono/src/services/iv-scoring/ticker.ts",
+      "backend-hono/src/services/iv-scoring/sentiment.ts",
+      "backend-hono/src/services/iv-scoring/sentiment-data.ts",
+      "backend-hono/src/services/iv-scoring/index.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/services/riskflow/scorer-tagging.ts",
+      "backend-hono/src/services/riskflow/scorer-watchlist.ts",
+      "backend-hono/src/services/feature-flag-service.ts",
+      "backend-hono/src/services/health-registry.ts",
+      "backend-hono/src/services/ingestion/base-poller.ts",
+      "backend-hono/src/services/riskflow/aquarium-scheduler.ts",
+      "backend-hono/src/services/riskflow/agent-notes.ts",
+      "backend-hono/src/services/peers/shared-memory.ts",
+    ],
+  },
+  {
+    date: "2026-04-17T00:15:00",
+    agent: "claude-code",
+    summary:
+      "S20-T2: Differentiated context feeding + legacy kill. Ported subject-tag filtering from miroshark-client into shared fetchFilteredHeadlines() in miroshark-context.ts. Rewrote buildAnalystPrompt/buildNarrativeContext/buildGovPrompt/buildDeliberationPrompt/buildHarperPrompt to be async and query DB with per-agent subject filtering (12 matched + 3 cross-domain). Made createMiroSharkDAG async. Removed legacy MARKET_ANALYSTS array (Alex Vane, Priya Nair, James Osei, Sophie Kwan, Marcus Webb), fetchHeadlinesForAnalyst, fetchExaHeadlinesForAgent, runMarketAnalystDebate, getMarketAnalysts from miroshark-client.ts. Updated miroshark-deliberation.ts to use ANALYST_META from template. Updated aquarium-scheduler fetchRecentHeadlines to filter by Oracle subjects. Renamed Agentic Chatroom to Agentic Forum in harper-handler.ts and HARPER-SOUL.md.",
+    files: [
+      "backend-hono/src/services/miroshark/miroshark-context.ts",
+      "backend-hono/src/services/agent-bus/templates/miroshark-template.ts",
+      "backend-hono/src/services/miroshark/miroshark-client.ts",
+      "backend-hono/src/services/miroshark/miroshark-deliberation.ts",
+      "backend-hono/src/services/miroshark/miroshark-service.ts",
+      "backend-hono/src/services/riskflow/aquarium-scheduler.ts",
+      "backend-hono/src/routes/miroshark/handlers.ts",
+      "backend-hono/src/routes/harper/index.ts",
+      "backend-hono/src/routes/boardroom/index.ts",
+      "backend-hono/src/services/harper-handler.ts",
+      "backend-hono/src/services/harper-autonomous/HARPER-SOUL.md",
+    ],
+  },
+  {
+    date: "2026-04-16T23:55:00",
+    agent: "claude-code",
+    summary:
+      "S20-T6: Conversation Persistence — relay.ts creates conversation + saves user message before forwarding, relay-connector passes userId to harper agent, memory-store has idempotency guard (5s dedup window) on assistant message save, ChatPage refreshes sessions after stream, SessionList shows messageCount badge + uses lastMessageAt, useConversations adds archiveSession method, SessionsPanel uses BackendClient with auth instead of bare fetch, RLS migration for ai_conversations + ai_messages with user-scoped policies and service_role bypass.",
+    files: [
+      "backend-hono/src/routes/relay.ts",
+      "backend-hono/src/services/relay-connector.ts",
+      "backend-hono/src/services/strands/memory-store.ts",
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/SessionList.tsx",
+      "mobile/hooks/useConversations.ts",
+      "frontend/lib/services/ai.ts",
+      "frontend/components/chat/SessionsPanel.tsx",
+      "supabase/migrations/20260416_conversation_rls.sql",
+    ],
+  },
+  {
+    date: "2026-04-16T23:30:00",
+    agent: "claude-code",
+    summary:
+      "S20-T1: Agent Dossiers & Personality Injection — created 4 definitive dossier files (Oracle/Feucht/Consul/Herald) with identity, worldview, operational rules, and analytical framework. Thinned base-prompts.ts to one-liner role tags. Dossiers inject after persona files in system prompt composition pipeline. Deduped philosophy-blocks.ts to retain only neural-layer framing. Updated frontend ApparatusMap.tsx and AgenticDesk.tsx to match backend personality titles.",
+    files: [
+      "backend-hono/src/services/ai/agent-instructions/dossiers/oracle.ts",
+      "backend-hono/src/services/ai/agent-instructions/dossiers/feucht.ts",
+      "backend-hono/src/services/ai/agent-instructions/dossiers/consul.ts",
+      "backend-hono/src/services/ai/agent-instructions/dossiers/herald.ts",
+      "backend-hono/src/services/ai/agent-instructions/base-prompts.ts",
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+      "backend-hono/src/services/ai/agent-instructions/philosophy-blocks.ts",
+      "frontend/components/apparatus/ApparatusMap.tsx",
+      "frontend/components/settings/AgenticDesk.tsx",
+    ],
+  },
+  {
+    date: "2026-04-16T17:45:00",
+    agent: "claude-code",
+    summary:
+      "S20-T8: Claude Code Routines — 8 cloud-based autonomous agents on Anthropic infrastructure. 3 MOVE routines (REFLECT, Prediction Resolver, Market Impact Enricher) fully migrated from backend with env flags to disable local schedulers. 5 AUGMENT routines (Dispatch Watchdog, Boardroom Synthesis, MiroShark Meta, Poly/Kalshi Divergence Analysis, Aquarium Deep Outlook) monitor/enrich existing backend jobs. Total 13 runs/day within 15-run budget.",
+    files: [
+      "backend-hono/src/services/autoresearch/reflect-scheduler.ts",
+      "backend-hono/src/services/polymarket-prediction-resolver.ts",
+      "backend-hono/src/services/cron/market-impact-enricher.ts",
+      "docs/routines.md",
+    ],
+  },
+  {
+    date: "2026-04-16T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S20-T3: Oracle scheduled research — prediction market scanning cycle. Scans Polymarket/Kalshi on 4h cron, cross-references with IV scoring + RiskFlow themes, detects arb opportunities (>15% mismatch), stores findings in oracle_research_findings table. Consumes existing divergence alerts as input (no duplication). GET /api/oracle/research endpoint for Harper/frontend. Gated by ORACLE_RESEARCH_ENABLED env var.",
+    files: [
+      "backend-hono/src/services/oracle-research/types.ts",
+      "backend-hono/src/services/oracle-research/scanner.ts",
+      "backend-hono/src/services/oracle-research/arb-detector.ts",
+      "backend-hono/src/services/oracle-research/index.ts",
+      "backend-hono/src/services/cron/oracle-research-scheduler.ts",
+      "backend-hono/src/routes/oracle.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/boot/services.ts",
+      "supabase/migrations/20260416_oracle_research.sql",
+    ],
+  },
+  {
+    date: "2026-04-16T18:30:00",
+    agent: "claude-code",
+    summary:
+      "Notion severance: removed all Notion code paths from frontend and backend. NotionService → DataService, notion-trade-idea → trade-idea, removed 30s Notion polling from RiskFlowContext, deleted /api/notion redirect shim, Notion MCP entry, and all notionUrl fields. Supabase is sole source of truth.",
+    files: [
+      "frontend/lib/services/data.ts",
+      "frontend/lib/services/index.ts",
+      "frontend/lib/riskflow-feed.ts",
+      "frontend/lib/shared-icons.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "frontend/contexts/ScheduleContext.tsx",
+      "frontend/contexts/TeamPresenceContext.tsx",
+      "frontend/hooks/useSourceStatus.ts",
+      "frontend/hooks/useRiskFlowFilters.ts",
+      "frontend/components/RiskFlowMini.tsx",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/routes/mcp/index.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/services/econ-calendar-service.ts",
+      "backend-hono/src/services/ai/agent-instructions/index.ts",
+    ],
+  },
+  {
+    date: "2026-04-16T16:00:00",
+    agent: "claude-code",
+    summary:
+      "fix: mobile briefing overlay renders behind Dash content due to stacking context trap. Replaced BottomSheet with full-screen BriefingOverlay using createPortal to escape z-index hierarchy. iOS pill bar swipe-to-dismiss.",
+    files: [
+      "mobile/components/home/BriefingOverlay.tsx",
+      "mobile/components/home/BriefingCard.tsx",
+    ],
+  },
+  {
+    date: "2026-04-16T15:00:00",
+    agent: "claude-code",
+    summary:
+      "feat: display linked Google email in Profile (General) tab with avatar, add Switch Account button to re-auth with a different Google account",
+    files: ["frontend/components/settings/GeneralTab.tsx"],
+  },
+  {
+    date: "2026-04-16T14:00:00",
+    agent: "claude-code",
+    summary:
+      "fix: scrape fallback uses hasAuthenticatedKeys() instead of isRettiwtAvailable() to skip curated timelines when all Rettiwt keys on cooldown. Agent-Reach (FinancialJuice, ZH, Reuters, Bloomberg) now runs unconditionally instead of gated behind totalWritten===0.",
+    files: ["backend-hono/src/services/riskflow/feed-poller.ts"],
+  },
+  {
+    date: "2026-04-16T13:30:00",
+    agent: "claude-code",
+    summary:
+      "fix: IV Scoring Engine reconnected — rewired iv-score-ticker + handler fallback to read from scored_riskflow_items (live pipeline) instead of deprecated news_feed_items. Added MiroShark boot restore from latest Aquarium simulation so mirosharkComponent survives backend restarts. Fixed merge conflict in feed-health.log.",
+    files: [
+      "backend-hono/src/services/market-data/iv-score-ticker.ts",
+      "backend-hono/src/routes/market-data/handlers.ts",
+      "backend-hono/src/services/miroshark/miroshark-boot.ts",
+      "backend-hono/src/boot/services.ts",
+    ],
+  },
+  {
+    date: "2026-04-16T13:00:00",
+    agent: "claude-code",
+    summary:
+      "feat: T4 unification — merged T2 (agent UI) + T3 (conversation persistence) into mobile-agent-upgrade. Wired useConversations hook to ChatPage/SessionList for API-backed session loading, forwarded images+riskFlowContext through sendMessage to relay.",
+    files: [
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/SessionList.tsx",
+      "mobile/hooks/useConversations.ts",
+    ],
+  },
+  {
+    date: "2026-04-16T12:00:00",
+    agent: "claude-code",
+    summary:
+      "fix: Mobile RiskFlow — pull-to-refresh now read-only (GET /api/riskflow/feed), added Agent Reach button for deliberate fetch+score via POST /api/riskflow/refresh. Separates passive headline reads from active polling on mobile.",
+    files: [
+      "mobile/contexts/RiskFlowContext.tsx",
+      "mobile/components/riskflow/RiskFlowPage.tsx",
+    ],
+  },
+  {
+    date: "2026-04-16T04:00:00",
+    agent: "claude-code",
+    summary:
+      "feat: T1 relay expansion — full payload forwarding (images, riskFlowContext, thinkHarder, persona), POST /api/relay/tool-decision endpoint, cognition event injection into SSE stream, noTimeout flag for relay-originated tool approvals",
+    files: [
+      "backend-hono/src/routes/relay.ts",
+      "backend-hono/src/services/relay-bridge.ts",
+      "backend-hono/src/services/relay-connector.ts",
+      "backend-hono/src/services/tool-approval-store.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/services/strands/harper-tools.ts",
+    ],
+  },
+  {
+    date: "2026-04-16T03:30:00",
+    agent: "claude-code",
+    summary:
+      "feat: T3 conversation persistence — useConversations hook + API-backed SessionList with search + background agent recovery via visibilitychange",
+    files: [
+      "mobile/hooks/useConversations.ts",
+      "mobile/components/chat/SessionList.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+    ],
+  },
+  {
+    date: "2026-04-16T03:00:00",
+    agent: "claude-code",
+    summary:
+      "feat: T2 mobile agent UI — image attachments (camera/photo picker, thumbnail preview), RiskFlow headline picker (bottom sheet, pill chips, formatHeadlineContext), inline tool approval cards (approve/deny with SSE events). ChatInput gets toolbar row + expanded onSend with images/riskFlowContext. ChatPage handles tool-approval-needed/resolved SSE events and POSTs decisions to relay.",
+    files: [
+      "mobile/components/chat/ImageAttachButton.tsx",
+      "mobile/components/chat/ImagePreviewRow.tsx",
+      "mobile/components/chat/HeadlineChips.tsx",
+      "mobile/components/chat/HeadlinePickerSheet.tsx",
+      "mobile/components/chat/ToolApprovalCard.tsx",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+    ],
+  },
+  {
     date: "2026-04-16T02:00:00",
     agent: "claude-code",
     summary:

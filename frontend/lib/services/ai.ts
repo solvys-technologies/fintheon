@@ -92,6 +92,10 @@ export class AIService {
     return this.client.get<any>(`/api/ai/conversations/${id}`);
   }
 
+  async archiveConversation(id: string): Promise<void> {
+    await this.client.put(`/api/ai/conversations/${id}`, { isArchived: true });
+  }
+
   /**
    * Quick Fintheon: Analyze a chart screenshot
    */

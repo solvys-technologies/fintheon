@@ -1,9 +1,9 @@
-// [claude-code 2026-04-15] T4: Daily briefing card — truncated brief with bottom sheet expand
+// [claude-code 2026-04-16] Daily briefing card — truncated brief with full-screen overlay expand
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { SurfaceCard } from "../shared/SurfaceCard";
-import { BottomSheet } from "../shared/BottomSheet";
+import { BriefingOverlay } from "./BriefingOverlay";
 import { useBriefing } from "../../hooks/useBriefing";
 
 export function BriefingCard() {
@@ -45,6 +45,13 @@ export function BriefingCard() {
   // Combine items into a single body string
   const fullText = items.map((i) => `**${i.title}**\n${i.detail}`).join("\n\n");
 
+  // Plain-text preview (webkit-line-clamp fails with block elements from ReactMarkdown)
+  const previewText =
+    fullText
+      .replace(/[#*_`~>]/g, "")
+      .replace(/\n{2,}/g, "\n")
+      .slice(0, 280) + (fullText.length > 280 ? "..." : "");
+
   return (
     <>
       <SurfaceCard>
@@ -56,13 +63,12 @@ export function BriefingCard() {
             color: "var(--text-primary)",
             lineHeight: 1.5,
             marginTop: 8,
-            display: "-webkit-box",
-            WebkitLineClamp: 6,
-            WebkitBoxOrient: "vertical",
+            maxHeight: "7.5em",
             overflow: "hidden",
+            whiteSpace: "pre-line",
           }}
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullText}</ReactMarkdown>
+          {previewText}
         </div>
         <button
           onClick={() => setSheetOpen(true)}
@@ -82,7 +88,7 @@ export function BriefingCard() {
         </button>
       </SurfaceCard>
 
-      <BottomSheet
+      <BriefingOverlay
         isOpen={sheetOpen}
         onClose={() => setSheetOpen(false)}
         title="DAILY BRIEF"
@@ -97,7 +103,7 @@ export function BriefingCard() {
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullText}</ReactMarkdown>
         </div>
-      </BottomSheet>
+      </BriefingOverlay>
     </>
   );
 }

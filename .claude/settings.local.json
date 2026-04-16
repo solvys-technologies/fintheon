@@ -34,7 +34,15 @@
       "Bash(mkdir -p /Users/tifos/.openclaw/workspace/memory/fintheon-dev-context)",
       "Bash(cp /Users/tifos/.claude/projects/-Users-tifos-Documents-Codebases-fintheon/memory/feedback_*.md /Users/tifos/.openclaw/workspace/memory/fintheon-dev-context/)",
       "Bash(cp /Users/tifos/.claude/projects/-Users-tifos-Documents-Codebases-fintheon/memory/project_*.md /Users/tifos/.openclaw/workspace/memory/fintheon-dev-context/)",
-      "Bash(cp /Users/tifos/.claude/projects/-Users-tifos-Documents-Codebases-fintheon/memory/MEMORY.md /Users/tifos/.openclaw/workspace/memory/fintheon-dev-context/)"
+      "Bash(cp /Users/tifos/.claude/projects/-Users-tifos-Documents-Codebases-fintheon/memory/MEMORY.md /Users/tifos/.openclaw/workspace/memory/fintheon-dev-context/)",
+      "mcp__notion__API-post-search",
+      "mcp__claude_ai_Notion__notion-search",
+      "mcp__claude_ai_Notion__notion-fetch",
+      "Bash(mkdir -p /tmp/solvys-skills/.claude/skills/solvys-test)",
+      "Bash(cp /Users/tifos/Documents/Codebases/fintheon/.claude/skills/solvys-test/SKILL.md /tmp/solvys-skills/.claude/skills/solvys-test/SKILL.md)",
+      "Bash(cp /Users/tifos/Documents/Codebases/fintheon/.claude/skills/solvys-deploy/SKILL.md /tmp/solvys-skills/.claude/skills/solvys-deploy/SKILL.md)",
+      "mcp__notion__API-delete-a-block",
+      "mcp__claude_ai_Notion__notion-update-page"
     ]
   }
 }

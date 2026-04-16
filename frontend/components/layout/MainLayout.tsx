@@ -790,11 +790,7 @@ function MainLayoutInner() {
             />
             <EmbeddedBrowserFrame
               title="Research (preload)"
-              src={
-                iframeUrls.research ||
-                import.meta.env.VITE_NOTION_RESEARCH_URL ||
-                "https://www.notion.so"
-              }
+              src={iframeUrls.research || ""}
             />
           </div>
         )}

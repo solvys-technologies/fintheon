@@ -7,7 +7,7 @@
 
 export type AlertSeverity = "low" | "medium" | "high" | "critical";
 export type AlertSource =
-  | "notion-trade-idea"
+  | "trade-idea"
   | "financial-juice"
   | "osint-sources"
   | "economic-calendar"
@@ -30,7 +30,6 @@ export interface TradeIdeaDetail {
   timeframe?: string;
   sourceAgent?: string;
   hermesDescription?: string;
-  notionUrl: string;
 }
 
 /** Per-item scoring breakdown showing how each factor contributed */

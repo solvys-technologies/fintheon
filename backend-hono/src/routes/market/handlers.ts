@@ -6,7 +6,7 @@ import {
   calculateIVScoreV2,
   type IVScoringConfig,
   type StackedEvent,
-} from "../../services/iv-scoring-v2.js";
+} from "../../services/iv-scoring/index.js";
 
 /**
  * GET /api/market/vix

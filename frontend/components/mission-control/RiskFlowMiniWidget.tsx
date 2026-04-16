@@ -59,7 +59,7 @@ export function RiskFlowMiniWidget() {
             visible.map((alert) => {
               const sev = SEVERITY_CONFIG[alert.severity];
               const isTradeIdea =
-                alert.source === "notion-trade-idea" && !!alert.tradeIdea;
+                alert.source === "trade-idea" && !!alert.tradeIdea;
               const isExpanded = expandedId === alert.id;
               const seen = isSeen(alert.id);
 

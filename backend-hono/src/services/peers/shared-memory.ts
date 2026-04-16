@@ -316,7 +316,7 @@ export function startSharedMemoryCleanup(): void {
         error: String(err),
       });
     }
-  }, 30 * 60_000);
+  }, 60 * 60_000);
   cleanupTimer.unref?.();
-  log.info("SharedMemoryCleanup scheduled (30min)");
+  log.info("SharedMemoryCleanup scheduled (60min)");
 }

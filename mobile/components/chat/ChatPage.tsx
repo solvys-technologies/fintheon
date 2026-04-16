@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] T4 unification: useConversations wired, sendMessage forwards images+riskFlowContext to relay
 // [claude-code 2026-04-16] T3/T6: Full-screen Harper chat — SSE streaming via relay, background recovery
 // Memory: feedback_keep_chat_mounted — use display:none not conditional render, streams survive navigation
 // Memory: feedback_uimessagestream_framing — start/finish events in SSE stream
@@ -5,13 +6,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { List } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useSettings } from "../../contexts/SettingsContext";
 import { getMobileBackend } from "../../lib/backend";
 import ChatMessage, { type ChatMessageData } from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import ConnectionStatus, { type RelayState } from "./ConnectionStatus";
-import SessionList, { type ChatSession } from "./SessionList";
+import SessionList from "./SessionList";
+import { useConversations } from "../../hooks/useConversations";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { ToolCallCard } from "./ToolCallCard";
+import { ToolApprovalCard } from "./ToolApprovalCard";
+import { useToolApprovals } from "../../hooks/useToolApprovals";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -21,17 +26,30 @@ interface ChatPageProps {
 
 export default function ChatPage({ visible }: ChatPageProps) {
   const { getAccessToken } = useAuth();
+  const { settings } = useSettings();
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [relayState, setRelayState] = useState<RelayState>("reconnecting");
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionListOpen, setSessionListOpen] = useState(false);
+  const {
+    sessions,
+    isLoading: sessionsLoading,
+    loadSession,
+    refresh: refreshSessions,
+  } = useConversations();
   const [activeToolCall, setActiveToolCall] = useState<{
     name: string;
     input?: string;
   } | null>(null);
+  const {
+    approvals,
+    pendingApprovals,
+    addApproval,
+    resolveApproval,
+    resolveFromEvent,
+    clearApprovals,
+  } = useToolApprovals();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -87,7 +105,10 @@ export default function ChatPage({ visible }: ChatPageProps) {
   }, [recoverConversation]);
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (
+      text: string,
+      opts?: { images?: string[]; riskFlowContext?: string },
+    ) => {
       if (isLoading) return;
 
       const userMsg: ChatMessageData = {
@@ -125,6 +146,11 @@ export default function ChatPage({ visible }: ChatPageProps) {
           body: JSON.stringify({
             message: text,
             conversationId: conversationIdRef.current,
+            ...(opts?.images?.length ? { images: opts.images } : {}),
+            ...(opts?.riskFlowContext
+              ? { riskFlowContext: opts.riskFlowContext }
+              : {}),
+            ...(settings.traderName ? { traderName: settings.traderName } : {}),
           }),
           signal: controller.signal,
         });
@@ -192,6 +218,19 @@ export default function ChatPage({ visible }: ChatPageProps) {
                         ? JSON.stringify(event.input).slice(0, 120)
                         : undefined,
                 });
+              } else if (event.type === "tool-approval-needed") {
+                setActiveToolCall(null);
+                addApproval({
+                  approvalId: event.approvalId,
+                  toolName: event.toolName || event.name || "unknown",
+                  toolInput: event.toolInput || event.input,
+                  description: event.description,
+                });
+              } else if (event.type === "tool-approval-resolved") {
+                resolveFromEvent({
+                  approvalId: event.approvalId,
+                  decision: event.decision || event.status,
+                });
               }
             } catch {
               // Skip non-JSON lines (heartbeats, comments)
@@ -200,6 +239,28 @@ export default function ChatPage({ visible }: ChatPageProps) {
         }
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === "AbortError") return;
+        // Stream interrupted — try recovering completed response from API
+        const convId = conversationIdRef.current;
+        if (convId) {
+          try {
+            const backend = getMobileBackend(getAccessToken);
+            const data = await backend.ai.getConversation(convId);
+            const lastMsg = data?.messages?.[data.messages.length - 1];
+            if (lastMsg?.role === "assistant" && lastMsg.content) {
+              setMessages(
+                data.messages.map((m: any) => ({
+                  id: m.id,
+                  role: m.role as "user" | "assistant",
+                  content: m.content,
+                  timestamp: m.createdAt ?? m.created_at ?? "",
+                })),
+              );
+              return;
+            }
+          } catch {
+            // Recovery failed — show error
+          }
+        }
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
@@ -211,24 +272,38 @@ export default function ChatPage({ visible }: ChatPageProps) {
         setIsLoading(false);
         setActiveToolCall(null);
         abortRef.current = null;
+        // Refresh session list so new/updated conversations appear
+        refreshSessions();
       }
     },
-    [isLoading, getAccessToken],
+    [isLoading, getAccessToken, refreshSessions],
+  );
+
+  const handleSelectSession = useCallback(
+    async (id: string) => {
+      const conv = await loadSession(id);
+      if (conv) {
+        setMessages(
+          conv.messages.map((m, i) => ({
+            id: m.id || `loaded-${i}`,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: m.createdAt,
+          })),
+        );
+        setConversationId(conv.id);
+      }
+      setSessionListOpen(false);
+    },
+    [loadSession],
   );
 
   const handleNewSession = useCallback(() => {
-    const id = `session-${Date.now()}`;
-    const session: ChatSession = {
-      id,
-      title: `Session #${sessions.length + 1}`,
-      timestamp: new Date().toISOString(),
-    };
-    setSessions((prev) => [session, ...prev]);
-    setActiveSessionId(id);
     setMessages([]);
     setConversationId(null);
     setSessionListOpen(false);
-  }, [sessions.length]);
+    clearApprovals();
+  }, [clearApprovals]);
 
   const isOffline = relayState === "offline";
 
@@ -248,8 +323,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "12px 16px",
-          paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
+          padding: "4px 16px",
           borderBottom: "none",
         }}
       >
@@ -292,6 +366,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
         ref={scrollRef}
         style={{
           flex: 1,
+          minHeight: 0,
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
@@ -305,20 +380,32 @@ export default function ChatPage({ visible }: ChatPageProps) {
             style={{
               flex: 1,
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 8,
             }}
           >
+            <span
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 20,
+                color: "var(--accent, #c79f4a)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              HARPER
+            </span>
             <span
               style={{
                 fontFamily: "var(--font-data)",
                 fontSize: 11,
                 color: "var(--text-disabled)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
+                letterSpacing: "0.06em",
               }}
             >
-              [MESSAGE HARPER]
+              Your CAO is standing by.
             </span>
           </div>
         )}
@@ -327,10 +414,23 @@ export default function ChatPage({ visible }: ChatPageProps) {
             style={{
               flex: 1,
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 8,
             }}
           >
+            <span
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 20,
+                color: "var(--accent, #c79f4a)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              HARPER
+            </span>
             <span
               style={{
                 fontFamily: "var(--font-data)",
@@ -340,7 +440,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
                 letterSpacing: "0.06em",
               }}
             >
-              [HARPER OFFLINE — START LOCAL INSTANCE]
+              [OFFLINE — START LOCAL INSTANCE]
             </span>
           </div>
         )}
@@ -365,26 +465,52 @@ export default function ChatPage({ visible }: ChatPageProps) {
             input={activeToolCall.input}
           />
         )}
+
+        {/* Tool approval cards */}
+        {approvals.map((approval) => (
+          <ToolApprovalCard
+            key={approval.id}
+            approvalId={approval.id}
+            toolName={approval.toolName}
+            description={approval.description}
+            toolInput={approval.toolInput}
+            status={approval.status}
+            onDecision={resolveApproval}
+          />
+        ))}
       </div>
 
-      {/* Input */}
-      <ChatInput
-        onSend={sendMessage}
-        isLoading={isLoading}
-        disabled={isOffline}
-      />
+      {/* Spacer for fixed input */}
+      <div style={{ height: 100, flexShrink: 0 }} />
+
+      {/* Input — fixed to bottom of viewport */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: "var(--black, #000)",
+          zIndex: 10,
+        }}
+      >
+        <ChatInput
+          onSend={sendMessage}
+          isLoading={isLoading}
+          disabled={isOffline}
+        />
+      </div>
 
       {/* Session list bottom sheet */}
       <SessionList
         open={sessionListOpen}
         onClose={() => setSessionListOpen(false)}
         sessions={sessions}
-        activeSessionId={activeSessionId}
-        onSelect={(id) => {
-          setActiveSessionId(id);
-          setSessionListOpen(false);
-        }}
+        isLoading={sessionsLoading}
+        activeSessionId={conversationId}
+        onSelect={handleSelectSession}
         onNewSession={handleNewSession}
+        onRefresh={refreshSessions}
       />
     </div>
   );

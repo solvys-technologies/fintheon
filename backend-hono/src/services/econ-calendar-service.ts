@@ -1,5 +1,4 @@
-// [claude-code 2026-03-20] Economic Calendar service — now Supabase-backed (was Notion)
-// [claude-code 2026-03-05] Economic Calendar service — fetches events + prints from Notion, writes actuals.
+// [claude-code 2026-04-16] Economic Calendar service — Supabase-backed
 
 import {
   readEconEvents,
@@ -26,7 +25,6 @@ export interface EconEvent {
   category?: string;
   definition?: string;
   aiTicker?: string;
-  notionUrl: string;
 }
 
 export interface EconPrint {
@@ -39,7 +37,6 @@ export interface EconPrint {
   surprise: number | null;
   direction: "beat" | "miss" | "inline" | null;
   goodBeta: boolean;
-  notionUrl: string;
 }
 
 // ── Fetch Economic Calendar Events ──────────────────────────────────────────
@@ -100,7 +97,6 @@ export async function fetchEconPrints(
       surprise,
       direction,
       goodBeta: false,
-      notionUrl: "",
     };
   });
 }
@@ -156,6 +152,5 @@ function impactToEconEvent(r: EconEventRecord): EconEvent {
     category: undefined,
     definition: r.detail ?? undefined,
     aiTicker: undefined,
-    notionUrl: "",
   };
 }
