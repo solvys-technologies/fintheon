@@ -200,6 +200,28 @@ export default function ChatPage({ visible }: ChatPageProps) {
         }
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === "AbortError") return;
+        // Stream interrupted — try recovering completed response from API
+        const convId = conversationIdRef.current;
+        if (convId) {
+          try {
+            const backend = getMobileBackend(getAccessToken);
+            const data = await backend.ai.getConversation(convId);
+            const lastMsg = data?.messages?.[data.messages.length - 1];
+            if (lastMsg?.role === "assistant" && lastMsg.content) {
+              setMessages(
+                data.messages.map((m: any) => ({
+                  id: m.id,
+                  role: m.role as "user" | "assistant",
+                  content: m.content,
+                  timestamp: m.createdAt ?? m.created_at ?? "",
+                })),
+              );
+              return;
+            }
+          } catch {
+            // Recovery failed — show error
+          }
+        }
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId

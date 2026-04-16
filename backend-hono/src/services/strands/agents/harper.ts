@@ -35,6 +35,8 @@ export interface HarperChatOptions {
   userContext?: UserContext;
   /** AI provider override: local (VProxy), nous (Sonnet via Nous), orouter (Opus via OpenRouter) */
   provider?: HarperProvider;
+  /** When true, tool approvals block indefinitely (no 30s auto-approve) — mobile user decides */
+  relayOriginated?: boolean;
 }
 
 /**
@@ -48,9 +50,12 @@ export async function createHarperAgent(
     conversationId?: string;
     userId?: string;
     provider?: HarperProvider;
+    relayOriginated?: boolean;
   },
 ) {
-  const coreTools = createHarperTools(requestId);
+  const coreTools = createHarperTools(requestId, {
+    noTimeout: opts?.relayOriginated,
+  });
   const solvysTools = getAllSolvysTools();
   const systemPrompt = await getAgentSystemPrompt("harper-cao", {});
 
@@ -88,6 +93,7 @@ export async function streamHarperChat(
     conversationId,
     userId,
     provider: options.provider,
+    relayOriginated: options.relayOriginated,
   });
 
   // Instrument agent with cognition telemetry for SSE observability

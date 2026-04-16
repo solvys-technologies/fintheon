@@ -1,5 +1,4 @@
-// [claude-code 2026-04-16] Toolbar — auto-populate trader nametag (read-only from settings)
-// [claude-code 2026-04-15] T3: Fixed top toolbar — wordmark, VIX badge, hamburger, chevron expander
+// [claude-code 2026-04-16] Toolbar — nametag centered, disappears when menu open
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Menu } from "lucide-react";
@@ -9,9 +8,13 @@ import { useSettings } from "../../contexts/SettingsContext";
 
 interface MobileToolbarProps {
   onHamburgerTap: () => void;
+  menuOpen: boolean;
 }
 
-export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
+export function MobileToolbar({
+  onHamburgerTap,
+  menuOpen,
+}: MobileToolbarProps) {
   const [expanded, setExpanded] = useState(false);
   const { settings } = useSettings();
   const traderName = settings.traderName || "";

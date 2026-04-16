@@ -1,3 +1,4 @@
+// [claude-code 2026-04-16] Agent Reach: added agentReach() method — POST /api/riskflow/refresh for deliberate fetch+score, separate from pull-to-refresh (read-only GET)
 // [claude-code 2026-04-15] T5: Mobile RiskFlow context — slimmed from desktop, no Notion polling, no trade ideas
 import {
   createContext,
@@ -54,12 +55,14 @@ interface RiskFlowContextValue {
   isLoading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
+  isReaching: boolean;
   criticalCount: number;
   highCount: number;
   mediumCount: number;
   lowCount: number;
   loadMore: () => Promise<void>;
   refresh: () => Promise<void>;
+  agentReach: () => Promise<void>;
   markSeen: (id: string) => void;
   removeAlert: (id: string) => void;
 }
@@ -78,6 +81,7 @@ export function MobileRiskFlowProvider({ children }: { children: ReactNode }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [isReaching, setIsReaching] = useState(false);
   const offsetRef = useRef(0);
 
   const mapItems = useCallback((items: any[]): MobileRiskFlowAlert[] => {
@@ -149,6 +153,20 @@ export function MobileRiskFlowProvider({ children }: { children: ReactNode }) {
     await fetchInitial();
   }, [fetchInitial]);
 
+  const agentReach = useCallback(async () => {
+    if (isReaching) return;
+    setIsReaching(true);
+    try {
+      await backend.riskflow.refresh();
+      offsetRef.current = 0;
+      await fetchInitial();
+    } catch (err) {
+      console.warn("[MobileRiskFlow] Agent Reach error:", err);
+    } finally {
+      setIsReaching(false);
+    }
+  }, [backend, fetchInitial, isReaching]);
+
   const markSeen = useCallback((_id: string) => {}, []);
   const removeAlert = useCallback((id: string) => {
     setDismissedIds((prev) => new Set(prev).add(id));
@@ -167,12 +185,14 @@ export function MobileRiskFlowProvider({ children }: { children: ReactNode }) {
         isLoading,
         loadingMore,
         hasMore,
+        isReaching,
         criticalCount,
         highCount,
         mediumCount,
         lowCount,
         loadMore,
         refresh,
+        agentReach,
         markSeen,
         removeAlert,
       }}

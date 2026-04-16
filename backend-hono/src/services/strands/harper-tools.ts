@@ -96,6 +96,7 @@ async function withApprovalGate<T>(
   toolInput: Record<string, unknown>,
   description: string,
   executeFn: () => Promise<T>,
+  opts?: { noTimeout?: boolean },
 ): Promise<T | string> {
   if (AUTO_APPROVED_TOOLS.has(toolName)) return executeFn();
   if (isToolApproved(toolName)) return executeFn();
@@ -105,6 +106,7 @@ async function withApprovalGate<T>(
     toolName,
     toolInput,
     description,
+    opts,
   );
   if (decision === "denied") {
     return `[Permission denied] User denied ${toolName}. Do not retry this tool.`;
@@ -115,7 +117,10 @@ async function withApprovalGate<T>(
 // ── Tool factory ────────────────────────────────────────────────────────────
 
 /** Create Harper's tool set bound to a specific requestId for approval gating */
-export function createHarperTools(requestId: string) {
+export function createHarperTools(
+  requestId: string,
+  approvalOpts?: { noTimeout?: boolean },
+) {
   return [
     tool({
       name: "run_command",
@@ -139,6 +144,7 @@ export function createHarperTools(requestId: string) {
               r.stdout + (r.stderr ? `\n[stderr] ${r.stderr}` : "")
             ).slice(0, 12_000);
           },
+          approvalOpts,
         );
         return ensureNonEmpty(result);
       },
@@ -176,6 +182,7 @@ export function createHarperTools(requestId: string) {
               return `Error: ${err instanceof Error ? err.message : String(err)}`;
             }
           },
+          approvalOpts,
         );
         return ensureNonEmpty(result);
       },
@@ -214,6 +221,7 @@ export function createHarperTools(requestId: string) {
               return `Error: ${err instanceof Error ? err.message : String(err)}`;
             }
           },
+          approvalOpts,
         );
         return ensureNonEmpty(result);
       },
@@ -256,6 +264,7 @@ export function createHarperTools(requestId: string) {
               return `Fetch error: ${err instanceof Error ? err.message : String(err)}`;
             }
           },
+          approvalOpts,
         );
         return ensureNonEmpty(result);
       },
@@ -289,6 +298,7 @@ export function createHarperTools(requestId: string) {
             }
             return JSON.stringify(results, null, 2).slice(0, 20_000);
           },
+          approvalOpts,
         );
         return ensureNonEmpty(result);
       },
