@@ -1,6 +1,7 @@
-// [claude-code 2026-04-16] Pull-to-refresh — lower threshold, spinning Nothing block, no text placeholder
+// [claude-code 2026-04-16] Pull-to-refresh — haptic-gated vibration
 import { type ReactNode, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useHaptic } from "../../hooks/useHaptic";
 
 interface PullToRefreshProps {
   children: ReactNode;
@@ -19,6 +20,7 @@ export function PullToRefresh({
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef(0);
   const pulling = useRef(false);
+  const vibrate = useHaptic();
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
@@ -45,7 +47,7 @@ export function PullToRefresh({
     if (!pulling.current) return;
     pulling.current = false;
     if (pullDistance >= PULL_THRESHOLD && !refreshing) {
-      navigator.vibrate?.(15);
+      vibrate(15);
       setRefreshing(true);
       setPullDistance(PULL_THRESHOLD);
       try {
@@ -57,7 +59,7 @@ export function PullToRefresh({
     } else {
       setPullDistance(0);
     }
-  }, [pullDistance, refreshing, onRefresh]);
+  }, [pullDistance, refreshing, onRefresh, vibrate]);
 
   const showIndicator = pullDistance > 10 || refreshing;
 

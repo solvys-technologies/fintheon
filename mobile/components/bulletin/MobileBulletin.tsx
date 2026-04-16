@@ -1,4 +1,4 @@
-// [claude-code 2026-04-16] Mobile StickyBulletin — 4-tab widget: Catalyst, Antilag, Event, Notes
+// [claude-code 2026-04-16] S20: StickyBulletin — auth headers, haptic-gated, activity signals
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Crosshair,
@@ -9,6 +9,9 @@ import {
   Zap,
 } from "lucide-react";
 import { BottomSheet } from "../shared/BottomSheet";
+import { useAuth } from "../../contexts/AuthContext";
+import { useHaptic } from "../../hooks/useHaptic";
+import { useActivityStatus } from "../../contexts/ActivityStatusContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -45,6 +48,9 @@ interface MobileBulletinProps {
 }
 
 export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
+  const { getAccessToken } = useAuth();
+  const vibrate = useHaptic();
+  const { setActivity } = useActivityStatus();
   const [section, setSection] = useState<SectionId>("notes");
   const [loaded, setLoaded] = useState(false);
 
@@ -71,38 +77,63 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
   // Load data on open
   useEffect(() => {
     if (!isOpen || loaded) return;
-    fetch(`${API_BASE}/api/sticky-bulletin`)
-      .then((r) => r.json())
-      .then((json) => {
+    (async () => {
+      try {
+        const token = await getAccessToken();
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const res = await fetch(`${API_BASE}/api/sticky-bulletin`, { headers });
+        const json = await res.json();
         const d = json.data ?? json;
         setTradingNotes(d.tradingNotes || "");
         setEventOfWeek(d.eventOfWeek || "");
         setAntilagTimes(d.antilagTimes || []);
-        setLoaded(true);
-      })
-      .catch(() => setLoaded(true));
-  }, [isOpen, loaded]);
+      } catch {}
+      setLoaded(true);
+    })();
+  }, [isOpen, loaded, getAccessToken]);
 
   // Load phrases when catalyst tab opens
   useEffect(() => {
     if (section !== "catalyst" || phrasesLoaded) return;
-    fetch(`${API_BASE}/api/riskflow/phrases`)
-      .then((r) => r.json())
-      .then((json) => {
+    (async () => {
+      try {
+        const token = await getAccessToken();
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const res = await fetch(`${API_BASE}/api/riskflow/phrases`, {
+          headers,
+        });
+        const json = await res.json();
         setPhrases(json.phrases || []);
-        setPhrasesLoaded(true);
-      })
-      .catch(() => setPhrasesLoaded(true));
-  }, [section, phrasesLoaded]);
+      } catch {}
+      setPhrasesLoaded(true);
+    })();
+  }, [section, phrasesLoaded, getAccessToken]);
 
-  // Auto-save notes
-  const saveField = useCallback((field: string, value: string) => {
-    fetch(`${API_BASE}/api/sticky-bulletin`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ [field]: value }),
-    }).catch(() => {});
-  }, []);
+  // Auto-save notes with auth + activity signal
+  const saveField = useCallback(
+    async (field: string, value: string) => {
+      setActivity("loading");
+      try {
+        const token = await getAccessToken();
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        await fetch(`${API_BASE}/api/sticky-bulletin`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ [field]: value }),
+        });
+        vibrate(6);
+        setActivity("success", 1500);
+      } catch {
+        setActivity("idle");
+      }
+    },
+    [getAccessToken, vibrate, setActivity],
+  );
 
   const handleNotesChange = useCallback(
     (val: string) => {
@@ -136,9 +167,14 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
     setQuickPulse(true);
     setTimeout(() => setQuickPulse(false), 600);
     try {
+      const token = await getAccessToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       await fetch(`${API_BASE}/api/sticky-bulletin/antilag`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ time, dayOfWeek, instrument: "ES", notes: "" }),
       });
       setAntilagTimes((prev) => [
@@ -151,17 +187,22 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
         },
         ...prev,
       ]);
-      navigator.vibrate?.(15);
+      vibrate(15);
     } catch {}
-  }, []);
+  }, [getAccessToken, vibrate]);
 
   // Add antilag manually
   const handleAddAntilag = useCallback(async () => {
     if (!newTime) return;
     try {
+      const token = await getAccessToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       await fetch(`${API_BASE}/api/sticky-bulletin/antilag`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           time: newTime,
           dayOfWeek: newDay,
@@ -180,35 +221,47 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
         ...prev,
       ]);
       setNewTime("");
-      navigator.vibrate?.(10);
+      vibrate(10);
     } catch {}
-  }, [newTime, newDay, newInstrument]);
+  }, [newTime, newDay, newInstrument, getAccessToken, vibrate]);
 
   // Add catalyst phrase
   const handleAddPhrase = useCallback(async () => {
     if (!newPhrase.trim()) return;
     try {
+      const token = await getAccessToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const res = await fetch(`${API_BASE}/api/riskflow/phrases`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ phrase: newPhrase, matchType, repeating }),
       });
       const json = await res.json();
       if (json.phrase) setPhrases((prev) => [json.phrase, ...prev]);
       setNewPhrase("");
-      navigator.vibrate?.(10);
+      vibrate(10);
     } catch {}
-  }, [newPhrase, matchType, repeating]);
+  }, [newPhrase, matchType, repeating, getAccessToken, vibrate]);
 
   // Delete catalyst phrase
-  const handleDeletePhrase = useCallback(async (id: number) => {
-    try {
-      await fetch(`${API_BASE}/api/riskflow/phrases/${id}`, {
-        method: "DELETE",
-      });
-      setPhrases((prev) => prev.filter((p) => p.id !== id));
-    } catch {}
-  }, []);
+  const handleDeletePhrase = useCallback(
+    async (id: number) => {
+      try {
+        const token = await getAccessToken();
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        await fetch(`${API_BASE}/api/riskflow/phrases/${id}`, {
+          method: "DELETE",
+          headers,
+        });
+        setPhrases((prev) => prev.filter((p) => p.id !== id));
+      } catch {}
+    },
+    [getAccessToken],
+  );
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="BULLETIN">

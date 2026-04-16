@@ -1,9 +1,10 @@
-// [claude-code 2026-04-15] T7: Settings page — notifications, appearance, account, about
+// [claude-code 2026-04-16] S20: Settings — save checkmarks per section, bulletin reminder toggle
 import { useState, useCallback } from "react";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
+import { SaveCheckmark } from "../shared/SaveCheckmark";
 import type { ThemeConfig } from "@frontend/lib/theme";
 import type { FontTheme } from "@frontend/lib/font-theme";
 
@@ -67,19 +68,36 @@ function Toggle({
   );
 }
 
-function SectionHeader({ label }: { label: string }) {
+function SectionHeader({
+  label,
+  showSave,
+  onSave,
+}: {
+  label: string;
+  showSave?: boolean;
+  onSave?: () => Promise<void>;
+}) {
   return (
     <div
       style={{
-        fontFamily: "'Space Mono', monospace",
-        fontSize: 11,
-        letterSpacing: "0.1em",
-        color: "var(--text-secondary)",
-        textTransform: "uppercase" as const,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
         marginBottom: 12,
       }}
     >
-      {label}
+      <div
+        style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: 11,
+          letterSpacing: "0.1em",
+          color: "var(--text-secondary)",
+          textTransform: "uppercase" as const,
+        }}
+      >
+        {label}
+      </div>
+      <SaveCheckmark visible={!!showSave} variant="single" onSave={onSave} />
     </div>
   );
 }
@@ -109,7 +127,7 @@ function SettingRow({
 }
 
 export function SettingsPage() {
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, isDirty, saveAll } = useSettings();
   const {
     theme,
     setTheme,
@@ -176,7 +194,11 @@ export function SettingsPage() {
     >
       {/* NOTIFICATIONS */}
       <section>
-        <SectionHeader label="Notifications" />
+        <SectionHeader
+          label="Notifications"
+          showSave={isDirty}
+          onSave={saveAll}
+        />
         <SettingRow label="Push Notifications">
           <Toggle
             on={masterEnabled}
@@ -308,7 +330,7 @@ export function SettingsPage() {
 
       {/* APPEARANCE */}
       <section>
-        <SectionHeader label="Appearance" />
+        <SectionHeader label="Appearance" showSave={isDirty} onSave={saveAll} />
         <div
           style={{
             fontFamily: "'Space Mono', monospace",
@@ -401,7 +423,7 @@ export function SettingsPage() {
 
       {/* TRADER */}
       <section>
-        <SectionHeader label="Trader" />
+        <SectionHeader label="Trader" showSave={isDirty} onSave={saveAll} />
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div>
             <div
@@ -510,6 +532,57 @@ export function SettingsPage() {
             }
           />
         </SettingRow>
+
+        {/* Bulletin reminder */}
+        <div style={{ marginTop: 8 }}>
+          <div
+            style={{
+              fontFamily: "'Space Mono', monospace",
+              fontSize: 10,
+              color: "var(--text-secondary)",
+              marginBottom: 8,
+              letterSpacing: "0.05em",
+            }}
+          >
+            BULLETIN REMINDER GLOW
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              border: "1px solid var(--border-visible)",
+              borderRadius: 6,
+              overflow: "hidden",
+            }}
+          >
+            {(["once", "until-pressed"] as const).map((mode, i) => (
+              <button
+                key={mode}
+                onClick={() => updateSettings({ bulletinReminder: mode })}
+                style={{
+                  padding: "8px 0",
+                  fontSize: 11,
+                  fontFamily: "'Space Mono', monospace",
+                  background:
+                    settings.bulletinReminder === mode
+                      ? "var(--text-display)"
+                      : "transparent",
+                  color:
+                    settings.bulletinReminder === mode
+                      ? "var(--black, #000)"
+                      : "var(--text-secondary)",
+                  border: "none",
+                  borderRight:
+                    i === 0 ? "1px solid var(--border-visible)" : "none",
+                  cursor: "pointer",
+                  minHeight: 44,
+                }}
+              >
+                {mode === "once" ? "ONCE" : "UNTIL PRESSED"}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Risk display (read-only from backend) */}
         <div style={{ marginTop: 8 }}>

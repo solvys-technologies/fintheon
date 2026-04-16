@@ -1,6 +1,7 @@
-// [claude-code 2026-04-16] Daily briefing card — truncated brief with full-screen overlay expand
+// [claude-code 2026-04-16] Briefing card — haptic on overlay open
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { useHaptic } from "../../hooks/useHaptic";
 import remarkGfm from "remark-gfm";
 import { SurfaceCard } from "../shared/SurfaceCard";
 import { BriefingOverlay } from "./BriefingOverlay";
@@ -9,6 +10,7 @@ import { useBriefing } from "../../hooks/useBriefing";
 export function BriefingCard() {
   const { items, isLoading, error, refresh } = useBriefing();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const vibrate = useHaptic();
 
   if (isLoading) {
     return (
@@ -71,7 +73,10 @@ export function BriefingCard() {
           {previewText}
         </div>
         <button
-          onClick={() => setSheetOpen(true)}
+          onClick={() => {
+            vibrate(8);
+            setSheetOpen(true);
+          }}
           style={{
             fontFamily: "var(--font-data)",
             fontSize: 11,

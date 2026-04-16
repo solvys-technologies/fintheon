@@ -1,6 +1,7 @@
-// [claude-code 2026-04-16] T7: Toolbar — offline indicator, clean header, bulletin moved to floating button
+// [claude-code 2026-04-16] S20: Toolbar — global save checkmark under hamburger
 import { Menu } from "lucide-react";
 import { VixBadge } from "../shared/VixBadge";
+import { SaveCheckmark } from "../shared/SaveCheckmark";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 
@@ -10,7 +11,7 @@ interface MobileToolbarProps {
 }
 
 export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
-  const { settings } = useSettings();
+  const { settings, isDirty, saveAll } = useSettings();
   const traderName = settings.traderName || "";
   const isOnline = useOnlineStatus();
 
@@ -105,6 +106,18 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
         >
           <Menu size={20} strokeWidth={1.5} color="var(--text-secondary)" />
         </button>
+      </div>
+
+      {/* Global save-all double-checkmark — sticky below hamburger */}
+      <div
+        style={{
+          position: "fixed",
+          top: "calc(env(safe-area-inset-top) + 52px)",
+          right: 20,
+          zIndex: 41,
+        }}
+      >
+        <SaveCheckmark visible={isDirty} variant="double" onSave={saveAll} />
       </div>
     </div>
   );

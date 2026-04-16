@@ -15,6 +15,7 @@
 import cron from "node-cron";
 import { generateBrief, wasBriefGeneratedToday } from "../brief-generator.js";
 import { appendToBoardroom } from "../hermes-sessions.js";
+import { startPrediction } from "../miroshark/miroshark-service.js";
 import { runMarketImpactEnrichment } from "./market-impact-enricher.js";
 import { createLogger } from "../../lib/logger.js";
 import type { BriefType } from "../supabase-service.js";
@@ -86,6 +87,13 @@ async function runDispatch(job: DispatchJob): Promise<void> {
     } catch {
       // Non-fatal — brief is still stored in Supabase
     }
+
+    // Fire-and-forget: trigger MiroShark Aquarium after every brief
+    startPrediction(
+      { lanes: [], catalysts: [], ropes: [] },
+      undefined,
+      "post-brief",
+    ).catch((err) => log.warn(`Post-brief Aquarium trigger failed:`, err));
 
     log.info(`${job.briefType} dispatch complete`, {
       supabaseId: result.supabaseId,
@@ -235,6 +243,15 @@ export async function catchUpMissedBriefs(): Promise<void> {
       } catch {
         /* non-fatal */
       }
+
+      // Fire-and-forget: trigger MiroShark Aquarium after catch-up brief
+      startPrediction(
+        { lanes: [], catalysts: [], ropes: [] },
+        undefined,
+        "post-brief",
+      ).catch((err) =>
+        log.warn(`Catch-up post-brief Aquarium trigger failed:`, err),
+      );
 
       log.info(`Catch-up: ${job.briefType} generated`, {
         supabaseId: result.supabaseId,

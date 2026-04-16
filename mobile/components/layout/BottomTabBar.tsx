@@ -1,4 +1,4 @@
-// [claude-code 2026-04-15] T3: Nothing-style bottom tab bar — Space Mono ALL CAPS, gold underline indicator
+// [claude-code 2026-04-16] Bottom tab bar — haptic-gated vibration
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Settings,
 } from "lucide-react";
+import { useHaptic } from "../../hooks/useHaptic";
 
 export const TAB_CONFIG = [
   { label: "HOME", icon: LayoutDashboard },
@@ -20,6 +21,7 @@ interface BottomTabBarProps {
 }
 
 export function BottomTabBar({ activeTab, onTabChange }: BottomTabBarProps) {
+  const vibrate = useHaptic();
   return (
     <nav
       role="tablist"
@@ -49,7 +51,7 @@ export function BottomTabBar({ activeTab, onTabChange }: BottomTabBarProps) {
             aria-label={tab.label}
             onClick={() => {
               if (i !== activeTab) {
-                navigator.vibrate?.(10);
+                vibrate(10);
                 onTabChange(i);
               }
             }}

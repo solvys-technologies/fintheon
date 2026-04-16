@@ -46,12 +46,16 @@ interface MobileSettings {
   selectedSymbol: TradingSymbol;
   alertConfig: AlertConfig;
   riskSettings: RiskSettings;
+  bulletinReminder: "once" | "until-pressed";
 }
 
 interface SettingsContextValue {
   settings: MobileSettings;
   updateSettings: (partial: Partial<MobileSettings>) => void;
   backendSynced: boolean;
+  isDirty: boolean;
+  isSaving: boolean;
+  saveAll: () => Promise<void>;
 }
 
 // ── Defaults ──
@@ -79,6 +83,7 @@ const DEFAULT_SETTINGS: MobileSettings = {
     dailyProfitTarget: 1500,
     dailyLossLimit: 750,
   },
+  bulletinReminder: "until-pressed" as const,
 };
 
 // ── Storage helpers ──
@@ -157,8 +162,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const { getAccessToken, isAuthenticated } = useAuth();
   const [settings, setSettings] = useState<MobileSettings>(loadSettings);
   const [synced, setSynced] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const backendSyncedRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedRef = useRef<string>(JSON.stringify(loadSettings()));
 
   // On mount: localStorage first (instant paint), then backend fetch (backend wins)
   useEffect(() => {
@@ -213,35 +221,77 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     })();
   }, [isAuthenticated, getAccessToken]);
 
+  // Flush save — immediate, used by saveAll and debounce
+  const flushSave = useCallback(
+    async (current: MobileSettings) => {
+      setIsSaving(true);
+      try {
+        const token = await getAccessToken();
+        await saveBackendSettings(
+          current as unknown as Record<string, unknown>,
+          token,
+        );
+        // Sync display name to profile
+        if (current.traderName) {
+          await fetch(`${API_BASE}/api/profile`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ display_name: current.traderName }),
+          }).catch(() => {});
+        }
+        lastSavedRef.current = JSON.stringify(current);
+        setIsDirty(false);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [getAccessToken],
+  );
+
   // Debounced save to localStorage + backend on change
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch {}
 
+    // Track dirty state
+    const currentJson = JSON.stringify(settings);
+    if (currentJson !== lastSavedRef.current) {
+      setIsDirty(true);
+    }
+
     if (!backendSyncedRef.current || !isAuthenticated) return;
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      const token = await getAccessToken();
-      await saveBackendSettings(
-        settings as unknown as Record<string, unknown>,
-        token,
-      );
-    }, 800);
+    saveTimerRef.current = setTimeout(() => flushSave(settings), 800);
 
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [settings, isAuthenticated, getAccessToken]);
+  }, [settings, isAuthenticated, flushSave]);
 
   const updateSettings = useCallback((partial: Partial<MobileSettings>) => {
     setSettings((prev) => ({ ...prev, ...partial }));
   }, []);
 
+  const saveAll = useCallback(async () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    await flushSave(settings);
+  }, [settings, flushSave]);
+
   return (
     <SettingsContext.Provider
-      value={{ settings, updateSettings, backendSynced: synced }}
+      value={{
+        settings,
+        updateSettings,
+        backendSynced: synced,
+        isDirty,
+        isSaving,
+        saveAll,
+      }}
     >
       {children}
     </SettingsContext.Provider>

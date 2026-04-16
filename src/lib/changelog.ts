@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T00:15:00",
+    agent: "claude-code",
+    summary:
+      "S20 mobile PWA: auth headers on all bulletin fetches, haptic gating via useHaptic hook (respects settings toggle), activity status context for chat FAB 3-state indicator (idle/radar/check), per-section save checkmarks + global double-checkmark in toolbar, bulletin FAB glow reminder (once/until-pressed), bulletin reminder setting, display name sync to profile, IV Score widget fuse bars replacing weight text",
+    files: [
+      "mobile/hooks/useHaptic.ts",
+      "mobile/contexts/ActivityStatusContext.tsx",
+      "mobile/components/shared/RadarSpinner.tsx",
+      "mobile/components/shared/SaveCheckmark.tsx",
+      "mobile/contexts/SettingsContext.tsx",
+      "mobile/components/layout/FloatingChatButton.tsx",
+      "mobile/components/layout/MobileShell.tsx",
+      "mobile/components/layout/MobileToolbar.tsx",
+      "mobile/components/layout/BottomTabBar.tsx",
+      "mobile/components/shared/PullToRefresh.tsx",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/home/BriefingCard.tsx",
+      "mobile/components/bulletin/MobileBulletin.tsx",
+      "mobile/components/settings/SettingsPage.tsx",
+      "mobile/hooks/useStickyBulletin.ts",
+      "mobile/App.tsx",
+      "frontend/components/IVScoreCard.tsx",
+    ],
+  },
+  {
     date: "2026-04-16T23:30:00",
     agent: "claude-code",
     summary:
