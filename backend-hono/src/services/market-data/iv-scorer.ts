@@ -7,7 +7,7 @@ import {
   calculateIVScoreV2,
   classifyEventType,
   type StackedEvent,
-} from "../iv-scoring-v2.js";
+} from "../iv-scoring/index.js";
 import { getCachedAssessment } from "../systemic/risk-detector.js";
 import { generateIVPrediction } from "./iv-prediction.js";
 import type { IVPrediction } from "./iv-prediction-types.js";

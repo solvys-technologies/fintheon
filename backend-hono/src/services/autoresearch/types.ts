@@ -1,7 +1,7 @@
 // [claude-code 2026-03-23] Canonical types for autoresearch scoring, observation, and backtesting
 // All autoresearch modules import types from this file.
 
-import type { IVScoringConfig } from "../iv-scoring-v2.js";
+import type { IVScoringConfig } from "../iv-scoring/index.js";
 
 /** A single scored observation attached to a news event */
 export interface ScoringObservation {

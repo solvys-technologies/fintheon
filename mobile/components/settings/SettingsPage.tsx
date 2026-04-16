@@ -135,7 +135,9 @@ export function SettingsPage() {
   }, [masterEnabled, push]);
 
   const toggleCategory = useCallback(
-    (key: "riskflow" | "dailyBrief" | "regimeActivations") => {
+    (
+      key: "riskflow" | "dailyBrief" | "regimeActivations" | "toolApprovals",
+    ) => {
       const updated = { ...notifPrefs, [key]: !notifPrefs[key] };
       updateSettings({ notificationPrefs: updated });
       if (push.isSubscribed) {
@@ -211,6 +213,12 @@ export function SettingsPage() {
               <Toggle
                 on={notifPrefs.regimeActivations}
                 onToggle={() => toggleCategory("regimeActivations")}
+              />
+            </SettingRow>
+            <SettingRow label="Tool Approvals">
+              <Toggle
+                on={notifPrefs.toolApprovals}
+                onToggle={() => toggleCategory("toolApprovals")}
               />
             </SettingRow>
 

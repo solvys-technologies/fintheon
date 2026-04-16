@@ -9,7 +9,7 @@
 
 import { calculateBlendedIVScore, classifyEventType } from "./iv-scorer.js";
 import { estimateAggregatePoints, estimatePoints } from "./point-estimator.js";
-import type { StackedEvent } from "../iv-scoring-v2.js";
+import type { StackedEvent } from "../iv-scoring/index.js";
 import type { BlendedIVScore } from "./iv-scorer.js";
 import { onVIXTrigger } from "../vix-service.js";
 

@@ -1,12 +1,20 @@
-// [claude-code 2026-04-16] Dash — scroll-lock snap pages with TradingView calendar embed
+// [claude-code 2026-04-16] T7: Dash — snap pages + NarrativeFlow catalysts + timeline
+import { lazy, Suspense } from "react";
 import { motion, type Variants } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { BriefingCard } from "./BriefingCard";
-import { EconCalendarEmbed } from "../econ/EconCalendarEmbed";
 import { AquariumSummary } from "./AquariumSummary";
 import { InstrumentOutlookCards } from "./InstrumentOutlookCards";
 import { AgentTradeCards } from "./AgentTradeCards";
+import { CatalystCards } from "./CatalystCards";
+import { TimelineView } from "./TimelineView";
 import { useIVScore } from "../../hooks/useIVScore";
+
+const EconCalendarEmbed = lazy(() =>
+  import("../econ/EconCalendarEmbed").then((m) => ({
+    default: m.EconCalendarEmbed,
+  })),
+);
 
 const container: Variants = {
   animate: { transition: { staggerChildren: 0.05 } },
@@ -314,9 +322,11 @@ export function HomePage() {
             zIndex: 1,
           }}
         >
-          {/* TradingView Economic Calendar — fills available space */}
+          {/* TradingView Economic Calendar — lazy-loaded, fills available space */}
           <div style={{ flex: 1, minHeight: "50%" }}>
-            <EconCalendarEmbed />
+            <Suspense fallback={null}>
+              <EconCalendarEmbed />
+            </Suspense>
           </div>
           <div className="fade-divider" style={{ margin: "0 16px" }} />
           {/* Aquarium Analysis */}
@@ -347,12 +357,44 @@ export function HomePage() {
           style={{
             flex: 1,
             paddingTop: 24,
-            paddingBottom: 64,
+            paddingBottom: 24,
             position: "relative",
             zIndex: 1,
           }}
         >
           <AgentTradeCards />
+        </div>
+      </SnapPage>
+
+      {/* Page 5: NarrativeFlow Catalysts */}
+      <SnapPage>
+        <div
+          style={{
+            flex: 1,
+            paddingTop: 24,
+            paddingBottom: 24,
+            overflowY: "auto",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          <CatalystCards />
+        </div>
+      </SnapPage>
+
+      {/* Page 6: Timeline */}
+      <SnapPage>
+        <div
+          style={{
+            flex: 1,
+            paddingTop: 24,
+            paddingBottom: 64,
+            overflowY: "auto",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          <TimelineView />
         </div>
       </SnapPage>
     </div>

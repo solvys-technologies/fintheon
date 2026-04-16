@@ -1,7 +1,8 @@
-// [claude-code 2026-04-16] Toolbar — clean header only, bulletin moved to floating button
+// [claude-code 2026-04-16] T7: Toolbar — offline indicator, clean header, bulletin moved to floating button
 import { Menu } from "lucide-react";
 import { VixBadge } from "../shared/VixBadge";
 import { useSettings } from "../../contexts/SettingsContext";
+import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 
 interface MobileToolbarProps {
   onHamburgerTap: () => void;
@@ -11,6 +12,7 @@ interface MobileToolbarProps {
 export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
   const { settings } = useSettings();
   const traderName = settings.traderName || "";
+  const isOnline = useOnlineStatus();
 
   return (
     <div
@@ -66,8 +68,23 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
           )}
         </div>
 
-        {/* VIX center */}
-        <VixBadge variant="compact" />
+        {/* VIX center / offline indicator */}
+        {isOnline ? (
+          <VixBadge variant="compact" />
+        ) : (
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 10,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--error)",
+              fontWeight: 600,
+            }}
+          >
+            [OFFLINE]
+          </span>
+        )}
 
         {/* Hamburger */}
         <button

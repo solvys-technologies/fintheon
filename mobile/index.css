@@ -90,6 +90,20 @@
   --fintheon-low: #34d399;
 }
 
+/* ── Font Display ── */
+@font-face {
+  font-family: "Doto";
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Mono";
+  font-display: swap;
+}
+
 /* ── Global Base ── */
 body {
   background: var(--black);

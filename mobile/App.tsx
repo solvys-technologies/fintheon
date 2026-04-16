@@ -117,6 +117,29 @@ function AuthenticatedApp() {
     setActiveTab(index);
   };
 
+  // Service worker notification tap routing
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type !== "notification-tap") return;
+      const { category } = event.data;
+
+      // Route to correct tab based on notification category
+      if (category === "riskflow") {
+        handleTabChange(1);
+      } else if (category === "chat" || category === "toolApprovals") {
+        handleTabChange(2);
+      } else if (category === "dailyBrief") {
+        handleTabChange(0);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener("message", handler);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", handler);
+  }, []);
+
   const direction = activeTab > prevTab.current ? 1 : -1;
 
   const renderPage = () => {

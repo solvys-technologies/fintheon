@@ -31,7 +31,7 @@ import {
   getMartingaleMultiplier,
   enforceSentiment,
   addToSessionBaseline,
-} from "../iv-scoring-v2.js";
+} from "../iv-scoring/index.js";
 import { broadcastLevel4 } from "./sse-broadcaster.js";
 import { getMatchedKeywords } from "../headline-parser.js";
 // [claude-code 2026-03-27] S3: Rewired data pipeline — raw → scored Supabase tables, deprecating news_feed_items

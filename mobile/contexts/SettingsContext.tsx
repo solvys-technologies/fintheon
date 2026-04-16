@@ -18,6 +18,7 @@ interface NotificationPrefs {
   riskflow: boolean;
   dailyBrief: boolean;
   regimeActivations: boolean;
+  toolApprovals: boolean;
   severityThreshold: "critical" | "high" | "medium" | "low";
 }
 
@@ -62,6 +63,7 @@ const DEFAULT_SETTINGS: MobileSettings = {
     riskflow: true,
     dailyBrief: true,
     regimeActivations: true,
+    toolApprovals: true,
     severityThreshold: "medium",
   },
   hapticEnabled: true,

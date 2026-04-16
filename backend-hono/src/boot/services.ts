@@ -54,6 +54,7 @@ import { initRettiwtPool } from "../services/rettiwt-service.js";
 import { cleanupOldRawItems } from "../services/supabase-service.js";
 import { startRelayConnector } from "../services/relay-connector.js";
 import { startOracleResearch } from "../services/cron/oracle-research-scheduler.js";
+import { startOutcomeResolver } from "../services/cron/outcome-resolver.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -315,6 +316,10 @@ export async function bootBackground(): Promise<void> {
 
   // REFLECT scheduler (04:00 UTC daily — news analysis quality self-improvement)
   startReflectScheduler();
+
+  // Outcome resolver (2h interval — resolves deliberation predictions vs actual VIX at 24/48/72h)
+  startOutcomeResolver();
+  log.info("OutcomeResolver started");
 
   // Harper Autonomous Loop — CAO autonomous agent (gated by HARPER_AUTONOMOUS_ENABLED=true)
   bootHarperAutonomous().catch((err) =>

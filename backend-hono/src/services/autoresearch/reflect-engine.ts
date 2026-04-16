@@ -7,6 +7,8 @@ import { generateFitnessReport, evaluateObservation } from "./fitness.js";
 import type { ScoringObservation, FitnessReport } from "./types.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
+import { addMemory } from "../agent-memory/memory-store.js";
+import type { AgentId } from "../agent-memory/types.js";
 
 const log = createLogger("REFLECT");
 
@@ -128,6 +130,9 @@ export async function runReflect(daysBack: number = 7): Promise<ReflectReport> {
 
   // Persist report to Supabase
   await persistReport(report);
+
+  // Distribute key findings to ALL agents' memory (not just Harper)
+  await distributeReflectFindings(report);
 
   log.info(
     `REFLECT complete: ${findings.length} findings, ${adjustments.length} adjustments`,
@@ -422,6 +427,71 @@ function buildSummary(
   }
 
   return summary.trim();
+}
+
+// ── Distribute REFLECT Findings to All Agents ──────────────────────────────
+
+const ALL_AGENTS: AgentId[] = [
+  "oracle",
+  "feucht",
+  "consul",
+  "herald",
+  "harper",
+];
+
+async function distributeReflectFindings(report: ReflectReport): Promise<void> {
+  const actionableFindings = report.findings.filter(
+    (f) => f.severity === "warning" || f.severity === "critical",
+  );
+
+  if (actionableFindings.length === 0 && report.findings.length > 0) {
+    // All healthy — still distribute a summary so agents know the system is calibrated
+    const content = `REFLECT ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${report.summary}`;
+    for (const agentId of ALL_AGENTS) {
+      await addMemory({
+        agentId,
+        memoryType: "reflect_finding",
+        content,
+        metadata: { metrics: report.metrics },
+        ttlHours: 7 * 24, // 7-day retention
+      }).catch((err) =>
+        log.warn("Failed to distribute REFLECT finding", {
+          agent: agentId,
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    }
+    return;
+  }
+
+  for (const finding of actionableFindings) {
+    const content =
+      `REFLECT [${finding.severity.toUpperCase()}] ${finding.message} — ` +
+      `Recommendation: ${finding.recommendation}`;
+
+    for (const agentId of ALL_AGENTS) {
+      await addMemory({
+        agentId,
+        memoryType: "reflect_finding",
+        content,
+        metadata: {
+          metric: finding.metric,
+          severity: finding.severity,
+          currentValue: finding.currentValue,
+        },
+        ttlHours: 7 * 24,
+      }).catch((err) =>
+        log.warn("Failed to distribute REFLECT finding", {
+          agent: agentId,
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    }
+  }
+
+  log.info(
+    `Distributed ${actionableFindings.length} REFLECT findings to ${ALL_AGENTS.length} agents`,
+  );
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────────

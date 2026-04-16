@@ -1,5 +1,7 @@
+// [claude-code 2026-04-16] T7: React.memo wrapper for streaming perf
 // [claude-code 2026-04-15] T6: Chat message bubble — markdown rendering, agent badge, streaming-ready
 
+import { memo } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
@@ -23,7 +25,7 @@ const formatTime = (iso: string) => {
   return `${hh}:${mm}`;
 };
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+function ChatMessageInner({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
 
   return (
@@ -165,3 +167,6 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     </motion.div>
   );
 }
+
+const ChatMessage = memo(ChatMessageInner);
+export default ChatMessage;

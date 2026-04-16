@@ -20,7 +20,7 @@ import {
   subscribeToIVScoreUpdates,
   type IVScoreSnapshot,
 } from "../../services/market-data/iv-score-ticker.js";
-import type { StackedEvent } from "../../services/iv-scoring-v2.js";
+import type { StackedEvent } from "../../services/iv-scoring/index.js";
 
 interface AggregateEventSignal {
   macroLevel?: number;

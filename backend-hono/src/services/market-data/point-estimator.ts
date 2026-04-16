@@ -5,7 +5,7 @@ import {
   calculateImpliedPoints,
   getInstrumentConfig,
   type ImpliedPoints,
-} from "../iv-scoring-v2.js";
+} from "../iv-scoring/index.js";
 
 export interface PointEstimate {
   /** The blended IV score this estimate is based on */
