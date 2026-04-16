@@ -60,7 +60,6 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   initialLoaded: false,
 });
 
-const NOTION_POLL_MS = 30_000;
 const BACKEND_FEED_POLL_MS = 15_000;
 
 function macroLevelToSeverity(level: number): RiskFlowAlert["severity"] {
@@ -107,10 +106,7 @@ function persistIds(key: string, ids: Set<string>): void {
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const backend = useBackend();
   const { selectedSymbol } = useSettings();
-  const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
-  const [notionPollStatus, setNotionPollStatus] =
-    useState<NotionPollStatus | null>(null);
   const [seenIds, setSeenIds] = useState<Set<string>>(() =>
     loadStoredIds(SEEN_STORAGE_KEY),
   );
@@ -120,78 +116,11 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
-  const notionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null,
   );
   // Track how many items have been loaded (initial 50 + loadMore pages) so polls don't reset scroll progress
   const loadedCountRef = useRef(50);
-
-  // Notion trade idea polling
-  const pollNotion = useCallback(async () => {
-    try {
-      const [ideas, pollStatus] = await Promise.all([
-        backend.notion.getTradeIdeas(),
-        backend.notion.getPollStatus(),
-      ]);
-      const converted: RiskFlowAlert[] = ideas.map((idea) => {
-        const displayName = idea.title || idea.ticker || "Trade Idea";
-        return {
-          id: `notion-ti-${idea.id}`,
-          headline: decodeHtmlEntities(
-            `${idea.direction.toUpperCase()} — ${displayName}${idea.entry ? ` @ ${idea.entry}` : ""}`,
-          ),
-          summary: decodeHtmlEntities(
-            idea.hermesDescription ??
-              `${displayName} — ${idea.direction} trade idea${idea.confidence ? ` (${idea.confidence} confidence)` : ""}`,
-          ),
-          url: idea.notionUrl,
-          publishedAt: idea.createdAt,
-          source: "notion-trade-idea" as const,
-          severity:
-            idea.confidence === "high" || idea.confidence === "max"
-              ? "high"
-              : idea.confidence === "medium"
-                ? "medium"
-                : "low",
-          tags: [idea.direction, idea.timeframe ?? ""].filter(Boolean),
-          tradeIdea: {
-            title: displayName,
-            ticker: idea.ticker || displayName,
-            direction: idea.direction,
-            entry: idea.entry,
-            stopLoss: idea.stopLoss,
-            takeProfit: idea.takeProfit,
-            potentialRisk: idea.potentialRisk,
-            potentialProfit: idea.potentialProfit,
-            riskRewardRatio: idea.riskRewardRatio,
-            confidence: idea.confidence,
-            timeframe: idea.timeframe,
-            sourceAgent: idea.sourceAgent,
-            hermesDescription: idea.hermesDescription,
-            notionUrl: idea.notionUrl,
-          },
-        };
-      });
-      setNotionAlerts(converted);
-      setNotionPollStatus(pollStatus);
-      console.debug(
-        `[RiskFlowContext] Notion poll: ${ideas.length} proposals (cache=${pollStatus.tradeIdeaCount}, running=${pollStatus.running})`,
-      );
-    } catch (err) {
-      console.warn("[RiskFlowContext] Notion poll error:", err);
-    }
-  }, [backend]);
-
-  useEffect(() => {
-    void pollNotion();
-    notionIntervalRef.current = setInterval(() => {
-      void pollNotion();
-    }, NOTION_POLL_MS);
-    return () => {
-      if (notionIntervalRef.current) clearInterval(notionIntervalRef.current);
-    };
-  }, [pollNotion]);
 
   // Backend feed polling (Rettiwt, Kalshi, Economic Calendar)
   // Uses loadedCountRef so polls fetch all items the user has scrolled through (not just first 50)
@@ -361,11 +290,8 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       document.removeEventListener("visibilitychange", handleVisibility);
   }, [backend, pollBackendFeed]);
 
-  // Merge: Notion (pinned) → Backend feed
   // [claude-code 2026-03-28] S9-T2: Removed 24h stalemate filter — items persist forever (backfill data)
-  const seenBackendIds = new Set(notionAlerts.map((a) => a.id));
-  const dedupedBackend = backendAlerts.filter((a) => !seenBackendIds.has(a.id));
-  const merged = [...notionAlerts, ...dedupedBackend];
+  const merged = backendAlerts;
   // FIX 1: Ensure every item has pointRange, direction, cyclical
   ensureScoring(merged, selectedSymbol.symbol);
   // FIX 4: Downgrade non-financial BREAKING headlines
@@ -440,13 +366,13 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         setFetchStatus("Backend refresh failed — fetching cached data");
       });
       setFetchStatus("Scoring & classifying items...");
-      await Promise.all([pollNotion(), pollBackendFeed()]);
+      await pollBackendFeed();
       setFetchStatus("Feed updated");
       setTimeout(() => setFetchStatus(""), 3000);
     } finally {
       setRefreshing(false);
     }
-  }, [backend, pollNotion, pollBackendFeed]);
+  }, [backend, pollBackendFeed]);
 
   useEffect(() => {
     persistIds(SEEN_STORAGE_KEY, seenIds);
@@ -459,7 +385,6 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         highCount,
         mediumCount,
         lowCount,
-        notionPollStatus,
         clearAll,
         removeAlert,
         markSeen,

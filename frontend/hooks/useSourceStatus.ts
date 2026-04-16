@@ -9,7 +9,7 @@ export interface RettiwtPoolStatus {
 }
 
 export interface SourceStatus {
-  notion: boolean;
+  supabase: boolean;
   rettiwt: boolean;
   rettiwtRateLimited: boolean;
   rettiwtCooldownSec: number;
@@ -24,7 +24,7 @@ export interface SourceStatus {
 }
 
 const DEFAULT_STATUS: SourceStatus = {
-  notion: false,
+  supabase: false,
   rettiwt: false,
   rettiwtRateLimited: false,
   rettiwtCooldownSec: 0,
@@ -50,7 +50,7 @@ export function useSourceStatus(): SourceStatus {
         const rateLimited = Boolean(data.rettiwtRateLimited ?? false);
         const cooldownSec = Number(data.rettiwtCooldownSec ?? 0);
         setStatus({
-          notion: Boolean(data.notion),
+          supabase: Boolean(data.supabase),
           rettiwt,
           rettiwtRateLimited: rateLimited,
           rettiwtCooldownSec: cooldownSec,

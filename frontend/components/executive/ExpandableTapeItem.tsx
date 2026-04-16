@@ -36,7 +36,7 @@ export function ExpandableTapeItem({
 }: ExpandableTapeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const backend = useBackend();
-  const isTradeIdea = alert.source === "notion-trade-idea" && !!alert.tradeIdea;
+  const isTradeIdea = alert.source === "trade-idea" && !!alert.tradeIdea;
 
   const handleGenerateNote = useCallback(async () => {
     const rawId = alert.id.replace(/^backend-/, "");

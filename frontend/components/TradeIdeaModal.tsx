@@ -1,4 +1,4 @@
-// [claude-code 2026-03-03] Trade Idea modal — shown when a Notion trade idea RiskFlow item is clicked.
+// [claude-code 2026-04-16] Trade Idea modal — shown when a trade idea RiskFlow item is clicked.
 // [claude-code 2026-03-24] Enhanced with expected print analysis, consensus/contrarian trade views, act/pass recommendation
 
 import React from "react";

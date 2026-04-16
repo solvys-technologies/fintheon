@@ -1,13 +1,22 @@
 ---
 name: solvys-beta
 description: Local build, test, and DMG publish to desktop. Like solvys-deploy but ends with a DMG on the desktop instead of a release. Use for local testing before committing to a production deploy.
-version: 0.1.0
 disable-model-invocation: true
 ---
 
 # Solvys Beta -- Local Build and DMG Publish
 
 You are a build engineer. Build the app locally, install it, verify it runs, and clean up old artifacts. No releases, no pushes -- this is local only.
+
+**CRITICAL RULES (from operational history):**
+
+- Always `rm -rf dist` in any directory before vite build -- stale bundles have shipped
+- Never start a vite dev server -- verify via `tsc --noEmit` + `vite build` only
+- Every desktop build must verify install/update scripts match the current version
+- Always clear quarantine attributes with `xattr -cr` after DMG install
+- Backend is launchd-managed (`io.solvys.fintheon-backend`) -- must unload before restart
+
+---
 
 ## Phase 1 -- Pre-flight (Light)
 
@@ -43,20 +52,27 @@ VERSION=$(node -p "require('./package.json').version")
 echo "Building v$VERSION"
 ```
 
+### 1d. Install/Update Script Check
+
+Verify install and update scripts reference the current version. WARN if out of date -- beta is a good time to catch this before production.
+
 ---
 
 ## Phase 2 -- Build
 
-Run the full build pipeline:
+Run the full build pipeline. Always clean dist directories first.
 
 ```bash
-# 1. Build frontend
+# 1. Clean stale build artifacts
+rm -rf dist frontend/dist mobile/dist
+
+# 2. Build frontend
 bun run frontend:build
 
-# 2. Build backend
+# 3. Build backend
 cd backend-hono && bun run build && cd ..
 
-# 3. Build Mac DMG
+# 4. Build Mac DMG
 bunx electron-builder --mac dmg
 ```
 
@@ -112,7 +128,22 @@ codesign -dv /Applications/Fintheon.app 2>&1 || echo "No code signature (expecte
 ls -la /Applications/Fintheon.app/Contents/MacOS/
 ```
 
-### 4b. Report
+### 4b. Local Backend Check
+
+Verify the backend is running (needed for the desktop app):
+
+```bash
+curl -s http://localhost:8080/api/diagnostics || echo "Backend not running -- restart with launchctl"
+```
+
+If not running:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist 2>/dev/null
+launchctl load ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist
+```
+
+### 4c. Report
 
 ```bash
 VERSION=$(node -p "require('./package.json').version")
@@ -127,27 +158,20 @@ echo "Checksum: $(shasum -a 256 "$DMG" | cut -d' ' -f1)"
 
 ## Phase 5 -- Old DMG Cleanup
 
-List all DMGs in `desktop-dist/`:
-
-```bash
-ls -la desktop-dist/*.dmg 2>/dev/null
-```
-
 Keep the current version's DMG. Delete all older DMGs:
 
 ```bash
 VERSION=$(node -p "require('./package.json').version")
+
+# Clean desktop-dist/
 for dmg in desktop-dist/*.dmg; do
   if [[ "$dmg" != *"$VERSION"* ]]; then
     rm "$dmg"
     echo "Removed: $dmg"
   fi
 done
-```
 
-Also clean up old DMGs from Downloads:
-
-```bash
+# Clean Downloads
 for dmg in ~/Downloads/Fintheon-*.dmg; do
   if [[ "$dmg" != *"$VERSION"* ]]; then
     rm "$dmg"
@@ -170,6 +194,8 @@ DMG: desktop-dist/Fintheon-{version}-arm64.dmg
 Size: {size}
 Checksum: {sha256}
 Installed: /Applications/Fintheon.app
+Backend: localhost:8080 [RUNNING/STOPPED]
+Install scripts: [CURRENT/OUTDATED]
 Old DMGs removed: {count}
 
 Open the app to verify manually.
@@ -180,6 +206,9 @@ Open the app to verify manually.
 - This skill builds and installs locally. It requires user invocation (disable-model-invocation).
 - Never create git tags or GitHub releases from a beta build.
 - Never push anything to remote.
+- Never start a vite dev server.
+- Always `rm -rf dist` before any vite build to prevent stale bundles.
 - Always remove the old app from /Applications before installing the new one.
 - Always clear quarantine attributes with `xattr -cr`.
 - Keep exactly one DMG (current version). Delete all others.
+- Verify install/update scripts are current -- flag if outdated.

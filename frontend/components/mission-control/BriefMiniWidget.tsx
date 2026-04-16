@@ -184,7 +184,7 @@ export function BriefMiniWidget() {
     } catch {
       // Try legacy endpoint
       try {
-        const res = await backend.notion.getMdbBrief();
+        const res = await backend.data.getMdbBrief();
         const text = res.items?.[0]?.detail ?? "";
         if (text) {
           setTodayBriefs([

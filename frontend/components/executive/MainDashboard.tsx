@@ -140,7 +140,7 @@ export function MainDashboard({
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await backend.notion.getMdbBrief();
+        const res = await backend.data.getMdbBrief();
         if (cancelled) return;
         setNtnText(res.items[0]?.detail ?? "");
         if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
@@ -166,7 +166,7 @@ export function MainDashboard({
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await backend.notion.getPerformance();
+        const res = await backend.data.getPerformance();
         if (cancelled) return;
         setKpis(res.kpis as ExecutiveKpi[]);
       } catch (error) {
@@ -219,14 +219,14 @@ export function MainDashboard({
       const feedRefreshPromise = refresh().catch(() => {});
 
       // Fetch brief
-      let res = await backend.notion.getMdbBrief();
+      let res = await backend.data.getMdbBrief();
       if (!res.items[0]?.detail) {
         await fetch(
           `${(import.meta.env.VITE_API_URL || "http://localhost:8080").replace(/\/$/, "")}/api/data/brief/generate`,
           { method: "POST" },
         ).catch(() => {});
         await new Promise((r) => setTimeout(r, 2000));
-        res = await backend.notion.getMdbBrief();
+        res = await backend.data.getMdbBrief();
       }
       setNtnText(res.items[0]?.detail ?? "");
       if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));

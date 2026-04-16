@@ -1,13 +1,27 @@
 ---
 name: solvys-deploy
 description: Pre-flight checks, deploy release, post-deploy test, fix-and-redeploy cycle. Use when shipping to production. This skill has side effects -- it deploys code and creates releases.
-version: 0.1.0
 disable-model-invocation: true
 ---
 
 # Solvys Deploy -- Ship to Production
 
 You are a release engineer. Follow every phase in order. Do not skip pre-flight. If any phase fails, stop and report -- do not silently continue.
+
+**CRITICAL RULES (from operational history):**
+
+- Deploy must hit ALL 3 targets: backend (Fly.io), desktop frontend (Vercel), mobile PWA (Vercel)
+- Backend deploys to Fly.io app `fintheon` (fintheon.fly.dev) -- NEVER `pulse-api-*`
+- Never run `fly deploy` from the repo root -- root Dockerfile is a gostatic static server
+- Mobile deploys as prebuilt from `mobile/` dir -- git auto-builds are disabled
+- Always `rm -rf dist` before mobile vite build -- stale bundles deploy otherwise
+- Desktop frontend deploys as prebuilt from `frontend/` dir
+- Every desktop release must update install/update scripts
+- Always restart local backend after deploy (unless actively editing it)
+- Never start a vite dev server -- verify via `tsc --noEmit` + `vite build` only
+- Always redeploy to prod AND test endpoints before reporting done
+
+---
 
 ## Phase 1 -- Pre-flight
 
@@ -41,34 +55,52 @@ git tag -l | tail -5
 - Verify `src/lib/changelog.ts` has an entry for this release
 - If not, prompt the user to add one before proceeding
 
+### 1d. Install/Update Scripts
+
+- Verify install and update scripts reference the current version
+- WARN if scripts are out of date -- they MUST be updated before deploy
+
 ---
 
-## Phase 2 -- Deploy
+## Phase 2 -- Deploy (All 3 Targets)
 
-Detect the deploy target from `$ARGUMENTS` or project configuration:
+Deploy order: backend first, then desktop frontend, then mobile PWA. All three are mandatory unless `$ARGUMENTS` explicitly limits scope.
 
-### Vercel (Frontend)
-
-```bash
-vercel --prod
-```
-
-Wait for deployment URL. Capture it for Phase 3.
-
-### Backend (Hono/Workers)
+### 2a. Backend (Fly.io)
 
 ```bash
-cd backend-hono && bun run build
-# Deploy method varies -- check package.json scripts for deploy command
+cd backend-hono && bun run build && fly deploy --yes
 ```
 
-### Full Stack
+- The `fly.toml` in `backend-hono/` has `app = 'fintheon'`
+- NEVER deploy from repo root (wrong Dockerfile)
+- NEVER deploy to any `pulse-api-*` app (deleted legacy)
+- Verify deployment succeeds before proceeding
 
-Run both in sequence: backend first, then frontend.
+### 2b. Desktop Frontend (Vercel)
 
-### GitHub Release
+```bash
+cd frontend && vercel build --prod && vercel deploy --prebuilt --prod
+```
 
-After successful deployment:
+Capture the deployment URL for Phase 3.
+
+### 2c. Mobile PWA (Vercel)
+
+```bash
+cd mobile && rm -rf dist && npx vite build && vercel build --prod && vercel deploy --prebuilt --prod
+```
+
+- ALWAYS `rm -rf dist` before build -- Vite caches aggressively and stale bundles have shipped
+- The Vercel project `fintheon-mobile` has git auto-builds disabled (`commandForIgnoringBuildStep: "exit 0"`)
+- Vercel rewrites in `mobile/vercel.json` proxy `/api/*` to `fintheon.fly.dev`
+- Never set root directory to "mobile" on the Vercel project -- causes path doubling
+
+Capture the deployment URL for Phase 3.
+
+### 2d. GitHub Release
+
+After all three targets deploy successfully:
 
 ```bash
 VERSION=$(node -p "require('./package.json').version")
@@ -81,28 +113,57 @@ gh release create "v$VERSION" --generate-notes --title "v$VERSION"
 
 ## Phase 3 -- Post-Deploy Verification
 
-### 3a. Health Check
-
-Hit the deployment URL(s):
+### 3a. Backend Health Check
 
 ```bash
-# Frontend
-curl -s -o /dev/null -w "%{http_code}" {deployment_url}
+curl -s https://fintheon.fly.dev/api/diagnostics
+```
 
-# Backend API
-curl -s {api_url}/api/diagnostics
+- PASS if HTTP 200 and response contains expected service status
+- FAIL if non-200 or timeout
+
+### 3b. Desktop Frontend Check
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" {desktop_deployment_url}
 ```
 
 - PASS if HTTP 200
-- FAIL if non-200 or timeout
 
-### 3b. Smoke Test
+### 3c. Mobile PWA Check
 
-If the project has smoke tests or e2e tests, run them against the deployed URL.
+```bash
+curl -s -o /dev/null -w "%{http_code}" {mobile_deployment_url}
+```
 
-### 3c. Visual Verification
+- PASS if HTTP 200
 
-If the frontend was deployed, remind the user to open the deployment URL and verify the golden path manually.
+### 3d. API Smoke Tests
+
+Hit key endpoints against the live backend:
+
+```bash
+curl -s https://fintheon.fly.dev/api/riskflow/feed | head -c 200
+curl -s https://fintheon.fly.dev/api/riskflow/iv-aggregate | head -c 200
+```
+
+- PASS if responses contain valid JSON
+- FAIL if empty, error, or timeout
+
+### 3e. Local Backend Restart
+
+```bash
+launchctl unload ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist 2>/dev/null
+launchctl load ~/Library/LaunchAgents/io.solvys.fintheon-backend.plist
+```
+
+Verify backend is running:
+
+```bash
+curl -s http://localhost:8080/api/diagnostics
+```
+
+Skip this step ONLY if actively editing the local backend.
 
 ---
 
@@ -115,7 +176,7 @@ Activated only if Phase 3 fails.
 1. Diagnose the failure using Solvys Audit Phase 6 (Debug Mode)
 2. Apply the minimal fix
 3. Commit with prefix: `fix(deploy): {description}`
-4. Re-run Phase 2 and Phase 3
+4. Re-run Phase 2 (only the failing target) and Phase 3
 
 ### Attempt 2
 
@@ -124,7 +185,7 @@ If Attempt 1 also fails:
 1. Diagnose again
 2. Apply fix
 3. Commit with prefix: `fix(deploy): {description} (retry 2)`
-4. Re-run Phase 2 and Phase 3
+4. Re-run Phase 2 (only the failing target) and Phase 3
 
 ### Abort
 
@@ -154,9 +215,10 @@ Maximum retry cycles: 2. After 2 failures, abort and report.
 
 After successful deployment and verification:
 
-1. Run the install-maintenance audit (if the project has one)
-2. Update changelog with deploy entry
-3. Report:
+1. Update install/update scripts with the new version
+2. Run the install-maintenance audit (`/install-maintenance`)
+3. Update changelog with deploy entry
+4. Report:
 
    ```
    ============================================
@@ -164,11 +226,13 @@ After successful deployment and verification:
      {project} v{version} -- {date}
    ============================================
 
-   Target: {vercel/workers/full-stack}
-   URL: {deployment_url}
-   Release: {github_release_url}
+   Backend:  fintheon.fly.dev          [PASS]
+   Desktop:  {desktop_url}            [PASS]
+   Mobile:   {mobile_url}             [PASS]
+   Release:  {github_release_url}
+   Local:    localhost:8080            [PASS]
    Duration: {total time}
-   Retries: {0/1/2}
+   Retries:  {0/1/2}
    ```
 
 ## Rules
@@ -176,6 +240,10 @@ After successful deployment and verification:
 - This skill creates releases and deploys code. It requires user invocation (disable-model-invocation).
 - Never deploy with failing pre-flight checks.
 - Never force-push during a deploy.
+- Always deploy all 3 targets unless explicitly told otherwise.
 - Always create a git tag before creating a GitHub release.
 - If rolling back, delete both the release AND the tag.
 - Maximum 2 fix-and-redeploy attempts. After that, humans need to intervene.
+- Always restart local backend after deploy (unless actively editing it).
+- Never start a vite dev server. Verify via build only.
+- Never report done without testing live endpoints.
