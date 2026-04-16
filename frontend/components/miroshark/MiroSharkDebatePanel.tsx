@@ -112,15 +112,24 @@ export function MiroSharkDebatePanel({
       return;
     }
 
+    let notFoundCount = 0;
     const poll = async () => {
       try {
         const res = await fetch(
           `${API_BASE}/api/miroshark/deliberation/${simulationId}`,
         );
         if (res.ok) {
+          notFoundCount = 0;
           const data = await res.json();
           setState(data);
           if (data.phase === "complete" && pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+        } else if (res.status === 404) {
+          notFoundCount++;
+          // Stop polling after 3 consecutive 404s — deliberation doesn't exist
+          if (notFoundCount >= 3 && pollRef.current) {
             clearInterval(pollRef.current);
             pollRef.current = null;
           }
@@ -129,7 +138,7 @@ export function MiroSharkDebatePanel({
     };
 
     poll();
-    pollRef.current = setInterval(poll, 2000);
+    pollRef.current = setInterval(poll, 3000);
 
     return () => {
       if (pollRef.current) {
