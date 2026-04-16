@@ -92,7 +92,7 @@ async function runDispatch(job: DispatchJob): Promise<void> {
     startPrediction(
       { lanes: [], catalysts: [], ropes: [] },
       undefined,
-      "post-brief",
+      "full-brief",
     ).catch((err) => log.warn(`Post-brief Aquarium trigger failed:`, err));
 
     log.info(`${job.briefType} dispatch complete`, {
@@ -248,7 +248,7 @@ export async function catchUpMissedBriefs(): Promise<void> {
       startPrediction(
         { lanes: [], catalysts: [], ropes: [] },
         undefined,
-        "post-brief",
+        "full-brief",
       ).catch((err) =>
         log.warn(`Catch-up post-brief Aquarium trigger failed:`, err),
       );

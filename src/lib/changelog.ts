@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T00:30:00",
+    agent: "claude-code",
+    summary:
+      "Trigger MiroShark Aquarium run after every briefing generation — cron dispatch and catch-up paths now fire startPrediction() post-brief, matching the existing behavior on the manual POST /api/data/brief/generate route.",
+    files: ["backend-hono/src/services/cron/dispatch-scheduler.ts"],
+  },
+  {
     date: "2026-04-17T00:15:00",
     agent: "claude-code",
     summary:
