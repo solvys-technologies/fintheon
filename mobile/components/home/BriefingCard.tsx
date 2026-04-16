@@ -45,6 +45,13 @@ export function BriefingCard() {
   // Combine items into a single body string
   const fullText = items.map((i) => `**${i.title}**\n${i.detail}`).join("\n\n");
 
+  // Plain-text preview (webkit-line-clamp fails with block elements from ReactMarkdown)
+  const previewText =
+    fullText
+      .replace(/[#*_`~>]/g, "")
+      .replace(/\n{2,}/g, "\n")
+      .slice(0, 280) + (fullText.length > 280 ? "..." : "");
+
   return (
     <>
       <SurfaceCard>
@@ -56,13 +63,12 @@ export function BriefingCard() {
             color: "var(--text-primary)",
             lineHeight: 1.5,
             marginTop: 8,
-            display: "-webkit-box",
-            WebkitLineClamp: 6,
-            WebkitBoxOrient: "vertical",
+            maxHeight: "7.5em",
             overflow: "hidden",
+            whiteSpace: "pre-line",
           }}
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullText}</ReactMarkdown>
+          {previewText}
         </div>
         <button
           onClick={() => setSheetOpen(true)}
