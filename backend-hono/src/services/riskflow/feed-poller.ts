@@ -19,7 +19,11 @@ import {
   markRettiwtPollSuccess,
   markRettiwtPollEmpty,
 } from "./econ-rettiwt-poller.js";
-import { isRettiwtAvailable, rettiwtUserTimeline } from "../rettiwt-service.js";
+import {
+  hasAuthenticatedKeys,
+  isRettiwtAvailable,
+  rettiwtUserTimeline,
+} from "../rettiwt-service.js";
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
 import { isSupabaseConfigured } from "../../config/supabase.js";
 import { getPollingConfig } from "./polling-config.js";
@@ -151,7 +155,9 @@ export async function runScrapeFallback(): Promise<number> {
   let totalWritten = 0;
 
   // ── Step 1: Pull curated account timelines ──
-  if (isRettiwtAvailable()) {
+  // [claude-code 2026-04-16] Use hasAuthenticatedKeys() — isRettiwtAvailable() returns true even when
+  // all keys are on cooldown, causing silent failures in timeline fetches.
+  if (hasAuthenticatedKeys()) {
     const handles = await getAccountHandles();
     for (const handle of handles) {
       try {
@@ -201,8 +207,10 @@ export async function runScrapeFallback(): Promise<number> {
     );
   }
 
-  // ── Step 2: Agent-Reach scrape if timelines yielded nothing ──
-  if (totalWritten === 0) {
+  // ── Step 2: Agent-Reach scrape — always run to catch FinancialJuice, ZH, Reuters, Bloomberg
+  // [claude-code 2026-04-16] Removed totalWritten === 0 gate — Agent-Reach should run alongside
+  // curated timelines, not as a fallback. FinancialJuice was unreachable when timelines wrote >0 items.
+  {
     const AGENT_REACH_DOMAINS = [
       "https://financialjuice.com",
       "https://zerohedge.com",

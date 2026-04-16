@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T14:00:00",
+    agent: "claude-code",
+    summary:
+      "fix: scrape fallback uses hasAuthenticatedKeys() instead of isRettiwtAvailable() to skip curated timelines when all Rettiwt keys on cooldown. Agent-Reach (FinancialJuice, ZH, Reuters, Bloomberg) now runs unconditionally instead of gated behind totalWritten===0.",
+    files: ["backend-hono/src/services/riskflow/feed-poller.ts"],
+  },
+  {
     date: "2026-04-16T13:30:00",
     agent: "claude-code",
     summary:
