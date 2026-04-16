@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T09:00:00",
+    agent: "claude-code",
+    summary:
+      "RiskFlow fuzzy dedup: token-overlap similarity (70% threshold) removes near-duplicate headlines from different sources. Fixed agent subject tags to match DB vocabulary (subj:macro, subj:geopolitical, subj:vol, subj:structure, subj:earnings, subj:credit, subj:sentiment) — each MiroShark agent now gets differentiated headline context instead of groupthink. Auto-trigger MiroShark Aquarium run after every Brief publish. Created 4 missing Supabase tables (miroshark_deliberations, agent_memory, deliberation_outcomes, oracle_research_findings).",
+    files: [
+      "backend-hono/src/services/riskflow/feed-service.ts",
+      "backend-hono/src/services/agent-bus/templates/miroshark-template.ts",
+      "backend-hono/src/routes/data/index.ts",
+    ],
+  },
+  {
     date: "2026-04-17T06:30:00",
     agent: "claude-code",
     summary:

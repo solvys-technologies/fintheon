@@ -1,6 +1,6 @@
 // [claude-code 2026-04-15] T3: Mini chat input per regime card — dispatches to sidebar chat
 import { useState, useRef } from "react";
-import { Send } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import type { TradingRegime } from "../../lib/regimes";
 
 interface RegimeMiniChatProps {
@@ -59,7 +59,7 @@ export function RegimeMiniChat({
       className="transition-all duration-200 ease-out"
       style={{ animation: "fadeSlideIn 0.2s ease-out forwards" }}
     >
-      <div className="relative">
+      <div className="flex items-center gap-1.5">
         <input
           ref={inputRef}
           type="text"
@@ -70,13 +70,20 @@ export function RegimeMiniChat({
             if (!value.trim()) setExpanded(false);
           }}
           placeholder={`Ask about ${regime.name}...`}
-          className="bg-transparent border border-[var(--fintheon-glass-border)] rounded-xl px-3 py-1.5 text-xs text-[var(--fintheon-text)] placeholder-zinc-600 focus:border-[var(--fintheon-accent)]/40 focus:outline-none focus:shadow-[0_0_8px_rgba(212,175,55,0.08)] w-full pr-7 transition-all duration-200"
+          className="flex-1 bg-transparent border border-[var(--fintheon-glass-border)] px-3 py-1.5 text-xs text-[var(--fintheon-text)] placeholder-zinc-600 focus:border-[var(--fintheon-accent)]/40 focus:outline-none focus:shadow-[0_0_8px_rgba(212,175,55,0.08)] transition-all duration-200"
         />
         <button
           onClick={handleSubmit}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors"
+          disabled={!value.trim()}
+          className={`flex items-center justify-center shrink-0 transition-all duration-300 ${
+            value.trim()
+              ? "bg-[var(--fintheon-accent)] text-black shadow-[0_0_12px_rgba(199,159,74,0.3)] hover:shadow-[0_0_20px_rgba(199,159,74,0.5)]"
+              : "bg-[var(--fintheon-accent)]/30 text-black/50"
+          }`}
+          style={{ width: "26px", height: "26px" }}
+          title="Send"
         >
-          <Send className="w-3 h-3" />
+          <ArrowUp size={13} strokeWidth={2.5} />
         </button>
       </div>
     </div>

@@ -62,6 +62,59 @@ const log = createLogger("RiskFlow");
 // [claude-code 2026-04-01] Bumped from 100 → 500. All scored items should be accessible.
 const MAX_FEED_ITEMS = 500;
 const isDev = process.env.NODE_ENV !== "production";
+
+// Stopwords for headline dedup — hoisted to module scope to avoid re-creating per item
+const DEDUP_STOPWORDS = new Set([
+  "the",
+  "a",
+  "an",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "has",
+  "have",
+  "had",
+  "do",
+  "does",
+  "did",
+  "will",
+  "would",
+  "could",
+  "should",
+  "may",
+  "might",
+  "can",
+  "shall",
+  "must",
+  "not",
+  "no",
+  "nor",
+  "but",
+  "and",
+  "or",
+  "if",
+  "of",
+  "in",
+  "on",
+  "at",
+  "to",
+  "for",
+  "by",
+  "with",
+  "from",
+  "that",
+  "this",
+  "its",
+  "it",
+  "i",
+  "am",
+  "so",
+  "as",
+  "up",
+]);
 const ALLOW_MOCK_FALLBACK = process.env.RISKFLOW_ALLOW_MOCK_FALLBACK === "true";
 
 // Keyword lists for sentiment inference (used for Polymarket + failed enrichment fallback)
@@ -925,19 +978,48 @@ export async function getFeed(
         new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
     );
 
-    // Headline-level dedup — same headline from different pipeline paths (fb-, cs-, rt-)
-    // Keep the first occurrence (highest recency after sort) of each normalized headline
-    const seenHeadlines = new Map<string, number>();
+    // [claude-code 2026-04-16] Token-overlap fuzzy dedup for semantic duplicates
+    // Removes near-identical headlines from different sources (e.g. FJ vs OSINT)
+    const preDedup = items.length;
+    const seenHeadlines: Array<{ key: string; tokens: Set<string> }> = [];
     items = items.filter((item) => {
-      const key = item.headline
+      const normalized = item.headline
         .replace(/[\s\n]+/g, " ")
         .trim()
-        .toLowerCase()
-        .slice(0, 120);
-      if (seenHeadlines.has(key)) return false;
-      seenHeadlines.set(key, 1);
+        .toLowerCase();
+      const key = normalized.slice(0, 120);
+
+      const tokenArr = normalized
+        .replace(/[^a-z0-9\s]/g, "")
+        .split(/\s+/)
+        .filter((w) => w.length > 2 && !DEDUP_STOPWORDS.has(w));
+      const tokenSet = new Set(tokenArr);
+
+      if (tokenSet.size === 0) {
+        if (seenHeadlines.some((s) => s.key === key)) return false;
+        seenHeadlines.push({ key, tokens: tokenSet });
+        return true;
+      }
+
+      for (const seen of seenHeadlines) {
+        if (seen.tokens.size === 0) continue;
+        let overlap = 0;
+        for (const t of tokenSet) {
+          if (seen.tokens.has(t)) overlap++;
+        }
+        const shorter = Math.min(tokenSet.size, seen.tokens.size);
+        if (shorter > 0 && overlap / shorter >= 0.7) return false;
+      }
+
+      seenHeadlines.push({ key, tokens: tokenSet });
       return true;
     });
+
+    if (preDedup !== items.length) {
+      log.info(
+        `Headline dedup: ${preDedup} → ${items.length} (removed ${preDedup - items.length})`,
+      );
+    }
 
     // Apply pagination (offset + limit)
     const limit = Math.min(filters?.limit ?? MAX_FEED_ITEMS, MAX_FEED_ITEMS);

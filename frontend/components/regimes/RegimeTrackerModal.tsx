@@ -12,6 +12,8 @@ import {
 } from "../../lib/regime-time";
 import type { TradingRegime } from "../../lib/regimes";
 import { GlassEffect, GlassButton } from "../ui/liquid-glass";
+import { BiasBadge } from "./BiasBadge";
+import { ConfidenceBar } from "./ConfidenceBar";
 import { RegimeCard } from "./RegimeCard";
 import { RegimeThinkingOverlay } from "./RegimeThinkingOverlay";
 
@@ -67,97 +69,143 @@ function AddRegimeForm({
   };
 
   const inputClass =
-    "w-full bg-[#0a0a06] border border-zinc-800 text-xs text-[var(--fintheon-text)] px-2 py-1.5 focus:outline-none focus:border-[var(--fintheon-accent)]/40";
+    "w-full bg-[#0a0a06]/60 border border-zinc-800/60 text-xs text-[var(--fintheon-text)] px-2.5 py-1.5 focus:outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors";
 
   return (
-    <div className="bg-[#0a0a06] border border-[var(--fintheon-accent)]/30 p-3 space-y-2">
-      <div className="text-[10px] font-semibold text-[var(--fintheon-accent)] tracking-wider uppercase mb-1">
-        New Custom Regime
-      </div>
-      <input
-        className={inputClass}
-        placeholder="Regime name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <input
-        className={inputClass}
-        placeholder="Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="text-[9px] text-zinc-600 uppercase">
-            Start (NY)
-          </label>
-          <input
-            className={inputClass}
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-[9px] text-zinc-600 uppercase">End (NY)</label>
-          <input
-            className={inputClass}
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="text-[9px] text-zinc-600 uppercase">Bias</label>
-          <select
-            className={inputClass}
-            value={bias}
-            onChange={(e) => setBias(e.target.value as TradingRegime["bias"])}
+    <GlassEffect
+      className="rounded-2xl"
+      style={{
+        borderColor: "var(--fintheon-accent)",
+        boxShadow: "0 0 16px rgba(212,175,55,0.12)",
+      }}
+    >
+      <div className="px-4 py-3 space-y-2.5">
+        {/* Header — matches RegimeCard header style */}
+        <div className="flex items-start justify-between mb-1">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[var(--fintheon-accent)]">
+                New Regime
+              </span>
+              <span className="shrink-0 inline-flex items-center gap-1 text-[8px] font-bold tracking-wider uppercase text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 px-1.5 py-0.5">
+                <Plus className="w-2 h-2" />
+                CREATE
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onCancel}
+            className="shrink-0 p-1 text-zinc-700 hover:text-zinc-400 transition-colors"
           >
-            <option value="continuation">Continuation</option>
-            <option value="reversal">Reversal</option>
-            <option value="convergence">Convergence</option>
-            <option value="consolidation">Consolidation</option>
-            <option value="rotation">Rotation</option>
-          </select>
+            <X className="w-3 h-3" />
+          </button>
         </div>
-        <div>
-          <label className="text-[9px] text-zinc-600 uppercase">
-            Confidence
-          </label>
-          <input
-            className={inputClass}
-            type="number"
-            min={0}
-            max={100}
-            value={confidence}
-            onChange={(e) => setConfidence(Number(e.target.value))}
-          />
+
+        {/* Form fields */}
+        <input
+          className={inputClass}
+          placeholder="Regime name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoFocus
+        />
+        <input
+          className={inputClass}
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+
+        {/* Meta row — matches RegimeCard meta layout */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[9px] text-zinc-600 uppercase tracking-wider">
+              Start (NY)
+            </label>
+            <input
+              className={inputClass}
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-[9px] text-zinc-600 uppercase tracking-wider">
+              End (NY)
+            </label>
+            <input
+              className={inputClass}
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Bias + Confidence — inline with visual preview */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[9px] text-zinc-600 uppercase tracking-wider">
+              Bias
+            </label>
+            <select
+              className={inputClass}
+              value={bias}
+              onChange={(e) => setBias(e.target.value as TradingRegime["bias"])}
+            >
+              <option value="continuation">Continuation</option>
+              <option value="reversal">Reversal</option>
+              <option value="convergence">Convergence</option>
+              <option value="consolidation">Consolidation</option>
+              <option value="rotation">Rotation</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[9px] text-zinc-600 uppercase tracking-wider">
+              Confidence
+            </label>
+            <input
+              className={inputClass}
+              type="number"
+              min={0}
+              max={100}
+              value={confidence}
+              onChange={(e) => setConfidence(Number(e.target.value))}
+            />
+          </div>
+        </div>
+
+        {/* Live preview badges */}
+        <div className="flex items-center gap-3">
+          <BiasBadge bias={bias} />
+          <ConfidenceBar value={confidence} />
+        </div>
+
+        <input
+          className={inputClass}
+          placeholder="Instruments (comma-sep)"
+          value={instruments}
+          onChange={(e) => setInstruments(e.target.value)}
+        />
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 pt-0.5">
+          <button
+            onClick={handleSubmit}
+            disabled={!name.trim()}
+            className="px-3 py-1 text-[10px] font-semibold bg-[var(--fintheon-accent)] text-black hover:bg-[color-mix(in_srgb,var(--fintheon-accent)_80%,white)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            Add Regime
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-3 py-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            Cancel
+          </button>
         </div>
       </div>
-      <input
-        className={inputClass}
-        placeholder="Instruments (comma-sep)"
-        value={instruments}
-        onChange={(e) => setInstruments(e.target.value)}
-      />
-      <div className="flex items-center gap-2 pt-1">
-        <button
-          onClick={handleSubmit}
-          className="px-3 py-1 text-[10px] font-semibold bg-[var(--fintheon-accent)] text-black hover:bg-[color-mix(in_srgb,var(--fintheon-accent)_80%,white)] transition-colors"
-        >
-          Add Regime
-        </button>
-        <button
-          onClick={onCancel}
-          className="px-3 py-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
+    </GlassEffect>
   );
 }
 

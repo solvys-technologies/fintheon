@@ -19,6 +19,8 @@ import type {
 import { fetchFilteredHeadlines } from "../../miroshark/miroshark-context.js";
 import { buildMemoryBlock } from "../../agent-memory/memory-injector.js";
 import type { AgentId } from "../../agent-memory/types.js";
+import { getLatestBrief } from "../../context-bank/context-bank-service.js";
+import { getSupabaseClient } from "../../../config/supabase.js";
 
 // ── Input types for the DAG template ────────────────────────────────────────
 
@@ -67,32 +69,81 @@ export const ANALYST_META: Record<
     name: "Oracle",
     title: "Macro Oracle & Prediction Markets",
     role: "macro-strategist",
-    subjects: ["macro", "monetary-policy", "prediction-markets", "regime"],
+    // DB tags: subj:macro, subj:geopolitical (geopolitical = macro catalyst)
+    subjects: ["macro", "geopolitical"],
   },
   feucht: {
     agentId: "feucht",
     name: "Feucht",
     title: "Futures Execution Desk",
     role: "flow-analyst",
-    subjects: ["futures", "flow", "vol-surface", "positioning"],
+    // DB tags: subj:vol, subj:structure (vol-surface + market microstructure)
+    subjects: ["vol", "structure"],
   },
   consul: {
     agentId: "consul",
     name: "Consul",
     title: "Fundamentals & Credit Desk",
     role: "fundamentals",
-    subjects: ["earnings", "credit", "valuations", "fundamentals"],
+    // DB tags: subj:earnings, subj:credit
+    subjects: ["earnings", "credit"],
   },
   herald: {
     agentId: "herald",
     name: "Herald",
     title: "News Sentiment & Social Signals",
     role: "sentiment-analyst",
-    subjects: ["sentiment", "news-flow", "social", "market-structure"],
+    // DB tags: subj:sentiment, subj:geopolitical (breaking news = geopolitical overlap)
+    subjects: ["sentiment", "geopolitical"],
   },
 };
 
 const WAVE0_AGENTS: HermesAgentId[] = ["oracle", "feucht", "consul", "herald"];
+
+// ── Feucht-specific context: latest brief + highest IV conflicts ────────────
+// [claude-code 2026-04-16] Feucht responds from briefings + top market-moving conflicts
+
+async function buildFeuchtContext(): Promise<string> {
+  const parts: string[] = [];
+
+  // Latest brief from context bank (Harper's synthesis)
+  const brief = getLatestBrief();
+  if (brief) {
+    const summary = brief.topAlerts
+      .slice(0, 5)
+      .map((a) => `  - [${a.severity}] ${a.title}`)
+      .join("\n");
+    const exec = brief.executiveSummary
+      ? `\n  Executive: ${brief.executiveSummary.slice(0, 300)}`
+      : "";
+    parts.push(
+      `## Latest Harper Brief${exec}\n### Top Alerts\n${summary || "  (no alerts)"}`,
+    );
+  }
+
+  // Highest IV-scoring items in last 48h — the most market-moving conflicts
+  const sb = getSupabaseClient();
+  if (sb) {
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const { data } = await sb
+      .from("scored_riskflow_items")
+      .select("headline, iv_score, sentiment, macro_level, category")
+      .gte("created_at", cutoff)
+      .gte("iv_score", 5)
+      .order("iv_score", { ascending: false })
+      .limit(8);
+
+    if (data?.length) {
+      const lines = data.map(
+        (r: Record<string, unknown>) =>
+          `  - [IV ${r.iv_score}] ${r.headline} (${r.sentiment ?? "neutral"}, ${r.category ?? "unknown"})`,
+      );
+      parts.push(`## Highest IV Conflicts (48h)\n${lines.join("\n")}`);
+    }
+  }
+
+  return parts.length > 0 ? parts.join("\n\n") : "";
+}
 
 // ── Prompt builders ──────────────────────────────────────────────────────────
 
@@ -127,8 +178,13 @@ async function buildAnalystPrompt(
     () => "",
   );
 
+  // Feucht gets enriched context: Harper's brief + highest IV conflicts
+  const feuchtBlock =
+    agentKey === "feucht" ? await buildFeuchtContext().catch(() => "") : "";
+
   return `You are ${meta.name}, ${meta.title}. Your analytical focus: ${meta.subjects.join(", ")}.
 ${memoryBlock}
+${feuchtBlock}
 
 ${ctx}
 ${userInjection ? `\n## Additional Context from User\n${userInjection}\n` : ""}
