@@ -5,8 +5,12 @@ Self-hosted WOFF2 font definitions imported from Fintheon. All fonts use `font-d
 ## Font Stack Priority
 
 ```css
---font-body: "Readable Digits", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
---font-heading: "Readable Digits", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+--font-body:
+  "Readable Digits", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+  sans-serif;
+--font-heading:
+  "Readable Digits", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+  sans-serif;
 ```
 
 Readable Digits is always first in the stack to ensure consistent numeric rendering across all themes.
@@ -178,7 +182,9 @@ Inter mapped to numeric/currency unicode ranges only. Prepended in font stacks s
   font-weight: 300;
   font-display: swap;
   src: url("/fonts/inter-light.woff2") format("woff2");
-  unicode-range: U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030, U+20AC;
+  unicode-range:
+    U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
+    U+20AC;
 }
 @font-face {
   font-family: "Readable Digits";
@@ -186,7 +192,9 @@ Inter mapped to numeric/currency unicode ranges only. Prepended in font stacks s
   font-weight: 400;
   font-display: swap;
   src: url("/fonts/inter-regular.woff2") format("woff2");
-  unicode-range: U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030, U+20AC;
+  unicode-range:
+    U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
+    U+20AC;
 }
 @font-face {
   font-family: "Readable Digits";
@@ -194,7 +202,9 @@ Inter mapped to numeric/currency unicode ranges only. Prepended in font stacks s
   font-weight: 500;
   font-display: swap;
   src: url("/fonts/inter-medium.woff2") format("woff2");
-  unicode-range: U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030, U+20AC;
+  unicode-range:
+    U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
+    U+20AC;
 }
 @font-face {
   font-family: "Readable Digits";
@@ -202,7 +212,9 @@ Inter mapped to numeric/currency unicode ranges only. Prepended in font stacks s
   font-weight: 600;
   font-display: swap;
   src: url("/fonts/inter-semibold.woff2") format("woff2");
-  unicode-range: U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030, U+20AC;
+  unicode-range:
+    U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
+    U+20AC;
 }
 @font-face {
   font-family: "Readable Digits";
@@ -210,21 +222,24 @@ Inter mapped to numeric/currency unicode ranges only. Prepended in font stacks s
   font-weight: 700;
   font-display: swap;
   src: url("/fonts/inter-bold.woff2") format("woff2");
-  unicode-range: U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030, U+20AC;
+  unicode-range:
+    U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
+    U+20AC;
 }
 ```
 
 ### Unicode Range Coverage
-| Range | Characters |
-|-------|-----------|
-| U+0024-0025 | $ % |
-| U+002B | + |
-| U+002C-002E | , - . |
-| U+0030-0039 | 0-9 |
-| U+00B0 | degree symbol |
+
+| Range       | Characters                    |
+| ----------- | ----------------------------- |
+| U+0024-0025 | $ %                           |
+| U+002B      | +                             |
+| U+002C-002E | , - .                         |
+| U+0030-0039 | 0-9                           |
+| U+00B0      | degree symbol                 |
 | U+2012-2014 | en-dash, em-dash, figure-dash |
-| U+2030 | per-mille |
-| U+20AC | euro sign |
+| U+2030      | per-mille                     |
+| U+20AC      | euro sign                     |
 
 ## Cormorant Garamond -- Imperial Body
 

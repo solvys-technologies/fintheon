@@ -14,12 +14,14 @@ You are a build engineer. Build the app locally, install it, verify it runs, and
 Lighter checks than solvys-deploy. Uncommitted changes are OK for beta builds.
 
 ### 1a. Environment
+
 ```bash
 node --version
 bun --version
 ```
 
 Verify electron-builder is available:
+
 ```bash
 bunx electron-builder --version 2>/dev/null || echo "electron-builder not found"
 ```
@@ -27,6 +29,7 @@ bunx electron-builder --version 2>/dev/null || echo "electron-builder not found"
 FAIL if electron-builder is missing.
 
 ### 1b. Build Check
+
 ```bash
 npx tsc --noEmit
 ```
@@ -34,6 +37,7 @@ npx tsc --noEmit
 WARN on type errors (beta builds can proceed with warnings).
 
 ### 1c. Version Detection
+
 ```bash
 VERSION=$(node -p "require('./package.json').version")
 echo "Building v$VERSION"
@@ -101,6 +105,7 @@ fi
 ## Phase 4 -- Verification
 
 ### 4a. App Launch Check
+
 ```bash
 # Verify the app bundle exists and is signed/cleared
 codesign -dv /Applications/Fintheon.app 2>&1 || echo "No code signature (expected for local builds)"
@@ -108,6 +113,7 @@ ls -la /Applications/Fintheon.app/Contents/MacOS/
 ```
 
 ### 4b. Report
+
 ```bash
 VERSION=$(node -p "require('./package.json').version")
 DMG="desktop-dist/Fintheon-${VERSION}-arm64.dmg"
@@ -122,11 +128,13 @@ echo "Checksum: $(shasum -a 256 "$DMG" | cut -d' ' -f1)"
 ## Phase 5 -- Old DMG Cleanup
 
 List all DMGs in `desktop-dist/`:
+
 ```bash
 ls -la desktop-dist/*.dmg 2>/dev/null
 ```
 
 Keep the current version's DMG. Delete all older DMGs:
+
 ```bash
 VERSION=$(node -p "require('./package.json').version")
 for dmg in desktop-dist/*.dmg; do
@@ -138,6 +146,7 @@ done
 ```
 
 Also clean up old DMGs from Downloads:
+
 ```bash
 for dmg in ~/Downloads/Fintheon-*.dmg; do
   if [[ "$dmg" != *"$VERSION"* ]]; then

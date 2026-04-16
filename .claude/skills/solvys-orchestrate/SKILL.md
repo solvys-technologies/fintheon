@@ -15,26 +15,31 @@ Enter plan mode. Do NOT proceed until you have answers to ALL of the following:
 ### Questions to Ask
 
 **Scope:**
+
 - What is the end-state we are building toward?
 - What exists today that we are changing vs. building from scratch?
 - What are the boundaries -- what is explicitly out of scope?
 
 **Architecture:**
+
 - What connects to what? Draw the dependency map in plain language.
 - How do these pieces operate in non-technical terms?
 - Which direction do we want data/control to flow?
 
 **Constraints:**
+
 - What must not break? (existing features, APIs, other agents' work)
 - Are there files owned by other agents that we must not touch?
 - What is the target branch? Does it exist yet?
 
 **Preferences:**
+
 - How many parallel tracks are comfortable? (default: 3 max)
 - Should tracks share a branch or use separate branches?
 - Is there a hard deadline or priority ordering?
 
 **Validation:**
+
 - How do we know each track succeeded?
 - What is the integration test for the full sprint?
 
@@ -71,43 +76,54 @@ Exit plan mode. For each track, produce a standalone markdown briefing file.
 
 ### Track Brief Template
 
-```markdown
+````markdown
 # Sprint Brief: T{N} -- {Title}
 
 ## Context
+
 [Why this track exists and how it fits the larger sprint]
 
 ## Branch Target
+
 `{branch-name}`
 
 ## Scope -- Included
+
 - [ ] {file or feature 1}
 - [ ] {file or feature 2}
 
 ## Scope -- Excluded (DO NOT TOUCH)
+
 - {file or feature that belongs to another track}
 
 ## Known Issues to Preserve
+
 - {Any intentional quirks, TODOs, or recent changes from changelog that must not be reverted}
 
 ## Implementation Steps
+
 1. {Step 1}
 2. {Step 2}
 3. ...
 
 ## Acceptance Criteria
+
 - [ ] {Criterion 1}
 - [ ] {Criterion 2}
 
 ## Validation Commands
+
 ```bash
 {build, test, or lint commands to verify}
 ```
+````
 
 ## Commit Format
+
 ```
 [v{VERSION}] feat: T{N} {description}
 ```
+
 ```
 
 Save each brief to `docs/sprint-briefs/S{SPRINT}-T{N}-{slug}.md` in the project. The orchestration doc goes to `docs/sprint-briefs/S{SPRINT}-ORCHESTRATION.md`.
@@ -123,17 +139,23 @@ Output the orchestration plan as a numbered wave sequence with @-mentions to the
 ### Wave 1 (parallel)
 
 ```
+
 @docs/sprint-briefs/S19-T1-{slug}.md
+
 ```
 
 ```
+
 @docs/sprint-briefs/S19-T2-{slug}.md
+
 ```
 
 ### Wave 2 (after Wave 1)
 
 ```
+
 @docs/sprint-briefs/S19-T3-unify.md
+
 ```
 
 **Wave 1** does X and Y in parallel.
@@ -154,3 +176,4 @@ State which approach you chose and why.
 - Always include a unification step, even for 2-track sprints.
 - If the user adds scope mid-planning, re-evaluate all track boundaries before proceeding.
 - Check `src/lib/changelog.ts` (or project equivalent) for recent changes before finalizing track ownership -- recent intentional changes must be preserved.
+```

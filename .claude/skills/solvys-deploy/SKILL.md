@@ -16,6 +16,7 @@ Run Solvys Audit phases 1-4 (environment, build, code quality, tests). If any ph
 Additionally verify:
 
 ### 1a. Git State
+
 ```bash
 git status
 git branch --show-current
@@ -26,6 +27,7 @@ git branch --show-current
 - WARN if branch is behind remote
 
 ### 1b. Version Check
+
 ```bash
 node -p "require('./package.json').version"
 git tag -l | tail -5
@@ -35,6 +37,7 @@ git tag -l | tail -5
 - Suggest the next version based on the change type (patch/minor/major)
 
 ### 1c. Changelog
+
 - Verify `src/lib/changelog.ts` has an entry for this release
 - If not, prompt the user to add one before proceeding
 
@@ -45,6 +48,7 @@ git tag -l | tail -5
 Detect the deploy target from `$ARGUMENTS` or project configuration:
 
 ### Vercel (Frontend)
+
 ```bash
 vercel --prod
 ```
@@ -52,16 +56,20 @@ vercel --prod
 Wait for deployment URL. Capture it for Phase 3.
 
 ### Backend (Hono/Workers)
+
 ```bash
 cd backend-hono && bun run build
 # Deploy method varies -- check package.json scripts for deploy command
 ```
 
 ### Full Stack
+
 Run both in sequence: backend first, then frontend.
 
 ### GitHub Release
+
 After successful deployment:
+
 ```bash
 VERSION=$(node -p "require('./package.json').version")
 git tag -a "v$VERSION" -m "Release v$VERSION"
@@ -74,6 +82,7 @@ gh release create "v$VERSION" --generate-notes --title "v$VERSION"
 ## Phase 3 -- Post-Deploy Verification
 
 ### 3a. Health Check
+
 Hit the deployment URL(s):
 
 ```bash
@@ -88,9 +97,11 @@ curl -s {api_url}/api/diagnostics
 - FAIL if non-200 or timeout
 
 ### 3b. Smoke Test
+
 If the project has smoke tests or e2e tests, run them against the deployed URL.
 
 ### 3c. Visual Verification
+
 If the frontend was deployed, remind the user to open the deployment URL and verify the golden path manually.
 
 ---
@@ -100,22 +111,28 @@ If the frontend was deployed, remind the user to open the deployment URL and ver
 Activated only if Phase 3 fails.
 
 ### Attempt 1
+
 1. Diagnose the failure using Solvys Audit Phase 6 (Debug Mode)
 2. Apply the minimal fix
 3. Commit with prefix: `fix(deploy): {description}`
 4. Re-run Phase 2 and Phase 3
 
 ### Attempt 2
+
 If Attempt 1 also fails:
+
 1. Diagnose again
 2. Apply fix
 3. Commit with prefix: `fix(deploy): {description} (retry 2)`
 4. Re-run Phase 2 and Phase 3
 
 ### Abort
+
 If both attempts fail:
+
 1. Report the full failure chain
 2. Roll back:
+
    ```bash
    # Vercel
    vercel rollback
@@ -126,6 +143,7 @@ If both attempts fail:
    git tag -d "v$VERSION"
    git push origin ":refs/tags/v$VERSION"
    ```
+
 3. Document what went wrong in the changelog
 
 Maximum retry cycles: 2. After 2 failures, abort and report.
@@ -139,6 +157,7 @@ After successful deployment and verification:
 1. Run the install-maintenance audit (if the project has one)
 2. Update changelog with deploy entry
 3. Report:
+
    ```
    ============================================
      DEPLOY COMPLETE
