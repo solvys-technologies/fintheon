@@ -7,11 +7,11 @@
   "rewrites": [
     {
       "source": "/api/chat",
-      "destination": "https://pulse-api-withered-dust-1394.fly.dev/api/ai/chat"
+      "destination": "https://fintheon.fly.dev/api/ai/chat"
     },
     {
       "source": "/api/:path*",
-      "destination": "https://pulse-api-withered-dust-1394.fly.dev/api/:path*"
+      "destination": "https://fintheon.fly.dev/api/:path*"
     },
     {
       "source": "/(.*)",
