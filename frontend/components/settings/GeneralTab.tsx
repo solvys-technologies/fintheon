@@ -1,7 +1,9 @@
+// [claude-code 2026-04-16] Added linked Google account display + switch account
 // [claude-code 2026-04-03] Extracted from SettingsPanel.tsx — general/profile tab
 import React, { useState } from "react";
-import { CreditCard } from "lucide-react";
+import { CreditCard, Mail, RefreshCw } from "lucide-react";
 import { Button } from "../ui/Button";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface AvailableSymbol {
   symbol: string;
@@ -29,6 +31,21 @@ export function GeneralTab({
   onShowUpgradeModal,
 }: GeneralTabProps) {
   const [showSymbolDropdown, setShowSymbolDropdown] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
+  const { user, signOut, signIn } = useAuth();
+
+  const linkedEmail = user?.email || user?.user_metadata?.email || null;
+  const avatarUrl = user?.user_metadata?.avatar_url || null;
+
+  const handleSwitchAccount = async () => {
+    setIsSwitching(true);
+    try {
+      await signOut();
+      await signIn();
+    } catch {
+      setIsSwitching(false);
+    }
+  };
 
   return (
     <>
@@ -53,6 +70,49 @@ export function GeneralTab({
           </p>
         </div>
       </section>
+
+      <section className="mb-6">
+        <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+          Linked Google Account
+        </h3>
+        <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="w-9 h-9 rounded-full border border-zinc-700"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center">
+                  <Mail className="w-4 h-4 text-gray-400" />
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-white">
+                  {linkedEmail || "No account linked"}
+                </p>
+                <p className="text-[10px] text-gray-500">
+                  Google OAuth via Supabase
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              className="text-xs flex items-center gap-1.5"
+              onClick={handleSwitchAccount}
+              disabled={isSwitching}
+            >
+              <RefreshCw
+                className={`w-3 h-3 ${isSwitching ? "animate-spin" : ""}`}
+              />
+              Switch Account
+            </Button>
+          </div>
+        </div>
+      </section>
+
       <section>
         <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
           Trading Symbol

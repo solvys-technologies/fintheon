@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-16T15:00:00",
+    agent: "claude-code",
+    summary:
+      "feat: display linked Google email in Profile (General) tab with avatar, add Switch Account button to re-auth with a different Google account",
+    files: ["frontend/components/settings/GeneralTab.tsx"],
+  },
+  {
     date: "2026-04-16T14:00:00",
     agent: "claude-code",
     summary:
