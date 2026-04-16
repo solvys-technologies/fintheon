@@ -140,9 +140,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
             ...(opts?.riskFlowContext
               ? { riskFlowContext: opts.riskFlowContext }
               : {}),
-            ...(settings.traderName
-              ? { traderName: settings.traderName }
-              : {}),
+            ...(settings.traderName ? { traderName: settings.traderName } : {}),
           }),
           signal: controller.signal,
         });
