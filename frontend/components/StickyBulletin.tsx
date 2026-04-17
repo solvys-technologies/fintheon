@@ -1,7 +1,8 @@
 // [claude-code 2026-04-10] Sticky Bulletin — personal trade board with 4 sections
 // [claude-code 2026-04-11] v2: Inline Catalyst Watch, Hot Times dropdown, Quick Clock
 // [claude-code 2026-04-11] v3: Extracted hook to useStickyBulletin.ts
-import { useState, useRef, useEffect, useCallback } from "react";
+// [claude-code 2026-04-17] v4: Drag migrated to useDraggable hook (pointer events + rAF, grip-only)
+import { useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   ClipboardList,
@@ -18,6 +19,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { useStickyBulletin, DAY_LABELS } from "../hooks/useStickyBulletin";
+import { useDraggable } from "../hooks/useDraggable";
 
 interface StickyBulletinProps {
   open: boolean;
@@ -38,68 +40,28 @@ export function StickyBulletin({
   anchorRef,
 }: StickyBulletinProps) {
   const b = useStickyBulletin(open, anchorRef);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
-  const dragOffset = useRef({ x: 0, y: 0 });
+  const gripRef = useRef<HTMLButtonElement>(null);
+  const draggable = useDraggable({
+    elementRef: b.panelRef,
+    handleRef: gripRef,
+    bounds: "viewport",
+    disabled: !open,
+  });
 
-  // Reset drag position when popup reopens
+  // Reset drag transform when popup closes so next open re-anchors to the anchor button
   useEffect(() => {
-    if (!open) setDragPos(null);
+    if (!open) draggable.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    const rect = (e.currentTarget as HTMLElement)
-      .closest("[data-bulletin-panel]")
-      ?.getBoundingClientRect();
-    if (rect) {
-      dragOffset.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isDragging) return;
-    const onMove = (e: MouseEvent) => {
-      setDragPos({
-        x: Math.max(
-          0,
-          Math.min(e.clientX - dragOffset.current.x, window.innerWidth - 360),
-        ),
-        y: Math.max(
-          0,
-          Math.min(e.clientY - dragOffset.current.y, window.innerHeight - 100),
-        ),
-      });
-    };
-    const onUp = () => setIsDragging(false);
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, [isDragging]);
 
   if (!open || !b.popupPos) return null;
 
-  const posStyle = dragPos
-    ? {
-        position: "fixed" as const,
-        left: dragPos.x,
-        top: dragPos.y,
-        right: undefined,
-        zIndex: 9998,
-      }
-    : {
-        position: "fixed" as const,
-        top: b.popupPos.top,
-        right: b.popupPos.right,
-        zIndex: 9998,
-      };
+  const posStyle = {
+    position: "fixed" as const,
+    top: b.popupPos.top,
+    right: b.popupPos.right,
+    zIndex: 9998,
+  };
 
   return createPortal(
     <div
@@ -130,15 +92,17 @@ export function StickyBulletin({
           }}
         >
           <div className="flex items-center gap-2">
-            <div
-              onMouseDown={handleDragStart}
-              className="cursor-grab active:cursor-grabbing touch-none"
+            <button
+              ref={gripRef}
+              className="cursor-grab active:cursor-grabbing touch-none p-0.5"
+              title="Drag"
+              aria-label="Drag bulletin"
             >
               <GripVertical
                 className="w-3.5 h-3.5"
                 style={{ color: "var(--fintheon-accent)", opacity: 0.4 }}
               />
-            </div>
+            </button>
             <ClipboardList
               className="w-4 h-4"
               style={{ color: "var(--fintheon-accent)" }}

@@ -1,7 +1,8 @@
-// [claude-code 2026-04-16] Smooth roll-out transition for header dock/undock
+// [claude-code 2026-04-17] Migrated drag to useDraggable hook (pointer events + rAF); grip-only; dock-on-release via onDragEnd
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { GripVertical, PictureInPicture2, X } from "lucide-react";
 import { CompactERMonitor } from "../mission-control/CompactERMonitor";
+import { useDraggable } from "../../hooks/useDraggable";
 
 export type PsychAssistDockTarget = "floating" | "header";
 
@@ -14,12 +15,6 @@ interface PsychAssistDockableProps {
   headerDockZoneId?: string;
 }
 
-type Pos = { x: number; y: number };
-
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
-
 export function PsychAssistDockable({
   target,
   onDockToHeader,
@@ -28,43 +23,45 @@ export function PsychAssistDockable({
   storageKey = "fintheon:psychassist-floating-pos:v1",
   headerDockZoneId = "fintheon-heading-toolbar",
 }: PsychAssistDockableProps) {
-  const [pos, setPos] = useState<Pos>({ x: 24, y: 86 });
-  const [dragging, setDragging] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(false);
-  const dragOffset = useRef<Pos>({ x: 0, y: 0 });
+  const panelRef = useRef<HTMLDivElement>(null);
+  const gripRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<Pos>;
-        if (typeof parsed.x === "number" && typeof parsed.y === "number") {
-          setPos({ x: parsed.x, y: parsed.y });
-          return;
-        }
-      }
-    } catch {
-      // ignore
-    }
+  const floating = target === "floating";
 
-    // Sensible default near top-right but below header
-    const x =
-      typeof window !== "undefined"
-        ? Math.max(24, window.innerWidth - 360)
-        : 24;
-    setPos({ x, y: 86 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const defaultPos = useMemo(() => {
+    if (typeof window === "undefined") return { x: 24, y: 86 };
+    return { x: Math.max(24, window.innerWidth - 360), y: 86 };
   }, []);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(pos));
-    } catch {
-      // ignore
-    }
-  }, [pos, storageKey]);
+  const handleDragEnd = useCallback(
+    (finalPos: { x: number; y: number }) => {
+      const dockZone = document.getElementById(headerDockZoneId);
+      if (!dockZone) return;
+      const rect = dockZone.getBoundingClientRect();
+      // Use the centre-ish of the grip (finalPos + offset)
+      const probeX = finalPos.x + 14;
+      const probeY = finalPos.y + 14;
+      const inside =
+        probeX >= rect.left &&
+        probeX <= rect.right &&
+        probeY >= rect.top &&
+        probeY <= rect.bottom;
+      if (inside) onDockToHeader();
+    },
+    [headerDockZoneId, onDockToHeader],
+  );
 
-  // Animate header dock open on mount
+  useDraggable({
+    elementRef: panelRef,
+    handleRef: gripRef,
+    storageKey,
+    bounds: "viewport",
+    initialPosition: defaultPos,
+    onDragEnd: handleDragEnd,
+    disabled: !floating,
+  });
+
   useEffect(() => {
     if (target === "header") {
       const raf = requestAnimationFrame(() => setHeaderVisible(true));
@@ -73,48 +70,11 @@ export function PsychAssistDockable({
     setHeaderVisible(false);
   }, [target]);
 
-  // Smooth undock: collapse first, then switch to floating
   const handleUndock = useCallback(() => {
     setHeaderVisible(false);
     const timer = setTimeout(() => onUndockToFloating(), 280);
     return () => clearTimeout(timer);
   }, [onUndockToFloating]);
-
-  useEffect(() => {
-    if (!dragging) return;
-
-    const handleMove = (e: MouseEvent) => {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const next = {
-        x: clamp(e.clientX - dragOffset.current.x, 8, vw - 260),
-        y: clamp(e.clientY - dragOffset.current.y, 72, vh - 120),
-      };
-      setPos(next);
-    };
-
-    const handleUp = (e: MouseEvent) => {
-      setDragging(false);
-      const dockZone = document.getElementById(headerDockZoneId);
-      if (!dockZone) return;
-      const rect = dockZone.getBoundingClientRect();
-      const inside =
-        e.clientX >= rect.left &&
-        e.clientX <= rect.right &&
-        e.clientY >= rect.top &&
-        e.clientY <= rect.bottom;
-      if (inside) onDockToHeader();
-    };
-
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleUp);
-    };
-  }, [dragging, headerDockZoneId, onDockToHeader]);
-
-  const floating = target === "floating";
 
   const body = useMemo(() => {
     return (
@@ -163,20 +123,17 @@ export function PsychAssistDockable({
 
   return (
     <div
+      ref={panelRef}
       className="fixed z-50 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-2xl px-3 py-2"
-      style={{ left: `${pos.x}px`, top: `${pos.y}px`, width: "340px" }}
+      style={{ top: 0, left: 0, width: "340px" }}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <button
-            onMouseDown={(e) => {
-              setDragging(true);
-              dragOffset.current = { x: 14, y: 14 };
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors cursor-grab active:cursor-grabbing"
+            ref={gripRef}
+            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors cursor-grab active:cursor-grabbing touch-none"
             title="Drag"
+            aria-label="Drag PsychAssist"
           >
             <GripVertical className="w-4 h-4" />
           </button>

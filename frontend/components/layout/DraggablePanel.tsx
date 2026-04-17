@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect, ReactNode } from "react";
+// [claude-code 2026-04-17] Migrated to useDraggable hook (pointer events + rAF + transform3d); grip-only handle; removed shadow-2xl per Nothing-Design
+import { useRef, ReactNode } from "react";
 import { GripVertical, X } from "lucide-react";
+import { useDraggable } from "../../hooks/useDraggable";
 
 export type PanelPosition = "left" | "right" | "floating";
 
@@ -10,6 +12,7 @@ interface DraggablePanelProps {
   onPositionChange?: (position: PanelPosition) => void;
   onClose?: () => void;
   className?: string;
+  storageKey?: string;
 }
 
 export function DraggablePanel({
@@ -19,69 +22,43 @@ export function DraggablePanel({
   onPositionChange,
   onClose,
   className = "",
+  storageKey = "fintheon:draggable-panel-pos",
 }: DraggablePanelProps) {
-  const [position, setPosition] = useState<PanelPosition>(defaultPosition);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (position !== "floating") return;
-    setIsDragging(true);
-    const rect = panelRef.current?.getBoundingClientRect();
-    if (rect) {
-      setDragStart({ x: e.clientX, y: e.clientY });
-      setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    }
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || position !== "floating") return;
-    const newX = e.clientX - offset.x;
-    const newY = e.clientY - offset.y;
-
-    if (panelRef.current) {
-      panelRef.current.style.left = `${newX}px`;
-      panelRef.current.style.top = `${newY}px`;
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  // Attach global mouse events for dragging
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-      return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [isDragging]);
+  const gripRef = useRef<HTMLButtonElement>(null);
 
   const handlePositionChange = (newPosition: PanelPosition) => {
-    setPosition(newPosition);
     onPositionChange?.(newPosition);
   };
+
+  useDraggable({
+    elementRef: panelRef,
+    handleRef: gripRef,
+    storageKey,
+    bounds: "viewport",
+    disabled: defaultPosition !== "floating",
+  });
 
   const baseClasses =
     "bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 flex flex-col";
 
-  if (position === "floating") {
+  if (defaultPosition === "floating") {
     return (
       <div
         ref={panelRef}
-        className={`${baseClasses} fixed z-50 rounded-lg shadow-2xl ${className}`}
-        style={{ width: "320px", height: "400px" }}
-        onMouseDown={handleMouseDown}
+        className={`${baseClasses} fixed z-50 rounded-lg ${className}`}
+        style={{ top: 0, left: 0, width: "320px", height: "400px" }}
       >
-        <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/20 cursor-move">
+        <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/20">
           <div className="flex items-center gap-2">
-            <GripVertical className="w-4 h-4 text-[var(--fintheon-accent)]/60" />
+            <button
+              ref={gripRef}
+              className="p-1 rounded cursor-grab active:cursor-grabbing text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] touch-none"
+              title="Drag"
+              aria-label="Drag panel"
+            >
+              <GripVertical className="w-4 h-4" />
+            </button>
             <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">
               {title}
             </h3>
@@ -126,12 +103,14 @@ export function DraggablePanel({
         <div className="flex items-center gap-1">
           <button
             onClick={() =>
-              handlePositionChange(position === "left" ? "right" : "left")
+              handlePositionChange(
+                defaultPosition === "left" ? "right" : "left",
+              )
             }
             className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] text-xs"
-            title={position === "left" ? "Move Right" : "Move Left"}
+            title={defaultPosition === "left" ? "Move Right" : "Move Left"}
           >
-            {position === "left" ? "→" : "←"}
+            {defaultPosition === "left" ? "→" : "←"}
           </button>
           <button
             onClick={() => handlePositionChange("floating")}

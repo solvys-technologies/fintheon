@@ -1,4 +1,5 @@
 // [claude-code 2026-04-03] Extracted from MainLayout.tsx — Strategium snap deck with widget pages
+// [claude-code 2026-04-17] Gear→Edit toggle; drag-reorder widget cards with microinteractions; unified edit mode
 import React, {
   useRef,
   useState,
@@ -6,9 +7,8 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Pencil, GripVertical, Eye, EyeOff } from "lucide-react";
 import { KanbanTitle } from "../ui/KanbanTitle";
-import { WidgetArrangeMenu } from "../mission-control/WidgetArrangeMenu";
 import type { MissionWidgetId } from "../../lib/layoutOrderStorage";
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -26,6 +26,8 @@ interface MissionControlContentProps {
   onReorder: (order: MissionWidgetId[]) => void;
   onToggleVisibility: (id: MissionWidgetId) => void;
   collapseFn?: () => void;
+  editMode?: boolean;
+  onToggleEditMode?: () => void;
 }
 
 export function MissionControlContent({
@@ -35,9 +37,12 @@ export function MissionControlContent({
   onReorder,
   onToggleVisibility,
   collapseFn,
+  editMode = false,
+  onToggleEditMode,
 }: MissionControlContentProps) {
   const missionDeckRef = useRef<HTMLDivElement>(null);
   const [missionDeckPage, setMissionDeckPage] = useState(0);
+  const [dragOverId, setDragOverId] = useState<MissionWidgetId | null>(null);
 
   const missionWidgetPages = useMemo(() => {
     const pages: Array<typeof orderedMissionWidgets> = [];
@@ -84,6 +89,45 @@ export function MissionControlContent({
     setMissionDeckPage(closest);
   }, []);
 
+  const handleDragStart = useCallback(
+    (e: React.DragEvent, id: MissionWidgetId) => {
+      e.dataTransfer.setData("text/plain", id);
+      e.dataTransfer.effectAllowed = "move";
+    },
+    [],
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, targetId: MissionWidgetId) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDragOverId(targetId);
+    },
+    [],
+  );
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverId(null);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent, targetId: MissionWidgetId) => {
+      e.preventDefault();
+      setDragOverId(null);
+      const sourceId = e.dataTransfer.getData("text/plain") as MissionWidgetId;
+      if (!sourceId || sourceId === targetId) return;
+      const currentOrder = allMissionWidgets.map((w) => w.id);
+      const si = currentOrder.indexOf(sourceId);
+      const ti = currentOrder.indexOf(targetId);
+      if (si === -1 || ti === -1) return;
+      const next = [...currentOrder];
+      next.splice(si, 1);
+      next.splice(ti, 0, sourceId);
+      onReorder(next);
+    },
+    [allMissionWidgets, onReorder],
+  );
+
   return (
     <div className="h-full flex flex-col" data-tour-target="strategium">
       <KanbanTitle
@@ -91,12 +135,20 @@ export function MissionControlContent({
         tone="gold"
         headerRight={
           <div className="flex items-center gap-0.5">
-            <WidgetArrangeMenu
-              widgets={allMissionWidgets}
-              visibility={missionWidgetVisibility}
-              onReorder={onReorder}
-              onToggleVisibility={onToggleVisibility}
-            />
+            {onToggleEditMode && (
+              <button
+                onClick={onToggleEditMode}
+                className={`p-1 rounded transition-colors ${
+                  editMode
+                    ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
+                    : "hover:bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
+                }`}
+                title={editMode ? "Finish editing layout" : "Edit layout"}
+                aria-pressed={editMode}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
             {collapseFn && (
               <button
                 onClick={collapseFn}
@@ -127,8 +179,56 @@ export function MissionControlContent({
                 if (!widget) {
                   return <div key={`slot-${slotIdx}`} className="p-3" />;
                 }
+                const isDragOver = dragOverId === widget.id;
                 return (
-                  <div key={widget.id} className="p-3">
+                  <div
+                    key={widget.id}
+                    className={`mission-widget-slot p-3 relative ${
+                      editMode ? "mission-widget-edit" : ""
+                    } ${isDragOver ? "mission-widget-drop-target" : ""}`}
+                    draggable={editMode}
+                    onDragStart={
+                      editMode
+                        ? (e) => handleDragStart(e, widget.id)
+                        : undefined
+                    }
+                    onDragOver={
+                      editMode ? (e) => handleDragOver(e, widget.id) : undefined
+                    }
+                    onDragLeave={editMode ? handleDragLeave : undefined}
+                    onDrop={
+                      editMode ? (e) => handleDrop(e, widget.id) : undefined
+                    }
+                  >
+                    {editMode && (
+                      <div className="absolute top-1.5 right-1.5 z-10 flex items-center gap-1 pointer-events-none">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleVisibility(widget.id);
+                          }}
+                          className="pointer-events-auto p-1 rounded hover:bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] transition-colors"
+                          title={
+                            missionWidgetVisibility[widget.id] === false
+                              ? "Show widget"
+                              : "Hide widget"
+                          }
+                        >
+                          {missionWidgetVisibility[widget.id] === false ? (
+                            <EyeOff className="w-3 h-3" />
+                          ) : (
+                            <Eye className="w-3 h-3" />
+                          )}
+                        </button>
+                        <div
+                          className="pointer-events-auto p-1 rounded text-[var(--fintheon-accent)]/70 cursor-grab active:cursor-grabbing"
+                          title="Drag to reorder"
+                        >
+                          <GripVertical className="w-3 h-3" />
+                        </div>
+                      </div>
+                    )}
                     {widget.node}
                   </div>
                 );

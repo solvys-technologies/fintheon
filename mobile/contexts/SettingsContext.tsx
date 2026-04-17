@@ -15,6 +15,8 @@ const API_BASE = import.meta.env.VITE_API_URL || "";
 // ── Types ──
 
 interface NotificationPrefs {
+  /** User intent to keep push enabled across sessions. UI reconciles with live subscription state. */
+  pushEnabled: boolean;
   riskflow: boolean;
   dailyBrief: boolean;
   regimeActivations: boolean;
@@ -64,6 +66,7 @@ const STORAGE_KEY = "fintheon-mobile:settings";
 
 const DEFAULT_SETTINGS: MobileSettings = {
   notificationPrefs: {
+    pushEnabled: false,
     riskflow: true,
     dailyBrief: true,
     regimeActivations: true,

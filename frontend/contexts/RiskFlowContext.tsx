@@ -39,6 +39,8 @@ interface RiskFlowContextValue {
   loadingMore: boolean;
   hasMore: boolean;
   initialLoaded: boolean;
+  /** ID of the single most-recently-arrived alert; used for one-shot flicker highlight. Auto-clears after animation. */
+  freshAlertId: string | null;
 }
 
 const RiskFlowContext = createContext<RiskFlowContextValue>({
@@ -58,6 +60,7 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   loadingMore: false,
   hasMore: false,
   initialLoaded: false,
+  freshAlertId: null,
 });
 
 const BACKEND_FEED_POLL_MS = 15_000;
@@ -116,9 +119,48 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
+  const [freshAlertId, setFreshAlertId] = useState<string | null>(null);
+  const prevAlertIdsRef = useRef<Set<string>>(new Set());
+  const freshClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null,
   );
+
+  // Diff each poll's alerts against the previous batch; flicker only the most-recent newcomer.
+  useEffect(() => {
+    const currentIds = new Set(backendAlerts.map((a) => a.id));
+    const prevIds = prevAlertIdsRef.current;
+
+    // Skip on first populated load — everything is "new" then, don't trigger a cascade.
+    if (prevIds.size === 0) {
+      prevAlertIdsRef.current = currentIds;
+      return;
+    }
+
+    const newcomers = backendAlerts.filter((a) => !prevIds.has(a.id));
+    prevAlertIdsRef.current = currentIds;
+    if (newcomers.length === 0) return;
+
+    // Pick the highest publishedAt among newcomers
+    newcomers.sort((a, b) => {
+      const ta = Date.parse(a.publishedAt) || 0;
+      const tb = Date.parse(b.publishedAt) || 0;
+      return tb - ta;
+    });
+    const topFresh = newcomers[0];
+    setFreshAlertId(topFresh.id);
+
+    if (freshClearTimerRef.current) clearTimeout(freshClearTimerRef.current);
+    freshClearTimerRef.current = setTimeout(() => {
+      setFreshAlertId(null);
+    }, 1200);
+  }, [backendAlerts]);
+
+  useEffect(() => {
+    return () => {
+      if (freshClearTimerRef.current) clearTimeout(freshClearTimerRef.current);
+    };
+  }, []);
   // Track how many items have been loaded (initial 50 + loadMore pages) so polls don't reset scroll progress
   const loadedCountRef = useRef(50);
 
@@ -397,6 +439,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         loadingMore,
         hasMore,
         initialLoaded,
+        freshAlertId,
       }}
     >
       {children}

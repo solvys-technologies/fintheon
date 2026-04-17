@@ -9,6 +9,46 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T22:40:00",
+    agent: "claude-code",
+    summary:
+      "Mobile push notifications: master toggle now persists user intent (new pushEnabled flag in NotificationPrefs) and reconciles with live subscription state across reloads; auto re-subscribes when permission is still granted but the SW subscription was cleared; enable() returns structured EnableResult so UI can surface permission-denied vs subscribe-failed vs unsupported; [TEST NOTIFICATION] button now has sending/success/error inline status (was previously fire-and-forget with zero feedback); sendTestNotification short-circuits with 'not-subscribed' / 'permission-denied' instead of silent no-op",
+    files: [
+      "mobile/hooks/usePushNotifications.ts",
+      "mobile/contexts/SettingsContext.tsx",
+      "mobile/components/settings/SettingsPage.tsx",
+    ],
+  },
+  {
+    date: "2026-04-17T22:00:00",
+    agent: "claude-code",
+    summary:
+      '7-part drag/Strategium/Aquarium overhaul: (1) new useDraggable hook (Pointer Events + setPointerCapture + rAF + transform3d) kills sticky-cursor + friction across DraggablePanel/PsychAssistDockable/YouTubeMiniplayer/StickyBulletin — strict grip-only handles, removed glass/shadow chrome; (2) Strategium gear→Edit (Pencil), widget cards become drag-reorderable with Nothing-Design microinteractions, unified layoutEditMode drives sidebar+toolbar+widgets; (3) NavSidebar now accepts controlled editMode; (4) Blindspots widget: 140-char cap + 4-entry cap, monochrome FuseBar with shimmer, IV chip replaces W/L% (backend joins against scored_riskflow_items for ivScore enrichment, POST rejects >140char); (5) 3-state Strategium pane mode (balanced/feedOnly/widgetsOnly) with peek footer + header, fixes collapsed-RiskFlow no-restore bug; (6) RiskFlow feed flickers the single most-recent new headline in theme accent color on every refresh (freshAlertId tracked in context, auto-clears 1.2s); (7) Harper Aquarium synthesis now awaited inline with briefing, prompt reframed so Harper IS the narrator (not cold analyst), red-flag-phrase + slop-input detectors replace templated heat/regime output with "No new agentic updates. Trigger an update in Aquarium." — SanctumBriefing renders fallback with Trigger Aquarium CTA',
+    files: [
+      "frontend/hooks/useDraggable.ts",
+      "frontend/components/layout/DraggablePanel.tsx",
+      "frontend/components/layout/PsychAssistDockable.tsx",
+      "frontend/components/layout/YouTubeMiniplayer.tsx",
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/components/layout/MissionControlContent.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/StrategiumPeekBar.tsx",
+      "frontend/components/mission-control/BlindspotsWidget.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/mission-control/RiskFlowMiniWidget.tsx",
+      "frontend/components/narrative/SanctumBriefing.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "frontend/lib/layoutOrderStorage.ts",
+      "frontend/lib/services/journal.ts",
+      "frontend/index.css",
+      "backend-hono/src/routes/blindspots.ts",
+      "backend-hono/src/services/psych-assist-service.ts",
+      "backend-hono/src/services/miroshark/miroshark-briefing.ts",
+      "backend-hono/src/services/miroshark/miroshark-service.ts",
+    ],
+  },
+  {
     date: "2026-04-17T15:45:00",
     agent: "claude-code",
     summary:

@@ -1,17 +1,22 @@
 // [claude-code 2026-03-28] S4-T3: Enhanced briefing display — structured sections, severity indicators, accent borders
 // [claude-code 2026-03-23] MiroShark briefing panel — agent reasoning synthesis
+// [claude-code 2026-04-17] Slop-fallback rendering: compact empty-state with Aquarium trigger link when backend emits SLOP_FALLBACK
 import type { MiroSharkBriefing } from "../../types/miroshark";
+
+const SLOP_FALLBACK = "No new agentic updates. Trigger an update in Aquarium.";
 
 interface SanctumBriefingProps {
   briefing: MiroSharkBriefing | null;
   isLoading?: boolean;
   noBorder?: boolean;
+  onTriggerAquarium?: () => void;
 }
 
 export function SanctumBriefing({
   briefing,
   isLoading,
   noBorder,
+  onTriggerAquarium,
 }: SanctumBriefingProps) {
   if (isLoading) {
     return (
@@ -25,6 +30,32 @@ export function SanctumBriefing({
   }
 
   if (!briefing) return null;
+
+  const isSlop = briefing.summary === SLOP_FALLBACK;
+
+  if (isSlop) {
+    return (
+      <div
+        className={`rounded bg-[var(--fintheon-surface)]/30 px-5 py-4 ${noBorder ? "" : "border border-[var(--fintheon-accent)]/10"}`}
+      >
+        <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block mb-1.5">
+          Analysis
+        </span>
+        <p className="text-[11px] text-[var(--fintheon-text)]/60 leading-relaxed">
+          {SLOP_FALLBACK}
+        </p>
+        {onTriggerAquarium && (
+          <button
+            type="button"
+            onClick={onTriggerAquarium}
+            className="mt-3 text-[10px] uppercase tracking-wider text-[var(--fintheon-accent)] hover:text-[var(--fintheon-text)] transition-colors"
+          >
+            Trigger Aquarium →
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded bg-[var(--fintheon-surface)]/30 overflow-hidden">
@@ -92,8 +123,8 @@ export function SanctumBriefing({
         </div>
       )}
 
-      {/* Harper Analysis — AI-generated narrative breakdown */}
-      {briefing.harperAnalysis && (
+      {/* Harper Analysis — AI-generated narrative breakdown (suppressed when fallback fires) */}
+      {briefing.harperAnalysis && briefing.harperAnalysis !== SLOP_FALLBACK && (
         <div className="px-5 py-4 border-t border-[var(--fintheon-border)]/10">
           <span className="text-[8px] text-[var(--fintheon-accent)]/50 uppercase tracking-wider block mb-2">
             Harper Analysis

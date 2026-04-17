@@ -18,7 +18,7 @@ import { timeAgo } from "../../lib/time-utils";
 const VISIBLE_COUNT = 4;
 
 export function RiskFlowMiniWidget() {
-  const { alerts, highCount, isSeen, markSeen } = useRiskFlow();
+  const { alerts, isSeen, markSeen, freshAlertId } = useRiskFlow();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(
     null,
@@ -66,7 +66,7 @@ export function RiskFlowMiniWidget() {
               return (
                 <div
                   key={alert.id}
-                  className={`rounded ${seen ? "opacity-60" : ""}`}
+                  className={`rounded ${seen ? "opacity-60" : ""} ${alert.id === freshAlertId ? "riskflow-flicker" : ""}`}
                 >
                   <button
                     type="button"
