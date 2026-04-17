@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T01:15:00",
+    agent: "claude-code",
+    summary:
+      "Fix mobile bulletin not syncing: removed loaded gate so bulletin re-fetches on every open, added cache: no-store to all mobile bulletin and phrases GET requests to bypass browser/PWA caching",
+    files: [
+      "mobile/components/bulletin/MobileBulletin.tsx",
+      "mobile/hooks/useStickyBulletin.ts",
+    ],
+  },
+  {
     date: "2026-04-17T01:00:00",
     agent: "claude-code",
     summary:

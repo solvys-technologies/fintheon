@@ -32,7 +32,10 @@ export function useMobileStickyBulletin(): StickyBulletinState {
       const token = await getAccessToken();
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}/api/sticky-bulletin`, { headers });
+      const res = await fetch(`${API_BASE}/api/sticky-bulletin`, {
+        headers,
+        cache: "no-store",
+      });
       if (!res.ok) return;
       const json = await res.json();
       const d = json.data ?? json;

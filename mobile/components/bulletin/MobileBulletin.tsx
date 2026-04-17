@@ -74,15 +74,18 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
   const [matchType, setMatchType] = useState<"contains" | "exact">("contains");
   const [repeating, setRepeating] = useState(false);
 
-  // Load data on open
+  // Re-fetch every time bulletin opens (no stale cache)
   useEffect(() => {
-    if (!isOpen || loaded) return;
+    if (!isOpen) return;
     (async () => {
       try {
         const token = await getAccessToken();
         const headers: Record<string, string> = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;
-        const res = await fetch(`${API_BASE}/api/sticky-bulletin`, { headers });
+        const res = await fetch(`${API_BASE}/api/sticky-bulletin`, {
+          headers,
+          cache: "no-store",
+        });
         const json = await res.json();
         const d = json.data ?? json;
         setTradingNotes(d.tradingNotes || "");
@@ -91,7 +94,7 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
       } catch {}
       setLoaded(true);
     })();
-  }, [isOpen, loaded, getAccessToken]);
+  }, [isOpen, getAccessToken]);
 
   // Load phrases when catalyst tab opens
   useEffect(() => {
@@ -103,6 +106,7 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
         if (token) headers["Authorization"] = `Bearer ${token}`;
         const res = await fetch(`${API_BASE}/api/riskflow/phrases`, {
           headers,
+          cache: "no-store",
         });
         const json = await res.json();
         setPhrases(json.phrases || []);
