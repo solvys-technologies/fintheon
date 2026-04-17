@@ -5,10 +5,7 @@ import { useState } from "react";
 import { Check, Save, Plus } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { type ThemeConfig, DEFAULT_THEME } from "../../lib/theme";
-import {
-  DEFAULT_FONT_THEME,
-  DIGIT_SCALE_DEFAULT,
-} from "../../lib/font-theme";
+import { DEFAULT_FONT_THEME, DIGIT_SCALE_DEFAULT } from "../../lib/font-theme";
 import { ColorSwatchInput } from "../ui/ColorPicker";
 
 const COLOR_FIELDS: { key: keyof ThemeConfig; label: string }[] = [
@@ -54,6 +51,10 @@ export function ThemeSettings() {
     fontThemes,
     pompaEnabled,
     setPompaEnabled,
+    digitScale,
+    setDigitScale,
+    digitScaleMin,
+    digitScaleMax,
   } = useTheme();
 
   const isSpecialActive = theme.special === true;
@@ -139,7 +140,7 @@ export function ThemeSettings() {
 
         {/* Font theme cards — each with its own inline sample */}
         <div
-          className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
           style={
             isSpecialActive
               ? { opacity: 0.4, pointerEvents: "none" }
@@ -192,6 +193,63 @@ export function ThemeSettings() {
               </button>
             );
           })}
+        </div>
+      </section>
+
+      {/* Digit Size — size-adjust for Readable Digits (Doto) */}
+      <section>
+        <h3
+          className="text-sm font-semibold mb-1"
+          style={{ color: "var(--fintheon-accent)" }}
+        >
+          Digit Size
+        </h3>
+        <p className="text-[11px] text-zinc-500 mb-3">
+          Scales numeric glyphs (digits, currency, %) relative to surrounding
+          text. Doto renders small natively — boost for legibility in dense
+          contexts like timestamps and small KPIs.
+        </p>
+        <div
+          className="p-4 rounded-lg border"
+          style={{
+            borderColor:
+              "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+            backgroundColor: "rgba(10,10,0,0.3)",
+          }}
+        >
+          <div className="flex items-baseline justify-between mb-3">
+            <div
+              className="text-[13px] text-zinc-300"
+              style={{ fontFamily: fontTheme.fontBody }}
+            >
+              $1,234.56 &nbsp; 62% &nbsp; 0h ago
+            </div>
+            <div className="text-[11px] text-zinc-500 font-mono">
+              {digitScale.toFixed(2)}x
+            </div>
+          </div>
+          <input
+            type="range"
+            min={digitScaleMin}
+            max={digitScaleMax}
+            step={0.05}
+            value={digitScale}
+            onChange={(e) => setDigitScale(parseFloat(e.target.value))}
+            aria-label="Digit size scale"
+            className="w-full accent-[var(--fintheon-accent)]"
+          />
+          <div className="flex justify-between text-[10px] text-zinc-600 mt-1">
+            <span>{digitScaleMin.toFixed(1)}x</span>
+            <button
+              type="button"
+              onClick={() => setDigitScale(DIGIT_SCALE_DEFAULT)}
+              className="hover:text-zinc-300 transition-colors"
+              aria-label="Reset digit scale to default"
+            >
+              reset {DIGIT_SCALE_DEFAULT.toFixed(1)}x
+            </button>
+            <span>{digitScaleMax.toFixed(1)}x</span>
+          </div>
         </div>
       </section>
 

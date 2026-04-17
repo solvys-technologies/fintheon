@@ -75,8 +75,6 @@ function applyReadableDigitsScale(scale: number): void {
     weight: "100 900",
     style: "normal",
     display: "swap",
-    // @ts-expect-error — sizeAdjust is in the CSSFontFaceDescriptors spec but
-    // may not be in older lib.dom.d.ts versions shipped with TS.
     sizeAdjust: pct,
   } as FontFaceDescriptors);
   face

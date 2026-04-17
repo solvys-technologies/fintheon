@@ -9,11 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-04-18T02:30:00",
+    date: "2026-04-18T03:00:00",
     agent: "claude-code",
     summary:
-      "Revert Nothing Design Doto digits on desktop: 'Readable Digits' @font-face remapped back from Doto to Inter (regular weight, same digit/currency/symbol unicode-range). All-digit Doto rendering didn't work visually on desktop. Doto @font-face retained so 'Something Solvys' / 'Something Monochrome' special themes still get Doto headings where explicitly opted in. Mobile unchanged.",
-    files: ["frontend/fonts.css"],
+      "Nothing Font Kit + adjustable digit size (desktop): (1) 'Readable Digits' @font-face stays on Doto but gets baseline size-adjust: 150% so digits render legibly alongside Inter/Space Grotesk body text (fixes tiny Doto glyphs in timestamps, calendar values, small KPIs, RiskFlow '0h ago' stamps, ticker pts deltas); (2) New 'Nothing' font theme (id: nothing) — Space Grotesk body + Doto headings + Space Mono mono — which applies Nothing thematics (.nothing-active, flat radius, Nothing ease) on top of ANY color theme, so users keep their palette and just swap typography; (3) Nothing Font Kit carries optional fontMono/borderRadius/easeDefault fields on FontTheme and toggles .nothing-active independently of legacy Special color presets; (4) New Digit Size slider in Appearance settings (1.0x–2.5x, default 1.5x) — swaps the Readable Digits FontFace at runtime via the FontFace API (delete+re-add with updated sizeAdjust) and persists per-user to backend settings as appearance.digitScale; (5) ThemeContext now reconciles .nothing-active across both fontTheme.nothingKit and legacy theme.special paths so switching between them doesn't leave stale overrides.",
+    files: [
+      "frontend/fonts.css",
+      "frontend/lib/font-theme.ts",
+      "frontend/contexts/ThemeContext.tsx",
+      "frontend/components/settings/ThemeSettings.tsx",
+    ],
   },
   {
     date: "2026-04-17T22:40:00",
