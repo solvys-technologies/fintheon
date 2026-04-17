@@ -63,6 +63,7 @@ import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
 import { createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
+import { createMeRoutes } from "./me/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -173,6 +174,9 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/settings/*", authMiddleware, requireAuth);
   app.use("/api/profile", authMiddleware, requireAuth);
   app.use("/api/profile/*", authMiddleware, requireAuth);
+  // [S23-T4] /api/me — client identity diagnostic for cross-device account debugging.
+  app.use("/api/me", authMiddleware, requireAuth);
+  app.use("/api/me/*", authMiddleware, requireAuth);
   app.use("/api/peers", authMiddleware, requireAuth);
   app.use("/api/peers/*", authMiddleware, requireAuth);
   app.use("/api/documents", authMiddleware, requireAuth);
@@ -229,6 +233,9 @@ export function registerRoutes(app: Hono): void {
 
   // User profiles + app state (localStorage migration target)
   app.route("/api/profile", createProfileRoutes());
+
+  // [S23-T4] /api/me — diagnostic: { userId, email, traderName }
+  app.route("/api/me", createMeRoutes());
 
   // Claude peers: registry, desks, heartbeat, group voice room
   app.route("/api/peers", createPeersRoutes());

@@ -9,6 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T15:45:00",
+    agent: "claude-code",
+    summary:
+      "S23-T4: /api/me diagnostic endpoint ({userId,email,traderName}) for cross-device account debugging, Harper/Hermes memory reads now use authenticated userId when available (falls back to SYSTEM_USER_ID for background jobs), HermesChatRequest + HarperChatRequest accept userId + surface — the hardcoded null-UUID that blocked per-user agent_context_bank reads is replaced with request.userId",
+    files: [
+      "backend-hono/src/routes/me/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/hermes-handler.ts",
+      "backend-hono/src/services/harper-handler.ts",
+    ],
+  },
+  {
+    date: "2026-04-17T15:30:00",
+    agent: "claude-code",
+    summary:
+      "S23-T3: Harper Aquarium literacy — ConsiliumHub persists current surface (aquarium/narratives/timeline/boardroom/apparatus/chat) to localStorage on tab change, useHermesChat auto-appends 'aquarium' to activeConnectors + sends surface flag when on the Aquarium surface, backend harper-handler + strands/harper + /api/ai/chat handlers inject buildAquariumContext() whenever surface===aquarium (no manual connector toggle needed), buildAquariumContext now exports from harper-handler with a 'How to read this' preamble explaining IV/regime/signal bands so agents interpret MiroShark output as ground truth (not debug noise), Harper base prompt gains an 'Aquarium' capability block",
+    files: [
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/chat/hooks/useHermesChat.ts",
+      "backend-hono/src/services/harper-handler.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/routes/ai/handlers/chat.ts",
+      "backend-hono/src/routes/harper/index.ts",
+    ],
+  },
+  {
     date: "2026-04-17T15:15:00",
     agent: "claude-code",
     summary:

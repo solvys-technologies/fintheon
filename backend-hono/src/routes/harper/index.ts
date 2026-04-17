@@ -361,6 +361,7 @@ export function createHarperRoutes() {
           persona: body.persona,
           riskFlowContext: body.riskFlowContext,
           activeConnectors: body.activeConnectors,
+          surface: body.surface,
           userContext: body.userContext,
           provider: body.provider,
         },

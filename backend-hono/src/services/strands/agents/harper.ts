@@ -32,6 +32,8 @@ export interface HarperChatOptions {
   persona?: string;
   riskFlowContext?: string;
   activeConnectors?: string[];
+  /** [S23-T3] Active Consilium surface — auto-enables surface-specific context injection (e.g. "aquarium"). */
+  surface?: string;
   userContext?: UserContext;
   /** AI provider override: local (VProxy), nous (Sonnet via Nous), orouter (Opus via OpenRouter) */
   provider?: HarperProvider;
@@ -113,6 +115,30 @@ export async function streamHarperChat(
 
   if (options.riskFlowContext) {
     prompt = `[RiskFlow Context]\n${options.riskFlowContext}\n\n${prompt}`;
+  }
+
+  // [S23-T3] Aquarium awareness: when the user is on the Aquarium surface (or the connector is
+  // explicitly active), inject the latest MiroShark simulation with interpretation scaffolding so
+  // Harper reads her own output as ground truth instead of treating it as debug noise.
+  const aquariumActive =
+    options.surface === "aquarium" ||
+    !!options.activeConnectors?.includes("aquarium");
+  if (aquariumActive) {
+    try {
+      const { buildAquariumContext } = await import("../../harper-handler.js");
+      const aquariumContext = await buildAquariumContext();
+      if (aquariumContext) {
+        prompt = `${aquariumContext}\n\n${prompt}`;
+        log.info("aquarium context injected (strands)", {
+          requestId,
+          surface: options.surface,
+        });
+      }
+    } catch (err) {
+      log.warn("failed to build aquarium context (non-fatal, strands)", {
+        error: String(err),
+      });
+    }
   }
 
   // Inject user context so Harper addresses the user correctly and knows their setup

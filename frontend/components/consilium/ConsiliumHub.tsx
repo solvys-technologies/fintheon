@@ -195,6 +195,26 @@ export function ConsiliumHub() {
   const boardroomDropdownRef = useRef<HTMLDivElement>(null);
   const apparatusDropdownRef = useRef<HTMLDivElement>(null);
 
+  // [S23-T3] Persist current Consilium surface so useHermesChat can auto-inject Aquarium/surface
+  // context into Harper + Hermes prompts without threading props through every chat widget.
+  useEffect(() => {
+    try {
+      const surface =
+        activeTab === "sanctum"
+          ? sanctumSubView === "aquarium"
+            ? "aquarium"
+            : sanctumSubView === "narratives"
+              ? "narratives"
+              : "timeline"
+          : activeTab === "boardroom"
+            ? "boardroom"
+            : activeTab === "apparatus"
+              ? "apparatus"
+              : "chat";
+      localStorage.setItem("fintheon:current-surface", surface);
+    } catch {}
+  }, [activeTab, sanctumSubView]);
+
   useEffect(() => {
     const anyOpen =
       sanctumDropdownOpen || boardroomDropdownOpen || apparatusDropdownOpen;
