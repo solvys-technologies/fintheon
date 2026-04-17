@@ -9,13 +9,15 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-04-17T01:15:00",
+    date: "2026-04-17T01:30:00",
     agent: "claude-code",
     summary:
-      "Fix mobile bulletin not syncing: removed loaded gate so bulletin re-fetches on every open, added cache: no-store to all mobile bulletin and phrases GET requests to bypass browser/PWA caching",
+      "Fix mobile bulletin sync: flush pending saves on close (no lost edits), re-fetch fresh on every open with cache: no-store, generate actual PWA icons from logo (were 0-byte placeholders)",
     files: [
       "mobile/components/bulletin/MobileBulletin.tsx",
       "mobile/hooks/useStickyBulletin.ts",
+      "mobile/public/icons/icon-192.png",
+      "mobile/public/icons/icon-512.png",
     ],
   },
   {

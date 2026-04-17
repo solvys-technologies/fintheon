@@ -1,4 +1,5 @@
 // [claude-code 2026-04-16] S20: StickyBulletin — auth headers, haptic-gated, activity signals
+// [claude-code 2026-04-17] Flush pending saves on close, re-fetch fresh on every open
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Crosshair,
@@ -59,6 +60,10 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
   const [eventOfWeek, setEventOfWeek] = useState("");
   const notesSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notesDirty = useRef(false);
+  const eventDirty = useRef(false);
+  const latestNotes = useRef("");
+  const latestEvent = useRef("");
 
   // Antilag
   const [antilagTimes, setAntilagTimes] = useState<AntilagEntry[]>([]);
@@ -142,11 +147,13 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
   const handleNotesChange = useCallback(
     (val: string) => {
       setTradingNotes(val);
+      latestNotes.current = val;
+      notesDirty.current = true;
       if (notesSaveTimer.current) clearTimeout(notesSaveTimer.current);
-      notesSaveTimer.current = setTimeout(
-        () => saveField("tradingNotes", val),
-        1200,
-      );
+      notesSaveTimer.current = setTimeout(() => {
+        saveField("tradingNotes", val);
+        notesDirty.current = false;
+      }, 1200);
     },
     [saveField],
   );
@@ -154,14 +161,37 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
   const handleEventChange = useCallback(
     (val: string) => {
       setEventOfWeek(val);
+      latestEvent.current = val;
+      eventDirty.current = true;
       if (eventSaveTimer.current) clearTimeout(eventSaveTimer.current);
-      eventSaveTimer.current = setTimeout(
-        () => saveField("eventOfWeek", val),
-        1200,
-      );
+      eventSaveTimer.current = setTimeout(() => {
+        saveField("eventOfWeek", val);
+        eventDirty.current = false;
+      }, 1200);
     },
     [saveField],
   );
+
+  // Flush pending saves immediately when bulletin closes
+  useEffect(() => {
+    if (isOpen) return;
+    if (notesSaveTimer.current) {
+      clearTimeout(notesSaveTimer.current);
+      notesSaveTimer.current = null;
+    }
+    if (eventSaveTimer.current) {
+      clearTimeout(eventSaveTimer.current);
+      eventSaveTimer.current = null;
+    }
+    if (notesDirty.current) {
+      saveField("tradingNotes", latestNotes.current);
+      notesDirty.current = false;
+    }
+    if (eventDirty.current) {
+      saveField("eventOfWeek", latestEvent.current);
+      eventDirty.current = false;
+    }
+  }, [isOpen, saveField]);
 
   // Quick Clock
   const handleQuickClock = useCallback(async () => {
