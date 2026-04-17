@@ -135,7 +135,13 @@ export function useDraggable(options: UseDraggableOptions): UseDraggableResult {
     const rawY = latestClientRef.current.y - startOffsetRef.current.y;
     const clamped =
       bounds === "viewport"
-        ? clampToViewport(rawX, rawY, dragEl, posRef.current.x, posRef.current.y)
+        ? clampToViewport(
+            rawX,
+            rawY,
+            dragEl,
+            posRef.current.x,
+            posRef.current.y,
+          )
         : { x: rawX, y: rawY };
 
     posRef.current = clamped;
@@ -256,7 +262,14 @@ export function useDraggable(options: UseDraggableOptions): UseDraggableResult {
       rafPendingRef.current = false;
       if (dragEl) dragEl.style.willChange = "";
     };
-  }, [handleEl, dragEl, disabled, handlePointerDown, handlePointerMove, endDrag]);
+  }, [
+    handleEl,
+    dragEl,
+    disabled,
+    handlePointerDown,
+    handlePointerMove,
+    endDrag,
+  ]);
 
   const reset = useCallback(() => {
     const next = initialPosition;
