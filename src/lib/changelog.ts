@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T16:00:00",
+    agent: "claude-code",
+    summary:
+      "Market Impact Enricher Routine: audited 130 qualifying items (macro_level≥3, 24h+ old, market_impact=null) across 75 unique dates. Found most items created today (fresh ingestions, backend enricher correctly skipping). Items from Apr 12 (created 5d ago) unenriched — suspected Yahoo Finance block on Fly.io. Added POST /api/diagnostics/trigger-market-impact endpoint so future Routine runs can invoke the enricher on the live backend directly.",
+    files: ["backend-hono/src/routes/diagnostics/index.ts"],
+  },
+  {
     date: "2026-04-17T09:00:00",
     agent: "claude-code",
     summary:

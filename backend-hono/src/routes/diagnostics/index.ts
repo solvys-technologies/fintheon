@@ -403,5 +403,17 @@ export function createDiagnosticsRoutes(): Hono {
     });
   });
 
+  // [claude-code 2026-04-17] Manual trigger for market impact enrichment — callable by Claude Code Routine
+  router.post("/trigger-market-impact", async (c) => {
+    try {
+      const { runMarketImpactEnrichment } =
+        await import("../../services/cron/market-impact-enricher.js");
+      const result = await runMarketImpactEnrichment();
+      return c.json({ success: true, ...result });
+    } catch (err) {
+      return c.json({ success: false, error: String(err) }, 500);
+    }
+  });
+
   return router;
 }
