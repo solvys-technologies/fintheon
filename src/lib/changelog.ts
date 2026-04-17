@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T04:00:00",
+    agent: "claude-code",
+    summary:
+      "Fix StickyBulletin (and any portal/conditional-mount) drag in useDraggable: (1) Listener-attachment race — handleRef/elementRef are now mirrored into useState via useLayoutEffect so the pointer-listener effect re-runs once the consumer's portal commits and refs populate; previously the effect fired once with refs=null (Bulletin returns null until popupPos is computed on a later render) and never re-attached, so hold-and-drag did nothing. (2) clampToViewport is now anchor-aware — it derives the clamped position from the element's current visual rect + transform delta instead of treating (x, y) as the absolute top-left, so panels positioned via top/right (Bulletin) can drag left/up without getting pinned to 0. Benefits DraggablePanel / PsychAssistDockable / YouTubeMiniplayer for free.",
+    files: ["frontend/hooks/useDraggable.ts"],
+  },
+  {
     date: "2026-04-18T03:00:00",
     agent: "claude-code",
     summary:
