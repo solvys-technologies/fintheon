@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+// [claude-code 2026-04-16] Smooth roll-out transition for header dock/undock
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { GripVertical, PictureInPicture2, X } from "lucide-react";
 import { CompactERMonitor } from "../mission-control/CompactERMonitor";
 
@@ -27,8 +28,9 @@ export function PsychAssistDockable({
   storageKey = "fintheon:psychassist-floating-pos:v1",
   headerDockZoneId = "fintheon-heading-toolbar",
 }: PsychAssistDockableProps) {
-  const [pos, setPos] = useState<Pos>({ x: 24, y: 92 });
+  const [pos, setPos] = useState<Pos>({ x: 24, y: 86 });
   const [dragging, setDragging] = useState(false);
+  const [headerVisible, setHeaderVisible] = useState(false);
   const dragOffset = useRef<Pos>({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export function PsychAssistDockable({
       typeof window !== "undefined"
         ? Math.max(24, window.innerWidth - 360)
         : 24;
-    setPos({ x, y: 92 });
+    setPos({ x, y: 86 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -61,6 +63,22 @@ export function PsychAssistDockable({
       // ignore
     }
   }, [pos, storageKey]);
+
+  // Animate header dock open on mount
+  useEffect(() => {
+    if (target === "header") {
+      const raf = requestAnimationFrame(() => setHeaderVisible(true));
+      return () => cancelAnimationFrame(raf);
+    }
+    setHeaderVisible(false);
+  }, [target]);
+
+  // Smooth undock: collapse first, then switch to floating
+  const handleUndock = useCallback(() => {
+    setHeaderVisible(false);
+    const timer = setTimeout(() => onUndockToFloating(), 280);
+    return () => clearTimeout(timer);
+  }, [onUndockToFloating]);
 
   useEffect(() => {
     if (!dragging) return;
@@ -113,9 +131,17 @@ export function PsychAssistDockable({
 
   if (!floating) {
     return (
-      <div className="flex items-center gap-2 bg-[var(--fintheon-bg)] rounded-lg px-3.5 h-8 min-w-[360px]">
+      <div
+        className="flex items-center gap-2 bg-[var(--fintheon-bg)] rounded-lg px-3.5 h-7 overflow-hidden"
+        style={{
+          width: headerVisible ? 360 : 0,
+          opacity: headerVisible ? 1 : 0,
+          transition:
+            "width 280ms cubic-bezier(0.4, 0, 0.2, 1), opacity 220ms ease",
+        }}
+      >
         <button
-          onClick={onUndockToFloating}
+          onClick={handleUndock}
           className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors"
           title="Picture-in-picture (float)"
         >
@@ -137,7 +163,7 @@ export function PsychAssistDockable({
 
   return (
     <div
-      className="fixed z-50 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-2xl px-3 py-2 shadow-2xl"
+      className="fixed z-50 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-2xl px-3 py-2"
       style={{ left: `${pos.x}px`, top: `${pos.y}px`, width: "340px" }}
     >
       <div className="flex items-center justify-between mb-2">

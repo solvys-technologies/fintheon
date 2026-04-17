@@ -1,4 +1,5 @@
 // [claude-code 2026-04-16] Compact header call widget — rolls open to reveal Fluxer voice room controls
+// [claude-code 2026-04-16] Voice channel updated to trading-floor; connect opens Fluxer directly
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Phone,
@@ -15,8 +16,8 @@ const FLUXER_URL = import.meta.env.VITE_FLUXER_COMMUNITY_URL as
   | string
   | undefined;
 
-// Voice channel path appended to the community base URL
-const VOICE_CHANNEL_PATH = "1492795130002214970";
+// Trading-floor voice channel in the PIC Fluxer community
+const VOICE_CHANNEL_PATH = "1494460462212445023";
 
 interface FluxerCallWidgetProps {
   className?: string;
@@ -49,16 +50,35 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
     ? `${FLUXER_URL.replace(/\/$/, "")}/${VOICE_CHANNEL_PATH}`
     : undefined;
 
+  const fluxerWindowRef = useRef<Window | null>(null);
+
+  // Connect opens Fluxer voice channel; disconnect closes it.
+  // Mute/deafen are visual-only indicators — Fluxer does not expose a
+  // postMessage API for audio control, so users manage audio inside Fluxer.
   const handleConnect = useCallback(() => {
     if (connected) {
       setConnected(false);
       setMuted(false);
       setDeafened(false);
       setShowVideoPanel(false);
+      if (fluxerWindowRef.current && !fluxerWindowRef.current.closed) {
+        fluxerWindowRef.current.close();
+      }
+      fluxerWindowRef.current = null;
       return;
     }
+    if (!voiceUrl) return;
+    if (isElectron()) {
+      setShowVideoPanel(true);
+    } else {
+      fluxerWindowRef.current = window.open(
+        voiceUrl,
+        "fluxer-voice",
+        "noopener,noreferrer",
+      );
+    }
     setConnected(true);
-  }, [connected]);
+  }, [connected, voiceUrl]);
 
   const handleVideoPopout = useCallback(() => {
     if (!voiceUrl) return;
@@ -80,14 +100,14 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
         {/* Trigger button — phone icon */}
         <button
           onClick={() => setExpanded((v) => !v)}
-          className={`relative p-1.5 rounded-lg transition-all ${
+          className={`relative toolbar-icon-btn ${
             connected
-              ? "text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15"
-              : "text-gray-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+              ? "!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-400"
+              : ""
           }`}
           title={connected ? "Voice connected" : "Voice room"}
         >
-          <Phone className="w-3.5 h-3.5" />
+          <Phone className="w-3 h-3" />
           {connected && (
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
           )}

@@ -993,6 +993,9 @@ export default function RiskFlowMini({
                         rel="noopener noreferrer"
                         onClick={() => markSeen(item.id)}
                         className={`block px-3 py-2 ${idx < collapsedPreviewItems.length - 1 ? "border-b border-zinc-800/80" : ""} ${seen ? "opacity-70" : ""}`}
+                        style={{
+                          animation: `fadeInTab 400ms cubic-bezier(0.4, 0, 0.2, 1) ${idx * 60}ms both`,
+                        }}
                       >
                         <div className="flex items-center gap-2">
                           <SourceIcon

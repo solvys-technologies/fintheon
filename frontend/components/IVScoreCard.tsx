@@ -87,8 +87,40 @@ if (
       0%, 100% { opacity: 1; }
       50% { opacity: 0.6; }
     }
+    @keyframes vix-direction-pulse {
+      0% { opacity: 1; }
+      30% { opacity: 0.5; }
+      60% { opacity: 1; }
+      80% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+    @keyframes vix-value-flash {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
   `;
   document.head.appendChild(style);
+}
+
+/** Direction-change pulse: bullish color when VIX drops, bearish when VIX rises */
+function getDirectionPulseStyle(direction: "up" | "down"): React.CSSProperties {
+  if (direction === "down") {
+    // VIX dropping = bullish
+    return {
+      animation: "vix-direction-pulse 1.5s ease-in-out",
+      borderColor: "var(--fintheon-bullish)",
+      boxShadow:
+        "0 0 6px color-mix(in srgb, var(--fintheon-bullish) 40%, transparent)",
+    };
+  }
+  // VIX rising = bearish
+  return {
+    animation: "vix-direction-pulse 1.5s ease-in-out",
+    borderColor: "var(--fintheon-bearish)",
+    boxShadow:
+      "0 0 6px color-mix(in srgb, var(--fintheon-bearish) 40%, transparent)",
+  };
 }
 
 export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
@@ -99,6 +131,48 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
   } | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // VIX direction-change tracking
+  const prevVixRef = useRef<number | null>(null);
+  const [directionPulse, setDirectionPulse] = useState<"up" | "down" | null>(
+    null,
+  );
+  const [vixFlash, setVixFlash] = useState(false);
+  const directionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!data) return;
+    const currentVix = data.vix.level;
+    const prev = prevVixRef.current;
+
+    if (prev !== null) {
+      const delta = currentVix - prev;
+      // Only trigger direction pulse on meaningful moves (>0.5 pts)
+      if (Math.abs(delta) > 0.5) {
+        const dir = delta > 0 ? "up" : "down";
+        setDirectionPulse(dir);
+        if (directionTimerRef.current) clearTimeout(directionTimerRef.current);
+        directionTimerRef.current = setTimeout(
+          () => setDirectionPulse(null),
+          3000,
+        );
+      }
+      // Flash VIX number on any value change
+      if (Math.abs(delta) > 0.01) {
+        setVixFlash(true);
+        setTimeout(() => setVixFlash(false), 150);
+      }
+    }
+
+    prevVixRef.current = currentVix;
+  }, [data?.vix.level]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(
+    () => () => {
+      if (directionTimerRef.current) clearTimeout(directionTimerRef.current);
+    },
+    [],
+  );
 
   const handleShowTooltip = () => {
     if (hideTimeoutRef.current) {
@@ -149,15 +223,17 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
   const envLabel = getEnvironmentLabel(data.score);
   const pts = data.points;
   const vixPulse = getVixPulseStyle(data.vix.level);
+  // Direction pulse takes priority over level-based pulse
+  const borderStyle: React.CSSProperties = directionPulse
+    ? getDirectionPulseStyle(directionPulse)
+    : (vixPulse ?? {
+        borderColor: "rgba(var(--fintheon-accent-rgb, 199, 159, 74), 0.2)",
+      });
 
   return (
     <div
       className="relative bg-[var(--fintheon-bg)] border rounded-lg px-3 h-8 flex items-center"
-      style={
-        vixPulse ?? {
-          borderColor: "rgba(var(--fintheon-accent-rgb, 199, 159, 74), 0.2)",
-        }
-      }
+      style={borderStyle}
     >
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-gray-400">IV</span>
@@ -195,7 +271,7 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             popupPos &&
             createPortal(
               <div
-                className="w-80 max-w-[90vw] bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl"
+                className="w-80 max-w-[90vw] bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl animate-tooltip-fade"
                 style={{
                   position: "fixed",
                   top: popupPos.top,

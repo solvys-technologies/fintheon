@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T01:00:00",
+    agent: "claude-code",
+    summary:
+      "Heading toolbar Solvys Feels pass: unified .toolbar-icon-btn class for all icon buttons (28px, accent borders, transparent bg, filled on active), toolbar height shrink 56->50px, Fluxer voice channel updated to trading-floor and connect wired to open Fluxer, PsychAssist smooth roll-out/collapse transition on dock/undock, VIX direction-change pulse with theme bullish/bearish colors, dropdown-enter and tooltip-fade microinteractions, Strategium card entrance stagger",
+    files: [
+      "frontend/index.css",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/consilium/FluxerCallWidget.tsx",
+      "frontend/components/layout/PsychAssistDockable.tsx",
+      "frontend/components/IVScoreCard.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+    ],
+  },
+  {
     date: "2026-04-17T00:30:00",
     agent: "claude-code",
     summary:
