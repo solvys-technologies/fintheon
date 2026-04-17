@@ -1,5 +1,12 @@
+// [claude-code 2026-04-18] Fix Bulletin drag — listeners now re-attach when refs populate after a portal/conditional mount; clampToViewport now anchor-aware (works for top/right/bottom-anchored panels, not just top-left)
 // [claude-code 2026-04-17] useDraggable: Pointer Events + rAF + transform3d; strict grip-only; kills sticky-cursor and friction by construction
-import { useEffect, useRef, useCallback, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useCallback,
+  useState,
+} from "react";
 
 export interface UseDraggableOptions {
   elementRef: React.RefObject<HTMLElement | null>;
@@ -37,18 +44,31 @@ function readStoredPosition(
   return fallback;
 }
 
+// Anchor-aware viewport clamp: pivot off the element's *current* visual rect
+// rather than assuming (x, y) is the absolute top-left. Works for panels
+// positioned via top/right (Bulletin), top/left (DraggablePanel), or any
+// combination — the transform delta is converted into a visual-rect delta,
+// clamped against the viewport, then converted back.
 function clampToViewport(
-  x: number,
-  y: number,
+  targetX: number,
+  targetY: number,
   el: HTMLElement | null,
+  currentX: number,
+  currentY: number,
 ): { x: number; y: number } {
-  if (!el) return { x, y };
+  if (!el) return { x: targetX, y: targetY };
   const rect = el.getBoundingClientRect();
-  const maxX = Math.max(0, window.innerWidth - rect.width);
-  const maxY = Math.max(0, window.innerHeight - rect.height);
+  const deltaX = targetX - currentX;
+  const deltaY = targetY - currentY;
+  const newLeft = rect.left + deltaX;
+  const newTop = rect.top + deltaY;
+  const maxLeft = Math.max(0, window.innerWidth - rect.width);
+  const maxTop = Math.max(0, window.innerHeight - rect.height);
+  const clampedLeft = Math.max(0, Math.min(newLeft, maxLeft));
+  const clampedTop = Math.max(0, Math.min(newTop, maxTop));
   return {
-    x: Math.max(0, Math.min(x, maxX)),
-    y: Math.max(0, Math.min(y, maxY)),
+    x: currentX + (clampedLeft - rect.left),
+    y: currentY + (clampedTop - rect.top),
   };
 }
 
@@ -69,6 +89,19 @@ export function useDraggable(options: UseDraggableOptions): UseDraggableResult {
   );
   const [isDragging, setIsDragging] = useState(false);
 
+  // Mirror handleRef/elementRef into state so the listener-attachment effect
+  // re-runs once the consumer's portal/conditional JSX commits and the refs
+  // populate. RefObject mutations alone don't trigger effect re-runs, which
+  // caused the Bulletin to never get pointer listeners (refs were null on the
+  // render where useDraggable's effect first fired with disabled=false).
+  const [handleEl, setHandleEl] = useState<HTMLElement | null>(null);
+  const [dragEl, setDragEl] = useState<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (handleRef.current !== handleEl) setHandleEl(handleRef.current);
+    if (elementRef.current !== dragEl) setDragEl(elementRef.current);
+  });
+
   const posRef = useRef(position);
   const latestClientRef = useRef({ x: 0, y: 0 });
   const startOffsetRef = useRef({ x: 0, y: 0 });
@@ -83,47 +116,42 @@ export function useDraggable(options: UseDraggableOptions): UseDraggableResult {
 
   // Apply transform on mount / when position changes externally
   useEffect(() => {
-    const el = elementRef.current;
-    if (!el) return;
-    el.style.transform = `translate3d(${posRef.current.x}px, ${posRef.current.y}px, 0)`;
-  }, [elementRef, position]);
+    if (!dragEl) return;
+    dragEl.style.transform = `translate3d(${posRef.current.x}px, ${posRef.current.y}px, 0)`;
+  }, [dragEl, position]);
 
   const writeTransform = useCallback(() => {
-    const el = elementRef.current;
-    if (!el) return;
+    if (!dragEl) return;
     const { x, y } = posRef.current;
-    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-  }, [elementRef]);
+    dragEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  }, [dragEl]);
 
   const flushFrame = useCallback(() => {
     rafPendingRef.current = false;
     if (!isDraggingRef.current) return;
-    const el = elementRef.current;
-    if (!el) return;
+    if (!dragEl) return;
 
     const rawX = latestClientRef.current.x - startOffsetRef.current.x;
     const rawY = latestClientRef.current.y - startOffsetRef.current.y;
     const clamped =
       bounds === "viewport"
-        ? clampToViewport(rawX, rawY, el)
+        ? clampToViewport(rawX, rawY, dragEl, posRef.current.x, posRef.current.y)
         : { x: rawX, y: rawY };
 
     posRef.current = clamped;
     writeTransform();
-  }, [elementRef, bounds, writeTransform]);
+  }, [dragEl, bounds, writeTransform]);
 
   const handlePointerDown = useCallback(
     (e: PointerEvent) => {
       if (disabled) return;
       if (e.button !== 0) return; // primary button only
 
-      const handle = handleRef.current;
-      const el = elementRef.current;
-      if (!handle || !el) return;
+      if (!handleEl || !dragEl) return;
 
       // Capture pointer so we get move/up even if cursor leaves the element
       try {
-        handle.setPointerCapture(e.pointerId);
+        handleEl.setPointerCapture(e.pointerId);
       } catch {
         /* ignore */
       }
@@ -136,13 +164,13 @@ export function useDraggable(options: UseDraggableOptions): UseDraggableResult {
       };
       latestClientRef.current = { x: e.clientX, y: e.clientY };
 
-      el.style.willChange = "transform";
+      dragEl.style.willChange = "transform";
       setIsDragging(true);
       onDragStart?.();
       e.preventDefault();
       e.stopPropagation();
     },
-    [disabled, handleRef, elementRef, onDragStart],
+    [disabled, handleEl, dragEl, onDragStart],
   );
 
   const handlePointerMove = useCallback(
@@ -168,11 +196,9 @@ export function useDraggable(options: UseDraggableOptions): UseDraggableResult {
         return;
       }
 
-      const handle = handleRef.current;
-      const el = elementRef.current;
-      if (handle && activePointerIdRef.current !== null) {
+      if (handleEl && activePointerIdRef.current !== null) {
         try {
-          handle.releasePointerCapture(activePointerIdRef.current);
+          handleEl.releasePointerCapture(activePointerIdRef.current);
         } catch {
           /* ignore */
         }
@@ -182,7 +208,7 @@ export function useDraggable(options: UseDraggableOptions): UseDraggableResult {
       activePointerIdRef.current = null;
       rafPendingRef.current = false;
 
-      if (el) el.style.willChange = "";
+      if (dragEl) dragEl.style.willChange = "";
 
       const finalPos = posRef.current;
       setPositionState(finalPos);
@@ -198,30 +224,29 @@ export function useDraggable(options: UseDraggableOptions): UseDraggableResult {
 
       onDragEnd?.(finalPos);
     },
-    [handleRef, elementRef, storageKey, onDragEnd],
+    [handleEl, dragEl, storageKey, onDragEnd],
   );
 
   useEffect(() => {
-    const handle = handleRef.current;
-    if (!handle || disabled) return;
+    if (!handleEl || disabled) return;
 
-    handle.addEventListener("pointerdown", handlePointerDown);
+    handleEl.addEventListener("pointerdown", handlePointerDown);
     // Attach move/up to the HANDLE (because we setPointerCapture on it) —
     // captured pointer routes move/up events through the capturing element.
-    handle.addEventListener("pointermove", handlePointerMove);
-    handle.addEventListener("pointerup", endDrag);
-    handle.addEventListener("pointercancel", endDrag);
+    handleEl.addEventListener("pointermove", handlePointerMove);
+    handleEl.addEventListener("pointerup", endDrag);
+    handleEl.addEventListener("pointercancel", endDrag);
 
     return () => {
-      handle.removeEventListener("pointerdown", handlePointerDown);
-      handle.removeEventListener("pointermove", handlePointerMove);
-      handle.removeEventListener("pointerup", endDrag);
-      handle.removeEventListener("pointercancel", endDrag);
+      handleEl.removeEventListener("pointerdown", handlePointerDown);
+      handleEl.removeEventListener("pointermove", handlePointerMove);
+      handleEl.removeEventListener("pointerup", endDrag);
+      handleEl.removeEventListener("pointercancel", endDrag);
 
       // Force-reset refs on unmount — kills sticky-cursor if component unmounts mid-drag
       if (activePointerIdRef.current !== null) {
         try {
-          handle.releasePointerCapture(activePointerIdRef.current);
+          handleEl.releasePointerCapture(activePointerIdRef.current);
         } catch {
           /* ignore */
         }
@@ -229,17 +254,9 @@ export function useDraggable(options: UseDraggableOptions): UseDraggableResult {
       isDraggingRef.current = false;
       activePointerIdRef.current = null;
       rafPendingRef.current = false;
-      const el = elementRef.current;
-      if (el) el.style.willChange = "";
+      if (dragEl) dragEl.style.willChange = "";
     };
-  }, [
-    handleRef,
-    elementRef,
-    disabled,
-    handlePointerDown,
-    handlePointerMove,
-    endDrag,
-  ]);
+  }, [handleEl, dragEl, disabled, handlePointerDown, handlePointerMove, endDrag]);
 
   const reset = useCallback(() => {
     const next = initialPosition;
