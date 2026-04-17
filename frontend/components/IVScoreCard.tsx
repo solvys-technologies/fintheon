@@ -30,6 +30,15 @@ function getEnvironmentLabel(score: number): string {
   return "Calm Seas";
 }
 
+/** Severity color for fuse bar segments — green at low, red at high */
+function getFuseSegmentColor(segmentIndex: number): string {
+  if (segmentIndex >= 8) return "#ef4444"; // red
+  if (segmentIndex >= 6) return "#f97316"; // orange
+  if (segmentIndex >= 4) return "#eab308"; // yellow
+  if (segmentIndex >= 2) return "#34d399"; // emerald
+  return "#22c55e"; // green
+}
+
 function getUrgencyColor(urgency: string) {
   switch (urgency) {
     case "extreme":
@@ -292,22 +301,19 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                   </h5>
                   {[
                     {
-                      label: "VIX Component",
+                      label: "VIX",
                       value: data.vixComponent,
                       detail: `VIX ${data.vix.level.toFixed(1)}`,
-                      weight: data.weights.vix ?? 0.7,
                     },
                     {
-                      label: "Headline Component",
+                      label: "Headlines",
                       value: data.headlineComponent,
-                      detail: `${data.eventCount} headline events`,
-                      weight: data.weights.headlines ?? 0.2,
+                      detail: `${data.eventCount} events`,
                     },
                     {
-                      label: "MiroShark Component",
+                      label: "MiroShark",
                       value: data.mirosharkComponent,
-                      detail: "MiroShark running analysis",
-                      weight: data.weights.miroshark ?? 0.1,
+                      detail: "Analysis",
                     },
                   ].map((c) => (
                     <div key={c.label}>
@@ -315,49 +321,44 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                         <span className="text-[10px] text-gray-400">
                           {c.label}
                         </span>
-                        <span className="text-[10px] text-gray-300 font-medium">
-                          {c.value.toFixed(1)}
+                        <span
+                          className="text-[10px] font-bold"
+                          style={{
+                            color: getFuseSegmentColor(Math.round(c.value)),
+                          }}
+                        >
+                          {c.value.toFixed(1)}/10
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-[6px] bg-zinc-800 rounded-sm overflow-hidden flex gap-[1px]">
-                          {Array.from({ length: 10 }, (_, i) => (
-                            <div
-                              key={i}
-                              className="flex-1 rounded-[1px]"
-                              style={{
-                                background:
-                                  i < Math.round(c.value)
-                                    ? "var(--fintheon-accent)"
-                                    : "var(--fintheon-border, #1a1a1a)",
-                                transition: "background 150ms ease-out",
-                              }}
-                            />
-                          ))}
+                        <div className="flex-1 h-[7px] bg-zinc-800/80 rounded-sm overflow-hidden flex gap-[1px]">
+                          {Array.from({ length: 10 }, (_, i) => {
+                            const filled = i < Math.round(c.value);
+                            return (
+                              <div
+                                key={i}
+                                className="flex-1 rounded-[1px]"
+                                style={{
+                                  background: filled
+                                    ? getFuseSegmentColor(i)
+                                    : "rgba(255,255,255,0.04)",
+                                  opacity: filled ? 1 : 0.5,
+                                  transition: `background 200ms ease-out ${i * 30}ms, opacity 200ms ease-out ${i * 30}ms`,
+                                }}
+                              />
+                            );
+                          })}
                         </div>
                       </div>
                       <div className="text-[9px] text-gray-600 mt-0.5">
-                        {c.detail} → component score {c.value.toFixed(1)}/10
+                        {c.detail}
                       </div>
                     </div>
                   ))}
 
-                  {/* Blended calculation */}
+                  {/* Blended score summary */}
                   <div className="pt-2 border-t border-zinc-800">
-                    <div className="text-[9px] text-gray-500 leading-relaxed">
-                      {(() => {
-                        const wv = data.weights.vix ?? 0.7;
-                        const wh = data.weights.headlines ?? 0.2;
-                        const wm = data.weights.miroshark ?? 0.1;
-                        const blended =
-                          data.vixComponent * wv +
-                          data.headlineComponent * wh +
-                          data.mirosharkComponent * wm;
-                        const vixFloor = Math.max(0, data.vixComponent - 2);
-                        return `Blended: (${data.vixComponent.toFixed(1)} × ${wv.toFixed(1)}) + (${data.headlineComponent.toFixed(1)} × ${wh.toFixed(1)}) + (${data.mirosharkComponent.toFixed(1)} × ${wm.toFixed(1)}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)} → ${data.score.toFixed(1)}`;
-                      })()}
-                    </div>
-                    <div className="flex items-center justify-between mt-1.5">
+                    <div className="flex items-center justify-between">
                       <span className="text-[10px] text-gray-300 font-medium">
                         Blended
                       </span>
