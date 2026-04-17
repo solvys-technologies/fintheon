@@ -1,6 +1,8 @@
 // [claude-code 2026-03-10] Gateway toast: show once per session only (sessionStorage guard)
 // [claude-code 2026-03-11] Gateway port now configurable via Settings → persisted in localStorage
 // [claude-code 2026-03-22] Parse /health response body, verify Hermes AI on startup, auto-restart if down
+// [claude-code 2026-04-17] Hydrate gateway/hermes status from localStorage to avoid self-team-card
+//                          flashing red on app reopen before first health poll resolves
 import {
   createContext,
   useContext,
@@ -61,6 +63,43 @@ const HEALTH_INTERVAL_MS = 30_000; // 30 seconds
 const MAX_BACKOFF_MS = 60_000;
 const HERMES_RESTART_DELAY_MS = 3000;
 const MAX_HERMES_RETRIES = 2;
+const CACHE_KEY = "fintheon:gatewayHealth";
+const CACHE_MAX_AGE_MS = 10 * 60 * 1000;
+
+interface CachedHealth {
+  status: GatewayStatus;
+  hermesStatus: HermesStatus;
+  lastHealthCheck: string;
+}
+
+function loadCachedHealth(): CachedHealth | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as CachedHealth;
+    const lastMs = new Date(cached.lastHealthCheck).getTime();
+    if (!Number.isFinite(lastMs)) return null;
+    if (Date.now() - lastMs > CACHE_MAX_AGE_MS) return null;
+    return cached;
+  } catch {
+    return null;
+  }
+}
+
+function persistHealth(
+  status: GatewayStatus,
+  hermesStatus: HermesStatus,
+  lastHealthCheck: string,
+) {
+  try {
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ status, hermesStatus, lastHealthCheck }),
+    );
+  } catch {
+    // Cache is best-effort
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /*  Provider                                                           */
@@ -68,10 +107,17 @@ const MAX_HERMES_RETRIES = 2;
 
 export function GatewayProvider({ children }: { children: ReactNode }) {
   const { gatewayPort } = useSettings();
-  const [status, setStatus] = useState<GatewayStatus>("connecting");
-  const [hermesStatus, setHermesStatus] = useState<HermesStatus>("unknown");
+  const cachedHealth = loadCachedHealth();
+  const [status, setStatus] = useState<GatewayStatus>(
+    cachedHealth?.status ?? "connecting",
+  );
+  const [hermesStatus, setHermesStatus] = useState<HermesStatus>(
+    cachedHealth?.hermesStatus ?? "unknown",
+  );
   const [isVerifyingHermes, setIsVerifyingHermes] = useState(false);
-  const [lastHealthCheck, setLastHealthCheck] = useState<string | null>(null);
+  const [lastHealthCheck, setLastHealthCheck] = useState<string | null>(
+    cachedHealth?.lastHealthCheck ?? null,
+  );
   const backoffRef = useRef(2000);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { addToast, dismissToast } = useToast();
@@ -153,16 +199,20 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
           status === "error" ||
           status === "connecting";
 
+        const nowIso = new Date().toISOString();
         setStatus("connected");
-        setLastHealthCheck(new Date().toISOString());
+        setLastHealthCheck(nowIso);
         backoffRef.current = 2000;
 
         // Update Hermes status from health response
         const aiStatus = body?.components?.aiGateway?.status;
+        let resolvedHermes: HermesStatus = "unknown";
         if (aiStatus === "ok") {
+          resolvedHermes = "ok";
           setHermesStatus("ok");
           hermesRestartAttempts.current = 0;
         } else if (aiStatus === "degraded") {
+          resolvedHermes = "degraded";
           setHermesStatus("degraded");
         } else if (
           wasDisconnected &&
@@ -170,11 +220,15 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
           !isVerifyingHermes
         ) {
           // First time connecting and Hermes is down — trigger restart
+          resolvedHermes = "error";
           setHermesStatus("error");
           attemptHermesRestart();
         } else if (aiStatus === "error") {
+          resolvedHermes = "error";
           setHermesStatus("error");
         }
+
+        persistHealth("connected", resolvedHermes, nowIso);
 
         if (wasDisconnected) {
           if (connectingToastRef.current) {
@@ -237,9 +291,15 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
   }, [checkHealth, addToast]);
 
   // Initial connection + periodic health checks (re-trigger when port changes)
+  // On first mount we keep any cached status so the team card doesn't flash
+  // red; only a gatewayUrl change (port swap) resets to "connecting".
+  const gatewayUrlChangeRef = useRef(false);
   useEffect(() => {
-    setStatus("connecting");
-    setHermesStatus("unknown");
+    if (gatewayUrlChangeRef.current) {
+      setStatus("connecting");
+      setHermesStatus("unknown");
+    }
+    gatewayUrlChangeRef.current = true;
     backoffRef.current = 2000;
     hermesRestartAttempts.current = 0;
     checkHealth();

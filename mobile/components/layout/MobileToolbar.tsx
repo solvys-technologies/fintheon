@@ -1,9 +1,12 @@
 // [claude-code 2026-04-16] S20: Toolbar — global save checkmark under hamburger
+// [claude-code 2026-04-17] Toolbar VIX fades in only when Dash hero VIX is off-screen
 import { Menu } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { SaveCheckmark } from "../shared/SaveCheckmark";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
+import { useHeroVixVisibleStore } from "../../hooks/useHeroVixVisible";
 
 interface MobileToolbarProps {
   onHamburgerTap: () => void;
@@ -14,6 +17,8 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
   const { settings, isDirty, saveAll } = useSettings();
   const traderName = settings.traderName || "";
   const isOnline = useOnlineStatus();
+  const heroVixVisible = useHeroVixVisibleStore((s) => s.visible);
+  const showToolbarVix = isOnline && !heroVixVisible;
 
   return (
     <div
@@ -69,23 +74,40 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
           )}
         </div>
 
-        {/* VIX center / offline indicator */}
-        {isOnline ? (
-          <VixBadge variant="compact" />
-        ) : (
-          <span
-            style={{
-              fontFamily: "var(--font-data)",
-              fontSize: 10,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--error)",
-              fontWeight: 600,
-            }}
-          >
-            [OFFLINE]
-          </span>
-        )}
+        {/* VIX center — fades in once the Dash hero VIX is scrolled off-screen */}
+        <AnimatePresence mode="wait">
+          {!isOnline ? (
+            <motion.span
+              key="offline"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 10,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--error)",
+                fontWeight: 600,
+              }}
+            >
+              [OFFLINE]
+            </motion.span>
+          ) : showToolbarVix ? (
+            <motion.div
+              key="vix"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              <VixBadge variant="compact" />
+            </motion.div>
+          ) : (
+            <span key="spacer" aria-hidden="true" />
+          )}
+        </AnimatePresence>
 
         {/* Hamburger */}
         <button

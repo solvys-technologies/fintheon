@@ -1,3 +1,4 @@
+// [claude-code 2026-04-17] S23-T2: Added mergeHarperScoringIntoCache — called from deliberation completion to refresh /latest with Harper-scored numbers
 // [claude-code 2026-04-12] Fix: Update button now always runs fresh simulation. Auto-run on launch if stale. Harper AI analysis.
 // [claude-code 2026-04-03] Daily auto-run: 12h staleness threshold, cross-user dedup
 // [claude-code 2026-03-28] S8-T5: 3-phase deliberation pipeline integration
@@ -367,6 +368,46 @@ export function getLatestCachedPrediction(): MiroSharkPrediction | undefined {
     }
   }
   return latest;
+}
+
+/** [S23-T2] After deliberation completes, overwrite the cached prediction with Harper's refined
+ * composite IV / regime risk / briefing so GET /api/miroshark/latest returns the post-synthesis
+ * payload (fixes the Aquarium "Updating…" hang where the frontend showed stale pre-Harper numbers). */
+export function mergeHarperScoringIntoCache(
+  simId: string,
+  harperScoring: {
+    compositeIV?: number;
+    regimeShiftProbability?: number;
+    actionabilityScore?: number;
+    finalBriefing?: string;
+    surfacedTheses?: string[];
+    contestedTheses?: string[];
+    downgradedTheses?: string[];
+  },
+): void {
+  const cached = predictionCache.get(simId);
+  if (!cached) return;
+
+  const merged: MiroSharkPrediction = {
+    ...cached,
+    nextSessionScore: harperScoring.compositeIV ?? cached.nextSessionScore,
+    regimeShiftProbability:
+      harperScoring.regimeShiftProbability ?? cached.regimeShiftProbability,
+    briefing: harperScoring.finalBriefing
+      ? {
+          summary: harperScoring.finalBriefing,
+          keyFindings: [
+            ...(harperScoring.surfacedTheses ?? []),
+            ...(harperScoring.contestedTheses ?? []),
+          ],
+          riskAlerts: harperScoring.downgradedTheses ?? [],
+          agentConsensus: cached.briefing?.agentConsensus ?? "",
+          generatedAt: new Date().toISOString(),
+        }
+      : cached.briefing,
+    generatedAt: new Date().toISOString(),
+  };
+  predictionCache.set(simId, merged);
 }
 
 /** Get history of past runs from Supabase */

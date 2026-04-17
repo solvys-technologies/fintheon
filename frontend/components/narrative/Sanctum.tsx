@@ -1,17 +1,12 @@
+// [claude-code 2026-04-17] S23-T1: Aquarium restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
 // [claude-code 2026-04-16] Sanctum — full-border severity on Risk Signals containers, solvys-feels polish
 // [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
 // [claude-code 2026-03-28] S4-T3: KPI labels rewritten to trading lingo with interpretive sub-text
 // [claude-code 2026-03-24] Persistence refactor: show persisted data immediately, background updates, no idle state
 // [claude-code 2026-03-24] Thread selectedSymbol prop for TradingView chart, taller chart container (65vh)
 // [claude-code 2026-03-24] Sanctum — 3-page dashboard (merged Risk + Narratives), expandable econ cards
-import {
-  useState,
-  useCallback,
-  useRef,
-  useEffect,
-  useLayoutEffect,
-} from "react";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { useState, useCallback, useRef, useLayoutEffect } from "react";
+import { Loader2 } from "lucide-react";
 import type {
   SanctumData,
   SanctumPreset,
@@ -23,7 +18,6 @@ import { AUDITORIUM_PAGES, ivHeatColor } from "../../types/miroshark";
 import { SanctumChart } from "./SanctumChart";
 import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
-import { SanctumMacroStrip } from "./SanctumMacroStrip";
 import { SanctumBriefing } from "./SanctumBriefing";
 import { SanctumNarratives } from "./SanctumNarratives";
 import { SanctumRiskAssessment } from "./SanctumRiskAssessment";
@@ -34,6 +28,7 @@ import { BlendedVIXCard } from "./BlendedVIXCard";
 import { NextSessionForecastCard } from "./NextSessionForecastCard";
 import { RiskSignalCards } from "./RiskSignalCards";
 import { useIVScoreData } from "./useIVScoreData";
+import { MiroSharkDebatePanel } from "../miroshark/MiroSharkDebatePanel";
 
 interface CatalystInput {
   id: string;
@@ -53,6 +48,10 @@ interface SanctumProps {
   macroContext?: SimulationContext | null;
   narratives?: SanctumNarrative[];
   selectedSymbol?: string;
+  /** Chart mode — splits Aquarium 50/50 with a TradingView iframe on the right. Toggled from the Consilium tab bar Chart button. */
+  chartMode?: boolean;
+  /** Fires once per simulationId when MiroShark deliberation completes — parent should reload latest report. */
+  onSynthesisComplete?: () => void;
 }
 
 function heatInterpretation(score: number): string {
@@ -79,6 +78,77 @@ function confidenceInterpretation(confidence: number): string {
   return "Low — consider sitting out";
 }
 
+function KpiTile({
+  label,
+  value,
+  valueColor,
+  caption,
+}: {
+  label: string;
+  value: string;
+  valueColor: string;
+  caption: string;
+}) {
+  return (
+    <div className="rounded-md border border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-surface)] px-4 py-3">
+      <span
+        className="text-[8px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block"
+        style={{ fontFamily: "var(--font-heading)" }}
+      >
+        {label}
+      </span>
+      <span
+        className="text-lg font-bold"
+        style={{ color: valueColor, fontFamily: "var(--font-mono)" }}
+      >
+        {value}
+      </span>
+      <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">
+        {caption}
+      </span>
+    </div>
+  );
+}
+
+function KpiRow({ data }: { data: SanctumData }) {
+  return (
+    <div className="shrink-0 flex justify-center">
+      <div className="grid grid-cols-3 gap-3 w-full max-w-2xl">
+        <KpiTile
+          label="Market Heat"
+          value={data.compositeIV.toFixed(1)}
+          valueColor={ivHeatColor(data.compositeIV)}
+          caption={heatInterpretation(data.compositeIV)}
+        />
+        <KpiTile
+          label="Regime Risk"
+          value={`${(data.regimeShiftProbability * 100).toFixed(0)}%`}
+          valueColor={
+            data.regimeShiftProbability >= 0.6
+              ? "var(--fintheon-severe)"
+              : data.regimeShiftProbability >= 0.3
+                ? "var(--fintheon-neutral-severe)"
+                : "var(--fintheon-low)"
+          }
+          caption={regimeInterpretation(data.regimeShiftProbability)}
+        />
+        <KpiTile
+          label="Signal Strength"
+          value={`${(data.confidence * 100).toFixed(0)}%`}
+          valueColor={
+            data.confidence >= 0.8
+              ? "var(--fintheon-low)"
+              : data.confidence >= 0.6
+                ? "var(--fintheon-neutral-severe)"
+                : "var(--fintheon-severe)"
+          }
+          caption={confidenceInterpretation(data.confidence)}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function Sanctum({
   data,
   onRun,
@@ -87,6 +157,8 @@ export function Sanctum({
   macroContext,
   narratives,
   selectedSymbol = "/MNQ",
+  chartMode = false,
+  onSynthesisComplete,
 }: SanctumProps) {
   const { data: ivData, isLoading: ivLoading } = useIVScoreData();
 
@@ -102,7 +174,6 @@ export function Sanctum({
     }
   });
   const [activePage, setActivePage] = useState(0);
-  const [showProjection, setShowProjection] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const status = data?.status ?? "idle";
@@ -210,181 +281,139 @@ export function Sanctum({
               data-aud-page="0"
               className="min-h-full snap-start p-3 pt-2 flex flex-col"
             >
-              <div className="flex-1 flex flex-col gap-4">
-                {/* TradingView + Rolling IV bars — always visible */}
-                <div className="shrink-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="text-[10px] text-[var(--fintheon-text)]/60 uppercase tracking-wider font-semibold"
-                        style={{ fontFamily: "var(--font-heading)" }}
-                      >
-                        {selectedSymbol} — Rolling IV
-                      </span>
-                      {isLoading && (
-                        <Loader2 className="w-3 h-3 text-[var(--fintheon-accent)] animate-spin" />
-                      )}
-                    </div>
+              {chartMode ? (
+                /* Chart mode — 50/50 split: compact Aquarium stack on left, TradingView chart on right */
+                <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-3 min-h-0">
+                  <div className="flex flex-col gap-3 overflow-y-auto pr-1">
+                    {data && data.compositeIV > 0 && <KpiRow data={data} />}
                     {data && data.compositeIV > 0 && (
-                      <button
-                        onClick={() => setShowProjection((v) => !v)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[9px] font-medium transition-colors ${
-                          showProjection
-                            ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/8"
-                            : "text-[var(--fintheon-muted)]/50 hover:text-[var(--fintheon-text)]/70 hover:bg-[var(--fintheon-accent)]/5"
-                        }`}
-                        style={{ fontFamily: "var(--font-body)" }}
-                        title={
-                          showProjection
-                            ? "Hide projection overlay"
-                            : "Show projection overlay"
-                        }
-                      >
-                        {showProjection ? (
-                          <Eye className="w-3 h-3" />
-                        ) : (
-                          <EyeOff className="w-3 h-3" />
-                        )}
-                        Projection
-                      </button>
+                      <SanctumBriefing
+                        briefing={data.briefing ?? null}
+                        isLoading={false}
+                        noBorder
+                      />
                     )}
+                    <BlendedVIXCard data={ivData} isLoading={ivLoading} />
+                    <NextSessionForecastCard
+                      data={ivData}
+                      isLoading={ivLoading}
+                    />
+                    <AquariumPredictionCards />
                   </div>
-                  <div className="h-[58vh]">
+                  <div className="min-h-[60vh] xl:min-h-0 rounded-xl border border-[var(--fintheon-accent)]/12 overflow-hidden">
                     <SanctumChart
                       timeSeries={data?.timeSeries ?? []}
                       rollingDays={rollingDays}
                       selectedSymbol={selectedSymbol}
-                      compositeIV={
-                        showProjection && data ? data.compositeIV : undefined
-                      }
-                      confidence={
-                        showProjection && data ? data.confidence : undefined
-                      }
-                      regimeShiftProbability={
-                        showProjection && data
-                          ? data.regimeShiftProbability
-                          : undefined
-                      }
-                      scenarios={
-                        showProjection && data ? data.scenarios : undefined
-                      }
+                      compositeIV={data?.compositeIV}
+                      confidence={data?.confidence}
+                      regimeShiftProbability={data?.regimeShiftProbability}
+                      scenarios={data?.scenarios}
                     />
                   </div>
                 </div>
-
-                {/* KPI Row — only when data exists */}
-                {data && data.compositeIV > 0 && (
-                  <div className="shrink-0 flex justify-center">
-                    <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
-                      <div
-                        className="rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)]/40 px-4 py-2 flex items-center justify-between"
-                        style={{
-                          boxShadow: "0 0 12px rgba(212, 175, 55, 0.2)",
-                        }}
-                      >
-                        <div>
-                          <span className="text-[8px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">
-                            Market Heat
-                          </span>
+              ) : (
+                <div className="flex-1 flex flex-col gap-4">
+                  {/* Brief-pattern top container — IV+Forecast left (55%), Deliberation right (45%) */}
+                  <div className="min-h-[520px] flex">
+                    <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
+                      {/* Left: Blended IV + Next Session Forecast (55%) */}
+                      <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
                           <span
-                            className="text-xl font-bold"
-                            style={{ color: ivHeatColor(data.compositeIV) }}
+                            className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
+                            style={{ fontFamily: "var(--font-heading)" }}
                           >
-                            {data.compositeIV.toFixed(1)}
+                            Volatility Read
                           </span>
-                          <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">
-                            {heatInterpretation(data.compositeIV)}
-                          </span>
+                          {isLoading && (
+                            <Loader2 className="w-3 h-3 text-[var(--fintheon-accent)] animate-spin" />
+                          )}
                         </div>
-                        {/* Vertical shimmer fuse */}
+                        <BlendedVIXCard data={ivData} isLoading={ivLoading} />
+                        <NextSessionForecastCard
+                          data={ivData}
+                          isLoading={ivLoading}
+                        />
+                      </div>
+
+                      {/* Needle divider — matches Dashboard brief pattern */}
+                      <div className="w-px relative shrink-0">
                         <div
-                          className="w-[3px] h-7 rounded-full overflow-hidden"
+                          className="absolute inset-0"
                           style={{
-                            background: `linear-gradient(to top, ${ivHeatColor(data.compositeIV)}20, ${ivHeatColor(data.compositeIV)}, ${ivHeatColor(data.compositeIV)}20)`,
-                            backgroundSize: "100% 200%",
-                            animation: "fuse-shimmer 2s ease-in-out infinite",
+                            background:
+                              "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 25%, var(--fintheon-accent) 75%, transparent 100%)",
+                            opacity: 0.15,
                           }}
                         />
                       </div>
-                      <div
-                        className="rounded-lg border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-2"
-                        style={{
-                          boxShadow: "0 0 12px rgba(212, 175, 55, 0.2)",
-                        }}
-                      >
-                        <span className="text-[8px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">
-                          Regime Risk
-                        </span>
-                        <span
-                          className="text-lg font-bold"
-                          style={{
-                            color:
-                              data.regimeShiftProbability >= 0.6
-                                ? "var(--fintheon-severe)"
-                                : data.regimeShiftProbability >= 0.3
-                                  ? "var(--fintheon-neutral-severe)"
-                                  : "var(--fintheon-low)",
-                          }}
-                        >
-                          {(data.regimeShiftProbability * 100).toFixed(0)}%
-                        </span>
-                        <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">
-                          {regimeInterpretation(data.regimeShiftProbability)}
-                        </span>
-                      </div>
-                      <div
-                        className="rounded-lg border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/40 px-4 py-2"
-                        style={{
-                          boxShadow: "0 0 12px rgba(212, 175, 55, 0.2)",
-                        }}
-                      >
-                        <span className="text-[8px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block">
-                          Signal Strength
-                        </span>
-                        <span
-                          className="text-lg font-bold"
-                          style={{
-                            color:
-                              data.confidence >= 0.8
-                                ? "var(--fintheon-low)"
-                                : data.confidence >= 0.6
-                                  ? "var(--fintheon-neutral-severe)"
-                                  : "var(--fintheon-severe)",
-                          }}
-                        >
-                          {(data.confidence * 100).toFixed(0)}%
-                        </span>
-                        <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">
-                          {confidenceInterpretation(data.confidence)}
-                        </span>
+
+                      {/* Right: MiroShark Deliberation (45%) */}
+                      <div className="flex-[45] min-w-0 min-h-0 flex flex-col">
+                        <MiroSharkDebatePanel
+                          simulationId={data?.simulationId ?? null}
+                          onSynthesisComplete={onSynthesisComplete}
+                        />
                       </div>
                     </div>
                   </div>
-                )}
 
-                {/* AI Analysis Briefing — below KPIs */}
-                {data && data.compositeIV > 0 && (
-                  <SanctumBriefing
-                    briefing={data.briefing ?? null}
-                    isLoading={false}
-                    noBorder
-                  />
-                )}
+                  {/* KPI Row */}
+                  {data && data.compositeIV > 0 && (
+                    <div className="shrink-0 flex justify-center">
+                      <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
+                        <KpiTile
+                          label="Market Heat"
+                          value={data.compositeIV.toFixed(1)}
+                          valueColor={ivHeatColor(data.compositeIV)}
+                          caption={heatInterpretation(data.compositeIV)}
+                        />
+                        <KpiTile
+                          label="Regime Risk"
+                          value={`${(data.regimeShiftProbability * 100).toFixed(0)}%`}
+                          valueColor={
+                            data.regimeShiftProbability >= 0.6
+                              ? "var(--fintheon-severe)"
+                              : data.regimeShiftProbability >= 0.3
+                                ? "var(--fintheon-neutral-severe)"
+                                : "var(--fintheon-low)"
+                          }
+                          caption={regimeInterpretation(
+                            data.regimeShiftProbability,
+                          )}
+                        />
+                        <KpiTile
+                          label="Signal Strength"
+                          value={`${(data.confidence * 100).toFixed(0)}%`}
+                          valueColor={
+                            data.confidence >= 0.8
+                              ? "var(--fintheon-low)"
+                              : data.confidence >= 0.6
+                                ? "var(--fintheon-neutral-severe)"
+                                : "var(--fintheon-severe)"
+                          }
+                          caption={confidenceInterpretation(data.confidence)}
+                        />
+                      </div>
+                    </div>
+                  )}
 
-                {/* Prediction Cards — 5 instruments */}
-                <div className="flex justify-center">
-                  <AquariumPredictionCards />
+                  {/* Briefing */}
+                  {data && data.compositeIV > 0 && (
+                    <SanctumBriefing
+                      briefing={data.briefing ?? null}
+                      isLoading={false}
+                      noBorder
+                    />
+                  )}
+
+                  {/* Prediction Cards — 5 instruments */}
+                  <div className="flex justify-center">
+                    <AquariumPredictionCards />
+                  </div>
                 </div>
-
-                {/* Blended VIX + Next Session Forecast */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 px-4">
-                  <BlendedVIXCard data={ivData} isLoading={ivLoading} />
-                  <NextSessionForecastCard
-                    data={ivData}
-                    isLoading={ivLoading}
-                  />
-                </div>
-              </div>
+              )}
 
               {status === "error" && data?.error && (
                 <div className="mt-4 text-center">

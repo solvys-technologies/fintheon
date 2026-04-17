@@ -9,6 +9,75 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-17T15:15:00",
+    agent: "claude-code",
+    summary:
+      "S23-T2: Aquarium delivery hang fix — MiroSharkDebatePanel fires onSynthesisComplete once per simulationId when deliberation reaches phase=complete, ConsiliumHub refetches /api/miroshark/latest to refresh KPIs/briefing without waiting for poll, backend updatePhase(complete) now merges Harper's refined composite IV/regime risk/briefing into the in-memory prediction cache so /latest returns post-synthesis numbers (not the stale pre-Harper scoring), AquariumPredictionCards fallback poll 120s → 30s",
+    files: [
+      "frontend/components/miroshark/MiroSharkDebatePanel.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "backend-hono/src/services/miroshark/miroshark-service.ts",
+      "backend-hono/src/services/miroshark/miroshark-deliberation.ts",
+    ],
+  },
+  {
+    date: "2026-04-17T15:00:00",
+    agent: "claude-code",
+    summary:
+      "S23-T1: Aquarium UI restructure — removed top QQQ TradingView chart, new brief-pattern top container (Blended IV + Next Session Forecast left 55%, MiroShark Deliberation right 45%, needle divider matching Dashboard aesthetic), replaced Debate button in Consilium tab bar with Chart button (LineChart icon) that toggles full 50/50 split with TradingView iframe on right, removed redundant TradingView iframe toggle from Proposals panel, theme-sensitive CSS-var styling throughout",
+    files: [
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+    ],
+  },
+  {
+    date: "2026-04-17T14:15:00",
+    agent: "claude-code",
+    summary:
+      "Harper Ops feed pivots from retired local CLI loop to Claude Code Routines: new 'routine' + 'ack' action types, POST /api/harper-ops/feed auto-detects routine posts via metadata.routineId/triggerId/source and writes a short Harper ack entry in response, status alive now = any ops activity within 24h (not just heartbeats), panel shows Routine · <name> badge and Ack markers, panel title now 'Harper Ops · Routines', bootHarperAutonomous() logs deprecation for the CLI loop gate, docs/routines.md documents the POST payload contract",
+    files: [
+      "backend-hono/src/services/harper-autonomous/ops-store.ts",
+      "backend-hono/src/services/harper-autonomous/index.ts",
+      "backend-hono/src/routes/harper-ops/index.ts",
+      "frontend/hooks/useHarperOps.ts",
+      "frontend/components/harper-ops/HarperOpsPanel.tsx",
+      "docs/routines.md",
+    ],
+  },
+  {
+    date: "2026-04-17T14:00:00",
+    agent: "claude-code",
+    summary:
+      "Chat relay button (copy pickup code to hand off conversation to another device), voice room rewired so connect joins silently with a hidden persistent webview (system audio wires via session permission handler in Electron main) and a new PictureInPicture button now toggles the visible panel, removed 'Wield the Consul' dropdown label, moved Agent Lounge out of Imperium into Apparatus as 'lounge', cache gateway/hermes + sourceStatus to localStorage so the self team card hydrates with last-known-good indicators on app reopen instead of flashing all-red until the first poll completes",
+    files: [
+      "frontend/components/chat/ChatHeader.tsx",
+      "frontend/components/consilium/FluxerCallWidget.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/consilium/ConsiliumTabConfig.ts",
+      "frontend/hooks/useSourceStatus.ts",
+      "frontend/contexts/GatewayContext.tsx",
+      "electron/main.cjs",
+    ],
+  },
+  {
+    date: "2026-04-17T00:10:00",
+    agent: "claude-code",
+    summary:
+      "All digits render in Doto (Nothing Design display) across every theme on desktop + mobile: remapped 'Readable Digits' @font-face from Inter to Doto via unicode-range, self-hosted Doto for mobile and prepended Readable Digits to mobile font stacks (previously only desktop). Mobile toolbar VIX now fades in smoothly via IntersectionObserver once the Dash hero VIX ticker scrolls off-screen, and hides again on Dash init state",
+    files: [
+      "frontend/fonts.css",
+      "frontend/contexts/ThemeContext.tsx",
+      "mobile/index.css",
+      "mobile/public/fonts/doto.woff2",
+      "mobile/contexts/ThemeContext.tsx",
+      "mobile/hooks/useHeroVixVisible.ts",
+      "mobile/components/home/HomePage.tsx",
+      "mobile/components/layout/MobileToolbar.tsx",
+    ],
+  },
+  {
     date: "2026-04-17T01:30:00",
     agent: "claude-code",
     summary:

@@ -94,7 +94,7 @@ function applyFontThemeToDOM(fontTheme: FontTheme, activeTheme?: ThemeConfig) {
   if (activeTheme?.special && activeTheme.fontBody) return;
 
   const root = document.documentElement;
-  // Prepend 'Readable Digits' so digits/numbers always render in Inter
+  // Prepend 'Readable Digits' so digits/numbers always render in Doto
   const bodyStack = `'Readable Digits', ${fontTheme.fontBody}`;
   const headingStack = `'Readable Digits', ${fontTheme.fontHeading}`;
   root.style.setProperty("--font-body", bodyStack);

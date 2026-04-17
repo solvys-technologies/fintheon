@@ -19,10 +19,13 @@ export interface OpsEntry {
     | "alert"
     | "recommendation"
     | "execution"
-    | "error";
+    | "error"
+    | "routine"
+    | "ack";
   title: string;
   detail?: string;
   severity?: "info" | "warning" | "critical";
+  // metadata may include routineId, triggerId, routineName, source for routine entries
   metadata?: Record<string, unknown>;
   requiresApproval?: boolean;
   approvalStatus?: "pending" | "approved" | "denied" | "auto" | null;
@@ -208,19 +211,28 @@ export async function updateApproval(
   }
 }
 
+// Any ops activity (heartbeat, routine, analysis, etc.) within this window
+// counts as "alive". Routines run 1-4x/day, so a 24h window is generous.
+// [claude-code 2026-04-17]
+const ALIVE_WINDOW_MS = 24 * 60 * 60_000;
+
 export async function getOpsStatus(): Promise<{
   alive: boolean;
   lastHeartbeat: string | null;
+  lastActivity: string | null;
   pendingApprovals: number;
   totalEntries: number;
 }> {
   if (!isDatabaseAvailable()) {
     const lastHb = memoryFeed.find((e) => e.actionType === "heartbeat");
+    const lastAny = memoryFeed[0];
+    const lastActivityAt = lastAny?.createdAt ?? null;
     return {
-      alive: lastHb
-        ? Date.now() - new Date(lastHb.createdAt!).getTime() < 10 * 60_000
+      alive: lastActivityAt
+        ? Date.now() - new Date(lastActivityAt).getTime() < ALIVE_WINDOW_MS
         : false,
       lastHeartbeat: lastHb?.createdAt ?? null,
+      lastActivity: lastActivityAt,
       pendingApprovals: memoryFeed.filter(
         (e) => e.requiresApproval && e.approvalStatus === "pending",
       ).length,
@@ -229,10 +241,14 @@ export async function getOpsStatus(): Promise<{
   }
 
   try {
-    const [hbRows, pendingRows, countRows] = await Promise.all([
+    const [hbRows, anyRows, pendingRows, countRows] = await Promise.all([
       sql`
         SELECT created_at FROM harper_ops_feed
-        WHERE action_type = 'heartbeat'
+        WHERE action_type IN ('heartbeat', 'routine')
+        ORDER BY created_at DESC LIMIT 1
+      `,
+      sql`
+        SELECT created_at FROM harper_ops_feed
         ORDER BY created_at DESC LIMIT 1
       `,
       sql`SELECT COUNT(*)::int AS c FROM harper_ops_feed WHERE requires_approval = true AND approval_status = 'pending'`,
@@ -243,13 +259,18 @@ export async function getOpsStatus(): Promise<{
       hbRows.length > 0
         ? (hbRows[0] as { created_at: string }).created_at
         : null;
-    const alive = lastHb
-      ? Date.now() - new Date(lastHb).getTime() < 10 * 60_000
+    const lastAny =
+      anyRows.length > 0
+        ? (anyRows[0] as { created_at: string }).created_at
+        : null;
+    const alive = lastAny
+      ? Date.now() - new Date(lastAny).getTime() < ALIVE_WINDOW_MS
       : false;
 
     return {
       alive,
       lastHeartbeat: lastHb,
+      lastActivity: lastAny,
       pendingApprovals: (pendingRows[0] as { c: number }).c,
       totalEntries: (countRows[0] as { c: number }).c,
     };
@@ -260,6 +281,7 @@ export async function getOpsStatus(): Promise<{
     return {
       alive: false,
       lastHeartbeat: null,
+      lastActivity: null,
       pendingApprovals: 0,
       totalEntries: 0,
     };

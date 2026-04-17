@@ -1,5 +1,6 @@
 // [claude-code 2026-04-16] T7: Dash — snap pages, Risk Signals replaces Proposals, NarrativeFlow catalysts + timeline
-import { lazy, Suspense } from "react";
+// [claude-code 2026-04-17] Observe hero VIX visibility so toolbar VIX can fade in/out
+import { lazy, Suspense, useRef } from "react";
 import { motion, type Variants } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { BriefingCard } from "./BriefingCard";
@@ -9,6 +10,7 @@ import { MobileRiskSignalCards } from "./RiskSignalCards";
 import { CatalystCards } from "./CatalystCards";
 import { TimelineView } from "./TimelineView";
 import { useIVScore } from "../../hooks/useIVScore";
+import { useObserveHeroVixVisibility } from "../../hooks/useHeroVixVisible";
 
 const EconCalendarEmbed = lazy(() =>
   import("../econ/EconCalendarEmbed").then((m) => ({
@@ -146,8 +148,13 @@ export function HomePage() {
     isLoading: ivLoading,
   } = useIVScore();
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const heroVixRef = useRef<HTMLDivElement>(null);
+  useObserveHeroVixVisibility(heroVixRef, scrollRef);
+
   return (
     <div
+      ref={scrollRef}
       style={{
         position: "relative",
         height: "100%",
@@ -233,6 +240,7 @@ export function HomePage() {
 
               {/* Center: VIX */}
               <div
+                ref={heroVixRef}
                 style={{
                   flex: 1,
                   display: "flex",
