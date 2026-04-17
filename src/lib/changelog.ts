@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T02:30:00",
+    agent: "claude-code",
+    summary:
+      "Revert Nothing Design Doto digits on desktop: 'Readable Digits' @font-face remapped back from Doto to Inter (regular weight, same digit/currency/symbol unicode-range). All-digit Doto rendering didn't work visually on desktop. Doto @font-face retained so 'Something Solvys' / 'Something Monochrome' special themes still get Doto headings where explicitly opted in. Mobile unchanged.",
+    files: ["frontend/fonts.css"],
+  },
+  {
     date: "2026-04-17T22:40:00",
     agent: "claude-code",
     summary:

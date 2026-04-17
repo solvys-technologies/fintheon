@@ -129,15 +129,16 @@
   src: url("/fonts/cinzel-bold.woff2") format("woff2");
 }
 
-/* Readable Digits — Doto (Nothing Design display) mapped to digit/number
-   unicode ranges only. Prepended in font stacks so digits always render in
-   Doto regardless of theme. [claude-code 2026-04-17] */
+/* Readable Digits — Inter mapped to digit/number unicode ranges only.
+   Prepended in font stacks so digits always render in Inter regardless of
+   theme. [claude-code 2026-04-17] Reverted from Doto — all-digit Nothing
+   Design rendering didn't work out on desktop. */
 @font-face {
   font-family: "Readable Digits";
   font-style: normal;
-  font-weight: 100 900;
+  font-weight: 400;
   font-display: swap;
-  src: url("/fonts/doto.woff2") format("woff2");
+  src: url("/fonts/inter-regular.woff2") format("woff2");
   unicode-range:
     U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
     U+20AC;
