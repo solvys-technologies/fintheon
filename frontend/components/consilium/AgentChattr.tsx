@@ -245,6 +245,23 @@ export function AgentChattr({
   const dagIsActive = dag.status === "dispatching" || dag.status === "running";
   const dagIsDone = dag.status === "complete" || dag.status === "error";
 
+  // Auto-collapse analysis panels once Harper begins streaming
+  const harperOut = dag.agentOutputs["harper"];
+  const harperActive =
+    harperOut?.status === "streaming" || harperOut?.status === "complete";
+  const [analystsCollapsed, setAnalystsCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (harperActive && !analystsCollapsed) {
+      // Delay collapse slightly so transition is visible
+      const timer = setTimeout(() => setAnalystsCollapsed(true), 800);
+      return () => clearTimeout(timer);
+    }
+    if (dag.status === "idle") {
+      setAnalystsCollapsed(false);
+    }
+  }, [harperActive, analystsCollapsed, dag.status]);
+
   // KPI signal aggregation from agent JSON extraction
   const [kpiSignals, setKpiSignals] = useState<Record<string, KPISignals>>({});
   const handleDataExtracted = useCallback(
@@ -510,37 +527,44 @@ export function AgentChattr({
 
             return (
               <>
+                {/* Sub-analyst panels — collapse after Harper begins synthesis */}
                 <div
-                  className={`grid gap-2 ${
-                    visibleAnalysis.length === 1
-                      ? "grid-cols-1"
-                      : visibleAnalysis.length === 2
-                        ? "grid-cols-2"
-                        : "grid-cols-2"
-                  }`}
+                  className="overflow-hidden transition-all duration-500"
+                  style={{
+                    maxHeight: analystsCollapsed ? 0 : 600,
+                    opacity: analystsCollapsed ? 0 : 1,
+                  }}
                 >
-                  {visibleAnalysis.map((id) => {
-                    const out = dag.agentOutputs[id] ?? {
-                      agentId: id,
-                      text: "",
-                      status: "pending",
-                    };
-                    return (
-                      <BoardroomAgentPanel
-                        key={id}
-                        agentId={id}
-                        text={out.text}
-                        status={out.status}
-                        onDataExtracted={handleDataExtracted}
-                      />
-                    );
-                  })}
+                  <div
+                    className={`grid gap-2 ${
+                      visibleAnalysis.length === 1
+                        ? "grid-cols-1"
+                        : "grid-cols-2"
+                    }`}
+                  >
+                    {visibleAnalysis.map((id) => {
+                      const out = dag.agentOutputs[id] ?? {
+                        agentId: id,
+                        text: "",
+                        status: "pending",
+                      };
+                      return (
+                        <BoardroomAgentPanel
+                          key={id}
+                          agentId={id}
+                          text={out.text}
+                          status={out.status}
+                          onDataExtracted={handleDataExtracted}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* Harper synthesis — full width */}
+                {/* Harper synthesis — full width, persists after completion */}
                 {showHarper &&
                   (() => {
-                    const harperOut = dag.agentOutputs["harper"] ?? {
+                    const ho = dag.agentOutputs["harper"] ?? {
                       agentId: "harper" as HermesAgentId,
                       text: "",
                       status: "pending" as const,
@@ -548,8 +572,8 @@ export function AgentChattr({
                     return (
                       <BoardroomAgentPanel
                         agentId="harper"
-                        text={harperOut.text}
-                        status={harperOut.status}
+                        text={ho.text}
+                        status={ho.status}
                         fullWidth
                         onDataExtracted={handleDataExtracted}
                       />
