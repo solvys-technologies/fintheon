@@ -20,7 +20,7 @@
     },
     "unusual-whales": {
       "command": "npx",
-      "args": ["-y", "unusual-whales-mcp"],
+      "args": ["-y", "@unusualwhales/mcp"],
       "env": {
         "UNUSUAL_WHALES_API_KEY": "${UW_API_KEY}"
       }

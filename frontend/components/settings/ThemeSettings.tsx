@@ -1,10 +1,14 @@
+// [claude-code 2026-04-18] Nothing Font Kit card + digit-scale slider (1.0x–2.5x)
 // [claude-code 2026-04-15] Special themes section — Nothing Design (Something Solvys/Monochrome)
 // [claude-code 2026-03-24] Theme settings — font style, color presets, custom color picker, severity colors, save custom themes
 import { useState } from "react";
 import { Check, Save, Plus } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { type ThemeConfig, DEFAULT_THEME } from "../../lib/theme";
-import { DEFAULT_FONT_THEME } from "../../lib/font-theme";
+import {
+  DEFAULT_FONT_THEME,
+  DIGIT_SCALE_DEFAULT,
+} from "../../lib/font-theme";
 import { ColorSwatchInput } from "../ui/ColorPicker";
 
 const COLOR_FIELDS: { key: keyof ThemeConfig; label: string }[] = [

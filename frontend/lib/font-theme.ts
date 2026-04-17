@@ -106,6 +106,9 @@ export function loadStoredDigitScale(): number {
 
 export function saveDigitScale(scale: number): void {
   try {
-    localStorage.setItem(DIGIT_SCALE_STORAGE_KEY, String(clampDigitScale(scale)));
+    localStorage.setItem(
+      DIGIT_SCALE_STORAGE_KEY,
+      String(clampDigitScale(scale)),
+    );
   } catch {}
 }
