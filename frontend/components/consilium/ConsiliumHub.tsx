@@ -650,9 +650,6 @@ export function ConsiliumHub() {
                 "opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)",
             }}
           >
-            <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-[var(--fintheon-accent)]/40 font-medium">
-              Wield the Consul
-            </div>
             {BOARDROOM_SUB_VIEWS.map(
               ({ id, label, subtitle, icon: Icon }, idx) => (
                 <button

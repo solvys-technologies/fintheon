@@ -15,12 +15,8 @@ import {
 // Top-level tabs: Sanctum, Boardroom, Apparatus are dropdowns; Chat is a direct button
 export type ConsiliumTab = "sanctum" | "chat" | "boardroom" | "apparatus";
 export type SanctumSubView = "narratives" | "aquarium" | "timeline";
-export type BoardroomSubView =
-  | "forum"
-  | "imperium"
-  | "agentic-chat"
-  | "research";
-export type ApparatusSubView = "desk" | "fileroom";
+export type BoardroomSubView = "forum" | "agentic-chat" | "research";
+export type ApparatusSubView = "desk" | "fileroom" | "lounge";
 
 // Chat is the only direct button now
 export const REGULAR_TABS: {
@@ -79,12 +75,6 @@ export const BOARDROOM_SUB_VIEWS: {
     subtitle: "Research knowledge base",
     icon: BookOpen,
   },
-  {
-    id: "imperium",
-    label: "Agent Lounge",
-    subtitle: "Agents and their thoughts",
-    icon: Moon,
-  },
 ];
 
 export const APPARATUS_SUB_VIEWS: {
@@ -104,5 +94,11 @@ export const APPARATUS_SUB_VIEWS: {
     label: "Fileroom",
     subtitle: "AI-generated context bank",
     icon: Brain,
+  },
+  {
+    id: "lounge",
+    label: "Agent Lounge",
+    subtitle: "Agents and their thoughts",
+    icon: Moon,
   },
 ];

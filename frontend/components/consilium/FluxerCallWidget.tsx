@@ -1,5 +1,6 @@
 // [claude-code 2026-04-16] Compact header call widget — rolls open to reveal Fluxer voice room controls
 // [claude-code 2026-04-16] Voice channel updated to trading-floor; connect opens Fluxer directly
+// [claude-code 2026-04-17] Connect joins silently in background (hidden webview wires system audio); PiP icon toggles visible panel
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Phone,
@@ -9,6 +10,7 @@ import {
   VolumeOff,
   Video,
   PhoneOff,
+  PictureInPicture2,
 } from "lucide-react";
 import { isElectron } from "../../lib/platform";
 
@@ -52,7 +54,9 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
 
   const fluxerWindowRef = useRef<Window | null>(null);
 
-  // Connect opens Fluxer voice channel; disconnect closes it.
+  // Connect opens Fluxer voice channel silently: Electron mounts a hidden
+  // webview so system audio wires automatically; browser opens a background
+  // window. The user can reveal the visible panel via the PiP button.
   // Mute/deafen are visual-only indicators — Fluxer does not expose a
   // postMessage API for audio control, so users manage audio inside Fluxer.
   const handleConnect = useCallback(() => {
@@ -68,24 +72,33 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
       return;
     }
     if (!voiceUrl) return;
-    if (isElectron()) {
-      setShowVideoPanel(true);
-    } else {
+    if (!isElectron()) {
+      // Browser: open a backgrounded window — user can focus it if needed
       fluxerWindowRef.current = window.open(
         voiceUrl,
         "fluxer-voice",
         "noopener,noreferrer",
       );
     }
+    // Electron: the hidden webview below mounts when `connected` flips true
     setConnected(true);
   }, [connected, voiceUrl]);
 
-  const handleVideoPopout = useCallback(() => {
+  const handlePipToggle = useCallback(() => {
     if (!voiceUrl) return;
     if (isElectron()) {
       setShowVideoPanel((v) => !v);
     } else {
-      window.open(voiceUrl, "_blank", "noopener,noreferrer");
+      // Browser: focus the background window (opened on connect)
+      if (fluxerWindowRef.current && !fluxerWindowRef.current.closed) {
+        fluxerWindowRef.current.focus();
+      } else {
+        fluxerWindowRef.current = window.open(
+          voiceUrl,
+          "fluxer-voice",
+          "noopener,noreferrer",
+        );
+      }
     }
   }, [voiceUrl]);
 
@@ -117,7 +130,7 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
         <div
           className="flex items-center overflow-hidden"
           style={{
-            width: expanded ? 132 : 0,
+            width: expanded ? 156 : 0,
             opacity: expanded ? 1 : 0,
             transition:
               "width 220ms cubic-bezier(0.4, 0, 0.2, 1), opacity 180ms ease",
@@ -181,9 +194,18 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
               )}
             </button>
 
-            {/* Video pop-out */}
+            {/* Video (placeholder — reserved for future in-app video) */}
             <button
-              onClick={handleVideoPopout}
+              disabled
+              className="p-1.5 rounded-md text-gray-600 cursor-not-allowed"
+              title="Video (inside voice room)"
+            >
+              <Video className="w-3 h-3" />
+            </button>
+
+            {/* Picture-in-picture — reveals the voice room panel */}
+            <button
+              onClick={handlePipToggle}
               disabled={!connected}
               className={`p-1.5 rounded-md transition-all ${
                 !connected
@@ -192,38 +214,57 @@ export function FluxerCallWidget({ className = "" }: FluxerCallWidgetProps) {
                     ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
                     : "text-[var(--fintheon-text)]/50 hover:text-[var(--fintheon-text)]/80 hover:bg-[var(--fintheon-accent)]/10"
               }`}
-              title="Video room"
+              title={showVideoPanel ? "Hide voice room" : "Show voice room"}
             >
-              <Video className="w-3 h-3" />
+              <PictureInPicture2 className="w-3 h-3" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Floating video panel (Electron only) */}
-      {showVideoPanel && connected && isElectron() && voiceUrl && (
+      {/* Persistent voice-room webview (Electron only).
+          Renders as soon as `connected` flips true so audio wires up in the
+          background. Position is off-screen when the user hasn't popped the
+          panel — display:none would suspend the webview and cut audio. */}
+      {connected && isElectron() && voiceUrl && (
         <div
-          className="fixed bottom-16 right-4 z-[9999] w-[400px] h-[300px] rounded-xl overflow-hidden border border-[var(--fintheon-accent)]/20 shadow-[0_12px_48px_rgba(0,0,0,0.6)]"
-          style={{ backdropFilter: "blur(24px)" }}
+          className={
+            showVideoPanel
+              ? "fixed bottom-16 right-4 z-[9999] w-[400px] h-[300px] rounded-xl overflow-hidden border border-[var(--fintheon-accent)]/20 shadow-[0_12px_48px_rgba(0,0,0,0.6)]"
+              : "fixed w-[400px] h-[300px] pointer-events-none"
+          }
+          style={
+            showVideoPanel
+              ? { backdropFilter: "blur(24px)" }
+              : {
+                  top: -9999,
+                  left: -9999,
+                  opacity: 0,
+                }
+          }
         >
-          <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--fintheon-bg)] border-b border-[var(--fintheon-accent)]/10">
-            <span className="text-[10px] font-medium text-[var(--fintheon-accent)]/60 uppercase tracking-wider">
-              Voice Room
-            </span>
-            <button
-              onClick={() => setShowVideoPanel(false)}
-              className="text-[var(--fintheon-text)]/30 hover:text-[var(--fintheon-text)]/60 transition-colors text-xs"
-            >
-              x
-            </button>
-          </div>
+          {showVideoPanel && (
+            <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--fintheon-bg)] border-b border-[var(--fintheon-accent)]/10">
+              <span className="text-[10px] font-medium text-[var(--fintheon-accent)]/60 uppercase tracking-wider">
+                Voice Room
+              </span>
+              <button
+                onClick={() => setShowVideoPanel(false)}
+                className="text-[var(--fintheon-text)]/30 hover:text-[var(--fintheon-text)]/60 transition-colors text-xs"
+              >
+                x
+              </button>
+            </div>
+          )}
           <webview
             src={voiceUrl}
             className="w-full"
-            style={{ height: "calc(100% - 28px)" }}
+            style={{
+              height: showVideoPanel ? "calc(100% - 28px)" : "100%",
+            }}
             allowpopups
             partition="persist:fintheon"
-            webpreferences="nativeWindowOpen=yes"
+            webpreferences="nativeWindowOpen=yes,autoplayPolicy=no-user-gesture-required"
           />
         </div>
       )}
