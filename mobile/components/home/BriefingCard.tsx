@@ -1,21 +1,25 @@
+// [claude-code 2026-04-19] S25: [READ MORE] + whole-body press now open the unified
+//   DetailSheet (full-viewport catalyst modal with Ask CAO). Legacy SnapSheet kept as
+//   fallback for when the modal context isn't mounted (e.g. edge-case remounts).
 // [claude-code 2026-04-19] TP: brief preview area +25%, top padding −25%, uses the
 //   unified SnapSheet instead of the one-off BriefingOverlay so every popup is sized
 //   like the brief (TP standard).
-// [claude-code 2026-04-19] Pulled out of SurfaceCard per TP — brief content flows directly
-//   on the dash, label + body + [READ MORE] inline. Container padding/border gone. Body
-//   flex-grows to fill the empty space between the fuse row and the bottom tab bar.
 // [claude-code 2026-04-16] Briefing card — haptic on overlay open
-import { useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { useHaptic } from "../../hooks/useHaptic";
-import remarkGfm from "remark-gfm";
-import { SnapSheet } from "../shared/SnapSheet";
 import { useBriefing } from "../../hooks/useBriefing";
+import { useNotificationModal } from "../../contexts/NotificationModalContext";
+import { CARD_PRESS } from "../../lib/sheet-motion";
+import { motion } from "framer-motion";
 
 export function BriefingCard() {
   const { items, isLoading, error, refresh } = useBriefing();
-  const [sheetOpen, setSheetOpen] = useState(false);
   const vibrate = useHaptic();
+  const { open } = useNotificationModal();
+
+  const openDetail = () => {
+    vibrate(10);
+    open({ kind: "dailyBrief" });
+  };
 
   if (isLoading) {
     return (
@@ -42,73 +46,59 @@ export function BriefingCard() {
     );
   }
 
-  // Combine items into a single body string
-  const fullText = items.map((i) => `**${i.title}**\n${i.detail}`).join("\n\n");
-
   // Plain-text preview — length scales with available space; overlay always has full.
+  const fullText = items.map((i) => `**${i.title}**\n${i.detail}`).join("\n\n");
   const previewText = fullText
     .replace(/[#*_`~>]/g, "")
     .replace(/\n{2,}/g, "\n")
     .trim();
 
   return (
-    <>
-      {/* Brief body — naked on the dash (no container, no border, no bg). */}
-      <div style={shellStyle}>
-        <Label>DAILY BRIEF</Label>
-        <div
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 14,
-            color: "var(--text-primary)",
-            lineHeight: 1.55,
-            marginTop: 8,
-            flex: 1,
-            minHeight: 0,
-            overflow: "hidden",
-            whiteSpace: "pre-line",
-            // Fade the bottom edge so clipped text hints at "there's more"
-            WebkitMaskImage:
-              "linear-gradient(to bottom, black calc(100% - 32px), transparent)",
-            maskImage:
-              "linear-gradient(to bottom, black calc(100% - 32px), transparent)",
-          }}
-        >
-          {previewText}
-        </div>
-        <button
-          onClick={() => {
-            vibrate(8);
-            setSheetOpen(true);
-          }}
-          style={{
-            ...ctaStyle,
-            alignSelf: "flex-start",
-            marginTop: 6,
-          }}
-        >
-          [READ MORE]
-        </button>
-      </div>
-
-      <SnapSheet
-        isOpen={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        title="DAILY BRIEF"
+    <motion.div
+      onClick={openDetail}
+      whileTap={CARD_PRESS}
+      role="button"
+      tabIndex={0}
+      aria-label="Open daily brief"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDetail();
+        }
+      }}
+      style={{
+        ...shellStyle,
+        cursor: "pointer",
+        WebkitTapHighlightColor: "transparent",
+      }}
+    >
+      <Label>DAILY BRIEF</Label>
+      <div
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: 14,
+          color: "var(--text-primary)",
+          lineHeight: 1.55,
+          marginTop: 8,
+          flex: 1,
+          minHeight: 0,
+          overflow: "hidden",
+          whiteSpace: "pre-line",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, black calc(100% - 32px), transparent)",
+          maskImage:
+            "linear-gradient(to bottom, black calc(100% - 32px), transparent)",
+        }}
       >
-        <div
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 14,
-            color: "var(--text-primary)",
-            lineHeight: 1.6,
-            padding: "0 6px",
-          }}
-        >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullText}</ReactMarkdown>
-        </div>
-      </SnapSheet>
-    </>
+        {previewText}
+      </div>
+      <span
+        style={{ ...ctaStyle, alignSelf: "flex-start", marginTop: 6 }}
+        aria-hidden
+      >
+        [READ MORE]
+      </span>
+    </motion.div>
   );
 }
 

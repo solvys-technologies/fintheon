@@ -1,6 +1,9 @@
+// [claude-code 2026-04-19] S25: mirror unreadCount into app-icon badge (setAppBadge) and
+//   notify the SW to reset its local counter on mark-all-read.
 // [claude-code 2026-04-18] A4: notification history fetch + unread tracking for NotificationBell
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { clearBadge, notifyServiceWorkerClear, setBadge } from "../lib/badge";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const POLL_MS = 30_000;
@@ -50,6 +53,8 @@ export function useNotificationHistory() {
       const data = (await res.json()) as HistoryResponse;
       setNotifications(data.notifications ?? []);
       setUnreadCount(data.unreadCount ?? 0);
+      // [S25] Mirror server truth into the app-icon badge (no-op if unsupported)
+      void setBadge(data.unreadCount ?? 0);
     } catch {
       // Network error — keep prior state
     } finally {
@@ -94,6 +99,9 @@ export function useNotificationHistory() {
       prev.map((n) => ({ ...n, read: true, readAt: new Date().toISOString() })),
     );
     setUnreadCount(0);
+    // [S25] Clear badge + notify SW so its local counter resets too
+    void clearBadge();
+    notifyServiceWorkerClear();
     try {
       await fetch(`${API_BASE}/api/notifications/history/mark-read`, {
         method: "POST",

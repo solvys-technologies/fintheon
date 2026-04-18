@@ -370,7 +370,7 @@ export async function getCatalystById(c: Context) {
     const { data: item, error } = await sb
       .from("scored_riskflow_items")
       .select(
-        "tweet_id, headline, body, url, symbols, tags, sentiment, iv_score, macro_level, published_at, promoted_at, category, status, price_brain_score, risk_type, market_impact, agent_note, image_url",
+        "tweet_id, headline, body, symbols, tags, sentiment, iv_score, macro_level, published_at, promoted_at, category, status, price_brain_score, risk_type, market_impact, agent_note",
       )
       .eq("tweet_id", id)
       .maybeSingle();
@@ -400,8 +400,10 @@ export async function getCatalystById(c: Context) {
       sentiment: sentimentVal.includes("bull") ? "bullish" : "bearish",
       severity,
       source: "riskflow" as const,
-      sourceUrl: (item as Record<string, unknown>).url ?? null,
-      imageUrl: (item as Record<string, unknown>).image_url ?? null,
+      // scored_riskflow_items doesn't carry the source URL directly; mobile falls back to
+      // /api/riskflow/items/:id which does return the url field for tweet/article embeds.
+      sourceUrl: null,
+      imageUrl: null,
       ivScore: item.iv_score ?? null,
       narrativeThreads: threads,
       narrative: threads[0] ?? null,

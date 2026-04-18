@@ -1,13 +1,9 @@
+// [claude-code 2026-04-19] S25: NotificationModalProvider wraps AuthenticatedApp so push-tap
+//   and card-press both open the full-viewport catalyst/approval DetailSheet. SW handler
+//   promoted into useNotificationTapRouter which routes tab + modal in one pass.
 // [claude-code 2026-04-19] FAB chat button forwards to chat tab (no floating overlay) per TP
 // [claude-code 2026-04-16] S20: Provider tree + activity status + haptic-gated nav
-import {
-  useState,
-  useRef,
-  useEffect,
-  useCallback,
-  Suspense,
-  lazy,
-} from "react";
+import { useState, useRef, useCallback, Suspense, lazy } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -15,11 +11,14 @@ import { SettingsProvider } from "./contexts/SettingsContext";
 import { StatusProvider } from "./contexts/ToastContext";
 import { ActivityStatusProvider } from "./contexts/ActivityStatusContext";
 import { MobileRiskFlowProvider } from "./contexts/RiskFlowContext";
+import { NotificationModalProvider } from "./contexts/NotificationModalContext";
 import { MobileShell } from "./components/layout/MobileShell";
 import { HomePage } from "./components/home/HomePage";
 import { SegmentedSpinner } from "./components/shared/SegmentedSpinner";
+import { DetailSheetRoot } from "./components/catalyst-modal/DetailSheetRoot";
 import { useVixTicker } from "./hooks/useVixTicker";
 import { useHaptic } from "./hooks/useHaptic";
+import { useNotificationTapRouter } from "./hooks/useNotificationTapRouter";
 
 const RiskFlowPage = lazy(() =>
   import("./components/riskflow/RiskFlowPage").then((m) => ({
@@ -129,49 +128,10 @@ function AuthenticatedApp() {
     [activeTab, vibrate],
   );
 
-  // Service worker notification tap routing
-  useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-
-    const handler = (event: MessageEvent) => {
-      if (event.data?.type !== "notification-tap") return;
-      const { category, conversationId } = event.data;
-
-      // Route to correct tab based on notification category
-      if (category === "riskflow") {
-        handleTabChange(1);
-      } else if (
-        category === "chat" ||
-        category === "toolApprovals" ||
-        category === "chat_relay"
-      ) {
-        handleTabChange(2);
-        // S21-T1 relay dispatch: stash pending convo so ChatPage can pick it up on mount
-        if (category === "chat_relay" && conversationId) {
-          try {
-            sessionStorage.setItem(
-              "fintheon:pending-relay-conv",
-              conversationId,
-            );
-            // Also dispatch a window event in case the tab is already open
-            window.dispatchEvent(
-              new CustomEvent("fintheon:relay-dispatch", {
-                detail: { conversationId },
-              }),
-            );
-          } catch {
-            /* ignore */
-          }
-        }
-      } else if (category === "dailyBrief") {
-        handleTabChange(0);
-      }
-    };
-
-    navigator.serviceWorker.addEventListener("message", handler);
-    return () =>
-      navigator.serviceWorker.removeEventListener("message", handler);
-  }, [handleTabChange]);
+  // [S25] SW notification-tap → tab + DetailSheet modal (via NotificationModalContext).
+  useNotificationTapRouter({
+    onTabChange: (idx) => handleTabChange(idx as number),
+  });
 
   const direction = activeTab > prevTab.current ? 1 : -1;
 
@@ -239,6 +199,8 @@ function AuthenticatedApp() {
           </motion.div>
         </AnimatePresence>
       </MobileShell>
+      {/* [S25] Sibling to MobileShell so it floats above the tab transition. */}
+      <DetailSheetRoot onDispatched={() => handleTabChange(2)} />
     </MobileRiskFlowProvider>
   );
 }
@@ -274,7 +236,11 @@ function AuthGate() {
 
   if (!isAuthenticated) return <LoginScreen />;
 
-  return <AuthenticatedApp />;
+  return (
+    <NotificationModalProvider>
+      <AuthenticatedApp />
+    </NotificationModalProvider>
+  );
 }
 
 export default function App() {

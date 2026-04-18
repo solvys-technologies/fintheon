@@ -53,7 +53,14 @@ export function NotificationsSection() {
 
   const toggleCategory = useCallback(
     (
-      key: "riskflow" | "dailyBrief" | "regimeActivations" | "toolApprovals",
+      key:
+        | "riskflow"
+        | "dailyBrief"
+        | "regimeActivations"
+        | "regimeProposals"
+        | "lexiconProposals"
+        | "walkBackReverts"
+        | "toolApprovals",
     ) => {
       const updated = { ...notifPrefs, [key]: !notifPrefs[key] };
       updateSettings({ notificationPrefs: updated });
@@ -141,6 +148,21 @@ export function NotificationsSection() {
             label="Tool Approvals"
             on={notifPrefs.toolApprovals}
             onToggle={() => toggleCategory("toolApprovals")}
+          />
+          <SettingToggle
+            label="Regime Proposals"
+            on={notifPrefs.regimeProposals}
+            onToggle={() => toggleCategory("regimeProposals")}
+          />
+          <SettingToggle
+            label="Lexicon Proposals"
+            on={notifPrefs.lexiconProposals}
+            onToggle={() => toggleCategory("lexiconProposals")}
+          />
+          <SettingToggle
+            label="Walk-back Reverts"
+            on={notifPrefs.walkBackReverts}
+            onToggle={() => toggleCategory("walkBackReverts")}
           />
 
           <div>
