@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T10:30:00",
+    agent: "claude-code",
+    summary:
+      "Mobile stayed OFFLINE after v5.19.2 install — found the relay was architecturally broken for every user, not just TP. Four fixes to make the desktop↔Fly↔mobile relay work multi-user. (1) relay-connector default URL was wss://pulse-api-withered-dust-1394.fly.dev (the DELETED legacy app) — every local backend that opt'd in to RELAY_ENABLED was silently failing to connect. Repointed to wss://fintheon.fly.dev/api/relay/connect. (2) Local backend had no way to identify WHICH user it serves — old code passed SUPABASE_SERVICE_ROLE_KEY to verifySupabaseToken(), which treats it as a user JWT and rejects it, so the WS upgrade always 401'd. Added a second auth path on the server (relay-ws.ts): accepts service_token=<SUPABASE_SERVICE_ROLE_KEY> + user_id=<sub> with constant-time comparison, and registers the WS under the claimed user_id. Preserves the user-JWT path for future use. (3) Dynamic multi-user scoping: new POST /api/relay/set-user endpoint on the local backend accepts {userId} from the signed-in frontend, validates that userId matches the authenticated caller (can't claim someone else's identity), and calls relay-connector.setRelayUser() to reconnect under the new user_id. GET /api/relay/connector-status reports the current connector state so the frontend can introspect. AuthContext now posts /set-user on every user change via onAuthStateChange, so the connector re-registers when TP signs in, signs out, or a different user logs in. Zero manual env config needed per user. (4) FintheonFloatingChat became a dispatch shortcut with the composer's microinteractions: collapsed button shows Radio/Loader2/Unplug/MessageSquare based on relay state, gold pulse when dispatched-here, reduced opacity when dispatched-elsewhere. Shift-click or alt-click = one-click dispatch without opening the panel. Normal click still opens the compact chat window for users who want the full composer. Also: enabled RELAY_ENABLED=true in backend-hono/.env (local-only, uncommitted).",
+    files: [
+      "backend-hono/src/services/relay-connector.ts",
+      "backend-hono/src/boot/relay-ws.ts",
+      "backend-hono/src/routes/relay.ts",
+      "frontend/contexts/AuthContext.tsx",
+      "frontend/components/chat/FintheonFloatingChat.tsx",
+    ],
+  },
+  {
     date: "2026-04-18T10:00:00",
     agent: "claude-code",
     summary:

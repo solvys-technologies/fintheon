@@ -1,3 +1,7 @@
+// [claude-code 2026-04-18] Default RELAY_URL repointed from the deleted pulse-api-withered-dust-1394
+//   (dead legacy app) to wss://fintheon.fly.dev/api/relay/connect. Without this the local backend
+//   never establishes the outbound WebSocket to the Fly relay, so Fly's /api/relay/health reports
+//   connected:false for every mobile poll, and ConnectionStatus locks the mobile into OFFLINE.
 // [claude-code 2026-04-16] T1: Relay connector — full payload forwarding, tool-decision handling, cognition SSE injection
 // Only runs when RELAY_ENABLED=true (opt-in). Auto-reconnects with exponential backoff.
 // Listens for forwarded chat messages, routes to local Harper, streams response back.
@@ -11,13 +15,18 @@ import { onStep } from "./cognition-emitter.js";
 const log = createLogger("RelayConnector");
 
 const RELAY_URL =
-  process.env.RELAY_WS_URL ||
-  "wss://pulse-api-withered-dust-1394.fly.dev/api/relay/connect";
+  process.env.RELAY_WS_URL || "wss://fintheon.fly.dev/api/relay/connect";
 
 let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectAttempt = 0;
 const MAX_BACKOFF = 30_000;
+
+// Runtime user-scoping. The local backend has the shared SUPABASE_SERVICE_ROLE_KEY but
+// can't know *which* user it serves until the Electron frontend signs in and tells it.
+// setRelayUser() is called by the /api/relay/set-user endpoint once the auth context is
+// established; it re-establishes the WS under the new user_id. Passing null disconnects.
+let currentUserId: string | null = process.env.RELAY_USER_ID || null;
 
 function getBackoff(): number {
   const base = Math.min(1000 * Math.pow(2, reconnectAttempt), MAX_BACKOFF);
@@ -117,12 +126,33 @@ function connect(): void {
     return;
   }
 
-  const token =
-    process.env.RELAY_AUTH_TOKEN || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  const url = `${RELAY_URL}?token=${encodeURIComponent(token)}`;
+  // Prefer explicit user-JWT path if provided. Otherwise fall back to the
+  // service-role + user_id path so the local backend (which doesn't have a
+  // user JWT of its own) can still register under the user it serves.
+  const userJwt = process.env.RELAY_AUTH_TOKEN || "";
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  const userId = currentUserId || "";
+
+  let url: string;
+  let mode: string;
+  if (userJwt) {
+    url = `${RELAY_URL}?token=${encodeURIComponent(userJwt)}`;
+    mode = "user-jwt";
+  } else if (serviceKey && userId) {
+    url = `${RELAY_URL}?service_token=${encodeURIComponent(serviceKey)}&user_id=${encodeURIComponent(userId)}`;
+    mode = "service+user_id";
+  } else {
+    log.info(
+      "Relay connector waiting for user identity — call POST /api/relay/set-user " +
+        "with { userId } once the Electron auth context is established.",
+    );
+    return;
+  }
 
   log.info("Connecting to relay", {
     url: RELAY_URL,
+    mode,
+    userId: mode === "service+user_id" ? userId : "(from JWT)",
     attempt: reconnectAttempt,
   });
   ws = new WebSocket(url);
@@ -179,6 +209,47 @@ export function startRelayConnector(): void {
     return;
   }
   connect();
+}
+
+/**
+ * Update the user identity this local backend reports to the Fly relay, and
+ * reconnect with the new credentials. Called by POST /api/relay/set-user when
+ * the Electron auth context is established (or when it changes on logout /
+ * account swap). Passing null disconnects cleanly.
+ */
+export function setRelayUser(userId: string | null): void {
+  if (userId === currentUserId) return;
+  log.info("Relay user identity updated", {
+    from: currentUserId ?? "(none)",
+    to: userId ?? "(none)",
+  });
+  currentUserId = userId;
+  // Close the existing connection — the close handler will trigger reconnect
+  // with the new identity (or skip if we just cleared it).
+  if (ws) {
+    try {
+      ws.close(1000, "identity-change");
+    } catch {
+      /* ignore */
+    }
+    ws = null;
+  }
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  reconnectAttempt = 0;
+  if (userId && process.env.RELAY_ENABLED === "true") {
+    connect();
+  }
+}
+
+export function getRelayUser(): string | null {
+  return currentUserId;
+}
+
+export function isRelayConnected(): boolean {
+  return ws?.readyState === WebSocket.OPEN;
 }
 
 export function stopRelayConnector(): void {
