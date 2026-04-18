@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S24-T2: SCORING_V4 walk-back pair detection after write, before push emit
 // [claude-code 2026-04-16] S20-T9: Split into scorer-tagging.ts + scorer-watchlist.ts — this file is now the pipeline orchestrator
 // [claude-code 2026-04-12] Fix stuck scorer: staleness guard (90s force-reset), defensive tick logging, delayed initial cycle for DB pool warmup
 // [claude-code 2026-03-31] POI priority boost — Top 3 POI = Critical (macroLevel 4), Top 8 = High (macroLevel 3)
@@ -392,6 +393,78 @@ export async function scoringCycle(): Promise<number> {
 
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
+
+    // ── Walk-back pairer (SCORING_V4) ──────────────────────────────────────
+    // [claude-code 2026-04-19] S24-T2: scan newly-scored L9/L10 items for
+    // semantic reversals of prior L9/L10 items in the last 24h. If matched,
+    // fade the original by 0.5× and fire a `walkBackReverts` critical push.
+    // Regime revert is deferred to T1's proposeRegimeChange() when available.
+    if (process.env.SCORING_V4 === "true") {
+      try {
+        const { detectWalkBack, applyFadeToOriginal } = await import(
+          "../scoring/walk-back-pairer.js"
+        );
+        const l9l10 = enrichedItems.filter((i) => (i.ivScore ?? 0) >= 9);
+        for (const item of l9l10) {
+          const result = await detectWalkBack(item);
+          if (result.action !== "fade" || !result.pairsWith) continue;
+
+          const faded = await applyFadeToOriginal({
+            originalId: result.pairsWith,
+            fadeFactor: 0.5,
+          });
+          log.info(
+            `Walk-back: "${item.headline.slice(0, 60)}" pairs with ${result.pairsWith} (overlap=${result.overlapScore}) faded=${faded}`,
+          );
+
+          // Propose regime revert via T1's proposals API if available.
+          try {
+            const mod: Record<string, unknown> = await import(
+              "../regime/regime-service.js"
+            );
+            const propose = (mod as { proposeRegimeChange?: Function })
+              .proposeRegimeChange;
+            if (typeof propose === "function") {
+              await propose({
+                proposedBy: "walk-back-pairer",
+                severity: "critical",
+                reason: `walk-back: "${item.headline.slice(0, 80)}" reverses ${result.pairsWith}`,
+                triggerItemId: item.id,
+              });
+            }
+          } catch (err) {
+            log.warn(`walk-back proposeRegimeChange unavailable: ${String(err)}`);
+          }
+
+          // Fire walkBackReverts push (critical severity bypasses quiet hours).
+          try {
+            const { emitPushAndLog } = await import(
+              "../notifications/emit.js"
+            );
+            await emitPushAndLog({
+              userId: "all",
+              category: "walkBackReverts",
+              severity: "critical",
+              title: "Walk-back detected",
+              body: `"${item.headline.slice(0, 90)}" reverses a recent L9/L10`,
+              url: `/riskflow/item/${item.id}`,
+              fingerprint: `walkback-${result.pairsWith}`,
+              metadata: {
+                newItemId: item.id,
+                pairedItemId: result.pairsWith,
+                overlapScore: result.overlapScore,
+              },
+            });
+          } catch (err) {
+            log.warn(`walk-back push emit failed: ${String(err)}`);
+          }
+        }
+      } catch (err) {
+        log.warn("Walk-back pairer step failed (non-fatal)", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
 
     // ── Push notifications ──────────────────────────────────────────────────
     // [claude-code 2026-04-18] S2/B1/B2/B3: emit.ts + fingerprint dedup + narrative coalescing + polished payload
