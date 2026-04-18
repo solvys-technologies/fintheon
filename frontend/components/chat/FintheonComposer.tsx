@@ -69,13 +69,17 @@ export function FintheonComposer({
   const [headlineChips, setHeadlineChips] = useState<HeadlineChip[]>([]);
 
   // Relay dispatch — disables the composer and shows a banner while active.
+  // [claude-code 2026-04-18] Fix: don't gate on isMobileReachable. /api/relay/health.connected
+  // on the LOCAL backend means "something is WS-connected to this local backend", not "mobile
+  // is online" — that flag is always false on desktop and was making the button permanently
+  // un-clickable. Dispatch is fire-and-forget via web-push; the push succeeds (pushedTo:0 if
+  // no subscriptions) and the user can open mobile to pick up.
   const relay = useRelayDispatch();
   const isDispatchedHere =
     relay.isDispatched && relay.dispatchedConversationId === conversationId;
   const relayDisabled =
     relay.isDispatching ||
     !conversationId ||
-    relay.isMobileReachable === false ||
     (relay.isDispatched && !isDispatchedHere); // already dispatched elsewhere
 
   const handleRelayClick = useCallback(async () => {
@@ -204,9 +208,7 @@ export function FintheonComposer({
   // ── Relay button (leftmost in composer action cluster) ───────────────────────
   const relayTitle = (() => {
     if (isDispatchedHere) return `Disconnect — resume on desktop`;
-    if (!conversationId) return "Relay — start a conversation first";
-    if (relay.isMobileReachable === false)
-      return "Relay — connect Fintheon mobile first";
+    if (!conversationId) return "Relay — send a message first";
     if (relay.isDispatched && !isDispatchedHere)
       return "Relay — another conversation is already dispatched";
     return "Relay — send this conversation to your mobile";
