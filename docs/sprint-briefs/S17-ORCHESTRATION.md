@@ -87,7 +87,7 @@ These files are touched by multiple tracks. Assign carefully or merge sequential
 
 ```bash
 # After every track:
-cd /Users/tifos/Documents/Codebases/fintheon
+cd /Users/tifos/Desktop/Codebases/fintheon
 cd mobile && bun run build          # Mobile must build clean
 cd ../frontend && npx vite build    # Desktop must build clean (not just tsc)
 cd ../backend-hono && bun run build # Backend must build clean

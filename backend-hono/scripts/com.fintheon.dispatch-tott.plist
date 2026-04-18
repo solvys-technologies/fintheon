@@ -8,7 +8,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/tifos/Documents/Codebases/fintheon/backend-hono/scripts/dispatch-tott.sh</string>
+        <string>/Users/tifos/Desktop/Codebases/fintheon/backend-hono/scripts/dispatch-tott.sh</string>
     </array>
 
     <!-- 4:30 PM ET, Sunday only -->
@@ -20,9 +20,9 @@
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/Users/tifos/Documents/Codebases/fintheon/backend-hono/logs/dispatch-tott-launchd.log</string>
+    <string>/Users/tifos/Desktop/Codebases/fintheon/backend-hono/logs/dispatch-tott-launchd.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/tifos/Documents/Codebases/fintheon/backend-hono/logs/dispatch-tott-launchd.log</string>
+    <string>/Users/tifos/Desktop/Codebases/fintheon/backend-hono/logs/dispatch-tott-launchd.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

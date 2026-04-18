@@ -8,7 +8,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/tifos/Documents/Codebases/fintheon/backend-hono/scripts/dispatch-adb.sh</string>
+        <string>/Users/tifos/Desktop/Codebases/fintheon/backend-hono/scripts/dispatch-adb.sh</string>
     </array>
 
     <!-- 10:45 AM ET, Mon-Fri -->
@@ -22,9 +22,9 @@
     </array>
 
     <key>StandardOutPath</key>
-    <string>/Users/tifos/Documents/Codebases/fintheon/backend-hono/logs/dispatch-adb-launchd.log</string>
+    <string>/Users/tifos/Desktop/Codebases/fintheon/backend-hono/logs/dispatch-adb-launchd.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/tifos/Documents/Codebases/fintheon/backend-hono/logs/dispatch-adb-launchd.log</string>
+    <string>/Users/tifos/Desktop/Codebases/fintheon/backend-hono/logs/dispatch-adb-launchd.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
