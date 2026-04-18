@@ -1,8 +1,13 @@
+// [claude-code 2026-04-19] Notification cards redesigned in RiskFlow's mobile shape —
+//   vertical fuse bar on the left, headline + body center, approve/deny stacked right.
+//   Keeps glassmorphic surface (TP: glass before kanban). Severity still drives the
+//   fuse color; severity dot removed (now lives in the fuse color/fill).
 // [claude-code 2026-04-18] S24-T4: approval-card rendering for regimeProposals / lexiconProposals / walkBackReverts / toolApprovals
 // [claude-code 2026-04-18] A4: bottom-sheet notification history, grouped by day
 import { useMemo, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { SnapSheet } from "../shared/SnapSheet";
+import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -62,6 +67,19 @@ function severityColor(sev: NotificationItem["severity"]): string {
       return "var(--text-secondary)";
     default:
       return "var(--text-secondary)";
+  }
+}
+
+function severityScore(sev: NotificationItem["severity"]): number {
+  switch (sev) {
+    case "critical":
+      return 10;
+    case "high":
+      return 7.5;
+    case "medium":
+      return 5;
+    default:
+      return 2.5;
   }
 }
 
@@ -199,26 +217,28 @@ export function NotificationDrawer({
               {items.map((n) => {
                 const isApproval = APPROVAL_CATEGORIES.has(n.category);
                 const status = decided[n.id];
+                const sevColor = severityColor(n.severity);
+                const fuseValue = severityScore(n.severity);
                 return (
                   <div
                     key={n.id}
                     onClick={isApproval ? undefined : () => void onItemTap(n)}
                     role={isApproval ? undefined : "button"}
                     style={{
-                      // [claude-code 2026-04-19] Glassmorphic card (TP rule: no kanban).
-                      //   No kanban-column left stripe, no flat border rectangle.
-                      //   Severity lives in a small accent-tinted dot top-right.
+                      // Glassmorphic, RiskFlow-shaped card: fuse | body | actions
                       width: "100%",
-                      position: "relative",
+                      display: "flex",
+                      alignItems: "stretch",
+                      gap: 12,
                       background: n.read
                         ? "rgba(255,255,255,0.015)"
-                        : "rgba(199, 159, 74, 0.05)",
+                        : "color-mix(in srgb, var(--accent) 5%, transparent)",
                       backdropFilter: "blur(18px) saturate(1.3)",
                       WebkitBackdropFilter: "blur(18px) saturate(1.3)",
                       border:
                         "1px solid color-mix(in srgb, var(--accent) 14%, transparent)",
                       borderRadius: 12,
-                      padding: "14px 16px",
+                      padding: "12px 14px",
                       marginBottom: 10,
                       textAlign: "left",
                       cursor: !isApproval && n.url ? "pointer" : "default",
@@ -228,141 +248,126 @@ export function NotificationDrawer({
                         ? "none"
                         : "0 1px 20px color-mix(in srgb, var(--accent) 6%, transparent)",
                       transition:
-                        "opacity 180ms ease, background 180ms ease, box-shadow 180ms ease",
+                        "opacity 220ms ease, background 220ms ease, box-shadow 220ms ease, border-color 220ms ease",
                     }}
                   >
-                    {/* Severity dot — top-right corner, tinted per level */}
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        position: "absolute",
-                        top: 10,
-                        right: 12,
-                        width: 6,
-                        height: 6,
-                        borderRadius: 3,
-                        background: severityColor(n.severity),
-                        opacity: 0.85,
-                      }}
-                    />
+                    {/* Left: vertical fuse bar — severity-driven, matches RiskFlow */}
+                    <VerticalFuseBar value={fuseValue} color={sevColor} />
+
+                    {/* Center: source/time + title + body */}
                     <div
                       style={{
+                        flex: 1,
+                        minWidth: 0,
                         display: "flex",
-                        alignItems: "baseline",
-                        justifyContent: "space-between",
-                        gap: 8,
-                        marginBottom: 4,
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        gap: 3,
                       }}
                     >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontFamily: "var(--font-data)",
+                          fontSize: 9,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        <span>{n.severity}</span>
+                        <span style={{ color: "var(--text-disabled)" }}>
+                          &middot;
+                        </span>
+                        <span>{timeLabel(n.createdAt)}</span>
+                      </div>
                       <span
                         style={{
-                          fontFamily: "var(--font-display)",
-                          fontSize: 13,
+                          fontFamily: "var(--font-body)",
+                          fontSize: 14,
+                          lineHeight: 1.4,
                           fontWeight: n.read ? 400 : 600,
-                          color: n.read ? "var(--text)" : "var(--accent)",
+                          color: n.read
+                            ? "var(--text-primary)"
+                            : "var(--accent)",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical" as const,
+                          overflow: "hidden",
                         }}
                       >
                         {n.title}
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-data)",
-                          fontSize: 10,
-                          color: "var(--text-secondary)",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {timeLabel(n.createdAt)}
-                      </span>
+                      {n.body && (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: "var(--text-secondary)",
+                            lineHeight: 1.4,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical" as const,
+                            overflow: "hidden",
+                          }}
+                        >
+                          {n.body}
+                        </span>
+                      )}
+                      {status && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontFamily: "var(--font-data)",
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            color: "var(--text-secondary)",
+                            marginTop: 2,
+                          }}
+                        >
+                          [{status}]
+                        </span>
+                      )}
                     </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--text-secondary)",
-                        lineHeight: 1.4,
-                        marginBottom: isApproval ? 10 : 0,
-                      }}
-                    >
-                      {n.body}
-                    </div>
-                    {isApproval && !status && n.eventId && (
+
+                    {/* Right: approve/deny stacked, borderless accent letters */}
+                    {isApproval && !status && n.eventId ? (
                       <div
                         style={{
                           display: "flex",
-                          gap: 6,
-                          justifyContent: "flex-end",
+                          flexDirection: "column",
+                          gap: 4,
+                          alignSelf: "center",
+                          flexShrink: 0,
                         }}
                       >
-                        {/* [claude-code 2026-04-19] Borderless, transparent, accent-letters per TP */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void decide(n, "deny");
-                          }}
-                          disabled={pending.has(n.id)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 4,
-                            padding: "6px 10px",
-                            fontSize: 12,
-                            fontFamily: "var(--font-data)",
-                            letterSpacing: "0.06em",
-                            color: "var(--accent)",
-                            background: "transparent",
-                            border: "none",
-                            cursor: pending.has(n.id)
-                              ? "not-allowed"
-                              : "pointer",
-                            WebkitTapHighlightColor: "transparent",
-                          }}
-                        >
-                          <XCircle size={12} />
-                          Deny
-                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             void decide(n, "approve");
                           }}
                           disabled={pending.has(n.id)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 4,
-                            padding: "6px 10px",
-                            fontSize: 12,
-                            fontFamily: "var(--font-data)",
-                            letterSpacing: "0.06em",
-                            fontWeight: 600,
-                            color: "var(--accent)",
-                            background: "transparent",
-                            border: "none",
-                            cursor: pending.has(n.id)
-                              ? "not-allowed"
-                              : "pointer",
-                            WebkitTapHighlightColor: "transparent",
-                          }}
+                          aria-label="Approve"
+                          style={stackBtnStyle("approve", pending.has(n.id))}
                         >
-                          <CheckCircle2 size={12} />
-                          Approve
+                          <CheckCircle2 size={13} />
+                          <span>Approve</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void decide(n, "deny");
+                          }}
+                          disabled={pending.has(n.id)}
+                          aria-label="Deny"
+                          style={stackBtnStyle("deny", pending.has(n.id))}
+                        >
+                          <XCircle size={13} />
+                          <span>Deny</span>
                         </button>
                       </div>
-                    )}
-                    {status && (
-                      <div
-                        style={{
-                          fontSize: 10,
-                          fontFamily: "var(--font-data)",
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase",
-                          color: "var(--text-secondary)",
-                          textAlign: "right",
-                        }}
-                      >
-                        {status}
-                      </div>
-                    )}
+                    ) : null}
                   </div>
                 );
               })}
@@ -372,4 +377,31 @@ export function NotificationDrawer({
       </div>
     </SnapSheet>
   );
+}
+
+function stackBtnStyle(
+  kind: "approve" | "deny",
+  isPending: boolean,
+): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 5,
+    padding: "6px 10px",
+    fontSize: 11,
+    fontFamily: "var(--font-data)",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    fontWeight: kind === "approve" ? 600 : 400,
+    color: "var(--accent)",
+    background: "transparent",
+    border: "none",
+    borderRadius: 6,
+    cursor: isPending ? "not-allowed" : "pointer",
+    opacity: isPending ? 0.4 : 1,
+    WebkitTapHighlightColor: "transparent",
+    transition: "opacity 150ms ease, background 150ms ease",
+    minWidth: 96,
+    justifyContent: "flex-start",
+  };
 }
