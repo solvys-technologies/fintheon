@@ -1,7 +1,13 @@
+// [claude-code 2026-04-18] Absolute API_BASE prefix — relative fetch('/api/...') was resolving
+//   against file:// under the Electron shell and throwing ERR_FILE_NOT_FOUND in the console,
+//   so the blindspots interview payloads silently evaporated after onboarding.
 // [claude-code 2026-03-28] S9-T3: Side-by-side Brief+Calendar with needle divider, kill padding
 // [claude-code 2026-03-11] T8: Tale of the Tape label for Sun+Mon<7AM, show only first brief item
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useBackend } from "../../lib/backend";
+
+const API_BASE =
+  (import.meta as any).env?.VITE_API_URL || "http://localhost:8080";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useToast } from "../../contexts/ToastContext";
 import { useSchedule } from "../../contexts/ScheduleContext";
@@ -86,7 +92,7 @@ export function MainDashboard({
       );
       settings.setInterviewCompleted(true);
 
-      fetch("/api/blindspots/interview", {
+      fetch(`${API_BASE}/api/blindspots/interview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,7 +104,7 @@ export function MainDashboard({
         }),
       }).catch(() => {});
 
-      fetch("/api/blindspots", {
+      fetch(`${API_BASE}/api/blindspots`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

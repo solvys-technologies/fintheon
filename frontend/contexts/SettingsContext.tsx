@@ -158,7 +158,12 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
 );
 
 const STORAGE_KEY = "fintheon:settings";
-const BACKEND_SETTINGS_URL = "/api/settings";
+// [claude-code 2026-04-18] Must be absolute: under Electron file:// a relative "/api/settings"
+//   resolves against the file protocol and throws ERR_FILE_NOT_FOUND, so both load+save silently
+//   no-op and settings never round-trip to Supabase until a reload on localhost.
+const API_BASE =
+  (import.meta as any).env?.VITE_API_URL || "http://localhost:8080";
+const BACKEND_SETTINGS_URL = `${API_BASE}/api/settings`;
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {

@@ -1,7 +1,11 @@
+// [claude-code 2026-04-18] Absolute API_BASE — /api/proposals/chart was file://-resolved under Electron.
 // [claude-code 2026-03-28] S7: Added Scorecards toggle view inside Proposals panel
 // [claude-code 2026-03-20] 8b: Proposals tab — Human/Agentic toggle + Kalshi tracking
 // [claude-code 2026-03-20] Theme fix: zinc → fintheon gold/cream palette
 import { useState, useEffect, useCallback } from "react";
+
+const API_BASE =
+  (import.meta as any).env?.VITE_API_URL || "http://localhost:8080";
 import {
   Target,
   Diff,
@@ -115,7 +119,7 @@ export function ProposalWidget() {
     setCharting(true);
     setChartStatus(null);
     try {
-      const res = await fetch("/api/proposals/chart", {
+      const res = await fetch(`${API_BASE}/api/proposals/chart`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

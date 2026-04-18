@@ -3,6 +3,10 @@
  * Simple chat hook for Hermes AI processing
  */
 
+// [claude-code 2026-04-18] Clear cached conversationId on 404 during hydration — otherwise Electron
+//   boots with a stale localStorage UUID, useHermesChat logs "starting fresh", but the consumer
+//   (FintheonComposer) still sees the old ID and fires /api/relay/dispatch → 404 → user reports
+//   "relay button bugged". clearConversationId is now threaded through from useHermesRuntime.
 // [claude-code 2026-03-28] S9-T4: Route harper-cao through /api/harper/chat for full Fintheon context injection
 // [claude-code 2026-03-09] Added conversation history hydration on remount
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -31,6 +35,7 @@ export function useHermesChat(
   setConversationId: (id: string) => void,
   agentOverride?: string,
   thinkHarder?: boolean,
+  clearConversationId?: () => void,
 ) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -382,7 +387,15 @@ export function useHermesChat(
           console.warn(
             `[useHermesChat] Conversation ${conversationId} not found (${res.status}) — starting fresh`,
           );
-          hydratedRef.current = conversationId;
+          // [claude-code 2026-04-18] Clear the stale cached ID so downstream consumers
+          // (FintheonComposer relay dispatch, session list, hydration effect) don't keep
+          // firing requests against a conversation that no longer exists. If the clear
+          // function wasn't threaded, at least stamp hydratedRef so we don't loop.
+          if (clearConversationId) {
+            clearConversationId();
+          } else {
+            hydratedRef.current = conversationId;
+          }
           return;
         }
         const data = await res.json();
