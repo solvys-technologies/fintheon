@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T10:00:00",
+    agent: "claude-code",
+    summary:
+      "Relay follow-up after fresh DMG install still 404'd — three root causes surfaced and fixed. (1) Hydration/dispatch ownership mismatch: handleGetConversation falls back to the 'anonymous' owner branch for legacy convos, so a stale anon convo would hydrate fine (200) but /api/relay/dispatch (strict ownership) returned 404, leaving the relay button broken. Added reassignConversationOwner(conversationId, fromUserId, toUserId) in conversation-store — UPDATE ai_conversations SET user_id WHERE id AND user_id, with memoryStore parity. handleGetConversation now calls it when the anon fallback succeeds for an authed user, migrating the convo on first access so subsequent ownership-gated routes work. Logs the reassign (non-fatal on failure). (2) /api/settings 401s in the Electron console — my earlier absolute-URL fix made SettingsContext + ThemeContext reach the backend, but neither fetch was sending Authorization. Now both getAccessToken() and attach Bearer headers to every load+save; skip the fetch entirely when no token (pre-login) since localStorage is the authoritative fallback there. (3) FintheonComposer self-heal — new onConversationGone prop; when relay.dispatch rejects with /not_found/, the composer calls it to evict the cached conversation id so the relay button re-disables and the user can send a fresh message instead of staring at a broken button. Wired through ChatInterface and ChatSidebar (both already had clearConversationId in scope from useHermesRuntime).",
+    files: [
+      "backend-hono/src/services/ai/conversation-store.ts",
+      "backend-hono/src/routes/ai/handlers/conversations.ts",
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/contexts/ThemeContext.tsx",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/ChatInterface.tsx",
+      "frontend/components/chat/ChatSidebar.tsx",
+    ],
+  },
+  {
     date: "2026-04-18T09:30:00",
     agent: "claude-code",
     summary:

@@ -1,3 +1,7 @@
+// [claude-code 2026-04-18] Attach Supabase JWT to backend-settings fetches. After the bare-URL
+//   fix (file:// → localhost:8080) the requests were reaching the backend but without an
+//   Authorization header, producing 401 in the Electron console. Now gets the token via
+//   getAccessToken() and falls back to localStorage when no token is available (first-boot).
 // [claude-code 2026-03-10] Added backend settings sync (source of truth when authenticated)
 import {
   createContext,
@@ -8,6 +12,7 @@ import {
   useEffect,
 } from "react";
 import type { HealingBowlSound } from "../utils/healingBowlSounds";
+import { getAccessToken } from "../lib/supabase";
 
 export interface APIKeys {
   openai?: string;
@@ -178,7 +183,13 @@ function loadFromStorage<T>(key: string, defaultValue: T): T {
 
 async function fetchBackendSettings(): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch(BACKEND_SETTINGS_URL, { credentials: "include" });
+    const token = await getAccessToken();
+    // No token (pre-login) → skip the backend hit entirely; localStorage is the fallback.
+    if (!token) return null;
+    const res = await fetch(BACKEND_SETTINGS_URL, {
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (!res.ok) return null;
     const data = await res.json();
     return data?.settings ?? null;
@@ -191,10 +202,15 @@ async function saveBackendSettings(
   settings: Record<string, unknown>,
 ): Promise<void> {
   try {
+    const token = await getAccessToken();
+    if (!token) return;
     await fetch(BACKEND_SETTINGS_URL, {
       method: "PUT",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ settings }),
     });
   } catch {

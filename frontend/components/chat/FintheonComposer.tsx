@@ -46,6 +46,13 @@ interface FintheonComposerProps {
   compact?: boolean;
   /** Current conversation id — required for relay dispatch. */
   conversationId?: string;
+  /**
+   * Optional: eject the cached conversation id when relay dispatch returns
+   * not_found. Self-heal for the hydration/dispatch ownership mismatch —
+   * legacy anon convos that hydrate via the anon fallback will 404 on dispatch,
+   * and without this prop the user stays stuck with a broken relay button.
+   */
+  onConversationGone?: () => void;
 }
 
 export function FintheonComposer({
@@ -59,6 +66,7 @@ export function FintheonComposer({
   disabledSkills: propDisabledSkills,
   compact,
   conversationId,
+  onConversationGone,
 }: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -103,9 +111,22 @@ export function FintheonComposer({
         await relay.dispatch(conversationId);
       } catch (err) {
         console.error("[FintheonComposer] relay dispatch failed:", err);
+        // Self-heal: a "not_found" dispatch means the backend doesn't recognize
+        // this convo under the current user's sub — most commonly a legacy anon
+        // convo missed by the 2026-04-18 migration. Evicting the cached id lets
+        // the user start a fresh convo and unblocks the button. The backend also
+        // auto-reassigns on next hydration, so sending a message will usually
+        // just work; this is defense-in-depth for older builds.
+        if (
+          err instanceof Error &&
+          /not_found|Conversation not found/i.test(err.message) &&
+          onConversationGone
+        ) {
+          onConversationGone();
+        }
       }
     }
-  }, [conversationId, isDispatchedHere, relay]);
+  }, [conversationId, isDispatchedHere, relay, onConversationGone]);
 
   const handleHeadlineToggle = useCallback((chip: HeadlineChip) => {
     setHeadlineChips((prev) => {

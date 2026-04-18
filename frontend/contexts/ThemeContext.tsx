@@ -1,3 +1,5 @@
+// [claude-code 2026-04-18] Attach JWT to backend-settings sync. Pairs with SettingsContext fix:
+//   absolute URL alone produced 401 because we weren't sending Authorization.
 // [claude-code 2026-04-18] Revert digit-scale runtime override — Readable Digits back to Inter via static @font-face
 // [claude-code 2026-04-18] Nothing Font Kit (color-agnostic Nothing Design typography)
 // [claude-code 2026-04-15] Special themes — Nothing Design visual overrides (Something Solvys/Monochrome)
@@ -12,6 +14,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { getAccessToken } from "../lib/supabase";
 import {
   type ThemeConfig,
   THEME_PRESETS,
@@ -180,9 +183,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyThemeToDOM(theme);
     applyFontThemeToDOM(fontTheme, theme);
 
-    fetch(BACKEND_SETTINGS_URL, { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+    (async () => {
+      try {
+        const token = await getAccessToken();
+        if (!token) {
+          backendSynced.current = true;
+          return;
+        }
+        const res = await fetch(BACKEND_SETTINGS_URL, {
+          credentials: "include",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = res.ok ? await res.json() : null;
         const remote = data?.settings;
         if (remote?.appearance) {
           const { colorTheme, fontThemeId, pompaMode } = remote.appearance;
@@ -207,11 +219,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setPompaEnabled(pompaMode as boolean);
           }
         }
+      } finally {
         backendSynced.current = true;
-      })
-      .catch(() => {
-        backendSynced.current = true;
-      });
+      }
+    })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -221,12 +232,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       fontThemeId: fontTheme.id,
       pompaMode: pompaEnabled,
     };
-    fetch(BACKEND_SETTINGS_URL, {
-      method: "PUT",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ settings: { appearance } }),
-    }).catch(() => {});
+    (async () => {
+      const token = await getAccessToken();
+      if (!token) return;
+      fetch(BACKEND_SETTINGS_URL, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ settings: { appearance } }),
+      }).catch(() => {});
+    })();
   }, [theme, fontTheme, pompaEnabled]);
 
   return (
