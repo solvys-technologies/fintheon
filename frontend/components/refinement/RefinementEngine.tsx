@@ -24,6 +24,8 @@ import {
   type ScoringPreset,
 } from "./PresetSelector";
 import { AdvancedPane } from "./AdvancedPane";
+import { MatrixEditor } from "./MatrixEditor";
+import { LexiconEditor } from "./LexiconEditor";
 import { ScoreImpactPreview } from "../ui/InlineDiff";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -56,7 +58,10 @@ const GROUPS: SensitivityGroup[] = [
   "speaker",
 ];
 
-function sameSensitivities(a: SensitivityValues, b: SensitivityValues): boolean {
+function sameSensitivities(
+  a: SensitivityValues,
+  b: SensitivityValues,
+): boolean {
   return GROUPS.every((g) => Math.abs(a[g] - b[g]) < 0.001);
 }
 
@@ -117,8 +122,8 @@ export function RefinementEngine() {
 
   const fetchWeights = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/calibration/weights`).then(
-        (r) => r.json(),
+      const res = await fetch(`${API_BASE}/api/calibration/weights`).then((r) =>
+        r.json(),
       );
       setWeights(res.weights ?? []);
     } catch {
@@ -162,7 +167,9 @@ export function RefinementEngine() {
     setAppliedSensitivities(currentRes);
     setPendingSensitivities(currentRes);
     // Select closest matching preset, fall back to neutral
-    const match = combined.find((p) => sameSensitivities(p.sensitivities, currentRes));
+    const match = combined.find((p) =>
+      sameSensitivities(p.sensitivities, currentRes),
+    );
     setSelectedPresetId(match?.id ?? null);
     setV4Available(true);
   }, []);
@@ -214,7 +221,9 @@ export function RefinementEngine() {
     (group: SensitivityGroup, value: number) => {
       setPendingSensitivities((prev) => {
         const next = { ...prev, [group]: value };
-        const match = presets.find((p) => sameSensitivities(p.sensitivities, next));
+        const match = presets.find((p) =>
+          sameSensitivities(p.sensitivities, next),
+        );
         setSelectedPresetId(match?.id ?? null);
         return next;
       });
@@ -240,7 +249,11 @@ export function RefinementEngine() {
       return;
     }
     setAppliedSensitivities(pendingSensitivities);
-    addToast("Sensitivities applied", "success", "Re-Score All to refresh scored items.");
+    addToast(
+      "Sensitivities applied",
+      "success",
+      "Re-Score All to refresh scored items.",
+    );
   }, [isDirty, pendingSensitivities, getAccessToken, addToast]);
 
   const onDiscardChanges = useCallback(() => {
@@ -256,7 +269,11 @@ export function RefinementEngine() {
       const token = (await getAccessToken()) ?? undefined;
       const res = await savePresetAs(name, pendingSensitivities, token);
       if (isNotReady(res)) {
-        addToast("Preset API not ready", "info", "Custom presets unavailable until T3 lands.");
+        addToast(
+          "Preset API not ready",
+          "info",
+          "Custom presets unavailable until T3 lands.",
+        );
         return;
       }
       setPresets((prev) => [...prev, res]);
@@ -425,17 +442,31 @@ export function RefinementEngine() {
               </div>
             )}
 
-            <AdvancedPane count={weights.length + registry.length + sourceAccounts.length}>
+            <AdvancedPane
+              count={weights.length + registry.length + sourceAccounts.length}
+            >
+              <MatrixEditor />
+              <div
+                style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
+              />
+              <LexiconEditor />
+              <div
+                style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
+              />
               <QuickWeightEditor
                 weights={weights}
                 onWeightsSaved={fetchWeights}
               />
-              <div style={{ borderTop: "1px solid var(--fintheon-glass-border)" }} />
+              <div
+                style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
+              />
               <CommentatorManager
                 registry={registry}
                 onRegistryChanged={fetchRegistry}
               />
-              <div style={{ borderTop: "1px solid var(--fintheon-glass-border)" }} />
+              <div
+                style={{ borderTop: "1px solid var(--fintheon-glass-border)" }}
+              />
               <SourceAccountsManager
                 accounts={sourceAccounts}
                 onAccountsChanged={fetchSourceAccounts}
