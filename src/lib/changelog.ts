@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T05:30:00",
+    agent: "claude-code",
+    summary:
+      "Ultrareview batch — 6 findings fixed on s20-agent-swarm-platform-ops. (1) outcome-tracker.mapAnalystToAgent was a stale legacy-role mapping that returned null for every MiroShark DAG analyst (oracle/feucht/consul/herald), silently dropping per-agent rows from deliberation_outcomes and leaving accuracy feedback forever empty — replaced with a passthrough validator against DELIBERATION_AGENTS. (2) feedback-composer was reading actual_vix_24h (a VIX level, not a delta) into PredictionResult.actualVixChange and rendering 'actual VIX moved +18.5' into every analyst/Harper system prompt — renamed to actualVixLevel and reformatted the line to 'actual VIX 18.5' to match the actual semantics. (3) /api/oracle was mounted without auth, so POST /api/oracle/research/trigger was a public cost-amplification vector against Polymarket/Kalshi + a pollution hose into oracle_research_findings — added authMiddleware+requireAuth on /api/oracle, plus ORACLE_RESEARCH_ENABLED check and 5-min in-process cooldown inside triggerResearchCycle so the kill switch actually works. (4) bootCritical() was called with .then() but never awaited, so Bun.serve (default export) was accepting requests during the seedCacheFromDb cold-boot window, returning empty /api/riskflow/feed and /api/context-bank snapshots — switched to top-level await bootCritical() before the default export is evaluated. (5) /api/lifecycle/* endpoints were unauthenticated and armIdleShutdown accepted timeoutMs=0, letting any remote POST trigger process.exit on the first 60s tick — added localhost-only middleware on /api/lifecycle/* and floored idleTimeoutMs at 60_000ms in armIdleShutdown. (6) /api/relay/chat trusted client-supplied conversationId and called addMessage with no ownership check; because addMessage resolves user_id via SELECT FROM ai_conversations the inserted row was stamped with the conversation OWNER's user_id, letting an authenticated attacker plant 'user'-role messages into any victim's history (IDOR + prompt-injection pivot) — now verifies ownership via getConversation(convId, userId) and returns 404 on mismatch.",
+    files: [
+      "backend-hono/src/services/agent-memory/outcome-tracker.ts",
+      "backend-hono/src/services/agent-memory/feedback-composer.ts",
+      "backend-hono/src/services/agent-memory/types.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/cron/oracle-research-scheduler.ts",
+      "backend-hono/src/index.ts",
+      "backend-hono/src/services/lifecycle.ts",
+      "backend-hono/src/routes/relay.ts",
+    ],
+  },
+  {
     date: "2026-04-18T05:15:00",
     agent: "claude-code",
     summary:

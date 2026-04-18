@@ -1,5 +1,8 @@
-// [claude-code 2026-04-16] T4: Composes accuracy feedback from resolved outcomes
-// "Your last 3 predictions: [date] predicted IV 6.2, actual VIX moved +1.3 (direction correct, magnitude overshot by 40%)"
+// [claude-code 2026-04-18] T4: Composes accuracy feedback from resolved outcomes.
+// Example line: "[Apr 16] predicted IV 6.2, actual VIX 18.5 (direction correct, magnitude overshot by 0.3 pts)"
+// Note: actual_vix_24h is a LEVEL (from vixData.level in outcome-resolver), not a delta —
+// previous implementation rendered it as a signed "moved +N" and fed category-confused text
+// into every analyst prompt.
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
@@ -46,7 +49,7 @@ export async function composeFeedback(
         day: "numeric",
       }),
       predictedIV: predicted,
-      actualVixChange: actual24h,
+      actualVixLevel: actual24h,
       directionCorrect: dirCorrect ?? false,
       magnitudeError: magError ?? 0,
     });
@@ -88,7 +91,7 @@ function buildFeedbackSummary(
 
     lines.push(
       `[${p.date}] predicted IV ${p.predictedIV.toFixed(1)}, ` +
-        `actual VIX moved ${p.actualVixChange > 0 ? "+" : ""}${p.actualVixChange.toFixed(1)} (${dir}, ${mag})`,
+        `actual VIX ${p.actualVixLevel.toFixed(1)} (${dir}, ${mag})`,
     );
   }
 

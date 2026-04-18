@@ -1,5 +1,7 @@
-// [claude-code 2026-04-16] S20-T3: Oracle research scheduler — cron trigger for
+// [claude-code 2026-04-18] S20-T3: Oracle research scheduler — cron trigger for
 // prediction market scanning + arb detection during extended market hours.
+// triggerResearchCycle now honors ORACLE_RESEARCH_ENABLED and an in-process
+// cooldown so an authenticated admin cannot burn Polymarket/Kalshi quota in a loop.
 
 import { createLogger } from "../../lib/logger.js";
 import {
@@ -13,7 +15,9 @@ import type { OracleResearchFinding } from "../oracle-research/types.js";
 const log = createLogger("OracleResearchScheduler");
 
 const DEFAULT_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
+const MANUAL_TRIGGER_COOLDOWN_MS = 5 * 60 * 1000; // 5 min between manual triggers
 let timer: ReturnType<typeof setInterval> | null = null;
+let lastManualRunAt = 0;
 
 /** Extended market hours: 6 AM - 8 PM ET, weekdays only */
 function isMarketHours(): boolean {
@@ -122,6 +126,17 @@ export function stopOracleResearch(): void {
 
 /** Manual trigger for testing / API endpoint */
 export async function triggerResearchCycle(): Promise<OracleResearchFinding[]> {
+  if (process.env.ORACLE_RESEARCH_ENABLED === "false") {
+    throw new Error("Oracle research disabled (ORACLE_RESEARCH_ENABLED=false)");
+  }
+
+  const sinceLastRun = Date.now() - lastManualRunAt;
+  if (sinceLastRun < MANUAL_TRIGGER_COOLDOWN_MS) {
+    const retryMs = MANUAL_TRIGGER_COOLDOWN_MS - sinceLastRun;
+    throw new Error(`Cooldown active — retry in ${Math.ceil(retryMs / 1000)}s`);
+  }
+  lastManualRunAt = Date.now();
+
   log.info("Manual research cycle triggered");
   const contracts = await scanPredictionMarkets();
   const findings = await detectArbOpportunities(contracts);

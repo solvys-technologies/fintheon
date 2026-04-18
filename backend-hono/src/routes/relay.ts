@@ -1,6 +1,9 @@
-// [claude-code 2026-04-16] T6: Conversation persistence — store user message + create conversation before relay forward
-// The WebSocket server is initialized separately in boot (needs access to the raw HTTP server).
-// These Hono routes handle the HTTP endpoints only.
+// [claude-code 2026-04-18] T6: Conversation persistence — store user message + create conversation before relay forward.
+// Fix: /chat now verifies the caller owns the supplied conversationId before addMessage,
+// otherwise the INSERT stamps the message with the conversation OWNER's user_id (via the
+// SELECT user_id FROM ai_conversations subquery in conversation-store.addMessage), which
+// lets an authenticated attacker plant attacker-authored 'user'-role messages into any
+// victim's history — a prompt-injection pivot on top of the IDOR.
 
 import { Hono } from "hono";
 import { relayBridge } from "../services/relay-bridge.js";
@@ -9,6 +12,7 @@ import {
   createConversation,
   addMessage,
   generateTitle,
+  getConversation,
 } from "../services/ai/conversation-store.js";
 
 const log = createLogger("Relay");
@@ -68,8 +72,24 @@ export function createRelayRoutes() {
       );
     }
 
-    // Ensure conversation exists and persist user message before forwarding
+    // Ensure conversation exists and persist user message before forwarding.
+    // IDOR guard: if the client supplied a conversationId, verify the caller owns
+    // it before calling addMessage (addMessage resolves user_id from the
+    // conversation, not the caller — so without this check an attacker could
+    // inject messages into any victim's conversation).
     let convId = body.conversationId || null;
+    if (convId) {
+      const owned = await getConversation(convId, userId);
+      if (!owned) {
+        return c.json(
+          {
+            error: "not_found",
+            message: "Conversation not found or not owned by caller",
+          },
+          404,
+        );
+      }
+    }
     try {
       if (!convId) {
         const conv = await createConversation(userId, {

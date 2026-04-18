@@ -116,6 +116,11 @@ export function registerRoutes(app: Hono): void {
   // Polymarket — read-only public market data, whale alerts, search (S15-T2)
   app.route("/api/polymarket", createPolymarketRoutes());
   // Oracle — scheduled research findings, manual trigger (S20-T3)
+  // Auth required: manual trigger hits external Polymarket/Kalshi APIs + inserts
+  // into oracle_research_findings, so unauthenticated access enables cost
+  // amplification + data pollution.
+  app.use("/api/oracle", authMiddleware, requireAuth);
+  app.use("/api/oracle/*", authMiddleware, requireAuth);
   app.route("/api/oracle", createOracleRoutes());
   // Relay — mobile↔local backend WebSocket bridge (auth required for chat/health, WS upgrade handled separately)
   app.use("/api/relay", authMiddleware);
