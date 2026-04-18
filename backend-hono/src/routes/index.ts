@@ -8,7 +8,6 @@ import { authMiddleware, requireAuth } from "../middleware/auth.js";
 import { createAccountRoutes } from "./account/index.js";
 import { createMarketRoutes } from "./market/index.js";
 import { createNotificationRoutes } from "./notifications/index.js";
-import { createScoringRoutes } from "./scoring/index.js";
 import { createTradingRoutes } from "./trading/index.js";
 import { createRiskFlowRoutes } from "./riskflow/index.js";
 import { createPsychAssistRoutes } from "./psych-assist.js";
@@ -215,11 +214,6 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/notifications/web-push", authMiddleware, requireAuth);
   app.use("/api/notifications/web-push/*", authMiddleware, requireAuth);
   app.route("/api/notifications/web-push", createWebPushRoutes());
-
-  // S24-T4: scoring admin — monitoring loop status/config + shadow stats
-  app.use("/api/scoring", authMiddleware);
-  app.use("/api/scoring/*", authMiddleware);
-  app.route("/api/scoring", createScoringRoutes());
 
   // Phase 2: Trading routes
   app.route("/api/trading", createTradingRoutes());
