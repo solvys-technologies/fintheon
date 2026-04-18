@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T00:00:00",
+    agent: "claude-code",
+    summary:
+      "S24-T1 RiskFlow V4 Foundation — load-bearing DB + API scaffolding for the V4 scoring rewrite. Direct answer to the 2026-04-18 diagnosis that TP manually set BULL_TREND on 2026-04-17 14:37 and the MDB brief silently overwrote it 10h later via brief-generator.ts:187–194 with setRegime(detected, 'mdb_agent', 0.8). V4 replaces that silent write with a proposal + push + approval queue, and the foundation pieces land here so T2 (intelligence) and T3 (calibration) can consume the schema in Wave 2. Migration 20260419_v4_foundation.sql ships 5 new tables + market_regimes column additions: (1) classification_matrix — regime → rubric (stance per eventType, entry/exit keywords, walk-back pairings), one row seeded per MARKET_REGIMES enum value with defaults lifted from DEFAULT_REGIME_MULTIPLIERS so existing scoring behavior survives until T2 edits the rubrics; (2) regime_proposals — proposed_regime/current_regime/reason/evidence/proposed_by/status(pending|approved|denied|auto-applied)/approved_by/decided_at/applied_at. Indexed on (status, created_at) + partial pending index; (3) lexicon_keywords — keyword/phrase_pattern/sentiment(bullish|bearish|neutral)/is_matrix_flip/target_regime/requires_action_verb/approved/expires_at, case-insensitive unique on LOWER(keyword) so T2's auto-proposer can't create dupes; (4) lexicon_proposals — agent-proposed keyword additions pending TP approval, same status machine as regime_proposals; (5) speaker_utterance_cache — novelty tracking for T2's speaker-repetition filter. Nullable embedding vector(384) + nullable tokens text[] — pgvector extension enabled so T2 can choose cosine sim or Jaccard at runtime. ivfflat index deferred until seed data exists. Plus ALTER TABLE market_regimes ADD locked_by text, locked_until timestamptz — TP's manual override now holds a 24h lock. Everything is idempotent (IF NOT EXISTS, ON CONFLICT DO NOTHING, DO-block CREATE POLICY guards). Backend code: emit.ts gains NOTIFICATION_CATEGORIES allowlist (regimeProposals/lexiconProposals/walkBackReverts added — critical severity still bypasses quiet hours via existing gate at emit.ts:100); web_push_subscriptions.categories default JSONB + existing-row backfill so fresh subscribers and TP's live iPhone both opt-in by default. New service services/regime/propose.ts — proposeRegimeChange(proposedBy, proposedRegime, reason, evidence, severity) inserts a regime_proposals row, reads the lock state, fires emitPushAndLog with category=regimeProposals + fingerprint=regime-proposal:<regime>:<by>:<hour-bucket> for 1h dedup, and returns {id,status,lockedUntil,pushed}. Routes: /api/regime/proposals (GET list, POST create, /:id/approve applies regime via setRegime('manual') + sets market_regimes.locked_by/locked_until to now()+24h with detected_by='manual-from-proposal', /:id/deny); /api/lexicon/keywords + /proposals CRUD; /api/classification-matrix GET + /:regime PATCH for rubric edits. All routes <300 lines each; registered in routes/index.ts. brief-generator.ts:186–247 edited — MDB auto-detect now routes through proposeRegimeChange() behind SCORING_V4=true; V3 (direct setRegime) retained as a one-toggle rollback when SCORING_V4 is unset. mobile/contexts/SettingsContext.tsx NotificationPrefs gains regimeProposals/lexiconProposals/walkBackReverts fields, all default true. Verification: migration applied via Supabase MCP (cm=8 seed rows, rp=lp=suc=0, lock cols present, web_push defaults include all 3 new categories); backend tsc clean; frontend + mobile tsc clean; live smoke test on port 8090 confirmed POST /api/regime/proposals creates a row and GET ?status=pending returns it, PATCH matrix writes rubric, POST lexicon proposal inserts — all smoke-test rows cleaned up post-verification. T2 and T3 can branch off this as soon as the push lands.",
+    files: [
+      "supabase/migrations/20260419_v4_foundation.sql",
+      "backend-hono/src/services/notifications/emit.ts",
+      "backend-hono/src/services/regime/propose.ts",
+      "backend-hono/src/services/brief-generator.ts",
+      "backend-hono/src/routes/regime/index.ts",
+      "backend-hono/src/routes/regime/proposals.ts",
+      "backend-hono/src/routes/lexicon/index.ts",
+      "backend-hono/src/routes/lexicon/keywords.ts",
+      "backend-hono/src/routes/lexicon/proposals.ts",
+      "backend-hono/src/routes/classification-matrix/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "mobile/contexts/SettingsContext.tsx",
+    ],
+  },
+  {
     date: "2026-04-18T16:30:00",
     agent: "claude-code",
     summary:

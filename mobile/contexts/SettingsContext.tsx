@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S24-T1: add regimeProposals / lexiconProposals / walkBackReverts notification categories; default-on so TP's phone gets V4 approvals + walk-back reverts out of the box.
 // [claude-code 2026-04-15] S19: Mobile settings — expanded with backend sync, trader prefs, risk display
 import {
   createContext,
@@ -20,6 +21,12 @@ interface NotificationPrefs {
   riskflow: boolean;
   dailyBrief: boolean;
   regimeActivations: boolean;
+  /** [S24-T1] Agent proposals awaiting TP approval. Default ON. */
+  regimeProposals: boolean;
+  /** [S24-T1] Agent-proposed lexicon keywords awaiting TP approval. Default ON. */
+  lexiconProposals: boolean;
+  /** [S24-T1] Walk-back reverts (e.g. ceasefire collapsed 4h after confirmation). Default ON. */
+  walkBackReverts: boolean;
   toolApprovals: boolean;
   severityThreshold: "critical" | "high" | "medium" | "low";
 }
@@ -70,6 +77,9 @@ const DEFAULT_SETTINGS: MobileSettings = {
     riskflow: true,
     dailyBrief: true,
     regimeActivations: true,
+    regimeProposals: true,
+    lexiconProposals: true,
+    walkBackReverts: true,
     toolApprovals: true,
     severityThreshold: "medium",
   },
