@@ -312,6 +312,45 @@ export async function updateConversation(
 }
 
 /**
+ * Reassign a conversation's owner. Used by the hydration endpoint to migrate
+ * legacy anonymous convos onto an authenticated user's sub on first access,
+ * so that downstream ownership-gated endpoints (relay dispatch, delete, etc.)
+ * stop returning 404 for convos that showed up in the user's chat history.
+ *
+ * [claude-code 2026-04-18] Added to resolve the hydration/dispatch ownership
+ * mismatch discovered after the 2026-04-18 chat history migration: 98 legacy
+ * anon conversations were reassigned to TP's sub in bulk, but any anon convo
+ * created AFTER the migration (or missed by the migration) still falls back
+ * to the anonymous branch in handleGetConversation — hydration succeeds,
+ * dispatch returns not_found, user sees a broken relay button.
+ */
+export async function reassignConversationOwner(
+  conversationId: string,
+  fromUserId: string,
+  toUserId: string,
+): Promise<boolean> {
+  if (!isDatabaseAvailable() || !sql) {
+    const conv = memoryStore.conversations.get(conversationId);
+    if (!conv || conv.userId !== fromUserId) return false;
+    memoryStore.conversations.set(conversationId, {
+      ...conv,
+      userId: toUserId,
+      updatedAt: new Date().toISOString(),
+    });
+    return true;
+  }
+
+  const result = await sql`
+    UPDATE ai_conversations
+    SET user_id = ${toUserId}, updated_at = NOW()
+    WHERE id = ${conversationId} AND user_id = ${fromUserId}
+    RETURNING id
+  `;
+
+  return result.length > 0;
+}
+
+/**
  * Delete a conversation and its messages
  */
 export async function deleteConversation(

@@ -4,6 +4,11 @@
  * Day 19 - Phase 5 Implementation
  */
 
+// [claude-code 2026-04-18] Anon-convo hydration now auto-reassigns to the authed user. The
+// anonymous fallback in handleGetConversation was masking ownership mismatches — convos
+// showed up in chat history fine but /api/relay/dispatch (strict ownership) returned 404,
+// breaking the relay button for any convo missed by the 2026-04-18 migration or created
+// as anon after it. Reassigning on first authed access aligns hydration + dispatch.
 import type { Context } from "hono";
 import * as conversationStore from "../../../services/ai/conversation-store.js";
 import type {
@@ -62,7 +67,10 @@ export async function handleGetConversation(c: Context) {
   }
 
   try {
-    // Try authenticated userId first, fall back to "anonymous" for legacy conversations
+    // Try authenticated userId first, fall back to "anonymous" for legacy conversations.
+    // If the fallback succeeds for an authed user, reassign ownership on the spot so that
+    // subsequent ownership-gated endpoints (relay dispatch, delete, etc.) succeed instead
+    // of returning 404. This is a no-op for unauthed callers (userId === "anonymous").
     let conversation = await conversationStore.getConversationWithMessages(
       conversationId,
       userId,
@@ -72,6 +80,22 @@ export async function handleGetConversation(c: Context) {
         conversationId,
         "anonymous",
       );
+      if (conversation) {
+        const reassigned = await conversationStore
+          .reassignConversationOwner(conversationId, "anonymous", userId)
+          .catch((err) => {
+            console.warn(
+              "[Conversations] Anon-to-user reassign failed (non-fatal):",
+              err,
+            );
+            return false;
+          });
+        if (reassigned) {
+          console.info(
+            `[Conversations] Reassigned legacy anon convo ${conversationId} to ${userId}`,
+          );
+        }
+      }
     }
 
     if (!conversation) {
