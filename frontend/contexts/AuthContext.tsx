@@ -127,44 +127,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sync the user's identity to the local backend's relay connector whenever
-  // sign-in / sign-out happens. The local backend can't know which user it
-  // serves until we tell it — without this, Fly's /api/relay/health reports
-  // connected:false and mobile locks to OFFLINE.
-  const lastReportedRelayUserRef = useRef<string | null>(null);
+  // Sync the user's identity to the local backend's relay connector. The
+  // local backend can't know which user it serves until we tell it — without
+  // this, Fly's /api/relay/health reports connected:false and mobile locks
+  // to OFFLINE. We also poll /connector-status every 30s because:
+  //   (a) the local backend is launchd-managed and can restart independently,
+  //   (b) RELAY_ENABLED may have been toggled off/on,
+  //   (c) the WS may have dropped and reconnected under the wrong identity.
+  // The poll is cheap (tiny JSON) and self-heals the link without user action.
   useEffect(() => {
     const currentUserId = user?.id ?? null;
-    if (lastReportedRelayUserRef.current === currentUserId) return;
-    lastReportedRelayUserRef.current = currentUserId;
+    const token = session?.access_token ?? null;
+    if (!currentUserId || !token) return;
 
-    // Only attempt when we have an access token (post sign-in). For sign-out
-    // we still try with whatever token we last had — the server accepts the
-    // matching-caller check; if that fails, it's a no-op.
-    (async () => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    async function syncSetUser(reason: string) {
       try {
-        const token = session?.access_token;
-        if (!token && currentUserId) return; // not signed in yet
         const res = await fetch(`${API_BASE}/api/relay/set-user`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ userId: currentUserId }),
         });
-        if (!res.ok && res.status !== 401) {
+        if (!cancelled && !res.ok && res.status !== 401) {
           console.debug(
-            "[AuthContext] relay set-user non-ok:",
+            `[AuthContext] relay set-user (${reason}) non-ok:`,
             res.status,
-            await res.text().catch(() => ""),
           );
         }
-      } catch (err) {
-        // Local backend may not be running yet — the connector will pick up
-        // the identity on a subsequent auth state change or manual reconnect.
-        console.debug("[AuthContext] relay set-user failed (non-fatal):", err);
+      } catch {
+        // Local backend down — the next poll will retry.
       }
-    })();
+    }
+
+    async function reconcile() {
+      try {
+        const res = await fetch(`${API_BASE}/api/relay/connector-status`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          userId: string | null;
+          connected: boolean;
+          matchesCaller: boolean;
+        };
+        // Local connector out of sync with us — realign it.
+        if (!data.matchesCaller || !data.connected) {
+          void syncSetUser(
+            !data.matchesCaller ? "identity-drift" : "disconnected",
+          );
+        }
+      } catch {
+        // Local backend unreachable — do nothing this tick.
+      }
+    }
+
+    // Initial push + periodic reconciliation.
+    void syncSetUser("initial");
+    timer = setInterval(reconcile, 30_000);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearInterval(timer);
+    };
   }, [user?.id, session?.access_token]);
 
   // Set session from tokens (implicit flow — access_token + refresh_token)
