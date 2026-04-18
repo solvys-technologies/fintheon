@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T12:00:00",
+    agent: "claude-code",
+    summary:
+      "Mobile chat input was locked on relay-connected sessions because the earlier S21-T1 remote-control refactor added `isStandby = !conversationId && !mirrorDevice` to ChatInput's disabled prop, with the stated intent of 'preventing orphan chats started from mobile'. That made sense when the relay didn't work (mobile messages would have gone nowhere), but now that WS is actually connected (v5.20.1), mobile-initiated messages are forwarded via /api/relay/chat → desktop's Harper → SSE back; the convo is created server-side if absent. Removed isStandby from the disabled prop — mobile is usable any time relay isn't OFFLINE. Updated the empty-state copy from 'Standing by — dispatch from desktop' to 'Message Harper directly, or pick up a dispatched conversation' so the UI matches the actual capability. Dispatched/mirror mode still auto-loads and shows the FROM DESKTOP pill; nothing about that flow changed.",
+    files: ["mobile/components/chat/ChatPage.tsx"],
+  },
+  {
     date: "2026-04-18T11:30:00",
     agent: "claude-code",
     summary:

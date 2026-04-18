@@ -1,3 +1,10 @@
+// [claude-code 2026-04-18] Input un-locked when relay is connected. The earlier
+// remote-control refactor gated the textarea on (!conversationId && !mirrorDevice)
+// to "prevent orphan chats from mobile" — but with the relay WS working, any
+// mobile-initiated message is forwarded to the desktop's Harper via /api/relay/chat
+// (which creates the convo if absent and streams the response back). So mobile is
+// usable any time relay isn't OFFLINE. Remote-control mode still works — dispatched
+// convos auto-load and mirror; we just don't block input when no dispatch is active.
 // [claude-code 2026-04-18] S21-T1 remote-control refactor: mobile chat is now
 // a per-dispatch surface (like Claude Code's remote-control skill). Session
 // list + history browsing removed — mobile only shows the conversation that
@@ -357,8 +364,9 @@ export default function ChatPage({ visible }: ChatPageProps) {
   );
 
   const isOffline = relayState === "offline";
-  // Remote-control mode: mobile can only type when it's actively mirroring a
-  // dispatched conversation. Prevents orphan chats started from mobile.
+  // Informational flag — true when there's nothing loaded yet. We no longer
+  // disable input on it (relay-connected mobile chats are first-class); it
+  // only drives the empty-state copy.
   const isStandby = !conversationId && !mirrorDevice;
 
   return (
@@ -463,9 +471,9 @@ export default function ChatPage({ visible }: ChatPageProps) {
                 lineHeight: 1.5,
               }}
             >
-              Standing by — dispatch a conversation from the
-              <br />
-              relay button in the desktop CAO chat.
+              {isStandby
+                ? "Message Harper directly, or pick up a dispatched conversation from the desktop relay."
+                : "Chief Analyst Officer — ready when you are."}
             </span>
           </div>
         )}
@@ -557,7 +565,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
         <ChatInput
           onSend={sendMessage}
           isLoading={isLoading}
-          disabled={isOffline || isStandby}
+          disabled={isOffline}
         />
       </div>
 
