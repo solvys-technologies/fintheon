@@ -131,7 +131,7 @@ export function requestApproval(
   toolName: string,
   toolInput: Record<string, unknown>,
   description: string,
-  opts?: { noTimeout?: boolean },
+  opts?: { noTimeout?: boolean; userId?: string },
 ): Promise<ApprovalDecision> {
   const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -166,6 +166,30 @@ export function requestApproval(
         description,
       }),
     });
+
+    // [claude-code 2026-04-18] A3: push notification on approval needed.
+    // Relay-originated requests (noTimeout + userId) block waiting for mobile; those need a push.
+    // Non-relay (short-timeout) requests skip push — auto-approve kicks in before user acts.
+    if (opts?.userId && opts?.noTimeout) {
+      void (async () => {
+        try {
+          const { emitPushAndLog } = await import("./notifications/emit.js");
+          await emitPushAndLog({
+            userId: opts.userId!,
+            category: "toolApprovals",
+            severity: "high",
+            title: `Approval needed: ${toolName}`,
+            body: description || `Harper wants to use ${toolName}`,
+            url: `/apparatus/approvals/${id}`,
+            fingerprint: `approval:${id}`,
+            eventId: id,
+            metadata: { approvalId: id, toolName, requestId },
+          });
+        } catch (err) {
+          log.warn("Approval push failed (non-fatal)", { error: String(err) });
+        }
+      })();
+    }
 
     log.info(`Approval requested: ${toolName} (${id})`, { description });
 

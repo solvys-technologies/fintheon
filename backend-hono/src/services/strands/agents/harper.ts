@@ -57,6 +57,7 @@ export async function createHarperAgent(
 ) {
   const coreTools = createHarperTools(requestId, {
     noTimeout: opts?.relayOriginated,
+    userId: opts?.userId,
   });
   const solvysTools = getAllSolvysTools();
   const systemPrompt = await getAgentSystemPrompt("harper-cao", {});

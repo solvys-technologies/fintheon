@@ -394,28 +394,33 @@ export async function scoringCycle(): Promise<number> {
     log.info(` Wrote ${written} scored items to Supabase`);
 
     // ── Push notifications ──────────────────────────────────────────────────
-    // [claude-code 2026-04-15] T7: Fire web push for Critical/High items. Never blocks scoring.
+    // [claude-code 2026-04-18] S2/B1/B2/B3: emit.ts + fingerprint dedup + narrative coalescing + polished payload
     try {
       const highItems = enrichedItems.filter(
         (i) => i.macroLevel && i.macroLevel >= 3,
       );
       if (highItems.length > 0) {
-        const { sendToAllUsers } = await import("../web-push-sender.js");
+        const { coalesceAndEmit } =
+          await import("../notifications/narrative-coalesce.js");
+        const { buildRiskFlowPush } =
+          await import("../notifications/riskflow-payload.js");
         for (const item of highItems) {
-          const severity = item.macroLevel === 4 ? "critical" : "high";
-          sendToAllUsers(
+          const payload = buildRiskFlowPush(item);
+          // Coalesce by (narrativeThreads[0] OR primary symbol) — 60s debounce window.
+          const narrativeKey =
+            item.narrativeThreads?.[0] || item.symbols?.[0] || "generic";
+          coalesceAndEmit(
             {
-              title: `[RISKFLOW] ${item.headline || "Alert"}`,
-              body:
-                (item as any).summary || item.headline?.substring(0, 100) || "",
+              userId: "all",
               category: "riskflow",
-              url: "/riskflow",
+              severity: item.macroLevel === 4 ? "critical" : "high",
+              ...payload,
             },
-            severity,
-          ).catch(() => {});
+            narrativeKey,
+          );
         }
         log.info(
-          `Queued push notifications for ${highItems.length} high-severity items`,
+          `Queued push notifications for ${highItems.length} high-severity items (coalesced)`,
         );
       }
     } catch {

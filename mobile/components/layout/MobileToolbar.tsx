@@ -1,9 +1,11 @@
+// [claude-code 2026-04-18] A4: mounted NotificationBell next to hamburger
 // [claude-code 2026-04-16] S20: Toolbar — global save checkmark under hamburger
 // [claude-code 2026-04-17] Toolbar VIX fades in only when Dash hero VIX is off-screen
 import { Menu } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { SaveCheckmark } from "../shared/SaveCheckmark";
+import { NotificationBell } from "../notifications/NotificationBell";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { useHeroVixVisibleStore } from "../../hooks/useHeroVixVisible";
@@ -109,25 +111,28 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
           )}
         </AnimatePresence>
 
-        {/* Hamburger */}
-        <button
-          onClick={onHamburgerTap}
-          aria-label="Open menu"
-          style={{
-            background: "transparent",
-            border: "none",
-            padding: 8,
-            minWidth: 44,
-            minHeight: 44,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            WebkitTapHighlightColor: "transparent",
-          }}
-        >
-          <Menu size={20} strokeWidth={1.5} color="var(--text-secondary)" />
-        </button>
+        {/* Right cluster: notification bell + hamburger */}
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <NotificationBell />
+          <button
+            onClick={onHamburgerTap}
+            aria-label="Open menu"
+            style={{
+              background: "transparent",
+              border: "none",
+              padding: 8,
+              minWidth: 44,
+              minHeight: 44,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            <Menu size={20} strokeWidth={1.5} color="var(--text-secondary)" />
+          </button>
+        </div>
       </div>
 
       {/* Global save-all double-checkmark — sticky below hamburger */}

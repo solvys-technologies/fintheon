@@ -39,6 +39,7 @@ import {
   getVIXSpikeAdjustment,
   getVIXScoringMultiplier,
   getVIXBaseline,
+  VIX_FALLBACK,
 } from "../../services/vix-service.js";
 import {
   calculateIVScoreV2,
@@ -160,7 +161,7 @@ export async function handleGetFeed(c: Context) {
 
     // Re-compute priceBrainScore for the user's selected instrument
     // Items are cached with /ES default — we re-estimate points per-request
-    let vixLevel = 16; // fallback
+    let vixLevel = VIX_FALLBACK; // [claude-code 2026-04-18] C1 unified fallback
     try {
       const vixData = await fetchVIX();
       vixLevel = vixData.level;

@@ -214,6 +214,30 @@ ${
     length: text.length,
   });
 
+  // [claude-code 2026-04-18] A1: Daily Brief push trigger. Idempotent via fingerprint (one push per type per day).
+  void (async () => {
+    try {
+      const { emitPushAndLog } = await import("./notifications/emit.js");
+      const today = new Date().toISOString().slice(0, 10);
+      const first = text.split(/\n+/).find((l) => l.trim().length > 0) ?? "";
+      await emitPushAndLog({
+        userId: "all",
+        category: "dailyBrief",
+        severity: "low",
+        title: `${briefType} brief ready`,
+        body: first || "New brief available",
+        url: stored?.id
+          ? `/consilium/briefs/${stored.id}`
+          : `/consilium/briefs/latest?type=${encodeURIComponent(briefType)}`,
+        fingerprint: `brief:${briefType}:${today}`,
+        eventId: stored?.id ?? undefined,
+        dedupWindowMins: 60 * 20, // 20h — covers same-day repeats
+      });
+    } catch (err) {
+      log.warn("Brief push emit failed (non-fatal)", { error: String(err) });
+    }
+  })();
+
   return {
     content: text,
     briefType,

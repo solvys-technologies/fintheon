@@ -1,34 +1,47 @@
+// [claude-code 2026-04-18] Unified with emit.ts schema: category/severity/body/url/fingerprint/suppressed
 /**
  * Notification Types
- * Type definitions for user notifications
+ * Type definitions for user notifications (in-app history + push log)
  */
 
-export type NotificationType =
-  | "system"
-  | "alert"
-  | "trade"
-  | "news"
-  | "achievement";
-export type NotificationPriority = "low" | "medium" | "high" | "urgent";
+export type PushCategory =
+  | "riskflow"
+  | "dailyBrief"
+  | "regimeActivations"
+  | "toolApprovals"
+  | "chat_relay"
+  | "test"
+  | "system";
+
+export type Severity = "low" | "medium" | "high" | "critical";
 
 export interface Notification {
   id: string;
   userId: string;
-  type: NotificationType;
+  category: string;
+  severity: Severity;
   title: string;
-  message: string;
-  priority: NotificationPriority;
-  isRead: boolean;
+  body: string;
+  url?: string;
+  fingerprint?: string;
+  eventId?: string;
+  suppressed: boolean;
   metadata?: Record<string, unknown>;
+  read: boolean;
   createdAt: Date;
   readAt?: Date;
 }
 
-export interface CreateNotificationRequest {
-  type: NotificationType;
+export interface NotificationInsert {
+  userId: string;
+  category: string;
+  severity: Severity;
   title: string;
-  message: string;
-  priority?: NotificationPriority;
+  body: string;
+  url?: string;
+  fingerprint?: string;
+  eventId?: string;
+  suppressed?: boolean;
   metadata?: Record<string, unknown>;
 }
 

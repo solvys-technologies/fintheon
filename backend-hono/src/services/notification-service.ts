@@ -1,24 +1,25 @@
+// [claude-code 2026-04-18] Extended for unified push+history table; added insert + bulk mark-read + dedup lookup
 /**
  * Notification Service
- * Business logic for notification operations
+ * Business logic for notification operations (in-app history + push log)
  */
 
 import * as notificationQueries from "../db/queries/notifications.js";
 import type {
   Notification,
+  NotificationInsert,
   NotificationListResponse,
 } from "../types/notifications.js";
 
-/**
- * Get notifications for a user
- */
 export async function getNotifications(
   userId: string,
   limit = 50,
+  unreadOnly = false,
 ): Promise<NotificationListResponse> {
   const notifications = await notificationQueries.getNotificationsByUserId(
     userId,
     limit,
+    unreadOnly,
   );
   const unreadCount = await notificationQueries.getUnreadCount(userId);
 
@@ -29,9 +30,6 @@ export async function getNotifications(
   };
 }
 
-/**
- * Mark a specific notification as read
- */
 export async function markAsRead(
   userId: string,
   notificationId: string,
@@ -39,9 +37,14 @@ export async function markAsRead(
   return notificationQueries.markAsRead(userId, notificationId);
 }
 
-/**
- * Mark all notifications as read for a user
- */
+export async function markManyAsRead(
+  userId: string,
+  ids: string[],
+): Promise<{ markedCount: number }> {
+  const count = await notificationQueries.markManyAsRead(userId, ids);
+  return { markedCount: count };
+}
+
 export async function markAllAsRead(
   userId: string,
 ): Promise<{ markedCount: number }> {
@@ -49,61 +52,20 @@ export async function markAllAsRead(
   return { markedCount: count };
 }
 
-/**
- * Generate mock notifications for development/demo
- */
-export function getMockNotifications(userId: string): NotificationListResponse {
-  const now = new Date();
-  const mockNotifications: Notification[] = [
-    {
-      id: "1",
-      userId,
-      type: "alert",
-      title: "VIX Spike Detected",
-      message:
-        "VIX increased by 15% in the last hour. Consider adjusting positions.",
-      priority: "high",
-      isRead: false,
-      createdAt: new Date(now.getTime() - 5 * 60_000),
-    },
-    {
-      id: "2",
-      userId,
-      type: "trade",
-      title: "Order Filled",
-      message: "Your limit order for ES 5200.00 has been filled.",
-      priority: "medium",
-      isRead: false,
-      createdAt: new Date(now.getTime() - 30 * 60_000),
-    },
-    {
-      id: "3",
-      userId,
-      type: "news",
-      title: "Fed Minutes Released",
-      message: "FOMC meeting minutes show hawkish stance on inflation.",
-      priority: "high",
-      isRead: true,
-      createdAt: new Date(now.getTime() - 2 * 60 * 60_000),
-      readAt: new Date(now.getTime() - 60 * 60_000),
-    },
-    {
-      id: "4",
-      userId,
-      type: "system",
-      title: "Welcome to Fintheon",
-      message:
-        "Your account has been activated. Start trading with confidence.",
-      priority: "low",
-      isRead: true,
-      createdAt: new Date(now.getTime() - 24 * 60 * 60_000),
-      readAt: new Date(now.getTime() - 23 * 60 * 60_000),
-    },
-  ];
+export async function insertNotification(
+  input: NotificationInsert,
+): Promise<Notification | null> {
+  return notificationQueries.insertNotification(input);
+}
 
-  return {
-    notifications: mockNotifications,
-    total: mockNotifications.length,
-    unreadCount: mockNotifications.filter((n) => !n.isRead).length,
-  };
+export async function hasRecentFingerprint(
+  userId: string,
+  fingerprint: string,
+  windowMins = 30,
+): Promise<boolean> {
+  return notificationQueries.hasRecentFingerprint(
+    userId,
+    fingerprint,
+    windowMins,
+  );
 }

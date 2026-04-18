@@ -1,3 +1,4 @@
+// [claude-code 2026-04-18] S2: exported canDeliverToUser/meetsSeverityThreshold gates for emit.ts reuse
 // [claude-code 2026-04-15] T7: Web push sending service — VAPID auth, category filtering, stale sub cleanup
 import webpush from "web-push";
 import { sql, isDatabaseAvailable } from "../config/database.js";
@@ -17,7 +18,7 @@ if (VAPID_PUBLIC && VAPID_PRIVATE) {
   log.warn("VAPID keys not set — web push disabled");
 }
 
-interface PushPayload {
+export interface PushPayload {
   title: string;
   body: string;
   category: string;
@@ -27,15 +28,20 @@ interface PushPayload {
   conversationId?: string;
 }
 
-const SEVERITY_ORDER = ["low", "medium", "high", "critical"] as const;
+export const SEVERITY_ORDER = ["low", "medium", "high", "critical"] as const;
+export type Severity = (typeof SEVERITY_ORDER)[number];
 
-function meetsSeverityThreshold(
+export function meetsSeverityThreshold(
   itemSeverity: string,
   threshold: string,
 ): boolean {
-  const itemIdx = SEVERITY_ORDER.indexOf(itemSeverity as any);
-  const threshIdx = SEVERITY_ORDER.indexOf(threshold as any);
+  const itemIdx = SEVERITY_ORDER.indexOf(itemSeverity as Severity);
+  const threshIdx = SEVERITY_ORDER.indexOf(threshold as Severity);
   return itemIdx >= threshIdx;
+}
+
+export function isPushEnabled(): boolean {
+  return Boolean(VAPID_PUBLIC && VAPID_PRIVATE && isDatabaseAvailable());
 }
 
 async function deleteStaleSubscription(endpoint: string): Promise<void> {
@@ -71,12 +77,36 @@ async function sendOne(
   }
 }
 
+/**
+ * Check whether this user has at least one subscription that would accept
+ * a push for the given category + severity. Used by emit.ts to decide
+ * whether to mark a log row as `suppressed`.
+ */
+export async function canDeliverToUser(
+  userId: string,
+  category: string,
+  severity?: string,
+): Promise<boolean> {
+  if (!isPushEnabled()) return false;
+  const rows = await sql`
+    SELECT severity_threshold
+    FROM web_push_subscriptions
+    WHERE user_id = ${userId}
+      AND categories->>${category} = 'true'
+  `;
+  if (rows.length === 0) return false;
+  if (!severity) return true;
+  return rows.some((r: any) =>
+    meetsSeverityThreshold(severity, r.severity_threshold),
+  );
+}
+
 export async function sendToUser(
   userId: string,
   payload: PushPayload,
   severity?: string,
 ): Promise<void> {
-  if (!VAPID_PUBLIC || !isDatabaseAvailable()) return;
+  if (!isPushEnabled()) return;
   const rows = await sql`
     SELECT endpoint, keys, severity_threshold
     FROM web_push_subscriptions
@@ -98,7 +128,7 @@ export async function sendToUserDirect(
   userId: string,
   payload: PushPayload,
 ): Promise<number> {
-  if (!VAPID_PUBLIC || !isDatabaseAvailable()) return 0;
+  if (!isPushEnabled()) return 0;
   const rows = await sql`
     SELECT endpoint, keys
     FROM web_push_subscriptions
@@ -116,7 +146,7 @@ export async function sendToAllUsers(
   payload: PushPayload,
   severity?: string,
 ): Promise<void> {
-  if (!VAPID_PUBLIC || !isDatabaseAvailable()) return;
+  if (!isPushEnabled()) return;
   const rows = await sql`
     SELECT endpoint, keys, severity_threshold
     FROM web_push_subscriptions
@@ -132,4 +162,20 @@ export async function sendToAllUsers(
       eligible.slice(i, i + 10).map((r) => sendOne(r, payload)),
     );
   }
+}
+
+/**
+ * Enumerate all user IDs with at least one subscription for this category.
+ * Used by emit.ts when broadcasting (userId:"all") so we can create one
+ * notifications-log row per subscribed user.
+ */
+export async function getSubscribedUserIds(
+  category: string,
+): Promise<string[]> {
+  if (!isPushEnabled()) return [];
+  const rows = await sql`
+    SELECT DISTINCT user_id FROM web_push_subscriptions
+    WHERE categories->>${category} = 'true'
+  `;
+  return rows.map((r: any) => String(r.user_id));
 }

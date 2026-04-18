@@ -220,14 +220,32 @@ export function createRelayRoutes() {
     // Fire web-push to mobile subscriptions. Payload.url is the PWA deep link
     // and conversationId lets the service worker postMessage a specific convo
     // to any already-open PWA tab (see mobile/public/sw.js + App.tsx handler).
-    const recipients = await sendToUserDirect(userId, {
-      title: "Fintheon — chat picked up",
-      body: `Harper is ready on ${deviceLabel}. Tap to continue the conversation.`,
-      category: "chat_relay",
-      url: `/chat/${body.conversationId}`,
-      icon: "/icons/icon-192.png",
-      conversationId: body.conversationId,
-    });
+    // Direct bypass: user explicitly requested pickup, so skip category/quiet gates.
+    // Still log via insertNotification so the in-app bell shows it.
+    const [recipients] = await Promise.all([
+      sendToUserDirect(userId, {
+        title: "Fintheon — chat picked up",
+        body: `Harper is ready on ${deviceLabel}. Tap to continue the conversation.`,
+        category: "chat_relay",
+        url: `/chat/${body.conversationId}`,
+        icon: "/icons/icon-192.png",
+        conversationId: body.conversationId,
+      }),
+      (async () => {
+        const { insertNotification } =
+          await import("../services/notification-service.js");
+        await insertNotification({
+          userId,
+          category: "chat_relay",
+          severity: "medium",
+          title: "Fintheon — chat picked up",
+          body: `Harper is ready on ${deviceLabel}. Tap to continue the conversation.`,
+          url: `/chat/${body.conversationId}`,
+          eventId: body.conversationId,
+          metadata: { conversationId: body.conversationId, deviceLabel },
+        }).catch(() => {});
+      })(),
+    ]);
 
     log.info("Relay dispatch fired", {
       userId,

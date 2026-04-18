@@ -32,6 +32,7 @@ import {
 } from "../services/cron/dispatch-scheduler.js";
 // [claude-code 2026-03-27] cleanupOldItems import removed — feed items retained for calibration
 import { startVIXPolling } from "../services/vix-service.js";
+import { startRegimePushListener } from "../services/notifications/regime-push.js";
 import { startCentralScorer } from "../services/riskflow/central-scorer.js";
 import { startIVScoreTicker } from "../services/market-data/iv-score-ticker.js";
 import { initVIXRescore } from "../services/riskflow/vix-rescore.js";
@@ -119,6 +120,9 @@ export async function bootCritical(): Promise<void> {
   // VIX background polling (60s interval — must start before rescore triggers)
   startVIXPolling();
   log.info("VIX polling started");
+
+  // [claude-code 2026-04-18] A2: regime-change → push listener (must come after VIX polling starts)
+  startRegimePushListener();
 
   // Scoring env var assertion — CRITICAL if missing/misconfigured
   const enableCentralScoring = process.env.ENABLE_CENTRAL_SCORING;
