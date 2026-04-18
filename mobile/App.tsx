@@ -136,13 +136,34 @@ function AuthenticatedApp() {
 
     const handler = (event: MessageEvent) => {
       if (event.data?.type !== "notification-tap") return;
-      const { category } = event.data;
+      const { category, conversationId } = event.data;
 
       // Route to correct tab based on notification category
       if (category === "riskflow") {
         handleTabChange(1);
-      } else if (category === "chat" || category === "toolApprovals") {
+      } else if (
+        category === "chat" ||
+        category === "toolApprovals" ||
+        category === "chat_relay"
+      ) {
         handleTabChange(2);
+        // S21-T1 relay dispatch: stash pending convo so ChatPage can pick it up on mount
+        if (category === "chat_relay" && conversationId) {
+          try {
+            sessionStorage.setItem(
+              "fintheon:pending-relay-conv",
+              conversationId,
+            );
+            // Also dispatch a window event in case the tab is already open
+            window.dispatchEvent(
+              new CustomEvent("fintheon:relay-dispatch", {
+                detail: { conversationId },
+              }),
+            );
+          } catch {
+            /* ignore */
+          }
+        }
       } else if (category === "dailyBrief") {
         handleTabChange(0);
       }

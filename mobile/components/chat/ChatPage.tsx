@@ -104,6 +104,48 @@ export default function ChatPage({ visible }: ChatPageProps) {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [recoverConversation]);
 
+  // S21-T1: relay dispatch — pick up a pending conversation from a push
+  // notification tap, or a direct relay-dispatch window event while already open.
+  const loadSessionRef = useRef(loadSession);
+  loadSessionRef.current = loadSession;
+  const loadRelayConversation = useCallback(async (convId: string) => {
+    const conv = await loadSessionRef.current(convId);
+    if (conv) {
+      setMessages(
+        conv.messages.map((m, i) => ({
+          id: m.id || `loaded-${i}`,
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          timestamp: m.createdAt,
+        })),
+      );
+      setConversationId(conv.id);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Check sessionStorage for a pending relay conversation on mount
+    try {
+      const pending = sessionStorage.getItem("fintheon:pending-relay-conv");
+      if (pending) {
+        sessionStorage.removeItem("fintheon:pending-relay-conv");
+        void loadRelayConversation(pending);
+      }
+    } catch {
+      /* ignore */
+    }
+
+    // Listen for in-session relay dispatch events (tab already open)
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.conversationId) {
+        void loadRelayConversation(detail.conversationId);
+      }
+    };
+    window.addEventListener("fintheon:relay-dispatch", handler);
+    return () => window.removeEventListener("fintheon:relay-dispatch", handler);
+  }, [loadRelayConversation]);
+
   const sendMessage = useCallback(
     async (
       text: string,

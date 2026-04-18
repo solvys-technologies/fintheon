@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T06:30:00",
+    agent: "claude-code",
+    summary:
+      "S21-T1 relay dispatch + mobile chat rescue. Mobile chat input was stuck disabled because ConnectionStatus called /api/relay/health without an auth header, the 401 was treated as 'offline', and ChatInput's `disabled={isOffline}` locked the textarea — fixed by attaching the Supabase JWT to the health poll and treating 401 as 'reconnecting' (not offline) so the input stays usable. Service worker push handler now routes chat_relay category notifications to the chat tab and stashes the conversationId in sessionStorage + fires a window event so ChatPage auto-loads the dispatched conversation on mount or while already open. Backend push payload now carries conversationId directly so sw.js can deep-link without parsing URL. Mobile RiskFlow headline attach modal (HeadlinePickerSheet) and image attach (ImageAttachButton + ImagePreviewRow + input[type=file accept=image/*]) were already present and wired into /api/relay/chat — verified end-to-end path: mobile → Vercel rewrite → fintheon.fly.dev → relay WebSocket → local backend → Harper with images + riskFlowContext.",
+    files: [
+      "mobile/components/chat/ConnectionStatus.tsx",
+      "mobile/App.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+      "backend-hono/src/services/web-push-sender.ts",
+      "backend-hono/src/routes/relay.ts",
+    ],
+  },
+  {
     date: "2026-04-18T05:30:00",
     agent: "claude-code",
     summary:

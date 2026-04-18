@@ -103,13 +103,16 @@ export function createRelayRoutes() {
       payload: { conversationId: body.conversationId, deviceLabel },
     });
 
-    // Fire web-push to mobile subscriptions. Payload.url is the PWA deep link.
+    // Fire web-push to mobile subscriptions. Payload.url is the PWA deep link
+    // and conversationId lets the service worker postMessage a specific convo
+    // to any already-open PWA tab (see mobile/public/sw.js + App.tsx handler).
     const recipients = await sendToUserDirect(userId, {
       title: "Fintheon — chat picked up",
       body: `Harper is ready on ${deviceLabel}. Tap to continue the conversation.`,
       category: "chat_relay",
       url: `/chat/${body.conversationId}`,
       icon: "/icons/icon-192.png",
+      conversationId: body.conversationId,
     });
 
     log.info("Relay dispatch fired", {

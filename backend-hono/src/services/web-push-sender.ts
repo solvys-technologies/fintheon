@@ -23,6 +23,8 @@ interface PushPayload {
   category: string;
   url?: string;
   icon?: string;
+  /** Optional conversation ID — consumed by service worker for deep-linking. */
+  conversationId?: string;
 }
 
 const SEVERITY_ORDER = ["low", "medium", "high", "critical"] as const;
