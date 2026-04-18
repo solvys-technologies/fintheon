@@ -13,9 +13,7 @@ export const changelog: ChangelogEntry[] = [
     agent: "claude-code",
     summary:
       "S21-T1 mobile mirror badge — ChatPage now polls /api/relay/health every 20s and shows a small '⟷ FROM DESKTOP' pill next to the HARPER title whenever the user's active conversation matches an active dispatch on the Fly relay. Also auto-loads the dispatched conversation when the mobile opens with no active convo. Gives visual confirmation on mobile without requiring the web-push path to have succeeded (push subscriptions can lag or be absent — the dispatch state on Fly is authoritative).",
-    files: [
-      "mobile/components/chat/ChatPage.tsx",
-    ],
+    files: ["mobile/components/chat/ChatPage.tsx"],
   },
   {
     date: "2026-04-18T06:30:00",
