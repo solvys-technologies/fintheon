@@ -1,4 +1,6 @@
 // [claude-code 2026-04-11] Renamed twitter fields → rettiwt/riskflow for X CLI removal
+// [claude-code 2026-04-18] S25-T4: Added unified newsfeedHealthy signal, per-source detail,
+//                          and per-user lastSuccessAt (for "Polled Nm ago" on team cards)
 
 export type UserStatus = "online" | "away" | "busy" | "dnd" | "offline";
 
@@ -10,6 +12,14 @@ export interface ServiceStatus {
   aiRuntime: boolean;
   newsfeedPolling: { active: boolean; lastUpdate: string };
   backendConnection: boolean;
+  // S25-T4
+  newsfeedHealthy: boolean;
+  newsfeedDegraded: boolean;
+  agentReachActive: boolean;
+  /** ISO of this user's last successful poll contribution (ingest+score). Null if never. */
+  lastSuccessAt: string | null;
+  /** Total successful polling contributions for this user. */
+  totalContributions: number;
 }
 
 export interface DeviceStatus {

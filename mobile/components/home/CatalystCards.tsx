@@ -1,6 +1,12 @@
+// [claude-code 2026-04-19] S25: card press → full-viewport DetailSheet catalyst modal.
+//   Whole card becomes a button with scale press feedback + glass highlight on active.
+//   Accessibility: aria-label + role=button; key presses (Enter/Space) also trigger open.
 // [claude-code 2026-04-16] T7: NarrativeFlow catalyst card list — vertical stack
 import { motion } from "framer-motion";
 import { useCatalysts, type Catalyst } from "../../hooks/useCatalysts";
+import { useNotificationModal } from "../../contexts/NotificationModalContext";
+import { useHaptic } from "../../hooks/useHaptic";
+import { CARD_PRESS } from "../../lib/sheet-motion";
 
 const sentimentColor = {
   bullish: "var(--success)",
@@ -15,6 +21,8 @@ const severityLabel = {
 
 function CatalystCard({ catalyst }: { catalyst: Catalyst }) {
   const sev = severityLabel[catalyst.severity];
+  const { open } = useNotificationModal();
+  const vibrate = useHaptic();
   const timeStr = new Date(catalyst.date).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -24,11 +32,27 @@ function CatalystCard({ catalyst }: { catalyst: Catalyst }) {
     day: "numeric",
   });
 
+  const onPress = () => {
+    vibrate(8);
+    open({ kind: "catalyst", catalystId: catalyst.id });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
+      whileTap={CARD_PRESS}
+      role="button"
+      tabIndex={0}
+      aria-label={`Open catalyst ${catalyst.title}`}
+      onClick={onPress}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onPress();
+        }
+      }}
       style={{
         padding: "12px 14px",
         background: "var(--surface)",
@@ -37,6 +61,8 @@ function CatalystCard({ catalyst }: { catalyst: Catalyst }) {
         display: "flex",
         flexDirection: "column",
         gap: 6,
+        cursor: "pointer",
+        WebkitTapHighlightColor: "transparent",
       }}
     >
       {/* Header: severity + sentiment + time */}

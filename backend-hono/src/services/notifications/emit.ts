@@ -77,6 +77,12 @@ export interface EmitInput {
   /** Override cooldown window (minutes). */
   dedupWindowMins?: number;
   metadata?: Record<string, unknown>;
+  /** [S25] SOTA additions — optional hero image, lock-screen actions, badge bump, item id, approval id. */
+  image?: string;
+  actions?: Array<{ action: string; title: string; icon?: string }>;
+  badge?: number;
+  itemId?: string;
+  approvalId?: string;
 }
 
 export interface EmitResult {
@@ -157,6 +163,11 @@ async function emitForSingleUser(
       url: input.url,
       icon: input.icon,
       conversationId: input.conversationId,
+      image: input.image,
+      actions: input.actions,
+      badge: input.badge,
+      itemId: input.itemId,
+      approvalId: input.approvalId,
     };
     try {
       await sendToUser(userId, payload, input.severity);

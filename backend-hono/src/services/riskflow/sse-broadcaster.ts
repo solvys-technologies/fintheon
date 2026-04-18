@@ -35,6 +35,10 @@ export function broadcastLevel4(item: FeedItem) {
   // Hard gate: this channel is reserved for Level 4 catalysts only.
   if (item.macroLevel !== 4) return;
 
+  // [claude-code 2026-04-18] S25-T5: Level 4 trips hot-mode — the next HOT_WINDOW_MS (30 min)
+  // polls at 15s across all tiers so breaking catalysts don't sit idle.
+  import("./polling-config.js").then((m) => m.triggerHotMode()).catch(() => {});
+
   const payload = `data: ${JSON.stringify(item)}\n\n`;
   const encoder = new TextEncoder();
 

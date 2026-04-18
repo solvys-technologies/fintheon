@@ -1,6 +1,7 @@
 // [claude-code 2026-04-11] Renamed twitterCli → rettiwt, added pollingOwner + activePollers
 // [claude-code 2026-04-17] Cache last-known-good status to localStorage so self team card
 //                          hydrates with accurate data on app reopen instead of flashing red
+// [claude-code 2026-04-18] S25-T4: consume multi-source health + per-user polling timestamps
 import { useEffect, useState, useRef, useCallback } from "react";
 
 export interface RettiwtPoolStatus {
@@ -8,6 +9,22 @@ export interface RettiwtPoolStatus {
   availableKeys: number;
   cooldownKeys: number;
   disabledKeys: number;
+}
+
+export interface SourceDetail {
+  active: boolean;
+  lastRunAt: string | null;
+}
+
+export interface AgentReachDetail extends SourceDetail {
+  domains: Record<string, "ok" | "tripped" | "cooldown">;
+}
+
+export interface UserPollStat {
+  lastPollAt: string | null;
+  lastSuccessAt: string | null;
+  totalContributions: number;
+  currentlyOwner: boolean;
 }
 
 export interface SourceStatus {
@@ -23,6 +40,13 @@ export interface SourceStatus {
   backendReachable: boolean;
   /** ISO timestamp of the last successful poll */
   lastPollSuccess: string;
+
+  // S25-T4 additions
+  newsfeedHealthy: boolean;
+  newsfeedDegraded: boolean;
+  agentReach: AgentReachDetail;
+  feedPoller: SourceDetail;
+  userPollStats: Record<string, UserPollStat>;
 }
 
 const DEFAULT_STATUS: SourceStatus = {
@@ -36,6 +60,11 @@ const DEFAULT_STATUS: SourceStatus = {
   xApi: false,
   backendReachable: false,
   lastPollSuccess: new Date(0).toISOString(),
+  newsfeedHealthy: false,
+  newsfeedDegraded: false,
+  agentReach: { active: false, lastRunAt: null, domains: {} },
+  feedPoller: { active: false, lastRunAt: null },
+  userPollStats: {},
 };
 const POLL_INTERVAL_MS = 30_000;
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -67,6 +96,11 @@ export function useSourceStatus(): SourceStatus {
         const rettiwt = Boolean(data.rettiwt ?? false);
         const rateLimited = Boolean(data.rettiwtRateLimited ?? false);
         const cooldownSec = Number(data.rettiwtCooldownSec ?? 0);
+        const sourcesBlock = (data.sources as Record<string, unknown>) ?? {};
+        const arBlock =
+          (sourcesBlock.agentReach as Record<string, unknown>) ?? {};
+        const fpBlock =
+          (sourcesBlock.feedPoller as Record<string, unknown>) ?? {};
         const next: SourceStatus = {
           supabase: Boolean(data.supabase),
           rettiwt,
@@ -78,6 +112,23 @@ export function useSourceStatus(): SourceStatus {
           xApi: Boolean(data.xApi),
           backendReachable: true,
           lastPollSuccess: new Date().toISOString(),
+          newsfeedHealthy: Boolean(data.newsfeedHealthy),
+          newsfeedDegraded: Boolean(data.newsfeedDegraded),
+          agentReach: {
+            active: Boolean(arBlock.active),
+            lastRunAt: (arBlock.lastRunAt as string | null) ?? null,
+            domains:
+              (arBlock.domains as Record<
+                string,
+                "ok" | "tripped" | "cooldown"
+              >) ?? {},
+          },
+          feedPoller: {
+            active: Boolean(fpBlock.active),
+            lastRunAt: (fpBlock.lastRunAt as string | null) ?? null,
+          },
+          userPollStats:
+            (data.userPollStats as Record<string, UserPollStat>) ?? {},
         };
         setStatus(next);
         try {

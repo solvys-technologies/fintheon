@@ -1,3 +1,5 @@
+// [claude-code 2026-04-19] S25: mounted /approvals/:id + /dispatch subroutes for the mobile
+//   catalyst DetailSheet flow — GET one approval with expiresAt, POST seeded conversation.
 // [claude-code 2026-04-05] Strands Phase 8: Harper routes — streamHarperChat() replaces old CLI bridge + createUIMessageStreamResponse
 /**
  * Harper Routes
@@ -23,6 +25,8 @@ import {
   getPendingApprovals,
   type ApprovalDecision,
 } from "../../services/tool-approval-store.js";
+import { createApprovalDetailRoutes } from "./approvals.js";
+import { createDispatchRoute } from "./dispatch.js";
 import { agentBus } from "../../services/agent-bus/bus.js";
 import { executeDag } from "../../services/agent-bus/dag-scheduler.js";
 import { createMiroSharkDAG } from "../../services/agent-bus/templates/miroshark-template.js";
@@ -438,6 +442,12 @@ export function createHarperRoutes() {
   app.get("/paths", (c) => {
     return c.json(FINTHEON_PATHS);
   });
+
+  // [S25] Approval detail fetch — used by mobile DetailSheet on push tap.
+  app.route("/approvals", createApprovalDetailRoutes());
+
+  // [S25] Ask CAO dispatch — seeded conversation from catalyst/riskflow/brief context.
+  app.route("/dispatch", createDispatchRoute());
 
   return app;
 }

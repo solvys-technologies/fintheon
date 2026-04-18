@@ -21,7 +21,6 @@ import {
 } from "./econ-rettiwt-poller.js";
 import {
   hasAuthenticatedKeys,
-  isRettiwtAvailable,
   rettiwtUserTimeline,
 } from "../rettiwt-service.js";
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
@@ -29,12 +28,25 @@ import { isSupabaseConfigured } from "../../config/supabase.js";
 import { getPollingConfig } from "./polling-config.js";
 import { pollCommentary } from "./commentary-scraper.js";
 import { checkForScheduledEvents } from "./exa-scheduled-monitor.js";
-import { scrapeMultiple } from "../agent-reach-service.js";
 import { getAccountHandles } from "../source-accounts/source-accounts-service.js";
-import { areAllUsersKilled } from "./user-polling-registry.js";
+import {
+  areAllUsersKilled,
+  advancePollingOwner,
+  getCurrentPollingOwner,
+  recordUserPollSuccess,
+  recordUserPollAttempt,
+} from "./user-polling-registry.js";
 import type { FeedItem } from "../../types/riskflow.js";
 import { createLogger } from "../../lib/logger.js";
 import { filterWithContentGuard } from "./content-guard.js";
+import {
+  register as registerService,
+  recordRun,
+  recordError,
+} from "../health-registry.js";
+
+const FEED_POLLER_HEALTH_NAME = "feed-poller";
+registerService(FEED_POLLER_HEALTH_NAME);
 
 /** Convert a FeedItem to a RawRiskFlowItem for the raw_riskflow_items inbox */
 function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
@@ -207,57 +219,9 @@ export async function runScrapeFallback(): Promise<number> {
     );
   }
 
-  // ── Step 2: Agent-Reach scrape — always run to catch FinancialJuice, ZH, Reuters, Bloomberg
-  // [claude-code 2026-04-16] Removed totalWritten === 0 gate — Agent-Reach should run alongside
-  // curated timelines, not as a fallback. FinancialJuice was unreachable when timelines wrote >0 items.
-  {
-    const AGENT_REACH_DOMAINS = [
-      "https://financialjuice.com",
-      "https://zerohedge.com",
-      "https://reuters.com",
-      "https://bloomberg.com",
-    ];
-    const articles = await scrapeMultiple(AGENT_REACH_DOMAINS);
-    const items: RawRiskFlowItem[] = [];
-    for (const a of articles) {
-      const title = a.title?.trim();
-      if (!title || title.length < 15) continue;
-      if (/^(home|about|contact|subscribe|sign in|menu|cookie)/i.test(title))
-        continue;
-
-      const id = `ar-fb-${hashForDedup(title.toLowerCase())}`;
-      if (fallbackSeenIds.has(id)) continue;
-      fallbackSeenIds.add(id);
-
-      const isBreaking = /\b(breaking|urgent|alert|flash)\b/i.test(
-        `${title} ${a.text}`,
-      );
-
-      items.push({
-        tweet_id: id,
-        source: "Custom",
-        headline: title,
-        body: a.text.slice(0, 300) || undefined,
-        url: a.url,
-        symbols: [],
-        tags: [],
-        is_breaking: isBreaking,
-        urgency: isBreaking ? "immediate" : "normal",
-        published_at: a.publishedDate ?? new Date().toISOString(),
-        submitted_by: "feed-poller:agent-reach-fallback",
-      });
-    }
-
-    const cleanAgentItems = filterWithContentGuard(
-      items,
-      (i) => `${i.headline} ${i.body || ""}`,
-    );
-    if (cleanAgentItems.length > 0) {
-      const written = await writeRawItems(cleanAgentItems);
-      totalWritten += written;
-      log.info(`[ScrapeFallback] Agent-Reach phase — ${written} items written`);
-    }
-  }
+  // [claude-code 2026-04-18] S25-T1: Agent-Reach scrape removed from this fallback.
+  // The dedicated agent-reach-poller now runs on its own schedule with UA rotation, per-domain
+  // token bucket, and circuit breaker. Letting both run double-dipped the domain rate budgets.
 
   // Also run commentary + scheduled event scrapers
   await Promise.all([
@@ -306,6 +270,11 @@ async function pollForNewItems(): Promise<void> {
   isPolling = true;
   _pollsSinceLastLog++;
 
+  // [claude-code 2026-04-18] S25-T2: rotate the round-robin polling owner each cycle so
+  // the Team Card sees Rettiwt contributions distributed across active users over time.
+  advancePollingOwner();
+  recordUserPollAttempt(getCurrentPollingOwner());
+
   try {
     // ── Scrape-only mode when all users killed their feeds ──
     if (shouldUseScrapeOnly()) {
@@ -324,15 +293,12 @@ async function pollForNewItems(): Promise<void> {
       return;
     }
 
-    // Check Rettiwt availability
-    const rettiwtUp = isRettiwtAvailable();
-    if (!rettiwtUp) {
-      log.warn(
-        "Rettiwt NOT available — feed will only contain economic calendar items. Check RETTIWT_AUTH_TOKEN",
-      );
-    }
+    // [claude-code 2026-04-18] S25-T1: Rettiwt is now SECONDARY. Agent Reach dedicated poller
+    // handles primary news. Rettiwt only runs when authenticated keys are available (not just
+    // registered — must be off cooldown). Silent when absent; no log spam.
+    const rettiwtUp = hasAuthenticatedKeys();
 
-    // Gather items from Rettiwt + economic feed
+    // Gather items from Rettiwt (if keys ready) + economic feed
     const [rettiwtItems, econItems] = await Promise.all([
       rettiwtUp
         ? pollForEconNews().catch((err) => {
@@ -395,7 +361,11 @@ async function pollForNewItems(): Promise<void> {
       const rawRows = cleanItems.map(feedItemToRaw);
       const written = await writeRawItems(rawRows);
       log.info(` Wrote ${written} raw items to raw_riskflow_items`);
+      // [claude-code 2026-04-18] S25-T2: attribute successful cycle to current polling owner
+      // (or backend sentinel when no active user). Team Card shows "Polled Nm ago" off this.
+      if (written > 0) recordUserPollSuccess(getCurrentPollingOwner());
     }
+    recordRun(FEED_POLLER_HEALTH_NAME);
 
     // Enrich with AI analysis (this calculates IV scores and macro levels)
     const enrichedItems = await withTimeout(
@@ -442,6 +412,7 @@ async function pollForNewItems(): Promise<void> {
     } else {
       log.error("[FeedPoller] Poll error:", { error: msg });
     }
+    recordError(FEED_POLLER_HEALTH_NAME, error);
   } finally {
     isPolling = false;
     maybeLogHealth();
@@ -533,6 +504,7 @@ export async function forcePoll(): Promise<void> {
       log.info(
         ` Manual refresh: wrote ${written} raw items to raw_riskflow_items`,
       );
+      if (written > 0) recordUserPollSuccess(getCurrentPollingOwner());
     }
 
     const enrichedItems = await enrichFeedWithAnalysis(cleanRefreshItems);

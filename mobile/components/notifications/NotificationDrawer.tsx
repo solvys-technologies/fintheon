@@ -331,13 +331,14 @@ export function NotificationDrawer({
                       )}
                     </div>
 
-                    {/* Right: approve/deny stacked, borderless accent letters */}
+                    {/* Right: approve/deny icon-only stack (TP: Check over X,
+                        Approve = accent, Deny = muted secondary) */}
                     {isApproval && !status && n.eventId ? (
                       <div
                         style={{
                           display: "flex",
                           flexDirection: "column",
-                          gap: 4,
+                          gap: 6,
                           alignSelf: "center",
                           flexShrink: 0,
                         }}
@@ -349,10 +350,9 @@ export function NotificationDrawer({
                           }}
                           disabled={pending.has(n.id)}
                           aria-label="Approve"
-                          style={stackBtnStyle("approve", pending.has(n.id))}
+                          style={iconBtnStyle("approve", pending.has(n.id))}
                         >
-                          <CheckCircle2 size={13} />
-                          <span>Approve</span>
+                          <CheckCircle2 size={20} strokeWidth={1.8} />
                         </button>
                         <button
                           onClick={(e) => {
@@ -361,10 +361,9 @@ export function NotificationDrawer({
                           }}
                           disabled={pending.has(n.id)}
                           aria-label="Deny"
-                          style={stackBtnStyle("deny", pending.has(n.id))}
+                          style={iconBtnStyle("deny", pending.has(n.id))}
                         >
-                          <XCircle size={13} />
-                          <span>Deny</span>
+                          <XCircle size={20} strokeWidth={1.8} />
                         </button>
                       </div>
                     ) : null}
@@ -379,29 +378,25 @@ export function NotificationDrawer({
   );
 }
 
-function stackBtnStyle(
+/** Icon-only 36×36 tap target. Approve = accent, Deny = muted secondary. */
+function iconBtnStyle(
   kind: "approve" | "deny",
   isPending: boolean,
 ): React.CSSProperties {
   return {
+    width: 36,
+    height: 36,
     display: "flex",
     alignItems: "center",
-    gap: 5,
-    padding: "6px 10px",
-    fontSize: 11,
-    fontFamily: "var(--font-data)",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    fontWeight: kind === "approve" ? 600 : 400,
-    color: "var(--accent)",
+    justifyContent: "center",
     background: "transparent",
     border: "none",
-    borderRadius: 6,
+    borderRadius: 8,
+    color: kind === "approve" ? "var(--accent)" : "var(--text-secondary)",
     cursor: isPending ? "not-allowed" : "pointer",
     opacity: isPending ? 0.4 : 1,
     WebkitTapHighlightColor: "transparent",
-    transition: "opacity 150ms ease, background 150ms ease",
-    minWidth: 96,
-    justifyContent: "flex-start",
+    transition:
+      "opacity 150ms ease, background 150ms ease, transform 150ms ease",
   };
 }

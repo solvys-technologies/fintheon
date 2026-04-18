@@ -1,3 +1,6 @@
+// [claude-code 2026-04-19] TP beta polish: drop the 800ms auto-save debounce. Changes
+//   now stage locally (still written to localStorage for reload persistence), and only
+//   commit to the backend when the user presses the save control in Settings UI.
 // [claude-code 2026-04-19] S24 unify: per TP — only regimeProposals + walkBackReverts default ON; everything else opt-in. Keeps the lock screen quiet except for the two categories that require immediate decisions.
 // [claude-code 2026-04-19] S24-T1: add regimeProposals / lexiconProposals / walkBackReverts notification categories; default-on so TP's phone gets V4 approvals + walk-back reverts out of the box.
 // [claude-code 2026-04-15] S19: Mobile settings — expanded with backend sync, trader prefs, risk display
@@ -181,7 +184,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const backendSyncedRef = useRef(false);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<string>(JSON.stringify(loadSettings()));
 
   // On mount: localStorage first (instant paint), then backend fetch (backend wins)
@@ -267,34 +269,23 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [getAccessToken],
   );
 
-  // Debounced save to localStorage + backend on change
+  // Stage changes locally. Backend commit is manual via saveAll() (tap the Save
+  // button in Settings). LocalStorage is still written every change so the UI
+  // stays consistent across reloads while the user is drafting.
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch {}
 
-    // Track dirty state
     const currentJson = JSON.stringify(settings);
-    if (currentJson !== lastSavedRef.current) {
-      setIsDirty(true);
-    }
-
-    if (!backendSyncedRef.current || !isAuthenticated) return;
-
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => flushSave(settings), 800);
-
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [settings, isAuthenticated, flushSave]);
+    setIsDirty(currentJson !== lastSavedRef.current);
+  }, [settings]);
 
   const updateSettings = useCallback((partial: Partial<MobileSettings>) => {
     setSettings((prev) => ({ ...prev, ...partial }));
   }, []);
 
   const saveAll = useCallback(async () => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     await flushSave(settings);
   }, [settings, flushSave]);
 

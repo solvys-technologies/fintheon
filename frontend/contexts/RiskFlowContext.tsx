@@ -309,28 +309,19 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     };
   }, [pollBackendFeed]);
 
-  // Device-gated on-open fetch: when the app becomes visible (tab focus, Electron foreground),
-  // trigger a refresh (backend gates X polling to owner only) then re-fetch the feed.
-  // Throttled to once per 5 minutes. Non-blocking: feed poll fires immediately, refresh is fire-and-forget.
-  const lastOnOpenRefresh = useRef(0);
+  // [claude-code 2026-04-18] S25-T3: On tab-focus, only re-fetch the cached feed. Do not trigger
+  // a backend poll from the client — the backend runs autonomous polling on its own schedule.
+  // Any user-initiated "make it poll now" must go through the Team Card Doctor button, which is
+  // cooldown-gated and does not compound rate-limit exposure.
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState !== "visible") return;
-      const now = Date.now();
-      if (now - lastOnOpenRefresh.current < 5 * 60 * 1000) return;
-      lastOnOpenRefresh.current = now;
-      console.debug(
-        "[RiskFlowContext] App became visible — triggering on-open refresh",
-      );
-      // Fire refresh (may take 30s+ for owner's X poll) but don't block feed display
-      backend.riskflow.refresh().catch(() => {});
-      // Immediately fetch cached scored items so feed displays fast
       pollBackendFeed();
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
-  }, [backend, pollBackendFeed]);
+  }, [pollBackendFeed]);
 
   // [claude-code 2026-03-28] S9-T2: Removed 24h stalemate filter — items persist forever (backfill data)
   const merged = backendAlerts;
@@ -399,22 +390,20 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     [seenIds],
   );
 
+  // [claude-code 2026-04-18] S25-T3: "Refresh" no longer triggers a backend poll. It only
+  // re-fetches the latest scored items from the backend cache. Manual poll triggers live
+  // exclusively on the self Team Card (Doctor button, cooldown-gated).
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      setFetchStatus("Polling X feeds...");
-      await backend.riskflow.refresh().catch((err: unknown) => {
-        console.warn("[RiskFlow] Manual refresh failed:", err);
-        setFetchStatus("Backend refresh failed — fetching cached data");
-      });
-      setFetchStatus("Scoring & classifying items...");
+      setFetchStatus("Fetching latest...");
       await pollBackendFeed();
       setFetchStatus("Feed updated");
-      setTimeout(() => setFetchStatus(""), 3000);
+      setTimeout(() => setFetchStatus(""), 2000);
     } finally {
       setRefreshing(false);
     }
-  }, [backend, pollBackendFeed]);
+  }, [pollBackendFeed]);
 
   useEffect(() => {
     persistIds(SEEN_STORAGE_KEY, seenIds);

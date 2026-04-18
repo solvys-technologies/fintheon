@@ -7,6 +7,8 @@
 import { hostname } from "node:os";
 import { createLogger } from "../lib/logger.js";
 import { startFeedPoller } from "../services/riskflow/feed-poller.js";
+import { startAgentReachPoller } from "../services/riskflow/agent-reach-poller.js";
+import { startPollWatchdog } from "../services/riskflow/poll-watchdog.js";
 import { seedCacheFromDb } from "../services/riskflow/feed-service.js";
 import { startEconEnricher } from "../services/cron/econ-enricher.js";
 import { startEconPoller } from "../services/riskflow/econ-rettiwt-poller.js";
@@ -167,13 +169,36 @@ export async function bootBackground(): Promise<void> {
   const t0 = Date.now();
   log.info("Background boot starting");
 
-  // RiskFlow Level 4 detection feed
+  // [claude-code 2026-04-18] S25-T1: Agent-Reach is the PRIMARY news source. It runs on its
+  // own schedule with UA pool + per-domain token bucket, hits RSS first then HTML fallback,
+  // and needs no credentials — so it keeps the feed alive even when Rettiwt has zero keys.
+  startAgentReachPoller();
+  log.info("AgentReachPoller started (primary news source)");
+
+  // RiskFlow Level 4 detection feed — now handles econ + Rettiwt (secondary)
   startFeedPoller();
   log.info("FeedPoller started");
 
   // Rettiwt key pool (per-user API keys from Supabase + env fallback)
   await initRettiwtPool();
   log.info("Rettiwt key pool initialized");
+
+  // [claude-code 2026-04-18] S25-T6: periodic Rettiwt pool reload (15 min) so keys stay fresh
+  // across user sessions. If a user signs out mid-day, their keys linger in the pool until
+  // this cron runs; that's fine because we also reload on search/timeline calls.
+  const poolReloadTimer = setInterval(() => {
+    initRettiwtPool().catch((err) =>
+      log.warn("Rettiwt pool reload failed (non-fatal)", {
+        error: String(err),
+      }),
+    );
+  }, 15 * 60_000);
+  poolReloadTimer.unref?.();
+  log.info("Rettiwt pool reload scheduled (15 min)");
+
+  // Poll watchdog — detects stalled Agent Reach, soft-nudges then restarts if needed
+  startPollWatchdog();
+  log.info("PollWatchdog started");
 
   // Econ-triggered Rettiwt poller (replaces twitter-cli)
   startEconPoller();

@@ -50,10 +50,15 @@
   --space-3xl: 64px;
   --space-4xl: 96px;
 
-  /* ── Motion ── */
+  /* ── Motion ──
+     TP beta polish 2026-04-19: one source of truth for easing + durations.
+     Framer Motion components still declare their own transitions, but every
+     CSS-driven transition should pick from these tokens. */
   --ease-nothing: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-micro: 150ms;
   --duration-transition: 300ms;
+  --duration-long: 500ms;
 
   /* ── Fintheon Legacy Tokens (shared component compatibility) ── */
   --fintheon-accent: #d4af37;
@@ -135,7 +140,10 @@ body {
 
 /* ── Native-feel touch defaults ──
    Claude's iOS-PWA audit: tap-highlight + double-tap-zoom make chat feel
-   like a browser page instead of an app. Kill both globally. */
+   like a browser page instead of an app. Kill both globally.
+   TP beta polish 2026-04-19: add subtle active-scale micro-interaction on
+   presses. Framer-motion components override their own transform, so this
+   only affects vanilla buttons/anchors — which is where we want it. */
 button,
 [role="button"],
 a,
@@ -145,6 +153,32 @@ select,
 label {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+button,
+[role="button"] {
+  transition:
+    transform var(--duration-micro) var(--ease-nothing),
+    background-color 200ms var(--ease-nothing),
+    border-color 200ms var(--ease-nothing),
+    color 200ms var(--ease-nothing),
+    opacity 200ms var(--ease-nothing);
+}
+
+button:active:not(:disabled),
+[role="button"]:active:not([aria-disabled="true"]) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  [role="button"] {
+    transition: none;
+  }
+  button:active:not(:disabled),
+  [role="button"]:active:not([aria-disabled="true"]) {
+    transform: none;
+  }
 }
 
 /* iOS Safari zooms into inputs whose font-size is < 16px on focus.

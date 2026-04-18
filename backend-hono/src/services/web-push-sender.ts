@@ -1,3 +1,7 @@
+// [claude-code 2026-04-19] S25: PushPayload extended with image/actions/badge/itemId for SOTA
+//   notifications — rich media (hero image), lock-screen action buttons (Approve/Deny/Open),
+//   per-notification badge count, and item-scoped deep-link target. All fields optional; old
+//   service workers ignore them without breaking.
 // [claude-code 2026-04-18] S2: exported canDeliverToUser/meetsSeverityThreshold gates for emit.ts reuse
 // [claude-code 2026-04-15] T7: Web push sending service — VAPID auth, category filtering, stale sub cleanup
 import webpush from "web-push";
@@ -26,6 +30,16 @@ export interface PushPayload {
   icon?: string;
   /** Optional conversation ID — consumed by service worker for deep-linking. */
   conversationId?: string;
+  /** Hero image URL (1200x600 recommended). Rendered by SW under body on iOS/Android rich push. */
+  image?: string;
+  /** Lock-screen action buttons. SW translates `action:'approve'|'deny'` into a no-auth POST. */
+  actions?: Array<{ action: string; title: string; icon?: string }>;
+  /** Incremental badge bump. SW reads this + IndexedDB counter to set `navigator.setAppBadge`. */
+  badge?: number;
+  /** Item ID that the SW can pair with the URL for context-aware detail modal opens. */
+  itemId?: string;
+  /** Approval ID — only set for toolApprovals category. Used by SW's no-auth decision fetch. */
+  approvalId?: string;
 }
 
 export const SEVERITY_ORDER = ["low", "medium", "high", "critical"] as const;

@@ -10,6 +10,7 @@ import {
   type ScrapedArticle,
 } from "../agent-reach-service.js";
 import { getPollingConfig } from "./polling-config.js";
+import { recordUserPollSuccess } from "./user-polling-registry.js";
 import type { RawRiskFlowItem } from "../supabase-service.js";
 import type { createLogger } from "../../lib/logger.js";
 
@@ -170,6 +171,8 @@ const poller = createBasePoller(
     name: AGENT_REACH_POLLER_NAME,
     getInterval: () => getPollingConfig().interval,
     initialDelayMs: 3_000,
+    // Agent Reach is always backend-attributed — no user credentials involved.
+    onWrite: () => recordUserPollSuccess(null),
   },
   pollAgentReach,
 );

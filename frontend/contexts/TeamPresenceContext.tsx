@@ -94,6 +94,9 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
+  // [claude-code 2026-04-18] S25-T4: Broadcast unified newsfeedHealthy + per-user lastSuccessAt
+  // so peers see truthful aggregated feed health and a per-card "Polled Nm ago" line.
+  const myStats = sourceStatus.userPollStats[userId];
   const buildPayload = useCallback(
     (): PresencePayload => ({
       userId,
@@ -111,14 +114,15 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
         riskflowKilled,
         aiRuntime: caoOnline,
         newsfeedPolling: {
-          active:
-            sourceStatus.backendReachable &&
-            (sourceStatus.supabase ||
-              sourceStatus.rettiwt ||
-              sourceStatus.xApi),
+          active: sourceStatus.backendReachable && sourceStatus.newsfeedHealthy,
           lastUpdate: sourceStatus.lastPollSuccess,
         },
         backendConnection: sourceStatus.backendReachable,
+        newsfeedHealthy: sourceStatus.newsfeedHealthy,
+        newsfeedDegraded: sourceStatus.newsfeedDegraded,
+        agentReachActive: sourceStatus.agentReach.active,
+        lastSuccessAt: myStats?.lastSuccessAt ?? null,
+        totalContributions: myStats?.totalContributions ?? 0,
       },
     }),
     [
@@ -128,10 +132,14 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
       caoOnline,
       sourceStatus.rettiwt,
       sourceStatus.rettiwtRateLimited,
-      sourceStatus.supabase,
-      sourceStatus.xApi,
+      sourceStatus.rettiwtPool?.totalKeys,
       sourceStatus.backendReachable,
       sourceStatus.lastPollSuccess,
+      sourceStatus.newsfeedHealthy,
+      sourceStatus.newsfeedDegraded,
+      sourceStatus.agentReach.active,
+      myStats?.lastSuccessAt,
+      myStats?.totalContributions,
       userStatus,
       riskflowKilled,
     ],
@@ -165,6 +173,11 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
               lastUpdate: new Date().toISOString(),
             },
             backendConnection: false,
+            newsfeedHealthy: false,
+            newsfeedDegraded: false,
+            agentReachActive: false,
+            lastSuccessAt: null,
+            totalContributions: 0,
           };
           members.push({
             userId: key,

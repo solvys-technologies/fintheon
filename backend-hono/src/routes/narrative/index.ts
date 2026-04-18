@@ -7,6 +7,7 @@ import {
   getThreads,
   getCardLinks,
   getCatalysts,
+  getCatalystById,
 } from "./handlers.js";
 
 export function createNarrativeRoutes(): Hono {
@@ -14,6 +15,8 @@ export function createNarrativeRoutes(): Hono {
   app.get("/threads", getThreads);
   app.get("/card-links", getCardLinks);
   app.get("/catalysts", getCatalysts);
+  // [S25] Single-catalyst lookup for mobile DetailSheet. Param last so `/catalysts/:id` wins after `/catalysts`.
+  app.get("/catalysts/:id", getCatalystById);
   app.post("/score-riskflow", scoreRiskflow);
   app.post("/score-brief", scoreBrief);
   app.post("/research-drill", researchDrill);

@@ -1,9 +1,14 @@
+// [claude-code 2026-04-19] S25 v5.22.0: SOTA push — rich media (image), lock-screen actions
+//   (Approve/Deny/Open), per-item tags (approvals stack, riskflow collapses), badge counter
+//   via setAppBadge + SW-local counter in memory, and an `event.action` branch that fires a
+//   no-auth POST /api/tool-decision-quick when the user taps Approve/Deny without opening
+//   the app.
 // [claude-code 2026-04-19] Cache-bust to v5.21.4 — TP wasn't seeing new bundles because the SW
 //   served the v1 cached assets. activate step nukes any cache name not in the current list.
 // [claude-code 2026-04-16] T7: Service worker — push notifications, app shell caching, stale-while-revalidate
 
-const CACHE_NAME = "fintheon-v5.21.5";
-const STATIC_CACHE = "fintheon-static-v5.21.5";
+const CACHE_NAME = "fintheon-v5.22.0";
+const STATIC_CACHE = "fintheon-static-v5.22.0";
 
 // App shell resources to pre-cache on install
 const APP_SHELL = ["/", "/index.html"];
@@ -14,6 +19,9 @@ const SWR_ROUTES = [
   "/api/ai/conversations",
   "/api/briefing/latest",
 ];
+
+// [S25] SW-local unread counter. Reset via client message {type:'clear-badge'}.
+let swUnread = 0;
 
 // ── Install: pre-cache app shell ──
 
@@ -106,28 +114,98 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  const { title, body, category, url, icon, conversationId } =
-    event.data.json();
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon: icon || "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      data: { url, category, conversationId },
-      tag: category,
-    }),
-  );
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    return;
+  }
+
+  const {
+    title,
+    body,
+    category,
+    url,
+    icon,
+    image,
+    actions,
+    conversationId,
+    itemId,
+    approvalId,
+  } = data;
+
+  // [S25] Per-item tag so approvals stack (user sees multiple pending decisions)
+  //       while noisy riskflow storms collapse under a single `riskflow` tag.
+  let tag = category || "default";
+  if (category === "toolApprovals" && approvalId) {
+    tag = `toolApprovals:${approvalId}`;
+  } else if (category === "chat_relay" && conversationId) {
+    tag = `chat_relay:${conversationId}`;
+  } else if (itemId && category !== "riskflow") {
+    tag = `${category}:${itemId}`;
+  }
+
+  // Bump badge if the platform supports it (iOS 16.4+, Android Chrome PWA)
+  swUnread += 1;
+  if (typeof self.registration.setAppBadge === "function") {
+    self.registration.setAppBadge(swUnread).catch(() => {});
+  }
+
+  const options = {
+    body: body || "",
+    icon: icon || "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    data: {
+      url,
+      category,
+      conversationId,
+      itemId,
+      approvalId,
+    },
+    tag,
+    renotify: true,
+    // Hero image for rich push (iOS 16.4+/Android)
+    ...(image ? { image } : {}),
+    // Lock-screen action buttons
+    ...(Array.isArray(actions) && actions.length > 0
+      ? { actions: actions.slice(0, 2) }
+      : {}),
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// ── Notification click: postMessage to client for tab routing ──
+// ── Notification click: either resolve the approval inline OR route into the app ──
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const { url, category, conversationId } = event.notification.data || {};
+
+  const data = event.notification.data || {};
+  const action = event.action || "";
+  const { url, category, conversationId, approvalId } = data;
+
+  // [S25] Lock-screen Approve/Deny — no-auth POST to the quick-decision endpoint,
+  //       approval-id-as-secret. Window is 10 min; handler enforces freshness.
+  if (
+    (action === "approve" || action === "deny") &&
+    approvalId &&
+    category === "toolApprovals"
+  ) {
+    const decision = action === "approve" ? "approved" : "denied";
+    event.waitUntil(
+      fetch("/api/tool-decision-quick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approvalId, decision }),
+      }).catch(() => {
+        // Silent fail — user can still open the app to decide
+      }),
+    );
+    return;
+  }
 
   event.waitUntil(
     self.clients.matchAll({ type: "window" }).then((clients) => {
-      // Try to find an existing window and route via postMessage
       for (const client of clients) {
         if ("focus" in client) {
           client.postMessage({
@@ -139,8 +217,18 @@ self.addEventListener("notificationclick", (event) => {
           return client.focus();
         }
       }
-      // No existing window — open one
       return self.clients.openWindow(url || "/");
     }),
   );
+});
+
+// ── Client messages — clear badge on mark-all-read ──
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "clear-badge") {
+    swUnread = 0;
+    if (typeof self.registration.clearAppBadge === "function") {
+      self.registration.clearAppBadge().catch(() => {});
+    }
+  }
 });

@@ -1,3 +1,6 @@
+// [claude-code 2026-04-19] S25: item-scoped URL (`/riskflow?item={id}`) so the mobile detail
+//   modal can open the exact headline on notification tap. Image passthrough supports rich
+//   push (hero media). Old SW versions ignore both gracefully.
 // [claude-code 2026-04-19] Plain-language catalyst push per TP — title "Catalyst · <Category>",
 //   body is the headline. Categories collapse to 3 buckets: Econ / Geopolitical / Monetary Policy
 //   (fallback "Market"). No more technical tags like "/ES · FOMC Minutes" on lock screen.
@@ -82,6 +85,8 @@ export interface RiskFlowPushPayload {
   url: string;
   fingerprint: string;
   eventId: string;
+  itemId: string;
+  image?: string;
 }
 
 export function buildRiskFlowPush(item: FeedItem): RiskFlowPushPayload {
@@ -99,8 +104,10 @@ export function buildRiskFlowPush(item: FeedItem): RiskFlowPushPayload {
   return {
     title,
     body,
-    url: "/riskflow",
+    // [S25] Item-scoped deep link — SW maps this to DetailSheet modal open for the exact item.
+    url: `/riskflow?item=${encodeURIComponent(item.id)}`,
     fingerprint,
     eventId: item.id,
+    itemId: item.id,
   };
 }

@@ -1,777 +1,138 @@
-// [claude-code 2026-04-16] S20: Settings — save checkmarks per section, bulletin reminder toggle
-// [claude-code 2026-04-17] Push notifications: persist pushEnabled intent, sync master toggle with live subscription, wire test button w/ inline status
-import { useState, useCallback, useEffect } from "react";
+// [claude-code 2026-04-19] TP beta polish: full rewrite. Scrollable shell, full-width,
+//   glassmorphic collapsible sections, accordion theme picker, 5-font picker, manual
+//   save via a clearly-pressable SaveButton. Broken into focused modules under 300 lines.
 import { useSettings } from "../../contexts/SettingsContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
-import { usePushNotifications } from "../../hooks/usePushNotifications";
-import { SaveCheckmark } from "../shared/SaveCheckmark";
-import type { ThemeConfig } from "@frontend/lib/theme";
-import type { FontTheme } from "@frontend/lib/font-theme";
-
-const SEVERITY_SEGMENTS = ["CRIT", "HIGH", "MED", "LOW"] as const;
-const SEVERITY_VALUES = ["critical", "high", "medium", "low"] as const;
-
-function Toggle({
-  on,
-  onToggle,
-  disabled,
-}: {
-  on: boolean;
-  onToggle: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      disabled={disabled}
-      aria-checked={on}
-      role="switch"
-      style={{
-        minWidth: 44,
-        minHeight: 44,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "transparent",
-        border: "none",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : 1,
-        padding: 0,
-        WebkitTapHighlightColor: "transparent",
-      }}
-    >
-      <div
-        style={{
-          width: 48,
-          height: 28,
-          borderRadius: 14,
-          border: `1.5px solid ${on ? "var(--accent)" : "var(--border-visible)"}`,
-          background: on ? "var(--accent)" : "transparent",
-          position: "relative",
-          transition: "background 0.2s ease-out, border-color 0.2s ease-out",
-        }}
-      >
-        <div
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: 10,
-            background: on ? "var(--black, #000)" : "var(--text-disabled)",
-            position: "absolute",
-            top: 2.5,
-            left: on ? 23 : 3,
-            transition: "left 0.2s ease-out, background 0.2s ease-out",
-          }}
-        />
-      </div>
-    </button>
-  );
-}
-
-function SectionHeader({
-  label,
-  showSave,
-  onSave,
-}: {
-  label: string;
-  showSave?: boolean;
-  onSave?: () => Promise<void>;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 12,
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "'Space Mono', monospace",
-          fontSize: 11,
-          letterSpacing: "0.1em",
-          color: "var(--text-secondary)",
-          textTransform: "uppercase" as const,
-        }}
-      >
-        {label}
-      </div>
-      <SaveCheckmark visible={!!showSave} variant="single" onSave={onSave} />
-    </div>
-  );
-}
-
-function SettingRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "10px 0",
-      }}
-    >
-      <span style={{ color: "var(--text-primary)", fontSize: 14 }}>
-        {label}
-      </span>
-      {children}
-    </div>
-  );
-}
+import { CollapsibleSection } from "./CollapsibleSection";
+import { ThemePickerAccordion } from "./ThemePickerAccordion";
+import { FontPickerList } from "./FontPickerList";
+import { NotificationsSection } from "./NotificationsSection";
+import { TraderSection } from "./TraderSection";
+import { SaveButton } from "./SaveButton";
 
 export function SettingsPage() {
-  const { settings, updateSettings, isDirty, saveAll } = useSettings();
+  const { isDirty, isSaving, saveAll } = useSettings();
   const {
     theme,
     setTheme,
     fontTheme,
     setFontTheme,
     availableThemes,
+    specialThemes,
     availableFonts,
   } = useTheme();
   const { user, signOut } = useAuth();
-  const push = usePushNotifications();
-  const notifPrefs = settings.notificationPrefs;
-  // Master toggle reflects EITHER live subscription OR the persisted user-intent (pushEnabled).
-  // Whichever is truthier wins, so a stale-subscription state doesn't desync the switch.
-  const masterEnabled = push.isSubscribed || notifPrefs.pushEnabled;
 
-  // Test-notification inline status: null=idle, "sending"=loading, string=last result
-  const [testStatus, setTestStatus] = useState<
-    null | "sending" | { ok: true } | { ok: false; msg: string }
-  >(null);
-
-  // If the user previously opted in (pushEnabled=true) but the current session
-  // lost its subscription (browser cleared it, permission reset, VAPID rotated),
-  // try to silently re-subscribe so notifications resume without requiring re-tap.
-  useEffect(() => {
-    if (
-      notifPrefs.pushEnabled &&
-      !push.isSubscribed &&
-      !push.isLoading &&
-      push.permissionStatus === "granted"
-    ) {
-      void push.enable();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notifPrefs.pushEnabled, push.isSubscribed, push.permissionStatus]);
-
-  const handleMasterToggle = useCallback(async () => {
-    if (masterEnabled) {
-      await push.disable();
-      updateSettings({
-        notificationPrefs: { ...notifPrefs, pushEnabled: false },
-      });
-      return;
-    }
-    const result = await push.enable();
-    if (result.ok) {
-      updateSettings({
-        notificationPrefs: { ...notifPrefs, pushEnabled: true },
-      });
-    } else {
-      // Persist that the user WANTED it on only if the failure is recoverable.
-      // Denied permission → keep pushEnabled false so we don't loop on re-enable.
-      if (result.reason !== "permission-denied") {
-        updateSettings({
-          notificationPrefs: { ...notifPrefs, pushEnabled: false },
-        });
-      }
-    }
-  }, [masterEnabled, push, notifPrefs, updateSettings]);
-
-  const handleTest = useCallback(async () => {
-    setTestStatus("sending");
-    const result = await push.sendTestNotification();
-    if (result.ok) {
-      setTestStatus({ ok: true });
-    } else {
-      const msgMap: Record<string, string> = {
-        "no-token": "Not signed in",
-        "not-subscribed": "Not subscribed — toggle Push Notifications on first",
-        "permission-denied": "Permission denied — enable in system settings",
-        network: "Network error",
-      };
-      setTestStatus({
-        ok: false,
-        msg: msgMap[result.reason] || result.reason,
-      });
-    }
-    // Auto-clear status after 4s
-    window.setTimeout(() => setTestStatus(null), 4000);
-  }, [push]);
-
-  const toggleCategory = useCallback(
-    (
-      key: "riskflow" | "dailyBrief" | "regimeActivations" | "toolApprovals",
-    ) => {
-      const updated = { ...notifPrefs, [key]: !notifPrefs[key] };
-      updateSettings({ notificationPrefs: updated });
-      if (push.isSubscribed) {
-        const { severityThreshold: _, ...cats } = updated;
-        push.syncCategories(cats);
-      }
-    },
-    [notifPrefs, updateSettings, push],
+  const trailingSave = (
+    <SaveButton visible={isDirty} saving={isSaving} onSave={saveAll} />
   );
-
-  const setSeverity = useCallback(
-    (idx: number) => {
-      const value = SEVERITY_VALUES[idx];
-      const updated = { ...notifPrefs, severityThreshold: value };
-      updateSettings({ notificationPrefs: updated });
-      if (push.isSubscribed) {
-        const { severityThreshold: _, ...cats } = updated;
-        push.syncCategories(cats, value);
-      }
-    },
-    [notifPrefs, updateSettings, push],
-  );
-
-  const severityIdx = SEVERITY_VALUES.indexOf(notifPrefs.severityThreshold);
 
   return (
     <div
       style={{
-        padding: "24px 16px",
-        maxWidth: 480,
-        margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 32,
+        height: "100%",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        overscrollBehavior: "contain",
       }}
     >
-      {/* NOTIFICATIONS */}
-      <section>
-        <SectionHeader
-          label="Notifications"
-          showSave={isDirty}
-          onSave={saveAll}
-        />
-        <SettingRow label="Push Notifications">
-          <Toggle
-            on={masterEnabled}
-            onToggle={handleMasterToggle}
-            disabled={push.isLoading || push.permissionStatus === "denied"}
-          />
-        </SettingRow>
-        {push.permissionStatus === "denied" && (
-          <div
-            style={{
-              color: "var(--text-secondary)",
-              fontSize: 12,
-              marginTop: -4,
-            }}
-          >
-            Blocked by browser — enable in system settings
-          </div>
-        )}
-        {masterEnabled && (
-          <>
-            <SettingRow label="RiskFlow Alerts">
-              <Toggle
-                on={notifPrefs.riskflow}
-                onToggle={() => toggleCategory("riskflow")}
-              />
-            </SettingRow>
-            <SettingRow label="Daily Brief">
-              <Toggle
-                on={notifPrefs.dailyBrief}
-                onToggle={() => toggleCategory("dailyBrief")}
-              />
-            </SettingRow>
-            <SettingRow label="Regime Activations">
-              <Toggle
-                on={notifPrefs.regimeActivations}
-                onToggle={() => toggleCategory("regimeActivations")}
-              />
-            </SettingRow>
-            <SettingRow label="Tool Approvals">
-              <Toggle
-                on={notifPrefs.toolApprovals}
-                onToggle={() => toggleCategory("toolApprovals")}
-              />
-            </SettingRow>
-
-            {/* Severity threshold segmented control */}
-            <div style={{ marginTop: 8 }}>
-              <div
-                style={{
-                  fontFamily: "'Space Mono', monospace",
-                  fontSize: 10,
-                  color: "var(--text-secondary)",
-                  marginBottom: 8,
-                  letterSpacing: "0.05em",
-                }}
-              >
-                SEVERITY THRESHOLD
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  border: "1px solid var(--border-visible)",
-                  borderRadius: 6,
-                  overflow: "hidden",
-                }}
-              >
-                {SEVERITY_SEGMENTS.map((seg, i) => (
-                  <button
-                    key={seg}
-                    onClick={() => setSeverity(i)}
-                    style={{
-                      padding: "8px 0",
-                      fontSize: 11,
-                      fontFamily: "'Space Mono', monospace",
-                      background:
-                        i === severityIdx
-                          ? "var(--text-display)"
-                          : "transparent",
-                      color:
-                        i === severityIdx
-                          ? "var(--black, #000)"
-                          : "var(--text-secondary)",
-                      border: "none",
-                      borderRight:
-                        i < 3 ? "1px solid var(--border-visible)" : "none",
-                      cursor: "pointer",
-                      minHeight: 44,
-                    }}
-                  >
-                    {seg}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Test button */}
-            <button
-              onClick={handleTest}
-              disabled={testStatus === "sending"}
-              style={{
-                marginTop: 12,
-                padding: "10px 16px",
-                background: "transparent",
-                border: "1px solid var(--border-visible)",
-                color: "var(--text-secondary)",
-                fontFamily: "'Space Mono', monospace",
-                fontSize: 11,
-                cursor: testStatus === "sending" ? "wait" : "pointer",
-                borderRadius: 4,
-                minHeight: 44,
-                opacity: testStatus === "sending" ? 0.6 : 1,
-              }}
-            >
-              {testStatus === "sending"
-                ? "[SENDING...]"
-                : "[TEST NOTIFICATION]"}
-            </button>
-            {testStatus && testStatus !== "sending" && (
-              <div
-                style={{
-                  marginTop: 8,
-                  fontFamily: "'Space Mono', monospace",
-                  fontSize: 11,
-                  color:
-                    "ok" in testStatus && testStatus.ok
-                      ? "var(--accent)"
-                      : "var(--text-secondary)",
-                }}
-              >
-                {"ok" in testStatus && testStatus.ok
-                  ? "[SENT — check your device]"
-                  : `[ERROR: ${"msg" in testStatus ? testStatus.msg : "unknown"}]`}
-              </div>
-            )}
-          </>
-        )}
-        {masterEnabled && (
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--text-secondary)",
-              marginTop: 4,
-            }}
-          >
-            {push.isSubscribed ? "[ENABLED]" : "[DISABLED]"}
-          </div>
-        )}
-      </section>
-
-      {/* APPEARANCE */}
-      <section>
-        <SectionHeader label="Appearance" showSave={isDirty} onSave={saveAll} />
-        <div
-          style={{
-            fontFamily: "'Space Mono', monospace",
-            fontSize: 10,
-            color: "var(--text-secondary)",
-            marginBottom: 8,
-            letterSpacing: "0.05em",
-          }}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          padding: "16px 16px calc(96px + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
+        <CollapsibleSection
+          id="notifications"
+          title="Notifications"
+          defaultOpen
+          trailing={trailingSave}
         >
-          THEME
-        </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(5, 1fr)",
-            gap: 8,
-          }}
-        >
-          {Object.values(availableThemes).map((t: ThemeConfig) => (
-            <button
-              key={t.name}
-              onClick={() => setTheme(t)}
-              title={t.label}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 8,
-                background: t.bg,
-                border:
-                  theme.name === t.name
-                    ? `2px solid var(--accent, ${t.accent})`
-                    : "1px solid var(--border-visible)",
-                cursor: "pointer",
-                position: "relative",
-              }}
-            >
-              <div
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 6,
-                  background: t.accent,
-                  position: "absolute",
-                  bottom: 4,
-                  right: 4,
-                }}
-              />
-            </button>
-          ))}
-        </div>
+          <NotificationsSection />
+        </CollapsibleSection>
 
-        <div
-          style={{
-            fontFamily: "'Space Mono', monospace",
-            fontSize: 10,
-            color: "var(--text-secondary)",
-            marginBottom: 8,
-            marginTop: 16,
-            letterSpacing: "0.05em",
-          }}
+        <CollapsibleSection
+          id="appearance"
+          title="Appearance"
+          defaultOpen
+          trailing={trailingSave}
         >
-          FONT
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {Object.values(availableFonts).map((f: FontTheme) => (
-            <button
-              key={f.id}
-              onClick={() => setFontTheme(f)}
-              style={{
-                padding: "10px 12px",
-                background: "transparent",
-                border:
-                  fontTheme.id === f.id
-                    ? "1px solid var(--accent, #D4AF37)"
-                    : "1px solid var(--border-visible)",
-                color: "var(--text-primary)",
-                fontFamily: f.fontHeading,
-                fontSize: 14,
-                cursor: "pointer",
-                borderRadius: 6,
-                textAlign: "left",
-                minHeight: 44,
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* TRADER */}
-      <section>
-        <SectionHeader label="Trader" showSave={isDirty} onSave={saveAll} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div>
-            <div
-              style={{
-                fontFamily: "'Space Mono', monospace",
-                fontSize: 10,
-                color: "var(--text-secondary)",
-                marginBottom: 6,
-                letterSpacing: "0.05em",
-              }}
-            >
-              DISPLAY NAME
-            </div>
-            <div
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: 6,
-                color: settings.traderName
-                  ? "var(--text-primary)"
-                  : "var(--text-disabled)",
-                fontFamily: "var(--font-body)",
-                fontSize: 14,
-                minHeight: 44,
-                boxSizing: "border-box",
-                display: "flex",
-                alignItems: "center",
-                opacity: 0.7,
-              }}
-            >
-              {settings.traderName || "Set on desktop"}
-            </div>
-            <span
-              style={{
-                fontFamily: "var(--font-data)",
-                fontSize: 10,
-                letterSpacing: "0.04em",
-                color: "var(--text-disabled)",
-                marginTop: 4,
-              }}
-            >
-              [READ-ONLY — SET VIA DESKTOP]
-            </span>
-          </div>
-          <div>
-            <div
-              style={{
-                fontFamily: "'Space Mono', monospace",
-                fontSize: 10,
-                color: "var(--text-secondary)",
-                marginBottom: 6,
-                letterSpacing: "0.05em",
-              }}
-            >
-              CAO NAME
-            </div>
-            <input
-              type="text"
-              value={settings.caoName}
-              onChange={(e) => updateSettings({ caoName: e.target.value })}
-              placeholder="Harper"
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                background: "var(--surface)",
-                border: "1px solid var(--border-visible)",
-                borderRadius: 6,
-                color: "var(--text-primary)",
-                fontFamily: "var(--font-body)",
-                fontSize: 14,
-                outline: "none",
-                minHeight: 44,
-                boxSizing: "border-box",
-              }}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <ThemePickerAccordion
+              current={theme}
+              onPick={setTheme}
+              standard={availableThemes}
+              special={specialThemes}
+            />
+            <FontPickerList
+              current={fontTheme}
+              onPick={setFontTheme}
+              fonts={availableFonts}
             />
           </div>
-        </div>
-        <SettingRow label="Hermes AI">
-          <Toggle
-            on={settings.hermesEnabled}
-            onToggle={() =>
-              updateSettings({ hermesEnabled: !settings.hermesEnabled })
-            }
-          />
-        </SettingRow>
-        <SettingRow label="Alert Sounds">
-          <Toggle
-            on={settings.alertConfig.soundEnabled}
-            onToggle={() =>
-              updateSettings({
-                alertConfig: {
-                  ...settings.alertConfig,
-                  soundEnabled: !settings.alertConfig.soundEnabled,
-                },
-              })
-            }
-          />
-        </SettingRow>
-        <SettingRow label="Haptic Feedback">
-          <Toggle
-            on={settings.hapticEnabled}
-            onToggle={() =>
-              updateSettings({ hapticEnabled: !settings.hapticEnabled })
-            }
-          />
-        </SettingRow>
+        </CollapsibleSection>
 
-        {/* Bulletin reminder */}
-        <div style={{ marginTop: 8 }}>
-          <div
-            style={{
-              fontFamily: "'Space Mono', monospace",
-              fontSize: 10,
-              color: "var(--text-secondary)",
-              marginBottom: 8,
-              letterSpacing: "0.05em",
-            }}
-          >
-            BULLETIN REMINDER GLOW
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              border: "1px solid var(--border-visible)",
-              borderRadius: 6,
-              overflow: "hidden",
-            }}
-          >
-            {(["once", "until-pressed"] as const).map((mode, i) => (
-              <button
-                key={mode}
-                onClick={() => updateSettings({ bulletinReminder: mode })}
-                style={{
-                  padding: "8px 0",
-                  fontSize: 11,
-                  fontFamily: "'Space Mono', monospace",
-                  background:
-                    settings.bulletinReminder === mode
-                      ? "var(--text-display)"
-                      : "transparent",
-                  color:
-                    settings.bulletinReminder === mode
-                      ? "var(--black, #000)"
-                      : "var(--text-secondary)",
-                  border: "none",
-                  borderRight:
-                    i === 0 ? "1px solid var(--border-visible)" : "none",
-                  cursor: "pointer",
-                  minHeight: 44,
-                }}
-              >
-                {mode === "once" ? "ONCE" : "UNTIL PRESSED"}
-              </button>
-            ))}
-          </div>
-        </div>
+        <CollapsibleSection id="trader" title="Trader" trailing={trailingSave}>
+          <TraderSection />
+        </CollapsibleSection>
 
-        {/* Risk display (read-only from backend) */}
-        <div style={{ marginTop: 8 }}>
-          <div
-            style={{
-              fontFamily: "'Space Mono', monospace",
-              fontSize: 10,
-              color: "var(--text-secondary)",
-              marginBottom: 8,
-              letterSpacing: "0.05em",
-            }}
-          >
-            RISK LIMITS (SET ON DESKTOP)
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 16,
-              padding: "10px 12px",
-              background: "var(--surface)",
-              borderRadius: 6,
-              border: "1px solid var(--border)",
-            }}
-          >
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontFamily: "var(--font-data)",
-                  fontSize: 10,
-                  color: "var(--text-secondary)",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                TARGET
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: 18,
-                  color: "var(--success)",
-                }}
-              >
-                ${settings.riskSettings.dailyProfitTarget.toLocaleString()}
-              </div>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontFamily: "var(--font-data)",
-                  fontSize: 10,
-                  color: "var(--text-secondary)",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                LIMIT
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: 18,
-                  color: "var(--error)",
-                }}
-              >
-                ${settings.riskSettings.dailyLossLimit.toLocaleString()}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ACCOUNT */}
-      <section>
-        <SectionHeader label="Account" />
-        <div
-          style={{
-            color: "var(--text-primary)",
-            fontSize: 14,
-            marginBottom: 4,
-          }}
+        <CollapsibleSection
+          id="account"
+          title="Account"
+          subtitle={user?.email || "Not signed in"}
         >
-          {user?.email || "Not signed in"}
-        </div>
-        <button
-          onClick={signOut}
-          style={{
-            marginTop: 8,
-            padding: "10px 16px",
-            background: "transparent",
-            border: "1px solid #EF4444",
-            color: "#EF4444",
-            fontFamily: "'Space Mono', monospace",
-            fontSize: 11,
-            cursor: "pointer",
-            borderRadius: 4,
-            minHeight: 44,
-          }}
-        >
-          [SIGN OUT]
-        </button>
-      </section>
-
-      {/* ABOUT */}
-      <section>
-        <SectionHeader label="About" />
-        <div style={{ color: "var(--text-disabled)", fontSize: 12 }}>
-          <div>Fintheon Mobile</div>
-          <div style={{ marginTop: 4 }}>
-            Built {import.meta.env.BUILD_TIME || "dev"}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 14,
+                color: "var(--text-primary)",
+              }}
+            >
+              {user?.email || "Not signed in"}
+            </div>
+            <button
+              onClick={signOut}
+              style={{
+                alignSelf: "flex-start",
+                padding: "10px 18px",
+                background: "transparent",
+                border:
+                  "1px solid color-mix(in srgb, #EF4444 60%, transparent)",
+                color: "#EF4444",
+                fontFamily: "var(--font-data)",
+                fontSize: 11,
+                letterSpacing: "0.1em",
+                cursor: "pointer",
+                borderRadius: 8,
+                minHeight: 44,
+                WebkitTapHighlightColor: "transparent",
+                transition: "background 200ms ease",
+              }}
+            >
+              [SIGN OUT]
+            </button>
           </div>
-        </div>
-      </section>
+        </CollapsibleSection>
+
+        <CollapsibleSection id="about" title="About">
+          <div
+            style={{
+              color: "var(--text-disabled)",
+              fontFamily: "var(--font-data)",
+              fontSize: 11,
+              letterSpacing: "0.08em",
+              lineHeight: 1.8,
+            }}
+          >
+            <div>FINTHEON MOBILE</div>
+            <div>BUILT {import.meta.env.BUILD_TIME || "DEV"}</div>
+          </div>
+        </CollapsibleSection>
+      </div>
     </div>
   );
 }

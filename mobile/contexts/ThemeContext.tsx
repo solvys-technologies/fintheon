@@ -1,3 +1,5 @@
+// [claude-code 2026-04-19] Expose ALL_PRESETS so mobile settings can show both standard
+//   themes and the Nothing Design special presets (Something Solvys / Something Monochrome).
 // [claude-code 2026-04-15] T2: Mobile theme — dual CSS var mapping (Fintheon + Nothing tokens)
 import {
   createContext,
@@ -11,6 +13,8 @@ import {
 import {
   type ThemeConfig,
   THEME_PRESETS,
+  SPECIAL_PRESETS,
+  ALL_PRESETS,
   loadStoredTheme,
   saveTheme,
 } from "@frontend/lib/theme";
@@ -31,6 +35,8 @@ interface ThemeContextValue {
   fontTheme: FontTheme;
   setFontTheme: (theme: FontTheme) => void;
   availableThemes: Record<string, ThemeConfig>;
+  specialThemes: Record<string, ThemeConfig>;
+  allThemes: Record<string, ThemeConfig>;
   availableFonts: Record<string, FontTheme>;
 }
 
@@ -171,6 +177,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         fontTheme,
         setFontTheme,
         availableThemes: THEME_PRESETS,
+        specialThemes: SPECIAL_PRESETS,
+        allThemes: ALL_PRESETS,
         availableFonts: FONT_THEMES,
       }}
     >

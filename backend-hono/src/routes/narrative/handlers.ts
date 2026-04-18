@@ -356,6 +356,71 @@ export async function getCardLinks(c: Context) {
 }
 
 /**
+ * GET /api/narrative/catalysts/:id — single catalyst lookup for mobile DetailSheet (S25)
+ * Returns the same shape as getCatalysts items plus narrativeThreads hydrated with labels.
+ */
+export async function getCatalystById(c: Context) {
+  const id = c.req.param("id");
+  if (!id) return c.json({ error: "catalystId required" }, 400);
+
+  const sb = getSupabaseClient();
+  if (!sb) return c.json({ error: "Database unavailable" }, 503);
+
+  try {
+    const { data: item, error } = await sb
+      .from("scored_riskflow_items")
+      .select(
+        "tweet_id, headline, body, url, symbols, tags, sentiment, iv_score, macro_level, published_at, promoted_at, category, status, price_brain_score, risk_type, market_impact, agent_note, image_url",
+      )
+      .eq("tweet_id", id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!item) return c.json({ error: "Catalyst not found" }, 404);
+
+    const { data: links } = await sb
+      .from("narrative_card_links")
+      .select("thread_slug, confidence")
+      .eq("card_id", item.tweet_id);
+
+    const pbs = item.price_brain_score as Record<string, unknown> | null;
+    const threads = (links ?? []).map((l) => l.thread_slug);
+    const macroLevel = (item.macro_level as number) ?? 1;
+    const severity =
+      macroLevel >= 3 ? "high" : macroLevel >= 2 ? "medium" : "low";
+    const sentimentVal = String(
+      item.sentiment ?? pbs?.sentiment ?? "bearish",
+    ).toLowerCase();
+
+    const catalyst = {
+      id: item.tweet_id,
+      title: (item.headline ?? "").slice(0, 160),
+      description: item.body ?? item.headline ?? "",
+      date: item.published_at,
+      sentiment: sentimentVal.includes("bull") ? "bullish" : "bearish",
+      severity,
+      source: "riskflow" as const,
+      sourceUrl: (item as Record<string, unknown>).url ?? null,
+      imageUrl: (item as Record<string, unknown>).image_url ?? null,
+      ivScore: item.iv_score ?? null,
+      narrativeThreads: threads,
+      narrative: threads[0] ?? null,
+      tags: item.tags ?? [],
+      category: item.category ?? "macroeconomic",
+      status: item.status ?? "active",
+      marketImpact: item.market_impact ?? null,
+      agentNote: item.agent_note ?? null,
+      riskflowItemId: item.tweet_id,
+    };
+
+    return c.json({ catalyst });
+  } catch (err) {
+    console.error("[Narrative] getCatalystById error:", err);
+    return c.json({ error: "Failed to load catalyst" }, 500);
+  }
+}
+
+/**
  * GET /api/narrative/catalysts
  * Auto-population endpoint for NarrativeFlow — returns promoted scored items
  * with narrative thread assignments, ready to render as CatalystCards.

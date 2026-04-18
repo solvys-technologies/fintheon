@@ -1,3 +1,6 @@
+// [claude-code 2026-04-19] S25: push now carries lock-screen actions (Approve/Deny) + approvalId.
+//   Added getApprovalById + getApprovalExpiresAt exports for the mobile DetailSheet to render
+//   a live countdown without refetching the full pending list.
 // [claude-code 2026-04-04] Added 30s auto-approve timeout so agentic loop never hangs indefinitely
 // [claude-code 2026-04-03] Tool approval store — persistent permission memory + pending approval gate
 /**
@@ -183,6 +186,13 @@ export function requestApproval(
             url: `/apparatus/approvals/${id}`,
             fingerprint: `approval:${id}`,
             eventId: id,
+            approvalId: id,
+            // [S25] Lock-screen action buttons. SW interprets these via event.action and
+            // fires a no-auth POST /api/relay/tool-decision-quick using the approvalId.
+            actions: [
+              { action: "approve", title: "Approve" },
+              { action: "deny", title: "Deny" },
+            ],
             metadata: { approvalId: id, toolName, requestId },
           });
         } catch (err) {
@@ -260,4 +270,30 @@ export function getPendingApprovals(): Omit<PendingApproval, "resolve">[] {
   return Array.from(pendingApprovals.values()).map(
     ({ resolve: _, ...rest }) => rest,
   );
+}
+
+/**
+ * [S25] Get one pending approval by id + its effective expiresAt (for countdown UI).
+ * Returns null if the approval is missing (already resolved, expired, or never existed).
+ * Relay-originated approvals (noTimeout) have `expiresAt: null` — block indefinitely.
+ */
+export function getApprovalById(id: string): {
+  approval: Omit<PendingApproval, "resolve">;
+  expiresAt: number | null;
+} | null {
+  const pending = pendingApprovals.get(id);
+  if (!pending) return null;
+  const { resolve: _resolve, ...rest } = pending;
+  // Heuristic: approvals without a resolve-timer (relay dispatch path) keep `noTimeout` state
+  // implicit. We can't read the timer directly, so we treat approvals older than APPROVAL_TIMEOUT_MS
+  // as "noTimeout=true" (relay path) since the timer-path ones auto-resolve before then.
+  const age = Date.now() - pending.createdAt;
+  const expiresAt =
+    age > APPROVAL_TIMEOUT_MS ? null : pending.createdAt + APPROVAL_TIMEOUT_MS;
+  return { approval: rest, expiresAt };
+}
+
+/** [S25] True if the approval exists — used by tool-decision-quick to validate freshness. */
+export function hasPendingApproval(id: string): boolean {
+  return pendingApprovals.has(id);
 }

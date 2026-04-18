@@ -1,3 +1,6 @@
+// [claude-code 2026-04-19] S25: tap now opens the full DetailSheet modal (deep view) instead
+//   of inline expansion. Long-press still expands inline for quick triage (kept for power users
+//   who scroll fast). Entry point is unified with CatalystCards + BriefingCard + push-tap flow.
 // [claude-code 2026-04-16] RiskFlow card — haptic on expand
 import { useState } from "react";
 import { ChevronUp, ChevronDown, Minus } from "lucide-react";
@@ -9,6 +12,8 @@ import { timeAgo } from "@frontend/lib/time-utils";
 import { SwipeAction } from "../shared/SwipeAction";
 import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import { RiskFlowCardExpanded } from "./RiskFlowCardExpanded";
+import { useNotificationModal } from "../../contexts/NotificationModalContext";
+import { CARD_PRESS } from "../../lib/sheet-motion";
 
 interface RiskFlowCardProps {
   alert: MobileRiskFlowAlert;

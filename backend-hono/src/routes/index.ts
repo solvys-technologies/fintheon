@@ -64,6 +64,8 @@ import { createDagRoutes } from "./dag/index.js";
 import { createDreamRoutes } from "./agent-bus/dreams.js";
 import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
+import { createRelayQuickRoutes } from "./relay-quick.js";
+import { createPreviewRoutes } from "./preview.js";
 import { createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
@@ -138,6 +140,16 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/relay", authMiddleware);
   app.use("/api/relay/*", authMiddleware);
   app.route("/api/relay", createRelayRoutes());
+
+  // [S25] Service-worker quick-action endpoint — no-auth, approval-id-as-secret.
+  // Mounted OUTSIDE /api/relay so the authMiddleware wildcard doesn't block the SW's
+  // lock-screen POST. Approval IDs (`approval-{ts}-{rand36}`) are unguessable within
+  // the 10-min freshness window enforced inside the handler.
+  app.route("/api/tool-decision-quick", createRelayQuickRoutes());
+
+  // [S25] Public OG preview — allow-listed domains only. Served unauthenticated so the
+  // mobile EmbedPreview can render even before Supabase token is hydrated on cold start.
+  app.route("/api/preview", createPreviewRoutes());
   // Harper — Claude CLI chat via SDK bridge (public, local-only)
   app.route("/api/harper", createHarperRoutes());
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
