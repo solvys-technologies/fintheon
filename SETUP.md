@@ -10,6 +10,12 @@ For users — one command handles everything:
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/main/scripts/fintheon-setup.sh)"
 ```
 
+The bootstrap prompts for an install path (default `~/Documents/Codebases/fintheon`) and remembers the choice in `~/.fintheon/install-path` so the `fintheon` CLI and its companion scripts (`update`, `peers`, `install-cli`) all resolve to the same location on subsequent runs. To skip the prompt in automated installs, pre-set the env var:
+
+```bash
+FINTHEON_DIR=/opt/fintheon /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/main/scripts/fintheon-setup.sh)"
+```
+
 For subsequent updates:
 
 ```bash

@@ -130,53 +130,15 @@
 }
 
 /* Readable Digits — Inter mapped to digit/number unicode ranges only.
-   Prepended in font stacks so digits always render in Inter regardless of theme. */
-@font-face {
-  font-family: "Readable Digits";
-  font-style: normal;
-  font-weight: 300;
-  font-display: swap;
-  src: url("/fonts/inter-light.woff2") format("woff2");
-  unicode-range:
-    U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
-    U+20AC;
-}
+   Prepended in font stacks so digits render consistently in Inter across all
+   font themes regardless of the heading/body font in use. This is the
+   original pre-Doto design. [claude-code 2026-04-18] */
 @font-face {
   font-family: "Readable Digits";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
   src: url("/fonts/inter-regular.woff2") format("woff2");
-  unicode-range:
-    U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
-    U+20AC;
-}
-@font-face {
-  font-family: "Readable Digits";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("/fonts/inter-medium.woff2") format("woff2");
-  unicode-range:
-    U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
-    U+20AC;
-}
-@font-face {
-  font-family: "Readable Digits";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/inter-semibold.woff2") format("woff2");
-  unicode-range:
-    U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
-    U+20AC;
-}
-@font-face {
-  font-family: "Readable Digits";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("/fonts/inter-bold.woff2") format("woff2");
   unicode-range:
     U+0024-0025, U+002B, U+002C-002E, U+0030-0039, U+00B0, U+2012-2014, U+2030,
     U+20AC;

@@ -169,12 +169,14 @@ function HermesChatInner({
   thinkHarder,
   setThinkHarder,
   onMessageSent,
+  conversationId,
 }: {
   lastError: string | null;
   lastRequestId: string | null;
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
   onMessageSent: (text: string) => void;
+  conversationId?: string;
 }) {
   const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
@@ -209,6 +211,7 @@ function HermesChatInner({
         showSkills={showSkills}
         onToggleSkills={() => setShowSkills((v) => !v)}
         compact
+        conversationId={conversationId}
       />
     </div>
   );
@@ -223,11 +226,12 @@ export function HermesCommandCenter() {
   const [thinkHarder, setThinkHarder] = useState(false);
   const { entries, logActivity } = useActivityLog();
 
-  const { runtime, lastError, lastRequestId } = useHermesRuntime(
-    activeAgent?.id ?? "default",
-    thinkHarder,
-    "hermes-command",
-  );
+  const { runtime, lastError, lastRequestId, conversationId } =
+    useHermesRuntime(
+      activeAgent?.id ?? "default",
+      thinkHarder,
+      "hermes-command",
+    );
 
   const handleMessageSent = useCallback(
     (text: string) => {
@@ -287,6 +291,7 @@ export function HermesCommandCenter() {
                 thinkHarder={thinkHarder}
                 setThinkHarder={setThinkHarder}
                 onMessageSent={handleMessageSent}
+                conversationId={conversationId}
               />
             </AssistantRuntimeProvider>
           </div>

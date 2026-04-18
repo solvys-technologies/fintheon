@@ -406,6 +406,36 @@ function createWindow() {
     },
   });
 
+  // [claude-code 2026-04-17] Auto-grant mic/speaker + related media permissions
+  // to the persist:fintheon partition so the hidden Fluxer webview can wire
+  // system audio without a permission prompt.
+  try {
+    const { session: electronSession } = require("electron");
+    const fluxerSession = electronSession.fromPartition("persist:fintheon");
+    fluxerSession.setPermissionRequestHandler((_wc, permission, cb) => {
+      const allowed = new Set([
+        "media",
+        "audioCapture",
+        "videoCapture",
+        "display-capture",
+        "mediaKeySystem",
+      ]);
+      cb(allowed.has(permission));
+    });
+    fluxerSession.setPermissionCheckHandler((_wc, permission) => {
+      const allowed = new Set([
+        "media",
+        "audioCapture",
+        "videoCapture",
+        "display-capture",
+        "mediaKeySystem",
+      ]);
+      return allowed.has(permission);
+    });
+  } catch (err) {
+    console.warn("[Electron] Failed to install media permission handler:", err);
+  }
+
   const rendererPath = path.join(
     __dirname,
     "..",

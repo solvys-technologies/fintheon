@@ -162,3 +162,27 @@ export function getRightPanelOrder(): RightPanelId[] {
 export function setRightPanelOrder(order: RightPanelId[]): void {
   saveOrder(RIGHT_PANEL_ORDER_KEY, order);
 }
+
+// [claude-code 2026-04-17] Strategium pane state: 3-way toggle between balanced / feedOnly / widgetsOnly
+export type StrategiumPaneMode = "balanced" | "feedOnly" | "widgetsOnly";
+const STRATEGIUM_PANE_MODE_KEY = "fintheon:strategium-pane-mode";
+
+export function getStrategiumPaneMode(): StrategiumPaneMode {
+  try {
+    const raw = localStorage.getItem(STRATEGIUM_PANE_MODE_KEY);
+    if (raw === "feedOnly" || raw === "widgetsOnly" || raw === "balanced") {
+      return raw;
+    }
+  } catch {
+    // ignore
+  }
+  return "balanced";
+}
+
+export function setStrategiumPaneMode(mode: StrategiumPaneMode): void {
+  try {
+    localStorage.setItem(STRATEGIUM_PANE_MODE_KEY, mode);
+  } catch {
+    // ignore
+  }
+}

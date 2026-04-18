@@ -1,18 +1,19 @@
-// [claude-code 2026-04-16] T4 unification: useConversations wired, sendMessage forwards images+riskFlowContext to relay
+// [claude-code 2026-04-18] S21-T1 remote-control refactor: mobile chat is now
+// a per-dispatch surface (like Claude Code's remote-control skill). Session
+// list + history browsing removed — mobile only shows the conversation that
+// was dispatched from desktop, and is idle otherwise. Conversation history
+// is still persisted server-side; we just don't surface it on mobile anymore.
 // [claude-code 2026-04-16] T3/T6: Full-screen Harper chat — SSE streaming via relay, background recovery
 // Memory: feedback_keep_chat_mounted — use display:none not conditional render, streams survive navigation
 // Memory: feedback_uimessagestream_framing — start/finish events in SSE stream
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { List } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import { getMobileBackend } from "../../lib/backend";
 import ChatMessage, { type ChatMessageData } from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import ConnectionStatus, { type RelayState } from "./ConnectionStatus";
-import SessionList from "./SessionList";
-import { useConversations } from "../../hooks/useConversations";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { ToolCallCard } from "./ToolCallCard";
 import { ToolApprovalCard } from "./ToolApprovalCard";
@@ -31,25 +32,13 @@ export default function ChatPage({ visible }: ChatPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [relayState, setRelayState] = useState<RelayState>("reconnecting");
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [sessionListOpen, setSessionListOpen] = useState(false);
-  const {
-    sessions,
-    isLoading: sessionsLoading,
-    loadSession,
-    refresh: refreshSessions,
-  } = useConversations();
+  const [mirrorDevice, setMirrorDevice] = useState<string | null>(null);
   const [activeToolCall, setActiveToolCall] = useState<{
     name: string;
     input?: string;
   } | null>(null);
-  const {
-    approvals,
-    pendingApprovals,
-    addApproval,
-    resolveApproval,
-    resolveFromEvent,
-    clearApprovals,
-  } = useToolApprovals();
+  const { approvals, addApproval, resolveApproval, resolveFromEvent } =
+    useToolApprovals();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -103,6 +92,96 @@ export default function ChatPage({ visible }: ChatPageProps) {
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [recoverConversation]);
+
+  // S21-T1: relay dispatch — pick up a pending conversation from a push
+  // notification tap, or a direct relay-dispatch window event while already open.
+  // Fetches via the backend client directly (no session-list dependency).
+  const loadRelayConversation = useCallback(
+    async (convId: string) => {
+      try {
+        const backend = getMobileBackend(getAccessToken);
+        const data = await backend.ai.getConversation(convId);
+        if (!data) return;
+        setMessages(
+          (data.messages ?? []).map((m: any, i: number) => ({
+            id: m.id || `loaded-${i}`,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: m.createdAt ?? m.created_at ?? "",
+          })),
+        );
+        setConversationId(data.id ?? convId);
+      } catch {
+        // Swallow — mobile shows "standing by" if the fetch fails.
+      }
+    },
+    [getAccessToken],
+  );
+
+  useEffect(() => {
+    // Check sessionStorage for a pending relay conversation on mount
+    try {
+      const pending = sessionStorage.getItem("fintheon:pending-relay-conv");
+      if (pending) {
+        sessionStorage.removeItem("fintheon:pending-relay-conv");
+        void loadRelayConversation(pending);
+      }
+    } catch {
+      /* ignore */
+    }
+
+    // Listen for in-session relay dispatch events (tab already open)
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.conversationId) {
+        void loadRelayConversation(detail.conversationId);
+      }
+    };
+    window.addEventListener("fintheon:relay-dispatch", handler);
+    return () => window.removeEventListener("fintheon:relay-dispatch", handler);
+  }, [loadRelayConversation]);
+
+  // Poll /api/relay/health every 20s: if desktop dispatched us here, show the
+  // "FROM DESKTOP" badge and auto-load the dispatched conversation when we
+  // don't already have one active.
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const token = await getAccessToken();
+        if (!token) return;
+        const res = await fetch(`${API_BASE}/api/relay/health`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          dispatch?: { conversationId: string; deviceLabel: string } | null;
+        };
+        if (cancelled) return;
+        const active = data.dispatch;
+        if (
+          active &&
+          (active.conversationId === conversationIdRef.current ||
+            !conversationIdRef.current)
+        ) {
+          setMirrorDevice(active.deviceLabel ?? "desktop");
+          if (!conversationIdRef.current) {
+            void loadRelayConversation(active.conversationId);
+          }
+        } else {
+          setMirrorDevice(null);
+        }
+      } catch {
+        /* ignore transient errors */
+      }
+    };
+    void check();
+    const id = setInterval(check, 20_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [getAccessToken, loadRelayConversation]);
 
   const sendMessage = useCallback(
     async (
@@ -272,40 +351,15 @@ export default function ChatPage({ visible }: ChatPageProps) {
         setIsLoading(false);
         setActiveToolCall(null);
         abortRef.current = null;
-        // Refresh session list so new/updated conversations appear
-        refreshSessions();
       }
     },
-    [isLoading, getAccessToken, refreshSessions],
+    [isLoading, getAccessToken],
   );
-
-  const handleSelectSession = useCallback(
-    async (id: string) => {
-      const conv = await loadSession(id);
-      if (conv) {
-        setMessages(
-          conv.messages.map((m, i) => ({
-            id: m.id || `loaded-${i}`,
-            role: m.role as "user" | "assistant",
-            content: m.content,
-            timestamp: m.createdAt,
-          })),
-        );
-        setConversationId(conv.id);
-      }
-      setSessionListOpen(false);
-    },
-    [loadSession],
-  );
-
-  const handleNewSession = useCallback(() => {
-    setMessages([]);
-    setConversationId(null);
-    setSessionListOpen(false);
-    clearApprovals();
-  }, [clearApprovals]);
 
   const isOffline = relayState === "offline";
+  // Remote-control mode: mobile can only type when it's actively mirroring a
+  // dispatched conversation. Prevents orphan chats started from mobile.
+  const isStandby = !conversationId && !mirrorDevice;
 
   return (
     // display:none keeps component mounted — streams survive tab navigation
@@ -327,37 +381,38 @@ export default function ChatPage({ visible }: ChatPageProps) {
           borderBottom: "none",
         }}
       >
-        <span
-          style={{
-            fontFamily: "var(--font-data)",
-            fontSize: 14,
-            color: "var(--text-display)",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            fontWeight: 700,
-          }}
-        >
-          HARPER
-        </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <ConnectionStatus onStateChange={setRelayState} />
-          <button
-            onClick={() => setSessionListOpen(true)}
-            aria-label="Open session list"
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
             style={{
-              background: "transparent",
-              border: "none",
-              padding: 10,
-              minWidth: 44,
-              minHeight: 44,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              fontFamily: "var(--font-data)",
+              fontSize: 14,
+              color: "var(--text-display)",
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              fontWeight: 700,
             }}
           >
-            <List size={18} color="var(--text-secondary)" />
-          </button>
+            HARPER
+          </span>
+          {mirrorDevice && (
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 9,
+                color: "var(--accent, #c79f4a)",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                padding: "2px 6px",
+                border: "1px solid rgba(199,159,74,0.35)",
+                borderRadius: 4,
+              }}
+            >
+              ⟷ FROM DESKTOP
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <ConnectionStatus onStateChange={setRelayState} />
         </div>
       </div>
 
@@ -384,6 +439,8 @@ export default function ChatPage({ visible }: ChatPageProps) {
               alignItems: "center",
               justifyContent: "center",
               gap: 8,
+              padding: "0 32px",
+              textAlign: "center",
             }}
           >
             <span
@@ -403,9 +460,12 @@ export default function ChatPage({ visible }: ChatPageProps) {
                 fontSize: 11,
                 color: "var(--text-disabled)",
                 letterSpacing: "0.06em",
+                lineHeight: 1.5,
               }}
             >
-              Your CAO is standing by.
+              Standing by — dispatch a conversation from the
+              <br />
+              relay button in the desktop CAO chat.
             </span>
           </div>
         )}
@@ -497,21 +557,11 @@ export default function ChatPage({ visible }: ChatPageProps) {
         <ChatInput
           onSend={sendMessage}
           isLoading={isLoading}
-          disabled={isOffline}
+          disabled={isOffline || isStandby}
         />
       </div>
 
-      {/* Session list bottom sheet */}
-      <SessionList
-        open={sessionListOpen}
-        onClose={() => setSessionListOpen(false)}
-        sessions={sessions}
-        isLoading={sessionsLoading}
-        activeSessionId={conversationId}
-        onSelect={handleSelectSession}
-        onNewSession={handleNewSession}
-        onRefresh={refreshSessions}
-      />
+      {/* Session list removed S21-T1 — mobile is remote-control only. */}
     </div>
   );
 }

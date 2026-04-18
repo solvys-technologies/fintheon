@@ -18,6 +18,7 @@ import {
 import { changelog } from "../../../src/lib/changelog";
 import { useErrorLog } from "../../hooks/useErrorLog";
 import { useSystemStatus } from "../../hooks/useSystemStatus";
+import { useSettings } from "../../contexts/SettingsContext";
 import { useGateway } from "../../contexts/GatewayContext";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { EPOCH_VERSION } from "../../lib/epoch-version";
@@ -122,6 +123,7 @@ export function FooterToolbar({
   allowSplitView = false,
   onPowerOff,
 }: FooterToolbarProps) {
+  const { proposerIframeSources } = useSettings();
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<PanelTab>("terminal");
   const [cliInput, setCliInput] = useState("");
@@ -831,6 +833,11 @@ export function FooterToolbar({
                   {label}
                 </option>
               ))}
+              {proposerIframeSources.map((s) => (
+                <option key={s.id} value={`custom:${s.id}`}>
+                  {s.label}
+                </option>
+              ))}
             </select>
             {allowSplitView && (
               <>
@@ -862,6 +869,13 @@ export function FooterToolbar({
                       .map(([key, label]) => (
                         <option key={key} value={key}>
                           {label}
+                        </option>
+                      ))}
+                    {proposerIframeSources
+                      .filter((s) => `custom:${s.id}` !== primaryPlatform)
+                      .map((s) => (
+                        <option key={s.id} value={`custom:${s.id}`}>
+                          {s.label}
                         </option>
                       ))}
                   </select>

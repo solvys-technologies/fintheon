@@ -10,8 +10,7 @@ import {
   getTimeRemaining,
   getCurrentETTime,
 } from "../../lib/regime-time";
-import type { TradingRegime } from "../../lib/regimes";
-import { GlassEffect, GlassButton } from "../ui/liquid-glass";
+import type { TradingRegime, TimeWindow } from "../../lib/regimes";
 import { BiasBadge } from "./BiasBadge";
 import { ConfidenceBar } from "./ConfidenceBar";
 import { RegimeCard } from "./RegimeCard";
@@ -31,6 +30,21 @@ const CATEGORY_ORDER: TradingRegime["category"][] = [
   "custom",
 ];
 
+// [claude-code 2026-04-16] Solvys Feels restyle: flat surfaces, accent borders, schedule type pills, multi-window support
+const SCHEDULE_TYPES = ["static", "dynamic", "mixed"] as const;
+type ScheduleType = (typeof SCHEDULE_TYPES)[number];
+const SCHEDULE_LABELS: Record<ScheduleType, string> = {
+  static: "Static",
+  dynamic: "Dynamic",
+  mixed: "Mixed",
+};
+const SCHEDULE_HINTS: Record<ScheduleType, string> = {
+  static: "Fixed recurring window every week",
+  dynamic: "Specific day + time blocks you define",
+  mixed: "Recurring base + additional one-off windows",
+};
+const ALL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
 function AddRegimeForm({
   onAdd,
   onCancel,
@@ -45,6 +59,20 @@ function AddRegimeForm({
   const [bias, setBias] = useState<TradingRegime["bias"]>("consolidation");
   const [confidence, setConfidence] = useState(50);
   const [instruments, setInstruments] = useState("/NQ, /ES");
+  const [scheduleType, setScheduleType] = useState<ScheduleType>("static");
+  const [timeWindows, setTimeWindows] = useState<TimeWindow[]>([]);
+
+  const addWindow = () =>
+    setTimeWindows((prev) => [
+      ...prev,
+      { day: "Mon", start: "09:30", end: "11:00" },
+    ]);
+  const removeWindow = (idx: number) =>
+    setTimeWindows((prev) => prev.filter((_, i) => i !== idx));
+  const updateWindow = (idx: number, field: keyof TimeWindow, val: string) =>
+    setTimeWindows((prev) =>
+      prev.map((w, i) => (i === idx ? { ...w, [field]: val } : w)),
+    );
 
   const handleSubmit = () => {
     if (!name.trim()) return;
@@ -56,6 +84,8 @@ function AddRegimeForm({
       timeRange: { start: startTime, end: endTime },
       timezone: "ET",
       daysActive: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+      scheduleType,
+      timeWindows: timeWindows.length > 0 ? timeWindows : undefined,
       confidence,
       record: { bullishDays: 0, bearishDays: 0 },
       daysObserved: 0,
@@ -69,39 +99,26 @@ function AddRegimeForm({
   };
 
   const inputClass =
-    "w-full bg-[#0a0a06]/60 border border-zinc-800/60 text-xs text-[var(--fintheon-text)] px-2.5 py-1.5 focus:outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors";
+    "w-full rounded-md bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/10 text-xs text-[var(--fintheon-text)] px-3 py-2 focus:outline-none focus:border-[var(--fintheon-accent)]/40 transition-colors appearance-none";
+  const labelClass =
+    "text-[9px] text-[var(--fintheon-text)]/40 uppercase tracking-wider font-medium";
 
   return (
-    <GlassEffect
-      className="rounded-2xl"
-      style={{
-        borderColor: "var(--fintheon-accent)",
-        boxShadow: "0 0 16px rgba(212,175,55,0.12)",
-      }}
-    >
-      <div className="px-4 py-3 space-y-2.5">
-        {/* Header — matches RegimeCard header style */}
-        <div className="flex items-start justify-between mb-1">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[var(--fintheon-accent)]">
-                New Regime
-              </span>
-              <span className="shrink-0 inline-flex items-center gap-1 text-[8px] font-bold tracking-wider uppercase text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 px-1.5 py-0.5">
-                <Plus className="w-2 h-2" />
-                CREATE
-              </span>
-            </div>
-          </div>
+    <div className="rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905]">
+      <div className="px-4 py-3 space-y-3">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fintheon-accent)]/70">
+            New Regime
+          </span>
           <button
             onClick={onCancel}
-            className="shrink-0 p-1 text-zinc-700 hover:text-zinc-400 transition-colors"
+            className="p-1 text-[var(--fintheon-text)]/20 hover:text-[var(--fintheon-text)]/60 transition-colors"
           >
-            <X className="w-3 h-3" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Form fields */}
         <input
           className={inputClass}
           placeholder="Regime name"
@@ -116,42 +133,126 @@ function AddRegimeForm({
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        {/* Meta row — matches RegimeCard meta layout */}
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[9px] text-zinc-600 uppercase tracking-wider">
-              Start (NY)
-            </label>
-            <input
-              className={inputClass}
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-            />
+        {/* Schedule type pills */}
+        <div className="space-y-1.5">
+          <span className={labelClass}>Schedule</span>
+          <div className="flex items-center gap-1">
+            {SCHEDULE_TYPES.map((t) => (
+              <button
+                key={t}
+                onClick={() => setScheduleType(t)}
+                className={`rounded-md px-3 py-1 text-[10px] font-medium transition-colors ${
+                  scheduleType === t
+                    ? "bg-[var(--fintheon-accent)]/12 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
+                    : "text-[var(--fintheon-text)]/30 border border-transparent hover:text-[var(--fintheon-text)]/60"
+                }`}
+              >
+                {SCHEDULE_LABELS[t]}
+              </button>
+            ))}
           </div>
-          <div>
-            <label className="text-[9px] text-zinc-600 uppercase tracking-wider">
-              End (NY)
-            </label>
-            <input
-              className={inputClass}
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-            />
-          </div>
+          <p className="text-[9px] text-[var(--fintheon-text)]/20">
+            {SCHEDULE_HINTS[scheduleType]}
+          </p>
         </div>
 
-        {/* Bias + Confidence — inline with visual preview */}
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[9px] text-zinc-600 uppercase tracking-wider">
-              Bias
-            </label>
+        {/* Primary time range (static + mixed) */}
+        {(scheduleType === "static" || scheduleType === "mixed") && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className={labelClass}>Start (ET)</label>
+              <input
+                className={inputClass}
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className={labelClass}>End (ET)</label>
+              <input
+                className={inputClass}
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic time windows (dynamic + mixed) */}
+        {(scheduleType === "dynamic" || scheduleType === "mixed") && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className={labelClass}>Time Blocks</span>
+              <button
+                onClick={addWindow}
+                className="p-1 text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 rounded-md transition-all"
+                title="Add time block"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {timeWindows.length === 0 && (
+              <p className="text-[9px] text-[var(--fintheon-text)]/20 py-1">
+                No blocks yet. Click + to add a day/time window.
+              </p>
+            )}
+            {timeWindows.map((w, idx) => (
+              <div key={idx} className="flex items-end gap-2">
+                <div className="space-y-1 w-20">
+                  {idx === 0 && <label className={labelClass}>Day</label>}
+                  <select
+                    className={inputClass}
+                    value={w.day}
+                    onChange={(e) => updateWindow(idx, "day", e.target.value)}
+                    style={{ colorScheme: "dark" }}
+                  >
+                    {ALL_DAYS.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1 flex-1">
+                  {idx === 0 && <label className={labelClass}>Start</label>}
+                  <input
+                    className={inputClass}
+                    type="time"
+                    value={w.start}
+                    onChange={(e) => updateWindow(idx, "start", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1 flex-1">
+                  {idx === 0 && <label className={labelClass}>End</label>}
+                  <input
+                    className={inputClass}
+                    type="time"
+                    value={w.end}
+                    onChange={(e) => updateWindow(idx, "end", e.target.value)}
+                  />
+                </div>
+                <button
+                  onClick={() => removeWindow(idx)}
+                  className="p-1.5 text-[var(--fintheon-text)]/20 hover:text-red-400/60 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Bias + Confidence */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className={labelClass}>Bias</label>
             <select
               className={inputClass}
               value={bias}
               onChange={(e) => setBias(e.target.value as TradingRegime["bias"])}
+              style={{ colorScheme: "dark" }}
             >
               <option value="continuation">Continuation</option>
               <option value="reversal">Reversal</option>
@@ -160,10 +261,8 @@ function AddRegimeForm({
               <option value="rotation">Rotation</option>
             </select>
           </div>
-          <div>
-            <label className="text-[9px] text-zinc-600 uppercase tracking-wider">
-              Confidence
-            </label>
+          <div className="space-y-1">
+            <label className={labelClass}>Confidence</label>
             <input
               className={inputClass}
               type="number"
@@ -175,7 +274,7 @@ function AddRegimeForm({
           </div>
         </div>
 
-        {/* Live preview badges */}
+        {/* Live preview */}
         <div className="flex items-center gap-3">
           <BiasBadge bias={bias} />
           <ConfidenceBar value={confidence} />
@@ -183,29 +282,29 @@ function AddRegimeForm({
 
         <input
           className={inputClass}
-          placeholder="Instruments (comma-sep)"
+          placeholder="Instruments (comma-separated)"
           value={instruments}
           onChange={(e) => setInstruments(e.target.value)}
         />
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-0.5">
+        <div className="flex items-center gap-2 pt-1">
           <button
             onClick={handleSubmit}
             disabled={!name.trim()}
-            className="px-3 py-1 text-[10px] font-semibold bg-[var(--fintheon-accent)] text-black hover:bg-[color-mix(in_srgb,var(--fintheon-accent)_80%,white)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="rounded-md px-4 py-1.5 text-[10px] font-semibold bg-[var(--fintheon-accent)] text-[var(--fintheon-bg)] transition-opacity disabled:opacity-20 disabled:cursor-not-allowed"
           >
             Add Regime
           </button>
           <button
             onClick={onCancel}
-            className="px-3 py-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="rounded-md px-3 py-1.5 text-[10px] text-[var(--fintheon-text)]/40 hover:text-[var(--fintheon-text)]/70 transition-colors"
           >
             Cancel
           </button>
         </div>
       </div>
-    </GlassEffect>
+    </div>
   );
 }
 
@@ -262,15 +361,10 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
 
   return (
     <>
-      <div
-        className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-50 bg-black/80" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <GlassEffect
-          tint="rgba(5,4,2,0.88)"
-          blur={16}
-          className="pointer-events-auto w-full max-w-2xl rounded-2xl shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh] overflow-hidden relative"
+        <div
+          className="pointer-events-auto w-full max-w-2xl rounded-lg border border-[var(--fintheon-accent)]/15 bg-[#0a0905] flex flex-col max-h-[85vh] overflow-hidden relative"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -282,17 +376,18 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <GlassButton
+              <button
                 onClick={handleAIGenerate}
-                className="px-2 py-1 text-[10px] font-semibold"
+                className="rounded-md px-3 py-1 text-[10px] font-semibold bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20 hover:bg-[var(--fintheon-accent)]/15 hover:border-[var(--fintheon-accent)]/35 transition-colors"
               >
                 AI Generate
-              </GlassButton>
+              </button>
               <button
                 onClick={() => setShowAddForm((v) => !v)}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-zinc-400 border border-zinc-700/50 hover:bg-zinc-800/50 transition-colors"
+                className="p-1.5 text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 rounded-md transition-all"
+                title="Add regime manually"
               >
-                <Plus className="w-3 h-3" /> Manual
+                <Plus className="w-4 h-4" />
               </button>
               <button
                 onClick={onClose}
@@ -419,7 +514,7 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
               </span>
             </div>
           </div>
-        </GlassEffect>
+        </div>
       </div>
     </>
   );

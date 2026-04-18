@@ -1,9 +1,11 @@
-// [claude-code 2026-04-15] T7: Settings page — notifications, appearance, account, about
-import { useState, useCallback } from "react";
+// [claude-code 2026-04-16] S20: Settings — save checkmarks per section, bulletin reminder toggle
+// [claude-code 2026-04-17] Push notifications: persist pushEnabled intent, sync master toggle with live subscription, wire test button w/ inline status
+import { useState, useCallback, useEffect } from "react";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
+import { SaveCheckmark } from "../shared/SaveCheckmark";
 import type { ThemeConfig } from "@frontend/lib/theme";
 import type { FontTheme } from "@frontend/lib/font-theme";
 
@@ -67,19 +69,36 @@ function Toggle({
   );
 }
 
-function SectionHeader({ label }: { label: string }) {
+function SectionHeader({
+  label,
+  showSave,
+  onSave,
+}: {
+  label: string;
+  showSave?: boolean;
+  onSave?: () => Promise<void>;
+}) {
   return (
     <div
       style={{
-        fontFamily: "'Space Mono', monospace",
-        fontSize: 11,
-        letterSpacing: "0.1em",
-        color: "var(--text-secondary)",
-        textTransform: "uppercase" as const,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
         marginBottom: 12,
       }}
     >
-      {label}
+      <div
+        style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: 11,
+          letterSpacing: "0.1em",
+          color: "var(--text-secondary)",
+          textTransform: "uppercase" as const,
+        }}
+      >
+        {label}
+      </div>
+      <SaveCheckmark visible={!!showSave} variant="single" onSave={onSave} />
     </div>
   );
 }
@@ -109,7 +128,7 @@ function SettingRow({
 }
 
 export function SettingsPage() {
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, isDirty, saveAll } = useSettings();
   const {
     theme,
     setTheme,
@@ -120,19 +139,75 @@ export function SettingsPage() {
   } = useTheme();
   const { user, signOut } = useAuth();
   const push = usePushNotifications();
-  const [masterEnabled, setMasterEnabled] = useState(push.isSubscribed);
-
   const notifPrefs = settings.notificationPrefs;
+  // Master toggle reflects EITHER live subscription OR the persisted user-intent (pushEnabled).
+  // Whichever is truthier wins, so a stale-subscription state doesn't desync the switch.
+  const masterEnabled = push.isSubscribed || notifPrefs.pushEnabled;
+
+  // Test-notification inline status: null=idle, "sending"=loading, string=last result
+  const [testStatus, setTestStatus] = useState<
+    null | "sending" | { ok: true } | { ok: false; msg: string }
+  >(null);
+
+  // If the user previously opted in (pushEnabled=true) but the current session
+  // lost its subscription (browser cleared it, permission reset, VAPID rotated),
+  // try to silently re-subscribe so notifications resume without requiring re-tap.
+  useEffect(() => {
+    if (
+      notifPrefs.pushEnabled &&
+      !push.isSubscribed &&
+      !push.isLoading &&
+      push.permissionStatus === "granted"
+    ) {
+      void push.enable();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifPrefs.pushEnabled, push.isSubscribed, push.permissionStatus]);
 
   const handleMasterToggle = useCallback(async () => {
     if (masterEnabled) {
       await push.disable();
-      setMasterEnabled(false);
-    } else {
-      await push.enable();
-      setMasterEnabled(true);
+      updateSettings({
+        notificationPrefs: { ...notifPrefs, pushEnabled: false },
+      });
+      return;
     }
-  }, [masterEnabled, push]);
+    const result = await push.enable();
+    if (result.ok) {
+      updateSettings({
+        notificationPrefs: { ...notifPrefs, pushEnabled: true },
+      });
+    } else {
+      // Persist that the user WANTED it on only if the failure is recoverable.
+      // Denied permission → keep pushEnabled false so we don't loop on re-enable.
+      if (result.reason !== "permission-denied") {
+        updateSettings({
+          notificationPrefs: { ...notifPrefs, pushEnabled: false },
+        });
+      }
+    }
+  }, [masterEnabled, push, notifPrefs, updateSettings]);
+
+  const handleTest = useCallback(async () => {
+    setTestStatus("sending");
+    const result = await push.sendTestNotification();
+    if (result.ok) {
+      setTestStatus({ ok: true });
+    } else {
+      const msgMap: Record<string, string> = {
+        "no-token": "Not signed in",
+        "not-subscribed": "Not subscribed — toggle Push Notifications on first",
+        "permission-denied": "Permission denied — enable in system settings",
+        network: "Network error",
+      };
+      setTestStatus({
+        ok: false,
+        msg: msgMap[result.reason] || result.reason,
+      });
+    }
+    // Auto-clear status after 4s
+    window.setTimeout(() => setTestStatus(null), 4000);
+  }, [push]);
 
   const toggleCategory = useCallback(
     (
@@ -176,7 +251,11 @@ export function SettingsPage() {
     >
       {/* NOTIFICATIONS */}
       <section>
-        <SectionHeader label="Notifications" />
+        <SectionHeader
+          label="Notifications"
+          showSave={isDirty}
+          onSave={saveAll}
+        />
         <SettingRow label="Push Notifications">
           <Toggle
             on={masterEnabled}
@@ -275,7 +354,8 @@ export function SettingsPage() {
 
             {/* Test button */}
             <button
-              onClick={push.sendTestNotification}
+              onClick={handleTest}
+              disabled={testStatus === "sending"}
               style={{
                 marginTop: 12,
                 padding: "10px 16px",
@@ -284,13 +364,33 @@ export function SettingsPage() {
                 color: "var(--text-secondary)",
                 fontFamily: "'Space Mono', monospace",
                 fontSize: 11,
-                cursor: "pointer",
+                cursor: testStatus === "sending" ? "wait" : "pointer",
                 borderRadius: 4,
                 minHeight: 44,
+                opacity: testStatus === "sending" ? 0.6 : 1,
               }}
             >
-              [TEST NOTIFICATION]
+              {testStatus === "sending"
+                ? "[SENDING...]"
+                : "[TEST NOTIFICATION]"}
             </button>
+            {testStatus && testStatus !== "sending" && (
+              <div
+                style={{
+                  marginTop: 8,
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: 11,
+                  color:
+                    "ok" in testStatus && testStatus.ok
+                      ? "var(--accent)"
+                      : "var(--text-secondary)",
+                }}
+              >
+                {"ok" in testStatus && testStatus.ok
+                  ? "[SENT — check your device]"
+                  : `[ERROR: ${"msg" in testStatus ? testStatus.msg : "unknown"}]`}
+              </div>
+            )}
           </>
         )}
         {masterEnabled && (
@@ -308,7 +408,7 @@ export function SettingsPage() {
 
       {/* APPEARANCE */}
       <section>
-        <SectionHeader label="Appearance" />
+        <SectionHeader label="Appearance" showSave={isDirty} onSave={saveAll} />
         <div
           style={{
             fontFamily: "'Space Mono', monospace",
@@ -401,7 +501,7 @@ export function SettingsPage() {
 
       {/* TRADER */}
       <section>
-        <SectionHeader label="Trader" />
+        <SectionHeader label="Trader" showSave={isDirty} onSave={saveAll} />
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div>
             <div
@@ -510,6 +610,57 @@ export function SettingsPage() {
             }
           />
         </SettingRow>
+
+        {/* Bulletin reminder */}
+        <div style={{ marginTop: 8 }}>
+          <div
+            style={{
+              fontFamily: "'Space Mono', monospace",
+              fontSize: 10,
+              color: "var(--text-secondary)",
+              marginBottom: 8,
+              letterSpacing: "0.05em",
+            }}
+          >
+            BULLETIN REMINDER GLOW
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              border: "1px solid var(--border-visible)",
+              borderRadius: 6,
+              overflow: "hidden",
+            }}
+          >
+            {(["once", "until-pressed"] as const).map((mode, i) => (
+              <button
+                key={mode}
+                onClick={() => updateSettings({ bulletinReminder: mode })}
+                style={{
+                  padding: "8px 0",
+                  fontSize: 11,
+                  fontFamily: "'Space Mono', monospace",
+                  background:
+                    settings.bulletinReminder === mode
+                      ? "var(--text-display)"
+                      : "transparent",
+                  color:
+                    settings.bulletinReminder === mode
+                      ? "var(--black, #000)"
+                      : "var(--text-secondary)",
+                  border: "none",
+                  borderRight:
+                    i === 0 ? "1px solid var(--border-visible)" : "none",
+                  cursor: "pointer",
+                  minHeight: 44,
+                }}
+              >
+                {mode === "once" ? "ONCE" : "UNTIL PRESSED"}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Risk display (read-only from backend) */}
         <div style={{ marginTop: 8 }}>

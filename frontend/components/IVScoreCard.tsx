@@ -30,6 +30,15 @@ function getEnvironmentLabel(score: number): string {
   return "Calm Seas";
 }
 
+/** Severity color for fuse bar segments — green at low, red at high */
+function getFuseSegmentColor(segmentIndex: number): string {
+  if (segmentIndex >= 8) return "#ef4444"; // red
+  if (segmentIndex >= 6) return "#f97316"; // orange
+  if (segmentIndex >= 4) return "#eab308"; // yellow
+  if (segmentIndex >= 2) return "#34d399"; // emerald
+  return "#22c55e"; // green
+}
+
 function getUrgencyColor(urgency: string) {
   switch (urgency) {
     case "extreme":
@@ -87,8 +96,40 @@ if (
       0%, 100% { opacity: 1; }
       50% { opacity: 0.6; }
     }
+    @keyframes vix-direction-pulse {
+      0% { opacity: 1; }
+      30% { opacity: 0.5; }
+      60% { opacity: 1; }
+      80% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+    @keyframes vix-value-flash {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
   `;
   document.head.appendChild(style);
+}
+
+/** Direction-change pulse: bullish color when VIX drops, bearish when VIX rises */
+function getDirectionPulseStyle(direction: "up" | "down"): React.CSSProperties {
+  if (direction === "down") {
+    // VIX dropping = bullish
+    return {
+      animation: "vix-direction-pulse 1.5s ease-in-out",
+      borderColor: "var(--fintheon-bullish)",
+      boxShadow:
+        "0 0 6px color-mix(in srgb, var(--fintheon-bullish) 40%, transparent)",
+    };
+  }
+  // VIX rising = bearish
+  return {
+    animation: "vix-direction-pulse 1.5s ease-in-out",
+    borderColor: "var(--fintheon-bearish)",
+    boxShadow:
+      "0 0 6px color-mix(in srgb, var(--fintheon-bearish) 40%, transparent)",
+  };
 }
 
 export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
@@ -99,6 +140,48 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
   } | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // VIX direction-change tracking
+  const prevVixRef = useRef<number | null>(null);
+  const [directionPulse, setDirectionPulse] = useState<"up" | "down" | null>(
+    null,
+  );
+  const [vixFlash, setVixFlash] = useState(false);
+  const directionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!data) return;
+    const currentVix = data.vix.level;
+    const prev = prevVixRef.current;
+
+    if (prev !== null) {
+      const delta = currentVix - prev;
+      // Only trigger direction pulse on meaningful moves (>0.5 pts)
+      if (Math.abs(delta) > 0.5) {
+        const dir = delta > 0 ? "up" : "down";
+        setDirectionPulse(dir);
+        if (directionTimerRef.current) clearTimeout(directionTimerRef.current);
+        directionTimerRef.current = setTimeout(
+          () => setDirectionPulse(null),
+          3000,
+        );
+      }
+      // Flash VIX number on any value change
+      if (Math.abs(delta) > 0.01) {
+        setVixFlash(true);
+        setTimeout(() => setVixFlash(false), 150);
+      }
+    }
+
+    prevVixRef.current = currentVix;
+  }, [data?.vix.level]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(
+    () => () => {
+      if (directionTimerRef.current) clearTimeout(directionTimerRef.current);
+    },
+    [],
+  );
 
   const handleShowTooltip = () => {
     if (hideTimeoutRef.current) {
@@ -149,15 +232,17 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
   const envLabel = getEnvironmentLabel(data.score);
   const pts = data.points;
   const vixPulse = getVixPulseStyle(data.vix.level);
+  // Direction pulse takes priority over level-based pulse
+  const borderStyle: React.CSSProperties = directionPulse
+    ? getDirectionPulseStyle(directionPulse)
+    : (vixPulse ?? {
+        borderColor: "rgba(var(--fintheon-accent-rgb, 199, 159, 74), 0.2)",
+      });
 
   return (
     <div
       className="relative bg-[var(--fintheon-bg)] border rounded-lg px-3 h-8 flex items-center"
-      style={
-        vixPulse ?? {
-          borderColor: "rgba(var(--fintheon-accent-rgb, 199, 159, 74), 0.2)",
-        }
-      }
+      style={borderStyle}
     >
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-gray-400">IV</span>
@@ -195,7 +280,7 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             popupPos &&
             createPortal(
               <div
-                className="w-80 max-w-[90vw] bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl"
+                className="w-80 max-w-[90vw] bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl animate-tooltip-fade"
                 style={{
                   position: "fixed",
                   top: popupPos.top,
@@ -205,67 +290,82 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                 onMouseEnter={handleShowTooltip}
                 onMouseLeave={handleHideTooltip}
               >
-                <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-2">
+                <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
                   Blended IV Score
                 </h4>
-                <p className="text-xs text-gray-400 mb-3">
-                  {Math.round((data.weights.vix ?? 0) * 100)}% VIX (
-                  {data.vix.level.toFixed(1)}) +{" "}
-                  {Math.round((data.weights.headlines ?? 0) * 100)}% catalyst
-                  heat ({data.eventCount} events) +{" "}
-                  {Math.round((data.weights.miroshark ?? 0) * 100)}% MiroShark
-                  flow.
-                </p>
 
-                {/* Component breakdown */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 mb-3 space-y-2">
+                {/* Component fuse bars */}
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 mb-3 space-y-2.5">
                   <h5 className="text-xs font-semibold text-gray-300 mb-1">
                     Components
                   </h5>
                   {[
                     {
-                      label: "VIX Component",
+                      label: "VIX",
                       value: data.vixComponent,
-                      max: 10,
+                      detail: `VIX ${data.vix.level.toFixed(1)}`,
                     },
                     {
-                      label: "Headline Component",
+                      label: "Headlines",
                       value: data.headlineComponent,
-                      max: 10,
+                      detail: `${data.eventCount} events`,
                     },
                     {
-                      label: "MiroShark Component",
+                      label: "MiroShark",
                       value: data.mirosharkComponent,
-                      max: 10,
+                      detail: "Analysis",
                     },
                   ].map((c) => (
-                    <div
-                      key={c.label}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-[10px] text-gray-400">
-                        {c.label}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-[var(--fintheon-accent)]"
-                            style={{ width: `${(c.value / c.max) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] text-gray-300 w-8 text-right">
-                          {c.value.toFixed(1)}
+                    <div key={c.label}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-gray-400">
+                          {c.label}
                         </span>
+                        <span
+                          className="text-[10px] font-bold"
+                          style={{
+                            color: getFuseSegmentColor(Math.round(c.value)),
+                          }}
+                        >
+                          {c.value.toFixed(1)}/10
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-[7px] bg-zinc-800/80 rounded-sm overflow-hidden flex gap-[1px]">
+                          {Array.from({ length: 10 }, (_, i) => {
+                            const filled = i < Math.round(c.value);
+                            return (
+                              <div
+                                key={i}
+                                className="flex-1 rounded-[1px]"
+                                style={{
+                                  background: filled
+                                    ? getFuseSegmentColor(i)
+                                    : "rgba(255,255,255,0.04)",
+                                  opacity: filled ? 1 : 0.5,
+                                  transition: `background 200ms ease-out ${i * 30}ms, opacity 200ms ease-out ${i * 30}ms`,
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="text-[9px] text-gray-600 mt-0.5">
+                        {c.detail}
                       </div>
                     </div>
                   ))}
-                  <div className="pt-2 border-t border-zinc-800 flex items-center justify-between">
-                    <span className="text-[10px] text-gray-300 font-medium">
-                      Blended
-                    </span>
-                    <span className="text-xs font-bold text-[var(--fintheon-accent)]">
-                      {data.score.toFixed(1)}/10
-                    </span>
+
+                  {/* Blended score summary */}
+                  <div className="pt-2 border-t border-zinc-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-gray-300 font-medium">
+                        Blended
+                      </span>
+                      <span className="text-xs font-bold text-[var(--fintheon-accent)]">
+                        {data.score.toFixed(1)}/10
+                      </span>
+                    </div>
                   </div>
                 </div>
 

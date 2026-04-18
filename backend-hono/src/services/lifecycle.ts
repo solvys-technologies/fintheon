@@ -1,10 +1,14 @@
-// [claude-code 2026-04-16] Backend lifecycle management — idle shutdown for routine-started instances.
+// [claude-code 2026-04-18] Backend lifecycle management — idle shutdown for routine-started instances.
 // When the Electron app disconnects and the backend was started by a Claude Code routine,
 // the app arms an idle timer. If no HTTP requests arrive within the timeout, the backend exits.
+// Clamp: timeoutMs is now floored at 60s so a pathological/accidental 0 can't self-terminate
+// on the first tick. Defence-in-depth beside the localhost guard on the route.
 
 import { createLogger } from "../lib/logger.js";
 
 const log = createLogger("Lifecycle");
+
+const MIN_IDLE_TIMEOUT_MS = 60_000; // floor — prevents self-terminate on first tick
 
 let lastActivityAt = Date.now();
 let idleTimerId: ReturnType<typeof setInterval> | null = null;
@@ -31,11 +35,13 @@ export function armIdleShutdown(timeoutMs: number): void {
     clearInterval(idleTimerId);
   }
 
-  idleTimeoutMs = timeoutMs;
+  idleTimeoutMs = Math.max(MIN_IDLE_TIMEOUT_MS, timeoutMs);
   isArmed = true;
   lastActivityAt = Date.now();
 
-  log.info(`Idle shutdown armed: ${Math.round(timeoutMs / 60000)}min timeout`);
+  log.info(
+    `Idle shutdown armed: ${Math.round(idleTimeoutMs / 60000)}min timeout`,
+  );
 
   // Check every 60s
   idleTimerId = setInterval(() => {

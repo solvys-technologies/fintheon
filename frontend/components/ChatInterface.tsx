@@ -152,6 +152,7 @@ function ChatInterfaceInner({
               showSkills={showSkills}
               onToggleSkills={() => setShowSkills((v) => !v)}
               disabledSkills={disabledSkills}
+              conversationId={conversationId}
             />
           </div>
         </div>

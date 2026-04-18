@@ -1,5 +1,6 @@
-// [claude-code 2026-04-16] Rewrite: direct fetch() bypassing ApiClient
+// [claude-code 2026-04-16] S20: auth headers added to sticky bulletin fetch
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -20,6 +21,7 @@ interface StickyBulletinState {
 }
 
 export function useMobileStickyBulletin(): StickyBulletinState {
+  const { getAccessToken } = useAuth();
   const [tradingNotes, setTradingNotes] = useState("");
   const [eventOfWeek, setEventOfWeek] = useState("");
   const [antilagTimes, setAntilagTimes] = useState<AntilagEntry[]>([]);
@@ -27,7 +29,13 @@ export function useMobileStickyBulletin(): StickyBulletinState {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/sticky-bulletin`);
+      const token = await getAccessToken();
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/api/sticky-bulletin`, {
+        headers,
+        cache: "no-store",
+      });
       if (!res.ok) return;
       const json = await res.json();
       const d = json.data ?? json;
@@ -39,7 +47,7 @@ export function useMobileStickyBulletin(): StickyBulletinState {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [getAccessToken]);
 
   useEffect(() => {
     fetchData();

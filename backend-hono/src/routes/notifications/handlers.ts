@@ -19,10 +19,9 @@ export async function handleGetNotifications(c: Context) {
   }
 
   try {
-    // If DB not available, return mock data
+    // If DB not available, return empty list
     if (!isDatabaseAvailable()) {
-      const mockData = notificationService.getMockNotifications(userId);
-      return c.json(mockData);
+      return c.json({ notifications: [], total: 0, unreadCount: 0 });
     }
 
     const limit = Number(c.req.query("limit")) || 50;
@@ -32,8 +31,8 @@ export async function handleGetNotifications(c: Context) {
     );
     return c.json(notifications);
   } catch (error) {
-    console.error("[Notifications] Get error:", error);
-    return c.json({ error: "Failed to fetch notifications" }, 500);
+    // DB query failed — return empty rather than 500 (non-critical feature)
+    return c.json({ notifications: [], total: 0, unreadCount: 0 });
   }
 }
 

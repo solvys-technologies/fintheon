@@ -1,6 +1,7 @@
-// [claude-code 2026-04-16] RiskFlow card — X-style: fuse bar left, source top-left, headline center, chevron+IV right
+// [claude-code 2026-04-16] RiskFlow card — haptic on expand
 import { useState } from "react";
 import { ChevronUp, ChevronDown, Minus } from "lucide-react";
+import { useHaptic } from "../../hooks/useHaptic";
 import { AnimatePresence, motion } from "framer-motion";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
@@ -64,6 +65,7 @@ export function RiskFlowCard({
   index = 0,
 }: RiskFlowCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const vibrate = useHaptic();
   const severityColor = SEVERITY_COLORS[alert.severity];
   const ivScore = alert.ivScore ?? 0;
 
@@ -75,7 +77,10 @@ export function RiskFlowCard({
     >
       <SwipeAction onSwipeLeft={() => onDismiss(alert.id)}>
         <div
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => {
+            vibrate(8);
+            setExpanded((v) => !v);
+          }}
           style={{
             background: "var(--surface)",
             cursor: "pointer",

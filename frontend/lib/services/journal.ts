@@ -170,6 +170,10 @@ export interface BlindspotItem {
   severity: "high" | "medium" | "low";
   /** 7-day rolling record: 'W' = win (avoided), 'L' = loss (triggered) */
   record?: Array<"W" | "L">;
+  /** IV score of the referenced catalyst/headline (preferred over W/L% at the headline position) */
+  ivScore?: number;
+  /** Optional pointer to the catalyst in scored_riskflow_items */
+  catalystRef?: string;
 }
 
 export class BlindspotsService {

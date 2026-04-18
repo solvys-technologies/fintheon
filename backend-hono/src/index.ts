@@ -1,3 +1,7 @@
+// [claude-code 2026-04-18] bootCritical now awaited before Bun.serve() auto-starts — prevents
+// cold-boot window where /api/riskflow etc. read an unseeded feedCache.
+// [claude-code 2026-04-18] /api/lifecycle/* gated to localhost — POST {timeoutMs:0} to arm-idle-shutdown
+// was a trivial unauthenticated remote DoS on fintheon.fly.dev.
 // [claude-code 2026-04-04] Secrets vault: loads env from Supabase before validateEnv so fresh devices work without .env
 // [claude-code 2026-03-20] Overhauled: structured errors, JSON logging, boot consolidation
 /**
@@ -71,12 +75,34 @@ app.get("/health", async (c) => {
 
 // Lifecycle endpoints — idle shutdown management
 // [claude-code 2026-04-16] Used by Electron to arm/disarm idle timeout on app close/open
+// Localhost-only: these endpoints can terminate the process (arm-idle-shutdown
+// schedules process.exit) and have no semantic meaning for remote callers.
+function isLocalhostRequest(host: string): boolean {
+  return (
+    host.startsWith("localhost") ||
+    host.startsWith("127.0.0.1") ||
+    host.startsWith("[::1]")
+  );
+}
+
+app.use("/api/lifecycle/*", async (c, next) => {
+  const host = c.req.header("host") ?? "";
+  if (!isLocalhostRequest(host)) {
+    return c.json(
+      { error: "forbidden", message: "Lifecycle endpoints are localhost-only" },
+      403,
+    );
+  }
+  await next();
+});
+
 app.post("/api/lifecycle/arm-idle-shutdown", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const timeoutMs =
     typeof body.timeoutMs === "number" ? body.timeoutMs : 3600_000; // default 1h
   armIdleShutdown(timeoutMs);
-  return c.json({ armed: true, timeoutMs });
+  // Echo the effective timeout (armIdleShutdown floors at 60s)
+  return c.json({ armed: true, timeoutMs: getLifecycleState().idleTimeoutMs });
 });
 
 app.post("/api/lifecycle/disarm-idle-shutdown", async (c) => {
@@ -138,15 +164,16 @@ app.notFound((c) => {
 
 log.info("Server starting", { port: config.PORT, env: config.NODE_ENV });
 
-// Two-phase boot: critical services before listen, background after
-bootCritical().then(() => {
-  log.info("Critical services ready — server accepting requests");
-  // Background services boot after listen via queueMicrotask
-  queueMicrotask(() => {
-    bootBackground().catch((err) =>
-      log.error("Background boot failed", { error: String(err) }),
-    );
-  });
+// Two-phase boot: critical services (seedCacheFromDb, VIX polling, scorer) MUST
+// finish before Bun.serve() auto-starts via the default export below. Using
+// top-level await here blocks module evaluation — the default export is not
+// installed, and therefore Bun does not accept requests, until we're ready.
+await bootCritical();
+log.info("Critical services ready — server accepting requests");
+queueMicrotask(() => {
+  bootBackground().catch((err) =>
+    log.error("Background boot failed", { error: String(err) }),
+  );
 });
 
 // Bun auto-serves via default export. Node needs @hono/node-server.

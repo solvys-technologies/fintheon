@@ -21,6 +21,7 @@ import {
   buildReflectContext,
 } from "./ai/agent-instructions/index.js";
 import { buildThoughtBankPromptBlock } from "./ai/agent-instructions/thought-bank-awareness.js";
+// [claude-code 2026-04-17] S23-T4: HermesChatRequest now accepts userId + surface so per-user agent_context_bank memories and Aquarium surface context can be injected when available.
 import { getContextForAgent } from "./agent-context-bank-service.js";
 import type { AgentMemoryEntry } from "./agent-context-bank-service.js";
 import { createLogger } from "../lib/logger.js";
@@ -44,6 +45,10 @@ export interface HermesChatRequest {
   history?: HermesMessage[];
   agentOverride?: HermesAgentRole;
   thinkHarder?: boolean;
+  /** [S23-T4] Authenticated user id for agent_context_bank memory reads. Falls back to SYSTEM_USER_ID. */
+  userId?: string;
+  /** [S23-T4] Active Consilium surface — auto-enables surface-specific context injection. */
+  surface?: string;
 }
 
 export interface HermesChatResponse {
@@ -584,8 +589,10 @@ export async function handleHermesChat(
   // Agent context bank — persistent memories from Supabase
   const contextBankAgentId =
     ROLE_TO_CONTEXT_BANK_ID[agentInfo.agent] ?? "harper-opus";
+  // [S23-T4] Use authenticated user id when available so agents read per-user memories
+  // (falls back to SYSTEM_USER_ID for background/scheduled jobs).
   const memoryEntries = await getContextForAgent(
-    SYSTEM_USER_ID,
+    request.userId ?? SYSTEM_USER_ID,
     contextBankAgentId,
   );
   const memoryBank = formatMemoryBank(memoryEntries);

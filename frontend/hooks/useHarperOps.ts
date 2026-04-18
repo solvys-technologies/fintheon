@@ -30,6 +30,7 @@ export interface LoopStatus {
 export interface OpsStatus {
   alive: boolean;
   lastHeartbeat: string | null;
+  lastActivity: string | null;
   pendingApprovals: number;
   totalEntries: number;
 }

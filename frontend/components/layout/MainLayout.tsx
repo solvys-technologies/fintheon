@@ -57,8 +57,13 @@ import {
   setMissionWidgetOrder,
   getMissionWidgetVisibility,
   setMissionWidgetVisibility,
+  getStrategiumPaneMode,
+  setStrategiumPaneMode,
   type MissionWidgetId,
+  type StrategiumPaneMode,
 } from "../../lib/layoutOrderStorage";
+import { StrategiumPeekBar } from "./StrategiumPeekBar";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useLayoutState } from "../../hooks/useLayoutState";
 import { useBrowserTransition } from "../../hooks/useBrowserTransition";
@@ -183,6 +188,12 @@ function MainLayoutInner() {
   const [missionWidgetVisibility, setMissionWidgetVisibilityState] = useState<
     Record<MissionWidgetId, boolean>
   >(getMissionWidgetVisibility);
+  const [strategiumPaneMode, setStrategiumPaneModeState] =
+    useState<StrategiumPaneMode>(() => getStrategiumPaneMode());
+  const updateStrategiumPaneMode = useCallback((mode: StrategiumPaneMode) => {
+    setStrategiumPaneModeState(mode);
+    setStrategiumPaneMode(mode);
+  }, []);
   const [psychAssistTarget, setPsychAssistTarget] =
     useState<PsychAssistDockTarget>(() => {
       try {
@@ -240,7 +251,7 @@ function MainLayoutInner() {
 
   const backend = useBackend();
   const { isAuthenticated } = useAuth();
-  const { alerts: riskFlowAlerts, removeAlert } = useRiskFlow();
+  const { alerts: riskFlowAlerts, removeAlert, isSeen } = useRiskFlow();
   useKeyboardShortcuts({
     navigateTab: navigateTab as (tab: string) => void,
     setShowSearchModal,
@@ -432,6 +443,8 @@ function MainLayoutInner() {
         onReorder={handleMissionWidgetReorder}
         onToggleVisibility={handleMissionWidgetToggleVisibility}
         collapseFn={collapseFn}
+        editMode={layoutEditMode}
+        onToggleEditMode={() => setLayoutEditMode(!layoutEditMode)}
       />
     ),
     [
@@ -440,6 +453,8 @@ function MainLayoutInner() {
       missionWidgetVisibility,
       handleMissionWidgetReorder,
       handleMissionWidgetToggleVisibility,
+      layoutEditMode,
+      setLayoutEditMode,
     ],
   );
 
@@ -541,28 +556,102 @@ function MainLayoutInner() {
             </div>
           ) : (
             <>
-              <div
-                className={`${riskFlowCollapsed ? "flex-1" : "h-1/2"} flex flex-col transition-all duration-300 bg-[var(--fintheon-surface)]`}
-              >
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                  <div className="p-3 h-full">
-                    {renderMissionControl(() =>
-                      setMissionControlCollapsed(true),
-                    )}
+              {/* Widget peek-header (only visible in feedOnly mode so user can restore widgets) */}
+              {strategiumPaneMode === "feedOnly" && (
+                <StrategiumPeekBar
+                  variant="header"
+                  label="Widgets · hidden"
+                  onRestore={() => updateStrategiumPaneMode("balanced")}
+                />
+              )}
+
+              {/* Widgets pane — shown in balanced + widgetsOnly */}
+              {strategiumPaneMode !== "feedOnly" && (
+                <div
+                  className={`${
+                    strategiumPaneMode === "widgetsOnly"
+                      ? "flex-1"
+                      : riskFlowCollapsed
+                        ? "flex-1"
+                        : "h-1/2"
+                  } flex flex-col transition-all duration-300 bg-[var(--fintheon-surface)] relative`}
+                >
+                  <div className="flex-1 min-h-0 overflow-y-auto">
+                    <div className="p-3 h-full">
+                      {renderMissionControl(() =>
+                        setMissionControlCollapsed(true),
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div
-                className={`${riskFlowCollapsed ? "h-[168px] shrink-0" : "h-1/2"} flex flex-col transition-all duration-300`}
-              >
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                  <RiskFlowMini
-                    collapsed={riskFlowCollapsed}
-                    onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
-                    onNavigateToFeed={() => navigateTab("riskflow")}
-                  />
+              )}
+
+              {/* RiskFlow pane — shown in balanced + feedOnly */}
+              {strategiumPaneMode !== "widgetsOnly" && (
+                <div
+                  className={`${
+                    strategiumPaneMode === "feedOnly"
+                      ? "flex-1"
+                      : riskFlowCollapsed
+                        ? "h-[168px] shrink-0"
+                        : "h-1/2"
+                  } flex flex-col transition-all duration-300 relative`}
+                >
+                  {/* Pane-mode toggle overlay — top-right of RiskFlow section */}
+                  <div className="absolute top-1.5 right-8 z-20 flex items-center gap-0.5 pointer-events-none">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateStrategiumPaneMode(
+                          strategiumPaneMode === "feedOnly"
+                            ? "balanced"
+                            : "feedOnly",
+                        )
+                      }
+                      className="pointer-events-auto p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors"
+                      title={
+                        strategiumPaneMode === "feedOnly"
+                          ? "Restore widgets"
+                          : "Maximize RiskFlow"
+                      }
+                    >
+                      {strategiumPaneMode === "feedOnly" ? (
+                        <Minimize2 className="w-3 h-3" />
+                      ) : (
+                        <Maximize2 className="w-3 h-3" />
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto">
+                    <RiskFlowMini
+                      collapsed={riskFlowCollapsed}
+                      onToggleCollapsed={() => {
+                        // In balanced mode, chevron-down means "collapse RiskFlow to peek-footer".
+                        // Route through pane mode so there's always a way to restore.
+                        if (strategiumPaneMode === "balanced") {
+                          updateStrategiumPaneMode("widgetsOnly");
+                        } else {
+                          setRiskFlowCollapsed((v) => !v);
+                        }
+                      }}
+                      onNavigateToFeed={() => navigateTab("riskflow")}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* RiskFlow peek-footer (only visible in widgetsOnly mode so user can restore feed) */}
+              {strategiumPaneMode === "widgetsOnly" && (
+                <StrategiumPeekBar
+                  variant="footer"
+                  label="RiskFlow"
+                  unreadCount={
+                    riskFlowAlerts.filter((a: { id: string }) => !isSeen(a.id))
+                      .length
+                  }
+                  onRestore={() => updateStrategiumPaneMode("balanced")}
+                />
+              )}
             </>
           )}
         </div>,
@@ -626,6 +715,7 @@ function MainLayoutInner() {
               onLogout={handleLogout}
               topStepXEnabled={topStepXEnabled}
               onOverlayVisibilityChange={setSidebarOverlayVisible}
+              editMode={layoutEditMode}
               onEditModeChange={setLayoutEditMode}
               onNotificationCenterToggle={() =>
                 setNotificationCenterOpen((v) => !v)

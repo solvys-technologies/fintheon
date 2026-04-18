@@ -9,11 +9,335 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T07:15:00",
+    agent: "claude-code",
+    summary:
+      "Interactive install path in fintheon-setup.sh — bootstrap now prompts 'Install path [~/Documents/Codebases/fintheon]:' (reading from /dev/tty so it works under curl | bash), expands ~, rejects non-fintheon git repos + non-empty non-git dirs at the target, and persists the chosen absolute path to ~/.fintheon/install-path. Companion scripts (fintheon-cli, fintheon-update, install-cli both outer + HEREDOC, peer-bootstrap) now resolve install path as FINTHEON_ROOT env > ~/.fintheon/install-path > default ~/Documents/Codebases/fintheon. Non-interactive installs skip the prompt with FINTHEON_DIR=/path env var. SETUP.md updated with the new flow. All 5 scripts pass `bash -n` syntax check.",
+    files: [
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-cli.sh",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/peer-bootstrap.sh",
+      "SETUP.md",
+    ],
+  },
+  {
+    date: "2026-04-18T07:00:00",
+    agent: "claude-code",
+    summary:
+      "S21-T1 mobile strip — per-dispatch remote-control mode. Removed session-list surface from mobile (List icon, SessionList bottom-sheet, useConversations hook usage, handleSelectSession/handleNewSession, sessionListOpen state, refreshSessions post-send). Mobile chat is now a projection of whatever the desktop dispatches. New isStandby gate disables ChatInput when no convo is loaded AND no dispatch is active, preventing orphan threads from mobile. Empty-state copy: 'Standing by — dispatch a conversation from the relay button in the desktop CAO chat.' Conversation history is still persisted server-side; we just stopped surfacing browsing on mobile. useConversations + SessionList files kept as dead code. ChatPage bundle 55.30kB → 50.27kB.",
+    files: ["mobile/components/chat/ChatPage.tsx"],
+  },
+  {
+    date: "2026-04-18T06:45:00",
+    agent: "claude-code",
+    summary:
+      "S21-T1 mobile mirror badge — ChatPage now polls /api/relay/health every 20s and shows a small '⟷ FROM DESKTOP' pill next to the HARPER title whenever the user's active conversation matches an active dispatch on the Fly relay. Also auto-loads the dispatched conversation when the mobile opens with no active convo. Gives visual confirmation on mobile without requiring the web-push path to have succeeded (push subscriptions can lag or be absent — the dispatch state on Fly is authoritative).",
+    files: ["mobile/components/chat/ChatPage.tsx"],
+  },
+  {
+    date: "2026-04-18T06:30:00",
+    agent: "claude-code",
+    summary:
+      "S21-T1 relay dispatch + mobile chat rescue. Mobile chat input was stuck disabled because ConnectionStatus called /api/relay/health without an auth header, the 401 was treated as 'offline', and ChatInput's `disabled={isOffline}` locked the textarea — fixed by attaching the Supabase JWT to the health poll and treating 401 as 'reconnecting' (not offline) so the input stays usable. Service worker push handler now routes chat_relay category notifications to the chat tab and stashes the conversationId in sessionStorage + fires a window event so ChatPage auto-loads the dispatched conversation on mount or while already open. Backend push payload now carries conversationId directly so sw.js can deep-link without parsing URL. Mobile RiskFlow headline attach modal (HeadlinePickerSheet) and image attach (ImageAttachButton + ImagePreviewRow + input[type=file accept=image/*]) were already present and wired into /api/relay/chat — verified end-to-end path: mobile → Vercel rewrite → fintheon.fly.dev → relay WebSocket → local backend → Harper with images + riskFlowContext.",
+    files: [
+      "mobile/components/chat/ConnectionStatus.tsx",
+      "mobile/App.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+      "backend-hono/src/services/web-push-sender.ts",
+      "backend-hono/src/routes/relay.ts",
+    ],
+  },
+  {
+    date: "2026-04-18T05:30:00",
+    agent: "claude-code",
+    summary:
+      "Ultrareview batch — 6 findings fixed on s20-agent-swarm-platform-ops. (1) outcome-tracker.mapAnalystToAgent was a stale legacy-role mapping that returned null for every MiroShark DAG analyst (oracle/feucht/consul/herald), silently dropping per-agent rows from deliberation_outcomes and leaving accuracy feedback forever empty — replaced with a passthrough validator against DELIBERATION_AGENTS. (2) feedback-composer was reading actual_vix_24h (a VIX level, not a delta) into PredictionResult.actualVixChange and rendering 'actual VIX moved +18.5' into every analyst/Harper system prompt — renamed to actualVixLevel and reformatted the line to 'actual VIX 18.5' to match the actual semantics. (3) /api/oracle was mounted without auth, so POST /api/oracle/research/trigger was a public cost-amplification vector against Polymarket/Kalshi + a pollution hose into oracle_research_findings — added authMiddleware+requireAuth on /api/oracle, plus ORACLE_RESEARCH_ENABLED check and 5-min in-process cooldown inside triggerResearchCycle so the kill switch actually works. (4) bootCritical() was called with .then() but never awaited, so Bun.serve (default export) was accepting requests during the seedCacheFromDb cold-boot window, returning empty /api/riskflow/feed and /api/context-bank snapshots — switched to top-level await bootCritical() before the default export is evaluated. (5) /api/lifecycle/* endpoints were unauthenticated and armIdleShutdown accepted timeoutMs=0, letting any remote POST trigger process.exit on the first 60s tick — added localhost-only middleware on /api/lifecycle/* and floored idleTimeoutMs at 60_000ms in armIdleShutdown. (6) /api/relay/chat trusted client-supplied conversationId and called addMessage with no ownership check; because addMessage resolves user_id via SELECT FROM ai_conversations the inserted row was stamped with the conversation OWNER's user_id, letting an authenticated attacker plant 'user'-role messages into any victim's history (IDOR + prompt-injection pivot) — now verifies ownership via getConversation(convId, userId) and returns 404 on mismatch.",
+    files: [
+      "backend-hono/src/services/agent-memory/outcome-tracker.ts",
+      "backend-hono/src/services/agent-memory/feedback-composer.ts",
+      "backend-hono/src/services/agent-memory/types.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/cron/oracle-research-scheduler.ts",
+      "backend-hono/src/index.ts",
+      "backend-hono/src/services/lifecycle.ts",
+      "backend-hono/src/routes/relay.ts",
+    ],
+  },
+  {
+    date: "2026-04-18T05:15:00",
+    agent: "claude-code",
+    summary:
+      "Unblock Ultrareview / Cursor Background Agents — add .cursor/environment.json + .cursor/install.sh so the cloud container can actually boot: installs Bun if missing, materializes the gitignored .env files (root, backend-hono, frontend) with workspace values inline (matches existing pattern in scripts/setup.ts where the Fly Supabase DATABASE_URL is already hardcoded), then runs bun install at root / backend-hono / frontend. Before this the review agent was stalling at 'Run setup script' with no setup script defined, so Find/Verify/Dedupe never started.",
+    files: [".cursor/environment.json", ".cursor/install.sh"],
+  },
+  {
+    date: "2026-04-18T05:00:00",
+    agent: "claude-code",
+    summary:
+      "Revert Doto digits globally — restore pre-Nothing-Design digit rendering: (1) 'Readable Digits' @font-face back to Inter (regular 400) from Doto, no size-adjust — digits now render consistently in Inter across every theme (the original design before the 2026-04-17 Doto remap that caused legibility issues on desktop). (2) Removed digit-scale runtime FontFace API override (applyReadableDigitsScale) + digitScale state/setter/persistence from ThemeContext. (3) Removed DIGIT_SCALE_* constants, clampDigitScale, loadStoredDigitScale, saveDigitScale from font-theme.ts. (4) Removed Digit Size slider section from Appearance settings. Nothing Font Kit retained unchanged — headings still get Doto via fontHeading stack, only digits revert to Inter. appearance.digitScale in backend settings is now ignored on load (harmless).",
+    files: [
+      "frontend/fonts.css",
+      "frontend/lib/font-theme.ts",
+      "frontend/contexts/ThemeContext.tsx",
+      "frontend/components/settings/ThemeSettings.tsx",
+    ],
+  },
+  {
+    date: "2026-04-18T04:00:00",
+    agent: "claude-code",
+    summary:
+      "Fix StickyBulletin (and any portal/conditional-mount) drag in useDraggable: (1) Listener-attachment race — handleRef/elementRef are now mirrored into useState via useLayoutEffect so the pointer-listener effect re-runs once the consumer's portal commits and refs populate; previously the effect fired once with refs=null (Bulletin returns null until popupPos is computed on a later render) and never re-attached, so hold-and-drag did nothing. (2) clampToViewport is now anchor-aware — it derives the clamped position from the element's current visual rect + transform delta instead of treating (x, y) as the absolute top-left, so panels positioned via top/right (Bulletin) can drag left/up without getting pinned to 0. Benefits DraggablePanel / PsychAssistDockable / YouTubeMiniplayer for free.",
+    files: ["frontend/hooks/useDraggable.ts"],
+  },
+  {
+    date: "2026-04-18T03:00:00",
+    agent: "claude-code",
+    summary:
+      "Nothing Font Kit + adjustable digit size (desktop): (1) 'Readable Digits' @font-face stays on Doto but gets baseline size-adjust: 150% so digits render legibly alongside Inter/Space Grotesk body text (fixes tiny Doto glyphs in timestamps, calendar values, small KPIs, RiskFlow '0h ago' stamps, ticker pts deltas); (2) New 'Nothing' font theme (id: nothing) — Space Grotesk body + Doto headings + Space Mono mono — which applies Nothing thematics (.nothing-active, flat radius, Nothing ease) on top of ANY color theme, so users keep their palette and just swap typography; (3) Nothing Font Kit carries optional fontMono/borderRadius/easeDefault fields on FontTheme and toggles .nothing-active independently of legacy Special color presets; (4) New Digit Size slider in Appearance settings (1.0x–2.5x, default 1.5x) — swaps the Readable Digits FontFace at runtime via the FontFace API (delete+re-add with updated sizeAdjust) and persists per-user to backend settings as appearance.digitScale; (5) ThemeContext now reconciles .nothing-active across both fontTheme.nothingKit and legacy theme.special paths so switching between them doesn't leave stale overrides.",
+    files: [
+      "frontend/fonts.css",
+      "frontend/lib/font-theme.ts",
+      "frontend/contexts/ThemeContext.tsx",
+      "frontend/components/settings/ThemeSettings.tsx",
+    ],
+  },
+  {
+    date: "2026-04-17T22:40:00",
+    agent: "claude-code",
+    summary:
+      "Mobile push notifications: master toggle now persists user intent (new pushEnabled flag in NotificationPrefs) and reconciles with live subscription state across reloads; auto re-subscribes when permission is still granted but the SW subscription was cleared; enable() returns structured EnableResult so UI can surface permission-denied vs subscribe-failed vs unsupported; [TEST NOTIFICATION] button now has sending/success/error inline status (was previously fire-and-forget with zero feedback); sendTestNotification short-circuits with 'not-subscribed' / 'permission-denied' instead of silent no-op",
+    files: [
+      "mobile/hooks/usePushNotifications.ts",
+      "mobile/contexts/SettingsContext.tsx",
+      "mobile/components/settings/SettingsPage.tsx",
+    ],
+  },
+  {
+    date: "2026-04-17T22:00:00",
+    agent: "claude-code",
+    summary:
+      '7-part drag/Strategium/Aquarium overhaul: (1) new useDraggable hook (Pointer Events + setPointerCapture + rAF + transform3d) kills sticky-cursor + friction across DraggablePanel/PsychAssistDockable/YouTubeMiniplayer/StickyBulletin — strict grip-only handles, removed glass/shadow chrome; (2) Strategium gear→Edit (Pencil), widget cards become drag-reorderable with Nothing-Design microinteractions, unified layoutEditMode drives sidebar+toolbar+widgets; (3) NavSidebar now accepts controlled editMode; (4) Blindspots widget: 140-char cap + 4-entry cap, monochrome FuseBar with shimmer, IV chip replaces W/L% (backend joins against scored_riskflow_items for ivScore enrichment, POST rejects >140char); (5) 3-state Strategium pane mode (balanced/feedOnly/widgetsOnly) with peek footer + header, fixes collapsed-RiskFlow no-restore bug; (6) RiskFlow feed flickers the single most-recent new headline in theme accent color on every refresh (freshAlertId tracked in context, auto-clears 1.2s); (7) Harper Aquarium synthesis now awaited inline with briefing, prompt reframed so Harper IS the narrator (not cold analyst), red-flag-phrase + slop-input detectors replace templated heat/regime output with "No new agentic updates. Trigger an update in Aquarium." — SanctumBriefing renders fallback with Trigger Aquarium CTA',
+    files: [
+      "frontend/hooks/useDraggable.ts",
+      "frontend/components/layout/DraggablePanel.tsx",
+      "frontend/components/layout/PsychAssistDockable.tsx",
+      "frontend/components/layout/YouTubeMiniplayer.tsx",
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/components/layout/MissionControlContent.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/StrategiumPeekBar.tsx",
+      "frontend/components/mission-control/BlindspotsWidget.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/mission-control/RiskFlowMiniWidget.tsx",
+      "frontend/components/narrative/SanctumBriefing.tsx",
+      "frontend/contexts/RiskFlowContext.tsx",
+      "frontend/lib/layoutOrderStorage.ts",
+      "frontend/lib/services/journal.ts",
+      "frontend/index.css",
+      "backend-hono/src/routes/blindspots.ts",
+      "backend-hono/src/services/psych-assist-service.ts",
+      "backend-hono/src/services/miroshark/miroshark-briefing.ts",
+      "backend-hono/src/services/miroshark/miroshark-service.ts",
+    ],
+  },
+  {
     date: "2026-04-17T16:00:00",
     agent: "claude-code",
     summary:
       "Market Impact Enricher Routine: audited 130 qualifying items (macro_level≥3, 24h+ old, market_impact=null) across 75 unique dates. Found most items created today (fresh ingestions, backend enricher correctly skipping). Items from Apr 12 (created 5d ago) unenriched — suspected Yahoo Finance block on Fly.io. Added POST /api/diagnostics/trigger-market-impact endpoint so future Routine runs can invoke the enricher on the live backend directly.",
     files: ["backend-hono/src/routes/diagnostics/index.ts"],
+  },
+  {
+    date: "2026-04-17T15:45:00",
+    agent: "claude-code",
+    summary:
+      "S23-T4: /api/me diagnostic endpoint ({userId,email,traderName}) for cross-device account debugging, Harper/Hermes memory reads now use authenticated userId when available (falls back to SYSTEM_USER_ID for background jobs), HermesChatRequest + HarperChatRequest accept userId + surface — the hardcoded null-UUID that blocked per-user agent_context_bank reads is replaced with request.userId",
+    files: [
+      "backend-hono/src/routes/me/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/services/hermes-handler.ts",
+      "backend-hono/src/services/harper-handler.ts",
+    ],
+  },
+  {
+    date: "2026-04-17T15:30:00",
+    agent: "claude-code",
+    summary:
+      "S23-T3: Harper Aquarium literacy — ConsiliumHub persists current surface (aquarium/narratives/timeline/boardroom/apparatus/chat) to localStorage on tab change, useHermesChat auto-appends 'aquarium' to activeConnectors + sends surface flag when on the Aquarium surface, backend harper-handler + strands/harper + /api/ai/chat handlers inject buildAquariumContext() whenever surface===aquarium (no manual connector toggle needed), buildAquariumContext now exports from harper-handler with a 'How to read this' preamble explaining IV/regime/signal bands so agents interpret MiroShark output as ground truth (not debug noise), Harper base prompt gains an 'Aquarium' capability block",
+    files: [
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/chat/hooks/useHermesChat.ts",
+      "backend-hono/src/services/harper-handler.ts",
+      "backend-hono/src/services/strands/agents/harper.ts",
+      "backend-hono/src/routes/ai/handlers/chat.ts",
+      "backend-hono/src/routes/harper/index.ts",
+    ],
+  },
+  {
+    date: "2026-04-17T15:15:00",
+    agent: "claude-code",
+    summary:
+      "S23-T2: Aquarium delivery hang fix — MiroSharkDebatePanel fires onSynthesisComplete once per simulationId when deliberation reaches phase=complete, ConsiliumHub refetches /api/miroshark/latest to refresh KPIs/briefing without waiting for poll, backend updatePhase(complete) now merges Harper's refined composite IV/regime risk/briefing into the in-memory prediction cache so /latest returns post-synthesis numbers (not the stale pre-Harper scoring), AquariumPredictionCards fallback poll 120s → 30s",
+    files: [
+      "frontend/components/miroshark/MiroSharkDebatePanel.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "backend-hono/src/services/miroshark/miroshark-service.ts",
+      "backend-hono/src/services/miroshark/miroshark-deliberation.ts",
+    ],
+  },
+  {
+    date: "2026-04-17T15:00:00",
+    agent: "claude-code",
+    summary:
+      "S23-T1: Aquarium UI restructure — removed top QQQ TradingView chart, new brief-pattern top container (Blended IV + Next Session Forecast left 55%, MiroShark Deliberation right 45%, needle divider matching Dashboard aesthetic), replaced Debate button in Consilium tab bar with Chart button (LineChart icon) that toggles full 50/50 split with TradingView iframe on right, removed redundant TradingView iframe toggle from Proposals panel, theme-sensitive CSS-var styling throughout",
+    files: [
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+    ],
+  },
+  {
+    date: "2026-04-17T14:15:00",
+    agent: "claude-code",
+    summary:
+      "Harper Ops feed pivots from retired local CLI loop to Claude Code Routines: new 'routine' + 'ack' action types, POST /api/harper-ops/feed auto-detects routine posts via metadata.routineId/triggerId/source and writes a short Harper ack entry in response, status alive now = any ops activity within 24h (not just heartbeats), panel shows Routine · <name> badge and Ack markers, panel title now 'Harper Ops · Routines', bootHarperAutonomous() logs deprecation for the CLI loop gate, docs/routines.md documents the POST payload contract",
+    files: [
+      "backend-hono/src/services/harper-autonomous/ops-store.ts",
+      "backend-hono/src/services/harper-autonomous/index.ts",
+      "backend-hono/src/routes/harper-ops/index.ts",
+      "frontend/hooks/useHarperOps.ts",
+      "frontend/components/harper-ops/HarperOpsPanel.tsx",
+      "docs/routines.md",
+    ],
+  },
+  {
+    date: "2026-04-17T14:00:00",
+    agent: "claude-code",
+    summary:
+      "Chat relay button (copy pickup code to hand off conversation to another device), voice room rewired so connect joins silently with a hidden persistent webview (system audio wires via session permission handler in Electron main) and a new PictureInPicture button now toggles the visible panel, removed 'Wield the Consul' dropdown label, moved Agent Lounge out of Imperium into Apparatus as 'lounge', cache gateway/hermes + sourceStatus to localStorage so the self team card hydrates with last-known-good indicators on app reopen instead of flashing all-red until the first poll completes",
+    files: [
+      "frontend/components/chat/ChatHeader.tsx",
+      "frontend/components/consilium/FluxerCallWidget.tsx",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/consilium/ConsiliumTabConfig.ts",
+      "frontend/hooks/useSourceStatus.ts",
+      "frontend/contexts/GatewayContext.tsx",
+      "electron/main.cjs",
+    ],
+  },
+  {
+    date: "2026-04-17T00:10:00",
+    agent: "claude-code",
+    summary:
+      "All digits render in Doto (Nothing Design display) across every theme on desktop + mobile: remapped 'Readable Digits' @font-face from Inter to Doto via unicode-range, self-hosted Doto for mobile and prepended Readable Digits to mobile font stacks (previously only desktop). Mobile toolbar VIX now fades in smoothly via IntersectionObserver once the Dash hero VIX ticker scrolls off-screen, and hides again on Dash init state",
+    files: [
+      "frontend/fonts.css",
+      "frontend/contexts/ThemeContext.tsx",
+      "mobile/index.css",
+      "mobile/public/fonts/doto.woff2",
+      "mobile/contexts/ThemeContext.tsx",
+      "mobile/hooks/useHeroVixVisible.ts",
+      "mobile/components/home/HomePage.tsx",
+      "mobile/components/layout/MobileToolbar.tsx",
+    ],
+  },
+  {
+    date: "2026-04-17T01:30:00",
+    agent: "claude-code",
+    summary:
+      "Fix mobile bulletin sync: flush pending saves on close (no lost edits), re-fetch fresh on every open with cache: no-store, generate actual PWA icons from logo (were 0-byte placeholders)",
+    files: [
+      "mobile/components/bulletin/MobileBulletin.tsx",
+      "mobile/hooks/useStickyBulletin.ts",
+      "mobile/public/icons/icon-192.png",
+      "mobile/public/icons/icon-512.png",
+    ],
+  },
+  {
+    date: "2026-04-17T01:00:00",
+    agent: "claude-code",
+    summary:
+      "Heading toolbar Solvys Feels pass: unified .toolbar-icon-btn class for all icon buttons (28px, accent borders, transparent bg, filled on active), toolbar height shrink 56->50px, Fluxer voice channel updated to trading-floor and connect wired to open Fluxer, PsychAssist smooth roll-out/collapse transition on dock/undock, VIX direction-change pulse with theme bullish/bearish colors, dropdown-enter and tooltip-fade microinteractions, Strategium card entrance stagger",
+    files: [
+      "frontend/index.css",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/consilium/FluxerCallWidget.tsx",
+      "frontend/components/layout/PsychAssistDockable.tsx",
+      "frontend/components/IVScoreCard.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+    ],
+  },
+  {
+    date: "2026-04-17T00:30:00",
+    agent: "claude-code",
+    summary:
+      "Trigger MiroShark Aquarium run after every briefing generation — cron dispatch and catch-up paths now fire startPrediction() post-brief, matching the existing behavior on the manual POST /api/data/brief/generate route.",
+    files: ["backend-hono/src/services/cron/dispatch-scheduler.ts"],
+  },
+  {
+    date: "2026-04-17T00:15:00",
+    agent: "claude-code",
+    summary:
+      "S20 mobile PWA: auth headers on all bulletin fetches, haptic gating via useHaptic hook (respects settings toggle), activity status context for chat FAB 3-state indicator (idle/radar/check), per-section save checkmarks + global double-checkmark in toolbar, bulletin FAB glow reminder (once/until-pressed), bulletin reminder setting, display name sync to profile, IV Score widget fuse bars replacing weight text",
+    files: [
+      "mobile/hooks/useHaptic.ts",
+      "mobile/contexts/ActivityStatusContext.tsx",
+      "mobile/components/shared/RadarSpinner.tsx",
+      "mobile/components/shared/SaveCheckmark.tsx",
+      "mobile/contexts/SettingsContext.tsx",
+      "mobile/components/layout/FloatingChatButton.tsx",
+      "mobile/components/layout/MobileShell.tsx",
+      "mobile/components/layout/MobileToolbar.tsx",
+      "mobile/components/layout/BottomTabBar.tsx",
+      "mobile/components/shared/PullToRefresh.tsx",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/home/BriefingCard.tsx",
+      "mobile/components/bulletin/MobileBulletin.tsx",
+      "mobile/components/settings/SettingsPage.tsx",
+      "mobile/hooks/useStickyBulletin.ts",
+      "mobile/App.tsx",
+      "frontend/components/IVScoreCard.tsx",
+    ],
+  },
+  {
+    date: "2026-04-16T23:30:00",
+    agent: "claude-code",
+    summary:
+      "Ensure all external repo deps (tradingview-mcp, financial-datasets-mcp, mobile workspace) are updated by both update scripts. Added tradingview-mcp clone/pull + npm install to fintheon-update.sh, added mobile workspace to both scripts, added MCP repo update step to update.ts.",
+    files: ["scripts/fintheon-update.sh", "scripts/update.ts"],
+  },
+  {
+    date: "2026-04-16T22:00:00",
+    agent: "claude-code",
+    summary:
+      "Replace Proposals with Risk Signals on mobile Dash page 4. Apply solvys-feels full-border severity coloring (no Kanban left-stripe) to Risk Signal cards in both mobile and desktop. Desktop RiskSignalCards and Sanctum containers updated with consistent severity border treatment.",
+    files: [
+      "mobile/components/home/RiskSignalCards.tsx",
+      "mobile/components/home/HomePage.tsx",
+      "frontend/components/narrative/RiskSignalCards.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+    ],
+  },
+  {
+    date: "2026-04-16T21:15:00",
+    agent: "claude-code",
+    summary:
+      "Imperium overhaul: Fixed Fluxer URL (app.fluxer.app→web.fluxer.app), converted FluxerEmbed to use Electron webview (bypasses X-Frame-Options DENY) with browser fallback to external link. Added FluxerCallWidget in header between nametag and antilag button — rolls out rightward to reveal audio controls (connect/mute/deafen/video) with floating video panel in Electron. Added Agent Dream Room (Imperium > Dream Room) — autonomous agent reflection channel inspired by Bitterbot Dream Engine, with backend endpoint and Supabase persistence.",
+    files: [
+      "frontend/components/consilium/FluxerEmbed.tsx",
+      "frontend/components/consilium/FluxerCallWidget.tsx",
+      "frontend/components/consilium/AgentDreamRoom.tsx",
+      "frontend/components/consilium/ConsiliumTabConfig.ts",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "backend-hono/src/routes/agent-bus/dreams.ts",
+      "backend-hono/src/routes/index.ts",
+      "supabase/migrations/20260416_agent_dreams.sql",
+    ],
   },
   {
     date: "2026-04-17T09:00:00",

@@ -2,9 +2,7 @@
   "mcpServers": {
     "tradingview": {
       "command": "node",
-      "args": [
-        "/Users/tifos/Documents/Codebases/tradingview-mcp/src/mcp-server.js"
-      ]
+      "args": ["/Users/tifos/Desktop/Codebases/tradingview-mcp/src/server.js"]
     },
     "exa": {
       "command": "npx",
@@ -18,13 +16,6 @@
       "args": ["-y", "@notionhq/notion-mcp-server"],
       "env": {
         "OPENAPI_MCP_HEADERS": "{\"Authorization\":\"Bearer ${NOTION_API_KEY}\",\"Notion-Version\":\"2022-06-28\"}"
-      }
-    },
-    "unusual-whales": {
-      "command": "npx",
-      "args": ["-y", "unusual-whales-mcp"],
-      "env": {
-        "UNUSUAL_WHALES_API_KEY": "${UW_API_KEY}"
       }
     }
   }

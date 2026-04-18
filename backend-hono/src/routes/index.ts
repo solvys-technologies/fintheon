@@ -58,10 +58,12 @@ import { createMemoryRoutes } from "./memory/index.js";
 import { createEditorRoutes } from "./editor/index.js";
 import { createMcpRoutes } from "./mcp/index.js";
 import { createDagRoutes } from "./dag/index.js";
+import { createDreamRoutes } from "./agent-bus/dreams.js";
 import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
 import { createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
+import { createMeRoutes } from "./me/index.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -97,6 +99,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/miroshark", createMirosharkRoutes());
   // DAG scheduler — status, SSE stream, cancel (S8-T2)
   app.route("/api/dag", createDagRoutes());
+  // Agent Dream Room — autonomous agent reflection channel
+  app.route("/api/agent-bus/dreams", createDreamRoutes());
   // Proposal charting — Playwright automation for TopStepX (public, local only)
   app.route("/api/proposals", createProposalRoutes());
   // Trade ideas — merged proposals + Supabase trade ideas (public)
@@ -112,6 +116,11 @@ export function registerRoutes(app: Hono): void {
   // Polymarket — read-only public market data, whale alerts, search (S15-T2)
   app.route("/api/polymarket", createPolymarketRoutes());
   // Oracle — scheduled research findings, manual trigger (S20-T3)
+  // Auth required: manual trigger hits external Polymarket/Kalshi APIs + inserts
+  // into oracle_research_findings, so unauthenticated access enables cost
+  // amplification + data pollution.
+  app.use("/api/oracle", authMiddleware, requireAuth);
+  app.use("/api/oracle/*", authMiddleware, requireAuth);
   app.route("/api/oracle", createOracleRoutes());
   // Relay — mobile↔local backend WebSocket bridge (auth required for chat/health, WS upgrade handled separately)
   app.use("/api/relay", authMiddleware);
@@ -170,6 +179,9 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/settings/*", authMiddleware, requireAuth);
   app.use("/api/profile", authMiddleware, requireAuth);
   app.use("/api/profile/*", authMiddleware, requireAuth);
+  // [S23-T4] /api/me — client identity diagnostic for cross-device account debugging.
+  app.use("/api/me", authMiddleware, requireAuth);
+  app.use("/api/me/*", authMiddleware, requireAuth);
   app.use("/api/peers", authMiddleware, requireAuth);
   app.use("/api/peers/*", authMiddleware, requireAuth);
   app.use("/api/documents", authMiddleware, requireAuth);
@@ -226,6 +238,9 @@ export function registerRoutes(app: Hono): void {
 
   // User profiles + app state (localStorage migration target)
   app.route("/api/profile", createProfileRoutes());
+
+  // [S23-T4] /api/me — diagnostic: { userId, email, traderName }
+  app.route("/api/me", createMeRoutes());
 
   // Claude peers: registry, desks, heartbeat, group voice room
   app.route("/api/peers", createPeersRoutes());

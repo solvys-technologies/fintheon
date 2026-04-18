@@ -23,6 +23,7 @@ function FloatingInner({
   lastRequestId,
   thinkHarder,
   setThinkHarder,
+  conversationId,
 }: {
   onExpandToAnalysis: () => void;
   onCollapse: () => void;
@@ -30,6 +31,7 @@ function FloatingInner({
   lastRequestId: string | null;
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
+  conversationId?: string;
 }) {
   const { activeAgent } = useFintheonAgents();
   const runtime = useThreadRuntime();
@@ -110,6 +112,7 @@ function FloatingInner({
         showSkills={showSkills}
         onToggleSkills={() => setShowSkills((v) => !v)}
         compact
+        conversationId={conversationId}
       />
     </div>
   );
@@ -123,11 +126,8 @@ export function FintheonFloatingChat({
   const [thinkHarder, setThinkHarder] = useState(false);
   const { activeAgent } = useFintheonAgents();
 
-  const { runtime, lastError, lastRequestId } = useHermesRuntime(
-    activeAgent?.id ?? "default",
-    thinkHarder,
-    "floating",
-  );
+  const { runtime, lastError, lastRequestId, conversationId } =
+    useHermesRuntime(activeAgent?.id ?? "default", thinkHarder, "floating");
 
   if (!visible) return null;
 
@@ -155,6 +155,7 @@ export function FintheonFloatingChat({
         lastRequestId={lastRequestId ?? null}
         thinkHarder={thinkHarder}
         setThinkHarder={setThinkHarder}
+        conversationId={conversationId}
       />
     </AssistantRuntimeProvider>
   );

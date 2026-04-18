@@ -1,4 +1,7 @@
-// [claude-code 2026-04-16] S20-T9: Unified feature flag service — single getFlag() replacing 3 systems
+// [claude-code 2026-04-18] S20-T9: Unified feature flag service — single getFlag() replacing 3 systems.
+// oracle_research now uses envInverse so getFlag() matches the scheduler's opt-out semantics
+// on ORACLE_RESEARCH_ENABLED (scheduler treats "!== 'false'" as enabled). Prior opt-in config made
+// getFlag() report the feature as DISABLED when the scheduler was actively running — Ultrareview bug_005.
 // Reads: env vars (ENABLE_*) → JSON blob (FINTHEON_FEATURE_FLAGS) → code defaults
 
 import { createLogger } from "../lib/logger.js";
@@ -22,7 +25,11 @@ const FLAG_REGISTRY: Record<string, FlagDef> = {
   computer_use: { envVar: "ENABLE_COMPUTER_USE", default: false },
   reflect: { envVar: "ENABLE_REFLECT", default: false },
   harper_autonomous: { envVar: "HARPER_AUTONOMOUS_ENABLED", default: false },
-  oracle_research: { envVar: "ORACLE_RESEARCH_ENABLED", default: false },
+  oracle_research: {
+    envVar: "ORACLE_RESEARCH_ENABLED",
+    envInverse: true,
+    default: true,
+  },
   relay: { envVar: "RELAY_ENABLED", default: false },
 
   // Skill flags (from FINTHEON_FEATURE_FLAGS JSON blob)

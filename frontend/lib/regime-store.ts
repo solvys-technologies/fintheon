@@ -39,12 +39,11 @@ function migrateV2toV3(regimes: any[]): TradingRegime[] {
 
 function loadRegimes(): TradingRegime[] {
   try {
-    // Try v3 first
+    // Try v3 first — empty array is valid (user deleted all regimes)
     const v3Raw = localStorage.getItem(V3_STORAGE_KEY);
     if (v3Raw) {
       const parsed = JSON.parse(v3Raw);
-      if (Array.isArray(parsed) && parsed.length > 0)
-        return parsed as TradingRegime[];
+      if (Array.isArray(parsed)) return parsed as TradingRegime[];
     }
     // Try v2 with migration
     const v2Raw = localStorage.getItem(V2_STORAGE_KEY);

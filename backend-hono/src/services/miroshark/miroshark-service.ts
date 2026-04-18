@@ -1,3 +1,4 @@
+// [claude-code 2026-04-17] S23-T2: Added mergeHarperScoringIntoCache — called from deliberation completion to refresh /latest with Harper-scored numbers
 // [claude-code 2026-04-12] Fix: Update button now always runs fresh simulation. Auto-run on launch if stale. Harper AI analysis.
 // [claude-code 2026-04-03] Daily auto-run: 12h staleness threshold, cross-user dedup
 // [claude-code 2026-03-28] S8-T5: 3-phase deliberation pipeline integration
@@ -28,7 +29,7 @@ import {
 } from "./miroshark-client.js";
 import { convertNarrativeToSeed } from "./miroshark-seed.js";
 import { assembleSimulationContext } from "./miroshark-context.js";
-import { generateBriefing } from "./miroshark-briefing.js";
+import { generateBriefing, SLOP_FALLBACK } from "./miroshark-briefing.js";
 import {
   runDeliberationPipeline,
   getDeliberationState,
@@ -222,10 +223,17 @@ export async function startPrediction(
     // Generate deterministic briefing
     const briefing = generateBriefing(report, context);
 
-    // Harper AI analysis — deeper narrative breakdown (fire-and-forget, fills in async)
-    generateHarperAnalysis(report, context, briefing).catch((err) => {
-      console.warn("[MiroShark] Harper analysis failed (non-fatal):", err);
-    });
+    // Harper AI analysis — awaited inline so the run record is never persisted
+    // with an empty or decoupled harperAnalysis. If the briefing is a slop run,
+    // generateBriefing already populated the fallback; skip the LLM call entirely.
+    if (briefing.summary !== SLOP_FALLBACK) {
+      try {
+        await generateHarperAnalysis(report, context, briefing);
+      } catch (err) {
+        console.warn("[MiroShark] Harper analysis failed (non-fatal):", err);
+        briefing.harperAnalysis = SLOP_FALLBACK;
+      }
+    }
 
     report.briefing = briefing;
     report.contextSnapshot = context;
@@ -367,6 +375,46 @@ export function getLatestCachedPrediction(): MiroSharkPrediction | undefined {
     }
   }
   return latest;
+}
+
+/** [S23-T2] After deliberation completes, overwrite the cached prediction with Harper's refined
+ * composite IV / regime risk / briefing so GET /api/miroshark/latest returns the post-synthesis
+ * payload (fixes the Aquarium "Updating…" hang where the frontend showed stale pre-Harper numbers). */
+export function mergeHarperScoringIntoCache(
+  simId: string,
+  harperScoring: {
+    compositeIV?: number;
+    regimeShiftProbability?: number;
+    actionabilityScore?: number;
+    finalBriefing?: string;
+    surfacedTheses?: string[];
+    contestedTheses?: string[];
+    downgradedTheses?: string[];
+  },
+): void {
+  const cached = predictionCache.get(simId);
+  if (!cached) return;
+
+  const merged: MiroSharkPrediction = {
+    ...cached,
+    nextSessionScore: harperScoring.compositeIV ?? cached.nextSessionScore,
+    regimeShiftProbability:
+      harperScoring.regimeShiftProbability ?? cached.regimeShiftProbability,
+    briefing: harperScoring.finalBriefing
+      ? {
+          summary: harperScoring.finalBriefing,
+          keyFindings: [
+            ...(harperScoring.surfacedTheses ?? []),
+            ...(harperScoring.contestedTheses ?? []),
+          ],
+          riskAlerts: harperScoring.downgradedTheses ?? [],
+          agentConsensus: cached.briefing?.agentConsensus ?? "",
+          generatedAt: new Date().toISOString(),
+        }
+      : cached.briefing,
+    generatedAt: new Date().toISOString(),
+  };
+  predictionCache.set(simId, merged);
 }
 
 /** Get history of past runs from Supabase */
@@ -642,14 +690,26 @@ export async function shouldAutoRun(): Promise<{
 // Generates a narrative market breakdown using Harper (AI), stored in briefing.harperAnalysis.
 // Mutates the briefing object in-place + updates the persisted run in Supabase.
 
-const HARPER_ANALYSIS_PROMPT = `You are Harper, the Chief Agentic Officer at Priced In Capital. Generate a concise market analysis breakdown (3-5 paragraphs) based on the data below. Write like a senior macro strategist addressing a trading desk — direct, no hedging, actionable. Cover:
+const HARPER_ANALYSIS_PROMPT = `You are Harper, the Chief Agentic Officer at Priced In Capital. You ARE the narrator of the Aquarium multi-agent run whose output is shown below — you are NOT an outside analyst reviewing unfamiliar data. Do NOT say "it looks like", "this appears to be", "I can see", "what do you need", "for example", or ask the user what they want. Do NOT describe the run as a "template" or "test" or "simulation output". Extend the briefing below with 2-3 tight paragraphs of narrative synthesis — senior macro strategist addressing a trading desk, direct, no hedging, actionable. Cover in prose (not headers): macro regime + dominant driver, what's being underpriced, futures positioning, and the next 24-72h catalysts. Reference the actual scores, scenarios, and headlines from this run by name. If the inputs are sparse, say so in one sentence and stop — don't invent.`;
 
-1. **Macro Regime** — Where are we in the cycle? What's the dominant driver?
-2. **Key Risks** — What could blow up? What's being underpriced?
-3. **Positioning** — How should a futures trader be positioned right now?
-4. **Catalyst Timeline** — What's coming in the next 24-72h that matters?
+const HARPER_RED_FLAG_PHRASES = [
+  "it looks like",
+  "i can see",
+  "this appears to be",
+  "what do you need",
+  "let me know",
+  "for example",
+  "you've shared",
+  "you have shared",
+  "template",
+  "test run",
+];
 
-Be specific. Reference the actual data points, scores, and scenarios provided. No generic commentary.`;
+function harperOutputIsSlop(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+  if (lower.length < 40) return true;
+  return HARPER_RED_FLAG_PHRASES.some((phrase) => lower.includes(phrase));
+}
 
 async function generateHarperAnalysis(
   report: MiroSharkReport,
@@ -677,7 +737,10 @@ async function generateHarperAnalysis(
     )
     .join("\n");
 
-  const userPrompt = `## Simulation Results
+  const userPrompt = `## Briefing Synthesis (this IS the run you are narrating)
+${briefing.summary}
+
+## Simulation Results
 Composite IV: ${report.nextSessionProjection.toFixed(1)}/10
 Regime Shift Probability: ${(report.regimeShiftProbability * 100).toFixed(0)}%
 Confidence: ${(report.confidence * 100).toFixed(0)}%
@@ -689,14 +752,13 @@ ${categoryBreakdown}
 ## Scenarios
 ${scenarioBreakdown}
 
-## Top Headlines (72h)
-${topHeadlines || "No headlines available"}
+## Top Headlines fed into this run
+${topHeadlines || "(no headlines in context)"}
 
 ## Agent Votes
 ${report.agentVotes.map((v) => `${v.agentId}: ${v.position} (conf ${(v.confidence * 100).toFixed(0)}%)`).join("\n")}
 
-## Deterministic Summary
-${briefing.summary}`;
+Write your 2-3 paragraph narrative now. No preamble, no headers, no questions back to the reader.`;
 
   const { text } = await invokeAgent({
     systemPrompt: HARPER_ANALYSIS_PROMPT,
@@ -704,7 +766,10 @@ ${briefing.summary}`;
     model: { temperature: 0.4, maxTokens: 800 },
   });
 
-  briefing.harperAnalysis = text.trim();
+  const trimmed = text.trim();
+  briefing.harperAnalysis = harperOutputIsSlop(trimmed)
+    ? SLOP_FALLBACK
+    : trimmed;
 
   // Update persisted run in Supabase with the analysis
   const sb = getSupabaseClient();

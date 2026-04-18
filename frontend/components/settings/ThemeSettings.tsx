@@ -1,3 +1,5 @@
+// [claude-code 2026-04-18] Remove Digit Size slider (digits reverted to Inter via unicode-range override)
+// [claude-code 2026-04-18] Nothing Font Kit card
 // [claude-code 2026-04-15] Special themes section — Nothing Design (Something Solvys/Monochrome)
 // [claude-code 2026-03-24] Theme settings — font style, color presets, custom color picker, severity colors, save custom themes
 import { useState } from "react";
@@ -135,7 +137,7 @@ export function ThemeSettings() {
 
         {/* Font theme cards — each with its own inline sample */}
         <div
-          className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
           style={
             isSpecialActive
               ? { opacity: 0.4, pointerEvents: "none" }

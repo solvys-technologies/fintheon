@@ -188,7 +188,7 @@ export function BoardroomAgentPanel({
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto transition-opacity duration-300"
-        style={{ maxHeight: fullWidth ? 180 : 120 }}
+        style={{ maxHeight: fullWidth ? 400 : 120 }}
       >
         {showThinking ? (
           /* Per-agent thinking phrase — rotates while waiting for first token */

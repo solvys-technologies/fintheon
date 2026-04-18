@@ -151,6 +151,7 @@ function TradeIdeaRow({
   onDeny,
   seen,
   expanded,
+  fresh,
   onToggleExpand,
   onGenerateNote,
 }: {
@@ -162,6 +163,7 @@ function TradeIdeaRow({
   onDeny?: (alert: RiskFlowAlert) => void;
   seen: boolean;
   expanded: boolean;
+  fresh?: boolean;
   onToggleExpand: () => void;
   onGenerateNote: (alertId: string) => void;
 }) {
@@ -190,7 +192,7 @@ function TradeIdeaRow({
       onDragStart={handleDragStart}
       className={`group relative border-b border-zinc-800/50 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
         seen ? "opacity-70" : ""
-      }`}
+      } ${fresh ? "riskflow-flicker" : ""}`}
     >
       <div
         className="flex items-start gap-2 px-3 py-2.5 cursor-pointer"
@@ -333,6 +335,7 @@ function AlertRow({
   onChat,
   seen,
   expanded,
+  fresh,
   onToggleExpand,
   onGenerateNote,
   onNavigateToFeed,
@@ -343,6 +346,7 @@ function AlertRow({
   onChat?: (alert: RiskFlowAlert) => void;
   seen: boolean;
   expanded: boolean;
+  fresh?: boolean;
   onToggleExpand: () => void;
   onGenerateNote: (alertId: string) => void;
   onNavigateToFeed?: () => void;
@@ -370,7 +374,7 @@ function AlertRow({
     <div
       draggable
       onDragStart={handleDragStart}
-      className={`group relative border-b border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? "riskflow-fintheon-row" : ""} ${seen ? "opacity-70" : ""}`}
+      className={`group relative border-b border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? "riskflow-fintheon-row" : ""} ${seen ? "opacity-70" : ""} ${fresh ? "riskflow-flicker" : ""}`}
     >
       {/* Main content area */}
       <div
@@ -628,6 +632,7 @@ export default function RiskFlowMini({
     loadMore,
     loadingMore,
     hasMore,
+    freshAlertId,
   } = useRiskFlow();
   const backend = useBackend();
   const { addToast } = useToast();
@@ -907,6 +912,7 @@ export default function RiskFlowMini({
                     onDeny={handleDeny}
                     seen={isSeen(alert.id)}
                     expanded={expandedId === alert.id}
+                    fresh={alert.id === freshAlertId}
                     onToggleExpand={() =>
                       setExpandedId(expandedId === alert.id ? null : alert.id)
                     }
@@ -920,6 +926,7 @@ export default function RiskFlowMini({
                     onChat={onChatAlert}
                     seen={isSeen(alert.id)}
                     expanded={expandedId === alert.id}
+                    fresh={alert.id === freshAlertId}
                     onToggleExpand={() =>
                       setExpandedId(expandedId === alert.id ? null : alert.id)
                     }
@@ -992,7 +999,10 @@ export default function RiskFlowMini({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => markSeen(item.id)}
-                        className={`block px-3 py-2 ${idx < collapsedPreviewItems.length - 1 ? "border-b border-zinc-800/80" : ""} ${seen ? "opacity-70" : ""}`}
+                        className={`block px-3 py-2 ${idx < collapsedPreviewItems.length - 1 ? "border-b border-zinc-800/80" : ""} ${seen ? "opacity-70" : ""} ${item.id === freshAlertId ? "riskflow-flicker" : ""}`}
+                        style={{
+                          animation: `fadeInTab 400ms cubic-bezier(0.4, 0, 0.2, 1) ${idx * 60}ms both`,
+                        }}
                       >
                         <div className="flex items-center gap-2">
                           <SourceIcon

@@ -1,4 +1,6 @@
 // [claude-code 2026-04-11] Renamed twitterCli → rettiwt, added pollingOwner + activePollers
+// [claude-code 2026-04-17] Cache last-known-good status to localStorage so self team card
+//                          hydrates with accurate data on app reopen instead of flashing red
 import { useEffect, useState, useRef, useCallback } from "react";
 
 export interface RettiwtPoolStatus {
@@ -37,9 +39,25 @@ const DEFAULT_STATUS: SourceStatus = {
 };
 const POLL_INTERVAL_MS = 30_000;
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const CACHE_KEY = "fintheon:sourceStatus";
+const CACHE_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
+
+function loadCachedStatus(): SourceStatus {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return DEFAULT_STATUS;
+    const cached = JSON.parse(raw) as SourceStatus;
+    const lastPollMs = new Date(cached.lastPollSuccess).getTime();
+    if (!Number.isFinite(lastPollMs)) return DEFAULT_STATUS;
+    if (Date.now() - lastPollMs > CACHE_MAX_AGE_MS) return DEFAULT_STATUS;
+    return cached;
+  } catch {
+    return DEFAULT_STATUS;
+  }
+}
 
 export function useSourceStatus(): SourceStatus {
-  const [status, setStatus] = useState<SourceStatus>(DEFAULT_STATUS);
+  const [status, setStatus] = useState<SourceStatus>(loadCachedStatus);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const poll = useCallback(() => {
@@ -49,7 +67,7 @@ export function useSourceStatus(): SourceStatus {
         const rettiwt = Boolean(data.rettiwt ?? false);
         const rateLimited = Boolean(data.rettiwtRateLimited ?? false);
         const cooldownSec = Number(data.rettiwtCooldownSec ?? 0);
-        setStatus({
+        const next: SourceStatus = {
           supabase: Boolean(data.supabase),
           rettiwt,
           rettiwtRateLimited: rateLimited,
@@ -60,7 +78,13 @@ export function useSourceStatus(): SourceStatus {
           xApi: Boolean(data.xApi),
           backendReachable: true,
           lastPollSuccess: new Date().toISOString(),
-        });
+        };
+        setStatus(next);
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+        } catch {
+          // Quota or SSR — cache is best-effort
+        }
       })
       .catch(() => setStatus((prev) => ({ ...prev, backendReachable: false })));
   }, []);

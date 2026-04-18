@@ -1,3 +1,4 @@
+// [claude-code 2026-04-17] S23-T2: fire onSynthesisComplete callback when phase hits complete (fixes Aquarium hang)
 // [claude-code 2026-04-03] MiroShark Deliberation v2 — 4 phases: Analysts → Officials? → Hermes → Harper
 // Shows market analyst cards with subject tags, consensus gauge, devil's advocate badge
 import { useState, useEffect, useRef } from "react";
@@ -96,42 +97,81 @@ interface DeliberationState {
 
 export function MiroSharkDebatePanel({
   simulationId,
+  onSynthesisComplete,
 }: {
   simulationId: string | null;
+  /** Fires once per simulationId when deliberation reaches phase === "complete". */
+  onSynthesisComplete?: () => void;
 }) {
   const [state, setState] = useState<DeliberationState | null>(null);
   const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
   const [injectText, setInjectText] = useState("");
   const [injecting, setInjecting] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const completeFiredRef = useRef<string | null>(null);
+  const onSynthesisCompleteRef = useRef(onSynthesisComplete);
+  useEffect(() => {
+    onSynthesisCompleteRef.current = onSynthesisComplete;
+  }, [onSynthesisComplete]);
 
-  // Poll deliberation state
+  // Fetch deliberation state — single check on mount, poll only if actively running
   useEffect(() => {
     if (!simulationId) {
       setState(null);
       return;
     }
 
-    const poll = async () => {
+    let cancelled = false;
+
+    const maybeFireComplete = (phase: string) => {
+      if (phase === "complete" && completeFiredRef.current !== simulationId) {
+        completeFiredRef.current = simulationId;
+        onSynthesisCompleteRef.current?.();
+      }
+    };
+
+    const fetchOnce = async () => {
       try {
         const res = await fetch(
           `${API_BASE}/api/miroshark/deliberation/${simulationId}`,
         );
-        if (res.ok) {
-          const data = await res.json();
-          setState(data);
-          if (data.phase === "complete" && pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-          }
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setState(data);
+        maybeFireComplete(data.phase);
+
+        // Only start polling if deliberation is actively in progress
+        const activePhases = [
+          "market-analysts",
+          "gov-officials",
+          "hermes-deliberation",
+          "harper-scoring",
+        ];
+        if (activePhases.includes(data.phase)) {
+          pollRef.current = setInterval(async () => {
+            try {
+              const r = await fetch(
+                `${API_BASE}/api/miroshark/deliberation/${simulationId}`,
+              );
+              if (!r.ok) return;
+              const d = await r.json();
+              setState(d);
+              maybeFireComplete(d.phase);
+              if (d.phase === "complete" && pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+              }
+            } catch {}
+          }, 3000);
         }
       } catch {}
     };
 
-    poll();
-    pollRef.current = setInterval(poll, 2000);
+    fetchOnce();
 
     return () => {
+      cancelled = true;
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;

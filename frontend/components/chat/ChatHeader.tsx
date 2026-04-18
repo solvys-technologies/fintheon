@@ -1,3 +1,5 @@
+// [claude-code 2026-04-18] S21-T1: relay button moved to FintheonComposer action cluster.
+// Clipboard-copy pickup-code flow deprecated in favor of active dispatch via /api/relay/dispatch.
 // [claude-code 2026-04-04] T4: History dropdown — Clock button toggles dropdown instead of modal
 import { useState } from "react";
 import { Scroll, Plus, Clock } from "lucide-react";

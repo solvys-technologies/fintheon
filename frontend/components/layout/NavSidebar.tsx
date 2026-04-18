@@ -40,6 +40,8 @@ interface NavSidebarProps {
   topStepXEnabled?: boolean;
   onOverlayVisibilityChange?: (visible: boolean) => void;
   onEditModeChange?: (editing: boolean) => void;
+  /** Controlled edit mode — when provided, overrides the internal local state (so the Strategium Edit button can drive reorder across the whole shell). */
+  editMode?: boolean;
   onNotificationCenterToggle?: () => void;
   onRefinementClick?: () => void;
   refinementEnabled?: boolean;
@@ -100,6 +102,7 @@ export function NavSidebar({
   topStepXEnabled = false,
   onOverlayVisibilityChange,
   onEditModeChange,
+  editMode: controlledEditMode,
   onNotificationCenterToggle,
   onRefinementClick,
   refinementEnabled = false,
@@ -109,7 +112,16 @@ export function NavSidebar({
   const [hovered, setHovered] = useState(false);
   const [manualExpand, setManualExpand] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [editMode, setEditMode] = useState(false);
+  const [localEditMode, setLocalEditMode] = useState(false);
+  const editMode = controlledEditMode ?? localEditMode;
+  const setEditMode = useCallback(
+    (next: boolean | ((prev: boolean) => boolean)) => {
+      const resolved = typeof next === "function" ? next(editMode) : next;
+      if (controlledEditMode === undefined) setLocalEditMode(resolved);
+      onEditModeChange?.(resolved);
+    },
+    [controlledEditMode, editMode, onEditModeChange],
+  );
   const [order, setOrder] = useState<NavTabId[]>(() => getSidebarOrder());
 
   const expanded = hovered || manualExpand;
@@ -141,13 +153,13 @@ export function NavSidebar({
     onOverlayVisibilityChange?.(topStepXEnabled && expanded);
   }, [onOverlayVisibilityChange, topStepXEnabled, expanded]);
 
+  // NOTE: edit-mode sync happens in the setEditMode wrapper above.
+  // Unmount clears edit mode so stray reorder state doesn't leak across route changes.
   useEffect(() => {
-    onEditModeChange?.(editMode);
-  }, [editMode, onEditModeChange]);
-
-  useEffect(() => {
-    return () => onEditModeChange?.(false);
-  }, [onEditModeChange]);
+    return () => {
+      if (controlledEditMode === undefined) onEditModeChange?.(false);
+    };
+  }, [onEditModeChange, controlledEditMode]);
 
   const handleDragStart = useCallback((e: React.DragEvent, id: NavTabId) => {
     e.dataTransfer.setData("text/plain", id);

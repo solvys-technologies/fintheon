@@ -36,6 +36,7 @@ import {
 import { WhatsNewButton } from "../onboarding/FirstTimeTour";
 import { StickyBulletin } from "../StickyBulletin";
 import { TraderNametag } from "../TraderNametag";
+import { FluxerCallWidget } from "../consilium/FluxerCallWidget";
 import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
@@ -110,7 +111,8 @@ export function TopHeader({
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
-  const { selectedSymbol, traderName, alertConfig } = useSettings();
+  const { selectedSymbol, traderName, alertConfig, proposerIframeSources } =
+    useSettings();
   const { addToast } = useToast();
   const instanceName =
     import.meta.env.VITE_FINTHEON_INSTANCE_NAME || "Fintheon";
@@ -278,6 +280,11 @@ export function TopHeader({
       label: "Research",
       description: "Research iFrame",
     },
+    ...proposerIframeSources.map((s) => ({
+      value: `custom:${s.id}` as TradingPlatform,
+      label: s.label,
+      description: s.url,
+    })),
   ];
 
   const selectedPlatformLabel =
@@ -448,7 +455,7 @@ export function TopHeader({
     <div
       id="fintheon-heading-toolbar"
       data-tour-target="toolbar"
-      className={`relative bg-[var(--fintheon-surface)] flex items-center justify-between px-3 lg:px-6 ${topStepXEnabled && layoutOption === "tickers-only" ? "h-[52px]" : "h-[56px]"}`}
+      className={`relative bg-[var(--fintheon-surface)] flex items-center justify-between px-3 lg:px-6 ${topStepXEnabled && layoutOption === "tickers-only" ? "h-[47px]" : "h-[50px]"}`}
     >
       <div className="flex items-center gap-2 lg:gap-4 xl:gap-6">
         <div
@@ -498,7 +505,7 @@ export function TopHeader({
 
           <button
             onClick={() => setShowUpgrade(true)}
-            className="relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg px-3 h-8 hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors cursor-pointer flex items-center hidden xl:flex"
+            className="relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg px-2.5 h-7 hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors cursor-pointer flex items-center hidden xl:flex"
           >
             <span className="text-[13px] text-gray-300">
               {getTierDisplayName()}
@@ -510,20 +517,17 @@ export function TopHeader({
               disablePulse={!(alertConfig.nametagEmoPulse ?? true)}
             />
           )}
+          <FluxerCallWidget />
           {topStepXEnabled && (
             <button
               onClick={toggleManualDnd}
-              className={`relative p-1.5 rounded-lg transition-colors ${
-                dndActive
-                  ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
-                  : "text-gray-500 hover:text-gray-300 hover:bg-zinc-800/50"
-              }`}
+              className={`relative toolbar-icon-btn ${dndActive ? "toolbar-active" : ""}`}
               title={dndActive ? "Do Not Disturb (ON)" : "Notifications"}
             >
               {dndActive ? (
-                <BellOff className="w-3.5 h-3.5" />
+                <BellOff className="w-3 h-3" />
               ) : (
-                <Bell className="w-3.5 h-3.5" />
+                <Bell className="w-3 h-3" />
               )}
               {queueCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500/80 text-white text-[8px] font-bold leading-none">
@@ -534,16 +538,10 @@ export function TopHeader({
           )}
           <button
             onClick={handleQuickClock}
-            className="p-1.5 rounded-lg transition-all text-gray-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 active:scale-90"
+            className={`toolbar-icon-btn ${quickClockPulse ? "toolbar-active" : ""}`}
             title="Quick clock antilag"
-            style={{
-              color: quickClockPulse ? "var(--fintheon-accent)" : undefined,
-              background: quickClockPulse
-                ? "color-mix(in srgb, var(--fintheon-accent) 15%, transparent)"
-                : undefined,
-            }}
           >
-            <Zap className="w-3.5 h-3.5" />
+            <Zap className="w-3 h-3" />
           </button>
           {voiceRoomWidget}
         </div>
@@ -553,7 +551,7 @@ export function TopHeader({
         <div className="flex items-center gap-2 flex-shrink-0">
           <WhatsNewButton />
           {psychAssistHeadingWidget}
-          <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-3 h-8 flex items-center flex-shrink-0">
+          <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-500">VIX</span>
               <span className="text-xs font-mono text-gray-300">
@@ -595,7 +593,7 @@ export function TopHeader({
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
-                      className="px-3 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                      className="px-2.5 h-7 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
                       title="Layout Options"
                     >
                       {
@@ -624,7 +622,7 @@ export function TopHeader({
                             left: layoutDropdownPos.left,
                             zIndex: 9999,
                           }}
-                          className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden"
+                          className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden animate-dropdown-enter"
                         >
                           {layoutOptions.map((option) => (
                             <button
@@ -665,7 +663,7 @@ export function TopHeader({
                     onClick={() =>
                       setShowPlatformDropdown(!showPlatformDropdown)
                     }
-                    className="px-3 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                    className="px-2.5 h-7 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
                     title="Select trading platform"
                   >
                     {!isElectron() && <Monitor className="w-3 h-3" />}
@@ -685,7 +683,7 @@ export function TopHeader({
                           left: platformDropdownPos.left,
                           zIndex: 9999,
                         }}
-                        className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden py-1"
+                        className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden py-1 animate-dropdown-enter"
                       >
                         {platformOptions.map((option) => (
                           <button
@@ -730,10 +728,10 @@ export function TopHeader({
               return wrapper(
                 <button
                   onClick={onTopStepXDisable}
-                  className={`px-2.5 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border transition-colors flex items-center gap-1.5 ${
+                  className={`toolbar-icon-btn ${
                     topStepXEnabled
-                      ? "text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
-                      : "text-zinc-500 border-zinc-700/50 hover:text-zinc-300 hover:bg-zinc-800/50"
+                      ? "!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-400"
+                      : ""
                   }`}
                   title={
                     topStepXEnabled
@@ -741,7 +739,7 @@ export function TopHeader({
                       : "Show iFrame layouts"
                   }
                 >
-                  <Power className="w-3.5 h-3.5" />
+                  <Power className="w-3 h-3" />
                 </button>,
               );
             }
@@ -752,14 +750,14 @@ export function TopHeader({
               return wrapper(
                 <button
                   onClick={onChatToggle}
-                  className={`p-2 rounded-lg text-xs font-medium transition-colors ${
+                  className={`toolbar-icon-btn ${
                     chatOpen
-                      ? "bg-[#6366f1] text-white hover:bg-[#6366f1]/90"
-                      : "bg-[var(--fintheon-bg)] border border-[#6366f1]/30 text-[#6366f1] hover:bg-[#6366f1]/10 hover:border-[#6366f1]/50"
+                      ? "!bg-[#6366f1]/15 !border-[#6366f1]/30 !text-[#6366f1]"
+                      : "!border-[#6366f1]/20 !text-[#6366f1]/50"
                   }`}
                   title="Convene"
                 >
-                  <MessageCircle className="w-3.5 h-3.5" />
+                  <MessageCircle className="w-3 h-3" />
                 </button>,
               );
             }
@@ -776,14 +774,10 @@ export function TopHeader({
                   <button
                     ref={bulletinBtnRef}
                     onClick={() => setShowBulletin(!showBulletin)}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      showBulletin
-                        ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
-                        : "bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40"
-                    }`}
+                    className={`toolbar-icon-btn ${showBulletin ? "toolbar-active" : ""}`}
                     title="Bulletin"
                   >
-                    <ClipboardList className="w-3.5 h-3.5" />
+                    <ClipboardList className="w-3 h-3" />
                   </button>
                   <StickyBulletin
                     open={showBulletin}

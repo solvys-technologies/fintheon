@@ -1,9 +1,16 @@
-// [claude-code 2026-04-16] Shell — toolbar + bulletin FAB above chat FAB, no chevron
-import { useRef, useCallback, type ReactNode } from "react";
-import { useState } from "react";
+// [claude-code 2026-04-16] Shell — toolbar + bulletin FAB with glow reminder + chat FAB status
+import {
+  useRef,
+  useCallback,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { Newspaper } from "lucide-react";
 import { useSwipeGesture } from "../../hooks/useSwipeGesture";
 import { useVixTicker } from "../../hooks/useVixTicker";
+import { useHaptic } from "../../hooks/useHaptic";
+import { useSettings } from "../../contexts/SettingsContext";
 import { MobileToolbar } from "./MobileToolbar";
 import { HamburgerMenu } from "./HamburgerMenu";
 import { FloatingChatButton } from "./FloatingChatButton";
@@ -30,22 +37,39 @@ export function MobileShell({
   const contentRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [bulletinOpen, setBulletinOpen] = useState(false);
+  const [bulletinGlow, setBulletinGlow] = useState(true);
+  const vibrate = useHaptic();
+  const { settings } = useSettings();
 
   useVixTicker();
 
+  // Bulletin glow: "once" dismisses on first render, "until-pressed" stays until tapped
+  useEffect(() => {
+    if (settings.bulletinReminder === "once") {
+      const key = "fintheon-mobile:bulletin-glow-dismissed";
+      if (localStorage.getItem(key)) {
+        setBulletinGlow(false);
+      } else {
+        localStorage.setItem(key, "1");
+        const t = setTimeout(() => setBulletinGlow(false), 4000);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [settings.bulletinReminder]);
+
   const handleSwipeLeft = useCallback(() => {
     if (activeTab < TAB_COUNT - 1) {
-      navigator.vibrate?.(10);
+      vibrate(10);
       onTabChange(activeTab + 1);
     }
-  }, [activeTab, onTabChange]);
+  }, [activeTab, onTabChange, vibrate]);
 
   const handleSwipeRight = useCallback(() => {
     if (activeTab > 0) {
-      navigator.vibrate?.(10);
+      vibrate(10);
       onTabChange(activeTab - 1);
     }
-  }, [activeTab, onTabChange]);
+  }, [activeTab, onTabChange, vibrate]);
 
   useSwipeGesture(contentRef, {
     onSwipeLeft: handleSwipeLeft,
@@ -83,10 +107,11 @@ export function MobileShell({
       {/* Floating buttons — bulletin above chat */}
       {!chatOpen && activeTab !== 2 && (
         <>
-          {/* Bulletin FAB */}
+          {/* Bulletin FAB with glow reminder */}
           <button
             onClick={() => {
-              navigator.vibrate?.(10);
+              vibrate(10);
+              setBulletinGlow(false);
               setBulletinOpen(true);
             }}
             aria-label="Open bulletin"
@@ -105,10 +130,27 @@ export function MobileShell({
               cursor: "pointer",
               zIndex: 30,
               WebkitTapHighlightColor: "transparent",
+              boxShadow: bulletinGlow
+                ? "0 0 12px 3px rgba(199, 159, 74, 0.45), 0 0 4px 1px rgba(199, 159, 74, 0.25)"
+                : "none",
+              animation: bulletinGlow
+                ? "bulletin-glow 2s ease-in-out infinite"
+                : "none",
+              transition: "box-shadow 0.6s ease-out",
             }}
           >
-            <Newspaper size={18} color="var(--text-secondary)" />
+            <Newspaper
+              size={18}
+              color={bulletinGlow ? "var(--accent)" : "var(--text-secondary)"}
+              style={{ transition: "color 0.4s ease-out" }}
+            />
           </button>
+          {bulletinGlow && (
+            <style>{`@keyframes bulletin-glow {
+              0%, 100% { box-shadow: 0 0 12px 3px rgba(199,159,74,0.45), 0 0 4px 1px rgba(199,159,74,0.25); }
+              50% { box-shadow: 0 0 18px 5px rgba(199,159,74,0.6), 0 0 6px 2px rgba(199,159,74,0.35); }
+            }`}</style>
+          )}
 
           {/* Chat FAB */}
           <FloatingChatButton onTap={onChatToggle} />

@@ -60,17 +60,26 @@ export {
 
 /**
  * Boot the Harper autonomous system.
- * Gated by HARPER_AUTONOMOUS_ENABLED=true environment variable.
+ *
+ * [claude-code 2026-04-17] The local Claude CLI subprocess loop is retired.
+ * Claude Code Routines (cloud, /schedule) now drive Harper Ops. The
+ * HARPER_AUTONOMOUS_ENABLED gate remains as an emergency escape hatch but
+ * prints a deprecation warning. Ops feed + status are now Routine-driven
+ * via POST /api/harper-ops/feed.
  */
 export async function bootHarperAutonomous(): Promise<void> {
   const enabled = process.env.HARPER_AUTONOMOUS_ENABLED === "true";
 
   if (!enabled) {
     log.info(
-      "Harper autonomous loop disabled (set HARPER_AUTONOMOUS_ENABLED=true to enable)",
+      "Harper autonomous loop disabled — Claude Code Routines drive Harper Ops. See docs/routines.md",
     );
     return;
   }
+
+  log.warn(
+    "HARPER_AUTONOMOUS_ENABLED=true — the local CLI loop is DEPRECATED. Prefer Claude Code Routines.",
+  );
 
   try {
     await startLoop();

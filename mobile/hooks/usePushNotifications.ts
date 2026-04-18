@@ -1,4 +1,5 @@
 // [claude-code 2026-04-15] T7: Push notification lifecycle hook
+// [claude-code 2026-04-17] enable() returns ok/failure so UI can surface errors; sendTestNotification returns structured result
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
@@ -10,6 +11,29 @@ import {
 } from "../lib/push";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
+
+export type EnableResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason:
+        | "no-token"
+        | "permission-denied"
+        | "subscribe-failed"
+        | "unsupported";
+    };
+
+export type TestResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason:
+        | "no-token"
+        | "not-subscribed"
+        | "permission-denied"
+        | "network"
+        | string;
+    };
 
 export function usePushNotifications() {
   const { getAccessToken } = useAuth();
@@ -38,15 +62,29 @@ export function usePushNotifications() {
     }
   }, []);
 
-  const enable = useCallback(async () => {
+  const enable = useCallback(async (): Promise<EnableResult> => {
     setIsLoading(true);
     try {
+      if (
+        !("serviceWorker" in navigator) ||
+        !("PushManager" in window) ||
+        !("Notification" in window)
+      ) {
+        return { ok: false, reason: "unsupported" };
+      }
       const token = await getAccessToken();
-      if (!token) return;
+      if (!token) return { ok: false, reason: "no-token" };
       const { severityThreshold: _, ...cats } = settings.notificationPrefs;
       const ok = await subscribeToPush(token, cats);
-      setIsSubscribed(ok);
       setPermissionStatus(getPermissionStatus());
+      if (!ok) {
+        setIsSubscribed(false);
+        if (getPermissionStatus() === "denied")
+          return { ok: false, reason: "permission-denied" };
+        return { ok: false, reason: "subscribe-failed" };
+      }
+      setIsSubscribed(true);
+      return { ok: true };
     } finally {
       setIsLoading(false);
     }
@@ -73,14 +111,39 @@ export function usePushNotifications() {
     [getAccessToken],
   );
 
-  const sendTestNotification = useCallback(async () => {
+  const sendTestNotification = useCallback(async (): Promise<TestResult> => {
+    if (!("Notification" in window)) {
+      return { ok: false, reason: "permission-denied" };
+    }
+    if (Notification.permission !== "granted") {
+      return { ok: false, reason: "permission-denied" };
+    }
+    if (!isSubscribed) {
+      return { ok: false, reason: "not-subscribed" };
+    }
     const token = await getAccessToken();
-    if (!token) return;
-    await fetch(`${API_BASE}/api/notifications/web-push/test`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }, [getAccessToken]);
+    if (!token) return { ok: false, reason: "no-token" };
+
+    try {
+      const res = await fetch(`${API_BASE}/api/notifications/web-push/test`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        return {
+          ok: false,
+          reason: `http-${res.status}${body ? `: ${body.slice(0, 80)}` : ""}`,
+        };
+      }
+      return { ok: true };
+    } catch (err) {
+      return {
+        ok: false,
+        reason: err instanceof Error ? err.message : "network",
+      };
+    }
+  }, [getAccessToken, isSubscribed]);
 
   return {
     permissionStatus,

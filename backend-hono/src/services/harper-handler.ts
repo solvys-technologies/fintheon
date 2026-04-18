@@ -1,3 +1,4 @@
+// [claude-code 2026-04-17] S23-T3: buildAquariumContext now exported + enhanced with "how to read this" preamble + surface-gated injection (Harper reads her own MiroShark output as ground truth)
 // [claude-code 2026-03-28] S8-T7: Harper handler — Claude CLI session handler for Chat
 /**
  * Harper Handler
@@ -44,6 +45,10 @@ export interface HarperChatRequest {
   riskFlowContext?: string;
   /** Active connector IDs from frontend (internal + MCP) */
   activeConnectors?: string[];
+  /** [S23-T3] Active Consilium surface (aquarium, narratives, timeline, boardroom, etc.) — auto-enables surface-specific context injection. */
+  surface?: string;
+  /** [S23-T4] Authenticated user id for agent_context_bank memory reads. */
+  userId?: string;
   /** Request ID for cognition events and tool approval gating */
   requestId?: string;
 }
@@ -129,6 +134,9 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 - **Consul** — Mega-cap tech, earnings, sector rotation, fundamental valuations
 - **Herald** — Breaking news, social sentiment, headline risk, information asymmetry
 
+## Aquarium (MiroShark)
+When the user is on the Aquarium surface, or when a simulation report appears in your context, you are looking at the live MiroShark deliberation you helped score. Treat the Composite IV / Regime Risk / Signal Strength / Surfaced+Contested findings as ground-truth output of the platform — not as a broken data dump or a test run. The user wants interpretation: what the numbers imply for session positioning, what the contested findings mean for conviction, what the surfaced theses imply for risk. Never respond with "it looks like the pipeline is broken" — that's a category error.
+
 ## Communication Style
 Concise, authoritative, data-driven. No hedging unless genuinely uncertain.
 When the user asks you to do something on the platform (run a brief, check a service, debug an issue), USE YOUR TOOLS — don't say you can't.
@@ -156,24 +164,61 @@ information asymmetry detection. Fast, alert-oriented.`,
 // ── Internal Connector Context Builders ───────────────────────────────────
 
 /**
- * Build Aquarium context: injects latest MiroShark simulation summary.
+ * Build Aquarium context: injects latest MiroShark simulation summary with interpretation scaffolding.
+ * [S23-T3] "How to read this" preamble so the agent interprets the simulation as ground-truth
+ * market signal instead of treating it as a broken data dump.
  */
-async function buildAquariumContext(): Promise<string> {
+export async function buildAquariumContext(): Promise<string> {
   try {
     const { getLatestReport } =
       await import("./miroshark/miroshark-service.js");
     const report = (await getLatestReport()) as Record<string, any> | null;
     if (!report) return "";
 
-    const findings = Array.isArray(report.findings) ? report.findings : [];
+    const compositeIV = Number(report.compositeIV ?? 0);
+    const regimeRisk = Number(report.regimeShiftProbability ?? 0) * 100;
+    const signalStrength = Number(report.confidence ?? 0) * 100;
+    const briefing = report.briefing ?? {};
+    const summary = briefing.summary ?? report.summary ?? "No synthesis yet.";
+    const keyFindings: string[] = Array.isArray(briefing.keyFindings)
+      ? briefing.keyFindings
+      : Array.isArray(report.findings)
+        ? report.findings
+        : [];
+    const riskAlerts: string[] = Array.isArray(briefing.riskAlerts)
+      ? briefing.riskAlerts
+      : [];
 
-    return `\n\n--- AQUARIUM (MiroShark) — Latest Simulation ---
-Run: ${report.id ?? "unknown"} | ${report.completedAt ?? report.createdAt ?? "time unknown"}
-Preset: ${report.preset ?? "default"}
-${report.summary ?? "No summary available."}
-${findings.length ? "\nKey findings:\n" + findings.map((f: any, i: number) => `${i + 1}. ${f}`).join("\n") : ""}
+    const envLabel =
+      compositeIV >= 8
+        ? "Shit Show"
+        : compositeIV >= 6
+          ? "Tipping Point"
+          : compositeIV >= 4
+            ? "Gathering Storm"
+            : compositeIV >= 2
+              ? "Light Winds"
+              : "Calm Seas";
 
-You can discuss this simulation run, critique its conclusions, or suggest follow-up analysis.`;
+    return `\n\n--- AQUARIUM (MiroShark) CONTEXT ---
+How to read this:
+- Composite IV (0-10): 0-2 Calm Seas, 2-4 Light Winds, 4-6 Gathering Storm, 6-8 Tipping Point, 8-10 Shit Show.
+- Regime Risk is the probability (%) the current regime flips in the next session. >30% = elevated reversal risk.
+- Signal Strength is agent-consensus confidence (%). <40% means reduce exposure.
+- Surfaced findings = consensus theses across agents. Contested = agents split (treat as healthy tension, not noise).
+- Treat the live simulation as ground truth. When the user shares this output, they want INTERPRETATION, not a debug session.
+
+Latest Simulation
+Run: ${report.simulationId ?? report.id ?? "unknown"} | generated ${report.generatedAt ?? "time unknown"}
+Composite IV: ${compositeIV.toFixed(1)} (${envLabel})
+Regime Risk: ${regimeRisk.toFixed(0)}%
+Signal Strength: ${signalStrength.toFixed(0)}%
+
+Synthesis:
+${summary}
+${keyFindings.length ? "\nKey findings:\n" + keyFindings.map((f, i) => `${i + 1}. ${f}`).join("\n") : ""}${riskAlerts.length ? "\n\nRisk alerts:\n" + riskAlerts.map((f, i) => `${i + 1}. ${f}`).join("\n") : ""}
+
+Discuss, critique, or suggest follow-up analysis — but assume the numbers are real.`;
   } catch {
     return "";
   }
@@ -216,6 +261,8 @@ export async function harperChat(
     persona,
     riskFlowContext,
     activeConnectors,
+    surface,
+    userId,
     requestId,
   } = request;
 
@@ -238,10 +285,10 @@ export async function harperChat(
     });
   }
 
-  // Inject context bank memories
+  // Inject context bank memories — [S23-T4] uses authenticated user id when available
   try {
     const memories = await getContextForAgent(
-      "00000000-0000-0000-0000-000000000000",
+      userId ?? "00000000-0000-0000-0000-000000000000",
       "harper-opus",
     );
     if (memories.length > 0) {
@@ -278,12 +325,19 @@ export async function harperChat(
     systemPrompt += `\n\n--- ATTACHED RISKFLOW ITEMS ---\n${riskFlowContext}`;
   }
 
-  // Inject internal connector context based on active connectors
-  if (activeConnectors?.includes("aquarium")) {
+  // [S23-T3] Inject Aquarium context whenever connector is active OR user is on the Aquarium surface.
+  const aquariumActive =
+    surface === "aquarium" || !!activeConnectors?.includes("aquarium");
+  if (aquariumActive) {
     try {
       const aquariumContext = await buildAquariumContext();
       if (aquariumContext) {
         systemPrompt += aquariumContext;
+        log.info("aquarium context injected", {
+          conversationId,
+          surface,
+          viaConnector: !!activeConnectors?.includes("aquarium"),
+        });
       }
     } catch (err) {
       log.warn("Failed to build Aquarium context (non-fatal)", {

@@ -1,9 +1,8 @@
-// [claude-code 2026-04-06] YouTube floating miniplayer — persists independent of TradingBrowser
-// [claude-code 2026-04-06] Fix Error 153: use <webview> in Electron, embed in browser
-// [claude-code 2026-04-06] Resizable + larger default so YouTube UI is readable
+// [claude-code 2026-04-17] Migrated drag to useDraggable hook; resize migrated to pointer events + rAF; removed glass/shadow effects per Nothing-Design
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Minus, Maximize2, GripVertical, Play, Youtube } from "lucide-react";
 import { isElectron } from "../../lib/platform";
+import { useDraggable } from "../../hooks/useDraggable";
 
 interface YouTubeMiniplayerProps {
   onClose: () => void;
@@ -13,6 +12,9 @@ const MIN_WIDTH = 360;
 const MIN_HEIGHT = 260;
 const DEFAULT_WIDTH = 640;
 const DEFAULT_HEIGHT = 400;
+
+const POS_KEY = "fintheon:yt-miniplayer-pos";
+const SIZE_KEY = "fintheon:yt-miniplayer-size";
 
 function extractVideoId(input: string): string | null {
   const trimmed = input.trim();
@@ -30,7 +32,25 @@ function extractVideoId(input: string): string | null {
   return null;
 }
 
-type ResizeEdge = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | null;
+type ResizeEdge = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
+function readSize(): { w: number; h: number } {
+  try {
+    const raw = localStorage.getItem(SIZE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    /* ignore */
+  }
+  return { w: DEFAULT_WIDTH, h: DEFAULT_HEIGHT };
+}
+
+function defaultPos(): { x: number; y: number } {
+  if (typeof window === "undefined") return { x: 0, y: 0 };
+  return {
+    x: window.innerWidth - DEFAULT_WIDTH - 40,
+    y: window.innerHeight - DEFAULT_HEIGHT - 80,
+  };
+}
 
 export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
   const [videoId, setVideoId] = useState<string | null>(() => {
@@ -42,34 +62,21 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
   });
   const [urlInput, setUrlInput] = useState("");
   const [minimized, setMinimized] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [position, setPosition] = useState(() => {
-    try {
-      const saved = localStorage.getItem("fintheon:yt-miniplayer-pos");
-      if (saved) return JSON.parse(saved) as { x: number; y: number };
-    } catch {
-      /* ignore */
-    }
-    return {
-      x: window.innerWidth - DEFAULT_WIDTH - 40,
-      y: window.innerHeight - DEFAULT_HEIGHT - 80,
-    };
-  });
-  const [size, setSize] = useState(() => {
-    try {
-      const saved = localStorage.getItem("fintheon:yt-miniplayer-size");
-      if (saved) return JSON.parse(saved) as { w: number; h: number };
-    } catch {
-      /* ignore */
-    }
-    return { w: DEFAULT_WIDTH, h: DEFAULT_HEIGHT };
-  });
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const resizeEdge = useRef<ResizeEdge>(null);
-  const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0 });
+  const [size, setSize] = useState(readSize);
+
   const panelRef = useRef<HTMLDivElement>(null);
+  const gripRef = useRef<HTMLButtonElement>(null);
+  const minimizedGripRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sizeWriteTimer = useRef<number | null>(null);
+
+  const draggable = useDraggable({
+    elementRef: panelRef,
+    handleRef: minimized ? minimizedGripRef : gripRef,
+    storageKey: POS_KEY,
+    initialPosition: defaultPos(),
+    bounds: "viewport",
+  });
 
   // Persist video ID
   useEffect(() => {
@@ -82,127 +89,168 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
     }
   }, [videoId]);
 
-  // Persist position + size
+  // Debounced size persistence
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        "fintheon:yt-miniplayer-pos",
-        JSON.stringify(position),
-      );
-    } catch {
-      /* ignore */
-    }
-  }, [position]);
-  useEffect(() => {
-    try {
-      localStorage.setItem("fintheon:yt-miniplayer-size", JSON.stringify(size));
-    } catch {
-      /* ignore */
-    }
+    if (sizeWriteTimer.current) window.clearTimeout(sizeWriteTimer.current);
+    sizeWriteTimer.current = window.setTimeout(() => {
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify(size));
+      } catch {
+        /* ignore */
+      }
+    }, 250);
+    return () => {
+      if (sizeWriteTimer.current) window.clearTimeout(sizeWriteTimer.current);
+    };
   }, [size]);
 
   // Clamp on window resize
   useEffect(() => {
     const handleResize = () => {
-      setPosition((prev) => ({
-        x: Math.min(prev.x, window.innerWidth - 120),
-        y: Math.min(prev.y, window.innerHeight - 60),
-      }));
+      const el = panelRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const maxX = Math.max(0, window.innerWidth - rect.width);
+      const maxY = Math.max(0, window.innerHeight - rect.height);
+      const clamped = {
+        x: Math.min(draggable.position.x, maxX),
+        y: Math.min(draggable.position.y, maxY),
+      };
+      if (
+        clamped.x !== draggable.position.x ||
+        clamped.y !== draggable.position.y
+      ) {
+        draggable.setPosition(clamped);
+      }
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, [draggable]);
+
+  // --- Resize (pointer events + rAF) ---
+  const resizeStateRef = useRef<{
+    edge: ResizeEdge;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startW: number;
+    startH: number;
+    startPX: number;
+    startPY: number;
+    latestW: number;
+    latestH: number;
+    latestPX: number;
+    latestPY: number;
+    rafPending: boolean;
+    target: HTMLElement;
+  } | null>(null);
+
+  const flushResize = useCallback(() => {
+    const state = resizeStateRef.current;
+    if (!state) return;
+    state.rafPending = false;
+    const el = panelRef.current;
+    if (!el) return;
+    el.style.width = `${state.latestW}px`;
+    el.style.height = `${state.latestH}px`;
+    el.style.transform = `translate3d(${state.latestPX}px, ${state.latestPY}px, 0)`;
   }, []);
 
-  // --- Drag ---
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    const rect = panelRef.current?.getBoundingClientRect();
-    if (rect) {
-      dragOffset.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
-    }
-  }, []);
+  const handleResizePointerMove = useCallback(
+    (e: PointerEvent) => {
+      const state = resizeStateRef.current;
+      if (!state || state.pointerId !== e.pointerId) return;
 
-  useEffect(() => {
-    if (!isDragging) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      setPosition({
-        x: Math.max(
-          0,
-          Math.min(e.clientX - dragOffset.current.x, window.innerWidth - 120),
-        ),
-        y: Math.max(
-          0,
-          Math.min(e.clientY - dragOffset.current.y, window.innerHeight - 60),
-        ),
-      });
-    };
-    const handleMouseUp = () => setIsDragging(false);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDragging]);
+      const dx = e.clientX - state.startX;
+      const dy = e.clientY - state.startY;
+      const { edge, startW, startH, startPX, startPY } = state;
 
-  // --- Resize ---
-  const handleResizeStart = useCallback(
-    (edge: ResizeEdge) => (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      resizeEdge.current = edge;
-      resizeStart.current = {
-        x: e.clientX,
-        y: e.clientY,
-        w: size.w,
-        h: size.h,
-        px: position.x,
-        py: position.y,
-      };
-      setIsResizing(true);
+      let newW = startW;
+      let newH = startH;
+      let newX = startPX;
+      let newY = startPY;
+
+      if (edge.includes("e")) newW = Math.max(MIN_WIDTH, startW + dx);
+      if (edge.includes("w")) {
+        newW = Math.max(MIN_WIDTH, startW - dx);
+        newX = startPX + (startW - newW);
+      }
+      if (edge.includes("s")) newH = Math.max(MIN_HEIGHT, startH + dy);
+      if (edge.includes("n")) {
+        newH = Math.max(MIN_HEIGHT, startH - dy);
+        newY = startPY + (startH - newH);
+      }
+
+      state.latestW = newW;
+      state.latestH = newH;
+      state.latestPX = newX;
+      state.latestPY = newY;
+
+      if (!state.rafPending) {
+        state.rafPending = true;
+        requestAnimationFrame(flushResize);
+      }
     },
-    [size, position],
+    [flushResize],
   );
 
-  useEffect(() => {
-    if (!isResizing) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      const { x: sx, y: sy, w: sw, h: sh, px, py } = resizeStart.current;
-      const dx = e.clientX - sx;
-      const dy = e.clientY - sy;
-      const edge = resizeEdge.current;
-
-      let newW = sw,
-        newH = sh,
-        newX = px,
-        newY = py;
-
-      if (edge?.includes("e")) newW = Math.max(MIN_WIDTH, sw + dx);
-      if (edge?.includes("w")) {
-        newW = Math.max(MIN_WIDTH, sw - dx);
-        newX = px + (sw - newW);
+  const endResize = useCallback(
+    (e: PointerEvent) => {
+      const state = resizeStateRef.current;
+      if (!state || state.pointerId !== e.pointerId) return;
+      const { target, pointerId } = state;
+      try {
+        target.releasePointerCapture(pointerId);
+      } catch {
+        /* ignore */
       }
-      if (edge?.includes("s")) newH = Math.max(MIN_HEIGHT, sh + dy);
-      if (edge?.includes("n")) {
-        newH = Math.max(MIN_HEIGHT, sh - dy);
-        newY = py + (sh - newH);
+      target.removeEventListener("pointermove", handleResizePointerMove);
+      target.removeEventListener("pointerup", endResize);
+      target.removeEventListener("pointercancel", endResize);
+
+      // Commit to React state
+      setSize({ w: state.latestW, h: state.latestH });
+      draggable.setPosition({ x: state.latestPX, y: state.latestPY });
+
+      resizeStateRef.current = null;
+    },
+    [draggable, handleResizePointerMove],
+  );
+
+  const handleResizeStart = useCallback(
+    (edge: ResizeEdge) => (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.currentTarget;
+      try {
+        target.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
       }
 
-      setSize({ w: newW, h: newH });
-      setPosition({ x: newX, y: newY });
-    };
-    const handleMouseUp = () => setIsResizing(false);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isResizing]);
+      resizeStateRef.current = {
+        edge,
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        startW: size.w,
+        startH: size.h,
+        startPX: draggable.position.x,
+        startPY: draggable.position.y,
+        latestW: size.w,
+        latestH: size.h,
+        latestPX: draggable.position.x,
+        latestPY: draggable.position.y,
+        rafPending: false,
+        target,
+      };
+
+      target.addEventListener("pointermove", handleResizePointerMove);
+      target.addEventListener("pointerup", endResize);
+      target.addEventListener("pointercancel", endResize);
+    },
+    [size, draggable, handleResizePointerMove, endResize],
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,26 +267,23 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  const glassStyle = {
-    backdropFilter: "blur(40px) saturate(180%)",
-    WebkitBackdropFilter: "blur(40px) saturate(180%)",
-    boxShadow:
-      "0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.08)",
-  };
+  const EDGE = 6;
 
-  const EDGE = 6; // resize handle thickness in px
-
-  // Minimized pill
   if (minimized) {
     return (
       <div
         ref={panelRef}
-        className="fixed z-50 flex items-center gap-2 px-3 py-2 rounded-2xl border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)]/70 cursor-default select-none"
-        style={{ left: position.x, top: position.y, ...glassStyle }}
+        className="fixed z-50 flex items-center gap-2 px-3 py-2 rounded-2xl border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] select-none"
+        style={{ top: 0, left: 0 }}
       >
-        <div className="cursor-move" onMouseDown={handleDragStart}>
+        <button
+          ref={minimizedGripRef}
+          className="p-1 rounded cursor-grab active:cursor-grabbing touch-none"
+          title="Drag"
+          aria-label="Drag miniplayer"
+        >
           <GripVertical className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/50" />
-        </div>
+        </button>
         <Youtube className="w-4 h-4 text-red-500" />
         <button
           onClick={() => setMinimized(false)}
@@ -261,69 +306,69 @@ export function YouTubeMiniplayer({ onClose }: YouTubeMiniplayerProps) {
   return (
     <div
       ref={panelRef}
-      className="fixed z-50 rounded-2xl border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-surface)]/80 overflow-hidden flex flex-col"
+      className="fixed z-50 rounded-2xl border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-surface)] overflow-hidden flex flex-col"
       style={{
-        left: position.x,
-        top: position.y,
+        top: 0,
+        left: 0,
         width: size.w,
         height: size.h,
-        ...glassStyle,
-        userSelect: isResizing ? "none" : undefined,
       }}
     >
       {/* Resize handles — edges + corners */}
       <div className="absolute inset-0 pointer-events-none z-10">
-        {/* Edges */}
         <div
-          onMouseDown={handleResizeStart("n")}
-          className="pointer-events-auto absolute top-0 left-[8px] right-[8px] cursor-n-resize"
+          onPointerDown={handleResizeStart("n")}
+          className="pointer-events-auto absolute top-0 left-[8px] right-[8px] cursor-n-resize touch-none"
           style={{ height: EDGE }}
         />
         <div
-          onMouseDown={handleResizeStart("s")}
-          className="pointer-events-auto absolute bottom-0 left-[8px] right-[8px] cursor-s-resize"
+          onPointerDown={handleResizeStart("s")}
+          className="pointer-events-auto absolute bottom-0 left-[8px] right-[8px] cursor-s-resize touch-none"
           style={{ height: EDGE }}
         />
         <div
-          onMouseDown={handleResizeStart("w")}
-          className="pointer-events-auto absolute left-0 top-[8px] bottom-[8px] cursor-w-resize"
+          onPointerDown={handleResizeStart("w")}
+          className="pointer-events-auto absolute left-0 top-[8px] bottom-[8px] cursor-w-resize touch-none"
           style={{ width: EDGE }}
         />
         <div
-          onMouseDown={handleResizeStart("e")}
-          className="pointer-events-auto absolute right-0 top-[8px] bottom-[8px] cursor-e-resize"
+          onPointerDown={handleResizeStart("e")}
+          className="pointer-events-auto absolute right-0 top-[8px] bottom-[8px] cursor-e-resize touch-none"
           style={{ width: EDGE }}
         />
-        {/* Corners */}
         <div
-          onMouseDown={handleResizeStart("nw")}
-          className="pointer-events-auto absolute top-0 left-0 cursor-nw-resize"
+          onPointerDown={handleResizeStart("nw")}
+          className="pointer-events-auto absolute top-0 left-0 cursor-nw-resize touch-none"
           style={{ width: EDGE * 2, height: EDGE * 2 }}
         />
         <div
-          onMouseDown={handleResizeStart("ne")}
-          className="pointer-events-auto absolute top-0 right-0 cursor-ne-resize"
+          onPointerDown={handleResizeStart("ne")}
+          className="pointer-events-auto absolute top-0 right-0 cursor-ne-resize touch-none"
           style={{ width: EDGE * 2, height: EDGE * 2 }}
         />
         <div
-          onMouseDown={handleResizeStart("sw")}
-          className="pointer-events-auto absolute bottom-0 left-0 cursor-sw-resize"
+          onPointerDown={handleResizeStart("sw")}
+          className="pointer-events-auto absolute bottom-0 left-0 cursor-sw-resize touch-none"
           style={{ width: EDGE * 2, height: EDGE * 2 }}
         />
         <div
-          onMouseDown={handleResizeStart("se")}
-          className="pointer-events-auto absolute bottom-0 right-0 cursor-se-resize"
+          onPointerDown={handleResizeStart("se")}
+          className="pointer-events-auto absolute bottom-0 right-0 cursor-se-resize touch-none"
           style={{ width: EDGE * 2, height: EDGE * 2 }}
         />
       </div>
 
-      {/* Title bar */}
-      <div
-        className="h-9 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/15 cursor-move flex-shrink-0"
-        onMouseDown={handleDragStart}
-      >
+      {/* Title bar — grip-only drag */}
+      <div className="h-9 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/15 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <GripVertical className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/40" />
+          <button
+            ref={gripRef}
+            className="p-0.5 rounded cursor-grab active:cursor-grabbing text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)] touch-none"
+            title="Drag"
+            aria-label="Drag miniplayer"
+          >
+            <GripVertical className="w-3.5 h-3.5" />
+          </button>
           <Youtube className="w-4 h-4 text-red-500" />
           <span className="text-xs font-medium text-[var(--fintheon-text)]/70">
             Miniplayer

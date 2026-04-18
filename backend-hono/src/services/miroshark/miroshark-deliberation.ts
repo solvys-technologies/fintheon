@@ -1,3 +1,4 @@
+// [claude-code 2026-04-17] S23-T2: Merge Harper's post-synthesis scoring into prediction cache so GET /api/miroshark/latest returns refined numbers
 // [claude-code 2026-04-10] S8-T3: Deliberation refactored to DAG execution via dag-scheduler
 // [claude-code 2026-04-03] Deliberation v2 — 4-phase pipeline with anti-groupthink + consensus scoring
 // Phase 1→Wave 0: Market analysts (parallel DAG tasks)
@@ -292,6 +293,15 @@ export async function runDeliberationPipeline(
       // Persist result to activeDeliberations map (backward compat with polling)
       Object.assign(activeDeliberations.get(simId)!, result);
       updatePhase(simId, "complete", result);
+
+      // [S23-T2] Merge Harper's refined scoring into the prediction cache so GET /api/miroshark/latest
+      // returns post-synthesis numbers — fixes the Aquarium "Updating…" hang.
+      const finalState = activeDeliberations.get(simId)!;
+      if (finalState.harperScoring) {
+        const { mergeHarperScoringIntoCache } =
+          await import("./miroshark-service.js");
+        mergeHarperScoringIntoCache(simId, finalState.harperScoring);
+      }
 
       // Persist deliberation to Supabase (fire-and-forget)
       persistDeliberation(activeDeliberations.get(simId)!).catch((err) => {

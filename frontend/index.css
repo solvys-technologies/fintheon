@@ -197,6 +197,152 @@ html *::-webkit-scrollbar {
   }
 }
 
+/* ── PART 2+3: Strategium edit-mode microinteractions ── */
+.mission-widget-edit {
+  transition:
+    opacity 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  outline: 1px solid rgba(199, 159, 74, 0.18);
+  outline-offset: -4px;
+  border-radius: 6px;
+}
+.mission-widget-edit:hover {
+  outline-color: rgba(199, 159, 74, 0.4);
+}
+.mission-widget-edit[draggable="true"]:active {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+.mission-widget-drop-target {
+  outline-color: rgba(199, 159, 74, 0.55);
+}
+
+/* ── PART 6: RiskFlow new-item flicker ── */
+@keyframes riskflow-flicker {
+  0% {
+    background-color: transparent;
+  }
+  8% {
+    background-color: color-mix(
+      in srgb,
+      var(--fintheon-accent) 45%,
+      transparent
+    );
+  }
+  14% {
+    background-color: color-mix(
+      in srgb,
+      var(--fintheon-accent) 10%,
+      transparent
+    );
+  }
+  22% {
+    background-color: color-mix(
+      in srgb,
+      var(--fintheon-accent) 50%,
+      transparent
+    );
+  }
+  55% {
+    background-color: color-mix(
+      in srgb,
+      var(--fintheon-accent) 18%,
+      transparent
+    );
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.riskflow-flicker {
+  animation: riskflow-flicker 1200ms cubic-bezier(0.4, 0, 0.2, 1) 1;
+}
+
+/* ── PART 5: Strategium peek-footer / peek-header shimmer ── */
+@keyframes fintheon-peek-shimmer {
+  0%,
+  80%,
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(100%);
+    opacity: 0.6;
+  }
+}
+.fintheon-peek-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.fintheon-peek-shimmer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 64px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(199, 159, 74, 0.2) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: fintheon-peek-shimmer 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── PART 4: Blindspots monochrome fuse shimmer ── */
+@keyframes blindspot-fuse-sweep {
+  0% {
+    transform: translateX(-60%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(160%);
+    opacity: 0;
+  }
+}
+.blindspot-fuse-container {
+  position: relative;
+  overflow: hidden;
+}
+.blindspot-fuse-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 14px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(199, 159, 74, 0.32) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: blindspot-fuse-sweep 2800ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .riskflow-flicker,
+  .fintheon-peek-shimmer::before,
+  .blindspot-fuse-container::before,
+  .mission-widget-edit {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -476,6 +622,68 @@ html *::-webkit-scrollbar {
 
 .transition-lush-fast {
   transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Toolbar icon button — unified sizing + Solvys Feels styling */
+.toolbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(199, 159, 74, 0.1);
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(240, 234, 214, 0.4);
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toolbar-icon-btn:hover {
+  border-color: rgba(199, 159, 74, 0.2);
+  color: rgba(240, 234, 214, 0.72);
+  transform: scale(1.02);
+}
+
+.toolbar-icon-btn:active {
+  transform: scale(0.97);
+}
+
+.toolbar-icon-btn.toolbar-active {
+  background: rgba(199, 159, 74, 0.12);
+  border-color: rgba(199, 159, 74, 0.2);
+  color: var(--fintheon-accent);
+}
+
+/* Dropdown entrance — lighter version of slideDown */
+@keyframes dropdown-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-dropdown-enter {
+  animation: dropdown-enter 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Tooltip/popup fade-in */
+@keyframes tooltip-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-tooltip-fade {
+  animation: tooltip-fade 150ms ease both;
 }
 
 /* Pulse theme utility classes */

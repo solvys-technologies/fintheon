@@ -238,12 +238,31 @@ export function useHermesChat(
               })(),
               activeConnectors: (() => {
                 try {
-                  return JSON.parse(
+                  const base: string[] = JSON.parse(
                     localStorage.getItem("fintheon:mcp-active-connectors") ??
                       "[]",
                   );
+                  // [S23-T3] Auto-append "aquarium" when the user is on the Aquarium surface
+                  // so Harper receives the latest MiroShark context without manual toggling.
+                  const surface = localStorage.getItem(
+                    "fintheon:current-surface",
+                  );
+                  if (surface === "aquarium" && !base.includes("aquarium")) {
+                    return [...base, "aquarium"];
+                  }
+                  return base;
                 } catch {
                   return [];
+                }
+              })(),
+              surface: (() => {
+                try {
+                  return (
+                    localStorage.getItem("fintheon:current-surface") ??
+                    undefined
+                  );
+                } catch {
+                  return undefined;
                 }
               })(),
             },
@@ -294,6 +313,16 @@ export function useHermesChat(
                 );
               } catch {
                 return [];
+              }
+            })(),
+            // [S23-T3] Surface flag so Hermes handlers can auto-inject Aquarium context.
+            surface: (() => {
+              try {
+                return (
+                  localStorage.getItem("fintheon:current-surface") ?? undefined
+                );
+              } catch {
+                return undefined;
               }
             })(),
           },

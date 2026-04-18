@@ -1,3 +1,5 @@
+// [claude-code 2026-04-18] S21-T1: Relay dispatch button + disconnect + mirror banner plumbed
+// into the composer's left action cluster (was in ChatHeader's clipboard-copy flow).
 // [claude-code 2026-03-11] T2a: clear active skill badge after send
 // [claude-code 2026-03-11] T3b: MCP auto-activation when skill selected
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, always full PromptBox
@@ -6,6 +8,7 @@
 // [claude-code 2026-03-22] Track 4: persona pills → PersonaDropdown, Plug2+Wrench → ToolsDropdown
 import { useEffect, useState, useCallback } from "react";
 import { useThread, useThreadRuntime } from "@assistant-ui/react";
+import { Radio, Unplug, Loader2 } from "lucide-react";
 import { PromptBox } from "../ui/chatgpt-prompt-input";
 import { SKILL_PREFIXES } from "../../lib/skillPrefixes";
 import { SKILLS } from "../../lib/skills";
@@ -13,6 +16,7 @@ import { useVoice } from "../../contexts/VoiceContext";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import { useMcpConnectors } from "../../hooks/useMcpConnectors";
+import { useRelayDispatch } from "../../hooks/useRelayDispatch";
 import { PersonaDropdown } from "./PersonaDropdown";
 import { ToolsDropdown } from "./ToolsDropdown";
 import { ProviderDropdown, useHarperProvider } from "./ProviderDropdown";
@@ -36,6 +40,8 @@ interface FintheonComposerProps {
   lastError: string | null;
   disabledSkills?: Record<string, { reason: string }>;
   compact?: boolean;
+  /** Current conversation id — required for relay dispatch. */
+  conversationId?: string;
 }
 
 export function FintheonComposer({
@@ -48,6 +54,7 @@ export function FintheonComposer({
   lastError,
   disabledSkills: propDisabledSkills,
   compact,
+  conversationId,
 }: FintheonComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -60,6 +67,29 @@ export function FintheonComposer({
   const { servers, activeIds, toggle: toggleConnector } = useMcpConnectors();
   const { provider, setProvider } = useHarperProvider();
   const [headlineChips, setHeadlineChips] = useState<HeadlineChip[]>([]);
+
+  // Relay dispatch — disables the composer and shows a banner while active.
+  const relay = useRelayDispatch();
+  const isDispatchedHere =
+    relay.isDispatched && relay.dispatchedConversationId === conversationId;
+  const relayDisabled =
+    relay.isDispatching ||
+    !conversationId ||
+    relay.isMobileReachable === false ||
+    (relay.isDispatched && !isDispatchedHere); // already dispatched elsewhere
+
+  const handleRelayClick = useCallback(async () => {
+    if (!conversationId) return;
+    if (isDispatchedHere) {
+      await relay.disconnect();
+    } else {
+      try {
+        await relay.dispatch(conversationId);
+      } catch (err) {
+        console.error("[FintheonComposer] relay dispatch failed:", err);
+      }
+    }
+  }, [conversationId, isDispatchedHere, relay]);
 
   const handleHeadlineToggle = useCallback((chip: HeadlineChip) => {
     setHeadlineChips((prev) => {
@@ -171,6 +201,56 @@ export function FintheonComposer({
     />
   );
 
+  // ── Relay button (leftmost in composer action cluster) ───────────────────────
+  const relayTitle = (() => {
+    if (isDispatchedHere) return `Disconnect — resume on desktop`;
+    if (!conversationId) return "Relay — start a conversation first";
+    if (relay.isMobileReachable === false)
+      return "Relay — connect Fintheon mobile first";
+    if (relay.isDispatched && !isDispatchedHere)
+      return "Relay — another conversation is already dispatched";
+    return "Relay — send this conversation to your mobile";
+  })();
+
+  const relayEl = (
+    <button
+      onClick={handleRelayClick}
+      disabled={relayDisabled}
+      className={`flex items-center justify-center rounded-lg transition-colors ${
+        isDispatchedHere
+          ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10 hover:bg-[var(--fintheon-accent)]/20"
+          : relayDisabled
+            ? "text-zinc-700 cursor-not-allowed"
+            : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
+      }`}
+      style={{ width: "32px", height: "32px" }}
+      title={relayTitle}
+    >
+      {relay.isDispatching ? (
+        <Loader2 size={16} className="animate-spin" />
+      ) : isDispatchedHere ? (
+        <Unplug size={16} />
+      ) : (
+        <Radio size={16} />
+      )}
+    </button>
+  );
+
+  // ── Dispatch banner — shown above input when this convo is dispatched ───────
+  const dispatchBannerEl = isDispatchedHere ? (
+    <div className="mb-2 rounded-lg border border-[var(--fintheon-accent)]/25 bg-[var(--fintheon-accent)]/5 px-3 py-2 text-[12px] text-[var(--fintheon-accent)] flex items-center justify-between">
+      <span>
+        Chatting on {relay.deviceLabel ?? "your mobile"} — desktop is mirroring
+      </span>
+      <button
+        onClick={() => relay.disconnect()}
+        className="text-zinc-400 hover:text-[var(--fintheon-accent)] underline underline-offset-2"
+      >
+        Disconnect
+      </button>
+    </div>
+  ) : null;
+
   return (
     <PromptBox
       onSend={handleSend}
@@ -191,6 +271,14 @@ export function FintheonComposer({
       providerSlot={providerEl}
       personaSlot={personaEl}
       toolsSlot={toolsEl}
+      relaySlot={relayEl}
+      dispatchBanner={dispatchBannerEl}
+      disabled={isDispatchedHere}
+      placeholder={
+        isDispatchedHere
+          ? `Chatting on ${relay.deviceLabel ?? "mobile"} — click Disconnect to resume here`
+          : undefined
+      }
       headlineAlerts={alerts}
       headlineChips={headlineChips}
       onHeadlineToggle={handleHeadlineToggle}

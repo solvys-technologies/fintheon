@@ -226,9 +226,9 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   }, [erScore, overtradingPenalty]);
 
   return (
-    <div className="flex items-center gap-2 w-full">
+    <div className="flex items-center gap-2 w-full py-1">
       {/* Waveform - Landscape oriented */}
-      <div className="relative h-8 flex-1 bg-black/50 rounded border border-[var(--fintheon-accent)]/10 overflow-hidden min-w-[100px]">
+      <div className="relative h-7 flex-1 bg-black/50 rounded border border-[var(--fintheon-accent)]/10 overflow-hidden min-w-[80px]">
         <div className="absolute inset-0 scanline-overlay opacity-50" />
         {isMonitoring && analyser ? (
           <WaveformCanvas
@@ -242,36 +242,29 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
         )}
       </div>
 
-      {/* Score & State */}
-      <div className="flex items-center gap-1.5">
-        {/* Status indicator dot */}
+      {/* Score + State inline */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
         <div
-          className={`w-2 h-2 rounded-full ${stateBgColor[resonanceState]} ${isMonitoring ? "animate-pulse" : ""}`}
+          className={`w-1.5 h-1.5 rounded-full ${stateBgColor[resonanceState]} ${isMonitoring ? "animate-pulse" : ""}`}
         />
-
-        {/* Score */}
-        <div className="text-right">
-          <div className={`text-xs font-bold ${stateColor[resonanceState]}`}>
-            {erScore.toFixed(1)}
-          </div>
-          <div className={`text-[8px] ${stateColor[resonanceState]}`}>
-            {resonanceState}
-          </div>
-        </div>
+        <span className={`text-xs font-bold ${stateColor[resonanceState]}`}>
+          {erScore.toFixed(1)}
+        </span>
+        <span className={`text-[9px] ${stateColor[resonanceState]}`}>
+          {resonanceState}
+        </span>
+        {resonanceState === "Tilted" && (
+          <AlertTriangle className="w-3 h-3 text-red-500 animate-pulse" />
+        )}
       </div>
-
-      {/* Tilt warning */}
-      {resonanceState === "Tilted" && (
-        <AlertTriangle className="w-3 h-3 text-red-500 animate-pulse flex-shrink-0" />
-      )}
 
       {/* Mic toggle button */}
       <button
         onClick={isMonitoring ? stopMonitoring : startMonitoring}
-        className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${
+        className={`toolbar-icon-btn flex-shrink-0 ${
           isMonitoring
-            ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-            : "bg-zinc-800/50 text-gray-400 hover:bg-zinc-700/50 hover:text-gray-300"
+            ? "!bg-emerald-500/15 !border-emerald-500/30 !text-emerald-400"
+            : ""
         }`}
         title={isMonitoring ? "Stop PsychAssist" : "Start PsychAssist"}
       >

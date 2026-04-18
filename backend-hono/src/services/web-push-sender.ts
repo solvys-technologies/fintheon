@@ -23,6 +23,8 @@ interface PushPayload {
   category: string;
   url?: string;
   icon?: string;
+  /** Optional conversation ID — consumed by service worker for deep-linking. */
+  conversationId?: string;
 }
 
 const SEVERITY_ORDER = ["low", "medium", "high", "critical"] as const;
@@ -85,6 +87,29 @@ export async function sendToUser(
     ? rows.filter((r) => meetsSeverityThreshold(severity, r.severity_threshold))
     : rows;
   await Promise.all(eligible.map((r) => sendOne(r, payload)));
+}
+
+/**
+ * Send to every active subscription for a user, bypassing category filtering.
+ * Used for user-initiated signals (e.g. relay dispatch) where the user explicitly
+ * asked for delivery — category filters are for ambient alerts, not user actions.
+ */
+export async function sendToUserDirect(
+  userId: string,
+  payload: PushPayload,
+): Promise<number> {
+  if (!VAPID_PUBLIC || !isDatabaseAvailable()) return 0;
+  const rows = await sql`
+    SELECT endpoint, keys
+    FROM web_push_subscriptions
+    WHERE user_id = ${userId}
+  `;
+  if (rows.length === 0) {
+    log.info("No subscriptions for direct push", { userId });
+    return 0;
+  }
+  await Promise.all(rows.map((r) => sendOne(r, payload)));
+  return rows.length;
 }
 
 export async function sendToAllUsers(

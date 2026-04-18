@@ -1,6 +1,10 @@
+// [claude-code 2026-04-18] S21-T1: auth header on /api/relay/health + auth-failure state
+// kept distinct from offline (was disabling the chat input whenever Supabase JWT was briefly
+// unavailable, making mobile unusable).
 // [claude-code 2026-04-15] T6: Relay connection status — polls health every 30s, three states
 
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 
 type RelayState = "connected" | "reconnecting" | "offline";
 
@@ -25,13 +29,24 @@ interface ConnectionStatusProps {
 export default function ConnectionStatus({
   onStateChange,
 }: ConnectionStatusProps) {
+  const { getAccessToken } = useAuth();
   const [state, setState] = useState<RelayState>("reconnecting");
 
   const checkHealth = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/relay/health`, {
-        headers: { "Content-Type": "application/json" },
-      });
+      const token = await getAccessToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/api/relay/health`, { headers });
+      if (res.status === 401) {
+        // Auth not ready yet — stay in "reconnecting" so the input doesn't lock.
+        // Another poll in 30s will reconcile once the JWT is available.
+        setState("reconnecting");
+        onStateChange?.("reconnecting");
+        return;
+      }
       if (!res.ok) {
         setState("offline");
         onStateChange?.("offline");
@@ -45,7 +60,7 @@ export default function ConnectionStatus({
       setState("offline");
       onStateChange?.("offline");
     }
-  }, [onStateChange]);
+  }, [getAccessToken, onStateChange]);
 
   useEffect(() => {
     checkHealth();

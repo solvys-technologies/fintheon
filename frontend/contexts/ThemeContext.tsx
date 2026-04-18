@@ -1,3 +1,5 @@
+// [claude-code 2026-04-18] Revert digit-scale runtime override — Readable Digits back to Inter via static @font-face
+// [claude-code 2026-04-18] Nothing Font Kit (color-agnostic Nothing Design typography)
 // [claude-code 2026-04-15] Special themes — Nothing Design visual overrides (Something Solvys/Monochrome)
 // [claude-code 2026-03-14] Theme context — color + font theme, applies CSS variables to :root
 // [claude-code 2026-03-24] Add backend settings sync for per-user theme persistence
@@ -54,7 +56,6 @@ function applyThemeToDOM(theme: ThemeConfig) {
   root.style.setProperty("--fintheon-surface", theme.surface);
   root.style.setProperty("--fintheon-border", theme.border);
   root.style.setProperty("--fintheon-muted", theme.muted);
-  // Severity colors — used by RiskFlow badges, alerts, status indicators
   root.style.setProperty("--fintheon-severe", theme.severe ?? "#EF4444");
   root.style.setProperty(
     "--fintheon-neutral-severe",
@@ -67,16 +68,15 @@ function applyThemeToDOM(theme: ThemeConfig) {
   );
   root.style.setProperty("--fintheon-low", theme.low ?? "#34D399");
 
-  // Special themes — Nothing Design visual overrides
-  if (theme.special) {
-    root.classList.add("nothing-active");
-    if (theme.fontBody) {
-      const bodyStack = `'Readable Digits', ${theme.fontBody}`;
-      const headingStack = `'Readable Digits', ${theme.fontHeading ?? theme.fontBody}`;
-      root.style.setProperty("--font-body", bodyStack);
-      root.style.setProperty("--font-heading", headingStack);
-      document.body.style.fontFamily = bodyStack;
-    }
+  // Legacy Special themes (Something Solvys / Monochrome) bundle their own
+  // font stack. Kept for backward compat — Nothing Font Kit is the preferred
+  // path going forward.
+  if (theme.special && theme.fontBody) {
+    const bodyStack = `'Readable Digits', ${theme.fontBody}`;
+    const headingStack = `'Readable Digits', ${theme.fontHeading ?? theme.fontBody}`;
+    root.style.setProperty("--font-body", bodyStack);
+    root.style.setProperty("--font-heading", headingStack);
+    document.body.style.fontFamily = bodyStack;
     if (theme.borderRadius) {
       root.style.setProperty("--radius", theme.borderRadius);
     }
@@ -84,23 +84,49 @@ function applyThemeToDOM(theme: ThemeConfig) {
       root.style.setProperty("--ease-spring", theme.easeDefault);
       root.style.setProperty("--ease-bounce", theme.easeDefault);
     }
-  } else {
-    root.classList.remove("nothing-active");
   }
 }
 
 function applyFontThemeToDOM(fontTheme: FontTheme, activeTheme?: ThemeConfig) {
-  // Skip font override when a special theme owns the font stack
-  if (activeTheme?.special && activeTheme.fontBody) return;
-
   const root = document.documentElement;
-  // Prepend 'Readable Digits' so digits/numbers always render in Inter
+  const specialOwnsFont = activeTheme?.special && activeTheme.fontBody;
+
+  // Toggle .nothing-active for Nothing Font Kit OR legacy Special theme.
+  const nothingActive = fontTheme.nothingKit || !!specialOwnsFont;
+  if (nothingActive) {
+    root.classList.add("nothing-active");
+  } else {
+    root.classList.remove("nothing-active");
+  }
+
+  if (specialOwnsFont) return;
+
+  // Readable Digits leads so digits render consistently in Inter across themes.
   const bodyStack = `'Readable Digits', ${fontTheme.fontBody}`;
   const headingStack = `'Readable Digits', ${fontTheme.fontHeading}`;
   root.style.setProperty("--font-body", bodyStack);
   root.style.setProperty("--font-heading", headingStack);
-  // Apply directly to body to bypass Tailwind v4 preflight specificity
   document.body.style.fontFamily = bodyStack;
+
+  if (fontTheme.fontMono) {
+    root.style.setProperty("--font-mono", fontTheme.fontMono);
+  } else {
+    root.style.removeProperty("--font-mono");
+  }
+
+  if (fontTheme.nothingKit) {
+    if (fontTheme.borderRadius) {
+      root.style.setProperty("--radius", fontTheme.borderRadius);
+    }
+    if (fontTheme.easeDefault) {
+      root.style.setProperty("--ease-spring", fontTheme.easeDefault);
+      root.style.setProperty("--ease-bounce", fontTheme.easeDefault);
+    }
+  } else {
+    root.style.removeProperty("--radius");
+    root.style.removeProperty("--ease-spring");
+    root.style.removeProperty("--ease-bounce");
+  }
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -132,10 +158,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setThemeState(next);
       applyThemeToDOM(next);
       saveTheme(next);
-      // When switching away from special → restore user's font theme
-      if (!next.special) {
-        applyFontThemeToDOM(fontTheme, next);
-      }
+      applyFontThemeToDOM(fontTheme, next);
     },
     [fontTheme],
   );
@@ -149,32 +172,31 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [theme],
   );
 
-  // Apply on mount (SSR safety) + fetch backend theme if available
   useEffect(() => {
     applyThemeToDOM(theme);
     applyFontThemeToDOM(fontTheme, theme);
 
-    // Fetch backend settings and apply stored theme (backend is source of truth)
     fetch(BACKEND_SETTINGS_URL, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const remote = data?.settings;
         if (remote?.appearance) {
           const { colorTheme, fontThemeId, pompaMode } = remote.appearance;
+          let nextTheme = theme;
           if (
             colorTheme &&
             typeof colorTheme === "object" &&
             colorTheme.accent
           ) {
-            const restored = colorTheme as ThemeConfig;
-            setThemeState(restored);
-            applyThemeToDOM(restored);
-            saveTheme(restored);
+            nextTheme = colorTheme as ThemeConfig;
+            setThemeState(nextTheme);
+            applyThemeToDOM(nextTheme);
+            saveTheme(nextTheme);
           }
           if (fontThemeId && FONT_THEMES[fontThemeId as FontThemeId]) {
             const ft = FONT_THEMES[fontThemeId as FontThemeId];
             setFontThemeState(ft);
-            applyFontThemeToDOM(ft, colorTheme as ThemeConfig | undefined);
+            applyFontThemeToDOM(ft, nextTheme);
             saveFontTheme(ft);
           }
           if (pompaMode !== undefined) {
@@ -188,7 +210,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync appearance settings to backend when they change
   useEffect(() => {
     if (!backendSynced.current) return;
     const appearance = {
@@ -228,3 +249,5 @@ export function useTheme(): ThemeContextValue {
   if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
   return ctx;
 }
+
+export { ALL_PRESETS };

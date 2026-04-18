@@ -93,6 +93,10 @@ export interface PromptBoxProps {
   personaSlot?: React.ReactNode;
   toolsSlot?: React.ReactNode;
   providerSlot?: React.ReactNode;
+  // Relay dispatch button (leftmost in action cluster). Renders either relay or disconnect.
+  relaySlot?: React.ReactNode;
+  // Optional banner shown above the input while dispatched (e.g. "Chatting on iPhone").
+  dispatchBanner?: React.ReactNode;
   // Boardroom: swap pulsing icon for newspaper RiskFlow picker
   onRiskFlowPick?: () => void;
   // Headline attachment (multi-select from scored feed items)
@@ -130,6 +134,8 @@ export function PromptBox({
   personaSlot,
   toolsSlot,
   providerSlot,
+  relaySlot,
+  dispatchBanner,
   onRiskFlowPick,
   headlineAlerts,
   headlineChips,
@@ -429,6 +435,9 @@ export function PromptBox({
           </div>
         )}
 
+        {/* Dispatch banner — shown above the input while a mirror session is active */}
+        {dispatchBanner}
+
         {/* Main input container */}
         <div
           className={[
@@ -500,6 +509,9 @@ export function PromptBox({
           >
             {/* Left toolbar */}
             <div className="flex items-center gap-1">
+              {/* Relay dispatch (leftmost) — S21-T1 */}
+              {relaySlot}
+
               {/* Attach */}
               <button
                 onClick={() => setShowAttach((v) => !v)}

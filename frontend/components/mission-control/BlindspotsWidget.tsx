@@ -1,4 +1,5 @@
 // [claude-code 2026-03-20] 8d: Blindspots overhaul — 7-day rolling W/L record instead of severity badge
+// [claude-code 2026-04-17] Nothing-Design FuseBar (monochrome + shimmer), IV chip replaces W/L%, 140-char text cap, 4-entry cap
 import { useState, useEffect } from "react";
 import { Eye } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -6,6 +7,9 @@ import { useBackend } from "../../lib/backend";
 import { LockedCard } from "../ui/LockedCard";
 import { IS_INTERNAL_BUILD } from "../../lib/internal-build";
 import type { BlindspotItem } from "../../lib/services";
+
+const BLINDSPOT_CHAR_CAP = 140;
+const BLINDSPOT_MAX_VISIBLE = 4;
 
 const FALLBACK_BLINDSPOTS: BlindspotItem[] = [
   {
@@ -55,27 +59,33 @@ function getInterviewBlindspots(): BlindspotItem[] {
   return [];
 }
 
-function RollingRecord({ record }: { record: Array<"W" | "L"> }) {
-  const wins = record.filter((r) => r === "W").length;
-  const pct = record.length > 0 ? Math.round((wins / record.length) * 100) : 0;
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) : text;
+}
 
+function FuseBar({ record }: { record: Array<"W" | "L"> }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="flex items-center gap-[2px]">
-        {record.map((r, i) => (
-          <div
-            key={i}
-            className={`w-[5px] h-3 rounded-[1px] ${r === "W" ? "bg-emerald-400" : "bg-red-400"}`}
-            title={`Day ${i + 1}: ${r === "W" ? "Win" : "Loss"}`}
-          />
-        ))}
-      </div>
-      <span
-        className={`text-[9px] font-mono font-semibold ${pct >= 70 ? "text-emerald-400" : pct >= 50 ? "text-[var(--fintheon-accent)]" : "text-red-400"}`}
-      >
-        {pct}%
-      </span>
+    <div className="blindspot-fuse-container flex items-center gap-[2px]">
+      {record.map((r, i) => (
+        <div
+          key={i}
+          className="w-[5px] h-3 rounded-[1px]"
+          style={{
+            backgroundColor: "#f0ead6",
+            opacity: r === "W" ? 0.6 : 0.15,
+          }}
+          title={`Day ${i + 1}: ${r === "W" ? "Avoided" : "Triggered"}`}
+        />
+      ))}
     </div>
+  );
+}
+
+function IVChip({ ivScore }: { ivScore: number }) {
+  return (
+    <span className="text-[9px] font-mono font-semibold text-[var(--fintheon-accent)] tabular-nums">
+      IV {ivScore.toFixed(1)}
+    </span>
   );
 }
 
@@ -94,7 +104,6 @@ export function BlindspotsWidget() {
       try {
         const data = await backend.blindspots.getBlindspots();
         if (!cancelled && data.blindspots.length > 0) {
-          // Ensure each blindspot has a record (fallback to random if backend doesn't provide)
           const enriched = data.blindspots.map((spot) => ({
             ...spot,
             record:
@@ -117,6 +126,8 @@ export function BlindspotsWidget() {
     };
   }, [backend]);
 
+  const visible = blindspots.slice(0, BLINDSPOT_MAX_VISIBLE);
+
   const content = (
     <div className="p-4">
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -127,27 +138,30 @@ export function BlindspotsWidget() {
           </h3>
         </div>
         <span className="text-[8px] text-zinc-600 uppercase tracking-wider">
-          7-day record
+          7-day fuse
         </span>
       </div>
-      {blindspots.length === 0 ? (
+      {visible.length === 0 ? (
         <p className="text-xs text-zinc-600 text-center py-2">
           No active blindspots.
         </p>
       ) : (
         <div className="space-y-2">
-          {blindspots.map((spot) => (
+          {visible.map((spot) => (
             <div
               key={spot.id}
               className="text-xs p-2 rounded border border-[var(--fintheon-accent)]/10"
             >
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-gray-300 flex-1 text-[10px] leading-tight">
-                  {spot.text}
+                  {truncate(spot.text, BLINDSPOT_CHAR_CAP)}
                 </span>
+                {typeof spot.ivScore === "number" && (
+                  <IVChip ivScore={spot.ivScore} />
+                )}
               </div>
               {spot.record && spot.record.length > 0 && (
-                <RollingRecord record={spot.record} />
+                <FuseBar record={spot.record} />
               )}
             </div>
           ))}

@@ -1,5 +1,6 @@
 // [claude-code 2026-04-04] Harper Ops Panel — autonomous loop monitoring + control
 // [claude-code 2026-04-06] Theme-sensitive: uses --fintheon-* vars for colors + inherited font-family
+// [claude-code 2026-04-17] Routine-aware: entries from Claude Code Routines get a badge, alive = any recent activity
 import { useState } from "react";
 import {
   Bot,
@@ -9,6 +10,8 @@ import {
   Check,
   X,
   RefreshCw,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import { useHarperOps, type OpsEntry } from "../../hooks/useHarperOps";
 
@@ -42,9 +45,22 @@ function actionIcon(type: string) {
       return <AlertTriangle className="w-3 h-3 text-amber-400" />;
     case "error":
       return <X className="w-3 h-3 text-red-400" />;
+    case "routine":
+      return <Clock className="w-3 h-3 text-sky-400" />;
+    case "ack":
+      return <CheckCircle2 className="w-3 h-3 text-emerald-400/70" />;
     default:
       return <Zap className="w-3 h-3 text-[var(--fintheon-accent)]" />;
   }
+}
+
+function routineLabel(entry: OpsEntry): string | null {
+  if (entry.actionType !== "routine") return null;
+  const meta = entry.metadata ?? {};
+  const name = typeof meta.routineName === "string" ? meta.routineName : null;
+  if (name) return name;
+  const id = typeof meta.routineId === "string" ? meta.routineId : null;
+  return id;
 }
 
 function formatTime(iso: string): string {
@@ -67,6 +83,8 @@ function OpsFeedItem({
 }) {
   const [expanded, setExpanded] = useState(false);
 
+  const routineName = routineLabel(entry);
+
   return (
     <div className="border-b border-[var(--fintheon-accent)]/8 py-2 px-3 hover:bg-[var(--fintheon-accent)]/[0.03] transition-colors">
       <div
@@ -84,6 +102,16 @@ function OpsFeedItem({
             <div
               className={`w-1.5 h-1.5 rounded-full ${severityDot(entry.severity)}`}
             />
+            {routineName && (
+              <span className="text-[9px] font-mono uppercase tracking-wider text-sky-400/80 border border-sky-400/20 rounded px-1 py-[1px] bg-sky-400/5">
+                Routine · {routineName}
+              </span>
+            )}
+            {entry.actionType === "ack" && (
+              <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400/70">
+                Ack
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-[var(--fintheon-text)]/80 mt-0.5 leading-snug truncate">
             {entry.title}
@@ -135,8 +163,10 @@ export function HarperOpsPanel() {
     deny,
   } = useHarperOps();
 
-  const loopAlive = status?.loop?.alive ?? false;
-  const lastHb = status?.ops?.lastHeartbeat;
+  // Alive now reflects any recent ops activity (Routines included), not just the
+  // retired local CLI loop. Last-activity timestamp replaces the old heartbeat.
+  const opsAlive = status?.ops?.alive ?? false;
+  const lastActivity = status?.ops?.lastActivity ?? status?.ops?.lastHeartbeat;
   const pendingCount = status?.ops?.pendingApprovals ?? 0;
   const queueDepth = status?.loop?.queueDepth ?? 0;
 
@@ -150,18 +180,18 @@ export function HarperOpsPanel() {
         <div className="flex items-center gap-2">
           <Bot className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
           <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--fintheon-accent)]">
-            Harper Ops
+            Harper Ops · Routines
           </span>
           <div
-            className={`w-2 h-2 rounded-full ${loopAlive ? "bg-emerald-400 animate-pulse" : "bg-[var(--fintheon-muted)]/40"}`}
+            className={`w-2 h-2 rounded-full ${opsAlive ? "bg-emerald-400 animate-pulse" : "bg-[var(--fintheon-muted)]/40"}`}
           />
           <span className="text-[9px] font-mono text-[var(--fintheon-muted)]">
-            {loopAlive ? "ALIVE" : "OFFLINE"}
+            {opsAlive ? "ALIVE" : "IDLE"}
           </span>
         </div>
 
         <div className="flex items-center gap-3 text-[9px] font-mono text-[var(--fintheon-muted)]">
-          {lastHb && <span>Last HB: {formatTime(lastHb)}</span>}
+          {lastActivity && <span>Last: {formatTime(lastActivity)}</span>}
           {queueDepth > 0 && (
             <span className="text-amber-400">Q: {queueDepth}</span>
           )}
@@ -211,7 +241,7 @@ export function HarperOpsPanel() {
 
         {!loading && feed.length === 0 && (
           <div className="p-4 text-center text-[10px] font-mono text-[var(--fintheon-muted)]">
-            No ops activity yet. Enable HARPER_AUTONOMOUS_ENABLED=true to start.
+            No ops activity yet. Routines post here on completion.
           </div>
         )}
 

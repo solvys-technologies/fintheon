@@ -363,6 +363,31 @@ export async function handleChat(c: Context) {
       prompt = `${feedContext}\n\n${prompt}`;
     }
 
+    // [S23-T3] Aquarium awareness: Hermes CAOs (Oracle, Feucht, Consul, Herald) should also
+    // interpret MiroShark output when the user is on the Aquarium surface.
+    const mcpActive = Array.isArray((body as any)?.mcpServers)
+      ? ((body as any).mcpServers as string[])
+      : [];
+    const hermesSurface = (body as any)?.surface as string | undefined;
+    if (hermesSurface === "aquarium" || mcpActive.includes("aquarium")) {
+      try {
+        const { buildAquariumContext } =
+          await import("../../../services/harper-handler.js");
+        const aquariumContext = await buildAquariumContext();
+        if (aquariumContext) {
+          prompt = `${aquariumContext}\n\n${prompt}`;
+          console.log(
+            `[Hermes][${requestId}] Aquarium context injected (surface=${hermesSurface ?? "none"})`,
+          );
+        }
+      } catch (err) {
+        console.warn(
+          `[Hermes][${requestId}] Failed to build Aquarium context:`,
+          err,
+        );
+      }
+    }
+
     cognition.step(
       "gateway-call",
       `Streaming from ${toAgentLabel(agentInfo.agent)}`,

@@ -47,12 +47,20 @@ const DEFAULT_SCORES: PsychScores = {
   adaptability: 6,
 };
 
+const BLINDSPOT_CHAR_CAP = 140;
+const BLINDSPOT_ITEM_CAP = 4;
+
 const normalizeBlindSpots = (blindSpots?: unknown): string[] => {
   if (!Array.isArray(blindSpots)) return [];
   return blindSpots
     .map((spot) => (typeof spot === "string" ? spot.trim() : ""))
     .filter((spot) => spot.length > 0)
-    .slice(0, 3);
+    .map((spot) =>
+      spot.length > BLINDSPOT_CHAR_CAP
+        ? spot.slice(0, BLINDSPOT_CHAR_CAP)
+        : spot,
+    )
+    .slice(0, BLINDSPOT_ITEM_CAP);
 };
 
 const sanitizeGoal = (goal?: unknown): string | null => {

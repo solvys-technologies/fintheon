@@ -39,10 +39,12 @@
       "mcp__claude_ai_Notion__notion-search",
       "mcp__claude_ai_Notion__notion-fetch",
       "Bash(mkdir -p /tmp/solvys-skills/.claude/skills/solvys-test)",
-      "Bash(cp /Users/tifos/Documents/Codebases/fintheon/.claude/skills/solvys-test/SKILL.md /tmp/solvys-skills/.claude/skills/solvys-test/SKILL.md)",
-      "Bash(cp /Users/tifos/Documents/Codebases/fintheon/.claude/skills/solvys-deploy/SKILL.md /tmp/solvys-skills/.claude/skills/solvys-deploy/SKILL.md)",
+      "Bash(cp /Users/tifos/Desktop/Codebases/fintheon/.claude/skills/solvys-test/SKILL.md /tmp/solvys-skills/.claude/skills/solvys-test/SKILL.md)",
+      "Bash(cp /Users/tifos/Desktop/Codebases/fintheon/.claude/skills/solvys-deploy/SKILL.md /tmp/solvys-skills/.claude/skills/solvys-deploy/SKILL.md)",
       "mcp__notion__API-delete-a-block",
-      "mcp__claude_ai_Notion__notion-update-page"
+      "mcp__claude_ai_Notion__notion-update-page",
+      "Skill(schedule)",
+      "Skill(schedule:*)"
     ]
   }
 }

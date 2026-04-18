@@ -58,7 +58,8 @@ export interface AccuracyFeedback {
 export interface PredictionResult {
   date: string;
   predictedIV: number;
-  actualVixChange: number;
+  /** Absolute VIX level at resolution (24h checkpoint), not a delta. */
+  actualVixLevel: number;
   directionCorrect: boolean;
   magnitudeError: number;
 }

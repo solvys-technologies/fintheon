@@ -1,0 +1,9 @@
+{
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "backend",
+      "command": "cd backend-hono && bun run dev"
+    }
+  ]
+}

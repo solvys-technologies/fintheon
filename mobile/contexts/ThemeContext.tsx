@@ -65,9 +65,12 @@ function applyThemeToDOM(theme: ThemeConfig) {
 
 function applyFontThemeToDOM(fontTheme: FontTheme) {
   const root = document.documentElement;
-  root.style.setProperty("--font-body", fontTheme.fontBody);
-  root.style.setProperty("--font-heading", fontTheme.fontHeading);
-  document.body.style.fontFamily = fontTheme.fontBody;
+  // Prepend 'Readable Digits' so digits/numbers always render in Doto
+  const bodyStack = `'Readable Digits', ${fontTheme.fontBody}`;
+  const headingStack = `'Readable Digits', ${fontTheme.fontHeading}`;
+  root.style.setProperty("--font-body", bodyStack);
+  root.style.setProperty("--font-heading", headingStack);
+  document.body.style.fontFamily = bodyStack;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

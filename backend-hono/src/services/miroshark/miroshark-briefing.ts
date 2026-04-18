@@ -1,10 +1,26 @@
 // [claude-code 2026-03-28] S4-T2: Rewrote briefing with trader-friendly language (Market Heat, Regime Risk, Signal Strength)
 // [claude-code 2026-03-23] MiroShark briefing generator — deterministic text from debate results
+// [claude-code 2026-04-17] Slop-detection: when a run has no real signal, emit the explicit fallback string instead of templated heat/regime slop
 import type {
   MiroSharkReport,
   MiroSharkBriefing,
   SimulationContext,
 } from "./miroshark-types.js";
+
+export const SLOP_FALLBACK =
+  "No new agentic updates. Trigger an update in Aquarium.";
+
+function isSlopRun(
+  report: MiroSharkReport,
+  context: SimulationContext,
+): boolean {
+  const allDefault = report.categoryScores.every(
+    (cs) => Math.abs(cs.ivScore - 5.0) < 0.15 && Math.abs(cs.delta) < 0.15,
+  );
+  const noHeadlines = (context.riskflowHeadlines?.length ?? 0) === 0;
+  const lowConfidence = report.confidence <= 0.3;
+  return allDefault && noHeadlines && lowConfidence;
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
   geopolitical: "Geopolitical",
@@ -44,6 +60,15 @@ export function generateBriefing(
   report: MiroSharkReport,
   context: SimulationContext,
 ): MiroSharkBriefing {
+  // Slop guard: no real signal → explicit fallback, not templated heat/regime slop
+  if (isSlopRun(report, context)) {
+    return {
+      summary: SLOP_FALLBACK,
+      keyFindings: [],
+      harperAnalysis: SLOP_FALLBACK,
+    } as MiroSharkBriefing;
+  }
+
   const composite = report.nextSessionProjection;
   const regime = report.regimeShiftProbability;
   const conf = report.confidence;

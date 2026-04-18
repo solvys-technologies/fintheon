@@ -1,6 +1,13 @@
+// [claude-code 2026-04-18] Remove digit-scale helpers (reverted to Inter digits — scaling no longer meaningful)
+// [claude-code 2026-04-18] Nothing Font Kit — color-agnostic Nothing Design typography
 // [claude-code 2026-03-14] Font theme system — types, presets, and localStorage persistence
 
-export type FontThemeId = "default" | "solvys" | "classic" | "imperial";
+export type FontThemeId =
+  | "default"
+  | "solvys"
+  | "classic"
+  | "imperial"
+  | "nothing";
 
 export interface FontTheme {
   id: FontThemeId;
@@ -8,6 +15,11 @@ export interface FontTheme {
   description: string;
   fontBody: string;
   fontHeading: string;
+  fontMono?: string;
+  // Nothing Font Kit — apply Nothing Design thematics on top of any color theme
+  nothingKit?: boolean;
+  borderRadius?: string;
+  easeDefault?: string;
 }
 
 const FALLBACK = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -40,6 +52,17 @@ export const FONT_THEMES: Record<FontThemeId, FontTheme> = {
     description: "Cinzel + Cormorant Garamond — Roman inscription aesthetic",
     fontBody: `'Cormorant Garamond', 'Georgia', serif`,
     fontHeading: `'Cinzel', 'Georgia', serif`,
+  },
+  nothing: {
+    id: "nothing",
+    label: "Nothing",
+    description: "Space Grotesk + Doto — industrial, flat, sharp",
+    fontBody: `'Space Grotesk', ${FALLBACK}`,
+    fontHeading: `'Doto', 'Space Grotesk', monospace`,
+    fontMono: `'Space Mono', ui-monospace, monospace`,
+    nothingKit: true,
+    borderRadius: "0.25rem",
+    easeDefault: "cubic-bezier(0.25, 0.1, 0.25, 1)",
   },
 };
 

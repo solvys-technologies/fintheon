@@ -11,7 +11,8 @@
 # ============================================================================
 set -eo pipefail
 
-FINTHEON_ROOT="${FINTHEON_ROOT:-$HOME/Documents/Codebases/fintheon}"
+# [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
+FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
 UPDATE_VERSION="2.0.0"
 SUPABASE_DATABASE_URL="postgresql://postgres.nrcfnzclbjboctptxaxx:Pricedinresearch0670963957%24@aws-0-us-west-2.pooler.supabase.com:5432/postgres"
 
@@ -125,6 +126,12 @@ if [[ -d "$FINTHEON_ROOT/frontend" && -f "$FINTHEON_ROOT/frontend/package.json" 
   ok "Frontend dependencies"
 fi
 
+if [[ -d "$FINTHEON_ROOT/mobile" && -f "$FINTHEON_ROOT/mobile/package.json" ]]; then
+  cd "$FINTHEON_ROOT/mobile"
+  bun install --silent 2>/dev/null || bun install 2>/dev/null || warn "Mobile deps install had issues"
+  ok "Mobile dependencies"
+fi
+
 cd "$FINTHEON_ROOT"
 
 # ── Step 5: Ensure environment is complete ───────────────────────────────────
@@ -177,6 +184,20 @@ if [[ -d "$FD_MCP/.git" ]]; then
 else
   git clone --quiet https://github.com/financial-datasets/mcp-server "$FD_MCP" 2>/dev/null || true
   ok "financial-datasets MCP cloned"
+fi
+
+# tradingview MCP server (screener, technicals, chart data)
+TV_MCP="$MCP_DIR/tradingview-mcp"
+if [[ -d "$TV_MCP/.git" ]]; then
+  git -C "$TV_MCP" pull --quiet 2>/dev/null || true
+  cd "$TV_MCP" && npm install --silent 2>/dev/null || true
+  cd "$FINTHEON_ROOT"
+  ok "tradingview MCP updated"
+else
+  git clone --quiet https://github.com/tradesdontlie/tradingview-mcp.git "$TV_MCP" 2>/dev/null || true
+  cd "$TV_MCP" && npm install --silent 2>/dev/null || true
+  cd "$FINTHEON_ROOT"
+  ok "tradingview MCP cloned"
 fi
 
 # Install uv if missing (needed for Python MCP servers)

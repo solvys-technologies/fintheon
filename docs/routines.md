@@ -89,6 +89,45 @@ The backend scheduler checks these flags at startup. When `true`, the backend cr
 - **What**: 2x/day full Context Bank synthesis + calibration preview. Compares predicted vs actual instrument movement, generates calibration score and 24h forward outlook
 - **Output**: Writes to `desk_reports` table (desk='aquarium-deep')
 
+## Harper Ops Feed Integration
+
+Routines post completion entries to the Harper Ops feed so the desktop panel
+surfaces their activity in real time. Harper auto-acknowledges each Routine
+post with a short follow-up entry (`actionType: "ack"`) so the feed reads as a
+conversation between Routines and Harper.
+
+### Endpoint
+
+`POST https://fintheon.fly.dev/api/harper-ops/feed`
+
+### Payload
+
+```json
+{
+  "actionType": "routine",
+  "title": "REFLECT: 7-day scoring calibration complete",
+  "detail": "Full report body…",
+  "severity": "info",
+  "metadata": {
+    "routineId": "trig_01ND9msD2oyniTwgYMtqBMQB",
+    "routineName": "REFLECT Nightly Quality Analysis",
+    "triggerId": "trig_01ND9msD2oyniTwgYMtqBMQB",
+    "source": "routine"
+  }
+}
+```
+
+Any of `actionType: "routine"`, `metadata.routineId`, `metadata.triggerId`, or
+`metadata.source === "routine"` flags an entry as Routine-authored. The panel
+renders a `Routine · <name>` badge and the status endpoint treats the post as a
+heartbeat (`alive = any entry within 24h`).
+
+### Severity guidance
+
+- `info` — successful completion, nothing unusual
+- `warning` — degraded output, partial data, retry recommended
+- `critical` — failure, manual intervention needed
+
 ## Infrastructure
 
 - **Environment**: Default (Anthropic Cloud)

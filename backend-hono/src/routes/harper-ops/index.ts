@@ -133,18 +133,51 @@ export function createHarperOpsRoutes() {
   });
 
   // [claude-code 2026-04-04] Direct write endpoints for ops + journal (maintenance-tier)
+  // [claude-code 2026-04-17] Routine POST integration — auto-ack when a routine
+  // posts, so the feed reads as a conversation between Routines and Harper.
   app.post("/feed", async (c) => {
     const body = await c.req.json<Partial<OpsEntry>>().catch(() => null);
     if (!body || !body.title) return c.json({ error: "title required" }, 400);
     const { writeOpsEntry } =
       await import("../../services/harper-autonomous/ops-store.js");
+
+    const meta = (body.metadata ?? {}) as Record<string, unknown>;
+    const isRoutine =
+      body.actionType === "routine" ||
+      typeof meta.routineId === "string" ||
+      typeof meta.triggerId === "string" ||
+      meta.source === "routine";
+
     const entry = await writeOpsEntry({
-      actionType: body.actionType ?? "alert",
+      actionType: isRoutine ? "routine" : (body.actionType ?? "alert"),
       title: body.title,
       detail: body.detail,
       severity: body.severity ?? "info",
       metadata: body.metadata,
     });
+
+    // Harper auto-acknowledges routine posts with a short follow-up note.
+    // Keeps the feed feeling responsive without re-spawning the CLI loop.
+    if (isRoutine) {
+      const routineLabel =
+        (typeof meta.routineName === "string" && meta.routineName) ||
+        (typeof meta.routineId === "string" && meta.routineId) ||
+        "routine";
+      writeOpsEntry({
+        actionType: "ack",
+        title: `Harper acknowledged: ${routineLabel}`,
+        severity: "info",
+        metadata: {
+          respondsTo: entry.id,
+          routineName: meta.routineName,
+          routineId: meta.routineId,
+          triggerId: meta.triggerId,
+        },
+      }).catch(() => {
+        /* non-fatal */
+      });
+    }
+
     return c.json({ ok: true, entry });
   });
 

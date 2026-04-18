@@ -1,3 +1,4 @@
+// [claude-code 2026-04-17] S23-T1/T2: Debate button → Chart button (LineChart icon, toggles Sanctum 50/50 with TradingView), Proposals iframe-toggle removed, reloadLatestReport wired into MiroShark synthesis-complete callback to fix Aquarium hang
 // [claude-code 2026-04-03] Spring-physics CSS transitions for dropdowns, tab content, side panels
 // [claude-code 2026-04-03] S14-T3: Consilium restructure — Boardroom + Apparatus as dropdowns
 // [claude-code 2026-03-30] Wire narratives from NarrativeContext → Sanctum (Aquarium)
@@ -19,7 +20,7 @@ import {
   PanelRightClose,
   ChevronDown,
   Zap,
-  Shield,
+  LineChart,
   Scroll,
   Plus,
 } from "lucide-react";
@@ -29,7 +30,6 @@ import { AgentChattr } from "./AgentChattr";
 import { Sanctum } from "../narrative/Sanctum";
 import { TimelinePanel } from "../narrative/TimelinePanel";
 import { ProposalWidget } from "../proposals/ProposalWidget";
-import { MiroSharkDebatePanel } from "../miroshark/MiroSharkDebatePanel";
 import { NarrativeMap } from "../narrative/NarrativeMap";
 import {
   NarrativeProvider,
@@ -37,6 +37,7 @@ import {
 } from "../../contexts/NarrativeContext";
 import { ApparatusFlowMap } from "../apparatus/ApparatusFlowMap";
 import { FluxerEmbed } from "./FluxerEmbed";
+import { AgentLounge } from "./AgentLounge";
 import { EmbeddedBrowserFrame } from "../layout/EmbeddedBrowserFrame";
 import { SharedMemoryPanel } from "../memory/SharedMemoryPanel";
 import { AiLoader } from "../chat/FintheonThread";
@@ -135,16 +136,8 @@ function SanctumWithNarratives(
 }
 
 export function ConsiliumHub() {
-  const {
-    selectedSymbol,
-    iframeUrls,
-    proposerIframeSources,
-    proposerDefaultIframe,
-  } = useSettings();
+  const { selectedSymbol, iframeUrls } = useSettings();
   const { status: harperStatus } = useHarperOps();
-  const [proposalsView, setProposalsView] = useState<"proposals" | "iframe">(
-    "proposals",
-  );
   const [activeTab, setActiveTab] = useState<ConsiliumTab>("chat");
   const [sanctumSubView, setSanctumSubView] =
     useState<SanctumSubView>("narratives");
@@ -168,16 +161,16 @@ export function ConsiliumHub() {
   const [macroContext, setMacroContext] = useState<SimulationContext | null>(
     null,
   );
-  type ActivePanel = "proposals" | "debate" | null;
+  type ActivePanel = "proposals" | "chart" | null;
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const showProposals = activePanel === "proposals";
-  const showDebate = activePanel === "debate";
+  const showChart = activePanel === "chart";
   const toggleProposals = useCallback(
     () => setActivePanel((prev) => (prev === "proposals" ? null : "proposals")),
     [],
   );
-  const toggleDebate = useCallback(
-    () => setActivePanel((prev) => (prev === "debate" ? null : "debate")),
+  const toggleChart = useCallback(
+    () => setActivePanel((prev) => (prev === "chart" ? null : "chart")),
     [],
   );
   const [showHarperFeed, setShowHarperFeed] = useState(true);
@@ -201,6 +194,26 @@ export function ConsiliumHub() {
   const sanctumDropdownRef = useRef<HTMLDivElement>(null);
   const boardroomDropdownRef = useRef<HTMLDivElement>(null);
   const apparatusDropdownRef = useRef<HTMLDivElement>(null);
+
+  // [S23-T3] Persist current Consilium surface so useHermesChat can auto-inject Aquarium/surface
+  // context into Harper + Hermes prompts without threading props through every chat widget.
+  useEffect(() => {
+    try {
+      const surface =
+        activeTab === "sanctum"
+          ? sanctumSubView === "aquarium"
+            ? "aquarium"
+            : sanctumSubView === "narratives"
+              ? "narratives"
+              : "timeline"
+          : activeTab === "boardroom"
+            ? "boardroom"
+            : activeTab === "apparatus"
+              ? "apparatus"
+              : "chat";
+      localStorage.setItem("fintheon:current-surface", surface);
+    } catch {}
+  }, [activeTab, sanctumSubView]);
 
   useEffect(() => {
     const anyOpen =
@@ -450,6 +463,17 @@ export function ConsiliumHub() {
     [fetchContext],
   );
 
+  const reloadLatestReport = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/miroshark/latest`);
+      if (!res.ok) return;
+      const report = await res.json();
+      if (report) applyReport(report);
+    } catch {
+      // silent — next poll / trigger will retry
+    }
+  }, [applyReport]);
+
   const handleRunMiroShark = useCallback(
     async (
       preset?: SanctumPreset,
@@ -649,9 +673,6 @@ export function ConsiliumHub() {
                 "opacity 180ms var(--ease-spring), transform 180ms var(--ease-spring)",
             }}
           >
-            <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-[var(--fintheon-accent)]/40 font-medium">
-              Wield the Consul
-            </div>
             {BOARDROOM_SUB_VIEWS.map(
               ({ id, label, subtitle, icon: Icon }, idx) => (
                 <button
@@ -802,16 +823,16 @@ export function ConsiliumHub() {
 
         {activeTab === "sanctum" && (
           <button
-            onClick={toggleDebate}
+            onClick={toggleChart}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-              showDebate
+              showChart
                 ? "text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30"
                 : "border border-transparent text-[var(--fintheon-accent)]/40 hover:text-[var(--fintheon-accent)]/70 hover:bg-[var(--fintheon-accent)]/5"
             }`}
-            title={showDebate ? "Hide Debate" : "Show Debate"}
+            title={showChart ? "Hide Chart" : "Show Chart"}
           >
-            <Shield size={14} />
-            Debate
+            <LineChart size={14} />
+            Chart
           </button>
         )}
 
@@ -855,6 +876,8 @@ export function ConsiliumHub() {
                   riskflowItems={riskflowItems}
                   macroContext={macroContext}
                   selectedSymbol={selectedSymbol.symbol}
+                  chartMode={showChart}
+                  onSynthesisComplete={reloadLatestReport}
                 />
               )}
               {displayedSubView === "timeline" && <TimelinePanel />}
@@ -875,19 +898,21 @@ export function ConsiliumHub() {
               {displayedBoardroomSub === "forum" && <FluxerEmbed />}
               {displayedBoardroomSub === "agentic-chat" && (
                 <div className="flex h-full">
-                  <div className="flex-1 min-w-0 relative">
-                    <AgentChattr />
-                    {/* Re-expand Harper Activity toggle */}
-                    {!showHarperFeed && (
-                      <button
-                        onClick={() => setShowHarperFeed(true)}
-                        className="absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-medium text-[var(--fintheon-accent)]/50 border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-bg)] hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-all"
-                        title="Show Harper Activity"
-                      >
-                        <PanelRightOpen size={12} />
-                        Activity
-                      </button>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <AgentChattr
+                      headerSlot={
+                        !showHarperFeed ? (
+                          <button
+                            onClick={() => setShowHarperFeed(true)}
+                            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-medium text-[var(--fintheon-accent)]/50 border border-[var(--fintheon-accent)]/15 hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 transition-all"
+                            title="Show Harper Activity"
+                          >
+                            <PanelRightOpen size={12} />
+                            Activity
+                          </button>
+                        ) : undefined
+                      }
+                    />
                   </div>
                   {/* Harper Activity sidebar — matches Debate/Proposals collapsible pattern */}
                   <div
@@ -930,30 +955,9 @@ export function ConsiliumHub() {
               {displayedApparatusSub === "fileroom" && (
                 <SharedMemoryPanel mode="fileroom" />
               )}
+              {displayedApparatusSub === "lounge" && <AgentLounge />}
             </>
           )}
-        </div>
-
-        {/* Collapsible Debate panel */}
-        <div
-          className={`flex-shrink-0 overflow-hidden border-l border-[var(--fintheon-accent)]/10 ${
-            showDebate ? "w-80" : "w-0 border-l-0"
-          }`}
-          style={{
-            transition: "width 280ms var(--ease-spring), border-width 280ms",
-          }}
-        >
-          <div
-            className="w-80 h-full overflow-hidden bg-[var(--fintheon-bg)]"
-            style={{
-              opacity: showDebate ? 1 : 0,
-              transition: "opacity 200ms ease 80ms",
-            }}
-          >
-            <MiroSharkDebatePanel
-              simulationId={mirosharkData?.simulationId ?? null}
-            />
-          </div>
         </div>
 
         {/* Collapsible Proposals + Scorecards right panel */}
@@ -972,49 +976,8 @@ export function ConsiliumHub() {
               transition: "opacity 200ms ease 80ms",
             }}
           >
-            {/* View toggle: Proposals vs iFrame */}
-            <div className="shrink-0 flex items-center border-b border-[var(--fintheon-accent)]/10 px-2 py-1.5 gap-1">
-              <button
-                onClick={() => setProposalsView("proposals")}
-                className={`px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-                  proposalsView === "proposals"
-                    ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                Proposals
-              </button>
-              <button
-                onClick={() => setProposalsView("iframe")}
-                className={`px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-                  proposalsView === "iframe"
-                    ? "text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                {proposerIframeSources.find(
-                  (s) => s.id === proposerDefaultIframe,
-                )?.label || "iFrame"}
-              </button>
-            </div>
             <div className="flex-1 min-h-0 overflow-y-auto">
-              {proposalsView === "proposals" ? (
-                <ProposalWidget />
-              ) : (
-                <EmbeddedBrowserFrame
-                  title={
-                    proposerIframeSources.find(
-                      (s) => s.id === proposerDefaultIframe,
-                    )?.label || "Proposer"
-                  }
-                  src={
-                    proposerIframeSources.find(
-                      (s) => s.id === proposerDefaultIframe,
-                    )?.url || "https://www.tradingview.com/chart"
-                  }
-                  className="w-full h-full"
-                />
-              )}
+              <ProposalWidget />
             </div>
           </div>
         </div>

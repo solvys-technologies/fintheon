@@ -1,15 +1,24 @@
-// [claude-code 2026-04-15] S18: Provider tree + header-menu nav + floating chat overlay
-import { useState, useRef, useEffect, Suspense, lazy } from "react";
+// [claude-code 2026-04-16] S20: Provider tree + activity status + haptic-gated nav
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  Suspense,
+  lazy,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import { StatusProvider } from "./contexts/ToastContext";
+import { ActivityStatusProvider } from "./contexts/ActivityStatusContext";
 import { MobileRiskFlowProvider } from "./contexts/RiskFlowContext";
 import { MobileShell } from "./components/layout/MobileShell";
 import { HomePage } from "./components/home/HomePage";
 import { SegmentedSpinner } from "./components/shared/SegmentedSpinner";
 import { useVixTicker } from "./hooks/useVixTicker";
+import { useHaptic } from "./hooks/useHaptic";
 import { X } from "lucide-react";
 
 const RiskFlowPage = lazy(() =>
@@ -106,16 +115,20 @@ function LoginScreen() {
 
 function AuthenticatedApp() {
   useVixTicker();
+  const vibrate = useHaptic();
 
   const [activeTab, setActiveTab] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const prevTab = useRef(0);
 
-  const handleTabChange = (index: number) => {
-    prevTab.current = activeTab;
-    navigator.vibrate?.(10);
-    setActiveTab(index);
-  };
+  const handleTabChange = useCallback(
+    (index: number) => {
+      prevTab.current = activeTab;
+      vibrate(10);
+      setActiveTab(index);
+    },
+    [activeTab, vibrate],
+  );
 
   // Service worker notification tap routing
   useEffect(() => {
@@ -123,13 +136,34 @@ function AuthenticatedApp() {
 
     const handler = (event: MessageEvent) => {
       if (event.data?.type !== "notification-tap") return;
-      const { category } = event.data;
+      const { category, conversationId } = event.data;
 
       // Route to correct tab based on notification category
       if (category === "riskflow") {
         handleTabChange(1);
-      } else if (category === "chat" || category === "toolApprovals") {
+      } else if (
+        category === "chat" ||
+        category === "toolApprovals" ||
+        category === "chat_relay"
+      ) {
         handleTabChange(2);
+        // S21-T1 relay dispatch: stash pending convo so ChatPage can pick it up on mount
+        if (category === "chat_relay" && conversationId) {
+          try {
+            sessionStorage.setItem(
+              "fintheon:pending-relay-conv",
+              conversationId,
+            );
+            // Also dispatch a window event in case the tab is already open
+            window.dispatchEvent(
+              new CustomEvent("fintheon:relay-dispatch", {
+                detail: { conversationId },
+              }),
+            );
+          } catch {
+            /* ignore */
+          }
+        }
       } else if (category === "dailyBrief") {
         handleTabChange(0);
       }
@@ -138,7 +172,7 @@ function AuthenticatedApp() {
     navigator.serviceWorker.addEventListener("message", handler);
     return () =>
       navigator.serviceWorker.removeEventListener("message", handler);
-  }, []);
+  }, [handleTabChange]);
 
   const direction = activeTab > prevTab.current ? 1 : -1;
 
@@ -286,9 +320,11 @@ export default function App() {
     <AuthProvider>
       <ThemeProvider>
         <SettingsProvider>
-          <StatusProvider>
-            <AuthGate />
-          </StatusProvider>
+          <ActivityStatusProvider>
+            <StatusProvider>
+              <AuthGate />
+            </StatusProvider>
+          </ActivityStatusProvider>
         </SettingsProvider>
       </ThemeProvider>
     </AuthProvider>

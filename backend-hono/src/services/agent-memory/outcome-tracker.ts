@@ -1,5 +1,8 @@
-// [claude-code 2026-04-16] T4: Captures deliberation predictions into deliberation_outcomes
-// Reads agent assessments from miroshark_deliberations, stores predictions for later resolution
+// [claude-code 2026-04-18] T4: Captures deliberation predictions into deliberation_outcomes
+// Reads agent assessments from miroshark_deliberations, stores predictions for later resolution.
+// Fix: MiroShark DAG emits analyst.agentId as oracle|feucht|consul|herald directly, so
+// mapAnalystToAgent is now a passthrough validator (was a stale legacy-role mapping that
+// silently dropped every per-agent row).
 
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
@@ -138,21 +141,15 @@ function buildDelibSummary(
 }
 
 /**
- * Map MiroShark analyst IDs to Hermes agent IDs.
- * Analysts like "flow-trader", "vol-strategist" etc. map to the 4 core agents.
+ * Validate MiroShark analyst ID. The DAG emits one of the four core Hermes agent
+ * IDs directly (see miroshark-template WAVE0_AGENTS + ANALYST_META), so the
+ * analyst ID is already the target agent ID — we just need to guard against
+ * anything outside the expected set. Legacy analyst role keys (flow-trader,
+ * vol-strategist, etc.) are no longer produced and deliberately fall through
+ * to null.
  */
 function mapAnalystToAgent(analystId: string): AgentId | null {
-  const mapping: Record<string, AgentId> = {
-    "flow-trader": "feucht",
-    "vol-strategist": "feucht",
-    "macro-strategist": "oracle",
-    "credit-analyst": "oracle",
-    "sentiment-analyst": "herald",
-    contrarian: "herald",
-    "earnings-analyst": "consul",
-    fundamentals: "consul",
-    "geopolitical-analyst": "oracle",
-    "risk-manager": "feucht",
-  };
-  return mapping[analystId] ?? null;
+  return DELIBERATION_AGENTS.includes(analystId as AgentId)
+    ? (analystId as AgentId)
+    : null;
 }
