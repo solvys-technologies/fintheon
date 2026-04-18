@@ -9,6 +9,28 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T15:00:00",
+    agent: "claude-code",
+    summary:
+      "S24-T3 RiskFlow V4 calibration — scarcity gate, rescore-all, shadow mode, outcome tagging. (1) iv-scorer.ts gains exported V4 helpers (analyzeV4Gate, computeV4ScarcityGate, applyV4ScarcityGate) implementing the L8/L9/L10 gate per the brief: L10 only with action verb + (lexicon matrix-flip OR major print OR Level-4 emoji); L9 with score ≥ 8.5 + lexicon hit; hedge phrases ('talks of', 'considering', 'reportedly planning') hard-cap at L8 regardless of multipliers. calculateMacroLevel V3 body untouched — V4 surface is purely additive so T2's SCORING_V4 wiring inside calculateIVScore can call it without conflict. (2) lexicon-cache.ts caches lexicon_keywords with 60s TTL; degrades to empty array if T1 migration hasn't landed. (3) rescore-all.ts is a one-shot migration job: cursor-paginated 50/batch sweep over scored_riskflow_items, pre-loads lexicon + VIX once, re-runs calculateIVScore + applies V4 gate when SCORING_V4=true, writes back iv_score / macro_level / sub_scores / sentiment / rescored_at. POST /api/riskflow/rescore-all (super admin only) with dryRun + limit query params; rejects 409 if a run is in progress. (4) shadow-mode.ts logs would-have-been agent proposals (regime_proposal | lexicon_addition | walk_back), then resolveShadowDecision matches them against real human decisions within 24h and computes agreement rate. canAutoApply flag flips when rate > 0.85 AND total ≥ 20 over 30d. (5) outcome-tagger.ts boots a 5min sweep that snapshots SPY at the 4h and 24h marks after each regime decision, computes delta_*_pct for the T4 admin 'your overrides were right X%' display. (6) Three migrations: 20260419_rescore_columns.sql (rescored_at), 20260419_shadow_decisions.sql (agent_shadow_decisions), 20260419_regime_outcomes.sql (regime_decision_outcomes). rescore_columns applied via Supabase MCP; the other two are committed to migrations/ for Wave 3 unification. (7) /api/scoring routes: GET /shadow-stats, POST /shadow-decisions, POST /shadow-decisions/resolve, GET /rescore-status. (8) scarcity-sanity.ts script verifies the gate produces L8 for hedged framing — all 3 cases pass with empty lexicon (hedge phrases alone are sufficient). Backend tsc clean.",
+    files: [
+      "supabase/migrations/20260419_rescore_columns.sql",
+      "supabase/migrations/20260419_shadow_decisions.sql",
+      "supabase/migrations/20260419_regime_outcomes.sql",
+      "backend-hono/src/services/analysis/iv-scorer.ts",
+      "backend-hono/src/services/scoring/lexicon-cache.ts",
+      "backend-hono/src/services/scoring/rescore-all.ts",
+      "backend-hono/src/services/scoring/shadow-mode.ts",
+      "backend-hono/src/services/scoring/outcome-tagger.ts",
+      "backend-hono/src/routes/scoring/index.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "backend-hono/src/routes/riskflow/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/scripts/scarcity-sanity.ts",
+    ],
+  },
+  {
     date: "2026-04-18T13:15:00",
     agent: "claude-code",
     summary:

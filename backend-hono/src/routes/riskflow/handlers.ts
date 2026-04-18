@@ -979,6 +979,50 @@ export async function handleRescore(c: Context) {
   }
 }
 
+/**
+ * POST /api/riskflow/rescore-all
+ * Super-admin only. One-shot V4 rescore of every scored_riskflow_items row.
+ * Idempotent: rejects if a run is already in progress.
+ * Query params: dryRun=true for read-only sample, limit=N to bound the run.
+ */
+// [claude-code 2026-04-19] S24-T3: rescore-all migration job behind super-admin gate
+export async function handleRescoreAll(c: Context) {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const { getUserById } = await import(
+    "../../services/peers/peer-registry.js"
+  );
+  const user = await getUserById(userId);
+  if (!user || user.role !== "admin") {
+    return c.json({ error: "Super admin privileges required" }, 403);
+  }
+
+  const dryRun = c.req.query("dryRun") === "true";
+  const limitParam = c.req.query("limit");
+  const limit = limitParam ? Math.max(1, parseInt(limitParam, 10) || 0) : null;
+
+  const { runRescoreAll, isRescoreInProgress } = await import(
+    "../../services/scoring/rescore-all.js"
+  );
+  if (isRescoreInProgress()) {
+    return c.json({ error: "rescore-all already in progress" }, 409);
+  }
+
+  try {
+    const stats = await runRescoreAll({ dryRun, limit });
+    return c.json({ success: true, stats });
+  } catch (error) {
+    console.error("[RiskFlow] rescore-all error:", error);
+    return c.json(
+      {
+        error: error instanceof Error ? error.message : "rescore-all failed",
+      },
+      500,
+    );
+  }
+}
+
 /** POST /api/riskflow/:id/not-relevant — remove item + log for learning */
 // [claude-code 2026-04-15] S16-T5: Accept optional reason field for dismissal feedback loop
 export async function handleNotRelevant(c: Context) {

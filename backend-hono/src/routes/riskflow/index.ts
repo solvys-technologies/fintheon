@@ -20,6 +20,7 @@ import {
   handleRefresh,
   handleGenerateNote,
   handleRescore,
+  handleRescoreAll,
   handlePollingToggle,
   handlePollingStatus,
   handleUserPollingToggle,
@@ -72,6 +73,9 @@ export function createRiskFlowRoutes(): Hono {
 
   // POST /api/riskflow/rescore - Re-score with current regime/calibration weights
   router.post("/rescore", handleRescore);
+
+  // POST /api/riskflow/rescore-all - One-shot V4 rescore of every persisted item (super admin only) [S24-T3]
+  router.post("/rescore-all", handleRescoreAll);
 
   // POST /api/riskflow/:id/generate-note - Manual agent note generation
   router.post("/:id/generate-note", handleGenerateNote);
