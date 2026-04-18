@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T05:15:00",
+    agent: "claude-code",
+    summary:
+      "Unblock Ultrareview / Cursor Background Agents — add .cursor/environment.json + .cursor/install.sh so the cloud container can actually boot: installs Bun if missing, materializes the gitignored .env files (root, backend-hono, frontend) with workspace values inline (matches existing pattern in scripts/setup.ts where the Fly Supabase DATABASE_URL is already hardcoded), then runs bun install at root / backend-hono / frontend. Before this the review agent was stalling at 'Run setup script' with no setup script defined, so Find/Verify/Dedupe never started.",
+    files: [".cursor/environment.json", ".cursor/install.sh"],
+  },
+  {
     date: "2026-04-18T05:00:00",
     agent: "claude-code",
     summary:
