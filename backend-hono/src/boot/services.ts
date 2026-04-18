@@ -57,6 +57,7 @@ import { cleanupOldRawItems } from "../services/supabase-service.js";
 import { startRelayConnector } from "../services/relay-connector.js";
 import { startOracleResearch } from "../services/cron/oracle-research-scheduler.js";
 import { startOutcomeResolver } from "../services/cron/outcome-resolver.js";
+import { startOutcomeTagger } from "../services/scoring/outcome-tagger.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -329,6 +330,9 @@ export async function bootBackground(): Promise<void> {
   // Outcome resolver (2h interval — resolves deliberation predictions vs actual VIX at 24/48/72h)
   startOutcomeResolver();
   log.info("OutcomeResolver started");
+
+  // Outcome tagger (S24-T3): 5min sweep that snapshots SPY at 4h + 24h after each regime decision
+  startOutcomeTagger();
 
   // Harper Autonomous Loop — CAO autonomous agent (gated by HARPER_AUTONOMOUS_ENABLED=true)
   bootHarperAutonomous().catch((err) =>

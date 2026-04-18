@@ -48,6 +48,7 @@ import { createAuthRoutes } from "./auth/index.js";
 import { createCommentatorRoutes } from "./commentator/index.js";
 import { createSourceAccountRoutes } from "./source-accounts/index.js";
 import { createCalibrationRoutes } from "./calibration/index.js";
+import { createScoringRoutes } from "./scoring/index.js";
 import { createHarperRoutes } from "./harper/index.js";
 import { createHarperOpsRoutes } from "./harper-ops/index.js";
 import { createPeersRoutes } from "./peers/index.js";
@@ -119,6 +120,10 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/source-accounts", createSourceAccountRoutes());
   // Calibration — scoring weight management, annotations, observations, bulk ingest (public, admin)
   app.route("/api/calibration", createCalibrationRoutes());
+  // Scoring — V4 shadow stats + rescore-status [S24-T3]
+  app.use("/api/scoring", authMiddleware, requireAuth);
+  app.use("/api/scoring/*", authMiddleware, requireAuth);
+  app.route("/api/scoring", createScoringRoutes());
   // Predictions — forward-looking instrument outlook from scored items + econ events
   app.route("/api/predictions", predictionsRoutes);
   // Polymarket — read-only public market data, whale alerts, search (S15-T2)
