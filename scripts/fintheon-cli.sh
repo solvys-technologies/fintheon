@@ -1,8 +1,9 @@
 #!/bin/bash
 # Fintheon CLI v2.0.0 — Priced In Capital
 # Dispatches commands to the Fintheon repo scripts
+# [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 
-FINTHEON_ROOT="${FINTHEON_ROOT:-$HOME/Documents/Codebases/fintheon}"
+FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
 
 # Verify repo exists
 if [[ ! -d "$FINTHEON_ROOT/.git" ]] && [[ "$1" != "setup" ]]; then

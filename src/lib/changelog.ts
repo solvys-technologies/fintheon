@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T07:15:00",
+    agent: "claude-code",
+    summary:
+      "Interactive install path in fintheon-setup.sh — bootstrap now prompts 'Install path [~/Documents/Codebases/fintheon]:' (reading from /dev/tty so it works under curl | bash), expands ~, rejects non-fintheon git repos + non-empty non-git dirs at the target, and persists the chosen absolute path to ~/.fintheon/install-path. Companion scripts (fintheon-cli, fintheon-update, install-cli both outer + HEREDOC, peer-bootstrap) now resolve install path as FINTHEON_ROOT env > ~/.fintheon/install-path > default ~/Documents/Codebases/fintheon. Non-interactive installs skip the prompt with FINTHEON_DIR=/path env var. SETUP.md updated with the new flow. All 5 scripts pass `bash -n` syntax check.",
+    files: [
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-cli.sh",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/peer-bootstrap.sh",
+      "SETUP.md",
+    ],
+  },
+  {
     date: "2026-04-18T07:00:00",
     agent: "claude-code",
     summary:

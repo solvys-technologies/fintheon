@@ -5,7 +5,8 @@
 # - Registers/updates this device in peers with round-robin capabilities
 set -euo pipefail
 
-FINTHEON_ROOT="${FINTHEON_ROOT:-$HOME/Documents/Codebases/fintheon}"
+# [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
+FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
 API_BASE="${FINTHEON_API_BASE:-http://localhost:8080}"
 PEER_CONFIG="${FINTHEON_PEER_CONFIG:-$HOME/.fintheon/peer.json}"
 FROM_UPDATE=false
