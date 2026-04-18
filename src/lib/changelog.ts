@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T18:15:00",
+    agent: "claude-code",
+    summary:
+      "Mobile UX polish pass per TP — notification/bulletin/briefing all snap under the dash fuse row; push copy speaks English; approve/deny buttons drop the Kanban look. (1) New `mobile/components/shared/SnapSheet.tsx` generalizes the old `NotificationSheet`: on open, queries `[data-snap-anchor='fuses']` in the DOM, reads that element's bottom edge, positions the sheet's top at that + 6px margin, stretches height to bottom. Fallback inset 340px when the anchor isn't rendered (e.g. sheet opens from a tab without the dash visible). Drag-down-to-close, glassmorphic surface (`backdrop-filter: blur(24px) saturate(1.4)`, thin border-top, accent shadow). (2) `HomePage.tsx` IVSubScores row (VIX / HEADLINE / AGENTIC DESK fuses) gains `data-snap-anchor='fuses'` so sheets know where to stop. (3) `NotificationDrawer.tsx` swapped import BottomSheet → SnapSheet. (4) `MobileBulletin.tsx` swapped BottomSheet → SnapSheet so bulletin sizing matches per TP ('same sizing should apply to the bulletin'). Non-snap callers (HeadlinePickerSheet, MiniRegimeTracker) stay on the original BottomSheet — TP only asked for notifications/bulletin/brief. (5) `BriefingOverlay.tsx` rewritten from `inset: 0` full-screen to `top: <fuses.bottom>` — briefing now covers the rest of the page per TP instead of obscuring tickers. Same anchor discovery, portal/drag/safe-area polish preserved. (6) Approval card buttons in NotificationDrawer stripped to bare — no border, no background fill, accent-color letters for both Deny and Approve (Approve gets weight 600 for primary affordance). Press states + icons carry the interaction weight. Matches the new global rule 'glassmorphic before Kanban; approve/deny buttons borderless + no-bg + accent letters'. (7) Push copy rewrites — `services/regime/propose.ts` replaces 'Regime proposal: BULL_TREND / <proposer> proposes GEO_TENSIONS → BULL_TREND' with plain title 'Regime Change' + body 'Geopol → Bear Market' via a REGIME_PLAIN code→label map. `services/notifications/riskflow-payload.ts` replaces 'Catalyst · /ES · FOMC Minutes / 9.2 · headline' with title 'Catalyst · <Category>' (Econ / Geopolitical / Monetary Policy / Market via keyword-driven pickCategoryLabel) + body = raw headline. iOS lock screen now reads like a human wrote it. (8) Dash econ calendar layout — HomePage Page 2 flex column now `flex: 1; minHeight: 0` with Aquarium Analysis `flexShrink: 0` so the calendar iframe fills every pixel between the fuses and the Aquarium card (no dead space). Per TP: 'Econ calendar on dash should end at the aquarium analysis section.' (9) `NotificationSheet.tsx` deleted (superseded by SnapSheet). Verified: mobile tsc + backend bun build both clean.",
+    files: [
+      "mobile/components/shared/SnapSheet.tsx",
+      "mobile/components/shared/NotificationSheet.tsx",
+      "mobile/components/notifications/NotificationDrawer.tsx",
+      "mobile/components/bulletin/MobileBulletin.tsx",
+      "mobile/components/home/BriefingOverlay.tsx",
+      "mobile/components/home/HomePage.tsx",
+      "backend-hono/src/services/regime/propose.ts",
+      "backend-hono/src/services/notifications/riskflow-payload.ts",
+    ],
+  },
+  {
     date: "2026-04-19T17:30:00",
     agent: "claude-code",
     summary:

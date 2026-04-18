@@ -2,7 +2,7 @@
 // [claude-code 2026-04-18] A4: bottom-sheet notification history, grouped by day
 import { useMemo, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
-import { NotificationSheet } from "../shared/NotificationSheet";
+import { SnapSheet } from "../shared/SnapSheet";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -128,7 +128,7 @@ export function NotificationDrawer({
   };
 
   return (
-    <NotificationSheet isOpen={isOpen} onClose={onClose} title="Notifications">
+    <SnapSheet isOpen={isOpen} onClose={onClose} title="Notifications">
       <div style={{ padding: "0 16px 24px" }}>
         <div
           style={{
@@ -272,6 +272,7 @@ export function NotificationDrawer({
                           justifyContent: "flex-end",
                         }}
                       >
+                        {/* [claude-code 2026-04-19] Borderless, transparent, accent-letters per TP */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -283,15 +284,16 @@ export function NotificationDrawer({
                             alignItems: "center",
                             gap: 4,
                             padding: "6px 10px",
-                            fontSize: 11,
+                            fontSize: 12,
                             fontFamily: "var(--font-data)",
-                            color: "var(--text-secondary)",
+                            letterSpacing: "0.06em",
+                            color: "var(--accent)",
                             background: "transparent",
-                            border: "1px solid var(--border)",
-                            borderRadius: 3,
+                            border: "none",
                             cursor: pending.has(n.id)
                               ? "not-allowed"
                               : "pointer",
+                            WebkitTapHighlightColor: "transparent",
                           }}
                         >
                           <XCircle size={12} />
@@ -308,16 +310,17 @@ export function NotificationDrawer({
                             alignItems: "center",
                             gap: 4,
                             padding: "6px 10px",
-                            fontSize: 11,
+                            fontSize: 12,
                             fontFamily: "var(--font-data)",
+                            letterSpacing: "0.06em",
                             fontWeight: 600,
-                            color: "var(--black)",
-                            background: "var(--accent)",
+                            color: "var(--accent)",
+                            background: "transparent",
                             border: "none",
-                            borderRadius: 3,
                             cursor: pending.has(n.id)
                               ? "not-allowed"
                               : "pointer",
+                            WebkitTapHighlightColor: "transparent",
                           }}
                         >
                           <CheckCircle2 size={12} />
@@ -346,6 +349,6 @@ export function NotificationDrawer({
           ))
         )}
       </div>
-    </NotificationSheet>
+    </SnapSheet>
   );
 }

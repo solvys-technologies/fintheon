@@ -55,6 +55,9 @@ function IVSubScores({
 
   return (
     <div
+      // [claude-code 2026-04-19] snap-anchor for SnapSheet: notifications + bulletin + brief
+      // open up to the bottom of this fuse row, leaving tickers + fuses visible above.
+      data-snap-anchor="fuses"
       style={{
         display: "flex",
         gap: 12,
@@ -319,26 +322,29 @@ export function HomePage() {
         </motion.div>
       </SnapPage>
 
-      {/* Page 2: Session Calendar + Aquarium Analysis */}
+      {/* Page 2: Econ Calendar + Aquarium Analysis
+          [claude-code 2026-04-19] Calendar flex-grows to push Aquarium down to just-above-bottom
+          per TP — no dead space between them, calendar ends exactly where Aquarium begins. */}
       <SnapPage style={{ padding: 0, gap: 0 }}>
         <div
           style={{
             flex: 1,
+            minHeight: 0,
             display: "flex",
             flexDirection: "column",
             position: "relative",
             zIndex: 1,
           }}
         >
-          {/* TradingView Economic Calendar — lazy-loaded, fills available space */}
-          <div style={{ flex: 1, minHeight: "50%" }}>
+          {/* TradingView Economic Calendar — takes every px the Aquarium doesn't */}
+          <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
             <Suspense fallback={null}>
               <EconCalendarEmbed />
             </Suspense>
           </div>
           <div className="fade-divider" style={{ margin: "0 16px" }} />
-          {/* Aquarium Analysis */}
-          <div style={{ padding: "16px 16px 24px" }}>
+          {/* Aquarium Analysis — sits flush at the bottom of the page */}
+          <div style={{ padding: "16px 16px 24px", flexShrink: 0 }}>
             <AquariumSummary />
           </div>
         </div>

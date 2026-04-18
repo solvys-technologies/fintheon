@@ -9,7 +9,9 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { BottomSheet } from "../shared/BottomSheet";
+// [claude-code 2026-04-19] Use SnapSheet so the bulletin rises under the dash fuse row,
+//   matching the notification drawer's sizing per TP.
+import { SnapSheet } from "../shared/SnapSheet";
 import { useAuth } from "../../contexts/AuthContext";
 import { useHaptic } from "../../hooks/useHaptic";
 import { useActivityStatus } from "../../contexts/ActivityStatusContext";
@@ -298,7 +300,7 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
   );
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="BULLETIN">
+    <SnapSheet isOpen={isOpen} onClose={onClose} title="BULLETIN">
       {/* Section tabs */}
       <div
         style={{
@@ -588,7 +590,7 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
           )}
         </div>
       )}
-    </BottomSheet>
+    </SnapSheet>
   );
 }
 

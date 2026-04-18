@@ -1,10 +1,13 @@
+// [claude-code 2026-04-19] Plain-language catalyst push per TP — title "Catalyst · <Category>",
+//   body is the headline. Categories collapse to 3 buckets: Econ / Geopolitical / Monetary Policy
+//   (fallback "Market"). No more technical tags like "/ES · FOMC Minutes" on lock screen.
 // [claude-code 2026-04-18] B3: RiskFlow push payload polish + B1 fingerprint
 /**
  * RiskFlow → push payload builder
  *
  * Produces iOS-friendly title/body/url/fingerprint from a scored FeedItem.
- * Title: "<instrument> · <event>"   (e.g. "/ES · FOMC Minutes")
- * Body:  "<score> · <headline>"     (e.g. "9.2 · Powell hints at pause…")
+ * Title: "Catalyst · <Category>"   (e.g. "Catalyst · Geopolitical")
+ * Body:  "<headline>"              (e.g. "Iran reopens Strait of Hormuz")
  * Fingerprint: riskflow:<hash(normalizedHeadline + instrument)>:<floor(now/5min)>
  */
 
@@ -15,16 +18,42 @@ function pickInstrument(item: FeedItem): string {
   return sym && sym.trim().length > 0 ? sym : "Market";
 }
 
-function pickEventLabel(item: FeedItem): string {
-  if (item.riskType) {
-    return String(item.riskType)
-      .replace(/[_-]+/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+/**
+ * Map the raw riskType/tags salad to one of three plain-English buckets that
+ * TP asked to see on the lock screen: Econ, Geopolitical, Monetary Policy.
+ * Falls back to "Market" when nothing fits.
+ */
+function pickCategoryLabel(item: FeedItem): string {
+  const haystack = [
+    item.riskType ?? "",
+    ...(item.tags ?? []),
+    item.headline ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    /\bfomc\b|\bfed\b|rate|dot\s*plot|powell|bessent|monetary|policy|hike|cut\b|dovish|hawkish/i.test(
+      haystack,
+    )
+  ) {
+    return "Monetary Policy";
   }
-  const tag = item.tags?.[0];
-  if (tag)
-    return tag.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  return "Alert";
+  if (
+    /geopol|geopolitical|conflict|war|strait|hormuz|ceasefire|tariff|sanction|missile|invasion|hezbollah|iran|israel|ukraine|russia|china|taiwan|osint/i.test(
+      haystack,
+    )
+  ) {
+    return "Geopolitical";
+  }
+  if (
+    /cpi|ppi|nfp|jobless|gdp|pce|ism|retail\s*sales|housing|econ|jolts|unemployment|payroll|inflation/i.test(
+      haystack,
+    )
+  ) {
+    return "Econ";
+  }
+  return "Market";
 }
 
 function normalizeHeadline(h: string): string {
@@ -57,13 +86,11 @@ export interface RiskFlowPushPayload {
 
 export function buildRiskFlowPush(item: FeedItem): RiskFlowPushPayload {
   const instrument = pickInstrument(item);
-  const eventLabel = pickEventLabel(item);
-  const scoreText =
-    typeof item.ivScore === "number" ? item.ivScore.toFixed(1) : "";
+  const category = pickCategoryLabel(item);
   const headline = (item.headline || "").trim();
 
-  const title = `${instrument} · ${eventLabel}`;
-  const body = scoreText ? `${scoreText} · ${headline}` : headline;
+  const title = `Catalyst · ${category}`;
+  const body = headline;
 
   const normalized = normalizeHeadline(headline);
   const bucket = Math.floor(Date.now() / (5 * 60_000));

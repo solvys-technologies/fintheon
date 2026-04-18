@@ -1,40 +1,63 @@
-// [claude-code 2026-04-19] S24 unify: top-anchored 60vh notification sheet. Snaps page to top on open so the
-// dash tickers stay visible above the sheet. Slides up from bottom to 60% viewport. Drag-down dismiss.
-import { type ReactNode, useRef, useCallback, useEffect } from "react";
+// [claude-code 2026-04-19] Generalized from NotificationSheet. Top-anchored sheet that opens
+//   to a target element's bottom edge (e.g. the dash fuse-bar row) — so only tickers + fuses
+//   stay visible above. Used by NotificationDrawer + MobileBulletin.
+//   Glassmorphic surface by default (not Kanban — TP's design rule).
+import {
+  type ReactNode,
+  useRef,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 
-interface NotificationSheetProps {
+interface SnapSheetProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
   children: ReactNode;
+  /** CSS selector for the element whose bottom edge the sheet should snap under. */
+  anchorSelector?: string;
+  /** Fallback top inset in px (from the top of the viewport) when the anchor isn't found. */
+  fallbackTopPx?: number;
 }
 
-/** How tall the sheet is, measured from the bottom of the viewport. */
-const SHEET_HEIGHT_VH = 60;
-
-export function NotificationSheet({
+/**
+ * Opens upward from the bottom, snapping its top edge just under `anchorSelector`
+ * (defaults to `[data-snap-anchor="fuses"]`). Page auto-scrolls to top so the
+ * anchor is visible before the sheet settles. Drag-down-to-close.
+ */
+export function SnapSheet({
   isOpen,
   onClose,
   title,
   children,
-}: NotificationSheetProps) {
+  anchorSelector = "[data-snap-anchor='fuses']",
+  fallbackTopPx = 340,
+}: SnapSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const [topPx, setTopPx] = useState<number>(fallbackTopPx);
 
-  // Snap page to top so the dash ticker row sits above the sheet when it opens.
+  // Snap page to top so the anchor row renders into view, then measure it.
   useEffect(() => {
     if (!isOpen) return;
-    // Let the drawer mount first, then scroll. Two rafs for safety on iOS Safari.
     requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      document
+        .querySelectorAll<HTMLElement>("[data-scroll-container='true']")
+        .forEach((el) => el.scrollTo({ top: 0, behavior: "smooth" }));
       requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        // Scroll any inner scroll containers to top too
-        document
-          .querySelectorAll<HTMLElement>("[data-scroll-container='true']")
-          .forEach((el) => el.scrollTo({ top: 0, behavior: "smooth" }));
+        const anchor = document.querySelector<HTMLElement>(anchorSelector);
+        if (anchor) {
+          const rect = anchor.getBoundingClientRect();
+          // 6px breathing room below the fuse row
+          setTopPx(Math.max(0, Math.round(rect.bottom + 6)));
+        } else {
+          setTopPx(fallbackTopPx);
+        }
       });
     });
-  }, [isOpen]);
+  }, [isOpen, anchorSelector, fallbackTopPx]);
 
   const handleDragEnd = useCallback(
     (_: unknown, info: PanInfo) => {
@@ -47,7 +70,7 @@ export function NotificationSheet({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop — sits ABOVE the ticker row so taps below the sheet close it */}
+          {/* Backdrop — clears the ticker/fuses area so taps above dismiss */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -56,17 +79,18 @@ export function NotificationSheet({
             onClick={onClose}
             style={{
               position: "fixed",
-              // Top inset clears toolbar + leaves the hero ticker row visible
               top: `calc(env(safe-area-inset-top, 0px) + 48px)`,
               left: 0,
               right: 0,
               bottom: 0,
               background: "rgba(0,0,0,0.55)",
+              backdropFilter: "blur(3px)",
+              WebkitBackdropFilter: "blur(3px)",
               zIndex: 998,
             }}
           />
 
-          {/* Sheet — anchored at bottom, climbs up to SHEET_HEIGHT_VH */}
+          {/* Sheet — glassmorphic, top-anchored under the fuse row */}
           <motion.div
             ref={sheetRef}
             initial={{ y: "100%" }}
@@ -79,11 +103,13 @@ export function NotificationSheet({
             onDragEnd={handleDragEnd}
             style={{
               position: "fixed",
-              bottom: 0,
+              top: topPx,
               left: 0,
               right: 0,
-              height: `${SHEET_HEIGHT_VH}vh`,
+              bottom: 0,
               background: "var(--surface)",
+              backdropFilter: "blur(24px) saturate(1.4)",
+              WebkitBackdropFilter: "blur(24px) saturate(1.4)",
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               borderTop: "1px solid var(--border-visible)",

@@ -50,6 +50,25 @@ export interface ProposeRegimeResult {
 }
 
 /**
+ * Plain-language labels for lock-screen pushes per TP. Avoids dumping
+ * "GEO_TENSIONS → BULL_TREND" on the notification center.
+ */
+const REGIME_PLAIN: Record<string, string> = {
+  BULL_TREND: "Bull Market",
+  BEAR_TREND: "Bear Market",
+  CONSOLIDATION: "Consolidation",
+  GEO_TENSIONS: "Geopol",
+  MACRO_ECON: "Macro",
+  RISK_OFF: "Risk Off",
+  EARNINGS_SEASON: "Earnings Season",
+  ILLIQUID_STUPIDITY: "Illiquid Chop",
+};
+function plainRegime(code: string | null | undefined): string {
+  if (!code) return "Unknown";
+  return REGIME_PLAIN[code] ?? code;
+}
+
+/**
  * Insert a regime proposal and fire a push. Idempotent within a 30min window
  * on the same (proposedRegime, proposedBy, current_regime) triple so repeat
  * agent calls don't spam TP.
@@ -139,16 +158,18 @@ export async function proposeRegimeChange(
   // Fire push. Defaults to "high" severity (respects quiet hours). Caller can
   // pass "critical" for L10 matrix flips to bypass quiet hours.
   const severity: Severity = input.severity ?? "high";
-  const lockSuffix = lockActive
-    ? " — your manual override is still active."
-    : "";
+  const lockSuffix = lockActive ? " (override active)" : "";
 
+  // [claude-code 2026-04-19] Plain-language title + body per TP. Lock-screen reads
+  //   title:  Regime Change
+  //   body:   Geopol → Bear Market
+  // instead of "Regime proposal: BULL_TREND" (technical tag). Preview stays tight.
   const pushResult = await emitPushAndLog({
     userId: input.notifyUserId ?? "all",
     category: "regimeProposals",
     severity,
-    title: `Regime proposal: ${input.proposedRegime}`,
-    body: `${input.proposedBy} proposes ${currentRegime ?? "(none)"} → ${input.proposedRegime}.${lockSuffix}`,
+    title: "Regime Change",
+    body: `${plainRegime(currentRegime)} → ${plainRegime(input.proposedRegime)}${lockSuffix}`,
     url: `/admin/approvals/${proposalId}`,
     fingerprint: `regime-proposal:${input.proposedRegime}:${input.proposedBy}:${new Date().toISOString().slice(0, 13)}`,
     eventId: proposalId,
