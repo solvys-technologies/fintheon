@@ -20,6 +20,11 @@ import {
   getConversation,
 } from "../services/ai/conversation-store.js";
 import { sendToUserDirect } from "../services/web-push-sender.js";
+import {
+  setRelayUser,
+  getRelayUser,
+  isRelayConnected,
+} from "../services/relay-connector.js";
 
 const log = createLogger("Relay");
 
@@ -49,6 +54,59 @@ export function createRelayRoutes() {
             deviceLabel: dispatch.deviceLabel,
           }
         : null,
+    });
+  });
+
+  /**
+   * POST /api/relay/set-user — Local-backend-only. Called by the Electron
+   * frontend after sign-in so the relay connector can register with Fly under
+   * the correct user_id. Accepts { userId: string | null }. Passing null
+   * disconnects.
+   *
+   * This endpoint must NOT be exposed publicly on Fly — it's for the local
+   * backend only, and the caller's auth middleware userId must match the
+   * payload userId so a logged-in user can't hijack another user's relay.
+   */
+  app.post("/set-user", async (c) => {
+    const callerId = c.get("userId") as string | undefined;
+    if (!callerId || callerId === "anonymous") {
+      return c.json({ error: "auth_required" }, 401);
+    }
+    const body = await c.req.json<{ userId?: string | null }>().catch(() => ({
+      userId: null,
+    }));
+    const nextUserId = body.userId ?? null;
+    if (nextUserId && nextUserId !== callerId) {
+      // Ownership check — the authed caller must match the identity they're
+      // claiming. Prevents "I'm signed in as A but want my relay to register
+      // as B" shenanigans.
+      return c.json(
+        { error: "forbidden", message: "userId must match authenticated user" },
+        403,
+      );
+    }
+    setRelayUser(nextUserId);
+    return c.json({
+      ok: true,
+      userId: getRelayUser(),
+      connected: isRelayConnected(),
+    });
+  });
+
+  /**
+   * GET /api/relay/connector-status — Local-only. Reports which user the
+   * connector is currently registered as, and whether the WS is open. Useful
+   * for the frontend to decide whether it needs to re-post /set-user.
+   */
+  app.get("/connector-status", async (c) => {
+    const callerId = c.get("userId") as string | undefined;
+    if (!callerId || callerId === "anonymous") {
+      return c.json({ error: "auth_required" }, 401);
+    }
+    return c.json({
+      userId: getRelayUser(),
+      connected: isRelayConnected(),
+      matchesCaller: getRelayUser() === callerId,
     });
   });
 

@@ -1,5 +1,16 @@
+// [claude-code 2026-04-18] FCB is now a dispatch shortcut: collapsed button mirrors the
+//   composer relay-button microinteractions (Radio / Loader2 / Unplug, gold pulse when
+//   dispatched-here, reduced opacity when dispatched-elsewhere). Clicking it opens the
+//   compact chat so the user can dispatch directly from the same surface.
 import { useState, useCallback } from "react";
-import { MessageSquare, X, Maximize2 } from "lucide-react";
+import {
+  MessageSquare,
+  X,
+  Maximize2,
+  Radio,
+  Unplug,
+  Loader2,
+} from "lucide-react";
 import {
   AssistantRuntimeProvider,
   useThread,
@@ -7,6 +18,7 @@ import {
 } from "@assistant-ui/react";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { useHermesRuntime } from "./useHermesRuntime";
+import { useRelayDispatch } from "../../hooks/useRelayDispatch";
 import { FintheonThread } from "./FintheonThread";
 import { FintheonComposer } from "./FintheonComposer";
 
@@ -129,18 +141,92 @@ export function FintheonFloatingChat({
   const { runtime, lastError, lastRequestId, conversationId } =
     useHermesRuntime(activeAgent?.id ?? "default", thinkHarder, "floating");
 
+  // Relay state for the collapsed FCB. Displayed as microinteractions that
+  // mirror the composer's relay button: Radio (idle/ready), Loader2 (in-flight),
+  // Unplug (dispatched-here), Radio + reduced opacity (dispatched-elsewhere).
+  const relay = useRelayDispatch();
+  const isDispatchedHere = Boolean(
+    relay.isDispatched &&
+    conversationId &&
+    relay.dispatchedConversationId &&
+    relay.dispatchedConversationId === conversationId,
+  );
+  const isDispatchedElsewhere = Boolean(
+    relay.isDispatched && !isDispatchedHere,
+  );
+
+  const handleQuickDispatch = useCallback(
+    async (e: React.MouseEvent) => {
+      // Shift-click (or Alt-click) on the FCB triggers one-click dispatch of
+      // the floating conversation to mobile without opening the panel. Without
+      // the modifier, the FCB opens the chat panel as before — we preserve the
+      // "shortcut to the dispatch window" behavior while also giving an
+      // expert-level one-click dispatch for users who already have a running
+      // floating conversation.
+      if (!conversationId || !(e.shiftKey || e.altKey)) {
+        setExpanded(true);
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      if (isDispatchedHere) {
+        await relay.disconnect();
+        return;
+      }
+      if (isDispatchedElsewhere) return; // don't steal someone else's dispatch
+      try {
+        await relay.dispatch(conversationId);
+      } catch {
+        // Failures fall through — open the chat so the user sees the error in
+        // the composer banner.
+        setExpanded(true);
+      }
+    },
+    [conversationId, isDispatchedHere, isDispatchedElsewhere, relay],
+  );
+
   if (!visible) return null;
 
-  /* Collapsed state — 48x48 pill */
+  /* Collapsed state — relay-aware 48x48 pill with dispatch microinteractions */
   if (!expanded) {
+    const title = relay.isDispatching
+      ? "Relaying…"
+      : isDispatchedHere
+        ? "Dispatched to mobile — shift-click to disconnect"
+        : isDispatchedElsewhere
+          ? "Another conversation is already dispatched"
+          : conversationId
+            ? "Open chat (shift-click to dispatch to mobile)"
+            : "Open chat";
+
+    const buttonClass = [
+      "fixed z-[90] flex items-center justify-center rounded-full transition-all shadow-lg hover:shadow-xl",
+      isDispatchedHere
+        ? "bg-[var(--fintheon-accent)] text-black shadow-[0_0_24px_rgba(199,159,74,0.45)] animate-pulse"
+        : isDispatchedElsewhere
+          ? "bg-[var(--fintheon-accent)]/50 text-black/60 cursor-not-allowed"
+          : relay.isDispatching
+            ? "bg-[var(--fintheon-accent)] text-black"
+            : "bg-[var(--fintheon-accent)] text-black hover:bg-[#C5A030]",
+    ].join(" ");
+
     return (
       <button
-        onClick={() => setExpanded(true)}
-        className="fixed z-[90] flex items-center justify-center rounded-full bg-[var(--fintheon-accent)] text-black hover:bg-[#C5A030] transition-all shadow-lg hover:shadow-xl"
+        onClick={handleQuickDispatch}
+        disabled={isDispatchedElsewhere || relay.isDispatching}
+        className={buttonClass}
         style={{ bottom: "24px", right: "24px", width: "48px", height: "48px" }}
-        title="Open chat"
+        title={title}
       >
-        <MessageSquare size={20} />
+        {relay.isDispatching ? (
+          <Loader2 size={20} className="animate-spin" />
+        ) : isDispatchedHere ? (
+          <Unplug size={20} />
+        ) : conversationId ? (
+          <Radio size={20} />
+        ) : (
+          <MessageSquare size={20} />
+        )}
       </button>
     );
   }

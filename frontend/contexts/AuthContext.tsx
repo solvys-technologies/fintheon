@@ -1,3 +1,7 @@
+// [claude-code 2026-04-18] Notify the local backend of the signed-in user's sub so its relay
+//   connector can register the outbound WS under the correct user_id. Without this the local
+//   backend has no way to know which user it serves, Fly reports connected:false on
+//   /api/relay/health, and mobile's ChatInput stays locked in "OFFLINE".
 // [claude-code 2026-03-24] Supabase Google OAuth + Electron deep link + GitHub Models OAuth
 import {
   createContext,
@@ -122,6 +126,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Sync the user's identity to the local backend's relay connector whenever
+  // sign-in / sign-out happens. The local backend can't know which user it
+  // serves until we tell it — without this, Fly's /api/relay/health reports
+  // connected:false and mobile locks to OFFLINE.
+  const lastReportedRelayUserRef = useRef<string | null>(null);
+  useEffect(() => {
+    const currentUserId = user?.id ?? null;
+    if (lastReportedRelayUserRef.current === currentUserId) return;
+    lastReportedRelayUserRef.current = currentUserId;
+
+    // Only attempt when we have an access token (post sign-in). For sign-out
+    // we still try with whatever token we last had — the server accepts the
+    // matching-caller check; if that fails, it's a no-op.
+    (async () => {
+      try {
+        const token = session?.access_token;
+        if (!token && currentUserId) return; // not signed in yet
+        const res = await fetch(`${API_BASE}/api/relay/set-user`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ userId: currentUserId }),
+        });
+        if (!res.ok && res.status !== 401) {
+          console.debug(
+            "[AuthContext] relay set-user non-ok:",
+            res.status,
+            await res.text().catch(() => ""),
+          );
+        }
+      } catch (err) {
+        // Local backend may not be running yet — the connector will pick up
+        // the identity on a subsequent auth state change or manual reconnect.
+        console.debug("[AuthContext] relay set-user failed (non-fatal):", err);
+      }
+    })();
+  }, [user?.id, session?.access_token]);
 
   // Set session from tokens (implicit flow — access_token + refresh_token)
   const setSessionFromTokens = useCallback(
