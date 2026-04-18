@@ -38,24 +38,24 @@ export function SnapSheet({
   const sheetRef = useRef<HTMLDivElement>(null);
   const [topPx, setTopPx] = useState<number>(fallbackTopPx);
 
-  // Snap page to top so the anchor row renders into view, then measure it.
+  // Snap page to top instantly (not smooth — smooth scroll is async and rect.bottom
+  // was being measured mid-scroll, giving a wrong Y). Then measure the anchor.
   useEffect(() => {
     if (!isOpen) return;
+    window.scrollTo({ top: 0, behavior: "auto" });
+    document
+      .querySelectorAll<HTMLElement>("[data-scroll-container='true']")
+      .forEach((el) => el.scrollTo({ top: 0, behavior: "auto" }));
+    // One RAF so layout settles, then measure.
     requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      document
-        .querySelectorAll<HTMLElement>("[data-scroll-container='true']")
-        .forEach((el) => el.scrollTo({ top: 0, behavior: "smooth" }));
-      requestAnimationFrame(() => {
-        const anchor = document.querySelector<HTMLElement>(anchorSelector);
-        if (anchor) {
-          const rect = anchor.getBoundingClientRect();
-          // 6px breathing room below the fuse row
-          setTopPx(Math.max(0, Math.round(rect.bottom + 6)));
-        } else {
-          setTopPx(fallbackTopPx);
-        }
-      });
+      const anchor = document.querySelector<HTMLElement>(anchorSelector);
+      if (anchor) {
+        const rect = anchor.getBoundingClientRect();
+        // 4px breathing room under the fuse row — sheet top edge sits right below.
+        setTopPx(Math.max(0, Math.round(rect.bottom + 4)));
+      } else {
+        setTopPx(fallbackTopPx);
+      }
     });
   }, [isOpen, anchorSelector, fallbackTopPx]);
 
@@ -158,13 +158,13 @@ export function SnapSheet({
               </div>
             )}
 
-            {/* Content */}
+            {/* Content — tight 10px side gutter so notification cards sit nearly edge-to-edge */}
             <div
               style={{
                 flex: 1,
                 minHeight: 0,
                 overflowY: "auto",
-                padding: "0 16px calc(16px + env(safe-area-inset-bottom, 0px))",
+                padding: "0 10px calc(16px + env(safe-area-inset-bottom, 0px))",
                 WebkitOverflowScrolling: "touch",
                 overscrollBehavior: "contain",
               }}
