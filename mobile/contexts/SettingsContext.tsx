@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S24 unify: per TP — only regimeProposals + walkBackReverts default ON; everything else opt-in. Keeps the lock screen quiet except for the two categories that require immediate decisions.
 // [claude-code 2026-04-19] S24-T1: add regimeProposals / lexiconProposals / walkBackReverts notification categories; default-on so TP's phone gets V4 approvals + walk-back reverts out of the box.
 // [claude-code 2026-04-15] S19: Mobile settings — expanded with backend sync, trader prefs, risk display
 import {
@@ -74,13 +75,15 @@ const STORAGE_KEY = "fintheon-mobile:settings";
 const DEFAULT_SETTINGS: MobileSettings = {
   notificationPrefs: {
     pushEnabled: false,
-    riskflow: true,
-    dailyBrief: true,
-    regimeActivations: true,
+    // S24 unify: only the two decision-critical categories default ON.
+    // The rest stay opt-in so the lock screen isn't noisy. Toggle in Settings.
+    riskflow: false,
+    dailyBrief: false,
+    regimeActivations: false,
     regimeProposals: true,
-    lexiconProposals: true,
+    lexiconProposals: false,
     walkBackReverts: true,
-    toolApprovals: true,
+    toolApprovals: false,
     severityThreshold: "medium",
   },
   hapticEnabled: true,
