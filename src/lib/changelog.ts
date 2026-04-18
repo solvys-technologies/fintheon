@@ -9,6 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T16:30:00",
+    agent: "claude-code",
+    summary:
+      "S24-T4 (RiskFlow V4 UX + admin + monitoring loop): Wave-2 track running in parallel with T1 foundation, T2 intelligence, T3 calibration. Everything feature-flagged — endpoints that don't exist yet fall back to graceful 'not ready' hints so the UI ships without waiting on T1/T2/T3 to land. (1) Shared UI: reused existing frontend/components/ui/Toast.tsx. Built new InlineDiff.tsx exporting ScoreImpactPreview (rescore-impact bucket preview) and KeywordDiffRow (per-keyword approve/deny for lexicon diff). (2) Refinement Engine rebuilt — replaced 40-slider workbench with 5 group-sensitivity dials (Macro/Geopolitical/Corporate/Technical/Speaker, each -1.0→+1.0) that scale all weights in their category. GroupSensitivityDial.tsx + PresetSelector.tsx (Neutral/Conservative/Aggressive/Geo-focused built-ins + save-as-custom) + AdvancedPane.tsx (collapsible wrapper for existing QuickWeightEditor, CommentatorManager, SourceAccountsManager, plus new MatrixEditor + LexiconEditor). Debounced rescore-impact preview fires 400ms after last dial change via POST /api/riskflow/rescore?dryRun=true. Toast on every save (success/error), replacing silent console.error. Apply Changes / Discard buttons appear only when pending != applied. (3) MatrixEditor.tsx — super-admin edit of classification_matrix rubric (regime tabs, JSON rubric textarea, save). LexiconEditor.tsx — add keywords + pending-proposal inline approve/deny with optimistic UI. Both detect 404 and show 'T1 endpoints not yet live' placeholder. (4) Admin approvals — new /admin area via AdminShell.tsx with three sub-tabs: Scoring (RefinementEngine) / Approvals (ApprovalsPage) / Monitor (MonitoringLoopCard). TabRenderer now renders AdminShell when showRefinement flag is on, instead of RefinementEngine directly. ApprovalsPage.tsx renders pending regime/lexicon/walk-back proposals as cards with inline chart screenshot + X sentiment snippet + evidence sources + approve/deny one-tap. Polls every 30s. (5) Monitor tab — MonitoringLoopCard.tsx shows last-run / next-run / proposals-created counts + shadow-mode graduation tracker per decision-type with agreement rate and graduate button when ≥85% agreement over ≥30 decisions. (6) Mobile approval surface — extended mobile/components/notifications/NotificationDrawer.tsx to render approval cards inline for categories regimeProposals/lexiconProposals/walkBackReverts/toolApprovals with Approve/Deny buttons that POST to the right endpoint and optimistically mark the card decided. NotificationItem type gained eventId + metadata fields. (7) Backend monitoring loop — backend-hono/src/services/cron/monitoring-loop.ts (2h cron, America/New_York, gated by ENABLE_MONITORING_LOOP env). Each cycle: counts L9/L10 items in last 24h (threshold 5 → files regime-rubric-review proposal), dynamically imports T2's lexicon-proposer and walk-back-pairer (safeImport with variable-string specs so TS doesn't fail when modules don't exist yet). State tracks last/next run + outcome for status endpoint. (8) Routes — new backend-hono/src/routes/scoring/index.ts at /api/scoring: GET /monitoring/status, POST /monitoring/run-now (super-admin), PATCH /monitoring/config (toggle enabled), GET /shadow-stats (aggregates agent_shadow_decisions from last 30 days, computes agreement rate, flags canAutoApply), POST /shadow-stats/graduate (super-admin insert into agent_decision_graduations). All routes fail-soft when T3 tables don't exist yet — return empty arrays, never 500. (9) startMonitoringLoop wired into boot/services.ts after MarketImpactEnricher. (10) Frontend/mobile/backend all tsc-clean + bun run build passes. Backend routes mounted with authMiddleware at /api/scoring. No dev server started — verification by type-check + build only. Preset API helper at frontend/lib/scoring-preset-api.ts uses NotReady sentinel type so every 404/501 gracefully downgrades the UI.",
+    files: [
+      "frontend/components/ui/InlineDiff.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/refinement/GroupSensitivityDial.tsx",
+      "frontend/components/refinement/PresetSelector.tsx",
+      "frontend/components/refinement/AdvancedPane.tsx",
+      "frontend/components/refinement/MatrixEditor.tsx",
+      "frontend/components/refinement/LexiconEditor.tsx",
+      "frontend/components/admin/AdminShell.tsx",
+      "frontend/components/admin/ApprovalsPage.tsx",
+      "frontend/components/admin/MonitoringLoopCard.tsx",
+      "frontend/components/layout/TabRenderer.tsx",
+      "frontend/lib/scoring-preset-api.ts",
+      "mobile/components/notifications/NotificationDrawer.tsx",
+      "mobile/hooks/useNotificationHistory.ts",
+      "backend-hono/src/services/cron/monitoring-loop.ts",
+      "backend-hono/src/routes/scoring/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/boot/services.ts",
+    ],
+  },
+  {
     date: "2026-04-18T14:00:00",
     agent: "claude-code",
     summary:

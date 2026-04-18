@@ -1,7 +1,26 @@
+// [claude-code 2026-04-18] S24-T4: approval-card rendering for regimeProposals / lexiconProposals / walkBackReverts / toolApprovals
 // [claude-code 2026-04-18] A4: bottom-sheet notification history, grouped by day
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { BottomSheet } from "../shared/BottomSheet";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
+import { useAuth } from "../../contexts/AuthContext";
+
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
+const APPROVAL_CATEGORIES = new Set([
+  "regimeProposals",
+  "lexiconProposals",
+  "walkBackReverts",
+  "toolApprovals",
+]);
+
+const APPROVAL_ENDPOINT_MAP: Record<string, string> = {
+  regimeProposals: "/api/regime/proposals",
+  lexiconProposals: "/api/lexicon/proposals",
+  walkBackReverts: "/api/riskflow/walk-back-proposals",
+  toolApprovals: "/api/tool-approvals",
+};
 
 interface Props {
   isOpen: boolean;
@@ -53,6 +72,12 @@ export function NotificationDrawer({
   markRead,
   markAllRead,
 }: Props) {
+  const { getAccessToken } = useAuth();
+  const [decided, setDecided] = useState<Record<string, "approved" | "denied">>(
+    {},
+  );
+  const [pending, setPending] = useState<Set<string>>(new Set());
+
   const grouped = useMemo(() => {
     const map = new Map<string, NotificationItem[]>();
     for (const n of notifications) {
@@ -71,6 +96,34 @@ export function NotificationDrawer({
     if (n.url) {
       window.location.href = n.url;
       onClose();
+    }
+  };
+
+  const decide = async (n: NotificationItem, action: "approve" | "deny") => {
+    if (!n.eventId) return;
+    const endpoint = APPROVAL_ENDPOINT_MAP[n.category];
+    if (!endpoint) return;
+    setPending((prev) => new Set(prev).add(n.id));
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}${endpoint}/${n.eventId}/${action}`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setDecided((prev) => ({
+        ...prev,
+        [n.id]: action === "approve" ? "approved" : "denied",
+      }));
+      if (!n.read) void markRead([n.id]);
+    } catch {
+      // best effort — card stays actionable
+    } finally {
+      setPending((prev) => {
+        const next = new Set(prev);
+        next.delete(n.id);
+        return next;
+      });
     }
   };
 
@@ -143,66 +196,152 @@ export function NotificationDrawer({
               >
                 {day}
               </div>
-              {items.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => onItemTap(n)}
-                  style={{
-                    width: "100%",
-                    background: n.read
-                      ? "transparent"
-                      : "rgba(199, 159, 74, 0.06)",
-                    border: "1px solid var(--border)",
-                    borderLeft: `3px solid ${severityColor(n.severity)}`,
-                    padding: "12px 14px",
-                    marginBottom: 8,
-                    textAlign: "left",
-                    cursor: n.url ? "pointer" : "default",
-                    WebkitTapHighlightColor: "transparent",
-                    display: "block",
-                  }}
-                >
+              {items.map((n) => {
+                const isApproval = APPROVAL_CATEGORIES.has(n.category);
+                const status = decided[n.id];
+                return (
                   <div
+                    key={n.id}
+                    onClick={isApproval ? undefined : () => void onItemTap(n)}
+                    role={isApproval ? undefined : "button"}
                     style={{
-                      display: "flex",
-                      alignItems: "baseline",
-                      justifyContent: "space-between",
-                      gap: 8,
-                      marginBottom: 4,
+                      width: "100%",
+                      background:
+                        status === "approved"
+                          ? "rgba(199, 159, 74, 0.10)"
+                          : status === "denied"
+                            ? "rgba(120,120,120,0.06)"
+                            : n.read
+                              ? "transparent"
+                              : "rgba(199, 159, 74, 0.06)",
+                      border: "1px solid var(--border)",
+                      borderLeft: `3px solid ${severityColor(n.severity)}`,
+                      padding: "12px 14px",
+                      marginBottom: 8,
+                      textAlign: "left",
+                      cursor: !isApproval && n.url ? "pointer" : "default",
+                      WebkitTapHighlightColor: "transparent",
+                      opacity: status ? 0.6 : 1,
                     }}
                   >
-                    <span
+                    <div
                       style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: 13,
-                        fontWeight: n.read ? 400 : 600,
-                        color: n.read ? "var(--text)" : "var(--accent)",
+                        display: "flex",
+                        alignItems: "baseline",
+                        justifyContent: "space-between",
+                        gap: 8,
+                        marginBottom: 4,
                       }}
                     >
-                      {n.title}
-                    </span>
-                    <span
+                      <span
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: 13,
+                          fontWeight: n.read ? 400 : 600,
+                          color: n.read ? "var(--text)" : "var(--accent)",
+                        }}
+                      >
+                        {n.title}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-data)",
+                          fontSize: 10,
+                          color: "var(--text-secondary)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {timeLabel(n.createdAt)}
+                      </span>
+                    </div>
+                    <div
                       style={{
-                        fontFamily: "var(--font-data)",
-                        fontSize: 10,
+                        fontSize: 12,
                         color: "var(--text-secondary)",
-                        flexShrink: 0,
+                        lineHeight: 1.4,
+                        marginBottom: isApproval ? 10 : 0,
                       }}
                     >
-                      {timeLabel(n.createdAt)}
-                    </span>
+                      {n.body}
+                    </div>
+                    {isApproval && !status && n.eventId && (
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void decide(n, "deny");
+                          }}
+                          disabled={pending.has(n.id)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "6px 10px",
+                            fontSize: 11,
+                            fontFamily: "var(--font-data)",
+                            color: "var(--text-secondary)",
+                            background: "transparent",
+                            border: "1px solid var(--border)",
+                            borderRadius: 3,
+                            cursor: pending.has(n.id)
+                              ? "not-allowed"
+                              : "pointer",
+                          }}
+                        >
+                          <XCircle size={12} />
+                          Deny
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void decide(n, "approve");
+                          }}
+                          disabled={pending.has(n.id)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "6px 10px",
+                            fontSize: 11,
+                            fontFamily: "var(--font-data)",
+                            fontWeight: 600,
+                            color: "var(--black)",
+                            background: "var(--accent)",
+                            border: "none",
+                            borderRadius: 3,
+                            cursor: pending.has(n.id)
+                              ? "not-allowed"
+                              : "pointer",
+                          }}
+                        >
+                          <CheckCircle2 size={12} />
+                          Approve
+                        </button>
+                      </div>
+                    )}
+                    {status && (
+                      <div
+                        style={{
+                          fontSize: 10,
+                          fontFamily: "var(--font-data)",
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          color: "var(--text-secondary)",
+                          textAlign: "right",
+                        }}
+                      >
+                        {status}
+                      </div>
+                    )}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "var(--text-secondary)",
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {n.body}
-                  </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
           ))
         )}

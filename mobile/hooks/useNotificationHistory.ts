@@ -13,6 +13,9 @@ export interface NotificationItem {
   title: string;
   body: string;
   url?: string;
+  /** Upstream proposal/event id for approve/deny routing. */
+  eventId?: string;
+  metadata?: Record<string, unknown>;
   read: boolean;
   createdAt: string;
   readAt?: string;
