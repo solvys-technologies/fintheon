@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S24-T2: SCORING_V4 branch — novelty-damped commentator, narrative-aware sentiment, directional geopolitical weights. V3 path untouched when flag is off.
 // [claude-code 2026-03-26] S2-T5: Regime-aware V3 rewire — async, dynamic calibration weights, regime+commentator multipliers, scheduled-data breaking block
 // [claude-code 2026-03-26] Tier-based score ceiling + recalibrated scoreToPoints curve (was producing 200+ pts for jobless claims)
 // [claude-code 2026-03-24] VIX-weighted scoring: continuousVIXMultiplier, SubScoreBreakdown, finer EVENT_WEIGHTS, macro threshold adjustment
@@ -14,7 +15,11 @@ import type {
 } from "../../types/news-analysis.js";
 import type { SubScoreBreakdown } from "../../types/riskflow.js";
 import type { VIXData } from "../vix-service.js";
-import { hasLevel4Emoji, MAJOR_MACRO_PRINTS } from "../headline-parser.js";
+import {
+  hasLevel4Emoji,
+  MAJOR_MACRO_PRINTS,
+  geopoliticalEventType,
+} from "../headline-parser.js";
 import {
   INSTRUMENT_BETAS,
   continuousVIXMultiplier,
@@ -25,6 +30,11 @@ import {
 } from "../regime/regime-service.js";
 import { getMultiplierForSpeaker } from "../commentator/commentator-service.js";
 import { getWeightForEvent } from "../calibration/calibration-service.js";
+import {
+  computeNoveltyFactor,
+  recordUtterance,
+} from "../scoring/speaker-novelty.js";
+import { interpretSentimentThroughNarratives } from "../scoring/narrative-sentiment.js";
 
 // [claude-code 2026-03-24] Synced with iv-scoring-v2 finer granularity (half-point steps, 2.0-10.0 range)
 // Base impact weights by event type — must stay in sync with iv-scoring-v2.ts EVENT_WEIGHTS
@@ -40,6 +50,11 @@ const EVENT_WEIGHTS: Record<string, number> = {
   bankingCrisis: 9,
   // Fed/Policy + Geopolitical (8-8.5)
   geopolitical: 8.5,
+  // [claude-code 2026-04-19] S24-T2: V4-only directional geopolitical weights
+  // Bullish de-escalation matters less to volatility than escalation.
+  geopoliticalBearish: 8.5,
+  geopoliticalBullish: 7.0,
+  geopoliticalNeutral: 5.5,
   fedDecision: 8.5,
   fomc: 8,
   powellSpeak: 8,
@@ -136,21 +151,39 @@ const SCHEDULED_DATA_EVENTS = [
 ];
 
 /**
- * Calculate IV impact score for a parsed headline (V3: regime-aware, async)
+ * Calculate IV impact score for a parsed headline (V3: regime-aware, async).
+ * When SCORING_V4=true, applies novelty-damped commentator + narrative-aware
+ * sentiment + directional geopolitical event types. V3 output is byte-identical
+ * when the flag is off.
  */
 export async function calculateIVScore(
   input: IVScoreInput,
 ): Promise<ExtendedIVScore> {
   const { parsed, hotPrint, timestamp = new Date(), vixData } = input;
   const rationale: string[] = [];
+  const isV4 = process.env.SCORING_V4 === "true";
 
   // --- Sub-score tracking ---
   let subTiming = 0;
   let subDeviation = 0;
   let subMomentum = 0;
 
+  // [claude-code 2026-04-19] S24-T2: V4 directional geopolitical override.
+  // V3 still sees eventType="geopolitical"; V4 routes to the directional variant
+  // based on the side-channel parsed.geopoliticalDirection set by headline-parser.
+  let eventType = parsed.eventType ?? "default";
+  if (
+    isV4 &&
+    eventType === "geopolitical" &&
+    parsed.geopoliticalDirection
+  ) {
+    eventType = geopoliticalEventType(parsed.geopoliticalDirection);
+    rationale.push(
+      `V4: geopolitical → ${eventType} (direction=${parsed.geopoliticalDirection})`,
+    );
+  }
+
   // Get base weight from calibration table (falls back to EVENT_WEIGHTS)
-  const eventType = parsed.eventType ?? "default";
   let baseEventWeight: number;
   try {
     baseEventWeight = await getWeightForEvent(eventType);
@@ -275,6 +308,10 @@ export async function calculateIVScore(
     }
   }
 
+  // [claude-code 2026-04-19] S24-T2: V4 narrative-aware sentiment — resolved once
+  // and reused for both regime multiplier + return value to keep them consistent.
+  const resolvedSentiment = await resolveSentiment(parsed, hotPrint, isV4);
+
   // --- Regime multiplier (after VIX, before tier ceiling) ---
   let regimeMultiplier = 1.0;
   let regimeName = "CONSOLIDATION";
@@ -288,10 +325,9 @@ export async function calculateIVScore(
       regimeMultiplier = regimeProfile.eventTypeOverrides[eventType];
     }
     // Then apply sentiment-based scaling
-    const sentiment = determineSentiment(parsed, hotPrint);
-    if (sentiment === "bullish") {
+    if (resolvedSentiment === "bullish") {
       regimeMultiplier *= regimeProfile.sentimentMultipliers.bullish;
-    } else if (sentiment === "bearish") {
+    } else if (resolvedSentiment === "bearish") {
       regimeMultiplier *= regimeProfile.sentimentMultipliers.bearish;
     } else {
       regimeMultiplier *= regimeProfile.sentimentMultipliers.neutral;
@@ -303,14 +339,33 @@ export async function calculateIVScore(
   }
 
   // --- Commentator multiplier (after regime, before tier ceiling) ---
+  // [claude-code 2026-04-19] S24-T2: V4 damps commentator boost by novelty.
+  // effectiveBoost = 1 + 0.5 * (rawMult - 1) * noveltyFactor.
+  // - rawMult=1 → no change (no boost to dampen)
+  // - rawMult=2, novelty=1.0 (novel) → effective 1.5×
+  // - rawMult=2, novelty=0.3 (highly repetitive) → effective 1.15×
   let commentatorMultiplier = 1.0;
   if (parsed.speaker) {
     try {
-      commentatorMultiplier = await getMultiplierForSpeaker(parsed.speaker);
-      score *= commentatorMultiplier;
-      rationale.push(
-        `Speaker: ${parsed.speaker} (${commentatorMultiplier.toFixed(2)}x tier)`,
-      );
+      const rawMult = await getMultiplierForSpeaker(parsed.speaker);
+      if (isV4) {
+        const novelty = await computeNoveltyFactor(
+          parsed.speaker,
+          parsed.raw,
+        );
+        const effective = 1 + 0.5 * (rawMult - 1) * novelty;
+        commentatorMultiplier = effective;
+        score *= effective;
+        rationale.push(
+          `V4 Speaker: ${parsed.speaker} raw=${rawMult.toFixed(2)} novelty=${novelty.toFixed(2)} → eff=${effective.toFixed(2)}x`,
+        );
+      } else {
+        commentatorMultiplier = rawMult;
+        score *= commentatorMultiplier;
+        rationale.push(
+          `Speaker: ${parsed.speaker} (${commentatorMultiplier.toFixed(2)}x tier)`,
+        );
+      }
     } catch {
       // Fallback: no speaker adjustment
     }
@@ -352,8 +407,8 @@ export async function calculateIVScore(
   // Determine macro level (1-4 scale) — VIX-aware thresholds
   const macroLevel = calculateMacroLevel(score, parsed, hotPrint, vixData);
 
-  // Determine sentiment
-  const sentiment = determineSentiment(parsed, hotPrint);
+  // [claude-code 2026-04-19] S24-T2: reuse the narrative-aware sentiment from above
+  const sentiment = resolvedSentiment;
 
   // Generate trading implication
   const tradingImplication = generateTradingImplication(
@@ -362,6 +417,12 @@ export async function calculateIVScore(
     sentiment,
     eventType,
   );
+
+  // [claude-code 2026-04-19] S24-T2: record speaker utterance for future novelty
+  // calcs. Fire and forget — never blocks scoring. V3 skips this entirely.
+  if (isV4 && parsed.speaker) {
+    void recordUtterance(parsed.speaker, parsed.raw);
+  }
 
   return {
     eventType,
@@ -443,6 +504,32 @@ function calculateMacroLevel(
   if (hotPrint?.impact === "medium" || score >= level3Threshold) return 3;
   if (score >= 4) return 2;
   return 1;
+}
+
+/**
+ * [claude-code 2026-04-19] S24-T2: Resolve sentiment — V4 tries narrative-aware
+ * interpretation first for speaker-attributed events, else consults geopolitical
+ * direction, else falls back to V3 determineSentiment. V3 path is unchanged.
+ */
+async function resolveSentiment(
+  parsed: ParsedHeadline,
+  hotPrint: HotPrint | null | undefined,
+  isV4: boolean,
+): Promise<"bullish" | "bearish" | "neutral"> {
+  if (!isV4) return determineSentiment(parsed, hotPrint);
+
+  // Speaker-attributed: narrative tint wins if a narrative matches.
+  if (parsed.speaker) {
+    const narrative = await interpretSentimentThroughNarratives(parsed);
+    if (narrative) return narrative;
+  }
+
+  // Geopolitical: directional pattern drives sentiment directly (no narrative needed).
+  if (parsed.geopoliticalDirection === "bullish") return "bullish";
+  if (parsed.geopoliticalDirection === "bearish") return "bearish";
+  if (parsed.geopoliticalDirection === "neutral") return "neutral";
+
+  return determineSentiment(parsed, hotPrint);
 }
 
 /**

@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T00:30:00",
+    agent: "claude-code",
+    summary:
+      "S24-T2 RiskFlow V4 Intelligence — scoring-engine redesign behind a SCORING_V4 feature flag. New services/scoring/ layer: (1) speaker-novelty.ts damps the commentator tier multiplier by a 0.3→1.0 novelty factor computed from pgvector cosine similarity (preferred) or Jaccard on tokenized headline text (fallback) against the speaker's last 7 days in speaker_utterance_cache — effectiveBoost = 1 + 0.5*(rawMult-1)*novelty, so Powell saying 'restrictive' for the 50th time barely nudges the score. Decay curve: sim<0.3 → 1.0, linear to (0.9, 0.4), floor 0.3 above 0.9. (2) narrative-sentiment.ts tints speaker-attributed events through active_narratives stance so 'rate cuts appropriate' reads bearish when price_stability / max_employment narratives are in breakdown, bullish when they're intact. Returns null when no active narrative matches, caller falls back to existing determineSentiment. (3) walk-back-pairer.ts scans the last 24h of L9/L10 items for semantic opposition (shared ticker/narrative/geopolitical tag + opposite sentiment + ≥0.25 Jaccard on direction-token-stripped subject tokens) — when a 'ceasefire collapses' lands after 'ceasefire confirmed', the pairer fades the original by 0.5×, drops its macro_level one tier, and fires a walkBackReverts critical push (bypasses quiet hours). Regime revert is deferred to T1's proposeRegimeChange() via dynamic import with soft-fail. (4) lexicon-proposer.ts (wired by T4's 2h cron) clusters repeated 2–3-grams in geopolitical/commentator items missing from lexicon_keywords, infers sentiment via narrative match, and writes one row per cluster into lexicon_proposals with top-5 evidence headlines + digest push (severity medium). headline-parser.ts gains classifyGeopoliticalDirection (bullishRisk / bearishRisk / neutralRisk regex set) as a side-channel — parsed.geopoliticalDirection is only consumed by the V4 iv-scorer path, so the V3 MACRO_KEYWORD_PATTERNS emitter and getMatchedKeywords output stay byte-identical. iv-scorer.ts gates all V4 behavior on process.env.SCORING_V4==='true': eventType rewrites 'geopolitical' → directional variant (geopoliticalBullish/Bearish/Neutral with weights 7.0/8.5/5.5), resolveSentiment tries narrative-aware first for speaker events then geopolitical direction, novelty-damped commentator boost replaces the raw tier multiplier, recordUtterance fires and forgets at the end. central-scorer.ts V4 branch calls detectWalkBack on freshly-scored L9/L10 items between writeScoredItems and the push-emit block. Soft-fail everywhere: if T1's speaker_utterance_cache / active_narratives / lexicon_keywords / lexicon_proposals / regime_proposals tables aren't present, novelty defaults to 1.0 (novel), narrative returns null (caller falls back), walk-back returns ignore, proposer reports 0 proposed. Verbose mode via SCORING_V4_VERBOSE keeps production logs quiet by default. Sanity scripts scripts/novelty-sanity.ts + scripts/walk-back-sanity.ts cover the decay curve, Jaccard, direction-token stripping, and (when Supabase is wired) end-to-end pair detection — both pass from pure-function paths alone.",
+    files: [
+      "backend-hono/src/services/scoring/speaker-novelty.ts",
+      "backend-hono/src/services/scoring/narrative-sentiment.ts",
+      "backend-hono/src/services/scoring/walk-back-pairer.ts",
+      "backend-hono/src/services/scoring/lexicon-proposer.ts",
+      "backend-hono/src/services/headline-parser.ts",
+      "backend-hono/src/services/analysis/iv-scorer.ts",
+      "backend-hono/src/services/riskflow/central-scorer.ts",
+      "backend-hono/src/types/news-analysis.ts",
+      "backend-hono/scripts/novelty-sanity.ts",
+      "backend-hono/scripts/walk-back-sanity.ts",
+    ],
+  },
+  {
     date: "2026-04-19T00:00:00",
     agent: "claude-code",
     summary:
