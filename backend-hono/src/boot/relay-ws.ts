@@ -28,14 +28,19 @@ export function attachRelayWebSocket(server: Server): void {
 
   // Handle upgrade requests for /api/relay/connect
   server.on("upgrade", async (req, socket, head) => {
-    if (req.url !== "/api/relay/connect") return;
+    if (req.url?.split("?")[0] !== "/api/relay/connect") return;
+
+    log.info("WS upgrade received", {
+      url: req.url?.split("?")[0],
+      hasAuthHeader: Boolean(req.headers.authorization),
+    });
 
     // Extract credentials from query params or Authorization header.
     // Two paths:
     //   A) token=<user-jwt> → verify via supabase.auth.getUser, register under user.sub
     //   B) service_token=<service-role-key> + user_id=<uuid> → constant-time compare
     //      against SUPABASE_SERVICE_ROLE_KEY, register under the provided user_id.
-    const url = new URL(req.url, `http://${req.headers.host}`);
+    const url = new URL(req.url ?? "", `http://${req.headers.host}`);
     const token =
       url.searchParams.get("token") ||
       req.headers.authorization?.replace("Bearer ", "");
@@ -45,14 +50,25 @@ export function attachRelayWebSocket(server: Server): void {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
     // Path B: service-role auth (constant-time compare + explicit user_id)
-    if (serviceToken && claimedUserId && serviceRoleKey) {
-      if (timingSafeEqual(serviceToken, serviceRoleKey)) {
+    if (serviceToken && claimedUserId) {
+      if (!serviceRoleKey) {
+        log.warn(
+          "WS service_token path unavailable — SUPABASE_SERVICE_ROLE_KEY not set",
+        );
+      } else if (timingSafeEqual(serviceToken, serviceRoleKey)) {
+        log.info("WS upgrade: service_token accepted", {
+          userId: claimedUserId,
+        });
         wss.handleUpgrade(req, socket, head, (ws) => {
           wss.emit("connection", ws, req, claimedUserId);
         });
         return;
+      } else {
+        log.warn("WS upgrade: service_token mismatch", {
+          sentLen: serviceToken.length,
+          expectLen: serviceRoleKey.length,
+        });
       }
-      log.warn("Rejected WS upgrade: service_token mismatch");
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
       socket.destroy();
       return;
@@ -60,6 +76,7 @@ export function attachRelayWebSocket(server: Server): void {
 
     // Path A: user JWT
     if (!token) {
+      log.warn("WS upgrade: no credentials");
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
       socket.destroy();
       return;
@@ -68,15 +85,20 @@ export function attachRelayWebSocket(server: Server): void {
     try {
       const user = await verifySupabaseToken(token);
       if (!user?.sub) {
+        log.warn("WS upgrade: user JWT missing sub");
         socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
         socket.destroy();
         return;
       }
 
+      log.info("WS upgrade: user JWT accepted", { userId: user.sub });
       wss.handleUpgrade(req, socket, head, (ws) => {
         wss.emit("connection", ws, req, user.sub);
       });
-    } catch {
+    } catch (err) {
+      log.warn("WS upgrade: user JWT rejected", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
       socket.destroy();
     }

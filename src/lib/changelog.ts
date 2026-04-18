@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T11:30:00",
+    agent: "claude-code",
+    summary:
+      "Relay WS end-to-end: actually connects now. v5.20.0 shipped but mobile stayed OFFLINE — root cause was a key mismatch, not an architectural bug. Local backend had SUPABASE_SERVICE_ROLE_KEY in the new sb_secret_* format (41 chars) from the 2026-04-18 rotation; Fly still had the old JWT-format key (219 chars) because the rotation never pushed to Fly. Every WS upgrade attempt with service_token failed the constant-time compare and 401'd. Verified via debug logs on relay-ws.ts: 'WS upgrade: service_token mismatch, sentLen:41 expectLen:219'. Fix: fly secrets set SUPABASE_SERVICE_ROLE_KEY=<new> -a fintheon. After rotation, node ws client connects on first try, Fly logs 'Local backend connected', /api/relay/connector-status reports connected:true. Also (a) allowed service-role callers (local-user) to set relay user to any sub via /set-user — trusted server-to-server path for bootstrap/admin tooling; user-JWT callers still get the strict ownership check; (b) added /api/relay/debug/convo-count (service-role-only, temporary) to verify the DB has the right data — confirmed TP's sub owns 107 conversations in ai_conversations, so if the user's Electron app shows 'no chat history' it means the frontend is calling the endpoint under a different identity (stale JWT / signed out / etc), not a DB problem. Added granular WS upgrade logging (WS upgrade received / accepted / rejected with reasons) so future mismatches are obvious from one fly logs call.",
+    files: [
+      "backend-hono/src/boot/relay-ws.ts",
+      "backend-hono/src/routes/relay.ts",
+    ],
+  },
+  {
     date: "2026-04-18T10:30:00",
     agent: "claude-code",
     summary:

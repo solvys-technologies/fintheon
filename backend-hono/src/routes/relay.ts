@@ -25,6 +25,7 @@ import {
   getRelayUser,
   isRelayConnected,
 } from "../services/relay-connector.js";
+import { sql, isDatabaseAvailable } from "../config/database.js";
 
 const log = createLogger("Relay");
 
@@ -76,10 +77,14 @@ export function createRelayRoutes() {
       userId: null,
     }));
     const nextUserId = body.userId ?? null;
-    if (nextUserId && nextUserId !== callerId) {
-      // Ownership check — the authed caller must match the identity they're
-      // claiming. Prevents "I'm signed in as A but want my relay to register
-      // as B" shenanigans.
+    // Ownership check — the authed caller must match the identity they're
+    // claiming. Prevents "I'm signed in as A but want my relay to register
+    // as B" shenanigans. Exception: the service-role key (auths as
+    // "local-user" per authMiddleware) is trusted for server-to-server
+    // operations and may set the relay user to anyone — this is how the
+    // local backend's own bootstrap scripts / admin tooling configure the
+    // connector without a user JWT.
+    if (nextUserId && nextUserId !== callerId && callerId !== "local-user") {
       return c.json(
         { error: "forbidden", message: "userId must match authenticated user" },
         403,
@@ -108,6 +113,51 @@ export function createRelayRoutes() {
       connected: isRelayConnected(),
       matchesCaller: getRelayUser() === callerId,
     });
+  });
+
+  /**
+   * GET /api/relay/debug/convo-count?userId=<sub> — service-role-only.
+   * Returns count of conversations owned by the given sub + owner distribution.
+   * Helps diagnose "chat history missing" — is the DB state wrong, or is the
+   * frontend fetching under the wrong identity? Remove after debugging session.
+   */
+  app.get("/debug/convo-count", async (c) => {
+    const callerId = c.get("userId") as string | undefined;
+    if (callerId !== "local-user") {
+      return c.json({ error: "service_role_required" }, 403);
+    }
+    if (!isDatabaseAvailable() || !sql) {
+      return c.json({ error: "database_unavailable" }, 503);
+    }
+    const target = c.req.query("userId");
+    try {
+      const counts = await sql`
+        SELECT user_id, COUNT(*)::int AS n
+        FROM ai_conversations
+        GROUP BY user_id
+        ORDER BY n DESC
+        LIMIT 20
+      `;
+      const forUser = target
+        ? await sql`
+            SELECT COUNT(*)::int AS n FROM ai_conversations WHERE user_id = ${target}
+          `
+        : null;
+      return c.json({
+        ownerDistribution: counts,
+        forUser: forUser
+          ? { userId: target, count: (forUser[0] as { n: number }).n }
+          : null,
+      });
+    } catch (err) {
+      return c.json(
+        {
+          error: "query_failed",
+          message: err instanceof Error ? err.message : String(err),
+        },
+        500,
+      );
+    }
   });
 
   /**
