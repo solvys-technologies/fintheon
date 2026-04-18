@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T09:30:00",
+    agent: "claude-code",
+    summary:
+      "S21-T1 follow-up batch. Five groupings: (1) Relay-blocking bug — stale cached conversationId caused every fresh Electron launch to 404 on /api/ai/conversations/<uuid> and then fire /api/relay/dispatch against the dead UUID, so the Radio button went straight to 'not_found'. useHermesChat now accepts an optional clearConversationId and calls it when the hydration fetch returns 404, evicting both the localStorage key (per-agent, per-surface) and the React state — downstream consumers see conversationId=undefined until the next message, and the relay button correctly reports 'Relay — send a message first'. Threaded through useHermesRuntime and useChatSession so both paths get the fix. (2) file://-resolved /api/ fetches — SettingsContext, ThemeContext (both BACKEND_SETTINGS_URL), MainDashboard (/api/blindspots, /api/blindspots/interview), and ProposalWidget (/api/proposals/chart) all used bare relative paths, which under Electron's file:// shell produced ERR_FILE_NOT_FOUND and silently killed settings persistence + onboarding payloads. All four now prefix with VITE_API_URL-derived API_BASE. (3) FintheonComposer polish — isDispatchedHere now requires both sides of the comparison to be truthy (guards against undefined===undefined false positives after the 404-clear), and the relay button gets a dedicated 'dispatching…' title during the in-flight window. (4) PromptBox polish — IME composition guard on Enter (both ref-based and e.nativeEvent.isComposing) prevents candidate commits from sending mid-composition, attach popup auto-dismisses once the user starts typing, queue chip row shows '+N more' when >2 jobs are active (was silent truncation), compact mode bottom-bar padding bumped to match main composer so the send button doesn't crowd the Harper pill, and the paste handler logs a one-time debug line for non-image clipboard payloads instead of silently dropping them. (5) SessionsDropdown — attaches Supabase JWT to the conversations list + delete fetches (post-migration RLS was returning empty sets for unauth reads, leaving the spinner rendering over an empty list forever), handles non-OK responses explicitly so the spinner clears on 401/500, and swaps rAF-focus for setTimeout(0) so the search input actually receives focus when the dropdown first commits under Electron's portal ordering. (6) ChatHeader hit targets widened from 32×32 to 44×44 per iOS/Electron touch guidelines, icon sizes unchanged. (7) ChatGreeting chips get explicit gold-tint hover + icon color lift + focus-visible ring for keyboard users.",
+    files: [
+      "frontend/components/chat/hooks/useHermesChat.ts",
+      "frontend/components/chat/hooks/useChatSession.ts",
+      "frontend/components/chat/useHermesRuntime.ts",
+      "frontend/components/chat/FintheonComposer.tsx",
+      "frontend/components/chat/ChatHeader.tsx",
+      "frontend/components/chat/ChatGreeting.tsx",
+      "frontend/components/chat/SessionsDropdown.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/contexts/ThemeContext.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "frontend/components/proposals/ProposalWidget.tsx",
+    ],
+  },
+  {
     date: "2026-04-18T07:15:00",
     agent: "claude-code",
     summary:
