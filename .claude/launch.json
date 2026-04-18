@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 7777,
       "cwd": "frontend"
+    },
+    {
+      "name": "fintheon-mobile",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev"],
+      "port": 7778,
+      "cwd": "mobile"
     }
   ]
 }

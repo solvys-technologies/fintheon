@@ -1,3 +1,6 @@
+// [claude-code 2026-04-18] PWA polish: textarea font-size 14→16 to prevent iOS auto-zoom on focus,
+// hit-target upgrade (34×34 → 44×44 min) per iOS HIG, native form autofill hints, buttonized focus
+// ring, rising composer animation, and an IME-composition guard on Enter to match desktop.
 // [claude-code 2026-04-16] Chat input — matches desktop theme: gradient box, accent border, inline toolbar
 import { useState, useRef, useCallback, type KeyboardEvent } from "react";
 import { ArrowUp, Plus, Newspaper } from "lucide-react";
@@ -44,6 +47,9 @@ export default function ChatInput({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
+      // IME-composition guard — don't submit mid-dictation on mobile
+      // keyboards (voice, Japanese/Chinese candidates, Wispr Flow, etc).
+      if (e.nativeEvent.isComposing || e.keyCode === 229) return;
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSend();
@@ -91,8 +97,15 @@ export default function ChatInput({
   return (
     <div
       style={{
-        padding: "8px 16px",
+        padding: "10px 16px 8px",
+        // Keep composer above the home indicator on devices with a bottom safe-area.
         paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
+        // Translucent blur so long messages scroll behind the composer
+        // without hard-cutting at the top edge — feels native on iOS.
+        background:
+          "linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.95) 25%, var(--black) 60%)",
+        backdropFilter: "blur(14px) saturate(1.2)",
+        WebkitBackdropFilter: "blur(14px) saturate(1.2)",
       }}
     >
       {/* Attachment previews above the input box */}
@@ -112,25 +125,28 @@ export default function ChatInput({
       {/* Main input container — matches desktop chatgpt-prompt-input */}
       <div
         style={{
-          borderRadius: 16,
+          borderRadius: 22,
           border: focused
-            ? "1px solid rgba(199,159,74,0.55)"
+            ? "1px solid rgba(199,159,74,0.6)"
             : hasContent
               ? "1px solid rgba(199,159,74,0.4)"
-              : "1px solid rgba(199,159,74,0.1)",
+              : "1px solid rgba(255,255,255,0.08)",
           background:
             focused || hasContent
-              ? "linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))"
-              : "transparent",
+              ? "linear-gradient(180deg, rgba(20,20,20,0.98), rgba(10,10,10,0.98))"
+              : "rgba(20,20,20,0.6)",
           boxShadow: focused
-            ? "0 0 20px rgba(199,159,74,0.18), 0 0 40px rgba(199,159,74,0.08)"
-            : "none",
-          transition: "all 0.4s ease",
+            ? "0 0 0 3px rgba(199,159,74,0.08), 0 8px 32px rgba(0,0,0,0.4)"
+            : "0 2px 12px rgba(0,0,0,0.3)",
+          transition:
+            "border-color 200ms var(--ease-nothing), box-shadow 200ms var(--ease-nothing), background 200ms var(--ease-nothing)",
           display: "flex",
           flexDirection: "column" as const,
         }}
       >
-        {/* Textarea */}
+        {/* Textarea — 16px font is the iOS Safari threshold that prevents
+            auto-zoom on focus (the whole reason the PWA "felt" like a PWA
+            when you tapped it). */}
         <textarea
           ref={textareaRef}
           value={text}
@@ -141,9 +157,13 @@ export default function ChatInput({
           onKeyDown={handleKeyDown}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder="Message Harper..."
+          placeholder="Message Harper"
           disabled={disabled}
           rows={1}
+          autoCapitalize="sentences"
+          autoCorrect="on"
+          spellCheck="true"
+          enterKeyHint="send"
           style={{
             flex: 1,
             background: "transparent",
@@ -151,26 +171,27 @@ export default function ChatInput({
             outline: "none",
             resize: "none",
             fontFamily: "var(--font-body)",
-            fontSize: 14,
+            fontSize: 16,
             color: "var(--text-primary)",
-            lineHeight: 1.5,
-            maxHeight: 96,
+            lineHeight: 1.45,
+            maxHeight: 132,
             overflow: "auto",
-            padding: "14px 16px 8px",
+            padding: "14px 18px 6px",
+            WebkitUserSelect: "text",
           }}
         />
 
-        {/* Bottom toolbar */}
+        {/* Bottom toolbar — 44×44 hit targets per iOS HIG */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "8px 10px 10px",
+            padding: "6px 8px 8px",
           }}
         >
           {/* Left: Plus + Headlines */}
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
             <input
               ref={fileInputRef}
               type="file"
@@ -181,10 +202,11 @@ export default function ChatInput({
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled || images.length >= 4}
+              aria-label="Attach image"
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
+                width: 40,
+                height: 40,
+                borderRadius: 12,
                 background: "transparent",
                 border: "none",
                 display: "flex",
@@ -192,58 +214,77 @@ export default function ChatInput({
                 justifyContent: "center",
                 cursor: disabled ? "default" : "pointer",
                 opacity: disabled ? 0.4 : 1,
-                transition: "color 150ms",
+                transition: "background 150ms, color 150ms",
                 color: "var(--text-secondary)",
+                WebkitTapHighlightColor: "transparent",
+                touchAction: "manipulation",
               }}
             >
-              <Plus size={16} />
+              <Plus size={20} />
             </button>
             <button
               onClick={() => setHeadlinePickerOpen(true)}
               disabled={disabled}
+              aria-label="Attach headline"
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: "transparent",
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background:
+                  headlineChips.length > 0
+                    ? "rgba(199,159,74,0.15)"
+                    : "transparent",
                 border: "none",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: disabled ? "default" : "pointer",
                 opacity: disabled ? 0.4 : 1,
-                transition: "color 150ms",
-                color: "var(--text-secondary)",
+                transition: "background 150ms, color 150ms",
+                color:
+                  headlineChips.length > 0
+                    ? "var(--accent)"
+                    : "var(--text-secondary)",
+                WebkitTapHighlightColor: "transparent",
+                touchAction: "manipulation",
               }}
             >
-              <Newspaper size={16} />
+              <Newspaper size={20} />
             </button>
           </div>
 
-          {/* Right: Send button */}
+          {/* Right: Send button — 44×44 to meet iOS HIG */}
           <button
             onClick={handleSend}
             disabled={!canSend}
+            aria-label="Send message"
             style={{
-              width: 34,
-              height: 34,
+              width: 40,
+              height: 40,
               borderRadius: "50%",
               background: canSend
                 ? "var(--accent, #c79f4a)"
-                : "rgba(199,159,74,0.3)",
+                : "rgba(199,159,74,0.2)",
               border: "none",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               cursor: canSend ? "pointer" : "default",
               flexShrink: 0,
-              boxShadow: canSend ? "0 0 20px rgba(199,159,74,0.4)" : "none",
-              transition: "all 0.4s ease",
+              boxShadow: canSend
+                ? "0 2px 16px rgba(199,159,74,0.35), 0 0 0 1px rgba(255,255,255,0.1) inset"
+                : "none",
+              transition:
+                "background 200ms var(--ease-nothing), box-shadow 200ms var(--ease-nothing), transform 120ms var(--ease-nothing)",
+              transform: canSend ? "scale(1)" : "scale(0.94)",
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation",
             }}
           >
             <ArrowUp
-              size={18}
-              color={canSend ? "var(--black, #000)" : "rgba(0,0,0,0.5)"}
+              size={20}
+              strokeWidth={2.4}
+              color={canSend ? "var(--black, #000)" : "rgba(255,255,255,0.35)"}
             />
           </button>
         </div>

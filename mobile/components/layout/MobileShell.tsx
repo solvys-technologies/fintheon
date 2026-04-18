@@ -79,7 +79,11 @@ export function MobileShell({
   return (
     <div
       style={{
+        // Dynamic viewport height respects iOS URL bar show/hide and resizes
+        // when the on-screen keyboard opens (with viewport interactive-widget
+        // =resizes-content set in index.html). 100vh fallback for older WebKit.
         minHeight: "100vh",
+        height: "100dvh",
         background: "var(--black)",
         display: "flex",
         flexDirection: "column",
@@ -94,9 +98,14 @@ export function MobileShell({
         ref={contentRef}
         style={{
           flex: 1,
+          minHeight: 0,
           overflow: "hidden",
           paddingTop: `calc(env(safe-area-inset-top) + ${TOOLBAR_HEIGHT}px)`,
-          paddingBottom: `calc(env(safe-area-inset-bottom) + 24px)`,
+          // Chat tab (index 2) manages its own bottom padding via the sticky
+          // composer — adding 24px here forced the input into a floating
+          // pocket instead of hugging the bottom edge like a native app.
+          paddingBottom:
+            activeTab === 2 ? "0" : `calc(env(safe-area-inset-bottom) + 24px)`,
           display: "flex",
           flexDirection: "column",
         }}

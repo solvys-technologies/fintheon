@@ -62,7 +62,7 @@ function ChatMessageInner({ message }: ChatMessageProps) {
             <p
               style={{
                 fontFamily: "var(--font-body)",
-                fontSize: 14,
+                fontSize: 15,
                 color: "var(--text-primary)",
                 margin: 0,
                 lineHeight: 1.5,

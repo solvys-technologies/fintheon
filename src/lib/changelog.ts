@@ -9,15 +9,35 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T13:15:00",
+    agent: "claude-code",
+    summary:
+      "Mobile chat PWA polish pass — kill the 'this is a PWA not an app' tell. Root cause of the giveaway was iOS Safari auto-zooming on focus whenever an input's computed font-size is < 16px; ChatInput.tsx was 14px, so tapping the composer yanked the whole viewport larger and exposed the browser chrome. Five coordinated fixes: (1) index.css enforces a 16px floor on input/textarea/select globally and layers in native-feel defaults (`-webkit-tap-highlight-color: transparent`, `touch-action: manipulation`) on all interactive elements — removes the gray flash on tap and the 300ms double-tap-zoom delay that reads as 'webpage'. Also adds `overscroll-behavior-y: none` so rubber-band scrolling can't expose the address bar. (2) index.html viewport meta gained `interactive-widget=resizes-content`, which tells iOS 16.4+ and modern Android Chrome to RESIZE the layout when the on-screen keyboard opens instead of overlaying it — paired with the composer change below, the input now rides up with the keyboard like a native chat app, no visualViewport JS required. (3) MobileShell.tsx swapped `minHeight: 100vh` → `height: 100dvh` so iOS URL-bar show/hide doesn't shift layout, and conditionally zeroes the bottom padding on the chat tab (index 2) so the composer can hug the true bottom edge instead of floating above a 24px dead zone. (4) ChatPage.tsx replaced the `position: fixed; bottom: 0` composer + 100px placeholder spacer with a `position: sticky; bottom: 0` child of the existing flex column — this is the one-line change that makes keyboard-aware layout 'just work' on modern iOS. Messages area got `-webkit-overflow-scrolling: touch` + `overscroll-behavior: contain` for momentum scrolling without leaking to the parent. (5) ChatInput.tsx got the full native composer treatment: textarea bumped 14→16px (the iOS zoom fix), added `autoCapitalize='sentences'`, `autoCorrect='on'`, `spellCheck='true'`, `enterKeyHint='send'` so the mobile keyboard shows a proper Send return key and capitalizes the first word; IME-composition guard on Enter so dictation (Wispr Flow, voice, CJK candidates) can't submit mid-phrase; hit-target upgrade from 32×32/34×34 → 40×40 with gentler scale-and-glow press states; input border radius 16→22 and a translucent blurred gradient background strip so the thread fades behind the composer edge instead of hard-cutting; send button gains subtle accent focus ring and a 120ms scale microinteraction. Message body font also raised from 14→15px for readability at phone distance. Verified in preview at 375×812 mobile: textarea computed font-size is 16px, send button 40×40, composer stickied at viewport bottom exactly (812), tap-highlight-color transparent.",
+    files: [
+      "mobile/index.html",
+      "mobile/index.css",
+      "mobile/components/layout/MobileShell.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/chat/ChatMessage.tsx",
+    ],
+  },
+  {
+    date: "2026-04-18T12:45:00",
+    agent: "claude-code",
+    summary:
+      "Kill the 'empty Harper bubble' class of bugs on mobile. TP reported two messages (one dictated via Wispr Flow with a RiskFlow headline chip attached, one plain 'Hey') that came back as blank assistant bubbles — no text, no error, no hint anything went wrong. Root cause was in mobile/components/chat/ChatPage.tsx's SSE parser: it only handled `text-delta`, `tool_use`, and `tool-approval-*` events, so any `{type:'error',errorText:…}` from stream-adapter.ts (Strands mid-stream throw) or `{type:'error',error:…}` from relay.ts (forward failure like local_offline during a reconnect window) or `{type:'finish',finishReason:'error'}` was silently dropped. The stream would drain to [DONE], isLoading flipped off, and the assistant bubble stayed empty — indistinguishable from 'Harper just didn't say anything'. Fixes: (1) mobile ChatPage now renders `[ERROR: <text>]` in the assistant bubble for both error frame shapes, falling back to 'Harper failed — no response' if a `finish(error)` fires without an explicit error event; (2) relay.ts /chat handler persists a matching `[ERROR: …]` assistant message on forward failure via addMessage, so next hydration shows the failed turn instead of a hanging user message (answers TP's 'conversation history didn't record' observation — the user message was saved, the assistant turn just had nothing to save). Verified: the WS upgrade path is fine (direct curl with --http1.1 + real service_token returns HTTP/1.1 101); local backend connector-status reports connected:true; TP still owns 109 conversations in ai_conversations (sub 826e7c65-…), with 2 legacy anonymous rows remaining.",
+    files: [
+      "mobile/components/chat/ChatPage.tsx",
+      "backend-hono/src/routes/relay.ts",
+    ],
+  },
+  {
     date: "2026-04-18T12:20:00",
     agent: "claude-code",
     summary:
       "Kill the gostatic-regression footgun permanently. Fly kept reverting to serving pierrezemb/gostatic on /api/* (404 plain text) — happened three times in one session, each time after a fly-level action that wasn't a clean rebuild from backend-hono/. Root cause: the repo root had a legacy fly.toml (app='fintheon') and Dockerfile (FROM pierrezemb/gostatic) from before the backend was split out. Any fly deploy invoked without explicit --config would pick them up and push a gostatic image to the Fly registry under the fintheon app — so subsequent machine restarts (from secrets set, manual restart, automatic recover, etc.) could pull that stale image and serve gostatic. Deleted both root files. Only backend-hono/fly.toml + backend-hono/Dockerfile remain; fly deploy must now come from backend-hono/ (there's no alternative) and there's no way for a Fly-internal restart to resurrect the gostatic image because no recent build produced one. Also repointed .github/workflows/riskflow-cron.yml from the deleted pulse-api-withered-dust-1394 URL to fintheon.fly.dev/api/riskflow/cron/prefetch — it was silently 404'ing every 5 minutes since the legacy app was deleted.",
-    files: [
-      "fly.toml",
-      "Dockerfile",
-      ".github/workflows/riskflow-cron.yml",
-    ],
+    files: ["fly.toml", "Dockerfile", ".github/workflows/riskflow-cron.yml"],
   },
   {
     date: "2026-04-18T12:00:00",

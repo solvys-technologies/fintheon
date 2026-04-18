@@ -1,3 +1,10 @@
+// [claude-code 2026-04-18] SSE parser now handles `error` and `finish(finishReason=error)` events.
+// Previously only text-delta / tool_use / tool-approval-* were handled — so when the backend
+// emitted an error event (Strands mid-stream failure, relay local_offline, etc), mobile silently
+// swallowed it, the stream drained to [DONE], isLoading flipped off, and the assistant bubble
+// stayed empty. Users saw a blank reply with no indication anything went wrong. Now we render
+// `[ERROR: …]` in the assistant bubble for both error frames, including the relay.ts error shape
+// ({type:"error", error: …}) and the stream-adapter.ts shape ({type:"error", errorText: …}).
 // [claude-code 2026-04-18] Input un-locked when relay is connected. The earlier
 // remote-control refactor gated the textarea on (!conversationId && !mirrorDevice)
 // to "prevent orphan chats from mobile" — but with the relay WS working, any
@@ -317,6 +324,39 @@ export default function ChatPage({ visible }: ChatPageProps) {
                   approvalId: event.approvalId,
                   decision: event.decision || event.status,
                 });
+              } else if (event.type === "error") {
+                // Two shapes: {errorText} from stream-adapter (Strands failure),
+                // {error} from relay.ts (forward failure like local_offline).
+                const errText =
+                  event.errorText || event.error || "Unknown error";
+                setActiveToolCall(null);
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? {
+                          ...m,
+                          content: m.content
+                            ? `${m.content}\n\n[ERROR: ${errText}]`
+                            : `[ERROR: ${errText}]`,
+                        }
+                      : m,
+                  ),
+                );
+              } else if (
+                event.type === "finish" &&
+                event.finishReason === "error"
+              ) {
+                // Stream ended in error but no explicit error event fired — fall back.
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId && m.content === ""
+                      ? {
+                          ...m,
+                          content: "[ERROR: Harper failed — no response]",
+                        }
+                      : m,
+                  ),
+                );
               }
             } catch {
               // Skip non-JSON lines (heartbeats, comments)
@@ -370,13 +410,18 @@ export default function ChatPage({ visible }: ChatPageProps) {
   const isStandby = !conversationId && !mirrorDevice;
 
   return (
-    // display:none keeps component mounted — streams survive tab navigation
+    // display:none keeps component mounted — streams survive tab navigation.
+    // height:100% fills MobileShell's <main>; the sticky composer at the
+    // bottom rides the keyboard up on iOS 16.4+ thanks to
+    // `interactive-widget=resizes-content` on the viewport meta.
     <div
       style={{
         display: visible ? "flex" : "none",
         flexDirection: "column",
         height: "100%",
+        minHeight: 0,
         background: "var(--black, #000)",
+        position: "relative",
       }}
     >
       {/* Header */}
@@ -424,18 +469,21 @@ export default function ChatPage({ visible }: ChatPageProps) {
         </div>
       </div>
 
-      {/* Messages area */}
+      {/* Messages area — momentum-scroll + contained overscroll so the page
+          beneath doesn't rubber-band when a thread hits its ends. */}
       <div
         ref={scrollRef}
         style={{
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
           display: "flex",
           flexDirection: "column",
-          gap: 8,
+          gap: 10,
           paddingTop: 12,
-          paddingBottom: 12,
+          paddingBottom: 16,
         }}
       >
         {messages.length === 0 && !isOffline && (
@@ -548,18 +596,20 @@ export default function ChatPage({ visible }: ChatPageProps) {
         ))}
       </div>
 
-      {/* Spacer for fixed input */}
-      <div style={{ height: 100, flexShrink: 0 }} />
-
-      {/* Input — fixed to bottom of viewport */}
+      {/* Composer — sticky in the flex column. Replaces the old position:fixed
+          + 100px spacer: with the viewport meta's `interactive-widget=
+          resizes-content`, iOS resizes the layout when the keyboard opens,
+          and a sticky child naturally rides the new bottom edge. No more
+          keyboard-covering-the-input bug and no more dead spacer below the
+          thread. */}
       <div
         style={{
-          position: "fixed",
+          position: "sticky",
           bottom: 0,
           left: 0,
           right: 0,
-          background: "var(--black, #000)",
           zIndex: 10,
+          flexShrink: 0,
         }}
       >
         <ChatInput
