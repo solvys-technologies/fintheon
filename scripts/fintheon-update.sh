@@ -42,13 +42,13 @@ torch_banner() {
   echo ""
   printf "      ${_FIRE3}  )  ${_R}                                    ${_FIRE3}  )  ${_R}\n"
   printf "      ${_FIRE2} ( ) ${_R}                                    ${_FIRE2} ( ) ${_R}\n"
-  printf "      ${_FIRE1}  )(  ${_R}                                   ${_FIRE1}  )(  ${_R}\n"
-  printf "      ${_EMBER} /||\ ${_R}                                   ${_EMBER} /||\ ${_R}\n"
-  printf "      ${_GOLD}]||||[${_R}  ${_GOLD}╔══════════════════════════════╗${_R}  ${_GOLD}]||||[${_R}\n"
-  printf "      ${_GOLD}]||||[${_R}  ${_GOLD}║${_R} ${_BOLD}${_GOLD}${_t}${_R}${_GOLD}║${_R}  ${_GOLD}]||||[${_R}\n"
-  printf "      ${_GOLD}]||||[${_R}  ${_GOLD}║${_R} ${_DIM}${_s}${_R}${_GOLD}║${_R}  ${_GOLD}]||||[${_R}\n"
-  printf "      ${_GOLD}]||||[${_R}  ${_GOLD}╚══════════════════════════════╝${_R}  ${_GOLD}]||||[${_R}\n"
-  printf "      ${_DIM} ╨╨╨╨ ${_R}                                    ${_DIM} ╨╨╨╨ ${_R}\n"
+  printf "      ${_FIRE1}  )( ${_R}                                    ${_FIRE1}  )( ${_R}\n"
+  printf "      ${_EMBER} /|\ ${_R}                                    ${_EMBER} /|\ ${_R}\n"
+  printf "      ${_GOLD}]|||[${_R}  ${_GOLD}╔══════════════════════════════╗${_R}  ${_GOLD}]|||[${_R}\n"
+  printf "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_BOLD}${_GOLD}${_t}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}\n"
+  printf "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_DIM}${_s}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}\n"
+  printf "      ${_GOLD}]|||[${_R}  ${_GOLD}╚══════════════════════════════╝${_R}  ${_GOLD}]|||[${_R}\n"
+  printf "      ${_DIM} ╨╨╨ ${_R}                                    ${_DIM} ╨╨╨ ${_R}\n"
   echo ""
 }
 
@@ -291,8 +291,10 @@ done
 step "10/12" "Refreshing X feed tokens..."
 # [claude-code 2026-04-16] Force-reload Rettiwt keys from DB + reset cooldowns on update
 REFRESH_RESULT=$(curl -s -X POST localhost:8080/api/riskflow/rettiwt-refresh 2>/dev/null || echo '{}')
-TOTAL_KEYS=$(echo "$REFRESH_RESULT" | grep -o '"totalKeys":[0-9]*' | cut -d: -f2 2>/dev/null || echo "0")
-RESET_COUNT=$(echo "$REFRESH_RESULT" | grep -o '"resetCount":[0-9]*' | cut -d: -f2 2>/dev/null || echo "0")
+TOTAL_KEYS=$(echo "$REFRESH_RESULT" | grep -o '"totalKeys":[0-9]*' | head -1 | cut -d: -f2 2>/dev/null || echo "0")
+RESET_COUNT=$(echo "$REFRESH_RESULT" | grep -o '"resetCount":[0-9]*' | head -1 | cut -d: -f2 2>/dev/null || echo "0")
+TOTAL_KEYS=${TOTAL_KEYS:-0}
+RESET_COUNT=${RESET_COUNT:-0}
 if [[ "$TOTAL_KEYS" -gt 0 ]]; then
   ok "Rettiwt pool refreshed: $TOTAL_KEYS keys, $RESET_COUNT cooldowns reset"
 else
@@ -351,12 +353,12 @@ echo ""
 echo -e "      ${_FIRE3}  )  ${_R}                                    ${_FIRE3}  (  ${_R}"
 echo -e "      ${_FIRE2} ( \\ ${_R}                                    ${_FIRE2} / ) ${_R}"
 echo -e "      ${_FIRE1}  )( ${_R}                                    ${_FIRE1}  )( ${_R}"
-echo -e "      ${_EMBER} /|\\${_R}                                     ${_EMBER} /|\\${_R}"
+echo -e "      ${_EMBER} /|\\ ${_R}                                    ${_EMBER} /|\\ ${_R}"
 echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╔══════════════════════════════╗${_R}  ${_GOLD}]|||[${_R}"
-printf -v _vl "%-30s" "UPDATE COMPLETE  $VERSION"
+printf -v _vl "%-30.30s" "UPDATE COMPLETE  $VERSION"
 echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_BOLD}${_GREEN}${_vl}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
 echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R}                                ${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
-printf -v _bl "%-30s" "Backend: http://localhost:8080"
+printf -v _bl "%-30.30s" "Backend: http://localhost:8080"
 echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_CREAM}${_bl}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
 printf -v _ll "%-30s" "Logs: tail -f /tmp/fintheon.."
 echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_DIM}${_ll}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
