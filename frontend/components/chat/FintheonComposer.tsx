@@ -1,3 +1,7 @@
+// [claude-code 2026-04-18] S21-T1 polish: guard isDispatchedHere against undefined-on-both-sides
+// false positives (after 404-clear of stale convo, both conversationId and dispatchedConversationId
+// can briefly be undefined → banner would linger). Also added a "dispatching" title for the relay
+// button so the spinner state doesn't keep the stale "send this conversation" tooltip.
 // [claude-code 2026-04-18] S21-T1: Relay dispatch button + disconnect + mirror banner plumbed
 // into the composer's left action cluster (was in ChatHeader's clipboard-copy flow).
 // [claude-code 2026-03-11] T2a: clear active skill badge after send
@@ -75,8 +79,16 @@ export function FintheonComposer({
   // un-clickable. Dispatch is fire-and-forget via web-push; the push succeeds (pushedTo:0 if
   // no subscriptions) and the user can open mobile to pick up.
   const relay = useRelayDispatch();
-  const isDispatchedHere =
-    relay.isDispatched && relay.dispatchedConversationId === conversationId;
+  // Guard against undefined-on-both-sides: if conversationId got cleared (e.g. 404-on-hydrate
+  // nuked the stale cache) relay.dispatchedConversationId can also be null/undefined briefly,
+  // and strict equality would resolve true → banner hangs around for one render. Require both
+  // sides to be truthy before claiming "dispatched here".
+  const isDispatchedHere = Boolean(
+    relay.isDispatched &&
+    conversationId &&
+    relay.dispatchedConversationId &&
+    relay.dispatchedConversationId === conversationId,
+  );
   const relayDisabled =
     relay.isDispatching ||
     !conversationId ||
@@ -207,6 +219,7 @@ export function FintheonComposer({
 
   // ── Relay button (leftmost in composer action cluster) ───────────────────────
   const relayTitle = (() => {
+    if (relay.isDispatching) return "Relay — dispatching to mobile…";
     if (isDispatchedHere) return `Disconnect — resume on desktop`;
     if (!conversationId) return "Relay — send a message first";
     if (relay.isDispatched && !isDispatchedHere)

@@ -1,3 +1,9 @@
+// [claude-code 2026-04-18] Composer polish: (1) IME composition guard on Enter so submitting an
+//   IME candidate with Enter no longer sends the message mid-composition; (2) Attach popup auto-
+//   dismisses when the user starts typing; (3) Queue chips show "+N more" hint when > 2 jobs
+//   are active (was silent truncation); (4) Compact mode bottom-bar padding bumped to match the
+//   main composer so the send button no longer crowds the Harper pill; (5) Paste handler logs
+//   a one-time note when non-image clipboard items are dropped (was silent).
 // [claude-code 2026-03-28] S8-T7: Pulsing icon (replaces Think Harder), no bg/border when active
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, RiskFlow drag-drop
 // [claude-code 2026-03-22] Track 4: persona/tools slots, icon-only Think, removed Plug2+Wrench
@@ -149,6 +155,8 @@ export function PromptBox({
   const [slashQuery, setSlashQuery] = useState<string | null>(null);
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
+  // IME composition state — blocks Enter-to-send while a candidate is being composed.
+  const isComposingRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -207,6 +215,9 @@ export function PromptBox({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
+      // IME composition: Enter commits a candidate — don't send the message.
+      // (Chromium also sets e.keyCode === 229 during composition; we keep a ref for safety.)
+      if (isComposingRef.current || e.nativeEvent.isComposing) return;
       e.preventDefault();
       if (isProcessing && onStop) {
         onStop();
@@ -226,12 +237,15 @@ export function PromptBox({
   };
 
   /* Paste image support */
+  const pasteWarnedRef = useRef(false);
   const handlePaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
     if (!items) return;
+    let handledImage = false;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (item.type.startsWith("image/")) {
+        handledImage = true;
         e.preventDefault();
         const blob = item.getAsFile();
         if (blob) {
@@ -244,6 +258,18 @@ export function PromptBox({
           reader.readAsDataURL(blob);
         }
       }
+    }
+    if (!handledImage && items.length > 0 && !pasteWarnedRef.current) {
+      // One-time log so we're not silent about dropped non-image clipboard payloads
+      // (files, html fragments, etc). Most such pastes land as text via the default path.
+      const nonImageTypes = Array.from(items)
+        .map((it) => it.type || "<unknown>")
+        .join(", ");
+      console.debug(
+        "[PromptBox] Non-image clipboard item(s) ignored by image handler:",
+        nonImageTypes,
+      );
+      pasteWarnedRef.current = true;
     }
   };
 
@@ -309,9 +335,9 @@ export function PromptBox({
     setDragOver(false);
   }, []);
 
-  const visibleQueueJobs = (queueJobs ?? [])
-    .filter((j) => j.status !== "done")
-    .slice(0, 2);
+  const activeQueueJobs = (queueJobs ?? []).filter((j) => j.status !== "done");
+  const visibleQueueJobs = activeQueueJobs.slice(0, 2);
+  const hiddenQueueCount = Math.max(0, activeQueueJobs.length - 2);
 
   return (
     <div
@@ -393,7 +419,7 @@ export function PromptBox({
           </div>
         )}
 
-        {/* Queue chips (max 2) */}
+        {/* Queue chips (max 2 + overflow hint) */}
         {visibleQueueJobs.length > 0 && (
           <div className="flex items-center gap-1.5 mb-2">
             {visibleQueueJobs.map((job) => (
@@ -425,6 +451,14 @@ export function PromptBox({
                 )}
               </span>
             ))}
+            {hiddenQueueCount > 0 && (
+              <span
+                className="inline-flex items-center px-2 py-1 rounded-full border border-[var(--fintheon-accent)]/10 bg-[#0d0c09]/60 text-[10px] text-zinc-500"
+                title={`${hiddenQueueCount} more job(s) queued`}
+              >
+                +{hiddenQueueCount} more
+              </span>
+            )}
           </div>
         )}
 
@@ -477,6 +511,9 @@ export function PromptBox({
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
               const val = e.target.value;
               setText(val);
+              // Auto-dismiss the attach popup once the user starts composing a message —
+              // otherwise the popup hangs over the input and blocks the first word or two.
+              if (val.length > 0 && showAttach) setShowAttach(false);
               // Slash-command detection
               if (
                 val.startsWith("/") &&
@@ -492,6 +529,12 @@ export function PromptBox({
             onPaste={handlePaste}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
+            onCompositionStart={() => {
+              isComposingRef.current = true;
+            }}
+            onCompositionEnd={() => {
+              isComposingRef.current = false;
+            }}
             placeholder={placeholder}
             rows={1}
             className="resize-none bg-transparent text-[13px] text-white placeholder:text-zinc-500 focus:outline-none overflow-y-auto"
@@ -502,10 +545,11 @@ export function PromptBox({
             }}
           />
 
-          {/* Bottom bar */}
+          {/* Bottom bar — compact padding matches main composer so the send button
+              doesn't crowd the Harper/provider pill in the sidebar chat. */}
           <div
             className="flex items-center justify-between"
-            style={{ padding: compact ? "6px 8px 8px" : "8px 10px 10px" }}
+            style={{ padding: compact ? "8px 10px 10px" : "8px 10px 10px" }}
           >
             {/* Left toolbar */}
             <div className="flex items-center gap-1">

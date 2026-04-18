@@ -1,3 +1,8 @@
+// [claude-code 2026-04-18] Greeting chips now have explicit hover (gold tint + icon color lift)
+//   and focus-visible ring for keyboard users. Chips already auto-dismiss the greeting by sending
+//   a message (the thread store swaps to the messages list on first append), so no extra dismiss
+//   handler needed — verified by reading FintheonThread.tsx:578 (greeting only renders when
+//   messages.length === 0).
 // [claude-code 2026-03-06] Extracted AnalysisGreeting from ChatInterface — greeting + suggestion chips
 // [claude-code 2026-03-11] Chips now wired to skill system via onSkillSend
 // [claude-code 2026-03-14] Fintheon rebrand: Dawn Dispatch/Weekly Tribune chips, Roman greetings, new agent titles
@@ -122,9 +127,9 @@ export function ChatGreeting({
               key={index}
               onClick={() => handleChipClick(chip)}
               disabled={isLoading}
-              className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-white/10 fintheon-accent-border-hover disabled:opacity-50 rounded-xl text-left transition-all group"
+              className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-white/10 fintheon-accent-border-hover hover:bg-[var(--fintheon-accent)]/5 disabled:opacity-50 rounded-xl text-left transition-all group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--fintheon-accent)]/60 focus-visible:border-[var(--fintheon-accent)]/60"
             >
-              <Icon className="w-[18px] h-[18px] text-gray-500 transition-colors shrink-0 fintheon-group-accent" />
+              <Icon className="w-[18px] h-[18px] text-gray-500 transition-colors shrink-0 fintheon-group-accent group-hover:text-[var(--fintheon-accent)]" />
               <span className="text-[13px] text-zinc-300 group-hover:text-white transition-colors">
                 {chip.label}
               </span>

@@ -1,7 +1,14 @@
+// [claude-code 2026-04-18] Attach Supabase JWT to conversations list + delete fetches —
+//   post-migration all 106 convo rows live under a real sub and RLS blocks unauth reads, so the
+//   dropdown was showing a frozen spinner (fetch resolved but data.conversations was empty and
+//   the list renderer short-circuited). Handle non-OK responses explicitly so the spinner clears
+//   even when the backend returns 401/500. Auto-focus uses setTimeout(0) instead of rAF so the
+//   dropdown has committed to the DOM before focus() fires (Electron portal ordering issue).
 // [claude-code 2026-04-04] Sessions dropdown — compact history panel anchored under trigger button
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Search, MessageSquare, Loader2, Trash2 } from "lucide-react";
 import { API_BASE_URL } from "./constants";
+import { getAccessToken } from "../../lib/supabase";
 
 interface ConversationSummary {
   id: string;
@@ -71,18 +78,45 @@ export function SessionsDropdown({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Fetch sessions on mount
+  // Fetch sessions on mount — with JWT so RLS returns the user's convos, not an empty set.
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/ai/conversations`)
-      .then((r) => r.json())
-      .then((data) => setSessions(data.conversations ?? []))
-      .catch(() => setSessions([]))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getAccessToken();
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const res = await fetch(`${API_BASE_URL}/api/ai/conversations`, {
+          headers,
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          console.warn(
+            `[SessionsDropdown] conversations fetch failed (${res.status})`,
+          );
+          setSessions([]);
+          return;
+        }
+        const data = await res.json();
+        setSessions(data.conversations ?? []);
+      } catch (err) {
+        if (!cancelled)
+          console.warn("[SessionsDropdown] conversations fetch error:", err);
+        if (!cancelled) setSessions([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Focus search on mount
+  // Focus search on mount — setTimeout(0) lets the dropdown commit to the DOM first;
+  // rAF was racing Electron's portal mount on the first open and silently no-oping.
   useEffect(() => {
-    requestAnimationFrame(() => searchRef.current?.focus());
+    const t = setTimeout(() => searchRef.current?.focus(), 0);
+    return () => clearTimeout(t);
   }, []);
 
   // Click outside to close
@@ -142,8 +176,12 @@ export function SessionsDropdown({
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
+      const token = await getAccessToken();
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       await fetch(`${API_BASE_URL}/api/ai/conversations/${id}`, {
         method: "DELETE",
+        headers,
       });
       setSessions((prev) => prev.filter((s) => s.id !== id));
     } catch {
