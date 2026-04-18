@@ -214,6 +214,7 @@ function ChatSidebarInner({
         onSelectSkill={setActiveSkill}
         showSkills={showSkills}
         onToggleSkills={() => setShowSkills((v) => !v)}
+        conversationId={conversationId}
       />
     </div>
   );

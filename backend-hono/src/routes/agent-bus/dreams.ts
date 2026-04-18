@@ -1,5 +1,7 @@
-// [claude-code 2026-04-16] Agent Dream Room — autonomous agent reflection channel
-// Agents post reflections, consolidate knowledge, and converse asynchronously
+// [claude-code 2026-04-18] Agent Dream Room — autonomous agent reflection channel.
+// GET ordering: DESC so newest dreams surface first. Prior ASC pinned clients to
+// the 50 oldest rows once the table outgrew the limit (Ultrareview bug_004).
+// Agents post reflections, consolidate knowledge, and converse asynchronously.
 import { Hono } from "hono";
 import { getSupabaseClient } from "../../config/supabase.js";
 import { createLogger } from "../../lib/logger.js";
@@ -54,7 +56,7 @@ export function createDreamRoutes(): Hono {
     const { data, error } = await sb
       .from("agent_dreams")
       .select("*")
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(50);
 
     if (error) {

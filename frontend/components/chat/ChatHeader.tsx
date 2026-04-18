@@ -1,7 +1,8 @@
+// [claude-code 2026-04-18] S21-T1: relay button moved to FintheonComposer action cluster.
+// Clipboard-copy pickup-code flow deprecated in favor of active dispatch via /api/relay/dispatch.
 // [claude-code 2026-04-04] T4: History dropdown — Clock button toggles dropdown instead of modal
-// [claude-code 2026-04-17] Relay button — copies pickup code so conversation can be relayed to another device
 import { useState } from "react";
-import { Scroll, Plus, Clock, Radio, Check } from "lucide-react";
+import { Scroll, Plus, Clock } from "lucide-react";
 import { SessionsDropdown } from "./SessionsDropdown";
 
 interface ChatHeaderProps {
@@ -22,50 +23,11 @@ export function ChatHeader({
   isLoading,
 }: ChatHeaderProps) {
   const [showHistory, setShowHistory] = useState(false);
-  const [relayCopied, setRelayCopied] = useState(false);
-
-  const handleRelay = async () => {
-    if (!currentConversationId) return;
-    const pickupCode = currentConversationId;
-    try {
-      await navigator.clipboard.writeText(pickupCode);
-      setRelayCopied(true);
-      setTimeout(() => setRelayCopied(false), 1500);
-    } catch {
-      // Clipboard unavailable — still flash state for feedback
-      setRelayCopied(true);
-      setTimeout(() => setRelayCopied(false), 1500);
-    }
-  };
 
   return (
     <div className="bg-transparent">
       <div className="h-12 flex items-center justify-end px-4 mt-0.5">
         <div className="flex items-center gap-1">
-          <button
-            onClick={handleRelay}
-            disabled={!currentConversationId}
-            className={`p-2 rounded-lg transition-colors ${
-              !currentConversationId
-                ? "text-zinc-700 cursor-not-allowed"
-                : relayCopied
-                  ? "text-emerald-400 bg-emerald-500/10"
-                  : "text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10"
-            }`}
-            title={
-              !currentConversationId
-                ? "Relay — start a conversation first"
-                : relayCopied
-                  ? "Pickup code copied"
-                  : "Relay — copy pickup code for another device"
-            }
-          >
-            {relayCopied ? (
-              <Check className="w-4 h-4" />
-            ) : (
-              <Radio className="w-4 h-4" />
-            )}
-          </button>
           <button
             onClick={onRunMDB}
             disabled={isLoading}
