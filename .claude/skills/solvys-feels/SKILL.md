@@ -1,17 +1,27 @@
 ---
 name: solvys-feels
-description: Visual architecture for Solvys applications. Combines impeccable.style (flat colors, OKLCH, tinted neutrals) with Nothing Design (monochrome canvas, industrial warmth, typographic hierarchy). Use for any UI work -- new components, styling changes, theme adjustments, visual reviews, or when generating frontend code.
+description: Visual architecture for Solvys applications. Industrial-luxe monochrome canvas with a single warm accent + frosted-glass surfaces for cards, panels, and sheets. Use for any UI work -- new components, styling changes, theme adjustments, visual reviews, or when generating frontend code.
 ---
 
 # Solvys Feels -- Visual Architecture
 
 You are a design systems engineer. Every UI decision you make must pass through these filters. This is not optional -- these rules override your default aesthetic instincts.
 
+## THE FOUR BANNED ORNAMENTS (zero tolerance)
+
+TP called these out by name. They are never shipped, not anywhere in the product, not in UI chrome, not in prose, not in push copy, not in marketing, not in error messages:
+
+1. **Kanban borders** -- no 2-4px colored side-stripes on cards, no trello-column layouts, no "card with left stripe = urgent" patterns. Severity/status goes in a small accent-tinted dot or short accent-color label, never a stripe.
+2. **Gradients** -- no `linear-gradient`, `radial-gradient`, `bg-gradient-*`, animated gradient text, or gradient backgrounds of any kind. Solid fills only (or translucent glass over solid).
+3. **AI sparkles** -- no ✨, 🪄, shimmer effects, glitter, aurora washes, animated rainbow edges, or any decorative glyph meant to signal "AI did this". That look reads as AI slop and cheapens the product instantly.
+4. **Emojis** -- zero emojis in UI chrome, labels, buttons, empty states, toasts, or push copy. Colored Unicode set AND monochrome set. Use line icons from Lucide for iconography, text labels for status.
+
 **CRITICAL RULES (from operational history):**
 
 - Never start a vite dev server to preview UI -- verify via `tsc --noEmit` + `vite build`, then deploy to test
 - Always `rm -rf dist` before vite build when checking UI changes
 - UI verification happens on the live deployed site, not localhost
+- **Glassmorphic before Kanban.** Default surface for cards/panels/sheets is frosted glass (translucent bg + `backdrop-filter: blur(16-24px) saturate(1.3-1.4)` + thin accent-tinted border + subtle accent-shadow). Flat rectangles are reserved for dense data tables and form inputs.
 
 ## Core Identity
 
@@ -36,23 +46,29 @@ Precise but not cold. Technical but not clinical. Monochrome canvas with a singl
 
 These patterns are NEVER acceptable in Solvys applications:
 
-| Banned Pattern                                                    | Why                                               |
-| ----------------------------------------------------------------- | ------------------------------------------------- |
-| Gradients (`bg-gradient-*`, `linear-gradient`, `radial-gradient`) | Violates flat design principle                    |
-| Shadows (`shadow-*`, `drop-shadow`, `box-shadow`)                 | Simulates depth we reject                         |
-| Blur (`blur-*`, `backdrop-blur`, `filter: blur`)                  | Glass morphism is banned                          |
-| Emojis in UI chrome                                               | Unprofessional, inconsistent cross-platform       |
-| AI sparkles / glitter / aurora effects                            | Immediate "AI slop" signal                        |
-| Colored icons / filled icons                                      | Line icons only, stroke-width 1.5-2px             |
-| Rounded-full on non-circular elements                             | Industrial, not bubbly                            |
-| Pure black (`#000000`) as background                              | Too harsh -- use warm near-black                  |
-| Pure white (`#ffffff`) as text                                    | Too harsh -- use warm off-white                   |
-| M-dashes in text content                                          | Use en-dashes or hyphens                          |
-| `border-left` or `border-right` > 1px on cards/alerts             | Side-stripe borders are banned                    |
-| Gradient text (`background-clip: text`)                           | Never                                             |
-| Skeleton loading screens                                          | Use `[LOADING...]` text indicators                |
-| Toast popups                                                      | Use inline status text: `[SAVED]`, `[ERROR: ...]` |
-| Parallax, scroll-jacking, bounce easing                           | Disruptive motion                                 |
+| Banned Pattern                                                    | Why                                                 |
+| ----------------------------------------------------------------- | --------------------------------------------------- |
+| Gradients (`bg-gradient-*`, `linear-gradient`, `radial-gradient`) | The Four — zero tolerance                           |
+| AI sparkles / glitter / aurora / shimmer                          | The Four — zero tolerance (AI slop signal)          |
+| Emojis anywhere (chrome, labels, copy, push, prose)               | The Four — zero tolerance                           |
+| Kanban-style side-stripe borders on cards/alerts                  | The Four — zero tolerance                           |
+| Colored icons / filled icons                                      | Line icons only, stroke-width 1.5-2px               |
+| Rounded-full on non-circular elements                             | Industrial, not bubbly                              |
+| Pure black (`#000000`) as background                              | Too harsh -- use warm near-black                    |
+| Pure white (`#ffffff`) as text                                    | Too harsh -- use warm off-white                     |
+| M-dashes in text content                                          | Use en-dashes or hyphens                            |
+| Gradient text (`background-clip: text`)                           | Never                                               |
+| Skeleton loading screens                                          | Use `[LOADING...]` text indicators                  |
+| Parallax, scroll-jacking, bounce easing                           | Disruptive motion                                   |
+| Flat-card grids that read as Trello columns                       | Glassmorphic first, flat only for dense data/inputs |
+
+### Allowed but deliberate
+
+- **Backdrop blur + translucent bg on glass surfaces** — the default for cards, panels, sheets. `backdrop-filter: blur(16-24px) saturate(1.3-1.4)` over a near-black base with a thin accent-tinted border.
+- **Subtle accent-tinted shadows** (e.g. `0 -12px 40px rgba(0,0,0,0.6)` on lifted sheets) — used only to separate glass from background.
+- **Toasts** — short-lived, bottom-left (system) / top-right (market). Existing `ToastContext` only. Never a stack.
+- **Severity dots** in the top-right of a glass card — 6px accent-tinted circle. The only acceptable replacement for the banned side-stripe.
+- **Accent-letter buttons** — `color: var(--accent)` on transparent background, no border. The only button style for inline Approve/Deny/CTA actions inside glass cards.
 
 ## Color System
 

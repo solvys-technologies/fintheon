@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] FAB chat button forwards to chat tab (no floating overlay) per TP
 // [claude-code 2026-04-16] S20: Provider tree + activity status + haptic-gated nav
 import {
   useState,
@@ -19,7 +20,6 @@ import { HomePage } from "./components/home/HomePage";
 import { SegmentedSpinner } from "./components/shared/SegmentedSpinner";
 import { useVixTicker } from "./hooks/useVixTicker";
 import { useHaptic } from "./hooks/useHaptic";
-import { X } from "lucide-react";
 
 const RiskFlowPage = lazy(() =>
   import("./components/riskflow/RiskFlowPage").then((m) => ({
@@ -118,7 +118,6 @@ function AuthenticatedApp() {
   const vibrate = useHaptic();
 
   const [activeTab, setActiveTab] = useState(0);
-  const [chatOpen, setChatOpen] = useState(false);
   const prevTab = useRef(0);
 
   const handleTabChange = useCallback(
@@ -214,8 +213,7 @@ function AuthenticatedApp() {
       <MobileShell
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        chatOpen={chatOpen}
-        onChatToggle={() => setChatOpen(true)}
+        onChatTap={() => handleTabChange(2)}
       >
         <AnimatePresence mode="popLayout" initial={false} custom={direction}>
           <motion.div
@@ -241,42 +239,6 @@ function AuthenticatedApp() {
           </motion.div>
         </AnimatePresence>
       </MobileShell>
-
-      {/* Chat overlay — slides up from bottom, stays mounted (only when not on chat tab) */}
-      {activeTab !== 2 && (
-        <Suspense fallback={<LazyFallback />}>
-          <ChatPage visible={chatOpen} />
-        </Suspense>
-      )}
-      <AnimatePresence>
-        {chatOpen && activeTab !== 2 && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.15 }}
-            onClick={() => setChatOpen(false)}
-            aria-label="Close chat"
-            style={{
-              position: "fixed",
-              top: "calc(env(safe-area-inset-top) + 12px)",
-              right: 16,
-              width: 44,
-              height: 44,
-              borderRadius: "50%",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--border-visible)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              zIndex: 1000,
-            }}
-          >
-            <X size={20} color="var(--text-primary)" />
-          </motion.button>
-        )}
-      </AnimatePresence>
     </MobileRiskFlowProvider>
   );
 }

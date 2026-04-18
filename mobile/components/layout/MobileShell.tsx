@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] Chat FAB now forwards to chat tab (no floating overlay) per TP
 // [claude-code 2026-04-16] Shell — toolbar + bulletin FAB with glow reminder + chat FAB status
 import {
   useRef,
@@ -19,8 +20,7 @@ import { MobileBulletin } from "../bulletin/MobileBulletin";
 interface MobileShellProps {
   activeTab: number;
   onTabChange: (index: number) => void;
-  chatOpen: boolean;
-  onChatToggle: () => void;
+  onChatTap: () => void;
   children: ReactNode;
 }
 
@@ -30,8 +30,7 @@ const TAB_COUNT = 5;
 export function MobileShell({
   activeTab,
   onTabChange,
-  chatOpen,
-  onChatToggle,
+  onChatTap,
   children,
 }: MobileShellProps) {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -113,8 +112,8 @@ export function MobileShell({
         {children}
       </main>
 
-      {/* Floating buttons — bulletin above chat */}
-      {!chatOpen && activeTab !== 2 && (
+      {/* Floating buttons — bulletin above chat. Hidden on chat tab itself. */}
+      {activeTab !== 2 && (
         <>
           {/* Bulletin FAB with glow reminder */}
           <button
@@ -161,8 +160,8 @@ export function MobileShell({
             }`}</style>
           )}
 
-          {/* Chat FAB */}
-          <FloatingChatButton onTap={onChatToggle} />
+          {/* Chat FAB — forwards to chat tab */}
+          <FloatingChatButton onTap={onChatTap} />
         </>
       )}
 
