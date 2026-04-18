@@ -990,9 +990,7 @@ export async function handleRescoreAll(c: Context) {
   const userId = c.get("userId") as string | undefined;
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const { getUserById } = await import(
-    "../../services/peers/peer-registry.js"
-  );
+  const { getUserById } = await import("../../services/peers/peer-registry.js");
   const user = await getUserById(userId);
   if (!user || user.role !== "admin") {
     return c.json({ error: "Super admin privileges required" }, 403);
@@ -1002,9 +1000,8 @@ export async function handleRescoreAll(c: Context) {
   const limitParam = c.req.query("limit");
   const limit = limitParam ? Math.max(1, parseInt(limitParam, 10) || 0) : null;
 
-  const { runRescoreAll, isRescoreInProgress } = await import(
-    "../../services/scoring/rescore-all.js"
-  );
+  const { runRescoreAll, isRescoreInProgress } =
+    await import("../../services/scoring/rescore-all.js");
   if (isRescoreInProgress()) {
     return c.json({ error: "rescore-all already in progress" }, 409);
   }

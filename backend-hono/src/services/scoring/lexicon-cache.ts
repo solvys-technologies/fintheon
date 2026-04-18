@@ -52,7 +52,10 @@ export async function refreshLexicon(): Promise<void> {
 
   if (error) {
     // T1 migration may not have landed yet — degrade gracefully
-    if (error.code === "42P01" || /relation .* does not exist/i.test(error.message)) {
+    if (
+      error.code === "42P01" ||
+      /relation .* does not exist/i.test(error.message)
+    ) {
       cache = [];
       cacheLoadedAt = Date.now();
       return;
@@ -65,7 +68,8 @@ export async function refreshLexicon(): Promise<void> {
     id: row.id as string,
     keyword: ((row.keyword as string) ?? "").toLowerCase(),
     phrasePattern: (row.phrase_pattern as string | null) ?? null,
-    sentiment: (row.sentiment as "bullish" | "bearish" | "neutral") ?? "neutral",
+    sentiment:
+      (row.sentiment as "bullish" | "bearish" | "neutral") ?? "neutral",
     isMatrixFlip: Boolean(row.is_matrix_flip),
     targetRegime: (row.target_regime as string | null) ?? null,
     requiresActionVerb: row.requires_action_verb !== false,

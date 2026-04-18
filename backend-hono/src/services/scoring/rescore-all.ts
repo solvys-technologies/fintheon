@@ -253,7 +253,9 @@ async function rescoreRow(
   };
 }
 
-function mapStoredSourceToNewsSource(source: string | null | undefined): NewsSource {
+function mapStoredSourceToNewsSource(
+  source: string | null | undefined,
+): NewsSource {
   const s = (source ?? "").toLowerCase();
   if (s.includes("financialjuice") || s.includes("financial juice")) {
     return "FinancialJuice" as NewsSource;

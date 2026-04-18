@@ -132,8 +132,12 @@ function compareProposals(
     );
   }
   if (decisionType === "lexicon_addition") {
-    const wouldKw = String(would.keyword ?? "").toLowerCase().trim();
-    const actualKw = String(actual.keyword ?? "").toLowerCase().trim();
+    const wouldKw = String(would.keyword ?? "")
+      .toLowerCase()
+      .trim();
+    const actualKw = String(actual.keyword ?? "")
+      .toLowerCase()
+      .trim();
     return wouldKw.length > 0 && wouldKw === actualKw;
   }
   if (decisionType === "walk_back") {

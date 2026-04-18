@@ -4,7 +4,10 @@
 
 import { parseHeadline } from "../src/services/headline-parser.js";
 import { computeV4ScarcityGate } from "../src/services/analysis/iv-scorer.js";
-import { getLexicon, refreshLexicon } from "../src/services/scoring/lexicon-cache.js";
+import {
+  getLexicon,
+  refreshLexicon,
+} from "../src/services/scoring/lexicon-cache.js";
 
 interface SanityCase {
   headline: string;
@@ -39,7 +42,9 @@ async function main(): Promise<void> {
   const lexicon = await getLexicon();
 
   console.log(`[scarcity-sanity] Loaded ${lexicon.length} lexicon entries`);
-  console.log(`[scarcity-sanity] SCORING_V4=${process.env.SCORING_V4 ?? "(unset)"}`);
+  console.log(
+    `[scarcity-sanity] SCORING_V4=${process.env.SCORING_V4 ?? "(unset)"}`,
+  );
 
   let passed = 0;
   let failed = 0;
