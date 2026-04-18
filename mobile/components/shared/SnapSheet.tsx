@@ -1,6 +1,9 @@
+// [claude-code 2026-04-19] TP standard: every popup in the app uses this surface. Pill bar
+//   sized like the Daily Brief overlay (40x5, 12/8 padding), title pad 16/12, drag thresholds
+//   for velocity+offset dismiss. Glassmorphic (TP: glass before kanban, always).
 // [claude-code 2026-04-19] Generalized from NotificationSheet. Top-anchored sheet that opens
 //   to a target element's bottom edge (e.g. the dash fuse-bar row) — so only tickers + fuses
-//   stay visible above. Used by NotificationDrawer + MobileBulletin.
+//   stay visible above. Used by NotificationDrawer + MobileBulletin + BriefingCard.
 //   Glassmorphic surface by default (not Kanban — TP's design rule).
 import {
   type ReactNode,
@@ -61,7 +64,7 @@ export function SnapSheet({
 
   const handleDragEnd = useCallback(
     (_: unknown, info: PanInfo) => {
-      if (info.velocity.y > 300 || info.offset.y > 100) onClose();
+      if (info.velocity.y > 300 || info.offset.y > 120) onClose();
     },
     [onClose],
   );
@@ -119,12 +122,12 @@ export function SnapSheet({
               boxShadow: "0 -12px 40px rgba(0,0,0,0.6)",
             }}
           >
-            {/* Handle */}
+            {/* Handle — TP standard: 40×5, generous grab area */}
             <div
               style={{
                 display: "flex",
                 justifyContent: "center",
-                paddingTop: 8,
+                paddingTop: 12,
                 paddingBottom: 8,
                 cursor: "grab",
                 flexShrink: 0,
@@ -132,9 +135,9 @@ export function SnapSheet({
             >
               <div
                 style={{
-                  width: 36,
-                  height: 3,
-                  borderRadius: 2,
+                  width: 40,
+                  height: 5,
+                  borderRadius: 3,
                   background: "var(--border-visible)",
                 }}
               />
@@ -145,7 +148,7 @@ export function SnapSheet({
               <div
                 style={{
                   textAlign: "center",
-                  padding: "0 16px 8px",
+                  padding: "0 16px 12px",
                   fontFamily: "var(--font-data)",
                   fontSize: 11,
                   letterSpacing: "0.12em",

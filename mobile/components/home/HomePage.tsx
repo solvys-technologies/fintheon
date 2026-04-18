@@ -1,3 +1,6 @@
+// [claude-code 2026-04-19] Tighten page 1 padding (−25% above brief), give briefing card
+//   more vertical room; page 2 calendar now owns real pixel height so no black gap above
+//   Aquarium. Aquarium rendered in a compact glass sliver at bottom.
 // [claude-code 2026-04-16] T7: Dash — snap pages, Risk Signals replaces Proposals, NarrativeFlow catalysts + timeline
 // [claude-code 2026-04-17] Observe hero VIX visibility so toolbar VIX can fade in/out
 import { lazy, Suspense, useRef } from "react";
@@ -179,7 +182,9 @@ export function HomePage() {
         }}
       />
 
-      {/* Page 1: Hero Ticker + Briefing */}
+      {/* Page 1: Hero Ticker + Briefing
+          [claude-code 2026-04-19] TP: −25% top padding, briefing gets 25% more
+          breathing room. Hero/brief gap halved from 24→18 to amplify brief. */}
       <SnapPage>
         <motion.div
           variants={container}
@@ -188,9 +193,9 @@ export function HomePage() {
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 24,
+            gap: 18,
             flex: 1,
-            paddingBottom: 24,
+            paddingBottom: 12,
             position: "relative",
             zIndex: 1,
           }}
@@ -202,7 +207,7 @@ export function HomePage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding: "20px 0 8px",
+                padding: "15px 0 6px",
                 gap: 8,
               }}
             >
@@ -323,8 +328,9 @@ export function HomePage() {
       </SnapPage>
 
       {/* Page 2: Econ Calendar + Aquarium Analysis
-          [claude-code 2026-04-19] Calendar flex-grows to push Aquarium down to just-above-bottom
-          per TP — no dead space between them, calendar ends exactly where Aquarium begins. */}
+          [claude-code 2026-04-19] Calendar now fills remaining viewport minus Aquarium
+          footprint via minHeight calc — embed iframe gets honest pixel height via
+          ResizeObserver in EconCalendarEmbed, so no black gap. */}
       <SnapPage style={{ padding: 0, gap: 0 }}>
         <div
           style={{
@@ -336,15 +342,21 @@ export function HomePage() {
             zIndex: 1,
           }}
         >
-          {/* TradingView Economic Calendar — takes every px the Aquarium doesn't */}
-          <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+          {/* TradingView Economic Calendar — fills every pixel above Aquarium */}
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflow: "hidden",
+            }}
+          >
             <Suspense fallback={null}>
               <EconCalendarEmbed />
             </Suspense>
           </div>
           <div className="fade-divider" style={{ margin: "0 16px" }} />
-          {/* Aquarium Analysis — sits flush at the bottom of the page */}
-          <div style={{ padding: "16px 16px 24px", flexShrink: 0 }}>
+          {/* Aquarium Analysis — compact sliver at the bottom */}
+          <div style={{ padding: "12px 16px 16px", flexShrink: 0 }}>
             <AquariumSummary />
           </div>
         </div>

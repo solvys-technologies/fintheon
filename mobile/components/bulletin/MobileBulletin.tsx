@@ -1,3 +1,5 @@
+// [claude-code 2026-04-19] TP: read-only until tap (bigger target), larger textarea rows,
+//   auto-save fires 900ms after last keystroke (keeps existing auth + activity signaling).
 // [claude-code 2026-04-16] S20: StickyBulletin — auth headers, haptic-gated, activity signals
 // [claude-code 2026-04-17] Flush pending saves on close, re-fetch fresh on every open
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -155,7 +157,7 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
       notesSaveTimer.current = setTimeout(() => {
         saveField("tradingNotes", val);
         notesDirty.current = false;
-      }, 1200);
+      }, 900);
     },
     [saveField],
   );
@@ -169,7 +171,7 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
       eventSaveTimer.current = setTimeout(() => {
         saveField("eventOfWeek", val);
         eventDirty.current = false;
-      }, 1200);
+      }, 900);
     },
     [saveField],
   );
@@ -354,29 +356,23 @@ export function MobileBulletin({ isOpen, onClose }: MobileBulletinProps) {
 
       {/* Content */}
       {section === "notes" && (
-        <div>
-          <SectionLabel>TRADING NOTES</SectionLabel>
-          <textarea
-            value={tradingNotes}
-            onChange={(e) => handleNotesChange(e.target.value)}
-            placeholder="Add your trading notes..."
-            style={textareaStyle}
-            rows={6}
-          />
-        </div>
+        <TapToEditField
+          label="TRADING NOTES"
+          value={tradingNotes}
+          onChange={handleNotesChange}
+          placeholder="Tap to add trading notes..."
+          rows={14}
+        />
       )}
 
       {section === "event" && (
-        <div>
-          <SectionLabel>EVENT OF THE WEEK</SectionLabel>
-          <textarea
-            value={eventOfWeek}
-            onChange={(e) => handleEventChange(e.target.value)}
-            placeholder="Key event to watch this week..."
-            style={textareaStyle}
-            rows={4}
-          />
-        </div>
+        <TapToEditField
+          label="EVENT OF THE WEEK"
+          value={eventOfWeek}
+          onChange={handleEventChange}
+          placeholder="Tap to log the key event to watch..."
+          rows={10}
+        />
       )}
 
       {section === "antilag" && (
@@ -642,19 +638,128 @@ function TogglePill({
   );
 }
 
-const textareaStyle: React.CSSProperties = {
+/** Tap-to-edit multiline field — renders as a read-only glass plate until tapped,
+ *  then flips to an editable textarea that auto-saves 900ms after last keystroke.
+ *  Blur returns to read-only. Keeps room for double the content TP was seeing. */
+function TapToEditField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows,
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder: string;
+  rows: number;
+}) {
+  const [editing, setEditing] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const enterEdit = useCallback(() => {
+    setEditing(true);
+    // Focus on the next frame so the textarea has mounted.
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
+  }, []);
+
+  const leaveEdit = useCallback(() => setEditing(false), []);
+
+  return (
+    <div>
+      <SectionLabel>{label}</SectionLabel>
+      {editing ? (
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={leaveEdit}
+          placeholder={placeholder}
+          rows={rows}
+          style={editTextareaStyle}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={enterEdit}
+          style={{ ...readonlyPlateStyle, minHeight: `${rows * 24 + 20}px` }}
+          aria-label={`Edit ${label.toLowerCase()}`}
+        >
+          {value ? (
+            <span style={readonlyTextStyle}>{value}</span>
+          ) : (
+            <span style={readonlyPlaceholderStyle}>{placeholder}</span>
+          )}
+          <span style={tapHintStyle}>[TAP TO EDIT]</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+const editTextareaStyle: React.CSSProperties = {
   width: "100%",
-  background: "transparent",
-  border: "1px solid var(--border-visible)",
-  borderRadius: 8,
-  padding: "10px 12px",
+  background: "color-mix(in srgb, var(--accent) 4%, transparent)",
+  border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
+  borderRadius: 10,
+  padding: "12px 14px",
   fontFamily: "var(--font-body)",
-  fontSize: 14,
+  fontSize: 16,
   color: "var(--text-primary)",
-  lineHeight: 1.5,
+  lineHeight: 1.55,
   resize: "none",
   outline: "none",
   boxSizing: "border-box",
+  backdropFilter: "blur(16px) saturate(1.3)",
+  WebkitBackdropFilter: "blur(16px) saturate(1.3)",
+  transition: "border-color 200ms ease, background 200ms ease",
+};
+
+const readonlyPlateStyle: React.CSSProperties = {
+  width: "100%",
+  textAlign: "left",
+  background: "color-mix(in srgb, var(--accent) 2%, transparent)",
+  border: "1px solid color-mix(in srgb, var(--accent) 12%, transparent)",
+  borderRadius: 10,
+  padding: "12px 14px",
+  fontFamily: "var(--font-body)",
+  cursor: "pointer",
+  WebkitTapHighlightColor: "transparent",
+  backdropFilter: "blur(14px) saturate(1.25)",
+  WebkitBackdropFilter: "blur(14px) saturate(1.25)",
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+  transition: "border-color 200ms ease, background 200ms ease",
+};
+
+const readonlyTextStyle: React.CSSProperties = {
+  fontFamily: "var(--font-body)",
+  fontSize: 15,
+  color: "var(--text-primary)",
+  lineHeight: 1.55,
+  whiteSpace: "pre-wrap",
+};
+
+const readonlyPlaceholderStyle: React.CSSProperties = {
+  fontFamily: "var(--font-body)",
+  fontSize: 14,
+  color: "var(--text-disabled)",
+  lineHeight: 1.55,
+};
+
+const tapHintStyle: React.CSSProperties = {
+  fontFamily: "var(--font-data)",
+  fontSize: 10,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "color-mix(in srgb, var(--accent) 60%, transparent)",
+  alignSelf: "flex-end",
 };
 
 const inputStyle: React.CSSProperties = {

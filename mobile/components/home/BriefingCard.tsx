@@ -1,3 +1,6 @@
+// [claude-code 2026-04-19] TP: brief preview area +25%, top padding −25%, uses the
+//   unified SnapSheet instead of the one-off BriefingOverlay so every popup is sized
+//   like the brief (TP standard).
 // [claude-code 2026-04-19] Pulled out of SurfaceCard per TP — brief content flows directly
 //   on the dash, label + body + [READ MORE] inline. Container padding/border gone. Body
 //   flex-grows to fill the empty space between the fuse row and the bottom tab bar.
@@ -6,7 +9,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useHaptic } from "../../hooks/useHaptic";
 import remarkGfm from "remark-gfm";
-import { BriefingOverlay } from "./BriefingOverlay";
+import { SnapSheet } from "../shared/SnapSheet";
 import { useBriefing } from "../../hooks/useBriefing";
 
 export function BriefingCard() {
@@ -59,16 +62,16 @@ export function BriefingCard() {
             fontSize: 14,
             color: "var(--text-primary)",
             lineHeight: 1.55,
-            marginTop: 10,
+            marginTop: 8,
             flex: 1,
             minHeight: 0,
             overflow: "hidden",
             whiteSpace: "pre-line",
             // Fade the bottom edge so clipped text hints at "there's more"
             WebkitMaskImage:
-              "linear-gradient(to bottom, black calc(100% - 28px), transparent)",
+              "linear-gradient(to bottom, black calc(100% - 32px), transparent)",
             maskImage:
-              "linear-gradient(to bottom, black calc(100% - 28px), transparent)",
+              "linear-gradient(to bottom, black calc(100% - 32px), transparent)",
           }}
         >
           {previewText}
@@ -81,14 +84,14 @@ export function BriefingCard() {
           style={{
             ...ctaStyle,
             alignSelf: "flex-start",
-            marginTop: 8,
+            marginTop: 6,
           }}
         >
           [READ MORE]
         </button>
       </div>
 
-      <BriefingOverlay
+      <SnapSheet
         isOpen={sheetOpen}
         onClose={() => setSheetOpen(false)}
         title="DAILY BRIEF"
@@ -99,11 +102,12 @@ export function BriefingCard() {
             fontSize: 14,
             color: "var(--text-primary)",
             lineHeight: 1.6,
+            padding: "0 6px",
           }}
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullText}</ReactMarkdown>
         </div>
-      </BriefingOverlay>
+      </SnapSheet>
     </>
   );
 }
@@ -113,7 +117,7 @@ const shellStyle: React.CSSProperties = {
   flexDirection: "column",
   flex: 1,
   minHeight: 0,
-  padding: "12px 16px 0",
+  padding: "9px 16px 0",
 };
 
 const ctaStyle: React.CSSProperties = {
