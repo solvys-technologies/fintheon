@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S24-T1: added V4 categories (regimeProposals, lexiconProposals, walkBackReverts). Critical severity already bypasses quiet hours.
 // [claude-code 2026-04-18] S2: unified emit helper — always log, push only if subscribed+allowed+not-suppressed
 /**
  * Notification emit helper
@@ -30,6 +31,29 @@ const log = createLogger("NotifEmit");
 const TITLE_MAX = 50;
 const BODY_MAX = 120;
 const DEFAULT_DEDUP_WINDOW_MINS = 30;
+
+/**
+ * Registered notification categories. Adding a category here is the contract —
+ * mobile SettingsContext defaults and web_push_subscriptions.categories JSONB
+ * should mirror this list.
+ *
+ * S24-T1 additions: regimeProposals, lexiconProposals, walkBackReverts. All
+ * three default to severity="high" (respects quiet hours); pass severity="critical"
+ * only for L10 matrix flips, which bypass quiet hours via the gate below.
+ */
+export const NOTIFICATION_CATEGORIES = [
+  "riskflow",
+  "dailyBrief",
+  "regimeActivations",
+  "regimeProposals",
+  "lexiconProposals",
+  "walkBackReverts",
+  "toolApprovals",
+  "chat_relay",
+  "test",
+  "system",
+] as const;
+export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
 
 function clamp(s: string, max: number): string {
   if (!s) return "";

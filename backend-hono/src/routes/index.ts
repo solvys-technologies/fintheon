@@ -24,6 +24,8 @@ import { createVoiceRoutes } from "./voice/index.js";
 import { livekit } from "./livekit/index.js";
 import { createRegimeRoutes } from "./regimes/index.js";
 import { createMarketRegimeRoutes } from "./regime/index.js";
+import { createLexiconRoutes } from "./lexicon/index.js";
+import { createClassificationMatrixRoutes } from "./classification-matrix/index.js";
 
 import { createVersionRoutes } from "./version/index.js";
 import { createMarketDataRoutes } from "./market-data/index.js";
@@ -84,7 +86,12 @@ export function registerRoutes(app: Hono): void {
   // Regime tracker — public, returns active trading regimes (session-based time windows)
   app.route("/api/regimes", createRegimeRoutes());
   // Market regime engine — public, macro regime classification (CRUD + detect)
+  // [S24-T1] /proposals subroute: agent proposals + TP approval queue.
   app.route("/api/regime", createMarketRegimeRoutes());
+  // [S24-T1] Lexicon — agent-curated keyword → sentiment mapping (keywords + proposals)
+  app.route("/api/lexicon", createLexiconRoutes());
+  // [S24-T1] Classification matrix — regime → rubric (stance, entry/exit keywords, walk-back pairs)
+  app.route("/api/classification-matrix", createClassificationMatrixRoutes());
   // Market data — Yahoo Finance quotes/VIX + Unusual Whales GEX/walls/flow (public)
   app.route("/api/market-data", createMarketDataRoutes());
   // Narrative scoring — LLM-scored catalyst candidates
