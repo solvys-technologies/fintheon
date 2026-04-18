@@ -29,7 +29,7 @@ const ENV_FILE = join(BACKEND_DIR, ".env");
 const FRONTEND_ENV = join(FRONTEND_DIR, ".env.local");
 const DEFAULT_PORT = 8080;
 const FLY_DEPLOYED_SUPABASE_DATABASE_URL =
-  "postgresql://postgres.nrcfnzclbjboctptxaxx:Pricedinresearch0670963957%24@aws-0-us-west-2.pooler.supabase.com:5432/postgres";
+  "postgresql://postgres:PIR0670963957%24@db.nrcfnzclbjboctptxaxx.supabase.co:5432/postgres";
 
 /* ------------------------------------------------------------------ */
 /*  Setup context — accumulated across steps                           */

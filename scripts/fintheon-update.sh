@@ -14,7 +14,7 @@ set -eo pipefail
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
 UPDATE_VERSION="2.0.0"
-SUPABASE_DATABASE_URL="postgresql://postgres.nrcfnzclbjboctptxaxx:Pricedinresearch0670963957%24@aws-0-us-west-2.pooler.supabase.com:5432/postgres"
+SUPABASE_DATABASE_URL="postgresql://postgres:PIR0670963957%24@db.nrcfnzclbjboctptxaxx.supabase.co:5432/postgres"
 
 # ── Solvys Gold ANSI palette ──────────────────────────────────────────────────
 _R='\033[0m'
