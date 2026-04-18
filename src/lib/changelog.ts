@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T17:00:00",
+    agent: "claude-code",
+    summary:
+      "Three post-unify fixes TP called out before final /solvys-deploy. (1) NotificationSheet (new): replaced the generic BottomSheet in the mobile notification drawer with a notification-specific sheet — fixed 60vh height, bottom-anchored slide-up, `scrollTo({top:0})` on open so the dash hero ticker row stays visible above the sheet, backdrop inset clears the 48px toolbar + safe-area so the ticker row isn't dimmed. drag-to-close + 36×3 pill handle kept. NotificationDrawer.tsx swapped import BottomSheet → NotificationSheet (two touch-points: import line + JSX wrapper). (2) Mobile backend reachability: every hook/lib in mobile/ reads `import.meta.env.VITE_API_URL`; Vercel project env has it blank for production (→ vercel.json rewrites /api/* to fintheon.fly.dev). But local `vercel build --prod` reads `.env.local` where TP has `VITE_API_URL=http://localhost:8080` for dev, which got baked into the last --prebuilt upload → every fetch on deployed PWA pointed at the user's phone localhost. Belt-and-suspenders fix in main.tsx: when `import.meta.env.PROD` is true AND `window.location.hostname` isn't localhost AND the baked VITE_API_URL is http(s)://localhost or 127.*, wrap window.fetch to rewrite any absolute localhost URL to a relative path. Vercel rewrite handles the proxy. Dev builds untouched. Also logs a single warn so the drift is loud in prod console if it ever recurs. The deploy command itself also ships with `VITE_API_URL= vite build` to catch it at the source. (3) UpdateBanner + VersionChecker nag fix: per TP 'releases are repetitively called to users' attention regardless of whether they have the newest version or not.' Three layers: (a) UpdateBanner.tsx ignores any `update-available` IPC event where the offered version isn't strictly newer than pkg.json.version — added a semver-ish compare (parse + zero-fill + lexicographic on ints). (b) Per-version localStorage dismissal key `fintheon:update-dismissed:v<version>` — clicking Later marks the exact version dismissed so the banner never comes back for that release. (c) version-check.ts (30min release poll) now applies the same semver gate locally, respects per-version dismissals, and enforces a 24h global cooldown after any dismissal so the toast can't rapid-fire across sessions. VersionChecker.tsx also writes the per-version dismiss key as soon as Install Now is clicked so a failed/aborted install flow doesn't re-trigger the nag. BUILD_VERSION sourced from package.json as the single source of truth. Verified: frontend/mobile/backend tsc clean; preview-server probe on mobile confirms the new NotificationSheet module resolves + ships with the 60vh, scroll-to-top, and safe-area-inset-top behaviors intact.",
+    files: [
+      "mobile/components/shared/NotificationSheet.tsx",
+      "mobile/components/notifications/NotificationDrawer.tsx",
+      "mobile/main.tsx",
+      "frontend/components/UpdateBanner.tsx",
+      "frontend/components/VersionChecker.tsx",
+      "frontend/lib/version-check.ts",
+    ],
+  },
+  {
     date: "2026-04-19T15:00:00",
     agent: "claude-code",
     summary:

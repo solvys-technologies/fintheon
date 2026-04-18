@@ -2,7 +2,7 @@
 // [claude-code 2026-04-18] A4: bottom-sheet notification history, grouped by day
 import { useMemo, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
-import { BottomSheet } from "../shared/BottomSheet";
+import { NotificationSheet } from "../shared/NotificationSheet";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -128,7 +128,7 @@ export function NotificationDrawer({
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Notifications">
+    <NotificationSheet isOpen={isOpen} onClose={onClose} title="Notifications">
       <div style={{ padding: "0 16px 24px" }}>
         <div
           style={{
@@ -346,6 +346,6 @@ export function NotificationDrawer({
           ))
         )}
       </div>
-    </BottomSheet>
+    </NotificationSheet>
   );
 }

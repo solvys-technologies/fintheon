@@ -1,9 +1,58 @@
+// [claude-code 2026-04-19] S24 unify: dismissal persists per-version in localStorage (key
+//   fintheon:update-dismissed:v<version>). If the user clicks Later on v5.21.0, we don't nag
+//   again until v5.22.0 releases. Also suppress the banner entirely when the pending version
+//   equals the running build (stops the "already latest" repeat-prompt class reported by TP).
 // [claude-code 2026-04-05] Bottom-right update toast — Install Now / Later CTAs, auto-downloads in background
 import { useEffect, useState, useCallback } from "react";
 import { Download, X, Loader2, RotateCw } from "lucide-react";
 import type { UpdateInfo, UpdateProgress } from "../types/electron";
+import pkgJson from "../../package.json";
 
 type UpdateState = "idle" | "downloading" | "ready";
+
+const BUILD_VERSION = (pkgJson as { version?: string }).version ?? "0.0.0";
+const DISMISS_KEY_PREFIX = "fintheon:update-dismissed:";
+
+function isDismissedForVersion(v: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(DISMISS_KEY_PREFIX + v) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markDismissedForVersion(v: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(DISMISS_KEY_PREFIX + v, "1");
+  } catch {
+    /* localStorage can be disabled — best-effort only */
+  }
+}
+
+/**
+ * Compare two semver strings: returns true if `candidate` is strictly newer than `current`.
+ * Handles missing/malformed pieces by treating them as zero. "5.21.0" > "5.20.1" → true.
+ */
+function isNewerThan(candidate: string, current: string): boolean {
+  const parse = (v: string) =>
+    v
+      .replace(/^v/, "")
+      .split(/[.-]/)
+      .map((p) => parseInt(p, 10))
+      .map((n) => (Number.isFinite(n) ? n : 0));
+  const a = parse(candidate);
+  const b = parse(current);
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const av = a[i] ?? 0;
+    const bv = b[i] ?? 0;
+    if (av > bv) return true;
+    if (av < bv) return false;
+  }
+  return false;
+}
 
 export function UpdateBanner() {
   const [state, setState] = useState<UpdateState>("idle");
@@ -17,6 +66,15 @@ export function UpdateBanner() {
     if (!el?.onUpdateAvailable) return;
 
     el.onUpdateAvailable((updateInfo) => {
+      // Suppress if user already dismissed this exact version, or if the offered
+      // version isn't actually newer than what's running (guards against the
+      // "latest users still see the banner" class of bug).
+      if (!isNewerThan(updateInfo.version, BUILD_VERSION)) {
+        return;
+      }
+      if (isDismissedForVersion(updateInfo.version)) {
+        return;
+      }
       setInfo(updateInfo);
       setState("downloading");
       setDismissed(false);
@@ -51,9 +109,10 @@ export function UpdateBanner() {
   }, []);
 
   const handleLater = useCallback(() => {
+    if (info?.version) markDismissedForVersion(info.version);
     setEntered(false);
     setTimeout(() => setDismissed(true), 300);
-  }, []);
+  }, [info?.version]);
 
   if (state === "idle" || dismissed) return null;
 
