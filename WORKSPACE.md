@@ -139,4 +139,4 @@ Check `CLAUDE.md` for global rules. Check `MEMORY.md` for session context.
 - Background: `#050402`
 - Accent: `#c79f4a`
 - Text: `#f0ead6`
-- No gradients, no colored emojis.
+- No gradients, no colored emojis, no kanban borders.
