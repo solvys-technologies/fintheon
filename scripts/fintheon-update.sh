@@ -360,7 +360,7 @@ echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_BOLD}${_GREEN}${_vl}${_R}
 echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R}                                ${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
 printf -v _bl "%-30.30s" "Backend: http://localhost:8080"
 echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_CREAM}${_bl}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
-printf -v _ll "%-30s" "Logs: tail -f /tmp/fintheon.."
+printf -v _ll "%-30.30s" "Logs: tail -f /tmp/fintheon.."
 echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}║${_R} ${_DIM}${_ll}${_R}${_GOLD}║${_R}  ${_GOLD}]|||[${_R}"
 echo -e "      ${_GOLD}]|||[${_R}  ${_GOLD}╚══════════════════════════════╝${_R}  ${_GOLD}]|||[${_R}"
 echo -e "      ${_DIM} ╨╨╨ ${_R}                                    ${_DIM} ╨╨╨ ${_R}"

@@ -9,7 +9,7 @@
 #   fintheon logs      — Tail backend logs
 #   fintheon oauth     — Connect Anthropic subscription via VProxy
 #   fintheon login     — Sign in to TradingView/TopStepX/etc. via Google OAuth
-#   fintheon peers     — Run per-device peer/Twitter onboarding
+#   fintheon peers     — Run per-device peer + Rettiwt + Agent Reach onboarding
 #   fintheon setup     — Re-run first-time setup
 #   fintheon version   — Show current version
 # ============================================================================
@@ -304,7 +304,7 @@ case "$1" in
     printf "  ${_G}logs${_R}      ${_D}Tail backend logs${_R}\n"
     printf "  ${_G}oauth${_R}     ${_D}Connect Anthropic via VProxy${_R}\n"
     printf "  ${_G}login${_R}     ${_D}Sign in to trading platforms${_R}\n"
-    printf "  ${_G}peers${_R}     ${_D}Peer + Twitter onboarding${_R}\n"
+    printf "  ${_G}peers${_R}     ${_D}Peer + Rettiwt + Agent Reach onboarding${_R}\n"
     printf "  ${_G}setup${_R}     ${_D}Re-run first-time setup${_R}\n"
     printf "  ${_G}doctor${_R}    ${_D}Full system health check${_R}\n"
     printf "  ${_G}version${_R}   ${_D}Show current version${_R}\n"

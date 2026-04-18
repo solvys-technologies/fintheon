@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T14:00:00",
+    agent: "claude-code",
+    summary:
+      "Update script cleanup — three bugs TP spotted in the fintheon-update.sh output. (1) Torch margins drifted: opening torch_banner() used 6-char torches ]||||[ + 6-char flames  /||\\ , while the closing banner used 5-char torches ]|||[ + a 4-char ember row /|\\, with compensating-but-inconsistent middle spacing (35/36/37 spaces) across rows. Normalized everything to 5-char flame/torch/base columns + 36-char middles so every visible line is exactly 52 chars wide — torches vertically aligned at cols 7-11 left / 48-52 right. (2) Box content overflow: UPDATE COMPLETE + VERSION (18-char SHA) was 35 chars stuffed into a 30-char %-30s box, pushing the right ║ past the right torch and making the alignment look broken even when columns were correct. Swapped to %-30.30s on _vl, _bl, _ll printf format strings to hard-truncate. (3) Syntax error at line 296 — `[[: 1 1: syntax error` — grep -o can return multiple lines, so $TOTAL_KEYS became '1\\n1' and the [[ -gt 0 ]] test choked. Added | head -1 on both grep pipes plus ${VAR:-0} safety defaults. Peer bootstrap rewrite — dropped Twitter CLI install/auth entirely (replaced by Rettiwt library + Agent Reach, both ship with the backend). ensure_twitter_cli/ensure_twitter_auth/resolve_twitter_bin/open_x_login removed. New flow: curl /api/diagnostics to confirm backend + Agent Reach availability, curl /api/riskflow/rettiwt-refresh to count pool keys, enroll into Team Round Robin iff Rettiwt keys > 0. peer.json now emits agent_reach_available/rettiwt_available/rettiwt_keys/round_robin_enrolled instead of twitter_cli_*. CAPABILITIES array now carries 'agent-reach' + 'rettiwt' (and 'hermes' if present) instead of 'twitter-cli' + 'twitter-round-robin'. fintheon-update.sh cleanup block (step 11/12) kept as-is — forward-compatible: removes legacy twitter binary + config dirs if found but never installs fresh. Help text in install-cli.sh + fintheon-cli.sh updated: 'peers — Peer + Rettiwt + Agent Reach onboarding'. All four shell scripts pass `bash -n` syntax check.",
+    files: [
+      "scripts/fintheon-update.sh",
+      "scripts/peer-bootstrap.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+    ],
+  },
+  {
     date: "2026-04-18T13:15:00",
     agent: "claude-code",
     summary:
