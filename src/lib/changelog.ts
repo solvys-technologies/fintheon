@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T07:00:00",
+    agent: "claude-code",
+    summary:
+      "S21-T1 mobile strip — per-dispatch remote-control mode. Removed session-list surface from mobile (List icon, SessionList bottom-sheet, useConversations hook usage, handleSelectSession/handleNewSession, sessionListOpen state, refreshSessions post-send). Mobile chat is now a projection of whatever the desktop dispatches. New isStandby gate disables ChatInput when no convo is loaded AND no dispatch is active, preventing orphan threads from mobile. Empty-state copy: 'Standing by — dispatch a conversation from the relay button in the desktop CAO chat.' Conversation history is still persisted server-side; we just stopped surfacing browsing on mobile. useConversations + SessionList files kept as dead code. ChatPage bundle 55.30kB → 50.27kB.",
+    files: ["mobile/components/chat/ChatPage.tsx"],
+  },
+  {
     date: "2026-04-18T06:45:00",
     agent: "claude-code",
     summary:
