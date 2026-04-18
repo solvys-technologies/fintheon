@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T05:00:00",
+    agent: "claude-code",
+    summary:
+      "Revert Doto digits globally — restore pre-Nothing-Design digit rendering: (1) 'Readable Digits' @font-face back to Inter (regular 400) from Doto, no size-adjust — digits now render consistently in Inter across every theme (the original design before the 2026-04-17 Doto remap that caused legibility issues on desktop). (2) Removed digit-scale runtime FontFace API override (applyReadableDigitsScale) + digitScale state/setter/persistence from ThemeContext. (3) Removed DIGIT_SCALE_* constants, clampDigitScale, loadStoredDigitScale, saveDigitScale from font-theme.ts. (4) Removed Digit Size slider section from Appearance settings. Nothing Font Kit retained unchanged — headings still get Doto via fontHeading stack, only digits revert to Inter. appearance.digitScale in backend settings is now ignored on load (harmless).",
+    files: [
+      "frontend/fonts.css",
+      "frontend/lib/font-theme.ts",
+      "frontend/contexts/ThemeContext.tsx",
+      "frontend/components/settings/ThemeSettings.tsx",
+    ],
+  },
+  {
     date: "2026-04-18T04:00:00",
     agent: "claude-code",
     summary:
