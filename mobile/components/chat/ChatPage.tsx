@@ -32,6 +32,7 @@ export default function ChatPage({ visible }: ChatPageProps) {
   const [relayState, setRelayState] = useState<RelayState>("reconnecting");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [sessionListOpen, setSessionListOpen] = useState(false);
+  const [mirrorDevice, setMirrorDevice] = useState<string | null>(null);
   const {
     sessions,
     isLoading: sessionsLoading,
@@ -145,6 +146,48 @@ export default function ChatPage({ visible }: ChatPageProps) {
     window.addEventListener("fintheon:relay-dispatch", handler);
     return () => window.removeEventListener("fintheon:relay-dispatch", handler);
   }, [loadRelayConversation]);
+
+  // Poll /api/relay/health every 20s: if desktop dispatched us here, show the
+  // "FROM DESKTOP" badge and auto-load the dispatched conversation when we
+  // don't already have one active.
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const token = await getAccessToken();
+        if (!token) return;
+        const res = await fetch(`${API_BASE}/api/relay/health`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          dispatch?: { conversationId: string; deviceLabel: string } | null;
+        };
+        if (cancelled) return;
+        const active = data.dispatch;
+        if (
+          active &&
+          (active.conversationId === conversationIdRef.current ||
+            !conversationIdRef.current)
+        ) {
+          setMirrorDevice(active.deviceLabel ?? "desktop");
+          if (!conversationIdRef.current) {
+            void loadRelayConversation(active.conversationId);
+          }
+        } else {
+          setMirrorDevice(null);
+        }
+      } catch {
+        /* ignore transient errors */
+      }
+    };
+    void check();
+    const id = setInterval(check, 20_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [getAccessToken, loadRelayConversation]);
 
   const sendMessage = useCallback(
     async (
@@ -369,18 +412,36 @@ export default function ChatPage({ visible }: ChatPageProps) {
           borderBottom: "none",
         }}
       >
-        <span
-          style={{
-            fontFamily: "var(--font-data)",
-            fontSize: 14,
-            color: "var(--text-display)",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            fontWeight: 700,
-          }}
-        >
-          HARPER
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 14,
+              color: "var(--text-display)",
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              fontWeight: 700,
+            }}
+          >
+            HARPER
+          </span>
+          {mirrorDevice && (
+            <span
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 9,
+                color: "var(--accent, #c79f4a)",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                padding: "2px 6px",
+                border: "1px solid rgba(199,159,74,0.35)",
+                borderRadius: 4,
+              }}
+            >
+              ⟷ FROM DESKTOP
+            </span>
+          )}
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <ConnectionStatus onStateChange={setRelayState} />
           <button
