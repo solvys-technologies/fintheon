@@ -30,7 +30,11 @@ import {
   saveFontTheme,
 } from "../lib/font-theme";
 
-const BACKEND_SETTINGS_URL = "/api/settings";
+// [claude-code 2026-04-18] Absolute URL — relative paths resolve against file:// under Electron
+//   and return ERR_FILE_NOT_FOUND, leaving theme sync broken without a visible error.
+const API_BASE =
+  (import.meta as any).env?.VITE_API_URL || "http://localhost:8080";
+const BACKEND_SETTINGS_URL = `${API_BASE}/api/settings`;
 
 interface ThemeContextValue {
   theme: ThemeConfig;

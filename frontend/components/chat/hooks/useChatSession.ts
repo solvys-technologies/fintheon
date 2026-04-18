@@ -1,3 +1,6 @@
+// [claude-code 2026-04-18] Pass clearConversationId through to useHermesChat so a stale cached
+//   conversationId (e.g. from a DB-wiped/pre-migration state) is evicted on 404 instead of
+//   lingering and breaking downstream relay/session UI that checks conversationId truthiness.
 // [claude-code 2026-03-06] Unified chat session hook wrapping useHermesChat + persistence + agent routing + part normalization
 import { useCallback, useMemo, useState } from "react";
 import { useHermesChat } from "./useHermesChat";
@@ -35,7 +38,13 @@ export function useChatSession({
     lastError,
     clearError,
     lastRequestId,
-  } = useHermesChat(conversationId, setConversationId, agentOverride);
+  } = useHermesChat(
+    conversationId,
+    setConversationId,
+    agentOverride,
+    undefined,
+    clearConversationId,
+  );
 
   const [lastSentMessage, setLastSentMessage] = useState("");
 
