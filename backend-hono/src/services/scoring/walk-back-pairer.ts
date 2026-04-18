@@ -21,19 +21,92 @@ const SUBJECT_OVERLAP_MIN = 0.25; // Jaccard min on shared-subject tokens
 const MAX_CANDIDATES = 40;
 
 const DIRECTION_TOKENS = new Set([
-  "confirmed","reached","agreed","holds","signed","de-escalation","deescalation",
-  "reopens","reopened","halted","withdrawal","truce","peace","accord",
-  "collapses","collapsed","broken","ended","violated","attack","attacked","strike",
-  "blockade","escalation","missile","invasion","invaded","seized","seize","nuclear",
-  "bombing","bombed","assault",
+  "confirmed",
+  "reached",
+  "agreed",
+  "holds",
+  "signed",
+  "de-escalation",
+  "deescalation",
+  "reopens",
+  "reopened",
+  "halted",
+  "withdrawal",
+  "truce",
+  "peace",
+  "accord",
+  "collapses",
+  "collapsed",
+  "broken",
+  "ended",
+  "violated",
+  "attack",
+  "attacked",
+  "strike",
+  "blockade",
+  "escalation",
+  "missile",
+  "invasion",
+  "invaded",
+  "seized",
+  "seize",
+  "nuclear",
+  "bombing",
+  "bombed",
+  "assault",
 ]);
 
 const STOPWORDS = new Set([
-  "a","an","the","is","are","was","were","be","been","being",
-  "to","of","in","on","at","by","for","with","from","as","into",
-  "and","or","but","if","then","so","that","this","these","those",
-  "it","its","he","she","they","we","you","i","his","her","their",
-  "says","said","say","tells","told","per","via","amp",
+  "a",
+  "an",
+  "the",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "to",
+  "of",
+  "in",
+  "on",
+  "at",
+  "by",
+  "for",
+  "with",
+  "from",
+  "as",
+  "into",
+  "and",
+  "or",
+  "but",
+  "if",
+  "then",
+  "so",
+  "that",
+  "this",
+  "these",
+  "those",
+  "it",
+  "its",
+  "he",
+  "she",
+  "they",
+  "we",
+  "you",
+  "i",
+  "his",
+  "her",
+  "their",
+  "says",
+  "said",
+  "say",
+  "tells",
+  "told",
+  "per",
+  "via",
+  "amp",
 ]);
 
 function tokenizeSubject(text: string): Set<string> {
@@ -42,8 +115,7 @@ function tokenizeSubject(text: string): Set<string> {
     .replace(/[^a-z0-9\s$%.-]/g, " ")
     .split(/\s+/)
     .filter(
-      (t) =>
-        t.length >= 3 && !STOPWORDS.has(t) && !DIRECTION_TOKENS.has(t),
+      (t) => t.length >= 3 && !STOPWORDS.has(t) && !DIRECTION_TOKENS.has(t),
     );
   return new Set(tokens);
 }
@@ -64,8 +136,7 @@ function oppositeSentiment(
 ): boolean {
   if (!a || !b) return false;
   return (
-    (a === "bullish" && b === "bearish") ||
-    (a === "bearish" && b === "bullish")
+    (a === "bullish" && b === "bearish") || (a === "bearish" && b === "bullish")
   );
 }
 
@@ -103,9 +174,7 @@ interface ScoredRowLite {
   analyzed_at: string | null;
 }
 
-async function fetchRecentHighItems(
-  excludeId: string,
-): Promise<FeedItem[]> {
+async function fetchRecentHighItems(excludeId: string): Promise<FeedItem[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
   const since = new Date(

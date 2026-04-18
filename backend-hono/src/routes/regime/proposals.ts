@@ -3,10 +3,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { sql, isDatabaseAvailable } from "../../config/database.js";
 import { createLogger } from "../../lib/logger.js";
-import {
-  MARKET_REGIMES,
-  type MarketRegime,
-} from "../../types/regime.js";
+import { MARKET_REGIMES, type MarketRegime } from "../../types/regime.js";
 import { setRegime } from "../../services/regime/regime-service.js";
 import { proposeRegimeChange } from "../../services/regime/propose.js";
 
@@ -93,10 +90,11 @@ export function createRegimeProposalRoutes(): Hono {
 
   // POST /api/regime/proposals/:id/deny — super admin denies
   app.post("/:id/deny", async (c) => {
-    if (!isDatabaseAvailable())
-      return c.json({ error: "DB unavailable" }, 503);
+    if (!isDatabaseAvailable()) return c.json({ error: "DB unavailable" }, 503);
     const id = c.req.param("id");
-    const userId = (((c.get as (k: string) => unknown)("userId") as string | undefined) ?? null);
+    const userId =
+      ((c.get as (k: string) => unknown)("userId") as string | undefined) ??
+      null;
 
     const rows = await sql`
       UPDATE regime_proposals
@@ -107,10 +105,7 @@ export function createRegimeProposalRoutes(): Hono {
       RETURNING id, status, decided_at
     `;
     if (rows.length === 0) {
-      return c.json(
-        { error: "Proposal not found or already decided" },
-        404,
-      );
+      return c.json({ error: "Proposal not found or already decided" }, 404);
     }
     log.info("Regime proposal denied", { id, userId });
     return c.json(rows[0]);
@@ -122,7 +117,8 @@ export function createRegimeProposalRoutes(): Hono {
 async function approveHandler(c: Context) {
   if (!isDatabaseAvailable()) return c.json({ error: "DB unavailable" }, 503);
   const id = c.req.param("id");
-  const userId = (((c.get as (k: string) => unknown)("userId") as string | undefined) ?? null);
+  const userId =
+    ((c.get as (k: string) => unknown)("userId") as string | undefined) ?? null;
 
   const existing = await sql`
     SELECT id, proposed_regime, status, proposed_by
@@ -133,10 +129,7 @@ async function approveHandler(c: Context) {
   }
   const row = existing[0];
   if (row.status !== "pending") {
-    return c.json(
-      { error: `Proposal already ${row.status}` },
-      409,
-    );
+    return c.json({ error: `Proposal already ${row.status}` }, 409);
   }
 
   if (!MARKET_REGIMES.includes(row.proposed_regime as MarketRegime)) {

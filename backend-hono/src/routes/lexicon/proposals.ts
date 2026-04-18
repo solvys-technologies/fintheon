@@ -31,8 +31,7 @@ export function createLexiconProposalRoutes(): Hono {
 
   // POST /api/lexicon/proposals — agent proposes new keyword
   app.post("/", async (c) => {
-    if (!isDatabaseAvailable())
-      return c.json({ error: "DB unavailable" }, 503);
+    if (!isDatabaseAvailable()) return c.json({ error: "DB unavailable" }, 503);
     const body = await c.req.json().catch(() => null);
     if (!body?.keyword || !body?.sentiment || !body?.reason) {
       return c.json(
@@ -96,10 +95,11 @@ export function createLexiconProposalRoutes(): Hono {
 
   // POST /api/lexicon/proposals/:id/approve — copies to lexicon_keywords with approved=TRUE
   app.post("/:id/approve", async (c) => {
-    if (!isDatabaseAvailable())
-      return c.json({ error: "DB unavailable" }, 503);
+    if (!isDatabaseAvailable()) return c.json({ error: "DB unavailable" }, 503);
     const id = c.req.param("id");
-    const userId = (((c.get as (k: string) => unknown)("userId") as string | undefined) ?? null);
+    const userId =
+      ((c.get as (k: string) => unknown)("userId") as string | undefined) ??
+      null;
 
     const existing = await sql`
       SELECT * FROM lexicon_proposals WHERE id = ${id} LIMIT 1
@@ -134,16 +134,20 @@ export function createLexiconProposalRoutes(): Hono {
       WHERE id = ${id}
       RETURNING *
     `;
-    log.info("Lexicon proposal approved + applied", { id, keyword: row.keyword });
+    log.info("Lexicon proposal approved + applied", {
+      id,
+      keyword: row.keyword,
+    });
     return c.json(updated[0]);
   });
 
   // POST /api/lexicon/proposals/:id/deny
   app.post("/:id/deny", async (c) => {
-    if (!isDatabaseAvailable())
-      return c.json({ error: "DB unavailable" }, 503);
+    if (!isDatabaseAvailable()) return c.json({ error: "DB unavailable" }, 503);
     const id = c.req.param("id");
-    const userId = (((c.get as (k: string) => unknown)("userId") as string | undefined) ?? null);
+    const userId =
+      ((c.get as (k: string) => unknown)("userId") as string | undefined) ??
+      null;
     const rows = await sql`
       UPDATE lexicon_proposals
       SET status = 'denied', approved_by = ${userId}::uuid, decided_at = now()

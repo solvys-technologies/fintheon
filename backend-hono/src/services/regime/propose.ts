@@ -104,8 +104,12 @@ export async function proposeRegimeChange(
     LIMIT 1
   `;
   const lockedUntilRaw = lockRows[0]?.locked_until ?? null;
-  const lockedUntil = lockedUntilRaw ? new Date(lockedUntilRaw).toISOString() : null;
-  const lockActive = lockedUntil ? new Date(lockedUntil).getTime() > Date.now() : false;
+  const lockedUntil = lockedUntilRaw
+    ? new Date(lockedUntilRaw).toISOString()
+    : null;
+  const lockActive = lockedUntil
+    ? new Date(lockedUntil).getTime() > Date.now()
+    : false;
 
   const inserted = await sql`
     INSERT INTO regime_proposals (proposed_regime, current_regime, reason, evidence, proposed_by, status)

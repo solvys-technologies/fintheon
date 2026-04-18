@@ -10,7 +10,10 @@ import {
   detectWalkBack,
   __test,
 } from "../src/services/scoring/walk-back-pairer.js";
-import { getSupabaseClient, isSupabaseConfigured } from "../src/config/supabase.js";
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+} from "../src/config/supabase.js";
 import type { FeedItem } from "../src/types/riskflow.js";
 
 const { tokenizeSubject, jaccard, oppositeSentiment, hasSharedSubject } =
@@ -39,7 +42,8 @@ async function main(): Promise<void> {
 
   console.log("\n── oppositeSentiment / hasSharedSubject ──");
   assert(
-    oppositeSentiment("bullish", "bearish") && oppositeSentiment("bearish", "bullish"),
+    oppositeSentiment("bullish", "bearish") &&
+      oppositeSentiment("bearish", "bullish"),
     "bullish ↔ bearish is opposite",
   );
   assert(!oppositeSentiment("neutral", "bearish"), "neutral is not opposite");
@@ -63,7 +67,10 @@ async function main(): Promise<void> {
     sentiment: "bearish",
     ivScore: 9.7,
   };
-  assert(hasSharedSubject(bullish, bearish), "shared CL symbol → shared subject");
+  assert(
+    hasSharedSubject(bullish, bearish),
+    "shared CL symbol → shared subject",
+  );
 
   console.log("\n── End-to-end (requires Supabase + SCORING_V4) ──");
   if (!isSupabaseConfigured()) {
@@ -122,7 +129,10 @@ async function main(): Promise<void> {
     `   detectWalkBack → action=${result.action} pairsWith=${result.pairsWith} overlap=${result.overlapScore}`,
   );
   assert(result.action === "fade", "action=fade on opposing L10 pair");
-  assert(result.pairsWith === CONFIRMED_ID, "pairs with the seeded confirmed row");
+  assert(
+    result.pairsWith === CONFIRMED_ID,
+    "pairs with the seeded confirmed row",
+  );
   assert((result.overlapScore ?? 0) >= 0.25, "overlap ≥ 0.25 threshold");
 
   // Cleanup

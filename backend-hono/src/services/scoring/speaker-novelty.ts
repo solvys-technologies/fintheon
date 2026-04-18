@@ -23,11 +23,56 @@ const SIM_NOVEL = 0.3; // below this → fully novel
 const SIM_SATURATED = 0.9; // above this → floor
 
 const STOPWORDS = new Set([
-  "a","an","the","is","are","was","were","be","been","being",
-  "to","of","in","on","at","by","for","with","from","as","into",
-  "and","or","but","if","then","so","that","this","these","those",
-  "it","its","he","she","they","we","you","i","his","her","their",
-  "says","said","say","tells","told","per","via","amp",
+  "a",
+  "an",
+  "the",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "to",
+  "of",
+  "in",
+  "on",
+  "at",
+  "by",
+  "for",
+  "with",
+  "from",
+  "as",
+  "into",
+  "and",
+  "or",
+  "but",
+  "if",
+  "then",
+  "so",
+  "that",
+  "this",
+  "these",
+  "those",
+  "it",
+  "its",
+  "he",
+  "she",
+  "they",
+  "we",
+  "you",
+  "i",
+  "his",
+  "her",
+  "their",
+  "says",
+  "said",
+  "say",
+  "tells",
+  "told",
+  "per",
+  "via",
+  "amp",
 ]);
 
 function normalizeSpeaker(name: string): string {
@@ -76,9 +121,7 @@ interface CacheRow {
   created_at?: string;
 }
 
-async function fetchRecentUtterances(
-  speaker: string,
-): Promise<CacheRow[]> {
+async function fetchRecentUtterances(speaker: string): Promise<CacheRow[]> {
   const sb = getSupabaseClient();
   if (!sb) return [];
   const since = new Date(

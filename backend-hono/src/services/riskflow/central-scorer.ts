@@ -401,9 +401,8 @@ export async function scoringCycle(): Promise<number> {
     // Regime revert is deferred to T1's proposeRegimeChange() when available.
     if (process.env.SCORING_V4 === "true") {
       try {
-        const { detectWalkBack, applyFadeToOriginal } = await import(
-          "../scoring/walk-back-pairer.js"
-        );
+        const { detectWalkBack, applyFadeToOriginal } =
+          await import("../scoring/walk-back-pairer.js");
         const l9l10 = enrichedItems.filter((i) => (i.ivScore ?? 0) >= 9);
         for (const item of l9l10) {
           const result = await detectWalkBack(item);
@@ -419,9 +418,8 @@ export async function scoringCycle(): Promise<number> {
 
           // Propose regime revert via T1's proposals API if available.
           try {
-            const mod: Record<string, unknown> = await import(
-              "../regime/regime-service.js"
-            );
+            const mod: Record<string, unknown> =
+              await import("../regime/regime-service.js");
             const propose = (mod as { proposeRegimeChange?: Function })
               .proposeRegimeChange;
             if (typeof propose === "function") {
@@ -433,14 +431,14 @@ export async function scoringCycle(): Promise<number> {
               });
             }
           } catch (err) {
-            log.warn(`walk-back proposeRegimeChange unavailable: ${String(err)}`);
+            log.warn(
+              `walk-back proposeRegimeChange unavailable: ${String(err)}`,
+            );
           }
 
           // Fire walkBackReverts push (critical severity bypasses quiet hours).
           try {
-            const { emitPushAndLog } = await import(
-              "../notifications/emit.js"
-            );
+            const { emitPushAndLog } = await import("../notifications/emit.js");
             await emitPushAndLog({
               userId: "all",
               category: "walkBackReverts",

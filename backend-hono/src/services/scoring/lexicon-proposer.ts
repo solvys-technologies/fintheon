@@ -28,13 +28,74 @@ const EVIDENCE_PER_PROPOSAL = 5;
 const MAX_PROPOSALS_PER_RUN = 20;
 
 const STOPWORDS = new Set([
-  "a","an","the","is","are","was","were","be","been","being",
-  "to","of","in","on","at","by","for","with","from","as","into",
-  "and","or","but","if","then","so","that","this","these","those",
-  "it","its","he","she","they","we","you","i","his","her","their",
-  "says","said","say","tells","told","per","via","amp","but",
-  "will","would","could","should","may","might","can","has","have","had",
-  "there","here","when","what","who","how","why",
+  "a",
+  "an",
+  "the",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "to",
+  "of",
+  "in",
+  "on",
+  "at",
+  "by",
+  "for",
+  "with",
+  "from",
+  "as",
+  "into",
+  "and",
+  "or",
+  "but",
+  "if",
+  "then",
+  "so",
+  "that",
+  "this",
+  "these",
+  "those",
+  "it",
+  "its",
+  "he",
+  "she",
+  "they",
+  "we",
+  "you",
+  "i",
+  "his",
+  "her",
+  "their",
+  "says",
+  "said",
+  "say",
+  "tells",
+  "told",
+  "per",
+  "via",
+  "amp",
+  "but",
+  "will",
+  "would",
+  "could",
+  "should",
+  "may",
+  "might",
+  "can",
+  "has",
+  "have",
+  "had",
+  "there",
+  "here",
+  "when",
+  "what",
+  "who",
+  "how",
+  "why",
 ]);
 
 interface ScoredRow {
@@ -166,8 +227,7 @@ function clusterPhrases(
   return [...map.values()]
     .filter(
       (c) =>
-        c.count >= MIN_OCCURRENCES &&
-        c.sources.size >= MIN_DISTINCT_SOURCES,
+        c.count >= MIN_OCCURRENCES && c.sources.size >= MIN_DISTINCT_SOURCES,
     )
     .sort((a, b) => b.count - a.count)
     .slice(0, MAX_PROPOSALS_PER_RUN);
@@ -215,9 +275,7 @@ export interface LexiconProposalRow {
   proposed_by: "lexicon-proposer";
 }
 
-async function insertProposals(
-  rows: LexiconProposalRow[],
-): Promise<number> {
+async function insertProposals(rows: LexiconProposalRow[]): Promise<number> {
   if (rows.length === 0) return 0;
   const sb = getSupabaseClient();
   if (!sb) return 0;
@@ -285,9 +343,7 @@ export async function proposeLexiconUpdates(): Promise<ProposeLexiconResult> {
     occurrences: c.count,
     distinct_sources: c.sources.size,
     evidence_ids: c.evidence.map((e) => e.tweet_id),
-    evidence_headlines: c.evidence
-      .map((e) => e.headline ?? "")
-      .filter(Boolean),
+    evidence_headlines: c.evidence.map((e) => e.headline ?? "").filter(Boolean),
     status: "pending",
     proposed_by: "lexicon-proposer",
   }));

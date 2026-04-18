@@ -172,11 +172,7 @@ export async function calculateIVScore(
   // V3 still sees eventType="geopolitical"; V4 routes to the directional variant
   // based on the side-channel parsed.geopoliticalDirection set by headline-parser.
   let eventType = parsed.eventType ?? "default";
-  if (
-    isV4 &&
-    eventType === "geopolitical" &&
-    parsed.geopoliticalDirection
-  ) {
+  if (isV4 && eventType === "geopolitical" && parsed.geopoliticalDirection) {
     eventType = geopoliticalEventType(parsed.geopoliticalDirection);
     rationale.push(
       `V4: geopolitical → ${eventType} (direction=${parsed.geopoliticalDirection})`,
@@ -349,10 +345,7 @@ export async function calculateIVScore(
     try {
       const rawMult = await getMultiplierForSpeaker(parsed.speaker);
       if (isV4) {
-        const novelty = await computeNoveltyFactor(
-          parsed.speaker,
-          parsed.raw,
-        );
+        const novelty = await computeNoveltyFactor(parsed.speaker, parsed.raw);
         const effective = 1 + 0.5 * (rawMult - 1) * novelty;
         commentatorMultiplier = effective;
         score *= effective;

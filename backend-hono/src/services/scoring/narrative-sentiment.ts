@@ -134,8 +134,7 @@ export async function interpretSentimentThroughNarratives(
   // should not get narrative tinting (they have their own direct sentiment).
   if (!parsed.speaker) return null;
 
-  const narratives =
-    overrideNarratives ?? (await fetchActiveNarratives());
+  const narratives = overrideNarratives ?? (await fetchActiveNarratives());
   if (!narratives.length) return null;
 
   const matched = matchNarratives(parsed, narratives);

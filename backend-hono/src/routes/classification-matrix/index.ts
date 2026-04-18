@@ -2,10 +2,7 @@
 import { Hono } from "hono";
 import { sql, isDatabaseAvailable } from "../../config/database.js";
 import { createLogger } from "../../lib/logger.js";
-import {
-  MARKET_REGIMES,
-  type MarketRegime,
-} from "../../types/regime.js";
+import { MARKET_REGIMES, type MarketRegime } from "../../types/regime.js";
 
 const log = createLogger("ClassificationMatrix");
 
@@ -26,8 +23,7 @@ export function createClassificationMatrixRoutes(): Hono {
 
   // GET /api/classification-matrix/:regime — single rubric
   app.get("/:regime", async (c) => {
-    if (!isDatabaseAvailable())
-      return c.json({ error: "DB unavailable" }, 503);
+    if (!isDatabaseAvailable()) return c.json({ error: "DB unavailable" }, 503);
     const regime = c.req.param("regime");
     if (!MARKET_REGIMES.includes(regime as MarketRegime)) {
       return c.json({ error: "Invalid regime" }, 400);
@@ -43,8 +39,7 @@ export function createClassificationMatrixRoutes(): Hono {
   // PATCH /api/classification-matrix/:regime — replace rubric (super admin only)
   // Body: { rubric: {...} }
   app.patch("/:regime", async (c) => {
-    if (!isDatabaseAvailable())
-      return c.json({ error: "DB unavailable" }, 503);
+    if (!isDatabaseAvailable()) return c.json({ error: "DB unavailable" }, 503);
     const regime = c.req.param("regime");
     if (!MARKET_REGIMES.includes(regime as MarketRegime)) {
       return c.json({ error: "Invalid regime" }, 400);
@@ -53,7 +48,9 @@ export function createClassificationMatrixRoutes(): Hono {
     if (!body?.rubric || typeof body.rubric !== "object") {
       return c.json({ error: "Missing rubric object" }, 400);
     }
-    const updatedBy = ((c.get as (k: string) => unknown)("email") as string | undefined) ?? "api";
+    const updatedBy =
+      ((c.get as (k: string) => unknown)("email") as string | undefined) ??
+      "api";
     const rows = await sql`
       UPDATE classification_matrix
       SET rubric = ${JSON.stringify(body.rubric)}::jsonb,

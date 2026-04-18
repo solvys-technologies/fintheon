@@ -49,8 +49,7 @@ export function createLexiconKeywordsRoutes(): Hono {
   // POST /api/lexicon/keywords — super admin direct-add (bypasses proposal queue)
   // Body: { keyword, phrasePattern?, sentiment, isMatrixFlip?, targetRegime?, requiresActionVerb?, expiresAt? }
   app.post("/", async (c) => {
-    if (!isDatabaseAvailable())
-      return c.json({ error: "DB unavailable" }, 503);
+    if (!isDatabaseAvailable()) return c.json({ error: "DB unavailable" }, 503);
     const body = await c.req.json().catch(() => null);
     if (!body?.keyword || !body?.sentiment) {
       return c.json({ error: "Missing fields: keyword, sentiment" }, 400);
@@ -61,7 +60,9 @@ export function createLexiconKeywordsRoutes(): Hono {
         400,
       );
     }
-    const addedBy = ((c.get as (k: string) => unknown)("email") as string | undefined) ?? "api";
+    const addedBy =
+      ((c.get as (k: string) => unknown)("email") as string | undefined) ??
+      "api";
     const rows = await sql`
       INSERT INTO lexicon_keywords
         (keyword, phrase_pattern, sentiment, is_matrix_flip, target_regime, requires_action_verb, added_by, approved, expires_at)
@@ -86,8 +87,7 @@ export function createLexiconKeywordsRoutes(): Hono {
 
   // DELETE /api/lexicon/keywords/:id
   app.delete("/:id", async (c) => {
-    if (!isDatabaseAvailable())
-      return c.json({ error: "DB unavailable" }, 503);
+    if (!isDatabaseAvailable()) return c.json({ error: "DB unavailable" }, 503);
     const id = c.req.param("id");
     const rows = await sql`
       DELETE FROM lexicon_keywords WHERE id = ${id} RETURNING id
