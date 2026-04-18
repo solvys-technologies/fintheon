@@ -62,9 +62,11 @@ async function loadPref(userId: string): Promise<QuietHoursPref | null> {
       cats && typeof cats === "object" ? (cats as any).quietHours : null;
     if (!qh || typeof qh !== "object") return null;
 
-    const enabled = Boolean(qh.enabled);
-    const startMin = parseHHMM(qh.start) ?? 22 * 60;
-    const endMin = parseHHMM(qh.end) ?? 7 * 60;
+    // [claude-code 2026-04-18] Default: quiet outside market hours (16:00 ET close → 09:30 ET open).
+    // Critical-severity pushes bypass quiet hours; everything else waits for RTH.
+    const enabled = qh.enabled !== false; // default ON — trader doesn't want pings after the close
+    const startMin = parseHHMM(qh.start) ?? 16 * 60; // 16:00 ET close
+    const endMin = parseHHMM(qh.end) ?? 9 * 60 + 30; // 09:30 ET open
     const tz = typeof qh.tz === "string" ? qh.tz : DEFAULT_TZ;
     return { enabled, startMin, endMin, tz };
   } catch {
