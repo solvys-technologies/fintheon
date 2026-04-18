@@ -1,12 +1,19 @@
+// [claude-code 2026-04-19] S24 unify: 24h-runtime mode per TP. Default-on (RELAY_ENABLED=false to
+//   opt out). Auto-discover userId from ~/.fintheon/peer.json at boot so a freshly-started backend
+//   connects to the Fly relay BEFORE any Electron sign-in happens. Client-side ping keepalive every
+//   30s + dead-connection detection at 90s so silent Fly WS drops get force-reconnected instead of
+//   the local thinking it's still open (the relay-ws-flapping class). Backoff max tightened 30s → 10s.
 // [claude-code 2026-04-18] Default RELAY_URL repointed from the deleted pulse-api-withered-dust-1394
 //   (dead legacy app) to wss://fintheon.fly.dev/api/relay/connect. Without this the local backend
 //   never establishes the outbound WebSocket to the Fly relay, so Fly's /api/relay/health reports
 //   connected:false for every mobile poll, and ConnectionStatus locks the mobile into OFFLINE.
 // [claude-code 2026-04-16] T1: Relay connector — full payload forwarding, tool-decision handling, cognition SSE injection
-// Only runs when RELAY_ENABLED=true (opt-in). Auto-reconnects with exponential backoff.
 // Listens for forwarded chat messages, routes to local Harper, streams response back.
 
 import WebSocket from "ws";
+import { readFileSync } from "node:fs";
+import { resolve as resolvePath } from "node:path";
+import { homedir } from "node:os";
 import { createLogger } from "../lib/logger.js";
 import { streamHarperChat, isStrandsAvailable } from "./strands/index.js";
 import { resolveApproval } from "./tool-approval-store.js";
@@ -17,16 +24,43 @@ const log = createLogger("RelayConnector");
 const RELAY_URL =
   process.env.RELAY_WS_URL || "wss://fintheon.fly.dev/api/relay/connect";
 
+// 24h-runtime tuning. Faster recovery beats exponential-long waits when the network blips.
+const MAX_BACKOFF = 10_000;
+const PING_INTERVAL_MS = 30_000;
+const PONG_DEADLINE_MS = 90_000;
+
 let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectAttempt = 0;
-const MAX_BACKOFF = 30_000;
+let pingTimer: ReturnType<typeof setInterval> | null = null;
+let lastPongAt = 0;
 
-// Runtime user-scoping. The local backend has the shared SUPABASE_SERVICE_ROLE_KEY but
-// can't know *which* user it serves until the Electron frontend signs in and tells it.
-// setRelayUser() is called by the /api/relay/set-user endpoint once the auth context is
-// established; it re-establishes the WS under the new user_id. Passing null disconnects.
-let currentUserId: string | null = process.env.RELAY_USER_ID || null;
+// Runtime user-scoping. Priority:
+//   1. RELAY_USER_ID env — explicit override
+//   2. ~/.fintheon/peer.json (written by peer-bootstrap.sh on device setup)
+//   3. waits for POST /api/relay/set-user from the Electron sign-in flow
+function discoverInitialUserId(): string | null {
+  const envUser = process.env.RELAY_USER_ID;
+  if (envUser) return envUser;
+  try {
+    const configPath =
+      process.env.FINTHEON_PEER_CONFIG ||
+      resolvePath(homedir(), ".fintheon", "peer.json");
+    const raw = readFileSync(configPath, "utf8");
+    const parsed = JSON.parse(raw) as { user_id?: string };
+    if (parsed.user_id && parsed.user_id !== "local-user") {
+      log.info("Discovered userId from peer.json", {
+        userId: parsed.user_id,
+      });
+      return parsed.user_id;
+    }
+  } catch {
+    /* peer.json absent — that's the default pre-bootstrap state */
+  }
+  return null;
+}
+
+let currentUserId: string | null = discoverInitialUserId();
 
 function getBackoff(): number {
   const base = Math.min(1000 * Math.pow(2, reconnectAttempt), MAX_BACKOFF);
@@ -159,7 +193,9 @@ function connect(): void {
 
   ws.on("open", () => {
     reconnectAttempt = 0;
+    lastPongAt = Date.now();
     log.info("Connected to relay");
+    startKeepalive();
   });
 
   ws.on("message", async (data) => {
@@ -180,8 +216,16 @@ function connect(): void {
     ws?.pong();
   });
 
+  // Keepalive health: Fly has been known to silently drop the outbound WS without
+  // firing a close frame. If we don't hear back from our pings for PONG_DEADLINE_MS,
+  // tear down and reconnect so mobile PWAs don't sit on a dead pipe.
+  ws.on("pong", () => {
+    lastPongAt = Date.now();
+  });
+
   ws.on("close", (code, reason) => {
     log.info("Relay connection closed", { code, reason: reason?.toString() });
+    stopKeepalive();
     ws = null;
     scheduleReconnect();
   });
@@ -190,6 +234,39 @@ function connect(): void {
     log.warn("Relay connection error", { error: err.message });
     // close event will fire next, triggering reconnect
   });
+}
+
+function startKeepalive(): void {
+  stopKeepalive();
+  pingTimer = setInterval(() => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    // Silent-drop detection: if the server went quiet > PONG_DEADLINE_MS ago,
+    // force-close. The close handler reconnects.
+    if (Date.now() - lastPongAt > PONG_DEADLINE_MS) {
+      log.warn("Relay pong deadline exceeded — force-reconnecting", {
+        lastPongAgoMs: Date.now() - lastPongAt,
+      });
+      try {
+        ws.terminate();
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    try {
+      ws.ping();
+    } catch {
+      /* ignore — close handler will fire */
+    }
+  }, PING_INTERVAL_MS);
+  pingTimer.unref?.();
+}
+
+function stopKeepalive(): void {
+  if (pingTimer) {
+    clearInterval(pingTimer);
+    pingTimer = null;
+  }
 }
 
 function scheduleReconnect(): void {
@@ -204,10 +281,23 @@ function scheduleReconnect(): void {
 }
 
 export function startRelayConnector(): void {
-  if (process.env.RELAY_ENABLED !== "true") {
-    log.info("Relay connector disabled (set RELAY_ENABLED=true to enable)");
+  // 24h-runtime: on by default. Opt OUT with RELAY_ENABLED=false (for CI /
+  // Fly-hosted backend which IS the relay server and shouldn't connect to itself).
+  if (process.env.RELAY_ENABLED === "false") {
+    log.info("Relay connector disabled via RELAY_ENABLED=false");
     return;
   }
+  if (process.env.FLY_APP_NAME) {
+    // Belt-and-suspenders: the Fly-hosted backend is the relay SERVER; don't open
+    // an outbound WS to itself. Local/Electron backends don't set FLY_APP_NAME.
+    log.info(
+      "Relay connector skipped on Fly host (this node is the relay server)",
+    );
+    return;
+  }
+  log.info("Relay connector starting (24h runtime mode)", {
+    userId: currentUserId ?? "(waiting for auth)",
+  });
   connect();
 }
 
@@ -239,7 +329,12 @@ export function setRelayUser(userId: string | null): void {
     reconnectTimer = null;
   }
   reconnectAttempt = 0;
-  if (userId && process.env.RELAY_ENABLED === "true") {
+  // 24h-runtime: reconnect by default unless explicitly disabled or running on Fly.
+  if (
+    userId &&
+    process.env.RELAY_ENABLED !== "false" &&
+    !process.env.FLY_APP_NAME
+  ) {
     connect();
   }
 }
@@ -253,6 +348,7 @@ export function isRelayConnected(): boolean {
 }
 
 export function stopRelayConnector(): void {
+  stopKeepalive();
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;

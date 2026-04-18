@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T17:30:00",
+    agent: "claude-code",
+    summary:
+      "Relay connector 24h-runtime mode — per TP, every time the local backend cuts on for a user, the mobile PWA should be able to reach it via the Fly relay immediately, no manual toggle. (1) Default-on: dropped the `RELAY_ENABLED=true` opt-in. Opt-out now via `RELAY_ENABLED=false`. Fly-hosted backend auto-skips via the `FLY_APP_NAME` env var (the Fly node IS the relay server — it shouldn't WS-connect to itself). (2) Auto-discover userId: relay-connector now reads `~/.fintheon/peer.json` at module load (env override: `FINTHEON_PEER_CONFIG`). If peer-bootstrap already wrote `user_id`, the relay connects BEFORE the Electron frontend even signs in. Falls back gracefully to waiting for `/api/relay/set-user` if the config is absent. (3) Moved `startRelayConnector()` from `bootBackground` (post-listen) to `bootCritical` (pre-listen) so the outbound WS is live before `/api/diagnostics` returns 200 — no window where the mobile PWA can poll a connected backend that hasn't finished wiring the relay yet. Removed the duplicate call in `bootBackground`. (4) Client-side keepalive: 30s ping interval, 90s pong deadline. If Fly silently drops the outbound WS without firing `close` (the flapping class from `project_relay_ws_flapping`), the client detects stale state and force-terminates, which triggers the close handler and reconnect. Fixes the 'local thinks connected:true but mobile gets 503' bug. (5) Backoff ceiling tightened 30s → 10s so transient network blips recover in ~10s worst case instead of waiting out a 30s exponential tail. (6) `setRelayUser(userId)` now respects the new default-on gate when deciding whether to reconnect after an identity change. Fly host guard prevents the internal Fly relay server from accidentally outbound-connecting when someone sets a user JWT. Backend tsc clean; local restart verified the relay comes up on boot instead of waiting for set-user.",
+    files: [
+      "backend-hono/src/services/relay-connector.ts",
+      "backend-hono/src/boot/services.ts",
+    ],
+  },
+  {
     date: "2026-04-19T17:00:00",
     agent: "claude-code",
     summary:

@@ -150,6 +150,12 @@ export async function bootCritical(): Promise<void> {
   startIVScoreTicker(instrument);
   log.info(`IVScoreTicker started (${instrument})`);
 
+  // [claude-code 2026-04-19] S24 unify: 24h-runtime mode — relay comes up BEFORE server.listen()
+  // returns so the mobile PWA never sees a moment where the backend is cut on but unreachable.
+  // Auto-discovers userId from ~/.fintheon/peer.json; set-user RPC overrides once Electron signs in.
+  startRelayConnector();
+  log.info("RelayConnector started");
+
   log.info(`Critical boot complete in ${Date.now() - t0}ms`);
 }
 
@@ -344,8 +350,7 @@ export async function bootBackground(): Promise<void> {
   // Oracle research scheduler (4h interval — prediction market scanning + arb detection, gated by ORACLE_RESEARCH_ENABLED)
   startOracleResearch();
 
-  // Relay connector — outbound WebSocket to Fly.io for mobile chat bridge (opt-in via RELAY_ENABLED)
-  startRelayConnector();
+  // [claude-code 2026-04-19] Relay connector moved to bootCritical — duplicate call removed here.
 
   log.info(`Background boot complete in ${Date.now() - t0}ms`);
 }
