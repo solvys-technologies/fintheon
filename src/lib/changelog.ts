@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-18T12:20:00",
+    agent: "claude-code",
+    summary:
+      "Kill the gostatic-regression footgun permanently. Fly kept reverting to serving pierrezemb/gostatic on /api/* (404 plain text) — happened three times in one session, each time after a fly-level action that wasn't a clean rebuild from backend-hono/. Root cause: the repo root had a legacy fly.toml (app='fintheon') and Dockerfile (FROM pierrezemb/gostatic) from before the backend was split out. Any fly deploy invoked without explicit --config would pick them up and push a gostatic image to the Fly registry under the fintheon app — so subsequent machine restarts (from secrets set, manual restart, automatic recover, etc.) could pull that stale image and serve gostatic. Deleted both root files. Only backend-hono/fly.toml + backend-hono/Dockerfile remain; fly deploy must now come from backend-hono/ (there's no alternative) and there's no way for a Fly-internal restart to resurrect the gostatic image because no recent build produced one. Also repointed .github/workflows/riskflow-cron.yml from the deleted pulse-api-withered-dust-1394 URL to fintheon.fly.dev/api/riskflow/cron/prefetch — it was silently 404'ing every 5 minutes since the legacy app was deleted.",
+    files: [
+      "fly.toml",
+      "Dockerfile",
+      ".github/workflows/riskflow-cron.yml",
+    ],
+  },
+  {
     date: "2026-04-18T12:00:00",
     agent: "claude-code",
     summary:
