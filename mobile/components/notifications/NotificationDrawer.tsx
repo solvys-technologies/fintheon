@@ -205,25 +205,46 @@ export function NotificationDrawer({
                     onClick={isApproval ? undefined : () => void onItemTap(n)}
                     role={isApproval ? undefined : "button"}
                     style={{
+                      // [claude-code 2026-04-19] Glassmorphic card (TP rule: no kanban).
+                      //   No kanban-column left stripe, no flat border rectangle.
+                      //   Severity lives in a small accent-tinted dot top-right.
                       width: "100%",
-                      background:
-                        status === "approved"
-                          ? "rgba(199, 159, 74, 0.10)"
-                          : status === "denied"
-                            ? "rgba(120,120,120,0.06)"
-                            : n.read
-                              ? "transparent"
-                              : "rgba(199, 159, 74, 0.06)",
-                      border: "1px solid var(--border)",
-                      borderLeft: `3px solid ${severityColor(n.severity)}`,
-                      padding: "12px 14px",
-                      marginBottom: 8,
+                      position: "relative",
+                      background: n.read
+                        ? "rgba(255,255,255,0.015)"
+                        : "rgba(199, 159, 74, 0.05)",
+                      backdropFilter: "blur(18px) saturate(1.3)",
+                      WebkitBackdropFilter: "blur(18px) saturate(1.3)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--accent) 14%, transparent)",
+                      borderRadius: 12,
+                      padding: "14px 16px",
+                      marginBottom: 10,
                       textAlign: "left",
                       cursor: !isApproval && n.url ? "pointer" : "default",
                       WebkitTapHighlightColor: "transparent",
-                      opacity: status ? 0.6 : 1,
+                      opacity: status ? 0.55 : 1,
+                      boxShadow: n.read
+                        ? "none"
+                        : "0 1px 20px color-mix(in srgb, var(--accent) 6%, transparent)",
+                      transition:
+                        "opacity 180ms ease, background 180ms ease, box-shadow 180ms ease",
                     }}
                   >
+                    {/* Severity dot — top-right corner, tinted per level */}
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        position: "absolute",
+                        top: 10,
+                        right: 12,
+                        width: 6,
+                        height: 6,
+                        borderRadius: 3,
+                        background: severityColor(n.severity),
+                        opacity: 0.85,
+                      }}
+                    />
                     <div
                       style={{
                         display: "flex",

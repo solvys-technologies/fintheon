@@ -1,7 +1,9 @@
+// [claude-code 2026-04-19] Cache-bust to v5.21.4 — TP wasn't seeing new bundles because the SW
+//   served the v1 cached assets. activate step nukes any cache name not in the current list.
 // [claude-code 2026-04-16] T7: Service worker — push notifications, app shell caching, stale-while-revalidate
 
-const CACHE_NAME = "fintheon-v1";
-const STATIC_CACHE = "fintheon-static-v1";
+const CACHE_NAME = "fintheon-v5.21.4";
+const STATIC_CACHE = "fintheon-static-v5.21.4";
 
 // App shell resources to pre-cache on install
 const APP_SHELL = ["/", "/index.html"];

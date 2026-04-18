@@ -264,11 +264,15 @@ function ProposalCard({
   return (
     <div
       style={{
-        border: "1px solid var(--fintheon-glass-border)",
-        borderRadius: 6,
-        padding: "12px 14px",
-        background:
-          "color-mix(in srgb, var(--fintheon-accent) 3%, transparent)",
+        // [claude-code 2026-04-19] Glassmorphic proposal card (TP rule: no kanban).
+        border:
+          "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
+        borderRadius: 12,
+        padding: "14px 16px",
+        background: "var(--fintheon-glass-bg)",
+        backdropFilter: "blur(24px) saturate(1.4)",
+        WebkitBackdropFilter: "blur(24px) saturate(1.4)",
+        boxShadow: "var(--fintheon-glass-shadow)",
       }}
     >
       <div
@@ -320,10 +324,14 @@ function ProposalCard({
       {proposal.evidence && (
         <div
           style={{
-            padding: "8px 10px",
-            background: "var(--fintheon-bg)",
-            border: "1px solid var(--fintheon-glass-border)",
-            borderRadius: 4,
+            padding: "10px 12px",
+            background:
+              "color-mix(in srgb, var(--fintheon-accent) 4%, transparent)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border:
+              "1px solid color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
+            borderRadius: 8,
             marginBottom: 10,
             display: "flex",
             flexDirection: "column",
@@ -386,7 +394,8 @@ function ProposalCard({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+      {/* [claude-code 2026-04-19] Borderless, no-bg, accent letters per TP */}
+      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
         <button
           onClick={onDeny}
           disabled={disabled}
@@ -394,14 +403,13 @@ function ProposalCard({
             display: "flex",
             alignItems: "center",
             gap: 4,
-            padding: "6px 12px",
-            fontSize: 11,
+            padding: "6px 10px",
+            fontSize: 12,
             fontFamily: "var(--font-data)",
-            letterSpacing: "0.04em",
-            color: "var(--fintheon-muted)",
+            letterSpacing: "0.06em",
+            color: "var(--fintheon-accent)",
             background: "transparent",
-            border: "1px solid var(--fintheon-glass-border)",
-            borderRadius: 3,
+            border: "none",
             cursor: disabled ? "not-allowed" : "pointer",
             opacity: disabled ? 0.5 : 1,
           }}
@@ -416,15 +424,14 @@ function ProposalCard({
             display: "flex",
             alignItems: "center",
             gap: 4,
-            padding: "6px 12px",
-            fontSize: 11,
+            padding: "6px 10px",
+            fontSize: 12,
             fontFamily: "var(--font-data)",
-            letterSpacing: "0.04em",
+            letterSpacing: "0.06em",
             fontWeight: 600,
-            color: "var(--fintheon-bg)",
-            background: "var(--fintheon-accent)",
+            color: "var(--fintheon-accent)",
+            background: "transparent",
             border: "none",
-            borderRadius: 3,
             cursor: disabled ? "not-allowed" : "pointer",
             opacity: disabled ? 0.5 : 1,
           }}
