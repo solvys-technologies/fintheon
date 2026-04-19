@@ -29,6 +29,29 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    date: "2026-04-19T13:30:00",
+    agent: "claude-code",
+    summary:
+      "[v.27.2] S27-T2 W1b — Hermes Python sidecar infra landed. New top-level hermes-sidecar/ directory: FastAPI on port 8318 exposing the /v1/chat (SSE) + /v1/context/{ingest,view,tools/*} + /v1/voice/{stt,tts} + /v1/skills + /v1/routing/select contract from shared/sidecar-contract.ts. uv-managed pyproject (no pip/venv), launchd plist io.solvys.fintheon-hermes with KeepAlive on crash, Fly config fintheon-hermes with internal-only networking (no public IP, shared-cpu-4x/4GB), multi-stage Dockerfile that builds wheels then ships on python:3.11-slim with tini. config.yaml picks context.engine=lcm + preloads hermes-lcm + icarus-plugin; routing.per_agent defaults are the T9 targets (Harper/Oracle→Opus, Feucht/Herald→Haiku, Consul→Sonnet). INTERNAL_HERMES_JWT HS256 auth required on every /v1 route; HERMES_AUTH_DISABLED=1 for local scratchpad only. runtime.py importlib-detects upstream hermes-agent and falls back to a stub adapter if absent so boot is never blocked — W2b (Claude-07) installs the real wheels via manual uv pip install of the git deps (kept out of pyproject due to upstream tag volatility). Populated shared/sidecar-contract.ts with full Zod schemas + types; replaced backend-hono/src/services/ai/sidecar-client.ts stub with a real typed HTTP client (SSE parser, JWT header, isSidecarEnabled() gate returning SidecarDisabledError so callers can fall back to legacy hermes-handler.ts). hermes-handler.ts untouched — flag defaults off, W2b flips it on. §3 5-point verification: (1) launchd plist plutil-lints clean + uv-run boot green; (2) /v1/chat SSE returns delta + done, 401 without JWT, 200 with valid HS256; (3) docker build + run of the prod image serves /healthz green; (4) Fly internal-network smoke requires the fintheon-hermes app to be created — deferred to TP approval before first fly deploy; (5) rollback proven trivially since the client is dormant until W2b routes through it. Backend build clean (tsc) + frontend build clean (vite, empty dist).",
+    files: [
+      "hermes-sidecar/pyproject.toml",
+      "hermes-sidecar/config.yaml",
+      "hermes-sidecar/entrypoint.py",
+      "hermes-sidecar/Dockerfile",
+      "hermes-sidecar/fly.toml",
+      "hermes-sidecar/README.md",
+      "hermes-sidecar/hermes_sidecar/app.py",
+      "hermes-sidecar/hermes_sidecar/auth.py",
+      "hermes-sidecar/hermes_sidecar/config.py",
+      "hermes-sidecar/hermes_sidecar/models.py",
+      "hermes-sidecar/hermes_sidecar/runtime.py",
+      "hermes-sidecar/launchd/io.solvys.fintheon-hermes.plist",
+      "shared/sidecar-contract.ts",
+      "backend-hono/src/services/ai/sidecar-client.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T01:00:00",
     agent: "claude-code",
     summary:
