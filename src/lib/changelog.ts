@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T02:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.22 mobile dash polish per TP screenshot. (1) Page 2 calendar swap: TradingView EconCalendarEmbed was rendering as a black void on TP's phone; replaced with the native MiniSessionCalendar (reads /api/econ/calendar directly, no third-party widget, scroll-overflow inside the page so the Aquarium summary still anchors the bottom). (2) Mobile Instrument Outlook drops YM client-side via a small blocklist in useInstrumentOutlook — desktop keeps the full /NQ /ES /YM /CL /GC grid. (3) Catalyst snap-page deleted from HomePage — RiskFlow already covers that surface per TP; Timeline shifts up to page 5; CatalystCards.tsx file kept on disk for the catalyst-detail modal route. (4) Risk signals data flow verified: mobile dash page 4 (MobileRiskSignalCards) reads /api/riskflow/risk-signals, same source as desktop Aquarium's RiskSignalCards; endpoint returned 200 with empty `signals` at curl time (cache cold), but mobile's localStorage cache + 120s repoll handles it. tsc clean, vite build clean.",
+    files: [
+      "mobile/components/home/HomePage.tsx",
+      "mobile/hooks/useInstrumentOutlook.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T02:10:00",
     agent: "claude-code",
     summary:

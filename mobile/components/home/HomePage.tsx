@@ -1,3 +1,9 @@
+// [claude-code 2026-04-18] v5.22 polish per TP: (a) page 2 swapped from TradingView
+//   EconCalendarEmbed (rendered as a black void on TP's screenshot) to native
+//   MiniSessionCalendar — same data, no third-party iframe, no widget rendering bug.
+//   (b) Catalyst page removed from the snap stack — RiskFlow already covers that surface
+//   per TP. (c) Briefing-page Aquarium row moved out of page 2 and lives below the
+//   calendar still, but page count drops from 6 → 5.
 // [claude-code 2026-04-18] v5.22 S2 (post-S1 reconcile): AGENTIC DESK → AGENT DESK; hero
 //   ticker labels aligned on one row (alignItems flex-start + lineHeight 1 on labels);
 //   IVSubScores prop renamed miroshark → agentDesk. S1 fully renamed the IVScoreResponse
@@ -8,24 +14,18 @@
 //   Aquarium. Aquarium rendered in a compact glass sliver at bottom.
 // [claude-code 2026-04-16] T7: Dash — snap pages, Risk Signals replaces Proposals, NarrativeFlow catalysts + timeline
 // [claude-code 2026-04-17] Observe hero VIX visibility so toolbar VIX can fade in/out
-import { lazy, Suspense, useRef } from "react";
+import { useRef } from "react";
 import { motion, type Variants } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { BriefingCard } from "./BriefingCard";
 import { AquariumSummary } from "./AquariumSummary";
 import { InstrumentOutlookCards } from "./InstrumentOutlookCards";
 import { MobileRiskSignalCards } from "./RiskSignalCards";
-import { CatalystCards } from "./CatalystCards";
+import { MiniSessionCalendar } from "./MiniSessionCalendar";
 import { TimelineView } from "./TimelineView";
 import { useIVScore } from "../../hooks/useIVScore";
 import { useObserveHeroVixVisibility } from "../../hooks/useHeroVixVisible";
 import { colorForScore } from "../../lib/fuse-palette";
-
-const EconCalendarEmbed = lazy(() =>
-  import("../econ/EconCalendarEmbed").then((m) => ({
-    default: m.EconCalendarEmbed,
-  })),
-);
 
 const container: Variants = {
   animate: { transition: { staggerChildren: 0.05 } },
@@ -339,10 +339,10 @@ export function HomePage() {
         </motion.div>
       </SnapPage>
 
-      {/* Page 2: Econ Calendar + Aquarium Analysis
-          [claude-code 2026-04-19] Calendar now fills remaining viewport minus Aquarium
-          footprint via minHeight calc — embed iframe gets honest pixel height via
-          ResizeObserver in EconCalendarEmbed, so no black gap. */}
+      {/* Page 2: Session Calendar + Aquarium Analysis
+          [claude-code 2026-04-18] Replaced the TradingView Econ Calendar embed with the
+          native MiniSessionCalendar — the TV iframe was rendering as a black void on TP's
+          phone. Native version reads /api/econ/calendar directly, no third-party widget. */}
       <SnapPage style={{ padding: 0, gap: 0 }}>
         <div
           style={{
@@ -354,20 +354,18 @@ export function HomePage() {
             zIndex: 1,
           }}
         >
-          {/* TradingView Economic Calendar — fills every pixel above Aquarium */}
           <div
             style={{
               flex: 1,
               minHeight: 0,
-              overflow: "hidden",
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+              padding: "16px 16px 0",
             }}
           >
-            <Suspense fallback={null}>
-              <EconCalendarEmbed />
-            </Suspense>
+            <MiniSessionCalendar maxEvents={20} />
           </div>
           <div className="fade-divider" style={{ margin: "0 16px" }} />
-          {/* Aquarium Analysis — compact sliver at the bottom */}
           <div style={{ padding: "12px 16px 16px", flexShrink: 0 }}>
             <AquariumSummary />
           </div>
@@ -389,7 +387,7 @@ export function HomePage() {
         </div>
       </SnapPage>
 
-      {/* Page 4: Risk Signals */}
+      {/* Page 4: Risk Signals — same /api/riskflow/risk-signals source as desktop Aquarium */}
       <SnapPage>
         <div
           style={{
@@ -405,23 +403,9 @@ export function HomePage() {
         </div>
       </SnapPage>
 
-      {/* Page 5: NarrativeFlow Catalysts */}
-      <SnapPage>
-        <div
-          style={{
-            flex: 1,
-            paddingTop: 24,
-            paddingBottom: 24,
-            overflowY: "auto",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <CatalystCards />
-        </div>
-      </SnapPage>
-
-      {/* Page 6: Timeline */}
+      {/* Page 5: Timeline
+          [claude-code 2026-04-18] CatalystCards page removed per TP — RiskFlow already
+          covers that surface. Was former page 5; Timeline shifts up. */}
       <SnapPage>
         <div
           style={{
