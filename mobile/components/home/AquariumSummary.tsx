@@ -1,8 +1,9 @@
-// [claude-code 2026-04-15] MiroShark aquarium summary — briefing text block, Nothing-styled
-import { useMirosharkLatest } from "../../hooks/useMirosharkLatest";
+// [claude-code 2026-04-18] v5.22 S2: rename MiroShark → Agent Desk; hook now useAgentDeskLatest.
+// [claude-code 2026-04-15] Aquarium summary — briefing text block, Nothing-styled
+import { useAgentDeskLatest } from "../../hooks/useAgentDeskLatest";
 
 export function AquariumSummary() {
-  const { data, isLoading } = useMirosharkLatest();
+  const { data, isLoading } = useAgentDeskLatest();
 
   if (isLoading) {
     return (

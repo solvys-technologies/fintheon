@@ -1,11 +1,13 @@
-// [claude-code 2026-04-15] MiroShark latest briefing hook — 120s polling
+// [claude-code 2026-04-18] v5.22 S2: renamed from useMirosharkLatest. Hook + types + cache key
+//   migrated to AgentDesk vocabulary. The API URL stays `/api/miroshark/latest` because
+//   S1 keeps the legacy alias on the backend; mobile flips paths in a follow-up sprint.
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const POLL_INTERVAL = 120_000;
-const CACHE_KEY = "fintheon:miroshark-latest";
+const CACHE_KEY = "fintheon:agent-desk-latest";
 
-interface MirosharkBriefing {
+interface AgentDeskBriefing {
   summary: string;
   keyFindings: string[];
   riskAlerts: string[];
@@ -14,17 +16,17 @@ interface MirosharkBriefing {
   generatedAt: string;
 }
 
-interface MirosharkLatest {
+interface AgentDeskLatest {
   simulationId: string;
   nextSessionScore: number;
   confidence: number;
   regimeShiftProbability: number;
-  briefing?: MirosharkBriefing;
+  briefing?: AgentDeskBriefing;
   timestamp: string;
 }
 
-export function useMirosharkLatest() {
-  const [data, setData] = useState<MirosharkLatest | null>(() => {
+export function useAgentDeskLatest() {
+  const [data, setData] = useState<AgentDeskLatest | null>(() => {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       return cached ? JSON.parse(cached) : null;

@@ -1,3 +1,6 @@
+// [claude-code 2026-04-18] v5.22 S2: AGENTIC DESK → AGENT DESK; hero ticker labels aligned on
+//   one row (alignItems flex-start + lineHeight 1 on labels); IVSubScores prop renamed miroshark
+//   → agentDesk. Backend response field `ivData.mirosharkComponent` stays per S1 alias plan.
 // [claude-code 2026-04-19] Tighten page 1 padding (−25% above brief), give briefing card
 //   more vertical room; page 2 calendar now owns real pixel height so no black gap above
 //   Aquarium. Aquarium rendered in a compact glass sliver at bottom.
@@ -14,6 +17,7 @@ import { CatalystCards } from "./CatalystCards";
 import { TimelineView } from "./TimelineView";
 import { useIVScore } from "../../hooks/useIVScore";
 import { useObserveHeroVixVisibility } from "../../hooks/useHeroVixVisible";
+import { colorForScore } from "../../lib/fuse-palette";
 
 const EconCalendarEmbed = lazy(() =>
   import("../econ/EconCalendarEmbed").then((m) => ({
@@ -33,27 +37,26 @@ const item: Variants = {
   },
 };
 
+/** [v5.22 S2] Delegates to the shared palette so user-preferences fusePalette overrides
+ *  flow through here too once SettingsContext starts merging the remote contract. */
 function getScoreColor(score: number): string {
-  if (score >= 8) return "var(--error)";
-  if (score >= 6) return "var(--warning)";
-  if (score >= 4) return "var(--accent)";
-  return "var(--success)";
+  return colorForScore(score);
 }
 
 /** IV sub-score horizontal fuse bars */
 function IVSubScores({
   vix,
   headlines,
-  miroshark,
+  agentDesk,
 }: {
   vix: number;
   headlines: number;
-  miroshark: number;
+  agentDesk: number;
 }) {
   const bars = [
     { label: "VIX", value: vix },
     { label: "HEADLINE", value: headlines },
-    { label: "AGENTIC DESK", value: miroshark },
+    { label: "AGENT DESK", value: agentDesk },
   ];
 
   return (
@@ -101,9 +104,10 @@ function IVSubScores({
           <div
             style={{
               height: 3,
-              borderRadius: 1,
-              background: "var(--border)",
+              borderRadius: 2,
+              background: "var(--fintheon-surface, #0a0a00)",
               overflow: "hidden",
+              position: "relative",
             }}
           >
             <div
@@ -111,10 +115,11 @@ function IVSubScores({
                 height: "100%",
                 width: `${Math.min(100, (value / 10) * 100)}%`,
                 background: getScoreColor(value),
-                borderRadius: 1,
+                borderRadius: 2,
                 transition: "width 0.4s ease-out",
               }}
             />
+            <span className="nothing-fuse-shimmer" aria-hidden="true" />
           </div>
         </div>
       ))}
@@ -200,12 +205,15 @@ export function HomePage() {
             zIndex: 1,
           }}
         >
-          {/* Hero Row: IV | VIX | Implied Points */}
+          {/* Hero Row: IV | VIX | Implied Points
+              [claude-code 2026-04-18] v5.22 S2: anchor columns to top so the three
+              labels (IV / VIX / IMPLIED) share one baseline. Center alignment used
+              to push the shortest column (IV) off-row. */}
           <motion.div variants={item}>
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
+                alignItems: "flex-start",
                 justifyContent: "space-between",
                 padding: "15px 0 6px",
                 gap: 8,
@@ -228,6 +236,7 @@ export function HomePage() {
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
                     color: "var(--text-secondary)",
+                    lineHeight: 1,
                   }}
                 >
                   IV
@@ -276,6 +285,7 @@ export function HomePage() {
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
                     color: "var(--text-secondary)",
+                    lineHeight: 1,
                   }}
                 >
                   IMPLIED{" "}
@@ -315,7 +325,7 @@ export function HomePage() {
               <IVSubScores
                 vix={ivData.vixComponent ?? 0}
                 headlines={ivData.headlineComponent ?? 0}
-                miroshark={ivData.mirosharkComponent ?? 0}
+                agentDesk={ivData.mirosharkComponent ?? 0}
               />
             )}
           </motion.div>

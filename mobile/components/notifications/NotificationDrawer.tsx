@@ -1,3 +1,6 @@
+// [claude-code 2026-04-18] v5.22 S2: severity color now resolved through
+//   colorForSeverity from mobile/lib/fuse-palette so user-preferences fusePalette
+//   overrides apply uniformly across mobile fuses.
 // [claude-code 2026-04-19] S26-P1 T7: haptic feedback on approve (success buzz) /
 //   deny (deny buzz). Respects the global hapticEnabled setting via the module gate.
 // [claude-code 2026-04-19] Notification cards redesigned in RiskFlow's mobile shape —
@@ -13,6 +16,10 @@ import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { useAuth } from "../../contexts/AuthContext";
 import { haptic } from "../../lib/haptics";
+import {
+  colorForSeverity,
+  type FuseSeverity,
+} from "../../lib/fuse-palette";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -62,17 +69,11 @@ function timeLabel(iso: string): string {
   });
 }
 
-function severityColor(sev: NotificationItem["severity"]): string {
-  switch (sev) {
-    case "critical":
-      return "var(--error, #d84f4f)";
-    case "high":
-      return "var(--accent)";
-    case "medium":
-      return "var(--text-secondary)";
-    default:
-      return "var(--text-secondary)";
-  }
+/** Coerce the notification's severity onto the shared palette enum. The notification
+ *  feed only emits critical/high/medium/low so the cast is safe; "neutral" never
+ *  arrives here. */
+function paletteSeverity(sev: NotificationItem["severity"]): FuseSeverity {
+  return sev as FuseSeverity;
 }
 
 function severityScore(sev: NotificationItem["severity"]): number {
@@ -225,7 +226,7 @@ export function NotificationDrawer({
               {items.map((n) => {
                 const isApproval = APPROVAL_CATEGORIES.has(n.category);
                 const status = decided[n.id];
-                const sevColor = severityColor(n.severity);
+                const sevColor = colorForSeverity(paletteSeverity(n.severity));
                 const fuseValue = severityScore(n.severity);
                 return (
                   <div
