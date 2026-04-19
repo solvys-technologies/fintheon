@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T00:10:00",
+    agent: "claude-code",
+    summary:
+      "Aquarium redesign sprint — Track 7a (Ops surface: last-run timer + brief countdown with error handling). New backend route GET /api/ops/schedule-status returns {miroshark: {lastRunAt, ageMinutes, status}, briefs: [{type, description, lastRunAt, nextRunAt, ageMinutes, countdownMinutes, status}]}. MiroShark status is derived from getLatestReport() (ok < 6h, ok-ish < 12h, stale otherwise). Brief statuses are computed per job — 'ok' when last run is within cadence, 'due-soon' when next run is < 30m out, 'stale' if the last run is more than 26h old (for daily briefs) or 7d+1h old (for the Weekly Tribune) beyond a 60m grace window, 'failed' when the dispatch scheduler isn't running, 'unknown' when no run has ever been recorded. Next-run timestamps are computed by walking 14 days forward from now and matching the cron's minute/hour + day-of-week field against America/New_York wall time using Intl.DateTimeFormat. New frontend component SanctumOpsChips polls the endpoint every 60s (plus a local 30s re-render tick so the 'N minutes ago' label stays fresh) and renders two compact chips next to the tabs in the SanctumHeader: (1) an Aquarium last-run chip with Activity icon, color-coded by staleness, Doto time value; (2) a brief countdown chip that shows the nearest upcoming brief (Clock icon + Doto countdown) — but when ANY brief is in 'failed' or 'stale' status that chip is replaced with a red AlertTriangle error badge showing the brief type and FAILED/STALE label. Exactly matches the user's spec: 'Briefs window needs a countdown til the next, with error handling replacing the countdown if the brief fails to generate'.",
+    files: [
+      "backend-hono/src/routes/ops/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/components/narrative/SanctumOpsChips.tsx",
+      "frontend/components/narrative/SanctumHeader.tsx",
+    ],
+  },
+  {
     date: "2026-04-19T23:30:00",
     agent: "claude-code",
     summary:
