@@ -10,8 +10,9 @@ You are a release engineer. Follow every phase in order. Do not skip pre-flight.
 
 **CRITICAL RULES (from operational history):**
 
-- **STANDING PUSH AUTHORIZATION**: every invocation of this skill = commit → push → publish GH release → prune older releases in the current major-version namespace. Do NOT ask TP for push approval. That authorization is standing.
+- **STANDING PUSH AUTHORIZATION**: every invocation of this skill = commit → push → publish GH release → prune older releases in the current major-version namespace → refresh install/update scripts so they fetch the latest tag. Do NOT ask TP for push approval. That authorization is standing.
 - **Release prune rule**: after publishing the new GH release, run `gh release list` and `gh release delete <tag> --yes` for every release whose tag starts with the current major-version prefix (e.g. `v5.*`) EXCEPT the one just published. Keep exactly one release per major version at any time.
+- **Install-script refresh rule** (MANDATORY every deploy): before the push, grep `scripts/fintheon-update.sh`, `scripts/fintheon-setup.sh`, `scripts/install-cli.sh` for version renders and fetch pointers. Any `git describe --tags --always` → swap to `git describe --tags --abbrev=0` (drops the `-N-gHASH` post-tag drift suffix). Any hardcoded `UPDATE_VERSION=` / `SETUP_VERSION=` / tag pointer → bump to the new tag. Any `git clone --branch <X>` or `curl .../raw/<X>/...` pointer must resolve to the new release. Commit the script changes with `INSTALL-UPDATE:` prefix as part of the deploy push — do NOT leave them for a follow-up.
 - **Current major** = numeric prefix of the active deploy branch (e.g. `v5.*` while on `v5.22`). When the branch rolls to v6.x later, pivot the prune target.
 - Deploy must hit ALL 3 targets: backend (Fly.io), desktop frontend (Vercel), mobile PWA (Vercel)
 - Backend deploys to Fly.io app `fintheon` (fintheon.fly.dev) -- NEVER `pulse-api-*`
@@ -115,6 +116,28 @@ fi
 CURRENT_BRANCH=$(git branch --show-current)
 git push origin "$CURRENT_BRANCH"
 ```
+
+### 2d2. Install/Update Script Refresh (MANDATORY every deploy)
+
+Keep installers self-consistent with the release tag. A `fintheon update` run immediately after a deploy must render the new version and fetch the new code. Run these checks; if any of them hit, patch the script and fold the fix into the deploy push before tagging.
+
+```bash
+# 1. Version renders — must use --abbrev=0 so they don't pick up post-tag -N-gHASH drift
+grep -nE "git describe --tags --always" scripts/fintheon-update.sh scripts/fintheon-setup.sh scripts/install-cli.sh 2>/dev/null
+
+# 2. Hardcoded version strings — bump to $VERSION
+grep -nE "UPDATE_VERSION=|SETUP_VERSION=|INSTALL_VERSION=" scripts/*.sh 2>/dev/null
+
+# 3. Fetch pointers — git clone --branch / curl raw/... must resolve to v5.22 (current branch) or $VERSION
+grep -nE "git clone.*--branch|raw\.githubusercontent\.com.*fintheon" scripts/*.sh 2>/dev/null
+
+# 4. .env.example + fintheon-update.sh Step 5 backfills in sync with any new env vars from this release
+grep -roh "process\.env\.[A-Z_]*" backend-hono/src/ --include="*.ts" | sed 's/process\.env\.//' | sort -u > /tmp/env-used.txt
+grep "^[A-Z_]" backend-hono/.env.example | cut -d= -f1 | sort -u > /tmp/env-documented.txt
+comm -23 /tmp/env-used.txt /tmp/env-documented.txt | head
+```
+
+If any grep hits require a fix, commit with `INSTALL-UPDATE:` prefix **before** pushing + tagging. The release tag should point to a commit that has a fully-refreshed installer — never a lagging one.
 
 ### 2e. GitHub Release
 
