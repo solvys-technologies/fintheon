@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T23:50:00",
+    agent: "claude-code",
+    summary:
+      "S27 sprint brief set authored from GitHub stars audit. TP asked for a sprint of wins that would increase UX + power of Fintheon's analysis and agentic features. Mined github.com/solvys starred repos (12 total), cross-referenced against a platform audit, and identified 8 concrete gaps. Produced S27-ORCHESTRATION.md + 5 task briefs as a 3-track parallel sprint: Track A (Harper UX) = T1 generative UI cards (vercel-labs/json-render inspired — fills the gap where harper-handler.ts:144 instructs Harper to emit structured JSON but no parser is wired) + cult-ui polish; Track B (Agent Core) = T2 tool-output sandbox (mksglu/context-mode, 98% token reduction target) + T3 A2A handoff protocol (Bitterbot-AI inspired — Harper gains handoff_to_oracle/feucht/consul/herald tools, replacing the current regex intent router which only mentions agents in prose); Track C (Capabilities) = T4 Herald browser-harness (browser-use/browser-harness, narrow allow-list for SEC EDGAR + FOMC + Polymarket) + T5 agent-voiced briefs (OpenAI TTS with per-agent voice map, voicebox/Qwen3 deferred). Tier-B stretch items noted: Dream Engine, wterm ops console, CL4R1T4S prompt red-team. No source code changed.",
+    files: [
+      "docs/sprint-briefs/S27-ORCHESTRATION.md",
+      "docs/sprint-briefs/S27-T1-generative-ui-harper.md",
+      "docs/sprint-briefs/S27-T2-context-sandbox.md",
+      "docs/sprint-briefs/S27-T3-a2a-handoff.md",
+      "docs/sprint-briefs/S27-T4-herald-browser.md",
+      "docs/sprint-briefs/S27-T5-agent-voice-briefs.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T03:15:00",
     agent: "claude-code",
     summary:
