@@ -6,7 +6,7 @@ S27-T2 W1b landed the scaffold. Boots FastAPI on port **8318** with the HTTP con
 
 ```
 hermes-sidecar/
-├── pyproject.toml              # uv-managed Python deps
+├── pyproject.toml              # uv-managed Python deps (not pip/venv)
 ├── config.yaml                 # runtime config (context engine, routing, plugins)
 ├── entrypoint.py               # uvicorn boot
 ├── Dockerfile                  # prod container (multi-stage uv)
@@ -17,9 +17,20 @@ hermes-sidecar/
 │   ├── config.py               # yaml loader
 │   ├── models.py               # Pydantic mirrors of shared/sidecar-contract.ts
 │   └── runtime.py              # Adapter over hermes-agent + hermes-lcm; stub fallback
-└── launchd/
-    └── io.solvys.fintheon-hermes.plist
+├── launchd/
+│   └── io.solvys.fintheon-hermes.plist
+└── plugins/gepa/               # T11 lands the GEPA + DSPy plugin here (W2e)
 ```
+
+## SOUL.md Mount (T8 dependency)
+
+Every agent in Fintheon is grounded by a SOUL.md in `backend-hono/src/services/ai/soul/`. The sidecar must have read access to this directory so that per-agent system prompts match backend-hono's view.
+
+- **Local**: bind-mount the repo path — `../backend-hono/src/services/ai/soul → /app/soul` (ro)
+- **Fly**: deploy a volume or copy the SOUL dir into the image at build time (prefer image-bake so SOUL drift is caught in CI before deploy)
+- `config.yaml` should set `soul.dir: /app/soul` — loader reads `${agent_id}.md` on demand
+- Grounding imports `../../../../../CLAUDE.md` literally — the sidecar must either replicate that relative tree or resolve the `grounding.source_of_truth` field at runtime by fetching from backend-hono's SOUL API. Simplest: mount the repo root read-only.
+- Schema + TS reference: [`shared/soul-schema.ts`](../shared/soul-schema.ts). Python port lives under `hermes-sidecar/hermes_sidecar/soul_schema.py` (W2b lands this alongside the real hermes wheels).
 
 ## Ports
 
