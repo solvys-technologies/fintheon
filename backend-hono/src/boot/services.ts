@@ -179,30 +179,41 @@ export async function bootBackground(): Promise<void> {
   startFeedPoller();
   log.info("FeedPoller started");
 
-  // Rettiwt key pool (per-user API keys from Supabase + env fallback)
-  await initRettiwtPool();
-  log.info("Rettiwt key pool initialized");
+  // [claude-code 2026-04-19] S27-T4: Rettiwt cut from Herald dispatcher. Pool init and
+  // econ-rettiwt-poller start are gated behind RETTIWT_REENABLE=true so we can reactivate
+  // without a code change if browser-harness coverage falls short in the 48h review.
+  if (process.env.RETTIWT_REENABLE === "true") {
+    await initRettiwtPool();
+    log.info("Rettiwt key pool initialized (RETTIWT_REENABLE=true)");
 
-  // [claude-code 2026-04-18] S25-T6: periodic Rettiwt pool reload (15 min) so keys stay fresh
-  // across user sessions. If a user signs out mid-day, their keys linger in the pool until
-  // this cron runs; that's fine because we also reload on search/timeline calls.
-  const poolReloadTimer = setInterval(() => {
-    initRettiwtPool().catch((err) =>
-      log.warn("Rettiwt pool reload failed (non-fatal)", {
-        error: String(err),
-      }),
+    const poolReloadTimer = setInterval(() => {
+      initRettiwtPool().catch((err) =>
+        log.warn("Rettiwt pool reload failed (non-fatal)", {
+          error: String(err),
+        }),
+      );
+    }, 15 * 60_000);
+    poolReloadTimer.unref?.();
+    log.info("Rettiwt pool reload scheduled (15 min)");
+  } else {
+    log.info(
+      "Rettiwt key pool skipped — S27-T4 cut from dispatcher (set RETTIWT_REENABLE=true to restore)",
     );
-  }, 15 * 60_000);
-  poolReloadTimer.unref?.();
-  log.info("Rettiwt pool reload scheduled (15 min)");
+  }
 
   // Poll watchdog — detects stalled Agent Reach, soft-nudges then restarts if needed
   startPollWatchdog();
   log.info("PollWatchdog started");
 
-  // Econ-triggered Rettiwt poller (replaces twitter-cli)
-  startEconPoller();
-  log.info("EconRettiwtPoller started");
+  if (process.env.RETTIWT_REENABLE === "true") {
+    // Econ-triggered Rettiwt poller (replaces twitter-cli)
+    startEconPoller();
+    log.info("EconRettiwtPoller started (RETTIWT_REENABLE=true)");
+  } else {
+    log.info(
+      "EconRettiwtPoller skipped — S27-T4 (set RETTIWT_REENABLE=true to restore)",
+    );
+  }
 
   // Exa scheduled-event monitor (supplementary discovery, not headline ingestion)
   startExaScheduledMonitor();

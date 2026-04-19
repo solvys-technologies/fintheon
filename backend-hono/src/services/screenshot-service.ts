@@ -1,9 +1,7 @@
+// [claude-code 2026-04-19] S27-T4: refactored to use the shared browser pool. No more
+// subprocess spawn per screenshot — persistent pooled pages cut Playwright launch overhead.
 // [claude-code 2026-03-10] Playwright screenshot service for QuickFintheon
-import { spawn } from "node:child_process";
-import { writeFile, readFile, unlink } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { randomUUID } from "node:crypto";
+import { acquirePage, isPlaywrightReady as poolReady } from "./browser/pool.js";
 
 export interface ScreenshotOptions {
   url?: string; // defaults to FINTHEON_APP_URL or localhost:5173
@@ -21,8 +19,7 @@ export interface ScreenshotResult {
 }
 
 /**
- * Take a screenshot via Playwright.
- * Spawns a minimal Node inline script — no MCP server needed for simple screenshots.
+ * Take a screenshot via the shared Playwright pool.
  */
 export async function takeScreenshot(
   options?: ScreenshotOptions,
@@ -31,65 +28,38 @@ export async function takeScreenshot(
     options?.url ?? process.env.FINTHEON_APP_URL ?? "http://localhost:5173";
   const width = options?.width ?? 1920;
   const height = options?.height ?? 1080;
-  const outPath = join(tmpdir(), `fintheon-screenshot-${randomUUID()}.png`);
 
-  const selectorLine = options?.selector
-    ? `await page.locator(${JSON.stringify(options.selector)}).screenshot({ path: outPath });`
-    : `await page.screenshot({ path: outPath, fullPage: ${options?.fullPage ?? true} });`;
-
-  const script = `
-const { chromium } = require('playwright');
-const outPath = ${JSON.stringify(outPath)};
-(async () => {
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport: { width: ${width}, height: ${height} } });
-  await page.goto(${JSON.stringify(url)}, { waitUntil: 'networkidle', timeout: 15000 });
-  ${selectorLine}
-  await browser.close();
-  console.log('SCREENSHOT_OK');
-})().catch(err => { console.error('SCREENSHOT_ERR', err.message); process.exit(1); });
-`;
-
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(process.execPath, ["-e", script], {
-      stdio: ["ignore", "pipe", "pipe"],
+  const handle = await acquirePage({ viewport: { width, height } });
+  try {
+    await handle.page.setViewportSize({ width, height });
+    await handle.page.goto(url, {
+      waitUntil: "networkidle",
+      timeout: 15_000,
     });
-    let stderr = "";
-    child.stderr.on("data", (d: Buffer) => {
-      stderr += d.toString();
-    });
-    child.on("close", (code) => {
-      if (code === 0) resolve();
-      else
-        reject(
-          new Error(
-            `Playwright script failed (exit ${code}): ${stderr.slice(0, 300)}`,
-          ),
-        );
-    });
-  });
 
-  const buf = await readFile(outPath);
-  await unlink(outPath).catch(() => {});
+    const buf = options?.selector
+      ? await handle.page
+          .locator(options.selector)
+          .screenshot({ type: "png" })
+      : await handle.page.screenshot({
+          type: "png",
+          fullPage: options?.fullPage ?? true,
+        });
 
-  return {
-    base64: buf.toString("base64"),
-    mimeType: "image/png",
-    width,
-    height,
-  };
+    return {
+      base64: buf.toString("base64"),
+      mimeType: "image/png",
+      width,
+      height,
+    };
+  } finally {
+    await handle.release();
+  }
 }
 
 /**
- * Check if Playwright + Chromium are available.
+ * Check if Playwright + Chromium are available via the pool.
  */
 export async function isPlaywrightReady(): Promise<boolean> {
-  return new Promise((resolve) => {
-    const child = spawn("npx", ["playwright", "--version"], {
-      stdio: "ignore",
-      shell: true,
-    });
-    child.on("close", (code) => resolve(code === 0));
-    child.on("error", () => resolve(false));
-  });
+  return poolReady();
 }

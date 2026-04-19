@@ -3,6 +3,9 @@
  * Continuously polls for new news items and broadcasts Level 4 events instantly
  * Runs independently of HTTP requests for real-time updates
  */
+// [claude-code 2026-04-19] S27-T4: Rettiwt cut from Herald dispatcher. Replaced with
+// no-op stubs so the structure is preserved for fast re-enable. browser-harness is the
+// primary replacement; headline volume telemetry quantifies the migration on riskflow_items.
 // [claude-code 2026-04-02] Dynamic polling: hot hours 60s (8-11AM ET), rotation 180s (all other times, 24/7).
 // [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via Rettiwt
 
@@ -12,17 +15,6 @@ import * as newsCache from "./news-cache.js";
 import { enrichFeedWithAnalysis, updateFeedCache } from "./feed-service.js";
 import { broadcastLevel4 } from "./sse-broadcaster.js";
 import { fetchEconomicFeed } from "./economic-feed.js";
-import {
-  pollForEconNews,
-  manualRefresh,
-  isRettiwtRateLimited,
-  markRettiwtPollSuccess,
-  markRettiwtPollEmpty,
-} from "./econ-rettiwt-poller.js";
-import {
-  hasAuthenticatedKeys,
-  rettiwtUserTimeline,
-} from "../rettiwt-service.js";
 import { writeRawItems, type RawRiskFlowItem } from "../supabase-service.js";
 import { isSupabaseConfigured } from "../../config/supabase.js";
 import { getPollingConfig } from "./polling-config.js";
@@ -47,6 +39,22 @@ import {
 
 const FEED_POLLER_HEALTH_NAME = "feed-poller";
 registerService(FEED_POLLER_HEALTH_NAME);
+
+// [claude-code 2026-04-19] S27-T4: inert Rettiwt stubs. Dispatcher compiles + runs
+// without Rettiwt; if the curated-timeline path is ever needed again, restore by
+// re-importing from ../rettiwt-service.js + ./econ-rettiwt-poller.js.
+const hasAuthenticatedKeys = (): boolean => false;
+const isRettiwtRateLimited = (): boolean => false;
+const markRettiwtPollSuccess = (): void => {};
+const markRettiwtPollEmpty = (): void => {};
+const pollForEconNews = async (): Promise<FeedItem[]> => [];
+const manualRefresh = async (): Promise<FeedItem[]> => [];
+const rettiwtUserTimeline = async (
+  _handle: string,
+  _opts: { count: number },
+): Promise<
+  Array<{ text: string; url?: string; publishedDate?: string }>
+> => [];
 
 /** Convert a FeedItem to a RawRiskFlowItem for the raw_riskflow_items inbox */
 function feedItemToRaw(item: FeedItem): RawRiskFlowItem {
