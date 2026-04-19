@@ -1,8 +1,18 @@
-# S27-T1 — Generative UI for Harper (Track A, primary)
+# S27-T1 — Generative UI for Harper
+
+## Ownership
+
+- **§1 schema layer**: Claude-02, Wave 1, branch `s27-w1a-schema`, worktree `/Users/tifos/Desktop/Codebases/fintheon-s27-w1a`. Ships `shared/harper-cards.ts` + `shared/skill-manifest.ts` + `shared/plugin-manifest.ts` + `shared/sidecar-contract.ts` stubs. Everything downstream imports from here.
+- **§2-5 renderers + parser + prompt**: Claude-06, Wave 2, branch `s27-w2a-cards-ui`, worktree `/Users/tifos/Desktop/Codebases/fintheon-s27-w2a`. Depends on W1a + W1d SOUL.
 
 ## Inspiration
 
 [vercel-labs/json-render](https://github.com/vercel-labs/json-render) — LLMs emit tagged JSON blocks, the frontend renders them as typed React components.
+
+## Dependencies on Other Wave 1 Work
+
+- **T8 SOUL.md** (W1d) — Harper's SOUL file drives the system prompt. Card-emission guidance (§4) is added to Harper's SOUL extras, not hand-coded into `harper-handler.ts` anymore. Claude-06 coordinates with Claude-05 (T8) so the card-emission rules live in SOUL where they can later evolve via GEPA (T11).
+- **T2 Hermes sidecar** (W1b) — Harper's chat path now proxies through `sidecar-client.ts`. Card emission still happens; the fence-parsing layer on the frontend is unchanged.
 
 ## The Gap
 

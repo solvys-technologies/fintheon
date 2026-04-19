@@ -9,6 +9,27 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T00:45:00",
+    agent: "claude-code",
+    summary:
+      "S27 Agentic Intelligence Sprint finalized as 10-Claude edition after 4 rounds of TP Q&A. Key pivots from initial draft: (1) T2 switches from native TS ContextEngine port to running real NousResearch Hermes Agent as a Python sidecar (io.solvys.fintheon-hermes launchd + Fly machine on port 8318). (2) T4 widens from Herald-only to shared browser primitives under backend-hono/src/services/browser/ — browser-use/browser-harness replaces Rettiwt (cut from dispatcher, code left inert) AND acts as fallback when Exa/AgentReach miss; headline-volume telemetry surfaces 48h pre/post comparison. (3) T5 rescoped from brief-narration to fixing the broken OpenAI voice assistant: voicebox/Qwen3-TTS + Whisper-equiv STT + smartest free Qwen reasoning via sidecar, grounded on SOUL file; non-interrupting rim UX (electron window-chrome + matching web overlay) so it never covers trading content. (4) All S28 strategic items absorbed into S27: T8 SOUL.md full conversion of 5 agents with Harper CLAUDE.md as source of personal truth, T9 Smart Model Routing live per-agent (Oracle→Opus, Feucht→Haiku, Consul→Sonnet, Herald→Haiku, Harper→Opus), T10 Skills Hub full agentskills.io adoption + security scanner + importer, T11 GEPA self-improvement loop (DSPy evolutionary optimization, PR-gated review against soul-evolution/ branch — never auto-merges). (5) T6 Harper Browser Operator (Hyperagent-inspired browse_task tool + Supabase action cache) and T7 Always-On News Worker (sibling launchd/Fly process, portless-addressed news.fintheon.test, Supabase-coupled so backend restarts don't interrupt ingestion) added new. Execution: waves (contract-first), 10 worktrees off v5.22, 1 persistent orchestrator Claude across 3 checkpoints, rolling v.27.N tags culminating in v.27.10 unified release. Produced 11 task briefs + rewritten orchestration doc. No source code changed; this is planning artifact only.",
+    files: [
+      "docs/sprint-briefs/S27-ORCHESTRATION.md",
+      "docs/sprint-briefs/S27-T1-generative-ui-harper.md",
+      "docs/sprint-briefs/S27-T2-context-sandbox.md",
+      "docs/sprint-briefs/S27-T3-a2a-handoff.md",
+      "docs/sprint-briefs/S27-T4-herald-browser.md",
+      "docs/sprint-briefs/S27-T5-agent-voice-briefs.md",
+      "docs/sprint-briefs/S27-T6-harper-browser-operator.md",
+      "docs/sprint-briefs/S27-T7-news-worker.md",
+      "docs/sprint-briefs/S27-T8-soul-conversion.md",
+      "docs/sprint-briefs/S27-T9-smart-model-routing.md",
+      "docs/sprint-briefs/S27-T10-skills-hub.md",
+      "docs/sprint-briefs/S27-T11-gepa-loop.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-19T23:50:00",
     agent: "claude-code",
     summary:

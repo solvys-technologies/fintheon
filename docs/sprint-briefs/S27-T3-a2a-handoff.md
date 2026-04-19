@@ -1,4 +1,16 @@
-# S27-T3 — A2A Handoff Protocol (Track B, part 2 of 2)
+# S27-T3 — A2A Handoff Protocol
+
+## Ownership
+
+Claude-07, Wave 2, branch `s27-w2b-context-handoff` (paired with T2 DAG engine), worktree `/Users/tifos/Desktop/Codebases/fintheon-s27-w2b`.
+
+Starts after Wave 1 (W1a schemas + W1b sidecar + W1d SOUL + routing) merges.
+
+## Routing Update (post-sidecar decision)
+
+The original T3 draft described a direct-OpenRouter agent-router. **Superseded by T2.** All agent calls now go through the Hermes Python sidecar via [`backend-hono/src/services/ai/sidecar-client.ts`](backend-hono/src/services/ai/sidecar-client.ts). `agent-router.ts` still exists as the handoff coordinator, but its implementation is a thin wrapper: `handoff(req)` constructs a `POST /v1/chat` call to the sidecar with the target agent's SOUL.md (T8) pre-loaded and the resolved model from T9 Smart Model Routing. Loop guards + depth cap + visited-set still enforced TS-side.
+
+Legacy regex intent router retained behind `HERMES_ROUTER_MODE=legacy` flag for rollback.
 
 ## Inspiration
 
