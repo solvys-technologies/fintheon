@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && bun scripts/copy-assets.ts",
+    "build": "tsc && node scripts/copy-assets.mjs",
     "start": "node dist/index.js",
     "dev": "tsc && node dist/index.js",
     "typecheck": "tsc --noEmit",
