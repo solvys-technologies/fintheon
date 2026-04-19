@@ -12,6 +12,9 @@
 //   of inline expansion. Long-press still expands inline for quick triage (kept for power users
 //   who scroll fast). Entry point is unified with CatalystCards + BriefingCard + push-tap flow.
 // [claude-code 2026-04-16] RiskFlow card — haptic on expand
+// [claude-code 2026-04-19] Polish pass: IV numeral now renders in Doto explicitly
+//   (var(--font-data) was getting mapped to a heavier mono on some themes), matching
+//   desktop's right-stacked IVStack. Chevron stays in the right column above the numeral.
 import { useCallback, useState } from "react";
 import { ChevronUp, ChevronDown, Minus } from "lucide-react";
 import { useHaptic } from "../../hooks/useHaptic";
@@ -212,11 +215,11 @@ export function RiskFlowCard({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
+                alignItems: "flex-end",
                 justifyContent: "center",
                 flexShrink: 0,
-                width: 32,
-                gap: 2,
+                width: 36,
+                gap: 1,
               }}
             >
               <DirectionChevron
@@ -225,10 +228,13 @@ export function RiskFlowCard({
               />
               <span
                 style={{
-                  fontFamily: "var(--font-data)",
-                  fontSize: 11,
+                  fontFamily:
+                    "'Doto', 'Readable Digits', var(--font-data, monospace)",
+                  fontSize: 13,
+                  fontWeight: 600,
                   color: severityColor,
                   fontVariantNumeric: "tabular-nums",
+                  letterSpacing: "0.02em",
                   lineHeight: 1,
                 }}
               >

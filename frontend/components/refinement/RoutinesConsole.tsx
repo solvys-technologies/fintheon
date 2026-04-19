@@ -27,7 +27,7 @@ export type RoutineMode =
 export interface RoutineDefinition {
   triggerId: string;
   name: string;
-  kind: "MOVE" | "AUGMENT";
+  kind: "MOVE" | "AUGMENT" | "HEAL";
   schedule: string;
   runsPerDay: number;
   description: string;

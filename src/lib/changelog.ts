@@ -9,6 +9,46 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T22:30:00",
+    agent: "claude-code",
+    summary:
+      "v.27.11 — RiskFlow card visual unification + multi-priority filter. (1) Every desktop RiskFlow card surface (AlertCardBase, RiskFlowMini AlertRow + TradeIdeaRow, SanctumRiskAssessment RiskItem, mission-control RiskFlowMiniWidget) now mirrors the Fintheon Mobile card anatomy: single segmented vertical NothingFuse on the left (no double borders), source/time uppercase row above a serif headline, and a right-justified column with the direction chevron stacked above the IV numeral. (2) NothingFuse gained a `segments` prop (default 10) that paints N-1 perpendicular ruler ticks over the continuous fill while preserving orientation + shimmer — the bar reads as a discrete 10-step scale on both vertical and horizontal mounts. (3) New shared primitives: components/shared/IVStack.tsx (chevron-over-numeral right column, Doto + Readable Digits font stack so IV numbers render in the Nothing Display dot-matrix face on every theme), components/shared/PriorityFilterMenu.tsx (checkbox popover for desktop multi-select), and lib/riskflow-card-utils.ts (severity-to-palette + fuseScore helpers used by every card). (4) Killed the AlertRow double-border bug — was a 2px borderLeft layered over the 6px NothingFuse — and dropped the bottom hero footer's IV/chevron pair so the right column owns IV display everywhere. (5) Mobile RiskFlowCard IV numeral switched to the Doto stack; chevron stacking unchanged. (6) Multi-priority filter on both surfaces: desktop FilterDropdown for Priority replaced with PriorityFilterMenu (checkbox per CRIT/HIGH/MED/LOW, empty selection = All); mobile RiskFlowFilterBar tabs are now toggle-multi-select (ALL clears the set, individual tabs flip on/off). Filter state persists to localStorage on both (`fintheon:riskflow-filters:v1` / `fintheon-mobile:riskflow-filters:v1`) so refresh and PWA reopen keep the user's selection. Verified: frontend tsc clean, mobile tsc clean, frontend vite build 3.18s, mobile vite build 1.26s, backend tsc clean.",
+    files: [
+      "frontend/components/shared/NothingFuse.tsx",
+      "frontend/components/shared/IVStack.tsx",
+      "frontend/components/shared/PriorityFilterMenu.tsx",
+      "frontend/components/feed/AlertCardBase.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/narrative/SanctumRiskAssessment.tsx",
+      "frontend/components/mission-control/RiskFlowMiniWidget.tsx",
+      "frontend/hooks/useRiskFlowFilters.ts",
+      "frontend/lib/riskflow-card-utils.ts",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/riskflow/RiskFlowFilterBar.tsx",
+      "mobile/components/riskflow/RiskFlowPage.tsx",
+      "mobile/hooks/useRiskFlowFilters.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-04-19T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S28 kickoff — Refinement Engine refinements + news-worker audit gates. (1) Moved RoutinesConsole out of the Refinement Engine Scoring sub-tab's left sidebar and into the Admin Monitor sub-tab, which is where routine operational state belongs. The Scoring sidebar keeps Regime / Sensitivity / Presets / Advanced; the Monitor tab is now purely the RoutinesConsole surface. (2) Stripped the dead /api/scoring/monitoring/* + /api/scoring/shadow-stats placeholders that were marked 'not yet live — wire at T4-8 backend cron build' in MonitoringLoopCard.tsx. Real routine controls (start/stop/rerun/mode) are already wired to /api/routines/* and now have the whole tab to themselves. (3) Non-negotiable news-worker audit gates at 6:00am / 11:30am / 4:00pm America/New_York. Three new HEAL routines registered (trig_newsaudit_0600, trig_newsaudit_1130, trig_newsaudit_1600) so they appear in the UI and can be paused / rerun manually. New in-process cron at backend-hono/src/services/cron/news-worker-audit-scheduler.ts honours paused state from routine_config so operators can disable from UI without a restart. Handler at backend-hono/src/services/routines/handlers/news-worker-audit.ts does the full cycle: heartbeat freshness check (breaking >10min stale, standard >15min stale), pipeline health (raw/h + scored/h + ratio), soft heal via agentReachTick(), hard heal via stopAgentReachPoller()+startAgentReachPoller() if still stale, ops-feed breadcrumb every run, and superadmin push escalation on failed auto-heal. /api/routines/:id/rerun now executes the audit inline for HEAL routine IDs and returns the snapshot instead of being paper-trail-only. New notifySuperadmins helper resolves SUPER_ADMIN_USER_ID env + users.role='admin' and pushes via sendToUserDirect so critical alerts bypass category gating.",
+    files: [
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/refinement/RoutinesConsole.tsx",
+      "frontend/components/admin/MonitoringLoopCard.tsx",
+      "backend-hono/src/services/routines/registry.ts",
+      "backend-hono/src/services/routines/handlers/news-worker-audit.ts",
+      "backend-hono/src/services/cron/news-worker-audit-scheduler.ts",
+      "backend-hono/src/services/notifications/notify-superadmins.ts",
+      "backend-hono/src/routes/routines/handlers.ts",
+      "backend-hono/src/boot/services.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T17:45:00",
     agent: "claude-code",
     summary:

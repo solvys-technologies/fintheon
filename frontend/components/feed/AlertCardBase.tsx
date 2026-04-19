@@ -1,6 +1,10 @@
 // [claude-code 2026-04-12] S9-T2: Shared card anatomy for RiskFlow detail + tape variants
 // [claude-code 2026-04-12] Added linkifyText — URLs in headlines/summaries are now clickable
 // [claude-code 2026-04-15] S16-T5: Dismissal reason quick-select popover on thumbs-down
+// [claude-code 2026-04-19] RiskFlow card polish — adopt mobile anatomy: single segmented
+//   left vertical fuse (NothingFuse with ruler ticks + shimmer), right column with direction
+//   chevron stacked above IV number in Doto. Removed the bottom hero footer's IV+chevron
+//   pair; the footer now carries time, priority, risk type and dismiss controls only.
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp, ThumbsDown } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
@@ -10,6 +14,12 @@ import { ivHeatColor } from "../../types/agent-desk";
 import { SourceIcon } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
 import { linkifyText } from "../../lib/linkify";
+import { NothingFuse } from "../shared/NothingFuse";
+import { IVStack } from "../shared/IVStack";
+import {
+  alertSeverityToPalette,
+  fuseScoreFromAlert,
+} from "../../lib/riskflow-card-utils";
 
 const DISMISS_REASONS = [
   { value: "redundant", label: "Redundant" },
@@ -66,6 +76,17 @@ export function AlertCardBase({
     return () => document.removeEventListener("mousedown", handler);
   }, [showReasonPicker]);
 
+  const palSeverity = alertSeverityToPalette(alert.severity);
+  const fuseScore = fuseScoreFromAlert(alert);
+  const directionForStack: "Bullish" | "Bearish" | "Neutral" =
+    dir === "Bullish"
+      ? "Bullish"
+      : isBull
+        ? "Bullish"
+        : dir
+          ? "Bearish"
+          : "Neutral";
+
   return (
     <div
       className={`group relative overflow-hidden transition-colors ${
@@ -75,11 +96,32 @@ export function AlertCardBase({
       } ${className || ""}`}
       style={style}
     >
-      {/* ── Collapsed: headline + source icon top-right ─────────────────────── */}
-      <div className="block px-3 pt-2.5 pb-2 cursor-pointer" onClick={onToggle}>
-        <div className="flex items-start gap-2">
+      {/* ── Collapsed: left fuse | source/headline | right IV stack ──────────── */}
+      <div className="block cursor-pointer" onClick={onToggle}>
+        <div className="flex items-stretch gap-3 px-3 py-2.5 min-h-[64px]">
+          {/* Left: segmented vertical fuse with shimmer */}
+          <div className="flex-shrink-0 w-[6px] flex items-stretch py-0.5">
+            <NothingFuse
+              value={Math.min(1, Math.max(0.15, fuseScore / 10))}
+              severity={palSeverity}
+              orientation="vertical"
+              thickness={6}
+            />
+          </div>
+
           {headerActions}
-          <div className="flex-1 min-w-0">
+
+          {/* Center: source/time row + headline + summary */}
+          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+            <div className="flex items-center gap-1.5 text-[9px] tracking-[0.08em] uppercase text-zinc-500">
+              <SourceIcon
+                source={alert.source}
+                className="w-2.5 h-2.5 text-zinc-500 flex-shrink-0"
+              />
+              <span className="truncate max-w-[60%]">{alert.source}</span>
+              <span className="text-zinc-700">&middot;</span>
+              <span>{timeAgo(alert.publishedAt)}</span>
+            </div>
             <p
               className={`text-xs leading-snug font-medium line-clamp-3 break-words ${
                 alert.severity === "critical"
@@ -98,62 +140,41 @@ export function AlertCardBase({
             )}
           </div>
 
-          {/* Source icon — top right */}
-          <SourceIcon
-            source={alert.source}
-            className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0 mt-0.5"
+          {/* Right: chevron + IV in Doto, right-justified */}
+          <IVStack
+            score={alert.ivScore != null ? Number(alert.ivScore) : null}
+            direction={directionForStack}
+            color={
+              alert.ivScore != null
+                ? ivHeatColor(Number(alert.ivScore))
+                : undefined
+            }
+            width={36}
           />
         </div>
       </div>
 
-      {/* ── Footer bar: time / direction / points / priority / risk-type / chevron ── */}
+      {/* ── Footer bar: time-strip is gone; keep priority + dismiss controls ── */}
       <div
-        className="flex items-center px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40 cursor-pointer"
+        className="flex items-center px-3 py-1 bg-zinc-900/60 border-t border-zinc-800/40 cursor-pointer"
         onClick={onToggle}
       >
-        <span className="text-[10px] text-zinc-600">
-          {timeAgo(alert.publishedAt)}
-        </span>
-
-        <span className="flex-1" />
-
-        {/* Direction chevron + IV Score — right-aligned */}
         <span
-          className="text-[11px] font-bold"
-          style={{
-            color: isBull
-              ? "var(--fintheon-bullish)"
-              : "var(--fintheon-bearish)",
-          }}
-        >
-          {isBull ? "▲" : "▼"}
-        </span>
-        {alert.ivScore != null && (
-          <span
-            className="ml-1.5 text-[11px] font-mono font-bold tabular-nums"
-            style={{ color: ivHeatColor(Number(alert.ivScore)) }}
-          >
-            IV {Number(alert.ivScore).toFixed(1)}
-          </span>
-        )}
-
-        {/* Priority badge */}
-        <span
-          className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border`}
+          className={`inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border`}
         >
           {sev.label}
         </span>
 
-        {/* Risk type tag */}
         {alert.riskType && (
           <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium tracking-wider uppercase border border-zinc-700 text-zinc-400">
             {alert.riskType}
           </span>
         )}
 
-        {/* Not relevant — thumbs down with reason picker */}
+        <span className="flex-1" />
+
         {onNotRelevant && (
-          <div className="relative ml-2" ref={reasonRef}>
+          <div className="relative" ref={reasonRef}>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -187,7 +208,6 @@ export function AlertCardBase({
           </div>
         )}
 
-        {/* Expand chevron */}
         <span className="ml-2 text-zinc-600">
           {expanded ? (
             <ChevronUp className="w-3 h-3" />

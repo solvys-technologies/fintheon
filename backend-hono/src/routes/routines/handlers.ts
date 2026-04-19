@@ -1,8 +1,16 @@
+// [claude-code 2026-04-19] S28: /rerun on a news-worker-audit trigger now executes the audit
+//   inline (heartbeat check, heal, ops breadcrumb, superadmin escalation) instead of being a
+//   paper-trail-only ack. Other triggerIds keep the original ops-feed-only behaviour.
 // [claude-code 2026-04-19] Routines Console — REST handlers.
 
 import type { Context } from "hono";
 import { writeOpsEntry } from "../../services/harper-autonomous/ops-store.js";
-import { listRoutines, getRoutine } from "../../services/routines/registry.js";
+import {
+  listRoutines,
+  getRoutine,
+  isNewsWorkerAuditId,
+} from "../../services/routines/registry.js";
+import { runNewsWorkerAudit } from "../../services/routines/handlers/news-worker-audit.js";
 import {
   getAllConfigs,
   getConfig,
@@ -116,16 +124,24 @@ export async function handlePause(c: Context) {
   return c.json({ config: updated });
 }
 
-// POST /api/routines/:id/rerun — manual trigger (records intent + ops entry)
-// We can't actually invoke a cloud-side Routine from here. What we *can* do is
-// (a) verify the loop is unblocked and (b) post an ops-feed entry so the next
-// scheduled run sees the request and the operator gets a paper trail.
+// POST /api/routines/:id/rerun — manual trigger.
+// For HEAL routines (news-worker audits) this executes the audit handler inline and returns
+// the snapshot. For MOVE/AUGMENT routines we can't invoke the cloud-side Routine from here, so
+// we record the intent + post an ops-feed entry as a paper trail for the next scheduled run.
 export async function handleRerun(c: Context) {
   const id = c.req.param("id");
   const def = getRoutine(id);
   if (!def) return c.json({ error: "Unknown trigger_id" }, 404);
 
   const decision = await shouldProceed(id);
+
+  if (isNewsWorkerAuditId(id) && decision.proceed) {
+    const result = await runNewsWorkerAudit({
+      auditName: def.name,
+      triggerId: def.triggerId,
+    });
+    return c.json({ ok: true, decision, audit: result });
+  }
 
   await writeOpsEntry({
     actionType: "routine",
