@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T02:30:00",
+    agent: "claude-code",
+    summary:
+      "Mobile iOS Safari auto-zoom fix on form inputs. The RiskFlow headline attachment modal (HeadlinePickerSheet) was triggering iOS Safari's auto-zoom every time the user tapped its search box — the input's fontSize was 12px, below the 16px threshold iOS uses to decide whether the text is 'too small' for comfortable typing. Same latent issue on the mobile ChatInput textarea (14px). Two-layer fix: (a) global rule added to mobile/index.css that forces font-size: 16px on every input/textarea/select so any future mobile input is zoom-safe by default, (b) bumped the inline fontSize to 16 on ChatInput and HeadlinePickerSheet with a comment explaining why so contributors don't walk it back during a styling pass. Non-form text elements (labels, badges, numbers inside spans/divs) are untouched — the rule only applies to actual form controls.",
+    files: [
+      "mobile/index.css",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/chat/HeadlinePickerSheet.tsx",
+    ],
+  },
+  {
     date: "2026-04-20T02:00:00",
     agent: "claude-code",
     summary:

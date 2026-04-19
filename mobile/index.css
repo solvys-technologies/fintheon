@@ -183,3 +183,13 @@ html *::-webkit-scrollbar {
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ── iOS Safari auto-zoom suppression ──
+   Safari zooms the viewport whenever an input or textarea with font-size
+   < 16px gains focus. Force a 16px floor on every form control so the page
+   stops jumping around when users tap the chat composer or headline search. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}

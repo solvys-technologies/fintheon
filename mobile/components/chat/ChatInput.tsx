@@ -151,7 +151,8 @@ export default function ChatInput({
             outline: "none",
             resize: "none",
             fontFamily: "var(--font-body)",
-            fontSize: 14,
+            // 16px prevents iOS Safari from auto-zooming the viewport on focus
+            fontSize: 16,
             color: "var(--text-primary)",
             lineHeight: 1.5,
             maxHeight: 96,
