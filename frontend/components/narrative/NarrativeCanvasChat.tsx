@@ -1,7 +1,8 @@
+// [claude-code 2026-04-19] S25-T6: Chat input now hidden by default — parent toolbar toggles via isOpen. Gold up-chevron send (Airplane send removed). Image paste clipboard → auto-pinned as chip alongside RiskFlow headline pins.
 // [claude-code 2026-03-28] S8-T2: Ephemeral command palette chat — expandable above toolbar
 // Same Claude CLI session as sidebar Chat. Responses auto-hide after 8s.
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Loader2, Send, X } from "lucide-react";
+import { Loader2, ChevronUp, X } from "lucide-react";
 import { useNarrative } from "../../contexts/NarrativeContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -10,12 +11,22 @@ interface NarrativeCanvasChatProps {
   /** Card data chips dragged or added from canvas */
   pendingChips?: { id: string; title: string }[];
   onClearChip?: (id: string) => void;
+  /** Parent-controlled visibility. Hidden by default — the toolbar chip toggles this. */
+  isOpen?: boolean;
+  /** Called on Escape so the toolbar can flip its chip back off. */
+  onDismiss?: () => void;
 }
 
 export function NarrativeCanvasChat({
   pendingChips = [],
   onClearChip,
+  isOpen = false,
+  onDismiss,
 }: NarrativeCanvasChatProps) {
+  // Local chips for image-paste attachments (url data URIs surface as title="image-<ts>")
+  const [localChips, setLocalChips] = useState<
+    { id: string; title: string; dataUrl?: string }[]
+  >([]);
   const { dispatch } = useNarrative();
   const [input, setInput] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -144,6 +155,36 @@ export function NarrativeCanvasChat({
     clearTimeout(hideTimerRef.current);
   }, []);
 
+  // Image-paste capture → attach as localChip
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLInputElement>) => {
+      for (const item of Array.from(e.clipboardData.items)) {
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const blob = item.getAsFile();
+          if (!blob) continue;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const url = String(reader.result ?? "");
+            const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+            setLocalChips((prev) => [
+              ...prev,
+              {
+                id,
+                title: `image (${Math.round(blob.size / 1024)}KB)`,
+                dataUrl: url,
+              },
+            ]);
+          };
+          reader.readAsDataURL(blob);
+        }
+      }
+    },
+    [],
+  );
+
+  // Hidden by default — parent toolbar controls isOpen
+  if (!isOpen) return null;
+
   return (
     <div className="relative flex flex-col items-center">
       {/* Ephemeral response popup — slides up from input */}
@@ -197,30 +238,43 @@ export function NarrativeCanvasChat({
           <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-40" />
         </div>
 
-        {/* Pending card chips */}
-        {pendingChips.length > 0 && (
+        {/* Pending card chips (RiskFlow headline pins + pasted images) */}
+        {(pendingChips.length > 0 || localChips.length > 0) && (
           <div className="flex items-center gap-1 shrink-0">
-            {pendingChips.slice(0, 2).map((chip) => (
-              <span
-                key={chip.id}
-                className="text-[8px] px-1.5 py-0.5 rounded-full border flex items-center gap-1"
-                style={{
-                  color: "var(--fintheon-accent)",
-                  backgroundColor:
-                    "color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
-                  borderColor:
-                    "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
-                }}
-              >
-                <span className="truncate max-w-[60px]">{chip.title}</span>
-                <button
-                  onClick={() => onClearChip?.(chip.id)}
-                  className="opacity-50 hover:opacity-100"
+            {[
+              ...pendingChips,
+              ...localChips.map((c) => ({ id: c.id, title: c.title })),
+            ]
+              .slice(0, 3)
+              .map((chip) => (
+                <span
+                  key={chip.id}
+                  className="text-[8px] px-1.5 py-0.5 rounded-full border flex items-center gap-1"
+                  style={{
+                    color: "var(--fintheon-accent)",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--fintheon-accent) 10%, transparent)",
+                    borderColor:
+                      "color-mix(in srgb, var(--fintheon-accent) 20%, transparent)",
+                  }}
                 >
-                  <X className="w-2 h-2" />
-                </button>
-              </span>
-            ))}
+                  <span className="truncate max-w-[80px]">{chip.title}</span>
+                  <button
+                    onClick={() => {
+                      if (chip.id.startsWith("img-")) {
+                        setLocalChips((prev) =>
+                          prev.filter((c) => c.id !== chip.id),
+                        );
+                      } else {
+                        onClearChip?.(chip.id);
+                      }
+                    }}
+                    className="opacity-50 hover:opacity-100"
+                  >
+                    <X className="w-2 h-2" />
+                  </button>
+                </span>
+              ))}
           </div>
         )}
 
@@ -233,19 +287,22 @@ export function NarrativeCanvasChat({
             if (e.key === "Escape") {
               setExpanded(false);
               setInput("");
+              onDismiss?.();
             }
           }}
           onFocus={() => setExpanded(true)}
           onBlur={() => {
             if (!input.trim()) setExpanded(false);
           }}
-          placeholder="Message Harper..."
+          onPaste={handlePaste}
+          placeholder="Message Harper…"
           className="flex-1 text-[11px] bg-transparent outline-none min-w-0"
           style={{
             color: "var(--fintheon-text)",
             fontFamily: "var(--font-body)",
           }}
           disabled={loading}
+          autoFocus
         />
 
         <button
@@ -257,7 +314,7 @@ export function NarrativeCanvasChat({
           {loading ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : (
-            <Send className="w-3.5 h-3.5" />
+            <ChevronUp className="w-3.5 h-3.5" strokeWidth={2.5} />
           )}
         </button>
       </div>

@@ -29,7 +29,8 @@ export const CATEGORY_CENTERS: Record<
   "black-swan": { x: 0, y: 0 },
 };
 
-export const CATEGORY_COLORS: Record<NarrativeCategory, string> = {
+// [claude-code 2026-04-19] S25-T6: Category colors now reference CSS tokens (--narrative-*) so themes can repaint the map without touching JS. Consumers keep the same hex-string API via getCategoryColor(); the fallback hex values below are read only when the CSS var resolves to empty (pre-boot or theme not yet loaded).
+const NARRATIVE_TOKEN_FALLBACK: Record<NarrativeCategory, string> = {
   geopolitical: "#F59E0B",
   monetary: "#8B5CF6",
   macroeconomic: "#3B82F6",
@@ -38,6 +39,39 @@ export const CATEGORY_COLORS: Record<NarrativeCategory, string> = {
   "supply-chain": "#14B8A6",
   "black-swan": "#EF4444",
 };
+
+const NARRATIVE_TOKEN_VAR: Record<NarrativeCategory, string> = {
+  geopolitical: "--narrative-geopolitical",
+  monetary: "--narrative-monetary",
+  macroeconomic: "--narrative-macroeconomic",
+  "market-structure": "--narrative-market-structure",
+  earnings: "--narrative-earnings",
+  "supply-chain": "--narrative-supply-chain",
+  "black-swan": "--narrative-black-swan",
+};
+
+export function getCategoryColor(cat: NarrativeCategory): string {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return NARRATIVE_TOKEN_FALLBACK[cat];
+  }
+  const resolved = getComputedStyle(document.documentElement)
+    .getPropertyValue(NARRATIVE_TOKEN_VAR[cat])
+    .trim();
+  return resolved || NARRATIVE_TOKEN_FALLBACK[cat];
+}
+
+/** Back-compat object API — each access resolves via the CSS token bridge. */
+export const CATEGORY_COLORS: Record<NarrativeCategory, string> = new Proxy(
+  {} as Record<NarrativeCategory, string>,
+  {
+    get(_target, prop: string) {
+      if (prop in NARRATIVE_TOKEN_FALLBACK) {
+        return getCategoryColor(prop as NarrativeCategory);
+      }
+      return undefined;
+    },
+  },
+);
 
 // Severity → node radius
 export function severityRadius(severity: string): number {

@@ -615,14 +615,22 @@ export function postProcessDeliberation(
   // ── Convergence detection ─────────────────────────────────────────────────
   const { convergence, shouldTriggerContrarian, healthyDisagreementCount } =
     computeConvergence(analystAssessments);
-  const contrarianTriggered = shouldTriggerContrarian;
+  // [claude-code 2026-04-19] S25-T7: Groupthink guard — Herald dissent is now MANDATORY on every
+  // deliberation run, not just when convergence tips a threshold. We keep the computed flag
+  // (shouldTriggerContrarian) for telemetry but override it true so the CONTRARIAN tag is always
+  // applied. Blind-then-reveal ordering is structurally enforced by the DAG: wave 0 (analysts)
+  // completes before wave 1 (Hermes) subscribes to its outputs, so no analyst reads another's
+  // draft before locking their own.
+  const contrarianTriggered = true;
 
-  // Mark lowest-confidence analyst as contrarian (matches existing logic)
-  if (contrarianTriggered && analystAssessments.length > 0) {
+  if (analystAssessments.length > 0) {
     const lowestConf = analystAssessments.reduce((a, b) =>
       a.confidence < b.confidence ? a : b,
     );
-    lowestConf.assessment = `[CONTRARIAN] ${lowestConf.assessment} — NOTE: high analyst convergence detected, this assessment may underweight tail risks.`;
+    const reason = shouldTriggerContrarian
+      ? "high analyst convergence detected, this assessment may underweight tail risks"
+      : "mandatory dissent pass — every run surfaces a counter-view";
+    lowestConf.assessment = `[CONTRARIAN] ${lowestConf.assessment} — NOTE: ${reason}.`;
   }
 
   // ── Wave 1: Extract Hermes deliberation results ───────────────────────────

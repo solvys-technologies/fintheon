@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { Copy, Check, Bot } from "lucide-react";
 import { AgentBadge, type BoardroomAgent } from "./AgentBadge";
 import { AgentMention, EveryoneMention } from "./AgentMention";
+import { ContextInjectionBadge } from "./ContextInjectionBadge";
 
 export interface BoardroomMessage {
   id: string;
@@ -139,6 +140,19 @@ export function ConsiliumMessage({
             autonomous={isAutonomous}
           />
           {isAutonomous && <Bot size={10} className="text-emerald-400/60" />}
+          {Boolean(message.metadata?.injections) && (
+            <ContextInjectionBadge
+              injections={
+                message.metadata!.injections as {
+                  feed: boolean;
+                  dossier: boolean;
+                  memoryBank: boolean;
+                  thoughtBank: boolean;
+                  reflect?: boolean;
+                }
+              }
+            />
+          )}
         </div>
       )}
       <div
