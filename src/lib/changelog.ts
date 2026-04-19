@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T15:30:00",
+    agent: "claude-code",
+    summary:
+      "[v.27.8] S27-T6 (W2d Claude-09): Harper Browser Operator — new browseTask({url, objective, extract_fields?, budget_usd?}) in backend-hono/src/services/browser/operator.ts consumes W1c Playwright pool + allowlist. Cache hit = zero-LLM XPath replay against action_cache (new Supabase table). Miss = OpenRouter Haiku extraction, validated against extract_schema/extract_fields, hard-capped by budget_usd (default $0.10). Stale detection: 3 replay failures → force LLM re-run; 30d no success → auto-evict. Every run logs to browse_task_runs; GET /api/diagnostics now returns browser_operator.{runs_24h, hits_24h, cache_hit_rate_24h, cost_usd_24h}. Harper wiring: new POST /api/harper/browse-task wrapper + GET /api/harper/tools/browse_task (tool schema advertisement for MCP bridge). harper-extra.md Browser Operator section documents when/how to call. URL_NOT_ALLOWED returned with suggestion when BROWSER_UNIVERSAL_ENABLED=false and URL is off-allowlist. Migration 20260419_05_action_cache.sql creates action_cache + browse_task_runs.",
+    files: [
+      "backend-hono/src/services/browser/operator.ts",
+      "backend-hono/src/routes/harper/index.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "supabase/migrations/20260419_05_action_cache.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T14:00:00",
     agent: "claude-code",
     summary:

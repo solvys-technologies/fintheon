@@ -1,5 +1,7 @@
 // [claude-code 2026-03-20] Diagnostics endpoint — service status, missing env vars, suggested fixes
 // [claude-code 2026-03-22] Add POST /hermes/restart for frontend-triggered Hermes re-initialization
+// [claude-code 2026-04-19] S27-T6/T7 (W2d): surface cache_hit_rate_24h (browser operator) and
+//   news_worker_age_seconds (news worker heartbeat) on GET /.
 
 import { Hono } from "hono";
 import { pingDb } from "../../db/optimized.js";
@@ -21,6 +23,7 @@ import {
   isReflectRunning,
 } from "../../services/autoresearch/reflect-scheduler.js";
 import { getLatestReflectReport } from "../../services/autoresearch/reflect-engine.js";
+import { getBrowseTaskStats24h } from "../../services/browser/operator.js";
 
 const log = createLogger("Diagnostics");
 
@@ -38,6 +41,48 @@ interface DiagnosticsResponse {
   overall: ServiceStatus;
   services: ServiceDiagnostic[];
   missingEnvVars: string[];
+  browser_operator?: {
+    runs_24h: number;
+    hits_24h: number;
+    cache_hit_rate_24h: number;
+    cost_usd_24h: number;
+  };
+  news_worker?: {
+    age_seconds: number | null;
+    tiers: Array<{ tier: string; last_run_at: string | null; age_seconds: number | null; items_ingested: number; errors: number }>;
+  };
+}
+
+async function getNewsWorkerSnapshot(): Promise<DiagnosticsResponse["news_worker"]> {
+  const { getSupabaseClient } = await import("../../config/supabase.js");
+  const sb = getSupabaseClient();
+  if (!sb) return { age_seconds: null, tiers: [] };
+  try {
+    const { data, error } = await sb
+      .from("news_worker_heartbeats")
+      .select("tier, last_run_at, items_ingested, errors");
+    if (error || !data) return { age_seconds: null, tiers: [] };
+    const now = Date.now();
+    const tiers = (data as Array<{
+      tier: string;
+      last_run_at: string | null;
+      items_ingested: number;
+      errors: number;
+    }>).map((row) => ({
+      tier: row.tier,
+      last_run_at: row.last_run_at,
+      age_seconds: row.last_run_at
+        ? Math.round((now - new Date(row.last_run_at).getTime()) / 1000)
+        : null,
+      items_ingested: Number(row.items_ingested ?? 0),
+      errors: Number(row.errors ?? 0),
+    }));
+    const ages = tiers.map((t) => t.age_seconds).filter((n): n is number => typeof n === "number");
+    const age_seconds = ages.length > 0 ? Math.min(...ages) : null;
+    return { age_seconds, tiers };
+  } catch {
+    return { age_seconds: null, tiers: [] };
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -217,11 +262,15 @@ export function createDiagnosticsRoutes(): Hono {
   router.get("/", async (c) => {
     const start = Date.now();
 
-    const services = await Promise.all([
-      checkHermesAI(),
-      checkDatabase(),
-      Promise.resolve(checkRettiwt()),
-      Promise.resolve(checkSupabaseAuth()),
+    const [services, browserStats, newsWorker] = await Promise.all([
+      Promise.all([
+        checkHermesAI(),
+        checkDatabase(),
+        Promise.resolve(checkRettiwt()),
+        Promise.resolve(checkSupabaseAuth()),
+      ]),
+      getBrowseTaskStats24h(),
+      getNewsWorkerSnapshot(),
     ]);
 
     const missingEnvVars = auditEnvVars();
@@ -239,6 +288,8 @@ export function createDiagnosticsRoutes(): Hono {
       overall,
       services,
       missingEnvVars,
+      browser_operator: browserStats,
+      news_worker: newsWorker,
     };
 
     log.info("Diagnostics check", { overall, elapsed: Date.now() - start });
