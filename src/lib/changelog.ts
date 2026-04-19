@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T01:15:00",
+    agent: "claude-code",
+    summary:
+      "Aquarium redesign sprint — Track 4b (backend CAO synthesis for Econ event cards). New POST /api/econ/synthesize accepts {tickers: string[], timeframe?: string} and returns, for each ticker, a CAO-generated description (2–3 sentences, what the data actually says), third-order thinking (1–2 sentences, second/third-order trader lens), a forecast direction ('beat' | 'miss' | null — populated only when the pattern is conclusive), a confidence score, and the recent prints array. Implemented in backend-hono/src/routes/econ/index.ts: assembles prompts from readEconHistory output, calls invokeAgent (Strands) with temperature 0.35 and maxTokens 380 per ticker, parses the JSON response, and falls back to a heuristic derivation (derived from beat/miss counts + latest direction) if the LLM call fails or returns empty — so the UI never shows a blank card. Forecast final-direction prefers the LLM call but backstops to the latest print's direction when the LLM returns null yet the latest print conclusively beat or missed. EconEventCard.tsx swapped from history-only derivation to calling /api/econ/synthesize first; previous history-only logic now lives as fallbackFromHistory and runs only when the synthesize endpoint is unreachable or returns empty. deriveDescription / deriveThirdOrder / deriveConfidence helpers retained in the component for that fallback path.",
+    files: [
+      "backend-hono/src/routes/econ/index.ts",
+      "backend-hono/src/routes/index.ts",
+      "frontend/components/narrative/econ/EconEventCard.tsx",
+    ],
+  },
+  {
     date: "2026-04-20T00:45:00",
     agent: "claude-code",
     summary:

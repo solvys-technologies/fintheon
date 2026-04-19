@@ -58,36 +58,59 @@ export function EconEventCard({ event, appearDelay }: EconEventCardProps) {
     return () => clearTimeout(t);
   }, [appearDelay]);
 
-  // Lazy synthesis fetch on first expand
+  // Lazy synthesis fetch on first expand — real CAO synthesis via POST /api/econ/synthesize,
+  // fallback to history-only heuristic derivation if the endpoint fails.
   useEffect(() => {
     if (!expanded || fetchedRef.current) return;
     fetchedRef.current = true;
     setLoading(true);
-    fetch(
-      `${API_BASE}/api/data/econ-history/${encodeURIComponent(event.ticker)}?limit=10`,
-    )
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!data) return;
-        // Backend doesn't yet return CAO synthesis — derive a placeholder from history
-        const prints = (data.history ?? []) as EconHistoryPrint[];
-        const latest = prints[0];
-        const beatMissConcluded =
-          latest?.direction === "beat" || latest?.direction === "miss";
-        setSynthesis({
-          description: deriveDescription(event, prints),
-          thirdOrder: deriveThirdOrder(event, prints),
-          forecast: beatMissConcluded
-            ? {
-                direction: latest.direction,
-                deviation: latest.surprise,
-              }
-            : null,
-          confidence: deriveConfidence(prints),
-          prints,
+
+    const fallbackFromHistory = async () => {
+      const r = await fetch(
+        `${API_BASE}/api/data/econ-history/${encodeURIComponent(event.ticker)}?limit=10`,
+      );
+      if (!r.ok) return null;
+      const data = await r.json();
+      const prints = (data.history ?? []) as EconHistoryPrint[];
+      const latest = prints[0];
+      const beatMissConcluded =
+        latest?.direction === "beat" || latest?.direction === "miss";
+      return {
+        description: deriveDescription(event, prints),
+        thirdOrder: deriveThirdOrder(event, prints),
+        forecast: beatMissConcluded
+          ? { direction: latest.direction, deviation: latest.surprise }
+          : null,
+        confidence: deriveConfidence(prints),
+        prints,
+      } as SynthesisPayload;
+    };
+
+    (async () => {
+      try {
+        const r = await fetch(`${API_BASE}/api/econ/synthesize`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tickers: [event.ticker] }),
         });
-      })
-      .finally(() => setLoading(false));
+        if (!r.ok) throw new Error(`synthesize ${r.status}`);
+        const data = await r.json();
+        const evt = (data.events ?? [])[0];
+        if (!evt || !evt.description) throw new Error("empty_synthesis");
+        setSynthesis({
+          description: evt.description,
+          thirdOrder: evt.thirdOrder ?? "",
+          forecast: evt.forecast ?? null,
+          confidence: evt.confidence ?? 0.5,
+          prints: evt.prints ?? [],
+        });
+      } catch {
+        const fallback = await fallbackFromHistory().catch(() => null);
+        if (fallback) setSynthesis(fallback);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [expanded, event]);
 
   const accent = CATEGORY_ACCENT[event.category];

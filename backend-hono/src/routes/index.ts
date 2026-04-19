@@ -48,6 +48,7 @@ import { createCalibrationRoutes } from "./calibration/index.js";
 import { createHarperRoutes } from "./harper/index.js";
 import { createHarperOpsRoutes } from "./harper-ops/index.js";
 import { createOpsRoutes } from "./ops/index.js";
+import { createEconRoutes } from "./econ/index.js";
 import { createPeersRoutes } from "./peers/index.js";
 import predictionsRoutes from "./predictions.js";
 import { createDocumentRoutes } from "./documents/index.js";
@@ -133,6 +134,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/harper-ops", createHarperOpsRoutes());
 
   app.route("/api/ops", createOpsRoutes());
+
+  app.route("/api/econ", createEconRoutes());
   // MCP registry — live read/write of ~/.claude/mcp.json (public, local-only)
   app.route("/api/mcp", createMcpRoutes());
 
