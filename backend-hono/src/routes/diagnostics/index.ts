@@ -415,5 +415,46 @@ export function createDiagnosticsRoutes(): Hono {
     }
   });
 
+  // [claude-code 2026-04-19] S27-T4: headline volume — per-source 48h sparkline.
+  // Powers the HeadlineVolumeWidget on the diagnostics page; quantifies the
+  // Rettiwt → browser-harness migration in riskflow_items source tags.
+  router.get("/headline-volume", async (c) => {
+    try {
+      const { getSupabaseClient } = await import(
+        "../../config/supabase.js"
+      );
+      const sb = getSupabaseClient();
+      if (!sb) {
+        return c.json({ window: "48h", sources: [], reason: "supabase_unconfigured" });
+      }
+      const { data, error } = await sb
+        .from("v_headline_volume_48h")
+        .select("*");
+      if (error) {
+        return c.json(
+          { window: "48h", sources: [], error: error.message },
+          500,
+        );
+      }
+      const { getQuotaSnapshot, getBreakerSnapshot, getPoolStats } =
+        await import("../../services/browser/index.js");
+      const [quotas, breaker, pool] = [
+        await getQuotaSnapshot(),
+        getBreakerSnapshot(),
+        getPoolStats(),
+      ];
+      return c.json({
+        window: "48h",
+        sources: data ?? [],
+        browser: { pool, quotas, breaker },
+      });
+    } catch (err) {
+      return c.json(
+        { window: "48h", sources: [], error: String(err) },
+        500,
+      );
+    }
+  });
+
   return router;
 }

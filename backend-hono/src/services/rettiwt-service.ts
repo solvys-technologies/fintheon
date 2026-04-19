@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] Cut from Herald dispatcher during S27-T4. Left inert for fast re-enable. Delete in S29 if browser-harness coverage holds. Do NOT remove imports elsewhere without replacing data source.
 // [claude-code 2026-04-12] Rettiwt service — per-user API key pool with rotation + guest fallback for timelines
 // Replaces single-token singleton. Keys loaded from user_settings.rettiwt_api_keys in Supabase.
 

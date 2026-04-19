@@ -9,6 +9,28 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T17:00:00",
+    agent: "claude-code",
+    summary:
+      "[v.27.3] S27-T4 (W1c): shared browser primitives + Rettiwt cut + 48h headline telemetry. New backend-hono/src/services/browser/ suite — singleton Playwright pool (max 4 pages, LIFO reuse, auto-reconnect), tiered allow-list with per-domain daily quotas (regulatory/market/social/news — X/Twitter 500/day replaces Rettiwt, SEC/Fed/BLS/Treasury regulatory tier at 50-200/day, prediction markets + Bloomberg/Reuters/WSJ/FT), harness.ts exposing browseRead({mode: 'allowlist'|'universal', waitFor, extract, textOnly, budget_usd}) with self-healing selector fallbacks (data-testid→data-test/data-qa, class→substring, id→aria/name, article/main heuristics), per-domain circuit breaker (3 fails × 10min pause reusing AgentReach pattern), universal-mode env gate (BROWSER_UNIVERSAL_ENABLED=false throws UNIVERSAL_MODE_DISABLED), $0.01/URL budget cap, full audit log to browser_fetches, and quota ledger mirrored to browser_quota_ledger for restart-safe daily counts. screenshot-service.ts refactored off subprocess-spawn onto the pool (persistent pages cut Playwright launch overhead). Rettiwt cut from Herald dispatcher: feed-poller.ts stubs out pollForEconNews/manualRefresh/rettiwtUserTimeline inline (returns empty arrays, preserves structure); boot/services.ts gates initRettiwtPool + startEconPoller behind RETTIWT_REENABLE=true (default off); rettiwt-service.ts + riskflow/rettiwt-poller-accounts.ts kept intact with S27-T4 header comments for fast re-enable. Migration 20260419_02_sources.sql adds source/source_domain/fetched_at/fetch_latency_ms to riskflow_items, v_headline_volume_48h view for per-source comparison, browser_fetches audit table, browser_quota_ledger table. New route GET /api/diagnostics/headline-volume returns 48h per-source counts + pool stats + quota snapshot + circuit-breaker state. HeadlineVolumeWidget mounted on HermesAdminTab (the existing diagnostics surface) — glassmorphic, accent-gold numerics, per-source sparklines, no gradients/kanban/shimmer. Unblocks Wave 2 (T6 Harper Browser Operator + T7 News Worker consume from browser/ barrel).",
+    files: [
+      "backend-hono/src/services/browser/pool.ts",
+      "backend-hono/src/services/browser/allowlist.ts",
+      "backend-hono/src/services/browser/harness.ts",
+      "backend-hono/src/services/browser/index.ts",
+      "backend-hono/src/services/screenshot-service.ts",
+      "backend-hono/src/services/rettiwt-service.ts",
+      "backend-hono/src/services/riskflow/rettiwt-poller-accounts.ts",
+      "backend-hono/src/services/riskflow/feed-poller.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "supabase/migrations/20260419_02_sources.sql",
+      "frontend/components/diagnostics/HeadlineVolumeWidget.tsx",
+      "frontend/components/settings/HermesAdminTab.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T01:00:00",
     agent: "claude-code",
     summary:

@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] Cut from Herald dispatcher during S27-T4. Left inert for fast re-enable. Delete in S29 if browser-harness coverage holds. Do NOT remove imports elsewhere without replacing data source.
 // [claude-code 2026-04-12] Rettiwt poller accounts — DB-backed with hardcoded fallback
 // Reads from riskflow_source_accounts table. Falls back to hardcoded lists if DB unreachable.
 
