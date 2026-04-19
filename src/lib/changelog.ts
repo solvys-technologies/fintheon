@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T22:45:00",
+    agent: "claude-code",
+    summary:
+      "Aquarium redesign sprint — Track 5 (Risk & Narratives reflow). Risk Signals (RiskSignalCards) moved from under Agent Scorecards to the top-left of the Risk & Narratives page, which was its intended spot all along — a two-column flex row (Risk Signals | Active Narratives) separated by a fading vertical ruler replaces the old 50/50 grid. Live Risk Signals (SanctumRiskAssessment) was removed from the page entirely — the left column now carries the moved Risk Signals section and the duplicate is gone. SanctumNarratives was rebuilt: kanban-style per-card borders replaced by clean row separators with fading rulers, each row shows direction icon + title + category + instruments + status + date, plus two small fuses on the right — HEALTH (0–100) and the new CROWDING (0–10) axis. An Info-button toggle opens a Lexicon drawer explaining the Crowding bands (0–3 Contrarian, 4–6 Forming, 7–8 Crowded, 9–10 Washout-prone) with Doto band numbers and a one-line trading meaning each. Crowding is currently derived from health + instrument count until the backend surfaces a real score. PolymarketPredictionCards (the kanban-style tile grid under 'Prediction Markets & Polybot Trades') is gone from the Risk page; new ConsolidatedTradeLedger component takes its slot — one row per trade, columns Question/Side/Entry/Traction/Origin/Age with a traction fuse rather than per-card borders, age-collapse policy (rows older than 48h auto-fold into a STALE drawer unless traction ≥ 75 keeps them surfaced), Doto entry price + traction score, clickable row opens polymarket.com in a new tab. AgentScorecard kept on the page but without its bordered container; now lives under its own Agent Performance header, preceded by a fading horizontal ruler. PolymarketPredictionCards + SanctumRiskAssessment files still on disk but no longer imported anywhere (orphaned safely).",
+    files: [
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/narrative/SanctumNarratives.tsx",
+      "frontend/components/narrative/ConsolidatedTradeLedger.tsx",
+    ],
+  },
+  {
     date: "2026-04-19T22:00:00",
     agent: "claude-code",
     summary:

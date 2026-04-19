@@ -27,10 +27,9 @@ import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
 import { SanctumBriefing } from "./SanctumBriefing";
 import { SanctumNarratives } from "./SanctumNarratives";
-import { SanctumRiskAssessment } from "./SanctumRiskAssessment";
 import { AgentScorecard } from "../consilium/AgentScorecard";
 import { AquariumPredictionCards } from "./AquariumPredictionCards";
-import { PolymarketPredictionCards } from "./PolymarketPredictionCards";
+import { ConsolidatedTradeLedger } from "./ConsolidatedTradeLedger";
 import { BlendedVIXCard } from "./BlendedVIXCard";
 import { NextSessionForecastCard } from "./NextSessionForecastCard";
 import { RiskSignalCards } from "./RiskSignalCards";
@@ -359,70 +358,84 @@ export function Sanctum({
 
               {data && data.compositeIV > 0 ? (
                 <div className="flex-1 flex flex-col gap-6">
-                  {/* ── 50/50: Active Narratives + Live Risk Signals ── */}
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 min-h-[300px]">
-                    {/* Left: Active Narratives */}
-                    <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
-                      <div className="px-4 py-2 border-b border-[var(--fintheon-border)]/10">
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
-                          Active Narratives
+                  {/* ── 2-col: Risk Signals (left, moved from bottom) | Active Narratives (right) ── */}
+                  <div className="flex items-stretch min-h-[320px]">
+                    {/* Left: Risk Signals */}
+                    <div className="flex-1 min-w-0 flex flex-col px-3 py-2">
+                      <div className="px-1 pb-2">
+                        <span
+                          className="text-[10px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/85"
+                          style={{ fontFamily: "var(--font-heading)" }}
+                        >
+                          Risk Signals
                         </span>
                       </div>
-                      <div className="p-3 max-h-[400px] overflow-y-auto">
+                      <div className="flex-1 min-h-0 overflow-y-auto">
+                        <RiskSignalCards />
+                      </div>
+                    </div>
+
+                    {/* Fading vertical ruler */}
+                    <div className="w-px shrink-0 relative mx-2">
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background:
+                            "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+                          opacity: 0.18,
+                        }}
+                      />
+                    </div>
+
+                    {/* Right: Active Narratives */}
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="flex-1 min-h-0 overflow-y-auto">
                         <SanctumNarratives
                           narratives={narratives}
                           expanded={preset === "full-brief"}
                         />
                       </div>
                     </div>
-                    {/* Right: Live Risk Signals */}
-                    <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
-                      <div className="px-4 py-2 border-b border-[var(--fintheon-border)]/10">
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
-                          Live Risk Signals
-                        </span>
-                      </div>
-                      <div className="p-3 max-h-[400px] overflow-y-auto">
-                        {(riskflowItems?.length ?? 0) > 0 ? (
-                          <SanctumRiskAssessment
-                            riskflowItems={riskflowItems ?? []}
-                            categoryScores={data.categoryScores}
-                          />
-                        ) : (
-                          <p className="text-[10px] text-[var(--fintheon-muted)]/30 text-center py-4">
-                            No risk signals in current window
-                          </p>
-                        )}
-                      </div>
-                    </div>
                   </div>
 
-                  {/* Prediction Markets & Polybot Trades — moved from Page 0 */}
+                  {/* Fading horizontal ruler */}
+                  <div className="h-px relative">
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(to right, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+                        opacity: 0.18,
+                      }}
+                    />
+                  </div>
+
+                  {/* Consolidated Trade Ledger — replaces Polymarket kanban */}
                   <div>
-                    <div className="text-[9px] text-[var(--fintheon-muted)]/40 mb-2 uppercase tracking-wider">
-                      Prediction Markets & Polybot Trades
-                    </div>
-                    <PolymarketPredictionCards />
+                    <ConsolidatedTradeLedger />
                   </div>
 
-                  {/* ── Agent Scorecards ── */}
-                  <div className="flex items-center gap-3 py-2">
-                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
-                    <span className="text-[8px] text-[var(--fintheon-muted)]/30 uppercase tracking-widest">
-                      Agent Performance
-                    </span>
-                    <div className="flex-1 h-px bg-[var(--fintheon-border)]/10" />
+                  {/* Fading horizontal ruler */}
+                  <div className="h-px relative">
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(to right, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+                        opacity: 0.18,
+                      }}
+                    />
                   </div>
-                  <div className="rounded border border-[var(--fintheon-border)]/15 bg-[var(--fintheon-surface)]/20 overflow-hidden">
-                    <div className="border-b border-[var(--fintheon-border)]/10">
-                      <div className="px-4 py-2">
-                        <span className="text-[9px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider">
-                          Risk Signals
-                        </span>
-                      </div>
-                      <div className="px-3 pb-3">
-                        <RiskSignalCards />
-                      </div>
+
+                  {/* Agent Performance — scorecards only (risk signals moved up; no bordered container) */}
+                  <div>
+                    <div className="px-1 pb-2">
+                      <span
+                        className="text-[10px] tracking-[0.22em] uppercase text-[var(--fintheon-accent)]/85"
+                        style={{ fontFamily: "var(--font-heading)" }}
+                      >
+                        Agent Performance
+                      </span>
                     </div>
                     <div className="max-h-[350px] overflow-y-auto">
                       <AgentScorecard />
