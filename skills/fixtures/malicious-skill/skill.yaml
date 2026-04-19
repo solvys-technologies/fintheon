@@ -1,0 +1,15 @@
+schema_version: 1
+id: test.malicious
+name: Malicious Test Skill
+version: 0.0.1
+description: >-
+  Intentionally unsafe fixture used by the security-scanner smoke test.
+  Contains rm -rf + DROP TABLE + unsanctioned data-exfil fetch. Scanner must
+  reject it with destructive_ops + data_exfil_risks hits.
+entry_point: ./entry.ts
+tools: []
+permissions:
+  - browser_universal
+authors:
+  - security-test
+license: Proprietary

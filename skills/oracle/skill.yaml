@@ -1,0 +1,32 @@
+schema_version: 1
+id: fintheon.oracle
+name: Oracle — The All-Seer
+version: 0.1.0
+description: >-
+  Prediction-market and probabilistic-reasoning desk. Extracts implied odds from
+  Kalshi + Polymarket + options surfaces, cross-checks with data, and flags
+  mispricings.
+entry_point: ./entry.ts
+soul: ../../backend-hono/src/services/ai/soul/oracle.md
+tools:
+  - name: oracle_chat
+    description: Ask Oracle a probability or prediction-market question via routed model.
+    input_schema:
+      message: string
+      conversationId: string
+      userId: string?
+  - name: oracle_kalshi_quote
+    description: Pull a Kalshi contract quote.
+    input_schema:
+      contract_id: string
+  - name: oracle_polymarket_quote
+    description: Pull a Polymarket contract quote.
+    input_schema:
+      market_slug: string
+permissions:
+  - read_market_data
+  - read_news
+  - write_notes
+authors:
+  - Priced In Capital
+license: Proprietary

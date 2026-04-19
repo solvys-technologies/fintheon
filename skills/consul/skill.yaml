@@ -1,0 +1,27 @@
+schema_version: 1
+id: fintheon.consul
+name: Consul — Fundamentals & Mega-Caps
+version: 0.1.0
+description: >-
+  Mega-cap tech and earnings desk. Owns fundamental valuations, earnings
+  deep-dives, guidance risk, and sector-rotation framing.
+entry_point: ./entry.ts
+soul: ../../backend-hono/src/services/ai/soul/consul.md
+tools:
+  - name: consul_chat
+    description: Fundamentals / earnings / sector analysis via routed Sonnet model.
+    input_schema:
+      message: string
+      conversationId: string
+      userId: string?
+  - name: consul_earnings_brief
+    description: Generate a pre-earnings brief for a single ticker.
+    input_schema:
+      ticker: string
+permissions:
+  - read_market_data
+  - read_filings
+  - write_notes
+authors:
+  - Priced In Capital
+license: Proprietary

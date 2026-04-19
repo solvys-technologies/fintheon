@@ -9,6 +9,42 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T15:20:00",
+    agent: "claude-code",
+    summary:
+      "[v.27.9] S27-T10 W2e — Skills Hub full adoption. Five desks exposed as agentskills.io-compatible skills: skills/{harper,oracle,feucht,consul,herald}/{skill.yaml,entry.ts}. Each entry.ts is a thin wrapper delegating to existing handlers via Smart Model Routing (T9). Three external skills wrapped for smoke: skills/imported/{close-crm,notion,google-workspace}/skill.yaml. New backend-hono/src/services/skills/{registry,importer,security-scanner,yaml-parse}.ts. Registry exposed via GET /api/skills returning all local + imported skills with manifests, scan reports, status. POST /api/skills/import triggers importSkillFromHub(hubUrl) — resolves local path / tarball / git clone, parses skill.yaml through Zod schema, runs security scanner, persists audit row. Scanner checks: destructive_ops (rm -rf / DROP TABLE / DELETE FROM / execSync / spawnSync) — always blocks; data_exfil_risks (fetch to non-allowlisted host) — blocks unless declared; prompt_injection_vectors (user input interpolation) — blocks unless declared; supply_chain_warnings (known-bad deps) — warns. CLI entry: bun run skills:import <hub_url>. Sidecar integration — boot services now registers all local skills with hermes sidecar via sidecarClient.skills.invoke('register_local', …) when HERMES_SIDECAR_ENABLED=true. Malicious fixture at skills/fixtures/malicious-skill/ proves scanner rejects rm -rf + non-allowlisted fetch. New supabase/migrations/20260419_08_skill_imports.sql.",
+    files: [
+      "skills/harper/skill.yaml",
+      "skills/harper/entry.ts",
+      "skills/oracle/skill.yaml",
+      "skills/oracle/entry.ts",
+      "skills/feucht/skill.yaml",
+      "skills/feucht/entry.ts",
+      "skills/consul/skill.yaml",
+      "skills/consul/entry.ts",
+      "skills/herald/skill.yaml",
+      "skills/herald/entry.ts",
+      "skills/imported/close-crm/skill.yaml",
+      "skills/imported/close-crm/entry.ts",
+      "skills/imported/notion/skill.yaml",
+      "skills/imported/notion/entry.ts",
+      "skills/imported/google-workspace/skill.yaml",
+      "skills/imported/google-workspace/entry.ts",
+      "skills/fixtures/malicious-skill/skill.yaml",
+      "skills/fixtures/malicious-skill/entry.ts",
+      "backend-hono/src/services/skills/importer.ts",
+      "backend-hono/src/services/skills/security-scanner.ts",
+      "backend-hono/src/services/skills/yaml-parse.ts",
+      "backend-hono/src/services/skills/registry.ts",
+      "backend-hono/src/routes/skills/index.ts",
+      "backend-hono/scripts/skills-import-cli.ts",
+      "backend-hono/src/boot/services.ts",
+      "backend-hono/package.json",
+      "supabase/migrations/20260419_08_skill_imports.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T15:10:00",
     agent: "claude-code",
     summary:
