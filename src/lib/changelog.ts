@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T20:30:00",
+    agent: "claude-code",
+    summary:
+      "Aquarium redesign sprint — Track 2 (chart button swap). The Chart button on the top bar used to render the TradingView widget-embed (s.tradingview.com/widgetembed) inside a sandbox'd iframe with a projection canvas drawn on top — that was the 'Lightweight Charts' look TP kept complaining about, plus the forecast image overlay they wanted gone. Replaced it with the exact same surface the Trading Browser already uses: EmbeddedBrowserFrame pointed at https://www.tradingview.com/chart/?symbol=X. In Electron that means a <webview> with persist:fintheon partition and native popups (so TradingView login state persists across sessions); in the browser it falls back to a permissively-sandboxed <iframe>. Symbol mapping unchanged (/MNQ→QQQ, /ES→SPX, /GC→GC1!, etc). Removed the entire projection overlay pipeline: canvas ref, ResizeObserver, tvLoaded state, drawProjectionOverlay, generateProjectionPath, getThemeColor — the forecast image is completely gone. SanctumChart still accepts the old props (timeSeries/compositeIV/confidence/etc) so Sanctum.tsx's call site doesn't have to change; they're marked @deprecated and ignored. Per TP: 'I don't want you to modify anything else about that part' — behavior of the Chart button itself (Consilium top-bar toggle → 50/50 split with Aquarium stack on the left) is untouched.",
+    files: ["frontend/components/narrative/SanctumChart.tsx"],
+  },
+  {
     date: "2026-04-19T20:00:00",
     agent: "claude-code",
     summary:
