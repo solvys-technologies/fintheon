@@ -32,9 +32,34 @@ routing:
     herald: claude-haiku-4-5
 
 voice:
-  # T5 (Claude-08) wires real voicebox + Qwen. Stubs respond with 501 until then.
-  stt_model: whisper-large-v3
-  tts_model: qwen3-tts
+  # [claude-code 2026-04-19] S27-T5 W2c — real voicebox + Qwen wired through the sidecar.
+  # Reasoning model for the voice CAO lives in ROUTING_TABLE (routing.ts) under
+  # agent=harper-voice. Swap via ROUTING_OVERRIDE_HARPER_VOICE env var.
+  agent_id: harper-voice
+  reasoning_model: qwen/qwen3.6-plus-preview:free
+  stt:
+    primary:
+      provider: whisper-turbo
+      model: whisper-turbo
+      # Base64 audio in, {transcript, words[]} out via POST /v1/voice/stt.
+    fallback:
+      provider: qwen-stt
+      model: qwen-audio-stt
+      enabled_via_env: VOICE_STT_USE_QWEN
+  tts:
+    provider: voicebox
+    model: qwen3-tts
+    voice_id: harper-voice
+    # Streams opus audio chunks; client side decodes as they arrive.
+    stream: true
+    target_first_byte_ms: 400
+  greeting:
+    # System prompt used by POST /v1/chat when the frontend opens a new voice session.
+    # Stays terse so the <2s end-of-speech → first-audio budget survives.
+    system_prompt: |
+      The user just opened the voice assistant. Give a 1-sentence greeting
+      (max 12 words) and wait for their question. Do not begin analysis.
+      Harper-voiced: confident, terse, data-first.
 
 skills:
   # T10 (Claude-10) registers agentskills.io manifests. Empty until then.

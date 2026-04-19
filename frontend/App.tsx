@@ -14,7 +14,8 @@ import { TeamPresenceProvider } from "./contexts/TeamPresenceContext";
 import { RiskFlowProvider } from "./contexts/RiskFlowContext";
 import { ContextBankProvider } from "./contexts/ContextBankContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { VoiceProvider, useVoice } from "./contexts/VoiceContext";
+import { VoiceProvider } from "./contexts/VoiceContext";
+import { VoiceRimFrame } from "./components/voice/VoiceRimFrame";
 import { ERProvider } from "./contexts/ERContext";
 import { MainLayout } from "./components/layout/MainLayout";
 import SplashScreen from "./components/SplashScreen";
@@ -33,36 +34,8 @@ import { AuthShell } from "./components/auth/AuthShell";
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();
 
-// [claude-code 2026-03-13] VoiceBorderPulse — green pulse when listening, gold when speaking
-function VoiceBorderPulse() {
-  const { runtimeState, enabled } = useVoice();
-  if (!enabled || runtimeState === "idle") return null;
-
-  const isListening = runtimeState === "listening";
-  const isSpeaking = runtimeState === "speaking";
-  if (!isListening && !isSpeaking) return null;
-
-  const color = isListening ? "rgba(34,197,94," : "rgba(199,159,74,";
-
-  return (
-    <>
-      <style>{`
-        @keyframes voiceBorderPulse {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 0.8; }
-        }
-      `}</style>
-      <div
-        className="fixed inset-0 pointer-events-none z-[90]"
-        style={{
-          border: `2px solid ${color}0.5)`,
-          animation: "voiceBorderPulse 2s ease-in-out infinite",
-          boxShadow: `inset 0 0 20px ${color}0.15)`,
-        }}
-      />
-    </>
-  );
-}
+// [claude-code 2026-04-19] S27-T5 W2c — replaced VoiceBorderPulse with VoiceRimFrame
+// (accent-gold rim + transcript ticker + dismiss button; never covers content).
 
 /**
  * Headless init hook — runs backend health check + cloud migration, then signals ready.
@@ -185,7 +158,7 @@ function AuthGate() {
                         <VoiceProvider>
                           <ERProvider>
                             <div className="dark">
-                              <VoiceBorderPulse />
+                              <VoiceRimFrame />
                               <style>{`
                   * {
                     scrollbar-width: thin;

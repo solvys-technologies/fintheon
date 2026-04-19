@@ -28,6 +28,26 @@ export interface VoiceSentimentResponse {
   provider: "claude-haiku" | "fallback";
 }
 
+// [claude-code 2026-04-19] S27-T5 W2c — session endpoints (sidecar-relayed).
+export interface VoiceSessionStartResponse {
+  conversationId: string;
+  greetingAudioUrl: string | null;
+  greetingBase64?: string;
+  greetingMimeType?: string;
+  resumed: boolean;
+  error?: string;
+}
+
+export interface VoiceSessionInterruptResponse {
+  ok: boolean;
+  interrupted: boolean;
+}
+
+export interface VoiceSessionEndResponse {
+  ok: boolean;
+  conversationId: string;
+}
+
 // Notifications Service
 export class NotificationsService {
   constructor(private client: ApiClient) {}
@@ -125,6 +145,25 @@ export class VoiceService {
     context?: string;
   }): Promise<VoiceSentimentResponse> {
     return this.client.post("/api/voice/analyze-sentiment", data);
+  }
+
+  // [claude-code 2026-04-19] S27-T5 W2c — sidecar-relayed session flow.
+  async sessionStart(data?: {
+    conversationId?: string;
+  }): Promise<VoiceSessionStartResponse> {
+    return this.client.post("/api/voice/session/start", data ?? {});
+  }
+
+  async sessionInterrupt(data: {
+    conversationId: string;
+  }): Promise<VoiceSessionInterruptResponse> {
+    return this.client.post("/api/voice/session/interrupt", data);
+  }
+
+  async sessionEnd(data: {
+    conversationId: string;
+  }): Promise<VoiceSessionEndResponse> {
+    return this.client.post("/api/voice/session/end", data);
   }
 }
 
