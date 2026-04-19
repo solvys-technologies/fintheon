@@ -19,6 +19,7 @@ import {
   type CanvasTool,
 } from "./NarrativeFloatingToolbar";
 import { NarrativeCanvasChat } from "./NarrativeCanvasChat";
+import { NarrativeColorKey } from "./NarrativeColorKey";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
 import {
   loadSeedEvents,
@@ -196,6 +197,9 @@ export function NarrativeMap() {
             onEditCard={handleEditCard}
             onZoomFnsReady={setZoomFns}
           />
+
+          {/* Narrative color key — bottom-right */}
+          <NarrativeColorKey />
 
           {/* Harper watching overlay — bottom-left */}
           {harperStatus?.loop?.alive && (

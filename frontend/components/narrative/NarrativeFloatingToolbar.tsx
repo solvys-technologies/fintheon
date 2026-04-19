@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S25-T6: Added computer-chip toggle in the actions row that shows/hides the NarrativeCanvasChat input (hidden by default).
 // [claude-code 2026-03-28] S8-T2: Unified bottom bar — static toolkit + expandable command-palette chat
 import { useState } from "react";
 import {
@@ -10,6 +11,7 @@ import {
   Map,
   Highlighter,
   SquareDashedMousePointer,
+  Cpu,
 } from "lucide-react";
 import { NarrativeCanvasChat } from "./NarrativeCanvasChat";
 
@@ -88,6 +90,12 @@ const ACTIONS: (ToolBtn & { onClick: string })[] = [
     tooltip: "Filter by sentiment",
   },
   {
+    id: "chat",
+    onClick: "chat",
+    icon: Cpu,
+    tooltip: "Chat with Harper",
+  },
+  {
     id: "sanctum",
     onClick: "sanctum",
     icon: Zap,
@@ -125,6 +133,7 @@ export function NarrativeFloatingToolbar({
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [sanctumOpen, setSanctumOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const handleAction = (id: string) => {
     switch (id) {
@@ -143,6 +152,9 @@ export function NarrativeFloatingToolbar({
       case "filter":
         onToggleFilter();
         break;
+      case "chat":
+        setChatOpen((v) => !v);
+        break;
     }
   };
 
@@ -155,10 +167,12 @@ export function NarrativeFloatingToolbar({
 
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2">
-      {/* Chat section — expandable above toolbar */}
+      {/* Chat section — hidden by default, toggled by the Cpu chip below */}
       <NarrativeCanvasChat
         pendingChips={pendingChips}
         onClearChip={onClearChip}
+        isOpen={chatOpen}
+        onDismiss={() => setChatOpen(false)}
       />
 
       {/* Toolbar section — static, always visible */}
@@ -219,7 +233,9 @@ export function NarrativeFloatingToolbar({
               <button
                 onClick={() => handleAction(a.onClick)}
                 className={`p-2 rounded-lg transition-all duration-150 ${
-                  active || (a.id === "sanctum" && sanctumOpen)
+                  active ||
+                  (a.id === "sanctum" && sanctumOpen) ||
+                  (a.id === "chat" && chatOpen)
                     ? "bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)]"
                     : "text-[var(--fintheon-muted)]/60 hover:text-[var(--fintheon-text)] hover:bg-[var(--fintheon-surface)]/60"
                 }`}

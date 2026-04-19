@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T23:30:00",
+    agent: "claude-code",
+    summary:
+      "Aquarium redesign sprint — Track 6 (Narrative Flow chat toggle + semantic narrative color tokens + bottom-right color key). The NarrativeCanvasChat input is now hidden by default — a new computer-chip (Cpu icon) action sits in the bottom toolbar's actions row and toggles the chat open. Send button swapped from the airplane Send icon to a gold ChevronUp matching every other Fintheon chat input. Image paste support added (clipboard image → auto-pinned as a chip alongside RiskFlow headline pins via a new localChips state). Escape now dismisses the chat and notifies the toolbar. Wispr Flow mic intentionally not added per spec. Narrative category colors moved off raw hex literals and onto CSS tokens (--narrative-geopolitical, --narrative-monetary, --narrative-macroeconomic, --narrative-market-structure, --narrative-earnings, --narrative-supply-chain, --narrative-black-swan) defined in index.css. The CATEGORY_COLORS map in narrative-force-layout.ts is now a Proxy that resolves each category through getComputedStyle — consumers keep the hex-string API but themes can repaint the entire map by overriding the CSS vars. Hex fallback values retained for SSR / pre-boot. New NarrativeColorKey component in the bottom-right corner of Narrative Flow shows a compact swatch strip with the seven narrative dot-colors; clicking opens a popover where each row has a swatch (clickable native color picker → updates the CSS var live), the resolved hex value, and a per-row reset button. All overrides persist to localStorage under fintheon:narrative-color-overrides and rehydrate on mount, surviving reloads. A 'Reset all' button in the popover header drops every override at once. DEFERRED: long-form Personalization Settings page work (general-stripe swatch dropdown UX on primary/secondary/accent, named saved-themes panel that bundles narrative + severity + priority + base palette) — those need a dedicated sprint and don't block this one.",
+    files: [
+      "frontend/index.css",
+      "frontend/lib/narrative-force-layout.ts",
+      "frontend/components/narrative/NarrativeCanvasChat.tsx",
+      "frontend/components/narrative/NarrativeFloatingToolbar.tsx",
+      "frontend/components/narrative/NarrativeColorKey.tsx",
+      "frontend/components/narrative/NarrativeMap.tsx",
+    ],
+  },
+  {
     date: "2026-04-19T22:45:00",
     agent: "claude-code",
     summary:
