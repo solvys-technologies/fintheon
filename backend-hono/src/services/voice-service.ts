@@ -1,3 +1,22 @@
+// [claude-code 2026-04-19] S27-T5 W2c — rewritten to relay through Hermes sidecar
+// (voicebox/Qwen3-TTS + Whisper-turbo + qwen/qwen3.6-plus-preview:free reasoning).
+// The old OpenAI-direct path never worked end-to-end (brief §Context).
+// Kept: VoiceTranscribeInput/Result shape so existing /api/voice/speak caller
+// still type-checks. Added: streamVoiceReply generator + synthesizeGreeting
+// for the new /api/voice/session routes.
+
+import { sidecarClient, isSidecarEnabled } from "./ai/sidecar-client.js";
+import { selectModel } from "./ai/routing.js";
+import { createLogger } from "../lib/logger.js";
+
+const log = createLogger("VoiceService");
+
+const HARPER_VOICE_AGENT_ID = "harper-voice";
+const HARPER_VOICE_ID = "harper-voice";
+
+const GREETING_PROMPT =
+  "The user just opened the voice assistant. Give a 1-sentence greeting (max 12 words) and wait for their question. Do not begin analysis.";
+
 export interface VoiceTranscribeInput {
   audioBase64?: string;
   mimeType?: string;
@@ -9,38 +28,33 @@ export interface VoiceTranscribeInput {
 export interface VoiceTranscribeResult {
   text: string;
   model: string;
-  provider: "openai" | "fallback";
+  provider: "hermes-sidecar" | "fallback";
+  words?: { word: string; start: number; end: number }[];
 }
 
 export interface VoiceSynthesisResult {
   audioBase64: string;
   audioMimeType: string;
   model: string;
-  provider: "openai";
+  provider: "hermes-sidecar";
 }
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_TRANSCRIBE_MODEL =
-  process.env.OPENAI_TRANSCRIBE_MODEL ?? "whisper-1";
-const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL ?? "gpt-4o-mini-tts";
-const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE ?? "alloy";
+export type VoiceEvent =
+  | { type: "transcript"; text: string }
+  | { type: "text"; text: string }
+  | { type: "audio"; audioBase64: string; mimeType: string }
+  | { type: "done"; reason: "complete" | "interrupted" | "error" }
+  | { type: "error"; message: string };
 
 function normalizeBase64Audio(value: string): string {
   const trimmed = value.trim();
   const prefixMatch = trimmed.match(/^data:.*;base64,(.*)$/);
-  if (prefixMatch && prefixMatch[1]) {
-    return prefixMatch[1];
-  }
+  if (prefixMatch && prefixMatch[1]) return prefixMatch[1];
   return trimmed;
 }
 
-function inferFileExtension(mimeType?: string): string {
-  if (!mimeType) return "webm";
-  if (mimeType.includes("wav")) return "wav";
-  if (mimeType.includes("mpeg") || mimeType.includes("mp3")) return "mp3";
-  if (mimeType.includes("ogg")) return "ogg";
-  if (mimeType.includes("mp4") || mimeType.includes("m4a")) return "m4a";
-  return "webm";
+function isVoiceEnabled(): boolean {
+  return isSidecarEnabled() && process.env.VOICE_SIDECAR_DISABLED !== "true";
 }
 
 export async function transcribeVoice(
@@ -55,99 +69,196 @@ export async function transcribeVoice(
   }
 
   if (!input.audioBase64) {
-    return {
-      text: "",
-      model: "none",
-      provider: "fallback",
-    };
+    return { text: "", model: "none", provider: "fallback" };
   }
 
-  if (!OPENAI_API_KEY) {
-    return {
-      text: "",
-      model: "openai-unconfigured",
-      provider: "fallback",
-    };
+  if (!isVoiceEnabled()) {
+    log.warn("transcribeVoice called with sidecar disabled");
+    return { text: "", model: "sidecar-disabled", provider: "fallback" };
   }
 
-  const normalizedBase64 = normalizeBase64Audio(input.audioBase64);
-  const bytes = Buffer.from(normalizedBase64, "base64");
-  const mimeType = input.mimeType ?? "audio/webm";
-  const ext = inferFileExtension(mimeType);
-
-  const form = new FormData();
-  const blob = new Blob([bytes], { type: mimeType });
-  form.append("file", blob, `voice.${ext}`);
-  form.append("model", OPENAI_TRANSCRIBE_MODEL);
-  if (input.language) {
-    form.append("language", input.language);
-  }
-  if (input.prompt) {
-    form.append("prompt", input.prompt);
-  }
-
-  const response = await fetch(
-    "https://api.openai.com/v1/audio/transcriptions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: form,
-    },
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Voice transcription failed (${response.status}): ${errorText}`,
-    );
-  }
-
-  const json = (await response.json()) as { text?: string };
+  const normalized = normalizeBase64Audio(input.audioBase64);
+  const result = await sidecarClient.voice.stt({
+    audio_bytes: normalized,
+    lang: input.language,
+  });
 
   return {
-    text: json.text?.trim() ?? "",
-    model: OPENAI_TRANSCRIBE_MODEL,
-    provider: "openai",
+    text: result.transcript.trim(),
+    model: "whisper-turbo",
+    provider: "hermes-sidecar",
+    words: result.words,
   };
 }
 
 export async function synthesizeVoice(
   text: string,
+  voiceId: string = HARPER_VOICE_ID,
 ): Promise<VoiceSynthesisResult | null> {
-  const input = text.trim();
-  if (!input) return null;
-  if (!OPENAI_API_KEY) return null;
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  if (!isVoiceEnabled()) return null;
 
-  const response = await fetch("https://api.openai.com/v1/audio/speech", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: OPENAI_TTS_MODEL,
-      voice: OPENAI_TTS_VOICE,
-      input: input.slice(0, 4000),
-      response_format: "mp3",
-    }),
+  const buf = await sidecarClient.voice.tts({
+    text: trimmed.slice(0, 4000),
+    voice_id: voiceId,
+    stream: false,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Voice synthesis failed (${response.status}): ${errorText}`,
-    );
+  return {
+    audioBase64: Buffer.from(buf).toString("base64"),
+    audioMimeType: "audio/ogg; codecs=opus",
+    model: "qwen3-tts",
+    provider: "hermes-sidecar",
+  };
+}
+
+export async function synthesizeGreeting(
+  conversationId: string,
+): Promise<VoiceSynthesisResult | null> {
+  if (!isVoiceEnabled()) return null;
+
+  await sidecarClient.context.ingest(conversationId, {
+    id: crypto.randomUUID(),
+    role: "system",
+    content: GREETING_PROMPT,
+    tokens_estimated: Math.ceil(GREETING_PROMPT.length / 4),
+    created_at: Date.now(),
+  });
+
+  let greetingText = "";
+  const stream = sidecarClient.chat.stream({
+    agent_id: HARPER_VOICE_AGENT_ID,
+    conversation_id: conversationId,
+    user_message: GREETING_PROMPT,
+    stream: true,
+    system_overrides: { model: selectModel("harper-voice").model },
+  });
+
+  for await (const evt of stream) {
+    if (
+      evt.type === "delta" &&
+      typeof (evt.payload as { text?: string })?.text === "string"
+    ) {
+      greetingText += (evt.payload as { text: string }).text;
+    }
+    if (evt.type === "done" || evt.type === "error") break;
   }
 
-  const arrayBuffer = await response.arrayBuffer();
-  const audioBase64 = Buffer.from(arrayBuffer).toString("base64");
+  const cleaned = greetingText.trim();
+  if (!cleaned) return null;
+  return synthesizeVoice(cleaned, HARPER_VOICE_ID);
+}
 
-  return {
-    audioBase64,
-    audioMimeType: "audio/mpeg",
-    model: OPENAI_TTS_MODEL,
-    provider: "openai",
+export interface StreamVoiceReplyArgs {
+  conversationId: string;
+  transcript: string;
+  abortSignal?: AbortSignal;
+}
+
+export async function* streamVoiceReply(
+  args: StreamVoiceReplyArgs,
+): AsyncGenerator<VoiceEvent> {
+  const { conversationId, transcript, abortSignal } = args;
+
+  if (!isVoiceEnabled()) {
+    yield {
+      type: "error",
+      message: "voice sidecar not enabled (HERMES_SIDECAR_ENABLED=false)",
+    };
+    yield { type: "done", reason: "error" };
+    return;
+  }
+
+  yield { type: "transcript", text: transcript };
+
+  await sidecarClient.context.ingest(conversationId, {
+    id: crypto.randomUUID(),
+    role: "user",
+    content: transcript,
+    tokens_estimated: Math.ceil(transcript.length / 4),
+    created_at: Date.now(),
+    metadata: { channel: "voice" },
+  });
+
+  const chatStream = sidecarClient.chat.stream({
+    agent_id: HARPER_VOICE_AGENT_ID,
+    conversation_id: conversationId,
+    user_message: transcript,
+    stream: true,
+    system_overrides: { model: selectModel("harper-voice").model },
+  });
+
+  // Sentence-gated TTS: synthesize every complete sentence as soon as the
+  // reasoning model emits it so audio starts overlapping generation.
+  let buffer = "";
+  const sentenceRe = /(?<=[.!?])\s+|\n\n/;
+  const ttsTasks: Promise<VoiceEvent>[] = [];
+
+  const startTts = (chunk: string): void => {
+    const clean = chunk.trim();
+    if (!clean) return;
+    ttsTasks.push(
+      (async () => {
+        try {
+          const buf = await sidecarClient.voice.tts({
+            text: clean,
+            voice_id: HARPER_VOICE_ID,
+            stream: true,
+          });
+          return {
+            type: "audio",
+            audioBase64: Buffer.from(buf).toString("base64"),
+            mimeType: "audio/ogg; codecs=opus",
+          } satisfies VoiceEvent;
+        } catch (err) {
+          log.warn("tts chunk failed", { error: String(err) });
+          return {
+            type: "error",
+            message: `tts failed: ${String(err)}`,
+          } satisfies VoiceEvent;
+        }
+      })(),
+    );
   };
+
+  try {
+    for await (const evt of chatStream) {
+      if (abortSignal?.aborted) break;
+
+      if (evt.type === "delta") {
+        const text = (evt.payload as { text?: string })?.text ?? "";
+        if (!text) continue;
+        yield { type: "text", text };
+        buffer += text;
+        const parts = buffer.split(sentenceRe);
+        if (parts.length > 1) {
+          for (let i = 0; i < parts.length - 1; i++) startTts(parts[i]);
+          buffer = parts[parts.length - 1];
+        }
+      } else if (evt.type === "error") {
+        const message =
+          (evt.payload as { message?: string })?.message ?? "sidecar error";
+        yield { type: "error", message };
+      } else if (evt.type === "done") {
+        break;
+      }
+    }
+
+    if (!abortSignal?.aborted && buffer.trim()) startTts(buffer);
+
+    for (const task of ttsTasks) {
+      if (abortSignal?.aborted) break;
+      yield await task;
+    }
+
+    yield {
+      type: "done",
+      reason: abortSignal?.aborted ? "interrupted" : "complete",
+    };
+  } catch (err) {
+    log.error("streamVoiceReply failed", { error: String(err) });
+    yield { type: "error", message: String(err) };
+    yield { type: "done", reason: "error" };
+  }
 }

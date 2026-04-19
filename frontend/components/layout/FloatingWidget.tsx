@@ -7,7 +7,7 @@ import { useBackend } from "../../lib/backend";
 import type { RiskFlowItem } from "../../types/api";
 import type { IVScoreResponse } from "../../types/market-data";
 import { X, Trash2 } from "lucide-react";
-import { ivHeatColor } from "../../types/miroshark";
+import { ivHeatColor } from "../../types/agent-desk";
 import { SourceIcon as ToastSourceIcon } from "../../lib/shared-icons";
 
 type LayoutOption = "tickers-only" | "combined";

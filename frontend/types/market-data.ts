@@ -83,8 +83,8 @@ export interface IVScoreResponse {
   score: number;
   vixComponent: number;
   headlineComponent: number;
-  mirosharkComponent: number;
-  weights: { vix: number; headlines: number; miroshark: number };
+  agentDeskComponent: number;
+  weights: { vix: number; headlines: number; agentDesk: number };
   vix: {
     level: number;
     percentChange: number;
@@ -112,7 +112,7 @@ export interface IVScoreResponse {
     };
   };
   instrument: string;
-  /** V4: MiroShark / heuristic forward-looking prediction */
+  /** V4: AgentDesk / heuristic forward-looking prediction */
   prediction?: {
     nextSessionScore: number;
     confidence: number;
@@ -122,7 +122,7 @@ export interface IVScoreResponse {
       probability: number;
       projectedScore: number;
     }>;
-    source: "miroshark" | "heuristic";
+    source: "agentDesk" | "heuristic";
     generatedAt: string;
   };
   /** V3: Systemic risk overlay data */

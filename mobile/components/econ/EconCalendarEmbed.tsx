@@ -1,3 +1,8 @@
+// [claude-code 2026-04-19] Fix iframe height flat-render — TradingView embed reads height
+//   from JSON on script load. Passing "100%" into a flex child produces an iframe that
+//   renders at ~300px and leaves a dead gap above the Aquarium on dash page 2. We now
+//   observe the wrapper with ResizeObserver and rebuild the script with an explicit
+//   pixel height so the calendar actually fills its container.
 // [claude-code 2026-04-16] TradingView economic calendar embed — Nothing-styled, full-height tab
 import { useEffect, useRef, useState } from "react";
 
@@ -18,10 +23,26 @@ export function EconCalendarEmbed() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [importanceFilter, setImportanceFilter] =
     useState<ImportanceFilter>("all");
+  const [measuredHeight, setMeasuredHeight] = useState(0);
+
+  // Observe the container and feed real pixel height into the embed JSON.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = Math.round(entry.contentRect.height);
+        if (h > 50)
+          setMeasuredHeight((prev) => (Math.abs(prev - h) > 8 ? h : prev));
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || measuredHeight < 50) return;
 
     while (container.firstChild) container.removeChild(container.firstChild);
 
@@ -40,7 +61,7 @@ export function EconCalendarEmbed() {
       colorTheme: "dark",
       isTransparent: true,
       width: "100%",
-      height: "100%",
+      height: measuredHeight,
       locale: "en",
       importanceFilter: FILTER_MAP[importanceFilter],
       countryFilter: "us",
@@ -50,7 +71,7 @@ export function EconCalendarEmbed() {
     return () => {
       while (container.firstChild) container.removeChild(container.firstChild);
     };
-  }, [importanceFilter]);
+  }, [importanceFilter, measuredHeight]);
 
   return (
     <div
@@ -69,6 +90,7 @@ export function EconCalendarEmbed() {
           justifyContent: "space-between",
           padding: "12px 16px",
           borderBottom: "1px solid var(--border)",
+          flexShrink: 0,
         }}
       >
         <span
@@ -118,7 +140,7 @@ export function EconCalendarEmbed() {
         </div>
       </div>
 
-      {/* TradingView widget container */}
+      {/* TradingView widget container — measured to feed explicit pixel height */}
       <div
         ref={containerRef}
         style={{

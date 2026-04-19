@@ -1,9 +1,13 @@
+// [claude-code 2026-04-19] TP beta polish: swap SaveCheckmark (read as status) for
+//   the new SaveButton (reads as a tap target). Same position, same isDirty/saveAll wiring.
+// [claude-code 2026-04-18] A4: mounted NotificationBell next to hamburger
 // [claude-code 2026-04-16] S20: Toolbar — global save checkmark under hamburger
 // [claude-code 2026-04-17] Toolbar VIX fades in only when Dash hero VIX is off-screen
 import { Menu } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
-import { SaveCheckmark } from "../shared/SaveCheckmark";
+import { SaveButton } from "../settings/SaveButton";
+import { NotificationBell } from "../notifications/NotificationBell";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { useHeroVixVisibleStore } from "../../hooks/useHeroVixVisible";
@@ -14,7 +18,7 @@ interface MobileToolbarProps {
 }
 
 export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
-  const { settings, isDirty, saveAll } = useSettings();
+  const { settings, isDirty, isSaving, saveAll } = useSettings();
   const traderName = settings.traderName || "";
   const isOnline = useOnlineStatus();
   const heroVixVisible = useHeroVixVisibleStore((s) => s.visible);
@@ -109,28 +113,31 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
           )}
         </AnimatePresence>
 
-        {/* Hamburger */}
-        <button
-          onClick={onHamburgerTap}
-          aria-label="Open menu"
-          style={{
-            background: "transparent",
-            border: "none",
-            padding: 8,
-            minWidth: 44,
-            minHeight: 44,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            WebkitTapHighlightColor: "transparent",
-          }}
-        >
-          <Menu size={20} strokeWidth={1.5} color="var(--text-secondary)" />
-        </button>
+        {/* Right cluster: notification bell + hamburger */}
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <NotificationBell />
+          <button
+            onClick={onHamburgerTap}
+            aria-label="Open menu"
+            style={{
+              background: "transparent",
+              border: "none",
+              padding: 8,
+              minWidth: 44,
+              minHeight: 44,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            <Menu size={20} strokeWidth={1.5} color="var(--text-secondary)" />
+          </button>
+        </div>
       </div>
 
-      {/* Global save-all double-checkmark — sticky below hamburger */}
+      {/* Global save — sticky pill below hamburger, only when there are staged changes */}
       <div
         style={{
           position: "fixed",
@@ -139,7 +146,7 @@ export function MobileToolbar({ onHamburgerTap }: MobileToolbarProps) {
           zIndex: 41,
         }}
       >
-        <SaveCheckmark visible={isDirty} variant="double" onSave={saveAll} />
+        <SaveButton visible={isDirty} saving={isSaving} onSave={saveAll} />
       </div>
     </div>
   );

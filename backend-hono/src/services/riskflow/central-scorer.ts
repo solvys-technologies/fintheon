@@ -1,8 +1,9 @@
+// [claude-code 2026-04-19] S24-T2: SCORING_V4 walk-back pair detection after write, before push emit
 // [claude-code 2026-04-16] S20-T9: Split into scorer-tagging.ts + scorer-watchlist.ts — this file is now the pipeline orchestrator
 // [claude-code 2026-04-12] Fix stuck scorer: staleness guard (90s force-reset), defensive tick logging, delayed initial cycle for DB pool warmup
 // [claude-code 2026-03-31] POI priority boost — Top 3 POI = Critical (macroLevel 4), Top 8 = High (macroLevel 3)
 // [claude-code 2026-03-26] Fix currentPrice: 0 → fetch real instrument price for autoresearch observations
-// [claude-code 2026-03-24] Added reactive MiroShark adjustment loop for high-impact items (macroLevel >= 3)
+// [claude-code 2026-03-24] Added reactive AgentDesk adjustment loop for high-impact items (macroLevel >= 3)
 // [claude-code 2026-03-23] Central scoring agent — polls unscored items from Supabase, runs AI analysis, writes scored results
 // Gated by ENABLE_CENTRAL_SCORING=true (only TP's instance should set this)
 // Phase T4: wired recordObservation() to feed autoresearch scoring pipeline
@@ -27,7 +28,7 @@ import {
   adjustScoresForRiskFlow,
   getRunningState,
   setRunningState,
-} from "../miroshark/miroshark-reactive.js";
+} from "../agent-desk/agent-desk-reactive.js";
 import {
   getAllActivePhrases,
   phraseMatchesItem,
@@ -271,7 +272,7 @@ export async function scoringCycle(): Promise<number> {
       }
     }
 
-    // Subject tagging for MiroShark persona routing
+    // Subject tagging for AgentDesk persona routing
     for (const item of enrichedItems) {
       const subjectTags = tagHeadlineSubjects(item.headline, item.tags || []);
       if (subjectTags.length > 0) {
@@ -336,7 +337,7 @@ export async function scoringCycle(): Promise<number> {
       log.info(` Recorded ${observationCount} autoresearch observations`);
     }
 
-    // Reactive MiroShark adjustment
+    // Reactive AgentDesk adjustment
     for (const item of enrichedItems) {
       if (item.macroLevel && shouldTriggerReactiveAdjustment(item.macroLevel)) {
         const currentState = getRunningState();
@@ -351,7 +352,7 @@ export async function scoringCycle(): Promise<number> {
           });
           setRunningState(updated);
           log.info(
-            ` Reactive MiroShark adjustment: ${item.headline.slice(0, 60)}... → composite ${updated.compositeIV.toFixed(1)}`,
+            ` Reactive AgentDesk adjustment: ${item.headline.slice(0, 60)}... → composite ${updated.compositeIV.toFixed(1)}`,
           );
         }
       }
@@ -393,29 +394,104 @@ export async function scoringCycle(): Promise<number> {
     const written = await writeScoredItems(scoredItems);
     log.info(` Wrote ${written} scored items to Supabase`);
 
+    // ── Walk-back pairer (SCORING_V4) ──────────────────────────────────────
+    // [claude-code 2026-04-19] S24-T2: scan newly-scored L9/L10 items for
+    // semantic reversals of prior L9/L10 items in the last 24h. If matched,
+    // fade the original by 0.5× and fire a `walkBackReverts` critical push.
+    // Regime revert is deferred to T1's proposeRegimeChange() when available.
+    if (process.env.SCORING_V4 === "true") {
+      try {
+        const { detectWalkBack, applyFadeToOriginal } =
+          await import("../scoring/walk-back-pairer.js");
+        const l9l10 = enrichedItems.filter((i) => (i.ivScore ?? 0) >= 9);
+        for (const item of l9l10) {
+          const result = await detectWalkBack(item);
+          if (result.action !== "fade" || !result.pairsWith) continue;
+
+          const faded = await applyFadeToOriginal({
+            originalId: result.pairsWith,
+            fadeFactor: 0.5,
+          });
+          log.info(
+            `Walk-back: "${item.headline.slice(0, 60)}" pairs with ${result.pairsWith} (overlap=${result.overlapScore}) faded=${faded}`,
+          );
+
+          // Propose regime revert via T1's proposals API if available.
+          try {
+            const mod: Record<string, unknown> =
+              await import("../regime/regime-service.js");
+            const propose = (mod as { proposeRegimeChange?: Function })
+              .proposeRegimeChange;
+            if (typeof propose === "function") {
+              await propose({
+                proposedBy: "walk-back-pairer",
+                severity: "critical",
+                reason: `walk-back: "${item.headline.slice(0, 80)}" reverses ${result.pairsWith}`,
+                triggerItemId: item.id,
+              });
+            }
+          } catch (err) {
+            log.warn(
+              `walk-back proposeRegimeChange unavailable: ${String(err)}`,
+            );
+          }
+
+          // Fire walkBackReverts push (critical severity bypasses quiet hours).
+          try {
+            const { emitPushAndLog } = await import("../notifications/emit.js");
+            await emitPushAndLog({
+              userId: "all",
+              category: "walkBackReverts",
+              severity: "critical",
+              title: "Walk-back detected",
+              body: `"${item.headline.slice(0, 90)}" reverses a recent L9/L10`,
+              url: `/riskflow/item/${item.id}`,
+              fingerprint: `walkback-${result.pairsWith}`,
+              metadata: {
+                newItemId: item.id,
+                pairedItemId: result.pairsWith,
+                overlapScore: result.overlapScore,
+              },
+            });
+          } catch (err) {
+            log.warn(`walk-back push emit failed: ${String(err)}`);
+          }
+        }
+      } catch (err) {
+        log.warn("Walk-back pairer step failed (non-fatal)", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
     // ── Push notifications ──────────────────────────────────────────────────
-    // [claude-code 2026-04-15] T7: Fire web push for Critical/High items. Never blocks scoring.
+    // [claude-code 2026-04-18] S2/B1/B2/B3: emit.ts + fingerprint dedup + narrative coalescing + polished payload
     try {
       const highItems = enrichedItems.filter(
         (i) => i.macroLevel && i.macroLevel >= 3,
       );
       if (highItems.length > 0) {
-        const { sendToAllUsers } = await import("../web-push-sender.js");
+        const { coalesceAndEmit } =
+          await import("../notifications/narrative-coalesce.js");
+        const { buildRiskFlowPush } =
+          await import("../notifications/riskflow-payload.js");
         for (const item of highItems) {
-          const severity = item.macroLevel === 4 ? "critical" : "high";
-          sendToAllUsers(
+          const payload = buildRiskFlowPush(item);
+          // Coalesce by (narrativeThreads[0] OR primary symbol) — 60s debounce window.
+          const narrativeKey =
+            item.narrativeThreads?.[0] || item.symbols?.[0] || "generic";
+          coalesceAndEmit(
             {
-              title: `[RISKFLOW] ${item.headline || "Alert"}`,
-              body:
-                (item as any).summary || item.headline?.substring(0, 100) || "",
+              userId: "all",
               category: "riskflow",
-              url: "/riskflow",
+              severity: item.macroLevel === 4 ? "critical" : "high",
+              ...payload,
             },
-            severity,
-          ).catch(() => {});
+            narrativeKey,
+          );
         }
         log.info(
-          `Queued push notifications for ${highItems.length} high-severity items`,
+          `Queued push notifications for ${highItems.length} high-severity items (coalesced)`,
         );
       }
     } catch {

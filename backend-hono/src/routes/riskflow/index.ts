@@ -20,6 +20,7 @@ import {
   handleRefresh,
   handleGenerateNote,
   handleRescore,
+  handleRescoreAll,
   handlePollingToggle,
   handlePollingStatus,
   handleUserPollingToggle,
@@ -29,6 +30,8 @@ import {
   handleDeletePhrase,
   handleNotRelevant,
   handleGetRiskSignals,
+  handleDoctor,
+  handleGetItemById,
 } from "./handlers.js";
 
 export function createRiskFlowRoutes(): Hono {
@@ -73,6 +76,9 @@ export function createRiskFlowRoutes(): Hono {
   // POST /api/riskflow/rescore - Re-score with current regime/calibration weights
   router.post("/rescore", handleRescore);
 
+  // POST /api/riskflow/rescore-all - One-shot V4 rescore of every persisted item (super admin only) [S24-T3]
+  router.post("/rescore-all", handleRescoreAll);
+
   // POST /api/riskflow/:id/generate-note - Manual agent note generation
   router.post("/:id/generate-note", handleGenerateNote);
 
@@ -94,6 +100,10 @@ export function createRiskFlowRoutes(): Hono {
   // GET /api/riskflow/user-polling-status - Per-user polling registry status
   router.get("/user-polling-status", handleUserPollingStatus);
 
+  // POST /api/riskflow/doctor — self-service: force-refresh pool + catchup + Agent Reach tick
+  // [claude-code 2026-04-18] S25-T3: ONLY user-facing poll trigger. Lives on Team Card.
+  router.post("/doctor", handleDoctor);
+
   // Catalyst Watch — watchlist phrase CRUD
   router.get("/phrases", handleGetPhrases);
   router.post("/phrases", handleAddPhrase);
@@ -101,6 +111,9 @@ export function createRiskFlowRoutes(): Hono {
 
   // Risk Signals — AI-refined cards (S16-T3)
   router.get("/risk-signals", handleGetRiskSignals);
+
+  // GET /api/riskflow/items/:id — single-item lookup for the mobile DetailSheet modal (S25)
+  router.get("/items/:id", handleGetItemById);
 
   // POST /api/riskflow/rettiwt-refresh — force-reload keys from DB + reset cooldowns
   // [claude-code 2026-04-16] Called on app startup to ensure X feed polling is immediately healthy

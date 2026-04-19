@@ -16,6 +16,13 @@ export interface BasePollerConfig {
   getInterval?: () => number;
   /** Delay before first poll after start() (default: 0) */
   initialDelayMs?: number;
+  /**
+   * Called after each successful tick that produces written items. Used by pollers
+   * to attribute successful cycles to a user (or the backend sentinel) in the
+   * per-user polling registry. Errors in this callback are swallowed.
+   * [claude-code 2026-04-18] S25-T2
+   */
+  onWrite?: (writtenCount: number) => void;
 }
 
 export interface PollResult {
@@ -89,6 +96,15 @@ export function createBasePoller(
         log.info(
           `Wrote ${written} items (${result.items.length} fetched, ${unique.length} unique, ${clean.length} passed guard)`,
         );
+        if (written > 0 && config.onWrite) {
+          try {
+            config.onWrite(written);
+          } catch (cbErr) {
+            log.warn("onWrite callback threw (swallowed)", {
+              error: String(cbErr),
+            });
+          }
+        }
       }
 
       recordRun(config.name);

@@ -96,7 +96,7 @@ async function withApprovalGate<T>(
   toolInput: Record<string, unknown>,
   description: string,
   executeFn: () => Promise<T>,
-  opts?: { noTimeout?: boolean },
+  opts?: { noTimeout?: boolean; userId?: string },
 ): Promise<T | string> {
   if (AUTO_APPROVED_TOOLS.has(toolName)) return executeFn();
   if (isToolApproved(toolName)) return executeFn();
@@ -119,7 +119,7 @@ async function withApprovalGate<T>(
 /** Create Harper's tool set bound to a specific requestId for approval gating */
 export function createHarperTools(
   requestId: string,
-  approvalOpts?: { noTimeout?: boolean },
+  approvalOpts?: { noTimeout?: boolean; userId?: string },
 ) {
   return [
     tool({

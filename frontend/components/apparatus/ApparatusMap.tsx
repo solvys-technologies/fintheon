@@ -151,7 +151,7 @@ const AGENTS: AgentNode[] = [
       {
         id: "o2",
         fact: "BTC cycle analysis: accumulation phase — low volatility + high exchange outflows",
-        source: "miroshark",
+        source: "agentDesk",
         timestamp: "2026-03-20T07:30:00",
         confidence: 0.65,
         version: 2,
@@ -225,7 +225,7 @@ const AGENTS: AgentNode[] = [
       {
         id: "f2",
         fact: "VIX at 14.2 — low vol regime, reducing position sizes per Rule 5 (dial back in volatility)",
-        source: "miroshark",
+        source: "agentDesk",
         timestamp: "2026-03-20T09:00:00",
         confidence: 0.91,
         version: 1,
@@ -294,7 +294,7 @@ const AGENTS: AgentNode[] = [
       {
         id: "c3",
         fact: "Mega-cap tech P/E compression: avg forward P/E dropped from 32x to 28x over 6 weeks",
-        source: "miroshark",
+        source: "agentDesk",
         timestamp: "2026-03-20T06:00:00",
         confidence: 0.85,
         version: 2,

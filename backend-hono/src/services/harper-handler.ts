@@ -1,4 +1,6 @@
-// [claude-code 2026-04-17] S23-T3: buildAquariumContext now exported + enhanced with "how to read this" preamble + surface-gated injection (Harper reads her own MiroShark output as ground truth)
+// [claude-code 2026-04-19] S27-T9 W2e: Harper CLI bridge invocation now records a routing_decisions row via llmCall wrapper — even though the model is pinned to Opus via Claude Code CLI, the telemetry feeds diagnostics + GEPA metrics.
+// [claude-code 2026-04-19] S27-T8 W1d: Harper system prompt now loads from SOUL.md (grounded on CLAUDE.md literal import). Hardcoded HARPER_BASE_SYSTEM_PROMPT retained as fallback only.
+// [claude-code 2026-04-17] S23-T3: buildAquariumContext now exported + enhanced with "how to read this" preamble + surface-gated injection (Harper reads her own AgentDesk output as ground truth)
 // [claude-code 2026-03-28] S8-T7: Harper handler — Claude CLI session handler for Chat
 /**
  * Harper Handler
@@ -11,12 +13,15 @@
  *     → Parsed stream events → SSE to frontend
  *
  * Features:
- *   - Full Fintheon context injection (narratives, RiskFlow, MiroShark)
+ *   - Full Fintheon context injection (narratives, RiskFlow, AgentDesk)
  *   - Artifact creation (catalyst cards, narrative items, trade ideas)
  *   - Persona switching via system prompt modifier
  *   - Session persistence in Supabase (harper_sessions)
  */
 
+// [claude-code 2026-04-19] S27-T8 W1d: Harper system prompt now loads from SOUL.md (grounded on CLAUDE.md).
+//   The hardcoded HARPER_BASE_SYSTEM_PROMPT constant is retained as a fallback for offline/bootstrap
+//   scenarios where the SOUL file is unreadable.
 import {
   isBridgeAvailable,
   bridgeChat,
@@ -25,10 +30,16 @@ import {
 } from "./claude-sdk/bridge.js";
 import { buildFeedContext } from "./ai/agent-instructions/index.js";
 import {
+  loadSoul,
+  renderSystemPrompt as renderSoulPrompt,
+} from "./ai/soul/loader.js";
+import {
   getContextForAgent,
   type AgentMemoryEntry,
 } from "./agent-context-bank-service.js";
 import { createLogger } from "../lib/logger.js";
+import { selectModel } from "./ai/routing.js";
+import { getSupabaseClient } from "../config/supabase.js";
 
 const log = createLogger("HarperOpus");
 
@@ -100,7 +111,7 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 
 ## Platform Sections
 - **Consilium** = Main workspace with tabs: Sanctum (narratives), Chat (you), Boardroom (team), Apparatus (tools)
-- **Sanctum** = NarrativeMap (force-directed canvas), Aquarium (MiroShark sim), Timeline
+- **Sanctum** = NarrativeMap (force-directed canvas), Aquarium (AgentDesk sim), Timeline
 - **Boardroom** = Forum (bulletin), Imperium (task command), Agentic Forum, Scriptorium (docs)
 - **Apparatus** = Desk (agent monitoring), Fileroom (context bank)
 - **Strategium** = Right panel: mission control widgets, RiskFlow feed, economic calendar
@@ -134,8 +145,8 @@ Use these freely to inspect code, grep logs, query the database, run scripts, bu
 - **Consul** — Mega-cap tech, earnings, sector rotation, fundamental valuations
 - **Herald** — Breaking news, social sentiment, headline risk, information asymmetry
 
-## Aquarium (MiroShark)
-When the user is on the Aquarium surface, or when a simulation report appears in your context, you are looking at the live MiroShark deliberation you helped score. Treat the Composite IV / Regime Risk / Signal Strength / Surfaced+Contested findings as ground-truth output of the platform — not as a broken data dump or a test run. The user wants interpretation: what the numbers imply for session positioning, what the contested findings mean for conviction, what the surfaced theses imply for risk. Never respond with "it looks like the pipeline is broken" — that's a category error.
+## Aquarium (AgentDesk)
+When the user is on the Aquarium surface, or when a simulation report appears in your context, you are looking at the live AgentDesk deliberation you helped score. Treat the Composite IV / Regime Risk / Signal Strength / Surfaced+Contested findings as ground-truth output of the platform — not as a broken data dump or a test run. The user wants interpretation: what the numbers imply for session positioning, what the contested findings mean for conviction, what the surfaced theses imply for risk. Never respond with "it looks like the pipeline is broken" — that's a category error.
 
 ## Communication Style
 Concise, authoritative, data-driven. No hedging unless genuinely uncertain.
@@ -164,14 +175,14 @@ information asymmetry detection. Fast, alert-oriented.`,
 // ── Internal Connector Context Builders ───────────────────────────────────
 
 /**
- * Build Aquarium context: injects latest MiroShark simulation summary with interpretation scaffolding.
+ * Build Aquarium context: injects latest AgentDesk simulation summary with interpretation scaffolding.
  * [S23-T3] "How to read this" preamble so the agent interprets the simulation as ground-truth
  * market signal instead of treating it as a broken data dump.
  */
 export async function buildAquariumContext(): Promise<string> {
   try {
     const { getLatestReport } =
-      await import("./miroshark/miroshark-service.js");
+      await import("./agent-desk/agent-desk-service.js");
     const report = (await getLatestReport()) as Record<string, any> | null;
     if (!report) return "";
 
@@ -200,7 +211,7 @@ export async function buildAquariumContext(): Promise<string> {
               ? "Light Winds"
               : "Calm Seas";
 
-    return `\n\n--- AQUARIUM (MiroShark) CONTEXT ---
+    return `\n\n--- AQUARIUM (AgentDesk) CONTEXT ---
 How to read this:
 - Composite IV (0-10): 0-2 Calm Seas, 2-4 Light Winds, 4-6 Gathering Storm, 6-8 Tipping Point, 8-10 Shit Show.
 - Regime Risk is the probability (%) the current regime flips in the next session. >30% = elevated reversal risk.
@@ -266,8 +277,17 @@ export async function harperChat(
     requestId,
   } = request;
 
-  // Build system prompt with persona modifier
-  let systemPrompt = HARPER_BASE_SYSTEM_PROMPT;
+  // Build system prompt — SOUL-grounded identity first, legacy constant as fallback.
+  let systemPrompt: string;
+  try {
+    const soul = await loadSoul("harper");
+    systemPrompt = renderSoulPrompt(soul);
+  } catch (err) {
+    log.warn("SOUL load failed for Harper; falling back to hardcoded prompt", {
+      error: String(err),
+    });
+    systemPrompt = HARPER_BASE_SYSTEM_PROMPT;
+  }
 
   if (persona && PERSONA_MODIFIERS[persona]) {
     systemPrompt += `\n\n--- PERSONA ACTIVE ---\n${PERSONA_MODIFIERS[persona]}`;
@@ -366,6 +386,12 @@ export async function harperChat(
     requestId,
   };
 
+  // [S27-T9 W2e] Record the routing decision for diagnostics + GEPA telemetry.
+  //   Claude CLI bridge is cost-free (Claude Max subscription), so cost_usd=0 —
+  //   but we still want Harper traffic visible alongside OpenRouter-routed agents.
+  const rule = selectModel("harper", "chat");
+  const startedAt = Date.now();
+
   const result = bridgeChat(bridgeRequest, {
     systemPrompt,
     model: "opus",
@@ -373,5 +399,46 @@ export async function harperChat(
     maxTurns: thinkHarder ? 5 : 3,
   });
 
+  void recordHarperRoutingDecision({
+    conversationId,
+    rule_model: rule.model,
+    rule_provider: rule.provider,
+    getFullText: result.getFullText,
+    startedAt,
+  });
+
   return result;
+}
+
+async function recordHarperRoutingDecision(args: {
+  conversationId: string;
+  rule_model: string;
+  rule_provider: string;
+  getFullText: () => string;
+  startedAt: number;
+}): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+  // Defer until the stream has had a chance to complete — the bridge settles getFullText.
+  await new Promise((resolve) => setTimeout(resolve, 2_000));
+  try {
+    const text = args.getFullText();
+    // crude token estimate: ~4 chars/token — good enough for diagnostics smoke.
+    const output_tokens = Math.max(1, Math.round(text.length / 4));
+    await sb.from("routing_decisions").insert({
+      conversation_id: args.conversationId,
+      agent_id: "harper",
+      task_type: "chat",
+      model: args.rule_model,
+      provider: args.rule_provider,
+      input_tokens: null,
+      output_tokens,
+      cost_usd: 0,
+      latency_ms: Date.now() - args.startedAt,
+    });
+  } catch (err) {
+    log.warn("Failed to record harper routing_decisions row", {
+      error: String(err),
+    });
+  }
 }

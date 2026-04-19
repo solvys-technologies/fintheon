@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] Chat FAB now forwards to chat tab (no floating overlay) per TP
 // [claude-code 2026-04-16] Shell — toolbar + bulletin FAB with glow reminder + chat FAB status
 import {
   useRef,
@@ -19,8 +20,7 @@ import { MobileBulletin } from "../bulletin/MobileBulletin";
 interface MobileShellProps {
   activeTab: number;
   onTabChange: (index: number) => void;
-  chatOpen: boolean;
-  onChatToggle: () => void;
+  onChatTap: () => void;
   children: ReactNode;
 }
 
@@ -30,8 +30,7 @@ const TAB_COUNT = 5;
 export function MobileShell({
   activeTab,
   onTabChange,
-  chatOpen,
-  onChatToggle,
+  onChatTap,
   children,
 }: MobileShellProps) {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -79,7 +78,11 @@ export function MobileShell({
   return (
     <div
       style={{
+        // Dynamic viewport height respects iOS URL bar show/hide and resizes
+        // when the on-screen keyboard opens (with viewport interactive-widget
+        // =resizes-content set in index.html). 100vh fallback for older WebKit.
         minHeight: "100vh",
+        height: "100dvh",
         background: "var(--black)",
         display: "flex",
         flexDirection: "column",
@@ -94,9 +97,14 @@ export function MobileShell({
         ref={contentRef}
         style={{
           flex: 1,
+          minHeight: 0,
           overflow: "hidden",
           paddingTop: `calc(env(safe-area-inset-top) + ${TOOLBAR_HEIGHT}px)`,
-          paddingBottom: `calc(env(safe-area-inset-bottom) + 24px)`,
+          // Chat tab (index 2) manages its own bottom padding via the sticky
+          // composer — adding 24px here forced the input into a floating
+          // pocket instead of hugging the bottom edge like a native app.
+          paddingBottom:
+            activeTab === 2 ? "0" : `calc(env(safe-area-inset-bottom) + 24px)`,
           display: "flex",
           flexDirection: "column",
         }}
@@ -104,8 +112,8 @@ export function MobileShell({
         {children}
       </main>
 
-      {/* Floating buttons — bulletin above chat */}
-      {!chatOpen && activeTab !== 2 && (
+      {/* Floating buttons — bulletin above chat. Hidden on chat tab itself. */}
+      {activeTab !== 2 && (
         <>
           {/* Bulletin FAB with glow reminder */}
           <button
@@ -152,8 +160,8 @@ export function MobileShell({
             }`}</style>
           )}
 
-          {/* Chat FAB */}
-          <FloatingChatButton onTap={onChatToggle} />
+          {/* Chat FAB — forwards to chat tab */}
+          <FloatingChatButton onTap={onChatTap} />
         </>
       )}
 

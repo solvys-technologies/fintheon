@@ -1062,6 +1062,30 @@ export async function getBreakingNews(userId: string): Promise<FeedResponse> {
   return getFeed(userId, { breakingOnly: true, limit: 10 });
 }
 
+// [claude-code 2026-04-19] S25: single-item lookup by id for the mobile DetailSheet.
+//   In-memory cache first, then scored DB fallback. Returns null when unknown (expired
+//   out of cache + not persisted) so the client renders an empty state.
+export async function getItemById(id: string): Promise<FeedItem | null> {
+  if (!id) return null;
+  const cached = feedCache?.find((i) => i.id === id);
+  if (cached) return cached;
+
+  // DB fallback — read scored items (central-scorer writes here) and find matching tweet_id.
+  if (isSupabaseConfigured()) {
+    try {
+      const rows = await readScoredItems({ limit: 500 });
+      const match = rows.find(
+        (r: ScoredRiskFlowItem) =>
+          r.tweet_id === id || (r as unknown as { id?: string }).id === id,
+      );
+      if (match) return scoredToFeedItem(match);
+    } catch {
+      /* fall through to null */
+    }
+  }
+  return null;
+}
+
 // [claude-code 2026-04-05] Feed health snapshot for Harper monitoring hook
 export function getFeedHealth(): {
   cacheSize: number;

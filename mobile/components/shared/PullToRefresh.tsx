@@ -1,7 +1,10 @@
+// [claude-code 2026-04-19] S26-P1 T7: pull-to-refresh haptics upgraded —
+//   `haptic.tap()` when the threshold is armed, `haptic.success()` when onRefresh
+//   resolves. Previously fired a single vibration on arm.
 // [claude-code 2026-04-16] Pull-to-refresh — haptic-gated vibration
 import { type ReactNode, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useHaptic } from "../../hooks/useHaptic";
+import { haptic } from "../../lib/haptics";
 
 interface PullToRefreshProps {
   children: ReactNode;
@@ -20,13 +23,14 @@ export function PullToRefresh({
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef(0);
   const pulling = useRef(false);
-  const vibrate = useHaptic();
+  const armed = useRef(false);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       if (scrollRef.current && scrollRef.current.scrollTop <= 0) {
         startY.current = e.touches[0].clientY;
         pulling.current = true;
+        armed.current = false;
       }
     },
     [scrollRef],
@@ -37,7 +41,13 @@ export function PullToRefresh({
       if (!pulling.current || refreshing) return;
       const delta = e.touches[0].clientY - startY.current;
       if (delta > 0) {
-        setPullDistance(Math.min(delta * 0.7, PULL_THRESHOLD * 1.5));
+        const next = Math.min(delta * 0.7, PULL_THRESHOLD * 1.5);
+        setPullDistance(next);
+        // Buzz once the refresh threshold is crossed, not every frame.
+        if (!armed.current && next >= PULL_THRESHOLD) {
+          armed.current = true;
+          haptic.tap();
+        }
       }
     },
     [refreshing],
@@ -47,19 +57,21 @@ export function PullToRefresh({
     if (!pulling.current) return;
     pulling.current = false;
     if (pullDistance >= PULL_THRESHOLD && !refreshing) {
-      vibrate(15);
       setRefreshing(true);
       setPullDistance(PULL_THRESHOLD);
       try {
         await onRefresh();
+        haptic.success();
       } finally {
         setRefreshing(false);
         setPullDistance(0);
+        armed.current = false;
       }
     } else {
       setPullDistance(0);
+      armed.current = false;
     }
-  }, [pullDistance, refreshing, onRefresh, vibrate]);
+  }, [pullDistance, refreshing, onRefresh]);
 
   const showIndicator = pullDistance > 10 || refreshing;
 

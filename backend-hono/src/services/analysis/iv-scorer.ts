@@ -1,3 +1,7 @@
+// [claude-code 2026-04-19] S24-T3: V4 calculateMacroLevel scarcity gate behind SCORING_V4 flag.
+//   L10 reserved for environment-changing headlines (action verb + lexicon matrix-flip / Level-4 emoji / major print).
+//   L9 = strong evidence with lexicon hit. L8 caps hedged/speculative framing ("talks of", "considering", "may").
+// [claude-code 2026-04-19] S24-T2: SCORING_V4 branch — novelty-damped commentator, narrative-aware sentiment, directional geopolitical weights. V3 path untouched when flag is off.
 // [claude-code 2026-03-26] S2-T5: Regime-aware V3 rewire — async, dynamic calibration weights, regime+commentator multipliers, scheduled-data breaking block
 // [claude-code 2026-03-26] Tier-based score ceiling + recalibrated scoreToPoints curve (was producing 200+ pts for jobless claims)
 // [claude-code 2026-03-24] VIX-weighted scoring: continuousVIXMultiplier, SubScoreBreakdown, finer EVENT_WEIGHTS, macro threshold adjustment
@@ -14,7 +18,11 @@ import type {
 } from "../../types/news-analysis.js";
 import type { SubScoreBreakdown } from "../../types/riskflow.js";
 import type { VIXData } from "../vix-service.js";
-import { hasLevel4Emoji, MAJOR_MACRO_PRINTS } from "../headline-parser.js";
+import {
+  hasLevel4Emoji,
+  MAJOR_MACRO_PRINTS,
+  geopoliticalEventType,
+} from "../headline-parser.js";
 import {
   INSTRUMENT_BETAS,
   continuousVIXMultiplier,
@@ -25,6 +33,11 @@ import {
 } from "../regime/regime-service.js";
 import { getMultiplierForSpeaker } from "../commentator/commentator-service.js";
 import { getWeightForEvent } from "../calibration/calibration-service.js";
+import {
+  computeNoveltyFactor,
+  recordUtterance,
+} from "../scoring/speaker-novelty.js";
+import { interpretSentimentThroughNarratives } from "../scoring/narrative-sentiment.js";
 
 // [claude-code 2026-03-24] Synced with iv-scoring-v2 finer granularity (half-point steps, 2.0-10.0 range)
 // Base impact weights by event type — must stay in sync with iv-scoring-v2.ts EVENT_WEIGHTS
@@ -40,6 +53,11 @@ const EVENT_WEIGHTS: Record<string, number> = {
   bankingCrisis: 9,
   // Fed/Policy + Geopolitical (8-8.5)
   geopolitical: 8.5,
+  // [claude-code 2026-04-19] S24-T2: V4-only directional geopolitical weights
+  // Bullish de-escalation matters less to volatility than escalation.
+  geopoliticalBearish: 8.5,
+  geopoliticalBullish: 7.0,
+  geopoliticalNeutral: 5.5,
   fedDecision: 8.5,
   fomc: 8,
   powellSpeak: 8,
@@ -136,21 +154,35 @@ const SCHEDULED_DATA_EVENTS = [
 ];
 
 /**
- * Calculate IV impact score for a parsed headline (V3: regime-aware, async)
+ * Calculate IV impact score for a parsed headline (V3: regime-aware, async).
+ * When SCORING_V4=true, applies novelty-damped commentator + narrative-aware
+ * sentiment + directional geopolitical event types. V3 output is byte-identical
+ * when the flag is off.
  */
 export async function calculateIVScore(
   input: IVScoreInput,
 ): Promise<ExtendedIVScore> {
   const { parsed, hotPrint, timestamp = new Date(), vixData } = input;
   const rationale: string[] = [];
+  const isV4 = process.env.SCORING_V4 === "true";
 
   // --- Sub-score tracking ---
   let subTiming = 0;
   let subDeviation = 0;
   let subMomentum = 0;
 
+  // [claude-code 2026-04-19] S24-T2: V4 directional geopolitical override.
+  // V3 still sees eventType="geopolitical"; V4 routes to the directional variant
+  // based on the side-channel parsed.geopoliticalDirection set by headline-parser.
+  let eventType = parsed.eventType ?? "default";
+  if (isV4 && eventType === "geopolitical" && parsed.geopoliticalDirection) {
+    eventType = geopoliticalEventType(parsed.geopoliticalDirection);
+    rationale.push(
+      `V4: geopolitical → ${eventType} (direction=${parsed.geopoliticalDirection})`,
+    );
+  }
+
   // Get base weight from calibration table (falls back to EVENT_WEIGHTS)
-  const eventType = parsed.eventType ?? "default";
   let baseEventWeight: number;
   try {
     baseEventWeight = await getWeightForEvent(eventType);
@@ -275,6 +307,10 @@ export async function calculateIVScore(
     }
   }
 
+  // [claude-code 2026-04-19] S24-T2: V4 narrative-aware sentiment — resolved once
+  // and reused for both regime multiplier + return value to keep them consistent.
+  const resolvedSentiment = await resolveSentiment(parsed, hotPrint, isV4);
+
   // --- Regime multiplier (after VIX, before tier ceiling) ---
   let regimeMultiplier = 1.0;
   let regimeName = "CONSOLIDATION";
@@ -288,10 +324,9 @@ export async function calculateIVScore(
       regimeMultiplier = regimeProfile.eventTypeOverrides[eventType];
     }
     // Then apply sentiment-based scaling
-    const sentiment = determineSentiment(parsed, hotPrint);
-    if (sentiment === "bullish") {
+    if (resolvedSentiment === "bullish") {
       regimeMultiplier *= regimeProfile.sentimentMultipliers.bullish;
-    } else if (sentiment === "bearish") {
+    } else if (resolvedSentiment === "bearish") {
       regimeMultiplier *= regimeProfile.sentimentMultipliers.bearish;
     } else {
       regimeMultiplier *= regimeProfile.sentimentMultipliers.neutral;
@@ -303,14 +338,30 @@ export async function calculateIVScore(
   }
 
   // --- Commentator multiplier (after regime, before tier ceiling) ---
+  // [claude-code 2026-04-19] S24-T2: V4 damps commentator boost by novelty.
+  // effectiveBoost = 1 + 0.5 * (rawMult - 1) * noveltyFactor.
+  // - rawMult=1 → no change (no boost to dampen)
+  // - rawMult=2, novelty=1.0 (novel) → effective 1.5×
+  // - rawMult=2, novelty=0.3 (highly repetitive) → effective 1.15×
   let commentatorMultiplier = 1.0;
   if (parsed.speaker) {
     try {
-      commentatorMultiplier = await getMultiplierForSpeaker(parsed.speaker);
-      score *= commentatorMultiplier;
-      rationale.push(
-        `Speaker: ${parsed.speaker} (${commentatorMultiplier.toFixed(2)}x tier)`,
-      );
+      const rawMult = await getMultiplierForSpeaker(parsed.speaker);
+      if (isV4) {
+        const novelty = await computeNoveltyFactor(parsed.speaker, parsed.raw);
+        const effective = 1 + 0.5 * (rawMult - 1) * novelty;
+        commentatorMultiplier = effective;
+        score *= effective;
+        rationale.push(
+          `V4 Speaker: ${parsed.speaker} raw=${rawMult.toFixed(2)} novelty=${novelty.toFixed(2)} → eff=${effective.toFixed(2)}x`,
+        );
+      } else {
+        commentatorMultiplier = rawMult;
+        score *= commentatorMultiplier;
+        rationale.push(
+          `Speaker: ${parsed.speaker} (${commentatorMultiplier.toFixed(2)}x tier)`,
+        );
+      }
     } catch {
       // Fallback: no speaker adjustment
     }
@@ -352,8 +403,8 @@ export async function calculateIVScore(
   // Determine macro level (1-4 scale) — VIX-aware thresholds
   const macroLevel = calculateMacroLevel(score, parsed, hotPrint, vixData);
 
-  // Determine sentiment
-  const sentiment = determineSentiment(parsed, hotPrint);
+  // [claude-code 2026-04-19] S24-T2: reuse the narrative-aware sentiment from above
+  const sentiment = resolvedSentiment;
 
   // Generate trading implication
   const tradingImplication = generateTradingImplication(
@@ -362,6 +413,12 @@ export async function calculateIVScore(
     sentiment,
     eventType,
   );
+
+  // [claude-code 2026-04-19] S24-T2: record speaker utterance for future novelty
+  // calcs. Fire and forget — never blocks scoring. V3 skips this entirely.
+  if (isV4 && parsed.speaker) {
+    void recordUtterance(parsed.speaker, parsed.raw);
+  }
 
   return {
     eventType,
@@ -443,6 +500,258 @@ function calculateMacroLevel(
   if (hotPrint?.impact === "medium" || score >= level3Threshold) return 3;
   if (score >= 4) return 2;
   return 1;
+}
+
+// ─── V4 Scarcity Gate (SCORING_V4) ───────────────────────────────────
+// L9 / L10 are reserved for environment-changing headlines.
+// Hedged framing ("talks of", "considering") caps at L8 regardless of multipliers.
+// T2 wires this into calculateIVScore when SCORING_V4=true; rescore-all calls it directly.
+
+const V4_ACTION_VERBS = [
+  "signed",
+  "confirmed",
+  "announced",
+  "declared",
+  "begins",
+  "commences",
+  "collapses",
+  "fails",
+  "ends",
+  "resigned",
+  "fired",
+  "dies",
+  "attacked",
+  "struck",
+  "launched",
+  "cuts",
+  "hikes",
+  "halts",
+  "resumes",
+  "reopens",
+  "halted",
+  "approved",
+  "rejected",
+  "passed",
+  "vetoed",
+] as const;
+
+const V4_HEDGE_PHRASES = [
+  "talks of",
+  "discussions",
+  "considering",
+  "weighing",
+  "may ",
+  "might ",
+  "could ",
+  "possibly",
+  "maybe",
+  "reportedly planning",
+  "rumored",
+  "suggests",
+  "sources say",
+] as const;
+
+export const V4_CAP_HEDGED = 8;
+export const V4_CAP_NO_GATE = 8.5;
+export const V4_THRESHOLD_L9 = 8.5;
+export const V4_THRESHOLD_L10 = 9.5;
+
+export interface V4GateAnalysis {
+  hasActionVerb: boolean;
+  hasHedgePhrase: boolean;
+  hasLevel4Emoji: boolean;
+  isMajorPrint: boolean;
+  lexiconHit: boolean;
+  isMatrixFlip: boolean;
+  targetRegime: string | null;
+}
+
+export function analyzeV4Gate(
+  parsed: ParsedHeadline,
+  lexicon: Array<{
+    keyword: string;
+    phrasePattern: string | null;
+    isMatrixFlip: boolean;
+    targetRegime: string | null;
+    requiresActionVerb: boolean;
+  }>,
+): V4GateAnalysis {
+  const headline = (parsed.raw ?? "").toLowerCase();
+  const hasActionVerb = V4_ACTION_VERBS.some((v) => headline.includes(v));
+  const hasHedgePhrase = V4_HEDGE_PHRASES.some((p) => headline.includes(p));
+  const hasEmoji = hasLevel4Emoji(parsed.raw ?? "");
+  const isMajorPrint = MAJOR_MACRO_PRINTS.includes(parsed.eventType ?? "");
+
+  let lexiconHit = false;
+  let isMatrixFlip = false;
+  let targetRegime: string | null = null;
+  for (const entry of lexicon) {
+    let matches = false;
+    if (entry.phrasePattern) {
+      try {
+        matches = new RegExp(entry.phrasePattern, "i").test(parsed.raw ?? "");
+      } catch {
+        matches = false;
+      }
+    } else if (entry.keyword) {
+      matches = headline.includes(entry.keyword.toLowerCase());
+    }
+    if (!matches) continue;
+
+    lexiconHit = true;
+    if (entry.isMatrixFlip && (!entry.requiresActionVerb || hasActionVerb)) {
+      isMatrixFlip = true;
+      targetRegime = entry.targetRegime;
+      break;
+    }
+  }
+
+  return {
+    hasActionVerb,
+    hasHedgePhrase,
+    hasLevel4Emoji: hasEmoji,
+    isMajorPrint,
+    lexiconHit,
+    isMatrixFlip,
+    targetRegime,
+  };
+}
+
+export interface V4ScarcityGateResult {
+  cappedScore: number;
+  capReason: string;
+  level: number;
+  matrixFlip: boolean;
+  targetRegime: string | null;
+}
+
+/**
+ * V4 scarcity gate: returns the maximum allowed score given lexicon + action-verb + hedge analysis.
+ * Caller is responsible for `Math.min(rawScore, result.cappedScore)`.
+ *
+ * Rules (per S24-T3 brief):
+ *   L10 ⟺ hasLevel4Emoji OR (isMajorPrint AND action verb) OR (lexicon matrix-flip AND action verb)
+ *   L9  ⟺ rawScore ≥ 8.5 AND lexicon hit  OR  (isMajorPrint AND high deviation)
+ *   L8  ⟺ rawScore ≥ 7.0; also the hard cap whenever a hedge phrase is present
+ *   L7..L1: V3 ladder (no cap from this gate)
+ */
+export async function applyV4ScarcityGate(
+  rawScore: number,
+  parsed: ParsedHeadline,
+  options: { highDeviation?: boolean } = {},
+): Promise<V4ScarcityGateResult> {
+  const { getLexicon } = await import("../scoring/lexicon-cache.js");
+  const lexicon = await getLexicon();
+  return computeV4ScarcityGate(rawScore, parsed, lexicon, options);
+}
+
+/** Pure variant exposed for batch rescoring (caller pre-loads lexicon once). */
+export function computeV4ScarcityGate(
+  rawScore: number,
+  parsed: ParsedHeadline,
+  lexicon: Parameters<typeof analyzeV4Gate>[1],
+  options: { highDeviation?: boolean } = {},
+): V4ScarcityGateResult {
+  const a = analyzeV4Gate(parsed, lexicon);
+
+  // L10 path
+  const qualifiesForL10 =
+    a.hasLevel4Emoji ||
+    (a.isMajorPrint && a.hasActionVerb) ||
+    (a.isMatrixFlip && a.hasActionVerb);
+
+  if (qualifiesForL10 && !a.hasHedgePhrase) {
+    return {
+      cappedScore: 10,
+      capReason: a.hasLevel4Emoji
+        ? "L10: Level-4 emoji"
+        : a.isMajorPrint
+          ? "L10: major print + action verb"
+          : "L10: lexicon matrix-flip + action verb",
+      level: 10,
+      matrixFlip: a.isMatrixFlip,
+      targetRegime: a.targetRegime,
+    };
+  }
+
+  // Hedge phrase forces max L8 regardless of other signals
+  if (a.hasHedgePhrase) {
+    return {
+      cappedScore: V4_CAP_HEDGED,
+      capReason: `L8 cap: hedged framing (${V4_HEDGE_PHRASES.find((p) => (parsed.raw ?? "").toLowerCase().includes(p))})`,
+      level: 8,
+      matrixFlip: false,
+      targetRegime: null,
+    };
+  }
+
+  // L9 path
+  const qualifiesForL9 =
+    (rawScore >= V4_THRESHOLD_L9 && a.lexiconHit) ||
+    (a.isMajorPrint && options.highDeviation === true);
+
+  if (qualifiesForL9) {
+    return {
+      cappedScore: 9.4,
+      capReason: a.lexiconHit
+        ? "L9: lexicon hit + score≥8.5"
+        : "L9: major print + high deviation",
+      level: 9,
+      matrixFlip: false,
+      targetRegime: a.targetRegime,
+    };
+  }
+
+  // No L9/L10 qualification → cap below the L9 threshold so multipliers can't push past
+  if (rawScore >= V4_THRESHOLD_L9) {
+    return {
+      cappedScore: V4_CAP_NO_GATE,
+      capReason: "L8 cap: no lexicon flip / action verb",
+      level: 8,
+      matrixFlip: false,
+      targetRegime: null,
+    };
+  }
+
+  // L7..L1 unchanged from V3
+  return {
+    cappedScore: rawScore,
+    capReason: "V4 gate: no cap (score < 8.5)",
+    level: Math.floor(rawScore),
+    matrixFlip: false,
+    targetRegime: null,
+  };
+}
+
+/** True when SCORING_V4 feature flag is enabled. */
+export function isScoringV4Enabled(): boolean {
+  return process.env.SCORING_V4 === "true";
+}
+
+/**
+ * [claude-code 2026-04-19] S24-T2: Resolve sentiment — V4 tries narrative-aware
+ * interpretation first for speaker-attributed events, else consults geopolitical
+ * direction, else falls back to V3 determineSentiment. V3 path is unchanged.
+ */
+async function resolveSentiment(
+  parsed: ParsedHeadline,
+  hotPrint: HotPrint | null | undefined,
+  isV4: boolean,
+): Promise<"bullish" | "bearish" | "neutral"> {
+  if (!isV4) return determineSentiment(parsed, hotPrint);
+
+  // Speaker-attributed: narrative tint wins if a narrative matches.
+  if (parsed.speaker) {
+    const narrative = await interpretSentimentThroughNarratives(parsed);
+    if (narrative) return narrative;
+  }
+
+  // Geopolitical: directional pattern drives sentiment directly (no narrative needed).
+  if (parsed.geopoliticalDirection === "bullish") return "bullish";
+  if (parsed.geopoliticalDirection === "bearish") return "bearish";
+  if (parsed.geopoliticalDirection === "neutral") return "neutral";
+
+  return determineSentiment(parsed, hotPrint);
 }
 
 /**

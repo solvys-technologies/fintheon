@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- [claude-code 2026-04-19] S27-T11 W2e: local launchd unit for the GEPA nightly runner.
+     Fires at 02:00 ET (06:00 UTC; StartCalendarInterval is local time on macOS).
+     Load: launchctl load -w ~/Library/LaunchAgents/io.solvys.fintheon-gepa.plist
+     Symlink from the repo: ln -s $(pwd)/launchd/io.solvys.fintheon-gepa.plist ~/Library/LaunchAgents/
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.solvys.fintheon-gepa</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-lc</string>
+        <string>cd "$FINTHEON_ROOT/backend-hono" &amp;&amp; /opt/homebrew/bin/bun run src/services/gepa/runner.ts &gt;&gt; /tmp/fintheon-gepa.log 2&gt;&amp;1</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>FINTHEON_ROOT</key>
+        <string>/Users/tifos/Documents/Codebases/fintheon</string>
+        <key>GEPA_ENABLED</key>
+        <string>true</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>2</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/tmp/fintheon-gepa.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/fintheon-gepa.err.log</string>
+</dict>
+</plist>

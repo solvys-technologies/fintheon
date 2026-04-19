@@ -1,22 +1,31 @@
+// [claude-code 2026-04-18] v5.22 polish per TP: (a) page 2 swapped from TradingView
+//   EconCalendarEmbed (rendered as a black void on TP's screenshot) to native
+//   MiniSessionCalendar — same data, no third-party iframe, no widget rendering bug.
+//   (b) Catalyst page removed from the snap stack — RiskFlow already covers that surface
+//   per TP. (c) Briefing-page Aquarium row moved out of page 2 and lives below the
+//   calendar still, but page count drops from 6 → 5.
+// [claude-code 2026-04-18] v5.22 S2 (post-S1 reconcile): AGENTIC DESK → AGENT DESK; hero
+//   ticker labels aligned on one row (alignItems flex-start + lineHeight 1 on labels);
+//   IVSubScores prop renamed miroshark → agentDesk. S1 fully renamed the IVScoreResponse
+//   field too (mirosharkComponent → agentDeskComponent), so the call-site reads the new
+//   name. Legacy `/api/miroshark/*` URLs still aliased on the backend.
+// [claude-code 2026-04-19] Tighten page 1 padding (−25% above brief), give briefing card
+//   more vertical room; page 2 calendar now owns real pixel height so no black gap above
+//   Aquarium. Aquarium rendered in a compact glass sliver at bottom.
 // [claude-code 2026-04-16] T7: Dash — snap pages, Risk Signals replaces Proposals, NarrativeFlow catalysts + timeline
 // [claude-code 2026-04-17] Observe hero VIX visibility so toolbar VIX can fade in/out
-import { lazy, Suspense, useRef } from "react";
+import { useRef } from "react";
 import { motion, type Variants } from "framer-motion";
 import { VixBadge } from "../shared/VixBadge";
 import { BriefingCard } from "./BriefingCard";
 import { AquariumSummary } from "./AquariumSummary";
 import { InstrumentOutlookCards } from "./InstrumentOutlookCards";
 import { MobileRiskSignalCards } from "./RiskSignalCards";
-import { CatalystCards } from "./CatalystCards";
+import { MiniSessionCalendar } from "./MiniSessionCalendar";
 import { TimelineView } from "./TimelineView";
 import { useIVScore } from "../../hooks/useIVScore";
 import { useObserveHeroVixVisibility } from "../../hooks/useHeroVixVisible";
-
-const EconCalendarEmbed = lazy(() =>
-  import("../econ/EconCalendarEmbed").then((m) => ({
-    default: m.EconCalendarEmbed,
-  })),
-);
+import { colorForScore } from "../../lib/fuse-palette";
 
 const container: Variants = {
   animate: { transition: { staggerChildren: 0.05 } },
@@ -30,31 +39,33 @@ const item: Variants = {
   },
 };
 
+/** [v5.22 S2] Delegates to the shared palette so user-preferences fusePalette overrides
+ *  flow through here too once SettingsContext starts merging the remote contract. */
 function getScoreColor(score: number): string {
-  if (score >= 8) return "var(--error)";
-  if (score >= 6) return "var(--warning)";
-  if (score >= 4) return "var(--accent)";
-  return "var(--success)";
+  return colorForScore(score);
 }
 
 /** IV sub-score horizontal fuse bars */
 function IVSubScores({
   vix,
   headlines,
-  miroshark,
+  agentDesk,
 }: {
   vix: number;
   headlines: number;
-  miroshark: number;
+  agentDesk: number;
 }) {
   const bars = [
     { label: "VIX", value: vix },
     { label: "HEADLINE", value: headlines },
-    { label: "AGENTIC DESK", value: miroshark },
+    { label: "AGENT DESK", value: agentDesk },
   ];
 
   return (
     <div
+      // [claude-code 2026-04-19] snap-anchor for SnapSheet: notifications + bulletin + brief
+      // open up to the bottom of this fuse row, leaving tickers + fuses visible above.
+      data-snap-anchor="fuses"
       style={{
         display: "flex",
         gap: 12,
@@ -95,9 +106,10 @@ function IVSubScores({
           <div
             style={{
               height: 3,
-              borderRadius: 1,
-              background: "var(--border)",
+              borderRadius: 2,
+              background: "var(--fintheon-surface, #0a0a00)",
               overflow: "hidden",
+              position: "relative",
             }}
           >
             <div
@@ -105,7 +117,7 @@ function IVSubScores({
                 height: "100%",
                 width: `${Math.min(100, (value / 10) * 100)}%`,
                 background: getScoreColor(value),
-                borderRadius: 1,
+                borderRadius: 2,
                 transition: "width 0.4s ease-out",
               }}
             />
@@ -176,7 +188,9 @@ export function HomePage() {
         }}
       />
 
-      {/* Page 1: Hero Ticker + Briefing */}
+      {/* Page 1: Hero Ticker + Briefing
+          [claude-code 2026-04-19] TP: −25% top padding, briefing gets 25% more
+          breathing room. Hero/brief gap halved from 24→18 to amplify brief. */}
       <SnapPage>
         <motion.div
           variants={container}
@@ -185,21 +199,24 @@ export function HomePage() {
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 24,
+            gap: 18,
             flex: 1,
-            paddingBottom: 24,
+            paddingBottom: 12,
             position: "relative",
             zIndex: 1,
           }}
         >
-          {/* Hero Row: IV | VIX | Implied Points */}
+          {/* Hero Row: IV | VIX | Implied Points
+              [claude-code 2026-04-18] v5.22 S2: anchor columns to top so the three
+              labels (IV / VIX / IMPLIED) share one baseline. Center alignment used
+              to push the shortest column (IV) off-row. */}
           <motion.div variants={item}>
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
+                alignItems: "flex-start",
                 justifyContent: "space-between",
-                padding: "20px 0 8px",
+                padding: "15px 0 6px",
                 gap: 8,
               }}
             >
@@ -220,6 +237,7 @@ export function HomePage() {
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
                     color: "var(--text-secondary)",
+                    lineHeight: 1,
                   }}
                 >
                   IV
@@ -268,6 +286,7 @@ export function HomePage() {
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
                     color: "var(--text-secondary)",
+                    lineHeight: 1,
                   }}
                 >
                   IMPLIED{" "}
@@ -307,7 +326,7 @@ export function HomePage() {
               <IVSubScores
                 vix={ivData.vixComponent ?? 0}
                 headlines={ivData.headlineComponent ?? 0}
-                miroshark={ivData.mirosharkComponent ?? 0}
+                agentDesk={ivData.agentDeskComponent ?? 0}
               />
             )}
           </motion.div>
@@ -319,26 +338,34 @@ export function HomePage() {
         </motion.div>
       </SnapPage>
 
-      {/* Page 2: Session Calendar + Aquarium Analysis */}
+      {/* Page 2: Session Calendar + Aquarium Analysis
+          [claude-code 2026-04-18] Replaced the TradingView Econ Calendar embed with the
+          native MiniSessionCalendar — the TV iframe was rendering as a black void on TP's
+          phone. Native version reads /api/econ/calendar directly, no third-party widget. */}
       <SnapPage style={{ padding: 0, gap: 0 }}>
         <div
           style={{
             flex: 1,
+            minHeight: 0,
             display: "flex",
             flexDirection: "column",
             position: "relative",
             zIndex: 1,
           }}
         >
-          {/* TradingView Economic Calendar — lazy-loaded, fills available space */}
-          <div style={{ flex: 1, minHeight: "50%" }}>
-            <Suspense fallback={null}>
-              <EconCalendarEmbed />
-            </Suspense>
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+              padding: "16px 16px 0",
+            }}
+          >
+            <MiniSessionCalendar maxEvents={20} />
           </div>
           <div className="fade-divider" style={{ margin: "0 16px" }} />
-          {/* Aquarium Analysis */}
-          <div style={{ padding: "16px 16px 24px" }}>
+          <div style={{ padding: "12px 16px 16px", flexShrink: 0 }}>
             <AquariumSummary />
           </div>
         </div>
@@ -359,7 +386,7 @@ export function HomePage() {
         </div>
       </SnapPage>
 
-      {/* Page 4: Risk Signals */}
+      {/* Page 4: Risk Signals — same /api/riskflow/risk-signals source as desktop Aquarium */}
       <SnapPage>
         <div
           style={{
@@ -375,23 +402,9 @@ export function HomePage() {
         </div>
       </SnapPage>
 
-      {/* Page 5: NarrativeFlow Catalysts */}
-      <SnapPage>
-        <div
-          style={{
-            flex: 1,
-            paddingTop: 24,
-            paddingBottom: 24,
-            overflowY: "auto",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <CatalystCards />
-        </div>
-      </SnapPage>
-
-      {/* Page 6: Timeline */}
+      {/* Page 5: Timeline
+          [claude-code 2026-04-18] CatalystCards page removed per TP — RiskFlow already
+          covers that surface. Was former page 5; Timeline shifts up. */}
       <SnapPage>
         <div
           style={{

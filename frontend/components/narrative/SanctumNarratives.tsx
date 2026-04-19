@@ -1,7 +1,7 @@
 // [claude-code 2026-03-28] S8-T4: Removed Simulation History — replaced by Agent Scorecards in Page 2
 // [claude-code 2026-03-23] Active Narratives — Page 2
 import { Diff, TrendingDown, Minus } from "lucide-react";
-import type { SanctumNarrative } from "../../types/miroshark";
+import type { SanctumNarrative } from "../../types/agent-desk";
 
 interface SanctumNarrativesProps {
   narratives?: SanctumNarrative[];

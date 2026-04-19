@@ -4,7 +4,7 @@
 // [claude-code 2026-03-25] Theme-sensitive fonts — use var(--font-heading) and var(--font-body)
 import { useState, useCallback } from "react";
 import { Zap, Loader2, Upload, X } from "lucide-react";
-import type { SanctumPreset } from "../../types/miroshark";
+import type { SanctumPreset } from "../../types/agent-desk";
 import { SanctumPresets } from "./SanctumPresets";
 
 const API_BASE = (
@@ -157,7 +157,7 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
       });
       const ingestData = await ingestRes.json();
 
-      // Upload to MiroShark context
+      // Upload to AgentDesk context
       if (ingestData.parsed > 0) {
         // Re-parse to get items for context upload
         const parseRes = await fetch(`${API_BASE}/api/calibration/bulk-parse`, {
@@ -281,7 +281,7 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
                 style={{ fontFamily: "var(--font-body)" }}
               >
                 Items will be stored in calibration_observations and fed to
-                MiroShark context.
+                AgentDesk context.
               </p>
             </div>
           )}
@@ -293,7 +293,7 @@ function UploadContextModal({ onClose }: { onClose: () => void }) {
                 className="text-xs text-[var(--fintheon-text)] font-bold"
                 style={{ fontFamily: "var(--font-body)" }}
               >
-                {result.stored} observations stored + MiroShark context updated
+                {result.stored} observations stored + AgentDesk context updated
               </p>
             </div>
           )}

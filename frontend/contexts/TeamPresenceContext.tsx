@@ -1,3 +1,7 @@
+// [claude-code 2026-04-19] S26 hotfix: guarded sourceStatus.userPollStats[userId] access.
+//   When a user had a cached `sourceStatus` from before S25-T4 added the userPollStats
+//   field, `sourceStatus.userPollStats` was undefined and `[userId]` threw on mount,
+//   blowing up the whole app into an error boundary with TP's sub shown in the message.
 // [claude-code 2026-04-11] Renamed twitter → rettiwt/riskflow for X CLI removal + round-robin
 import {
   createContext,
@@ -94,6 +98,9 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
     });
   }, [userId]);
 
+  // [claude-code 2026-04-18] S25-T4: Broadcast unified newsfeedHealthy + per-user lastSuccessAt
+  // so peers see truthful aggregated feed health and a per-card "Polled Nm ago" line.
+  const myStats = sourceStatus.userPollStats?.[userId];
   const buildPayload = useCallback(
     (): PresencePayload => ({
       userId,
@@ -111,14 +118,15 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
         riskflowKilled,
         aiRuntime: caoOnline,
         newsfeedPolling: {
-          active:
-            sourceStatus.backendReachable &&
-            (sourceStatus.supabase ||
-              sourceStatus.rettiwt ||
-              sourceStatus.xApi),
+          active: sourceStatus.backendReachable && sourceStatus.newsfeedHealthy,
           lastUpdate: sourceStatus.lastPollSuccess,
         },
         backendConnection: sourceStatus.backendReachable,
+        newsfeedHealthy: sourceStatus.newsfeedHealthy,
+        newsfeedDegraded: sourceStatus.newsfeedDegraded,
+        agentReachActive: sourceStatus.agentReach.active,
+        lastSuccessAt: myStats?.lastSuccessAt ?? null,
+        totalContributions: myStats?.totalContributions ?? 0,
       },
     }),
     [
@@ -128,10 +136,14 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
       caoOnline,
       sourceStatus.rettiwt,
       sourceStatus.rettiwtRateLimited,
-      sourceStatus.supabase,
-      sourceStatus.xApi,
+      sourceStatus.rettiwtPool?.totalKeys,
       sourceStatus.backendReachable,
       sourceStatus.lastPollSuccess,
+      sourceStatus.newsfeedHealthy,
+      sourceStatus.newsfeedDegraded,
+      sourceStatus.agentReach.active,
+      myStats?.lastSuccessAt,
+      myStats?.totalContributions,
       userStatus,
       riskflowKilled,
     ],
@@ -165,6 +177,11 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
               lastUpdate: new Date().toISOString(),
             },
             backendConnection: false,
+            newsfeedHealthy: false,
+            newsfeedDegraded: false,
+            agentReachActive: false,
+            lastSuccessAt: null,
+            totalContributions: 0,
           };
           members.push({
             userId: key,

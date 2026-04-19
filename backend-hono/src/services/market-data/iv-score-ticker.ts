@@ -1,6 +1,6 @@
 // [claude-code 2026-04-16] Rewired fetchEventsFromDB to read from scored_riskflow_items (live pipeline) instead of deprecated news_feed_items
 // [claude-code 2026-04-02] VIX-triggered retick + SSE listeners + aggregate point estimator wiring
-// [claude-code 2026-03-24] Updated weights to VIX/catalyst/MiroShark blend
+// [claude-code 2026-03-24] Updated weights to VIX/catalyst/AgentDesk blend
 // [claude-code 2026-03-12] Task 2C: startIVScoreTicker reads PRIMARY_INSTRUMENT env var
 // [claude-code 2026-03-11] IV Score Ticker — persistent background scorer
 // Runs every 60s, computes blended IV score, caches to DB.
@@ -359,8 +359,8 @@ async function restoreFromDB(): Promise<void> {
             score: data.score,
             vixComponent: data.vixComponent,
             headlineComponent: data.headlineComponent,
-            mirosharkComponent: data.mirosharkComponent ?? 0,
-            weights: { vix: 0.7, headlines: 0.2, miroshark: 0.1 },
+            agentDeskComponent: data.agentDeskComponent ?? 0,
+            weights: { vix: 0.7, headlines: 0.2, agentDesk: 0.1 },
             vix: {
               level: data.vixLevel,
               percentChange: 0,

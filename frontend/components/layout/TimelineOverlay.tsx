@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { ChevronRight, Clock, ChevronDown, Loader2 } from "lucide-react";
 import { useBackend } from "../../lib/backend";
-import { ivHeatColor } from "../../types/miroshark";
+import { ivHeatColor } from "../../types/agent-desk";
 
 interface FeedItem {
   id: string;

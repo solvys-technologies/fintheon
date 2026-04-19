@@ -16,7 +16,7 @@ export interface IVPrediction {
   /** Top scenarios ranked by probability */
   scenarios: IVPredictionScenario[];
   /** Source of the prediction */
-  source: "miroshark" | "heuristic";
+  source: "agentDesk" | "heuristic";
   /** When the prediction was generated */
   generatedAt: string;
 }

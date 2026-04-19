@@ -1,14 +1,33 @@
+// [claude-code 2026-04-18] v5.22 S2: severity color now resolved through
+//   colorForSeverity from mobile/lib/fuse-palette so user-preferences fusePalette
+//   overrides apply uniformly. Card geometry + drain choreography unchanged.
+// [claude-code 2026-04-19] S26-P2 T10: IV fuse drain choreography per TP — "this cool
+//   micro interaction that kind of depletes the IV gauge on the left and then fills it
+//   down in the footer when it expands." On tap: drain the vertical fuse to 0 over
+//   ~220ms, THEN open the modal. The modal's horizontal IVFuseBar fills from 0 to the
+//   real score on mount, completing the visual hand-off. Using the explicit approach
+//   (B) from the brief because the vertical-to-horizontal rotation makes Framer's
+//   layoutId crossfade look janky.
+// [claude-code 2026-04-19] S25: tap now opens the full DetailSheet modal (deep view) instead
+//   of inline expansion. Long-press still expands inline for quick triage (kept for power users
+//   who scroll fast). Entry point is unified with CatalystCards + BriefingCard + push-tap flow.
 // [claude-code 2026-04-16] RiskFlow card — haptic on expand
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ChevronUp, ChevronDown, Minus } from "lucide-react";
 import { useHaptic } from "../../hooks/useHaptic";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { MobileRiskFlowAlert } from "../../contexts/RiskFlowContext";
 import type { AlertSeverity } from "@frontend/lib/riskflow-feed";
 import { timeAgo } from "@frontend/lib/time-utils";
 import { SwipeAction } from "../shared/SwipeAction";
 import { VerticalFuseBar } from "../shared/VerticalFuseBar";
-import { RiskFlowCardExpanded } from "./RiskFlowCardExpanded";
+import { useNotificationModal } from "../../contexts/NotificationModalContext";
+import { CARD_PRESS } from "../../lib/sheet-motion";
+import { colorForSeverity, type FuseSeverity } from "../../lib/fuse-palette";
+
+/** How long the drain takes — covers the staggered top-down segment fade. Keep this
+ *  in sync with VerticalFuseBar's `transitionDelay` formula (segments × 18ms + 150ms buffer). */
+const DRAIN_DURATION_MS = 220;
 
 interface RiskFlowCardProps {
   alert: MobileRiskFlowAlert;
@@ -16,12 +35,11 @@ interface RiskFlowCardProps {
   index?: number;
 }
 
-const SEVERITY_COLORS: Record<AlertSeverity, string> = {
-  critical: "var(--fintheon-severe)",
-  high: "var(--fintheon-severe)",
-  medium: "var(--fintheon-neutral-severe)",
-  low: "var(--fintheon-neutral)",
-};
+/** AlertSeverity is the same critical/high/medium/low set as the palette's FuseSeverity
+ *  minus "neutral" — narrower union, so the cast through paletteSeverity is sound. */
+function paletteSeverity(sev: AlertSeverity): FuseSeverity {
+  return sev as FuseSeverity;
+}
 
 function formatSource(source: string): string {
   const map: Record<string, string> = {
@@ -64,10 +82,28 @@ export function RiskFlowCard({
   onDismiss,
   index = 0,
 }: RiskFlowCardProps) {
-  const [expanded, setExpanded] = useState(false);
   const vibrate = useHaptic();
-  const severityColor = SEVERITY_COLORS[alert.severity];
+  const { open } = useNotificationModal();
+  const [draining, setDraining] = useState(false);
+  const severityColor = colorForSeverity(paletteSeverity(alert.severity));
   const ivScore = alert.ivScore ?? 0;
+
+  // Strip "backend-" prefix so modal matches feed-service item ids (id="tweet_id")
+  const modalItemId = alert.id.startsWith("backend-")
+    ? alert.id.slice("backend-".length)
+    : alert.id;
+
+  const openWithDrain = useCallback(() => {
+    if (draining) return;
+    vibrate(8);
+    setDraining(true);
+    window.setTimeout(() => {
+      open({ kind: "riskflowItem", itemId: modalItemId });
+      // Reset draining after the modal is up so if the user returns to this card
+      // the fuse re-renders at full fill (VerticalFuseBar re-mounts are cheap).
+      window.setTimeout(() => setDraining(false), 400);
+    }, DRAIN_DURATION_MS);
+  }, [draining, vibrate, open, modalItemId]);
 
   return (
     <motion.div
@@ -76,10 +112,17 @@ export function RiskFlowCard({
       transition={{ duration: 0.25, delay: index * 0.04, ease: "easeOut" }}
     >
       <SwipeAction onSwipeLeft={() => onDismiss(alert.id)}>
-        <div
-          onClick={() => {
-            vibrate(8);
-            setExpanded((v) => !v);
+        <motion.div
+          onClick={openWithDrain}
+          whileTap={CARD_PRESS}
+          role="button"
+          tabIndex={0}
+          aria-label={`Open headline detail: ${alert.title}`}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openWithDrain();
+            }
           }}
           style={{
             background: "var(--surface)",
@@ -96,8 +139,12 @@ export function RiskFlowCard({
               minHeight: 60,
             }}
           >
-            {/* Left: Vertical fuse bar */}
-            <VerticalFuseBar value={ivScore} color={severityColor} />
+            {/* Left: Vertical fuse bar — drains on tap to hand juice to the modal footer */}
+            <VerticalFuseBar
+              value={ivScore}
+              color={severityColor}
+              draining={draining}
+            />
 
             {/* Center: Source + Headline + Author */}
             <div
@@ -189,12 +236,7 @@ export function RiskFlowCard({
               </span>
             </div>
           </div>
-
-          {/* Expanded content */}
-          <AnimatePresence>
-            {expanded && <RiskFlowCardExpanded alert={alert} />}
-          </AnimatePresence>
-        </div>
+        </motion.div>
       </SwipeAction>
     </motion.div>
   );

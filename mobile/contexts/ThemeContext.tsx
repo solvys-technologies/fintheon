@@ -1,3 +1,11 @@
+// [claude-code 2026-04-19] S26-P2 T5: mode state ("dark" | "light") + global palette
+//   flip per TP — "people should have the option to switch between the light theme and
+//   the dark theme on a toggle inside of the menu that pops up from the hamburger menu."
+//   Dark remains the default. Light mode paints bg/surface as paper and flips text to
+//   near-black; accent stays the theme accent so brand identity survives the switch.
+//   Persists to localStorage as `fintheon:theme-mode`.
+// [claude-code 2026-04-19] Expose ALL_PRESETS so mobile settings can show both standard
+//   themes and the Nothing Design special presets (Something Solvys / Something Monochrome).
 // [claude-code 2026-04-15] T2: Mobile theme — dual CSS var mapping (Fintheon + Nothing tokens)
 import {
   createContext,
@@ -11,6 +19,8 @@ import {
 import {
   type ThemeConfig,
   THEME_PRESETS,
+  SPECIAL_PRESETS,
+  ALL_PRESETS,
   loadStoredTheme,
   saveTheme,
 } from "@frontend/lib/theme";
@@ -24,29 +34,74 @@ import {
 import { useAuth } from "./AuthContext";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
+const MODE_STORAGE_KEY = "fintheon:theme-mode";
+
+export type ThemeMode = "dark" | "light";
 
 interface ThemeContextValue {
   theme: ThemeConfig;
   setTheme: (theme: ThemeConfig) => void;
+  mode: ThemeMode;
+  setMode: (mode: ThemeMode) => void;
   fontTheme: FontTheme;
   setFontTheme: (theme: FontTheme) => void;
   availableThemes: Record<string, ThemeConfig>;
+  specialThemes: Record<string, ThemeConfig>;
+  allThemes: Record<string, ThemeConfig>;
   availableFonts: Record<string, FontTheme>;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function applyThemeToDOM(theme: ThemeConfig) {
+/** Paper / near-black inversion used when mode === "light". Accent keeps the
+ *  theme's accent so brand identity doesn't vanish. Surface sits slightly darker
+ *  than bg so glass/cards still have depth. */
+const LIGHT_SURFACE = {
+  bg: "#f2ede1",
+  surface: "#e9e2cf",
+  text: "#171310",
+  muted: "#6b6455",
+  border: "#1a1612",
+};
+
+function loadStoredMode(): ThemeMode {
+  try {
+    const stored = localStorage.getItem(MODE_STORAGE_KEY);
+    return stored === "light" ? "light" : "dark";
+  } catch {
+    return "dark";
+  }
+}
+
+function saveMode(mode: ThemeMode) {
+  try {
+    localStorage.setItem(MODE_STORAGE_KEY, mode);
+  } catch {
+    /* ignore */
+  }
+}
+
+function applyThemeToDOM(theme: ThemeConfig, mode: ThemeMode) {
   const root = document.documentElement;
+  const isLight = mode === "light";
+
+  // Accent stays the same regardless of mode — brand continuity.
+  const bg = isLight ? LIGHT_SURFACE.bg : theme.bg;
+  const text = isLight ? LIGHT_SURFACE.text : theme.text;
+  const surface = isLight ? LIGHT_SURFACE.surface : theme.surface;
+  const muted = isLight ? LIGHT_SURFACE.muted : theme.muted;
+  const border = isLight ? LIGHT_SURFACE.border : theme.border;
+
+  root.setAttribute("data-theme", mode);
   // Fintheon tokens (shared components)
   root.style.setProperty("--fintheon-accent", theme.accent);
-  root.style.setProperty("--fintheon-bg", theme.bg);
-  root.style.setProperty("--fintheon-text", theme.text);
+  root.style.setProperty("--fintheon-bg", bg);
+  root.style.setProperty("--fintheon-text", text);
   root.style.setProperty("--fintheon-bullish", theme.bullish);
   root.style.setProperty("--fintheon-bearish", theme.bearish);
-  root.style.setProperty("--fintheon-surface", theme.surface);
-  root.style.setProperty("--fintheon-border", theme.border);
-  root.style.setProperty("--fintheon-muted", theme.muted);
+  root.style.setProperty("--fintheon-surface", surface);
+  root.style.setProperty("--fintheon-border", border);
+  root.style.setProperty("--fintheon-muted", muted);
   root.style.setProperty("--fintheon-severe", theme.severe ?? "#EF4444");
   root.style.setProperty(
     "--fintheon-neutral-severe",
@@ -76,9 +131,11 @@ function applyFontThemeToDOM(fontTheme: FontTheme) {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const { getAccessToken, isAuthenticated } = useAuth();
 
+  const [mode, setModeState] = useState<ThemeMode>(() => loadStoredMode());
+
   const [theme, setThemeState] = useState<ThemeConfig>(() => {
     const stored = loadStoredTheme();
-    applyThemeToDOM(stored);
+    applyThemeToDOM(stored, loadStoredMode());
     return stored;
   });
 
@@ -90,11 +147,23 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const backendSynced = useRef(false);
 
-  const setTheme = useCallback((next: ThemeConfig) => {
-    setThemeState(next);
-    applyThemeToDOM(next);
-    saveTheme(next);
-  }, []);
+  const setTheme = useCallback(
+    (next: ThemeConfig) => {
+      setThemeState(next);
+      applyThemeToDOM(next, mode);
+      saveTheme(next);
+    },
+    [mode],
+  );
+
+  const setMode = useCallback(
+    (next: ThemeMode) => {
+      setModeState(next);
+      applyThemeToDOM(theme, next);
+      saveMode(next);
+    },
+    [theme],
+  );
 
   const setFontTheme = useCallback((next: FontTheme) => {
     setFontThemeState(next);
@@ -104,7 +173,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Fetch backend theme on mount (backend is source of truth when authenticated)
   useEffect(() => {
-    applyThemeToDOM(theme);
+    applyThemeToDOM(theme, mode);
     applyFontThemeToDOM(fontTheme);
 
     if (!isAuthenticated) {
@@ -127,7 +196,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         if (remote?.colorTheme?.accent) {
           const restored = remote.colorTheme as ThemeConfig;
           setThemeState(restored);
-          applyThemeToDOM(restored);
+          applyThemeToDOM(restored, mode);
           saveTheme(restored);
         }
         if (
@@ -168,9 +237,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       value={{
         theme,
         setTheme,
+        mode,
+        setMode,
         fontTheme,
         setFontTheme,
         availableThemes: THEME_PRESETS,
+        specialThemes: SPECIAL_PRESETS,
+        allThemes: ALL_PRESETS,
         availableFonts: FONT_THEMES,
       }}
     >

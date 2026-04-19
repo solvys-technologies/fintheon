@@ -61,6 +61,14 @@ export interface ParsedHeadline {
   speakerInstitution?: string;
   isOfficialStatement?: boolean;
   narrativePressure?: 0 | 1 | 2 | 3;
+  /**
+   * [claude-code 2026-04-19] S24-T2: directional geopolitical stance.
+   * Populated by headline-parser when a bullishRisk/bearishRisk/neutralRisk
+   * pattern matches. Consumed only by the SCORING_V4 path in iv-scorer —
+   * V3 scorer ignores this field, so output stays byte-identical when the
+   * flag is off.
+   */
+  geopoliticalDirection?: "bullish" | "bearish" | "neutral";
 }
 
 export interface EconomicPrint {

@@ -1,0 +1,27 @@
+schema_version: 1
+id: fintheon.herald
+name: Herald — News & Sentiment
+version: 0.1.0
+description: >-
+  Breaking-news and social-sentiment desk. Scores headlines for IV impact and
+  flags headline risk before price reacts.
+entry_point: ./entry.ts
+soul: ../../backend-hono/src/services/ai/soul/herald.md
+tools:
+  - name: herald_chat
+    description: News / sentiment / headline-risk analysis via routed Haiku model.
+    input_schema:
+      message: string
+      conversationId: string
+      userId: string?
+  - name: herald_riskflow_score
+    description: Score a batch of raw headlines into scored_riskflow_items.
+    input_schema:
+      headlines: array
+permissions:
+  - read_news
+  - read_market_data
+  - write_notes
+authors:
+  - Priced In Capital
+license: Proprietary

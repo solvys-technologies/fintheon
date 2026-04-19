@@ -1,0 +1,27 @@
+schema_version: 1
+id: fintheon.feucht
+name: Feucht — Futures & Risk
+version: 0.1.0
+description: >-
+  /NQ and /ES futures desk. Owns technical levels, FA Ripper setups, TopStepX
+  execution discipline, and the risk manager role for all directional trades.
+entry_point: ./entry.ts
+soul: ../../backend-hono/src/services/ai/soul/feucht.md
+tools:
+  - name: feucht_chat
+    description: Tape-read and level analysis via routed Haiku model.
+    input_schema:
+      message: string
+      conversationId: string
+      userId: string?
+  - name: feucht_chart_levels
+    description: Produce a key-levels card for a given instrument + timeframe.
+    input_schema:
+      instrument: string
+      timeframe: string
+permissions:
+  - read_market_data
+  - write_notes
+authors:
+  - Priced In Capital
+license: Proprietary

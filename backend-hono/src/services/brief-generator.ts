@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S24-T1: MDB no longer writes regime directly — it proposes. Live behind SCORING_V4 env flag so V3 is a one-toggle rollback. Root cause: 2026-04-17 TP manually set BULL_TREND; MDB silently overwrote it 10h later via setRegime(). Kills the silent-override footgun.
 // [claude-code 2026-04-05] Strands Phase 8: Replace generateText + OpenRouter fallback with invokeAgent
 // [claude-code 2026-03-26] S2-T2: Add regime classification to MDB prompt + auto-parse after generation
 import { invokeAgent } from "./strands/index.js";
@@ -12,6 +13,9 @@ import { getFeed } from "./riskflow/feed-service.js";
 import { createLogger } from "../lib/logger.js";
 import { MARKET_REGIMES, type MarketRegime } from "../types/regime.js";
 import { setRegime } from "./regime/regime-service.js";
+import { proposeRegimeChange } from "./regime/propose.js";
+
+const SCORING_V4 = process.env.SCORING_V4 === "true";
 
 const log = createLogger("BriefGenerator");
 
@@ -183,14 +187,48 @@ ${
   log.info(`Strands agent generated ${text.length} chars`);
 
   // Auto-detect regime from MDB output (MDB only — parse after generation)
+  // [S24-T1] V4: MDB PROPOSES; TP approves. Never writes market_regimes directly.
+  //          V3 fallback (direct setRegime) kept behind SCORING_V4 flag so rollback is one env toggle.
   if (briefType === "MDB") {
     try {
       const regimeMatch = text.match(/\*\*Market Regime:\*\*\s*(\w+)/);
       if (regimeMatch) {
         const detected = regimeMatch[1] as MarketRegime;
         if (MARKET_REGIMES.includes(detected)) {
-          await setRegime(detected, "mdb_agent", 0.8, "Auto-detected from MDB");
-          log.info(`Regime auto-set from MDB: ${detected}`);
+          if (SCORING_V4) {
+            // Extract the regime-justification line (first line after the regime token).
+            const justifyMatch = text.match(
+              /\*\*Market Regime:\*\*\s*\w+\s*\n+([^\n*]+)/,
+            );
+            const mdbExcerpt = justifyMatch
+              ? justifyMatch[1].trim().slice(0, 400)
+              : `Auto-detected from MDB: ${detected}`;
+            const result = await proposeRegimeChange({
+              proposedBy: "mdb_agent",
+              proposedRegime: detected,
+              reason: mdbExcerpt,
+              evidence: {
+                mdbExcerpt,
+                briefType,
+                generatedAt: new Date().toISOString(),
+              },
+              severity: "high",
+            });
+            log.info("Regime proposed from MDB (V4)", {
+              detected,
+              proposalId: result.id,
+              status: result.status,
+              lockedUntil: result.lockedUntil,
+            });
+          } else {
+            await setRegime(
+              detected,
+              "mdb_agent",
+              0.8,
+              "Auto-detected from MDB",
+            );
+            log.info(`Regime auto-set from MDB (V3): ${detected}`);
+          }
         }
       }
     } catch (err) {
@@ -213,6 +251,30 @@ ${
     provider: usedProvider,
     length: text.length,
   });
+
+  // [claude-code 2026-04-18] A1: Daily Brief push trigger. Idempotent via fingerprint (one push per type per day).
+  void (async () => {
+    try {
+      const { emitPushAndLog } = await import("./notifications/emit.js");
+      const today = new Date().toISOString().slice(0, 10);
+      const first = text.split(/\n+/).find((l) => l.trim().length > 0) ?? "";
+      await emitPushAndLog({
+        userId: "all",
+        category: "dailyBrief",
+        severity: "low",
+        title: `${briefType} brief ready`,
+        body: first || "New brief available",
+        url: stored?.id
+          ? `/consilium/briefs/${stored.id}`
+          : `/consilium/briefs/latest?type=${encodeURIComponent(briefType)}`,
+        fingerprint: `brief:${briefType}:${today}`,
+        eventId: stored?.id ?? undefined,
+        dedupWindowMins: 60 * 20, // 20h — covers same-day repeats
+      });
+    } catch (err) {
+      log.warn("Brief push emit failed (non-fatal)", { error: String(err) });
+    }
+  })();
 
   return {
     content: text,

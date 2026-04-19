@@ -138,9 +138,16 @@ cd backend-hono && bun run build
 ```
 ````
 
-Save each brief to `docs/sprint-briefs/S{SPRINT}-T{N}-{slug}.md` in the project. The orchestration doc goes to `docs/sprint-briefs/S{SPRINT}-ORCHESTRATION.md`.
+Save each brief to `sprint-md/S{SPRINT}-T{N}-{slug}.md` at the CURRENT workspace root. The orchestration doc goes to `sprint-md/S{SPRINT}-ORCHESTRATION.md`.
 
-**Sprint numbering:** Check existing files in `docs/sprint-briefs/` for the latest S{N} number. If the latest is S18, the new sprint is S19. Always confirm with the user if unsure.
+**Sprint-md folder rules:**
+
+- `sprint-md/` lives at the TOP LEVEL of whatever repo we are working in -- never inside `docs/`, never inside a sub-app folder.
+- Create it if it does not exist. Do not assume prior sprints used this path.
+- If a legacy `docs/sprint-briefs/` folder exists in the repo, DO NOT write there. New plans always go to `sprint-md/`. Migration of legacy plans happens at deploy time via `/solvys-deploy` Phase 5a, not here.
+- Shipped plans get archived to `sprint-changelog/` by `/solvys-deploy`. `sprint-md/` should only ever contain in-flight work.
+
+**Sprint numbering:** Check existing files in `sprint-md/` AND `sprint-changelog/` (and any legacy `docs/sprint-briefs/`) for the highest S{N}. If the latest shipped is S26, the new sprint is S27. Always confirm with the user if unsure.
 
 ## Phase 4 -- Execution Sequence
 

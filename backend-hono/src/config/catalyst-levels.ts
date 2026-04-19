@@ -5,7 +5,7 @@ export const CATALYST_LEVEL_CRITERIA = {
   4: {
     label: "Critical",
     description:
-      "Instant alert. SSE broadcast. Consilium push. Oracle notes. MiroShark adjustment. narrativePressureCap uncapped for Macro/Geopolitical.",
+      "Instant alert. SSE broadcast. Consilium push. Oracle notes. AgentDesk adjustment. narrativePressureCap uncapped for Macro/Geopolitical.",
     ivThreshold: 90, // normalized IV score floor (inclusive)
     fjEmojiTiers: ["tier1"], // maps to 🚨 and equivalents
     riskTypes: ["Macro", "Geopolitical"], // riskTypes where this level is most expected
@@ -29,7 +29,7 @@ export const CATALYST_LEVEL_CRITERIA = {
   },
   3: {
     label: "High",
-    description: "Consilium push. Oracle notes. MiroShark adjustment.",
+    description: "Consilium push. Oracle notes. AgentDesk adjustment.",
     ivThreshold: 70,
     fjEmojiTiers: ["tier2"], // maps to ⚠️ and equivalents
     riskTypes: ["Macro", "Geopolitical", "Earnings"],

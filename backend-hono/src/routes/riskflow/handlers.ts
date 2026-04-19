@@ -39,6 +39,7 @@ import {
   getVIXSpikeAdjustment,
   getVIXScoringMultiplier,
   getVIXBaseline,
+  VIX_FALLBACK,
 } from "../../services/vix-service.js";
 import {
   calculateIVScoreV2,
@@ -160,7 +161,7 @@ export async function handleGetFeed(c: Context) {
 
     // Re-compute priceBrainScore for the user's selected instrument
     // Items are cached with /ES default — we re-estimate points per-request
-    let vixLevel = 16; // fallback
+    let vixLevel = VIX_FALLBACK; // [claude-code 2026-04-18] C1 unified fallback
     try {
       const vixData = await fetchVIX();
       vixLevel = vixData.level;
@@ -978,6 +979,47 @@ export async function handleRescore(c: Context) {
   }
 }
 
+/**
+ * POST /api/riskflow/rescore-all
+ * Super-admin only. One-shot V4 rescore of every scored_riskflow_items row.
+ * Idempotent: rejects if a run is already in progress.
+ * Query params: dryRun=true for read-only sample, limit=N to bound the run.
+ */
+// [claude-code 2026-04-19] S24-T3: rescore-all migration job behind super-admin gate
+export async function handleRescoreAll(c: Context) {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const { getUserById } = await import("../../services/peers/peer-registry.js");
+  const user = await getUserById(userId);
+  if (!user || user.role !== "admin") {
+    return c.json({ error: "Super admin privileges required" }, 403);
+  }
+
+  const dryRun = c.req.query("dryRun") === "true";
+  const limitParam = c.req.query("limit");
+  const limit = limitParam ? Math.max(1, parseInt(limitParam, 10) || 0) : null;
+
+  const { runRescoreAll, isRescoreInProgress } =
+    await import("../../services/scoring/rescore-all.js");
+  if (isRescoreInProgress()) {
+    return c.json({ error: "rescore-all already in progress" }, 409);
+  }
+
+  try {
+    const stats = await runRescoreAll({ dryRun, limit });
+    return c.json({ success: true, stats });
+  } catch (error) {
+    console.error("[RiskFlow] rescore-all error:", error);
+    return c.json(
+      {
+        error: error instanceof Error ? error.message : "rescore-all failed",
+      },
+      500,
+    );
+  }
+}
+
 /** POST /api/riskflow/:id/not-relevant — remove item + log for learning */
 // [claude-code 2026-04-15] S16-T5: Accept optional reason field for dismissal feedback loop
 export async function handleNotRelevant(c: Context) {
@@ -1059,14 +1101,21 @@ export async function handleNotRelevant(c: Context) {
   }
 }
 
-/** GET /api/riskflow/sources — connection status for data source indicators */
+/** GET /api/riskflow/sources — connection status for data source indicators
+ * [claude-code 2026-04-18] S25-T2: expanded with multi-source health + per-user polling stats.
+ */
 export async function handleGetSources(c: Context) {
   const { isRettiwtRateLimited, getRettiwtCooldownMs } =
     await import("../../services/riskflow/econ-rettiwt-poller.js");
-  const { getCurrentPollingOwner, getActivePollingUsers } =
+  const { getCurrentPollingOwner, getActivePollingUsers, getAllUserPollStats } =
     await import("../../services/riskflow/user-polling-registry.js");
-  const { getPoolStatus, hasAuthenticatedKeys } =
-    await import("../../services/rettiwt-service.js");
+  const { getPoolStatus } = await import("../../services/rettiwt-service.js");
+  const { getStatus: getHealthStatus } =
+    await import("../../services/health-registry.js");
+  const { getDomainStatus } =
+    await import("../../services/agent-reach-service.js");
+  const { AGENT_REACH_POLLER_NAME } =
+    await import("../../services/riskflow/agent-reach-poller.js");
 
   const supabaseUp = isSupabaseConfigured();
   const pool = getPoolStatus();
@@ -1076,7 +1125,53 @@ export async function handleGetSources(c: Context) {
     ? Math.round(getRettiwtCooldownMs() / 1000)
     : 0;
 
+  // Per-source health from the registry
+  const health = getHealthStatus();
+  const now = Date.now();
+  const STALE_MS = 5 * 60_000; // 5 min
+
+  const lookup = (name: string) => {
+    const entry = health.services.find((s) => s.name === name);
+    const lastRunAt = entry?.lastRunAt ?? null;
+    const active = lastRunAt
+      ? now - new Date(lastRunAt).getTime() < STALE_MS
+      : false;
+    return { entry, lastRunAt, active };
+  };
+
+  const ar = lookup(AGENT_REACH_POLLER_NAME);
+  // feed-poller handles the econ + Rettiwt branch; its lastRunAt represents both.
+  const fp = lookup("feed-poller");
+
+  const sources = {
+    agentReach: {
+      active: ar.active,
+      lastRunAt: ar.lastRunAt,
+      domains: getDomainStatus(),
+    },
+    rettiwt: {
+      active: fp.active && rettiwtUp,
+      lastRunAt: fp.lastRunAt,
+      rateLimited,
+      poolKeys: pool.totalKeys,
+    },
+    feedPoller: {
+      active: fp.active,
+      lastRunAt: fp.lastRunAt,
+    },
+  };
+
+  const anyActive = sources.agentReach.active || sources.feedPoller.active;
+
+  const anyTripped = Object.values(sources.agentReach.domains).some(
+    (s) => s === "tripped",
+  );
+
+  const newsfeedHealthy = anyActive;
+  const newsfeedDegraded = anyActive && (anyTripped || rateLimited);
+
   return c.json({
+    // Legacy fields (kept for backward compat)
     supabase: supabaseUp,
     rettiwt: rettiwtUp,
     rettiwtRateLimited: rateLimited,
@@ -1085,6 +1180,14 @@ export async function handleGetSources(c: Context) {
     pollingOwner: getCurrentPollingOwner(),
     activePollers: getActivePollingUsers(),
     xApi: false,
+
+    // NEW — multi-source health
+    sources,
+    newsfeedHealthy,
+    newsfeedDegraded,
+
+    // NEW — per-user polling attribution (keyed by userId or "backend" sentinel)
+    userPollStats: getAllUserPollStats(),
   });
 }
 
@@ -1193,6 +1296,86 @@ export async function handleUserPollingStatus(c: Context) {
   });
 }
 
+// ── Doctor: self-service polling diagnostic + repair ──────────────────────
+// [claude-code 2026-04-18] S25-T3: single user-facing poll trigger, lives on Team Card.
+
+const doctorCooldowns = new Map<string, number>();
+const DOCTOR_COOLDOWN_MS = 60_000; // 60s per user
+
+/**
+ * POST /api/riskflow/doctor
+ * Per-user self-service: refresh Rettiwt pool, run catchup, trigger Agent Reach tick.
+ * Rate-limited to 1 call per 60s per user. Returns stats for toast feedback.
+ */
+export async function handleDoctor(c: Context) {
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const now = Date.now();
+  const lastCall = doctorCooldowns.get(userId) ?? 0;
+  if (now - lastCall < DOCTOR_COOLDOWN_MS) {
+    const cooldownSec = Math.ceil(
+      (DOCTOR_COOLDOWN_MS - (now - lastCall)) / 1000,
+    );
+    return c.json(
+      {
+        ok: false,
+        error: "Cooldown active",
+        cooldownSec,
+      },
+      429,
+    );
+  }
+  doctorCooldowns.set(userId, now);
+
+  const { forceRefreshPool } =
+    await import("../../services/rettiwt-service.js");
+  const { setUserPollingState, recordUserPollSuccess, getUserPollStats } =
+    await import("../../services/riskflow/user-polling-registry.js");
+  const { agentReachTick } =
+    await import("../../services/riskflow/agent-reach-poller.js");
+
+  // 1. Reset Rettiwt pool cooldowns + reload keys
+  let poolRefreshed = { totalKeys: 0, resetCount: 0 };
+  try {
+    poolRefreshed = await forceRefreshPool();
+  } catch (err) {
+    console.warn("[Doctor] forceRefreshPool failed (continuing):", err);
+  }
+
+  // 2. Ensure user is not killed
+  setUserPollingState(userId, false);
+
+  // 3. Catchup: score backlog, seed cache, one Agent Reach tick
+  // [claude-code 2026-04-18] S25-T3: intentionally does NOT call forcePoll() — the scheduled
+  // feed-poller handles Rettiwt on its own cadence. Letting every user's Doctor click trigger
+  // an extra Rettiwt poll would compound rate-limit exposure. Agent Reach is safe to tick here
+  // because it's gated by per-domain token buckets, so repeated clicks are no-ops per domain.
+  let scored = 0;
+  let wroteItems = 0;
+  try {
+    scored = await scoringCycle();
+    await seedCacheFromDb();
+    await agentReachTick();
+    wroteItems = scored;
+  } catch (err) {
+    console.warn("[Doctor] catchup sequence error (continuing):", err);
+  }
+
+  // 4. Attribute success to this user
+  recordUserPollSuccess(userId);
+
+  const stats = getUserPollStats(userId);
+  return c.json({
+    ok: true,
+    scored,
+    wroteItems,
+    sourcesHealthy: true,
+    newLastSuccessAt: stats?.lastSuccessAt ?? null,
+    poolRefreshed,
+  });
+}
+
 /**
  * GET /api/riskflow/phrases
  * Get user's active catalyst watch phrases
@@ -1262,4 +1445,23 @@ export async function handleGetRiskSignals(c: Context) {
     generatedAt:
       signals.length > 0 ? signals[0].generatedAt : new Date().toISOString(),
   });
+}
+
+// ── Single-item lookup for mobile DetailSheet (S25) ─────────────────────────
+/**
+ * GET /api/riskflow/items/:id — fetch one FeedItem by id. Used by the mobile
+ * catalyst DetailSheet when a push notification is tapped or a card is pressed.
+ * Falls back to scored-items DB if the in-memory feed cache has rotated past it.
+ */
+export async function handleGetItemById(c: Context) {
+  const id = c.req.param("id");
+  if (!id) return c.json({ error: "itemId required" }, 400);
+
+  const userId = c.get("userId" as never) as string | undefined;
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const item = await feedService.getItemById(id);
+  if (!item) return c.json({ error: "Item not found" }, 404);
+
+  return c.json({ item });
 }

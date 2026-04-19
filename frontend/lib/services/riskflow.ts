@@ -129,11 +129,39 @@ export class RiskFlowService {
     }
   }
 
+  /**
+   * Re-fetch latest scored items from the backend cache.
+   * [claude-code 2026-04-18] S25-T3: Manual poll trigger removed from user-facing UI. This
+   * method no longer tells the backend to poll — it only re-reads the scored cache.
+   * The only user-facing poll trigger is the Doctor button on the self Team Card.
+   */
+  async fetchLatest(): Promise<{ success: boolean; refreshedAt: string }> {
+    const res = await this.list({ limit: 100 });
+    return {
+      success: true,
+      refreshedAt: new Date().toISOString(),
+    };
+  }
+
+  /** @deprecated use fetchLatest — preserved for one release during UI migration */
   async refresh(): Promise<{ success: boolean; refreshedAt: string }> {
-    return this.client.post<{ success: boolean; refreshedAt: string }>(
-      "/api/riskflow/refresh",
-      {},
-    );
+    return this.fetchLatest();
+  }
+
+  /**
+   * Self-service polling "doctor" — reloads Rettiwt pool, runs catchup, triggers a poll.
+   * Server-enforced 60s cooldown per user. Invoked from the Team Card stethoscope button.
+   * [claude-code 2026-04-18] S25-T3
+   */
+  async runDoctor(): Promise<{
+    ok: boolean;
+    scored: number;
+    wroteItems: number;
+    sourcesHealthy: boolean;
+    newLastSuccessAt: string | null;
+    cooldownSec?: number;
+  }> {
+    return this.client.post("/api/riskflow/doctor", {});
   }
 
   async fetchVIX(): Promise<{ value: number }> {

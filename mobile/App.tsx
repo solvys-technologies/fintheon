@@ -1,9 +1,13 @@
+// [claude-code 2026-04-19] S25: NotificationModalProvider wraps AuthenticatedApp so push-tap
+//   and card-press both open the full-viewport catalyst/approval DetailSheet. SW handler
+//   promoted into useNotificationTapRouter which routes tab + modal in one pass.
+// [claude-code 2026-04-19] FAB chat button forwards to chat tab (no floating overlay) per TP
 // [claude-code 2026-04-16] S20: Provider tree + activity status + haptic-gated nav
 import {
   useState,
   useRef,
-  useEffect,
   useCallback,
+  useEffect,
   Suspense,
   lazy,
 } from "react";
@@ -14,12 +18,14 @@ import { SettingsProvider } from "./contexts/SettingsContext";
 import { StatusProvider } from "./contexts/ToastContext";
 import { ActivityStatusProvider } from "./contexts/ActivityStatusContext";
 import { MobileRiskFlowProvider } from "./contexts/RiskFlowContext";
+import { NotificationModalProvider } from "./contexts/NotificationModalContext";
 import { MobileShell } from "./components/layout/MobileShell";
 import { HomePage } from "./components/home/HomePage";
 import { SegmentedSpinner } from "./components/shared/SegmentedSpinner";
+import { DetailSheetRoot } from "./components/catalyst-modal/DetailSheetRoot";
 import { useVixTicker } from "./hooks/useVixTicker";
 import { useHaptic } from "./hooks/useHaptic";
-import { X } from "lucide-react";
+import { useNotificationTapRouter } from "./hooks/useNotificationTapRouter";
 
 const RiskFlowPage = lazy(() =>
   import("./components/riskflow/RiskFlowPage").then((m) => ({
@@ -118,7 +124,6 @@ function AuthenticatedApp() {
   const vibrate = useHaptic();
 
   const [activeTab, setActiveTab] = useState(0);
-  const [chatOpen, setChatOpen] = useState(false);
   const prevTab = useRef(0);
 
   const handleTabChange = useCallback(
@@ -130,48 +135,23 @@ function AuthenticatedApp() {
     [activeTab, vibrate],
   );
 
-  // Service worker notification tap routing
+  // [S25] SW notification-tap → tab + DetailSheet modal (via NotificationModalContext).
+  useNotificationTapRouter({
+    onTabChange: (idx) => handleTabChange(idx as number),
+  });
+
+  // [v5.22 polish] Notification drawer's "Ask Harper" swipe dispatches a
+  // window event with {index} to switch tabs. Decoupled from the drawer so
+  // the drawer doesn't need to know about layout state.
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-
-    const handler = (event: MessageEvent) => {
-      if (event.data?.type !== "notification-tap") return;
-      const { category, conversationId } = event.data;
-
-      // Route to correct tab based on notification category
-      if (category === "riskflow") {
-        handleTabChange(1);
-      } else if (
-        category === "chat" ||
-        category === "toolApprovals" ||
-        category === "chat_relay"
-      ) {
-        handleTabChange(2);
-        // S21-T1 relay dispatch: stash pending convo so ChatPage can pick it up on mount
-        if (category === "chat_relay" && conversationId) {
-          try {
-            sessionStorage.setItem(
-              "fintheon:pending-relay-conv",
-              conversationId,
-            );
-            // Also dispatch a window event in case the tab is already open
-            window.dispatchEvent(
-              new CustomEvent("fintheon:relay-dispatch", {
-                detail: { conversationId },
-              }),
-            );
-          } catch {
-            /* ignore */
-          }
-        }
-      } else if (category === "dailyBrief") {
-        handleTabChange(0);
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ index?: number }>).detail;
+      if (typeof detail?.index === "number") {
+        handleTabChange(detail.index);
       }
     };
-
-    navigator.serviceWorker.addEventListener("message", handler);
-    return () =>
-      navigator.serviceWorker.removeEventListener("message", handler);
+    window.addEventListener("fintheon:tab-change", handler);
+    return () => window.removeEventListener("fintheon:tab-change", handler);
   }, [handleTabChange]);
 
   const direction = activeTab > prevTab.current ? 1 : -1;
@@ -214,8 +194,7 @@ function AuthenticatedApp() {
       <MobileShell
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        chatOpen={chatOpen}
-        onChatToggle={() => setChatOpen(true)}
+        onChatTap={() => handleTabChange(2)}
       >
         <AnimatePresence mode="popLayout" initial={false} custom={direction}>
           <motion.div
@@ -241,42 +220,8 @@ function AuthenticatedApp() {
           </motion.div>
         </AnimatePresence>
       </MobileShell>
-
-      {/* Chat overlay — slides up from bottom, stays mounted (only when not on chat tab) */}
-      {activeTab !== 2 && (
-        <Suspense fallback={<LazyFallback />}>
-          <ChatPage visible={chatOpen} />
-        </Suspense>
-      )}
-      <AnimatePresence>
-        {chatOpen && activeTab !== 2 && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.15 }}
-            onClick={() => setChatOpen(false)}
-            aria-label="Close chat"
-            style={{
-              position: "fixed",
-              top: "calc(env(safe-area-inset-top) + 12px)",
-              right: 16,
-              width: 44,
-              height: 44,
-              borderRadius: "50%",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--border-visible)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              zIndex: 1000,
-            }}
-          >
-            <X size={20} color="var(--text-primary)" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {/* [S25] Sibling to MobileShell so it floats above the tab transition. */}
+      <DetailSheetRoot onDispatched={() => handleTabChange(2)} />
     </MobileRiskFlowProvider>
   );
 }
@@ -312,7 +257,11 @@ function AuthGate() {
 
   if (!isAuthenticated) return <LoginScreen />;
 
-  return <AuthenticatedApp />;
+  return (
+    <NotificationModalProvider>
+      <AuthenticatedApp />
+    </NotificationModalProvider>
+  );
 }
 
 export default function App() {

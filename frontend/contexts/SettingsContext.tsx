@@ -1,3 +1,6 @@
+// [claude-code 2026-04-19] v5.22 S1: added cross-platform preferences sync (GET/PUT
+//   /api/preferences). Runs PARALLEL to the existing /api/settings trading-settings pipe —
+//   the UserPreferences contract is the cross-device shape shared with mobile.
 // [claude-code 2026-04-18] Attach Supabase JWT to backend-settings fetches. After the bare-URL
 //   fix (file:// → localhost:8080) the requests were reaching the backend but without an
 //   Authorization header, producing 401 in the Electron console. Now gets the token via
@@ -13,6 +16,11 @@ import {
 } from "react";
 import type { HealingBowlSound } from "../utils/healingBowlSounds";
 import { getAccessToken } from "../lib/supabase";
+import {
+  DEFAULT_PREFERENCES,
+  PREFERENCES_API_PATH,
+  type UserPreferences,
+} from "../lib/user-preferences";
 
 export interface APIKeys {
   openai?: string;
@@ -59,7 +67,7 @@ interface DeveloperSettings {
   showTestTradeButton: boolean;
   showMockProposal: boolean;
   showPlaceholderBriefings: boolean;
-  mirosharkSimulations: boolean;
+  agentDeskSimulations: boolean;
   agentAutoProposals: boolean;
   accountTrackerEnabled: boolean;
 }
@@ -156,6 +164,9 @@ interface SettingsContextType {
   /** Custom CAO display name (default: "Harper") */
   caoName: string;
   setCaoName: (name: string) => void;
+  /** v5.22 S1: cross-device preferences contract (theme, notifications, fuse palette). */
+  preferences: UserPreferences;
+  updatePreferences: (patch: Partial<UserPreferences>) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -163,6 +174,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
 );
 
 const STORAGE_KEY = "fintheon:settings";
+const PREFERENCES_STORAGE_KEY = "fintheon:preferences";
 // [claude-code 2026-04-18] Must be absolute: under Electron file:// a relative "/api/settings"
 //   resolves against the file protocol and throws ERR_FILE_NOT_FOUND, so both load+save silently
 //   no-op and settings never round-trip to Supabase until a reload on localhost.
@@ -195,6 +207,64 @@ async function fetchBackendSettings(): Promise<Record<string, unknown> | null> {
     return data?.settings ?? null;
   } catch {
     return null;
+  }
+}
+
+// [claude-code 2026-04-19] v5.22 S1: UserPreferences sync — parallel to the legacy
+//   /api/settings trading-settings block. Reads + writes /api/preferences, polls every
+//   30s for cross-device updates. Falls back to localStorage when no JWT is available.
+async function fetchBackendPreferences(): Promise<UserPreferences | null> {
+  try {
+    const token = await getAccessToken();
+    if (!token) return null;
+    const res = await fetch(`${API_BASE}${PREFERENCES_API_PATH}`, {
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as UserPreferences;
+  } catch {
+    return null;
+  }
+}
+
+async function saveBackendPreferences(
+  prefs: UserPreferences,
+): Promise<UserPreferences | null> {
+  try {
+    const token = await getAccessToken();
+    if (!token) return null;
+    const res = await fetch(`${API_BASE}${PREFERENCES_API_PATH}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(prefs),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as UserPreferences;
+  } catch {
+    return null;
+  }
+}
+
+function loadPreferencesFromStorage(): UserPreferences {
+  try {
+    const raw = localStorage.getItem(PREFERENCES_STORAGE_KEY);
+    if (!raw) return DEFAULT_PREFERENCES;
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_PREFERENCES,
+      ...parsed,
+      notifications: {
+        ...DEFAULT_PREFERENCES.notifications,
+        ...(parsed?.notifications ?? {}),
+      },
+    };
+  } catch {
+    return DEFAULT_PREFERENCES;
   }
 }
 
@@ -267,7 +337,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         showTestTradeButton: false,
         showMockProposal: false,
         showPlaceholderBriefings: false,
-        mirosharkSimulations: false,
+        agentDeskSimulations: false,
         agentAutoProposals: false,
         accountTrackerEnabled: false,
       }),
@@ -391,6 +461,72 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [caoName, setCaoName] = useState<string>(() =>
     loadFromStorage("caoName", "Harper"),
   );
+
+  // [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences.
+  const [preferences, setPreferences] = useState<UserPreferences>(() =>
+    loadPreferencesFromStorage(),
+  );
+  const preferencesSynced = useRef(false);
+
+  const updatePreferences = (patch: Partial<UserPreferences>) => {
+    setPreferences((prev) => {
+      const next: UserPreferences = {
+        ...prev,
+        ...patch,
+        notifications: {
+          ...prev.notifications,
+          ...(patch.notifications ?? {}),
+        },
+        updatedAt: new Date().toISOString(),
+      };
+      try {
+        localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      if (preferencesSynced.current) {
+        saveBackendPreferences(next).then((server) => {
+          if (server && server.updatedAt) {
+            setPreferences((curr) => ({
+              ...curr,
+              updatedAt: server.updatedAt,
+            }));
+          }
+        });
+      }
+      return next;
+    });
+  };
+
+  // Initial fetch + 30s polling for cross-device updates.
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncFromBackend = async () => {
+      const remote = await fetchBackendPreferences();
+      if (cancelled || !remote) return;
+      setPreferences((curr) => {
+        const remoteUpdated = new Date(remote.updatedAt).getTime();
+        const currUpdated = new Date(curr.updatedAt).getTime();
+        if (remoteUpdated <= currUpdated) return curr;
+        try {
+          localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(remote));
+        } catch {}
+        return remote;
+      });
+    };
+
+    syncFromBackend().finally(() => {
+      preferencesSynced.current = true;
+    });
+
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") syncFromBackend();
+    }, 30_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   // Track whether initial backend fetch has completed to avoid saving back stale data
   const backendSynced = useRef(false);
@@ -609,6 +745,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setProposerDefaultIframe,
         caoName,
         setCaoName,
+        preferences,
+        updatePreferences,
       }}
     >
       {children}

@@ -1,0 +1,35 @@
+schema_version: 1
+id: fintheon.imported.close-crm
+name: Close CRM (wrapped)
+version: 0.1.0
+description: >-
+  Wraps TP's existing Close CRM Zapier MCP tools (lead find/create/update,
+  contact mgmt, call logging) as an agentskills.io-compatible skill so Harper
+  can invoke them through the skill registry.
+entry_point: ./entry.ts
+tools:
+  - name: close_find_lead
+    description: Search Close CRM leads by email, phone, name, or status.
+    input_schema:
+      query: string
+  - name: close_create_lead
+    description: Create a new Close CRM lead.
+    input_schema:
+      name: string
+      company: string?
+      phone: string?
+      email: string?
+  - name: close_create_note
+    description: Append a note to a lead.
+    input_schema:
+      lead_id: string
+      note: string
+permissions:
+  - write_notes
+security_scan:
+  data_exfil_risks: []
+  prompt_injection_vectors: []
+  destructive_ops: []
+authors:
+  - Priced In Capital
+license: Proprietary

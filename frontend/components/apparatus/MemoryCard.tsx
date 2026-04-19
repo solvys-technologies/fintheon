@@ -15,7 +15,7 @@ import type { AgentMemory, MemorySource } from "./types";
 const SOURCE_ICONS: Record<MemorySource, typeof Twitter> = {
   twitter: Twitter,
   data: Database,
-  miroshark: BarChart3,
+  agentDesk: BarChart3,
   trade: Diff,
   boardroom: MessageSquare,
   manual: Pencil,
@@ -24,7 +24,7 @@ const SOURCE_ICONS: Record<MemorySource, typeof Twitter> = {
 const SOURCE_LABELS: Record<MemorySource, string> = {
   twitter: "X",
   data: "Data",
-  miroshark: "MiroShark",
+  agentDesk: "AgentDesk",
   trade: "Trade",
   boardroom: "Boardroom",
   manual: "Manual",

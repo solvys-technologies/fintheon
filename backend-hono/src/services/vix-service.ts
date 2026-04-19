@@ -1,3 +1,4 @@
+// [claude-code 2026-04-18] C1: unified VIX_FALLBACK=18 (5-yr median); used here + in riskflow handlers
 // [claude-code 2026-03-24] VIX velocity tracking, regime detection, trigger callback system; spike threshold lowered to 2.5%
 // [claude-code 2026-03-14] VIX via Yahoo Finance — 60s polling, no API key needed
 /**
@@ -6,6 +7,14 @@
  * regime detection, and trigger callback system.
  * Source: Yahoo Finance (no API key required)
  */
+
+/**
+ * VIX fallback when live fetch fails AND there is no cached reading.
+ * 18 is the ~5-year median — neutral enough to avoid over- or under-scoring
+ * on cold-start. Same constant used by `routes/riskflow/handlers.ts` so
+ * score-path and serve-path agree on the same number.
+ */
+export const VIX_FALLBACK = 18;
 
 export interface VIXData {
   level: number;
@@ -248,10 +257,10 @@ function getFallbackVIX(now: Date): VIXData {
   }
 
   // Default VIX if nothing available
-  console.warn("[VIX] No cache available, using default VIX=20");
+  console.warn(`[VIX] No cache available, using default VIX=${VIX_FALLBACK}`);
   return {
-    level: 20,
-    previousLevel: 20,
+    level: VIX_FALLBACK,
+    previousLevel: VIX_FALLBACK,
     timestamp: now,
     percentChange: 0,
     isSpike: false,

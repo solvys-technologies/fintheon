@@ -248,7 +248,7 @@ export function useHermesChat(
                       "[]",
                   );
                   // [S23-T3] Auto-append "aquarium" when the user is on the Aquarium surface
-                  // so Harper receives the latest MiroShark context without manual toggling.
+                  // so Harper receives the latest AgentDesk context without manual toggling.
                   const surface = localStorage.getItem(
                     "fintheon:current-surface",
                   );

@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp, ThumbsDown } from "lucide-react";
 import type { RiskFlowAlert } from "../../lib/riskflow-feed";
 import { inferDirection } from "../../lib/riskflow-feed";
 import { SEVERITY_CONFIG } from "../../lib/severity-config";
-import { ivHeatColor } from "../../types/miroshark";
+import { ivHeatColor } from "../../types/agent-desk";
 import { SourceIcon } from "../../lib/shared-icons";
 import { timeAgo } from "../../lib/time-utils";
 import { linkifyText } from "../../lib/linkify";

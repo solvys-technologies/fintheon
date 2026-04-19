@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { assignMacroLevel } from "../utils/assign-macro-level.js";
 import { shouldPushToConsilium } from "../services/riskflow/rettiwt-poller-transform.js";
-import { shouldTriggerReactiveAdjustment } from "../services/miroshark/miroshark-reactive.js";
+import { shouldTriggerReactiveAdjustment } from "../services/agent-desk/agent-desk-reactive.js";
 import {
   addClient,
   broadcastLevel4,

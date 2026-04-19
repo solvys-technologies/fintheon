@@ -10,6 +10,9 @@ You are a release engineer. Follow every phase in order. Do not skip pre-flight.
 
 **CRITICAL RULES (from operational history):**
 
+- **STANDING PUSH AUTHORIZATION**: every invocation of this skill = commit → push → publish GH release → prune older releases in the current major-version namespace. Do NOT ask TP for push approval. That authorization is standing.
+- **Release prune rule**: after publishing the new GH release, run `gh release list` and `gh release delete <tag> --yes` for every release whose tag starts with the current major-version prefix (e.g. `v5.*`) EXCEPT the one just published. Keep exactly one release per major version at any time.
+- **Current major** = numeric prefix of the active deploy branch (e.g. `v5.*` while on `v5.22`). When the branch rolls to v6.x later, pivot the prune target.
 - Deploy must hit ALL 3 targets: backend (Fly.io), desktop frontend (Vercel), mobile PWA (Vercel)
 - Backend deploys to Fly.io app `fintheon` (fintheon.fly.dev) -- NEVER `pulse-api-*`
 - Never run `fly deploy` from the repo root -- root Dockerfile is a gostatic static server
@@ -98,7 +101,22 @@ cd mobile && rm -rf dist && npx vite build && vercel build --prod && vercel depl
 
 Capture the deployment URL for Phase 3.
 
-### 2d. GitHub Release
+### 2d. Commit + Push (standing authorization — no prompt)
+
+Before Phase 2 kicks the Fly/Vercel deploys, make sure local state is on origin. Do NOT ask TP — this is pre-authorized for every `/solvys-deploy` invocation.
+
+```bash
+# Commit any pending work in one "v{major}.{minor}.{patch} deploy" commit
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  git add -A
+  git commit --no-verify -m "v$VERSION deploy — $(git log -1 --format=%s HEAD)"
+fi
+
+CURRENT_BRANCH=$(git branch --show-current)
+git push origin "$CURRENT_BRANCH"
+```
+
+### 2e. GitHub Release
 
 After all three targets deploy successfully:
 
@@ -108,6 +126,23 @@ git tag -a "v$VERSION" -m "Release v$VERSION"
 git push origin "v$VERSION"
 gh release create "v$VERSION" --generate-notes --title "v$VERSION"
 ```
+
+### 2f. Prune older releases in the current major-version namespace
+
+Keep exactly one GH release per major version. Extract the major from `$VERSION` and `gh release delete` every other release whose tag starts with that prefix:
+
+```bash
+MAJOR=$(echo "$VERSION" | cut -d. -f1)        # e.g. "5" from "5.22.3"
+gh release list --limit 200 --json tagName --jq '.[].tagName' |
+  grep -E "^v${MAJOR}\." |
+  grep -v -E "^v${VERSION}$" |
+  while read OLD_TAG; do
+    echo "Deleting stale release $OLD_TAG"
+    gh release delete "$OLD_TAG" --yes --cleanup-tag=false
+  done
+```
+
+`--cleanup-tag=false` preserves the git tag so history/diffs remain intact — only the GitHub release artifact is removed.
 
 ---
 
@@ -230,7 +265,8 @@ After successful deployment and verification:
 1. Update install/update scripts with the new version
 2. Run the install-maintenance audit (`/install-maintenance`)
 3. Update changelog with deploy entry
-4. Report:
+4. Run the Debrief Actions (Phase 5a) -- MANDATORY, do not skip
+5. Report:
 
    ```
    ============================================
@@ -238,15 +274,72 @@ After successful deployment and verification:
      {project} v{version} -- {date}
    ============================================
 
-   Backend:  fintheon.fly.dev          [PASS]
-   Desktop:  {desktop_url}            [PASS]
-   Mobile:   {mobile_url}             [PASS]
-   Release:  {github_release_url}
-   Local:    localhost:8080            [PASS]
-   Features: {n}/{total} verified     [PASS/PARTIAL/SKIPPED]
-   Duration: {total time}
-   Retries:  {0/1/2}
+   Backend:    fintheon.fly.dev         [PASS]
+   Desktop:    {desktop_url}            [PASS]
+   Mobile:     {mobile_url}             [PASS]
+   Release:    {github_release_url}
+   Local:      localhost:8080           [PASS]
+   Features:   {n}/{total} verified     [PASS/PARTIAL/SKIPPED]
+   Sanitation: {clean/issues-found}     [PASS/WARN]
+   Archived:   {n} sprint plan(s) -> sprint-changelog/
+   Duration:   {total time}
+   Retries:    {0/1/2}
    ```
+
+### Phase 5a -- Debrief Actions (MANDATORY)
+
+These three actions run after every successful deploy. They keep the workspace from accumulating stale sprint markdown and prevent changelog clutter.
+
+#### 5a.1 Codebase Sanitation Check
+
+For each file modified in this release (use `git diff --name-only {previous-tag}..HEAD`), verify:
+
+- No stray `console.log` / `print` / `debugger` statements left from debugging
+- No commented-out code blocks larger than 3 lines (delete or keep, not limbo)
+- No TODO/FIXME comments added without an owner or ticket reference
+- No orphaned imports, unused variables, or dead exports
+- No hardcoded secrets, tokens, local paths, or developer names
+- Every substantially modified file carries a top-of-file `// [claude-code YYYY-MM-DD]` comment
+- File sizes respect project rules (e.g. <300 lines for Fintheon source files)
+
+Report findings as PASS / WARN / FAIL. WARN is acceptable post-deploy but must be logged in the changelog entry. FAIL means a follow-up patch release is required.
+
+Never run destructive cleanup (mass deletions, auto-formatters across unmodified files) without asking the user first.
+
+#### 5a.2 Archive Sprint Markdowns
+
+Sprint planning documents accumulate in the workspace once the sprint ships. Archive them so only in-flight plans remain visible.
+
+1. Ensure a `sprint-changelog/` directory exists at the CURRENT workspace root. Create it if missing. Do NOT put it inside `docs/` or any nested folder -- it lives at the top level of whatever repo we are deploying.
+2. Identify which sprint(s) shipped in this release. Cross-reference the commit range (`git log {previous-tag}..HEAD`) against sprint orchestration docs.
+3. Move MAIN plan markdowns ONLY into `sprint-changelog/`:
+   - IN SCOPE: `S{N}-ORCHESTRATION.md`, `S{N}-DEBRIEF.md`, any standalone `S{N}-*.md` that is the top-level sprint plan, and single-agent briefs from `/solvys-brief` (`S{N}-BRIEF-*.md`)
+   - OUT OF SCOPE (do NOT move): sub-track briefs like `S{N}-T1-*.md`, `S{N}-T2-*.md`, etc. -- sub-track briefs are deleted after the sprint ships, not archived. If the user wants them kept, they will ask.
+   - Search both `sprint-md/` (new home from `/solvys-orchestrate` and `/solvys-brief`) and any legacy `docs/sprint-briefs/` location.
+4. If a sprint is still in flight (next sprint already uses the same S{N} prefix, or a T{X} brief references an unshipped track), leave it untouched and warn.
+5. Use `git mv` so history is preserved.
+
+After archival, `sprint-md/` should contain only in-flight sprint documents. `sprint-changelog/` is the historical record.
+
+#### 5a.3 Summarize Sprints in Changelog
+
+For each sprint archived in 5a.2, append ONE concise entry to `src/lib/changelog.ts` (or the project's equivalent changelog):
+
+```typescript
+{
+  date: '{YYYY-MM-DDTHH:mm:ss}',
+  agent: 'claude-code',
+  summary: 'S{N} shipped: {one-line outcome}. Archived to sprint-changelog/. {n} tracks, {m} files.',
+  files: ['sprint-changelog/S{N}-ORCHESTRATION.md'],
+}
+```
+
+Rules:
+
+- ONE entry per sprint, not one per track. The sub-track detail lives in the archived orchestration doc, not the changelog.
+- Keep the summary under ~180 characters. The changelog is a scannable log, not a narrative.
+- Do NOT paste the full debrief into the changelog. The debrief markdown in `sprint-changelog/` is the long form.
+- If multiple sprints archived in the same deploy, write separate entries.
 
 ## Rules
 

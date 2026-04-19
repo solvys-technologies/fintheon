@@ -1,3 +1,9 @@
+// [claude-code 2026-04-18] Persist error turns on relay forward failure. When the stream throws
+// (local_offline during a reconnect window, WS closed mid-flight, etc), we now write an assistant
+// message with `[ERROR: …]` content to the convo so next hydration shows what happened instead of
+// a hanging user message. Mobile's SSE parser also renders these — users see the error in the
+// chat bubble. Best-effort persistence: a DB failure here swallows silently so it can't mask the
+// original relay error.
 // [claude-code 2026-04-18] S21-T1: relay dispatch + mirror stream. Adds POST /dispatch
 // (sends web-push to mobile + registers dispatch state), POST /disconnect (tears it down),
 // GET /mirror-stream (SSE of messages mobile is sending while dispatched). /chat handler now
@@ -214,14 +220,32 @@ export function createRelayRoutes() {
     // Fire web-push to mobile subscriptions. Payload.url is the PWA deep link
     // and conversationId lets the service worker postMessage a specific convo
     // to any already-open PWA tab (see mobile/public/sw.js + App.tsx handler).
-    const recipients = await sendToUserDirect(userId, {
-      title: "Fintheon — chat picked up",
-      body: `Harper is ready on ${deviceLabel}. Tap to continue the conversation.`,
-      category: "chat_relay",
-      url: `/chat/${body.conversationId}`,
-      icon: "/icons/icon-192.png",
-      conversationId: body.conversationId,
-    });
+    // Direct bypass: user explicitly requested pickup, so skip category/quiet gates.
+    // Still log via insertNotification so the in-app bell shows it.
+    const [recipients] = await Promise.all([
+      sendToUserDirect(userId, {
+        title: "Fintheon — chat picked up",
+        body: `Harper is ready on ${deviceLabel}. Tap to continue the conversation.`,
+        category: "chat_relay",
+        url: `/chat/${body.conversationId}`,
+        icon: "/icons/icon-192.png",
+        conversationId: body.conversationId,
+      }),
+      (async () => {
+        const { insertNotification } =
+          await import("../services/notification-service.js");
+        await insertNotification({
+          userId,
+          category: "chat_relay",
+          severity: "medium",
+          title: "Fintheon — chat picked up",
+          body: `Harper is ready on ${deviceLabel}. Tap to continue the conversation.`,
+          url: `/chat/${body.conversationId}`,
+          eventId: body.conversationId,
+          metadata: { conversationId: body.conversationId, deviceLabel },
+        }).catch(() => {});
+      })(),
+    ]);
 
     log.info("Relay dispatch fired", {
       userId,
@@ -479,15 +503,29 @@ export function createRelayRoutes() {
           }
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : "Relay error";
+          const userFacing =
+            msg === "local_offline" ? "Local backend disconnected" : msg;
           log.error("Relay forward failed", { userId, error: msg });
-          send(
-            JSON.stringify({
-              type: "error",
-              error:
-                msg === "local_offline" ? "Local backend disconnected" : msg,
-            }),
-          );
+          send(JSON.stringify({ type: "error", error: userFacing }));
           send("[DONE]");
+          // Best-effort: persist the failure so the thread reflects what happened.
+          // Without this, the UI hydrates a dead user message with no reply — same
+          // "empty bubble" symptom that drove this fix.
+          if (convId) {
+            try {
+              await addMessage(convId, {
+                conversationId: convId,
+                role: "assistant",
+                content: `[ERROR: ${userFacing}]`,
+              });
+            } catch (persistErr) {
+              log.warn("Failed to persist error message", {
+                userId,
+                conversationId: convId,
+                error: String(persistErr),
+              });
+            }
+          }
         } finally {
           controller.close();
         }

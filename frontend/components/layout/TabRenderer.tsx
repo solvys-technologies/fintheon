@@ -1,3 +1,4 @@
+// [claude-code 2026-04-18] S24-T4: Admin surface now wraps Refinement/Approvals/Monitor via AdminShell
 // [claude-code 2026-04-03] Extracted from MainLayout.tsx — tab content rendering
 import React from "react";
 import { MinimalFeedSection } from "../feed/MinimalFeedSection";
@@ -11,7 +12,7 @@ import { NarrativeMap } from "../narrative/NarrativeMap";
 import { PerformanceJournal } from "../journal/PerformanceJournal";
 import { ProposalWidget } from "../proposals/ProposalWidget";
 import { ApparatusMap } from "../apparatus/ApparatusMap";
-import { RefinementEngine } from "../refinement/RefinementEngine";
+import { AdminShell } from "../admin/AdminShell";
 import { SettingsPage } from "../SettingsPanel";
 
 type NavTab =
@@ -49,8 +50,8 @@ export function TabRenderer({
   return (
     <div className="flex-1 min-h-0 overflow-hidden">
       {showRefinement && (
-        <div key="refinement" className="h-full w-full animate-fade-in-tab">
-          <RefinementEngine />
+        <div key="admin" className="h-full w-full animate-fade-in-tab">
+          <AdminShell />
         </div>
       )}
       {!showRefinement && activeTab === "dashboard" && (

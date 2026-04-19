@@ -1,5 +1,8 @@
+// [claude-code 2026-04-19] v5.22 S1: Nothing-fuse-shimmer on every component bar, palette
+//   severity colors, "Agent Desk" label replaces MiroShark.
 // [claude-code 2026-04-15] S16-T4: Blended VIX Score card — visible on Aquarium Page 0
 import type { IVScoreResponse } from "../../types/market-data";
+import { NothingFuse } from "../shared/NothingFuse";
 
 interface BlendedVIXCardProps {
   data: IVScoreResponse | null;
@@ -19,13 +22,6 @@ function getEnvironmentLabel(score: number): string {
   if (score >= 4) return "Gathering Storm";
   if (score >= 2) return "Light Winds";
   return "Calm Seas";
-}
-
-function getBarColor(value: number): string {
-  if (value > 7) return "bg-red-500";
-  if (value > 5) return "bg-orange-400";
-  if (value > 3) return "bg-yellow-400";
-  return "bg-emerald-400";
 }
 
 export function BlendedVIXCard({ data, isLoading }: BlendedVIXCardProps) {
@@ -58,8 +54,8 @@ export function BlendedVIXCard({ data, isLoading }: BlendedVIXCardProps) {
       detail: `(${data.eventCount} events)`,
     },
     {
-      label: "MiroShark",
-      value: data.mirosharkComponent,
+      label: "Agent Desk",
+      value: data.agentDeskComponent,
       weight: "10%",
       detail: null,
     },
@@ -89,10 +85,11 @@ export function BlendedVIXCard({ data, isLoading }: BlendedVIXCardProps) {
             <span className="text-[9px] text-gray-500 w-[52px] shrink-0">
               {c.label}
             </span>
-            <div className="flex-1 h-[4px] bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full ${getBarColor(c.value)}`}
-                style={{ width: `${Math.min(100, (c.value / 10) * 100)}%` }}
+            <div className="flex-1">
+              <NothingFuse
+                value={Math.min(1, c.value / 10)}
+                score={c.value}
+                thickness={4}
               />
             </div>
             <span className="text-[9px] text-gray-300 w-6 text-right shrink-0">

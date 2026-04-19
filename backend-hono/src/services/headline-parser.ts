@@ -1,3 +1,7 @@
+// [claude-code 2026-04-19] S24-T2: Added directional geopolitical classifier
+// (bullishRisk / bearishRisk / neutralRisk). Side-channel only — V3 eventType
+// remains "geopolitical"; V4 iv-scorer reads parsed.geopoliticalDirection to
+// route to geopoliticalBullish/Bearish/Neutral weights + sentiment.
 import type {
   ParsedHeadline,
   NewsSource,
@@ -82,6 +86,51 @@ export function getMatchedKeywords(text: string): string[] {
     if (pattern.test(text)) matches.add(keyword);
   }
   return [...matches];
+}
+
+// [claude-code 2026-04-19] S24-T2: Directional geopolitical classification.
+// Split into bullish (de-escalation), bearish (escalation), neutral (hedged).
+// Order matters: bullish checked first so "ceasefire collapses" doesn't get
+// stuck on the base "ceasefire" token — but caller should still feed walk-back
+// phrases to the walk-back pairer for proper inversion.
+export const GEOPOLITICAL_BULLISH_PATTERN =
+  /\b(ceasefire\s+(?:confirmed|reached|agreed|holds)|agreement\s+signed|de[-\s]?escalation|reopens?|re-?opened|halted|withdrawal|truce|peace\s+deal|accord\s+reached)\b/i;
+export const GEOPOLITICAL_BEARISH_PATTERN =
+  /\b(attack(?:ed|s|ing)?|strike(?:s|d)?|blockade|escalation|missile|invasion|invaded|seized|seize|nuclear|strait\s+of\s+hormuz|bombing|bombed|assault)\b/i;
+export const GEOPOLITICAL_NEUTRAL_PATTERN =
+  /\b(talks|negotiations|warning|warns|threat(?:en(?:ed|s|ing)?)?|may|maybe|considering|weighing|could|might|if)\b/i;
+
+export type GeopoliticalDirection = "bullish" | "bearish" | "neutral";
+
+/**
+ * Classify a headline's geopolitical stance. Returns null when none of the
+ * directional patterns match (caller may still detect eventType="geopolitical"
+ * via the existing WAR/SANCTION/TENSION fallback — no direction available).
+ *
+ * Priority: bearish (escalation) > bullish (de-escalation) > neutral (hedge).
+ * Escalation always dominates — if both "invasion" and "talks" appear in the
+ * same item, the attack wins.
+ */
+export function classifyGeopoliticalDirection(
+  text: string,
+): GeopoliticalDirection | null {
+  if (GEOPOLITICAL_BEARISH_PATTERN.test(text)) return "bearish";
+  if (GEOPOLITICAL_BULLISH_PATTERN.test(text)) return "bullish";
+  if (GEOPOLITICAL_NEUTRAL_PATTERN.test(text)) return "neutral";
+  return null;
+}
+
+/**
+ * Map a geopolitical direction to the V4 event-type variant. V3 callers
+ * should keep reading `parsed.eventType === "geopolitical"`; only the V4
+ * scoring path consults this function.
+ */
+export function geopoliticalEventType(
+  direction: GeopoliticalDirection,
+): "geopoliticalBullish" | "geopoliticalBearish" | "geopoliticalNeutral" {
+  if (direction === "bullish") return "geopoliticalBullish";
+  if (direction === "bearish") return "geopoliticalBearish";
+  return "geopoliticalNeutral";
 }
 
 const knownTickers = [
@@ -232,6 +281,13 @@ export const parseHeadline = (
   parsed.symbols = extractSymbols(trimmed);
   parsed.eventType = detectEventType(trimmed);
   parsed.marketReaction = inferMarketReaction(trimmed);
+
+  // [claude-code 2026-04-19] S24-T2: side-channel directional stance for V4.
+  // Only populates when a directional pattern matches — V3 ignores this field.
+  const geoDirection = classifyGeopoliticalDirection(trimmed);
+  if (geoDirection) {
+    parsed.geopoliticalDirection = geoDirection;
+  }
 
   const actionInfo = parseActionStatement(trimmed);
   if (actionInfo) {

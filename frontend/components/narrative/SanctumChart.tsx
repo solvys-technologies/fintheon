@@ -1,11 +1,11 @@
 // [claude-code 2026-03-28] S9-T3: Removed IV risk bars canvas — TradingView + projection overlay only
 // [claude-code 2026-03-24] Chart overhaul — TradingView iframe embed
-// [claude-code 2026-03-25] Price projection canvas overlay — MiroShark expected move path + confidence band
+// [claude-code 2026-03-25] Price projection canvas overlay — AgentDesk expected move path + confidence band
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import type {
-  MiroSharkTimePoint,
-  MiroSharkScenario,
-} from "../../types/miroshark";
+  AgentDeskTimePoint,
+  AgentDeskScenario,
+} from "../../types/agent-desk";
 
 /** Map user-facing futures symbols to TradingView widget-compatible symbols. */
 const SYMBOL_MAP: Record<string, string> = {
@@ -33,13 +33,13 @@ function mapSymbol(sym: string): string {
 const COMPARE_SYMBOLS = ["COMEX:GC1!", "SP:SPX", "NASDAQ:QQQ"];
 
 interface SanctumChartProps {
-  timeSeries: MiroSharkTimePoint[];
+  timeSeries: AgentDeskTimePoint[];
   rollingDays: number;
   selectedSymbol?: string;
   compositeIV?: number;
   confidence?: number;
   regimeShiftProbability?: number;
-  scenarios?: MiroSharkScenario[];
+  scenarios?: AgentDeskScenario[];
 }
 
 function getThemeColor(
@@ -53,13 +53,13 @@ function getThemeColor(
 
 /* ── Projection overlay: draws expected move path + confidence band on top of TradingView ── */
 
-/** Generate a smooth projected path using MiroShark data.
+/** Generate a smooth projected path using AgentDesk data.
  *  Returns an array of {x, y} points normalized to 0-1 range. */
 function generateProjectionPath(
   compositeIV: number,
   confidence: number,
   regimeShift: number,
-  scenarios: MiroSharkScenario[],
+  scenarios: AgentDeskScenario[],
 ): {
   points: { x: number; y: number }[];
   bandWidth: number;
@@ -121,7 +121,7 @@ function drawProjectionOverlay(
   compositeIV: number,
   confidence: number,
   regimeShift: number,
-  scenarios: MiroSharkScenario[],
+  scenarios: AgentDeskScenario[],
   accentColor: string,
   lowColor: string,
   severeColor: string,

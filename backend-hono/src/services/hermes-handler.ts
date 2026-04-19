@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S27-T9 W2e: Live Smart Model Routing — OpenRouter call now picks the per-agent model via selectModel() + llmCall() (budget-aware degrade, telemetry to routing_decisions).
 // [claude-code 2026-03-14] Hermes routes to OpenRouter (Nous subscription) + Claude Sonnet 4.6
 // [claude-code 2026-03-14] Model routing fix: default→Sonnet 4.6, thinkHarder→Opus via chat.ts
 // [claude-code 2026-03-14] Fintheon rebrand: Weekly Tribune intent, updated agent display names (Consul/Censori/Herald)
@@ -26,6 +27,9 @@ import { getContextForAgent } from "./agent-context-bank-service.js";
 import type { AgentMemoryEntry } from "./agent-context-bank-service.js";
 import { createLogger } from "../lib/logger.js";
 import { checkVProxyHealth, isVProxyEnabled } from "./strands/index.js";
+import { llmCall } from "./ai/llm-call.js";
+import { toRoutingAgent } from "./ai/agent-map.js";
+import type { TaskType } from "./ai/routing.js";
 
 const log = createLogger("Hermes");
 
@@ -662,7 +666,8 @@ export async function handleHermesChat(
     });
   }
 
-  // Fallback: OpenRouter
+  // Fallback: OpenRouter via Smart Model Routing (T9 W2e) — per-agent model,
+  //   budget-aware degrade, telemetry to routing_decisions.
   const apiKey = process.env.OPENROUTER_API_KEY ?? "";
   const baseUrl = "https://openrouter.ai/api/v1";
 
@@ -673,50 +678,67 @@ export async function handleHermesChat(
     return generateLocalResponse(request, agentInfo);
   }
 
-  log.info("Calling OpenRouter", {
-    agent: agentInfo.agent,
-    messages: messages.length,
-  });
+  const routingAgent = toRoutingAgent(agentInfo.agent);
+  const routingTask = agentInfoToTaskType(agentInfo.intent);
 
   try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer":
-          process.env.OPENROUTER_APP_URL ??
-          "https://fintheon-solvys.vercel.app",
-        "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
+    const outcome = await llmCall({
+      agent: routingAgent,
+      task: routingTask,
+      conversationId: request.conversationId ?? "adhoc",
+      userId: request.userId,
+      invoke: async (rule) => {
+        log.info("Calling OpenRouter via selectModel", {
+          agent: routingAgent,
+          model: rule.model,
+          provider: rule.provider,
+        });
+        const response = await fetch(`${baseUrl}/chat/completions`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer":
+              process.env.OPENROUTER_APP_URL ??
+              "https://fintheon-solvys.vercel.app",
+            "X-Title": process.env.OPENROUTER_APP_NAME ?? "Fintheon-AI-Gateway",
+          },
+          body: JSON.stringify({
+            model: toOpenRouterModel(rule.model),
+            messages,
+            max_tokens: 8192,
+          }),
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`OpenRouter ${response.status}: ${errorText}`);
+        }
+        const data = (await response.json()) as {
+          choices?: { message?: { content?: string } }[];
+          usage?: { prompt_tokens?: number; completion_tokens?: number };
+        };
+        const content = data.choices?.[0]?.message?.content ?? "";
+        return {
+          result: content,
+          input_tokens: data.usage?.prompt_tokens,
+          output_tokens: data.usage?.completion_tokens,
+          user_id: request.userId,
+        };
       },
-      body: JSON.stringify({
-        model: OPENROUTER_OPUS_MODEL,
-        messages,
-        max_tokens: 8192,
-      }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      log.error("OpenRouter error", {
-        status: response.status,
-        body: errorText,
-      });
-      return generateLocalResponse(request, agentInfo);
-    }
-
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const content = data.choices?.[0]?.message?.content ?? "";
-
+    const content = outcome.result;
     if (!content) {
       log.warn("Empty response from OpenRouter, using local fallback");
       return generateLocalResponse(request, agentInfo);
     }
 
     log.info("OpenRouter response received", {
-      preview: content.substring(0, 50),
+      agent: routingAgent,
+      model: outcome.rule.model,
+      latency_ms: outcome.latency_ms,
+      cost_usd: outcome.cost_usd,
+      degraded: outcome.degraded,
     });
 
     return {
@@ -732,6 +754,24 @@ export async function handleHermesChat(
     log.error("OpenRouter request failed", { error: String(error) });
     return generateLocalResponse(request, agentInfo);
   }
+}
+
+// Anthropic models routed through OpenRouter need the `anthropic/` prefix.
+function toOpenRouterModel(model: string): string {
+  if (model.includes("/")) return model;
+  if (model.startsWith("claude-")) return `anthropic/${model}`;
+  return model;
+}
+
+// Map hermes intent buckets → routing TaskType so the router can specialize on task.
+function agentInfoToTaskType(intent: string): TaskType | undefined {
+  if (intent === "prediction-market") return "probability";
+  if (intent === "news-sentiment") return "news";
+  if (intent === "futures-trade" || intent === "technical") return "tape";
+  if (intent === "fed-analysis" || intent === "political-analysis") {
+    return "macro";
+  }
+  return undefined;
 }
 
 /**

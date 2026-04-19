@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] Cut from Herald dispatcher during S27-T4. Left inert for fast re-enable. Delete in S29 if browser-harness coverage holds. Do NOT remove imports elsewhere without replacing data source.
 // [claude-code 2026-04-12] Rettiwt service — per-user API key pool with rotation + guest fallback for timelines
 // Replaces single-token singleton. Keys loaded from user_settings.rettiwt_api_keys in Supabase.
 
@@ -29,7 +30,7 @@ const keyPool: PooledKey[] = [];
 let rotationIndex = 0;
 let lastKeyLoadMs = 0;
 const KEY_RELOAD_INTERVAL = 5 * 60_000; // reload from DB every 5 min
-const COOLDOWN_MS = 90_000; // 90s cooldown per key on 429
+const COOLDOWN_MS = 180_000; // [claude-code 2026-04-18] S25-T1: 180s cooldown (was 90s) — Rettiwt is secondary, longer back-off reduces rate-limit churn
 const MAX_FAILURES = 5; // disable key after 5 consecutive failures
 
 /** Load API keys from all users in Supabase */

@@ -310,7 +310,7 @@ function generateFindings(metrics: ReflectMetrics): ReflectFinding[] {
     findings.push({
       metric: "tagCoverage",
       severity: "critical",
-      message: `Only ${metrics.tagCoverage}% of items have subject tags — MiroShark routing is blind`,
+      message: `Only ${metrics.tagCoverage}% of items have subject tags — AgentDesk routing is blind`,
       currentValue: metrics.tagCoverage,
       threshold: THRESHOLDS.tagCoverage.critical,
       recommendation:

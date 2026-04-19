@@ -57,6 +57,7 @@ export async function createHarperAgent(
 ) {
   const coreTools = createHarperTools(requestId, {
     noTimeout: opts?.relayOriginated,
+    userId: opts?.userId,
   });
   const solvysTools = getAllSolvysTools();
   const systemPrompt = await getAgentSystemPrompt("harper-cao", {});
@@ -118,7 +119,7 @@ export async function streamHarperChat(
   }
 
   // [S23-T3] Aquarium awareness: when the user is on the Aquarium surface (or the connector is
-  // explicitly active), inject the latest MiroShark simulation with interpretation scaffolding so
+  // explicitly active), inject the latest AgentDesk simulation with interpretation scaffolding so
   // Harper reads her own output as ground truth instead of treating it as debug noise.
   const aquariumActive =
     options.surface === "aquarium" ||

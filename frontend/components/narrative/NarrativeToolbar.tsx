@@ -36,8 +36,8 @@ interface NarrativeToolbarProps {
   hasSnapshot: boolean;
   onImport: () => void;
   onManage: () => void;
-  onMiroShark: () => void;
-  mirosharkActive: boolean;
+  onAgentDesk: () => void;
+  agentDeskActive: boolean;
 }
 
 const ZOOM_LEVELS: { value: ZoomLevel; label: string; hint: string }[] = [
@@ -118,8 +118,8 @@ export function NarrativeToolbar({
   hasSnapshot,
   onImport,
   onManage,
-  onMiroShark,
-  mirosharkActive,
+  onAgentDesk,
+  agentDeskActive,
 }: NarrativeToolbarProps) {
   const { highlightMode, toggleHighlightMode } = useHighlight();
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
@@ -344,8 +344,8 @@ export function NarrativeToolbar({
 
         {/* Sanctum */}
         <ToolbarBtn
-          onClick={onMiroShark}
-          active={mirosharkActive}
+          onClick={onAgentDesk}
+          active={agentDeskActive}
           tooltip="Open Sanctum — market intelligence panel"
           shortcut="S"
         >

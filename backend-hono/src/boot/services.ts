@@ -1,5 +1,5 @@
 // [claude-code 2026-04-16] S20-T9: Two-phase boot — bootCritical() before listen, bootBackground() after via queueMicrotask
-// [claude-code 2026-04-03] Added MiroShark daily cron (6:00 AM ET weekdays) to boot sequence
+// [claude-code 2026-04-03] Added AgentDesk daily cron (6:00 AM ET weekdays) to boot sequence
 // [claude-code 2026-03-29] Added catalyst promoter to boot sequence (graduates scored items → narrative catalysts)
 // [claude-code 2026-03-24] Added VIX polling, central scorer, IV ticker, VIX rescore to boot sequence
 // [claude-code 2026-03-20] Service boot consolidation — single entry point for all background services
@@ -7,6 +7,8 @@
 import { hostname } from "node:os";
 import { createLogger } from "../lib/logger.js";
 import { startFeedPoller } from "../services/riskflow/feed-poller.js";
+import { startAgentReachPoller } from "../services/riskflow/agent-reach-poller.js";
+import { startPollWatchdog } from "../services/riskflow/poll-watchdog.js";
 import { seedCacheFromDb } from "../services/riskflow/feed-service.js";
 import { startEconEnricher } from "../services/cron/econ-enricher.js";
 import { startEconPoller } from "../services/riskflow/econ-rettiwt-poller.js";
@@ -32,6 +34,7 @@ import {
 } from "../services/cron/dispatch-scheduler.js";
 // [claude-code 2026-03-27] cleanupOldItems import removed — feed items retained for calibration
 import { startVIXPolling } from "../services/vix-service.js";
+import { startRegimePushListener } from "../services/notifications/regime-push.js";
 import { startCentralScorer } from "../services/riskflow/central-scorer.js";
 import { startIVScoreTicker } from "../services/market-data/iv-score-ticker.js";
 import { initVIXRescore } from "../services/riskflow/vix-rescore.js";
@@ -39,14 +42,15 @@ import { startAgentNotesCron } from "../services/riskflow/agent-notes.js";
 // [claude-code 2026-04-04] Re-enabled: Exa-powered X scraper bypasses CLI rate limits
 import { startCommentaryScraper } from "../services/riskflow/commentary-scraper.js";
 import { startMarketImpactEnricher } from "../services/cron/market-impact-enricher.js";
+import { startMonitoringLoop } from "../services/cron/monitoring-loop.js";
 import { startCatalystPromoter } from "../services/riskflow/catalyst-promoter.js";
 import { isComputerUseAvailable } from "../services/skills/tradingview-trade-plan.js";
 import * as projectxService from "../services/projectx-service.js";
 import { startSharedMemoryCleanup } from "../services/peers/shared-memory.js";
 import { startReflectScheduler } from "../services/autoresearch/reflect-scheduler.js";
-import { startMiroSharkDaily } from "../services/cron/miroshark-daily.js";
+import { startAgentDeskDaily } from "../services/cron/agent-desk-daily.js";
 import { startAquariumScheduler } from "../services/riskflow/aquarium-scheduler.js";
-import { restoreMiroSharkRunningState } from "../services/miroshark/miroshark-boot.js";
+import { restoreAgentDeskRunningState } from "../services/agent-desk/agent-desk-boot.js";
 import { startDivergenceDetector } from "../services/polymarket-kalshi-divergence.js";
 import { startPredictionResolver } from "../services/polymarket-prediction-resolver.js";
 import { bootHarperAutonomous } from "../services/harper-autonomous/index.js";
@@ -55,6 +59,7 @@ import { cleanupOldRawItems } from "../services/supabase-service.js";
 import { startRelayConnector } from "../services/relay-connector.js";
 import { startOracleResearch } from "../services/cron/oracle-research-scheduler.js";
 import { startOutcomeResolver } from "../services/cron/outcome-resolver.js";
+import { startOutcomeTagger } from "../services/scoring/outcome-tagger.js";
 
 const log = createLogger("Boot");
 let localPeerHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -120,6 +125,9 @@ export async function bootCritical(): Promise<void> {
   startVIXPolling();
   log.info("VIX polling started");
 
+  // [claude-code 2026-04-18] A2: regime-change → push listener (must come after VIX polling starts)
+  startRegimePushListener();
+
   // Scoring env var assertion — CRITICAL if missing/misconfigured
   const enableCentralScoring = process.env.ENABLE_CENTRAL_SCORING;
   if (enableCentralScoring !== "true") {
@@ -144,6 +152,12 @@ export async function bootCritical(): Promise<void> {
   startIVScoreTicker(instrument);
   log.info(`IVScoreTicker started (${instrument})`);
 
+  // [claude-code 2026-04-19] S24 unify: 24h-runtime mode — relay comes up BEFORE server.listen()
+  // returns so the mobile PWA never sees a moment where the backend is cut on but unreachable.
+  // Auto-discovers userId from ~/.fintheon/peer.json; set-user RPC overrides once Electron signs in.
+  startRelayConnector();
+  log.info("RelayConnector started");
+
   log.info(`Critical boot complete in ${Date.now() - t0}ms`);
 }
 
@@ -155,17 +169,51 @@ export async function bootBackground(): Promise<void> {
   const t0 = Date.now();
   log.info("Background boot starting");
 
-  // RiskFlow Level 4 detection feed
+  // [claude-code 2026-04-18] S25-T1: Agent-Reach is the PRIMARY news source. It runs on its
+  // own schedule with UA pool + per-domain token bucket, hits RSS first then HTML fallback,
+  // and needs no credentials — so it keeps the feed alive even when Rettiwt has zero keys.
+  startAgentReachPoller();
+  log.info("AgentReachPoller started (primary news source)");
+
+  // RiskFlow Level 4 detection feed — now handles econ + Rettiwt (secondary)
   startFeedPoller();
   log.info("FeedPoller started");
 
-  // Rettiwt key pool (per-user API keys from Supabase + env fallback)
-  await initRettiwtPool();
-  log.info("Rettiwt key pool initialized");
+  // [claude-code 2026-04-19] S27-T4: Rettiwt cut from Herald dispatcher. Pool init and
+  // econ-rettiwt-poller start are gated behind RETTIWT_REENABLE=true so we can reactivate
+  // without a code change if browser-harness coverage falls short in the 48h review.
+  if (process.env.RETTIWT_REENABLE === "true") {
+    await initRettiwtPool();
+    log.info("Rettiwt key pool initialized (RETTIWT_REENABLE=true)");
 
-  // Econ-triggered Rettiwt poller (replaces twitter-cli)
-  startEconPoller();
-  log.info("EconRettiwtPoller started");
+    const poolReloadTimer = setInterval(() => {
+      initRettiwtPool().catch((err) =>
+        log.warn("Rettiwt pool reload failed (non-fatal)", {
+          error: String(err),
+        }),
+      );
+    }, 15 * 60_000);
+    poolReloadTimer.unref?.();
+    log.info("Rettiwt pool reload scheduled (15 min)");
+  } else {
+    log.info(
+      "Rettiwt key pool skipped — S27-T4 cut from dispatcher (set RETTIWT_REENABLE=true to restore)",
+    );
+  }
+
+  // Poll watchdog — detects stalled Agent Reach, soft-nudges then restarts if needed
+  startPollWatchdog();
+  log.info("PollWatchdog started");
+
+  if (process.env.RETTIWT_REENABLE === "true") {
+    // Econ-triggered Rettiwt poller (replaces twitter-cli)
+    startEconPoller();
+    log.info("EconRettiwtPoller started (RETTIWT_REENABLE=true)");
+  } else {
+    log.info(
+      "EconRettiwtPoller skipped — S27-T4 (set RETTIWT_REENABLE=true to restore)",
+    );
+  }
 
   // Exa scheduled-event monitor (supplementary discovery, not headline ingestion)
   startExaScheduledMonitor();
@@ -179,9 +227,9 @@ export async function bootBackground(): Promise<void> {
   startCatalystPromoter();
   log.info("CatalystPromoter started");
 
-  // MiroShark running state restore (from latest Aquarium simulation — non-blocking)
-  restoreMiroSharkRunningState().catch((err) =>
-    log.warn("MiroShark running state restore failed (non-fatal)", {
+  // AgentDesk running state restore (from latest Aquarium simulation — non-blocking)
+  restoreAgentDeskRunningState().catch((err) =>
+    log.warn("AgentDesk running state restore failed (non-fatal)", {
       error: String(err),
     }),
   );
@@ -245,6 +293,10 @@ export async function bootBackground(): Promise<void> {
   startMarketImpactEnricher();
   log.info("MarketImpactEnricher started");
 
+  // [claude-code 2026-04-18] S24-T4: V4 monitoring loop (2h — proposes regime/lexicon/walk-back changes)
+  // Gated by ENABLE_MONITORING_LOOP env var. Turn on after T1/T2/T3 migrations land.
+  startMonitoringLoop();
+
   // [claude-code 2026-03-27] Feed cleanup DISABLED — scored items accumulate for calibration DB
   // cleanupOldItems() was purging items older than 30 days. Now we keep everything.
   log.info(
@@ -301,9 +353,9 @@ export async function bootBackground(): Promise<void> {
   // Shared memory cleanup cron (60min — expires entries past TTL)
   startSharedMemoryCleanup();
 
-  // MiroShark daily auto-run (6:00 AM ET weekdays — once per day before MDB)
-  startMiroSharkDaily();
-  log.info("MiroSharkDaily cron scheduled");
+  // AgentDesk daily auto-run (6:00 AM ET weekdays — once per day before MDB)
+  startAgentDeskDaily();
+  log.info("AgentDeskDaily cron scheduled");
 
   // Aquarium AI scheduler (Oracle/Nous — 60min interval, first run 20s after boot)
   startAquariumScheduler();
@@ -321,6 +373,9 @@ export async function bootBackground(): Promise<void> {
   startOutcomeResolver();
   log.info("OutcomeResolver started");
 
+  // Outcome tagger (S24-T3): 5min sweep that snapshots SPY at 4h + 24h after each regime decision
+  startOutcomeTagger();
+
   // Harper Autonomous Loop — CAO autonomous agent (gated by HARPER_AUTONOMOUS_ENABLED=true)
   bootHarperAutonomous().catch((err) =>
     log.warn("Harper autonomous boot failed (non-fatal)", {
@@ -331,10 +386,41 @@ export async function bootBackground(): Promise<void> {
   // Oracle research scheduler (4h interval — prediction market scanning + arb detection, gated by ORACLE_RESEARCH_ENABLED)
   startOracleResearch();
 
-  // Relay connector — outbound WebSocket to Fly.io for mobile chat bridge (opt-in via RELAY_ENABLED)
-  startRelayConnector();
+  // [claude-code 2026-04-19] Relay connector moved to bootCritical — duplicate call removed here.
+
+  // [S27-T10 W2e] Register local skills with the Hermes sidecar so cross-agent skill invocation
+  // works identically whether the caller is Harper (MCP) or the sidecar (/v1/chat tool call).
+  void registerLocalSkillsWithSidecar().catch((err) =>
+    log.warn("Sidecar skill registration skipped (non-fatal)", {
+      error: String(err),
+    }),
+  );
 
   log.info(`Background boot complete in ${Date.now() - t0}ms`);
+}
+
+async function registerLocalSkillsWithSidecar(): Promise<void> {
+  const { isSidecarEnabled, sidecarClient } =
+    await import("../services/ai/sidecar-client.js");
+  if (!isSidecarEnabled()) return;
+  const { listAllSkills } = await import("../services/skills/registry.js");
+  const skills = await listAllSkills();
+  for (const s of skills) {
+    try {
+      await sidecarClient.skills.invoke("register_local", {
+        skill_id: s.manifest.id,
+        version: s.manifest.version,
+        entry_path: s.path,
+        permissions: s.manifest.permissions,
+      });
+    } catch (err) {
+      log.warn("sidecar skill register failed", {
+        skill_id: s.manifest.id,
+        error: String(err),
+      });
+    }
+  }
+  log.info(`Registered ${skills.length} local skills with sidecar`);
 }
 
 /**

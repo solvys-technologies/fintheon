@@ -18,12 +18,14 @@ import { createRithmicRoutes } from "./rithmic/index.js";
 import { createHyperliquidRoutes } from "./hyperliquid/index.js";
 import { createDataRoutes } from "./data/index.js";
 import { createNarrativeRoutes } from "./narrative/index.js";
-import { createMirosharkRoutes } from "./miroshark/index.js";
+import { createAgentDeskRoutes } from "./agent-desk/index.js";
 import { createERRoutes } from "./er/index.js";
 import { createVoiceRoutes } from "./voice/index.js";
 import { livekit } from "./livekit/index.js";
 import { createRegimeRoutes } from "./regimes/index.js";
 import { createMarketRegimeRoutes } from "./regime/index.js";
+import { createLexiconRoutes } from "./lexicon/index.js";
+import { createClassificationMatrixRoutes } from "./classification-matrix/index.js";
 
 import { createVersionRoutes } from "./version/index.js";
 import { createMarketDataRoutes } from "./market-data/index.js";
@@ -40,11 +42,14 @@ import { createTerminalRoutes } from "./terminal/index.js";
 import { createSetupRoutes } from "./setup/index.js";
 import { createTradeIdeasRoutes } from "./trade-ideas/index.js";
 import { createProfileRoutes } from "./profile/index.js";
+// [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences
+import { createPreferencesRoutes } from "./preferences/index.js";
 import { createAuthCallbackRoute } from "./auth-callback.js";
 import { createAuthRoutes } from "./auth/index.js";
 import { createCommentatorRoutes } from "./commentator/index.js";
 import { createSourceAccountRoutes } from "./source-accounts/index.js";
 import { createCalibrationRoutes } from "./calibration/index.js";
+import { createScoringRoutes } from "./scoring/index.js";
 import { createHarperRoutes } from "./harper/index.js";
 import { createHarperOpsRoutes } from "./harper-ops/index.js";
 import { createPeersRoutes } from "./peers/index.js";
@@ -61,9 +66,12 @@ import { createDagRoutes } from "./dag/index.js";
 import { createDreamRoutes } from "./agent-bus/dreams.js";
 import { createPolymarketRoutes } from "./polymarket/index.js";
 import { createRelayRoutes } from "./relay.js";
+import { createRelayQuickRoutes } from "./relay-quick.js";
+import { createPreviewRoutes } from "./preview.js";
 import { createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
+import { createMaintenanceRoutes } from "./maintenance.js";
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -84,7 +92,12 @@ export function registerRoutes(app: Hono): void {
   // Regime tracker — public, returns active trading regimes (session-based time windows)
   app.route("/api/regimes", createRegimeRoutes());
   // Market regime engine — public, macro regime classification (CRUD + detect)
+  // [S24-T1] /proposals subroute: agent proposals + TP approval queue.
   app.route("/api/regime", createMarketRegimeRoutes());
+  // [S24-T1] Lexicon — agent-curated keyword → sentiment mapping (keywords + proposals)
+  app.route("/api/lexicon", createLexiconRoutes());
+  // [S24-T1] Classification matrix — regime → rubric (stance, entry/exit keywords, walk-back pairs)
+  app.route("/api/classification-matrix", createClassificationMatrixRoutes());
   // Market data — Yahoo Finance quotes/VIX + Unusual Whales GEX/walls/flow (public)
   app.route("/api/market-data", createMarketDataRoutes());
   // Narrative scoring — LLM-scored catalyst candidates
@@ -95,8 +108,12 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/systemic", systemicRoutes);
   // Context Bank — public, agents consume directly (unified snapshot + desk reports)
   app.route("/api/context-bank", createContextBankRoutes());
-  // MiroShark multi-agent simulation — feature-flagged via MIROSHARK_ENABLED
-  app.route("/api/miroshark", createMirosharkRoutes());
+  // Agent Desk multi-agent simulation — feature-flagged via AGENT_DESK_ENABLED
+  // [claude-code 2026-04-19] v5.22: dual-mount — /api/agent-desk is the new path,
+  //   /api/miroshark kept as legacy alias for live clients mid-deploy.
+  const agentDeskRoutes = createAgentDeskRoutes();
+  app.route("/api/agent-desk", agentDeskRoutes);
+  app.route("/api/miroshark", agentDeskRoutes);
   // DAG scheduler — status, SSE stream, cancel (S8-T2)
   app.route("/api/dag", createDagRoutes());
   // Agent Dream Room — autonomous agent reflection channel
@@ -111,6 +128,10 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/source-accounts", createSourceAccountRoutes());
   // Calibration — scoring weight management, annotations, observations, bulk ingest (public, admin)
   app.route("/api/calibration", createCalibrationRoutes());
+  // Scoring — V4 shadow stats + rescore-status [S24-T3]
+  app.use("/api/scoring", authMiddleware, requireAuth);
+  app.use("/api/scoring/*", authMiddleware, requireAuth);
+  app.route("/api/scoring", createScoringRoutes());
   // Predictions — forward-looking instrument outlook from scored items + econ events
   app.route("/api/predictions", predictionsRoutes);
   // Polymarket — read-only public market data, whale alerts, search (S15-T2)
@@ -126,6 +147,24 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/relay", authMiddleware);
   app.use("/api/relay/*", authMiddleware);
   app.route("/api/relay", createRelayRoutes());
+
+  // [S25] Service-worker quick-action endpoint — no-auth, approval-id-as-secret.
+  // Mounted OUTSIDE /api/relay so the authMiddleware wildcard doesn't block the SW's
+  // lock-screen POST. Approval IDs (`approval-{ts}-{rand36}`) are unguessable within
+  // the 10-min freshness window enforced inside the handler.
+  app.route("/api/tool-decision-quick", createRelayQuickRoutes());
+
+  // [S25] Public OG preview — allow-listed domains only. Served unauthenticated so the
+  // mobile EmbedPreview can render even before Supabase token is hydrated on cold start.
+  app.route("/api/preview", createPreviewRoutes());
+
+  // [S26-P2 T9] Maintenance — super-admin commit/deploy/deny for agent-proposed fixes.
+  // GET /api/maintenance/request/:id is public (modal renders for anyone), POST
+  // /api/maintenance/decision is gated inside the handler (returns 401 unauthed /
+  // 403 non-admin). optional-auth middleware fills userId when the JWT is present.
+  app.use("/api/maintenance", authMiddleware);
+  app.use("/api/maintenance/*", authMiddleware);
+  app.route("/api/maintenance", createMaintenanceRoutes());
   // Harper — Claude CLI chat via SDK bridge (public, local-only)
   app.route("/api/harper", createHarperRoutes());
   // Harper Ops — autonomous loop monitoring + control (public, local-only)
@@ -179,6 +218,10 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/settings/*", authMiddleware, requireAuth);
   app.use("/api/profile", authMiddleware, requireAuth);
   app.use("/api/profile/*", authMiddleware, requireAuth);
+  // [claude-code 2026-04-19] v5.22 S1: shared cross-platform preferences — theme,
+  //   traderName, notifications, fuse palette overrides (reusable by mobile).
+  app.use("/api/preferences", authMiddleware, requireAuth);
+  app.use("/api/preferences/*", authMiddleware, requireAuth);
   // [S23-T4] /api/me — client identity diagnostic for cross-device account debugging.
   app.use("/api/me", authMiddleware, requireAuth);
   app.use("/api/me/*", authMiddleware, requireAuth);
@@ -238,6 +281,9 @@ export function registerRoutes(app: Hono): void {
 
   // User profiles + app state (localStorage migration target)
   app.route("/api/profile", createProfileRoutes());
+
+  // v5.22 S1: cross-platform preferences (theme, notifications, fuse palette)
+  app.route("/api/preferences", createPreferencesRoutes());
 
   // [S23-T4] /api/me — diagnostic: { userId, email, traderName }
   app.route("/api/me", createMeRoutes());

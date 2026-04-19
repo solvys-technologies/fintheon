@@ -1,7 +1,8 @@
 #!/bin/bash
 # Per-device peer bootstrap for Fintheon.
-# - Verifies Twitter CLI install/auth on THIS machine
-# - Opens x.com/login in system browser when auth is missing
+# [claude-code 2026-04-18] Team Round Robin is Rettiwt + Agent Reach — Twitter CLI dropped.
+# - Verifies backend reachability (Agent Reach ships built-in with backend, no install needed)
+# - Verifies Rettiwt pool has at least one key available (required for round-robin ingest)
 # - Registers/updates this device in peers with round-robin capabilities
 set -euo pipefail
 
@@ -48,105 +49,31 @@ echo "  API:    $API_BASE"
 echo "  Device: $DEVICE_NAME"
 echo ""
 
-resolve_twitter_bin() {
-  if command -v twitter >/dev/null 2>&1; then
-    command -v twitter
-    return
-  fi
-  if [[ -x "$HOME/.local/bin/twitter" ]]; then
-    echo "$HOME/.local/bin/twitter"
-    return
-  fi
-  echo ""
-}
-
-TWITTER_BIN="$(resolve_twitter_bin)"
-TWITTER_INSTALLED=false
-TWITTER_AUTHENTICATED=false
+AGENT_REACH_AVAILABLE=false
+RETTIWT_AVAILABLE=false
+RETTIWT_KEYS=0
 ROUND_ROBIN_ENROLLED=false
 
-open_x_login() {
-  local url="https://x.com/login"
-  info "Opening browser for X login: $url"
-  if command -v open >/dev/null 2>&1; then
-    open "$url" >/dev/null 2>&1 || true
-  elif command -v xdg-open >/dev/null 2>&1; then
-    xdg-open "$url" >/dev/null 2>&1 || true
+# ── Agent Reach: ships with backend, just verify backend is reachable ──────
+if curl -sS --max-time 5 "$API_BASE/api/diagnostics" >/dev/null 2>&1; then
+  AGENT_REACH_AVAILABLE=true
+  ok "Backend reachable — Agent Reach available (built-in)"
+else
+  warn "Backend not reachable at $API_BASE — Agent Reach + Rettiwt offline"
+fi
+
+# ── Rettiwt pool: required for Team Round Robin X ingest ───────────────────
+if [[ "$AGENT_REACH_AVAILABLE" == true ]]; then
+  RETTIWT_STATUS=$(curl -sS --max-time 10 -X POST "$API_BASE/api/riskflow/rettiwt-refresh" 2>/dev/null || echo '{}')
+  RETTIWT_KEYS=$(echo "$RETTIWT_STATUS" | grep -o '"totalKeys":[0-9]*' | head -1 | cut -d: -f2)
+  RETTIWT_KEYS=${RETTIWT_KEYS:-0}
+  if [[ "$RETTIWT_KEYS" -gt 0 ]]; then
+    RETTIWT_AVAILABLE=true
+    ok "Rettiwt pool ready ($RETTIWT_KEYS keys)"
   else
-    warn "Could not auto-open browser. Open manually: $url"
+    warn "Rettiwt pool empty — add keys via admin UI to enable round-robin X ingest"
   fi
-}
-
-ensure_twitter_cli() {
-  if [[ -n "$TWITTER_BIN" ]]; then
-    TWITTER_INSTALLED=true
-    ok "Twitter CLI installed ($TWITTER_BIN)"
-    return
-  fi
-
-  warn "Twitter CLI not found on this device"
-  if command -v uv >/dev/null 2>&1; then
-    info "Installing twitter-cli via uv..."
-    uv tool install twitter-cli >/dev/null 2>&1 || uv tool install twitter-cli || true
-    export PATH="$HOME/.local/bin:$PATH"
-    hash -r || true
-    TWITTER_BIN="$(resolve_twitter_bin)"
-  else
-    warn "uv not found; cannot auto-install twitter-cli"
-  fi
-
-  if [[ -n "$TWITTER_BIN" ]]; then
-    TWITTER_INSTALLED=true
-    ok "Twitter CLI installed ($TWITTER_BIN)"
-  else
-    warn "Twitter CLI still missing after install attempt"
-    open_x_login
-  fi
-}
-
-twitter_status_authenticated() {
-  if [[ -z "$TWITTER_BIN" ]]; then
-    return 1
-  fi
-  local status_json
-  status_json="$("$TWITTER_BIN" status --json 2>/dev/null || true)"
-  if [[ -z "$status_json" ]]; then
-    return 1
-  fi
-  echo "$status_json" | grep -q '"authenticated"[[:space:]]*:[[:space:]]*true'
-}
-
-ensure_twitter_auth() {
-  if [[ "$TWITTER_INSTALLED" != true ]]; then
-    warn "Skipping Twitter auth check because CLI is not installed"
-    return
-  fi
-
-  if twitter_status_authenticated; then
-    TWITTER_AUTHENTICATED=true
-    ok "Twitter CLI is authenticated"
-    return
-  fi
-
-  warn "Twitter CLI is installed but not authenticated on this device"
-  open_x_login
-
-  if [[ "$ASSUME_YES" == true ]]; then
-    info "Waiting briefly, then re-checking auth..."
-    sleep 4
-  else
-    echo ""
-    read -r -p "Press Enter after logging into X in your browser..." _
-  fi
-
-  if twitter_status_authenticated; then
-    TWITTER_AUTHENTICATED=true
-    ok "Twitter auth confirmed"
-  else
-    warn "Twitter auth is still missing (run '$TWITTER_BIN status --json' to verify)"
-    "$TWITTER_BIN" doctor --json >/dev/null 2>&1 || true
-  fi
-}
+fi
 
 fetch_access_token() {
   # 1. Explicit token override (e.g. CI)
@@ -177,15 +104,13 @@ fetch_access_token() {
   warn "Run 'fintheon update' after the backend has loaded secrets from the vault" >&2
 }
 
-ensure_twitter_cli
-ensure_twitter_auth
-
+# ── Capabilities: Agent Reach + Rettiwt are the round-robin substrate ──────
 CAPABILITIES='["claude-cli","peer-round-robin"'
-if [[ "$TWITTER_INSTALLED" == true ]]; then
-  CAPABILITIES="$CAPABILITIES, \"twitter-cli\""
+if [[ "$AGENT_REACH_AVAILABLE" == true ]]; then
+  CAPABILITIES="$CAPABILITIES, \"agent-reach\""
 fi
-if [[ "$TWITTER_INSTALLED" == true && "$TWITTER_AUTHENTICATED" == true ]]; then
-  CAPABILITIES="$CAPABILITIES, \"twitter-round-robin\""
+if [[ "$RETTIWT_AVAILABLE" == true ]]; then
+  CAPABILITIES="$CAPABILITIES, \"rettiwt\""
   ROUND_ROBIN_ENROLLED=true
 fi
 if command -v hermes >/dev/null 2>&1 || [[ -f "$HOME/.hermes/config/default.json" ]]; then
@@ -212,7 +137,6 @@ USER_ID="$(python3 -c 'import json,sys; d=json.loads(sys.stdin.read()); print(((
 if [[ -z "$PEER_ID" ]]; then
   warn "Peer register/update failed (429 rate limit or backend unreachable). Continuing setup..."
   info "Response: $(echo "$REGISTER_JSON" | head -c 200)"
-  # Don't exit — continue with setup so the terminal flow completes
 fi
 
 mkdir -p "$(dirname "$PEER_CONFIG")"
@@ -223,8 +147,9 @@ cat > "$PEER_CONFIG" <<EOF
   "device_name": "$DEVICE_NAME",
   "api_base": "$API_BASE",
   "capabilities": $CAPABILITIES,
-  "twitter_cli_installed": $TWITTER_INSTALLED,
-  "twitter_cli_authenticated": $TWITTER_AUTHENTICATED,
+  "agent_reach_available": $AGENT_REACH_AVAILABLE,
+  "rettiwt_available": $RETTIWT_AVAILABLE,
+  "rettiwt_keys": $RETTIWT_KEYS,
   "round_robin_enrolled": $ROUND_ROBIN_ENROLLED,
   "registered_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
   "source": "$( [[ "$FROM_UPDATE" == true ]] && echo "fintheon-update" || echo "peer-bootstrap" )"
@@ -235,9 +160,9 @@ echo ""
 ok "Peer registration synchronized"
 echo "  Peer ID: $PEER_ID"
 echo "  Desk: ${DESK_NAME:-Unassigned}"
-echo "  Twitter CLI installed: $TWITTER_INSTALLED"
-echo "  Twitter auth ready:    $TWITTER_AUTHENTICATED"
-echo "  Round-robin enrolled:  $ROUND_ROBIN_ENROLLED"
+echo "  Agent Reach:          $AGENT_REACH_AVAILABLE"
+echo "  Rettiwt pool ready:   $RETTIWT_AVAILABLE ($RETTIWT_KEYS keys)"
+echo "  Round-robin enrolled: $ROUND_ROBIN_ENROLLED"
 echo "  Config: $PEER_CONFIG"
 
 # Test fire: trigger an immediate feed poll to verify the pipeline works on this device

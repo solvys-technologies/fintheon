@@ -5,10 +5,13 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && cp src/config/*.json dist/config/ 2>/dev/null || true",
+    "build": "tsc && bun scripts/copy-assets.ts",
     "start": "node dist/index.js",
     "dev": "tsc && node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:24h": "bun scripts/riskflow-24h-harness.ts",
+    "skills:import": "bun scripts/skills-import-cli.ts",
+    "gepa:dry-run": "bun src/services/gepa/runner.ts --dry-run"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.2",

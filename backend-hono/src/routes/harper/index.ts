@@ -1,3 +1,5 @@
+// [claude-code 2026-04-19] S25: mounted /approvals/:id + /dispatch subroutes for the mobile
+//   catalyst DetailSheet flow — GET one approval with expiresAt, POST seeded conversation.
 // [claude-code 2026-04-05] Strands Phase 8: Harper routes — streamHarperChat() replaces old CLI bridge + createUIMessageStreamResponse
 /**
  * Harper Routes
@@ -23,9 +25,16 @@ import {
   getPendingApprovals,
   type ApprovalDecision,
 } from "../../services/tool-approval-store.js";
+import { createApprovalDetailRoutes } from "./approvals.js";
+import { createDispatchRoute } from "./dispatch.js";
+import {
+  browseTask,
+  BrowseTaskInputSchema,
+  BROWSE_TASK_TOOL_SCHEMA,
+} from "../../services/browser/operator.js";
 import { agentBus } from "../../services/agent-bus/bus.js";
 import { executeDag } from "../../services/agent-bus/dag-scheduler.js";
-import { createMiroSharkDAG } from "../../services/agent-bus/templates/miroshark-template.js";
+import { createAgentDeskDAG } from "../../services/agent-bus/templates/agent-desk-template.js";
 import type {
   AgentStreamEvent,
   DAGProgressEvent,
@@ -94,7 +103,7 @@ export function createHarperRoutes() {
 
       if (isBoardroomMode) {
         const userId = (c.get("userId" as never) as string) || "anonymous";
-        const dagDef = await createMiroSharkDAG({
+        const dagDef = await createAgentDeskDAG({
           lanes: [
             {
               id: "boardroom-query",
@@ -438,6 +447,40 @@ export function createHarperRoutes() {
   app.get("/paths", (c) => {
     return c.json(FINTHEON_PATHS);
   });
+
+  // [S27-T6] Browser Operator — Harper invokes this via MCP tool wrapper or
+  // run_command/curl. Gated by universal-mode env flag for non-allowlisted URLs.
+  app.post("/browse-task", async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const parsed = BrowseTaskInputSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json(
+        { error: "invalid input", issues: parsed.error.issues },
+        400,
+      );
+    }
+    const result = await browseTask(parsed.data);
+    const status = result.success
+      ? 200
+      : result.error_code === "URL_NOT_ALLOWED"
+        ? 403
+        : result.error_code === "BUDGET_EXCEEDED"
+          ? 402
+          : 500;
+    return c.json(result, status);
+  });
+
+  // [S27-T6] Tool-schema advertisement — any MCP bridge that registers Harper's
+  // first-party tools reads the schema from here.
+  app.get("/tools/browse_task", (c) => {
+    return c.json(BROWSE_TASK_TOOL_SCHEMA);
+  });
+
+  // [S25] Approval detail fetch — used by mobile DetailSheet on push tap.
+  app.route("/approvals", createApprovalDetailRoutes());
+
+  // [S25] Ask CAO dispatch — seeded conversation from catalyst/riskflow/brief context.
+  app.route("/dispatch", createDispatchRoute());
 
   return app;
 }

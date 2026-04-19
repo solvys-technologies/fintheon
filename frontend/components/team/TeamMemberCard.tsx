@@ -1,9 +1,12 @@
 // [claude-code 2026-04-03] S14-T6: Team member card with status dropdown + service lights + last seen
-import { useState, useRef, useEffect } from "react";
-import { Phone } from "lucide-react";
+// [claude-code 2026-04-18] S25-T4: Unified News light + per-member time-ago + self-only Doctor button
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Phone, Stethoscope } from "lucide-react";
 import type { TeamMember, UserStatus } from "../../types/team";
 import { isStale, timeAgo } from "../../types/team";
 import { useTeamPresence } from "../../contexts/TeamPresenceContext";
+import { useToast } from "../../contexts/ToastContext";
+import backend from "../../lib/backend";
 
 interface TeamMemberCardProps {
   member: TeamMember;
@@ -66,10 +69,76 @@ function ServiceLight({
   );
 }
 
+/**
+ * Compute the unified "News" light state for a team member.
+ *  - GREEN  if newsfeedHealthy (any source alive <5 min)
+ *  - ORANGE if degraded (healthy but ≥1 source tripped/rate-limited)
+ *  - RED    only if backend reachable + ALL sources stale
+ *  - GREY   if backend unreachable OR peer offline — don't flag as down
+ */
+function deriveNewsState(
+  services: TeamMember["presence"]["services"],
+  isOnline: boolean,
+): { color: string; warning?: string } {
+  if (!isOnline) {
+    return { color: "var(--fintheon-muted)", warning: "Offline" };
+  }
+  if (!services.backendConnection) {
+    return { color: "var(--fintheon-muted)", warning: "No Backend" };
+  }
+  if (services.newsfeedHealthy) {
+    if (services.newsfeedDegraded) {
+      return {
+        color: "var(--fintheon-neutral-severe)",
+        warning: "Degraded",
+      };
+    }
+    return { color: "var(--fintheon-low)" };
+  }
+  return { color: "var(--fintheon-severe)" };
+}
+
+function PolledTimeAgo({
+  lastSuccessAt,
+  totalContributions,
+}: {
+  lastSuccessAt: string | null;
+  totalContributions: number;
+}) {
+  if (!lastSuccessAt) {
+    return (
+      <span className="text-[9px] text-[var(--fintheon-muted)] font-mono">
+        Not yet contributed
+      </span>
+    );
+  }
+  const ageMs = Date.now() - new Date(lastSuccessAt).getTime();
+  const ageMin = ageMs / 60_000;
+  const dotColor =
+    ageMin < 5
+      ? "var(--fintheon-low)"
+      : ageMin < 15
+        ? "var(--fintheon-neutral-severe)"
+        : "var(--fintheon-muted)";
+  return (
+    <span className="flex items-center gap-1.5 text-[9px] text-[var(--fintheon-muted)] font-mono">
+      <span
+        className="inline-block w-1 h-1 rounded-full"
+        style={{ backgroundColor: dotColor }}
+      />
+      Polled {timeAgo(lastSuccessAt)}
+      {totalContributions > 0 && ` · ${totalContributions}`}
+    </span>
+  );
+}
+
 export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
   const { presence } = member;
-  const { setUserStatus, riskflowKilled, toggleRiskFlow } = useTeamPresence();
+  const { setUserStatus } = useTeamPresence();
+  const { addToast } = useToast();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [doctorBusy, setDoctorBusy] = useState(false);
+  const [doctorCooldownSec, setDoctorCooldownSec] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const newsfeedStale = isStale(
@@ -77,7 +146,6 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
     15,
   );
 
-  // Close dropdown on outside click
   useEffect(() => {
     if (!dropdownOpen) return;
     function handleClick(e: MouseEvent) {
@@ -91,6 +159,50 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [dropdownOpen]);
+
+  useEffect(() => {
+    if (doctorCooldownSec <= 0) return;
+    const t = setTimeout(() => setDoctorCooldownSec((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [doctorCooldownSec]);
+
+  const runDoctor = useCallback(async () => {
+    if (doctorBusy || doctorCooldownSec > 0) return;
+    setDoctorBusy(true);
+    try {
+      const result = await backend.riskflow.runDoctor();
+      if (result.ok) {
+        addToast(
+          `Feed healthy — ${result.scored} scored, ${result.wroteItems} new`,
+          "success",
+          undefined,
+          "system-update",
+        );
+        setDoctorCooldownSec(60);
+      } else if (result.cooldownSec) {
+        addToast(
+          `Doctor cooling down — ${result.cooldownSec}s`,
+          "info",
+          undefined,
+          "system-update",
+        );
+        setDoctorCooldownSec(result.cooldownSec);
+      }
+    } catch (err) {
+      addToast("Doctor call failed", "error", undefined, "system-update");
+    } finally {
+      setDoctorBusy(false);
+    }
+  }, [doctorBusy, doctorCooldownSec, addToast]);
+
+  const newsState = deriveNewsState(presence.services, presence.online);
+  const rettiwtChip = presence.services.rettiwtRateLimited
+    ? "X rate-limited"
+    : presence.services.rettiwtNoKeys
+      ? "No X keys"
+      : presence.services.rettiwt
+        ? "X live"
+        : null;
 
   return (
     <div
@@ -109,7 +221,6 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
           className="relative flex items-center gap-2 min-w-0"
           ref={dropdownRef}
         >
-          {/* Status dot */}
           <div className="relative shrink-0">
             <div
               className="w-2 h-2 rounded-full"
@@ -125,7 +236,6 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
             )}
           </div>
 
-          {/* Name — clickable for self to open status dropdown */}
           <button
             onClick={() => isSelf && setDropdownOpen((v) => !v)}
             className={`text-[11px] font-semibold tracking-[0.12em] text-[var(--fintheon-accent)] uppercase truncate font-mono ${isSelf ? "cursor-pointer hover:underline" : "cursor-default"}`}
@@ -139,7 +249,6 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
             </span>
           )}
 
-          {/* Status dropdown — only for self */}
           {dropdownOpen && isSelf && (
             <div className="absolute top-full left-0 mt-1 z-50 rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-lg min-w-[140px]">
               {STATUS_OPTIONS.map((opt) => (
@@ -166,7 +275,6 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
           )}
         </div>
 
-        {/* Last seen + in-call */}
         <div className="flex items-center gap-2 shrink-0">
           {presence.inCall && (
             <div className="flex items-center gap-1 text-[9px] text-[var(--fintheon-low)] font-mono">
@@ -179,21 +287,24 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
         </div>
       </div>
 
-      {/* Service status lights */}
+      {/* Service status lights — unified News indicator + AI + Backend */}
       <div className="flex items-center gap-3 mt-2">
-        <ServiceLight
-          label="RiskFlow"
-          active={presence.services.rettiwt}
-          warning={
-            presence.services.riskflowKilled
-              ? "Killed"
-              : presence.services.rettiwtNoKeys
-                ? "No Keys"
-                : presence.services.rettiwtRateLimited
-                  ? "Rate Limited"
-                  : undefined
+        <span
+          className="flex items-center gap-1 text-[9px] text-[var(--fintheon-muted)] font-mono"
+          title={
+            newsState.warning
+              ? `News: ${newsState.warning}`
+              : presence.services.newsfeedHealthy
+                ? "News: OK"
+                : "News: Down"
           }
-        />
+        >
+          <span
+            className={`inline-block w-1.5 h-1.5 rounded-full ${newsState.warning === "Degraded" ? "animate-pulse" : ""}`}
+            style={{ backgroundColor: newsState.color }}
+          />
+          {newsState.warning || "News"}
+        </span>
         <ServiceLight label="AI" active={presence.services.aiRuntime} />
         <ServiceLight
           label="Backend"
@@ -201,39 +312,54 @@ export function TeamMemberCard({ member, isSelf }: TeamMemberCardProps) {
         />
       </div>
 
-      {/* RiskFlow killswitch — self only */}
+      {/* Time-ago polling tracker — shown on every card */}
+      <div className="flex items-center justify-between gap-2 mt-1.5">
+        <PolledTimeAgo
+          lastSuccessAt={presence.services.lastSuccessAt}
+          totalContributions={presence.services.totalContributions}
+        />
+        {rettiwtChip && !isSelf && (
+          <span className="text-[9px] text-[var(--fintheon-muted)] font-mono opacity-60">
+            {rettiwtChip}
+          </span>
+        )}
+      </div>
+
+      {/* Doctor button — self only, glass-styled, cooldown-aware */}
       {isSelf && (
         <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--fintheon-accent)]/10">
-          <span
-            className="text-[9px] font-mono tracking-wider"
-            style={{
-              color: riskflowKilled
-                ? "var(--fintheon-severe)"
-                : "var(--fintheon-muted)",
-            }}
-          >
-            {riskflowKilled ? "Feed Polling Killed" : "Feed Polling Active"}
-          </span>
-          <button
-            onClick={toggleRiskFlow}
-            className="relative w-7 h-[14px] rounded-full transition-colors duration-300"
-            style={{
-              backgroundColor: riskflowKilled
-                ? "var(--fintheon-severe)"
-                : "var(--fintheon-low)",
-              opacity: 0.7,
-            }}
-            title={riskflowKilled ? "Resume RiskFlow" : "Kill RiskFlow"}
-          >
+          {rettiwtChip && (
             <span
-              className="absolute top-[2px] w-[10px] h-[10px] rounded-full bg-white transition-all duration-300"
-              style={{
-                left: riskflowKilled ? "2px" : "15px",
-              }}
+              className="text-[9px] font-mono tracking-wider text-[var(--fintheon-muted)] opacity-70"
+              title="Your Rettiwt (X) contribution — optional"
+            >
+              {rettiwtChip}
+            </span>
+          )}
+          <button
+            onClick={runDoctor}
+            disabled={doctorBusy || doctorCooldownSec > 0}
+            className="ml-auto flex items-center gap-1 text-[9px] font-mono tracking-wider text-[var(--fintheon-accent)] hover:text-[var(--fintheon-accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+            title={
+              doctorCooldownSec > 0
+                ? `Cooldown ${doctorCooldownSec}s`
+                : "Doctor: re-score backlog + tick Agent Reach"
+            }
+          >
+            <Stethoscope
+              className={`w-3 h-3 ${doctorBusy ? "animate-spin" : ""}`}
             />
+            {doctorBusy
+              ? "RUNNING"
+              : doctorCooldownSec > 0
+                ? `${doctorCooldownSec}s`
+                : "DOCTOR"}
           </button>
         </div>
       )}
+
+      {/* Silent hidden staleness indicator for accessibility */}
+      {newsfeedStale && <span className="sr-only">Feed stale</span>}
     </div>
   );
 }

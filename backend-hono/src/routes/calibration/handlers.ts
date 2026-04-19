@@ -16,7 +16,7 @@ import {
   bulkItemsToObservations,
 } from "../../services/calibration/bulk-parser.js";
 import type { ParsedBulkItem } from "../../services/calibration/bulk-parser.js";
-import { addCalibrationContext } from "../../services/miroshark/miroshark-context.js";
+import { addCalibrationContext } from "../../services/agent-desk/agent-desk-context.js";
 import type { MarketRegime } from "../../types/regime.js";
 
 // GET /api/calibration/weights

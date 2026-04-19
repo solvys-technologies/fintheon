@@ -311,8 +311,8 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                       detail: `${data.eventCount} events`,
                     },
                     {
-                      label: "MiroShark",
-                      value: data.mirosharkComponent,
+                      label: "AgentDesk",
+                      value: data.agentDeskComponent,
                       detail: "Analysis",
                     },
                   ].map((c) => (
@@ -331,7 +331,7 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-[7px] bg-zinc-800/80 rounded-sm overflow-hidden flex gap-[1px]">
+                        <div className="flex-1 h-[7px] bg-[var(--fintheon-surface)] rounded-[2px] overflow-hidden flex gap-[1px]">
                           {Array.from({ length: 10 }, (_, i) => {
                             const filled = i < Math.round(c.value);
                             return (
@@ -466,8 +466,8 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
                         Next Session Forecast
                       </h5>
                       <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-gray-500 ml-auto">
-                        {data.prediction.source === "miroshark"
-                          ? "MiroShark"
+                        {data.prediction.source === "agentDesk"
+                          ? "AgentDesk"
                           : "Heuristic"}
                       </span>
                     </div>
