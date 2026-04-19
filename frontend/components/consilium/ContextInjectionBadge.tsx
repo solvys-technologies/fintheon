@@ -12,14 +12,17 @@ interface ContextInjectionBadgeProps {
   injections: InjectionAudit;
 }
 
-const DOT_SPEC: { key: keyof InjectionAudit; label: string; letter: string }[] = [
-  { key: "feed", label: "RiskFlow feed", letter: "F" },
-  { key: "dossier", label: "Agent dossier", letter: "D" },
-  { key: "memoryBank", label: "Memory bank", letter: "M" },
-  { key: "thoughtBank", label: "Thought bank", letter: "T" },
-];
+const DOT_SPEC: { key: keyof InjectionAudit; label: string; letter: string }[] =
+  [
+    { key: "feed", label: "RiskFlow feed", letter: "F" },
+    { key: "dossier", label: "Agent dossier", letter: "D" },
+    { key: "memoryBank", label: "Memory bank", letter: "M" },
+    { key: "thoughtBank", label: "Thought bank", letter: "T" },
+  ];
 
-export function ContextInjectionBadge({ injections }: ContextInjectionBadgeProps) {
+export function ContextInjectionBadge({
+  injections,
+}: ContextInjectionBadgeProps) {
   const allOk = DOT_SPEC.every((d) => injections[d.key] === true);
   const tip = DOT_SPEC.map(
     (d) => `${d.letter} ${d.label}: ${injections[d.key] ? "ok" : "missing"}`,

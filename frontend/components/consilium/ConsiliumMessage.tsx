@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { Copy, Check, Bot } from "lucide-react";
 import { AgentBadge, type BoardroomAgent } from "./AgentBadge";
 import { AgentMention, EveryoneMention } from "./AgentMention";
+import { ContextInjectionBadge } from "./ContextInjectionBadge";
 
 export interface BoardroomMessage {
   id: string;

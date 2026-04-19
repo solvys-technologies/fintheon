@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T00:45:00",
+    agent: "claude-code",
+    summary:
+      "Aquarium redesign sprint — Track 7b (Hermes context-injection audit badges + groupthink guard). HermesChatResponse now carries metadata.injections on every response: {feed, dossier, memoryBank, thoughtBank, reflect?} — each flag reports whether the corresponding prompt block was present and non-empty when the request was served. Computed once in handleHermesChat right after the prompt assembly and threaded into both the Harper CLI-provider return path and the OpenRouter fallback return path (local fallback still omits it since that path doesn't touch the prompt builders). New frontend component ContextInjectionBadge renders a 4-dot chip (F/D/M/T) next to the agent avatar on every ConsiliumMessage; each dot is green when its injection was present and red when missing, with a hover tooltip that spells out which blocks were ok/missing and nudges the user to rerun if unexpected. Mounted in ConsiliumMessage so every Hermes/Harper response in the Agentic Forum shows the audit inline — no secondary ops panel required. Groupthink guard: the MiroShark postProcessDeliberation contrarianTriggered flag is now forced to true on every run instead of only when convergence exceeds a threshold, so the CONTRARIAN dissent tag is mandatory on every deliberation. The lowest-confidence analyst's assessment gets the [CONTRARIAN] prefix with a reason string that differentiates a convergence-triggered contrarian from a mandatory dissent pass. Blind-then-reveal ordering is structurally enforced by the existing DAG wave isolation (wave 0 analysts finish before wave 1 Hermes subscribes to their outputs), so no code change is needed there — just a comment documenting the invariant.",
+    files: [
+      "backend-hono/src/services/hermes-handler.ts",
+      "backend-hono/src/services/agent-bus/templates/miroshark-template.ts",
+      "frontend/components/consilium/ContextInjectionBadge.tsx",
+      "frontend/components/consilium/ConsiliumMessage.tsx",
+    ],
+  },
+  {
     date: "2026-04-20T00:10:00",
     agent: "claude-code",
     summary:
