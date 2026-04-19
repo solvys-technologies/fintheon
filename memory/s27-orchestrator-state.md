@@ -6,7 +6,17 @@ Persistent state for the S27 orchestrator. Survives process crashes across three
 
 - [x] **KICKOFF** — 2026-04-20T04:30 ET (Claude-01)
 - [x] **MID-SPRINT** — 2026-04-20T14:00 ET. Wave 1 merged clean (v.27.1..v.27.4). Wave 2 fast-forwarded. Cleared to launch.
-- [x] **FINAL SANITATION** — 2026-04-20T17:30 ET. v.27.10 unified release stamped. T4–T11 shipped; T1/T2§4-6/T3 rolled to S28.
+- [x] **FINAL SANITATION** — 2026-04-20T17:30 ET. Wave 2 merges landed (v.27.7/8/9). TP flagged Refinement Engine stuck-loading bug mid-pass; investigated, fixed, committed as fef8d32b at 17:45 ET. v.27.10 unified release stamped on fef8d32b. T4–T11 shipped; T1/T2§4-6/T3 rolled to S28. /solvys-deploy next.
+
+## Blocker Resolved Mid-Final-Pass — Refinement Engine (fef8d32b → v.27.10)
+
+**Symptom**: /refinement page stuck forever on "Loading Refinement Engine...".
+
+**Root cause**: RefinementEngine.tsx loadAll does `Promise.all` across 6 fetchers; 5 are wrapped in try/catch (silent-on-failure) but `loadV4State` was the lone outlier. `loadV4State` called `fetchPresets()` + `fetchCurrentSensitivities()` without an auth token. `/api/scoring/*` is gated by authMiddleware + requireAuth (backend-hono/src/routes/index.ts:132-133) → returned 401. `safeFetch` only classified 404/501 as notReady; any other non-2xx threw. Throw propagated through loadV4State → Promise.all → loadAll's await rejected → setLoading(false) never ran.
+
+**Fix**: (1) scoring-preset-api.ts — safeFetch treats 401/403 as notReady; fetchPresets + fetchCurrentSensitivities accept token arg and attach Authorization header. (2) RefinementEngine.tsx — loadV4State threads getAccessToken() into the fetchers and wraps its body in try/catch defaulting to setV4Available(false). Authenticated sessions now get V4 dials; unauthenticated/degraded sessions get built-in presets + Advanced pane. Loader always unsticks.
+
+**Verified**: frontend tsc --noEmit clean; frontend clean vite build clean (3.35s).
 
 ## Final-Pass Results (2026-04-20T17:30)
 
