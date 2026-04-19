@@ -1,7 +1,24 @@
+// [claude-code 2026-04-19] S28: +3 news-worker audit routines (6:00am/11:30am/4:00pm ET).
+//   These are HEAL routines: in-process cron + handler lives at
+//   services/routines/handlers/news-worker-audit.ts. Separate kind from MOVE/AUGMENT so the UI
+//   can surface them and so /rerun dispatches the audit handler directly.
 // [claude-code 2026-04-19] Routines Console — static registry of the 8 Claude Code Routines
 // Source of truth: docs/routines.md. Mutable state lives in routine_config / routine_runs.
 
-export type RoutineKind = "MOVE" | "AUGMENT";
+export type RoutineKind = "MOVE" | "AUGMENT" | "HEAL";
+
+export const NEWS_WORKER_AUDIT_IDS = {
+  morning: "trig_newsaudit_0600",
+  midday: "trig_newsaudit_1130",
+  close: "trig_newsaudit_1600",
+} as const;
+
+export type NewsWorkerAuditId =
+  (typeof NEWS_WORKER_AUDIT_IDS)[keyof typeof NEWS_WORKER_AUDIT_IDS];
+
+export function isNewsWorkerAuditId(id: string): id is NewsWorkerAuditId {
+  return Object.values(NEWS_WORKER_AUDIT_IDS).includes(id as NewsWorkerAuditId);
+}
 
 export interface RoutineDefinition {
   triggerId: string;
@@ -92,6 +109,33 @@ export const ROUTINES: readonly RoutineDefinition[] = [
     runsPerDay: 2,
     description:
       "Full Context Bank synthesis + calibration preview → desk_reports (aquarium-deep).",
+  },
+  {
+    triggerId: NEWS_WORKER_AUDIT_IDS.morning,
+    name: "News Worker Audit — Morning Open",
+    kind: "HEAL",
+    schedule: "0 6 * * * (America/New_York)",
+    runsPerDay: 1,
+    description:
+      "Pre-open audit of the news worker: heartbeat freshness, raw→scored ratio, auto-heal via poll-watchdog, escalate to superadmins on failure.",
+  },
+  {
+    triggerId: NEWS_WORKER_AUDIT_IDS.midday,
+    name: "News Worker Audit — Midday",
+    kind: "HEAL",
+    schedule: "30 11 * * * (America/New_York)",
+    runsPerDay: 1,
+    description:
+      "Midday audit of the news worker pipeline. Same checks + heal as morning audit.",
+  },
+  {
+    triggerId: NEWS_WORKER_AUDIT_IDS.close,
+    name: "News Worker Audit — Close",
+    kind: "HEAL",
+    schedule: "0 16 * * * (America/New_York)",
+    runsPerDay: 1,
+    description:
+      "Market-close audit of the news worker pipeline. Verifies end-of-session ingest health.",
   },
 ] as const;
 

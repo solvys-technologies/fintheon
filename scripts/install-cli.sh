@@ -230,7 +230,7 @@ case "$1" in
 
     # Git
     cd "$FINTHEON_ROOT" 2>/dev/null
-    echo "  Version:      $(git describe --tags --always 2>/dev/null || echo 'unknown')"
+    echo "  Version:      $(git describe --tags --abbrev=0 2>/dev/null || echo 'unknown')"
     echo "  Branch:       $(git branch --show-current 2>/dev/null || echo 'unknown')"
     DIRTY=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
     if [[ "$DIRTY" -eq 0 ]]; then
@@ -243,7 +243,7 @@ case "$1" in
     ;;
   version)
     cd "$FINTHEON_ROOT" 2>/dev/null || exit 1
-    VERSION=$(git describe --tags --always 2>/dev/null || echo "unknown")
+    VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "unknown")
     BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
     echo ""
     echo "  Fintheon $VERSION ($BRANCH)"
@@ -271,7 +271,7 @@ case "$1" in
 
     # Version
     cd "$FINTHEON_ROOT" 2>/dev/null || exit 1
-    echo "  Version:  $(git describe --tags --always 2>/dev/null || echo 'unknown')"
+    echo "  Version:  $(git describe --tags --abbrev=0 2>/dev/null || echo 'unknown')"
     echo "  Branch:   $(git branch --show-current 2>/dev/null || echo 'unknown')"
     echo ""
     ;;
