@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T23:15:00",
+    agent: "claude-code",
+    summary:
+      "v5.22 kickoff — shared cross-platform contracts. Landed fuse-palette module (FuseSeverity/FusePriority types + DEFAULT_FUSE_PALETTE + severityFromScore/colorForSeverity/colorForPriority/colorForScore helpers) as the single source of truth for fuse color linking across the app. Landed user-preferences shape (ThemeMode, NotificationPrefs, UserPreferences, DEFAULT_PREFERENCES, PREFERENCES_API_PATH) for the desktop↔mobile settings sync spine. Both modules live in BOTH frontend/lib and mobile/lib as mirrored copies — keep in sync byte-for-byte until a shared workspace package exists. Session 1 (desktop+backend) and Session 2 (mobile) both import from these paths. Does not touch UI yet — this is the pre-handoff contract commit so the two parallel sessions don't collide on typing decisions.",
+    files: [
+      "frontend/lib/fuse-palette.ts",
+      "mobile/lib/fuse-palette.ts",
+      "frontend/lib/user-preferences.ts",
+      "mobile/lib/user-preferences.ts",
+    ],
+  },
+  {
     date: "2026-04-19T22:40:00",
     agent: "claude-code",
     summary:
