@@ -1,5 +1,9 @@
 // [claude-code 2026-03-28] S4-T4: Rich scored item display — expandable cards with agent notes,
 // econ data, sub-score breakdowns, PriceBrain direction. Grouped by risk_type with section headers.
+// [claude-code 2026-04-19] RiskFlow card polish: replace solid sentiment pill with the shared
+//   segmented vertical NothingFuse + right-justified IVStack (chevron over Doto numeral). The
+//   sentiment label keeps its color but moves under the IV in the right column for consistency
+//   with every other RiskFlow card surface.
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type {
@@ -7,6 +11,9 @@ import type {
   AgentDeskCategoryScore,
 } from "../../types/agent-desk";
 import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/agent-desk";
+import { NothingFuse } from "../shared/NothingFuse";
+import { IVStack } from "../shared/IVStack";
+import { severityFromScore } from "../../lib/fuse-palette";
 
 interface SanctumRiskAssessmentProps {
   riskflowItems: RiskFlowCatalyst[];
@@ -49,6 +56,15 @@ function RiskItem({
   onToggle: () => void;
 }) {
   const dirColor = sentimentColor(item.sentiment);
+  const ivNumeric = item.iv_score != null ? Number(item.iv_score) : null;
+  const fuseFill =
+    ivNumeric != null ? Math.min(1, Math.max(0.15, ivNumeric / 10)) : 0.4;
+  const directionForStack: "Bullish" | "Bearish" | "Neutral" =
+    item.sentiment === "bullish"
+      ? "Bullish"
+      : item.sentiment === "bearish"
+        ? "Bearish"
+        : "Neutral";
 
   return (
     <div
@@ -56,12 +72,19 @@ function RiskItem({
       onClick={onToggle}
     >
       {/* Collapsed row */}
-      <div className="flex items-center gap-3 px-3 py-2">
-        <div
-          className="w-1.5 h-6 rounded-full shrink-0"
-          style={{ backgroundColor: dirColor }}
-        />
-        <div className="flex-1 min-w-0">
+      <div className="flex items-stretch gap-3 px-3 py-2 min-h-[40px]">
+        <div className="flex-shrink-0 w-[5px] flex items-stretch py-0.5">
+          <NothingFuse
+            value={fuseFill}
+            severity={
+              ivNumeric != null ? severityFromScore(ivNumeric) : "neutral"
+            }
+            color={ivNumeric == null ? dirColor : undefined}
+            orientation="vertical"
+            thickness={5}
+          />
+        </div>
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
           <span className="text-[10px] text-[var(--fintheon-text)]/80 font-medium truncate block">
             {item.title}
           </span>
@@ -71,21 +94,15 @@ function RiskItem({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span
-            className="text-[8px] font-mono font-bold"
-            style={{ color: dirColor }}
-          >
-            {item.sentiment.toUpperCase()}
-          </span>
-          {item.iv_score != null && (
-            <span
-              className="text-[8px] font-mono font-bold"
-              style={{ color: ivHeatColor(Number(item.iv_score)) }}
-            >
-              IV {Number(item.iv_score).toFixed(1)}
-            </span>
-          )}
+        <IVStack
+          score={ivNumeric}
+          direction={directionForStack}
+          color={ivNumeric != null ? ivHeatColor(ivNumeric) : dirColor}
+          width={32}
+          fontSize={11}
+          chevronSize={12}
+        />
+        <div className="flex items-center shrink-0">
           <ChevronDown
             className={`w-3 h-3 text-[var(--fintheon-muted)]/30 transition-transform ${isExpanded ? "rotate-180" : ""}`}
           />

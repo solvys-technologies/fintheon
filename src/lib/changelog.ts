@@ -9,6 +9,28 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T22:30:00",
+    agent: "claude-code",
+    summary:
+      "v.27.11 — RiskFlow card visual unification + multi-priority filter. (1) Every desktop RiskFlow card surface (AlertCardBase, RiskFlowMini AlertRow + TradeIdeaRow, SanctumRiskAssessment RiskItem, mission-control RiskFlowMiniWidget) now mirrors the Fintheon Mobile card anatomy: single segmented vertical NothingFuse on the left (no double borders), source/time uppercase row above a serif headline, and a right-justified column with the direction chevron stacked above the IV numeral. (2) NothingFuse gained a `segments` prop (default 10) that paints N-1 perpendicular ruler ticks over the continuous fill while preserving orientation + shimmer — the bar reads as a discrete 10-step scale on both vertical and horizontal mounts. (3) New shared primitives: components/shared/IVStack.tsx (chevron-over-numeral right column, Doto + Readable Digits font stack so IV numbers render in the Nothing Display dot-matrix face on every theme), components/shared/PriorityFilterMenu.tsx (checkbox popover for desktop multi-select), and lib/riskflow-card-utils.ts (severity-to-palette + fuseScore helpers used by every card). (4) Killed the AlertRow double-border bug — was a 2px borderLeft layered over the 6px NothingFuse — and dropped the bottom hero footer's IV/chevron pair so the right column owns IV display everywhere. (5) Mobile RiskFlowCard IV numeral switched to the Doto stack; chevron stacking unchanged. (6) Multi-priority filter on both surfaces: desktop FilterDropdown for Priority replaced with PriorityFilterMenu (checkbox per CRIT/HIGH/MED/LOW, empty selection = All); mobile RiskFlowFilterBar tabs are now toggle-multi-select (ALL clears the set, individual tabs flip on/off). Filter state persists to localStorage on both (`fintheon:riskflow-filters:v1` / `fintheon-mobile:riskflow-filters:v1`) so refresh and PWA reopen keep the user's selection. Verified: frontend tsc clean, mobile tsc clean, frontend vite build 3.18s, mobile vite build 1.26s, backend tsc clean.",
+    files: [
+      "frontend/components/shared/NothingFuse.tsx",
+      "frontend/components/shared/IVStack.tsx",
+      "frontend/components/shared/PriorityFilterMenu.tsx",
+      "frontend/components/feed/AlertCardBase.tsx",
+      "frontend/components/RiskFlowMini.tsx",
+      "frontend/components/narrative/SanctumRiskAssessment.tsx",
+      "frontend/components/mission-control/RiskFlowMiniWidget.tsx",
+      "frontend/hooks/useRiskFlowFilters.ts",
+      "frontend/lib/riskflow-card-utils.ts",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/riskflow/RiskFlowFilterBar.tsx",
+      "mobile/components/riskflow/RiskFlowPage.tsx",
+      "mobile/hooks/useRiskFlowFilters.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-19T22:00:00",
     agent: "claude-code",
     summary:

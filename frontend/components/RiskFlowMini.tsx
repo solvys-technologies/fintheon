@@ -8,6 +8,11 @@
 // [claude-code 2026-03-20] S3:T4d: Swapped chevron directions — expanded=ChevronDown, collapsed=ChevronUp
 // [claude-code 2026-03-26] T3: Card expand/collapse with agent notes, risk type tags, smooth transitions
 // [claude-code 2026-03-28] S8-T6: Infinite scroll + toggle, Loader2 for loading state
+// [claude-code 2026-04-19] RiskFlow card polish: AlertRow + TradeIdeaRow now use the shared
+//   IVStack (Doto numerals, chevron stacked above) on the right edge, and a single segmented
+//   NothingFuse on the left. Killed the AlertRow double-border bug (2px borderLeft was
+//   layered on top of the 6px NothingFuse) and dropped the bottom hero footer's IV/chevron
+//   pair so the right column owns IV display.
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useRiskFlow } from "../contexts/RiskFlowContext";
 import { useToast } from "../contexts/ToastContext";
@@ -42,21 +47,14 @@ import { SEVERITY_CONFIG } from "../lib/severity-config";
 import { ivHeatColor } from "../types/agent-desk";
 import { SourceIcon } from "../lib/shared-icons";
 import { NothingFuse } from "./shared/NothingFuse";
+import { IVStack } from "./shared/IVStack";
+import { PriorityFilterMenu } from "./shared/PriorityFilterMenu";
 import {
-  type FuseSeverity,
-  severityFromScore,
-  colorForSeverity,
-} from "../lib/fuse-palette";
-
-// [claude-code 2026-04-19] v5.22 S1: map RiskFlow alert severity to the shared FuseSeverity
-//   keys so every desktop card tints from one palette (linkable to user preferences later).
-function alertSeverityToPalette(sev: RiskFlowAlert["severity"]): FuseSeverity {
-  if (sev === "critical") return "critical";
-  if (sev === "high") return "high";
-  if (sev === "medium") return "medium";
-  if (sev === "low") return "low";
-  return "neutral";
-}
+  alertSeverityToPalette,
+  fuseScoreFromAlert,
+} from "../lib/riskflow-card-utils";
+import { severityFromScore } from "../lib/fuse-palette";
+import type { AlertSeverity } from "../lib/riskflow-feed";
 
 // ── Cyclical Badge ───────────────────────────────────────────────────────────
 
@@ -202,11 +200,11 @@ function TradeIdeaRow({
     e.dataTransfer.effectAllowed = "copy";
   };
 
-  // [claude-code 2026-04-19] v5.22 S1: TradeIdeaRow gets palette-driven left accent so
-  //   priority-color linkage shows at a glance on desktop cards.
-  const tradeIdeaPalColor = colorForSeverity(
-    alertSeverityToPalette(alert.severity),
-  );
+  // [claude-code 2026-04-19] Polish pass: single segmented vertical fuse + right IVStack.
+  //   Bottom-border accent is gone — fuse + right column own all the priority signaling.
+  const tradeIdeaPalSeverity = alertSeverityToPalette(alert.severity);
+  const tradeIdeaFuseScore = fuseScoreFromAlert(alert);
+  const tradeIdeaDir = inferDirection(alert);
   return (
     <div
       draggable
@@ -214,15 +212,24 @@ function TradeIdeaRow({
       className={`group relative border-b border-zinc-800/50 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
         seen ? "opacity-70" : ""
       } ${fresh ? "riskflow-flicker" : ""}`}
-      style={{ borderLeft: `2px solid ${tradeIdeaPalColor}` }}
     >
       <div
-        className="flex items-start gap-2 px-3 py-3 cursor-pointer"
+        className="flex items-stretch gap-3 px-3 py-3 cursor-pointer min-h-[64px]"
         onClick={() => {
           onMarkSeen(alert.id);
           onOpen(idea);
         }}
       >
+        {/* Left: segmented vertical fuse */}
+        <div className="flex-shrink-0 w-[6px] flex items-stretch py-0.5">
+          <NothingFuse
+            value={Math.min(1, Math.max(0.15, tradeIdeaFuseScore / 10))}
+            severity={tradeIdeaPalSeverity}
+            orientation="vertical"
+            thickness={6}
+          />
+        </div>
+
         {/* Cyclical badge — top right */}
         {alert.cyclical && alert.cyclical !== "Neutral" && (
           <div className="absolute top-1.5 right-9">
@@ -231,7 +238,7 @@ function TradeIdeaRow({
         )}
 
         <div className="flex-1 min-w-0 flex items-start gap-2">
-          {/* Source logo */}
+          {/* Direction icon badge */}
           <span className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10">
             {isLong ? (
               <Diff className="w-3 h-3 text-[var(--fintheon-accent)]" />
@@ -242,6 +249,25 @@ function TradeIdeaRow({
             )}
           </span>
           <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 text-[9px] tracking-[0.08em] uppercase text-zinc-500 mb-0.5">
+              <SourceIcon
+                source={alert.source}
+                className="w-2.5 h-2.5 text-zinc-500"
+              />
+              <span>{timeAgo(alert.publishedAt)}</span>
+              <span className="text-zinc-700">&middot;</span>
+              <span className="text-[var(--fintheon-accent)]/60">
+                {idea.sourceAgent ?? "Proposal"}
+              </span>
+              {idea.riskRewardRatio && (
+                <>
+                  <span className="text-zinc-700">&middot;</span>
+                  <span className="text-zinc-500 normal-case tracking-normal">
+                    R/R {idea.riskRewardRatio.toFixed(1)}:1
+                  </span>
+                </>
+              )}
+            </div>
             <p className="text-xs leading-snug font-medium line-clamp-2 text-[var(--fintheon-text)] group-hover:text-white transition-colors">
               {alert.headline}
             </p>
@@ -250,40 +276,21 @@ function TradeIdeaRow({
                 {alert.summary}
               </p>
             )}
-            <div className="flex items-center gap-2 mt-1">
-              <SourceIcon
-                source={alert.source}
-                className="w-2.5 h-2.5 text-zinc-600"
-              />
-              <span className="text-[10px] text-zinc-600">
-                {timeAgo(alert.publishedAt)}
-              </span>
-              <span className="text-[10px] text-zinc-700">&middot;</span>
-              <span className="text-[10px] text-[var(--fintheon-accent)]/60 uppercase tracking-wider">
-                {idea.sourceAgent ?? "Proposal"}
-              </span>
-              {idea.riskRewardRatio && (
-                <>
-                  <span className="text-[10px] text-zinc-700">&middot;</span>
-                  <span className="text-[10px] text-zinc-500">
-                    R/R {idea.riskRewardRatio.toFixed(1)}:1
-                  </span>
-                </>
-              )}
-              <span className="text-[10px] text-zinc-700">&middot;</span>
-              <DirectionBadge alert={alert} />
-              <span className="text-[10px] text-zinc-700">&middot;</span>
-              {alert.ivScore != null && (
-                <span
-                  className="text-[9px] font-mono font-bold tabular-nums"
-                  style={{ color: ivHeatColor(Number(alert.ivScore)) }}
-                >
-                  IV {Number(alert.ivScore).toFixed(1)}
-                </span>
-              )}
-            </div>
           </div>
         </div>
+
+        {/* Right: chevron + IV in Doto, stacked */}
+        <IVStack
+          score={alert.ivScore != null ? Number(alert.ivScore) : null}
+          direction={
+            tradeIdeaDir === "Bullish"
+              ? "Bullish"
+              : tradeIdeaDir === "Bearish"
+                ? "Bearish"
+                : "Neutral"
+          }
+          width={36}
+        />
 
         {/* Expand chevron + Approve / Deny CTA */}
         <div className="flex-shrink-0 flex items-center gap-0.5">
@@ -392,34 +399,19 @@ function AlertRow({
     e.dataTransfer.effectAllowed = "copy";
   };
 
-  // [claude-code 2026-04-19] v5.22 S1: mobile-vocabulary desktop card — left severity
-  //   fuse bar in place of the pill badge, palette-driven color (respects user preferences
-  //   once wired via SettingsContext).
+  // [claude-code 2026-04-19] Polish pass: kill the double-border bug — was 2px borderLeft
+  //   stacked over the 6px NothingFuse — and move IV/direction into the right IVStack.
+  //   Mirrors the Fintheon Mobile RiskFlow card anatomy.
   const palSeverity = alertSeverityToPalette(alert.severity);
-  const palColor = colorForSeverity(palSeverity);
-  const ivScoreValue = alert.ivScore != null ? Number(alert.ivScore) : null;
-  const fuseScore =
-    ivScoreValue != null
-      ? ivScoreValue
-      : alert.severity === "critical"
-        ? 9
-        : alert.severity === "high"
-          ? 7
-          : alert.severity === "medium"
-            ? 5
-            : alert.severity === "low"
-              ? 3
-              : 1;
+  const fuseScore = fuseScoreFromAlert(alert);
+  const directionForStack: "Bullish" | "Bearish" | "Neutral" =
+    dir === "Bullish" ? "Bullish" : dir === "Bearish" ? "Bearish" : "Neutral";
 
   return (
     <div
       draggable
       onDragStart={handleDragStart}
       className={`group relative border-b border-zinc-800/60 overflow-hidden hover:border-[var(--fintheon-accent)]/30 transition-colors ${isHigh ? "riskflow-fintheon-row" : ""} ${seen ? "opacity-70" : ""} ${fresh ? "riskflow-flicker" : ""}`}
-      style={{
-        borderLeft: `2px solid ${palColor}`,
-        boxShadow: isHigh ? `inset 3px 0 12px ${palColor}22` : undefined,
-      }}
     >
       {/* Main content area */}
       <div
@@ -430,7 +422,7 @@ function AlertRow({
         }}
       >
         <div className="flex items-stretch gap-3 min-h-[72px]">
-          {/* Left: vertical severity fuse (mobile-vocabulary, larger desktop thickness) */}
+          {/* Left: segmented vertical severity fuse */}
           <div className="flex-shrink-0 w-[6px] flex items-stretch py-0.5">
             <NothingFuse
               value={Math.min(1, Math.max(0.15, fuseScore / 10))}
@@ -439,12 +431,13 @@ function AlertRow({
               thickness={6}
             />
           </div>
-          <span
-            className={`inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ""} flex-shrink-0 mt-0.5 h-[18px]`}
-          >
-            {sev.label}
-          </span>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+            {/* Source / time row */}
+            <div className="flex items-center gap-1.5 text-[9px] tracking-[0.08em] uppercase text-zinc-500">
+              <span className="truncate max-w-[60%]">{alert.source}</span>
+              <span className="text-zinc-700">&middot;</span>
+              <span>{timeAgo(alert.publishedAt)}</span>
+            </div>
             <p
               className={`text-xs leading-snug font-medium line-clamp-3 break-words ${alert.severity === "critical" ? "text-orange-300" : isHigh ? "text-red-300" : "text-zinc-300"} group-hover:text-white transition-colors`}
             >
@@ -456,21 +449,35 @@ function AlertRow({
               </p>
             )}
             {/* Cyclical badge + risk type + author row */}
-            <div className="flex items-center gap-1.5 mt-1">
-              {alert.cyclical && alert.cyclical !== "Neutral" && (
-                <CyclicalBadge classification={alert.cyclical} />
-              )}
-              {riskType && <RiskTypeBadge riskType={riskType} />}
-              {alert.authorHandle && (
-                <span className="text-[9px] text-zinc-500">
-                  @{alert.authorHandle}
-                </span>
-              )}
-            </div>
+            {(alert.cyclical || riskType || alert.authorHandle) && (
+              <div className="flex items-center gap-1.5 mt-1">
+                {alert.cyclical && alert.cyclical !== "Neutral" && (
+                  <CyclicalBadge classification={alert.cyclical} />
+                )}
+                {riskType && <RiskTypeBadge riskType={riskType} />}
+                {alert.authorHandle && (
+                  <span className="text-[9px] text-zinc-500">
+                    @{alert.authorHandle}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Chat + Dismiss CTAs */}
-          <div className="flex-shrink-0 flex items-center gap-0.5">
+          {/* Right: chevron + IV in Doto, stacked */}
+          <IVStack
+            score={alert.ivScore != null ? Number(alert.ivScore) : null}
+            direction={directionForStack}
+            color={
+              alert.ivScore != null
+                ? ivHeatColor(Number(alert.ivScore))
+                : undefined
+            }
+            width={36}
+          />
+
+          {/* Chat CTA */}
+          <div className="flex-shrink-0 flex items-start">
             {onChat && (
               <button
                 type="button"
@@ -487,31 +494,22 @@ function AlertRow({
             )}
           </div>
         </div>
-      </div>
 
-      {/* Bottom hero footer — time (left), direction chevron + IV (right) */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900/80 border-t border-zinc-800/40">
-        <span className="text-[10px] text-zinc-600">
-          {timeAgo(alert.publishedAt)}
-        </span>
-        <div className="flex items-center gap-1.5">
+        {/* Compact footer strip — priority badge + dismiss only (no IV/dir duplication) */}
+        <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-zinc-800/30">
           <span
-            className="text-[11px] font-bold"
-            style={{
-              color: isBull
-                ? "var(--fintheon-bullish)"
-                : "var(--fintheon-bearish)",
-            }}
+            className={`inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ""} h-[16px]`}
           >
-            {isBull ? "▲" : "▼"}
+            {sev.label}
           </span>
-          {alert.ivScore != null && (
-            <span
-              className="text-[10px] font-mono font-bold tabular-nums"
-              style={{ color: ivHeatColor(Number(alert.ivScore)) }}
-            >
-              IV {Number(alert.ivScore).toFixed(1)}
-            </span>
+          <span className="flex-1" />
+          <span className="text-[9px] text-zinc-600">
+            {expanded ? "Less" : "More"}
+          </span>
+          {expanded ? (
+            <ChevronDown className="w-3 h-3 text-zinc-600" />
+          ) : (
+            <ChevronUp className="w-3 h-3 text-zinc-600" />
           )}
         </div>
       </div>
@@ -691,7 +689,9 @@ export default function RiskFlowMini({
   const backend = useBackend();
   const { addToast } = useToast();
   const {
-    severityFilter,
+    severitySet,
+    toggleSeverity,
+    clearSeverities,
     setSeverityFilter,
     sourceFilter,
     setSourceFilter,
@@ -874,16 +874,21 @@ export default function RiskFlowMini({
           {/* Inline filters — same row as header */}
           {expanded && (
             <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-              <FilterDropdown<SeverityFilter>
-                value={showProposals ? "all" : severityFilter}
-                options={[
-                  { value: "all", label: `Priority: All` },
-                  { value: "high", label: `High (${highCount})` },
-                  { value: "medium", label: `Med (${mediumCount})` },
-                ]}
-                onChange={(v) => {
+              <PriorityFilterMenu
+                selected={
+                  showProposals ? new Set<AlertSeverity>() : severitySet
+                }
+                onToggle={(s) => {
                   setShowProposals(false);
-                  setSeverityFilter(v);
+                  toggleSeverity(s);
+                }}
+                onClear={() => {
+                  setShowProposals(false);
+                  clearSeverities();
+                }}
+                counts={{
+                  high: highCount,
+                  medium: mediumCount,
                 }}
               />
               <FilterDropdown<SourceFilter>

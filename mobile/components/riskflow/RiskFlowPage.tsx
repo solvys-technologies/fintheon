@@ -21,9 +21,10 @@ export function RiskFlowPage() {
     removeAlert,
   } = useMobileRiskFlow();
 
-  const { filtered, activeSeverity, setSeverity } = useRiskFlowFilters({
-    alerts,
-  });
+  const { filtered, activeSeverities, toggleSeverity, clearSeverities } =
+    useRiskFlowFilters({
+      alerts,
+    });
   const { sentinelRef, scrollContainerRef } = useRiskFlowInfiniteScroll({
     hasMore,
     loadingMore,
@@ -52,8 +53,9 @@ export function RiskFlowPage() {
       <PullToRefresh onRefresh={refresh} scrollRef={scrollContainerRef}>
         {/* Full-width segmented filter strip */}
         <RiskFlowFilterBar
-          activeSeverity={activeSeverity}
-          onSeverityChange={setSeverity}
+          activeSeverities={activeSeverities}
+          onToggleSeverity={toggleSeverity}
+          onClearSeverities={clearSeverities}
           counts={{
             all: alerts.length,
             critical: criticalCount,

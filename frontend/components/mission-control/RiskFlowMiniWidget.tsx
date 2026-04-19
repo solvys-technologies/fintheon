@@ -1,19 +1,26 @@
 // [claude-code 2026-03-05] Phase 3B: RiskFlow mini widget for Mission Control deck
 // [claude-code 2026-03-10] T3: critical severity dot (orange)
+// [claude-code 2026-04-19] RiskFlow card polish: severity dot replaced with the shared
+//   segmented vertical NothingFuse, time stamp now renders in Doto for consistency with
+//   every other RiskFlow card surface.
 import { useState } from "react";
 import {
-  Zap,
   ChevronDown,
   ChevronUp,
   ExternalLink,
   Diff,
   TrendingDown,
+  Zap,
 } from "lucide-react";
 import { useRiskFlow } from "../../contexts/RiskFlowContext";
-import { SEVERITY_CONFIG } from "../../lib/severity-config";
 import type { TradeIdeaDetail } from "../../lib/riskflow-feed";
 import TradeIdeaModal from "../TradeIdeaModal";
 import { timeAgo } from "../../lib/time-utils";
+import { NothingFuse } from "../shared/NothingFuse";
+import {
+  alertSeverityToPalette,
+  fuseScoreFromAlert,
+} from "../../lib/riskflow-card-utils";
 
 const VISIBLE_COUNT = 4;
 
@@ -57,11 +64,12 @@ export function RiskFlowMiniWidget() {
             <div className="text-[10px] text-zinc-600 py-2">No alerts</div>
           ) : (
             visible.map((alert) => {
-              const sev = SEVERITY_CONFIG[alert.severity];
               const isTradeIdea =
                 alert.source === "trade-idea" && !!alert.tradeIdea;
               const isExpanded = expandedId === alert.id;
               const seen = isSeen(alert.id);
+              const palSeverity = alertSeverityToPalette(alert.severity);
+              const fuseScore = fuseScoreFromAlert(alert);
 
               return (
                 <div
@@ -74,38 +82,44 @@ export function RiskFlowMiniWidget() {
                       markSeen(alert.id);
                       setExpandedId(isExpanded ? null : alert.id);
                     }}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/[0.02] transition-colors"
+                    className="w-full flex items-stretch gap-2 px-2 py-1.5 text-left hover:bg-white/[0.02] transition-colors min-h-[26px]"
                   >
-                    {/* Severity dot or direction icon */}
+                    {/* Segmented vertical fuse — replaces the old severity dot */}
                     {isTradeIdea ? (
-                      alert.tradeIdea!.direction === "long" ? (
-                        <Diff className="w-2.5 h-2.5 text-[var(--fintheon-accent)] shrink-0" />
-                      ) : (
-                        <TrendingDown className="w-2.5 h-2.5 text-zinc-400 shrink-0" />
-                      )
+                      <span className="shrink-0 flex items-center w-2.5">
+                        {alert.tradeIdea!.direction === "long" ? (
+                          <Diff className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
+                        ) : (
+                          <TrendingDown className="w-2.5 h-2.5 text-zinc-400" />
+                        )}
+                      </span>
                     ) : (
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                          alert.severity === "critical"
-                            ? "bg-orange-400"
-                            : alert.severity === "high"
-                              ? "bg-red-400"
-                              : alert.severity === "medium"
-                                ? "bg-[var(--fintheon-accent)]"
-                                : "bg-zinc-600"
-                        }`}
-                      />
+                      <div className="shrink-0 w-[3px] flex items-stretch py-0.5">
+                        <NothingFuse
+                          value={Math.min(1, Math.max(0.15, fuseScore / 10))}
+                          severity={palSeverity}
+                          orientation="vertical"
+                          thickness={3}
+                        />
+                      </div>
                     )}
-                    <span className="flex-1 min-w-0 text-[11px] text-zinc-300 truncate">
+                    <span className="flex-1 min-w-0 text-[11px] text-zinc-300 truncate self-center">
                       {alert.headline}
                     </span>
-                    <span className="text-[9px] text-zinc-600 shrink-0">
+                    <span
+                      className="text-[10px] text-zinc-600 shrink-0 self-center"
+                      style={{
+                        fontFamily:
+                          "'Doto', 'Readable Digits', var(--font-data, monospace)",
+                        letterSpacing: "0.02em",
+                      }}
+                    >
                       {timeAgo(alert.publishedAt)}
                     </span>
                     {isExpanded ? (
-                      <ChevronUp className="w-2.5 h-2.5 text-zinc-600 shrink-0" />
+                      <ChevronUp className="w-2.5 h-2.5 text-zinc-600 shrink-0 self-center" />
                     ) : (
-                      <ChevronDown className="w-2.5 h-2.5 text-zinc-600 shrink-0" />
+                      <ChevronDown className="w-2.5 h-2.5 text-zinc-600 shrink-0 self-center" />
                     )}
                   </button>
 
