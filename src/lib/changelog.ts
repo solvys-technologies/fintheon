@@ -13,10 +13,7 @@ export const changelog: ChangelogEntry[] = [
     agent: "claude-code",
     summary:
       "S27 orchestrator kickoff checkpoint (Claude-01). Spawned 9 worktrees off v5.22 HEAD (819c5a2e) under ~/Desktop/Codebases/: fintheon-s27-w1a..w1d (Wave 1) and w2a..w2e (Wave 2), each on its own feature branch s27-w{slot}-{slug}. Verified S27 foundation stubs already committed (shared/harper-cards.ts, shared/skill-manifest.ts, shared/plugin-manifest.ts, shared/sidecar-contract.ts, shared/soul-schema.ts, backend-hono/src/services/browser/index.ts, backend-hono/src/services/ai/sidecar-client.ts, backend-hono/src/services/ai/routing.ts, backend-hono/src/services/ai/soul/README.md, hermes-sidecar/README.md) from prior commit 3a5b1872. Re-ran full verification — backend-hono bun run build clean, frontend tsc --noEmit clean, frontend clean vite build clean (dist wiped first), local launchd backend /api/diagnostics returns 200. Stamped tag v.27.0-kickoff on 819c5a2e. Snapshot written to memory/s27-orchestrator-state.md for crash survival across Wave 1 merges. Wave 1 (Claudes 02-05) cleared to launch — foundations unblocked. Wave 2 gated pending mid-sprint checkpoint.",
-    files: [
-      "src/lib/changelog.ts",
-      "memory/s27-orchestrator-state.md",
-    ],
+    files: ["src/lib/changelog.ts", "memory/s27-orchestrator-state.md"],
   },
   {
     date: "2026-04-20T01:00:00",

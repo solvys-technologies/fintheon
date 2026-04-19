@@ -17,34 +17,34 @@ Persistent state for the S27 orchestrator. Survives process crashes across three
 
 ## Worktree Lineup
 
-| Slot | Claude    | Task                                                   | Branch                     | Worktree path                                          |
-| ---- | --------- | ------------------------------------------------------ | -------------------------- | ------------------------------------------------------ |
-| W1a  | Claude-02 | T1 schema layer                                        | `s27-w1a-schema`           | `/Users/tifos/Desktop/Codebases/fintheon-s27-w1a`      |
-| W1b  | Claude-03 | T2 Hermes sidecar infra                                | `s27-w1b-sidecar`          | `/Users/tifos/Desktop/Codebases/fintheon-s27-w1b`      |
-| W1c  | Claude-04 | T4 browser primitives + Rettiwt cut + telemetry        | `s27-w1c-browser`          | `/Users/tifos/Desktop/Codebases/fintheon-s27-w1c`      |
-| W1d  | Claude-05 | T8 SOUL + T9 routing foundation + manifest scaffolds   | `s27-w1d-soul-routing`     | `/Users/tifos/Desktop/Codebases/fintheon-s27-w1d`      |
-| W2a  | Claude-06 | T1 renderers + Harper prompt + stream parser           | `s27-w2a-cards-ui`         | `/Users/tifos/Desktop/Codebases/fintheon-s27-w2a`      |
-| W2b  | Claude-07 | T2 DAG engine + T3 A2A handoff                         | `s27-w2b-context-handoff`  | `/Users/tifos/Desktop/Codebases/fintheon-s27-w2b`      |
-| W2c  | Claude-08 | T5 voice assistant full loop                           | `s27-w2c-voice`            | `/Users/tifos/Desktop/Codebases/fintheon-s27-w2c`      |
-| W2d  | Claude-09 | T6 Harper Browser Operator + T7 News Worker            | `s27-w2d-browser-ops`      | `/Users/tifos/Desktop/Codebases/fintheon-s27-w2d`      |
-| W2e  | Claude-10 | T9 routing live + T10 Skills Hub + T11 GEPA loop       | `s27-w2e-routing-hub-gepa` | `/Users/tifos/Desktop/Codebases/fintheon-s27-w2e`      |
+| Slot | Claude    | Task                                                 | Branch                     | Worktree path                                     |
+| ---- | --------- | ---------------------------------------------------- | -------------------------- | ------------------------------------------------- |
+| W1a  | Claude-02 | T1 schema layer                                      | `s27-w1a-schema`           | `/Users/tifos/Desktop/Codebases/fintheon-s27-w1a` |
+| W1b  | Claude-03 | T2 Hermes sidecar infra                              | `s27-w1b-sidecar`          | `/Users/tifos/Desktop/Codebases/fintheon-s27-w1b` |
+| W1c  | Claude-04 | T4 browser primitives + Rettiwt cut + telemetry      | `s27-w1c-browser`          | `/Users/tifos/Desktop/Codebases/fintheon-s27-w1c` |
+| W1d  | Claude-05 | T8 SOUL + T9 routing foundation + manifest scaffolds | `s27-w1d-soul-routing`     | `/Users/tifos/Desktop/Codebases/fintheon-s27-w1d` |
+| W2a  | Claude-06 | T1 renderers + Harper prompt + stream parser         | `s27-w2a-cards-ui`         | `/Users/tifos/Desktop/Codebases/fintheon-s27-w2a` |
+| W2b  | Claude-07 | T2 DAG engine + T3 A2A handoff                       | `s27-w2b-context-handoff`  | `/Users/tifos/Desktop/Codebases/fintheon-s27-w2b` |
+| W2c  | Claude-08 | T5 voice assistant full loop                         | `s27-w2c-voice`            | `/Users/tifos/Desktop/Codebases/fintheon-s27-w2c` |
+| W2d  | Claude-09 | T6 Harper Browser Operator + T7 News Worker          | `s27-w2d-browser-ops`      | `/Users/tifos/Desktop/Codebases/fintheon-s27-w2d` |
+| W2e  | Claude-10 | T9 routing live + T10 Skills Hub + T11 GEPA loop     | `s27-w2e-routing-hub-gepa` | `/Users/tifos/Desktop/Codebases/fintheon-s27-w2e` |
 
 All 9 branches currently at `819c5a2e` — confirmed via `git worktree list` at kickoff.
 
 ## Foundation Stubs (verified present at kickoff, from commit 3a5b1872)
 
-| File                                                      | Owner (Wave 1) | Notes                                                                                  |
-| --------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
-| `shared/harper-cards.ts`                                  | W1a            | Zod schema + CARD_FENCE_OPEN/CLOSE + 6 variants defined; W2a consumes read-only        |
-| `shared/skill-manifest.ts`                                | W1a            | Stub for T10 Skills Hub manifests                                                      |
-| `shared/plugin-manifest.ts`                               | W1a            | Stub for Hermes sidecar plugin registry                                                |
-| `shared/sidecar-contract.ts`                              | W1a creates / W1b populates | Typed HTTP contract scaffolding                                         |
-| `shared/soul-schema.ts`                                   | W1d            | Zod SoulSchema + `Soul` type                                                            |
-| `backend-hono/src/services/browser/index.ts`              | W1c            | Barrel export; pool/allowlist/harness populated by W1c                                  |
-| `backend-hono/src/services/ai/sidecar-client.ts`          | W1b            | Stub throws with pointer to brief; types inlined to avoid cross-tsconfig root-dir leak |
-| `backend-hono/src/services/ai/routing.ts`                 | W1d / W2e      | `ROUTING_READY=false`; selectModel throws until W1d lands ROUTING_TABLE                |
-| `backend-hono/src/services/ai/soul/README.md`             | W1d            | Directory marker; harper/oracle/feucht/consul/herald.md land during W1d                |
-| `hermes-sidecar/README.md`                                | W1b            | Placeholder for Python sidecar tree (pyproject/config/entrypoint/Dockerfile/Fly/plist) |
+| File                                             | Owner (Wave 1)              | Notes                                                                                  |
+| ------------------------------------------------ | --------------------------- | -------------------------------------------------------------------------------------- |
+| `shared/harper-cards.ts`                         | W1a                         | Zod schema + CARD_FENCE_OPEN/CLOSE + 6 variants defined; W2a consumes read-only        |
+| `shared/skill-manifest.ts`                       | W1a                         | Stub for T10 Skills Hub manifests                                                      |
+| `shared/plugin-manifest.ts`                      | W1a                         | Stub for Hermes sidecar plugin registry                                                |
+| `shared/sidecar-contract.ts`                     | W1a creates / W1b populates | Typed HTTP contract scaffolding                                                        |
+| `shared/soul-schema.ts`                          | W1d                         | Zod SoulSchema + `Soul` type                                                           |
+| `backend-hono/src/services/browser/index.ts`     | W1c                         | Barrel export; pool/allowlist/harness populated by W1c                                 |
+| `backend-hono/src/services/ai/sidecar-client.ts` | W1b                         | Stub throws with pointer to brief; types inlined to avoid cross-tsconfig root-dir leak |
+| `backend-hono/src/services/ai/routing.ts`        | W1d / W2e                   | `ROUTING_READY=false`; selectModel throws until W1d lands ROUTING_TABLE                |
+| `backend-hono/src/services/ai/soul/README.md`    | W1d                         | Directory marker; harper/oracle/feucht/consul/herald.md land during W1d                |
+| `hermes-sidecar/README.md`                       | W1b                         | Placeholder for Python sidecar tree (pyproject/config/entrypoint/Dockerfile/Fly/plist) |
 
 ## Kickoff Build Verification
 
@@ -63,6 +63,7 @@ All 9 branches currently at `819c5a2e` — confirmed via `git worktree list` at 
 - [x] State snapshot committed (this file)
 
 Wave 1 (Claudes 02–05) cleared to start in parallel. Each Claude:
+
 - Works inside its assigned worktree (never touches main worktree)
 - Imports from `shared/` + `backend-hono/` stubs — owner files only
 - Adds a changelog entry on merge
@@ -72,15 +73,16 @@ Wave 1 (Claudes 02–05) cleared to start in parallel. Each Claude:
 
 Do **not** release Wave 2 until all four Wave 1 branches merge cleanly to `v5.22` and these contracts are stable:
 
-| Contract                                                  | Owner | Consumed by                  |
-| --------------------------------------------------------- | ----- | ---------------------------- |
-| `shared/harper-cards.ts` card schema + fence tokens       | W1a   | W2a, W2b                     |
-| `shared/soul-schema.ts` + `ai/soul/*.md` + `loader.ts`    | W1d   | W2c (voice), W2e (GEPA)      |
-| `ai/routing.ts` ROUTING_TABLE + selectModel + telemetry   | W1d   | W2e (flip live on call sites)|
-| `ai/sidecar-client.ts` HTTP contract + Hermes :8318 alive | W1b   | W2b, W2c, W2e                |
-| `browser/{pool,allowlist,harness}.ts` + v_headline_volume | W1c   | W2d                          |
+| Contract                                                  | Owner | Consumed by                   |
+| --------------------------------------------------------- | ----- | ----------------------------- |
+| `shared/harper-cards.ts` card schema + fence tokens       | W1a   | W2a, W2b                      |
+| `shared/soul-schema.ts` + `ai/soul/*.md` + `loader.ts`    | W1d   | W2c (voice), W2e (GEPA)       |
+| `ai/routing.ts` ROUTING_TABLE + selectModel + telemetry   | W1d   | W2e (flip live on call sites) |
+| `ai/sidecar-client.ts` HTTP contract + Hermes :8318 alive | W1b   | W2b, W2c, W2e                 |
+| `browser/{pool,allowlist,harness}.ts` + v_headline_volume | W1c   | W2d                           |
 
 Mid-sprint verification commands:
+
 ```
 cd backend-hono && bun run build
 cd frontend && npx tsc --noEmit && find dist -mindepth 1 -delete && npx vite build
@@ -93,15 +95,15 @@ curl -H "Authorization: Bearer $INTERNAL_HERMES_JWT" http://localhost:8318/healt
 
 Per orchestration doc §Conflict Matrix — re-stated here for crash-recovery:
 
-| File / Area                                       | Merge Order                                           |
-| ------------------------------------------------- | ----------------------------------------------------- |
-| `shared/*.ts`                                     | W1a first; W2a/W2b/W2c/W2e rebase on top              |
-| `backend-hono/src/services/browser/`              | W1c first; W2d rebases                                |
-| `backend-hono/src/services/ai/sidecar-client.ts`  | W1b first; W2b/W2c/W2e rebase                         |
-| `backend-hono/src/services/ai/soul/*.md`          | W1d owns; W2c/W2e read-only; GEPA PRs → `soul-evolution/` |
-| `backend-hono/src/services/ai/routing.ts`         | W1d lands scaffold; W2e flips live (sequential)       |
-| `backend-hono/src/services/harper-handler.ts`     | W2a merges first; W2b rebases                         |
-| `src/lib/changelog.ts`                            | orchestrator resolves any merge conflicts at final    |
+| File / Area                                      | Merge Order                                               |
+| ------------------------------------------------ | --------------------------------------------------------- |
+| `shared/*.ts`                                    | W1a first; W2a/W2b/W2c/W2e rebase on top                  |
+| `backend-hono/src/services/browser/`             | W1c first; W2d rebases                                    |
+| `backend-hono/src/services/ai/sidecar-client.ts` | W1b first; W2b/W2c/W2e rebase                             |
+| `backend-hono/src/services/ai/soul/*.md`         | W1d owns; W2c/W2e read-only; GEPA PRs → `soul-evolution/` |
+| `backend-hono/src/services/ai/routing.ts`        | W1d lands scaffold; W2e flips live (sequential)           |
+| `backend-hono/src/services/harper-handler.ts`    | W2a merges first; W2b rebases                             |
+| `src/lib/changelog.ts`                           | orchestrator resolves any merge conflicts at final        |
 
 ## Ship Tag Plan
 
