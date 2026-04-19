@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S28: RoutinesConsole moved out of Scoring sidebar into the Monitor sub-tab. Scoring sidebar keeps Regime / Sensitivity / Presets / Advanced.
 // [claude-code 2026-04-20] S27 final-sanitation: thread auth token into V4 preset fetches + wrap loadV4State in try/catch so a rejected fetch never deadlocks the loader. Prior release stuck forever on "Loading Refinement Engine...".
 // [claude-code 2026-04-18] S24-T4: Rebuilt — 5 group dials + presets + advanced pane + toasts + rescore preview
 // [claude-code 2026-03-27] S2-T7: Refinement Engine — scoring calibration workbench
@@ -27,7 +28,6 @@ import {
 import { AdvancedPane } from "./AdvancedPane";
 import { MatrixEditor } from "./MatrixEditor";
 import { LexiconEditor } from "./LexiconEditor";
-import { RoutinesConsole } from "./RoutinesConsole";
 import { ScoreImpactPreview } from "../ui/InlineDiff";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -369,12 +369,8 @@ export function RefinementEngine() {
         </div>
       ) : (
         <div className="flex-1 min-h-0 flex">
-          {/* Left panel — routines console + V4 group dials + regime + presets + advanced pane */}
+          {/* Left panel — V4 group dials + regime + presets + advanced pane */}
           <div className="w-[340px] shrink-0 border-r border-[var(--fintheon-accent)]/15 overflow-y-auto p-3">
-            <RoutinesConsole />
-
-            <div className="border-t border-[var(--fintheon-accent)]/15 my-4" />
-
             <RegimeControl regime={regime} onRegimeChanged={fetchRegime} />
 
             {v4Available ? (
