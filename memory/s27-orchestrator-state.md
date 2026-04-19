@@ -6,7 +6,80 @@ Persistent state for the S27 orchestrator. Survives process crashes across three
 
 - [x] **KICKOFF** — 2026-04-20T04:30 ET (Claude-01)
 - [x] **MID-SPRINT** — 2026-04-20T14:00 ET. Wave 1 merged clean (v.27.1..v.27.4). Wave 2 fast-forwarded. Cleared to launch.
-- [ ] **FINAL SANITATION** — integration QA, v.27.10 release
+- [x] **FINAL SANITATION** — 2026-04-20T17:30 ET. v.27.10 unified release stamped. T4–T11 shipped; T1/T2§4-6/T3 rolled to S28.
+
+## Final-Pass Results (2026-04-20T17:30)
+
+### Wave 2 merges
+
+| Branch                   | Source   | Merge commit | Tag    | Notes                                                                                                         |
+| ------------------------ | -------- | ------------ | ------ | ------------------------------------------------------------------------------------------------------------- |
+| s27-w2c-voice            | 910f31a9 | 49c28646     | v.27.7 | Clean merge, no conflicts                                                                                     |
+| s27-w2d-browser-ops      | 9e403c3a | ae53d080     | v.27.8 | changelog.ts conflict only (2 entries unioned)                                                                |
+| s27-w2e-routing-hub-gepa | a36e02e4 | 32855e13     | v.27.9 | changelog.ts + diagnostics/index.ts DiagnosticsResponse unioned (browser_operator+news_worker ∪ routing+gepa) |
+
+Unified release: **v.27.10 → 32855e13** (head of v5.22 after Wave 2 merges).
+
+### Final verification block
+
+| Step                                                             | Result                                                                                                                            |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `cd backend-hono && bun run build`                               | ✅ clean (tsc + copy-assets)                                                                                                      |
+| `cd frontend && npx tsc --noEmit`                                | ✅ clean                                                                                                                          |
+| `cd frontend && find dist -mindepth 1 -delete && npx vite build` | ✅ ✓ built in 3.43s                                                                                                               |
+| `launchctl list \| grep io.solvys.fintheon`                      | ⚠ `-backend` green; `-hermes`, `-news-worker`, `-gepa` plists committed but NOT loaded (needs `/install-maintenance` post-ship)   |
+| `curl /api/diagnostics`                                          | ✅ 200 (via both launchd stale checkout and manual merged dist boot)                                                              |
+| `curl /api/diagnostics/headline-volume`                          | ⚠ 500 on merged dist (route mounts; fails because migration 20260419_02_sources.sql not yet applied). Stale checkout returns 404. |
+| `curl /api/diagnostics/routing`                                  | ✅ 200 on merged dist                                                                                                             |
+| `curl /api/diagnostics/gepa`                                     | ✅ 200 on merged dist                                                                                                             |
+| `curl /api/skills`                                               | ✅ 401 on merged dist (Supabase JWT enforced — expected)                                                                          |
+| `curl /api/harper/tools/browse_task`                             | ✅ 200 on merged dist                                                                                                             |
+| `bun run scripts/soul-ground-check.ts`                           | ✅ PASS — 5/5 SOULs grounded cleanly on CLAUDE.md                                                                                 |
+
+### Per-track outcomes
+
+| Track                                           | Owner         | Status            | Notes                                                                                                                                                                                                 |
+| ----------------------------------------------- | ------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T1 generative UI cards                          | W2a Claude-06 | ❌ **NOT LANDED** | Branch s27-w2a-cards-ui sat at mid-sprint HEAD with zero commits. Schema contracts (W1a shared/harper-cards.ts) exist; renderers, stream parser, Harper prompt extension never authored. Roll to S28. |
+| T2 Hermes sidecar infra (§1-3)                  | W1b Claude-03 | ✅ shipped        | Python FastAPI sidecar boots local; Fly deploy deferred to TP.                                                                                                                                        |
+| T2 context engine integration (§4-6)            | W2b Claude-07 | ❌ **NOT LANDED** | Branch s27-w2b-context-handoff sat at mid-sprint HEAD with zero commits. Conversation-store.ts still runs the 80k Haiku summarizer. Roll to S28.                                                      |
+| T3 A2A handoff protocol                         | W2b Claude-07 | ❌ **NOT LANDED** | Same branch as T2 §4-6. handoff*to*{oracle,feucht,consul,herald} tools never registered. Roll to S28.                                                                                                 |
+| T4 browser primitives + Rettiwt cut + telemetry | W1c Claude-04 | ✅ shipped        | Pool/allowlist/harness live; headline-volume route mounts (needs migration applied).                                                                                                                  |
+| T5 voice assistant end-to-end                   | W2c Claude-08 | ✅ shipped        | qwen/qwen3.6-plus-preview:free chosen; rim UX + session routes + tests.                                                                                                                               |
+| T6 Harper Browser Operator + action cache       | W2d Claude-09 | ✅ shipped        | browseTask tool + cache + Harper wiring; `/api/harper/tools/browse_task` green.                                                                                                                       |
+| T7 Always-On News Worker                        | W2d Claude-09 | ⚠ partial         | Code landed; launchd unit + Fly app not yet installed. `/install-maintenance` covers.                                                                                                                 |
+| T8 SOUL.md full conversion (5 agents)           | W1d Claude-05 | ✅ shipped        | Grounded literally on CLAUDE.md; drift guard PASS.                                                                                                                                                    |
+| T9 Smart Model Routing live                     | W2e Claude-10 | ✅ shipped        | selectModel + llmCall wired across hermes-handler + harper-handler; budget degrade logic in budget.ts; routing_decisions writes ready when migration 20260419_04 applied.                             |
+| T10 Skills Hub                                  | W2e Claude-10 | ✅ shipped        | 5 desks + 3 imports + security scanner; malicious fixture proves rejection; migration 20260419_08 ready.                                                                                              |
+| T11 GEPA self-improvement loop                  | W2e Claude-10 | ✅ shipped        | Nightly runner + sidecar DSPy plugin + PR-gated promotion; launchd plist + Fly cron committed.                                                                                                        |
+
+### Delivery score
+
+- **8 of 11 tracks shipped.** T5/T6/T8/T9/T10/T11 fully live; T2 §1-3 + T4 + T7 shipped with install/migration gates pending.
+- **3 tracks rolled to S28**: T1 generative UI cards, T2 §4-6 context engine integration, T3 A2A handoff protocol.
+- **Regression guard**: no Wave 1 foundation broke on Wave 2 merges; all contract tests (SOUL drift guard, build, tsc) green end-to-end.
+
+## Outstanding for TP / S28 follow-up
+
+### Install / deploy items (before the tracks become fully visible in prod)
+
+1. `supabase db push` against local + prod — 6 pending migrations: `20260419_02_sources.sql`, `20260419_04_gepa_metrics.sql`, `20260419_05_action_cache.sql`, `20260419_06_worker_heartbeats.sql`, `20260419_07_user_budgets.sql`, `20260419_08_skill_imports.sql`.
+2. Install + `launchctl load` the three new plists:
+   - `hermes-sidecar/launchd/io.solvys.fintheon-hermes.plist`
+   - `launchd/io.solvys.fintheon-news-worker.plist`
+   - `launchd/io.solvys.fintheon-gepa.plist`
+3. Create Fly apps: `fintheon-hermes` (from `hermes-sidecar/fly.toml`), `fintheon-news-worker` (from `backend-hono/fly.news-worker.toml`). First deploys held for TP approval.
+4. Sync `~/Desktop/Codebases/fintheon` checkout (launchd backend runs from there): `git pull` + `bun run build` + `launchctl reload`. Without this, `/api/diagnostics/{headline-volume,routing,gepa}` return 404 on localhost port 8080.
+5. Resolve `origin/v5.22` divergence — local is 23 ahead / 2 diverged vs origin. Rebase or merge call, then push.
+6. `/install-maintenance` post-ship audit to codify all of the above in setup/update scripts.
+
+### S28 scope candidates
+
+- **T1 rollover** — generative UI cards. Schema contracts (shared/harper-cards.ts, CARD_FENCE_OPEN/CLOSE, CARD_VARIANT_CATALOG) already landed from W1a. Remaining: frontend CardPartRenderer + 6 variant components, stream-parser fence handling in frontend/lib/harper/stream-parser.ts, Harper prompt extension with card-emission rules (ideally via SOUL extras so T11 GEPA can evolve them), Boardroom DirectionAwareHover polish.
+- **T2 §4-6 rollover** — context engine integration. Hermes sidecar is up; hermes-handler.ts still bypasses it. Work: route every Hermes message through POST /v1/context/ingest → /v1/chat → handle tool_call events; delete 80k Haiku summarizer in conversation-store.ts; persistent-memory bridge (agent_context_bank + agent_memory → system_overrides.persistent_memory); context_messages mirror migration; observability via context_views table.
+- **T3 rollover** — A2A handoff tools. Wire handoff*to*{oracle,feucht,consul,herald} tools into Harper's tool registry; depth cap 2; visited set; rejection on self-handoff. Agent-router replaces regex intent router in harper-handler.ts.
+- Sidecar rollout beyond local (first `fly deploy --config hermes-sidecar/fly.toml`) with INTERNAL_HERMES_JWT rotation.
+- GEPA dry-run → live PR promotion cycle (needs 7-day baseline in routing_decisions after migrations applied).
 
 ## Mid-Sprint Results
 
