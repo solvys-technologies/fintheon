@@ -85,7 +85,7 @@ export function IVFuseBar({
         </motion.span>
       </div>
 
-      {/* Nothing-Design fuse — opaque surface track, severity fill, slow shimmer overlay */}
+      {/* Nothing-Design fuse — opaque surface track, severity fill, no shimmer per TP. */}
       <div
         style={{
           height: 4,
@@ -105,7 +105,6 @@ export function IVFuseBar({
             borderRadius: 2,
           }}
         />
-        <span className="nothing-fuse-shimmer" aria-hidden="true" />
       </div>
     </div>
   );

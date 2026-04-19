@@ -121,7 +121,6 @@ function IVSubScores({
                 transition: "width 0.4s ease-out",
               }}
             />
-            <span className="nothing-fuse-shimmer" aria-hidden="true" />
           </div>
         </div>
       ))}

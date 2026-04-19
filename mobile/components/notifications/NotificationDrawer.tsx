@@ -1,34 +1,26 @@
-// [claude-code 2026-04-18] v5.22 S2: severity color now resolved through
-//   colorForSeverity from mobile/lib/fuse-palette so user-preferences fusePalette
-//   overrides apply uniformly across mobile fuses.
-// [claude-code 2026-04-19] S26-P1 T7: haptic feedback on approve (success buzz) /
-//   deny (deny buzz). Respects the global hapticEnabled setting via the module gate.
-// [claude-code 2026-04-19] Notification cards redesigned in RiskFlow's mobile shape —
-//   vertical fuse bar on the left, headline + body center, approve/deny stacked right.
-//   Keeps glassmorphic surface (TP: glass before kanban). Severity still drives the
-//   fuse color; severity dot removed (now lives in the fuse color/fill).
-// [claude-code 2026-04-18] S24-T4: approval-card rendering for regimeProposals / lexiconProposals / walkBackReverts / toolApprovals
-// [claude-code 2026-04-18] A4: bottom-sheet notification history, grouped by day
-import { useMemo, useState } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+// [claude-code 2026-04-18] v5.22 polish per TP — overhauled drawer.
+//   • Cards extracted into NotificationCard with bidirectional swipe (left = dismiss,
+//     right = ASK HARPER for scored alerts / REVEAL ACTIONS for proposals).
+//   • "Clear" button at top-right runs a fast staggered exit (40ms between cards) and
+//     marks-all-read on the backend.
+//   • Local dismissedIds Set persisted to localStorage so dismissed cards stay gone
+//     across drawer opens and across reloads.
+//   • System categories (regimeActivations / dailyBrief / maintenanceRequest /
+//     proposals) skip the severity fuse — they're system pings, not scored signals.
+// [claude-code 2026-04-19] S26-P1 T7: haptic feedback on approve / deny.
+// [claude-code 2026-04-18] A4: bottom-sheet notification history, grouped by day.
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { AnimatePresence } from "framer-motion";
 import { SnapSheet } from "../shared/SnapSheet";
-import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { useAuth } from "../../contexts/AuthContext";
 import { haptic } from "../../lib/haptics";
 import { useNotificationModal } from "../../contexts/NotificationModalContext";
-import { colorForSeverity, type FuseSeverity } from "../../lib/fuse-palette";
+import { NotificationCard } from "./NotificationCard";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
-
-const APPROVAL_CATEGORIES = new Set([
-  "regimeProposals",
-  "lexiconProposals",
-  "walkBackReverts",
-  "toolApprovals",
-  // [S26-P2 T9] maintenance_request decisions flow through the MaintenanceDetail modal,
-  // not through the inline approve/deny icons. Drawer cards for this category tap-to-open.
-]);
+const DISMISSED_STORAGE_KEY = "fintheon-mobile:dismissed-notifications";
+const CLEAR_STAGGER_MS = 40;
 
 const APPROVAL_ENDPOINT_MAP: Record<string, string> = {
   regimeProposals: "/api/regime/proposals",
@@ -59,31 +51,25 @@ function dayLabel(iso: string): string {
   });
 }
 
-function timeLabel(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+function loadDismissed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DISMISSED_STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw) as string[];
+    return new Set(arr);
+  } catch {
+    return new Set();
+  }
 }
 
-/** Coerce the notification's severity onto the shared palette enum. The notification
- *  feed only emits critical/high/medium/low so the cast is safe; "neutral" never
- *  arrives here. */
-function paletteSeverity(sev: NotificationItem["severity"]): FuseSeverity {
-  return sev as FuseSeverity;
-}
-
-function severityScore(sev: NotificationItem["severity"]): number {
-  switch (sev) {
-    case "critical":
-      return 10;
-    case "high":
-      return 7.5;
-    case "medium":
-      return 5;
-    default:
-      return 2.5;
+function saveDismissed(ids: Set<string>) {
+  try {
+    localStorage.setItem(
+      DISMISSED_STORAGE_KEY,
+      JSON.stringify(Array.from(ids)),
+    );
+  } catch {
+    /* storage full — ignore */
   }
 }
 
@@ -100,101 +86,172 @@ export function NotificationDrawer({
     {},
   );
   const [pending, setPending] = useState<Set<string>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<string>>(loadDismissed);
+
+  // Persist whenever dismissed changes
+  useEffect(() => {
+    saveDismissed(dismissed);
+  }, [dismissed]);
+
+  const dismissOne = useCallback((id: string) => {
+    setDismissed((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Visible list = notifications minus locally-dismissed.
+  const visible = useMemo(
+    () => notifications.filter((n) => !dismissed.has(n.id)),
+    [notifications, dismissed],
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<string, NotificationItem[]>();
-    for (const n of notifications) {
+    for (const n of visible) {
       const key = dayLabel(n.createdAt);
       const arr = map.get(key) ?? [];
       arr.push(n);
       map.set(key, arr);
     }
     return Array.from(map.entries());
-  }, [notifications]);
+  }, [visible]);
 
-  const hasUnread = notifications.some((n) => !n.read);
+  const hasAny = visible.length > 0;
 
-  // [v5.22 S2] Drawer rows used to do `window.location.href = n.url` which dropped the
-  // user on the dash for catalyst/riskflow URLs. Now we parse the URL and open the
-  // matching DetailSheet via the modal context — keeping push-tap and drawer-tap on the
-  // same code path. Falls back to navigation for URLs we don't have a modal for.
-  const onItemTap = async (n: NotificationItem) => {
-    if (!n.read) await markRead([n.id]);
-    if (!n.url) return;
-
-    let routed = false;
-    try {
-      const parsed = new URL(n.url, window.location.origin);
-      const path = parsed.pathname;
-
-      const approvalMatch = path.match(/^\/apparatus\/approvals\/([^/]+)/);
-      if (approvalMatch) {
-        openDetail({ kind: "toolApproval", approvalId: approvalMatch[1] });
-        routed = true;
-      } else if (path.startsWith("/maintenance/")) {
-        const id = path.split("/")[2];
-        if (id) {
-          openDetail({ kind: "maintenanceRequest", requestId: id });
-          routed = true;
-        }
-      } else if (path === "/riskflow") {
-        const itemId = parsed.searchParams.get("item");
-        if (itemId) {
-          openDetail({ kind: "riskflowItem", itemId });
-          routed = true;
-        }
-      } else {
-        const catalystMatch = path.match(/^\/narrative\/catalyst\/([^/]+)/);
-        if (catalystMatch) {
-          openDetail({ kind: "catalyst", catalystId: catalystMatch[1] });
-          routed = true;
-        } else if (path === "/briefing" || path === "/briefing/") {
-          openDetail({ kind: "dailyBrief" });
-          routed = true;
-        }
-      }
-    } catch {
-      // malformed URL — fall through to nav fallback
-    }
-
-    if (routed) {
-      onClose();
-    } else {
-      window.location.href = n.url;
-      onClose();
-    }
-  };
-
-  const decide = async (n: NotificationItem, action: "approve" | "deny") => {
-    if (!n.eventId) return;
-    const endpoint = APPROVAL_ENDPOINT_MAP[n.category];
-    if (!endpoint) return;
-    setPending((prev) => new Set(prev).add(n.id));
-    try {
-      const token = await getAccessToken();
-      const res = await fetch(`${API_BASE}${endpoint}/${n.eventId}/${action}`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setDecided((prev) => ({
-        ...prev,
-        [n.id]: action === "approve" ? "approved" : "denied",
-      }));
-      if (action === "approve") haptic.success();
-      else haptic.deny();
-      if (!n.read) void markRead([n.id]);
-    } catch {
-      // best effort — card stays actionable
-      haptic.deny();
-    } finally {
-      setPending((prev) => {
+  // [v5.22 polish] "Clear" runs a fast staggered exit so the drawer empties
+  // visibly card-by-card instead of all-at-once. ~40ms per card → ~13 cards
+  // takes ~520ms total, fast enough to feel snappy.
+  const clearAll = useCallback(async () => {
+    haptic.tap();
+    const ids = visible.map((n) => n.id);
+    for (let i = 0; i < ids.length; i += 1) {
+      const id = ids[i];
+      setDismissed((prev) => {
         const next = new Set(prev);
-        next.delete(n.id);
+        next.add(id);
         return next;
       });
+      // small delay between dismissals — feels like cards flicking off the stack
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((r) => setTimeout(r, CLEAR_STAGGER_MS));
     }
-  };
+    void markAllRead();
+  }, [visible, markAllRead]);
+
+  // Card tap → mark-read + open detail or navigate.
+  const onItemTap = useCallback(
+    async (n: NotificationItem) => {
+      if (!n.read) await markRead([n.id]);
+      if (!n.url) return;
+
+      let routed = false;
+      try {
+        const parsed = new URL(n.url, window.location.origin);
+        const path = parsed.pathname;
+
+        const approvalMatch = path.match(/^\/apparatus\/approvals\/([^/]+)/);
+        if (approvalMatch) {
+          openDetail({ kind: "toolApproval", approvalId: approvalMatch[1] });
+          routed = true;
+        } else if (path.startsWith("/maintenance/")) {
+          const id = path.split("/")[2];
+          if (id) {
+            openDetail({ kind: "maintenanceRequest", requestId: id });
+            routed = true;
+          }
+        } else if (path === "/riskflow") {
+          const itemId = parsed.searchParams.get("item");
+          if (itemId) {
+            openDetail({ kind: "riskflowItem", itemId });
+            routed = true;
+          }
+        } else {
+          const catalystMatch = path.match(/^\/narrative\/catalyst\/([^/]+)/);
+          if (catalystMatch) {
+            openDetail({ kind: "catalyst", catalystId: catalystMatch[1] });
+            routed = true;
+          } else if (path === "/briefing" || path === "/briefing/") {
+            openDetail({ kind: "dailyBrief" });
+            routed = true;
+          }
+        }
+      } catch {
+        /* malformed URL — fall through */
+      }
+
+      if (routed) {
+        onClose();
+      } else {
+        window.location.href = n.url;
+        onClose();
+      }
+    },
+    [markRead, openDetail, onClose],
+  );
+
+  // Approve / deny for proposal cards (revealed via swipe-right inside the card).
+  const decide = useCallback(
+    async (n: NotificationItem, action: "approve" | "deny") => {
+      if (!n.eventId) return;
+      const endpoint = APPROVAL_ENDPOINT_MAP[n.category];
+      if (!endpoint) return;
+      setPending((prev) => new Set(prev).add(n.id));
+      try {
+        const token = await getAccessToken();
+        const res = await fetch(
+          `${API_BASE}${endpoint}/${n.eventId}/${action}`,
+          {
+            method: "POST",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          },
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setDecided((prev) => ({
+          ...prev,
+          [n.id]: action === "approve" ? "approved" : "denied",
+        }));
+        if (action === "approve") haptic.success();
+        else haptic.deny();
+        if (!n.read) void markRead([n.id]);
+      } catch {
+        haptic.deny();
+      } finally {
+        setPending((prev) => {
+          const next = new Set(prev);
+          next.delete(n.id);
+          return next;
+        });
+      }
+    },
+    [getAccessToken, markRead],
+  );
+
+  // Send-to-Harper: dispatches a window event the chat surface listens for. App.tsx
+  // catches the tab-change side, ChatInput catches the prefill side. The card itself
+  // animates the throw-rightward gesture so the user sees feedback even if chat isn't
+  // mounted yet (event is fire-and-forget).
+  const sendToHarper = useCallback(
+    (n: NotificationItem) => {
+      const text = `${n.title}${n.body ? `\n\n${n.body}` : ""}`;
+      try {
+        window.dispatchEvent(
+          new CustomEvent("fintheon:harper-prefill", {
+            detail: { text, source: "notification", id: n.id },
+          }),
+        );
+        window.dispatchEvent(
+          new CustomEvent("fintheon:tab-change", { detail: { index: 2 } }),
+        );
+      } catch {
+        /* ignore */
+      }
+      if (!n.read) void markRead([n.id]);
+      onClose();
+    },
+    [markRead, onClose],
+  );
 
   return (
     <SnapSheet isOpen={isOpen} onClose={onClose} title="Notifications">
@@ -217,29 +274,31 @@ export function NotificationDrawer({
               color: "var(--text-secondary)",
             }}
           >
-            {notifications.length}{" "}
-            {notifications.length === 1 ? "alert" : "alerts"}
+            {visible.length} {visible.length === 1 ? "alert" : "alerts"}
           </span>
-          {hasUnread && (
+          {hasAny && (
             <button
-              onClick={markAllRead}
+              onClick={clearAll}
               style={{
                 background: "transparent",
                 border: "none",
                 color: "var(--accent)",
                 fontFamily: "var(--font-data)",
                 fontSize: 11,
-                letterSpacing: "0.04em",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
                 cursor: "pointer",
-                padding: "4px 8px",
+                padding: "6px 10px",
+                minHeight: 36,
+                WebkitTapHighlightColor: "transparent",
               }}
             >
-              Mark all read
+              Clear
             </button>
           )}
         </div>
 
-        {notifications.length === 0 ? (
+        {!hasAny ? (
           <div
             style={{
               padding: "48px 16px",
@@ -248,7 +307,7 @@ export function NotificationDrawer({
               fontSize: 13,
             }}
           >
-            No notifications yet
+            No notifications
           </div>
         ) : (
           grouped.map(([day, items]) => (
@@ -265,189 +324,25 @@ export function NotificationDrawer({
               >
                 {day}
               </div>
-              {items.map((n) => {
-                const isApproval = APPROVAL_CATEGORIES.has(n.category);
-                const status = decided[n.id];
-                const sevColor = colorForSeverity(paletteSeverity(n.severity));
-                const fuseValue = severityScore(n.severity);
-                return (
-                  <div
+              <AnimatePresence initial={false}>
+                {items.map((n) => (
+                  <NotificationCard
                     key={n.id}
-                    onClick={isApproval ? undefined : () => void onItemTap(n)}
-                    role={isApproval ? undefined : "button"}
-                    style={{
-                      // Glassmorphic, RiskFlow-shaped card: fuse | body | actions
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "stretch",
-                      gap: 12,
-                      background: n.read
-                        ? "rgba(255,255,255,0.015)"
-                        : "color-mix(in srgb, var(--accent) 5%, transparent)",
-                      backdropFilter: "blur(18px) saturate(1.3)",
-                      WebkitBackdropFilter: "blur(18px) saturate(1.3)",
-                      border:
-                        "1px solid color-mix(in srgb, var(--accent) 14%, transparent)",
-                      borderRadius: 12,
-                      padding: "12px 14px",
-                      marginBottom: 10,
-                      textAlign: "left",
-                      cursor: !isApproval && n.url ? "pointer" : "default",
-                      WebkitTapHighlightColor: "transparent",
-                      opacity: status ? 0.55 : 1,
-                      boxShadow: n.read
-                        ? "none"
-                        : "0 1px 20px color-mix(in srgb, var(--accent) 6%, transparent)",
-                      transition:
-                        "opacity 220ms ease, background 220ms ease, box-shadow 220ms ease, border-color 220ms ease",
-                    }}
-                  >
-                    {/* Left: vertical fuse bar — severity-driven, matches RiskFlow */}
-                    <VerticalFuseBar value={fuseValue} color={sevColor} />
-
-                    {/* Center: source/time + title + body */}
-                    <div
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        gap: 3,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          fontFamily: "var(--font-data)",
-                          fontSize: 9,
-                          letterSpacing: "0.08em",
-                          textTransform: "uppercase",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        <span>{n.severity}</span>
-                        <span style={{ color: "var(--text-disabled)" }}>
-                          &middot;
-                        </span>
-                        <span>{timeLabel(n.createdAt)}</span>
-                      </div>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-body)",
-                          fontSize: 14,
-                          lineHeight: 1.4,
-                          fontWeight: n.read ? 400 : 600,
-                          color: n.read
-                            ? "var(--text-primary)"
-                            : "var(--accent)",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical" as const,
-                          overflow: "hidden",
-                        }}
-                      >
-                        {n.title}
-                      </span>
-                      {n.body && (
-                        <span
-                          style={{
-                            fontSize: 12,
-                            color: "var(--text-secondary)",
-                            lineHeight: 1.4,
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical" as const,
-                            overflow: "hidden",
-                          }}
-                        >
-                          {n.body}
-                        </span>
-                      )}
-                      {status && (
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontFamily: "var(--font-data)",
-                            letterSpacing: "0.08em",
-                            textTransform: "uppercase",
-                            color: "var(--text-secondary)",
-                            marginTop: 2,
-                          }}
-                        >
-                          [{status}]
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Right: approve/deny icon-only stack (TP: Check over X,
-                        Approve = accent, Deny = muted secondary) */}
-                    {isApproval && !status && n.eventId ? (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 6,
-                          alignSelf: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void decide(n, "approve");
-                          }}
-                          disabled={pending.has(n.id)}
-                          aria-label="Approve"
-                          style={iconBtnStyle("approve", pending.has(n.id))}
-                        >
-                          <CheckCircle2 size={20} strokeWidth={1.8} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void decide(n, "deny");
-                          }}
-                          disabled={pending.has(n.id)}
-                          aria-label="Deny"
-                          style={iconBtnStyle("deny", pending.has(n.id))}
-                        >
-                          <XCircle size={20} strokeWidth={1.8} />
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
+                    notification={n}
+                    decided={decided[n.id]}
+                    pendingDecision={pending.has(n.id)}
+                    onDismiss={dismissOne}
+                    onTap={(item) => void onItemTap(item)}
+                    onApprove={(item) => void decide(item, "approve")}
+                    onDeny={(item) => void decide(item, "deny")}
+                    onSendToHarper={sendToHarper}
+                  />
+                ))}
+              </AnimatePresence>
             </div>
           ))
         )}
       </div>
     </SnapSheet>
   );
-}
-
-/** Icon-only 36×36 tap target. Approve = accent, Deny = muted secondary. */
-function iconBtnStyle(
-  kind: "approve" | "deny",
-  isPending: boolean,
-): React.CSSProperties {
-  return {
-    width: 36,
-    height: 36,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "transparent",
-    border: "none",
-    borderRadius: 8,
-    color: kind === "approve" ? "var(--accent)" : "var(--text-secondary)",
-    cursor: isPending ? "not-allowed" : "pointer",
-    opacity: isPending ? 0.4 : 1,
-    WebkitTapHighlightColor: "transparent",
-    transition:
-      "opacity 150ms ease, background 150ms ease, transform 150ms ease",
-  };
 }

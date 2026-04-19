@@ -1,9 +1,10 @@
-// [claude-code 2026-04-18] v5.22 S2: caret-alignment fix per TP screenshot. The textarea
-//   was rendering its caret at the content-box origin (top-left) on focus while the
-//   placeholder painted lower because the scrollHeight measurement on empty content was
-//   smaller than the padded content area. Fix: explicit verticalAlign + boxSizing +
-//   minHeight matching one padded line, an explicit caretColor, and a useLayoutEffect
-//   that sizes the textarea once before first paint.
+// [claude-code 2026-04-18] v5.22 caret v3 — previous fix attempts left iOS Safari rendering
+//   the caret at the line-box top while the "Message Harper" placeholder painted on the
+//   baseline below it. Fix: caret is hidden while the field is empty (TP: "it is supposed
+//   to remove itself"), tight symmetric padding so the line-box is centered in the textarea,
+//   lineHeight 1.25 so the caret occupies the same vertical strip as the placeholder text,
+//   and the on-mount auto-size pass is dropped (it was producing inconsistent scrollHeight
+//   reads on empty content and oversizing the box).
 // [claude-code 2026-04-18] PWA polish: textarea font-size 14→16 to prevent iOS auto-zoom on focus,
 // hit-target upgrade (34×34 → 44×44 min) per iOS HIG, native form autofill hints, buttonized focus
 // ring, rising composer animation, and an IME-composition guard on Enter to match desktop.
@@ -12,7 +13,7 @@ import {
   useState,
   useRef,
   useCallback,
-  useLayoutEffect,
+  useEffect,
   type KeyboardEvent,
 } from "react";
 import { ArrowUp, Plus, Newspaper } from "lucide-react";
@@ -21,8 +22,13 @@ import { HeadlineChips, formatHeadlineContext } from "./HeadlineChips";
 import type { HeadlineChip } from "./HeadlineChips";
 import { HeadlinePickerSheet } from "./HeadlinePickerSheet";
 
-/** One padded text line: top padding + bottom padding + (fontSize × lineHeight). */
-const TEXTAREA_MIN_HEIGHT = 14 + 6 + 16 * 1.45;
+const TEXTAREA_LINE_HEIGHT = 1.25;
+const TEXTAREA_FONT_SIZE = 16;
+const TEXTAREA_PADDING_Y = 11;
+/** Symmetric padding + line-height keeps the caret strip vertically centered against
+ *  the placeholder baseline on iOS Safari. 11 + 11 + 16*1.25 = 42px. */
+const TEXTAREA_MIN_HEIGHT =
+  TEXTAREA_PADDING_Y * 2 + TEXTAREA_FONT_SIZE * TEXTAREA_LINE_HEIGHT;
 
 interface ChatInputProps {
   onSend: (
@@ -80,11 +86,22 @@ export default function ChatInput({
     el.style.height = `${Math.max(TEXTAREA_MIN_HEIGHT, Math.min(el.scrollHeight, 96))}px`;
   }, []);
 
-  // Size the textarea once on mount so the caret doesn't render against an
-  // un-measured content-box on the first focus (TP's "caret floating in the
-  // top-left" screenshot). Layout effect runs synchronously before paint.
-  useLayoutEffect(() => {
-    handleInput();
+  // [v5.22 polish] Notification drawer's "Ask Harper" swipe dispatches
+  // fintheon:harper-prefill with the notification text. Append to whatever
+  // is in the textarea, focus, and let the user tap send themselves.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ text?: string }>).detail;
+      if (!detail?.text) return;
+      setText((prev) => (prev ? `${prev}\n\n${detail.text}` : detail.text!));
+      // Focus on next frame so the sticky composer rides the keyboard up.
+      requestAnimationFrame(() => {
+        textareaRef.current?.focus();
+        handleInput();
+      });
+    };
+    window.addEventListener("fintheon:harper-prefill", handler);
+    return () => window.removeEventListener("fintheon:harper-prefill", handler);
   }, [handleInput]);
 
   const handleToggleChip = useCallback((chip: HeadlineChip) => {
@@ -193,18 +210,23 @@ export default function ChatInput({
             outline: "none",
             resize: "none",
             fontFamily: "var(--font-body)",
-            fontSize: 16,
+            fontSize: TEXTAREA_FONT_SIZE,
             color: "var(--text-primary)",
-            caretColor: "var(--accent, #c79f4a)",
-            lineHeight: 1.45,
+            // Hide the caret while the field is empty so it doesn't paint as a
+            // disconnected stripe above the "Message Harper" placeholder per TP.
+            // It snaps back in the moment the user types a character.
+            caretColor:
+              text.length === 0 ? "transparent" : "var(--accent, #c79f4a)",
+            lineHeight: TEXTAREA_LINE_HEIGHT,
             minHeight: TEXTAREA_MIN_HEIGHT,
+            height: TEXTAREA_MIN_HEIGHT,
             maxHeight: 132,
             overflow: "auto",
-            padding: "14px 18px 6px",
-            verticalAlign: "top",
+            padding: `${TEXTAREA_PADDING_Y}px 18px`,
+            margin: 0,
+            verticalAlign: "middle",
             boxSizing: "border-box",
             textAlign: "start",
-            writingMode: "horizontal-tb",
             WebkitUserSelect: "text",
           }}
         />

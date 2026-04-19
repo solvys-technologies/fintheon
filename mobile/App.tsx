@@ -3,7 +3,14 @@
 //   promoted into useNotificationTapRouter which routes tab + modal in one pass.
 // [claude-code 2026-04-19] FAB chat button forwards to chat tab (no floating overlay) per TP
 // [claude-code 2026-04-16] S20: Provider tree + activity status + haptic-gated nav
-import { useState, useRef, useCallback, Suspense, lazy } from "react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  Suspense,
+  lazy,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -132,6 +139,20 @@ function AuthenticatedApp() {
   useNotificationTapRouter({
     onTabChange: (idx) => handleTabChange(idx as number),
   });
+
+  // [v5.22 polish] Notification drawer's "Ask Harper" swipe dispatches a
+  // window event with {index} to switch tabs. Decoupled from the drawer so
+  // the drawer doesn't need to know about layout state.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ index?: number }>).detail;
+      if (typeof detail?.index === "number") {
+        handleTabChange(detail.index);
+      }
+    };
+    window.addEventListener("fintheon:tab-change", handler);
+    return () => window.removeEventListener("fintheon:tab-change", handler);
+  }, [handleTabChange]);
 
   const direction = activeTab > prevTab.current ? 1 : -1;
 

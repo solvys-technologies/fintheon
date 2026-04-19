@@ -251,40 +251,9 @@ html *::-webkit-scrollbar {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* ── Nothing Fuse Shimmer ──
-   [claude-code 2026-04-18] v5.22 S2: slow 4.2s shimmer overlay for every fuse fill on
-   mobile. The 76%-100% holds ~1s of dead time per cycle so it doesn't read as "AI
-   sparkle" — TP wants it slow and intentional. Mirrored from frontend/index.css when
-   S1 lands the desktop equivalent; S2 carries the mobile copy in the meantime. */
-@keyframes nothing-fuse-shimmer {
-  0%,
-  76%,
-  100% {
-    background-position: -200% 0;
-    opacity: 0;
-  }
-  38% {
-    background-position: 200% 0;
-    opacity: 0.45;
-  }
-}
+/* [claude-code 2026-04-18] Removed nothing-fuse-shimmer per TP — too brief on mobile to
+   read as anything but a flash, dropped to keep fuses calm. Component overlays stay as
+   no-op spans (the class is empty so the markup stays compatible with desktop). */
 .nothing-fuse-shimmer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--fintheon-text, #f0ead6) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  mix-blend-mode: overlay;
-  animation: nothing-fuse-shimmer 4.2s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .nothing-fuse-shimmer {
-    animation: none;
-    opacity: 0;
-  }
+  display: none;
 }

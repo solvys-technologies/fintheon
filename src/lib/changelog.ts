@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T03:15:00",
+    agent: "claude-code",
+    summary:
+      "v5.22 mobile beta polish per TP screenshots. (1) NotificationDrawer overhauled: cards extracted into NotificationCard with bidirectional swipe — left swipe past 96px (or 600 velocity) dismisses with red DISMISS bg; right swipe on scored alerts fires fintheon:harper-prefill + fintheon:tab-change so the notification text seeds the chat input on the Harper tab; right swipe on proposal cards (regime/lexicon/walkBack/tool approvals) snaps to a revealed mode that exposes inline Approve / Deny buttons (TP: 'swipe from the left to the right to be able to bring up the approve or deny buttons'). Clear button at top-right runs a fast staggered exit (40ms between cards) and marks-all-read; dismissed ids persist to localStorage so they don't reappear on reopen. Card body line-clamp widened 2 → 3, padding bumped, glass surface keeps blur(20px) saturate(1.4). (2) System-category notifications (regimeActivations/dailyBrief/maintenanceRequest/regimeProposals/lexiconProposals/walkBackReverts/toolApprovals) drop the severity fuse — they're system pings, not scored alerts. Replaced with a thin accent strip on the left rail and a category label (REGIME/BRIEF/PROPOSAL/etc.) instead of severity text. (3) ChatInput caret v3: previous attempts left iOS Safari painting the caret stripe above the placeholder baseline. Now the caret is hidden while the field is empty (TP: 'should remove itself when I start typing') and snaps to accent the moment the user types a character; symmetric padding (11px top+bottom) + lineHeight 1.25 keep the line-box centered in the textarea so the caret strip and placeholder share the same vertical strip. Dropped the on-mount auto-size pass — was producing inconsistent scrollHeight reads. (4) Removed nothing-fuse-shimmer globally — too brief on mobile to register, dropped the keyframe + per-component overlays. ChatPage harper-prefill listener prefills the textarea on Ask-Harper swipe (appends if there's already text). App.tsx routes fintheon:tab-change to handleTabChange. tsc + vite build clean.",
+    files: [
+      "mobile/components/notifications/NotificationDrawer.tsx",
+      "mobile/components/notifications/NotificationCard.tsx",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/shared/IVFuseBar.tsx",
+      "mobile/components/shared/VerticalFuseBar.tsx",
+      "mobile/components/home/HomePage.tsx",
+      "mobile/index.css",
+      "mobile/App.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T02:30:00",
     agent: "claude-code",
     summary:
