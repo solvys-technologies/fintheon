@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T02:00:00",
+    agent: "claude-code",
+    summary:
+      "Aquarium redesign sprint — Track 6b (Personalization Settings: Category color section + narrative overrides bundled into saved themes). ThemeSettings gains a new 'Narrative Category Colors' section alongside Custom Colors and Severity Colors — seven ColorSwatchInput rows (Geopolitical / Monetary / Macro / Market Structure / Earnings / Supply Chain / Black Swan) that write through to the --narrative-* CSS variables on :root and persist to localStorage under fintheon:narrative-color-overrides (same store the in-canvas NarrativeColorKey popover uses, so the two surfaces stay in sync). A 'Reset categories' mini-link appears once any override exists. Save as Custom Theme now bundles the current narrative overrides into the saved theme under a new optional narrativeColors field on ThemeConfigWithNarrative; Reset to Default clears every narrative override along with base/font; activating a saved theme restores its bundled narrativeColors (or clears all overrides if the theme was saved without any). Hydration on mount re-applies any persisted overrides so the Settings panel always reflects the active palette. DEFERRED from the Track 6 wishlist: general-stripe swatch dropdown UX on primary/secondary/accent (needs a curated palette + ColorSwatchInput API change across all consumers) — standalone sprint.",
+    files: ["frontend/components/settings/ThemeSettings.tsx"],
+  },
+  {
     date: "2026-04-20T01:15:00",
     agent: "claude-code",
     summary:
