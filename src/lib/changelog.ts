@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T19:00:00",
+    agent: "claude-code",
+    summary:
+      "Loopndroll → Refinement Engine: Routines Console + Mobile Superadmin. Wraps the 8 already-deployed Claude Code Routines (3 MOVE + 5 AUGMENT, see docs/routines.md) with loopndroll's four continuation modes — Infinite, Await Reply, Completion Checks, Max Turns — and the operator surface loopndroll provides via Codex Hooks: status chips, error handling, manual rerun, pause/resume, and human-in-the-loop approvals. Backend: new routine_config / routine_runs / routine_approvals tables (migration 20260420_routines_console.sql); registry of the 8 routines (services/routines/registry.ts) sourced from docs/routines.md; state-store with in-memory fallback; per-mode error policy (services/routines/error-handler.ts) — awaitReply blocks next run via routine_approvals row, completionChecks logs degraded, maxTurns locks + escalates after N failures in 24h; REST surface (/api/routines, /api/routines/:id, /api/routines/:id/mode|pause|rerun, /api/routines/approvals/pending, /api/routines/approvals/:id/{approve,deny}); existing harper-ops /feed POST extended so every routine entry also creates a routine_runs row and applies the configured mode policy (no parallel store — reuses writeOpsEntry + opsEmitter). Desktop: RoutinesConsole.tsx mounts as the first card on the Refinement Engine left panel with a status chip per routine (paused / await / failed / degraded / ok / idle), inline mode dropdown, pause/rerun buttons, and a detail modal showing recent run history + per-mode config + pending approvals. Mobile: useRoutineApprovals hook polls the pending queue, RoutineApprovalCard renders a slide-up sheet of large per-routine cards with Approve/Deny + collapsed raw payload view, MobileShell adds a third FAB (ShieldCheck icon, badge with count) that glows whenever approvals are pending — same bulletin-glow keyframe so it visually matches the existing FAB stack. Codex swap: deleted CODEX_MODEL / CODEX_MODEL_NAME from frontend/lib/FintheonModelCatalog.ts and updated the file header to credit Claude Code Routines as the autonomous backend driver. Boot wiring adds initRoutinesStore() alongside the tool-approval-store init. Source pattern: https://github.com/lnikell/loopndroll.",
+    files: [
+      "supabase/migrations/20260420_routines_console.sql",
+      "backend-hono/src/services/routines/registry.ts",
+      "backend-hono/src/services/routines/state-store.ts",
+      "backend-hono/src/services/routines/error-handler.ts",
+      "backend-hono/src/routes/routines/index.ts",
+      "backend-hono/src/routes/routines/handlers.ts",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/routes/harper-ops/index.ts",
+      "backend-hono/src/boot/services.ts",
+      "frontend/components/refinement/RoutinesConsole.tsx",
+      "frontend/components/refinement/RoutineDetailModal.tsx",
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/lib/FintheonModelCatalog.ts",
+      "mobile/hooks/useRoutineApprovals.ts",
+      "mobile/components/routines/RoutineApprovalCard.tsx",
+      "mobile/components/layout/MobileShell.tsx",
+      "docs/routines.md",
+    ],
+  },
+  {
     date: "2026-04-18T12:20:00",
     agent: "claude-code",
     summary:

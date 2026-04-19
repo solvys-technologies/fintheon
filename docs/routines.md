@@ -136,6 +136,47 @@ heartbeat (`alive = any entry within 24h`).
 - **MCP**: All routines have Supabase MCP connector attached
 - **API Base**: https://fintheon.fly.dev (all routines call this for data)
 
+## Modes & Approvals (Routines Console)
+
+The Refinement Engine ships a Routines Console that wraps each of the 8 routines
+above with loopndroll-style continuation modes plus an error/approval surface.
+Source pattern: https://github.com/lnikell/loopndroll — Codex Hooks swapped for
+Claude Code Routines as the autonomous driver.
+
+### Modes
+
+Configurable per routine via `PUT /api/routines/:trigger_id/mode`:
+
+| Mode               | Behavior                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| `infinite`         | Default — runs on its cron schedule forever, no extra gating.                                     |
+| `awaitReply`       | Blocks the next scheduled run until a Superadmin approves the previous output (mobile FAB ping).  |
+| `completionChecks` | If a run posts severity ≥ warning, mark degraded and let the next scheduled run retry.            |
+| `maxTurns`         | Counts non-`info` runs in a 24h window; locks the routine + escalates `critical` past the budget. |
+
+### Operator API (`/api/routines`)
+
+```
+GET  /api/routines                       — list routines + state
+GET  /api/routines/:trigger_id           — detail + recent runs + pending approvals
+PUT  /api/routines/:trigger_id/mode      — { mode, maxTurns?, notes? }
+POST /api/routines/:trigger_id/pause     — { paused?: boolean }  (toggle if omitted)
+POST /api/routines/:trigger_id/rerun     — manual rerun request (logs intent + ops entry)
+GET  /api/routines/approvals/pending     — Superadmin queue
+POST /api/routines/approvals/:id/approve — Superadmin sign-off
+POST /api/routines/approvals/:id/deny    — Superadmin reject
+```
+
+State persists in `routine_config`, `routine_runs`, `routine_approvals`
+(migration `supabase/migrations/20260420_routines_console.sql`). Routines call
+their own `shouldProceed()` gate via `error-handler.ts` before doing work.
+
+### Mobile Superadmin
+
+`mobile/components/routines/RoutineApprovalCard.tsx` renders a slide-up sheet
+listing pending approvals. The MobileShell FAB glows whenever
+`pendingApprovals.length > 0` so the operator can clear the queue from anywhere.
+
 ## Management
 
 ```bash

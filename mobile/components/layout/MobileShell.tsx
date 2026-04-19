@@ -6,15 +6,17 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Newspaper } from "lucide-react";
+import { Newspaper, ShieldCheck } from "lucide-react";
 import { useSwipeGesture } from "../../hooks/useSwipeGesture";
 import { useVixTicker } from "../../hooks/useVixTicker";
 import { useHaptic } from "../../hooks/useHaptic";
 import { useSettings } from "../../contexts/SettingsContext";
+import { useRoutineApprovals } from "../../hooks/useRoutineApprovals";
 import { MobileToolbar } from "./MobileToolbar";
 import { HamburgerMenu } from "./HamburgerMenu";
 import { FloatingChatButton } from "./FloatingChatButton";
 import { MobileBulletin } from "../bulletin/MobileBulletin";
+import { RoutineApprovalCard } from "../routines/RoutineApprovalCard";
 
 interface MobileShellProps {
   activeTab: number;
@@ -38,8 +40,10 @@ export function MobileShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [bulletinOpen, setBulletinOpen] = useState(false);
   const [bulletinGlow, setBulletinGlow] = useState(true);
+  const [approvalsOpen, setApprovalsOpen] = useState(false);
   const vibrate = useHaptic();
   const { settings } = useSettings();
+  const { pendingCount: pendingApprovals } = useRoutineApprovals();
 
   useVixTicker();
 
@@ -152,6 +156,58 @@ export function MobileShell({
             }`}</style>
           )}
 
+          {/* Routine approval FAB — glows when Superadmin sign-off is pending */}
+          {pendingApprovals > 0 && (
+            <button
+              onClick={() => {
+                vibrate(10);
+                setApprovalsOpen(true);
+              }}
+              aria-label={`${pendingApprovals} routine approval${pendingApprovals === 1 ? "" : "s"} pending`}
+              style={{
+                position: "fixed",
+                bottom: "calc(140px + env(safe-area-inset-bottom))",
+                right: 20,
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                background: "var(--surface-raised, #1a1a1a)",
+                border: "1px solid var(--accent, #c79f4a)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                zIndex: 30,
+                WebkitTapHighlightColor: "transparent",
+                boxShadow:
+                  "0 0 12px 3px rgba(199, 159, 74, 0.45), 0 0 4px 1px rgba(199, 159, 74, 0.25)",
+                animation: "bulletin-glow 2s ease-in-out infinite",
+              }}
+            >
+              <ShieldCheck size={18} color="var(--accent)" />
+              <span
+                style={{
+                  position: "absolute",
+                  top: -4,
+                  right: -4,
+                  background: "var(--accent, #c79f4a)",
+                  color: "var(--black, #050402)",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "ui-monospace, monospace",
+                }}
+              >
+                {pendingApprovals > 9 ? "9+" : pendingApprovals}
+              </span>
+            </button>
+          )}
+
           {/* Chat FAB */}
           <FloatingChatButton onTap={onChatToggle} />
         </>
@@ -161,6 +217,12 @@ export function MobileShell({
       <MobileBulletin
         isOpen={bulletinOpen}
         onClose={() => setBulletinOpen(false)}
+      />
+
+      {/* Routine approvals sheet */}
+      <RoutineApprovalCard
+        isOpen={approvalsOpen}
+        onClose={() => setApprovalsOpen(false)}
       />
 
       <HamburgerMenu

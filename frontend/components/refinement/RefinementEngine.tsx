@@ -11,6 +11,7 @@ import { QuickWeightEditor } from "./QuickWeightEditor";
 import { CommentatorManager } from "./CommentatorManager";
 import { SourceAccountsManager } from "./SourceAccountsManager";
 import { AnnotatableItem } from "./AnnotatableItem";
+import { RoutinesConsole } from "./RoutinesConsole";
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
@@ -156,8 +157,12 @@ export function RefinementEngine() {
       ) : (
         /* Two-panel layout */
         <div className="flex-1 min-h-0 flex">
-          {/* Left panel — regime, weights, persons of interest */}
+          {/* Left panel — routines console, regime, weights, persons of interest */}
           <div className="w-[320px] shrink-0 border-r border-[var(--fintheon-accent)]/15 overflow-y-auto p-3 space-y-5">
+            <RoutinesConsole />
+
+            <div className="border-t border-zinc-800" />
+
             <RegimeControl regime={regime} onRegimeChanged={fetchRegime} />
 
             <div className="border-t border-zinc-800" />
