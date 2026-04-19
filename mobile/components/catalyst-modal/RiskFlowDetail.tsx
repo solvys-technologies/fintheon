@@ -1,12 +1,36 @@
+// [claude-code 2026-04-19] S26-P1 T3: collapse preview/headline duplication per TP —
+//   body only renders when it's materially distinct from the headline (not a prefix/echo).
+//   Adds a "View original" link below the headline when item.url is present so users can
+//   jump to the source (Twitter / Reuters / etc.). EmbedPreview stays — that's the rich
+//   Twitter/OG peek and it's intentional per S25.
 // [claude-code 2026-04-19] S25: full news-headline detail — source/time header, headline,
 //   body, ticker chips, EmbedPreview peek of original post, footer (IV fuse + Ask CAO).
 //   Stagger-in so header lands first, body second, embed third, footer last.
 import { motion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
 import { DetailHeader } from "./DetailHeader";
 import { DetailFooter } from "./DetailFooter";
 import { EmbedPreview } from "../embed/EmbedPreview";
 import { useRiskFlowItem } from "../../hooks/useRiskFlowItem";
 import { DETAIL_STAGGER } from "../../lib/sheet-motion";
+
+/** Body is a "duplicate" of the headline when it's empty, identical, or one is a
+ *  prefix/contains-loose-match of the other (common for Twitter headlines where
+ *  `body` ends up being the truncated tweet text and `headline` is the full tweet). */
+function bodyDuplicatesHeadline(
+  headline: string,
+  body: string | null | undefined,
+): boolean {
+  if (!body) return true;
+  const h = headline.trim().toLowerCase();
+  const b = body.trim().toLowerCase();
+  if (!b) return true;
+  if (h === b) return true;
+  if (h.startsWith(b) || b.startsWith(h)) return true;
+  // fuzzy contains: body fully embedded in headline (or vice-versa) is also a dup
+  if (h.length > 40 && (h.includes(b) || b.includes(h))) return true;
+  return false;
+}
 
 interface Props {
   itemId: string;
@@ -90,9 +114,10 @@ export function RiskFlowDetail({ itemId, onClose, onDispatched }: Props) {
             {item.headline}
           </h2>
           <SourceRow source={item.source} author={item.authorHandle} />
+          {item.url && <ViewOriginalLink url={item.url} />}
         </Row>
 
-        {item.body && (
+        {item.body && !bodyDuplicatesHeadline(item.headline, item.body) && (
           <Row>
             <p
               style={{
@@ -165,6 +190,33 @@ function Row({ children }: { children: React.ReactNode }) {
     >
       {children}
     </motion.div>
+  );
+}
+
+function ViewOriginalLink({ url }: { url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        marginTop: 10,
+        fontFamily: "var(--font-data)",
+        fontSize: 11,
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        color: "var(--accent)",
+        textDecoration: "none",
+        WebkitTapHighlightColor: "transparent",
+      }}
+    >
+      <span>View original</span>
+      <ArrowUpRight size={12} strokeWidth={1.8} />
+    </a>
   );
 }
 

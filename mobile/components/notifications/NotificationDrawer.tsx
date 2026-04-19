@@ -1,3 +1,5 @@
+// [claude-code 2026-04-19] S26-P1 T7: haptic feedback on approve (success buzz) /
+//   deny (deny buzz). Respects the global hapticEnabled setting via the module gate.
 // [claude-code 2026-04-19] Notification cards redesigned in RiskFlow's mobile shape —
 //   vertical fuse bar on the left, headline + body center, approve/deny stacked right.
 //   Keeps glassmorphic surface (TP: glass before kanban). Severity still drives the
@@ -10,6 +12,7 @@ import { SnapSheet } from "../shared/SnapSheet";
 import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { useAuth } from "../../contexts/AuthContext";
+import { haptic } from "../../lib/haptics";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -133,9 +136,12 @@ export function NotificationDrawer({
         ...prev,
         [n.id]: action === "approve" ? "approved" : "denied",
       }));
+      if (action === "approve") haptic.success();
+      else haptic.deny();
       if (!n.read) void markRead([n.id]);
     } catch {
       // best effort — card stays actionable
+      haptic.deny();
     } finally {
       setPending((prev) => {
         const next = new Set(prev);

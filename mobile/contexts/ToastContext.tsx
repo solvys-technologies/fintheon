@@ -1,3 +1,6 @@
+// [claude-code 2026-04-19] S26-P1 T7: toast now fires haptic on success (positive buzz)
+//   and error (deny pattern). Info toasts stay silent. Module-level gate respects the
+//   hapticEnabled setting.
 // [claude-code 2026-04-15] T2: Mobile inline status system — [SAVED], [ERROR: ...] style, auto-dismiss 3s
 import {
   createContext,
@@ -6,6 +9,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { haptic } from "../lib/haptics";
 
 interface StatusMessage {
   id: string;
@@ -32,6 +36,8 @@ export function StatusProvider({ children }: { children: ReactNode }) {
       const id = `status-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const entry: StatusMessage = { id, message, type, timestamp: Date.now() };
       setStatuses((prev) => [...prev, entry]);
+      if (type === "success") haptic.success();
+      else if (type === "error") haptic.deny();
       setTimeout(() => {
         setStatuses((prev) => prev.filter((s) => s.id !== id));
       }, 3000);

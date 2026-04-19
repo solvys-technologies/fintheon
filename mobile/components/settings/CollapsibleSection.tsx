@@ -1,3 +1,9 @@
+// [claude-code 2026-04-19] S26-P1 T4: Settings sections now borderless per TP —
+//   "everything is separated by horizontal border lines but then I want them to be
+//   invisible so people shouldn't really be able to see what it is that is dividing
+//   them until they expand or contract a specific subsection." No cards, no vertical
+//   borders, no glass surface. Just vertical padding, chevron header, and a bottom
+//   separator that fades in to 8% accent when the section is open or being hovered.
 // [claude-code 2026-04-19] TP beta polish: glassmorphic accordion for Settings sections.
 //   Header tap toggles open. Open state persists to localStorage by id so TP's choices
 //   stick across reloads. Animations use the Nothing ease — no bounce, opacity-led.
@@ -50,6 +56,7 @@ export function CollapsibleSection({
     if (stored.has(id)) return true;
     return defaultOpen;
   });
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
     const stored = loadOpenSet();
@@ -64,16 +71,19 @@ export function CollapsibleSection({
     setOpen((v) => !v);
   }, [vibrate]);
 
+  // Transparent by default; fades to 8% accent while open or being interacted with.
+  const separatorColor =
+    open || hovered
+      ? "color-mix(in srgb, var(--accent) 8%, transparent)"
+      : "rgba(255, 255, 255, 0)";
+
   return (
     <section
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        background: "color-mix(in srgb, var(--accent) 3%, transparent)",
-        backdropFilter: "blur(18px) saturate(1.3)",
-        WebkitBackdropFilter: "blur(18px) saturate(1.3)",
-        border: "1px solid color-mix(in srgb, var(--accent) 14%, transparent)",
-        borderRadius: 14,
-        overflow: "hidden",
-        transition: "border-color 200ms ease, background 200ms ease",
+        borderBottom: `1px solid ${separatorColor}`,
+        transition: "border-color 200ms ease",
       }}
     >
       <button
@@ -85,7 +95,7 @@ export function CollapsibleSection({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "14px 16px",
+          padding: "14px 4px",
           background: "transparent",
           border: "none",
           cursor: "pointer",
@@ -153,15 +163,7 @@ export function CollapsibleSection({
             transition={{ duration: 0.3, ease: NOTHING_EASE }}
             style={{ overflow: "hidden" }}
           >
-            <div
-              style={{
-                padding: "4px 16px 18px",
-                borderTop:
-                  "1px solid color-mix(in srgb, var(--accent) 8%, transparent)",
-              }}
-            >
-              {children}
-            </div>
+            <div style={{ padding: "4px 4px 18px" }}>{children}</div>
           </motion.div>
         )}
       </AnimatePresence>

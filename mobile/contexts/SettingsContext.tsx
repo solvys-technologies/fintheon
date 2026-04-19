@@ -1,3 +1,5 @@
+// [claude-code 2026-04-19] S26-P1 T6: removed caoName + riskSettings per TP — mobile
+//   trader section is identity-only now. Desktop stays authoritative for both fields.
 // [claude-code 2026-04-19] TP beta polish: drop the 800ms auto-save debounce. Changes
 //   now stage locally (still written to localStorage for reload persistence), and only
 //   commit to the backend when the user presses the save control in Settings UI.
@@ -14,6 +16,7 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "./AuthContext";
+import { setHapticsEnabled } from "../lib/haptics";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -40,11 +43,6 @@ interface AlertConfig {
   vixSpikeThreshold: number;
 }
 
-interface RiskSettings {
-  dailyProfitTarget: number;
-  dailyLossLimit: number;
-}
-
 interface TradingSymbol {
   symbol: string;
   contractName: string;
@@ -55,10 +53,8 @@ interface MobileSettings {
   hapticEnabled: boolean;
   traderName: string;
   hermesEnabled: boolean;
-  caoName: string;
   selectedSymbol: TradingSymbol;
   alertConfig: AlertConfig;
-  riskSettings: RiskSettings;
   bulletinReminder: "once" | "until-pressed";
 }
 
@@ -92,15 +88,10 @@ const DEFAULT_SETTINGS: MobileSettings = {
   hapticEnabled: true,
   traderName: "",
   hermesEnabled: true,
-  caoName: "Harper",
   selectedSymbol: { symbol: "/MNQ", contractName: "/MNQZ25" },
   alertConfig: {
     soundEnabled: true,
     vixSpikeThreshold: 22,
-  },
-  riskSettings: {
-    dailyProfitTarget: 1500,
-    dailyLossLimit: 750,
   },
   bulletinReminder: "until-pressed" as const,
 };
@@ -122,10 +113,6 @@ function loadSettings(): MobileSettings {
         alertConfig: {
           ...DEFAULT_SETTINGS.alertConfig,
           ...parsed.alertConfig,
-        },
-        riskSettings: {
-          ...DEFAULT_SETTINGS.riskSettings,
-          ...parsed.riskSettings,
         },
         selectedSymbol: {
           ...DEFAULT_SETTINGS.selectedSymbol,
@@ -205,8 +192,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
               merged.traderName = remote.traderName as string;
             if (remote.hermesEnabled !== undefined)
               merged.hermesEnabled = remote.hermesEnabled as boolean;
-            if (remote.caoName !== undefined)
-              merged.caoName = remote.caoName as string;
             if (remote.selectedSymbol)
               merged.selectedSymbol = {
                 ...prev.selectedSymbol,
@@ -222,12 +207,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                 vixSpikeThreshold:
                   (remoteAlert.vixSpikeThreshold as number) ??
                   prev.alertConfig.vixSpikeThreshold,
-              };
-            }
-            if (remote.riskSettings) {
-              merged.riskSettings = {
-                ...prev.riskSettings,
-                ...(remote.riskSettings as RiskSettings),
               };
             }
             return merged;
@@ -277,6 +256,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch {}
 
+    // Keep the module-level haptics flag in sync with the setting so non-React
+    // call-sites (toasts, service handlers) respect user intent immediately.
+    setHapticsEnabled(settings.hapticEnabled);
+
     const currentJson = JSON.stringify(settings);
     setIsDirty(currentJson !== lastSavedRef.current);
   }, [settings]);
@@ -311,10 +294,4 @@ export function useSettings() {
   return ctx;
 }
 
-export type {
-  MobileSettings,
-  NotificationPrefs,
-  AlertConfig,
-  RiskSettings,
-  TradingSymbol,
-};
+export type { MobileSettings, NotificationPrefs, AlertConfig, TradingSymbol };

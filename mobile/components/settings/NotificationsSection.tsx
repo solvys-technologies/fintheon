@@ -1,3 +1,6 @@
+// [claude-code 2026-04-19] S26-P1 T6+T7: absorbed the Hermes / Alert Sounds /
+//   Bulletin Reminder toggles from TraderSection (which is now identity-only per TP),
+//   and added the new Haptics toggle alongside the other feel/audio controls.
 // [claude-code 2026-04-19] TP beta polish: notifications section extracted from the
 //   monolithic SettingsPage. Same logic (push master toggle, per-category toggles,
 //   severity threshold, test) lifted into a focused module under 300 lines.
@@ -8,6 +11,10 @@ import { SettingToggle } from "./SettingToggle";
 
 const SEVERITY_SEGMENTS = ["CRIT", "HIGH", "MED", "LOW"] as const;
 const SEVERITY_VALUES = ["critical", "high", "medium", "low"] as const;
+const BULLETIN_MODES: { id: "once" | "until-pressed"; label: string }[] = [
+  { id: "once", label: "ONCE" },
+  { id: "until-pressed", label: "UNTIL PRESSED" },
+];
 
 export function NotificationsSection() {
   const { settings, updateSettings } = useSettings();
@@ -213,6 +220,98 @@ export function NotificationsSection() {
                     }}
                   >
                     {seg}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div
+            style={{
+              height: 1,
+              background: "color-mix(in srgb, var(--accent) 8%, transparent)",
+              margin: "4px 0",
+            }}
+          />
+
+          <SettingToggle
+            label="Hermes AI"
+            on={settings.hermesEnabled}
+            onToggle={() =>
+              updateSettings({ hermesEnabled: !settings.hermesEnabled })
+            }
+          />
+          <SettingToggle
+            label="Alert Sounds"
+            on={settings.alertConfig.soundEnabled}
+            onToggle={() =>
+              updateSettings({
+                alertConfig: {
+                  ...settings.alertConfig,
+                  soundEnabled: !settings.alertConfig.soundEnabled,
+                },
+              })
+            }
+          />
+          <SettingToggle
+            label="Haptics"
+            on={settings.hapticEnabled}
+            onToggle={() =>
+              updateSettings({ hapticEnabled: !settings.hapticEnabled })
+            }
+          />
+
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--font-data)",
+                fontSize: 10,
+                color: "var(--text-secondary)",
+                marginBottom: 8,
+                letterSpacing: "0.1em",
+              }}
+            >
+              BULLETIN REMINDER GLOW
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                border:
+                  "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
+                borderRadius: 8,
+                overflow: "hidden",
+              }}
+            >
+              {BULLETIN_MODES.map((mode, i) => {
+                const active = settings.bulletinReminder === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    onClick={() =>
+                      updateSettings({ bulletinReminder: mode.id })
+                    }
+                    style={{
+                      padding: "10px 0",
+                      fontSize: 11,
+                      fontFamily: "var(--font-data)",
+                      letterSpacing: "0.08em",
+                      background: active ? "var(--accent)" : "transparent",
+                      color: active
+                        ? "var(--black, #000)"
+                        : "var(--text-secondary)",
+                      border: "none",
+                      borderRight:
+                        i === 0
+                          ? "1px solid color-mix(in srgb, var(--accent) 16%, transparent)"
+                          : "none",
+                      cursor: "pointer",
+                      minHeight: 44,
+                      WebkitTapHighlightColor: "transparent",
+                      transition: "background 200ms ease, color 200ms ease",
+                    }}
+                  >
+                    {mode.label}
                   </button>
                 );
               })}

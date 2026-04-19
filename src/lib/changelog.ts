@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T21:15:00",
+    agent: "claude-code",
+    summary:
+      "S26-P1: mobile polish pass (v.26.1). (T2) Briefing modal no longer carries an IV score — DetailFooter gained a `showIV` prop (default true) and BriefDetail opts out; severity dropped from the briefing DetailHeader. (T3) RiskFlow detail no longer duplicates the headline/body when they're substantively identical (Twitter items where body is a truncated tweet) — guarded via bodyDuplicatesHeadline (headline === body, prefix, or loose contains). Added a `View original` arrow link under the headline that opens item.url in a new tab when present; EmbedPreview stays for rich Twitter/OG peeks. (T4) Settings sections stripped of card chrome per TP — CollapsibleSection no longer renders background, border, radius, backdropFilter, or shadow; only vertical padding + a horizontal bottom border that fades from transparent to 8% accent on open/hover. SettingsPage gap zeroed so each section's fading separator reads as the divider between it and the next. (T6) TraderSection reduced to identity only: Display Name (read-only) + Trader Tag (read-only toolbar-wordmark preview). CAO name, risk limits, Hermes AI, Alert Sounds, Haptics, and Bulletin Reminder Glow all removed from this section. caoName + riskSettings fields + RiskSettings type deleted from SettingsContext + remote merge path. Hermes AI / Alert Sounds / Haptics / Bulletin Reminder Glow moved under NotificationsSection where they belong by category. (T7) New `mobile/lib/haptics.ts` module — module-level enabled flag + `haptic.tap/success/deny` pattern helpers. SettingsContext keeps the module flag in sync with `hapticEnabled` on every change so non-React call-sites respect user intent. PullToRefresh now fires haptic.tap on arm + haptic.success on refresh-complete (previously a single buzz on arm). NotificationDrawer fires haptic.success on approve and haptic.deny on deny or network error. StatusProvider fires haptic.success on type=success toasts and haptic.deny on type=error. Info toasts stay silent. Haptics toggle surfaced in NotificationsSection. (T8) About section gains a link row to https://pricedinresearch.io/fintion rendered as `→ pricedinresearch.io/fintion` in accent-colored data font, matching the new borderless style. Validation: mobile tsc clean; vite build clean (index 542.68 kB).",
+    files: [
+      "mobile/components/catalyst-modal/DetailFooter.tsx",
+      "mobile/components/catalyst-modal/BriefDetail.tsx",
+      "mobile/components/catalyst-modal/RiskFlowDetail.tsx",
+      "mobile/components/settings/CollapsibleSection.tsx",
+      "mobile/components/settings/SettingsPage.tsx",
+      "mobile/components/settings/TraderSection.tsx",
+      "mobile/components/settings/NotificationsSection.tsx",
+      "mobile/components/notifications/NotificationDrawer.tsx",
+      "mobile/components/shared/PullToRefresh.tsx",
+      "mobile/contexts/SettingsContext.tsx",
+      "mobile/contexts/ToastContext.tsx",
+      "mobile/lib/haptics.ts",
+    ],
+  },
+  {
     date: "2026-04-19T20:00:00",
     agent: "claude-code",
     summary:
