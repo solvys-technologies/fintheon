@@ -1,14 +1,13 @@
+// [claude-code 2026-04-19] S26-P1 T2: briefing no longer carries an IV score per TP.
+//   Passed `showIV={false}` to DetailFooter; dropped severity from DetailHeader.
 // [claude-code 2026-04-19] S25: Daily Brief detail — uses existing useBriefing hook,
-//   renders full markdown body with fade-in rows, IV fuse (brief-level) + Ask CAO footer.
-//   Brief IV is derived from current aggregate IV (useIVScore) since briefs don't carry
-//   a per-item score — gives the footer a meaningful severity color and number.
+//   renders full markdown body with fade-in rows + Ask CAO footer.
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DetailHeader } from "./DetailHeader";
 import { DetailFooter } from "./DetailFooter";
 import { useBriefing } from "../../hooks/useBriefing";
-import { useIVScore } from "../../hooks/useIVScore";
 import { DETAIL_STAGGER } from "../../lib/sheet-motion";
 
 interface Props {
@@ -17,19 +16,8 @@ interface Props {
   onDispatched: (conversationId: string) => void;
 }
 
-function sevFromIv(iv: number): "low" | "medium" | "high" | "critical" {
-  if (iv >= 8) return "critical";
-  if (iv >= 6) return "high";
-  if (iv >= 4) return "medium";
-  return "low";
-}
-
 export function BriefDetail({ onClose, onDispatched }: Props) {
   const { items, isLoading, error } = useBriefing();
-  const { score: ivScore } = useIVScore();
-
-  const iv = ivScore ?? 0;
-  const severity = sevFromIv(iv);
 
   if (isLoading) {
     return (
@@ -54,7 +42,7 @@ export function BriefDetail({ onClose, onDispatched }: Props) {
 
   return (
     <div>
-      <DetailHeader label="Daily Brief" severity={severity} onClose={onClose} />
+      <DetailHeader label="Daily Brief" onClose={onClose} />
 
       <motion.div
         initial="hidden"
@@ -112,17 +100,15 @@ export function BriefDetail({ onClose, onDispatched }: Props) {
       </motion.div>
 
       <DetailFooter
-        iv={iv}
-        severity={severity}
-        label="IV · BRIEF"
+        iv={0}
+        severity="low"
+        showIV={false}
         dispatch={{
           source: "brief",
           sourceId: "daily",
           context: {
             title,
             summary: fullText.slice(0, 800),
-            severity,
-            iv,
           },
         }}
         onDispatched={onDispatched}

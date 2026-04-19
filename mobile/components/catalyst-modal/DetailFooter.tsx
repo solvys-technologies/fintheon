@@ -1,3 +1,5 @@
+// [claude-code 2026-04-19] S26-P1 T2: showIV prop — briefing modal opts out per TP
+//   ("the briefing does not need an IV score, do not score the briefings").
 // [claude-code 2026-04-19] S25: detail-sheet footer — IV fuse on top, "Ask CAO" CTA below.
 //   Button is borderless, transparent bg, accent letters per TP glass rule. On press the
 //   button scales + animates an accent glow that trails the tap point; meanwhile the hook
@@ -13,6 +15,8 @@ interface Props {
   iv: number;
   severity: FuseSeverity;
   label?: string;
+  /** When false, the IV fuse bar is hidden (briefing modal — TP: no IV score for briefs). */
+  showIV?: boolean;
   dispatch: AskCAOInput;
   /** Fires after the dispatch succeeds — parents use this to close the modal + route to Chat. */
   onDispatched: (conversationId: string) => void;
@@ -22,6 +26,7 @@ export function DetailFooter({
   iv,
   severity,
   label,
+  showIV = true,
   dispatch,
   onDispatched,
 }: Props) {
@@ -49,7 +54,9 @@ export function DetailFooter({
         gap: 12,
       }}
     >
-      <IVFuseBar iv={iv} severity={severity} label={label ?? "IV"} />
+      {showIV && (
+        <IVFuseBar iv={iv} severity={severity} label={label ?? "IV"} />
+      )}
 
       <motion.button
         type="button"
