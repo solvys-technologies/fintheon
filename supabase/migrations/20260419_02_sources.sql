@@ -1,17 +1,20 @@
 -- [claude-code 2026-04-19] S27-T4 (W1c): source telemetry for post-Rettiwt Herald dispatcher.
--- Adds source tagging to riskflow_items, a rolling 48h comparison view, and two
+-- [claude-code 2026-04-20] Fix: W1c migration targeted non-existent public.riskflow_items; the real
+-- ingestion inbox is public.raw_riskflow_items (scored_riskflow_items is the permanent record).
+-- Retargeted source columns + index + view to raw_riskflow_items.
+-- Adds source tagging to raw_riskflow_items, a rolling 48h comparison view, and two
 -- bookkeeping tables for browser-harness fetches + quota ledger.
 
 -- ── riskflow_items: per-source provenance ──────────────────────────────────
 
-alter table public.riskflow_items
+alter table public.raw_riskflow_items
   add column if not exists source text,
   add column if not exists source_domain text,
   add column if not exists fetched_at timestamptz,
   add column if not exists fetch_latency_ms int;
 
-create index if not exists riskflow_items_source_fetched_at_idx
-  on public.riskflow_items (source, fetched_at desc);
+create index if not exists raw_riskflow_items_source_fetched_at_idx
+  on public.raw_riskflow_items (source, fetched_at desc);
 
 -- ── 48h comparison view ────────────────────────────────────────────────────
 
@@ -22,7 +25,7 @@ select
   avg(fetch_latency_ms)    as avg_latency_ms,
   min(fetched_at)          as earliest,
   max(fetched_at)          as latest
-from public.riskflow_items
+from public.raw_riskflow_items
 where fetched_at > now() - interval '48 hours'
 group by source;
 
