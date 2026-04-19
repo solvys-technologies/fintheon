@@ -11,6 +11,7 @@ RUN npm install --legacy-peer-deps
 
 # Copy source code and config
 COPY src ./src
+COPY scripts ./scripts
 COPY tsconfig.json ./
 
 # Build TypeScript
