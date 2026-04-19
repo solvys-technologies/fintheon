@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T23:40:00",
+    agent: "claude-code",
+    summary:
+      "S26 followup (v.26.3): (1) Fixed pricedinresearch.io/fintion → pricedinresearch.io/fintheon typo in the mobile About link (brief had the typo; TP corrected it). (2) Wiped NextSessionForecastCard from the Aquarium per TP — `wipe that forecast line off the face of the planet`. Removed from both chart-mode and non-chart-mode layouts + the import. The heuristic scenarios (Continuation / Risk-on rally / Headline escalation with fake probabilities) were noise. (3) Swapped the top-container right pane (45%) from MiroSharkDebatePanel to an iFrame embedding https://pricedinresearch.io/fintheon, with a `PRICED IN RESEARCH` header + `OPEN →` external-tab link so the site is one click away. Sandbox flags set to allow-scripts + allow-same-origin + allow-popups + allow-forms; referrerPolicy no-referrer-when-downgrade. Non-chart Aquarium top container now reads: Volatility Read (Blended IV) | Priced In Research site. MiroShark Deliberation still accessible from Imperium. Validation: mobile tsc clean, desktop tsc clean, desktop vite build clean (main 2,853.82 kB).",
+    files: [
+      "frontend/components/narrative/Sanctum.tsx",
+      "mobile/components/settings/SettingsPage.tsx",
+    ],
+  },
+  {
     date: "2026-04-19T23:15:00",
     agent: "claude-code",
     summary:

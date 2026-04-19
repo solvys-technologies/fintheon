@@ -1,6 +1,6 @@
 // [claude-code 2026-04-19] S26-P1 T4+T8: borderless sections per TP ("I don't want them
 //   to be cards"). Stacked with no gap so the invisible per-section separators read as
-//   the divider between them. About section gets a link row to pricedinresearch.io/fintion.
+//   the divider between them. About section gets a link row to pricedinresearch.io/fintheon.
 // [claude-code 2026-04-19] TP beta polish: full rewrite. Scrollable shell, full-width,
 //   accordion theme picker, 5-font picker, manual save via a clearly-pressable
 //   SaveButton. Broken into focused modules under 300 lines.
@@ -138,7 +138,7 @@ export function SettingsPage() {
               <div>BUILT {import.meta.env.BUILD_TIME || "DEV"}</div>
             </div>
             <a
-              href="https://pricedinresearch.io/fintion"
+              href="https://pricedinresearch.io/fintheon"
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -152,7 +152,7 @@ export function SettingsPage() {
               }}
             >
               <span style={{ color: "var(--text-disabled)" }}>&rarr;</span>
-              <span>pricedinresearch.io/fintion</span>
+              <span>pricedinresearch.io/fintheon</span>
             </a>
           </div>
         </CollapsibleSection>
