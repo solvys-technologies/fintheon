@@ -32,6 +32,7 @@ import {
   startDispatchScheduler,
   catchUpMissedBriefs,
 } from "../services/cron/dispatch-scheduler.js";
+import { startNewsWorkerAuditScheduler } from "../services/cron/news-worker-audit-scheduler.js";
 // [claude-code 2026-03-27] cleanupOldItems import removed — feed items retained for calibration
 import { startVIXPolling } from "../services/vix-service.js";
 import { startRegimePushListener } from "../services/notifications/regime-push.js";
@@ -254,6 +255,10 @@ export async function bootBackground(): Promise<void> {
   // Dispatch scheduler (cron-driven MDB/ADB/PMDB/TOTT briefing generation)
   startDispatchScheduler();
   log.info("DispatchScheduler started");
+
+  // [claude-code 2026-04-19] S28: News-worker audit gates — 6:00am/11:30am/4:00pm ET, non-negotiable
+  startNewsWorkerAuditScheduler();
+  log.info("NewsWorkerAuditScheduler started");
 
   // Catch-up: generate any briefs that should have fired today but were missed (backend wasn't running)
   catchUpMissedBriefs().catch((err) =>

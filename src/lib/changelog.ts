@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T22:00:00",
+    agent: "claude-code",
+    summary:
+      "S28 kickoff — Refinement Engine refinements + news-worker audit gates. (1) Moved RoutinesConsole out of the Refinement Engine Scoring sub-tab's left sidebar and into the Admin Monitor sub-tab, which is where routine operational state belongs. The Scoring sidebar keeps Regime / Sensitivity / Presets / Advanced; the Monitor tab is now purely the RoutinesConsole surface. (2) Stripped the dead /api/scoring/monitoring/* + /api/scoring/shadow-stats placeholders that were marked 'not yet live — wire at T4-8 backend cron build' in MonitoringLoopCard.tsx. Real routine controls (start/stop/rerun/mode) are already wired to /api/routines/* and now have the whole tab to themselves. (3) Non-negotiable news-worker audit gates at 6:00am / 11:30am / 4:00pm America/New_York. Three new HEAL routines registered (trig_newsaudit_0600, trig_newsaudit_1130, trig_newsaudit_1600) so they appear in the UI and can be paused / rerun manually. New in-process cron at backend-hono/src/services/cron/news-worker-audit-scheduler.ts honours paused state from routine_config so operators can disable from UI without a restart. Handler at backend-hono/src/services/routines/handlers/news-worker-audit.ts does the full cycle: heartbeat freshness check (breaking >10min stale, standard >15min stale), pipeline health (raw/h + scored/h + ratio), soft heal via agentReachTick(), hard heal via stopAgentReachPoller()+startAgentReachPoller() if still stale, ops-feed breadcrumb every run, and superadmin push escalation on failed auto-heal. /api/routines/:id/rerun now executes the audit inline for HEAL routine IDs and returns the snapshot instead of being paper-trail-only. New notifySuperadmins helper resolves SUPER_ADMIN_USER_ID env + users.role='admin' and pushes via sendToUserDirect so critical alerts bypass category gating.",
+    files: [
+      "frontend/components/refinement/RefinementEngine.tsx",
+      "frontend/components/refinement/RoutinesConsole.tsx",
+      "frontend/components/admin/MonitoringLoopCard.tsx",
+      "backend-hono/src/services/routines/registry.ts",
+      "backend-hono/src/services/routines/handlers/news-worker-audit.ts",
+      "backend-hono/src/services/cron/news-worker-audit-scheduler.ts",
+      "backend-hono/src/services/notifications/notify-superadmins.ts",
+      "backend-hono/src/routes/routines/handlers.ts",
+      "backend-hono/src/boot/services.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-20T17:45:00",
     agent: "claude-code",
     summary:
