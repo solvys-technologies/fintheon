@@ -9,34 +9,6 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-04-20T20:40:00",
-    agent: "claude-code",
-    summary:
-      "S27 shipped (Agentic Intelligence, 10-Claude sprint): 8 of 11 tracks live — T2§1-3 Hermes sidecar, T4 browser primitives + Rettiwt cut, T5 voice assistant, T6 Harper Browser Operator, T7 news worker, T8 SOUL.md, T9 Smart Model Routing, T10 Skills Hub, T11 GEPA. T1/T2§4-6/T3 rolled to S28. Archived to sprint-changelog/. 11 sub-track briefs deleted.",
-    files: [
-      "sprint-changelog/S27-ORCHESTRATION.md",
-      "sprint-changelog/S27-CONTEXT.md",
-    ],
-  },
-  {
-    date: "2026-04-20T20:40:00",
-    agent: "claude-code",
-    summary:
-      "S26 shipped (mobile polish + heavy UX + maintenance backend, two-part single-agent handoff): archived to sprint-changelog/. Three files: S26-ORCHESTRATION + S26-PART-1-polish + S26-PART-2-heavy.",
-    files: [
-      "sprint-changelog/S26-ORCHESTRATION.md",
-      "sprint-changelog/S26-PART-1-polish.md",
-      "sprint-changelog/S26-PART-2-heavy.md",
-    ],
-  },
-  {
-    date: "2026-04-20T20:40:00",
-    agent: "claude-code",
-    summary:
-      "S25 unified in v5 line retroactively: Routines Console + Mobile Superadmin (v5.22.4, branch caed3239) + Sanctum/Aquarium/Econ Intel redesign (v5.22.6, branch 6d76d74e). Both sat unmerged across S26/S27; TP flagged them during v.27.10 final-sanitation. 14 tracks, 52 files.",
-    files: ["src/lib/changelog.ts"],
-  },
-  {
     date: "2026-04-20T17:45:00",
     agent: "claude-code",
     summary:
@@ -498,97 +470,6 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    date: "2026-04-20T02:30:00",
-    agent: "claude-code",
-    summary:
-      "Mobile iOS Safari auto-zoom fix on form inputs. The RiskFlow headline attachment modal (HeadlinePickerSheet) was triggering iOS Safari's auto-zoom every time the user tapped its search box — the input's fontSize was 12px, below the 16px threshold iOS uses to decide whether the text is 'too small' for comfortable typing. Same latent issue on the mobile ChatInput textarea (14px). Two-layer fix: (a) global rule added to mobile/index.css that forces font-size: 16px on every input/textarea/select so any future mobile input is zoom-safe by default, (b) bumped the inline fontSize to 16 on ChatInput and HeadlinePickerSheet with a comment explaining why so contributors don't walk it back during a styling pass. Non-form text elements (labels, badges, numbers inside spans/divs) are untouched — the rule only applies to actual form controls.",
-    files: [
-      "mobile/index.css",
-      "mobile/components/chat/ChatInput.tsx",
-      "mobile/components/chat/HeadlinePickerSheet.tsx",
-    ],
-  },
-  {
-    date: "2026-04-20T02:00:00",
-    agent: "claude-code",
-    summary:
-      "Aquarium redesign sprint — Track 6b (Personalization Settings: Category color section + narrative overrides bundled into saved themes). ThemeSettings gains a new 'Narrative Category Colors' section alongside Custom Colors and Severity Colors — seven ColorSwatchInput rows (Geopolitical / Monetary / Macro / Market Structure / Earnings / Supply Chain / Black Swan) that write through to the --narrative-* CSS variables on :root and persist to localStorage under fintheon:narrative-color-overrides (same store the in-canvas NarrativeColorKey popover uses, so the two surfaces stay in sync). A 'Reset categories' mini-link appears once any override exists. Save as Custom Theme now bundles the current narrative overrides into the saved theme under a new optional narrativeColors field on ThemeConfigWithNarrative; Reset to Default clears every narrative override along with base/font; activating a saved theme restores its bundled narrativeColors (or clears all overrides if the theme was saved without any). Hydration on mount re-applies any persisted overrides so the Settings panel always reflects the active palette. DEFERRED from the Track 6 wishlist: general-stripe swatch dropdown UX on primary/secondary/accent (needs a curated palette + ColorSwatchInput API change across all consumers) — standalone sprint.",
-    files: ["frontend/components/settings/ThemeSettings.tsx"],
-  },
-  {
-    date: "2026-04-20T01:15:00",
-    agent: "claude-code",
-    summary:
-      "Aquarium redesign sprint — Track 4b (backend CAO synthesis for Econ event cards). New POST /api/econ/synthesize accepts {tickers: string[], timeframe?: string} and returns, for each ticker, a CAO-generated description (2–3 sentences, what the data actually says), third-order thinking (1–2 sentences, second/third-order trader lens), a forecast direction ('beat' | 'miss' | null — populated only when the pattern is conclusive), a confidence score, and the recent prints array. Implemented in backend-hono/src/routes/econ/index.ts: assembles prompts from readEconHistory output, calls invokeAgent (Strands) with temperature 0.35 and maxTokens 380 per ticker, parses the JSON response, and falls back to a heuristic derivation (derived from beat/miss counts + latest direction) if the LLM call fails or returns empty — so the UI never shows a blank card. Forecast final-direction prefers the LLM call but backstops to the latest print's direction when the LLM returns null yet the latest print conclusively beat or missed. EconEventCard.tsx swapped from history-only derivation to calling /api/econ/synthesize first; previous history-only logic now lives as fallbackFromHistory and runs only when the synthesize endpoint is unreachable or returns empty. deriveDescription / deriveThirdOrder / deriveConfidence helpers retained in the component for that fallback path.",
-    files: [
-      "backend-hono/src/routes/econ/index.ts",
-      "backend-hono/src/routes/index.ts",
-      "frontend/components/narrative/econ/EconEventCard.tsx",
-    ],
-  },
-  {
-    date: "2026-04-20T00:45:00",
-    agent: "claude-code",
-    summary:
-      "Aquarium redesign sprint — Track 7b (Hermes context-injection audit badges + groupthink guard). HermesChatResponse now carries metadata.injections on every response: {feed, dossier, memoryBank, thoughtBank, reflect?} — each flag reports whether the corresponding prompt block was present and non-empty when the request was served. Computed once in handleHermesChat right after the prompt assembly and threaded into both the Harper CLI-provider return path and the OpenRouter fallback return path (local fallback still omits it since that path doesn't touch the prompt builders). New frontend component ContextInjectionBadge renders a 4-dot chip (F/D/M/T) next to the agent avatar on every ConsiliumMessage; each dot is green when its injection was present and red when missing, with a hover tooltip that spells out which blocks were ok/missing and nudges the user to rerun if unexpected. Mounted in ConsiliumMessage so every Hermes/Harper response in the Agentic Forum shows the audit inline — no secondary ops panel required. Groupthink guard: the MiroShark postProcessDeliberation contrarianTriggered flag is now forced to true on every run instead of only when convergence exceeds a threshold, so the CONTRARIAN dissent tag is mandatory on every deliberation. The lowest-confidence analyst's assessment gets the [CONTRARIAN] prefix with a reason string that differentiates a convergence-triggered contrarian from a mandatory dissent pass. Blind-then-reveal ordering is structurally enforced by the existing DAG wave isolation (wave 0 analysts finish before wave 1 Hermes subscribes to their outputs), so no code change is needed there — just a comment documenting the invariant.",
-    files: [
-      "backend-hono/src/services/hermes-handler.ts",
-      "backend-hono/src/services/agent-bus/templates/miroshark-template.ts",
-      "frontend/components/consilium/ContextInjectionBadge.tsx",
-      "frontend/components/consilium/ConsiliumMessage.tsx",
-    ],
-  },
-  {
-    date: "2026-04-20T00:10:00",
-    agent: "claude-code",
-    summary:
-      "Aquarium redesign sprint — Track 7a (Ops surface: last-run timer + brief countdown with error handling). New backend route GET /api/ops/schedule-status returns {miroshark: {lastRunAt, ageMinutes, status}, briefs: [{type, description, lastRunAt, nextRunAt, ageMinutes, countdownMinutes, status}]}. MiroShark status is derived from getLatestReport() (ok < 6h, ok-ish < 12h, stale otherwise). Brief statuses are computed per job — 'ok' when last run is within cadence, 'due-soon' when next run is < 30m out, 'stale' if the last run is more than 26h old (for daily briefs) or 7d+1h old (for the Weekly Tribune) beyond a 60m grace window, 'failed' when the dispatch scheduler isn't running, 'unknown' when no run has ever been recorded. Next-run timestamps are computed by walking 14 days forward from now and matching the cron's minute/hour + day-of-week field against America/New_York wall time using Intl.DateTimeFormat. New frontend component SanctumOpsChips polls the endpoint every 60s (plus a local 30s re-render tick so the 'N minutes ago' label stays fresh) and renders two compact chips next to the tabs in the SanctumHeader: (1) an Aquarium last-run chip with Activity icon, color-coded by staleness, Doto time value; (2) a brief countdown chip that shows the nearest upcoming brief (Clock icon + Doto countdown) — but when ANY brief is in 'failed' or 'stale' status that chip is replaced with a red AlertTriangle error badge showing the brief type and FAILED/STALE label. Exactly matches the user's spec: 'Briefs window needs a countdown til the next, with error handling replacing the countdown if the brief fails to generate'.",
-    files: [
-      "backend-hono/src/routes/ops/index.ts",
-      "backend-hono/src/routes/index.ts",
-      "frontend/components/narrative/SanctumOpsChips.tsx",
-      "frontend/components/narrative/SanctumHeader.tsx",
-    ],
-  },
-  {
-    date: "2026-04-19T23:30:00",
-    agent: "claude-code",
-    summary:
-      "Aquarium redesign sprint — Track 6 (Narrative Flow chat toggle + semantic narrative color tokens + bottom-right color key). The NarrativeCanvasChat input is now hidden by default — a new computer-chip (Cpu icon) action sits in the bottom toolbar's actions row and toggles the chat open. Send button swapped from the airplane Send icon to a gold ChevronUp matching every other Fintheon chat input. Image paste support added (clipboard image → auto-pinned as a chip alongside RiskFlow headline pins via a new localChips state). Escape now dismisses the chat and notifies the toolbar. Wispr Flow mic intentionally not added per spec. Narrative category colors moved off raw hex literals and onto CSS tokens (--narrative-geopolitical, --narrative-monetary, --narrative-macroeconomic, --narrative-market-structure, --narrative-earnings, --narrative-supply-chain, --narrative-black-swan) defined in index.css. The CATEGORY_COLORS map in narrative-force-layout.ts is now a Proxy that resolves each category through getComputedStyle — consumers keep the hex-string API but themes can repaint the entire map by overriding the CSS vars. Hex fallback values retained for SSR / pre-boot. New NarrativeColorKey component in the bottom-right corner of Narrative Flow shows a compact swatch strip with the seven narrative dot-colors; clicking opens a popover where each row has a swatch (clickable native color picker → updates the CSS var live), the resolved hex value, and a per-row reset button. All overrides persist to localStorage under fintheon:narrative-color-overrides and rehydrate on mount, surviving reloads. A 'Reset all' button in the popover header drops every override at once. DEFERRED: long-form Personalization Settings page work (general-stripe swatch dropdown UX on primary/secondary/accent, named saved-themes panel that bundles narrative + severity + priority + base palette) — those need a dedicated sprint and don't block this one.",
-    files: [
-      "frontend/index.css",
-      "frontend/lib/narrative-force-layout.ts",
-      "frontend/components/narrative/NarrativeCanvasChat.tsx",
-      "frontend/components/narrative/NarrativeFloatingToolbar.tsx",
-      "frontend/components/narrative/NarrativeColorKey.tsx",
-      "frontend/components/narrative/NarrativeMap.tsx",
-    ],
-  },
-  {
-    date: "2026-04-19T22:45:00",
-    agent: "claude-code",
-    summary:
-      "Aquarium redesign sprint — Track 5 (Risk & Narratives reflow). Risk Signals (RiskSignalCards) moved from under Agent Scorecards to the top-left of the Risk & Narratives page, which was its intended spot all along — a two-column flex row (Risk Signals | Active Narratives) separated by a fading vertical ruler replaces the old 50/50 grid. Live Risk Signals (SanctumRiskAssessment) was removed from the page entirely — the left column now carries the moved Risk Signals section and the duplicate is gone. SanctumNarratives was rebuilt: kanban-style per-card borders replaced by clean row separators with fading rulers, each row shows direction icon + title + category + instruments + status + date, plus two small fuses on the right — HEALTH (0–100) and the new CROWDING (0–10) axis. An Info-button toggle opens a Lexicon drawer explaining the Crowding bands (0–3 Contrarian, 4–6 Forming, 7–8 Crowded, 9–10 Washout-prone) with Doto band numbers and a one-line trading meaning each. Crowding is currently derived from health + instrument count until the backend surfaces a real score. PolymarketPredictionCards (the kanban-style tile grid under 'Prediction Markets & Polybot Trades') is gone from the Risk page; new ConsolidatedTradeLedger component takes its slot — one row per trade, columns Question/Side/Entry/Traction/Origin/Age with a traction fuse rather than per-card borders, age-collapse policy (rows older than 48h auto-fold into a STALE drawer unless traction ≥ 75 keeps them surfaced), Doto entry price + traction score, clickable row opens polymarket.com in a new tab. AgentScorecard kept on the page but without its bordered container; now lives under its own Agent Performance header, preceded by a fading horizontal ruler. PolymarketPredictionCards + SanctumRiskAssessment files still on disk but no longer imported anywhere (orphaned safely).",
-    files: [
-      "frontend/components/narrative/Sanctum.tsx",
-      "frontend/components/narrative/SanctumNarratives.tsx",
-      "frontend/components/narrative/ConsolidatedTradeLedger.tsx",
-    ],
-  },
-  {
-    date: "2026-04-19T22:00:00",
-    agent: "claude-code",
-    summary:
-      "Aquarium redesign sprint — Track 4a (Econ Intelligence scroll-lock page UI rebuild). Old sectioned-card page (Inflation Data / Jobs Data / Supply Chain with expandable CategoryScoreCards) replaced entirely with the new event-filter flow. Top of the page is a split header row: Econ Pulse fuses on the left (Inflation Pulse, Labor Pulse, Supply/Output — all vertically stacked with clear ECON PULSE heading, Doto numbers, coverage count) and Instruments fuses on the right (each instrument from /api/predictions/outlook rendered as one fuse per row, vertically stacked with clear INSTRUMENTS heading), separated by a fading vertical ruler. Middle: EconEventFilter dropdown (multi-select with hard cap of 4 events; each option shows category tag + sub-desc 'N releases collected · last X ago · next DATE'), a timespan pill row (1W/1M/3M/6M/1Y), and a Generate button. Bottom: progressive chevron event cards (EconEventCard) mount inside a scrollable container with staggered 120ms-per-card fade-in-and-up; each card shows ticker + category tag + name + sub-desc collapsed, expands on chevron to show CAO Synthesis block (description + third-order thinking, derived from existing econ-history data in 4a — real CAO synthesis lands in 4b), a Forecast chip that renders ONLY when the latest print conclusively beat or missed (not inline), per-print rows formatted as Date · Variant · [→] Previous · Forecast · Actual · Deviation (actuals in Doto, deviation priority-colored: green < 2% | amber 2-5% | red ≥ 5%), then a footer AI-synthesis confidence fuse (Nothing-Design bar with Doto %). Catalogue is seeded with 11 standard tickers (CPI/PPI/PCE, NFP/UNEMP/INIT/JOLTS, GDP/PMI/RETA/FOMC) and enriched on mount from /api/data/econ-calendar (next release date) + per-ticker /api/data/econ-history peek (release count + last seen date). The old SanctumEconIntel props (expanded/context/categoryScores) are kept for call-site compat but marked @deprecated and ignored. New directory: frontend/components/narrative/econ/ with EconKpiFuses, EconInstrumentFuses, EconEventFilter, EconEventCard.",
-    files: [
-      "frontend/components/narrative/econ/EconEventCard.tsx",
-      "frontend/components/narrative/econ/EconEventFilter.tsx",
-      "frontend/components/narrative/econ/EconKpiFuses.tsx",
-      "frontend/components/narrative/econ/EconInstrumentFuses.tsx",
-      "frontend/components/narrative/SanctumEconIntel.tsx",
-    ],
-  },
-  {
     date: "2026-04-19T21:15:00",
     agent: "claude-code",
     summary:
@@ -879,68 +760,6 @@ export const changelog: ChangelogEntry[] = [
     files: [
       "mobile/components/chat/ChatPage.tsx",
       "backend-hono/src/routes/relay.ts",
-    ],
-  },
-  {
-    date: "2026-04-19T19:00:00",
-    agent: "claude-code",
-    summary:
-      "Loopndroll → Refinement Engine: Routines Console + Mobile Superadmin. Wraps the 8 already-deployed Claude Code Routines (3 MOVE + 5 AUGMENT, see docs/routines.md) with loopndroll's four continuation modes — Infinite, Await Reply, Completion Checks, Max Turns — and the operator surface loopndroll provides via Codex Hooks: status chips, error handling, manual rerun, pause/resume, and human-in-the-loop approvals. Backend: new routine_config / routine_runs / routine_approvals tables (migration 20260420_routines_console.sql); registry of the 8 routines (services/routines/registry.ts) sourced from docs/routines.md; state-store with in-memory fallback; per-mode error policy (services/routines/error-handler.ts) — awaitReply blocks next run via routine_approvals row, completionChecks logs degraded, maxTurns locks + escalates after N failures in 24h; REST surface (/api/routines, /api/routines/:id, /api/routines/:id/mode|pause|rerun, /api/routines/approvals/pending, /api/routines/approvals/:id/{approve,deny}); existing harper-ops /feed POST extended so every routine entry also creates a routine_runs row and applies the configured mode policy (no parallel store — reuses writeOpsEntry + opsEmitter). Desktop: RoutinesConsole.tsx mounts as the first card on the Refinement Engine left panel with a status chip per routine (paused / await / failed / degraded / ok / idle), inline mode dropdown, pause/rerun buttons, and a detail modal showing recent run history + per-mode config + pending approvals. Mobile: useRoutineApprovals hook polls the pending queue, RoutineApprovalCard renders a slide-up sheet of large per-routine cards with Approve/Deny + collapsed raw payload view, MobileShell adds a third FAB (ShieldCheck icon, badge with count) that glows whenever approvals are pending — same bulletin-glow keyframe so it visually matches the existing FAB stack. Codex swap: deleted CODEX_MODEL / CODEX_MODEL_NAME from frontend/lib/FintheonModelCatalog.ts and updated the file header to credit Claude Code Routines as the autonomous backend driver. Boot wiring adds initRoutinesStore() alongside the tool-approval-store init. Source pattern: https://github.com/lnikell/loopndroll.",
-    files: [
-      "supabase/migrations/20260420_routines_console.sql",
-      "backend-hono/src/services/routines/registry.ts",
-      "backend-hono/src/services/routines/state-store.ts",
-      "backend-hono/src/services/routines/error-handler.ts",
-      "backend-hono/src/routes/routines/index.ts",
-      "backend-hono/src/routes/routines/handlers.ts",
-      "backend-hono/src/routes/index.ts",
-      "backend-hono/src/routes/harper-ops/index.ts",
-      "backend-hono/src/boot/services.ts",
-      "frontend/components/refinement/RoutinesConsole.tsx",
-      "frontend/components/refinement/RoutineDetailModal.tsx",
-      "frontend/components/refinement/RefinementEngine.tsx",
-      "frontend/lib/FintheonModelCatalog.ts",
-      "mobile/hooks/useRoutineApprovals.ts",
-      "mobile/components/routines/RoutineApprovalCard.tsx",
-      "mobile/components/layout/MobileShell.tsx",
-      "docs/routines.md",
-    ],
-  },
-  {
-    date: "2026-04-19T17:30:00",
-    agent: "claude-code",
-    summary:
-      "Aquarium redesign sprint — Track 3 (right-rail Sanctum drawer + Strategium footer-stub fix + Doto font on Aquarium KPIs). New SanctumSitemapDrawer component: a 4px hot zone on the screen-right edge that slides out a 240px navigation drawer when hovered (auto-hides 1.5s after the mouse leaves). Lists Sanctum's three subviews (Narrative Flow / Timeline / Aquarium) plus three nested Aquarium pages (Command / Econ / Risk) so users can deep-link from anywhere in Sanctum without going back to the top tab strip. Mounted in ConsiliumHub only when activeTab === 'sanctum'. Cross-component navigation uses a window CustomEvent ('fintheon:aquarium-scroll-to') that Sanctum.tsx listens for and routes through its existing scrollToPage handler — keeps Sanctum's internal page state self-contained. Strategium footer-stub fix: when in feedOnly pane mode (RiskFlow takes the whole right rail) and the user collapses the feed, the entire pane used to disappear with no way back; now (a) the chevron-down handler in feedOnly explicitly sets riskFlowCollapsed=true instead of toggling silently, (b) the StrategiumPeekBar footer renders whenever the feed is hidden (widgetsOnly OR feedOnly+collapsed), (c) restoring from the peek does the right thing for either mode. Doto (Nothing Design display font) now wraps the Aquarium KPI numbers — SIGNAL/REGIME/HEAT fuse values in DeliberationFuses, Blended IV Score, and Next Session Forecast score — with hard-coded inline font-family so the look stays static regardless of which theme is active. Bumped Blended IV from text-sm to text-base and Next Session Forecast from text-lg to text-xl since Doto's wider glyphs needed the polish.",
-    files: [
-      "frontend/components/layout/SanctumSitemapDrawer.tsx",
-      "frontend/components/consilium/ConsiliumHub.tsx",
-      "frontend/components/narrative/Sanctum.tsx",
-      "frontend/components/layout/MainLayout.tsx",
-      "frontend/components/miroshark/MiroSharkDebatePanel.tsx",
-      "frontend/components/narrative/BlendedVIXCard.tsx",
-      "frontend/components/narrative/NextSessionForecastCard.tsx",
-    ],
-  },
-  {
-    date: "2026-04-19T20:30:00",
-    agent: "claude-code",
-    summary:
-      "Aquarium redesign sprint — Track 2 (chart button swap). The Chart button on the top bar used to render the TradingView widget-embed (s.tradingview.com/widgetembed) inside a sandbox'd iframe with a projection canvas drawn on top — that was the 'Lightweight Charts' look TP kept complaining about, plus the forecast image overlay they wanted gone. Replaced it with the exact same surface the Trading Browser already uses: EmbeddedBrowserFrame pointed at https://www.tradingview.com/chart/?symbol=X. In Electron that means a <webview> with persist:fintheon partition and native popups (so TradingView login state persists across sessions); in the browser it falls back to a permissively-sandboxed <iframe>. Symbol mapping unchanged (/MNQ→QQQ, /ES→SPX, /GC→GC1!, etc). Removed the entire projection overlay pipeline: canvas ref, ResizeObserver, tvLoaded state, drawProjectionOverlay, generateProjectionPath, getThemeColor — the forecast image is completely gone. SanctumChart still accepts the old props (timeSeries/compositeIV/confidence/etc) so Sanctum.tsx's call site doesn't have to change; they're marked @deprecated and ignored. Per TP: 'I don't want you to modify anything else about that part' — behavior of the Chart button itself (Consilium top-bar toggle → 50/50 split with Aquarium stack on the left) is untouched.",
-    files: ["frontend/components/narrative/SanctumChart.tsx"],
-  },
-  {
-    date: "2026-04-19T20:00:00",
-    agent: "claude-code",
-    summary:
-      "Aquarium redesign sprint — Track 1 (visual foundation). Renamed top tab strip from 'Full Brief / Chart Focus / Econ Watch / Risk Scan' to 'Command / Econ / Risk / 5D' (chart-focus still exists as a preset id but is no longer rendered — the Chart button in the top bar owns that mode). Removed the duplicate '5d window' text pill in SanctumHeader since it's now inside the tab strip. Deleted the Market Heat / Regime Risk / Signal Strength KPI cards entirely — those metrics now live only as three SIGNAL / REGIME / HEAT fuses pinned to the bottom of the MiroShark Deliberation panel with 16px bottom padding so they no longer kiss the frame edge. Stripped the outer border off the brief-pattern top container in Command; the two halves (Volatility Read on the left, Deliberation + fuses on the right) are now separated only by a fading vertical ruler (accent gold → transparent at top+bottom, 18% opacity center). Fused the /NQ /ES /YM /CL /GC instrument cards into a single continuous row — per-card borders gone, replaced by fading vertical rulers between each instrument. Removed the Risk Sector 'IV by Category' fuse cards from the Econ Intelligence page (they duplicated the new Agent Desk fuses); SanctumEconIntel.categoryScores prop kept for call-site compat but unused until Track 4 repurposes the page. Added data-aquarium-viewport-lock attribute on the Sanctum root for the ≥1440px viewport-lock CSS to hook into next pass. Also simplified the chart-mode left rail by dropping the KPI row mount there.",
-    files: [
-      "frontend/types/miroshark.ts",
-      "frontend/components/narrative/SanctumPresets.tsx",
-      "frontend/components/narrative/SanctumHeader.tsx",
-      "frontend/components/narrative/Sanctum.tsx",
-      "frontend/components/narrative/AquariumPredictionCards.tsx",
-      "frontend/components/narrative/SanctumEconIntel.tsx",
-      "frontend/components/miroshark/MiroSharkDebatePanel.tsx",
     ],
   },
   {
