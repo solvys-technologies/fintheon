@@ -107,9 +107,10 @@ export interface PageHandle {
   release: () => Promise<void>;
 }
 
-export async function acquirePage(
-  opts?: { userAgent?: string; viewport?: { width: number; height: number } },
-): Promise<PageHandle> {
+export async function acquirePage(opts?: {
+  userAgent?: string;
+  viewport?: { width: number; height: number };
+}): Promise<PageHandle> {
   await waitForSlot();
   const browser = await launchBrowser();
 
@@ -148,7 +149,9 @@ export async function acquirePage(
     }
 
     try {
-      await pooledEntry.page.goto("about:blank", { timeout: 2000 }).catch(() => {});
+      await pooledEntry.page
+        .goto("about:blank", { timeout: 2000 })
+        .catch(() => {});
     } catch {
       await prunePage(pooledEntry);
     }

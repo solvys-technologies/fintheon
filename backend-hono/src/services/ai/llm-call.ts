@@ -12,7 +12,12 @@
 //     invoke: async (rule) => { ... call provider ... return { text, input_tokens, output_tokens } },
 //   });
 
-import { selectModel, type AgentId, type TaskType, type RoutingRule } from "./routing.js";
+import {
+  selectModel,
+  type AgentId,
+  type TaskType,
+  type RoutingRule,
+} from "./routing.js";
 import { getSupabaseClient } from "../../config/supabase.js";
 
 export interface LlmCallArgs<T> {
@@ -43,7 +48,8 @@ function computeCost(
   input_tokens?: number,
   output_tokens?: number,
 ): number {
-  const inCost = ((input_tokens ?? 0) / 1_000_000) * rule.cost_per_mtoken_in_usd;
+  const inCost =
+    ((input_tokens ?? 0) / 1_000_000) * rule.cost_per_mtoken_in_usd;
   const outCost =
     ((output_tokens ?? 0) / 1_000_000) * rule.cost_per_mtoken_out_usd;
   return Number((inCost + outCost).toFixed(6));

@@ -13,7 +13,8 @@ import { z } from "zod";
 // ─── Connection constants ────────────────────────────────────────────────────
 
 export const SIDECAR_PORT_LOCAL = 8318;
-export const SIDECAR_URL_LOCAL = `http://localhost:${SIDECAR_PORT_LOCAL}` as const;
+export const SIDECAR_URL_LOCAL =
+  `http://localhost:${SIDECAR_PORT_LOCAL}` as const;
 
 export const SIDECAR_HEADERS = {
   AUTH: "Authorization", // Bearer INTERNAL_HERMES_JWT
@@ -229,7 +230,11 @@ export const ContextToolResponseSchema = z.object({
 });
 export type ContextToolResponse = z.infer<typeof ContextToolResponseSchema>;
 
-export const LCM_CONTEXT_TOOLS = ["lcm_grep", "lcm_describe", "lcm_expand"] as const;
+export const LCM_CONTEXT_TOOLS = [
+  "lcm_grep",
+  "lcm_describe",
+  "lcm_expand",
+] as const;
 export type LcmContextTool = (typeof LCM_CONTEXT_TOOLS)[number];
 
 // ─── /v1/voice/stt ───────────────────────────────────────────────────────────

@@ -9,6 +9,33 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T14:00:00",
+    agent: "claude-code",
+    summary:
+      "S27 mid-sprint checkpoint (Claude-01 orchestrator). All 4 Wave 1 branches merged into v5.22 in dependency order: W1a (s27-w1a-schema → 5e584fdd, tag v.27.1), W1b (s27-w1b-sidecar → 6961a589, tag v.27.2), W1c (s27-w1c-browser → 4a936f42, tag v.27.3), W1d (s27-w1d-soul-routing → 849808d2, tag v.27.4). Conflicts resolved on src/lib/changelog.ts (kept all entries chronologically), shared/sidecar-contract.ts (kept W1a's richer superset version — AgentIdSchema, SIDECAR_HEADERS/ROUTES constants, discriminated ChatEvent, LCM_CONTEXT_TOOLS — required by harper-cards AgentHandoff variant), and hermes-sidecar/README.md (unified W1b layout tree + W1d SOUL mount doc). Post-merge verification: backend-hono bun run build clean (tsc + copy-assets), frontend tsc --noEmit clean, frontend clean vite build clean (3.36s), soul-ground-check.ts PASS (5 SOUL files grounded cleanly on CLAUDE.md), /api/diagnostics 200, /api/diagnostics/headline-volume mounts correctly on manual dist boot (returns 500 until Supabase migration 20260419_02_sources.sql applied — deferred to TP). All 5 Wave 2 branches (s27-w2a..w2e) fast-forwarded to v5.22 HEAD 849808d2 — foundations available. Contract stability gates ALL GREEN: harper-cards/skill-manifest/plugin-manifest/sidecar-contract (W1a), sidecar-client + hermes-sidecar FastAPI tree (W1b), browser pool/allowlist/harness + Rettiwt cut + headline telemetry (W1c), SOUL schema + 5 agents + loader + drift guard + routing table + llm-call (W1d). Wave 2 CLEARED to launch. Outstanding for TP: supabase db push for 20260419_02 + 20260419_04 migrations, sync of stale ~/Desktop/Codebases/fintheon launchd checkout, origin/v5.22 divergence (12 ahead / 2 diverged — rebase-or-merge call), fintheon-hermes Fly app creation (first fly deploy deferred to approval). Hermes rollback flag HERMES_SIDECAR_ENABLED=false default preserved. Formatter/linter autofixes on merged files included in this commit (prettier normalized line breaks in shared/* + backend-hono/src/services/ai/* + backend-hono/src/services/browser/*).",
+    files: [
+      "src/lib/changelog.ts",
+      "memory/s27-orchestrator-state.md",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/services/ai/agent-instructions/feucht-extra.md",
+      "backend-hono/src/services/ai/agent-instructions/harper-extra.md",
+      "backend-hono/src/services/ai/agent-instructions/herald-extra.md",
+      "backend-hono/src/services/ai/agent-instructions/oracle-extra.md",
+      "backend-hono/src/services/ai/llm-call.ts",
+      "backend-hono/src/services/ai/sidecar-client.ts",
+      "backend-hono/src/services/browser/allowlist.ts",
+      "backend-hono/src/services/browser/harness.ts",
+      "backend-hono/src/services/browser/index.ts",
+      "backend-hono/src/services/browser/pool.ts",
+      "hermes-sidecar/README.md",
+      "hermes-sidecar/hermes_sidecar/app.py",
+      "hermes-sidecar/hermes_sidecar/runtime.py",
+      "shared/harper-cards.ts",
+      "shared/sidecar-contract.ts",
+      "shared/skill-manifest.ts",
+    ],
+  },
+  {
     date: "2026-04-20T04:30:00",
     agent: "claude-code",
     summary:

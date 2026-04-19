@@ -38,9 +38,7 @@ export async function takeScreenshot(
     });
 
     const buf = options?.selector
-      ? await handle.page
-          .locator(options.selector)
-          .screenshot({ type: "png" })
+      ? await handle.page.locator(options.selector).screenshot({ type: "png" })
       : await handle.page.screenshot({
           type: "png",
           fullPage: options?.fullPage ?? true,

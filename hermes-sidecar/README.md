@@ -47,6 +47,7 @@ uv run python entrypoint.py
 ```
 
 launchd:
+
 ```bash
 ln -s "$PWD/launchd/io.solvys.fintheon-hermes.plist" ~/Library/LaunchAgents/io.solvys.fintheon-hermes.plist
 launchctl load -w ~/Library/LaunchAgents/io.solvys.fintheon-hermes.plist
@@ -55,17 +56,17 @@ curl http://localhost:8318/healthz
 
 ## HTTP Contract (see S27-T2 §2 for canonical reference)
 
-| Method | Path | Notes |
-| --- | --- | --- |
-| GET  | `/healthz` | Public. Returns version + plugins loaded. |
-| POST | `/v1/chat` | SSE stream. JWT required. |
-| POST | `/v1/context/ingest` | JWT required. Returns 204. |
-| GET/POST | `/v1/context/view` | JWT required. |
-| POST | `/v1/context/tools/:tool` | `lcm_grep`, `lcm_describe`, `lcm_expand`, etc. |
-| POST | `/v1/voice/{stt,tts}` | Returns 501 until Claude-08 (W2c) lands T5. |
-| GET  | `/v1/skills` | Returns registry from `config.yaml` (T10 populates). |
-| POST | `/v1/skills/invoke` | Returns 501 until Claude-10 (W2e) lands T10. |
-| POST | `/v1/routing/select` | JWT required. Reads `config.yaml` routing map. |
+| Method   | Path                      | Notes                                                |
+| -------- | ------------------------- | ---------------------------------------------------- |
+| GET      | `/healthz`                | Public. Returns version + plugins loaded.            |
+| POST     | `/v1/chat`                | SSE stream. JWT required.                            |
+| POST     | `/v1/context/ingest`      | JWT required. Returns 204.                           |
+| GET/POST | `/v1/context/view`        | JWT required.                                        |
+| POST     | `/v1/context/tools/:tool` | `lcm_grep`, `lcm_describe`, `lcm_expand`, etc.       |
+| POST     | `/v1/voice/{stt,tts}`     | Returns 501 until Claude-08 (W2c) lands T5.          |
+| GET      | `/v1/skills`              | Returns registry from `config.yaml` (T10 populates). |
+| POST     | `/v1/skills/invoke`       | Returns 501 until Claude-10 (W2e) lands T10.         |
+| POST     | `/v1/routing/select`      | JWT required. Reads `config.yaml` routing map.       |
 
 ## Upstream runtime
 

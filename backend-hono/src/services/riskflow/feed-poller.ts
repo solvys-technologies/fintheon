@@ -52,9 +52,7 @@ const manualRefresh = async (): Promise<FeedItem[]> => [];
 const rettiwtUserTimeline = async (
   _handle: string,
   _opts: { count: number },
-): Promise<
-  Array<{ text: string; url?: string; publishedDate?: string }>
-> => [];
+): Promise<Array<{ text: string; url?: string; publishedDate?: string }>> => [];
 
 /** Convert a FeedItem to a RawRiskFlowItem for the raw_riskflow_items inbox */
 function feedItemToRaw(item: FeedItem): RawRiskFlowItem {

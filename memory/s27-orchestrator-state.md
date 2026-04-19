@@ -5,8 +5,61 @@ Persistent state for the S27 orchestrator. Survives process crashes across three
 ## Current Checkpoint
 
 - [x] **KICKOFF** — 2026-04-20T04:30 ET (Claude-01)
-- [ ] **MID-SPRINT** — gate Wave 1 merges, greenlight Wave 2
+- [x] **MID-SPRINT** — 2026-04-20T14:00 ET. Wave 1 merged clean (v.27.1..v.27.4). Wave 2 fast-forwarded. Cleared to launch.
 - [ ] **FINAL SANITATION** — integration QA, v.27.10 release
+
+## Mid-Sprint Results
+
+| Branch               | Commit   | Tag    | Merge commit | Conflicts resolved                                                   |
+| -------------------- | -------- | ------ | ------------ | -------------------------------------------------------------------- |
+| s27-w1a-schema       | 0d00538e | v.27.1 | 5e584fdd     | changelog.ts                                                         |
+| s27-w1b-sidecar      | dd27bdb0 | v.27.2 | 6961a589     | changelog.ts; shared/sidecar-contract.ts (kept W1a's richer version) |
+| s27-w1c-browser      | 6fdb586b | v.27.3 | 4a936f42     | changelog.ts                                                         |
+| s27-w1d-soul-routing | dab41e71 | v.27.4 | 849808d2     | changelog.ts; hermes-sidecar/README.md (unified layouts + SOUL)      |
+
+**v5.22 HEAD**: `849808d2`
+
+**Post-merge verification**:
+
+- `cd backend-hono && bun run build` → clean (tsc + copy-assets)
+- `cd frontend && npx tsc --noEmit` → clean
+- `cd frontend && find dist -mindepth 1 -delete && npx vite build` → ✓ built in 3.36s
+- `bun run scripts/soul-ground-check.ts` → PASS (5 SOUL files grounded cleanly on CLAUDE.md)
+- `/api/diagnostics` → 200 (via launchd, which reads the separate `~/Desktop/Codebases/fintheon` checkout and serves stale dist — normal)
+- `/api/diagnostics/headline-volume` → confirmed mounts correctly via manual `bun dist/index.js` from the merged tree (returned 500 as expected because the `v_headline_volume_48h` Supabase view isn't deployed yet — migration `20260419_02_sources.sql` awaits `supabase db push`). Launchd unit is reading a separate checkout and serves 404 until TP syncs it.
+
+## Contract Stability (mid-sprint gate — all GREEN ✅)
+
+| Contract                                                     | Owner   | Status at v5.22 HEAD                                                                                                                                   |
+| ------------------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `shared/harper-cards.ts` + fence tokens                      | W1a     | ✅ Full Zod discriminated union for 6 variants + CARD_FENCE_OPEN/CLOSE + parser                                                                        |
+| `shared/sidecar-contract.ts` HTTP contract                   | W1a     | ✅ W1a's richer version retained (AgentIdSchema, discriminated ChatEvent, LCM)                                                                         |
+| `shared/skill-manifest.ts` + `shared/plugin-manifest.ts`     | W1a     | ✅ agentskills.io manifest + Hermes v0.9 plugin.yaml schemas populated                                                                                 |
+| `backend-hono/src/services/ai/sidecar-client.ts`             | W1b     | ✅ Real typed HTTP client with SSE parser + JWT + isSidecarEnabled gate                                                                                |
+| `hermes-sidecar/` Python FastAPI tree                        | W1b     | ✅ uv pyproject, launchd plist, Fly toml, Docker, auth, models, runtime adapter                                                                        |
+| `backend-hono/src/services/browser/{pool,allowlist,harness}` | W1c     | ✅ Pool + allowlist tiers + self-healing harness + circuit breaker + audit                                                                             |
+| Supabase migrations (sources, gepa_metrics)                  | W1c+W1d | ✅ `20260419_02_sources.sql` + `20260419_04_gepa_metrics.sql` committed — NOT YET APPLIED. Run `supabase db push` before Wave 2 W2d/W2e runtime smoke. |
+| SOUL.md files (5 agents) + loader + drift guard              | W1d     | ✅ All 5 agents grounded on CLAUDE.md; loader fail-fast; drift guard PASS                                                                              |
+| `backend-hono/src/services/ai/routing.ts` + `llm-call.ts`    | W1d     | ✅ ROUTING_TABLE populated; selectModel + env overrides; routing_decisions writer                                                                      |
+
+## Wave 2 Branches (fast-forwarded)
+
+All 5 Wave 2 branches are now at `849808d2` (v5.22 HEAD) via fast-forward. Foundations available to each:
+
+| Claude    | Branch                     | Depends on      | Unblocked |
+| --------- | -------------------------- | --------------- | --------- |
+| Claude-06 | `s27-w2a-cards-ui`         | W1a + W1d SOUL  | ✅ yes    |
+| Claude-07 | `s27-w2b-context-handoff`  | W1a + W1b + W1d | ✅ yes    |
+| Claude-08 | `s27-w2c-voice`            | W1b + W1d       | ✅ yes    |
+| Claude-09 | `s27-w2d-browser-ops`      | W1c             | ✅ yes    |
+| Claude-10 | `s27-w2e-routing-hub-gepa` | W1b + W1d       | ✅ yes    |
+
+## Outstanding Items for TP
+
+- **Supabase migrations not yet applied** — `20260419_02_sources.sql` (W1c sources + quotas) and `20260419_04_gepa_metrics.sql` (W1d routing telemetry). Run `supabase db push` against prod + local when TP approves. Wave 2 W2d runtime smoke (`/api/diagnostics/headline-volume`) + W2e routing_decisions row writes will return empty/500 until applied.
+- **`~/Desktop/Codebases/fintheon` checkout** (launchd backend runs from here) is stale. `git pull` from that directory to sync v5.22 HEAD + rebuild dist + reload launchd if TP wants `/api/diagnostics/headline-volume` + SOUL-prompted Harper to serve locally.
+- **`origin/v5.22` divergence** — local v5.22 has 12 commits ahead; origin has 2 commits (`8720d72c INSTALL-UPDATE env vars` + `90af0085 auto checkpoint`) that weren't pulled pre-kickoff. Not pushing; left for TP to decide rebase-or-merge strategy.
+- **Hermes Fly app `fintheon-hermes` not yet created** — W1b deferred first `fly deploy` to TP approval. No-op locally (rollback flag `HERMES_SIDECAR_ENABLED=false` default).
 
 ## Repo Anchor
 

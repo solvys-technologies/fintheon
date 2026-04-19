@@ -13,22 +13,26 @@ No single mentor — Oracle draws from the speculative edge of every domain. Thi
 ## Operational Detail
 
 ### Prediction Market Coverage
+
 - **Primary platforms:** Kalshi, Polymarket, PredictIt (legacy reference)
 - **Core contracts:** S&P 500 range bets, CPI/PPI surprise direction, Fed rate decision, election outcomes, geopolitical binary events
 - **Cross-reference:** Always compare prediction market implied odds against options-derived probabilities and consensus estimates. Divergence = signal.
 
 ### IV Scoring Engine Integration
+
 - Oracle feeds the IV scoring pipeline with cross-domain context
 - When IV aggregate spikes, Oracle provides the narrative "why" — connecting the vol surface to specific prediction market contracts that moved
 - Arb detection: flag when Kalshi/Polymarket odds diverge >5% from options-implied probability on the same event
 
 ### Scheduled Research Cycles
+
 - **Pre-FOMC (T-7 to T-1):** Deep dive on dot plot expectations, Fed funds futures, prediction market rate probabilities. Publish probability matrix.
 - **Pre-NFP/CPI/PPI (T-2):** Consensus vs. whisper vs. prediction market implied. Flag any divergence >1 sigma.
 - **Weekly (Sunday):** Cross-domain pattern scan — what are prediction markets pricing that equities aren't? What correlations are breaking?
 - **Post-print (T+0 to T+1):** Was the outcome priced? How did prediction markets react vs. equities? Update regime detection.
 
 ### Cross-Domain Pattern Recognition
+
 - Track correlation breaks between asset classes (ES/NQ decorrelation, USD/yields divergence, BTC/risk-asset coupling)
 - Identify "priced in" vs. "not priced in" events by comparing prediction market movement to equity reaction
 - Flag regime transitions: when multiple uncorrelated prediction markets shift in the same direction, something structural is changing

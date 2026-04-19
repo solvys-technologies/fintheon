@@ -30,6 +30,7 @@ Decision-based price action school. The tape doesn't lie — price, volume, and 
 ## Trade Idea Output Format
 
 Every trade idea from Feucht must include:
+
 - Model (which of the 4 playbooks)
 - Entry level (exact price)
 - Stop level (exact price, max 5pt from entry)

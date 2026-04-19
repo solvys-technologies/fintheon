@@ -142,12 +142,23 @@ export function getBreakerSnapshot(): Record<
 
 // ── HTML cleaner (reuses the agent-reach stripping approach) ──────────────
 
-const STRIP_TAGS = ["script", "style", "nav", "footer", "header", "noscript", "aside"];
+const STRIP_TAGS = [
+  "script",
+  "style",
+  "nav",
+  "footer",
+  "header",
+  "noscript",
+  "aside",
+];
 
 function stripHtmlTags(html: string): string {
   let out = html;
   for (const tag of STRIP_TAGS) {
-    out = out.replace(new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, "gi"), "");
+    out = out.replace(
+      new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, "gi"),
+      "",
+    );
   }
   return out;
 }
@@ -303,7 +314,10 @@ export async function browseRead<T = unknown>(
     });
     status = response?.status() ?? null;
 
-    if (status !== null && (status === 403 || status === 429 || status >= 500)) {
+    if (
+      status !== null &&
+      (status === 403 || status === 429 || status >= 500)
+    ) {
       failureReason = `http_${status}`;
       recordFailure(domain, failureReason);
       throw new Error(`HTTP ${status}: ${opts.url}`);
@@ -386,7 +400,8 @@ export async function browseRead<T = unknown>(
       cost_usd: costUsd,
     };
   } catch (err) {
-    failureReason = failureReason ?? (err instanceof Error ? err.message : String(err));
+    failureReason =
+      failureReason ?? (err instanceof Error ? err.message : String(err));
     recordFailure(domain, failureReason);
     await writeAudit({
       domain,

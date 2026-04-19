@@ -420,12 +420,14 @@ export function createDiagnosticsRoutes(): Hono {
   // Rettiwt → browser-harness migration in riskflow_items source tags.
   router.get("/headline-volume", async (c) => {
     try {
-      const { getSupabaseClient } = await import(
-        "../../config/supabase.js"
-      );
+      const { getSupabaseClient } = await import("../../config/supabase.js");
       const sb = getSupabaseClient();
       if (!sb) {
-        return c.json({ window: "48h", sources: [], reason: "supabase_unconfigured" });
+        return c.json({
+          window: "48h",
+          sources: [],
+          reason: "supabase_unconfigured",
+        });
       }
       const { data, error } = await sb
         .from("v_headline_volume_48h")
@@ -449,10 +451,7 @@ export function createDiagnosticsRoutes(): Hono {
         browser: { pool, quotas, breaker },
       });
     } catch (err) {
-      return c.json(
-        { window: "48h", sources: [], error: String(err) },
-        500,
-      );
+      return c.json({ window: "48h", sources: [], error: String(err) }, 500);
     }
   });
 

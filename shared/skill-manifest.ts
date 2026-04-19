@@ -40,7 +40,9 @@ export const SkillSecurityScanSchema = z.object({
   prompt_injection_vectors: z.array(z.string()).default([]),
   destructive_ops: z.array(z.string()).default([]),
 });
-export type SkillSecurityScanDeclaration = z.infer<typeof SkillSecurityScanSchema>;
+export type SkillSecurityScanDeclaration = z.infer<
+  typeof SkillSecurityScanSchema
+>;
 
 // ─── Manifest ─────────────────────────────────────────────────────────────────
 

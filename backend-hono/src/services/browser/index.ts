@@ -20,10 +20,7 @@ export {
   hostname,
   incrementQuota,
 } from "./allowlist.js";
-export type {
-  BrowserAllowlistEntry,
-  BrowserAllowTier,
-} from "./allowlist.js";
+export type { BrowserAllowlistEntry, BrowserAllowTier } from "./allowlist.js";
 
 export {
   browseRead,

@@ -169,9 +169,7 @@ export function HeadlineVolumeWidget() {
           {sources.map((row) => {
             const label = SOURCE_LABEL[row.source] ?? row.source;
             const pct =
-              total > 0
-                ? Math.round(((row.headlines ?? 0) / total) * 100)
-                : 0;
+              total > 0 ? Math.round(((row.headlines ?? 0) / total) * 100) : 0;
             const spark = Array.from(
               { length: 8 },
               (_, i) => ((row.headlines ?? 0) * (i + 1)) / 8,

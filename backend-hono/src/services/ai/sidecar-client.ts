@@ -105,12 +105,16 @@ function getJwt(): string {
 
 class SidecarDisabledError extends Error {
   constructor() {
-    super("sidecar disabled via HERMES_SIDECAR_ENABLED=false — caller should fall back");
+    super(
+      "sidecar disabled via HERMES_SIDECAR_ENABLED=false — caller should fall back",
+    );
     this.name = "SidecarDisabledError";
   }
 }
 
-export function isSidecarDisabledError(err: unknown): err is SidecarDisabledError {
+export function isSidecarDisabledError(
+  err: unknown,
+): err is SidecarDisabledError {
   return err instanceof Error && err.name === "SidecarDisabledError";
 }
 
@@ -120,7 +124,9 @@ function assertEnabled(): void {
 
 function authHeaders(): Record<string, string> {
   const jwt = getJwt();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
   return headers;
 }
@@ -143,7 +149,9 @@ async function jsonRequest<T>(
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`sidecar ${init.method ?? "GET"} ${path} failed: ${res.status} ${body}`);
+    throw new Error(
+      `sidecar ${init.method ?? "GET"} ${path} failed: ${res.status} ${body}`,
+    );
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -151,7 +159,9 @@ async function jsonRequest<T>(
 
 // ── SSE parsing for /v1/chat ──────────────────────────────────────────────
 
-async function* parseSse(body: ReadableStream<Uint8Array>): AsyncGenerator<ChatEvent> {
+async function* parseSse(
+  body: ReadableStream<Uint8Array>,
+): AsyncGenerator<ChatEvent> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -173,7 +183,10 @@ async function* parseSse(body: ReadableStream<Uint8Array>): AsyncGenerator<ChatE
           const parsed = JSON.parse(dataStr) as ChatEvent;
           yield parsed;
         } catch (err) {
-          log.warn("sse parse failed", { preview: dataStr.slice(0, 120), error: String(err) });
+          log.warn("sse parse failed", {
+            preview: dataStr.slice(0, 120),
+            error: String(err),
+          });
         }
       }
       boundary = buffer.indexOf("\n\n");
@@ -211,13 +224,19 @@ export const sidecarClient = {
   },
 
   context: {
-    async ingest(conversation_id: string, turn: ConversationTurn): Promise<void> {
+    async ingest(
+      conversation_id: string,
+      turn: ConversationTurn,
+    ): Promise<void> {
       await jsonRequest<void>("/v1/context/ingest", {
         method: "POST",
         body: JSON.stringify({ conversation_id, turn }),
       });
     },
-    async view(conversation_id: string, budget_tokens = 120000): Promise<ContextView> {
+    async view(
+      conversation_id: string,
+      budget_tokens = 120000,
+    ): Promise<ContextView> {
       return jsonRequest<ContextView>("/v1/context/view", {
         method: "GET",
         query: { conversation_id, budget_tokens },
@@ -238,12 +257,16 @@ export const sidecarClient = {
 
   voice: {
     async stt(args: { audio_bytes: string; lang?: string }) {
-      return jsonRequest<{ transcript: string; words: { word: string; start: number; end: number }[] }>(
-        "/v1/voice/stt",
-        { method: "POST", body: JSON.stringify(args) },
-      );
+      return jsonRequest<{
+        transcript: string;
+        words: { word: string; start: number; end: number }[];
+      }>("/v1/voice/stt", { method: "POST", body: JSON.stringify(args) });
     },
-    async tts(args: { text: string; voice_id: string; stream?: boolean }): Promise<ArrayBuffer> {
+    async tts(args: {
+      text: string;
+      voice_id: string;
+      stream?: boolean;
+    }): Promise<ArrayBuffer> {
       assertEnabled();
       const base = getSidecarBaseUrl();
       const res = await fetch(new URL("/v1/voice/tts", base), {
@@ -251,7 +274,8 @@ export const sidecarClient = {
         headers: authHeaders(),
         body: JSON.stringify(args),
       });
-      if (!res.ok) throw new Error(`sidecar /v1/voice/tts failed: ${res.status}`);
+      if (!res.ok)
+        throw new Error(`sidecar /v1/voice/tts failed: ${res.status}`);
       return res.arrayBuffer();
     },
   },

@@ -32,7 +32,11 @@ export type CardVariant = z.infer<typeof CardVariantSchema>;
 // ─── Variant: price-level ─────────────────────────────────────────────────────
 // Feucht / futures desk output. Symbol + ordered levels around current price.
 
-export const PriceLevelTypeSchema = z.enum(["support", "resistance", "trigger"]);
+export const PriceLevelTypeSchema = z.enum([
+  "support",
+  "resistance",
+  "trigger",
+]);
 
 export const PriceLevelRowSchema = z.object({
   label: z.string(),
@@ -174,7 +178,12 @@ export type NarrativeThreadData = z.infer<typeof NarrativeThreadDataSchema>;
 
 export type CardParseResult =
   | { ok: true; card: HarperCard }
-  | { ok: false; reason: "invalid-json" | "schema-mismatch"; raw: string; issues?: string[] };
+  | {
+      ok: false;
+      reason: "invalid-json" | "schema-mismatch";
+      raw: string;
+      issues?: string[];
+    };
 
 export function parseCardPayload(raw: string): CardParseResult {
   let json: unknown;
@@ -189,7 +198,9 @@ export function parseCardPayload(raw: string): CardParseResult {
       ok: false,
       reason: "schema-mismatch",
       raw,
-      issues: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`),
+      issues: parsed.error.issues.map(
+        (i) => `${i.path.join(".")}: ${i.message}`,
+      ),
     };
   }
   return { ok: true, card: parsed.data };

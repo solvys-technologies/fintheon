@@ -29,9 +29,7 @@ export const BROWSER_ALLOWLIST: BrowserAllowlistEntry[] = [
   { domain: "ft.com", tier: "news", dailyQuota: 100 },
 ];
 
-const allowlistByDomain = new Map(
-  BROWSER_ALLOWLIST.map((e) => [e.domain, e]),
-);
+const allowlistByDomain = new Map(BROWSER_ALLOWLIST.map((e) => [e.domain, e]));
 
 export function hostname(url: string): string {
   try {
@@ -123,10 +121,12 @@ export async function incrementQuota(url: string): Promise<void> {
   const sb = getSupabaseClient();
   if (!sb) return;
   try {
-    await sb.from("browser_quota_ledger").upsert(
-      { domain: entry.domain, day: counter.day, fetches: counter.count },
-      { onConflict: "domain,day" },
-    );
+    await sb
+      .from("browser_quota_ledger")
+      .upsert(
+        { domain: entry.domain, day: counter.day, fetches: counter.count },
+        { onConflict: "domain,day" },
+      );
   } catch (err) {
     log.warn("Quota ledger upsert failed (in-memory still incremented)", {
       domain: entry.domain,

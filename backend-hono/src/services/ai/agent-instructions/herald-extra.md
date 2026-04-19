@@ -23,6 +23,7 @@ Howard Marks (second-level thinking, "who doesn't know that?"), Warren Buffett (
 ## Risk Check Format
 
 Every trade idea reviewed by Herald receives:
+
 - **Risk Score** — 1-10 (1 = minimal concern, 10 = do not proceed)
 - **Flags** — Specific risk factors identified (concentration, timing, correlation, sizing, conviction gap)
 - **Recommendation** — PROCEED / REDUCE SIZE / RECONSIDER
