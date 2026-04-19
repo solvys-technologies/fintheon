@@ -16,6 +16,7 @@ import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { useAuth } from "../../contexts/AuthContext";
 import { haptic } from "../../lib/haptics";
+import { useNotificationModal } from "../../contexts/NotificationModalContext";
 import {
   colorForSeverity,
   type FuseSeverity,
@@ -97,6 +98,7 @@ export function NotificationDrawer({
   markAllRead,
 }: Props) {
   const { getAccessToken } = useAuth();
+  const { open: openDetail } = useNotificationModal();
   const [decided, setDecided] = useState<Record<string, "approved" | "denied">>(
     {},
   );
@@ -115,9 +117,52 @@ export function NotificationDrawer({
 
   const hasUnread = notifications.some((n) => !n.read);
 
+  // [v5.22 S2] Drawer rows used to do `window.location.href = n.url` which dropped the
+  // user on the dash for catalyst/riskflow URLs. Now we parse the URL and open the
+  // matching DetailSheet via the modal context — keeping push-tap and drawer-tap on the
+  // same code path. Falls back to navigation for URLs we don't have a modal for.
   const onItemTap = async (n: NotificationItem) => {
     if (!n.read) await markRead([n.id]);
-    if (n.url) {
+    if (!n.url) return;
+
+    let routed = false;
+    try {
+      const parsed = new URL(n.url, window.location.origin);
+      const path = parsed.pathname;
+
+      const approvalMatch = path.match(/^\/apparatus\/approvals\/([^/]+)/);
+      if (approvalMatch) {
+        openDetail({ kind: "toolApproval", approvalId: approvalMatch[1] });
+        routed = true;
+      } else if (path.startsWith("/maintenance/")) {
+        const id = path.split("/")[2];
+        if (id) {
+          openDetail({ kind: "maintenanceRequest", requestId: id });
+          routed = true;
+        }
+      } else if (path === "/riskflow") {
+        const itemId = parsed.searchParams.get("item");
+        if (itemId) {
+          openDetail({ kind: "riskflowItem", itemId });
+          routed = true;
+        }
+      } else {
+        const catalystMatch = path.match(/^\/narrative\/catalyst\/([^/]+)/);
+        if (catalystMatch) {
+          openDetail({ kind: "catalyst", catalystId: catalystMatch[1] });
+          routed = true;
+        } else if (path === "/briefing" || path === "/briefing/") {
+          openDetail({ kind: "dailyBrief" });
+          routed = true;
+        }
+      }
+    } catch {
+      // malformed URL — fall through to nav fallback
+    }
+
+    if (routed) {
+      onClose();
+    } else {
       window.location.href = n.url;
       onClose();
     }

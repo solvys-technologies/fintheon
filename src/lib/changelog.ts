@@ -9,6 +9,28 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T01:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.22 S2 (mobile) — TP audit fixes + cross-platform settings sync + MiroShark→Agent Desk rename. Chat: assistant message now inserts on first text-delta (no more hollow thinking bubble per TP); per-user-message status caption (sending → sent → error); 12s no-stream watchdog (HARPER SILENT — CHECK DESKTOP RELAY) without closing the stream; DEV console.debug for unknown SSE event types; thinking-indicator gate widened to cover the lazy-insert window. ChatInput: caret alignment fix (verticalAlign top, boxSizing border-box, explicit minHeight, useLayoutEffect on mount, caretColor accent). HomePage: AGENTIC DESK → AGENT DESK label; hero ticker IV/VIX/IMPLIED labels share one baseline (alignItems flex-start + lineHeight 1). Fuses: nothing-fuse-shimmer keyframe (4.2s, 76%-100% dwell, reduced-motion guard) added to mobile/index.css; IVFuseBar/VerticalFuseBar/HomePage IVSubScores/NotificationDrawer/RiskFlowCard now route color through colorForSeverity/colorForScore from mobile/lib/fuse-palette and use opaque var(--fintheon-surface) tracks with the shimmer overlay. Catalyst tap: NotificationDrawer.onItemTap now dispatches catalyst/riskflow/maintenance/briefing URLs through useNotificationModal instead of window.location.href, so drawer taps open the DetailSheet (matches push-tap). MiroShark rename: useMirosharkLatest → useAgentDeskLatest (file + export + types + cache key); AGENTIC DESK label + miroshark prop → agentDesk; AquariumSummary import updated. /api/miroshark/* URL kept (S1 maintains backend alias); ivData.mirosharkComponent backend response field kept (no-op for client). Settings sync: SettingsContext additively fetches /api/preferences on mount and polls every 30s; setPreferences PUTs the shared UserPreferences shape; theme bridges both directions through ThemeContext (mobile picker → /api/preferences PUT; remote poll detects desktop theme change → ThemeContext.setTheme). Falls back silently to DEFAULT_PREFERENCES if S1 hasn't deployed /api/preferences yet — no feature flag, no blocking. SettingToggle gained a readOnly variant with a SET FROM DESKTOP caption for desktop-authoritative fields. tsc clean, vite build clean.",
+    files: [
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/ChatMessage.tsx",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/home/HomePage.tsx",
+      "mobile/components/home/AquariumSummary.tsx",
+      "mobile/components/shared/IVFuseBar.tsx",
+      "mobile/components/shared/VerticalFuseBar.tsx",
+      "mobile/components/notifications/NotificationDrawer.tsx",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/settings/SettingToggle.tsx",
+      "mobile/contexts/SettingsContext.tsx",
+      "mobile/hooks/useAgentDeskLatest.ts",
+      "mobile/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-04-19T23:15:00",
     agent: "claude-code",
     summary:

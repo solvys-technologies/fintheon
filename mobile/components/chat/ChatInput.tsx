@@ -1,13 +1,28 @@
+// [claude-code 2026-04-18] v5.22 S2: caret-alignment fix per TP screenshot. The textarea
+//   was rendering its caret at the content-box origin (top-left) on focus while the
+//   placeholder painted lower because the scrollHeight measurement on empty content was
+//   smaller than the padded content area. Fix: explicit verticalAlign + boxSizing +
+//   minHeight matching one padded line, an explicit caretColor, and a useLayoutEffect
+//   that sizes the textarea once before first paint.
 // [claude-code 2026-04-18] PWA polish: textarea font-size 14→16 to prevent iOS auto-zoom on focus,
 // hit-target upgrade (34×34 → 44×44 min) per iOS HIG, native form autofill hints, buttonized focus
 // ring, rising composer animation, and an IME-composition guard on Enter to match desktop.
 // [claude-code 2026-04-16] Chat input — matches desktop theme: gradient box, accent border, inline toolbar
-import { useState, useRef, useCallback, type KeyboardEvent } from "react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  useLayoutEffect,
+  type KeyboardEvent,
+} from "react";
 import { ArrowUp, Plus, Newspaper } from "lucide-react";
 import { ImagePreviewRow } from "./ImagePreviewRow";
 import { HeadlineChips, formatHeadlineContext } from "./HeadlineChips";
 import type { HeadlineChip } from "./HeadlineChips";
 import { HeadlinePickerSheet } from "./HeadlinePickerSheet";
+
+/** One padded text line: top padding + bottom padding + (fontSize × lineHeight). */
+const TEXTAREA_MIN_HEIGHT = 14 + 6 + 16 * 1.45;
 
 interface ChatInputProps {
   onSend: (
@@ -62,8 +77,15 @@ export default function ChatInput({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+    el.style.height = `${Math.max(TEXTAREA_MIN_HEIGHT, Math.min(el.scrollHeight, 96))}px`;
   }, []);
+
+  // Size the textarea once on mount so the caret doesn't render against an
+  // un-measured content-box on the first focus (TP's "caret floating in the
+  // top-left" screenshot). Layout effect runs synchronously before paint.
+  useLayoutEffect(() => {
+    handleInput();
+  }, [handleInput]);
 
   const handleToggleChip = useCallback((chip: HeadlineChip) => {
     setHeadlineChips((prev) => {
@@ -173,10 +195,16 @@ export default function ChatInput({
             fontFamily: "var(--font-body)",
             fontSize: 16,
             color: "var(--text-primary)",
+            caretColor: "var(--accent, #c79f4a)",
             lineHeight: 1.45,
+            minHeight: TEXTAREA_MIN_HEIGHT,
             maxHeight: 132,
             overflow: "auto",
             padding: "14px 18px 6px",
+            verticalAlign: "top",
+            boxSizing: "border-box",
+            textAlign: "start",
+            writingMode: "horizontal-tb",
             WebkitUserSelect: "text",
           }}
         />
