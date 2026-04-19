@@ -1,3 +1,12 @@
+// [claude-code 2026-04-18] v5.22 S2: TP saw a hollow "thinking bubble" appear before any
+// text streamed. Root cause: ChatPage pre-created the assistant message with content:""
+// at send-time, and ChatMessage renders the bubble chrome unconditionally. Fix: defer the
+// assistant insert until the first text-delta (or until an error event arrives first, in
+// which case we insert a minimal assistant with the error text). The thinking indicator
+// now gates on "last message is user" OR "last assistant is empty".
+// Also: per-user-message delivery status (sending → sent → error) caption + a 12s no-stream
+// watchdog ("HARPER SILENT — CHECK DESKTOP RELAY") so silence has a visible cause. The stream
+// stays open through the watchdog so late events still paint.
 // [claude-code 2026-04-18] SSE parser now handles `error` and `finish(finishReason=error)` events.
 // Previously only text-delta / tool_use / tool-approval-* were handled — so when the backend
 // emitted an error event (Strands mid-stream failure, relay local_offline, etc), mobile silently
@@ -204,23 +213,54 @@ export default function ChatPage({ visible }: ChatPageProps) {
     ) => {
       if (isLoading) return;
 
+      const userId = `user-${Date.now()}`;
       const userMsg: ChatMessageData = {
-        id: `user-${Date.now()}`,
+        id: userId,
         role: "user",
         content: text,
         timestamp: new Date().toISOString(),
+        status: "sending",
       };
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
 
       const assistantId = `harper-${Date.now()}`;
-      const assistantMsg: ChatMessageData = {
-        id: assistantId,
-        role: "assistant",
-        content: "",
-        timestamp: new Date().toISOString(),
+      let assistantInserted = false;
+      let eventCount = 0;
+      let watchdog: ReturnType<typeof setTimeout> | null = null;
+
+      // Lazy assistant insert — fires on first text-delta (or first error frame)
+      // so a hollow bubble never paints when the backend stays silent.
+      const ensureAssistant = (initialContent: string) => {
+        if (assistantInserted) return;
+        assistantInserted = true;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: assistantId,
+            role: "assistant",
+            content: initialContent,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+
+      const setUserStatus = (
+        status: "sending" | "sent" | "error",
+        silentHint?: string,
+      ) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === userId
+              ? {
+                  ...m,
+                  status,
+                  ...(silentHint !== undefined ? { silentHint } : {}),
+                }
+              : m,
+          ),
+        );
+      };
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -252,16 +292,21 @@ export default function ChatPage({ visible }: ChatPageProps) {
           const err = await res
             .json()
             .catch(() => ({ error: "Request failed" }));
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId
-                ? { ...m, content: `[ERROR: ${err.error || res.statusText}]` }
-                : m,
-            ),
-          );
+          setUserStatus("error");
+          ensureAssistant(`[ERROR: ${err.error || res.statusText}]`);
           setIsLoading(false);
           return;
         }
+
+        setUserStatus("sent");
+
+        // 12s no-stream watchdog — surface a visible reason for silence without
+        // closing the stream, so late events still paint into a fresh bubble.
+        watchdog = setTimeout(() => {
+          if (eventCount === 0) {
+            setUserStatus("sent", "HARPER SILENT — CHECK DESKTOP RELAY");
+          }
+        }, 12_000);
 
         // Capture conversation ID from response
         const respConvId = res.headers.get("X-Conversation-Id");
@@ -289,15 +334,20 @@ export default function ChatPage({ visible }: ChatPageProps) {
 
             try {
               const event = JSON.parse(payload);
+              eventCount += 1;
               if (event.type === "text-delta" && event.delta) {
                 setActiveToolCall(null);
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId
-                      ? { ...m, content: m.content + event.delta }
-                      : m,
-                  ),
-                );
+                if (!assistantInserted) {
+                  ensureAssistant(event.delta);
+                } else {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantId
+                        ? { ...m, content: m.content + event.delta }
+                        : m,
+                    ),
+                  );
+                }
               } else if (
                 event.type === "tool_use" ||
                 event.type === "tool-use"
@@ -330,33 +380,45 @@ export default function ChatPage({ visible }: ChatPageProps) {
                 const errText =
                   event.errorText || event.error || "Unknown error";
                 setActiveToolCall(null);
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId
-                      ? {
-                          ...m,
-                          content: m.content
-                            ? `${m.content}\n\n[ERROR: ${errText}]`
-                            : `[ERROR: ${errText}]`,
-                        }
-                      : m,
-                  ),
-                );
+                setUserStatus("error");
+                if (!assistantInserted) {
+                  ensureAssistant(`[ERROR: ${errText}]`);
+                } else {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantId
+                        ? {
+                            ...m,
+                            content: m.content
+                              ? `${m.content}\n\n[ERROR: ${errText}]`
+                              : `[ERROR: ${errText}]`,
+                          }
+                        : m,
+                    ),
+                  );
+                }
               } else if (
                 event.type === "finish" &&
                 event.finishReason === "error"
               ) {
                 // Stream ended in error but no explicit error event fired — fall back.
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId && m.content === ""
-                      ? {
-                          ...m,
-                          content: "[ERROR: Harper failed — no response]",
-                        }
-                      : m,
-                  ),
-                );
+                setUserStatus("error");
+                if (!assistantInserted) {
+                  ensureAssistant("[ERROR: Harper failed — no response]");
+                } else {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantId && m.content === ""
+                        ? {
+                            ...m,
+                            content: "[ERROR: Harper failed — no response]",
+                          }
+                        : m,
+                    ),
+                  );
+                }
+              } else if (import.meta.env.DEV) {
+                console.debug("[harper-sse] unknown event", event);
               }
             } catch {
               // Skip non-JSON lines (heartbeats, comments)
@@ -387,20 +449,26 @@ export default function ChatPage({ visible }: ChatPageProps) {
             // Recovery failed — show error
           }
         }
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? { ...m, content: "[ERROR: CONNECTION LOST]" }
-              : m,
-          ),
-        );
+        setUserStatus("error");
+        if (!assistantInserted) {
+          ensureAssistant("[ERROR: CONNECTION LOST]");
+        } else {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: "[ERROR: CONNECTION LOST]" }
+                : m,
+            ),
+          );
+        }
       } finally {
+        if (watchdog) clearTimeout(watchdog);
         setIsLoading(false);
         setActiveToolCall(null);
         abortRef.current = null;
       }
     },
-    [isLoading, getAccessToken],
+    [isLoading, getAccessToken, settings.traderName, addApproval, resolveFromEvent],
   );
 
   const isOffline = relayState === "offline";
@@ -564,13 +632,17 @@ export default function ChatPage({ visible }: ChatPageProps) {
           <ChatMessage key={msg.id} message={msg} />
         ))}
 
-        {/* Thinking indicator — shows during streaming when content is empty */}
+        {/* Thinking indicator — shows during streaming until either an assistant
+            message is inserted (first text-delta) or the existing assistant bubble
+            picks up content. The last-msg-is-user case covers the new lazy-insert
+            window where Harper hasn't sent a delta yet. */}
         <ThinkingIndicator
           isThinking={
             isLoading &&
             messages.length > 0 &&
-            messages[messages.length - 1].role === "assistant" &&
-            messages[messages.length - 1].content === ""
+            (messages[messages.length - 1].role === "user" ||
+              (messages[messages.length - 1].role === "assistant" &&
+                messages[messages.length - 1].content === ""))
           }
         />
 

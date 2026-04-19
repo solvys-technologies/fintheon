@@ -1,3 +1,6 @@
+// [claude-code 2026-04-18] v5.22 S2: severity color now resolved through
+//   colorForSeverity from mobile/lib/fuse-palette so user-preferences fusePalette
+//   overrides apply uniformly. Card geometry + drain choreography unchanged.
 // [claude-code 2026-04-19] S26-P2 T10: IV fuse drain choreography per TP — "this cool
 //   micro interaction that kind of depletes the IV gauge on the left and then fills it
 //   down in the footer when it expands." On tap: drain the vertical fuse to 0 over
@@ -20,6 +23,10 @@ import { SwipeAction } from "../shared/SwipeAction";
 import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import { useNotificationModal } from "../../contexts/NotificationModalContext";
 import { CARD_PRESS } from "../../lib/sheet-motion";
+import {
+  colorForSeverity,
+  type FuseSeverity,
+} from "../../lib/fuse-palette";
 
 /** How long the drain takes — covers the staggered top-down segment fade. Keep this
  *  in sync with VerticalFuseBar's `transitionDelay` formula (segments × 18ms + 150ms buffer). */
@@ -31,12 +38,11 @@ interface RiskFlowCardProps {
   index?: number;
 }
 
-const SEVERITY_COLORS: Record<AlertSeverity, string> = {
-  critical: "var(--fintheon-severe)",
-  high: "var(--fintheon-severe)",
-  medium: "var(--fintheon-neutral-severe)",
-  low: "var(--fintheon-neutral)",
-};
+/** AlertSeverity is the same critical/high/medium/low set as the palette's FuseSeverity
+ *  minus "neutral" — narrower union, so the cast through paletteSeverity is sound. */
+function paletteSeverity(sev: AlertSeverity): FuseSeverity {
+  return sev as FuseSeverity;
+}
 
 function formatSource(source: string): string {
   const map: Record<string, string> = {
@@ -82,7 +88,7 @@ export function RiskFlowCard({
   const vibrate = useHaptic();
   const { open } = useNotificationModal();
   const [draining, setDraining] = useState(false);
-  const severityColor = SEVERITY_COLORS[alert.severity];
+  const severityColor = colorForSeverity(paletteSeverity(alert.severity));
   const ivScore = alert.ivScore ?? 0;
 
   // Strip "backend-" prefix so modal matches feed-service item ids (id="tweet_id")

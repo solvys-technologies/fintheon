@@ -1,10 +1,19 @@
+// [claude-code 2026-04-18] v5.22 S2: Nothing-Design flatten + shared palette adoption +
+//   4.2s shimmer. Track is opaque var(--fintheon-surface), no accent border, no inner
+//   glow on the fill. Color resolves through colorForSeverity from mobile/lib/fuse-palette
+//   so user-preferences fusePalette overrides flow through later (when S1 ships).
 // [claude-code 2026-04-19] S25: horizontal IV fuse — severity-sensitive color ramp, number
 //   right-justified on the same row. Fill animates in from 0 on mount for a subtle "charge"
 //   feel. The IV number springs in from 0.6 opacity so it reads as "settled" after the fill.
-//   Palette via CSS vars so theme mode flips still work.
 import { motion } from "framer-motion";
+import {
+  colorForSeverity,
+  type FuseSeverity as PaletteSeverity,
+} from "../../lib/fuse-palette";
 
-export type FuseSeverity = "low" | "medium" | "high" | "critical";
+/** Local subset re-exported for legacy call-sites. Palette accepts the wider union
+ *  ("neutral") but mobile UI never sets it, so this narrower set keeps callers honest. */
+export type FuseSeverity = Exclude<PaletteSeverity, "neutral">;
 
 interface Props {
   /** Normalized to 0-100 for fill percent. RiskFlow scores are 0-10; we × 10 here. */
@@ -17,19 +26,6 @@ interface Props {
   display?: string;
   /** 10-scale (default) renders "8.4"; 100-scale renders "84". */
   scale?: "10" | "100";
-}
-
-function severityColor(sev: FuseSeverity): string {
-  switch (sev) {
-    case "critical":
-      return "var(--error, #d84f4f)";
-    case "high":
-      return "var(--warning, #f0b055)";
-    case "medium":
-      return "var(--accent, #c79f4a)";
-    default:
-      return "var(--text-secondary, #b8b09c)";
-  }
 }
 
 export function IVFuseBar({
@@ -45,7 +41,7 @@ export function IVFuseBar({
       ? Math.max(0, Math.min(100, (safeIv / 10) * 100))
       : Math.max(0, Math.min(100, safeIv));
 
-  const color = severityColor(severity);
+  const color = colorForSeverity(severity);
   const displayValue =
     display ??
     (scale === "10" ? safeIv.toFixed(1) : Math.round(safeIv).toString());
@@ -89,14 +85,12 @@ export function IVFuseBar({
         </motion.span>
       </div>
 
-      {/* Fuse — accent-bordered track, severity-colored fill */}
+      {/* Nothing-Design fuse — opaque surface track, severity fill, slow shimmer overlay */}
       <div
         style={{
           height: 4,
           borderRadius: 2,
-          background: "color-mix(in srgb, var(--accent) 8%, transparent)",
-          border:
-            "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
+          background: "var(--fintheon-surface, #0a0a00)",
           overflow: "hidden",
           position: "relative",
         }}
@@ -109,10 +103,9 @@ export function IVFuseBar({
             height: "100%",
             background: color,
             borderRadius: 2,
-            // Subtle inner glow along the fill edge — TP glass aesthetic
-            boxShadow: `0 0 10px color-mix(in srgb, ${color} 45%, transparent)`,
           }}
         />
+        <span className="nothing-fuse-shimmer" aria-hidden="true" />
       </div>
     </div>
   );

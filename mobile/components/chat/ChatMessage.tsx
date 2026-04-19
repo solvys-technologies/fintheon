@@ -1,3 +1,7 @@
+// [claude-code 2026-04-18] v5.22 S2: per-user-message delivery status. Status flips
+//   sending → sent on res.ok, sending/sent → error on transport errors. Renders as a
+//   plain-text caption under the user bubble (FROM DESKTOP badge style — no glyphs,
+//   no checkmark, no sparkle). silentHint carries the 12s no-stream watchdog string.
 // [claude-code 2026-04-16] T7: React.memo wrapper for streaming perf
 // [claude-code 2026-04-15] T6: Chat message bubble — markdown rendering, agent badge, streaming-ready
 
@@ -7,12 +11,33 @@ import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
 import AgentBadge from "./AgentBadge";
 
+export type ChatMessageStatus = "sending" | "sent" | "error";
+
 export interface ChatMessageData {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: string;
+  /** Delivery status for user messages. Undefined for assistant messages and for
+   *  user messages from completed/loaded conversations (no live send to track). */
+  status?: ChatMessageStatus;
+  /** Optional caption rendered alongside the status — used by the no-stream watchdog
+   *  (e.g. "HARPER SILENT — CHECK DESKTOP RELAY") so the stream stays open while the
+   *  user is told nothing has come back yet. */
+  silentHint?: string;
 }
+
+const STATUS_LABEL: Record<ChatMessageStatus, string> = {
+  sending: "\u2026",
+  sent: "SENT",
+  error: "FAILED",
+};
+
+const STATUS_COLOR: Record<ChatMessageStatus, string> = {
+  sending: "var(--text-disabled)",
+  sent: "var(--accent, #c79f4a)",
+  error: "var(--error)",
+};
 
 interface ChatMessageProps {
   message: ChatMessageData;
@@ -163,6 +188,41 @@ function ChatMessageInner({ message }: ChatMessageProps) {
         >
           {formatTime(message.timestamp)}
         </span>
+        {isUser && message.status && (
+          <span
+            aria-live="polite"
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 8,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: STATUS_COLOR[message.status],
+              alignSelf: "flex-end",
+              paddingRight: 4,
+              lineHeight: 1,
+            }}
+          >
+            {STATUS_LABEL[message.status]}
+          </span>
+        )}
+        {isUser && message.silentHint && (
+          <span
+            role="status"
+            style={{
+              fontFamily: "var(--font-data)",
+              fontSize: 8,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "var(--warning, #d4a843)",
+              alignSelf: "flex-end",
+              paddingRight: 4,
+              lineHeight: 1.2,
+              maxWidth: "100%",
+            }}
+          >
+            {message.silentHint}
+          </span>
+        )}
       </div>
     </motion.div>
   );

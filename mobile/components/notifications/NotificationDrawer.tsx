@@ -1,3 +1,6 @@
+// [claude-code 2026-04-18] v5.22 S2: severity color now resolved through
+//   colorForSeverity from mobile/lib/fuse-palette so user-preferences fusePalette
+//   overrides apply uniformly across mobile fuses.
 // [claude-code 2026-04-19] S26-P1 T7: haptic feedback on approve (success buzz) /
 //   deny (deny buzz). Respects the global hapticEnabled setting via the module gate.
 // [claude-code 2026-04-19] Notification cards redesigned in RiskFlow's mobile shape —
@@ -13,6 +16,11 @@ import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { useAuth } from "../../contexts/AuthContext";
 import { haptic } from "../../lib/haptics";
+import { useNotificationModal } from "../../contexts/NotificationModalContext";
+import {
+  colorForSeverity,
+  type FuseSeverity,
+} from "../../lib/fuse-palette";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -62,17 +70,11 @@ function timeLabel(iso: string): string {
   });
 }
 
-function severityColor(sev: NotificationItem["severity"]): string {
-  switch (sev) {
-    case "critical":
-      return "var(--error, #d84f4f)";
-    case "high":
-      return "var(--accent)";
-    case "medium":
-      return "var(--text-secondary)";
-    default:
-      return "var(--text-secondary)";
-  }
+/** Coerce the notification's severity onto the shared palette enum. The notification
+ *  feed only emits critical/high/medium/low so the cast is safe; "neutral" never
+ *  arrives here. */
+function paletteSeverity(sev: NotificationItem["severity"]): FuseSeverity {
+  return sev as FuseSeverity;
 }
 
 function severityScore(sev: NotificationItem["severity"]): number {
@@ -96,6 +98,7 @@ export function NotificationDrawer({
   markAllRead,
 }: Props) {
   const { getAccessToken } = useAuth();
+  const { open: openDetail } = useNotificationModal();
   const [decided, setDecided] = useState<Record<string, "approved" | "denied">>(
     {},
   );
@@ -114,9 +117,52 @@ export function NotificationDrawer({
 
   const hasUnread = notifications.some((n) => !n.read);
 
+  // [v5.22 S2] Drawer rows used to do `window.location.href = n.url` which dropped the
+  // user on the dash for catalyst/riskflow URLs. Now we parse the URL and open the
+  // matching DetailSheet via the modal context — keeping push-tap and drawer-tap on the
+  // same code path. Falls back to navigation for URLs we don't have a modal for.
   const onItemTap = async (n: NotificationItem) => {
     if (!n.read) await markRead([n.id]);
-    if (n.url) {
+    if (!n.url) return;
+
+    let routed = false;
+    try {
+      const parsed = new URL(n.url, window.location.origin);
+      const path = parsed.pathname;
+
+      const approvalMatch = path.match(/^\/apparatus\/approvals\/([^/]+)/);
+      if (approvalMatch) {
+        openDetail({ kind: "toolApproval", approvalId: approvalMatch[1] });
+        routed = true;
+      } else if (path.startsWith("/maintenance/")) {
+        const id = path.split("/")[2];
+        if (id) {
+          openDetail({ kind: "maintenanceRequest", requestId: id });
+          routed = true;
+        }
+      } else if (path === "/riskflow") {
+        const itemId = parsed.searchParams.get("item");
+        if (itemId) {
+          openDetail({ kind: "riskflowItem", itemId });
+          routed = true;
+        }
+      } else {
+        const catalystMatch = path.match(/^\/narrative\/catalyst\/([^/]+)/);
+        if (catalystMatch) {
+          openDetail({ kind: "catalyst", catalystId: catalystMatch[1] });
+          routed = true;
+        } else if (path === "/briefing" || path === "/briefing/") {
+          openDetail({ kind: "dailyBrief" });
+          routed = true;
+        }
+      }
+    } catch {
+      // malformed URL — fall through to nav fallback
+    }
+
+    if (routed) {
+      onClose();
+    } else {
       window.location.href = n.url;
       onClose();
     }
@@ -225,7 +271,7 @@ export function NotificationDrawer({
               {items.map((n) => {
                 const isApproval = APPROVAL_CATEGORIES.has(n.category);
                 const status = decided[n.id];
-                const sevColor = severityColor(n.severity);
+                const sevColor = colorForSeverity(paletteSeverity(n.severity));
                 const fuseValue = severityScore(n.severity);
                 return (
                   <div

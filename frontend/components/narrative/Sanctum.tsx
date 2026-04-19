@@ -1,7 +1,3 @@
-// [claude-code 2026-04-19] S26 followup: killed NextSessionForecastCard per TP ("wipe
-//   that forecast line off the face of the planet"). Right pane of the top container
-//   in non-chart mode now embeds pricedinresearch.io/fintheon as an iFrame instead of
-//   the MiroShark Deliberation panel. Deliberation still available in Imperium.
 // [claude-code 2026-04-17] S23-T1: Aquarium restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
 // [claude-code 2026-04-16] Sanctum — full-border severity on Risk Signals containers, solvys-feels polish
 // [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
@@ -29,11 +25,10 @@ import { AgentScorecard } from "../consilium/AgentScorecard";
 import { AquariumPredictionCards } from "./AquariumPredictionCards";
 import { PolymarketPredictionCards } from "./PolymarketPredictionCards";
 import { BlendedVIXCard } from "./BlendedVIXCard";
-// NextSessionForecastCard removed per TP — forecast heuristic was too noisy to read.
+import { NextSessionForecastCard } from "./NextSessionForecastCard";
 import { RiskSignalCards } from "./RiskSignalCards";
 import { useIVScoreData } from "./useIVScoreData";
-// MiroSharkDebatePanel retired from the Aquarium top container — lives in Imperium.
-// Right pane now hosts the pricedinresearch.io/fintheon iFrame instead.
+import { MiroSharkDebatePanel } from "../miroshark/MiroSharkDebatePanel";
 
 interface CatalystInput {
   id: string;
@@ -299,6 +294,10 @@ export function Sanctum({
                       />
                     )}
                     <BlendedVIXCard data={ivData} isLoading={ivLoading} />
+                    <NextSessionForecastCard
+                      data={ivData}
+                      isLoading={ivLoading}
+                    />
                     <AquariumPredictionCards />
                   </div>
                   <div className="min-h-[60vh] xl:min-h-0 rounded-xl border border-[var(--fintheon-accent)]/12 overflow-hidden">
@@ -315,13 +314,10 @@ export function Sanctum({
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col gap-4">
-                  {/* Brief-pattern top container — Volatility Read left (55%),
-                      Priced in Research site iFrame right (45%). Replaces the old
-                      MiroShark Deliberation embed. The iFrame is sandboxed so it
-                      can't navigate the parent frame. */}
+                  {/* Brief-pattern top container — IV+Forecast left (55%), Deliberation right (45%) */}
                   <div className="min-h-[520px] flex">
                     <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
-                      {/* Left: Blended IV (55%) */}
+                      {/* Left: Blended IV + Next Session Forecast (55%) */}
                       <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
                         <div className="flex items-center gap-2">
                           <span
@@ -335,6 +331,10 @@ export function Sanctum({
                           )}
                         </div>
                         <BlendedVIXCard data={ivData} isLoading={ivLoading} />
+                        <NextSessionForecastCard
+                          data={ivData}
+                          isLoading={ivLoading}
+                        />
                       </div>
 
                       {/* Needle divider — matches Dashboard brief pattern */}
@@ -349,31 +349,11 @@ export function Sanctum({
                         />
                       </div>
 
-                      {/* Right: pricedinresearch.io/fintheon iFrame (45%) */}
+                      {/* Right: MiroShark Deliberation (45%) */}
                       <div className="flex-[45] min-w-0 min-h-0 flex flex-col">
-                        <div className="px-4 py-2 shrink-0 border-b border-[var(--fintheon-border)]/10 flex items-center justify-between">
-                          <span
-                            className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
-                            style={{ fontFamily: "var(--font-heading)" }}
-                          >
-                            Priced In Research
-                          </span>
-                          <a
-                            href="https://pricedinresearch.io/fintheon"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] transition-colors"
-                          >
-                            Open →
-                          </a>
-                        </div>
-                        <iframe
-                          src="https://pricedinresearch.io/fintheon"
-                          title="Priced In Research — Fintheon"
-                          loading="lazy"
-                          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          className="flex-1 w-full border-0 bg-transparent"
+                        <MiroSharkDebatePanel
+                          simulationId={data?.simulationId ?? null}
+                          onSynthesisComplete={onSynthesisComplete}
                         />
                       </div>
                     </div>

@@ -1,3 +1,11 @@
+// [claude-code 2026-04-18] v5.22 S2: cross-platform settings sync. Adds a parallel
+//   /api/preferences fetch + 30s poll for the shared UserPreferences contract (theme,
+//   delivery-window notifications, traderName, fusePalette overrides). The existing
+//   /api/settings flow (mobile-specific category toggles + alertConfig + selectedSymbol)
+//   stays intact — the two endpoints carry different concerns. Theme bridges through
+//   ThemeContext both ways: mobile theme change → PUT /api/preferences; remote theme
+//   change from poll → ThemeContext.setTheme. If S1 hasn't deployed /api/preferences yet,
+//   the fetch silently no-ops (404) and the app falls back to local defaults.
 // [claude-code 2026-04-19] S26-P1 T6: removed caoName + riskSettings per TP — mobile
 //   trader section is identity-only now. Desktop stays authoritative for both fields.
 // [claude-code 2026-04-19] TP beta polish: drop the 800ms auto-save debounce. Changes
@@ -16,9 +24,17 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "./AuthContext";
+import { useTheme } from "./ThemeContext";
 import { setHapticsEnabled } from "../lib/haptics";
+import {
+  DEFAULT_PREFERENCES,
+  PREFERENCES_API_PATH,
+  type UserPreferences,
+  type ThemeMode,
+} from "../lib/user-preferences";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
+const PREFERENCES_POLL_MS = 30_000;
 
 // ── Types ──
 
@@ -65,6 +81,13 @@ interface SettingsContextValue {
   isDirty: boolean;
   isSaving: boolean;
   saveAll: () => Promise<void>;
+  /** [v5.22 S2] Cross-platform UserPreferences mirror. Theme + notifications + traderName
+   *  + fusePalette overrides. Read from /api/preferences, polled every 30s. Mobile writes
+   *  notifications + theme (per TP — "all personalization should work like this"). */
+  preferences: UserPreferences;
+  /** Optimistically applies the patch locally + PUTs /api/preferences. Silent on failure
+   *  so the UI stays responsive even when S1 backend is unavailable. */
+  setPreferences: (partial: Partial<UserPreferences>) => Promise<void>;
 }
 
 // ── Defaults ──
@@ -158,6 +181,40 @@ async function saveBackendSettings(
   } catch {}
 }
 
+// ── /api/preferences shared contract (v5.22 S2) ──
+
+async function fetchBackendPreferences(
+  token: string | null,
+): Promise<UserPreferences | null> {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE}${PREFERENCES_API_PATH}`, { headers });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { preferences?: UserPreferences };
+    return data?.preferences ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveBackendPreferences(
+  preferences: UserPreferences,
+  token: string | null,
+): Promise<void> {
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    await fetch(`${API_BASE}${PREFERENCES_API_PATH}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ preferences }),
+    });
+  } catch {}
+}
+
 // ── Context ──
 
 const SettingsContext = createContext<SettingsContextValue | undefined>(
@@ -166,12 +223,19 @@ const SettingsContext = createContext<SettingsContextValue | undefined>(
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const { getAccessToken, isAuthenticated } = useAuth();
+  const { theme, setTheme, allThemes } = useTheme();
   const [settings, setSettings] = useState<MobileSettings>(loadSettings);
   const [synced, setSynced] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [preferences, setPreferencesState] =
+    useState<UserPreferences>(DEFAULT_PREFERENCES);
   const backendSyncedRef = useRef(false);
   const lastSavedRef = useRef<string>(JSON.stringify(loadSettings()));
+  /** Tracks whether the most recent local preferences came from a remote sync.
+   *  Prevents the theme-bridge effect from echoing remote-driven theme changes
+   *  back to the server. */
+  const lastRemoteThemeRef = useRef<ThemeMode | null>(null);
 
   // On mount: localStorage first (instant paint), then backend fetch (backend wins)
   useEffect(() => {
@@ -272,6 +336,91 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     await flushSave(settings);
   }, [settings, flushSave]);
 
+  // ── /api/preferences sync ──
+
+  const setPreferences = useCallback(
+    async (partial: Partial<UserPreferences>) => {
+      let next: UserPreferences = preferences;
+      setPreferencesState((prev) => {
+        next = {
+          ...prev,
+          ...partial,
+          notifications: {
+            ...prev.notifications,
+            ...(partial.notifications ?? {}),
+          },
+          updatedAt: new Date().toISOString(),
+        };
+        return next;
+      });
+      if (!isAuthenticated) return;
+      try {
+        const token = await getAccessToken();
+        await saveBackendPreferences(next, token);
+      } catch {
+        // best effort — local state already reflects the change
+      }
+    },
+    [preferences, isAuthenticated, getAccessToken],
+  );
+
+  // Mount: fetch /api/preferences once. Silent on 404 (S1 may not have shipped yet).
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    (async () => {
+      const token = await getAccessToken();
+      const remote = await fetchBackendPreferences(token);
+      if (cancelled || !remote) return;
+      setPreferencesState((prev) =>
+        new Date(remote.updatedAt) > new Date(prev.updatedAt) ? remote : prev,
+      );
+      lastRemoteThemeRef.current = remote.theme;
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, getAccessToken]);
+
+  // 30s poll for cross-device updates. Replaces local state when remote.updatedAt is
+  // newer; theme-bridge effect picks up the change and applies it through ThemeContext.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const id = setInterval(async () => {
+      const token = await getAccessToken();
+      const remote = await fetchBackendPreferences(token);
+      if (!remote) return;
+      setPreferencesState((prev) =>
+        new Date(remote.updatedAt) > new Date(prev.updatedAt) ? remote : prev,
+      );
+    }, PREFERENCES_POLL_MS);
+    return () => clearInterval(id);
+  }, [isAuthenticated, getAccessToken]);
+
+  // Bridge: ThemeContext.theme → preferences.theme. Sends the local theme name
+  // to /api/preferences whenever the user picks a new theme on this device. The
+  // ref guard skips echoes from a remote-driven theme apply.
+  useEffect(() => {
+    const localMode = theme.name as ThemeMode;
+    if (preferences.theme === localMode) return;
+    if (lastRemoteThemeRef.current === localMode) {
+      lastRemoteThemeRef.current = null;
+      return;
+    }
+    void setPreferences({ theme: localMode });
+  }, [theme.name, preferences.theme, setPreferences]);
+
+  // Bridge: preferences.theme → ThemeContext.setTheme. When the poll detects that
+  // another device flipped the theme, look up the matching preset and apply it.
+  // Falls back silently when the remote name doesn't map to a known preset.
+  useEffect(() => {
+    if (preferences.theme === (theme.name as ThemeMode)) return;
+    const next = allThemes[preferences.theme];
+    if (!next) return;
+    lastRemoteThemeRef.current = preferences.theme;
+    setTheme(next);
+  }, [preferences.theme, theme.name, allThemes, setTheme]);
+
   return (
     <SettingsContext.Provider
       value={{
@@ -281,6 +430,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         isDirty,
         isSaving,
         saveAll,
+        preferences,
+        setPreferences,
       }}
     >
       {children}

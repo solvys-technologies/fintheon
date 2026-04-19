@@ -9,13 +9,32 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-04-19T23:40:00",
+    date: "2026-04-20T02:10:00",
     agent: "claude-code",
     summary:
-      "S26 followup (v.26.3): (1) Fixed pricedinresearch.io/fintion → pricedinresearch.io/fintheon typo in the mobile About link (brief had the typo; TP corrected it). (2) Wiped NextSessionForecastCard from the Aquarium per TP — `wipe that forecast line off the face of the planet`. Removed from both chart-mode and non-chart-mode layouts + the import. The heuristic scenarios (Continuation / Risk-on rally / Headline escalation with fake probabilities) were noise. (3) Swapped the top-container right pane (45%) from MiroSharkDebatePanel to an iFrame embedding https://pricedinresearch.io/fintheon, with a `PRICED IN RESEARCH` header + `OPEN →` external-tab link so the site is one click away. Sandbox flags set to allow-scripts + allow-same-origin + allow-popups + allow-forms; referrerPolicy no-referrer-when-downgrade. Non-chart Aquarium top container now reads: Volatility Read (Blended IV) | Priced In Research site. MiroShark Deliberation still accessible from Imperium. Validation: mobile tsc clean, desktop tsc clean, desktop vite build clean (main 2,853.82 kB).",
+      "v.26.5 Aquarium revert per TP. My v.26.3 commit incorrectly placed the pricedinresearch.io/fintheon URL as an iFrame in the Aquarium (replacing the MiroShark Deliberation pane) AND removed the NextSessionForecastCard. That was a misread of TP's instruction — the URL was already placed in mobile About (Part 1, correct), and the 'embed' in 'where you put the embed' was not something I had actually placed. Sanctum.tsx restored to its ccee7f4^ state: MiroShark Deliberation pane back, NextSessionForecastCard back, iFrame removed. Mobile About link stays correctly pointed at pricedinresearch.io/fintheon.",
+    files: ["frontend/components/narrative/Sanctum.tsx"],
+  },
+  {
+    date: "2026-04-20T01:30:00",
+    agent: "claude-code",
+    summary:
+      "v5.22 S2 (mobile) — TP audit fixes + cross-platform settings sync + MiroShark→Agent Desk rename. Chat: assistant message now inserts on first text-delta (no more hollow thinking bubble per TP); per-user-message status caption (sending → sent → error); 12s no-stream watchdog (HARPER SILENT — CHECK DESKTOP RELAY) without closing the stream; DEV console.debug for unknown SSE event types; thinking-indicator gate widened to cover the lazy-insert window. ChatInput: caret alignment fix (verticalAlign top, boxSizing border-box, explicit minHeight, useLayoutEffect on mount, caretColor accent). HomePage: AGENTIC DESK → AGENT DESK label; hero ticker IV/VIX/IMPLIED labels share one baseline (alignItems flex-start + lineHeight 1). Fuses: nothing-fuse-shimmer keyframe (4.2s, 76%-100% dwell, reduced-motion guard) added to mobile/index.css; IVFuseBar/VerticalFuseBar/HomePage IVSubScores/NotificationDrawer/RiskFlowCard now route color through colorForSeverity/colorForScore from mobile/lib/fuse-palette and use opaque var(--fintheon-surface) tracks with the shimmer overlay. Catalyst tap: NotificationDrawer.onItemTap now dispatches catalyst/riskflow/maintenance/briefing URLs through useNotificationModal instead of window.location.href, so drawer taps open the DetailSheet (matches push-tap). MiroShark rename: useMirosharkLatest → useAgentDeskLatest (file + export + types + cache key); AGENTIC DESK label + miroshark prop → agentDesk; AquariumSummary import updated. /api/miroshark/* URL kept (S1 maintains backend alias); ivData.mirosharkComponent backend response field kept (no-op for client). Settings sync: SettingsContext additively fetches /api/preferences on mount and polls every 30s; setPreferences PUTs the shared UserPreferences shape; theme bridges both directions through ThemeContext (mobile picker → /api/preferences PUT; remote poll detects desktop theme change → ThemeContext.setTheme). Falls back silently to DEFAULT_PREFERENCES if S1 hasn't deployed /api/preferences yet — no feature flag, no blocking. SettingToggle gained a readOnly variant with a SET FROM DESKTOP caption for desktop-authoritative fields. tsc clean, vite build clean.",
     files: [
-      "frontend/components/narrative/Sanctum.tsx",
-      "mobile/components/settings/SettingsPage.tsx",
+      "mobile/components/chat/ChatPage.tsx",
+      "mobile/components/chat/ChatMessage.tsx",
+      "mobile/components/chat/ChatInput.tsx",
+      "mobile/components/home/HomePage.tsx",
+      "mobile/components/home/AquariumSummary.tsx",
+      "mobile/components/shared/IVFuseBar.tsx",
+      "mobile/components/shared/VerticalFuseBar.tsx",
+      "mobile/components/notifications/NotificationDrawer.tsx",
+      "mobile/components/riskflow/RiskFlowCard.tsx",
+      "mobile/components/settings/SettingToggle.tsx",
+      "mobile/contexts/SettingsContext.tsx",
+      "mobile/hooks/useAgentDeskLatest.ts",
+      "mobile/index.css",
+      "src/lib/changelog.ts",
     ],
   },
   {
