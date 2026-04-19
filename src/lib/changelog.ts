@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-20T01:00:00",
+    agent: "claude-code",
+    summary:
+      "v5.22.2 deploy — 3-target ship after prior stale deploy by another Claude. Pushed current v5.22 state (S26 mobile polish + v5.22 desktop refit + S27 planning + S27 foundation stubs) to all three prod surfaces. Backend redeployed to Fly.io app `fintheon` (fintheon.fly.dev) — rolling update, new machine reached good state, all 4 services green (Hermes AI / Supabase / X Feed / Supabase Auth). Desktop frontend Vercel project rebuilt + deployed (behind auth as expected, consumed via Electron app). Mobile PWA rebuilt clean (find dist -mindepth 1 -delete + vite build + vercel build --prod + vercel deploy --prebuilt --prod), new deployment dpl_Gp43QuJp57GyU15zuMXw6HFosrXV aliased to fintheon.pricedinresearch.io. Verified via build-hash match (index-CsfywWAP.js serving on prod matches local .vercel/output). Git tag v5.22.2 pushed + GitHub release created. Local launchd-managed backend unloaded + reloaded + diagnostics green. All riskflow smoke endpoints returning valid JSON on prod. Zero functional change — S27 stubs are typed-only throw-on-call scaffolding for the 10-Claude sprint worktrees.",
+    files: ["package.json", "src/lib/changelog.ts"],
+  },
+  {
     date: "2026-04-20T00:45:00",
     agent: "claude-code",
     summary:
