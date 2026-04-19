@@ -23,10 +23,7 @@ import { SwipeAction } from "../shared/SwipeAction";
 import { VerticalFuseBar } from "../shared/VerticalFuseBar";
 import { useNotificationModal } from "../../contexts/NotificationModalContext";
 import { CARD_PRESS } from "../../lib/sheet-motion";
-import {
-  colorForSeverity,
-  type FuseSeverity,
-} from "../../lib/fuse-palette";
+import { colorForSeverity, type FuseSeverity } from "../../lib/fuse-palette";
 
 /** How long the drain takes — covers the staggered top-down segment fade. Keep this
  *  in sync with VerticalFuseBar's `transitionDelay` formula (segments × 18ms + 150ms buffer). */

@@ -58,7 +58,9 @@ export function VerticalFuseBar({
               background: i < filled ? color : "var(--border)",
               // Stagger the drain top-down (i=9 first, i=0 last) so it reads as juice
               // flowing out of the card, not a simple fade. 18ms per segment × 10 = 180ms.
-              transitionDelay: draining ? `${(segments - 1 - i) * 18}ms` : "0ms",
+              transitionDelay: draining
+                ? `${(segments - 1 - i) * 18}ms`
+                : "0ms",
               transition: "background 150ms ease-out",
             }}
           />

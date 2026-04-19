@@ -468,7 +468,13 @@ export default function ChatPage({ visible }: ChatPageProps) {
         abortRef.current = null;
       }
     },
-    [isLoading, getAccessToken, settings.traderName, addApproval, resolveFromEvent],
+    [
+      isLoading,
+      getAccessToken,
+      settings.traderName,
+      addApproval,
+      resolveFromEvent,
+    ],
   );
 
   const isOffline = relayState === "offline";

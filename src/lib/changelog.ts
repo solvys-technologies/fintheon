@@ -9,7 +9,6 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
-<<<<<<< HEAD
     date: "2026-04-20T02:10:00",
     agent: "claude-code",
     summary:
@@ -36,7 +35,9 @@ export const changelog: ChangelogEntry[] = [
       "mobile/hooks/useAgentDeskLatest.ts",
       "mobile/index.css",
       "src/lib/changelog.ts",
-=======
+    ],
+  },
+  {
     date: "2026-04-19T23:55:00",
     agent: "claude-code",
     summary:
@@ -75,7 +76,6 @@ export const changelog: ChangelogEntry[] = [
       "backend-hono/src/services/market-data/iv-scorer.ts",
       "backend-hono/.env.example",
       "supabase/migrations/20260419_user_preferences.sql",
->>>>>>> v5.22-s1-desktop
     ],
   },
   {

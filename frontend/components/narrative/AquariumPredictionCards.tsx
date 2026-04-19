@@ -37,7 +37,9 @@ const CONVICTION_COLOR: Record<string, string> = {
 
 function IVHeatBar({ score }: { score: number }) {
   // [claude-code 2026-04-19] v5.22 S1: HEAT bar uses shared NothingFuse + palette severity.
-  return <NothingFuse value={Math.min(1, score / 10)} score={score} thickness={3} />;
+  return (
+    <NothingFuse value={Math.min(1, score / 10)} score={score} thickness={3} />
+  );
 }
 
 const CACHE_KEY = "fintheon:aquarium-predictions";

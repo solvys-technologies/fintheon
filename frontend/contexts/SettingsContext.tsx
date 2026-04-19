@@ -485,7 +485,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (preferencesSynced.current) {
         saveBackendPreferences(next).then((server) => {
           if (server && server.updatedAt) {
-            setPreferences((curr) => ({ ...curr, updatedAt: server.updatedAt }));
+            setPreferences((curr) => ({
+              ...curr,
+              updatedAt: server.updatedAt,
+            }));
           }
         });
       }

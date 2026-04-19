@@ -17,10 +17,7 @@ import type { NotificationItem } from "../../hooks/useNotificationHistory";
 import { useAuth } from "../../contexts/AuthContext";
 import { haptic } from "../../lib/haptics";
 import { useNotificationModal } from "../../contexts/NotificationModalContext";
-import {
-  colorForSeverity,
-  type FuseSeverity,
-} from "../../lib/fuse-palette";
+import { colorForSeverity, type FuseSeverity } from "../../lib/fuse-palette";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 

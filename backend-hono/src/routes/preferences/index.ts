@@ -111,10 +111,7 @@ export function createPreferencesRoutes(): Hono {
 
     const sb = getSupabaseClient();
     if (!sb) {
-      return c.json(
-        { error: "Preferences backend not configured" },
-        503,
-      );
+      return c.json({ error: "Preferences backend not configured" }, 503);
     }
 
     const now = new Date().toISOString();

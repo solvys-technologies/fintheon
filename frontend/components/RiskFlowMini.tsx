@@ -399,7 +399,17 @@ function AlertRow({
   const palColor = colorForSeverity(palSeverity);
   const ivScoreValue = alert.ivScore != null ? Number(alert.ivScore) : null;
   const fuseScore =
-    ivScoreValue != null ? ivScoreValue : alert.severity === "critical" ? 9 : alert.severity === "high" ? 7 : alert.severity === "medium" ? 5 : alert.severity === "low" ? 3 : 1;
+    ivScoreValue != null
+      ? ivScoreValue
+      : alert.severity === "critical"
+        ? 9
+        : alert.severity === "high"
+          ? 7
+          : alert.severity === "medium"
+            ? 5
+            : alert.severity === "low"
+              ? 3
+              : 1;
 
   return (
     <div
