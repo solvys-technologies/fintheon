@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S25-T1: SIGNAL/REGIME/HEAT fuses pinned to bottom with 16px pad (replaces KPI row on Command page)
 // [claude-code 2026-04-17] S23-T2: fire onSynthesisComplete callback when phase hits complete (fixes Aquarium hang)
 // [claude-code 2026-04-03] MiroShark Deliberation v2 — 4 phases: Analysts → Officials? → Hermes → Harper
 // Shows market analyst cards with subject tags, consensus gauge, devil's advocate badge
@@ -15,6 +16,7 @@ import {
   BarChart3,
   Zap,
 } from "lucide-react";
+import { ivHeatColor } from "../../types/miroshark";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -98,10 +100,17 @@ interface DeliberationState {
 export function MiroSharkDebatePanel({
   simulationId,
   onSynthesisComplete,
+  compositeIV,
+  regimeShiftProbability,
+  confidence,
 }: {
   simulationId: string | null;
   /** Fires once per simulationId when deliberation reaches phase === "complete". */
   onSynthesisComplete?: () => void;
+  /** Bottom fuses — SIGNAL / REGIME / HEAT. Omit to hide the fuse row. */
+  compositeIV?: number;
+  regimeShiftProbability?: number;
+  confidence?: number;
 }) {
   const [state, setState] = useState<DeliberationState | null>(null);
   const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
@@ -353,6 +362,129 @@ export function MiroSharkDebatePanel({
           </div>
         </div>
       )}
+
+      {/* SIGNAL / REGIME / HEAT fuses — pinned to bottom with breathing room */}
+      {(compositeIV != null ||
+        regimeShiftProbability != null ||
+        confidence != null) && (
+        <DeliberationFuses
+          compositeIV={compositeIV}
+          regimeShiftProbability={regimeShiftProbability}
+          confidence={confidence}
+        />
+      )}
+    </div>
+  );
+}
+
+function DeliberationFuses({
+  compositeIV,
+  regimeShiftProbability,
+  confidence,
+}: {
+  compositeIV?: number;
+  regimeShiftProbability?: number;
+  confidence?: number;
+}) {
+  const signalPct =
+    confidence != null ? Math.max(0, Math.min(1, confidence)) * 100 : 0;
+  const regimePct =
+    regimeShiftProbability != null
+      ? Math.max(0, Math.min(1, regimeShiftProbability)) * 100
+      : 0;
+  const heatPct =
+    compositeIV != null ? Math.max(0, Math.min(10, compositeIV)) * 10 : 0;
+
+  const signalColor =
+    signalPct >= 80
+      ? "var(--fintheon-low)"
+      : signalPct >= 60
+        ? "var(--fintheon-neutral-severe)"
+        : "var(--fintheon-severe)";
+  const regimeColor =
+    regimePct >= 60
+      ? "var(--fintheon-severe)"
+      : regimePct >= 30
+        ? "var(--fintheon-neutral-severe)"
+        : "var(--fintheon-low)";
+  const heatColor = ivHeatColor(compositeIV ?? 0);
+
+  return (
+    <div className="flex-shrink-0 px-4 pt-3 pb-4 flex items-center gap-5">
+      <Fuse
+        label="SIGNAL"
+        value={confidence != null ? `${signalPct.toFixed(0)}%` : "—"}
+        pct={signalPct}
+        color={signalColor}
+      />
+      <FadingRuler />
+      <Fuse
+        label="REGIME"
+        value={
+          regimeShiftProbability != null ? `${regimePct.toFixed(0)}%` : "—"
+        }
+        pct={regimePct}
+        color={regimeColor}
+      />
+      <FadingRuler />
+      <Fuse
+        label="HEAT"
+        value={compositeIV != null ? compositeIV.toFixed(1) : "—"}
+        pct={heatPct}
+        color={heatColor}
+      />
+    </div>
+  );
+}
+
+function Fuse({
+  label,
+  value,
+  pct,
+  color,
+}: {
+  label: string;
+  value: string;
+  pct: number;
+  color: string;
+}) {
+  return (
+    <div className="flex-1 min-w-0 flex flex-col gap-1">
+      <div className="flex items-baseline justify-between">
+        <span
+          className="text-[8px] tracking-[0.22em] text-[var(--fintheon-muted)]/50"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          {label}
+        </span>
+        <span
+          className="text-[10px] font-mono font-bold"
+          style={{ color, fontFamily: "var(--font-mono)" }}
+        >
+          {value}
+        </span>
+      </div>
+      <div className="h-[3px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function FadingRuler() {
+  return (
+    <div className="w-px self-stretch relative shrink-0">
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+          opacity: 0.18,
+        }}
+      />
     </div>
   );
 }

@@ -67,13 +67,6 @@ export function SanctumHeader({
         <div className="flex items-center gap-3">
           <SanctumPresets active={preset} onChange={onPresetChange} />
 
-          <span
-            className="text-[10px] text-[var(--fintheon-muted)]/50"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            5d window
-          </span>
-
           <button
             onClick={() => setUploadOpen(true)}
             className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors border border-[var(--fintheon-border)]/20 text-[var(--fintheon-muted)] hover:text-[var(--fintheon-accent)] hover:border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/5"

@@ -9,6 +9,21 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-04-19T20:00:00",
+    agent: "claude-code",
+    summary:
+      "Aquarium redesign sprint — Track 1 (visual foundation). Renamed top tab strip from 'Full Brief / Chart Focus / Econ Watch / Risk Scan' to 'Command / Econ / Risk / 5D' (chart-focus still exists as a preset id but is no longer rendered — the Chart button in the top bar owns that mode). Removed the duplicate '5d window' text pill in SanctumHeader since it's now inside the tab strip. Deleted the Market Heat / Regime Risk / Signal Strength KPI cards entirely — those metrics now live only as three SIGNAL / REGIME / HEAT fuses pinned to the bottom of the MiroShark Deliberation panel with 16px bottom padding so they no longer kiss the frame edge. Stripped the outer border off the brief-pattern top container in Command; the two halves (Volatility Read on the left, Deliberation + fuses on the right) are now separated only by a fading vertical ruler (accent gold → transparent at top+bottom, 18% opacity center). Fused the /NQ /ES /YM /CL /GC instrument cards into a single continuous row — per-card borders gone, replaced by fading vertical rulers between each instrument. Removed the Risk Sector 'IV by Category' fuse cards from the Econ Intelligence page (they duplicated the new Agent Desk fuses); SanctumEconIntel.categoryScores prop kept for call-site compat but unused until Track 4 repurposes the page. Added data-aquarium-viewport-lock attribute on the Sanctum root for the ≥1440px viewport-lock CSS to hook into next pass. Also simplified the chart-mode left rail by dropping the KPI row mount there.",
+    files: [
+      "frontend/types/miroshark.ts",
+      "frontend/components/narrative/SanctumPresets.tsx",
+      "frontend/components/narrative/SanctumHeader.tsx",
+      "frontend/components/narrative/Sanctum.tsx",
+      "frontend/components/narrative/AquariumPredictionCards.tsx",
+      "frontend/components/narrative/SanctumEconIntel.tsx",
+      "frontend/components/miroshark/MiroSharkDebatePanel.tsx",
+    ],
+  },
+  {
     date: "2026-04-18T12:20:00",
     agent: "claude-code",
     summary:

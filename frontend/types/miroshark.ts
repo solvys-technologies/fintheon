@@ -113,10 +113,10 @@ export const AUDITORIUM_PRESETS: {
   label: string;
   description: string;
 }[] = [
-  { id: "full-brief", label: "Full Brief", description: "All pages" },
-  { id: "chart-focus", label: "Chart Focus", description: "IV chart expanded" },
-  { id: "econ-watch", label: "Econ Watch", description: "Economic events" },
-  { id: "risk-scan", label: "Risk Scan", description: "Sectors & scenarios" },
+  { id: "full-brief", label: "Command", description: "Command Center" },
+  { id: "chart-focus", label: "Chart", description: "Chart overlay" },
+  { id: "econ-watch", label: "Econ", description: "Economic Intelligence" },
+  { id: "risk-scan", label: "Risk", description: "Risk & Narratives" },
 ];
 
 export const AUDITORIUM_PAGES = [

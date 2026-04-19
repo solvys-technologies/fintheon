@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S25-T1: Removed KPI row (moved to Agent Desk fuses), stripped card borders to fading edges, viewport lock ≥1440px, fuses piped into DebatePanel
 // [claude-code 2026-04-17] S23-T1: Aquarium restructure — top chart replaced with brief-pattern container (IV+Forecast | Deliberation), Chart toggle renders 50/50 with TradingView iframe, feels polish
 // [claude-code 2026-04-16] Sanctum — full-border severity on Risk Signals containers, solvys-feels polish
 // [claude-code 2026-03-28] S8-T4: Chart cleanup, Page 2 restructure (50/50 narratives+risk), sim history removed
@@ -14,7 +15,7 @@ import type {
   RiskFlowCatalyst,
   SanctumNarrative,
 } from "../../types/miroshark";
-import { AUDITORIUM_PAGES, ivHeatColor } from "../../types/miroshark";
+import { AUDITORIUM_PAGES } from "../../types/miroshark";
 import { SanctumChart } from "./SanctumChart";
 import { SanctumEconIntel } from "./SanctumEconIntel";
 import { SanctumHeader } from "./SanctumHeader";
@@ -52,101 +53,6 @@ interface SanctumProps {
   chartMode?: boolean;
   /** Fires once per simulationId when MiroShark deliberation completes — parent should reload latest report. */
   onSynthesisComplete?: () => void;
-}
-
-function heatInterpretation(score: number): string {
-  if (score >= 9) return "Extreme — capital preservation mode";
-  if (score >= 7) return "High — reduce size, widen stops";
-  if (score >= 5) return "Elevated — wider ranges, faster reversals";
-  if (score >= 3) return "Moderate — normal conditions";
-  return "Low — range-bound, fade extremes";
-}
-
-function regimeInterpretation(probability: number): string {
-  const pct = probability * 100;
-  if (pct >= 60) return "Likely shifting — trend models unreliable";
-  if (pct >= 30) return "Possible — tighten stops on trend trades";
-  if (pct >= 15) return "Low risk — current regime holding";
-  return "Stable — no structural change expected";
-}
-
-function confidenceInterpretation(confidence: number): string {
-  const pct = confidence * 100;
-  if (pct >= 80) return "High conviction — size accordingly";
-  if (pct >= 60) return "Moderate — standard positioning";
-  if (pct >= 40) return "Uncertain — reduce exposure";
-  return "Low — consider sitting out";
-}
-
-function KpiTile({
-  label,
-  value,
-  valueColor,
-  caption,
-}: {
-  label: string;
-  value: string;
-  valueColor: string;
-  caption: string;
-}) {
-  return (
-    <div className="rounded-md border border-[var(--fintheon-accent)]/10 bg-[var(--fintheon-surface)] px-4 py-3">
-      <span
-        className="text-[8px] text-[var(--fintheon-muted)]/50 uppercase tracking-wider block"
-        style={{ fontFamily: "var(--font-heading)" }}
-      >
-        {label}
-      </span>
-      <span
-        className="text-lg font-bold"
-        style={{ color: valueColor, fontFamily: "var(--font-mono)" }}
-      >
-        {value}
-      </span>
-      <span className="text-[8px] text-[var(--fintheon-muted)]/40 block mt-0.5">
-        {caption}
-      </span>
-    </div>
-  );
-}
-
-function KpiRow({ data }: { data: SanctumData }) {
-  return (
-    <div className="shrink-0 flex justify-center">
-      <div className="grid grid-cols-3 gap-3 w-full max-w-2xl">
-        <KpiTile
-          label="Market Heat"
-          value={data.compositeIV.toFixed(1)}
-          valueColor={ivHeatColor(data.compositeIV)}
-          caption={heatInterpretation(data.compositeIV)}
-        />
-        <KpiTile
-          label="Regime Risk"
-          value={`${(data.regimeShiftProbability * 100).toFixed(0)}%`}
-          valueColor={
-            data.regimeShiftProbability >= 0.6
-              ? "var(--fintheon-severe)"
-              : data.regimeShiftProbability >= 0.3
-                ? "var(--fintheon-neutral-severe)"
-                : "var(--fintheon-low)"
-          }
-          caption={regimeInterpretation(data.regimeShiftProbability)}
-        />
-        <KpiTile
-          label="Signal Strength"
-          value={`${(data.confidence * 100).toFixed(0)}%`}
-          valueColor={
-            data.confidence >= 0.8
-              ? "var(--fintheon-low)"
-              : data.confidence >= 0.6
-                ? "var(--fintheon-neutral-severe)"
-                : "var(--fintheon-severe)"
-          }
-          caption={confidenceInterpretation(data.confidence)}
-        />
-      </div>
-    </div>
-  );
 }
 
 export function Sanctum({
@@ -257,7 +163,10 @@ export function Sanctum({
   const displayContext = data?.contextSnapshot ?? macroContext ?? null;
 
   return (
-    <div className="h-full w-full flex flex-col bg-[var(--fintheon-bg)]">
+    <div
+      className="h-full w-full flex flex-col bg-[var(--fintheon-bg)]"
+      data-aquarium-viewport-lock
+    >
       {/* Persistent header — always visible */}
       <SanctumHeader
         preset={preset}
@@ -285,7 +194,6 @@ export function Sanctum({
                 /* Chart mode — 50/50 split: compact Aquarium stack on left, TradingView chart on right */
                 <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-3 min-h-0">
                   <div className="flex flex-col gap-3 overflow-y-auto pr-1">
-                    {data && data.compositeIV > 0 && <KpiRow data={data} />}
                     {data && data.compositeIV > 0 && (
                       <SanctumBriefing
                         briefing={data.briefing ?? null}
@@ -300,7 +208,7 @@ export function Sanctum({
                     />
                     <AquariumPredictionCards />
                   </div>
-                  <div className="min-h-[60vh] xl:min-h-0 rounded-xl border border-[var(--fintheon-accent)]/12 overflow-hidden">
+                  <div className="min-h-[60vh] xl:min-h-0 overflow-hidden">
                     <SanctumChart
                       timeSeries={data?.timeSeries ?? []}
                       rollingDays={rollingDays}
@@ -314,10 +222,10 @@ export function Sanctum({
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col gap-4">
-                  {/* Brief-pattern top container — IV+Forecast left (55%), Deliberation right (45%) */}
+                  {/* Brief-pattern top container — Volatility Read left (55%), Deliberation right (45%) — no outer border, fading ruler divides */}
                   <div className="min-h-[520px] flex">
-                    <div className="flex-1 flex border border-[var(--fintheon-accent)]/12 rounded-xl overflow-hidden mx-1 my-1">
-                      {/* Left: Blended IV + Next Session Forecast (55%) */}
+                    <div className="flex-1 flex overflow-hidden mx-1 my-1">
+                      {/* Left: Volatility Read — Blended IV + Next Session Forecast (55%) */}
                       <div className="flex-[55] min-w-0 overflow-y-auto p-4 flex flex-col gap-3">
                         <div className="flex items-center gap-2">
                           <span
@@ -337,67 +245,30 @@ export function Sanctum({
                         />
                       </div>
 
-                      {/* Needle divider — matches Dashboard brief pattern */}
+                      {/* Fading vertical ruler between Volatility Read and Deliberation */}
                       <div className="w-px relative shrink-0">
                         <div
                           className="absolute inset-0"
                           style={{
                             background:
-                              "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 25%, var(--fintheon-accent) 75%, transparent 100%)",
-                            opacity: 0.15,
+                              "linear-gradient(to bottom, transparent 0%, var(--fintheon-accent) 50%, transparent 100%)",
+                            opacity: 0.18,
                           }}
                         />
                       </div>
 
-                      {/* Right: MiroShark Deliberation (45%) */}
+                      {/* Right: MiroShark Deliberation with SIGNAL/REGIME/HEAT fuses at bottom (45%) */}
                       <div className="flex-[45] min-w-0 min-h-0 flex flex-col">
                         <MiroSharkDebatePanel
                           simulationId={data?.simulationId ?? null}
                           onSynthesisComplete={onSynthesisComplete}
+                          compositeIV={data?.compositeIV}
+                          regimeShiftProbability={data?.regimeShiftProbability}
+                          confidence={data?.confidence}
                         />
                       </div>
                     </div>
                   </div>
-
-                  {/* KPI Row */}
-                  {data && data.compositeIV > 0 && (
-                    <div className="shrink-0 flex justify-center">
-                      <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
-                        <KpiTile
-                          label="Market Heat"
-                          value={data.compositeIV.toFixed(1)}
-                          valueColor={ivHeatColor(data.compositeIV)}
-                          caption={heatInterpretation(data.compositeIV)}
-                        />
-                        <KpiTile
-                          label="Regime Risk"
-                          value={`${(data.regimeShiftProbability * 100).toFixed(0)}%`}
-                          valueColor={
-                            data.regimeShiftProbability >= 0.6
-                              ? "var(--fintheon-severe)"
-                              : data.regimeShiftProbability >= 0.3
-                                ? "var(--fintheon-neutral-severe)"
-                                : "var(--fintheon-low)"
-                          }
-                          caption={regimeInterpretation(
-                            data.regimeShiftProbability,
-                          )}
-                        />
-                        <KpiTile
-                          label="Signal Strength"
-                          value={`${(data.confidence * 100).toFixed(0)}%`}
-                          valueColor={
-                            data.confidence >= 0.8
-                              ? "var(--fintheon-low)"
-                              : data.confidence >= 0.6
-                                ? "var(--fintheon-neutral-severe)"
-                                : "var(--fintheon-severe)"
-                          }
-                          caption={confidenceInterpretation(data.confidence)}
-                        />
-                      </div>
-                    </div>
-                  )}
 
                   {/* Briefing */}
                   {data && data.compositeIV > 0 && (
@@ -408,7 +279,7 @@ export function Sanctum({
                     />
                   )}
 
-                  {/* Prediction Cards — 5 instruments */}
+                  {/* Instrument Fuses — single fused row, /NQ /ES /YM /CL /GC with fading rulers */}
                   <div className="flex justify-center">
                     <AquariumPredictionCards />
                   </div>

@@ -1,3 +1,4 @@
+// [claude-code 2026-04-19] S25-T1: Removed Risk Sector fuse cards (duplicated Agent Desk fuses); categoryScores prop now unused on this page
 // [claude-code 2026-04-10] Split into Inflation/Jobs/Supply Chain sections, US-only filter
 // [claude-code 2026-03-28] S9-T3: 5s fetch timeout, error fallback with retry, history fetch timeout
 // [claude-code 2026-03-28] S8-T4: Risk sector cards — whole border + fuse + percentage (matching CategoryScoreCard)
@@ -22,7 +23,7 @@ import type {
   SimulationContext,
   MiroSharkCategoryScore,
 } from "../../types/miroshark";
-import { RISK_CATEGORY_LABELS, ivHeatColor } from "../../types/miroshark";
+import { ivHeatColor } from "../../types/miroshark";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -49,34 +50,6 @@ const ECON_TICKERS: SectionedEconCard[] = [
 ];
 
 const ECON_SECTIONS = ["Inflation Data", "Jobs Data", "Supply Chain"] as const;
-
-function categoryInterpretation(
-  category: string,
-  label: string,
-  delta: number,
-  ivScore: number,
-): string {
-  const direction =
-    delta > 0.5 ? "rising" : delta < -0.5 ? "subsiding" : "stable";
-
-  const catContext: Record<string, string> = {
-    geopolitical: "Watch for gap risk on overnight holds.",
-    political: "Policy headlines may whipsaw intraday — trade smaller.",
-    "monetary-policy": "Bonds leading — check /ZN before equity entries.",
-    "earnings-corporate": "Single-stock vol elevated — favor spreads.",
-    "market-structure": "Liquidity thinning — reduce size on breakouts.",
-    "black-swan": "Tail risk active — consider hedges or flat.",
-  };
-
-  const base =
-    direction === "rising"
-      ? `${label} heat rising at ${ivScore.toFixed(1)} — momentum ${delta > 0 ? "+" : ""}${delta.toFixed(1)}.`
-      : direction === "subsiding"
-        ? `${label} heat cooling — momentum ${delta.toFixed(1)}, uncertainty receding.`
-        : `${label} heat steady at ${ivScore.toFixed(1)} — no directional shift.`;
-
-  return `${base} ${catContext[category] ?? ""}`;
-}
 
 const DIRECTION_CONFIG = {
   beat: { icon: Diff, color: "var(--fintheon-low)", label: "BEAT" },
@@ -664,14 +637,11 @@ function EconCard({
 interface SanctumEconIntelProps {
   expanded?: boolean;
   context?: SimulationContext | null;
+  /** @deprecated Risk Sector fuse cards removed — kept for call-site compat; Track 4 repurposes this page. */
   categoryScores?: MiroSharkCategoryScore[];
 }
 
-export function SanctumEconIntel({
-  expanded,
-  context,
-  categoryScores,
-}: SanctumEconIntelProps) {
+export function SanctumEconIntel({ expanded, context }: SanctumEconIntelProps) {
   const [cards, setCards] = useState<SectionedEconCard[]>(ECON_TICKERS);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -765,159 +735,6 @@ export function SanctumEconIntel({
 
   return (
     <div className={expanded ? "flex flex-col gap-4" : ""}>
-      {/* Risk Category Cards — shown first, above econ event cards */}
-      {categoryScores && categoryScores.length > 0 && (
-        <div className="mb-4">
-          <div className="text-[9px] text-[var(--fintheon-muted)]/40 font-mono mb-2 uppercase tracking-wider">
-            Risk Sectors — IV by Category
-          </div>
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-            {categoryScores.map((cs) => {
-              const color = ivHeatColor(cs.ivScore);
-              const label = RISK_CATEGORY_LABELS[cs.category];
-              const isExpanded = expandedTicker === `risk-${cs.category}`;
-              const deltaColor =
-                cs.delta > 0
-                  ? "#EF4444"
-                  : cs.delta < 0
-                    ? "#34D399"
-                    : "var(--fintheon-muted)";
-              const deltaSign = cs.delta > 0 ? "+" : "";
-              const confPct = Math.round(cs.confidence * 100);
-
-              return (
-                <div
-                  key={cs.category}
-                  className={`flex flex-col rounded-lg bg-[var(--fintheon-surface)]/40 transition-all duration-300 cursor-pointer ${
-                    isExpanded ? "shadow-[0_0_12px_rgba(199,159,74,0.15)]" : ""
-                  }`}
-                  style={{
-                    border: `1px solid ${color}30`,
-                    boxShadow: isExpanded ? undefined : `0 0 8px ${color}15`,
-                  }}
-                  onClick={() =>
-                    setExpandedTicker((prev) =>
-                      prev === `risk-${cs.category}`
-                        ? null
-                        : `risk-${cs.category}`,
-                    )
-                  }
-                >
-                  <div className="px-5 py-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: color }}
-                        />
-                        <span className="text-[11px] font-mono text-[var(--fintheon-text)]/80 uppercase tracking-wider">
-                          {label}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="text-[11px] font-mono font-bold"
-                          style={{ color: deltaColor }}
-                        >
-                          {deltaSign}
-                          {cs.delta.toFixed(1)}
-                        </span>
-                        <ChevronDown
-                          className={`w-3.5 h-3.5 text-[var(--fintheon-muted)]/30 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-end justify-between">
-                      <span
-                        className="text-3xl font-mono font-bold"
-                        style={{ color, textShadow: `0 0 12px ${color}40` }}
-                      >
-                        {cs.ivScore.toFixed(1)}
-                      </span>
-                      <div className="flex flex-col items-end gap-1">
-                        <span
-                          className="text-[11px] font-mono font-bold"
-                          style={{
-                            color:
-                              confPct >= 70
-                                ? "#34D399"
-                                : confPct >= 50
-                                  ? "#F59E0B"
-                                  : "#EF4444",
-                          }}
-                        >
-                          {confPct}%
-                        </span>
-                        {/* Volatility fuse */}
-                        <div className="w-20 h-[3px] rounded-full bg-[var(--fintheon-border)]/10 overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${Math.min(cs.ivScore * 10, 100)}%`,
-                              backgroundColor: color,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expanded detail */}
-                  <div
-                    className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out"
-                    style={{
-                      maxHeight: isExpanded ? "200px" : "0px",
-                      opacity: isExpanded ? 1 : 0,
-                    }}
-                  >
-                    <div className="border-t border-[var(--fintheon-border)]/10 px-4 py-3 flex flex-col gap-2">
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-                            IV Score
-                          </span>
-                          <span className="text-xs font-mono text-[var(--fintheon-text)]">
-                            {cs.ivScore.toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-                            Delta
-                          </span>
-                          <span
-                            className="text-xs font-mono"
-                            style={{ color: deltaColor }}
-                          >
-                            {deltaSign}
-                            {cs.delta.toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[8px] text-[var(--fintheon-muted)]/40 uppercase tracking-wider block">
-                            Confidence
-                          </span>
-                          <span className="text-xs font-mono text-[var(--fintheon-text)]">
-                            {confPct}%
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-[var(--fintheon-muted)]/50 leading-relaxed">
-                        {categoryInterpretation(
-                          cs.category,
-                          label,
-                          cs.delta,
-                          cs.ivScore,
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Economic Event Cards — grouped by section */}
       {ECON_SECTIONS.map((sectionName, sectionIdx) => {
         const sectionCards = cards.filter((c) => c.section === sectionName);
