@@ -1,3 +1,7 @@
+// [claude-code 2026-04-19] S26 hotfix: guarded sourceStatus.userPollStats[userId] access.
+//   When a user had a cached `sourceStatus` from before S25-T4 added the userPollStats
+//   field, `sourceStatus.userPollStats` was undefined and `[userId]` threw on mount,
+//   blowing up the whole app into an error boundary with TP's sub shown in the message.
 // [claude-code 2026-04-11] Renamed twitter → rettiwt/riskflow for X CLI removal + round-robin
 import {
   createContext,
@@ -96,7 +100,7 @@ export function TeamPresenceProvider({ children }: { children: ReactNode }) {
 
   // [claude-code 2026-04-18] S25-T4: Broadcast unified newsfeedHealthy + per-user lastSuccessAt
   // so peers see truthful aggregated feed health and a per-card "Polled Nm ago" line.
-  const myStats = sourceStatus.userPollStats[userId];
+  const myStats = sourceStatus.userPollStats?.[userId];
   const buildPayload = useCallback(
     (): PresencePayload => ({
       userId,

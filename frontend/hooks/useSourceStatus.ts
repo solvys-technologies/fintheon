@@ -1,3 +1,7 @@
+// [claude-code 2026-04-19] S26 hotfix: `loadCachedStatus` now spreads DEFAULT_STATUS
+//   under the cached object so stale caches (serialized before new fields like
+//   userPollStats/agentReach/feedPoller landed) still hydrate with complete shape.
+//   Prevents `Cannot read properties of undefined` crashes on app reopen.
 // [claude-code 2026-04-11] Renamed twitterCli → rettiwt, added pollingOwner + activePollers
 // [claude-code 2026-04-17] Cache last-known-good status to localStorage so self team card
 //                          hydrates with accurate data on app reopen instead of flashing red
@@ -75,11 +79,15 @@ function loadCachedStatus(): SourceStatus {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return DEFAULT_STATUS;
-    const cached = JSON.parse(raw) as SourceStatus;
-    const lastPollMs = new Date(cached.lastPollSuccess).getTime();
+    const cached = JSON.parse(raw) as Partial<SourceStatus>;
+    const lastPollMs = new Date(cached.lastPollSuccess ?? 0).getTime();
     if (!Number.isFinite(lastPollMs)) return DEFAULT_STATUS;
     if (Date.now() - lastPollMs > CACHE_MAX_AGE_MS) return DEFAULT_STATUS;
-    return cached;
+    // Spread DEFAULT_STATUS first so any fields added after this user's last
+    // cache write (e.g. S25-T4's userPollStats) still exist on the returned
+    // object. Without this merge, `sourceStatus.userPollStats[userId]` threw
+    // on mount for anyone with a pre-S25-T4 cache.
+    return { ...DEFAULT_STATUS, ...cached } as SourceStatus;
   } catch {
     return DEFAULT_STATUS;
   }
