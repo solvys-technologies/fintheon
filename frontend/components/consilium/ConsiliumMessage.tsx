@@ -139,6 +139,19 @@ export function ConsiliumMessage({
             autonomous={isAutonomous}
           />
           {isAutonomous && <Bot size={10} className="text-emerald-400/60" />}
+          {message.metadata?.injections && (
+            <ContextInjectionBadge
+              injections={
+                message.metadata.injections as {
+                  feed: boolean;
+                  dossier: boolean;
+                  memoryBank: boolean;
+                  thoughtBank: boolean;
+                  reflect?: boolean;
+                }
+              }
+            />
+          )}
         </div>
       )}
       <div

@@ -60,6 +60,18 @@ export interface HermesChatResponse {
     symbols?: string[];
     tradeDirection?: "long" | "short" | "flat";
     riskLevel?: "low" | "medium" | "high";
+    /**
+     * Context-injection audit. Every flag reports whether the corresponding prompt
+     * block was present and non-empty for this request. Consumed by the frontend
+     * to render a 4-dot badge on each agent response.
+     */
+    injections?: {
+      feed: boolean;
+      dossier: boolean;
+      memoryBank: boolean;
+      thoughtBank: boolean;
+      reflect?: boolean;
+    };
   };
 }
 
@@ -604,6 +616,19 @@ export async function handleHermesChat(
   const thoughtBankBlock = await buildThoughtBankPromptBlock(agentDisplayName);
   const systemPrompt =
     basePrompt + feedContext + memoryBank + reflectContext + thoughtBankBlock;
+
+  // Context-injection audit — captured once per request, returned on the response
+  // so the frontend can render a 4-dot badge showing which blocks were live.
+  const injectionAudit = {
+    feed: feedContext.trim().length > 0,
+    dossier: basePrompt.trim().length > 0,
+    memoryBank: memoryBank.trim().length > 0,
+    thoughtBank: thoughtBankBlock.trim().length > 0,
+    reflect:
+      agentInfo.agent === "harper-cao"
+        ? reflectContext.trim().length > 0
+        : undefined,
+  };
   const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: "system", content: systemPrompt },
   ];
@@ -652,6 +677,7 @@ export async function handleHermesChat(
           metadata: {
             intent: agentInfo.intent,
             symbols: extractSymbols(request.message),
+            injections: injectionAudit,
           },
         };
       }
@@ -726,6 +752,7 @@ export async function handleHermesChat(
       metadata: {
         intent: agentInfo.intent,
         symbols: extractSymbols(request.message),
+        injections: injectionAudit,
       },
     };
   } catch (error) {
